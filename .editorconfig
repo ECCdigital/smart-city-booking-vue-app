@@ -1,0 +1,68 @@
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# ReST-Files
+[*.rst]
+max_line_length = 80
+
+# YAML-Files
+[*.{yaml,yml}]
+indent_size = 2
+
+# NEON-Files
+[*.neon]
+indent_size = 2
+indent_style = tab
+
+# TypoScript
+[*.{typoscript,tsconfig}]
+indent_size = 2
+
+# XLF-Files
+[*.xlf]
+indent_style = tab
+
+# SQL-Files
+[*.sql]
+indent_style = tab
+indent_size = 2
+
+# .htaccess
+[{_.htaccess,.htaccess}]
+indent_style = tab
+
+# JavaScript
+[*.{js,jsx,ts,tsx,vue,json}]
+indent_size = 2
+
+# Styling
+[*.{scss,sass,css}]
+indent_size = 2
+
+# Configuration
+[.stylelintrc]
+indent_size = 2
+
+[*.{dtd,inc,php,phpt,rng,wsdl,xml,xsd,xsl}]
+indent_size = 4
+
+[*.{awk,bat,c,cpp,d,h,l,re,skl,w32,y}]
+indent_style = tab
+
+[{Makefile,**.mk}]
+indent_style = tab
+
+[*.{md,markdown}]
+trim_trailing_whitespace = false
+
+# HTML and Templating
+[*.{html,twig}]
+indent_size = 2

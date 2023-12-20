@@ -1,0 +1,275 @@
+{
+  "logout": {
+    "success": {
+      "title": "Erfolgreich abgemeldet",
+      "message": "Sie haben sich erfolgreich abgemeldet."
+    }
+  },
+  "login": {
+    "success": {
+      "default": {
+        "title": "Erfolgreich angemeldet",
+        "message": "Sie haben sich erfolgreich im Kundenbereich angemeldet"
+      }
+    },
+    "error": {
+      "default": {
+        "title": "Anmeldung fehlgeschlagen",
+        "message": "Leider ist die Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
+      },
+      "wrong-email": {
+        "title": "Falsche E-Mail/Passwort",
+        "message": "Leider stimmt die E-Mail und/oder das Passwort nicht. Bitte versuchen Sie es erneut."
+      }
+    }
+  },
+  "register": {
+    "success": {
+      "default": {
+        "title": "Registrierung angemeldet",
+        "message": "Sie haben Sich erfolgreich registriert"
+      }
+    },
+    "error": {
+      "default": {
+        "title": "Registrierung fehlgeschlagen",
+        "message": "Leider ist die Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut."
+      },
+      "wrong-email": {
+        "title": "Falsche E-Mail/Passwort",
+        "message": "Leider stimmt mit der E-Mail etwas nicht. Bitte versuchen Sie es erneut."
+      },
+      "information-missing": {
+        "title": "Fehlende Angaben",
+        "message": "Bitte füllen Sie alle Pflichtfelder aus und versuchen Sie es erneut."
+      }
+    }
+  },
+  "editBookables": {
+    "types": {
+      "event-location": "Veranstaltungsort",
+      "room": "Raum",
+      "resource": "Ressource",
+      "ticket": "Ticket"
+    }
+  },
+  "errors": {
+    "unauthenticated": {
+      "title": "Zugriff verweigert",
+      "message": "Bitte loggen Sie sich ein um den gewünschten Bereich einzusehen"
+    }
+  },
+  "bookable": {
+    "delete": {
+      "success": {
+        "title": "Erfolgreich gelöscht",
+        "message": "Das Element wurde erfolgreich gelöscht."
+      }
+    }
+  },
+  "event": {
+    "delete": {
+      "success": {
+        "title": "Erfolgreich gelöscht",
+        "message": "Die Veranstaltung wurde erfolgreich gelöscht."
+      }
+    },
+    "create": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Die Veranstaltung wurde erfolgreich erstellt."
+      }
+    },
+    "update": {
+      "success": {
+        "title": "Erfolgreich aktualisiert",
+        "message": "Die Veranstaltung wurde erfolgreich aktualisiert."
+      }
+    },
+    "duplicate": {
+      "success": {
+        "title": "Erfolgreich dupliziert",
+        "message": "Die Veranstaltung wurde erfolgreich dupliziert."
+      }
+    }
+  },
+
+  "password": {
+    "reset": {
+      "success": {
+        "title": "Bestätigungs E-Mail gesendet",
+        "message": "Bitte überprüfen Sie Ihr E-Mail Postfach. Sie erhalten in Kürze eine E-Mail  mit einem Link zum Bestätigen Ihres Passworts."
+      },
+      "error": {
+        "title": "Fehler beim Zurücksetzen",
+        "message": "Leider ist beim Zurücksetzen des Passworts ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+      },
+      "wrong-email": {
+        "title": "Falsche E-Mail",
+        "message": "Leider stimmt die E-Mail nicht. Bitte versuchen Sie es erneut."
+      },
+      "password-mismatch": {
+        "title": "Passwörter stimmen nicht überein",
+        "message": "Leider stimmen die Passwörter nicht überein. Bitte versuchen Sie es erneut."
+      }
+    }
+  },
+  "booking": {
+    "delete": {
+      "success": {
+        "title": "Erfolgreich gelöscht",
+        "message": "Die Buchung wurde erfolgreich gelöscht."
+      },
+      "error": {
+        "title": "Fehler beim Löschen",
+        "message": "Die Buchung konnte nicht gelöscht werden."
+      }
+    },
+    "create": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Die Buchung wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Die Buchung konnte nicht erstellt werden."
+      },
+      "error-time-confict": {
+        "title": "Zeitkonflikt",
+        "message": "Die Buchung konnte nicht erstellt werden, da es zu einem Zeitkonflikt kommt."
+      }
+    },
+    "edit": {
+      "success": {
+        "title": "Erfolgreich bearbeitet",
+        "message": "Die Buchung wurde erfolgreich bearbeitet."
+      },
+      "error": {
+        "title": "Fehler beim Bearbeiten",
+        "message": "Die Buchung konnte nicht bearbeitet werden."
+      },
+      "error-time-confict": {
+        "title": "Zeitkonflikt",
+        "message": "Die Buchung konnte nicht bearbeitet werden, da es zu einem Zeitkonflikt kommt."
+      }
+    }
+  },
+  "checkout": {
+    "error": {
+      "booking-conflict": {
+        "title": "Objekt nicht verfügbar.",
+        "message": "Die Buchung kann leider nicht durchgeführt werden, da das Objekt zu dieser Zeit nicht verfügbar ist."
+      },
+      "unexpected": {
+        "title": "Ein Fehler ist aufgetreten.",
+        "message": "Leider ist bei der Prüfung ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
+      }
+    },
+    "warning": {
+      "min-booking-duration": {
+        "title": "Minimale Buchungsdauer beachten",
+        "message": "Bitte beachten Sie die minimale Buchungsdauer und versuchen Sie es erneut."
+      },
+      "max-booking-duration": {
+        "title": "Maximale Buchungsdauer beachten",
+        "message": "Bitte beachten Sie die maximale Buchungsdauer und versuchen Sie es erneut."
+      }
+    }
+  },
+  "session": {
+    "expired": {
+      "title": "Sitzung abgelaufen",
+      "message": "Ihre Sitzung ist abgelaufen. Bitte loggen Sie sich erneut ein."
+    }
+  },
+  "user": {
+    "delete": {
+      "success": {
+        "title": "Erfolgreich gelöscht",
+        "message": "Der Benutzer wurde erfolgreich gelöscht."
+      }
+    },
+    "create": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Der Benutzer wurde erfolgreich erstellt."
+      }
+    },
+    "edit": {
+      "success": {
+        "title": "Erfolgreich bearbeitet",
+        "message": "Der Benutzer wurde erfolgreich bearbeitet."
+      }
+    },
+    "edit-profile": {
+      "success": {
+        "title": "Erfolgreich bearbeitet",
+        "message": "Ihr Profil wurde erfolgreich aktualisiert."
+      },
+      "error": {
+        "title": "Fehler beim Bearbeiten",
+        "message": "Ihr Profil konnte nicht aktualisiert werden."
+      }
+    }
+  },
+  "coupon": {
+    "delete": {
+      "success": {
+        "title": "Erfolgreich gelöscht",
+        "message": "Der Gutschein wurde erfolgreich gelöscht."
+      },
+      "error": {
+        "title": "Fehler beim Löschen",
+        "message": "Der Gutschein konnte nicht gelöscht werden."
+      }
+    },
+    "create": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Der Gutschein wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Der Gutschein konnte nicht erstellt werden. Der Gutscheincode muss einmalig sein."
+      }
+    },
+    "edit": {
+      "success": {
+        "title": "Erfolgreich bearbeitet",
+        "message": "Der Gutschein wurde erfolgreich bearbeitet."
+      },
+      "error": {
+        "title": "Fehler beim Bearbeiten",
+        "message": "Der Gutschein konnte nicht bearbeitet werden."
+      }
+    }
+  },
+  "permissions": {
+    "accessLevels": {
+      "create": "Erstellen",
+      "updateOwn": "Eigene bearbeiten",
+      "updateAny": "Alle bearbeiten",
+      "deleteOwn": "Eigene löschen",
+      "deleteAny": "Alle löschen",
+      "readOwn": "Eigene lesen",
+      "readAny": "Alle lesen",
+      "none": "-",
+      "all": "Alle"
+    },
+    "adminInterfaces": {
+      "tenants": "Mandanten",
+      "users": "Benutzer",
+      "roles": "Rollen",
+      "bookables": "Buchungsobjekte",
+      "rooms": "Räume",
+      "locations": "Veranstaltungsorte",
+      "events": "Veranstaltungen",
+      "resources": "Ressourcen",
+      "tickets":  "Tickets",
+      "bookings": "Buchungen",
+      "coupons": "Gutscheine",
+      "none": "-",
+      "all": "Alle"
+    }
+  }
+}

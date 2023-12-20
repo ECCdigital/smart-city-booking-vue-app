@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+  <title>Smart City - Buchungssystem</title>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,400;0,700;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css">
+</head>
+<body>
+<noscript>
+  <strong>We're sorry but Smart City - Buchungssystem doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+</noscript>
+<div id="app"></div>
+<!-- built files will be auto injected -->
+
+<script>
+  if (!location.href.includes("localhost")) {
+    window.onUsersnapCXLoad = function(api) {
+      api.init();
+    }
+    var script = document.createElement('script');
+    script.defer = 1;
+    script.src = 'https://widget.usersnap.com/load/5608a0f7-5652-4fb1-bc97-dc8d302a1626?onload=onUsersnapCXLoad';
+    document.getElementsByTagName('head')[0].appendChild(script);
+  }
+</script>
+</body>
+</html>
