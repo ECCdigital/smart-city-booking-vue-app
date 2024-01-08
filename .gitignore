@@ -5,7 +5,6 @@ node_modules
 
 # local env files
 .env
-.env.*
 .env.local
 .env.*.local
 
@@ -26,6 +25,5 @@ pnpm-debug.log*
 
 # idea files
 .idea/*
-.env
 
 temp/
