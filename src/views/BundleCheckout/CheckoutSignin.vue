@@ -43,6 +43,9 @@
               class="mt-4"
               v-model="password"
             ></v-text-field>
+            <div class="mt-2">
+              <a href="/password/reset">Passwort vergessen?</a>
+            </div>
             <div class="d-flex mt-4">
               <v-btn outlined elevation="0" to="/registrieren"
                 >Konto erstellen</v-btn
