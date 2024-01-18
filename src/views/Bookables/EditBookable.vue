@@ -422,14 +422,14 @@
         />
       </v-col>
       <v-col class="col-auto">
-        <v-btn icon small @click="removeAttachement(attachment.id)">
+        <v-btn icon small @click="removeAttachment(attachment.id)">
           <v-icon>mdi-delete</v-icon>
         </v-btn>
       </v-col>
     </v-row>
     <v-row>
       <v-col class="col-auto">
-        <v-btn outlined class="mt-2" @click="addNewAttachement()"
+        <v-btn outlined class="mt-2" @click="addNewAttachment()"
           >Neuer Anhang</v-btn
         >
       </v-col>
