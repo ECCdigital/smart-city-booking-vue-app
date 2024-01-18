@@ -1,7 +1,7 @@
 <template>
   <AdminLayout class="pb-15">
     <v-row>
-      <v-col cols="12">
+      <v-col>
         <v-select
           class="filter-field"
           v-model="filters"
@@ -28,6 +28,13 @@
             </v-chip>
           </template>
         </v-select>
+      </v-col>
+      <v-col cols="auto">
+        <v-checkbox
+          v-model="hidePastEvents"
+          label="Vergangene ausblenden"
+          class="mt-2"
+        ></v-checkbox>
       </v-col>
     </v-row>
     <v-row gutters align="stretch">
@@ -77,7 +84,7 @@ import { mapGetters, mapActions } from "vuex";
 import ApiEventService from "@/services/api/ApiEventService";
 import ToastService from "@/services/ToastService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
-import {slice} from "lodash";
+import { slice } from "lodash";
 
 export default {
   components: {
@@ -91,6 +98,7 @@ export default {
         tags: [],
       },
       filters: [],
+      hidePastEvents: true,
     };
   },
   computed: {
@@ -102,21 +110,40 @@ export default {
     },
     filteredEvents() {
       // Check if filter is set
-      if (this.filters.length > 0) {
-        return this.api.events.filter((event) => {
+
+      return this.api.events
+        .filter((event) => {
           // Check if element has tags
-          if (_.isNil(event.information.tags) || event.tags.length === 0) {
+          if (this.filters.length > 0) {
+            if (
+              _.isNil(event.information.tags) ||
+              event.information.tags.length === 0
+            ) {
+              return false;
+            }
+
+            // Check if the element includes every selected chip/service
+            return this.filters.every((chip) =>
+              event.information.tags.includes(chip)
+            );
+          }
+
+          if (
+            this.hidePastEvents === true &&
+            (_.isNil(event.information.startDate) ||
+              new Date(event.information.startDate) < new Date())
+          ) {
             return false;
           }
 
-          // Check if the element includes every selected chip/service
-          return this.filters.every((chip) =>
-            event.information.tags.includes(chip)
+          return true;
+        })
+        .sort((a, b) => {
+          return (
+            new Date(b.information.startDate) -
+            new Date(a.information.startDate)
           );
         });
-      }
-
-      return this.api.events;
     },
   },
   methods: {
@@ -130,7 +157,6 @@ export default {
       this.filters.splice(this.filters.indexOf(item), 1);
     },
     removeBookable(eventId) {
-      // axios.
       this.startLoading("fetch-delete-event");
       ApiEventService.deleteEvent(eventId)
         .then(() => {
