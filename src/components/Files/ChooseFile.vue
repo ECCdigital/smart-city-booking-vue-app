@@ -222,6 +222,8 @@ export default {
   },
   methods: {
     async fetchFiles() {
+      if (!this.tenant) return [];
+
       const response = await ApiFileService.getFiles(
         this.tenant,
         this.allowProtected

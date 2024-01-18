@@ -290,7 +290,7 @@
               @click:close="removePermittedRole(item)"
             >
               <strong>{{
-                availableRoles.find((r) => r.id === item).name
+                availableRoles.find((r) => r.id === item)?.name
               }}</strong>
             </v-chip>
           </template>
