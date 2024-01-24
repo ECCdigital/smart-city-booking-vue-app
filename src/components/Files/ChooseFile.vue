@@ -250,7 +250,7 @@ export default {
           formData.append("file", this.uploadFile);
           formData.append("accessLevel", this.accessLevel);
           formData.append("customDirectory", path);
-          await ApiFileService.createFile("diz", formData);
+          await ApiFileService.createFile(this.tenant, formData);
           await this.fetchFiles();
           this.$emit(
             "input",
