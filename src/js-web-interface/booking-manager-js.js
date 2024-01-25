@@ -9,6 +9,7 @@ class BookingManager {
     console.log("Initializing Booking Manager Integration.");
     this.addLibScripts([
       "https://cdn.jsdelivr.net/npm/fullcalendar@6.0.3/index.global.min.js",
+      "https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/locales-all.global.min.js",
     ])
       .then(() => {
         this.fetchBookableList();
@@ -32,35 +33,17 @@ class BookingManager {
    * @param scriptUrls List of script urls to load
    * @returns {Promise<unknown>}
    */
-  addLibScripts(scriptUrls) {
-    const promises = [];
-    scriptUrls.forEach((scriptUrl) => {
-      promises.push(
-        new Promise((resolve, reject) => {
-          let scriptEle = document.createElement("script");
-          scriptEle.setAttribute("src", scriptUrl);
-          document.body.appendChild(scriptEle);
+  async addLibScripts(scriptUrls) {
+    for (const scriptUrl of scriptUrls) {
+      await new Promise((resolve, reject) => {
+        let scriptEle = document.createElement("script");
+        scriptEle.setAttribute("src", scriptUrl);
+        document.body.appendChild(scriptEle);
 
-          scriptEle.addEventListener("load", () => {
-            resolve();
-          });
-
-          scriptEle.addEventListener("error", (err) => {
-            reject(err);
-          });
-        })
-      );
-    });
-
-    return new Promise((resolve, reject) => {
-      Promise.all(promises)
-        .then(() => {
-          resolve();
-        })
-        .catch((err) => {
-          reject(err);
-        });
-    });
+        scriptEle.addEventListener("load", resolve);
+        scriptEle.addEventListener("error", reject);
+      });
+    }
   }
 
   /**
