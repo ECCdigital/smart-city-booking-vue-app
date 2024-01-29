@@ -29,9 +29,9 @@ export default {
     }
   },
   created() {
-    this.inBookingTenant = "diz"; //this.$route.query.tenant;
-    if(this.$route.query.id) {
+    if(this.$route.query.id && this.$route.query.tenant){
       this.bookingId = this.$route.query.id;
+      this.inBookingTenant = this.$route.query.tenant;
       ApiPaymentService.payments(this.bookingId, this.inBookingTenant).then((res) => {
         const paymentUrl = res.data?.paymentUrl
         if (paymentUrl) {
