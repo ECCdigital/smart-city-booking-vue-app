@@ -63,6 +63,35 @@
                   ></v-checkbox>
                 </v-col>
               </v-row>
+              <v-row>
+                <v-col>
+                  <v-text-field
+                    v-if="!!selectedBooking.couponCode"
+                    background-color="accent"
+                    filled
+                    hide-details
+                    label="genutzter Gutschein"
+                    v-model="selectedBooking._couponUsed.id"
+                    readonly
+                    disabled
+                    :placeholder="selectedBooking._couponUsed.id"
+                  ></v-text-field>
+                </v-col>
+                  <v-col>
+                    <v-text-field
+                      v-if="!!selectedBooking.couponCode"
+                      background-color="accent"
+                      filled
+                      hide-details
+                      label="Rabatt"
+                      v-model.number="selectedBooking._couponUsed.discount"
+                      readonly
+                      disabled
+                      :placeholder="selectedBooking._couponUsed.discount"
+                      :suffix="selectedBooking._couponUsed.type === 'percentage' ? '%' : '€'"
+                    ></v-text-field>
+                  </v-col>
+              </v-row>
 
               <v-row>
                 <v-col>
@@ -444,12 +473,9 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import { mapActions } from "vuex";
 import ToastService from "@/services/ToastService";
-import BookingCalendar from "@/components/Booking/BookingCalendar";
-import SortableList from "@/components/SortableList.vue";
 
 export default {
   name: "BookingEdit",
-  components: { SortableList, BookingCalendar },
   props: {
     open: {
       type: Boolean,
