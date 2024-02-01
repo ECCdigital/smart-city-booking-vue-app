@@ -153,7 +153,7 @@ export default {
 
       ApiBookablesService.duplicateBookable(bookableId)
         .then(() => {
-          this.fetchLocations();
+          this.fetchRooms();
         })
         .finally(() => {
           this.addToast(
