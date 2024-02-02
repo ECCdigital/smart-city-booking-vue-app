@@ -45,6 +45,15 @@
       </v-row>
       <v-row no-gutters>
         <v-col class="col-2 font-weight-bold">
+          <small>Ende:</small>
+        </v-col>
+        <v-col>
+          {{ item.information?.endDate | date("short") }} –
+          {{ item.information?.endTime | time("short") }} Uhr
+        </v-col>
+      </v-row>
+      <v-row no-gutters>
+        <v-col class="col-2 font-weight-bold">
           <small>Ort:</small>
         </v-col>
         <v-col>

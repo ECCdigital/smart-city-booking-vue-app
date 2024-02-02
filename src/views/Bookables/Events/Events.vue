@@ -131,7 +131,7 @@ export default {
           if (
             this.hidePastEvents === true &&
             (_.isNil(event.information.startDate) ||
-              new Date(event.information.startDate) < new Date())
+              new Date(event.information.endDate) < new Date())
           ) {
             return false;
           }

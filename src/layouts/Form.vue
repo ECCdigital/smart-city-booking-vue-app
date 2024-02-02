@@ -6,7 +6,7 @@
           <v-btn @click="goBack()" class="mr-4 accent" icon>
             <v-icon>mdi-close</v-icon>
           </v-btn>
-          <h1>Neue Veranstaltung erstellen</h1>
+          <h1>Veranstaltung bearbeiten</h1>
         </div>
 
         <v-row>
