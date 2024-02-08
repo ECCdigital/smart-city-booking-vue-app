@@ -300,15 +300,6 @@ export default {
 
       return CheckoutUtils.formatCurrency(value);
     },
-    calculateBookablePrice(bookable, amount, timeBegin, timeEnd, coupon) {
-      return CheckoutUtils.calculateBookablePrice(
-        bookable,
-        amount,
-        timeBegin,
-        timeEnd,
-        coupon
-      );
-    },
     increaseItemAmount(item) {
       item.amount++;
       this.$emit("validate-items");
