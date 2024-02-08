@@ -173,7 +173,6 @@ export default {
   },
 
   async mounted() {
-
     await this.fetchBookables();
     await this.checkBookableAvailability();
   },
