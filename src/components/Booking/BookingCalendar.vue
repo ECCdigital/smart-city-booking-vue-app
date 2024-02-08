@@ -166,7 +166,7 @@ export default {
     },
 
     fetchOpeningHours() {
-      ApiBookablesService.getReleatedOpeningHours(
+      ApiBookablesService.getRelatedOpeningHours(
         this.bookableId,
         this.tenant
       ).then((response) => {
@@ -180,7 +180,7 @@ export default {
       );
     },
 
-    getDaysfromBookingDuration(timeBegin, timeEnd) {
+    getDaysFromBookingDuration(timeBegin, timeEnd) {
       if (!timeBegin || !timeEnd) {
         return [];
       }
@@ -199,7 +199,7 @@ export default {
         return new Date(0, 0, 0, hours, minutes);
       }
 
-      const days = this.getDaysfromBookingDuration(timeBegin, timeEnd);
+      const days = this.getDaysFromBookingDuration(timeBegin, timeEnd);
 
       if (days.length > 1) {
         for (const day of days) {

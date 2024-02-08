@@ -66,7 +66,7 @@ export default {
         });
     });
   },
-  getReleatedOpeningHours(bookableId, tenant) {
+  getRelatedOpeningHours(bookableId, tenant) {
     const t = tenant || currentTenant.id;
     return ApiClient.get(`api/${t}/bookables/${bookableId}/openingHours`, {
       withCredentials: true,
