@@ -341,7 +341,7 @@
         <v-combobox
           v-model="freeBookingRoles"
           :items="availableRoles"
-          label="Verfügbar für Rollen"
+          label="Rollen, die kostenfrei buchen dürfen"
           item-text="name"
           item-value="id"
           hide-selected
