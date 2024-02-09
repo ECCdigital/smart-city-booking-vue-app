@@ -138,6 +138,8 @@ export default {
         amount: null,
         bookable: null,
         valid: null,
+        regularPriceEur: null,
+        userPriceEur: null,
       },
 
       // A list of items subsequently added to the bundle. Those items have to fit the checkout procedure determined by
@@ -246,7 +248,8 @@ export default {
       for (let item of [this.leadItem, ...this.subsequentItems]) {
         if (
           (item.bookable.isScheduleRelated ||
-            item.bookable.isTimePeriodRelated || item.bookable.isLongRange) &&
+            item.bookable.isTimePeriodRelated ||
+            item.bookable.isLongRange) &&
           (this.timeBegin == null || this.timeEnd == null)
         ) {
           item.valid = null;
@@ -256,14 +259,19 @@ export default {
               this.tenant,
               item,
               this.timeBegin,
-              this.timeEnd
+              this.timeEnd,
+              this.coupon?.id
             );
 
             if (response.status === 200) {
+              item.regularPriceEur = response.data.regularPriceEur;
+              item.userPriceEur = response.data.userPriceEur;
               item.valid = true;
               delete item.error;
             }
           } catch (error) {
+            item.regularPriceEur = null;
+            item.userPriceEur = null;
             item.valid = false;
             item.error = error.response.data;
             console.log(error);
@@ -281,6 +289,8 @@ export default {
       const bookableItem = {
         ...item,
         bookable: data,
+        regularPriceEur: null,
+        userPriceEur: null,
       };
 
       this.subsequentItems.push(bookableItem);
@@ -321,11 +331,14 @@ export default {
         if (e.response.status === 404) {
           this.coupon = null;
         }
+      } finally {
+        await this.validateItems();
       }
     },
 
-    removeCoupon() {
+    async removeCoupon() {
       this.coupon = null;
+      await this.validateItems();
     },
   },
 

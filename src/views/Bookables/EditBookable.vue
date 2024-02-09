@@ -331,6 +331,46 @@
       </v-col>
     </v-row>
 
+    <v-row>
+      <v-col>
+        <p>
+          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses
+          Objekt kostenfrei zu buchen.
+        </p>
+
+        <v-combobox
+          v-model="freeBookingRoles"
+          :items="availableRoles"
+          label="Rollen, die kostenfrei buchen dürfen"
+          item-text="name"
+          item-value="id"
+          hide-selected
+          no-data-text="Keine Rollen verfügbar"
+          multiple
+          background-color="accent"
+          clearable
+          chips
+          filled
+          :return-object="false"
+        >
+          <template v-slot:selection="{ attrs, item, select, selected }">
+            <v-chip
+              v-bind="attrs"
+              :input-value="selected"
+              close
+              color="secondary"
+              @click="select"
+              @click:close="removeFreeBookingRole(item)"
+            >
+              <strong>{{
+                availableRoles.find((r) => r.id === item)?.name
+              }}</strong>
+            </v-chip>
+          </template>
+        </v-combobox>
+      </v-col>
+    </v-row>
+
     <h2 class="mt-10">Beziehungen zu anderen Buchungsobjekten</h2>
 
     <h3 class="mt-5">Zusätzliche Buchungsoptionen</h3>
@@ -651,6 +691,7 @@ export default {
             permittedUsers,
             permittedRoles,
             freeBookingUsers,
+            freeBookingRoles,
             isLongRange,
             longRangeOptions,
           } = response.data;
@@ -700,6 +741,7 @@ export default {
             permittedUsers: permittedUsers,
             permittedRoles: permittedRoles,
             freeBookingUsers: freeBookingUsers,
+            freeBookingRoles: freeBookingRoles,
             isLongRange: isLongRange,
             longRangeOptions: longRangeOptions,
           });
@@ -828,6 +870,9 @@ export default {
     },
     removeFreeBookingUser(item) {
       this.freeBookingUsers.splice(this.freeBookingUsers.indexOf(item), 1);
+    },
+    removeFreeBookingRole(item) {
+      this.freeBookingRoles.splice(this.freeBookingRoles.indexOf(item), 1);
     },
   },
   computed: {
@@ -1021,6 +1066,14 @@ export default {
       },
       set(value) {
         this.updateValue({ field: "freeBookingUsers", value: value });
+      },
+    },
+    freeBookingRoles: {
+      get() {
+        return this.$store.state.bookables.form.freeBookingRoles;
+      },
+      set(value) {
+        this.updateValue({ field: "freeBookingRoles", value: value });
       },
     },
     checkoutBookableIds: {

@@ -1,3 +1,5 @@
+import ApiUsersService from "@/services/api/ApiUsersService";
+
 export default {
   formatDateTime(d) {
     let year = new Intl.DateTimeFormat("en-US", { year: "numeric" }).format(d);
@@ -28,47 +30,6 @@ export default {
       style: "currency",
       currency: "EUR",
     }).format(value);
-  },
-
-  calculateBookablePrice: function (
-    bookable,
-    amount,
-    timeBegin,
-    timeEnd,
-    coupon,
-    userId
-  ) {
-    if (
-      !!bookable.freeBookingUsers &&
-      bookable.freeBookingUsers.includes(userId)
-    ) {
-      return 0;
-    }
-
-    const duration = (timeEnd - timeBegin) / 1000 / 60 / 60; // Hours
-    let price = bookable.priceEur * amount;
-
-    if (coupon && coupon.type === "percentage") {
-      price = price * (1 - coupon.discount / 100);
-    } else if (coupon && coupon.type === "fixed") {
-      price = Math.max(0, price - coupon.discount);
-    }
-
-    if (bookable.priceCategory === "per-hour") {
-      if (timeBegin && timeEnd) {
-        return Math.round(price * duration * amount * 100) / 100;
-      } else {
-        return undefined;
-      }
-    } else if (bookable.priceCategory === "per-day") {
-      if (timeBegin && timeEnd) {
-        return Math.round(((price * duration * amount) / 24) * 100) / 100;
-      } else {
-        return undefined;
-      }
-    } else {
-      return Math.round(price * 100) / 100;
-    }
   },
 
   addHoursToTime(time, min) {

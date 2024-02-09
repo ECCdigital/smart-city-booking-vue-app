@@ -75,9 +75,14 @@
           <v-row no-gutters>
             <v-col class="font-weight-bold col-md-2"> Dauer: </v-col>
             <v-col class="text-right" v-if="leadItem.bookable.isLongRange">
-              {{ bookingDurationLongRange }} </v-col>
-            <v-col class="text-right" v-else-if="!leadItem.bookable.isLongRange">
-              {{ bookingDuration }} </v-col>
+              {{ bookingDurationLongRange }}
+            </v-col>
+            <v-col
+              class="text-right"
+              v-else-if="!leadItem.bookable.isLongRange"
+            >
+              {{ bookingDuration }}
+            </v-col>
           </v-row>
         </div>
 
@@ -113,16 +118,13 @@
             </v-btn>
           </v-col>
           <v-col class="text-right col-md-3">
-            {{
-              formatCurrency(
-                calculateBookablePrice(
-                  item.bookable,
-                  item.amount,
-                  timeBegin,
-                  timeEnd
-                )
-              )
-            }}
+            <span
+              class="text-decoration-line-through"
+              v-if="item.regularPriceEur > item.userPriceEur"
+            >
+              <small>{{ formatCurrency(item.regularPriceEur) }}</small>
+            </span>
+            {{ formatCurrency(item.userPriceEur) }}
           </v-col>
           <v-col v-if="!item.valid" class="col-12 red--text">
             <small>
@@ -132,13 +134,26 @@
         </v-row>
 
         <v-divider class="mt-7 mb-3"></v-divider>
-        <v-row no-gutters v-if="totalPriceOff > 0" class="mb-2">
+
+        <v-row no-gutters v-if="totalPriceOff > 0" class="">
           <v-col class="font-weight-bold"> Ihr Rabatt </v-col>
           <v-col class="text-right col-md-3 font-weight-bold">
             - {{ formatCurrency(totalPriceOff) }}
           </v-col>
         </v-row>
-        <v-row no-gutters v-if="!!coupon">
+        <v-row>
+          <v-col class="font-weight-bold"> Gesamt: </v-col>
+          <v-col
+            class="text-right col-md-3 font-weight-bold"
+            style="font-size: large"
+          >
+            <span v-if="allItemsValid">{{ formatCurrency(totalPrice) }}</span>
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-divider class="mt-5"></v-divider>
+      <v-card-text v-if="!!coupon">
+        <v-row no-gutters>
           <v-col class="col font-weight-bold">
             Gutschein: {{ coupon.description }}
             <v-btn
@@ -155,18 +170,8 @@
             {{ coupon.type === "percentage" ? "%" : "€" }}
           </v-col>
         </v-row>
-        <v-row>
-          <v-col class="font-weight-bold"> Gesamt: </v-col>
-          <v-col
-            class="text-right col-md-3 font-weight-bold"
-            style="font-size: large"
-          >
-            {{ formatCurrency(totalPrice) }}
-          </v-col>
-        </v-row>
       </v-card-text>
-      <v-divider class="mt-5"></v-divider>
-      <v-expansion-panels flat>
+      <v-expansion-panels flat v-if="!coupon">
         <v-expansion-panel>
           <v-expansion-panel-header>
             Gutschein einlösen
@@ -295,15 +300,6 @@ export default {
 
       return CheckoutUtils.formatCurrency(value);
     },
-    calculateBookablePrice(bookable, amount, timeBegin, timeEnd, coupon) {
-      return CheckoutUtils.calculateBookablePrice(
-        bookable,
-        amount,
-        timeBegin,
-        timeEnd,
-        coupon
-      );
-    },
     increaseItemAmount(item) {
       item.amount++;
       this.$emit("validate-items");
@@ -401,16 +397,10 @@ export default {
 
   computed: {
     totalPrice() {
+      console.log("test");
       let price = 0;
       for (const item of [this.leadItem, ...this.subsequentItems]) {
-        price += CheckoutUtils.calculateBookablePrice(
-          item.bookable,
-          item.amount,
-          this.timeBegin,
-          this.timeEnd,
-          this.coupon,
-          this.me?.id
-        );
+        price += item.userPriceEur;
       }
 
       return price;
@@ -419,26 +409,8 @@ export default {
     totalPriceOff() {
       let off = 0;
       for (const item of [this.leadItem, ...this.subsequentItems]) {
-        const regularPrice = CheckoutUtils.calculateBookablePrice(
-          item.bookable,
-          item.amount,
-          this.timeBegin,
-          this.timeEnd,
-          undefined,
-          undefined
-        );
-
-        const userPrice = CheckoutUtils.calculateBookablePrice(
-          item.bookable,
-          item.amount,
-          this.timeBegin,
-          this.timeEnd,
-          undefined,
-          this.me?.id
-        );
-
-        if (regularPrice > userPrice) {
-          off += regularPrice - userPrice;
+        if (item.regularPriceEur > item.userPriceEur) {
+          off += item.regularPriceEur - item.userPriceEur;
         }
       }
 
@@ -466,8 +438,11 @@ export default {
     },
 
     bookingDurationLongRange() {
-      return CheckoutUtils.bookingDurationLongRange(this.timeBegin, this.timeEnd);
-    }
+      return CheckoutUtils.bookingDurationLongRange(
+        this.timeBegin,
+        this.timeEnd
+      );
+    },
   },
 };
 </script>

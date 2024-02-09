@@ -6,9 +6,14 @@ export default {
       withCredentials: true,
     });
   },
-  getUserIds() {
+  getUserIds(filterRoles) {
+    let queryParams = "";
+    if (!!filterRoles && filterRoles.length === 0) {
+      queryParams = `?filterRoles=${filterRoles.join(",")}`;
+    }
+
     return ApiClient.get(
-      `api/${store.getters["tenants/tenant"].id}/users/ids`,
+      `api/${store.getters["tenants/tenant"].id}/users/ids${queryParams}`,
       { withCredentials: true }
     );
   },
