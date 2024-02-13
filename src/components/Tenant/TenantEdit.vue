@@ -13,6 +13,7 @@
           <v-container>
             <v-form ref="form" v-model="valid">
               <h3 class="mb-5">Allgemeine Informationen</h3>
+              <v-btn @click="changeColor">Test</v-btn>
               <v-row>
                 <v-col>
                   <v-text-field
@@ -357,6 +358,13 @@ export default {
   methods: {
     closeDialog() {
       this.$emit("close");
+    },
+    changeColor() {
+      this.$vuetify.theme.themes.light.primary = "#ff0000";
+      this.$vuetify.theme.themes.dark.primary = "#ff0000";
+
+      this.$vuetify.theme.themes.light.secondary = "#ff0000";
+      this.$vuetify.theme.themes.dark.secondary = "#ff0000";
     },
     async submitChanges() {
       if (this.$refs.form.validate()) {
