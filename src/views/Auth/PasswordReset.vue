@@ -2,7 +2,7 @@
   <v-container class="text-center  fill-height fluid justify-center">
     <v-card outlined class="mx-auto mt-sm-15" width="500">
       <v-card-text class="px-10 pb-10">
-        <v-img src="@/assets/app-logo.png" max-width="200" class="mx-auto"/>
+        <v-img src="../../../public/app-logo.png" max-width="200" class="mx-auto"/>
         <h2 class="mt-8 mb-2">Passwort zurücksetzen</h2>
         <v-form ref="form" v-model="valid" lazy-validation>
           <v-text-field

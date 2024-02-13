@@ -11,7 +11,7 @@
         class="App-logo"
         width="250"
         alt="Smart City Süderbrarup"
-        src="@/assets/app-logo.png"
+        src="../../public/app-logo.png"
       />
       <v-spacer></v-spacer>
       <span v-if="isProduction !== true" class="font-weight-bold"
