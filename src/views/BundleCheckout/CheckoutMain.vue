@@ -32,6 +32,7 @@
               :subsequent-items="subsequentItems"
               :time-begin="timeBegin"
               :time-end="timeEnd"
+              :amount="leadItem.amount"
               @booking-time-selected="setBookingTime"
               @submit="nextPage"
             ></checkout-time-selector>

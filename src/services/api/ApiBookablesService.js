@@ -27,7 +27,9 @@ export default {
       formData.priceEur = Number(formData.priceEur);
     }
 
-    formData.specialOpeningHours = formData.specialOpeningHours.filter((item) => item.date !== null);
+    formData.specialOpeningHours = formData.specialOpeningHours.filter(
+      (item) => item.date !== null
+    );
 
     return ApiClient.put(`api/${t}/bookables`, formData, {
       withCredentials: true,
@@ -71,5 +73,13 @@ export default {
     return ApiClient.get(`api/${t}/bookables/${bookableId}/openingHours`, {
       withCredentials: true,
     });
-  }
+  },
+  getBookableAvailability(bookableId, tenant, startDate, endDate, amount) {
+    return ApiClient.get(
+      `api/${tenant}/bookables/${bookableId}/availability?startDate=${startDate}&endDate=${endDate}&amount=${amount}`,
+      {
+        withCredentials: true,
+      }
+    );
+  },
 };
