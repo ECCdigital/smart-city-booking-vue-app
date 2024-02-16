@@ -17,15 +17,13 @@
 <!-- built files will be auto injected -->
 
 <script>
-  if (!location.href.includes("localhost")) {
-    window.onUsersnapCXLoad = function(api) {
-      api.init();
-    }
-    var script = document.createElement('script');
-    script.defer = 1;
-    script.src = 'https://widget.usersnap.com/load/5608a0f7-5652-4fb1-bc97-dc8d302a1626?onload=onUsersnapCXLoad';
-    document.getElementsByTagName('head')[0].appendChild(script);
-  }
+  window.onUsersnapLoad = function(api) {
+    api.init();
+  };
+  var script = document.createElement('script');
+  script.defer = 1;
+  script.src = 'https://widget.usersnap.com/global/load/060b4b12-f4bc-447a-8a1e-0c0671e74e6a?onload=onUsersnapLoad';
+  document.getElementsByTagName('head')[0].appendChild(script);
 </script>
 </body>
 </html>
