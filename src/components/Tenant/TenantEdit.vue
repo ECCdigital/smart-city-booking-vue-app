@@ -91,6 +91,19 @@
                   ></v-text-field>
                 </v-col>
               </v-row>
+              <v-row>
+                <v-col>
+                  <v-text-field
+                    background-color="accent"
+                    filled
+                    dense
+                    label="Website"
+                    :rules="validationRules.required"
+                    type="text"
+                    v-model="selectedTenant.website"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
               <h3 class="mb-5 mt-5">Web-Schnittstelle</h3>
               <v-row>
                 <v-col>
