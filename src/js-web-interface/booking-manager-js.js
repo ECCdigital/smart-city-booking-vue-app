@@ -1,12 +1,37 @@
 /**
  * The Booking Manager class handles the integration of bookable and event objects into a website.
+ * It is responsible for fetching data from the server, initializing various elements on the page,
+ * and handling user interactions.
+ *
+ * @class
+ * @param {string} url - The base URL of the server.
+ * @param {string} tenant - The tenant identifier.
+ * @param {string} calendarView - The initial view of the calendar ('month' or 'week').
  */
 class BookingManager {
+  /**
+   * Creates an instance of BookingManager.
+   *
+   * @constructor
+   * @param {string} url - The base URL of the server.
+   * @param {string} tenant - The tenant identifier.
+   * @param {string} calendarView - The initial view of the calendar ('month' or 'week').
+   */
+  constructor(url, tenant, calendarView = "month") {
+    this.url = url;
+    this.tenant = tenant;
+    this.calendarView = calendarView;
+  }
   /**
    * Initialize the Booking Manager Integration.
    */
   init() {
     console.log("Initializing Booking Manager Integration.");
+
+    this.calendar = {
+      initialView: this.calendarView === "week" ? "dayGridWeek" : "dayGridMonth",
+    };
+
     this.addLibScripts([
       "https://cdn.jsdelivr.net/npm/fullcalendar@6.0.3/index.global.min.js",
       "https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/locales-all.global.min.js",
@@ -198,7 +223,7 @@ class BookingManager {
         .then(function (text) {
           const apiResponse = JSON.parse(text);
           const events = apiResponse.map((event) => {
-            const linkUrl = self.calendarHref.replace("{id}", event.id);
+            const linkUrl = self.calendarHref?.replace("{id}", event.id);
             return {
               title: event.information.name,
               start:
