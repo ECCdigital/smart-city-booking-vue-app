@@ -1,4 +1,5 @@
 import store from "@/store";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   login(tenant, id, password) {
@@ -21,6 +22,12 @@ export default {
 
     return ApiClient.post(`auth/${tenant}/signup`, body, {
       withCredentials: true,
+    }).then(async (response) => {
+      if (response.data.tenantId) {
+        const tenant = await ApiTenantService.getTenant(response.data.tenantId, false);
+        await store.dispatch("tenants/update", tenant.data);
+      }
+      return response;
     });
   },
   logout(tenant) {
