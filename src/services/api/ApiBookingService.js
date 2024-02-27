@@ -1,29 +1,27 @@
 import store from "@/store";
-const currentTenant = store.getters["tenants/tenant"];
-
 export default {
   getBookings(tenant, populate) {
-    var t = tenant || currentTenant.id;
+    var t = tenant || store.getters["tenants/tenant"].id;
     var p = populate || false;
     return ApiClient.get(`api/${t}/bookings?populate=${p}`, {
       withCredentials: true,
     });
   },
   getBooking(id, tenant, populate) {
-    var t = tenant || currentTenant.id;
+    var t = tenant || store.getters["tenants/tenant"].id;
     var p = populate || false;
     return ApiClient.get(`api/${t}/bookings/${id}?populate=${p}`, {
       withCredentials: true,
     });
   },
   getPublicBookings(tenant) {
-    var t = tenant || currentTenant.id;
+    var t = tenant || store.getters["tenants/tenant"].id;
     return ApiClient.get(`api/${t}/bookings?public=true`, {
       withCredentials: true,
     });
   },
   getBookingStatus(id, tenant) {
-    const t = tenant || currentTenant.id;
+    const t = tenant || store.getters["tenants/tenant"].id;
     return ApiClient.get(`api/${t}/bookings/${id}/status`, {
       withCredentials: true,
     });
@@ -35,7 +33,7 @@ export default {
     includeParentBookables,
     publicOnly
   ) {
-    var t = tenant || currentTenant.id;
+    var t = tenant || store.getters["tenants/tenant"].id;
     var irb = includeRelatedBookables || false;
     var ipb = includeParentBookables || false;
     var po = publicOnly || false;
@@ -49,12 +47,12 @@ export default {
   storeBooking(booking) {
     const cleansedBooking = Object.assign(new Object(), booking);
     delete cleansedBooking._populated;
-    return ApiClient.put(`api/${currentTenant.id}/bookings`, cleansedBooking, {
+    return ApiClient.put(`api/${store.getters["tenants/tenant"].id}/bookings`, cleansedBooking, {
       withCredentials: true,
     });
   },
   checkoutBooking(bookingAttempt, simulate, tenant) {
-    const t = tenant || currentTenant.id;
+    const t = tenant || store.getters["tenants/tenant"].id;
     return ApiClient.post(
       `api/${t}/checkout?simulate=${simulate || false}`,
       bookingAttempt,
@@ -62,12 +60,12 @@ export default {
     );
   },
   commitBooking(id) {
-    return ApiClient.get(`api/${currentTenant.id}/bookings/${id}/commit`, {
+    return ApiClient.get(`api/${store.getters["tenants/tenant"].id}/bookings/${id}/commit`, {
       withCredentials: true,
     });
   },
   deleteBooking(booking) {
-    return ApiClient.delete(`api/${currentTenant.id}/bookings/${booking.id}`, {
+    return ApiClient.delete(`api/${store.getters["tenants/tenant"].id}/bookings/${booking.id}`, {
       withCredentials: true,
     });
   },

@@ -1,5 +1,4 @@
 import store from "@/store";
-
 export default {
   getUsers() {
     return ApiClient.get(`api/${store.getters["tenants/tenant"].id}/users`, {

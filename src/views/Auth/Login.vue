@@ -39,7 +39,6 @@
     </div>
 </template>
 <script>
-import DefaultLayout from "@/layouts/Default";
 import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiTenantService from "@/services/api/ApiTenantService";

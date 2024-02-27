@@ -1,6 +1,3 @@
-import store from "@/store";
-const currentTenant = store.getters["tenants/tenant"];
-
 export default {
   validateCheckoutItem(tenant, item, timeBegin, timeEnd, couponCode) {
     return ApiClient.post(
