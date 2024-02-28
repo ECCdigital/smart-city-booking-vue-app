@@ -16,11 +16,7 @@
           <div class="text-left mt-2"><a href="/password/reset">Passwort vergessen?</a></div>
           <v-select outlined hide-details label="Mandant" v-model="tenant" :items="tenants" item-text="name"
                     return-object no-data-text="Keine Mandanten vorhanden" class="mt-5"></v-select>
-          <p class="text-left mt-5">
-            <small>Dieser Service wird bereitgestellt vom Amt Süderbrarup, team Allee 22, 24392 Süderbrarup. Weitere
-              Informationen und Kontaktmöglichkeiten finden Sie unter <a href="https://www.amt-suederbrarup.de/kontakt"
-                                                                         target="_blank">www.amt-suederbrarup.de/kontakt</a>.</small>
-          </p>
+          <ContactInformation/>
         </v-card-text>
         <v-card-actions class="px-10 pb-10">
           <v-btn to="/registrieren" outlined>Konto erstellen</v-btn>
@@ -39,15 +35,15 @@
     </div>
 </template>
 <script>
-import DefaultLayout from "@/layouts/Default";
 import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import {mapActions} from "vuex";
+import ContactInformation from "@/components/ContactInformation.vue";
 
 export default {
   components: {
-
+    ContactInformation
   },
   data() {
     return {

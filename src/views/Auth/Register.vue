@@ -15,9 +15,7 @@
                         @click:append="showPassword = !showPassword"></v-text-field>
 
 
-          <p class="text-left mt-5">
-            <small>Dieser Service wird bereitgestellt vom Amt Süderbrarup, team Allee 22, 24392 Süderbrarup. Weitere Informationen und Kontaktmöglichkeiten finden Sie unter <a href="https://www.amt-suederbrarup.de/kontakt" target="_blank">www.amt-suederbrarup.de/kontakt</a>.</small>
-          </p>
+         <ContactInformation/>
         </v-card-text>
         <v-card-actions class="px-10 pb-10">
           <v-btn to="/login" outlined>Konto vorhanden?</v-btn>
@@ -40,9 +38,10 @@ import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { mapActions } from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ContactInformation from "@/components/ContactInformation.vue";
 
 export default {
-  components: {  },
+  components: {ContactInformation},
   data() {
     return {
       id: "",
