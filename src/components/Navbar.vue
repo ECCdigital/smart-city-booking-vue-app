@@ -296,9 +296,7 @@ export default {
   },
   mounted() {
     this.drawer = !this.$vuetify.breakpoint.mdAndDown;
-    this.isProduction = window.location.href.includes(
-      "buchungsplattform.amt-suederbrarup.de"
-    );
+    this.isProduction = process.env.VUE_APP_IS_PRODUCTION === "true";
   },
 };
 </script>
