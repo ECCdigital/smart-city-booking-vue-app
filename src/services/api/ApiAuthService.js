@@ -1,5 +1,4 @@
 import store from "@/store";
-
 export default {
   login(tenant, id, password) {
     const body = {
