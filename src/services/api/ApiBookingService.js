@@ -47,9 +47,13 @@ export default {
   storeBooking(booking) {
     const cleansedBooking = Object.assign(new Object(), booking);
     delete cleansedBooking._populated;
-    return ApiClient.put(`api/${store.getters["tenants/tenant"].id}/bookings`, cleansedBooking, {
-      withCredentials: true,
-    });
+    return ApiClient.put(
+      `api/${store.getters["tenants/tenant"].id}/bookings`,
+      cleansedBooking,
+      {
+        withCredentials: true,
+      }
+    );
   },
   checkoutBooking(bookingAttempt, simulate, tenant) {
     const t = tenant || store.getters["tenants/tenant"].id;
@@ -60,13 +64,27 @@ export default {
     );
   },
   commitBooking(id) {
-    return ApiClient.get(`api/${store.getters["tenants/tenant"].id}/bookings/${id}/commit`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(
+      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/commit`,
+      {
+        withCredentials: true,
+      }
+    );
   },
   deleteBooking(booking) {
-    return ApiClient.delete(`api/${store.getters["tenants/tenant"].id}/bookings/${booking.id}`, {
-      withCredentials: true,
-    });
+    return ApiClient.delete(
+      `api/${store.getters["tenants/tenant"].id}/bookings/${booking.id}`,
+      {
+        withCredentials: true,
+      }
+    );
+  },
+  generateReceipt(id) {
+    return ApiClient.get(
+      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/generate-receipt`,
+      {
+        withCredentials: true,
+      }
+    );
   },
 };
