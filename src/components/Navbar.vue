@@ -11,7 +11,7 @@
         class="App-logo"
         width="250"
         alt="Smart City Süderbrarup"
-        src="@/assets/smart-city-suederbrarup-logo.png"
+        src="@/assets/app-logo.png"
       />
       <v-spacer></v-spacer>
       <span v-if="isProduction !== true" class="font-weight-bold"
@@ -296,9 +296,7 @@ export default {
   },
   mounted() {
     this.drawer = !this.$vuetify.breakpoint.mdAndDown;
-    this.isProduction = window.location.href.includes(
-      "buchungsplattform.amt-suederbrarup.de"
-    );
+    this.isProduction = process.env.VUE_APP_IS_PRODUCTION === "true";
   },
 };
 </script>

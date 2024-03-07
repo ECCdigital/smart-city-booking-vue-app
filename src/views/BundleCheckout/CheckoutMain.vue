@@ -157,7 +157,7 @@ export default {
       contactDetails: {
         name: null,
         company: null,
-        email: null,
+        mail: null,
         phone: null,
         street: null,
         zipCode: null,
@@ -191,7 +191,7 @@ export default {
       try {
         const { data } = await ApiAuthService.me(this.tenant, true);
         this.me = data;
-        this.contactDetails.email = this.me.id;
+        this.contactDetails.mail = this.me.id;
         this.contactDetails.name = this.me.firstName + " " + this.me.lastName;
         this.contactDetails.phone = this.me.phone;
         this.contactDetails.street = this.me.address;
@@ -200,7 +200,7 @@ export default {
       } catch (error) {
         console.log(error);
         this.me = null;
-        this.contactDetails.email = null;
+        this.contactDetails.mail = null;
         this.contactDetails.name = null;
         this.contactDetails.phone = null;
         this.contactDetails.street = null;

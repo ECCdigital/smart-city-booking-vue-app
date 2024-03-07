@@ -2,7 +2,7 @@
     <div class="text-center">
       <v-card outlined max-width="500" class="mx-auto mt-sm-15">
         <v-card-text class="text-center pa-10">
-          <v-img src="@/assets/smart-city-suederbrarup-logo.png" max-width="200" class="mx-auto"/>
+          <v-img src="@/assets/app-logo.png" max-width="200" class="mx-auto"/>
 
           <h2 class="mt-8 mb-2">Registrieren</h2>
           <p class="subtitle-2 mb-10">Erstellen Sie einen Account.</p>

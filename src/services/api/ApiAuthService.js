@@ -1,5 +1,4 @@
 import store from "@/store";
-import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   login(tenant, id, password) {
