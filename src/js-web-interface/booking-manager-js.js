@@ -15,12 +15,10 @@ class BookingManager {
    * @constructor
    * @param {string} url - The base URL of the server.
    * @param {string} tenant - The tenant identifier.
-   * @param {string} calendarView - The initial view of the calendar ('month' or 'week').
    */
-  constructor(url, tenant, calendarView = "month") {
+  constructor(url, tenant) {
     this.url = url;
     this.tenant = tenant;
-    this.calendarView = calendarView;
   }
   /**
    * Initialize the Booking Manager Integration.
@@ -28,9 +26,6 @@ class BookingManager {
   init() {
     console.log("Initializing Booking Manager Integration.");
 
-    this.calendar = {
-      initialView: this.calendarView === "week" ? "dayGridWeek" : "dayGridMonth",
-    };
 
     this.addLibScripts([
       "https://cdn.jsdelivr.net/npm/fullcalendar@6.0.3/index.global.min.js",
@@ -41,8 +36,8 @@ class BookingManager {
         this.fetchBookableItem();
         this.fetchEventList();
         this.fetchEventItem();
-        this.initializeCalendar();
-        this.initializeOccupancyCalendar();
+        this.initializeEventCalendars();
+        this.initializeOccupancyCalendars();
         this.initializeLoginForm();
         this.initializeLogoutButton();
         this.initializeBookingsTable();
@@ -206,90 +201,43 @@ class BookingManager {
   }
 
   /**
-   * Initialize the a calendar showing events and bind it to the element with id bm-calendar.
+   * This method initializes calendars for all elements with the class "bm-calendar".
+   * It fetches event data for each calendar and sets the initial view of the calendar based on the "data-view" attribute of the element.
+   * If no "data-view" attribute is present, the default view is "dayGridMonth".
    */
-  initializeCalendar() {
-    const self = this;
-    if (document.getElementById("bm-calendar")) {
-      console.log("Binding data to element with id bm-calendar");
+  initializeEventCalendars() {
+    const calendarEls = document.getElementsByClassName("bm-calendar");
 
-      const calendarConfig = this.calendar;
+    for (let i = 0; i < calendarEls.length; i++) {
+      const calendarEl = calendarEls[i];
+      const initialView = calendarEl.getAttribute("data-view") || "dayGridMonth";
 
-      const fetchUrl = `${this.url}/api/${this.tenant}/events`;
-      fetch(fetchUrl)
-        .then(function (response) {
-          return response.text();
-        })
-        .then(function (text) {
-          const apiResponse = JSON.parse(text);
-          const events = apiResponse.map((event) => {
-            const linkUrl = self.calendarHref?.replace("{id}", event.id);
-            return {
-              title: event.information.name,
-              start:
-                event.information.startDate + "T" + event.information.startTime,
-              end: event.information.endDate + "T" + event.information.endTime,
-              url: linkUrl,
-            };
-          });
+      console.log(`Binding data to element with class bm-calendar and initial view ${initialView}`);
 
-          var calendarEl = document.getElementById("bm-calendar");
-          let config = {
-            events: events,
-            ...calendarConfig,
-          };
-          var calendar = new FullCalendar.Calendar(calendarEl, config);
-          calendar.render();
-        })
-        .catch(function (err) {
-          console.warn(`Could not fetch data from ${fetchUrl}`, err);
-        });
+      this._fetchEvents().then((events) => {
+        this._initCalendar(calendarEl, initialView, events);
+      });
     }
   }
 
   /**
-   * Initialize the a calendar showing occupancy and bind it to the element with id bm-occupancy-calendar.
+   * This method initializes occupancy calendars for all elements with the class "bm-occupancy-calendar".
+   * It fetches occupancy data for each calendar based on the bookable IDs specified in the "data-id" attribute of the element.
+   * The initial view of the calendar is determined by the "data-view" attribute of the element. If no "data-view" attribute is present, the default view is "dayGridMonth".
    */
-  initializeOccupancyCalendar() {
-    const self = this;
-    if (document.getElementById("bm-occupancy-calendar")) {
-      console.log("Binding data to element with id bm-occupancy-calendar");
+  initializeOccupancyCalendars() {
+    const calendarEls = document.getElementsByClassName("bm-occupancy-calendar");
 
-      const calendarConfig = this.calendar;
+    for ( let i = 0; i< calendarEls.length; i++ ) {
+      const calendarEl = calendarEls[i];
+      const bookableIds = calendarEl.getAttribute("data-id")?.split(",");
+      const initialView = calendarEl.getAttribute("data-view") || "dayGridMonth";
 
-      const bookableIds = document
-        .getElementById("bm-occupancy-calendar")
-        .getAttribute("data-id")
-        .split(",");
+      console.log(`Binding data to element with class bm-occupancy-calendar and initial view ${initialView}`);
 
-      const fetchUrl = `${this.url}/api/${this.tenant}/calendar/occupancy`;
-      fetch(fetchUrl)
-        .then(function (response) {
-          return response.text();
-        })
-        .then(function (text) {
-          const apiResponse = JSON.parse(text);
-          const events = apiResponse
-            .filter((occupancy) => bookableIds.includes(occupancy.bookableId))
-            .map((occupancy) => {
-              return {
-                title: occupancy.title,
-                start: occupancy.timeBegin,
-                end: occupancy.timeEnd,
-              };
-            });
-
-          var calendarEl = document.getElementById("bm-occupancy-calendar");
-          let config = {
-            events: events,
-            ...calendarConfig,
-          };
-          var calendar = new FullCalendar.Calendar(calendarEl, config);
-          calendar.render();
-        })
-        .catch(function (err) {
-          console.warn(`Could not fetch data from ${fetchUrl}`, err);
-        });
+      this._fetchOccupancies(bookableIds).then((occupancy) => {
+        this._initCalendar(calendarEl, initialView, occupancy);
+      });
     }
   }
 
@@ -506,5 +454,84 @@ class BookingManager {
       console.error(error);
       return false;
     }
+  }
+
+  /**
+   * Asynchronously fetches event data from the server.
+   *
+   * This method sends a GET request to the server's /api/{tenant}/events endpoint and processes the response.
+   * It maps the response data to an array of event objects, each with a title, start time, end time, and URL.
+   *
+   * @async
+   * @returns {Promise<Array>} A promise that resolves to an array of event objects.
+   * @throws Will throw an error if the fetch operation fails.
+   */
+  async _fetchEvents() {
+    const fetchUrl = `${this.url}/api/${this.tenant}/events`;
+    try {
+      const response = await fetch(fetchUrl);
+      const apiResponse = await response.json();
+      return apiResponse.map(event => ({
+        title: event.information.name,
+        start: `${event.information.startDate}T${event.information.startTime}`,
+        end: `${event.information.endDate}T${event.information.endTime}`,
+        url: this.calendarHref?.replace("{id}", event.id),
+      }));
+    } catch (err) {
+      console.warn(`Could not fetch data from ${fetchUrl}`, err);
+    }
+  }
+
+  /**
+   * Asynchronously fetches occupancy data from the server.
+   *
+   * This method sends a GET request to the server's /api/{tenant}/calendar/occupancy endpoint and processes the response.
+   * If the provided bookableIds array is defined, it is converted to a comma-separated string and included as a parameter in the fetch URL.
+   * The response data is then mapped to an array of occupancy objects, each with a title, start time, and end time.
+   *
+   * @async
+   * @param {Array} bookableIds - An array of bookable IDs. If defined, these IDs are included as a parameter in the fetch URL.
+   * @returns {Promise<Array>} A promise that resolves to an array of occupancy objects.
+   * @throws Will throw an error if the fetch operation fails.
+   */
+  async _fetchOccupancies(bookableIds) {
+    let fetchUrl = `${this.url}/api/${this.tenant}/calendar/occupancy`;
+
+    // Add ids to the URL only if bookableIds is defined
+    if (bookableIds) {
+      const ids = bookableIds.join(",");
+      fetchUrl += `?ids=${ids}`;
+    }
+
+    try {
+      const response = await fetch(fetchUrl);
+      const apiResponse = await response.json();
+      return apiResponse.map((occupancy) => ({
+        title: occupancy.title,
+        start: occupancy.timeBegin,
+        end: occupancy.timeEnd,
+      }));
+    } catch (err) {
+      console.warn(`Could not fetch data from ${fetchUrl}`, err);
+    }
+  }
+
+  /**
+   * Initializes a FullCalendar instance on the provided element.
+   *
+   * This method creates a new FullCalendar instance with the provided initial view and calendar items.
+   * The calendar configuration is extended with the instance's own calendar configuration.
+   *
+   * @param {HTMLElement} calendarEl - The element to initialize the calendar on.
+   * @param {string} initialView - The initial view of the calendar.
+   * @param {Array} calenderItems - An array of calendar items to display on the calendar.
+   */
+  _initCalendar(calendarEl, initialView, calenderItems) {
+    const config = {
+      initialView: initialView,
+      events: calenderItems,
+      ...this.calendar,
+    };
+    new FullCalendar.Calendar(calendarEl, config).render();
   }
 }
