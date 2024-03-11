@@ -176,18 +176,6 @@
                     <v-divider></v-divider>
                     <v-list-item
                       link
-                      :href="receiptLink(item.id)"
-                      :disabled="!BookingPermissionService.allowUpdate(item)"
-                    >
-                      <v-list-item-icon>
-                        <v-icon>mdi-receipt-text-arrow-right</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title
-                        >Neuen Buchungsbeleg generieren</v-list-item-title
-                      >
-                    </v-list-item>
-                    <v-list-item
-                      link
                       @click="onOpenDeleteDialog(item.id)"
                       class="red--text"
                       :disabled="!BookingPermissionService.allowDelete(item)"
@@ -349,9 +337,6 @@ export default {
         .catch((error) => {
           console.log(error);
         });
-    },
-    receiptLink(id) {
-      return `${process.env.VUE_APP_SERVER_BASE_URL}/api/${this.tenant.id}/bookings/${id}/generate-receipt`;
     },
     onOpenEditBooking(bookingId) {
       this.selectedBooking = Object.assign(
