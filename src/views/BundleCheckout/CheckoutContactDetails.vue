@@ -49,7 +49,7 @@
           filled
           label="E-Mail*"
           :rules="validationRules.mail"
-          v-model="contactDetails.email"
+          v-model="contactDetails.mail"
         ></v-text-field>
       </v-col>
       <v-col>

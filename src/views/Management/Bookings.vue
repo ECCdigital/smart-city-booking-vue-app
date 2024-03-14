@@ -70,7 +70,7 @@
             <template v-slot:item.isPayed="{ item }">
               <span>{{ item.isPayed ? "bezahlt" : "ausstehend" }}</span>
             </template>
-            <template v-slot:item.controls="{ item }">
+            <!-- <template v-slot:item.controls="{ item }">
               <span>
                 <v-menu offset-y>
                   <template v-slot:activator="{ on, attrs }">
@@ -100,7 +100,7 @@
                   </v-list>
                 </v-menu>
               </span>
-            </template>
+            </template>-->
             <template v-slot:item.timeBegin="{ item }">
               <span v-if="item.timeBegin">{{
                 Intl.DateTimeFormat("de-DE", {
@@ -385,34 +385,34 @@ export default {
     },
     translatePayMethod(value) {
       switch (value) {
-      case "1":
-        return "Giropay";
-      case "17":
-        return "Giropay";
-      case "18":
-        return "Giropay";
-      case "2":
-        return "eps";
-      case "12":
-        return "iDEAL";
-      case "11":
-        return "Kreditkarte";
-      case "6":
-        return "Lastschrift";
-      case "7":
-        return "Lastschrift";
-      case "26":
-        return "Bluecode";
-      case "33":
-        return "Maestro";
-      case "14":
-        return "PayPal";
-      case "23":
-        return "paydirekt";
-      case "27":
-        return "Sofortüberweisung";
-      default:
-        return "Unbekannt";
+        case "1":
+          return "Giropay";
+        case "17":
+          return "Giropay";
+        case "18":
+          return "Giropay";
+        case "2":
+          return "eps";
+        case "12":
+          return "iDEAL";
+        case "11":
+          return "Kreditkarte";
+        case "6":
+          return "Lastschrift";
+        case "7":
+          return "Lastschrift";
+        case "26":
+          return "Bluecode";
+        case "33":
+          return "Maestro";
+        case "14":
+          return "PayPal";
+        case "23":
+          return "paydirekt";
+        case "27":
+          return "Sofortüberweisung";
+        default:
+          return "Unbekannt";
       }
     },
   },

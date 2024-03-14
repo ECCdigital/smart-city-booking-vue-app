@@ -341,7 +341,7 @@ export default {
         street: this.contactDetails.street,
         zipCode: this.contactDetails.zipCode,
         location: this.contactDetails.location,
-        email: this.contactDetails.email,
+        mail: this.contactDetails.mail,
         phone: this.contactDetails.phone,
         comment: this.contactDetails.comment,
       };
@@ -361,7 +361,6 @@ export default {
 
         if (checkoutResponse.status === 200) {
           const booking = checkoutResponse.data;
-          console.log(booking);
           if (this.totalPrice > 0 && this.isAutoCommit) {
             const paymentResponse = await ApiPaymentService.payments(
               booking.id,

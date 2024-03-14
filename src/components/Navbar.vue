@@ -4,17 +4,17 @@
       flat
       app
       clipped-left
-      :color="isProduction !== true ? 'green' : ''"
+      :color="isProduction !== 'true' ? 'green' : ''"
     >
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <img
         class="App-logo"
         width="250"
         alt="Smart City Süderbrarup"
-        src="@/assets/smart-city-suederbrarup-logo.png"
+        src="@/assets/app-logo.png"
       />
       <v-spacer></v-spacer>
-      <span v-if="isProduction !== true" class="font-weight-bold"
+      <span v-if="isProduction !== 'true'" class="font-weight-bold"
         >DIES IST EIN TESTSYSTEM</span
       >
       <v-spacer></v-spacer>
@@ -146,7 +146,7 @@ import { RolePermission } from "@/entities/role";
 export default {
   data: () => ({
     drawer: false,
-    isProduction: false,
+    isProduction: process.env.VUE_APP_IS_PRODUCTION ,
     profileItems: [
       {
         title: "Einstellungen",
@@ -296,9 +296,6 @@ export default {
   },
   mounted() {
     this.drawer = !this.$vuetify.breakpoint.mdAndDown;
-    this.isProduction = window.location.href.includes(
-      "buchungsplattform.amt-suederbrarup.de"
-    );
   },
 };
 </script>

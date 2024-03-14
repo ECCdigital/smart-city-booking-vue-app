@@ -2,7 +2,7 @@
     <div class="text-center">
       <v-card outlined max-width="500" class="mx-auto mt-sm-15">
         <v-card-text class="text-center pa-10">
-          <v-img src="@/assets/smart-city-suederbrarup-logo.png" max-width="200" class="mx-auto"/>
+          <v-img src="@/assets/app-logo.png" max-width="200" class="mx-auto"/>
 
           <h2 class="mt-8 mb-2">Registrieren</h2>
           <p class="subtitle-2 mb-10">Erstellen Sie einen Account.</p>
@@ -65,8 +65,8 @@ export default {
     register() {
       ApiAuthService.register(this.tenant, this.id, this.firstName, this.lastName, this.password)
         .then((response) => {
-          if (response.status === 200) {
-            this.$router.push("/willkommen")
+          if (response.status === 201) {
+            this.$router.push(`/willkommen/${this.tenant}`)
               .then(() => {
                 this.addToast(ToastService.createToast("register.success.default", "success"));
               });
