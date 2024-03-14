@@ -66,8 +66,8 @@ export default {
     register() {
       ApiAuthService.register(this.tenant, this.id, this.firstName, this.lastName, this.password)
         .then((response) => {
-          if (response.status === 200) {
-            this.$router.push("/willkommen")
+          if (response.status === 201) {
+            this.$router.push(`/willkommen/${this.tenant}`)
               .then(() => {
                 this.addToast(ToastService.createToast("register.success.default", "success"));
               });

@@ -1,4 +1,5 @@
 import store from "@/store";
+
 export default {
   login(tenant, id, password) {
     const body = {
@@ -20,6 +21,8 @@ export default {
 
     return ApiClient.post(`auth/${tenant}/signup`, body, {
       withCredentials: true,
+    }).then(async (response) => {
+      return response;
     });
   },
   logout(tenant) {

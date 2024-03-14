@@ -383,13 +383,14 @@ const routes = [
     },
   },
   {
-    path: "/willkommen",
+    path: "/willkommen/:tenantId",
     name: "welcome",
     component: lazyLoad("Auth/Welcome"),
     meta: {
       title: "Willkommen",
       requiresAuth: false,
     },
+    props: true,
   },
   {
     path: "/email/verify",
