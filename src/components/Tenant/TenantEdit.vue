@@ -137,6 +137,48 @@
               </v-row>
               <h3 class="mb-5 mt-5">E-Mail-Konfiguration</h3>
               <v-row>
+                <v-col class="">
+                  <v-card
+                    v-if="!!selectedTenant.genericMailTemplate"
+                    flat
+                    height="100"
+                  >
+                    <v-snackbar
+                      :timeout="-1"
+                      :value="true"
+                      absolute
+                      color="success"
+                      text
+
+                    >
+                      <v-icon left>
+                        mdi-check
+                      </v-icon>
+                      Es ist eine E-Mail-Vorlage hinterlegt. Um diese zu ändern, wenden Sie sich bitte an den Administrator.
+                    </v-snackbar>
+                  </v-card>
+                  <v-card
+                    v-else
+                    flat
+                    height="100"
+                  >
+                    <v-snackbar
+                      :timeout="-1"
+                      :value="true"
+                      absolute
+                      color="error"
+                      text
+
+                    >
+                      <v-icon left>
+                        mdi-close
+                      </v-icon>
+                      Es ist keine E-Mail-Vorlage hinterlegt. Um eine E-Mail-Vorlage zu hinterlegen, wenden Sie sich bitte an den Administrator.
+                    </v-snackbar>
+                  </v-card>
+                </v-col>
+              </v-row>
+              <v-row>
                 <v-col>
                   <v-text-field
                     background-color="accent"
@@ -198,45 +240,6 @@
                   ></v-text-field>
                 </v-col>
               </v-row>
-              <v-row>
-                <v-col class="">
-                  <v-card
-                    v-if="!!selectedTenant.genericMailTemplate"
-                    flat
-                    height="70"
-                  >
-                    <v-snackbar
-                      :timeout="-1"
-                      :value="true"
-                      absolute
-                      color="success"
-                      text
-
-                    >
-                      <v-icon left>
-                        mdi-check
-                      </v-icon>
-                      Es ist eine E-Mail-Vorlage hinterlegt. Um diese zu ändern, wenden Sie sich bitte an den Administrator.
-                    </v-snackbar>
-                    </v-card>
-                    <v-card
-                      v-else>
-                    <v-snackbar
-                      :timeout="-1"
-                      :value="true"
-                      absolute
-                      color="error"
-                      text
-
-                    >
-                      <v-icon left>
-                        mdi-close
-                      </v-icon>
-                      Es ist keine E-Mail-Vorlage hinterlegt. Um eine E-Mail-Vorlage zu hinterlegen, wenden Sie sich bitte an den Administrator.
-                    </v-snackbar>
-                  </v-card>
-                </v-col>
-              </v-row>
 
               <h3 class="mb-5 mt-5">Zahlungsbeleg</h3>
               <v-row>
@@ -255,7 +258,7 @@
                       <v-icon left>
                         mdi-check
                       </v-icon>
-                      Es ist eine Zahlungsbelegvorlage hinterlegt. Um diese zu ändern, wenden Sie sich bitte an den Administrator.
+                      Es ist eine Zahlungsbeleg-Vorlage hinterlegt. Um diese zu ändern, wenden Sie sich bitte an den Administrator.
                     </v-snackbar>
                   </v-card>
                   <v-card
@@ -277,6 +280,8 @@
                     </v-snackbar>
                   </v-card>
                 </v-col>
+              </v-row>
+              <v-row>
                 <v-col>
                   <v-text-field
                     background-color="accent"
