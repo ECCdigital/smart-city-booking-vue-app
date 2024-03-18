@@ -891,7 +891,11 @@ export default {
     },
     tenant: {
       get() {
-        return this.$store.state.bookables.form.tenant;
+        if(this.mode === "create") {
+          return this.$store.state.tenants.data.id;
+        } else {
+          return this.$store.state.bookables.form.tenant;
+        }
       },
       set(value) {
         this.updateValue({ field: "tenant", value: value });
