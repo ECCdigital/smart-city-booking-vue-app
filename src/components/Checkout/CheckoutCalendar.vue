@@ -1,6 +1,9 @@
 <template>
   <div>
     <v-row class="mb-1">
+      {{events.length}}
+      hier
+      {{focus}}
       <v-col>
         <h3 class="text-h5">
           {{
@@ -90,6 +93,7 @@ export default {
     startDate: undefined,
     focus: new Date().toISOString().split("T")[0],
     fetchedUntil: undefined,
+    test: undefined,
   }),
 
   computed: {
@@ -139,12 +143,12 @@ export default {
       let dateBegin = new Date();
       if (this.fetchedUntil) {
         dateBegin = new Date(this.fetchedUntil);
-        dateBegin.setDate(dateBegin.getDate() + 1);
+        dateBegin.setTime(dateBegin.getTime() + 1000 * 60 * 60 * 24);
       }
 
       // The date until data should be loaded is 3 days after the current focus date
       const dateEnd = new Date(this.focus);
-      dateEnd.setDate(dateEnd.getDate() + 3);
+      dateEnd.setTime(dateEnd.getTime() + (3 * 24 * 60 * 60 * 1000));
 
       // If the calendar is currently loading or the dateBegin is after the dateEnd, not data should be fetched to prevent double fetching
       if (this.loading === true || dateBegin >= dateEnd) {
