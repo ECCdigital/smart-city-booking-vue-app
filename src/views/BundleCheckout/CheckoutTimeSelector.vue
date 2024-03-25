@@ -247,15 +247,16 @@
         </v-col>
       </v-row>
 
-      <booking-calendar
+      <checkout-calendar
         v-if="leadItem.bookable"
         :bookableId="leadItem.bookable.id"
         :tenant="leadItem.bookable.tenant"
-        :time-begin="timestampBegin"
-        :time-end="timestampEnd"
-        :date-begin="dateBeginModel"
+        :booking-time-begin="timestampBegin"
+        :booking-time-end="timestampEnd"
+        :amount="amount"
+        class="mt-10 mb-15"
       >
-      </booking-calendar>
+      </checkout-calendar>
     </v-form>
   </div>
 </template>
@@ -263,11 +264,11 @@
 <script>
 import CheckoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
-import BookingCalendar from "@/components/Booking/BookingCalendar.vue";
+import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
 
 export default {
   name: "CheckoutTimeSelector",
-  components: { BookingCalendar },
+  components: { CheckoutCalendar },
 
   props: {
     trace: {
@@ -284,6 +285,9 @@ export default {
       type: Number,
     },
     timeEnd: {
+      type: Number,
+    },
+    amount: {
       type: Number,
     },
   },
@@ -485,7 +489,7 @@ export default {
         const month = new Date(nextMonth);
         month.setMonth(month.getMonth() + i);
         calendarMonths.push({
-          label: month.toLocaleDateString("de-DE", { month: "long"}),
+          label: month.toLocaleDateString("de-DE", { month: "long" }),
           year: month.getFullYear(),
           startDate: month.toISOString().split("T")[0],
           endDate: new Date(month.getFullYear(), month.getMonth() + 1, 1)
