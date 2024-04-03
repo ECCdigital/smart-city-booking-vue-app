@@ -397,42 +397,47 @@ export default {
     },
 
     minBookingTime() {
-      if (
-        this.leadItem.bookable.minBookingDuration > 0 &&
-        this.dateBeginModel === this.dateEndModel &&
-        this.dateBeginModel != null
-      ) {
-        return CheckoutUtils.addHoursToTime(
-          this.timeBeginModel,
-          this.leadItem.bookable.minBookingDuration
-        );
-      } else if (
-        !this.leadItem.bookable.minBookingDuration > 0 &&
-        this.leadItem.bookable.maxBookingDuration > 0 &&
-        this.dateBeginModel === this.dateEndModel &&
-        this.dateBeginModel != null
-      ) {
-        return this.timeBeginModel;
-      } else {
+      let maxDateTime = new Date(this.timestampBegin);
+      maxDateTime.setHours(
+        new Date(this.timestampBegin).getHours() +
+          (this.leadItem.bookable.minBookingDuration || 0)
+      );
+
+      const maxDate = maxDateTime.toISOString().split("T")[0];
+
+      if (this.dateEndModel !== maxDate) {
         return null;
       }
+
+      return maxDateTime.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     },
     maxBookingTime() {
-      if (
-        this.leadItem.bookable.maxBookingDuration > 0 &&
-        this.dateBeginModel === this.dateEndModel &&
-        this.dateBeginModel != null
-      ) {
-        return CheckoutUtils.addHoursToTime(
-          this.timeBeginModel,
-          this.leadItem.bookable.maxBookingDuration
-        );
+      if (this.leadItem.bookable.maxBookingDuration == null) {
+        return null;
       }
-      return null;
+
+      let maxDateTime = new Date(this.timestampBegin);
+      maxDateTime.setHours(
+        new Date(this.timestampBegin).getHours() +
+          (this.leadItem.bookable.maxBookingDuration + 0)
+      );
+
+      const maxDate = maxDateTime.toISOString().split("T")[0];
+
+      if (this.dateEndModel !== maxDate) {
+        return null;
+      }
+
+      return maxDateTime.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     },
     maxBookingDate() {
       const maxDate = new Date().setMonth(new Date().getMonth() + 6);
-      // return maxDate in ISO 8601 format
       return new Date(maxDate).toISOString().split("T")[0];
     },
     minBookingDate() {
