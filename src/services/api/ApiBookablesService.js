@@ -78,4 +78,10 @@ export default {
       }
     );
   },
+  async bookableCountCheck(tenant) {
+    const t = tenant || store.getters["tenants/tenant"].id;
+    return (await ApiClient.get(`api/${t}/bookables/count/check`, {
+      withCredentials: true,
+    })).data
+  }
 };

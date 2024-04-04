@@ -1,6 +1,18 @@
 <template>
   <AdminLayout class="pb-15">
     <v-row>
+      <v-col class="col-auto">
+        <v-alert
+          class="custom-alert"
+          v-if="!bookableCountCheck"
+          type="info"
+          elevation="2"
+        >
+          Sie haben die maximale Anzahl an Buchungsobjekten erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Buchungsobjekte.
+        </v-alert>
+      </v-col>
+    </v-row>
+    <v-row>
       <v-col cols="12">
         <v-select
           class="filter-field"
@@ -65,7 +77,7 @@
           name: 'location-edit',
           query: { fromRoute: $router.currentRoute.name },
         }"
-        :disabled="!BookablePermissionService.allowCreate()"
+        :disabled="createDisabled"
       >
         <v-icon>mdi-plus</v-icon>
         Veranstaltungsort erstellen
@@ -95,12 +107,16 @@ export default {
         tags: [],
       },
       filters: [],
+      bookableCountCheck: true,
     };
   },
   computed: {
     ...mapGetters({
       loading: "loading/isLoading",
     }),
+    createDisabled() {
+      return !this.BookablePermissionService.allowCreate() || !this.bookableCountCheck;
+    },
     BookablePermissionService() {
       return BookablePermissionService;
     },
@@ -127,8 +143,8 @@ export default {
       stopLoading: "loading/stop",
       addToast: "toasts/add",
     }),
-    removeBookable(bookableId) {
-      this.startLoading("fetch-delete-bookable");
+    async removeBookable(bookableId) {
+      await this.startLoading("fetch-delete-bookable");
       ApiBookablesService.deleteBookable(bookableId)
         .then(() => {
           this.fetchLocations();
@@ -145,9 +161,10 @@ export default {
           );
           console.log(error);
         });
+      await this.getBookableCount();
     },
-    duplicateBookable(bookableId) {
-      this.startLoading("fetch-duplicate-bookable");
+    async duplicateBookable(bookableId) {
+      await this.startLoading("fetch-duplicate-bookable");
 
       ApiBookablesService.duplicateBookable(bookableId)
         .then(() => {
@@ -165,6 +182,7 @@ export default {
           );
           console.log(error);
         });
+      await this.getBookableCount();
     },
     remove(item) {
       this.filters.splice(this.filters.indexOf(item), 1);
@@ -197,6 +215,12 @@ export default {
           console.log(error);
         });
     },
+    async getBookableCount() {
+      this.bookableCountCheck = await ApiBookablesService.bookableCountCheck();
+    },
+  },
+  async mounted() {
+    await this.getBookableCount();
   },
   created() {
     this.fetchLocations();
@@ -208,5 +232,8 @@ export default {
 <style scoped>
 .filter-field {
   border-radius: 15px;
+}
+.custom-alert {
+  border-radius: 15px !important;
 }
 </style>

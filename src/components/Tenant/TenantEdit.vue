@@ -433,9 +433,13 @@ export default {
       if (this.$refs.form.validate()) {
         this.inProgress = true;
         delete this.selectedTenant._id;
-        await ApiTenantService.submitTenant(this.selectedTenant);
-        this.inProgress = false;
-        this.closeDialog();
+        try{
+          await ApiTenantService.submitTenant(this.selectedTenant);
+          this.inProgress = false;
+          this.closeDialog();
+        } catch (e) {
+          this.inProgress = false;
+        }
       } else {
         //reset validation after 4 seconds
         setTimeout(() => {

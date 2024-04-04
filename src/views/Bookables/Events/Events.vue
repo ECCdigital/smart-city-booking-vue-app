@@ -1,6 +1,18 @@
 <template>
   <AdminLayout class="pb-15">
     <v-row>
+      <v-col class="col-auto">
+        <v-alert
+          class="custom-alert"
+          v-if="!eventCountCheck"
+          type="info"
+          elevation="2"
+        >
+          Sie haben die maximale Anzahl an Events erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Events.
+        </v-alert>
+      </v-col>
+    </v-row>
+    <v-row>
       <v-col>
         <v-select
           class="filter-field"
@@ -68,7 +80,7 @@
         rounded
         class="v-btn"
         :to="{ name: 'event-create-information' }"
-        :disabled="!BookablePermissionService.allowCreate()"
+        :disabled="createDisabled"
       >
         <v-icon>mdi-plus</v-icon>
         Veranstaltung erstellen
@@ -99,12 +111,16 @@ export default {
       },
       filters: [],
       hidePastEvents: true,
+      eventCountCheck: true,
     };
   },
   computed: {
     ...mapGetters({
       loading: "loading/isLoading",
     }),
+    createDisabled() {
+      return !this.BookablePermissionService.allowCreate() || !this.eventCountCheck;
+    },
     BookablePermissionService() {
       return BookablePermissionService;
     },
@@ -156,8 +172,8 @@ export default {
     remove(item) {
       this.filters.splice(this.filters.indexOf(item), 1);
     },
-    removeBookable(eventId) {
-      this.startLoading("fetch-delete-event");
+    async removeBookable(eventId) {
+      await this.startLoading("fetch-delete-event");
       ApiEventService.deleteEvent(eventId)
         .then(() => {
           this.fetchEvents();
@@ -174,10 +190,10 @@ export default {
           );
           console.log(error);
         });
+      await this.getEventCount();
     },
-    duplicateEvent(eventId) {
-      this.startLoading("fetch-duplicate-event");
-
+    async duplicateEvent(eventId) {
+      await this.startLoading("fetch-duplicate-event");
       ApiEventService.duplicateEvent(eventId)
         .then(() => {
           this.fetchEvents();
@@ -194,6 +210,7 @@ export default {
           );
           console.log(error);
         });
+      await this.getEventCount();
     },
     fetchFilterTags() {
       ApiEventService.getTags()
@@ -217,6 +234,12 @@ export default {
           console.log(error);
         });
     },
+    async getEventCount() {
+      this.eventCountCheck = await ApiEventService.eventCountCheck();
+    },
+  },
+  async mounted() {
+    await this.getEventCount();
   },
   created() {
     this.fetchEvents();
@@ -228,5 +251,9 @@ export default {
 <style scoped>
 .filter-field {
   border-radius: 15px;
+}
+
+.custom-alert {
+  border-radius: 15px !important;
 }
 </style>

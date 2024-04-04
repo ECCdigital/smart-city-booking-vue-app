@@ -43,5 +43,11 @@ export default {
         reject(error);
       });
     });
+  },
+  async eventCountCheck(tenant) {
+    const t = tenant || store.getters["tenants/tenant"].id;
+    return (await ApiClient.get(`api/${t}/events/count/check`, {
+      withCredentials: true,
+    })).data
   }
 };

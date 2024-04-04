@@ -10,5 +10,10 @@ export default {
   },
   getTenant(id, withCredentials= true) {
     return ApiClient.get(`api/tenants/${id}`,  { withCredentials : withCredentials });
+  },
+  async tenantCountCheck() {
+    return (await ApiClient.get("api/tenants/count/check", {
+      withCredentials: true,
+    })).data
   }
 };
