@@ -1,9 +1,6 @@
 <template>
   <div>
     <v-row class="mb-1">
-      {{events.length}}
-      hier
-      {{focus}}
       <v-col>
         <h3 class="text-h5">
           {{
