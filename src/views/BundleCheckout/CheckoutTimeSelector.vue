@@ -262,7 +262,6 @@
 </template>
 
 <script>
-import CheckoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
 
@@ -397,42 +396,56 @@ export default {
     },
 
     minBookingTime() {
-      if (
-        this.leadItem.bookable.minBookingDuration > 0 &&
-        this.dateBeginModel === this.dateEndModel &&
-        this.dateBeginModel != null
-      ) {
-        return CheckoutUtils.addHoursToTime(
-          this.timeBeginModel,
-          this.leadItem.bookable.minBookingDuration
-        );
-      } else if (
-        !this.leadItem.bookable.minBookingDuration > 0 &&
-        this.leadItem.bookable.maxBookingDuration > 0 &&
-        this.dateBeginModel === this.dateEndModel &&
-        this.dateBeginModel != null
-      ) {
-        return this.timeBeginModel;
-      } else {
+      let minDateTime = new Date(this.timestampBegin);
+      minDateTime.setHours(
+        new Date(this.timestampBegin).getHours() +
+          (this.leadItem.bookable.minBookingDuration || 0)
+      );
+
+      const minDate = minDateTime.toLocaleDateString("sv-SE");
+
+      if (this.dateEndModel !== minDate) {
         return null;
       }
+
+      return minDateTime.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     },
     maxBookingTime() {
-      if (
-        this.leadItem.bookable.maxBookingDuration > 0 &&
-        this.dateBeginModel === this.dateEndModel &&
-        this.dateBeginModel != null
-      ) {
-        return CheckoutUtils.addHoursToTime(
-          this.timeBeginModel,
-          this.leadItem.bookable.maxBookingDuration
-        );
+      if (this.leadItem.bookable.maxBookingDuration == null) {
+        return null;
       }
-      return null;
+
+      let startDateTime = new Date(this.timestampBegin);
+
+      let maxDateTime = new Date(this.timestampBegin);
+      maxDateTime.setHours(startDateTime.getHours() + this.leadItem.bookable.maxBookingDuration);
+
+      let minDateTime = new Date(this.timestampBegin);
+      minDateTime.setHours(startDateTime.getHours() + this.leadItem.bookable.minBookingDuration);
+
+      const formatDate = (date) => date.toLocaleDateString("sv-SE");
+
+      const maxDate = formatDate(maxDateTime);
+      const minDate = formatDate(minDateTime);
+
+      if (this.dateEndModel > maxDate || this.dateEndModel < minDate) {
+        return "-1";
+      }
+
+      if (this.dateEndModel !== maxDate) {
+        return null;
+      }
+
+      return maxDateTime.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     },
     maxBookingDate() {
       const maxDate = new Date().setMonth(new Date().getMonth() + 6);
-      // return maxDate in ISO 8601 format
       return new Date(maxDate).toISOString().split("T")[0];
     },
     minBookingDate() {
@@ -504,10 +517,10 @@ export default {
   watch: {
     dateBeginModel: function () {
       // set dateEnd if dateBegin is higher
-      if (
-        new Date(this.timeBeginModel) > new Date(this.timeEndModel) ||
-        this.dateEndModel == null
-      ) {
+      const dateBegin = new Date(this.dateBeginModel).getTime();
+      const dateEnd = new Date(this.dateEndModel).getTime();
+
+      if ( dateBegin > dateEnd || this.dateEndModel == null) {
         this.dateEndModel = this.dateBeginModel;
       }
 
@@ -522,12 +535,25 @@ export default {
     timeBeginModel: function () {
       if (
         this.leadItem.bookable.minBookingDuration > 0 ||
-        new Date(this.timeEndModel) < new Date(this.timeBeginModel)
+        new Date("1970-01-01T" + this.timeBeginModel).getTime() > new Date("1970-01-01T" + this.timeEndModel).getTime()
       ) {
         this.timeEndModel = checkoutUtils.addHoursToTime(
           this.timeBeginModel,
           this.leadItem.bookable.minBookingDuration
         );
+
+        const hoursToAdd = Number(this.leadItem.bookable.minBookingDuration);
+        const startHours = Number(this.timeBeginModel.split(":")[0]);
+        const newTimestamp = new Date(this.dateBeginModel + "T" + this.timeBeginModel)
+          .setHours(startHours + hoursToAdd);
+
+        // Erstellung eines neuen Date-Objekts für den Vergleich
+        const newDate = new Date(newTimestamp);
+
+        // Vergleich der neuen Datumswerte
+        if ( newDate > new Date(this.dateEndModel + "T" + this.timeEndModel)) {
+          this.dateEndModel = newDate.toLocaleDateString("sv-SE");
+        }
       }
 
       this.notifyBookingTimeSelected();
