@@ -1,5 +1,3 @@
-import ApiUsersService from "@/services/api/ApiUsersService";
-
 export default {
   formatDateTime(d) {
     let year = new Intl.DateTimeFormat("en-US", { year: "numeric" }).format(d);

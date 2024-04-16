@@ -145,7 +145,7 @@ export default {
 
       // The date until data should be loaded is 3 days after the current focus date
       const dateEnd = new Date(this.focus);
-      dateEnd.setTime(dateEnd.getTime() + (3 * 24 * 60 * 60 * 1000));
+      dateEnd.setTime(dateEnd.getTime() + 3 * 24 * 60 * 60 * 1000);
 
       // If the calendar is currently loading or the dateBegin is after the dateEnd, not data should be fetched to prevent double fetching
       if (this.loading === true || dateBegin >= dateEnd) {
