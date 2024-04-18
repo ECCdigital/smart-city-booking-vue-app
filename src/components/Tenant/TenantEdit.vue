@@ -348,6 +348,19 @@
                   ></v-text-field>
                 </v-col>
               </v-row>
+              <h3 class="mb-5 mt-5" v-if="parevaSystem?.active">Pareva Schließsystem</h3>
+              <v-row>
+                <v-col>
+                  <v-text-field
+                    v-if="parevaSystem?.active"
+                    background-color="accent"
+                    filled
+                    dense
+                    label="Pareva API-Key"
+                    v-model="parevaSystem.apiKey"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
             </v-form>
           </v-container>
         </v-card-text>
@@ -419,6 +432,11 @@ export default {
         return this.tenant;
       },
     },
+    parevaSystem:{
+      get() {
+        return this.selectedTenant.applications?.find((app) => app.id === "pareva");
+      },
+    }
   },
   watch: {
     tenant(val) {

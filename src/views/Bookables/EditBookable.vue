@@ -219,6 +219,20 @@
       </v-col>
     </v-row>
 
+    <h3 class="mt-10">Schließsysteme</h3>
+    <v-row>
+      <v-col>
+        <p>
+          Buchungsobjekte, die mit Schließsystemen verbunden sind, können
+          automatisch geöffnet und geschlossen werden.
+        </p>
+      </v-col>
+    </v-row>
+    <BookableLockingAttributes
+      :tenant="tenant"
+      :amount="amount"
+    ></BookableLockingAttributes>
+
     <h3 class="mt-10">Individuelle Berechtigungen</h3>
 
     <v-row>
@@ -505,6 +519,7 @@ import SortableList from "@/components/SortableList";
 import Tiptap from "@/components/Tiptap";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ChooseFile from "@/components/Files/ChooseFile.vue";
+import BookableLockingAttributes from "@/components/Bookable/BookableLockingAttributes";
 
 export default {
   name: "EditBookable",
@@ -513,6 +528,7 @@ export default {
     SortableList,
     BookableTimeDependantAttributes,
     Tiptap,
+    BookableLockingAttributes,
   },
 
   data() {
@@ -694,6 +710,7 @@ export default {
             freeBookingRoles,
             isLongRange,
             longRangeOptions,
+            lockerDetails,
           } = response.data;
 
           this.restoreFromApi({
@@ -744,6 +761,7 @@ export default {
             freeBookingRoles: freeBookingRoles,
             isLongRange: isLongRange,
             longRangeOptions: longRangeOptions,
+            lockerDetails: lockerDetails,
           });
         })
         .finally(() => {
@@ -784,7 +802,6 @@ export default {
         this.fetchBookables();
         this.prepareCreateForm();
       }
-
       this.fetchEvents();
       this.fetchUsers();
       this.fetchRoles();

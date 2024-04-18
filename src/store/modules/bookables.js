@@ -38,6 +38,7 @@ const state = {
     isPublic: false,
     isLongRange: false,
     longRangeOptions: null,
+    lockerDetails: {active: false, units: []},
   },
 };
 
@@ -96,6 +97,7 @@ const mutations = {
       isPublic: false,
       isLongRange: false,
       longRangeOptions: null,
+      lockerDetails: {active: false, units: []},
     };
   },
 };
