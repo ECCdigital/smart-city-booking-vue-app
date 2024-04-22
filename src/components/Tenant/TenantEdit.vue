@@ -350,15 +350,17 @@
               </v-row>
               <h3 class="mb-5 mt-5">Buchungskonfiguration</h3>
               <v-row>
-                <v-col>
+                <v-col class="col-12 col-md-6">
                   <v-text-field
                     background-color="accent"
                     filled
                     dense
-                    label="Maximale Monate, die im Voraus gebucht werden können"
+                    label="Vorausbuchungen möglich bis"
                     type="number"
-                    v-model="selectedTenant.maxBookingAdvancedInMonths"
-                  ></v-text-field>
+                    suffix="Monate"
+                    v-model="selectedTenant.maxBookingMonths"
+                  >
+                  </v-text-field>
                 </v-col>
               </v-row>
             </v-form>
