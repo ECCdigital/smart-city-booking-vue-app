@@ -348,6 +348,21 @@
                   ></v-text-field>
                 </v-col>
               </v-row>
+              <h3 class="mb-5 mt-5">Buchungskonfiguration</h3>
+              <v-row>
+                <v-col class="col-12 col-md-6">
+                  <v-text-field
+                    background-color="accent"
+                    filled
+                    dense
+                    label="Vorausbuchungen möglich bis"
+                    type="number"
+                    suffix="Monate"
+                    v-model="selectedTenant.maxBookingMonths"
+                  >
+                  </v-text-field>
+                </v-col>
+              </v-row>
             </v-form>
           </v-container>
         </v-card-text>
