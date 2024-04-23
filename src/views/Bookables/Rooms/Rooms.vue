@@ -8,7 +8,7 @@
           type="info"
           elevation="2"
         >
-          Sie haben die maximale Anzahl an Buchungsobjekten erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Buchungsobjekte.
+          Sie haben die maximale Anzahl an öffentlichen Buchungsobjekten erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Buchungsobjekte.
         </v-alert>
       </v-col>
     </v-row>
@@ -114,7 +114,7 @@ export default {
       loading: "loading/isLoading",
     }),
     createDisabled() {
-      return !this.BookablePermissionService.allowCreate() || !this.bookableCountCheck;
+      return !this.BookablePermissionService.allowCreate();
     },
     BookablePermissionService() {
       return BookablePermissionService;
@@ -159,7 +159,7 @@ export default {
         })
         .catch((error) => {
           this.addToast(
-            ToastService.createToast("errors.something-wrong", "error")
+            ToastService.createToast("bookable.duplicate.errors.something-wrong", "error")
           );
           console.log(error);
         });
@@ -215,7 +215,7 @@ export default {
         });
     },
     async getBookableCount() {
-      this.bookableCountCheck = await ApiBookablesService.bookableCountCheck();
+      this.bookableCountCheck = await ApiBookablesService.publicBookableCountCheck();
     },
   },
   async mounted() {

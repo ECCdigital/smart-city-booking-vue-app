@@ -8,7 +8,7 @@
           type="info"
           elevation="2"
         >
-          Sie haben die maximale Anzahl an Events erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Events.
+          Sie haben die maximale Anzahl an öffentlichen Events erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Events.
         </v-alert>
       </v-col>
     </v-row>
@@ -119,7 +119,7 @@ export default {
       loading: "loading/isLoading",
     }),
     createDisabled() {
-      return !this.BookablePermissionService.allowCreate() || !this.eventCountCheck;
+      return !this.BookablePermissionService.allowCreate();
     },
     BookablePermissionService() {
       return BookablePermissionService;
@@ -206,7 +206,7 @@ export default {
         })
         .catch((error) => {
           this.addToast(
-            ToastService.createToast("errors.something-wrong", "error")
+            ToastService.createToast("event.duplicate.errors.something-wrong", "error")
           );
           console.log(error);
         });
@@ -235,7 +235,7 @@ export default {
         });
     },
     async getEventCount() {
-      this.eventCountCheck = await ApiEventService.eventCountCheck();
+      this.eventCountCheck = await ApiEventService.publicEventCountCheck();
     },
   },
   async mounted() {

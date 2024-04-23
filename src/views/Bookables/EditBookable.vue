@@ -211,6 +211,7 @@
       </v-col>
       <v-col class="col-md-3 col-sm-12">
         <v-switch
+          :disabled="!allowPublic"
           dense
           label="Buchungsobjekt ist sichtbar"
           hide-details
@@ -517,6 +518,7 @@ export default {
 
   data() {
     return {
+      allowPublic:true,
       bookableType: null,
       bookable: {},
       bookableTypes: [
@@ -874,6 +876,10 @@ export default {
     removeFreeBookingRole(item) {
       this.freeBookingRoles.splice(this.freeBookingRoles.indexOf(item), 1);
     },
+    async allowSetPublic() {
+      const bookableCountCheck = await ApiBookablesService.publicBookableCountCheck();
+      this.allowPublic = bookableCountCheck || this.isPublic
+    },
   },
   computed: {
     ...mapGetters({
@@ -1102,6 +1108,7 @@ export default {
 
   mounted() {
     this.initialize();
+    this.allowSetPublic();
   },
 };
 </script>

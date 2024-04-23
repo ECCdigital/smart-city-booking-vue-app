@@ -103,7 +103,7 @@
           <v-list-item
             link
             @click="emitDuplicateAction"
-            :disabled="createDisabled"
+            :disabled="duplicateDisabled"
           >
             <v-list-item-icon>
               <v-icon>mdi-content-copy</v-icon>
@@ -152,7 +152,7 @@ export default {
   data() {
     return {
       defaultImage: require("@/assets/bookable-default.jpg"),
-      bookableCountCheck: true,
+      isDuplicateAllowed: true,
     };
   },
   methods: {
@@ -169,23 +169,24 @@ export default {
     shortenText(text) {
       return text.substring(0, 140) + (text.length > 140 ? " ..." : "");
     },
-    async getBookableCount() {
-      this.bookableCountCheck = await ApiBookablesService.bookableCountCheck();
+    async setAllowDuplicate() {
+      const bookableCountCheck = await ApiBookablesService.publicBookableCountCheck();
+      this.isDuplicateAllowed = bookableCountCheck || !this.item.isPublic;
     },
   },
   computed: {
     ...mapGetters({
       tenant: "tenants/tenant",
     }),
-    createDisabled() {
-      return !this.BookablePermissionService.allowCreate() || !this.bookableCountCheck;
+    duplicateDisabled() {
+      return !this.BookablePermissionService.allowCreate() || !this.isDuplicateAllowed;
     },
     BookablePermissionService() {
       return BookablePermissionService;
     },
   },
   mounted() {
-    this.getBookableCount();
+    this.setAllowDuplicate();
   },
 };
 </script>
