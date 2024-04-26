@@ -8,6 +8,7 @@
  * @param {string} tenant - The tenant identifier.
  * @param {string} calendarView - The initial view of the calendar ('month' or 'week').
  */
+// eslint-disable-next-line no-unused-vars
 class BookingManager {
   /**
    * Creates an instance of BookingManager.
@@ -539,6 +540,7 @@ class BookingManager {
       events: calenderItems,
       ...this.calendar,
     };
+    // eslint-disable-next-line no-undef
     new FullCalendar.Calendar(calendarEl, config).render();
   }
 }
