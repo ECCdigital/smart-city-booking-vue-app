@@ -88,13 +88,4 @@ export default {
       }
     );
   },
-  getReceipt(id, receiptId) {
-    return ApiClient.get(
-      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/receipt/${receiptId}`,
-      {
-        responseType: "blob",
-        withCredentials: true,
-      }
-    );
-  },
 };

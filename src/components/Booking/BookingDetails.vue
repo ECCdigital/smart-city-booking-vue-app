@@ -75,18 +75,6 @@ export default {
           this.creatingReceipt = false;
         });
     },
-    downloadReceipt(name) {
-      ApiBookingService.getReceipt(this.booking.id, name)
-        .then((response) => {
-          const blob = new Blob([response.data], { type: "application/pdf" });
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", name);
-          document.body.appendChild(link);
-          link.click();
-        });
-    },
   },
 }
 </script>
@@ -188,28 +176,6 @@ export default {
               }).format(new Date(booking.timeEnd)) }}</v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
-        </v-col>
-      </v-row>
-      <div class="mt-6">
-        <span class="text-h6">Buchungsobjekte</span>
-      </div>
-      <v-divider />
-      <v-row no-gutters>
-        <v-col>
-          <v-list dense >
-            <template v-for="(item, name, index) in booking.bookableItems">
-              <v-list-item two-line :key="name">
-                <v-list-item-content>
-                  <v-list-item-title>
-                    {{ item._bookableUsed?.title }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle>Anzahl: {{  item?.amount }}</v-list-item-subtitle>
-
-                </v-list-item-content>
-              </v-list-item>
-              <v-divider v-if="index < receipts.length - 1" :key="index"/>
-            </template>
-          </v-list>
         </v-col>
       </v-row>
       <div class="mt-6">
@@ -321,7 +287,7 @@ export default {
                   }).format(new Date(item.timeCreated)) }}</v-list-item-subtitle>
                 </v-list-item-content>
                 <v-list-item-action>
-                  <v-btn icon @click="downloadReceipt(item.name)">
+                  <v-btn icon>
                     <v-icon color="primary">mdi-file-download</v-icon>
                   </v-btn>
                 </v-list-item-action>
