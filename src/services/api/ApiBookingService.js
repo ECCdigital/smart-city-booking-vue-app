@@ -80,9 +80,8 @@ export default {
     );
   },
   generateReceipt(id) {
-    return ApiClient.post(
-      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/receipt`,
-      {},
+    return ApiClient.get(
+      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/generate-receipt`,
       {
         withCredentials: true,
       }

@@ -271,17 +271,5 @@
       "none": "-",
       "all": "Alle"
     }
-  },
-  "receipt": {
-    "create": {
-      "success": {
-        "title": "Erfolgreich erstellt",
-        "message": "Der Buchungsbeleg wurde erfolgreich erstellt."
-      },
-      "error": {
-        "title": "Fehler beim Erstellen",
-        "message": "Der Buchungsbeleg konnte nicht erstellt werden."
-      }
-    }
   }
 }
