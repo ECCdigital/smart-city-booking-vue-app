@@ -26,7 +26,6 @@ class BookingManager {
   init() {
     console.log("Initializing Booking Manager Integration.");
 
-
     this.addLibScripts([
       "https://cdn.jsdelivr.net/npm/fullcalendar@6.0.3/index.global.min.js",
       "https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/locales-all.global.min.js",
@@ -210,9 +209,12 @@ class BookingManager {
 
     for (let i = 0; i < calendarEls.length; i++) {
       const calendarEl = calendarEls[i];
-      const initialView = calendarEl.getAttribute("data-view") || "dayGridMonth";
+      const initialView =
+        calendarEl.getAttribute("data-view") || "dayGridMonth";
 
-      console.log(`Binding data to element with class bm-calendar and initial view ${initialView}`);
+      console.log(
+        `Binding data to element with class bm-calendar and initial view ${initialView}`
+      );
 
       this._fetchEvents().then((events) => {
         this._initCalendar(calendarEl, initialView, events);
@@ -226,14 +228,19 @@ class BookingManager {
    * The initial view of the calendar is determined by the "data-view" attribute of the element. If no "data-view" attribute is present, the default view is "dayGridMonth".
    */
   initializeOccupancyCalendars() {
-    const calendarEls = document.getElementsByClassName("bm-occupancy-calendar");
+    const calendarEls = document.getElementsByClassName(
+      "bm-occupancy-calendar"
+    );
 
-    for ( let i = 0; i< calendarEls.length; i++ ) {
+    for (let i = 0; i < calendarEls.length; i++) {
       const calendarEl = calendarEls[i];
       const bookableIds = calendarEl.getAttribute("data-id")?.split(",");
-      const initialView = calendarEl.getAttribute("data-view") || "dayGridMonth";
+      const initialView =
+        calendarEl.getAttribute("data-view") || "dayGridMonth";
 
-      console.log(`Binding data to element with class bm-occupancy-calendar and initial view ${initialView}`);
+      console.log(
+        `Binding data to element with class bm-occupancy-calendar and initial view ${initialView}`
+      );
 
       this._fetchOccupancies(bookableIds).then((occupancy) => {
         this._initCalendar(calendarEl, initialView, occupancy);
@@ -301,7 +308,7 @@ class BookingManager {
           .then(function (response) {
             return response.text();
           })
-          .then(function (text) {
+          .then(function () {
             console.log("Signout successful");
           })
           .catch(function (err) {
@@ -471,7 +478,7 @@ class BookingManager {
     try {
       const response = await fetch(fetchUrl);
       const apiResponse = await response.json();
-      return apiResponse.map(event => ({
+      return apiResponse.map((event) => ({
         title: event.information.name,
         start: `${event.information.startDate}T${event.information.startTime}`,
         end: `${event.information.endDate}T${event.information.endTime}`,
