@@ -80,9 +80,19 @@ export default {
     );
   },
   generateReceipt(id) {
-    return ApiClient.get(
-      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/generate-receipt`,
+    return ApiClient.post(
+      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/receipt`,
+      {},
       {
+        withCredentials: true,
+      }
+    );
+  },
+  getReceipt(id, receiptId) {
+    return ApiClient.get(
+      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/receipt/${receiptId}`,
+      {
+        responseType: "blob",
         withCredentials: true,
       }
     );
