@@ -97,7 +97,7 @@ export default {
         })
     },
     fetchTenants() {
-      ApiTenantService.getTenants().then((response) => {
+      ApiTenantService.getTenants(true).then((response) => {
         this.tenants = response.data;
       });
     }
