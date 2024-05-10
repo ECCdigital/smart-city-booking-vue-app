@@ -364,8 +364,8 @@ export default {
       this.selectedBooking = {
         tenant: this.tenant,
         assignedUserId: null,
-        timeBegin: 1681383600000,
-        timeEnd: 1681387200000,
+        timeBegin: Date.now(),
+        timeEnd: Date.now(),
         bookableItems: [],
         couponCode: null,
         name: null,
