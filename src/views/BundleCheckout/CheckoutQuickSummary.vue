@@ -394,36 +394,63 @@ export default {
       this.isSubmitting = true;
 
       try {
-        const checkoutResponse = await ApiCheckoutService.checkout(
-          this.tenant,
-          this.compileBooking(),
-          false
-        );
-
-        if (checkoutResponse.status === 200) {
-          //TODO: check payment method (INVOICE, Sparkasse, etc.)
-          const booking = checkoutResponse.data;
-          if (this.totalPrice > 0 && this.isAutoCommit) {
-            const paymentResponse = await ApiPaymentService.payments(
-              booking.id,
-              this.tenant
-            );
-            const paymentUrl = paymentResponse.data?.data;
-            if (paymentUrl) {
-              window.location.href = paymentUrl;
-            }
-          } else {
-            this.$router.push({
-              path: "/checkout/status",
-              query: { id: booking.id, tenant: booking.tenant },
-            });
-          }
-        }
+        const checkoutResponse = await this.performCheckout();
+        const paymentResponse = await this.processPayment(checkoutResponse.data);
+        await this.handlePaymentOutcome(paymentResponse);
       } catch (error) {
-        console.log(error);
+        console.error("Checkout process failed:", error.message);
       } finally {
         this.isSubmitting = false;
       }
+    },
+
+    async performCheckout() {
+      const response = await ApiCheckoutService.checkout(this.tenant, this.compileBooking(), false);
+      if (response.status !== 200) throw new Error("Checkout service failed");
+      return response;
+    },
+
+    async processPayment(booking) {
+      const response = await ApiPaymentService.payments(booking.id, booking.tenant);
+      if (response.status !== 200) throw new Error("Payment processing failed");
+      return response;
+    },
+
+    async handlePaymentOutcome(paymentResponse) {
+      const finalBooking = paymentResponse.data.booking;
+
+      if (finalBooking.totalPrice <= 0 || !finalBooking.isCommitted) {
+        await this.routeToStatus(finalBooking);
+        return;
+      }
+
+      switch (finalBooking.paymentMethod) {
+      case "giroCockpit": {
+        const paymentUrl = paymentResponse.data?.paymentData;
+        if (paymentUrl) {
+          window.location.href = paymentUrl;
+        }
+        break;
+      }
+      case "invoice":
+        await this.routeToStatus(finalBooking, finalBooking.paymentMethod);
+        break;
+      default:
+        await this.routeToStatus(finalBooking);
+        break;
+      }
+    },
+
+
+    async routeToStatus(booking, paymentMethod = null) {
+      await this.$router.push({
+        path: "/checkout/status",
+        query: {
+          id: booking.id,
+          tenant: booking.tenant,
+          paymentMethod: paymentMethod,
+        },
+      });
     },
 
     redeemCoupon() {
