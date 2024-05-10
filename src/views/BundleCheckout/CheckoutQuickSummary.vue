@@ -197,6 +197,33 @@
         </v-expansion-panel>
       </v-expansion-panels>
     </v-card>
+    <v-card class="mt-5 rounded-sm" outlined v-if="totalPrice > 0">
+      <v-card-text>
+        <h2 class="mb-7">Zahlungsart</h2>
+        <v-list-item-group mandatory>
+          <v-list-item
+            v-for="(method, index) in paymentMethods"
+            :key="index"
+            @click="paymentMethod = method.value"
+          >
+            <v-list-item-action>
+              <v-checkbox
+                v-model="paymentMethod"
+                :value="method.value"
+              ></v-checkbox>
+            </v-list-item-action>
+
+            <v-list-item-content>
+              <v-list-item-title>{{ method.name }}</v-list-item-title>
+            </v-list-item-content>
+
+            <v-list-item-action>
+              <v-icon>{{ method.logo }}</v-icon>
+            </v-list-item-action>
+          </v-list-item>
+        </v-list-item-group>
+      </v-card-text>
+    </v-card>
 
     <v-card
       class="mt-5 rounded-sm"
@@ -286,6 +313,19 @@ export default {
       validating: false,
       isSubmitting: false,
       couponCode: null,
+      paymentMethods: [
+        {
+          name: "Per Rechnung bezahlen",
+          value: "invoice",
+          logo: "mdi-invoice",
+        },
+        {
+          name: "Online bezahlen",
+          value: "giroCockpit",
+          logo: "mdi-currency-usd",
+        },
+      ],
+      paymentMethod: "",
     };
   },
 
@@ -344,6 +384,7 @@ export default {
         mail: this.contactDetails.mail,
         phone: this.contactDetails.phone,
         comment: this.contactDetails.comment,
+        paymentMethod: this.paymentMethod,
       };
 
       return payload;
@@ -360,13 +401,14 @@ export default {
         );
 
         if (checkoutResponse.status === 200) {
+          //TODO: check payment method (INVOICE, Sparkasse, etc.)
           const booking = checkoutResponse.data;
           if (this.totalPrice > 0 && this.isAutoCommit) {
             const paymentResponse = await ApiPaymentService.payments(
               booking.id,
               this.tenant
             );
-            const paymentUrl = paymentResponse.data?.paymentUrl;
+            const paymentUrl = paymentResponse.data?.data;
             if (paymentUrl) {
               window.location.href = paymentUrl;
             }
