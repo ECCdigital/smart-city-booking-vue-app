@@ -20,12 +20,16 @@
               Kontaktdaten
             </v-stepper-step>
             <v-divider></v-divider>
-            <v-stepper-step step="5"> Zusammenfassung </v-stepper-step>
+            <v-stepper-step v-if="activePaymentApps.length > 1 && (leadItem.bookable.priceEur > 0 || leadItem.userPriceEur > 0)" step="5" :complete="step > 5">
+              Zahlungsmethode
+            </v-stepper-step>
+            <v-divider></v-divider>
+            <v-stepper-step :step="summaryStepNumber"> Zusammenfassung </v-stepper-step>
           </v-stepper-header>
         </v-stepper>
 
         <v-row>
-          <v-col v-if="step < 5" class="col-md-7">
+          <v-col v-if="step < summaryStepNumber" class="col-md-7">
             <checkout-time-selector
               v-if="!loading && step === 1 && leadItem.bookable"
               :lead-item="leadItem"
@@ -62,6 +66,12 @@
               @back="previousPage()"
               @submit="nextPage()"
             ></checkout-contact-details>
+            <checkout-payment-method
+              v-if="activePaymentApps.length > 1 && leadItem.bookable && step === 5 && (leadItem.bookable.priceEur > 0 || leadItem.userPriceEur > 0)"
+              :active-payment-apps="activePaymentApps"
+              @back="previousPage()"
+              @submit="setPaymentApp"
+            ></checkout-payment-method>
           </v-col>
           <v-col class="col-md">
             <checkout-quick-summary
@@ -73,8 +83,9 @@
               :contact-details="contactDetails"
               :tenant="tenant"
               :coupon="coupon"
+              :selected-payment-app="selectedPaymentApp"
               :trace="trace"
-              :final-check="step === 5"
+              :final-check="step === summaryStepNumber"
               :me="me"
               @back="previousPage()"
               @validate-items="validateItems()"
@@ -104,11 +115,14 @@ import AdditionalBookables from "@/views/BundleCheckout/AdditionalBookables.vue"
 import CheckoutSignin from "@/views/BundleCheckout/CheckoutSignin.vue";
 import CheckoutContactDetails from "@/views/BundleCheckout/CheckoutContactDetails.vue";
 import ApiCouponService from "@/services/api/ApiCouponService";
+import ApiTenantService from "@/services/api/ApiTenantService";
+import CheckoutPaymentMethod from "@/views/BundleCheckout/CheckoutPaymentMethod.vue";
 
 export default {
   name: "CheckoutMain",
 
   components: {
+    CheckoutPaymentMethod,
     CheckoutSignin,
     AdditionalBookables,
     CheckoutQuickSummary,
@@ -168,6 +182,9 @@ export default {
 
       // If the user enters a coupon code, this coupon will be stored here.
       coupon: null,
+
+      activePaymentApps: [],
+      selectedPaymentApp: null,
     };
   },
 
@@ -181,6 +198,7 @@ export default {
     await this.fetchLeadBookable();
     await this.fetchSubsequentBookables();
     await this.validateItems();
+    await this.fetchActivePaymentApps();
 
     this.step = this.minimumPageNumber;
 
@@ -305,7 +323,7 @@ export default {
     },
 
     nextPage() {
-      if (this.step < 5) {
+      if (this.step < this.summaryStepNumber) {
         this.step++;
       }
 
@@ -341,6 +359,28 @@ export default {
       this.coupon = null;
       await this.validateItems();
     },
+
+    async fetchActivePaymentApps() {
+      try {
+        const response = await ApiTenantService.getTenantActivePaymentApps(
+          this.tenant
+        );
+        this.activePaymentApps = response.data;
+
+        if (this.activePaymentApps.length < 2) {
+          this.selectedPaymentApp = this.activePaymentApps[0].id;
+        }
+
+        console.log(this.selectedPaymentApp);
+      } catch (error) {
+        console.log(error);
+        this.tenant = null;
+      }
+    },
+    setPaymentApp(app) {
+      this.selectedPaymentApp = app;
+      this.nextPage();
+    },
   },
 
   computed: {
@@ -355,6 +395,13 @@ export default {
         return 2;
       } else {
         return 3;
+      }
+    },
+    summaryStepNumber() {
+      if (this.activePaymentApps.length > 1 && (this.leadItem.bookable.priceEur > 0 || this.leadItem.userPriceEur > 0)) {
+        return 6;
+      } else {
+        return 5;
       }
     },
   },

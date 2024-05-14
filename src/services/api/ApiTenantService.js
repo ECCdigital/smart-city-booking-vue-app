@@ -10,5 +10,8 @@ export default {
   },
   getTenant(id, withCredentials= true) {
     return ApiClient.get(`api/tenants/${id}`,  { withCredentials : withCredentials });
-  }
+  },
+  getTenantActivePaymentApps(id, withCredentials= true) {
+    return ApiClient.get(`api/tenants/${id}/payment-apps`,  { withCredentials : withCredentials });
+  },
 };

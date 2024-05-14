@@ -7,7 +7,7 @@
       </v-btn>
       <v-spacer></v-spacer>
       <v-btn color="primary" class="px-10" small @click="submit">
-        Zur Zusammenfassung
+        Weiter
       </v-btn>
     </div>
 
