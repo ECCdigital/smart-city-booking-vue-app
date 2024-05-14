@@ -103,7 +103,7 @@
           <v-list-item
             link
             @click="emitDuplicateAction"
-            :disabled="!BookablePermissionService.allowCreate()"
+            :disabled="duplicateDisabled"
           >
             <v-list-item-icon>
               <v-icon>mdi-content-copy</v-icon>
@@ -138,6 +138,7 @@
 <script>
 import { mapGetters } from "vuex";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
+import ApiBookablesService from "@/services/api/ApiBookablesService";
 
 export default {
   props: {
@@ -151,6 +152,7 @@ export default {
   data() {
     return {
       defaultImage: require("@/assets/bookable-default.jpg"),
+      isDuplicateAllowed: true,
     };
   },
   methods: {
@@ -167,14 +169,24 @@ export default {
     shortenText(text) {
       return text.substring(0, 140) + (text.length > 140 ? " ..." : "");
     },
+    async setAllowDuplicate() {
+      const bookableCountCheck = await ApiBookablesService.publicBookableCountCheck();
+      this.isDuplicateAllowed = bookableCountCheck || !this.item.isPublic;
+    },
   },
   computed: {
     ...mapGetters({
       tenant: "tenants/tenant",
     }),
+    duplicateDisabled() {
+      return !this.BookablePermissionService.allowCreate() || !this.isDuplicateAllowed;
+    },
     BookablePermissionService() {
       return BookablePermissionService;
     },
+  },
+  mounted() {
+    this.setAllowDuplicate();
   },
 };
 </script>

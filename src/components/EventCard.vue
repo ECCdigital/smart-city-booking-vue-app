@@ -142,7 +142,7 @@
           <v-list-item
             link
             @click="emitDuplicateAction"
-            :disabled="!BookablePermissionService.allowCreate()"
+            :disabled="duplicateDisabled"
           >
             <v-list-item-icon>
               <v-icon>mdi-content-copy</v-icon>
@@ -169,6 +169,7 @@
 </template>
 
 <script>
+import ApiEventService from "@/services/api/ApiEventService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 
 export default {
@@ -182,11 +183,15 @@ export default {
   data() {
     return {
       defaultImage: require("@/assets/bookable-default.jpg"),
+      isDuplicateAllowed: true,
     };
   },
   computed: {
     BookablePermissionService() {
       return BookablePermissionService;
+    },
+    duplicateDisabled() {
+      return !this.BookablePermissionService.allowCreate() || !this.isDuplicateAllowed;
     },
   },
   methods: {
@@ -199,8 +204,15 @@ export default {
     eventBookingsDownloadLink(id, tenantId) {
       return `${process.env.VUE_APP_SERVER_BASE_URL}/csv/${tenantId}/events/${id}/bookings`;
     },
+    async setAllowDuplicate() {
+      const eventCountCheck = await ApiEventService.publicEventCountCheck();
+      this.isDuplicateAllowed = eventCountCheck || !this.item.isPublic;
+    },
   },
   created() {},
+  mounted() {
+    this.setAllowDuplicate();
+  },
 };
 </script>
 
