@@ -50,6 +50,9 @@ new Vue({
   created() {
     this.initializeApp();
   },
+  mounted() {
+    this.loadUsersnap();
+  },
   methods: {
     ...mapActions({
       updateUser: "user/update",
@@ -65,6 +68,15 @@ new Vue({
       } else {
         this.deleteUser()
       }
+    },
+    loadUsersnap() {
+      window.onUsersnapLoad = function(api) {
+        api.init();
+      };
+      const script = document.createElement("script");
+      script.defer = true;
+      script.src = `https://widget.usersnap.com/load/${process.env.VUE_APP_USERSNAP_API_KEY}?onload=onUsersnapLoad`;
+      document.getElementsByTagName("head")[0].appendChild(script);
     },
   },
 }).$mount("#app");

@@ -546,42 +546,54 @@ export default {
     },
     dateFrom: {
       get() {
-        if (!this.selectedBooking.timeBegin) return undefined;
+        if (!this.selectedBooking.timeBegin) {
+          return this.formatDate(new Date());
+        }
         return this.formatDate(new Date(this.selectedBooking.timeBegin));
       },
       set(val) {
-        this.selectedBooking.timeBegin = new Date(val + " " + this.timeFrom);
+        this.selectedBooking.timeBegin = new Date(
+          val + " " + this.timeFrom
+        ).getTime();
       },
     },
     dateTo: {
       get() {
-        if (!this.selectedBooking.timeEnd) return undefined;
+        if (!this.selectedBooking.timeEnd) {
+          return this.formatDate(new Date());
+        }
         return this.formatDate(new Date(this.selectedBooking.timeEnd));
       },
       set(val) {
-        this.selectedBooking.timeEnd = new Date(val + " " + this.timeTo);
+        this.selectedBooking.timeEnd = new Date(
+          val + " " + this.timeTo
+        ).getTime();
       },
     },
     timeFrom: {
       get() {
-        if (!this.selectedBooking.timeBegin) return undefined;
+        if (!this.selectedBooking.timeBegin) {
+          return this.formatTime(new Date());
+        }
         return this.formatTime(new Date(this.selectedBooking.timeBegin));
       },
       set(val) {
-        this.selectedBooking.timeBegin = this.formatDateTime(
-          new Date(this.dateFrom + " " + val)
-        );
+        this.selectedBooking.timeBegin = new Date(
+          this.dateFrom + " " + val
+        ).getTime();
       },
     },
     timeTo: {
       get() {
-        if (!this.selectedBooking.timeEnd) return undefined;
+        if (!this.selectedBooking.timeEnd) {
+          return this.formatTime(new Date())
+        }
         return this.formatTime(new Date(this.selectedBooking.timeEnd));
       },
       set(val) {
-        this.selectedBooking.timeEnd = this.formatDateTime(
-          new Date(this.dateTo + " " + val)
-        );
+        this.selectedBooking.timeEnd = new Date(
+          this.dateTo + " " + val
+        ).getTime();
       },
     },
     bookableItems: {
@@ -768,8 +780,7 @@ export default {
       }
     },
   },
-
-  created() {
+  mounted() {
     if (this.selectedBooking._id) {
       this.getEvents();
     }
