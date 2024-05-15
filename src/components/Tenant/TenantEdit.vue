@@ -149,31 +149,24 @@
                       absolute
                       color="success"
                       text
-
                     >
-                      <v-icon left>
-                        mdi-check
-                      </v-icon>
-                      Es ist eine E-Mail-Vorlage hinterlegt. Um diese zu ändern, wenden Sie sich bitte an den Administrator.
+                      <v-icon left> mdi-check </v-icon>
+                      Es ist eine E-Mail-Vorlage hinterlegt. Um diese zu ändern,
+                      wenden Sie sich bitte an den Administrator.
                     </v-snackbar>
                   </v-card>
-                  <v-card
-                    v-else
-                    flat
-                    height="100"
-                  >
+                  <v-card v-else flat height="100">
                     <v-snackbar
                       :timeout="-1"
                       :value="true"
                       absolute
                       color="error"
                       text
-
                     >
-                      <v-icon left>
-                        mdi-close
-                      </v-icon>
-                      Es ist keine E-Mail-Vorlage hinterlegt. Um eine E-Mail-Vorlage zu hinterlegen, wenden Sie sich bitte an den Administrator.
+                      <v-icon left> mdi-close </v-icon>
+                      Es ist keine E-Mail-Vorlage hinterlegt. Um eine
+                      E-Mail-Vorlage zu hinterlegen, wenden Sie sich bitte an
+                      den Administrator.
                     </v-snackbar>
                   </v-card>
                 </v-col>
@@ -247,7 +240,8 @@
                   <v-card
                     v-if="!!selectedTenant.receiptTemplate"
                     flat
-                    height="100">
+                    height="100"
+                  >
                     <v-snackbar
                       :timeout="-1"
                       :value="true"
@@ -255,17 +249,12 @@
                       color="success"
                       text
                     >
-                      <v-icon left>
-                        mdi-check
-                      </v-icon>
-                      Es ist eine Zahlungsbeleg-Vorlage hinterlegt. Um diese zu ändern, wenden Sie sich bitte an den Administrator.
+                      <v-icon left> mdi-check </v-icon>
+                      Es ist eine Zahlungsbeleg-Vorlage hinterlegt. Um diese zu
+                      ändern, wenden Sie sich bitte an den Administrator.
                     </v-snackbar>
                   </v-card>
-                  <v-card
-                    flat
-                    height="120"
-                    v-else
-                  >
+                  <v-card flat height="120" v-else>
                     <v-snackbar
                       :timeout="-1"
                       :value="true"
@@ -273,10 +262,10 @@
                       color="error"
                       text
                     >
-                      <v-icon left>
-                        mdi-close
-                      </v-icon>
-                      Es ist keine Zahlungsbelegvorlage hinterlegt. Um eine Zahlungsbelegvorlage zu hinterlegen, wenden Sie sich bitte an den Administrator.
+                      <v-icon left> mdi-close </v-icon>
+                      Es ist keine Zahlungsbelegvorlage hinterlegt. Um eine
+                      Zahlungsbelegvorlage zu hinterlegen, wenden Sie sich bitte
+                      an den Administrator.
                     </v-snackbar>
                   </v-card>
                 </v-col>
@@ -292,60 +281,221 @@
                   ></v-text-field>
                 </v-col>
               </v-row>
-              <h3 class="mb-5 mt-5">Konfiguration des Zahlungsanbieters</h3>
-              <v-row>
+              <h3>Zahlungsmethoden</h3>
+              <v-row class="mt-3">
                 <v-col>
                   <v-text-field
                     background-color="accent"
                     filled
-                    dense
-                    disabled
-                    label="Zahlungsanbieter"
-                    value="S-Public Services"
-                  ></v-text-field>
-                </v-col>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Kunde"
-                    v-model="selectedTenant.paymentMerchantId"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Projekt"
-                    v-model="selectedTenant.paymentProjectId"
-                  ></v-text-field>
-                </v-col>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Schlüssel"
-                    type="password"
-                    v-model="selectedTenant.paymentSecret"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
                     label="Ergänzung zum Verwendungszweck"
                     prefix="[Buchungsnummer] - "
                     :rules="validationRules.paymentPurposeSuffix"
                     v-model="selectedTenant.paymentPurposeSuffix"
                   ></v-text-field>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col>
+                  <v-expansion-panels flat multiple>
+                    <v-expansion-panel>
+                      <v-expansion-panel-header
+                        color="accent"
+                        expand-icon="mdi-menu-down"
+                        class="panel-header"
+                      >
+                        <template v-slot:default="{ open }">
+                          <v-row no-gutters align="center">
+                            <v-col cols="4">
+                              <span class="text-subtitle-1">
+                                S-Public Services
+                              </span>
+                            </v-col>
+                            <v-col class="col-2">
+                              <v-fade-transition leave-absolute>
+                                <div v-if="!open">
+                                  <v-icon
+                                    v-if="giroCockpitApp.active"
+                                    color="success"
+                                    >mdi-check</v-icon
+                                  >
+                                  <span
+                                    v-if="giroCockpitApp.active"
+                                    class="ml-2"
+                                    >Aktiv</span
+                                  >
+
+                                  <v-icon
+                                    v-if="giroCockpitApp.active === false"
+                                    color="error"
+                                    >mdi-close</v-icon
+                                  >
+                                  <span
+                                    v-if="giroCockpitApp.active === false"
+                                    class="ml-2"
+                                    >Inaktiv</span
+                                  >
+                                </div>
+                              </v-fade-transition>
+                            </v-col>
+                          </v-row>
+                        </template>
+                      </v-expansion-panel-header>
+                      <v-expansion-panel-content class="mt-3">
+                        <v-row>
+                          <v-col class="col-12">
+                            <v-switch
+                              v-model="giroCockpitApp.active"
+                              color="primary"
+                              hide-details
+                              label="S-Public Services als Zahlungsanbieter aktivieren"
+                              class="mt-2"
+                            ></v-switch>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              label="Kundennummer"
+                              hide-details
+                              v-model="giroCockpitApp.paymentMerchantId"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              label="Projektnummer"
+                              v-model="giroCockpitApp.paymentProjectId"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              label="Schlüssel"
+                              type="password"
+                              v-model="giroCockpitApp.paymentSecret"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              prefix="[Buchungsnummer] - "
+                              :rules="validationRules.paymentPurposeSuffix"
+                              v-model="giroCockpitApp.paymentPurposeSuffix"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                      </v-expansion-panel-content>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
+                  <v-expansion-panels flat multiple class="mt-8">
+                    <v-expansion-panel>
+                      <v-expansion-panel-header
+                        color="accent"
+                        expand-icon="mdi-menu-down"
+                        class="panel-header"
+                      >
+                        <template v-slot:default="{ open }">
+                          <v-row no-gutters align="center">
+                            <v-col cols="4">
+                              <span class="text-subtitle-1"> Rechnung </span>
+                            </v-col>
+                            <v-col class="col-2">
+                              <v-fade-transition leave-absolute>
+                                <div v-if="!open">
+                                  <v-icon
+                                    v-if="invoiceApp.active"
+                                    color="success"
+                                    >mdi-check</v-icon
+                                  >
+                                  <span v-if="invoiceApp.active" class="ml-2"
+                                    >Aktiv</span
+                                  >
+
+                                  <v-icon
+                                    v-if="invoiceApp.active === false"
+                                    color="error"
+                                    >mdi-close</v-icon
+                                  >
+                                  <span
+                                    v-if="invoiceApp.active === false"
+                                    class="ml-2"
+                                    >Inaktiv</span
+                                  >
+                                </div>
+                              </v-fade-transition>
+                            </v-col>
+                          </v-row>
+                        </template>
+                      </v-expansion-panel-header>
+                      <v-expansion-panel-content class="mt-3">
+                        <v-row>
+                          <v-col class="col-12">
+                            <v-switch
+                              v-model="invoiceApp.active"
+                              color="primary"
+                              hide-details
+                              label="Rechnung als Zahlungsmittel aktivieren"
+                              class="mt-2"
+                            ></v-switch>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              label="Bank"
+                              v-model="invoiceApp.bank"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              label="IBAN"
+                              v-model="invoiceApp.iban"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              label="BIC"
+                              v-model="invoiceApp.bic"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              label="Kontoinhaber"
+                              v-model="invoiceApp.accountHolder"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col class="col-12 col-md-6">
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              label="Zahlungsziel in Tagen"
+                              type="number"
+                              v-model="invoiceApp.daysUntilPaymentDue"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                      </v-expansion-panel-content>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
                 </v-col>
               </v-row>
               <h3 class="mb-5 mt-5">Buchungskonfiguration</h3>
@@ -421,6 +571,26 @@ export default {
             "Ungültige URL.",
         ],
       },
+      giroCockpitApp: {
+        type: "payment",
+        id: "giroCockpit",
+        title: "Online-Zahlung",
+        paymentMerchantId: "",
+        paymentProjectId: "",
+        paymentSecret: "",
+        active: false,
+      },
+      invoiceApp: {
+        type: "payment",
+        id: "invoice",
+        title: "Rechnung",
+        bank: "",
+        iban: "",
+        bic: "",
+        accountHolder: "",
+        daysUntilPaymentDue: null,
+        active: false,
+      },
     };
   },
   computed: {
@@ -437,6 +607,8 @@ export default {
   },
   watch: {
     tenant(val) {
+      this.initializeGiroCockpit();
+      this.initializeInvoiceApp();
       this.originTenantId = val.id;
     },
   },
@@ -446,9 +618,11 @@ export default {
     },
     async submitChanges() {
       if (this.$refs.form.validate()) {
+        this.replacePaymentApps();
         this.inProgress = true;
         delete this.selectedTenant._id;
-        try{
+
+        try {
           await ApiTenantService.submitTenant(this.selectedTenant);
           this.inProgress = false;
           this.closeDialog();
@@ -462,6 +636,75 @@ export default {
         }, 4000);
       }
     },
+    initializeGiroCockpit() {
+      const application = this.tenant.applications?.find(
+        (app) => app.id === "giroCockpit"
+      );
+      if (application) {
+        this.giroCockpitApp = application;
+      } else {
+        this.giroCockpitApp = {
+          type: "payment",
+          id: "giroCockpit",
+          title: "Online-Zahlung",
+          paymentMerchantId: "",
+          paymentProjectId: "",
+          paymentSecret: "",
+          active: false,
+        };
+      }
+    },
+
+    initializeInvoiceApp() {
+      const application = this.tenant.applications?.find(
+        (app) => app.id === "invoice"
+      );
+      if (application) {
+        this.invoiceApp = application;
+      } else {
+        this.invoiceApp = {
+          type: "payment",
+          id: "invoice",
+          title: "Rechnung",
+          bank: "",
+          iban: "",
+          bic: "",
+          accountHolder: "",
+          daysUntilPaymentDue: null,
+          active: false,
+        };
+      }
+    },
+
+    replacePaymentApps() {
+      const appIds = this.selectedTenant.applications.map(app => app.id);
+      const invoiceAppExists = appIds.includes("invoice");
+      const giroCockpitAppExists = appIds.includes("giroCockpit");
+
+      this.selectedTenant.applications = this.selectedTenant.applications.map(
+        (app) => {
+          if (app.id === "invoice") {
+            return this.invoiceApp;
+          } else if (app.id === "giroCockpit") {
+            return this.giroCockpitApp;
+          } else {
+            return app;
+          }
+        }
+      );
+
+      if (!invoiceAppExists) {
+        this.selectedTenant.applications.push(this.invoiceApp);
+      }
+
+      if (!giroCockpitAppExists) {
+        this.selectedTenant.applications.push(this.giroCockpitApp);
+      }
+    }
+  },
+  mounted() {
+    this.initializeGiroCockpit();
+    this.initializeInvoiceApp();
   },
 };
 </script>
