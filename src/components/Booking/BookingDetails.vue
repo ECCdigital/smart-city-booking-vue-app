@@ -19,6 +19,7 @@ export default {
   },
   computed: {
     receipts() {
+      if (this.booking.attachments === undefined) return [];
       return this.booking.attachments.filter((attachment) => attachment.type === "receipt");
     },
   },
@@ -86,6 +87,9 @@ export default {
           document.body.appendChild(link);
           link.click();
         });
+    },
+    closeDialog() {
+      this.$emit("close");
     },
   },
 }
@@ -155,7 +159,7 @@ export default {
           <v-list-item two-line>
             <v-list-item-content>
               <v-list-item-title class="text-h">
-                ZahlungsStatus
+                Status der Zahlung
               </v-list-item-title>
               <v-list-item-subtitle>{{ booking.isPayed ? "bezahlt" : "ausstehend" }}</v-list-item-subtitle>
             </v-list-item-content>
@@ -213,7 +217,7 @@ export default {
         </v-col>
       </v-row>
       <div class="mt-6">
-        <span class="text-h6">Buchender</span>
+        <span class="text-h6">Kunde</span>
       </div>
       <v-divider />
       <v-row no-gutters>
@@ -297,9 +301,10 @@ export default {
       <div class="d-flex flex-row justify-space-between mt-6">
         <span class="text-h6">Buchungsbelege</span>
         <v-btn
-          color="primary"
+
           :loading="creatingReceipt"
-          rounded
+          small
+          outlined
           @click="createReceipt(booking.id)"
         >
           <v-icon>mdi-plus</v-icon>Buchungsbeleg erstellen
@@ -342,6 +347,13 @@ export default {
         </v-col>
       </v-row>
     </v-card-text>
+    <v-card-actions>
+      <v-spacer />
+      <v-btn class="mb-5 mr-5" outlined @click="closeDialog">
+        Schließen
+      </v-btn>
+    </v-card-actions>
+  </v-card>
   </v-card>
 </template>
 

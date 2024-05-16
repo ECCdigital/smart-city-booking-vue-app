@@ -28,6 +28,12 @@
             fixed-header
             :custom-filter="customSearch"
           >
+            <template v-slot:item.id="{ item }">
+              <span v-if="BookingPermissionService.allowUpdate(item)"
+                ><a @click="onOpenBooking(item.id)">{{ item.id }}</a></span
+              >
+              <span v-else>{{ item.id }}</span>
+            </template>
             <template v-slot:item.bookableIds="{ item }">
               <v-chip
                 class="ml-1 mt-1"
@@ -35,48 +41,48 @@
                 text-color="black"
                 v-for="(i, key) in item.bookableItems"
                 :key="key"
-              >{{ i._bookableUsed?.title }}</v-chip
+                >{{ i._bookableUsed?.title }}</v-chip
               >
             </template>
             <template v-slot:item.timeBegin="{ item }">
               <span v-if="item.timeBegin">{{
-                  Intl.DateTimeFormat("de-DE", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  }).format(new Date(item.timeBegin))
-                }}</span>
+                Intl.DateTimeFormat("de-DE", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                }).format(new Date(item.timeBegin))
+              }}</span>
             </template>
             <template v-slot:item.timeEnd="{ item }">
               <span v-if="item.timeEnd">{{
-                  Intl.DateTimeFormat("de-DE", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  }).format(new Date(item.timeEnd))
-                }}</span>
+                Intl.DateTimeFormat("de-DE", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                }).format(new Date(item.timeEnd))
+              }}</span>
             </template>
             <template v-slot:item.timeCreated="{ item }">
               <span>{{
-                  Intl.DateTimeFormat("de-DE", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  }).format(new Date(item.timeCreated))
-                }}</span>
+                Intl.DateTimeFormat("de-DE", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                }).format(new Date(item.timeCreated))
+              }}</span>
             </template>
             <template v-slot:item.isCommitted="{ item }">
               <span>{{
-                  item.isCommitted == true ? "freigegeben" : "ausstehend"
-                }}</span>
+                item.isCommitted == true ? "freigegeben" : "ausstehend"
+              }}</span>
             </template>
             <template v-slot:item.isPayed="{ item }">
               <span>{{ item.isPayed ? "bezahlt" : "ausstehend" }}</span>
             </template>
             <template v-slot:item.priceEur="{ item }">
               <span>{{
-                  Intl.NumberFormat("de-DE", {
-                    style: "currency",
-                    currency: "EUR",
-                  }).format(item.priceEur)
-                }}</span>
+                Intl.NumberFormat("de-DE", {
+                  style: "currency",
+                  currency: "EUR",
+                }).format(item.priceEur)
+              }}</span>
             </template>
             <template v-slot:item.payMethod="{ item }">
               <span>{{ translatePayMethod(item.payMethod) }}</span>
@@ -90,6 +96,19 @@
                     </v-btn>
                   </template>
                   <v-list>
+                    <v-list-item
+                      link
+                      @click="onOpenBooking(item.id)"
+                      :disabled="!BookingPermissionService.allowUpdate(item)"
+                    >
+                      <v-list-item-icon>
+                        <v-icon>mdi-information</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-title
+                        >Buchungsdetails ansehen</v-list-item-title
+                      >
+                    </v-list-item>
+                    <v-divider></v-divider>
                     <v-list-item
                       link
                       @click="onOpenEditBooking(item.id)"
@@ -109,16 +128,6 @@
                         <v-icon>mdi-checkbox-marked-circle</v-icon>
                       </v-list-item-icon>
                       <v-list-item-title>Buchung freigeben</v-list-item-title>
-                    </v-list-item>
-                     <v-list-item
-                       link
-                       @click="onOpenBooking(item.id)"
-                       :disabled="!BookingPermissionService.allowUpdate(item)"
-                     >
-                      <v-list-item-icon>
-                        <v-icon>mdi-information</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title>Buchungsdetails ansehen</v-list-item-title>
                     </v-list-item>
                     <v-divider></v-divider>
                     <v-list-item
@@ -156,7 +165,7 @@
       :booking="selectedBooking"
       :open="openEditDialog"
       :bookables="bookables"
-      @close="onCloseDialog"
+      @close="onCloseEditDialog"
     />
     <BookingDeleteConformationDialog
       :to-delete="selectedBooking"
@@ -164,9 +173,11 @@
       @close="onCloseDeleteDialog"
     />
     <v-dialog v-model="openBookingDialog" max-width="800px">
-      <BookingDetails :booking="selectedBooking" @update="updateBooking">
-
-      </BookingDetails>
+      <BookingDetails
+        :booking="selectedBooking"
+        @update="updateBooking"
+        @close="onCloseBookingDialog"
+      ></BookingDetails>
     </v-dialog>
   </AdminLayout>
 </template>
@@ -314,13 +325,16 @@ export default {
       );
       this.openDeleteDialog = true;
     },
-    onCloseDialog() {
+    onCloseEditDialog() {
       this.fetchBookings();
       this.openEditDialog = false;
     },
     onCloseDeleteDialog() {
       this.fetchBookings();
       this.openDeleteDialog = false;
+    },
+    onCloseBookingDialog() {
+      this.openBookingDialog = false;
     },
     onOpenCreateBookings() {
       this.selectedBooking = {
@@ -347,34 +361,34 @@ export default {
     },
     translatePayMethod(value) {
       switch (value) {
-      case "1":
-        return "Giropay";
-      case "17":
-        return "Giropay";
-      case "18":
-        return "Giropay";
-      case "2":
-        return "eps";
-      case "12":
-        return "iDEAL";
-      case "11":
-        return "Kreditkarte";
-      case "6":
-        return "Lastschrift";
-      case "7":
-        return "Lastschrift";
-      case "26":
-        return "Bluecode";
-      case "33":
-        return "Maestro";
-      case "14":
-        return "PayPal";
-      case "23":
-        return "paydirekt";
-      case "27":
-        return "Sofortüberweisung";
-      default:
-        return "Unbekannt";
+        case "1":
+          return "Giropay";
+        case "17":
+          return "Giropay";
+        case "18":
+          return "Giropay";
+        case "2":
+          return "eps";
+        case "12":
+          return "iDEAL";
+        case "11":
+          return "Kreditkarte";
+        case "6":
+          return "Lastschrift";
+        case "7":
+          return "Lastschrift";
+        case "26":
+          return "Bluecode";
+        case "33":
+          return "Maestro";
+        case "14":
+          return "PayPal";
+        case "23":
+          return "paydirekt";
+        case "27":
+          return "Sofortüberweisung";
+        default:
+          return "Unbekannt";
       }
     },
     async updateBooking(bookingId) {
