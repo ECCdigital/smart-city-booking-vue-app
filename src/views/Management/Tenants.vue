@@ -1,5 +1,17 @@
 <template>
   <AdminLayout>
+    <v-row>
+      <v-col class="col-auto">
+        <v-alert
+          class="custom-alert"
+          v-if="!tenantCountCheck"
+          type="info"
+          elevation="2"
+        >
+          Sie haben die maximale Anzahl an Mandanten erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Mandanten.
+        </v-alert>
+      </v-col>
+    </v-row>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
         <v-text-field
@@ -73,7 +85,7 @@
       rounded
       @click="onOpenCreateTenant()"
       class="v-btn"
-      :disabled="!TenantPermissionService.allowCreate()"
+      :disabled="createDisabled"
     >
       <v-icon>mdi-plus</v-icon> Mandanten anlegen
     </v-btn>
@@ -128,12 +140,16 @@ export default {
       openEditDialog: false,
       openDeleteDialog: false,
       selectedTenant: {},
+      tenantCountCheck: true,
     };
   },
   computed: {
     ...mapGetters({
       loading: "loading/isLoading",
     }),
+    createDisabled() {
+      return !TenantPermissionService.allowCreate() || !this.tenantCountCheck;
+    },
     TenantPermissionService() {
       return TenantPermissionService;
     },
@@ -163,9 +179,10 @@ export default {
       );
       this.openEditDialog = true;
     },
-    onCloseDialog() {
+    async onCloseDialog() {
       this.fetchTenants();
       this.openEditDialog = false;
+      await this.getTenantCountCheck();
     },
     onOpenDeleteDialog(tenantId) {
       this.selectedTenant = Object.assign(
@@ -174,14 +191,21 @@ export default {
       );
       this.openDeleteDialog = true;
     },
-    onCloseDeleteDialog() {
+    async onCloseDeleteDialog() {
       this.fetchTenants();
       this.openDeleteDialog = false;
+      await this.getTenantCountCheck();
     },
     onOpenCreateTenant() {
       this.selectedTenant = new Tenant();
       this.openEditDialog = true;
     },
+    async getTenantCountCheck() {
+      this.tenantCountCheck = await ApiTenantService.tenantCountCheck();
+    },
+  },
+  async mounted() {
+    await this.getTenantCountCheck();
   },
   created() {
     this.fetchTenants();
@@ -192,5 +216,8 @@ export default {
 <style scoped>
 .search-field {
   border-radius: 15px;
+}
+.custom-alert {
+  border-radius: 15px !important;
 }
 </style>

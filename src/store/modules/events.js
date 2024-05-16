@@ -49,7 +49,7 @@ const defaultState = {
   attachments: [],
   images: [],
   format: 0,
-  isPublic: true,
+  isPublic: false,
 }
 const state = {
   form: { ...defaultState }

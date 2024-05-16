@@ -4,6 +4,7 @@
     <template #sidebar>
       <multi-stepper :structure="stepperMenu" :updateEvent="!!form.id" />
       <v-switch
+        :disabled="!allowPublic"
         class="mt-10"
         dense
         label="Veranstaltung ist sichtbar"
@@ -82,6 +83,7 @@ export default {
         },
       ],
       formHasChanged: false,
+      allowPublic: true,
     };
   },
 
@@ -164,10 +166,15 @@ export default {
           console.log(error);
         });
     },
+    async allowSetPublic() {
+      const eventCountCheck = await ApiEventService.publicEventCountCheck();
+      this.allowPublic = eventCountCheck || this.isPublic
+    },
   },
 
   mounted() {
     this.initialize();
+    this.allowSetPublic();
   },
 };
 </script>

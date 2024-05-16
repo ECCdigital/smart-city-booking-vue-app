@@ -1,5 +1,4 @@
 import user from "@/store/modules/user";
-import Tenant from "@/entities/tenant";
 
 class TenantPermissionService {
   static isOwner(tenant) {
