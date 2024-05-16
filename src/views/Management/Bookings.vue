@@ -28,6 +28,12 @@
             fixed-header
             :custom-filter="customSearch"
           >
+            <template v-slot:item.id="{ item }">
+              <span v-if="BookingPermissionService.allowUpdate(item)"
+                ><a @click="onOpenBooking(item.id)">{{ item.id }}</a></span
+              >
+              <span v-else>{{ item.id }}</span>
+            </template>
             <template v-slot:item.bookableIds="{ item }">
               <v-chip
                 class="ml-1 mt-1"
@@ -70,61 +76,6 @@
             <template v-slot:item.isPayed="{ item }">
               <span>{{ item.isPayed ? "bezahlt" : "ausstehend" }}</span>
             </template>
-            <!-- <template v-slot:item.controls="{ item }">
-              <span>
-                <v-menu offset-y>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn icon v-bind="attrs" v-on="on" small>
-                      <v-icon>mdi-dots-horizontal</v-icon>
-                    </v-btn>
-                  </template>
-                  <v-list>
-                    <v-list-item link @click="commitBooking(item.id)">
-                      <v-list-item-icon>
-                        <v-icon>mdi-checkbox-marked-outline</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title>Buchung freigeben</v-list-item-title>
-                    </v-list-item>
-                    <v-list-item link @click="onOpenEditBooking(item.id)">
-                      <v-list-item-icon>
-                        <v-icon>mdi-pencil</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title>Buchung bearbeiten</v-list-item-title>
-                    </v-list-item>
-                    <v-list-item link @click="onOpenDeleteDialog(item.id)">
-                      <v-list-item-icon>
-                        <v-icon>mdi-delete</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title>Buchung löschen</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-              </span>
-            </template>-->
-            <template v-slot:item.timeBegin="{ item }">
-              <span v-if="item.timeBegin">{{
-                Intl.DateTimeFormat("de-DE", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                }).format(new Date(item.timeBegin))
-              }}</span>
-            </template>
-            <template v-slot:item.timeEnd="{ item }">
-              <span v-if="item.timeEnd">{{
-                Intl.DateTimeFormat("de-DE", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                }).format(new Date(item.timeEnd))
-              }}</span>
-            </template>
-            <template v-slot:item.timeCreated="{ item }">
-              <span>{{
-                Intl.DateTimeFormat("de-DE", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                }).format(new Date(item.timeCreated))
-              }}</span>
-            </template>
             <template v-slot:item.priceEur="{ item }">
               <span>{{
                 Intl.NumberFormat("de-DE", {
@@ -132,14 +83,6 @@
                   currency: "EUR",
                 }).format(item.priceEur)
               }}</span>
-            </template>
-            <template v-slot:item.isCommitted="{ item }">
-              <span>{{
-                item.isCommitted == true ? "freigegeben" : "ausstehend"
-              }}</span>
-            </template>
-            <template v-slot:item.isPayed="{ item }">
-              <span>{{ item.isPayed ? "bezahlt" : "ausstehend" }}</span>
             </template>
             <template v-slot:item.payMethod="{ item }">
               <span>{{ translatePayMethod(item.payMethod) }}</span>
@@ -153,6 +96,19 @@
                     </v-btn>
                   </template>
                   <v-list>
+                    <v-list-item
+                      link
+                      @click="onOpenBooking(item.id)"
+                      :disabled="!BookingPermissionService.allowUpdate(item)"
+                    >
+                      <v-list-item-icon>
+                        <v-icon>mdi-information</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-title
+                        >Buchungsdetails ansehen</v-list-item-title
+                      >
+                    </v-list-item>
+                    <v-divider></v-divider>
                     <v-list-item
                       link
                       @click="onOpenEditBooking(item.id)"
@@ -209,13 +165,20 @@
       :booking="selectedBooking"
       :open="openEditDialog"
       :bookables="bookables"
-      @close="onCloseDialog"
+      @close="onCloseEditDialog"
     />
     <BookingDeleteConformationDialog
       :to-delete="selectedBooking"
       :open="openDeleteDialog"
       @close="onCloseDeleteDialog"
     />
+    <v-dialog v-model="openBookingDialog" max-width="800px">
+      <BookingDetails
+        :booking="selectedBooking"
+        @update="updateBooking"
+        @close="onCloseBookingDialog"
+      ></BookingDetails>
+    </v-dialog>
   </AdminLayout>
 </template>
 
@@ -225,12 +188,13 @@ import { mapActions, mapGetters } from "vuex";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import BookingEdit from "@/components/Booking/BookingEdit";
 import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteConformationDialog";
-import { Booking } from "@/entities/booking";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
+import BookingDetails from "@/components/Booking/BookingDetails.vue";
 
 export default {
   components: {
+    BookingDetails,
     BookingDeleteConformationDialog,
     AdminLayout,
     BookingEdit,
@@ -262,6 +226,7 @@ export default {
       openDeleteDialog: false,
       selectedBooking: {},
       bookables: [],
+      openBookingDialog: false,
     };
   },
   computed: {
@@ -275,6 +240,7 @@ export default {
   },
   methods: {
     ...mapActions({
+      addToast: "toasts/add",
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
@@ -313,10 +279,10 @@ export default {
           console.log(error);
         });
     },
-    fetchBookings() {
-      this.startLoading("fetch-bookings");
+    async fetchBookings() {
+      await this.startLoading("fetch-bookings");
 
-      ApiBookingService.getBookings(undefined, true)
+      await ApiBookingService.getBookings(undefined, true)
         .then((response) => {
           this.api.bookings = response.data;
         })
@@ -338,6 +304,13 @@ export default {
           console.log(error);
         });
     },
+    onOpenBooking(bookingId) {
+      this.selectedBooking = Object.assign(
+        {},
+        this.api.bookings.find((booking) => booking.id === bookingId)
+      );
+      this.openBookingDialog = true;
+    },
     onOpenEditBooking(bookingId) {
       this.selectedBooking = Object.assign(
         {},
@@ -352,13 +325,16 @@ export default {
       );
       this.openDeleteDialog = true;
     },
-    onCloseDialog() {
+    onCloseEditDialog() {
       this.fetchBookings();
       this.openEditDialog = false;
     },
     onCloseDeleteDialog() {
       this.fetchBookings();
       this.openDeleteDialog = false;
+    },
+    onCloseBookingDialog() {
+      this.openBookingDialog = false;
     },
     onOpenCreateBookings() {
       this.selectedBooking = {
@@ -414,6 +390,13 @@ export default {
         default:
           return "Unbekannt";
       }
+    },
+    async updateBooking(bookingId) {
+      await this.fetchBookings();
+      this.selectedBooking = Object.assign(
+        {},
+        this.api.bookings.find((booking) => booking.id === bookingId)
+      );
     },
   },
   created() {
