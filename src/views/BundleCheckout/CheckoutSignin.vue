@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-form>
-      <v-btn outlined small class="mb-5" @click="back">
+      <v-btn v-if="showBack" outlined small class="mb-5" @click="back">
         <v-icon left small>mdi-arrow-left</v-icon>
         Zurück
       </v-btn>
@@ -63,7 +63,13 @@
         </v-card-text>
       </v-card>
 
-      <v-btn block large outlined @click="signOut(true)" class="mt-10"
+      <v-btn
+        v-if="showSubmitGuest"
+        block
+        large
+        outlined
+        @click="signOut(true)"
+        class="mt-10"
         >Als Gast fortfahren</v-btn
       >
     </v-form>
@@ -92,6 +98,14 @@ export default {
     },
     me: {
       type: Object,
+    },
+    showBack: {
+      type: Boolean,
+      default: true,
+    },
+    showSubmitGuest: {
+      type: Boolean,
+      default: true,
     },
   },
 
