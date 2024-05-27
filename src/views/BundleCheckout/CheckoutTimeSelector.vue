@@ -41,7 +41,6 @@
               locale="de"
               :first-day-of-week="1"
               :show-current="minBookingDate"
-              :max="maxBookingDate"
               :min="minBookingDate"
               @click:date="$refs.dateBeginMenu.save(dateBeginModel)"
             >
@@ -110,7 +109,6 @@
               locale="de"
               :first-day-of-week="1"
               :show-current="minBookingDate"
-              :max="maxBookingDate"
               :min="dateBeginModel || minBookingDate"
               @click:date="$refs.dateEndMenu.save(dateEndModel)"
             >
@@ -178,7 +176,6 @@
             <v-date-picker
               v-model="dateBeginModel"
               :show-current="minBookingDate"
-              :max="maxBookingDate"
               :min="minBookingDate"
               locale="de"
               :first-day-of-week="1"
@@ -318,9 +315,6 @@ export default {
           (v) =>
             new Date(v) >= new Date() ||
             "Startdatum muss in der Zukunft liegen",
-          (v) =>
-            new Date(v) <= new Date().setMonth(new Date().getMonth() + 6) ||
-            "Startdatum darf maximal sechs Monate in der Zukunft liegen",
         ],
         dateEnd: [
           (v) => !!v || "Bitte wählen Sie ein Datum aus",
@@ -443,10 +437,6 @@ export default {
         hour: "2-digit",
         minute: "2-digit",
       });
-    },
-    maxBookingDate() {
-      const maxDate = new Date().setMonth(new Date().getMonth() + 6);
-      return new Date(maxDate).toISOString().split("T")[0];
     },
     minBookingDate() {
       return new Date().toISOString().split("T")[0];

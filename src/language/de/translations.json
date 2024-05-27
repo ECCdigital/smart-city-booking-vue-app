@@ -57,6 +57,26 @@
     "unauthenticated": {
       "title": "Zugriff verweigert",
       "message": "Bitte loggen Sie sich ein um den gewünschten Bereich einzusehen"
+    },
+    "something-wrong": {
+      "title": "Fehler",
+      "message": "Leider ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+    },
+    "not-found": {
+      "title": "Nicht gefunden",
+      "message": "Die angeforderte Seite konnte nicht gefunden werden."
+    },
+    "unauthorized": {
+      "title": "Nicht autorisiert",
+      "message": "Sie haben keine Berechtigung für diese Aktion."
+    },
+    "forbidden": {
+      "title": "Verboten",
+      "message": "Sie haben keine Berechtigung für diese Aktion."
+    },
+    "validation": {
+      "title": "Validierungsfehler",
+      "message": "Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
     }
   },
   "bookable": {
@@ -64,6 +84,24 @@
       "success": {
         "title": "Erfolgreich gelöscht",
         "message": "Das Element wurde erfolgreich gelöscht."
+      }
+    },
+    "create": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Das Element wurde erfolgreich erstellt."
+      }
+    },
+    "duplicate": {
+      "success": {
+        "title": "Erfolgreich dupliziert",
+        "message": "Das Element wurde erfolgreich dupliziert."
+      },
+      "errors": {
+        "something-wrong": {
+          "title": "Fehler",
+          "message": "Leider ist ein Fehler beim Duplizieren aufgetreten. Bitte versuchen Sie es erneut."
+        }
       }
     }
   },
@@ -90,6 +128,12 @@
       "success": {
         "title": "Erfolgreich dupliziert",
         "message": "Die Veranstaltung wurde erfolgreich dupliziert."
+      },
+      "errors": {
+        "something-wrong": {
+          "title": "Fehler",
+          "message": "Leider ist ein Fehler beim Duplizieren aufgetreten. Bitte versuchen Sie es erneut."
+        }
       }
     }
   },
@@ -270,6 +314,18 @@
       "coupons": "Gutscheine",
       "none": "-",
       "all": "Alle"
+    }
+  },
+  "receipt": {
+    "create": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Der Buchungsbeleg wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Der Buchungsbeleg konnte nicht erstellt werden."
+      }
     }
   }
 }
