@@ -1,6 +1,18 @@
 <template>
   <AdminLayout class="pb-15">
     <v-row>
+      <v-col class="col-auto">
+        <v-alert
+          class="custom-alert"
+          v-if="!bookableCountCheck"
+          type="info"
+          elevation="2"
+        >
+          Sie haben die maximale Anzahl an öffentlichen Buchungsobjekten erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Buchungsobjekte.
+        </v-alert>
+      </v-col>
+    </v-row>
+    <v-row>
       <v-col cols="12">
         <v-select
           class="filter-field"
@@ -65,7 +77,7 @@
           name: 'room-edit',
           query: { fromRoute: $router.currentRoute.name },
         }"
-        :disabled="!BookablePermissionService.allowCreate()"
+        :disabled="createDisabled"
       >
         <v-icon>mdi-plus</v-icon> Raum erstellen
       </v-btn>
@@ -94,12 +106,16 @@ export default {
         tags: [],
       },
       filters: [],
+      bookableCountCheck: true,
     };
   },
   computed: {
     ...mapGetters({
       loading: "loading/isLoading",
     }),
+    createDisabled() {
+      return !this.BookablePermissionService.allowCreate();
+    },
     BookablePermissionService() {
       return BookablePermissionService;
     },
@@ -129,8 +145,8 @@ export default {
     remove(item) {
       this.filters.splice(this.filters.indexOf(item), 1);
     },
-    removeBookable(bookableId) {
-      this.startLoading("fetch-delete-bookable");
+    async removeBookable(bookableId) {
+      await this.startLoading("fetch-delete-bookable");
       ApiBookablesService.deleteBookable(bookableId)
         .then(() => {
           this.fetchRooms();
@@ -143,13 +159,14 @@ export default {
         })
         .catch((error) => {
           this.addToast(
-            ToastService.createToast("errors.something-wrong", "error")
+            ToastService.createToast("bookable.duplicate.errors.something-wrong", "error")
           );
           console.log(error);
         });
+      await this.getBookableCount();
     },
-    duplicateBookable(bookableId) {
-      this.startLoading("fetch-duplicate-bookable");
+    async duplicateBookable(bookableId) {
+      await this.startLoading("fetch-duplicate-bookable");
 
       ApiBookablesService.duplicateBookable(bookableId)
         .then(() => {
@@ -167,6 +184,7 @@ export default {
           );
           console.log(error);
         });
+      await this.getBookableCount();
     },
     fetchFilterTags() {
       this.startLoading("fetch-filter-tags");
@@ -196,6 +214,12 @@ export default {
           console.log(error);
         });
     },
+    async getBookableCount() {
+      this.bookableCountCheck = await ApiBookablesService.publicBookableCountCheck();
+    },
+  },
+  async mounted() {
+    await this.getBookableCount();
   },
   created() {
     this.fetchRooms();
@@ -206,5 +230,8 @@ export default {
 <style scoped>
 .filter-field {
   border-radius: 15px;
+}
+.custom-alert {
+  border-radius: 15px !important;
 }
 </style>

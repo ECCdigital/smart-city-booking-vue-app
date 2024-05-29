@@ -425,6 +425,22 @@
                       </v-expansion-panel-content>
                     </v-expansion-panel>
                   </v-expansion-panels>
+                  </v-col>
+              </v-row>
+
+              <h3 class="mb-5 mt-5">Buchungskonfiguration</h3>
+              <v-row>
+                <v-col class="col-12 col-md-6">
+                  <v-text-field
+                    background-color="accent"
+                    filled
+                    dense
+                    label="Vorausbuchungen möglich bis"
+                    type="number"
+                    suffix="Monate"
+                    v-model="selectedTenant.maxBookingMonths"
+                  >
+                  </v-text-field>
                 </v-col>
               </v-row>
             </v-form>
@@ -522,9 +538,13 @@ export default {
       if (this.$refs.form.validate()) {
         this.inProgress = true;
         delete this.selectedTenant._id;
-        await ApiTenantService.submitTenant(this.selectedTenant);
-        this.inProgress = false;
-        this.closeDialog();
+        try{
+          await ApiTenantService.submitTenant(this.selectedTenant);
+          this.inProgress = false;
+          this.closeDialog();
+        } catch (e) {
+          this.inProgress = false;
+        }
       } else {
         //reset validation after 4 seconds
         setTimeout(() => {

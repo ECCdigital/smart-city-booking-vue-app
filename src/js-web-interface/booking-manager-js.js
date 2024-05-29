@@ -7,7 +7,24 @@
  * @param {string} url - The base URL of the server.
  * @param {string} tenant - The tenant identifier.
  * @param {string} calendarView - The initial view of the calendar ('month' or 'week').
+ *
+ * @example
+ * // Include the Booking Manager script in your HTML file
+ * <script src="https://demo1.smart-city-booking.de/cdn/current/booking-manager.min.js"></script>
+ * <script>
+ *   // Create a new instance of the Booking Manager
+ *   const bm = new BookingManager();
+ *   // Set the base URL of the server
+ *   bm.url = <server-url>;
+ *   // Set the tenant identifier
+ *   bm.tenant = <tenant>;
+ *   // Initialize the Booking Manager when the window loads
+ *   window.addEventListener("load", () => {
+ *     bm.init();
+ *   });
+ * </script>
  */
+// eslint-disable-next-line no-unused-vars
 class BookingManager {
   /**
    * Creates an instance of BookingManager.
@@ -26,16 +43,19 @@ class BookingManager {
   init() {
     console.log("Initializing Booking Manager Integration.");
 
-
     this.addLibScripts([
       "https://cdn.jsdelivr.net/npm/fullcalendar@6.0.3/index.global.min.js",
       "https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/locales-all.global.min.js",
     ])
-      .then(() => {
-        this.fetchBookableList();
-        this.fetchBookableItem();
-        this.fetchEventList();
-        this.fetchEventItem();
+      .then(async () => {
+        await this.fetchBookableList();
+        this.fetchBookableList_old();
+        await this.fetchBookableItem();
+        this.fetchBookableItem_old();
+        await this.fetchEventList();
+        this.fetchEventList_old();
+        await this.fetchEventItem();
+        this.fetchEventItem_old();
         this.initializeEventCalendars();
         this.initializeOccupancyCalendars();
         this.initializeLoginForm();
@@ -79,9 +99,63 @@ class BookingManager {
   }
 
   /**
-   * Fetch the list of bookables.
+   * Asynchronously fetches the list of bookables and updates the corresponding elements on the page.
+   *
+   * This method selects all elements with the class ".bm-bookable-list" and for each element, it fetches the corresponding bookable data from the server.
+   * The fetched data is then used to update the innerHTML of the element.
+   *
+   * The fetch URL is constructed using the base URL, tenant identifier, and optional type and ids attributes of the element.
+   * If the fetch operation is successful, the innerHTML of the element is updated with the response text.
+   * If the fetch operation fails, a warning message is logged to the console.
+   *
+   * All fetch operations are performed concurrently using Promise.all.
+   *
+   * @async
+   * @throws Will throw an error if there is an issue with selecting the elements or with the fetch operations.
    */
-  fetchBookableList() {
+  async fetchBookableList() {
+    try {
+      const elements = document.querySelectorAll(".bm-bookable-list");
+
+      const fetchDataForElement = async (element) => {
+        const type = element.getAttribute("data-type") || "";
+        const fixedBookableIds = element.getAttribute("data-ids") || "";
+        const fetchUrl = `${this.url}/html/${this.tenant}/bookables?type=${type}&ids=${fixedBookableIds}`;
+
+        try {
+          const response = await fetch(fetchUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          element.innerHTML = await response.text();
+        } catch (err) {
+          console.warn(`Could not fetch data from ${fetchUrl}`, err);
+        }
+      };
+
+      const fetchPromises = Array.from(elements).map(fetchDataForElement);
+      await Promise.all(fetchPromises);
+    } catch (error) {
+      console.error("Error fetching bookable lists:", error);
+    }
+  }
+
+  /**
+   * Fetches the list of bookables and updates the corresponding elements on the page.
+   * This is an older version of the method, hence the suffix "_old".
+   *
+   * This method selects the element with the id "bm-bookable-list" and fetches the corresponding bookable data from the server.
+   * The fetched data is then used to update the innerHTML of the element.
+   *
+   * The fetch URL is constructed using the base URL, tenant identifier, and optional type and ids attributes of the element.
+   * If the fetch operation is successful, the innerHTML of the element is updated with the response text.
+   * If the fetch operation fails, a warning message is logged to the console.
+   *
+   * @method
+   * @deprecated This method is deprecated and will be removed in future versions.
+   * @throws Will throw an error if there is an issue with selecting the elements or with the fetch operations.
+   */
+  fetchBookableList_old() {
     if (document.getElementById("bm-bookable-list")) {
       console.log("Binding data to elements with id bm-bookable-list");
 
@@ -107,9 +181,71 @@ class BookingManager {
   }
 
   /**
-   * Fetch a single bookable object.
+   * Asynchronously fetches a single bookable item and updates the corresponding elements on the page.
+   *
+   * This method selects all elements with the class ".bm-bookable-item" and for each element, it fetches the corresponding bookable data from the server.
+   * The fetched data is then used to update the innerHTML of the element.
+   *
+   * The fetch URL is constructed using the base URL, tenant identifier, and the bookable ID which is either fixed or retrieved from the URL parameters.
+   * If the fetch operation is successful, the innerHTML of the element is updated with the response text.
+   * If the fetch operation fails, a warning message is logged to the console.
+   *
+   * All fetch operations are performed concurrently using Promise.all.
+   *
+   * @async
+   * @throws Will throw an error if there is an issue with selecting the elements or with the fetch operations.
    */
-  fetchBookableItem() {
+  async fetchBookableItem() {
+    try {
+      const elements = document.querySelectorAll(".bm-bookable-item");
+
+      const fetchDataForElement = async (element) => {
+        const fixedBookableId = element.getAttribute("data-id");
+        const bookableIdParameterName = element.getAttribute("data-id-param");
+        const bookableId =
+          fixedBookableId || this._getUrlParameter(bookableIdParameterName);
+
+        if (!bookableId) {
+          console.warn("Could not get bookable id");
+          return;
+        }
+
+        const fetchUrl = `${this.url}/html/${this.tenant}/bookables/${bookableId}`;
+
+        try {
+          const response = await fetch(fetchUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          element.innerHTML = await response.text();
+        } catch (err) {
+          console.warn(`Could not fetch data from ${fetchUrl}`, err);
+        }
+      };
+
+      const fetchPromises = Array.from(elements).map(fetchDataForElement);
+      await Promise.all(fetchPromises);
+    } catch (error) {
+      console.error("Error fetching bookable items:", error);
+    }
+  }
+
+  /**
+   * Fetches a single bookable object and updates the corresponding element on the page.
+   * This is an older version of the method, hence the suffix "_old".
+   *
+   * This method selects the element with the id "bm-bookable-item" and fetches the corresponding bookable data from the server.
+   * The fetched data is then used to update the innerHTML of the element.
+   *
+   * The fetch URL is constructed using the base URL, tenant identifier, and the bookable ID which is either fixed or retrieved from the URL parameters.
+   * If the fetch operation is successful, the innerHTML of the element is updated with the response text.
+   * If the fetch operation fails, a warning message is logged to the console.
+   *
+   * @method
+   * @deprecated This method is deprecated and will be removed in future versions.
+   * @throws Will throw an error if there is an issue with selecting the elements or with the fetch operations.
+   */
+  fetchBookableItem_old() {
     if (document.getElementById("bm-bookable-item")) {
       console.log("Binding data to elements with id bm-bookable-item");
 
@@ -141,9 +277,62 @@ class BookingManager {
   }
 
   /**
-   * Fetch the list of events.
+   * Asynchronously fetches the list of events and updates the corresponding elements on the page.
+   *
+   * This method selects all elements with the class ".bm-event-list" and for each element, it fetches the corresponding event data from the server.
+   * The fetched data is then used to update the innerHTML of the element.
+   *
+   * The fetch URL is constructed using the base URL, tenant identifier, and optional ids attribute of the element.
+   * If the fetch operation is successful, the innerHTML of the element is updated with the response text.
+   * If the fetch operation fails, a warning message is logged to the console.
+   *
+   * All fetch operations are performed concurrently using Promise.all.
+   *
+   * @async
+   * @throws Will throw an error if there is an issue with selecting the elements or with the fetch operations.
    */
-  fetchEventList() {
+  async fetchEventList() {
+    try {
+      const elements = document.querySelectorAll(".bm-event-list");
+
+      const fetchDataForElement = async (element) => {
+        const fixedEventIds = element.getAttribute("data-ids") || "";
+        const fetchUrl = `${this.url}/html/${this.tenant}/events?ids=${fixedEventIds}`;
+
+        try {
+          const response = await fetch(fetchUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          element.innerHTML = await response.text();
+        } catch (err) {
+          console.warn(`Could not fetch data from ${fetchUrl}`, err);
+        }
+      };
+
+      const fetchPromises = Array.from(elements).map(fetchDataForElement);
+      await Promise.all(fetchPromises);
+    } catch (error) {
+      console.error("Error fetching event lists:", error);
+    }
+  }
+
+  /**
+   * Fetches the list of events and updates the corresponding element on the page.
+   * This is an older version of the method, hence the suffix "_old".
+   *
+   * This method selects the element with the id "bm-event-list" and fetches the corresponding event data from the server.
+   * The fetched data is then used to update the innerHTML of the element.
+   *
+   * The fetch URL is constructed using the base URL, tenant identifier, and optional ids attribute of the element.
+   * If the fetch operation is successful, the innerHTML of the element is updated with the response text.
+   * If the fetch operation fails, a warning message is logged to the console.
+   *
+   * @method
+   * @deprecated This method is deprecated and will be removed in future versions.
+   * @throws Will throw an error if there is an issue with selecting the elements or with the fetch operations.
+   */
+  fetchEventList_old() {
     if (document.getElementById("bm-event-list")) {
       console.log("Binding data to elements with id bm-event-list");
 
@@ -165,9 +354,71 @@ class BookingManager {
   }
 
   /**
-   * Fetch a single event object.
+   * Asynchronously fetches a single event item and updates the corresponding elements on the page.
+   *
+   * This method selects all elements with the class ".bm-event-item" and for each element, it fetches the corresponding event data from the server.
+   * The fetched data is then used to update the innerHTML of the element.
+   *
+   * The fetch URL is constructed using the base URL, tenant identifier, and the event ID which is either fixed or retrieved from the URL parameters.
+   * If the fetch operation is successful, the innerHTML of the element is updated with the response text.
+   * If the fetch operation fails, a warning message is logged to the console.
+   *
+   * All fetch operations are performed concurrently using Promise.all.
+   *
+   * @async
+   * @throws Will throw an error if there is an issue with selecting the elements or with the fetch operations.
    */
-  fetchEventItem() {
+  async fetchEventItem() {
+    try {
+      const elements = document.querySelectorAll(".bm-event-item");
+
+      const fetchDataForElement = async (element) => {
+        const fixedEventId = element.getAttribute("data-id");
+        const eventIdParameterName = element.getAttribute("data-id-param");
+        const eventId =
+          fixedEventId || this._getUrlParameter(eventIdParameterName);
+
+        if (!eventId) {
+          console.warn("Could not get event id");
+          return;
+        }
+
+        const fetchUrl = `${this.url}/html/${this.tenant}/events/${eventId}`;
+
+        try {
+          const response = await fetch(fetchUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          element.innerHTML = await response.text();
+        } catch (err) {
+          console.warn(`Could not fetch data from ${fetchUrl}`, err);
+        }
+      };
+
+      const fetchPromises = Array.from(elements).map(fetchDataForElement);
+      await Promise.all(fetchPromises);
+    } catch (error) {
+      console.error("Error fetching event items:", error);
+    }
+  }
+
+  /**
+   * Fetches a single event object and updates the corresponding element on the page.
+   * This is an older version of the method, hence the suffix "_old".
+   *
+   * This method selects the element with the id "bm-event-item" and fetches the corresponding event data from the server.
+   * The fetched data is then used to update the innerHTML of the element.
+   *
+   * The fetch URL is constructed using the base URL, tenant identifier, and the event ID which is either fixed or retrieved from the URL parameters.
+   * If the fetch operation is successful, the innerHTML of the element is updated with the response text.
+   * If the fetch operation fails, a warning message is logged to the console.
+   *
+   * @method
+   * @deprecated This method is deprecated and will be removed in future versions.
+   * @throws Will throw an error if there is an issue with selecting the elements or with the fetch operations.
+   */
+  fetchEventItem_old() {
     if (document.getElementById("bm-event-item")) {
       console.log("Binding data to elements with id bm-event-item");
 
@@ -201,18 +452,27 @@ class BookingManager {
   }
 
   /**
-   * This method initializes calendars for all elements with the class "bm-calendar".
-   * It fetches event data for each calendar and sets the initial view of the calendar based on the "data-view" attribute of the element.
-   * If no "data-view" attribute is present, the default view is "dayGridMonth".
+   * Initializes calendars for all elements with the class "bm-calendar".
+   *
+   * This method iterates over all elements with the class "bm-calendar" and for each element, it fetches the corresponding event data from the server.
+   * The fetched data is then used to initialize a calendar on the element.
+   *
+   * The initial view of the calendar is determined by the "data-view" attribute of the element. If no "data-view" attribute is present, the default view is "dayGridMonth".
+   *
+   * @method
+   * @throws Will throw an error if there is an issue with fetching the events or initializing the calendar.
    */
   initializeEventCalendars() {
     const calendarEls = document.getElementsByClassName("bm-calendar");
 
     for (let i = 0; i < calendarEls.length; i++) {
       const calendarEl = calendarEls[i];
-      const initialView = calendarEl.getAttribute("data-view") || "dayGridMonth";
+      const initialView =
+        calendarEl.getAttribute("data-view") || "dayGridMonth";
 
-      console.log(`Binding data to element with class bm-calendar and initial view ${initialView}`);
+      console.log(
+        `Binding data to element with class bm-calendar and initial view ${initialView}`
+      );
 
       this._fetchEvents().then((events) => {
         this._initCalendar(calendarEl, initialView, events);
@@ -226,14 +486,19 @@ class BookingManager {
    * The initial view of the calendar is determined by the "data-view" attribute of the element. If no "data-view" attribute is present, the default view is "dayGridMonth".
    */
   initializeOccupancyCalendars() {
-    const calendarEls = document.getElementsByClassName("bm-occupancy-calendar");
+    const calendarEls = document.getElementsByClassName(
+      "bm-occupancy-calendar"
+    );
 
-    for ( let i = 0; i< calendarEls.length; i++ ) {
+    for (let i = 0; i < calendarEls.length; i++) {
       const calendarEl = calendarEls[i];
       const bookableIds = calendarEl.getAttribute("data-id")?.split(",");
-      const initialView = calendarEl.getAttribute("data-view") || "dayGridMonth";
+      const initialView =
+        calendarEl.getAttribute("data-view") || "dayGridMonth";
 
-      console.log(`Binding data to element with class bm-occupancy-calendar and initial view ${initialView}`);
+      console.log(
+        `Binding data to element with class bm-occupancy-calendar and initial view ${initialView}`
+      );
 
       this._fetchOccupancies(bookableIds).then((occupancy) => {
         this._initCalendar(calendarEl, initialView, occupancy);
@@ -242,8 +507,16 @@ class BookingManager {
   }
 
   /**
-   * Initialize a login formular and bind it to the element with id bm-signin. Add a button that posts a login request
-   * to the backend.
+   * Initializes occupancy calendars for all elements with the class "bm-occupancy-calendar".
+   *
+   * This method iterates over all elements with the class "bm-occupancy-calendar" and for each element, it fetches the corresponding occupancy data from the server.
+   * The fetched data is then used to initialize a calendar on the element.
+   *
+   * The initial view of the calendar is determined by the "data-view" attribute of the element. If no "data-view" attribute is present, the default view is "dayGridMonth".
+   * The bookable IDs for which to fetch occupancy data are determined by the "data-id" attribute of the element. If present, this attribute is split into an array of IDs.
+   *
+   * @method
+   * @throws Will throw an error if there is an issue with fetching the occupancy data or initializing the calendar.
    */
   initializeLoginForm() {
     if (document.getElementById("bm-signin")) {
@@ -289,7 +562,15 @@ class BookingManager {
   }
 
   /**
-   * Bind logout to the element with id bm-signout.
+   * Initializes the logout button functionality.
+   *
+   * This method selects the element with the id "bm-signout" and binds a click event listener to it.
+   * When the logout button is clicked, a fetch request is sent to the server's signout endpoint.
+   * If the fetch operation is successful, a message is logged to the console.
+   * If the fetch operation fails, a warning message is logged to the console.
+   *
+   * @method
+   * @throws Will throw an error if there is an issue with the fetch operation.
    */
   initializeLogoutButton() {
     if (document.getElementById("bm-signout")) {
@@ -301,7 +582,7 @@ class BookingManager {
           .then(function (response) {
             return response.text();
           })
-          .then(function (text) {
+          .then(function () {
             console.log("Signout successful");
           })
           .catch(function (err) {
@@ -471,7 +752,7 @@ class BookingManager {
     try {
       const response = await fetch(fetchUrl);
       const apiResponse = await response.json();
-      return apiResponse.map(event => ({
+      return apiResponse.map((event) => ({
         title: event.information.name,
         start: `${event.information.startDate}T${event.information.startTime}`,
         end: `${event.information.endDate}T${event.information.endTime}`,
@@ -532,6 +813,7 @@ class BookingManager {
       events: calenderItems,
       ...this.calendar,
     };
+    // eslint-disable-next-line no-undef
     new FullCalendar.Calendar(calendarEl, config).render();
   }
 }

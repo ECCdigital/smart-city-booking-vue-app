@@ -22,7 +22,6 @@ import Tickets from "@/views/Bookables/Tickets/Tickets";
 import Bookings from "@/views/Management/Bookings";
 import Settings from "@/views/Settings";
 import EditBookable from "@/views/Bookables/EditBookable";
-import { RolePermission } from "@/entities/role";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import Coupons from "@/views/Management/Coupons";
 
