@@ -1,6 +1,7 @@
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
 import {mapActions} from "vuex";
+import { v4 as uuidv4 } from "uuid";
 
 
 export default {
@@ -17,7 +18,7 @@ export default {
   },
   data() {
     return {
-      lockingSystems: [],
+      lockerSystems: [],
     };
   },
   computed: {
@@ -34,23 +35,24 @@ export default {
     ...mapActions({
       updateValue: "bookables/updateForm",
     }),
-    async fetchLockingSystems() {
+    async fetchLockerSystems() {
       try {
         const tenant = await ApiTenantService.getTenant(this.tenant);
-        this.lockingSystems = tenant.data.applications?.filter(app => app.type === "locker" && app.active);
+        this.lockerSystems = tenant.data.applications?.filter(app => app.type === "locker" && app.active);
       } catch (error) {
         console.error(error);
       }
     },
     addLockerUnit() {
-      this.lockerDetails.units.push({ id: "", lockingSystem: "" });
+      const id = uuidv4();
+      this.lockerDetails.units.push({ id: id, lockerSystem: "", unitId: ""});
     },
     removeLockerUnit(idx) {
       this.lockerDetails.units.splice(idx, 1);
     },
   },
   mounted() {
-    this.fetchLockingSystems();
+    this.fetchLockerSystems();
   },
 }
 </script>
@@ -118,8 +120,8 @@ export default {
                   <v-select
                     background-color="accent"
                     filled
-                    v-model="unit.lockingSystem"
-                    :items="lockingSystems"
+                    v-model="unit.lockerSystem"
+                    :items="lockerSystems"
                     object
                     item-text="title"
                     item-value="id"
@@ -132,7 +134,7 @@ export default {
                 </v-col>
                 <v-col>
                   <v-text-field
-                    v-model="unit.id"
+                    v-model="unit.unitId"
                     label="Schließfachnummer"
                     background-color="accent"
                     filled

@@ -350,21 +350,21 @@
                               <v-fade-transition leave-absolute>
                                 <div v-if="!open">
                                   <v-icon
-                                    v-if="parevaSystem.active"
+                                    v-if="parevaSystem?.active"
                                     color="success"
                                     >mdi-check</v-icon
                                   >
-                                  <span v-if="parevaSystem.active" class="ml-2"
+                                  <span v-if="parevaSystem?.active" class="ml-2"
                                     >Aktiv</span
                                   >
 
                                   <v-icon
-                                    v-if="parevaSystem.active === false"
+                                    v-if="parevaSystem?.active === false"
                                     color="error"
                                     >mdi-close</v-icon
                                   >
                                   <span
-                                    v-if="parevaSystem.active === false"
+                                    v-if="parevaSystem?.active === false"
                                     class="ml-2"
                                     >Inaktiv</span
                                   >
@@ -505,7 +505,7 @@ export default {
       get() {
         return this.selectedTenant.applications?.find(
           (app) => app.id === "pareva"
-        );
+        ) || {};
       },
     },
   },
