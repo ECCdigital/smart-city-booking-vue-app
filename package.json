@@ -38,6 +38,7 @@
     "sass": "^1.69.5",
     "sass-loader": "^13.3.2",
     "uglify-js": "^3.17.4",
+    "uuid": "^9.0.1",
     "vee-validate": "^3.4.14",
     "vue": "^2.7.15",
     "vue-axios": "^3.5.2",
