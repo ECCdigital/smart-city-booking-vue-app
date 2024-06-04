@@ -15,15 +15,14 @@ export default {
   data: function () {
     return {
       test: null,
-      date: (new Date()).toISOString().split("T")[0],
+      date: new Date().toISOString().split("T")[0],
       timePeriod: null,
       occupations: [],
       displayedMonth: null,
       loading: false,
     };
   },
-  computed: {
-  },
+  computed: {},
   methods: {
     allowedDates(val) {
       const today = new Date();
@@ -43,33 +42,34 @@ export default {
         return [];
       }
       const weekday = new Date(val).getDay();
-      const timePeriods = this.leadItem.bookable.timePeriods.filter(
-        (timePeriod) => timePeriod.weekdays.includes(weekday)
-      ).map((timePeriod) => {
-        return {
-          text: timePeriod.startTime + " - " + timePeriod.endTime,
-          value: timePeriod,
-          timeBegin: new Date(val).setHours(
-            timePeriod.startTime.split(":")[0],
-            timePeriod.startTime.split(":")[1]
-          ),
-          timeEnd: new Date(val).setHours(
-            timePeriod.endTime.split(":")[0],
-            timePeriod.endTime.split(":")[1]
-          ),
-        };
-      })
+      const timePeriods = this.leadItem.bookable.timePeriods
+        .filter((timePeriod) => timePeriod.weekdays.includes(weekday))
+        .map((timePeriod) => {
+          return {
+            text: timePeriod.startTime + " - " + timePeriod.endTime,
+            value: timePeriod,
+            timeBegin: new Date(val).setHours(
+              timePeriod.startTime.split(":")[0],
+              timePeriod.startTime.split(":")[1]
+            ),
+            timeEnd: new Date(val).setHours(
+              timePeriod.endTime.split(":")[0],
+              timePeriod.endTime.split(":")[1]
+            ),
+          };
+        });
 
       this.occupations.forEach((occupation) => {
         timePeriods.forEach((timePeriod, index) => {
-          if (timePeriod.timeBegin >= occupation.timeBegin && timePeriod.timeEnd <= occupation.timeEnd) {
+          if (
+            timePeriod.timeBegin >= occupation.timeBegin &&
+            timePeriod.timeEnd <= occupation.timeEnd
+          ) {
             timePeriods.splice(index, 1);
           }
         });
       });
-
-
-      return timePeriods
+      return timePeriods;
     },
     transformDate(date) {
       return date.split("-").reverse().join(".");
@@ -85,8 +85,16 @@ export default {
     async validateAvailability() {
       this.loading = true;
       const dateObj = new Date(this.displayedMonth);
-      const firstDayOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
-      const lastDayOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
+      const firstDayOfMonth = new Date(
+        dateObj.getFullYear(),
+        dateObj.getMonth(),
+        1
+      );
+      const lastDayOfMonth = new Date(
+        dateObj.getFullYear(),
+        dateObj.getMonth() + 1,
+        0
+      );
 
       const timeBegin = firstDayOfMonth.toISOString();
       const timeEnd = lastDayOfMonth.toISOString();
@@ -98,7 +106,7 @@ export default {
           timeBegin,
           timeEnd,
           this.leadItem.amount
-        )
+        );
         if (response.data) {
           this.occupations = response.data;
         }
@@ -140,6 +148,7 @@ export default {
       v-model="date"
       locale="de"
       :allowed-dates="allowedDates"
+      color="secondary"
       full-width
       @update:picker-date="updateDisplayedMonth"
     >
@@ -147,12 +156,12 @@ export default {
     <v-row v-if="date" class="mt-10">
       <v-col>
         <span class="subtitle-1"
-        >Welchen Zeitraum wollen Sie am <strong>{{ transformDate(this.date) }}</strong>
-          buchen?</span
+          >Welchen Zeitraum wollen Sie am
+          <strong>{{ transformDate(this.date) }}</strong> buchen?</span
         >
       </v-col>
     </v-row>
-    <v-row class="primary">
+    <v-row v-if="getTimePeriods(date).length > 0" class="primary">
       <v-col
         class="col-12 col-md-4"
         v-for="timePeriod in getTimePeriods(date)"
@@ -166,6 +175,13 @@ export default {
           @click="selectTimePeriod(timePeriod)"
           >{{ timePeriod.text }}
           <v-icon right dark> mdi-chevron-right </v-icon></v-btn
+        >
+      </v-col>
+    </v-row>
+    <v-row v-else class="primary">
+      <v-col>
+        <span class="subtitle-1 secondary--text"
+          >Für den ausgewählten Tag sind keine Zeiträume verfügbar.</span
         >
       </v-col>
     </v-row>

@@ -307,6 +307,9 @@ export default {
 
     submit() {
       if (this.$refs.form.validate()) {
+        if (!this.dateBeginModel || !this.timeBeginModel || !this.dateEndModel || !this.timeEndModel) {
+          return;
+        }
         this.$emit("submit");
       }
     },
@@ -327,24 +330,6 @@ export default {
       }
       const d = new Date(this.dateEndModel + " " + this.timeEndModel);
       return d.getTime();
-    },
-
-    timePeriods() {
-      if (this.dateBeginModel == null) {
-        return [];
-      }
-      const weekday = new Date(this.dateBeginModel).getDay();
-      // get all time periods for the selected weekday included in the bookable
-      const timePeriods = this.leadItem.bookable.timePeriods.filter(
-        (timePeriod) => timePeriod.weekdays.includes(weekday)
-      );
-      // return startTime and endTime as string
-      return timePeriods.map((timePeriod) => {
-        return {
-          text: timePeriod.startTime + " - " + timePeriod.endTime,
-          value: timePeriod,
-        };
-      });
     },
 
     minBookingTime() {
