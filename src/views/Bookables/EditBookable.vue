@@ -724,6 +724,7 @@ export default {
             isLongRange,
             longRangeOptions,
             lockerDetails,
+            requiredFields,
           } = response.data;
 
           this.restoreFromApi({
@@ -775,6 +776,7 @@ export default {
             isLongRange: isLongRange,
             longRangeOptions: longRangeOptions,
             lockerDetails: lockerDetails,
+            requiredFields: requiredFields,
           });
         })
         .finally(() => {
