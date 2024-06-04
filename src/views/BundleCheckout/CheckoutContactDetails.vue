@@ -184,7 +184,7 @@ export default {
       );
     },
     commentRequired() {
-      return this.leadItem.bookable.commentRequired;
+      return this.leadItem.bookable.requiredFields?.includes("comment");
     },
     commentLabel() {
       return this.commentRequired

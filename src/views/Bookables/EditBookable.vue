@@ -1124,10 +1124,24 @@ export default {
     },
     commentRequired: {
       get() {
-        return this.$store.state.bookables.form.commentRequired;
+        return this.$store.state.bookables.form.requiredFields?.includes("comment");
       },
       set(value) {
-        this.updateValue({ field: "commentRequired", value: value });
+        if (value) {
+          if (!this.$store.state.bookables.form.requiredFields?.includes("comment")) {
+            this.updateValue({
+              field: "requiredFields",
+              value: [...(this.$store.state.bookables.form.requiredFields || []), "comment"],
+            });
+          }
+        } else {
+          this.updateValue({
+            field: "requiredFields",
+            value: (this.$store.state.bookables.form.requiredFields || []).filter(
+              (f) => f !== "comment"
+            ),
+          });
+        }
       },
     },
     mode: function () {
