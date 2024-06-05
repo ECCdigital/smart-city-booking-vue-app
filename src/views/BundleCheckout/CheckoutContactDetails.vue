@@ -110,33 +110,15 @@
       v-model="contactDetails.comment"
     ></v-textarea>
 
-    <section class="agreements mt-5" v-if="agreements.length > 0">
-      <p>
-        Um dieses Objekt zu buchen, bestätigen Sie bitte, dass Sie die
-        nachfolgenden Vereinbarungen gelesen haben und diese akzeptieren.
-      </p>
-      <v-checkbox
-        v-for="agreement in agreements"
-        :key="agreement.id"
-        :rules="validationRules.required"
-        hide-details
-      >
-        <div slot="label">
-          {{ agreement.title }} (<a
-            :href="agreement.url"
-            target="_blank"
-            @click.stop
-            >Zur Vereinbarung</a
-          >)
-        </div>
-      </v-checkbox>
-    </section>
+    <v-divider class="mt-5"></v-divider>
+    <span class="caption">* Pflichtfelder</span>
   </v-form>
 </template>
 
 <script>
 export default {
   name: "CheckoutContactDetails",
+  components: {},
 
   props: {
     leadItem: {
@@ -165,7 +147,7 @@ export default {
 
   methods: {
     submit() {
-      if (this.$refs.form.validate()) {
+      if (this.$refs.form.validate() && this.$parent.$refs.checkoutAgreements.validate()) {
         this.$emit("submit");
       }
     },

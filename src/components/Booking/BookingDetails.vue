@@ -2,6 +2,7 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ToastService from "@/services/ToastService";
 import {mapActions} from "vuex";
+import ApiFileService from "@/services/api/ApiFileService";
 
 export default {
   name: "BookingDetails",
@@ -21,6 +22,10 @@ export default {
     receipts() {
       if (this.booking.attachments === undefined) return [];
       return this.booking.attachments.filter((attachment) => attachment.type === "receipt");
+    },
+    attachments() {
+      if (this.booking.attachments === undefined) return [];
+      return this.booking.attachments.filter((attachment) => attachment.type !== "receipt");
     },
   },
   methods: {
@@ -78,6 +83,18 @@ export default {
     },
     downloadReceipt(name) {
       ApiBookingService.getReceipt(this.booking.id, name)
+        .then((response) => {
+          const blob = new Blob([response.data], { type: "application/pdf" });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", name);
+          document.body.appendChild(link);
+          link.click();
+        });
+    },
+    downloadAttachment(name) {
+      ApiFileService.getFile(this.booking.tenant, name)
         .then((response) => {
           const blob = new Blob([response.data], { type: "application/pdf" });
           const url = window.URL.createObjectURL(blob);
@@ -346,6 +363,42 @@ export default {
           <p>{{ booking.comment }}</p>
         </v-col>
       </v-row>
+      <div class="mt-6">
+        <span class="text-h6">Anhänge</span>
+      </div>
+      <v-divider />
+      <v-row no-gutters>
+        <v-col>
+          <v-list dense v-if="attachments?.length > 0">
+            <template v-for="(item, index) in attachments">
+              <v-list-item two-line :key="index">
+                <v-list-item-content>
+                  <v-list-item-title>
+                    {{ item.name }}
+                  </v-list-item-title>
+                  <v-list-item-subtitle>
+                    Gelesen und akzeptiert:
+                    <v-icon v-if="item.content.required && item.content.accepted" color="success">
+                      mdi-checkbox-marked-outline
+                    </v-icon>
+                    <v-icon v-else color="error">
+                      mdi-checkbox-blank-outline
+                    </v-icon>
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+                <v-list-item-action>
+                  <v-btn icon @click="downloadAttachment(item.filePath)">
+                    <v-icon color="primary">mdi-file-download</v-icon>
+                  </v-btn>
+                </v-list-item-action>
+              </v-list-item>
+              <v-divider v-if="index < attachments.length - 1" :key="`divider-${index}`" />
+            </template>
+          </v-list>
+          <span v-else>Keine Anhänge vorhanden</span>
+        </v-col>
+
+      </v-row>
     </v-card-text>
     <v-card-actions>
       <v-spacer />
@@ -353,7 +406,6 @@ export default {
         Schließen
       </v-btn>
     </v-card-actions>
-  </v-card>
   </v-card>
 </template>
 

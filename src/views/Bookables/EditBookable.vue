@@ -476,6 +476,14 @@
           forced-subdirectory="agreements"
         />
       </v-col>
+      <v-col>
+        <v-switch
+          dense
+          label="Muss vom Nutzer akzeptiert werden"
+          hide-details
+          v-model="attachment.required"
+        ></v-switch>
+      </v-col>
       <v-col class="col-auto">
         <v-btn icon small @click="removeAttachment(attachment.id)">
           <v-icon>mdi-delete</v-icon>

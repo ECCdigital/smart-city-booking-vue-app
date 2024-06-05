@@ -9,6 +9,11 @@ export default {
       }
     );
   },
+  getFile(tenant, name) {
+    return ApiClient.get(`api/${tenant}/files/get?name=${name}`, {
+      withCredentials: true,
+    });
+  },
   createFile(tenant, formData) {
     return ApiClient.post(`api/${tenant}/files`, formData, {
       withCredentials: true,

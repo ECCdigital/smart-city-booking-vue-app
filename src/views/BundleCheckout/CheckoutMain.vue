@@ -62,6 +62,11 @@
               @back="previousPage()"
               @submit="nextPage()"
             ></checkout-contact-details>
+            <checkout-agreements
+              v-if="leadItem.bookable && step === 4 && leadItem.bookable.attachments.length > 0"
+              ref="checkoutAgreements"
+              :agreements="leadItem.bookable.attachments"
+            ></checkout-agreements>
           </v-col>
           <v-col class="col-md">
             <checkout-quick-summary
@@ -104,11 +109,13 @@ import AdditionalBookables from "@/views/BundleCheckout/AdditionalBookables.vue"
 import CheckoutSignin from "@/views/BundleCheckout/CheckoutSignin.vue";
 import CheckoutContactDetails from "@/views/BundleCheckout/CheckoutContactDetails.vue";
 import ApiCouponService from "@/services/api/ApiCouponService";
+import CheckoutAgreements from "@/views/BundleCheckout/CheckoutAgreements.vue";
 
 export default {
   name: "CheckoutMain",
 
   components: {
+    CheckoutAgreements,
     CheckoutSignin,
     AdditionalBookables,
     CheckoutQuickSummary,
