@@ -441,8 +441,8 @@
     </v-row>
 
     <h3 class="mt-10 mb-4">Anhänge</h3>
-    <div v-for="attachment in attachments" :key="attachment.id">
-      <v-row class="mt-10">
+    <div v-for="(attachment, index) in attachments" :key="attachment.id">
+      <v-row class="">
         <v-col class="col-12 col-md-9">
           <v-row>
             <v-col>
@@ -503,6 +503,12 @@
                 hide-details
                 v-model="attachment.required"
               ></v-switch>
+              <v-switch
+                dense
+                label="Im Buchungsprozess anzeigen"
+                hide-details
+                v-model="attachment.show"
+              ></v-switch>
             </v-col>
             <v-col class="col-auto">
               <v-btn icon small @click="removeAttachment(attachment.id)">
@@ -512,6 +518,11 @@
           </v-row>
         </v-col>
       </v-row>
+      <v-divider
+        class="my-5"
+        v-if="index < attachments.length - 1"
+        :key="`divider-${index}`"
+      />
     </div>
     <v-row>
       <v-col class="col-auto">

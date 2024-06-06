@@ -17,11 +17,7 @@ export default {
   },
   computed: {
     filteredAgreements() {
-      return this.agreements.filter(
-        (agreement) =>
-          agreement.type === "agreement" ||
-          agreement.type === "privacy-agreement"
-      );
+      return this.agreements.filter((agreement) => agreement.show);
     },
   },
   methods: {
