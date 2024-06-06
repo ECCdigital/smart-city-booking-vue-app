@@ -22,7 +22,10 @@
         </v-stepper>
 
         <v-row>
-          <v-col v-if="step < steps.length" :class="leadItem.bookable ? 'col-md-7' : 'col-md' ">
+          <v-col
+            v-if="step < steps.length"
+            :class="leadItem.bookable ? 'col-md-7' : 'col-md'"
+          >
             <component
               :is="steps[step - 1].component"
               v-if="!loading"
@@ -198,7 +201,10 @@ export default {
           this.leadItem.bookable = response.data;
           this.preventBooking = false;
 
-          if (this.leadItem.bookable.permittedRoles?.length > 0 || this.leadItem.bookable.permittedUsers?.length > 0) {
+          if (
+            this.leadItem.bookable.permittedRoles?.length > 0 ||
+            this.leadItem.bookable.permittedUsers?.length > 0
+          ) {
             this.loginRequired = true;
           }
         } else {
@@ -208,7 +214,7 @@ export default {
       } catch (error) {
         this.loginRequired = error.response.status === 401;
         this.bookingPermission = error.response.status !== 403;
-        if(!this.bookingPermission) {
+        if (!this.bookingPermission) {
           this.step = 1;
         }
         this.leadItem.bookable = null;
@@ -328,7 +334,7 @@ export default {
     steps() {
       const permissionStep = {
         title: "Berechtigung",
-        rules: [()=> false],
+        rules: [() => false],
         component: "checkout-no-permission",
         props: {
           tenant: this.tenant,
@@ -420,11 +426,17 @@ export default {
         stepsToReturn.push(permissionStep);
       }
 
-      if (this.loginRequired ||!this.bookingPermission) {
+      if (this.loginRequired || !this.bookingPermission) {
         stepsToReturn.push(loginRequiredStep);
       }
 
-      stepsToReturn.push(timeSelectorStep);
+      if (
+        this.leadItem.bookable?.isScheduleRelated ||
+        this.leadItem.bookable?.isTimePeriodRelated ||
+        this.leadItem.bookable?.isLongRange
+      ) {
+        stepsToReturn.push(timeSelectorStep);
+      }
 
       if (this.leadItem.bookable?.checkoutBookableIds?.length > 0) {
         stepsToReturn.push(additionalBookableOptions);
