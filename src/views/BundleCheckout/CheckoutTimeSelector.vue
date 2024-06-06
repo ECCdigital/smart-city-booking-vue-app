@@ -389,16 +389,16 @@ export default {
       return new Date().toISOString().split("T")[0];
     },
     selectionType() {
-      if (this.leadItem.bookable.isScheduleRelated === true) {
+      if (this.leadItem.bookable?.isScheduleRelated === true) {
         return "schedule";
       }
-      if (this.leadItem.bookable.isTimePeriodRelated === true) {
+      if (this.leadItem.bookable?.isTimePeriodRelated === true) {
         return "time-period";
       }
-      if (this.leadItem.bookable.isLongRange === true) {
-        if (this.leadItem.bookable.longRangeOptions?.type === "week") {
+      if (this.leadItem.bookable?.isLongRange === true) {
+        if (this.leadItem.bookable?.longRangeOptions?.type === "week") {
           return "long-range-week";
-        } else if (this.leadItem.bookable.longRangeOptions?.type === "month") {
+        } else if (this.leadItem.bookable?.longRangeOptions?.type === "month") {
           return "long-range-month";
         }
       }

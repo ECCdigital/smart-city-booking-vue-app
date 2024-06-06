@@ -1,71 +1,41 @@
 <template>
   <div>
     <v-container>
-      <div v-if="preventBooking === false">
+      <div v-if="!preventBooking">
         <v-stepper alt-labels elevation="0" class="mb-10" v-model="step">
           <v-stepper-header>
-            <v-stepper-step step="1" :complete="step > 1">
-              Buchungszeitraum
-            </v-stepper-step>
-            <v-divider></v-divider>
-            <v-stepper-step step="2" :complete="step > 2">
-              Ergänzungen
-            </v-stepper-step>
-            <v-divider></v-divider>
-            <v-stepper-step step="3" :complete="step > 3">
-              Anmeldung
-            </v-stepper-step>
-            <v-divider></v-divider>
-            <v-stepper-step step="4" :complete="step > 4">
-              Kontaktdaten
-            </v-stepper-step>
-            <v-divider></v-divider>
-            <v-stepper-step step="5"> Zusammenfassung </v-stepper-step>
+            <template v-for="(step, index) in steps">
+              <v-stepper-step
+                :key="`step-${index}`"
+                :complete="stepComplete(index)"
+                :step="index + 1"
+                :rules="step.rules"
+              >
+                {{ step.title }}
+              </v-stepper-step>
+              <v-divider
+                v-if="index < steps.length - 1"
+                :key="index"
+              ></v-divider>
+            </template>
           </v-stepper-header>
         </v-stepper>
 
         <v-row>
-          <v-col v-if="step < 5" class="col-md-7">
-            <checkout-time-selector
-              v-if="!loading && step === 1 && leadItem.bookable"
-              :lead-item="leadItem"
-              :subsequent-items="subsequentItems"
-              :time-begin="timeBegin"
-              :time-end="timeEnd"
-              :amount="leadItem.amount"
-              @booking-time-selected="setBookingTime"
-              @submit="nextPage"
-            ></checkout-time-selector>
-            <additional-bookables
-              v-if="step === 2 && leadItem.bookable"
-              :lead-item="leadItem"
-              :subsequent-items="subsequentItems"
-              :time-begin="timeBegin"
-              :time-end="timeEnd"
-              @item-selected="addSubsequentItem"
-              @back="previousPage()"
-              @submit="nextPage()"
-            ></additional-bookables>
-            <checkout-signin
-              v-if="step === 3"
-              :tenant="tenant"
-              :me="me"
-              @back="previousPage()"
-              @submit="nextPage()"
-              @update-me="fetchMe()"
-            ></checkout-signin>
-            <checkout-contact-details
-              v-if="leadItem.bookable && step === 4"
-              :me="me"
-              :lead-item="leadItem"
-              :contact-details="contactDetails"
-              @back="previousPage()"
-              @submit="nextPage()"
-            ></checkout-contact-details>
-          </v-col>
-          <v-col class="col-md">
-            <checkout-quick-summary
+          <v-col
+            v-if="step < steps.length"
+            :class="leadItem.bookable ? 'col-md-7' : 'col-md'"
+          >
+            <component
+              :is="steps[step - 1].component"
               v-if="!loading"
+              v-bind="steps[step - 1].props"
+              v-on="steps[step - 1].events"
+            ></component>
+          </v-col>
+          <v-col v-if="leadItem.bookable" class="col-md">
+            <checkout-quick-summary
+              v-if="!loading && leadItem.bookable"
               :lead-item="leadItem"
               :subsequent-items="subsequentItems"
               :time-begin="timeBegin"
@@ -74,7 +44,7 @@
               :tenant="tenant"
               :coupon="coupon"
               :trace="trace"
-              :final-check="step === 5"
+              :final-check="step === steps.length"
               :me="me"
               @back="previousPage()"
               @validate-items="validateItems()"
@@ -104,6 +74,7 @@ import AdditionalBookables from "@/views/BundleCheckout/AdditionalBookables.vue"
 import CheckoutSignin from "@/views/BundleCheckout/CheckoutSignin.vue";
 import CheckoutContactDetails from "@/views/BundleCheckout/CheckoutContactDetails.vue";
 import ApiCouponService from "@/services/api/ApiCouponService";
+import CheckoutNoPermission from "@/views/BundleCheckout/CheckoutNoPermission.vue";
 
 export default {
   name: "CheckoutMain",
@@ -114,26 +85,19 @@ export default {
     CheckoutQuickSummary,
     CheckoutTimeSelector,
     CheckoutContactDetails,
+    CheckoutNoPermission,
   },
 
   data() {
     return {
       loading: true,
       trace: false,
-
-      // If true, the booking procedure will be prevented. This is used to stop booking procedure in case of any errors.
       preventBooking: false,
-
-      // The current page of the checkout procedure
+      loginRequired: false,
+      bookingPermission: true,
       step: 1,
-
-      // The user currently logged in
       me: null,
-
-      // The tenant of the booking procedure
       tenant: null,
-
-      // The leading bookable item of this bundle. The leading item determines the checkout procedure.
       leadItem: {
         bookableId: null,
         amount: null,
@@ -142,19 +106,10 @@ export default {
         regularPriceEur: null,
         userPriceEur: null,
       },
-
-      // A list of items subsequently added to the bundle. Those items have to fit the checkout procedure determined by
-      // the leading item.
       subsequentItems: [],
-
-      // Time range of the booking
       timeBegin: null,
       timeEnd: null,
-
-      // All bookings of bookable items in this bundle
       itemBookings: [],
-
-      // Contact Details for the booking
       contactDetails: {
         name: null,
         company: null,
@@ -165,29 +120,55 @@ export default {
         location: null,
         comment: null,
       },
-
-      // If the user enters a coupon code, this coupon will be stored here.
       coupon: null,
     };
   },
 
   async mounted() {
+    this.resetState();
     this.trace = this.$route.query.trace === "true";
     this.tenant = this.$route.query.tenant;
     this.leadItem.bookableId = this.$route.query.id;
     this.leadItem.amount = parseInt(this.$route.query.amount || 1);
-
-    await this.fetchMe();
-    await this.fetchLeadBookable();
-    await this.fetchSubsequentBookables();
-    await this.validateItems();
-
-    this.step = this.minimumPageNumber;
-
-    this.loading = false;
+    await this.init();
   },
 
   methods: {
+    async init() {
+      await this.fetchMe();
+      await this.fetchLeadBookable();
+      await this.fetchSubsequentBookables();
+      await this.validateItems();
+      this.loading = false;
+    },
+
+    resetState() {
+      this.loading = true;
+      this.leadItem = {
+        bookableId: null,
+        amount: null,
+        bookable: null,
+        valid: null,
+        regularPriceEur: null,
+        userPriceEur: null,
+      };
+      this.subsequentItems = [];
+      this.timeBegin = null;
+      this.timeEnd = null;
+      this.itemBookings = [];
+      this.contactDetails = {
+        name: null,
+        company: null,
+        mail: null,
+        phone: null,
+        street: null,
+        zipCode: null,
+        location: null,
+        comment: null,
+      };
+      this.coupon = null;
+    },
+
     async fetchMe() {
       try {
         const { data } = await ApiAuthService.me(this.tenant, true);
@@ -199,7 +180,6 @@ export default {
         this.contactDetails.zipCode = this.me.zipCode;
         this.contactDetails.location = this.me.city;
       } catch (error) {
-        console.log(error);
         this.me = null;
         this.contactDetails.mail = null;
         this.contactDetails.name = null;
@@ -219,13 +199,25 @@ export default {
 
         if (response.data.id) {
           this.leadItem.bookable = response.data;
+          this.preventBooking = false;
+
+          if (
+            this.leadItem.bookable.permittedRoles?.length > 0 ||
+            this.leadItem.bookable.permittedUsers?.length > 0
+          ) {
+            this.loginRequired = true;
+          }
         } else {
           this.preventBooking = true;
+          this.loginRequired = false;
         }
       } catch (error) {
-        console.log(error);
+        this.loginRequired = error.response.status === 401;
+        this.bookingPermission = error.response.status !== 403;
+        if (!this.bookingPermission) {
+          this.step = 1;
+        }
         this.leadItem.bookable = null;
-        this.preventBooking = true;
       }
     },
 
@@ -240,7 +232,6 @@ export default {
           bookableItem.bookable = data;
         }
       } catch (error) {
-        console.log(error);
         this.subsequentItems.forEach((item) => (item.bookable = null));
       }
     },
@@ -248,12 +239,13 @@ export default {
     async validateItems() {
       for (let item of [this.leadItem, ...this.subsequentItems]) {
         if (
-          (item.bookable.isScheduleRelated ||
-            item.bookable.isTimePeriodRelated ||
-            item.bookable.isLongRange) &&
+          (item.bookable?.isScheduleRelated ||
+            item.bookable?.isTimePeriodRelated ||
+            item.bookable?.isLongRange) &&
           (this.timeBegin == null || this.timeEnd == null)
         ) {
           item.valid = null;
+          delete item.error;
         } else {
           try {
             const response = await ApiCheckoutService.validateCheckoutItem(
@@ -275,7 +267,6 @@ export default {
             item.userPriceEur = null;
             item.valid = false;
             item.error = error.response.data;
-            console.log(error);
           }
         }
       }
@@ -308,18 +299,10 @@ export default {
       if (this.step < 5) {
         this.step++;
       }
-
-      // Step over additional objects, if there are none
-      if (
-        this.step === 2 &&
-        this.leadItem.bookable.checkoutBookableIds.length === 0
-      ) {
-        this.step++;
-      }
     },
 
     previousPage() {
-      if (this.step > this.minimumPageNumber) {
+      if (this.step > 1) {
         this.step--;
       }
     },
@@ -341,21 +324,135 @@ export default {
       this.coupon = null;
       await this.validateItems();
     },
+
+    stepComplete(index) {
+      return this.step > index + 1;
+    },
   },
 
   computed: {
-    minimumPageNumber() {
-      if (
-        this.leadItem.bookable.isScheduleRelated ||
-        this.leadItem.bookable.isTimePeriodRelated ||
-        this.leadItem.bookable.isLongRange
-      ) {
-        return 1;
-      } else if (this.leadItem.bookable.checkoutBookableIds.length > 0) {
-        return 2;
-      } else {
-        return 3;
+    steps() {
+      const permissionStep = {
+        title: "Berechtigung",
+        rules: [() => false],
+        component: "checkout-no-permission",
+        props: {
+          tenant: this.tenant,
+        },
+        events: {
+          "sign-out": this.init,
+        },
+      };
+
+      const loginStep = {
+        title: "Anmeldung",
+        component: "checkout-signin",
+        props: {
+          tenant: this.tenant,
+          me: this.me,
+        },
+        events: {
+          "update-me": this.fetchMe,
+          submit: this.nextPage,
+          back: this.previousPage,
+        },
+      };
+
+      const loginRequiredStep = {
+        title: "Anmeldung",
+        component: "checkout-signin",
+        props: {
+          tenant: this.tenant,
+          me: this.me,
+          "show-back": false,
+          "show-submit-guest": false,
+        },
+        events: {
+          "update-me": this.init,
+          submit: this.nextPage,
+        },
+      };
+
+      const contactDetailsStep = {
+        title: "Kontaktdaten",
+        component: "checkout-contact-details",
+        props: {
+          me: this.me,
+          leadItem: this.leadItem,
+          contactDetails: this.contactDetails,
+        },
+        events: {
+          back: this.previousPage,
+          submit: this.nextPage,
+        },
+      };
+
+      const timeSelectorStep = {
+        title: "Buchungszeitraum",
+        component: "checkout-time-selector",
+        props: {
+          leadItem: this.leadItem,
+          subsequentItems: this.subsequentItems,
+          timeBegin: this.timeBegin,
+          timeEnd: this.timeEnd,
+          amount: this.leadItem.amount,
+        },
+        events: {
+          "booking-time-selected": this.setBookingTime,
+          submit: this.nextPage,
+          back: this.previousPage,
+        },
+      };
+
+      const additionalBookableOptions = {
+        title: "Ergänzungen",
+        component: "additional-bookables",
+        props: {
+          leadItem: this.leadItem,
+          subsequentItems: this.subsequentItems,
+          timeBegin: this.timeBegin,
+          timeEnd: this.timeEnd,
+        },
+        events: {
+          "item-selected": this.addSubsequentItem,
+          back: this.previousPage,
+          submit: this.nextPage,
+        },
+      };
+
+      let stepsToReturn = [];
+
+      if (!this.bookingPermission) {
+        stepsToReturn.push(permissionStep);
       }
+
+      if (this.loginRequired || !this.bookingPermission) {
+        stepsToReturn.push(loginRequiredStep);
+      }
+
+      if (
+        this.leadItem.bookable?.isScheduleRelated ||
+        this.leadItem.bookable?.isTimePeriodRelated ||
+        this.leadItem.bookable?.isLongRange
+      ) {
+        stepsToReturn.push(timeSelectorStep);
+      }
+
+      if (this.leadItem.bookable?.checkoutBookableIds?.length > 0) {
+        stepsToReturn.push(additionalBookableOptions);
+      }
+
+      if (!this.loginRequired && this.bookingPermission) {
+        stepsToReturn.push(loginStep);
+      }
+
+      stepsToReturn.push(contactDetailsStep);
+
+      stepsToReturn.push({
+        title: "Zusammenfassung",
+      });
+
+      return stepsToReturn;
     },
   },
 };
