@@ -441,55 +441,78 @@
     </v-row>
 
     <h3 class="mt-10 mb-4">Anhänge</h3>
-    <v-row v-for="attachment in attachments" :key="attachment.id">
-      <v-col>
-        <v-text-field
-          dense
-          background-color="accent"
-          filled
-          label="Titel"
-          hide-details
-          v-model="attachment.title"
-        ></v-text-field>
-      </v-col>
-      <v-col>
-        <v-select
-          dense
-          background-color="accent"
-          filled
-          label="Typ"
-          hide-details
-          v-model="attachment.type"
-          :items="attachmentTypes"
-          item-text="name"
-          item-value="id"
-        ></v-select>
-      </v-col>
-      <v-col>
-        <ChooseFile
-          v-model="attachment.url"
-          :allow-protected="false"
-          :tenant="tenant"
-          filled
-          label="Datei"
-          background-color="accent"
-          forced-subdirectory="agreements"
-        />
-      </v-col>
-      <v-col>
-        <v-switch
-          dense
-          label="Muss vom Nutzer akzeptiert werden"
-          hide-details
-          v-model="attachment.required"
-        ></v-switch>
-      </v-col>
-      <v-col class="col-auto">
-        <v-btn icon small @click="removeAttachment(attachment.id)">
-          <v-icon>mdi-delete</v-icon>
-        </v-btn>
-      </v-col>
-    </v-row>
+    <div v-for="attachment in attachments" :key="attachment.id">
+      <v-row class="mt-10">
+        <v-col class="col-12 col-md-9">
+          <v-row>
+            <v-col>
+              <v-text-field
+                dense
+                background-color="accent"
+                filled
+                label="Titel"
+                hide-details
+                v-model="attachment.title"
+              ></v-text-field>
+            </v-col>
+            <v-col>
+              <v-select
+                dense
+                background-color="accent"
+                filled
+                label="Typ"
+                hide-details
+                v-model="attachment.type"
+                :items="attachmentTypes"
+                item-text="name"
+                item-value="id"
+              ></v-select>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-text-field
+                dense
+                background-color="accent"
+                filled
+                label="Beschreibung"
+                placeholder="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."
+                hide-details
+                v-model="attachment.caption"
+              ></v-text-field>
+            </v-col>
+            <v-col>
+              <ChooseFile
+                v-model="attachment.url"
+                :allow-protected="false"
+                :tenant="tenant"
+                filled
+                label="Datei"
+                background-color="accent"
+                forced-subdirectory="agreements"
+              />
+            </v-col>
+          </v-row>
+        </v-col>
+        <v-col>
+          <v-row>
+            <v-col>
+              <v-switch
+                dense
+                label="Muss vom Nutzer akzeptiert werden"
+                hide-details
+                v-model="attachment.required"
+              ></v-switch>
+            </v-col>
+            <v-col class="col-auto">
+              <v-btn icon small @click="removeAttachment(attachment.id)">
+                <v-icon>mdi-delete</v-icon>
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-col>
+      </v-row>
+    </div>
     <v-row>
       <v-col class="col-auto">
         <v-btn outlined class="mt-2" @click="addNewAttachment()"
@@ -520,7 +543,8 @@
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import { mapActions, mapGetters } from "vuex";
-import uniqueId from "lodash/uniqueId";
+import _ from "lodash";
+import { v4 as uuidv4 } from "uuid";
 import ApiEventService from "@/services/api/ApiEventService";
 import ApiUsersService from "@/services/api/ApiUsersService";
 import BookableTimeDependantAttributes from "@/components/Bookable/BookableTimeDependantAttributes";
@@ -542,7 +566,7 @@ export default {
 
   data() {
     return {
-      allowPublic:true,
+      allowPublic: true,
       bookableType: null,
       bookable: {},
       bookableTypes: [
@@ -653,8 +677,9 @@ export default {
     },
     addNewAttachment() {
       this.addAttachment({
-        id: uniqueId(),
+        id: uuidv4(),
         title: "",
+        caption: "",
         type: "",
         url: "",
       });
@@ -902,8 +927,9 @@ export default {
       this.freeBookingRoles.splice(this.freeBookingRoles.indexOf(item), 1);
     },
     async allowSetPublic() {
-      const bookableCountCheck = await ApiBookablesService.publicBookableCountCheck();
-      this.allowPublic = bookableCountCheck || this.isPublic
+      const bookableCountCheck =
+        await ApiBookablesService.publicBookableCountCheck();
+      this.allowPublic = bookableCountCheck || this.isPublic;
     },
   },
   computed: {
@@ -922,7 +948,7 @@ export default {
     },
     tenant: {
       get() {
-        if(this.mode === "create") {
+        if (this.mode === "create") {
           return this.$store.state.tenants.data.id;
         } else {
           return this.$store.state.bookables.form.tenant;

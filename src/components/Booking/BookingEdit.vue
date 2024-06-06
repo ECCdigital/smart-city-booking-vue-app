@@ -133,7 +133,7 @@
                 </template>
               </v-list>
               <div
-                v-if="selectedBooking.bookableItems.length === 0"
+                v-if="selectedBooking.bookableItems?.length === 0"
                 class="text-center font-italic"
               >
                 Diese Buchung enthält keine Buchungen

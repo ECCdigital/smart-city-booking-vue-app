@@ -344,16 +344,12 @@ export default {
         mail: this.contactDetails.mail,
         phone: this.contactDetails.phone,
         comment: this.contactDetails.comment,
-        attachments: [this.leadItem, ...this.subsequentItems].flatMap((item) =>
+        attachmentStatus: [this.leadItem, ...this.subsequentItems].flatMap((item) =>
           item.bookable.attachments.map((attachment) => {
-            const url = new URL(attachment.url);
-            const filePath = url.searchParams.get("name")
             return {
-              type: attachment.type,
-              title: attachment.title,
-              filePath: filePath,
+              id: attachment.id,
               bookableId: item.bookableId,
-              content: attachment,
+              accepted: attachment.accepted,
             };
           })
         ),

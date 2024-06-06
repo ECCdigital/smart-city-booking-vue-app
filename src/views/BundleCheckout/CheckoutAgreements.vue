@@ -55,7 +55,7 @@ export default {
         :color="agreement.required ? 'error' : 'primary'"
       >
         <div slot="label">
-          Ich habe die {{ agreement.title }} gelesen und akzeptiere sie
+          {{ agreement.caption }}
           <span v-if="agreement.required">*</span> (<a
             :href="agreement.url"
             target="_blank"
