@@ -91,6 +91,23 @@
           >Zurück zur Website</v-btn
         >
       </div>
+
+      <div v-if="status === 'await-payment'">
+        <v-icon size="75" class="mb-5" color="primary">mdi-check</v-icon>
+        <h1>Ihre Buchung ist bei uns eingegangen</h1>
+        <p class="lead mt-5">
+          In Kürze werden Sie von uns eine Email mit der Zahlungsaufforderung
+          erhalten.
+        </p>
+        <v-btn
+          v-if="!!websiteLink"
+          elevation="0"
+          outlined
+          class="mt-15"
+          :href="websiteLink"
+          >Zurück zur Website</v-btn
+        >
+      </div>
     </v-container>
   </div>
 </template>
@@ -117,6 +134,7 @@ export default {
     this.bookingId = this.$route.query.id;
     this.tenant = this.$route.query.tenant;
     this.bookingStatus = this.$route.query.status;
+    this.paymentMethod = this.$route.query.paymentMethod;
 
     const tenantObj = await ApiTenantService.getTenant(this.tenant);
 
@@ -129,29 +147,37 @@ export default {
 
   methods: {
     fetchBookingStatus: async function () {
-      ApiBookingService.getBookingStatus(this.bookingId, this.tenant)
-        .then((response) => {
-          this.bookingStatus = response.data;
+      try {
+        const response = await ApiBookingService.getBookingStatus(
+          this.bookingId,
+          this.tenant
+        );
+        this.bookingStatus = response.data;
 
-          if (!this.bookingStatus.bookingId) {
-            this.status = "not-found";
-          } else {
-            if (
-              this.bookingStatus.isCommitted === true &&
-              this.bookingStatus.isPayed === true
-            ) {
-              this.status = "success";
-            } else if (this.bookingStatus.isCommitted === false) {
-              this.status = "await-approval";
-            } else if (
-              this.bookingStatus.isCommitted === true &&
-              this.bookingStatus.isPayed === false
-            ) {
-              this.status = "no-payment";
-            }
-          }
-        })
-        .catch((err) => console.log(err));
+        if (!this.bookingStatus.bookingId) {
+          this.status = "not-found";
+        } else {
+          this.determineStatus();
+        }
+      } catch (err) {
+        console.error("Error fetching booking status:", err);
+        this.status = "error";
+      }
+    },
+    determineStatus: function () {
+      const { isCommitted, isPayed } = this.bookingStatus;
+
+      if (isCommitted && isPayed) {
+        this.status = "success";
+      } else if (!isCommitted) {
+        this.status = "await-approval";
+      } else if (isCommitted && !isPayed) {
+        if (this.paymentMethod === "invoice") {
+          this.status = "await-payment";
+        } else {
+          this.status = "no-payment";
+        }
+      }
     },
   },
 };
