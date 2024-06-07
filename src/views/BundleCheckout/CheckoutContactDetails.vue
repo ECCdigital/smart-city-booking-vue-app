@@ -104,9 +104,11 @@
 
     <v-textarea
       filled
-      label="Hinweise zur Buchung"
+      :label="commentLabel"
+      :placeholder="commentRequired ? 'Bitte geben Sie den Zweck oder die geplante Nutzung dieser Ressource an. Dieses Feld ist erforderlich.' : ''"
       hide-details
       dense
+      :rules="commentRequired ? validationRules.required : []"
       v-model="contactDetails.comment"
     ></v-textarea>
 
@@ -180,6 +182,14 @@ export default {
       return this.leadItem.bookable.attachments.filter(
         (a) => a.type === "agreement" || a.type === "privacy-agreement"
       );
+    },
+    commentRequired() {
+      return this.leadItem.bookable.requiredFields?.includes("comment");
+    },
+    commentLabel() {
+      return this.commentRequired
+        ? "Hinweise zur Buchung*"
+        : "Hinweise zur Buchung";
     },
   },
 };
