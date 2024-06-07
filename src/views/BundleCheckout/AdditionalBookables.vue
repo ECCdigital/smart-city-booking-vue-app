@@ -66,7 +66,6 @@
 
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
-import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 
 export default {

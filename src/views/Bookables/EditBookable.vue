@@ -220,6 +220,20 @@
       </v-col>
     </v-row>
 
+    <h3 class="mt-10">Schließsysteme</h3>
+    <v-row>
+      <v-col>
+        <p>
+          Buchungsobjekte, die mit Schließsystemen verbunden sind, können
+          automatisch geöffnet und geschlossen werden.
+        </p>
+      </v-col>
+    </v-row>
+    <BookableLockingAttributes
+      :tenant="tenant"
+      :amount="amount"
+    ></BookableLockingAttributes>
+
     <h3 class="mt-10">Individuelle Berechtigungen</h3>
 
     <v-row>
@@ -475,6 +489,17 @@
         >
       </v-col>
     </v-row>
+    <h3 class="mt-10 mb-4">Zusätzliche Optionen</h3>
+    <v-row>
+      <v-col class="col-auto">
+        <v-switch
+          dense
+          label="Kommentarfeld erforderlich"
+          hide-details
+          v-model="commentRequired"
+          ></v-switch>
+      </v-col>
+    </v-row>
 
     <v-divider class="mt-10"></v-divider>
 
@@ -506,6 +531,7 @@ import SortableList from "@/components/SortableList";
 import Tiptap from "@/components/Tiptap";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ChooseFile from "@/components/Files/ChooseFile.vue";
+import BookableLockingAttributes from "@/components/Bookable/BookableLockingAttributes";
 
 export default {
   name: "EditBookable",
@@ -514,6 +540,7 @@ export default {
     SortableList,
     BookableTimeDependantAttributes,
     Tiptap,
+    BookableLockingAttributes,
   },
 
   data() {
@@ -696,6 +723,8 @@ export default {
             freeBookingRoles,
             isLongRange,
             longRangeOptions,
+            lockerDetails,
+            requiredFields,
           } = response.data;
 
           this.restoreFromApi({
@@ -746,6 +775,8 @@ export default {
             freeBookingRoles: freeBookingRoles,
             isLongRange: isLongRange,
             longRangeOptions: longRangeOptions,
+            lockerDetails: lockerDetails,
+            requiredFields: requiredFields,
           });
         })
         .finally(() => {
@@ -786,7 +817,6 @@ export default {
         this.fetchBookables();
         this.prepareCreateForm();
       }
-
       this.fetchEvents();
       this.fetchUsers();
       this.fetchRoles();
@@ -1092,6 +1122,28 @@ export default {
       },
       set(value) {
         this.updateValue({ field: "checkoutBookableIds", value: value });
+      },
+    },
+    commentRequired: {
+      get() {
+        return this.$store.state.bookables.form.requiredFields?.includes("comment");
+      },
+      set(value) {
+        if (value) {
+          if (!this.$store.state.bookables.form.requiredFields?.includes("comment")) {
+            this.updateValue({
+              field: "requiredFields",
+              value: [...(this.$store.state.bookables.form.requiredFields || []), "comment"],
+            });
+          }
+        } else {
+          this.updateValue({
+            field: "requiredFields",
+            value: (this.$store.state.bookables.form.requiredFields || []).filter(
+              (f) => f !== "comment"
+            ),
+          });
+        }
       },
     },
     mode: function () {

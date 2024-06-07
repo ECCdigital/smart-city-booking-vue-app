@@ -12,7 +12,8 @@
         <v-card-text>
           <v-container>
             <v-form ref="form" v-model="valid">
-              <h3 class="mb-5">Allgemeine Informationen</h3>
+              <h3>Allgemeine Informationen</h3>
+              <v-divider class="mb-5"></v-divider>
               <v-row>
                 <v-col>
                   <v-text-field
@@ -104,7 +105,8 @@
                   ></v-text-field>
                 </v-col>
               </v-row>
-              <h3 class="mb-5 mt-5">Web-Schnittstelle</h3>
+              <h3 class="mt-10">Web-Schnittstelle</h3>
+              <v-divider class="mb-5"></v-divider>
               <v-row>
                 <v-col>
                   <v-text-field
@@ -135,7 +137,8 @@
                   </v-text-field>
                 </v-col>
               </v-row>
-              <h3 class="mb-5 mt-5">E-Mail-Konfiguration</h3>
+              <h3 class="mt-10">E-Mail-Konfiguration</h3>
+              <v-divider class="mb-5"></v-divider>
               <v-row>
                 <v-col class="">
                   <v-card
@@ -223,18 +226,15 @@
                   ></v-text-field>
                 </v-col>
                 <v-col class="">
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Passwort"
-                    type="password"
+                  <password-field
                     v-model="selectedTenant.noreplyPassword"
-                  ></v-text-field>
+                    label="Passwort"
+                  ></password-field>
                 </v-col>
               </v-row>
 
-              <h3 class="mb-5 mt-5">Zahlungsbeleg</h3>
+              <h3 class="mt-10">Zahlungsbeleg</h3>
+              <v-divider class="mb-5"></v-divider>
               <v-row>
                 <v-col>
                   <v-card
@@ -281,8 +281,9 @@
                   ></v-text-field>
                 </v-col>
               </v-row>
-              <h3>Zahlungsmethoden</h3>
-              <v-row class="mt-3">
+              <h3 class="mt-10">Zahlungsmethoden</h3>
+              <v-divider class="mb-5"></v-divider>
+              <v-row>
                 <v-col>
                   <v-text-field
                     background-color="accent"
@@ -373,13 +374,10 @@
                         </v-row>
                         <v-row>
                           <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              label="Schlüssel"
-                              type="password"
+                            <password-field
                               v-model="giroCockpitApp.paymentSecret"
-                            ></v-text-field>
+                              label="Schlüssel"
+                            ></password-field>
                           </v-col>
                           <v-col>
                             <v-text-field
@@ -498,7 +496,106 @@
                   </v-expansion-panels>
                 </v-col>
               </v-row>
-              <h3 class="mb-5 mt-5">Buchungskonfiguration</h3>
+              <h3 class="mt-10">Schließsysteme</h3>
+              <v-divider class="mb-5"></v-divider>
+              <v-row>
+                <v-col>
+                  <v-expansion-panels flat multiple>
+                    <v-expansion-panel>
+                      <v-expansion-panel-header
+                        color="accent"
+                        expand-icon="mdi-menu-down"
+                        class="penal-header"
+                      >
+                        <template v-slot:default="{ open }">
+                          <v-row no-gutters align="center">
+                            <v-col cols="4">
+                              <span class="text-subtitle-1"> Pareva </span>
+                            </v-col>
+                            <v-col class="col-2">
+                              <v-fade-transition leave-absolute>
+                                <div v-if="!open">
+                                  <v-icon
+                                    v-if="parevaSystem?.active"
+                                    color="success"
+                                    >mdi-check</v-icon
+                                  >
+                                  <span v-if="parevaSystem?.active" class="ml-2"
+                                    >Aktiv</span
+                                  >
+
+                                  <v-icon
+                                    v-if="parevaSystem?.active === false"
+                                    color="error"
+                                    >mdi-close</v-icon
+                                  >
+                                  <span
+                                    v-if="parevaSystem?.active === false"
+                                    class="ml-2"
+                                    >Inaktiv</span
+                                  >
+                                </div>
+                              </v-fade-transition>
+                            </v-col>
+                          </v-row>
+                        </template>
+                      </v-expansion-panel-header>
+                      <v-expansion-panel-content class="mt-3">
+                        <v-row>
+                          <v-col class="col-12">
+                            <v-switch
+                              v-model="parevaSystem.active"
+                              color="primary"
+                              hide-details
+                              label="Parava aktivieren"
+                              class="mt-2"
+                            ></v-switch>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Server-URL"
+                              v-model="parevaSystem.serverUrl"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Locker-ID"
+                              v-model="parevaSystem.lockerId"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Benutzername"
+                              v-model="parevaSystem.user"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <password-field
+                              v-model="parevaSystem.password"
+                            ></password-field>
+                          </v-col>
+                        </v-row>
+                      </v-expansion-panel-content>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
+                  </v-col>
+              </v-row>
+
+              <h3 class="mt-10">Buchungskonfiguration</h3>
+              <v-divider class="mb-5"></v-divider>
               <v-row>
                 <v-col class="col-12 col-md-6">
                   <v-text-field
@@ -537,9 +634,11 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import PasswordField from "@/components/CommonComponents/PasswordField.vue";
 
 export default {
   name: "TenantEdit",
+  components: { PasswordField },
   props: {
     open: {
       type: Boolean,
@@ -602,6 +701,13 @@ export default {
     selectedTenant: {
       get() {
         return this.tenant;
+      },
+    },
+    parevaSystem: {
+      get() {
+        return this.selectedTenant.applications?.find(
+          (app) => app.id === "pareva"
+        ) || {};
       },
     },
   },
