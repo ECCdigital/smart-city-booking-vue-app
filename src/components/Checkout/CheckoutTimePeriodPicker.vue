@@ -119,8 +119,20 @@ export default {
     updateDisplayedMonth(val) {
       this.displayedMonth = val;
     },
+    scrollToElement(id){
+      const element = document.getElementById(id);
+      element.scrollIntoView({behavior: "smooth"});
+    }
   },
   watch: {
+    date: {
+      handler: function (old, val) {
+        if(old && val) {
+          this.scrollToElement("time-periods");
+        }
+      },
+      immediate: true,
+    },
     timePeriod: {
       handler: function (val) {
         this.$emit("input", val);
@@ -161,7 +173,7 @@ export default {
         >
       </v-col>
     </v-row>
-    <v-row v-if="getTimePeriods(date).length > 0" class="primary">
+    <v-row id="time-periods" v-if="getTimePeriods(date).length > 0" class="primary">
       <v-col
         class="col-12 col-md-4"
         v-for="timePeriod in getTimePeriods(date)"
