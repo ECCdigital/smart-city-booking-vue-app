@@ -2,12 +2,11 @@
   <div>
     <div class="d-flex mb-5">
       <v-spacer></v-spacer>
-      <v-btn color="primary" class="px-10" small @click="submit">
+      <v-btn :disabled="isNextButtonDisabled" color="primary" class="px-10" small @click="submit">
         Weiter
         <v-icon right small>mdi-arrow-right</v-icon>
       </v-btn>
     </div>
-
     <v-form v-model="valid" ref="form">
       <h2>Buchungszeitraum</h2>
       <p>Bitte wählen Sie den Zeitraum für Ihre Buchung.</p>
@@ -316,6 +315,9 @@ export default {
   },
 
   computed: {
+    isNextButtonDisabled() {
+      return !this.leadItem.valid;
+    },
     timestampBegin() {
       if (this.dateBeginModel == null || this.timeBeginModel == null) {
         return 0;

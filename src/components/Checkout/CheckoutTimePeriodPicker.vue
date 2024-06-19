@@ -119,8 +119,20 @@ export default {
     updateDisplayedMonth(val) {
       this.displayedMonth = val;
     },
+    scrollToElement(id) {
+      const el = this.$refs[id];
+      el.scrollIntoView({ behavior: "smooth" });
+    },
   },
   watch: {
+    date: {
+      handler: function (old, val) {
+        if (old && val) {
+          this.scrollToElement("time-periods");
+        }
+      },
+      immediate: true,
+    },
     timePeriod: {
       handler: function (val) {
         this.$emit("input", val);
@@ -153,6 +165,7 @@ export default {
       @update:picker-date="updateDisplayedMonth"
     >
     </v-date-picker>
+    <div ref="time-periods"></div>
     <v-row v-if="date" class="mt-10">
       <v-col>
         <span class="subtitle-1"

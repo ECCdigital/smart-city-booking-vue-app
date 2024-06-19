@@ -6,7 +6,7 @@
         Zurück
       </v-btn>
       <v-spacer></v-spacer>
-      <v-btn color="primary" class="px-10" small @click="submit">
+      <v-btn :disabled="isNextButtonDisabled" color="primary" class="px-10" small @click="submit">
         Zur Zusammenfassung
       </v-btn>
     </div>
@@ -178,6 +178,9 @@ export default {
   },
 
   computed: {
+    isNextButtonDisabled() {
+      return !this.valid;
+    },
     agreements: function () {
       return this.leadItem.bookable.attachments.filter(
         (a) => a.type === "agreement" || a.type === "privacy-agreement"
