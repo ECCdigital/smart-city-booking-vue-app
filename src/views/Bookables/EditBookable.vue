@@ -531,6 +531,17 @@
         >
       </v-col>
     </v-row>
+    <h3 class="mt-10 mb-4">Zusätzliche Optionen</h3>
+    <v-row>
+      <v-col class="col-auto">
+        <v-switch
+          dense
+          label="Kommentarfeld erforderlich"
+          hide-details
+          v-model="commentRequired"
+          ></v-switch>
+      </v-col>
+    </v-row>
 
     <v-divider class="mt-10"></v-divider>
 
@@ -757,6 +768,7 @@ export default {
             isLongRange,
             longRangeOptions,
             lockerDetails,
+            requiredFields,
           } = response.data;
 
           this.restoreFromApi({
@@ -808,6 +820,7 @@ export default {
             isLongRange: isLongRange,
             longRangeOptions: longRangeOptions,
             lockerDetails: lockerDetails,
+            requiredFields: requiredFields,
           });
         })
         .finally(() => {
@@ -1154,6 +1167,28 @@ export default {
       },
       set(value) {
         this.updateValue({ field: "checkoutBookableIds", value: value });
+      },
+    },
+    commentRequired: {
+      get() {
+        return this.$store.state.bookables.form.requiredFields?.includes("comment");
+      },
+      set(value) {
+        if (value) {
+          if (!this.$store.state.bookables.form.requiredFields?.includes("comment")) {
+            this.updateValue({
+              field: "requiredFields",
+              value: [...(this.$store.state.bookables.form.requiredFields || []), "comment"],
+            });
+          }
+        } else {
+          this.updateValue({
+            field: "requiredFields",
+            value: (this.$store.state.bookables.form.requiredFields || []).filter(
+              (f) => f !== "comment"
+            ),
+          });
+        }
       },
     },
     mode: function () {

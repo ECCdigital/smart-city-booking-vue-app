@@ -6,7 +6,13 @@
         Zurück
       </v-btn>
       <v-spacer></v-spacer>
-      <v-btn color="primary" class="px-10" small @click="submit">
+      <v-btn
+        :disabled="isNextButtonDisabled"
+        color="primary"
+        class="px-10"
+        small
+        @click="submit"
+      >
         Zur Zusammenfassung
       </v-btn>
     </div>
@@ -104,21 +110,30 @@
 
     <v-textarea
       filled
-      label="Hinweise zur Buchung"
+      :label="commentLabel"
+      :placeholder="
+        commentRequired
+          ? 'Bitte geben Sie den Zweck oder die geplante Nutzung dieser Ressource an. Dieses Feld ist erforderlich.'
+          : ''
+      "
       hide-details
       dense
+      :rules="commentRequired ? validationRules.required : []"
       v-model="contactDetails.comment"
     ></v-textarea>
 
     <v-divider class="mt-5"></v-divider>
     <span class="caption">* Pflichtfelder</span>
+    <checkout-agreements v-if="leadItem && leadItem.bookable.attachments.length > 0" :agreements="leadItem.bookable.attachments" ref="checkoutAgreements"></checkout-agreements>
   </v-form>
 </template>
 
 <script>
+import CheckoutAgreements from "@/views/BundleCheckout/CheckoutAgreements.vue";
+
 export default {
   name: "CheckoutContactDetails",
-  components: {},
+  components: { CheckoutAgreements },
 
   props: {
     leadItem: {
@@ -147,7 +162,10 @@ export default {
 
   methods: {
     submit() {
-      if (this.$refs.form.validate() && this.$parent.$refs.checkoutAgreements.validate()) {
+      if (
+        this.$refs.form.validate() &&
+        this.$refs.checkoutAgreements.validate()
+      ) {
         this.$emit("submit");
       }
     },
@@ -158,10 +176,21 @@ export default {
   },
 
   computed: {
+    isNextButtonDisabled() {
+      return !this.valid;
+    },
     agreements: function () {
       return this.leadItem.bookable.attachments.filter(
         (a) => a.type === "agreement" || a.type === "privacy-agreement"
       );
+    },
+    commentRequired() {
+      return this.leadItem.bookable.requiredFields?.includes("comment");
+    },
+    commentLabel() {
+      return this.commentRequired
+        ? "Hinweise zur Buchung*"
+        : "Hinweise zur Buchung";
     },
   },
 };
