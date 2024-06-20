@@ -327,5 +327,13 @@
         "message": "Der Buchungsbeleg konnte nicht erstellt werden."
       }
     }
+  },
+  "attachment": {
+    "download": {
+      "error": {
+        "title": "Fehler beim Herunterladen",
+        "message": "Die Datei konnte nicht heruntergeladen werden."
+      }
+    }
   }
 }
