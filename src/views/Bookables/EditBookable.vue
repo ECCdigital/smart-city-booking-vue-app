@@ -442,73 +442,77 @@
 
     <h3 class="mt-10 mb-4">Anhänge</h3>
     <div v-for="(attachment, index) in attachments" :key="attachment.id">
-      <v-row class="">
-        <v-col class="col-12 col-md-9">
-          <v-row>
-            <v-col>
-              <v-text-field
-                dense
-                background-color="accent"
-                filled
-                label="Titel"
-                hide-details
-                v-model="attachment.title"
-              ></v-text-field>
-            </v-col>
-            <v-col>
-              <v-select
-                dense
-                background-color="accent"
-                filled
-                label="Typ"
-                hide-details
-                v-model="attachment.type"
-                :items="attachmentTypes"
-                item-text="name"
-                item-value="id"
-              ></v-select>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col>
-              <v-text-field
-                dense
-                background-color="accent"
-                filled
-                label="Beschreibung"
-                placeholder="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."
-                hide-details
-                v-model="attachment.caption"
-              ></v-text-field>
-            </v-col>
-            <v-col>
-              <ChooseFile
-                v-model="attachment.url"
-                :allow-protected="false"
-                :tenant="tenant"
-                filled
-                label="Datei"
-                background-color="accent"
-                forced-subdirectory="agreements"
-              />
-            </v-col>
-          </v-row>
-        </v-col>
-        <v-col>
-          <v-row>
-            <v-col>
-              <v-switch
-                dense
-                label="Muss vom Nutzer akzeptiert werden"
-                hide-details
-                v-model="attachment.required"
-              ></v-switch>
-              <v-switch
-                dense
-                label="Im Buchungsprozess anzeigen"
-                hide-details
-                v-model="attachment.show"
-              ></v-switch>
+      <v-card flat outlined rounded>
+        <v-card-text>
+          <v-row class="">
+            <v-col class="col">
+              <v-row>
+                <v-col>
+                  <v-text-field
+                    dense
+                    background-color="accent"
+                    filled
+                    label="Titel"
+                    hide-details
+                    v-model="attachment.title"
+                  ></v-text-field>
+                </v-col>
+                <v-col>
+                  <v-select
+                    dense
+                    background-color="accent"
+                    filled
+                    label="Typ"
+                    hide-details
+                    v-model="attachment.type"
+                    :items="attachmentTypes"
+                    item-text="name"
+                    item-value="id"
+                  ></v-select>
+                </v-col>
+                <v-col>
+                  <ChooseFile
+                    v-model="attachment.url"
+                    :allow-protected="false"
+                    :tenant="tenant"
+                    filled
+                    label="Datei"
+                    background-color="accent"
+                    forced-subdirectory="agreements"
+                  />
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col>
+                  <v-text-field
+                    dense
+                    background-color="accent"
+                    filled
+                    label="Beschreibung"
+                    placeholder="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."
+                    hide-details
+                    v-model="attachment.caption"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col>
+                  <v-switch
+                    dense
+                    label="Muss vom Nutzer akzeptiert werden"
+                    hide-details
+                    v-model="attachment.required"
+                  ></v-switch>
+                </v-col>
+                <v-col>
+                  <v-switch
+                    dense
+                    label="Im Buchungsprozess anzeigen"
+                    hide-details
+                    v-model="attachment.show"
+                  ></v-switch>
+                </v-col>
+              </v-row>
             </v-col>
             <v-col class="col-auto">
               <v-btn icon small @click="removeAttachment(attachment.id)">
@@ -516,8 +520,8 @@
               </v-btn>
             </v-col>
           </v-row>
-        </v-col>
-      </v-row>
+        </v-card-text>
+      </v-card>
       <v-divider
         class="my-5"
         v-if="index < attachments.length - 1"
@@ -539,7 +543,7 @@
           label="Kommentarfeld erforderlich"
           hide-details
           v-model="commentRequired"
-          ></v-switch>
+        ></v-switch>
       </v-col>
     </v-row>
 
@@ -1171,22 +1175,31 @@ export default {
     },
     commentRequired: {
       get() {
-        return this.$store.state.bookables.form.requiredFields?.includes("comment");
+        return this.$store.state.bookables.form.requiredFields?.includes(
+          "comment"
+        );
       },
       set(value) {
         if (value) {
-          if (!this.$store.state.bookables.form.requiredFields?.includes("comment")) {
+          if (
+            !this.$store.state.bookables.form.requiredFields?.includes(
+              "comment"
+            )
+          ) {
             this.updateValue({
               field: "requiredFields",
-              value: [...(this.$store.state.bookables.form.requiredFields || []), "comment"],
+              value: [
+                ...(this.$store.state.bookables.form.requiredFields || []),
+                "comment",
+              ],
             });
           }
         } else {
           this.updateValue({
             field: "requiredFields",
-            value: (this.$store.state.bookables.form.requiredFields || []).filter(
-              (f) => f !== "comment"
-            ),
+            value: (
+              this.$store.state.bookables.form.requiredFields || []
+            ).filter((f) => f !== "comment"),
           });
         }
       },
