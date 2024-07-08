@@ -2,12 +2,11 @@
   <div>
     <div class="d-flex mb-5">
       <v-spacer></v-spacer>
-      <v-btn color="primary" class="px-10" small @click="submit">
+      <v-btn :disabled="isNextButtonDisabled" color="primary" class="px-10" small @click="submit">
         Weiter
         <v-icon right small>mdi-arrow-right</v-icon>
       </v-btn>
     </div>
-
     <v-form v-model="valid" ref="form">
       <h2>Buchungszeitraum</h2>
       <p>Bitte wählen Sie den Zeitraum für Ihre Buchung.</p>
@@ -150,55 +149,11 @@
           </v-menu>
         </v-col>
       </v-row>
-
       <v-row v-if="selectionType === 'time-period'">
         <v-col>
-          <v-menu
-            ref="dateBeginMenu"
-            v-model="dateBeginMenu"
-            :close-on-content-click="false"
-            :return-value.sync="dateBeginModel"
-            transition="scale-transition"
-            offset-y
-            min-width="auto"
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-text-field
-                v-model="dateBeginModel"
-                label="Datum"
-                prepend-icon="mdi-calendar"
-                readonly
-                v-bind="attrs"
-                v-on="on"
-                :rules="validationRules.dateBegin"
-              ></v-text-field>
-            </template>
-            <v-date-picker
-              v-model="dateBeginModel"
-              :show-current="minBookingDate"
-              :min="minBookingDate"
-              locale="de"
-              :first-day-of-week="1"
-              no-title
-              scrollable
-              @click:date="$refs.dateBeginMenu.save(dateBeginModel)"
-            >
-            </v-date-picker>
-          </v-menu>
-        </v-col>
-        <v-col>
-          <v-select
-            v-model="timePeriodModel"
-            :items="timePeriods"
-            label="Zeitraum"
-            prepend-icon="mdi-clock-outline"
-            :rules="validationRules.required"
-            no-data-text="Es sind keine Zeiträume verfügbar"
-          >
-          </v-select>
+          <checkout-time-period-picker v-model="selectedTimePeriod" :lead-item="leadItem"></checkout-time-period-picker>
         </v-col>
       </v-row>
-
       <v-row v-if="selectionType === 'long-range-week'">
         <v-col>
           <v-select
@@ -245,7 +200,7 @@
       </v-row>
 
       <checkout-calendar
-        v-if="leadItem.bookable"
+        v-if="leadItem.bookable && selectionType !== 'time-period'"
         :bookableId="leadItem.bookable.id"
         :tenant="leadItem.bookable.tenant"
         :booking-time-begin="timestampBegin"
@@ -261,10 +216,11 @@
 <script>
 import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
+import CheckoutTimePeriodPicker from "@/components/Checkout/CheckoutTimePeriodPicker.vue";
 
 export default {
   name: "CheckoutTimeSelector",
-  components: { CheckoutCalendar },
+  components: { CheckoutTimePeriodPicker, CheckoutCalendar },
 
   props: {
     trace: {
@@ -307,6 +263,7 @@ export default {
       timePeriodModel: null,
       longRangeWeekModel: null,
       longRangeMonthModel: null,
+      selectedTimePeriod: null,
 
       validationRules: {
         required: [(v) => !!v],
@@ -349,12 +306,18 @@ export default {
 
     submit() {
       if (this.$refs.form.validate()) {
+        if (!this.dateBeginModel || !this.timeBeginModel || !this.dateEndModel || !this.timeEndModel) {
+          return;
+        }
         this.$emit("submit");
       }
     },
   },
 
   computed: {
+    isNextButtonDisabled() {
+      return !this.leadItem.valid;
+    },
     timestampBegin() {
       if (this.dateBeginModel == null || this.timeBeginModel == null) {
         return 0;
@@ -369,24 +332,6 @@ export default {
       }
       const d = new Date(this.dateEndModel + " " + this.timeEndModel);
       return d.getTime();
-    },
-
-    timePeriods() {
-      if (this.dateBeginModel == null) {
-        return [];
-      }
-      const weekday = new Date(this.dateBeginModel).getDay();
-      // get all time periods for the selected weekday included in the bookable
-      const timePeriods = this.leadItem.bookable.timePeriods.filter(
-        (timePeriod) => timePeriod.weekdays.includes(weekday)
-      );
-      // return startTime and endTime as string
-      return timePeriods.map((timePeriod) => {
-        return {
-          text: timePeriod.startTime + " - " + timePeriod.endTime,
-          value: timePeriod,
-        };
-      });
     },
 
     minBookingTime() {
@@ -415,10 +360,14 @@ export default {
       let startDateTime = new Date(this.timestampBegin);
 
       let maxDateTime = new Date(this.timestampBegin);
-      maxDateTime.setHours(startDateTime.getHours() + this.leadItem.bookable.maxBookingDuration);
+      maxDateTime.setHours(
+        startDateTime.getHours() + this.leadItem.bookable.maxBookingDuration
+      );
 
       let minDateTime = new Date(this.timestampBegin);
-      minDateTime.setHours(startDateTime.getHours() + this.leadItem.bookable.minBookingDuration);
+      minDateTime.setHours(
+        startDateTime.getHours() + this.leadItem.bookable.minBookingDuration
+      );
 
       const formatDate = (date) => date.toLocaleDateString("sv-SE");
 
@@ -442,16 +391,16 @@ export default {
       return new Date().toISOString().split("T")[0];
     },
     selectionType() {
-      if (this.leadItem.bookable.isScheduleRelated === true) {
+      if (this.leadItem.bookable?.isScheduleRelated === true) {
         return "schedule";
       }
-      if (this.leadItem.bookable.isTimePeriodRelated === true) {
+      if (this.leadItem.bookable?.isTimePeriodRelated === true) {
         return "time-period";
       }
-      if (this.leadItem.bookable.isLongRange === true) {
-        if (this.leadItem.bookable.longRangeOptions?.type === "week") {
+      if (this.leadItem.bookable?.isLongRange === true) {
+        if (this.leadItem.bookable?.longRangeOptions?.type === "week") {
           return "long-range-week";
-        } else if (this.leadItem.bookable.longRangeOptions?.type === "month") {
+        } else if (this.leadItem.bookable?.longRangeOptions?.type === "month") {
           return "long-range-month";
         }
       }
@@ -510,7 +459,7 @@ export default {
       const dateBegin = new Date(this.dateBeginModel).getTime();
       const dateEnd = new Date(this.dateEndModel).getTime();
 
-      if ( dateBegin > dateEnd || this.dateEndModel == null) {
+      if (dateBegin > dateEnd || this.dateEndModel == null) {
         this.dateEndModel = this.dateBeginModel;
       }
 
@@ -525,7 +474,8 @@ export default {
     timeBeginModel: function () {
       if (
         this.leadItem.bookable.minBookingDuration > 0 ||
-        new Date("1970-01-01T" + this.timeBeginModel).getTime() > new Date("1970-01-01T" + this.timeEndModel).getTime()
+        new Date("1970-01-01T" + this.timeBeginModel).getTime() >
+          new Date("1970-01-01T" + this.timeEndModel).getTime()
       ) {
         this.timeEndModel = checkoutUtils.addHoursToTime(
           this.timeBeginModel,
@@ -534,14 +484,15 @@ export default {
 
         const hoursToAdd = Number(this.leadItem.bookable.minBookingDuration);
         const startHours = Number(this.timeBeginModel.split(":")[0]);
-        const newTimestamp = new Date(this.dateBeginModel + "T" + this.timeBeginModel)
-          .setHours(startHours + hoursToAdd);
+        const newTimestamp = new Date(
+          this.dateBeginModel + "T" + this.timeBeginModel
+        ).setHours(startHours + hoursToAdd);
 
         // Erstellung eines neuen Date-Objekts für den Vergleich
         const newDate = new Date(newTimestamp);
 
         // Vergleich der neuen Datumswerte
-        if ( newDate > new Date(this.dateEndModel + "T" + this.timeEndModel)) {
+        if (newDate > new Date(this.dateEndModel + "T" + this.timeEndModel)) {
           this.dateEndModel = newDate.toLocaleDateString("sv-SE");
         }
       }
@@ -552,6 +503,21 @@ export default {
     timePeriodModel: function () {
       this.timeBeginModel = this.timePeriodModel?.startTime;
       this.timeEndModel = this.timePeriodModel?.endTime;
+    },
+
+    selectedTimePeriod: function () {
+      const dateBegin = new Date(this.selectedTimePeriod.timeBegin);
+      const dateEnd = new Date(this.selectedTimePeriod.timeEnd);
+      this.dateBeginModel = dateBegin.toISOString().split("T")[0];
+      this.timeBeginModel = dateBegin.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      this.dateEndModel = dateEnd.toISOString().split("T")[0];
+      this.timeEndModel = dateEnd.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     },
 
     dateEndModel: function () {

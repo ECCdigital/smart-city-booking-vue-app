@@ -1,7 +1,7 @@
 {
   "name": "smart-city-booking-vue-app",
   "description": "A VueJS Frontend for the Smart City Booking System",
-  "version": "2.4.0",
+  "version": "2.9.0",
   "private": true,
   "scripts": {
     "start": "node --max_old_space_size=4096 node_modules/@vue/cli-service/bin/vue-cli-service.js serve --mode production",
@@ -38,6 +38,7 @@
     "sass": "^1.69.5",
     "sass-loader": "^13.3.2",
     "uglify-js": "^3.17.4",
+    "uuid": "^9.0.1",
     "vee-validate": "^3.4.14",
     "vue": "^2.7.15",
     "vue-axios": "^3.5.2",

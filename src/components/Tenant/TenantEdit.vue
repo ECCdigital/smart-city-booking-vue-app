@@ -149,31 +149,24 @@
                       absolute
                       color="success"
                       text
-
                     >
-                      <v-icon left>
-                        mdi-check
-                      </v-icon>
-                      Es ist eine E-Mail-Vorlage hinterlegt. Um diese zu ändern, wenden Sie sich bitte an den Administrator.
+                      <v-icon left> mdi-check </v-icon>
+                      Es ist eine E-Mail-Vorlage hinterlegt. Um diese zu ändern,
+                      wenden Sie sich bitte an den Administrator.
                     </v-snackbar>
                   </v-card>
-                  <v-card
-                    v-else
-                    flat
-                    height="100"
-                  >
+                  <v-card v-else flat height="100">
                     <v-snackbar
                       :timeout="-1"
                       :value="true"
                       absolute
                       color="error"
                       text
-
                     >
-                      <v-icon left>
-                        mdi-close
-                      </v-icon>
-                      Es ist keine E-Mail-Vorlage hinterlegt. Um eine E-Mail-Vorlage zu hinterlegen, wenden Sie sich bitte an den Administrator.
+                      <v-icon left> mdi-close </v-icon>
+                      Es ist keine E-Mail-Vorlage hinterlegt. Um eine
+                      E-Mail-Vorlage zu hinterlegen, wenden Sie sich bitte an
+                      den Administrator.
                     </v-snackbar>
                   </v-card>
                 </v-col>
@@ -230,14 +223,10 @@
                   ></v-text-field>
                 </v-col>
                 <v-col class="">
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Passwort"
-                    type="password"
+                  <password-field
                     v-model="selectedTenant.noreplyPassword"
-                  ></v-text-field>
+                    label="Passwort"
+                  ></password-field>
                 </v-col>
               </v-row>
 
@@ -247,7 +236,8 @@
                   <v-card
                     v-if="!!selectedTenant.receiptTemplate"
                     flat
-                    height="100">
+                    height="100"
+                  >
                     <v-snackbar
                       :timeout="-1"
                       :value="true"
@@ -255,17 +245,12 @@
                       color="success"
                       text
                     >
-                      <v-icon left>
-                        mdi-check
-                      </v-icon>
-                      Es ist eine Zahlungsbeleg-Vorlage hinterlegt. Um diese zu ändern, wenden Sie sich bitte an den Administrator.
+                      <v-icon left> mdi-check </v-icon>
+                      Es ist eine Zahlungsbeleg-Vorlage hinterlegt. Um diese zu
+                      ändern, wenden Sie sich bitte an den Administrator.
                     </v-snackbar>
                   </v-card>
-                  <v-card
-                    flat
-                    height="120"
-                    v-else
-                  >
+                  <v-card flat height="120" v-else>
                     <v-snackbar
                       :timeout="-1"
                       :value="true"
@@ -273,10 +258,10 @@
                       color="error"
                       text
                     >
-                      <v-icon left>
-                        mdi-close
-                      </v-icon>
-                      Es ist keine Zahlungsbelegvorlage hinterlegt. Um eine Zahlungsbelegvorlage zu hinterlegen, wenden Sie sich bitte an den Administrator.
+                      <v-icon left> mdi-close </v-icon>
+                      Es ist keine Zahlungsbelegvorlage hinterlegt. Um eine
+                      Zahlungsbelegvorlage zu hinterlegen, wenden Sie sich bitte
+                      an den Administrator.
                     </v-snackbar>
                   </v-card>
                 </v-col>
@@ -325,14 +310,10 @@
                   ></v-text-field>
                 </v-col>
                 <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Schlüssel"
-                    type="password"
+                  <password-field
                     v-model="selectedTenant.paymentSecret"
-                  ></v-text-field>
+                    label="Schlüssel"
+                  ></password-field>
                 </v-col>
               </v-row>
               <v-row>
@@ -348,6 +329,105 @@
                   ></v-text-field>
                 </v-col>
               </v-row>
+              <h3 class="mb-5 mt-5" v-if="parevaSystem?.active">
+                Schließsysteme
+              </h3>
+              <v-row>
+                <v-col>
+                  <v-expansion-panels flat multiple>
+                    <v-expansion-panel>
+                      <v-expansion-panel-header
+                        color="accent"
+                        expand-icon="mdi-menu-down"
+                        class="penal-header"
+                      >
+                        <template v-slot:default="{ open }">
+                          <v-row no-gutters align="center">
+                            <v-col cols="4">
+                              <span class="text-subtitle-1"> Pareva </span>
+                            </v-col>
+                            <v-col class="col-2">
+                              <v-fade-transition leave-absolute>
+                                <div v-if="!open">
+                                  <v-icon
+                                    v-if="parevaSystem?.active"
+                                    color="success"
+                                    >mdi-check</v-icon
+                                  >
+                                  <span v-if="parevaSystem?.active" class="ml-2"
+                                    >Aktiv</span
+                                  >
+
+                                  <v-icon
+                                    v-if="parevaSystem?.active === false"
+                                    color="error"
+                                    >mdi-close</v-icon
+                                  >
+                                  <span
+                                    v-if="parevaSystem?.active === false"
+                                    class="ml-2"
+                                    >Inaktiv</span
+                                  >
+                                </div>
+                              </v-fade-transition>
+                            </v-col>
+                          </v-row>
+                        </template>
+                      </v-expansion-panel-header>
+                      <v-expansion-panel-content class="mt-3">
+                        <v-row>
+                          <v-col class="col-12">
+                            <v-switch
+                              v-model="parevaSystem.active"
+                              color="primary"
+                              hide-details
+                              label="Parava aktivieren"
+                              class="mt-2"
+                            ></v-switch>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Server-URL"
+                              v-model="parevaSystem.serverUrl"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Locker-ID"
+                              v-model="parevaSystem.lockerId"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Benutzername"
+                              v-model="parevaSystem.user"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <password-field
+                              v-model="parevaSystem.password"
+                            ></password-field>
+                          </v-col>
+                        </v-row>
+                      </v-expansion-panel-content>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
+                  </v-col>
+              </v-row>
+
               <h3 class="mb-5 mt-5">Buchungskonfiguration</h3>
               <v-row>
                 <v-col class="col-12 col-md-6">
@@ -387,9 +467,11 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import PasswordField from "@/components/CommonComponents/PasswordField.vue";
 
 export default {
   name: "TenantEdit",
+  components: { PasswordField },
   props: {
     open: {
       type: Boolean,
@@ -402,6 +484,7 @@ export default {
   },
   data() {
     return {
+      test: "",
       valid: false,
       originTenantId: null,
       inProgress: false,
@@ -432,6 +515,13 @@ export default {
     selectedTenant: {
       get() {
         return this.tenant;
+      },
+    },
+    parevaSystem: {
+      get() {
+        return this.selectedTenant.applications?.find(
+          (app) => app.id === "pareva"
+        ) || {};
       },
     },
   },

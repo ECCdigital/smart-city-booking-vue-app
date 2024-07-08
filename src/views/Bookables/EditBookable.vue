@@ -220,6 +220,20 @@
       </v-col>
     </v-row>
 
+    <h3 class="mt-10">Schließsysteme</h3>
+    <v-row>
+      <v-col>
+        <p>
+          Buchungsobjekte, die mit Schließsystemen verbunden sind, können
+          automatisch geöffnet und geschlossen werden.
+        </p>
+      </v-col>
+    </v-row>
+    <BookableLockingAttributes
+      :tenant="tenant"
+      :amount="amount"
+    ></BookableLockingAttributes>
+
     <h3 class="mt-10">Individuelle Berechtigungen</h3>
 
     <v-row>
@@ -427,52 +441,109 @@
     </v-row>
 
     <h3 class="mt-10 mb-4">Anhänge</h3>
-    <v-row v-for="attachment in attachments" :key="attachment.id">
-      <v-col>
-        <v-text-field
-          dense
-          background-color="accent"
-          filled
-          label="Titel"
-          hide-details
-          v-model="attachment.title"
-        ></v-text-field>
-      </v-col>
-      <v-col>
-        <v-select
-          dense
-          background-color="accent"
-          filled
-          label="Typ"
-          hide-details
-          v-model="attachment.type"
-          :items="attachmentTypes"
-          item-text="name"
-          item-value="id"
-        ></v-select>
-      </v-col>
-      <v-col>
-        <ChooseFile
-          v-model="attachment.url"
-          :allow-protected="false"
-          :tenant="tenant"
-          filled
-          label="Datei"
-          background-color="accent"
-          forced-subdirectory="agreements"
-        />
-      </v-col>
-      <v-col class="col-auto">
-        <v-btn icon small @click="removeAttachment(attachment.id)">
-          <v-icon>mdi-delete</v-icon>
-        </v-btn>
-      </v-col>
-    </v-row>
+    <div v-for="(attachment, index) in attachments" :key="attachment.id">
+      <v-card flat outlined rounded>
+        <v-card-text>
+          <v-row class="">
+            <v-col class="col">
+              <v-row>
+                <v-col>
+                  <v-text-field
+                    dense
+                    background-color="accent"
+                    filled
+                    label="Titel"
+                    hide-details
+                    v-model="attachment.title"
+                  ></v-text-field>
+                </v-col>
+                <v-col>
+                  <v-select
+                    dense
+                    background-color="accent"
+                    filled
+                    label="Typ"
+                    hide-details
+                    v-model="attachment.type"
+                    :items="attachmentTypes"
+                    item-text="name"
+                    item-value="id"
+                  ></v-select>
+                </v-col>
+                <v-col>
+                  <ChooseFile
+                    v-model="attachment.url"
+                    :allow-protected="false"
+                    :tenant="tenant"
+                    filled
+                    label="Datei"
+                    background-color="accent"
+                    forced-subdirectory="agreements"
+                  />
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col>
+                  <v-text-field
+                    dense
+                    background-color="accent"
+                    filled
+                    label="Beschreibung"
+                    placeholder="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."
+                    hide-details
+                    v-model="attachment.caption"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col>
+                  <v-switch
+                    dense
+                    label="Muss vom Nutzer akzeptiert werden"
+                    hide-details
+                    v-model="attachment.required"
+                  ></v-switch>
+                </v-col>
+                <v-col>
+                  <v-switch
+                    dense
+                    label="Im Buchungsprozess anzeigen"
+                    hide-details
+                    v-model="attachment.show"
+                  ></v-switch>
+                </v-col>
+              </v-row>
+            </v-col>
+            <v-col class="col-auto">
+              <v-btn icon small @click="removeAttachment(attachment.id)">
+                <v-icon>mdi-delete</v-icon>
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+      <v-divider
+        class="my-5"
+        v-if="index < attachments.length - 1"
+        :key="`divider-${index}`"
+      />
+    </div>
     <v-row>
       <v-col class="col-auto">
         <v-btn outlined class="mt-2" @click="addNewAttachment()"
           >Neuer Anhang</v-btn
         >
+      </v-col>
+    </v-row>
+    <h3 class="mt-10 mb-4">Zusätzliche Optionen</h3>
+    <v-row>
+      <v-col class="col-auto">
+        <v-switch
+          dense
+          label="Kommentarfeld erforderlich"
+          hide-details
+          v-model="commentRequired"
+        ></v-switch>
       </v-col>
     </v-row>
 
@@ -498,7 +569,8 @@
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import { mapActions, mapGetters } from "vuex";
-import uniqueId from "lodash/uniqueId";
+import _ from "lodash";
+import { v4 as uuidv4 } from "uuid";
 import ApiEventService from "@/services/api/ApiEventService";
 import ApiUsersService from "@/services/api/ApiUsersService";
 import BookableTimeDependantAttributes from "@/components/Bookable/BookableTimeDependantAttributes";
@@ -506,6 +578,7 @@ import SortableList from "@/components/SortableList";
 import Tiptap from "@/components/Tiptap";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ChooseFile from "@/components/Files/ChooseFile.vue";
+import BookableLockingAttributes from "@/components/Bookable/BookableLockingAttributes";
 
 export default {
   name: "EditBookable",
@@ -514,11 +587,12 @@ export default {
     SortableList,
     BookableTimeDependantAttributes,
     Tiptap,
+    BookableLockingAttributes,
   },
 
   data() {
     return {
-      allowPublic:true,
+      allowPublic: true,
       bookableType: null,
       bookable: {},
       bookableTypes: [
@@ -629,8 +703,9 @@ export default {
     },
     addNewAttachment() {
       this.addAttachment({
-        id: uniqueId(),
+        id: uuidv4(),
         title: "",
+        caption: "",
         type: "",
         url: "",
       });
@@ -696,6 +771,8 @@ export default {
             freeBookingRoles,
             isLongRange,
             longRangeOptions,
+            lockerDetails,
+            requiredFields,
           } = response.data;
 
           this.restoreFromApi({
@@ -746,6 +823,8 @@ export default {
             freeBookingRoles: freeBookingRoles,
             isLongRange: isLongRange,
             longRangeOptions: longRangeOptions,
+            lockerDetails: lockerDetails,
+            requiredFields: requiredFields,
           });
         })
         .finally(() => {
@@ -786,7 +865,6 @@ export default {
         this.fetchBookables();
         this.prepareCreateForm();
       }
-
       this.fetchEvents();
       this.fetchUsers();
       this.fetchRoles();
@@ -877,8 +955,9 @@ export default {
       this.freeBookingRoles.splice(this.freeBookingRoles.indexOf(item), 1);
     },
     async allowSetPublic() {
-      const bookableCountCheck = await ApiBookablesService.publicBookableCountCheck();
-      this.allowPublic = bookableCountCheck || this.isPublic
+      const bookableCountCheck =
+        await ApiBookablesService.publicBookableCountCheck();
+      this.allowPublic = bookableCountCheck || this.isPublic;
     },
   },
   computed: {
@@ -897,7 +976,7 @@ export default {
     },
     tenant: {
       get() {
-        if(this.mode === "create") {
+        if (this.mode === "create") {
           return this.$store.state.tenants.data.id;
         } else {
           return this.$store.state.bookables.form.tenant;
@@ -1092,6 +1171,37 @@ export default {
       },
       set(value) {
         this.updateValue({ field: "checkoutBookableIds", value: value });
+      },
+    },
+    commentRequired: {
+      get() {
+        return this.$store.state.bookables.form.requiredFields?.includes(
+          "comment"
+        );
+      },
+      set(value) {
+        if (value) {
+          if (
+            !this.$store.state.bookables.form.requiredFields?.includes(
+              "comment"
+            )
+          ) {
+            this.updateValue({
+              field: "requiredFields",
+              value: [
+                ...(this.$store.state.bookables.form.requiredFields || []),
+                "comment",
+              ],
+            });
+          }
+        } else {
+          this.updateValue({
+            field: "requiredFields",
+            value: (
+              this.$store.state.bookables.form.requiredFields || []
+            ).filter((f) => f !== "comment"),
+          });
+        }
       },
     },
     mode: function () {
