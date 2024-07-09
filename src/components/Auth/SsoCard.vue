@@ -45,7 +45,11 @@ export default {
       this.state = state;
     },
     async fetchSsoConfig() {
-      this.ssoConfig = await ApiTenantService.tenantSsoConfig(this.tenant.id);
+      try {
+        this.ssoConfig = await ApiTenantService.tenantSsoConfig(this.tenant.id);
+      } catch (error) {
+        this.setState(this.possibleStates.KC_AUTH_ERROR);
+      }
     },
     async createKeycloakSession() {
       this.loading = true;
@@ -174,6 +178,9 @@ export default {
       <v-alert v-if="state === possibleStates.KC_AUTH_SUCCESS" dense text type="success">
         Sie wurden erfolgreich authentifiziert. Wollen Sie sich mit dem Benutzer
         <strong>{{ userEmail }}</strong> anmelden?
+      </v-alert>
+      <v-alert v-if="state === possibleStates.KC_AUTH_ERROR" dense text type="error">
+        Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.
       </v-alert>
       <v-alert v-if="state === possibleStates.NO_USER_FOUND" dense text type="info">
         Wir konnten keinen Benutzer finden. Möchten Sie sich mit dem Benutzer <strong>{{ userEmail }}</strong> registrieren?

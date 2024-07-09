@@ -526,17 +526,10 @@
                               filled
                               dense
                               label="Client-ID für Web-Anwendung"
-                              v-model="keycloak.clientIdApp"
+                              v-model="keycloak.publicClient"
                             ></v-text-field>
                           </v-col>
                           <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              dense
-                              label="Client-Secret"
-                              v-model="keycloak.clientSecret"
-                            ></v-text-field>
                           </v-col>
                         </v-row>
                         <v-row>
@@ -546,29 +539,25 @@
                               filled
                               dense
                               label="Client-ID für Api-Zugriff"
-                              v-model="keycloak.clientIdApi"
+                              v-model="keycloak.privateClient"
                             ></v-text-field>
                           </v-col>
                           <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              dense
+                            <password-field
                               label="Client-Secret"
-                              v-model="keycloak.clientApiSecret"
-                            ></v-text-field>
+                              v-model="keycloak.privateClientSecret"
+                            ></password-field>
                           </v-col>
                         </v-row>
-                        {{keycloak.rolemapping.active}}
                         <v-row>
                           <v-col>
                             <v-switch
-                              v-model="keycloak.rolemapping.active"
+                              v-model="keycloak.roleMapping.active"
                               label="Rollenzuordnung"
                             ></v-switch>
                           </v-col>
                         </v-row>
-                        <v-row v-for="(role, idx) in keycloak.rolemapping.roles"  :key="idx" align="center">
+                        <v-row v-for="(role, idx) in keycloak.roleMapping.roles"  :key="idx" align="center">
                           <v-col>
                             <v-text-field
                               background-color="accent"
@@ -611,7 +600,7 @@
                                   class="align-center add-time-period"
                                   v-on="on"
                                   outlined
-                                  :disabled="!keycloak.rolemapping.active"
+                                  :disabled="!keycloak.roleMapping.active"
                                   @click="addRole"
                                 >
                                   Weitere Schließfach hinzufügen
@@ -720,11 +709,10 @@ export default {
             active: false,
             serverUrl: "",
             realm: "",
-            clientIdApp: "",
-            clientSecret: "",
-            clientIdApi: "",
-            clientApiSecret: "",
-            rolemapping: {
+            publicClient: "",
+            privateClient: "",
+            privateClientSecret: "",
+            roleMapping: {
               active: false,
               roles: [],
             },
@@ -765,10 +753,10 @@ export default {
       this.tenantRoles = response.data;
     },
     addRole() {
-      this.keycloak.rolemapping.roles.push({ keycloakRole: "", tenantRoleId: "" });
+      this.keycloak.roleMapping.roles.push({ keycloakRole: "", tenantRoleId: "" });
     },
     removeRole(idx) {
-      this.keycloak.rolemapping.roles.splice(idx, 1);
+      this.keycloak.roleMapping.roles.splice(idx, 1);
     },
   },
   mounted() {
