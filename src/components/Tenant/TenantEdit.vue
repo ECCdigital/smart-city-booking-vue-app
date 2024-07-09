@@ -702,10 +702,10 @@ export default {
     },
     keycloak: {
       get() {
-        return (
-          this.selectedTenant.applications?.find(
-            (app) => app.id === "keycloak"
-          ) || {
+        let keycloakApp = this.selectedTenant.applications?.find(app => app.id === "keycloak");
+        if (!keycloakApp) {
+          const defaultKeycloak = {
+            id: "keycloak",
             active: false,
             serverUrl: "",
             realm: "",
@@ -716,8 +716,15 @@ export default {
               active: false,
               roles: [],
             },
-          }
-        );
+          };
+          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+          this.selectedTenant.applications = [
+            ...(this.selectedTenant.applications || []),
+            defaultKeycloak,
+          ];
+          keycloakApp = defaultKeycloak;
+        }
+        return keycloakApp;
       },
     },
   },
