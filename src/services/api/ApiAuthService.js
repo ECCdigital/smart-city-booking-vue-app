@@ -11,6 +11,15 @@ export default {
       withCredentials: true,
     });
   },
+  ssoLogin(tenant, token) {
+    const body = {
+      token: token,
+    };
+
+    return ApiClient.post(`auth/${tenant}/sso/signin`, body, {
+      withCredentials: true,
+    });
+  },
   register(tenant, id, firstName, lastName, password) {
     const body = {
       id: id,
@@ -23,6 +32,14 @@ export default {
       withCredentials: true,
     }).then(async (response) => {
       return response;
+    });
+  },
+  ssoRegister(tenant, token) {
+    const body = {
+      token: token,
+    };
+    return ApiClient.post(`auth/${tenant}/sso/signup`, body, {
+      withCredentials: true,
     });
   },
   logout(tenant) {

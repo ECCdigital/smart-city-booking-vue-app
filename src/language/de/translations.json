@@ -26,8 +26,14 @@
   "register": {
     "success": {
       "default": {
-        "title": "Registrierung angemeldet",
+        "title": "Registrierung",
         "message": "Sie haben Sich erfolgreich registriert"
+      },
+      "error": {
+        "default": {
+          "title": "Registrierung fehlgeschlagen",
+          "message": "Leider ist die Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut."
+        }
       }
     },
     "error": {
@@ -309,7 +315,7 @@
       "locations": "Veranstaltungsorte",
       "events": "Veranstaltungen",
       "resources": "Ressourcen",
-      "tickets":  "Tickets",
+      "tickets": "Tickets",
       "bookings": "Buchungen",
       "coupons": "Gutscheine",
       "none": "-",

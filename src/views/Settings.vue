@@ -1,49 +1,52 @@
 <template>
   <AdminLayout>
     <v-row no-gutters align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
+      <v-col class="mx-xs-auto" cols="12" sm="6">
         <p class="text-h4">Allgemein</p>
       </v-col>
     </v-row>
     <v-row no-gutters align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
+      <v-col class="mx-xs-auto" cols="12" sm="6">
         <p class="text-subtitle-1">Allgemeine Angaben zu Ihrem Account</p>
       </v-col>
     </v-row>
     <v-row no-gutters align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
-        <v-card outlined class='mx-auto pa-2'>
-          <v-card-title class='text-h4 darkgrey--text ml-3'>
+      <v-col class="mx-xs-auto" cols="12" sm="6">
+        <v-card outlined class="mx-auto pa-2">
+          <v-card-title class="text-h4 darkgrey--text ml-3">
             Öffentliche Daten
           </v-card-title>
           <v-card-subtitle class="mt-1 ml-3">
-            Diese Daten sind öffentlich und können von anderen Benutzern eingesehen werden.
+            Diese Daten sind öffentlich und können von anderen Benutzern
+            eingesehen werden.
           </v-card-subtitle>
           <v-card-text>
             <v-row>
-              <v-expansion-panels flat class="elevation-0" v-model="generalPanel" multiple>
+              <v-expansion-panels
+                flat
+                class="elevation-0"
+                v-model="generalPanel"
+                multiple
+              >
                 <v-expansion-panel>
                   <v-expansion-panel-header>
-                    <v-row  align="center" justify="space-between">
-                      <v-col class="darkgrey--text col-5">Vor- und Nachname ändern</v-col>
-                      <v-col class="darkgrey--text col-4">{{api.user.firstName}} {{api.user.lastName}}</v-col>
+                    <v-row align="center" justify="space-between">
+                      <v-col class="darkgrey--text col-5"
+                        >Vor- und Nachname ändern</v-col
+                      >
+                      <v-col class="darkgrey--text col-4"
+                        >{{ api.user.firstName }} {{ api.user.lastName }}</v-col
+                      >
                       <v-col class="text-right"></v-col>
                     </v-row>
                     <template v-slot:actions>
                       <v-tooltip bottom>
-                      <template v-slot:activator="{ on }">
-                          <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
-                      </template>
-                      <span>Name ändern</span>
+                        <template v-slot:activator="{ on }">
+                          <v-icon v-on="on" color="darkgrey"
+                            >mdi-chevron-right</v-icon
+                          >
+                        </template>
+                        <span>Name ändern</span>
                       </v-tooltip>
                     </template>
                   </v-expansion-panel-header>
@@ -84,7 +87,9 @@
                   <v-expansion-panel-header>
                     <v-row no-gutters align="center" justify="space-between">
                       <v-col class="darkgrey--text col-5">Beigetreten</v-col>
-                      <v-col class="darkgrey--text col-4">{{ api.user?.created | date }}</v-col>
+                      <v-col class="darkgrey--text col-4">{{
+                        api.user?.created | date
+                      }}</v-col>
                       <v-col class="text-right"></v-col>
                     </v-row>
                   </v-expansion-panel-header>
@@ -114,12 +119,9 @@
       </v-col>
     </v-row>
     <v-row no-gutters class="mt-8 mb-16" align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
-        <v-card outlined class='mx-auto pa-2'>
-          <v-card-title class='text-h4 darkgrey--text ml-3'>
+      <v-col class="mx-xs-auto" cols="12" sm="6">
+        <v-card outlined class="mx-auto pa-2">
+          <v-card-title class="text-h4 darkgrey--text ml-3">
             Kontaktdaten
           </v-card-title>
           <v-card-subtitle class="mt-1 ml-3">
@@ -127,18 +129,29 @@
           </v-card-subtitle>
           <v-card-text>
             <v-row>
-              <v-expansion-panels flat class="elevation-0" v-model="generalPanel" multiple>
+              <v-expansion-panels
+                flat
+                class="elevation-0"
+                v-model="generalPanel"
+                multiple
+              >
                 <v-expansion-panel>
                   <v-expansion-panel-header>
-                    <v-row  align="center" justify="space-between">
-                      <v-col class="darkgrey--text col-5">Telefonnummer ändern</v-col>
-                      <v-col class="darkgrey--text col-4">{{api.user.phone}}</v-col>
+                    <v-row align="center" justify="space-between">
+                      <v-col class="darkgrey--text col-5"
+                        >Telefonnummer ändern</v-col
+                      >
+                      <v-col class="darkgrey--text col-4">{{
+                        api.user.phone
+                      }}</v-col>
                       <v-col class="text-right"></v-col>
                     </v-row>
                     <template v-slot:actions>
                       <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                          <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
+                          <v-icon v-on="on" color="darkgrey"
+                            >mdi-chevron-right</v-icon
+                          >
                         </template>
                         <span>Telefonnummer ändern</span>
                       </v-tooltip>
@@ -171,15 +184,21 @@
                 </v-expansion-panel>
                 <v-expansion-panel>
                   <v-expansion-panel-header>
-                    <v-row  align="center" justify="space-between">
-                      <v-col class="darkgrey--text col-5">Straße und Hausnummer ändern</v-col>
-                      <v-col class="darkgrey--text col-4">{{api.user.address}}</v-col>
+                    <v-row align="center" justify="space-between">
+                      <v-col class="darkgrey--text col-5"
+                        >Straße und Hausnummer ändern</v-col
+                      >
+                      <v-col class="darkgrey--text col-4">{{
+                        api.user.address
+                      }}</v-col>
                       <v-col class="text-right"></v-col>
                     </v-row>
                     <template v-slot:actions>
                       <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                          <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
+                          <v-icon v-on="on" color="darkgrey"
+                            >mdi-chevron-right</v-icon
+                          >
                         </template>
                         <span>Straße und Hausnummer ändern</span>
                       </v-tooltip>
@@ -212,15 +231,21 @@
                 </v-expansion-panel>
                 <v-expansion-panel>
                   <v-expansion-panel-header>
-                    <v-row  align="center" justify="space-between">
-                      <v-col class="darkgrey--text col-5">Postleitzahl ändern</v-col>
-                      <v-col class="darkgrey--text col-4">{{api.user.zipCode}}</v-col>
+                    <v-row align="center" justify="space-between">
+                      <v-col class="darkgrey--text col-5"
+                        >Postleitzahl ändern</v-col
+                      >
+                      <v-col class="darkgrey--text col-4">{{
+                        api.user.zipCode
+                      }}</v-col>
                       <v-col class="text-right"></v-col>
                     </v-row>
                     <template v-slot:actions>
                       <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                          <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
+                          <v-icon v-on="on" color="darkgrey"
+                            >mdi-chevron-right</v-icon
+                          >
                         </template>
                         <span>Postleitzahl ändern</span>
                       </v-tooltip>
@@ -253,15 +278,19 @@
                 </v-expansion-panel>
                 <v-expansion-panel>
                   <v-expansion-panel-header>
-                    <v-row  align="center" justify="space-between">
+                    <v-row align="center" justify="space-between">
                       <v-col class="darkgrey--text col-5">Wohnort ändern</v-col>
-                      <v-col class="darkgrey--text col-4">{{api.user.city}}</v-col>
+                      <v-col class="darkgrey--text col-4">{{
+                        api.user.city
+                      }}</v-col>
                       <v-col class="text-right"></v-col>
                     </v-row>
                     <template v-slot:actions>
                       <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                          <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
+                          <v-icon v-on="on" color="darkgrey"
+                            >mdi-chevron-right</v-icon
+                          >
                         </template>
                         <span>Wohnort ändern</span>
                       </v-tooltip>
@@ -298,47 +327,54 @@
       </v-col>
     </v-row>
     <v-row no-gutters class="mt-16" align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
+      <v-col class="mx-xs-auto" cols="12" sm="6">
         <p class="text-h4">Sicherheit</p>
       </v-col>
     </v-row>
     <v-row no-gutters align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
-        <p class="text-subtitle-1">Einstellungen zum schützen deines Accounts</p>
+      <v-col class="mx-xs-auto" cols="12" sm="6">
+        <p class="text-subtitle-1">
+          Einstellungen zum schützen deines Accounts
+        </p>
       </v-col>
     </v-row>
     <v-row no-gutters align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
-        <v-card outlined class='mx-auto pa-2'>
-          <v-card-title class='text-h4 darkgrey--text ml-3'>
+      <v-col class="mx-xs-auto" cols="12" sm="6">
+        <v-card outlined class="mx-auto pa-2">
+          <v-card-title class="text-h4 darkgrey--text ml-3">
             Anmeldung
           </v-card-title>
           <v-card-subtitle class="mt-1 ml-3">
-            Ändern Sie Ihre E-Mail-Adresse oder Ihr Passwort, damit Ihr Account aktuell bleibt.
+            Ändern Sie Ihre E-Mail-Adresse oder Ihr Passwort, damit Ihr Account
+            aktuell bleibt.
           </v-card-subtitle>
           <v-card-text>
             <v-row>
-              <v-expansion-panels flat class="elevation-0" v-model="securePanel" multiple>
+              <v-expansion-panels
+                flat
+                class="elevation-0"
+                v-model="securePanel"
+                multiple
+              >
                 <v-expansion-panel disabled>
                   <v-expansion-panel-header>
                     <v-row no-gutters align="center" justify="space-between">
-                      <v-col class="darkgrey--text col-5">E-Mail-Adresse ändern</v-col>
-                      <v-col class="darkgrey--text col-4">{{api.user.id}}</v-col>
-                      <v-col class="text-right"><v-icon color="darkgrey">mdi-lock</v-icon></v-col>
+                      <v-col class="darkgrey--text col-5"
+                        >E-Mail-Adresse ändern</v-col
+                      >
+                      <v-col class="darkgrey--text col-4">{{
+                        api.user.id
+                      }}</v-col>
+                      <v-col class="text-right"
+                        ><v-icon color="darkgrey">mdi-lock</v-icon></v-col
+                      >
                     </v-row>
                     <template v-slot:actions>
                       <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                          <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
+                          <v-icon v-on="on" color="darkgrey"
+                            >mdi-chevron-right</v-icon
+                          >
                         </template>
                         <span>E-Mail-Adresse ändern</span>
                       </v-tooltip>
@@ -350,17 +386,29 @@
                   </v-expansion-panel-content>
                   <v-divider></v-divider>
                 </v-expansion-panel>
-                <v-expansion-panel>
+                <v-expansion-panel
+                  :disabled="api.user?.authType === 'keycloak'"
+                >
                   <v-expansion-panel-header>
                     <v-row no-gutters align="center" justify="space-between">
                       <v-col class="darkgrey--text">Passwort ändern</v-col>
                       <v-col class=""></v-col>
-                      <v-col class="text-right"></v-col>
+                      <v-col class="text-right">
+                        <v-icon
+                          v-if="api.user?.authType === 'keycloak'"
+                          color="darkgrey"
+                          >mdi-lock</v-icon
+                        >
+                      </v-col>
                     </v-row>
                     <template v-slot:actions>
                       <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                          <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
+                          <v-col class="text-right">
+                            <v-icon v-on="on" color="darkgrey"
+                              >mdi-chevron-right</v-icon
+                            >
+                          </v-col>
                         </template>
                         <span>Passwort ändern</span>
                       </v-tooltip>
@@ -378,8 +426,11 @@
                             :rules="passwordRules"
                             v-model="password"
                             :type="showPassword ? 'text' : 'password'"
-                            :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                            @click:append="showPassword = !showPassword">
+                            :append-icon="
+                              showPassword ? 'mdi-eye' : 'mdi-eye-off'
+                            "
+                            @click:append="showPassword = !showPassword"
+                          >
                           </v-text-field>
                         </v-col>
                         <v-col>
@@ -390,7 +441,8 @@
                             hide-details
                             :rules="passwordRules"
                             :type="showPassword ? 'text' : 'password'"
-                            v-model="passwordRepeat">
+                            v-model="passwordRepeat"
+                          >
                           </v-text-field>
                         </v-col>
                         <v-col class="text-right">
@@ -411,34 +463,29 @@
             </v-row>
           </v-card-text>
         </v-card>
-      </v-col>
-    </v-row><v-row no-gutters class="mt-16" align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
+      </v-col> </v-row
+    ><v-row no-gutters class="mt-16" align="center" justify="center">
+      <v-col class="mx-xs-auto" cols="12" sm="6">
         <p class="text-h4">Benachrichtigungen</p>
       </v-col>
     </v-row>
     <v-row no-gutters align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
-        <p class="text-subtitle-1">Stellen Sie ein, zu welchen Themen Sie Benachrichtigungen erhalten wollen.</p>
+      <v-col class="mx-xs-auto" cols="12" sm="6">
+        <p class="text-subtitle-1">
+          Stellen Sie ein, zu welchen Themen Sie Benachrichtigungen erhalten
+          wollen.
+        </p>
       </v-col>
     </v-row>
     <v-row no-gutters align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
-        <v-card outlined class='mx-auto pa-2'>
-          <v-card-title class='text-h4 darkgrey--text ml-3'>
+      <v-col class="mx-xs-auto" cols="12" sm="6">
+        <v-card outlined class="mx-auto pa-2">
+          <v-card-title class="text-h4 darkgrey--text ml-3">
             E-Mail Benachrichtigungen
           </v-card-title>
           <v-card-subtitle class="mt-1 ml-3">
-            Diese Benachrichtigungen dienen dazu, um Sie auf dem aktuellen Stand zu halten.
+            Diese Benachrichtigungen dienen dazu, um Sie auf dem aktuellen Stand
+            zu halten.
           </v-card-subtitle>
           <v-card-text>
             <v-row>
@@ -446,16 +493,24 @@
                 <v-expansion-panel disabled>
                   <v-expansion-panel-header>
                     <v-row no-gutters align="center" justify="space-between">
-                      <v-col class="darkgrey--text col-5">Updates zu deinen Veranstaltungen</v-col>
+                      <v-col class="darkgrey--text col-5"
+                        >Updates zu deinen Veranstaltungen</v-col
+                      >
                       <v-col class="col-4">Bald verfügbar...</v-col>
-                      <v-col class="text-right"><v-icon color="darkgrey">mdi-lock</v-icon></v-col>
+                      <v-col class="text-right"
+                        ><v-icon color="darkgrey">mdi-lock</v-icon></v-col
+                      >
                     </v-row>
                     <template v-slot:actions>
                       <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                          <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
+                          <v-icon v-on="on" color="darkgrey"
+                            >mdi-chevron-right</v-icon
+                          >
                         </template>
-                        <span>Updates zu deinen Veranstaltungen einstellen</span>
+                        <span
+                          >Updates zu deinen Veranstaltungen einstellen</span
+                        >
                       </v-tooltip>
                     </template>
                   </v-expansion-panel-header>
@@ -468,14 +523,23 @@
                 <v-expansion-panel disabled>
                   <v-expansion-panel-header>
                     <v-row no-gutters align="center" justify="space-between">
-                      <v-col class="darkgrey--text col-5">Reservierungsbestätigungen</v-col>
-                      <v-col class="darkgrey--text col-4"><v-icon color="darkgrey">mdi-information</v-icon>Aktiviert</v-col>
-                      <v-col class="text-right"><v-icon color="darkgrey">mdi-lock</v-icon></v-col>
+                      <v-col class="darkgrey--text col-5"
+                        >Reservierungsbestätigungen</v-col
+                      >
+                      <v-col class="darkgrey--text col-4"
+                        ><v-icon color="darkgrey">mdi-information</v-icon
+                        >Aktiviert</v-col
+                      >
+                      <v-col class="text-right"
+                        ><v-icon color="darkgrey">mdi-lock</v-icon></v-col
+                      >
                     </v-row>
                     <template v-slot:actions>
                       <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                          <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
+                          <v-icon v-on="on" color="darkgrey"
+                            >mdi-chevron-right</v-icon
+                          >
                         </template>
                         <span>Reservierungsbestätigungen einstellen</span>
                       </v-tooltip>
@@ -493,12 +557,9 @@
       </v-col>
     </v-row>
     <v-row no-gutters class="mt-8 mb-16" align="center" justify="center">
-      <v-col
-        class="mx-xs-auto"
-        cols="12"
-        sm="6">
-        <v-card outlined class='mx-auto pa-2'>
-          <v-card-title class='text-h4 darkgrey--text ml-3'>
+      <v-col class="mx-xs-auto" cols="12" sm="6">
+        <v-card outlined class="mx-auto pa-2">
+          <v-card-title class="text-h4 darkgrey--text ml-3">
             Wichtige Benachrichtigungen
           </v-card-title>
           <v-card-subtitle class="mt-1 ml-3">
@@ -510,8 +571,13 @@
                 <v-expansion-panel disabled>
                   <v-expansion-panel-header>
                     <v-row no-gutters align="center" justify="space-between">
-                      <v-col class="darkgrey--text col-5">Passwort vergessen</v-col>
-                      <v-col class="darkgrey--text col-4"><v-icon color="darkgrey">mdi-information</v-icon>Aktiviert</v-col>
+                      <v-col class="darkgrey--text col-5"
+                        >Passwort vergessen</v-col
+                      >
+                      <v-col class="darkgrey--text col-4"
+                        ><v-icon color="darkgrey">mdi-information</v-icon
+                        >Aktiviert</v-col
+                      >
                       <v-col class="text-right"></v-col>
                     </v-row>
                   </v-expansion-panel-header>
@@ -527,8 +593,8 @@
 
 <script>
 import AdminLayout from "@/layouts/Admin";
-import {mapActions, mapGetters} from "vuex";
-import {RolePermission} from "@/entities/role";
+import { mapActions, mapGetters } from "vuex";
+import { RolePermission } from "@/entities/role";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ToastService from "@/services/ToastService";
 import ApiUsersService from "@/services/api/ApiUsersService";
@@ -543,9 +609,7 @@ export default {
       password: "",
       passwordRepeat: "",
       showPassword: false,
-      passwordRules: [
-        v => !!v || "Passwort ist erforderlich",
-      ],
+      passwordRules: [(v) => !!v || "Passwort ist erforderlich"],
       api: {
         user: [],
       },
@@ -556,13 +620,13 @@ export default {
       tempZip: "",
       tempCity: "",
       headers: [
-        {text: "Vorname", value: "firstName"},
-        {text: "Nachname", value: "lastName"},
-        {text: "E-Mail Adresse", value: "id"},
-        {text: "Mandant", value: "tenant"},
-        {text: "Verifiziert", value: "isVerified"},
-        {text: "Rollen", value: "permissions"},
-        {text: "Beigetreten", value: "created"},
+        { text: "Vorname", value: "firstName" },
+        { text: "Nachname", value: "lastName" },
+        { text: "E-Mail Adresse", value: "id" },
+        { text: "Mandant", value: "tenant" },
+        { text: "Verifiziert", value: "isVerified" },
+        { text: "Rollen", value: "permissions" },
+        { text: "Beigetreten", value: "created" },
       ],
     };
   },
@@ -581,7 +645,7 @@ export default {
       },
       set(value) {
         this.tempFirstName = value;
-      }
+      },
     },
     lastName: {
       get() {
@@ -589,7 +653,7 @@ export default {
       },
       set(value) {
         this.tempLastName = value;
-      }
+      },
     },
     phone: {
       get() {
@@ -597,7 +661,7 @@ export default {
       },
       set(value) {
         this.tempPhone = value;
-      }
+      },
     },
     address: {
       get() {
@@ -605,7 +669,7 @@ export default {
       },
       set(value) {
         this.tempAddress = value;
-      }
+      },
     },
     zip: {
       get() {
@@ -613,7 +677,7 @@ export default {
       },
       set(value) {
         this.tempZip = value;
-      }
+      },
     },
     city: {
       get() {
@@ -621,7 +685,7 @@ export default {
       },
       set(value) {
         this.tempCity = value;
-      }
+      },
     },
     permissions() {
       const permissions = [];
@@ -645,7 +709,7 @@ export default {
         permissions.push("Ressourcen verwalten");
       }
       return permissions;
-    }
+    },
   },
   methods: {
     ...mapActions({
@@ -668,18 +732,21 @@ export default {
         .then((user) => {
           this.updateMe(user.data);
           this.isLoading = false;
-          this.addToast(ToastService.createToast("user.edit-profile.success", "success"));
+          this.addToast(
+            ToastService.createToast("user.edit-profile.success", "success")
+          );
           // set last item of array to true to open the panel
           this.generalPanel = -1;
         })
         .finally(() => {
           this.stopLoading("update-user");
-
         })
-        .catch(error => {
+        .catch((error) => {
           this.isLoading = false;
           console.log(error);
-          this.addToast(ToastService.createToast("user.edit-profile.error", "error"));
+          this.addToast(
+            ToastService.createToast("user.edit-profile.error", "error")
+          );
         });
     },
     updateUserPassword() {
@@ -690,25 +757,39 @@ export default {
           // call api
           ApiAuthService.resetPassword(this.api.user.id, this.password)
             .then(() => {
-              this.addToast(ToastService.createToast("password.reset.success", "success"))
+              this.addToast(
+                ToastService.createToast("password.reset.success", "success")
+              );
               this.isLoading = false;
               this.securePanel = -1;
             })
             .catch((err) => {
               if (err.response.status === 404) {
-                this.addToast(ToastService.createToast("password.reset.wrong-email", "error"))
+                this.addToast(
+                  ToastService.createToast(
+                    "password.reset.wrong-email",
+                    "error"
+                  )
+                );
                 this.isLoading = false;
               } else {
-                this.addToast(ToastService.createToast("password.reset.error", "error"))
+                this.addToast(
+                  ToastService.createToast("password.reset.error", "error")
+                );
                 this.isLoading = false;
               }
             });
         } else {
           this.isLoading = false;
-          this.addToast(ToastService.createToast("password.reset.password-mismatch", "error"))
+          this.addToast(
+            ToastService.createToast(
+              "password.reset.password-mismatch",
+              "error"
+            )
+          );
         }
       }
-    }
+    },
   },
   mounted() {
     this.tempFirstName = this.user.firstName;
@@ -720,10 +801,8 @@ export default {
   },
   created() {
     this.api.user = this.user;
-  }
-}
+  },
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

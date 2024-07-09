@@ -21,5 +21,10 @@ export default {
     return (await ApiClient.get("api/tenants/count/check", {
       withCredentials: true,
     })).data
-  }
+  },
+  async tenantSsoConfig(id) {
+    return (await ApiClient.get(`api/tenants/${id}/sso/config`, {
+      withCredentials: true,
+    })).data;
+  },
 };

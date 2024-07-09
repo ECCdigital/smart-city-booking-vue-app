@@ -284,6 +284,8 @@ export default {
               if (page.showAlways) {
                 return true;
               }
+              console.log(page.interfaceName);
+              console.log(this.isAuthorized(page.interfaceName));
               return this.isAuthorized(page.interfaceName);
             }),
           };

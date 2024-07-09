@@ -425,7 +425,7 @@
                       </v-expansion-panel-content>
                     </v-expansion-panel>
                   </v-expansion-panels>
-                  </v-col>
+                </v-col>
               </v-row>
 
               <h3 class="mb-5 mt-5">Buchungskonfiguration</h3>
@@ -441,6 +441,189 @@
                     v-model="selectedTenant.maxBookingMonths"
                   >
                   </v-text-field>
+                </v-col>
+              </v-row>
+
+              <h3 class="mb-5 mt-5">Keycloak</h3>
+              <v-row>
+                <v-col>
+                  <v-expansion-panels flat multiple>
+                    <v-expansion-panel>
+                      <v-expansion-panel-header
+                        color="accent"
+                        expand-icon="mdi-menu-down"
+                        class="penal-header"
+                      >
+                        <template v-slot:default="{ open }">
+                          <v-row no-gutters align="center">
+                            <v-col cols="4">
+                              <span class="text-subtitle-1"> Keycloak </span>
+                            </v-col>
+                            <v-col class="col-2">
+                              <v-fade-transition leave-absolute>
+                                <div v-if="!open">
+                                  <v-icon
+                                    v-if="keycloak?.active"
+                                    color="success"
+                                    >mdi-check</v-icon
+                                  >
+                                  <span v-if="keycloak?.active" class="ml-2"
+                                    >Aktiv</span
+                                  >
+
+                                  <v-icon
+                                    v-if="keycloak?.active === false"
+                                    color="error"
+                                    >mdi-close</v-icon
+                                  >
+                                  <span
+                                    v-if="keycloak?.active === false"
+                                    class="ml-2"
+                                    >Inaktiv</span
+                                  >
+                                </div>
+                              </v-fade-transition>
+                            </v-col>
+                          </v-row>
+                        </template>
+                      </v-expansion-panel-header>
+                      <v-expansion-panel-content class="mt-3">
+                        <v-row>
+                          <v-col>
+                            <v-switch
+                              v-model="keycloak.active"
+                              color="primary"
+                              hide-details
+                              label="Keycloak aktivieren"
+                              class="mt-2"
+                            ></v-switch>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Keycloak-URL"
+                              v-model="keycloak.serverUrl"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Realm"
+                              v-model="keycloak.realm"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Client-ID für Web-Anwendung"
+                              v-model="keycloak.clientIdApp"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Client-Secret"
+                              v-model="keycloak.clientSecret"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Client-ID für Api-Zugriff"
+                              v-model="keycloak.clientIdApi"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Client-Secret"
+                              v-model="keycloak.clientApiSecret"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        {{keycloak.rolemapping.active}}
+                        <v-row>
+                          <v-col>
+                            <v-switch
+                              v-model="keycloak.rolemapping.active"
+                              label="Rollenzuordnung"
+                            ></v-switch>
+                          </v-col>
+                        </v-row>
+                        <v-row v-for="(role, idx) in keycloak.rolemapping.roles"  :key="idx" align="center">
+                          <v-col>
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Keycloak-Rolle"
+                              v-model="role.keycloakRole"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-select
+                              v-model="role.tenantRoleId"
+                              background-color="accent"
+                              :items="tenantRoles"
+                              item-text="name"
+                              item-value="id"
+                              filled
+                              dense
+                              label="Rollen-Mapping"
+                            ></v-select>
+                          </v-col>
+                          <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                              <v-btn
+                                v-on="on"
+                                icon
+                                @click="removeRole(idx)"
+                              >
+                                <v-icon>mdi-delete</v-icon>
+                              </v-btn>
+                            </template>
+                            <span>Rollenzuweisung löschen</span>
+                          </v-tooltip>
+                        </v-row>
+                        <v-row>
+                          <v-col class="text-center">
+                            <v-tooltip bottom offset-y>
+                              <template v-slot:activator="{ on }">
+                                <v-btn
+                                  class="align-center add-time-period"
+                                  v-on="on"
+                                  outlined
+                                  :disabled="!keycloak.rolemapping.active"
+                                  @click="addRole"
+                                >
+                                  Weitere Schließfach hinzufügen
+                                </v-btn>
+                              </template>
+                              <span>Weitere Schließfach hinzufügen</span>
+                            </v-tooltip>
+                          </v-col>
+                        </v-row>
+                      </v-expansion-panel-content>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
                 </v-col>
               </v-row>
             </v-form>
@@ -467,6 +650,7 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiRolesService from "@/services/api/ApiRolesService";
 import PasswordField from "@/components/CommonComponents/PasswordField.vue";
 
 export default {
@@ -504,6 +688,7 @@ export default {
             "Ungültige URL.",
         ],
       },
+      tenantRoles: [],
     };
   },
   computed: {
@@ -519,9 +704,32 @@ export default {
     },
     parevaSystem: {
       get() {
-        return this.selectedTenant.applications?.find(
-          (app) => app.id === "pareva"
-        ) || {};
+        return (
+          this.selectedTenant.applications?.find(
+            (app) => app.id === "pareva"
+          ) || {}
+        );
+      },
+    },
+    keycloak: {
+      get() {
+        return (
+          this.selectedTenant.applications?.find(
+            (app) => app.id === "keycloak"
+          ) || {
+            active: false,
+            serverUrl: "",
+            realm: "",
+            clientIdApp: "",
+            clientSecret: "",
+            clientIdApi: "",
+            clientApiSecret: "",
+            rolemapping: {
+              active: false,
+              roles: [],
+            },
+          }
+        );
       },
     },
   },
@@ -538,7 +746,7 @@ export default {
       if (this.$refs.form.validate()) {
         this.inProgress = true;
         delete this.selectedTenant._id;
-        try{
+        try {
           await ApiTenantService.submitTenant(this.selectedTenant);
           this.inProgress = false;
           this.closeDialog();
@@ -552,6 +760,19 @@ export default {
         }, 4000);
       }
     },
+    async fetchRoles() {
+      const response = await ApiRolesService.getRoles();
+      this.tenantRoles = response.data;
+    },
+    addRole() {
+      this.keycloak.rolemapping.roles.push({ keycloakRole: "", tenantRoleId: "" });
+    },
+    removeRole(idx) {
+      this.keycloak.rolemapping.roles.splice(idx, 1);
+    },
+  },
+  mounted() {
+    this.fetchRoles();
   },
 };
 </script>
