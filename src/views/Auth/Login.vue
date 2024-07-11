@@ -2,7 +2,11 @@
   <div class="text-center">
     <v-card outlined max-width="500" class="mx-auto mt-sm-15">
       <v-card-text class="px-0">
-        <v-img src="@/assets/app-logo.png" max-width="200" class="mx-auto mt-4" />
+        <v-img
+          src="@/assets/app-logo.png"
+          max-width="200"
+          class="mx-auto mt-4"
+        />
         <h2 class="mt-8 mb-2">Anmeldung</h2>
         <v-row
           v-if="step !== 'tenant'"
@@ -62,7 +66,7 @@ export default {
   },
   data() {
     return {
-      step: "tenant",
+      step: "",
       tenants: [],
       tenant: null,
       possibleSteps: ["tenant", "login"],
@@ -86,9 +90,24 @@ export default {
       },
       immediate: true,
     },
+    tenants: {
+      handler: function (tenants) {
+        if (tenants.length === 1) {
+          this.tenant = tenants[0];
+        }
+      },
+      immediate: true,
+    },
   },
 
   methods: {
+    setStartStep() {
+      if (this.tenants.length === 1) {
+        this.step = "login";
+      } else {
+        this.step = "tenant";
+      }
+    },
     getStepFromUrl() {
       const step = this.$route.query.step;
       if (this.possibleSteps.includes(step)) {
@@ -97,10 +116,11 @@ export default {
       }
     },
 
-    fetchTenants() {
-      ApiTenantService.getTenants(true).then((response) => {
+    async fetchTenants() {
+      await ApiTenantService.getTenants(true).then((response) => {
         this.tenants = response.data;
       });
+      this.setStartStep()
     },
     nextStep() {
       this.step = this.possibleSteps[this.possibleSteps.indexOf(this.step) + 1];
