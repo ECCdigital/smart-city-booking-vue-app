@@ -10,6 +10,7 @@ import EventCreateAttendees from "@/views/Bookables/Events/Form/Attendees.vue";
 import EventCreateAgenda from "@/views/Bookables/Events/Form/Agenda.vue";
 import EventCreateAttachements from "@/views/Bookables/Events/Form/Attachments.vue";
 import EventCreateImages from "@/views/Bookables/Events/Form/Images.vue";
+import SimpleEventCreator from "@/views/Bookables/Events/SimpleEventCreator.vue";
 import Rooms from "@/views/Bookables/Rooms/Rooms.vue";
 import Resources from "@/views/Bookables/Resources/Resources.vue";
 import Locations from "@/views/Bookables/Locations/Locations";
@@ -262,6 +263,16 @@ const routes = [
       interfaceName: "events",
     },
     children: [
+      {
+        path: "simple-event",
+        name: "simple-event-creator",
+        component: SimpleEventCreator,
+        meta: {
+          title: "Veranstaltung erstellen",
+          requiresAuth: true,
+          interfaceName: "events",
+        },
+      },
       {
         path: "information",
         name: "event-create-information",

@@ -52,7 +52,7 @@ const defaultState = {
   isPublic: false,
 }
 const state = {
-  form: { ...defaultState }
+  form: JSON.parse(JSON.stringify(defaultState))
 };
 
 const mutations = {
@@ -85,7 +85,7 @@ const mutations = {
     state.form = payload;
   },
   CLEAR(state) {
-    state.form = { ...defaultState };
+    state.form = JSON.parse(JSON.stringify(defaultState));
   },
   UPDATE_SCHEDULES_FOR_DAY(state, payload) {
     // add schedules to the day

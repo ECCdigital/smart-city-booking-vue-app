@@ -1,5 +1,5 @@
 <template>
-  <v-container v-if="!isLoading">
+  <v-container v-if="!isLoading" style="max-width: 1200px">
     <div class="d-flex">
       <v-btn icon class="ms-n14 me-5 accent" @click="goBack">
         <v-icon>mdi-close</v-icon>
