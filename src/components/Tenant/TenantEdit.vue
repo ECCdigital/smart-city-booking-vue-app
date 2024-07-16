@@ -454,7 +454,9 @@
                       color="info"
                       text
                     >
-                      <v-icon color="info" left> mdi-information-outline </v-icon>
+                      <v-icon color="info" left>
+                        mdi-information-outline
+                      </v-icon>
                       <span>
                         Mit dieser Option können Sie das Erstellen einer
                         Veranstaltung standardmäßig auf den einfachen Modus
@@ -568,9 +570,11 @@ export default {
         return mode === "simple";
       },
       set(value) {
-        this.selectedTenant.defaultEventCreationMode = value
-          ? "simple"
-          : "detailed";
+        this.$set(
+          this.selectedTenant,
+          "defaultEventCreationMode",
+          value ? "simple" : "detailed"
+        );
       },
     },
   },
