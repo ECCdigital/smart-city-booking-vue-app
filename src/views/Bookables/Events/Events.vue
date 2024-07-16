@@ -72,7 +72,6 @@
         </v-skeleton-loader>
       </v-col>
     </v-row>
-    {{ buttonTarget}}
     <v-fab-transition>
       <div class="floating-menu-container">
         <v-menu :disabled="createDisabled">
