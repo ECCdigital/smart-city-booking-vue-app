@@ -389,39 +389,12 @@ export default {
         <v-col cols="12">
           <Tiptap label="Beschreibung" v-model="description"></Tiptap>
         </v-col>
-        <v-col cols="12" md="6">
-          <v-combobox
-            v-model="eventTags"
-            :items="api.tags"
-            label="Tags"
-            hide-selected
-            no-data-text="Keine Tags angelegt"
-            multiple
-            background-color="accent"
-            clearable
-            chips
-            filled
-          >
-            <template v-slot:selection="{ attrs, item, select, selected }">
-              <v-chip
-                v-bind="attrs"
-                :input-value="selected"
-                close
-                color="secondary"
-                @click="select"
-                @click:close="removeTags(item)"
-              >
-                <strong>{{ item }}</strong>
-              </v-chip>
-            </template>
-          </v-combobox>
-        </v-col>
-        <v-col cols="12" md="6">
+        <v-col cols="12">
           <v-combobox
             v-model="eventFlags"
             :items="eventFlags"
-            label="Flags"
-            no-data-text="Keine Flags angelegt"
+            label="Schlagwörter"
+            no-data-text="Keine Schlagwörter angelegt"
             background-color="accent"
             multiple
             filled
@@ -633,7 +606,12 @@ export default {
       <v-btn plain elevation="2" rounded @click="goBack" class="mr-2"
         >Zurück</v-btn
       >
-      <v-btn color="primary" elevation="2" rounded @click="submitForm" :disabled="!formValid"
+      <v-btn
+        color="primary"
+        elevation="2"
+        rounded
+        @click="submitForm"
+        :disabled="!formValid"
         >Absenden</v-btn
       >
     </v-form>
