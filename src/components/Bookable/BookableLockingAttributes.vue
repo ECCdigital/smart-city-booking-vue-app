@@ -1,19 +1,17 @@
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
-import {mapActions} from "vuex";
-import { v4 as uuidv4 } from "uuid";
-
+import { mapActions } from "vuex";
 
 export default {
   name: "BookableLockingAttributes",
   props: {
     tenant: {
       type: String,
-      required: true
+      required: true,
     },
     amount: {
       type: Number,
-      required: true
+      required: true,
     },
   },
   data() {
@@ -30,6 +28,15 @@ export default {
         this.updateValue({ key: "lockerDetails", value });
       },
     },
+    lockerUnitCount: {
+      get() {
+        return Number(
+          this.lockerDetails.units
+            .map((unit) => unit.amount)
+            .reduce((acc, val) => Number(acc) + Number(val))
+        );
+      },
+    },
   },
   methods: {
     ...mapActions({
@@ -38,14 +45,15 @@ export default {
     async fetchLockerSystems() {
       try {
         const tenant = await ApiTenantService.getTenant(this.tenant);
-        this.lockerSystems = tenant.data.applications?.filter(app => app.type === "locker" && app.active);
+        this.lockerSystems = tenant.data.applications?.filter(
+          (app) => app.type === "locker" && app.active
+        );
       } catch (error) {
         console.error(error);
       }
     },
     addLockerUnit() {
-      const id = uuidv4();
-      this.lockerDetails.units.push({ id: id, lockerSystem: "", unitId: ""});
+      this.lockerDetails.units.push({ id: "", lockerSystem: "" });
     },
     removeLockerUnit(idx) {
       this.lockerDetails.units.splice(idx, 1);
@@ -54,7 +62,7 @@ export default {
   mounted() {
     this.fetchLockerSystems();
   },
-}
+};
 </script>
 
 <template>
@@ -71,16 +79,14 @@ export default {
               <template v-slot:default="{ open }">
                 <v-row no-gutters align="center">
                   <v-col cols="4">
-                    <span class="text-subtitle-1">
-                      Schließsysteme
-                    </span>
+                    <span class="text-subtitle-1"> Schließsysteme </span>
                   </v-col>
                   <v-col class="col-2">
                     <v-fade-transition leave-absolute>
                       <div v-if="!open">
                         <v-icon color="darkgrey">mdi-information</v-icon>
                         <span v-if="lockerDetails.active" class="ml-2"
-                        >Aktiviert</span
+                          >Aktiviert</span
                         >
                         <span v-else class="ml-2">Inaktiviert</span>
                       </div>
@@ -93,8 +99,16 @@ export default {
                     class="text--secondary"
                   >
                     <v-fade-transition leave-absolute>
-                      <v-alert type="warning" dense outlined v-if="lockerDetails.active && lockerDetails.units?.length !== amount ">
-                        Die Anzahl der verfügbaren Buchungsobjekte passt nicht mit der Anzahl der Schließfächer überein.
+                      <v-alert
+                        type="warning"
+                        dense
+                        outlined
+                        v-if="
+                          lockerDetails.active && lockerUnitCount !== amount
+                        "
+                      >
+                        Die Anzahl der verfügbaren Buchungsobjekte passt nicht
+                        mit der Anzahl der Schließfächer überein.
                       </v-alert>
                     </v-fade-transition>
                   </v-col>
@@ -129,13 +143,23 @@ export default {
                     hide-selected
                     hide-details
                   >
-
                   </v-select>
                 </v-col>
                 <v-col>
                   <v-text-field
-                    v-model="unit.unitId"
-                    label="Schließfachnummer"
+                    v-model="unit.id"
+                    label="Produkt-ID"
+                    background-color="accent"
+                    filled
+                    hide-selected
+                    hide-details
+                  ></v-text-field>
+                </v-col>
+                <v-col>
+                  <v-text-field
+                    type="number"
+                    v-model="unit.amount"
+                    label="Anzahl Schließfächer"
                     background-color="accent"
                     filled
                     hide-selected
@@ -144,11 +168,7 @@ export default {
                 </v-col>
                 <v-tooltip bottom>
                   <template v-slot:activator="{ on }">
-                    <v-btn
-                      v-on="on"
-                      icon
-                      @click="removeLockerUnit(idx)"
-                    >
+                    <v-btn v-on="on" icon @click="removeLockerUnit(idx)">
                       <v-icon>mdi-delete</v-icon>
                     </v-btn>
                   </template>
@@ -179,7 +199,6 @@ export default {
       </v-col>
     </v-row>
   </div>
-
 </template>
 
 <style scoped>
@@ -189,5 +208,4 @@ export default {
 .panel-header {
   padding: 13px 13px 13px 13px;
 }
-
 </style>
