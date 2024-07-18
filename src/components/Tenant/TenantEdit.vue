@@ -591,7 +591,7 @@
                       </v-expansion-panel-content>
                     </v-expansion-panel>
                   </v-expansion-panels>
-                  </v-col>
+                </v-col>
               </v-row>
 
               <h3 class="mt-10">Buchungskonfiguration</h3>
@@ -608,6 +608,44 @@
                     v-model="selectedTenant.maxBookingMonths"
                   >
                   </v-text-field>
+                </v-col>
+              </v-row>
+              <h3 class="mb-5 mt-5">Events</h3>
+              <v-row>
+                <v-col>
+                  <v-card flat height="120">
+                    <v-snackbar
+                      :timeout="-1"
+                      :value="true"
+                      absolute
+                      color="info"
+                      text
+                    >
+                      <v-icon color="info" left>
+                        mdi-information-outline
+                      </v-icon>
+                      <span>
+                        Mit dieser Option können Sie das Erstellen einer
+                        Veranstaltung standardmäßig auf den einfachen Modus
+                        umstellen. Dieser Modus ist für die meisten
+                        Anwendungsfälle ausreichend. Das Erstellen einer
+                        detaillierte Veranstaltung lässt sich weiterhin über den
+                        "Veranstaltung Erstellen" Knopf auswählen.
+                      </span>
+                    </v-snackbar>
+                  </v-card>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col class="col-12 col-md-6">
+                  <v-switch
+                    v-model="eventCreationMode"
+                    color="primary"
+                    hide-details
+                    label="Einfacher Event-Modus"
+                    class="mt-2"
+                  >
+                  </v-switch>
                 </v-col>
               </v-row>
             </v-form>
@@ -705,9 +743,24 @@ export default {
     },
     parevaSystem: {
       get() {
-        return this.selectedTenant.applications?.find(
-          (app) => app.id === "pareva"
-        ) || {};
+        return (
+          this.selectedTenant.applications?.find(
+            (app) => app.id === "pareva"
+          ) || {}
+        );
+      },
+    },
+    eventCreationMode: {
+      get() {
+        const mode = this.selectedTenant.defaultEventCreationMode;
+        return mode === "simple";
+      },
+      set(value) {
+        this.$set(
+          this.selectedTenant,
+          "defaultEventCreationMode",
+          value ? "simple" : "detailed"
+        );
       },
     },
   },
