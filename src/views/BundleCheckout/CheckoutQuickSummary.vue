@@ -334,7 +334,7 @@ export default {
         }
       );
 
-      const payload = {
+      return {
         timeBegin: this.timeBegin,
         timeEnd: this.timeEnd,
         bookableItems: bookableItems,
@@ -348,9 +348,16 @@ export default {
         phone: this.contactDetails.phone,
         comment: this.contactDetails.comment,
         paymentMethod: this.selectedPaymentApp,
+        attachmentStatus: [this.leadItem, ...this.subsequentItems].flatMap((item) =>
+          item.bookable.attachments.map((attachment) => {
+            return {
+              id: attachment.id,
+              bookableId: item.bookableId,
+              accepted: attachment.accepted,
+            };
+          })
+        ),
       };
-
-      return payload;
     },
 
     async checkout() {
