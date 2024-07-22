@@ -347,11 +347,11 @@ export default {
         );
         this.activePaymentApps = response.data;
 
-        if (this.activePaymentApps.length < 2) {
+        if (this.activePaymentApps.length === 1) {
           this.selectedPaymentApp = this.activePaymentApps[0].id;
         }
       } catch (error) {
-        this.tenant = null;
+        console.log("Error while fetching active payment apps");
       }
     },
     setPaymentApp(app) {
@@ -490,7 +490,11 @@ export default {
 
       stepsToReturn.push(contactDetailsStep);
 
-      if (this.activePaymentApps.length > 1 && this.leadItem.bookable && (this.leadItem.bookable.priceEur > 0 || this.leadItem.userPriceEur > 0)) {
+      if (
+        this.activePaymentApps.length > 1 &&
+        this.leadItem.bookable &&
+        (this.leadItem.bookable.priceEur > 0 || this.leadItem.userPriceEur > 0)
+      ) {
         stepsToReturn.push(paymentStep);
       }
 

@@ -499,17 +499,17 @@
                 <v-col>
                   <v-switch
                     dense
-                    label="Muss vom Nutzer akzeptiert werden"
+                    label="Im Buchungsprozess anzeigen"
                     hide-details
-                    v-model="attachment.required"
+                    v-model="attachment.show"
                   ></v-switch>
                 </v-col>
                 <v-col>
                   <v-switch
                     dense
-                    label="Im Buchungsprozess anzeigen"
+                    label="Muss vom Nutzer akzeptiert werden"
                     hide-details
-                    v-model="attachment.show"
+                    v-model="attachment.required"
                   ></v-switch>
                 </v-col>
               </v-row>
@@ -686,6 +686,18 @@ export default {
       availableUsers: [],
       availableRoles: [],
     };
+  },
+  watch: {
+    attachments: {
+      handler: function (val) {
+        val.forEach((attachment) => {
+          if (attachment.required === true) {
+            attachment.show = true;
+          }
+        });
+      },
+      deep: true,
+    },
   },
   methods: {
     ...mapActions({
