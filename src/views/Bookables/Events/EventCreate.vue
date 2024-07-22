@@ -103,6 +103,9 @@ export default {
         this.updateValue({ field: "isPublic", value: value });
       },
     },
+    isSimpleEvent() {
+      return this.$route.name === "simple-event-creator";
+    },
   },
   watch: {
     form: {
@@ -168,7 +171,7 @@ export default {
     },
     async allowSetPublic() {
       const eventCountCheck = await ApiEventService.publicEventCountCheck();
-      this.allowPublic = eventCountCheck || this.isPublic
+      this.allowPublic = (eventCountCheck || this.isPublic) && !this.isSimpleEvent;
     },
   },
 

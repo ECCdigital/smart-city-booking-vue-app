@@ -43,6 +43,7 @@
               :contact-details="contactDetails"
               :tenant="tenant"
               :coupon="coupon"
+              :selected-payment-app="selectedPaymentApp"
               :trace="trace"
               :final-check="step === steps.length"
               :me="me"
@@ -75,11 +76,14 @@ import CheckoutSignin from "@/views/BundleCheckout/CheckoutSignin.vue";
 import CheckoutContactDetails from "@/views/BundleCheckout/CheckoutContactDetails.vue";
 import ApiCouponService from "@/services/api/ApiCouponService";
 import CheckoutNoPermission from "@/views/BundleCheckout/CheckoutNoPermission.vue";
+import ApiTenantService from "@/services/api/ApiTenantService";
+import CheckoutPaymentMethod from "@/views/BundleCheckout/CheckoutPaymentMethod.vue";
 
 export default {
   name: "CheckoutMain",
 
   components: {
+    CheckoutPaymentMethod,
     CheckoutSignin,
     AdditionalBookables,
     CheckoutQuickSummary,
@@ -121,6 +125,9 @@ export default {
         comment: null,
       },
       coupon: null,
+
+      activePaymentApps: [],
+      selectedPaymentApp: null,
     };
   },
 
@@ -139,6 +146,7 @@ export default {
       await this.fetchLeadBookable();
       await this.fetchSubsequentBookables();
       await this.validateItems();
+      await this.fetchActivePaymentApps();
       this.loading = false;
     },
 
@@ -218,6 +226,7 @@ export default {
           this.step = 1;
         }
         this.leadItem.bookable = null;
+        this.preventBooking = true;
       }
     },
 
@@ -296,6 +305,8 @@ export default {
     },
 
     nextPage() {
+      //TODO: set step to length
+      console.log(this.steps.length);
       if (this.step < 5) {
         this.step++;
       }
@@ -327,6 +338,25 @@ export default {
 
     stepComplete(index) {
       return this.step > index + 1;
+    },
+
+    async fetchActivePaymentApps() {
+      try {
+        const response = await ApiTenantService.getTenantActivePaymentApps(
+          this.tenant
+        );
+        this.activePaymentApps = response.data;
+
+        if (this.activePaymentApps.length === 1) {
+          this.selectedPaymentApp = this.activePaymentApps[0].id;
+        }
+      } catch (error) {
+        console.log("Error while fetching active payment apps");
+      }
+    },
+    setPaymentApp(app) {
+      this.selectedPaymentApp = app;
+      this.nextPage();
     },
   },
 
@@ -420,6 +450,18 @@ export default {
         },
       };
 
+      const paymentStep = {
+        title: "Zahlungsmethode",
+        component: "checkout-payment-method",
+        props: {
+          activePaymentApps: this.activePaymentApps,
+        },
+        events: {
+          back: this.previousPage,
+          submit: this.setPaymentApp,
+        },
+      };
+
       let stepsToReturn = [];
 
       if (!this.bookingPermission) {
@@ -447,6 +489,14 @@ export default {
       }
 
       stepsToReturn.push(contactDetailsStep);
+
+      if (
+        this.activePaymentApps.length > 1 &&
+        this.leadItem.bookable &&
+        (this.leadItem.bookable.priceEur > 0 || this.leadItem.userPriceEur > 0)
+      ) {
+        stepsToReturn.push(paymentStep);
+      }
 
       stepsToReturn.push({
         title: "Zusammenfassung",

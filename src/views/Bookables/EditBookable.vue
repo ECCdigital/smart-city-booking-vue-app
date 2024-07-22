@@ -1,5 +1,5 @@
 <template>
-  <v-container v-if="!isLoading">
+  <v-container v-if="!isLoading" style="max-width: 1200px">
     <div class="d-flex">
       <v-btn icon class="ms-n14 me-5 accent" @click="goBack">
         <v-icon>mdi-close</v-icon>
@@ -499,17 +499,17 @@
                 <v-col>
                   <v-switch
                     dense
-                    label="Muss vom Nutzer akzeptiert werden"
+                    label="Im Buchungsprozess anzeigen"
                     hide-details
-                    v-model="attachment.required"
+                    v-model="attachment.show"
                   ></v-switch>
                 </v-col>
                 <v-col>
                   <v-switch
                     dense
-                    label="Im Buchungsprozess anzeigen"
+                    label="Muss vom Nutzer akzeptiert werden"
                     hide-details
-                    v-model="attachment.show"
+                    v-model="attachment.required"
                   ></v-switch>
                 </v-col>
               </v-row>
@@ -686,6 +686,18 @@ export default {
       availableUsers: [],
       availableRoles: [],
     };
+  },
+  watch: {
+    attachments: {
+      handler: function (val) {
+        val.forEach((attachment) => {
+          if (attachment.required === true) {
+            attachment.show = true;
+          }
+        });
+      },
+      deep: true,
+    },
   },
   methods: {
     ...mapActions({

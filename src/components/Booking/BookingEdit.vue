@@ -65,6 +65,18 @@
               </v-row>
               <v-row>
                 <v-col>
+                  <v-select
+                    :items="activePaymentApps"
+                    v-model="selectedBooking.paymentMethod"
+                    label="Zahlungsmethode"
+                    item-text="title"
+                    item-value="id"
+                  >
+                  </v-select>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col>
                   <v-text-field
                     v-if="!!selectedBooking.couponCode"
                     background-color="accent"
@@ -477,6 +489,7 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import { mapActions } from "vuex";
 import ToastService from "@/services/ToastService";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   name: "BookingEdit",
@@ -508,6 +521,8 @@ export default {
       timeToModal: false,
 
       bookableId_temp: null,
+
+      activePaymentApps: [],
 
       events: [],
       validationRules: {
@@ -605,6 +620,9 @@ export default {
 
     timeTo: function () {
       this.getEvents();
+    },
+    booking: function () {
+      this.fetchActivePaymentApps();
     },
   },
   methods: {
@@ -750,6 +768,16 @@ export default {
     removeBookingTimes() {
       this.selectedBooking.timeBegin = null;
       this.selectedBooking.timeEnd = null;
+    },
+    async fetchActivePaymentApps() {
+      try {
+        const response = await ApiTenantService.getTenantActivePaymentApps(
+          this.booking.tenant
+        );
+        this.activePaymentApps = response.data;
+      } catch (error) {
+        console.log(error);
+      }
     },
   },
   mounted() {

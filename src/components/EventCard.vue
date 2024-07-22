@@ -149,7 +149,9 @@
             </v-list-item-icon>
             <v-list-item-title>Duplizieren</v-list-item-title>
           </v-list-item>
-          <v-divider v-if="BookablePermissionService.allowDelete()"></v-divider>
+          <v-divider
+            v-if="BookablePermissionService.allowDelete(item)"
+          ></v-divider>
           <v-list-item
             class="red--text"
             link
@@ -191,7 +193,10 @@ export default {
       return BookablePermissionService;
     },
     duplicateDisabled() {
-      return !this.BookablePermissionService.allowCreate() || !this.isDuplicateAllowed;
+      return (
+        !this.BookablePermissionService.allowCreate() ||
+        !this.isDuplicateAllowed
+      );
     },
   },
   methods: {

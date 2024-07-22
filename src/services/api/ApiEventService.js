@@ -12,11 +12,11 @@ export default {
     const t = tenant || store.getters["tenants/tenant"].id;
     return ApiClient.get(`api/${t}/events/_meta/tags`, { withCredentials: true })
   },
-  addEvent(tenant) {
+  addEvent(addTickets = false, tenant) {
     const t = tenant || store.getters["tenants/tenant"].id;
     const formData = { ...store.state.events.form };
     formData.tenant = t;
-    return ApiClient.put(`api/${t}/events`, formData, { withCredentials: true })
+    return ApiClient.put(`api/${t}/events?withTickets=${addTickets}`, formData, { withCredentials: true })
   },
   deleteEvent(id, tenant) {
     const t = tenant || store.getters["tenants/tenant"].id;

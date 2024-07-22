@@ -37,7 +37,7 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <section class="agreements mt-5" v-if="agreements.length > 0">
+    <section class="agreements mt-5" v-if="filteredAgreements.length > 0">
       <p>
         Um dieses Objekt zu buchen, bestätigen Sie bitte, dass Sie die
         nachfolgenden Vereinbarungen gelesen haben und diese akzeptieren.
