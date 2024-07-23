@@ -124,7 +124,11 @@
 
     <v-divider class="mt-5"></v-divider>
     <span class="caption">* Pflichtfelder</span>
-    <checkout-agreements v-if="leadItem && leadItem.bookable.attachments.length > 0" :agreements="leadItem.bookable.attachments" ref="checkoutAgreements"></checkout-agreements>
+    <checkout-agreements
+      v-if="leadItem && leadItem.bookable.attachments.length > 0"
+      :agreements="leadItem.bookable.attachments"
+      ref="checkoutAgreements"
+    ></checkout-agreements>
   </v-form>
 </template>
 
@@ -164,7 +168,8 @@ export default {
     submit() {
       if (
         this.$refs.form.validate() &&
-        this.$refs.checkoutAgreements.validate()
+        (!this.$refs.checkoutAgreements ||
+          this.$refs.checkoutAgreements.validate())
       ) {
         this.$emit("submit");
       }
