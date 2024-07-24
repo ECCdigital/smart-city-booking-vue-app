@@ -348,14 +348,15 @@ export default {
         phone: this.contactDetails.phone,
         comment: this.contactDetails.comment,
         paymentMethod: this.selectedPaymentApp,
-        attachmentStatus: [this.leadItem, ...this.subsequentItems].flatMap((item) =>
-          item.bookable.attachments.map((attachment) => {
-            return {
-              id: attachment.id,
-              bookableId: item.bookableId,
-              accepted: attachment.accepted,
-            };
-          })
+        attachmentStatus: [this.leadItem, ...this.subsequentItems].flatMap(
+          (item) =>
+            item.bookable.attachments.map((attachment) => {
+              return {
+                id: attachment.id,
+                bookableId: item.bookableId,
+                accepted: attachment.accepted,
+              };
+            })
         ),
       };
     },
@@ -365,8 +366,17 @@ export default {
 
       try {
         const checkoutResponse = await this.performCheckout();
-        const paymentResponse = await this.processPayment(checkoutResponse.data);
-        await this.handlePaymentOutcome(paymentResponse);
+        if (
+          checkoutResponse.data.isCommitted === true &&
+          checkoutResponse.data.isPayed === false
+        ) {
+          const paymentResponse = await this.processPayment(
+            checkoutResponse.data
+          );
+          await this.handlePaymentOutcome(paymentResponse);
+        } else {
+          await this.routeToStatus(checkoutResponse.data);
+        }
       } catch (error) {
         console.error("Checkout process failed:", error.message);
       } finally {
@@ -375,13 +385,20 @@ export default {
     },
 
     async performCheckout() {
-      const response = await ApiCheckoutService.checkout(this.tenant, this.compileBooking(), false);
+      const response = await ApiCheckoutService.checkout(
+        this.tenant,
+        this.compileBooking(),
+        false
+      );
       if (response.status !== 200) throw new Error("Checkout service failed");
       return response;
     },
 
     async processPayment(booking) {
-      const response = await ApiPaymentService.payments(booking.id, booking.tenant);
+      const response = await ApiPaymentService.payments(
+        booking.id,
+        booking.tenant
+      );
       if (response.status !== 200) throw new Error("Payment processing failed");
       return response;
     },
@@ -395,22 +412,21 @@ export default {
       }
 
       switch (finalBooking.paymentMethod) {
-      case "giroCockpit": {
-        const paymentUrl = paymentResponse.data?.paymentData;
-        if (paymentUrl) {
-          window.location.href = paymentUrl;
+        case "giroCockpit": {
+          const paymentUrl = paymentResponse.data?.paymentData;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          }
+          break;
         }
-        break;
-      }
-      case "invoice":
-        await this.routeToStatus(finalBooking, finalBooking.paymentMethod);
-        break;
-      default:
-        await this.routeToStatus(finalBooking);
-        break;
+        case "invoice":
+          await this.routeToStatus(finalBooking, finalBooking.paymentMethod);
+          break;
+        default:
+          await this.routeToStatus(finalBooking);
+          break;
       }
     },
-
 
     async routeToStatus(booking, paymentMethod = null) {
       await this.$router.push({
