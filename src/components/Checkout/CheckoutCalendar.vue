@@ -98,7 +98,7 @@ export default {
         .filter((ai) => ai.available === false)
         .map((item) => {
           return {
-            name: `${item.available} Nicht verfügbar `,
+            name: "Nicht verfügbar",
             start: new Date(item.timeBegin),
             end: new Date(item.timeEnd),
             timed: true,
