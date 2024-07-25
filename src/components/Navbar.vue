@@ -8,10 +8,9 @@
     >
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <img
-        class="App-logo"
-        width="250"
-        alt="Smart City Süderbrarup"
+        alt="Smart City Booking"
         src="@/assets/app-logo.png"
+        style="max-height: 50px; width: auto; max-width: 250px;"
       />
       <v-spacer></v-spacer>
       <span v-if="isProduction !== 'true'" class="font-weight-bold"

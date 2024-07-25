@@ -6,7 +6,13 @@
         Zurück
       </v-btn>
       <v-spacer></v-spacer>
-      <v-btn color="primary" class="px-10" small @click="submit">
+      <v-btn
+        :disabled="isNextButtonDisabled"
+        color="primary"
+        class="px-10"
+        small
+        @click="submit"
+      >
         Zur Zusammenfassung
       </v-btn>
     </div>
@@ -104,39 +110,34 @@
 
     <v-textarea
       filled
-      label="Hinweise zur Buchung"
+      :label="commentLabel"
+      :placeholder="
+        commentRequired
+          ? 'Bitte geben Sie den Zweck oder die geplante Nutzung dieser Ressource an. Dieses Feld ist erforderlich.'
+          : ''
+      "
       hide-details
       dense
+      :rules="commentRequired ? validationRules.required : []"
       v-model="contactDetails.comment"
     ></v-textarea>
 
-    <section class="agreements mt-5" v-if="agreements.length > 0">
-      <p>
-        Um dieses Objekt zu buchen, bestätigen Sie bitte, dass Sie die
-        nachfolgenden Vereinbarungen gelesen haben und diese akzeptieren.
-      </p>
-      <v-checkbox
-        v-for="agreement in agreements"
-        :key="agreement.id"
-        :rules="validationRules.required"
-        hide-details
-      >
-        <div slot="label">
-          {{ agreement.title }} (<a
-            :href="agreement.url"
-            target="_blank"
-            @click.stop
-            >Zur Vereinbarung</a
-          >)
-        </div>
-      </v-checkbox>
-    </section>
+    <v-divider class="mt-5"></v-divider>
+    <span class="caption">* Pflichtfelder</span>
+    <checkout-agreements
+      v-if="leadItem && leadItem.bookable.attachments.length > 0"
+      :agreements="leadItem.bookable.attachments"
+      ref="checkoutAgreements"
+    ></checkout-agreements>
   </v-form>
 </template>
 
 <script>
+import CheckoutAgreements from "@/views/BundleCheckout/CheckoutAgreements.vue";
+
 export default {
   name: "CheckoutContactDetails",
+  components: { CheckoutAgreements },
 
   props: {
     leadItem: {
@@ -165,7 +166,11 @@ export default {
 
   methods: {
     submit() {
-      if (this.$refs.form.validate()) {
+      if (
+        this.$refs.form.validate() &&
+        (!this.$refs.checkoutAgreements ||
+          this.$refs.checkoutAgreements.validate())
+      ) {
         this.$emit("submit");
       }
     },
@@ -176,10 +181,21 @@ export default {
   },
 
   computed: {
+    isNextButtonDisabled() {
+      return !this.valid;
+    },
     agreements: function () {
       return this.leadItem.bookable.attachments.filter(
         (a) => a.type === "agreement" || a.type === "privacy-agreement"
       );
+    },
+    commentRequired() {
+      return this.leadItem.bookable.requiredFields?.includes("comment");
+    },
+    commentLabel() {
+      return this.commentRequired
+        ? "Hinweise zur Buchung*"
+        : "Hinweise zur Buchung";
     },
   },
 };

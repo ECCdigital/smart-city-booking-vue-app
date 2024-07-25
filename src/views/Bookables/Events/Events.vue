@@ -8,7 +8,9 @@
           type="info"
           elevation="2"
         >
-          Sie haben die maximale Anzahl an öffentlichen Events erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Events.
+          Sie haben die maximale Anzahl an öffentlichen Events erreicht.
+          Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte
+          Events.
         </v-alert>
       </v-col>
     </v-row>
@@ -71,20 +73,45 @@
       </v-col>
     </v-row>
     <v-fab-transition>
-      <v-btn
-        color="primary"
-        fixed
-        large
-        bottom
-        right
-        rounded
-        class="v-btn"
-        :to="{ name: 'event-create-information' }"
-        :disabled="createDisabled"
-      >
-        <v-icon>mdi-plus</v-icon>
-        Veranstaltung erstellen
-      </v-btn>
+      <div class="floating-menu-container">
+        <v-menu :disabled="createDisabled">
+          <template v-slot:activator="{ on }">
+            <div class="split-btn">
+              <v-btn
+                rounded
+                large
+                color="primary"
+                dark
+                class="main-btn"
+                :to="{ name: buttonTarget?.to }"
+              >
+                <v-icon>mdi-plus</v-icon>Veranstaltung erstellen</v-btn
+              >
+              <v-btn
+                v-on="on"
+                rounded
+                large
+                color="primary"
+                dark
+                class="actions-btn"
+                ><v-icon left>mdi-menu-down</v-icon></v-btn
+              >
+            </div>
+          </template>
+
+          <v-list>
+            <v-list-item-group v-model="activeTarget" color="primary">
+              <v-list-item
+                v-for="(item, index) in items"
+                :key="index"
+                @click="setButtonTarget(item)"
+              >
+                <v-list-item-title>{{ item.title }}</v-list-item-title>
+              </v-list-item>
+            </v-list-item-group>
+          </v-list>
+        </v-menu>
+      </div>
     </v-fab-transition>
   </AdminLayout>
 </template>
@@ -112,11 +139,18 @@ export default {
       filters: [],
       hidePastEvents: true,
       eventCountCheck: true,
+      buttonTarget: null,
+      activeTarget: null,
+      items: [
+        { title: "Detaillierte Event-Erstellung", to: "event-create-information" },
+        { title: "Einfache Event-Erstellung", to: "simple-event-creator" },
+      ],
     };
   },
   computed: {
     ...mapGetters({
       loading: "loading/isLoading",
+      tenant: "tenants/tenant",
     }),
     createDisabled() {
       return !this.BookablePermissionService.allowCreate();
@@ -169,6 +203,9 @@ export default {
       stopLoading: "loading/stop",
       addToast: "toasts/add",
     }),
+    setButtonTarget(target) {
+      this.buttonTarget = target;
+    },
     remove(item) {
       this.filters.splice(this.filters.indexOf(item), 1);
     },
@@ -206,7 +243,10 @@ export default {
         })
         .catch((error) => {
           this.addToast(
-            ToastService.createToast("event.duplicate.errors.something-wrong", "error")
+            ToastService.createToast(
+              "event.duplicate.errors.something-wrong",
+              "error"
+            )
           );
           console.log(error);
         });
@@ -237,9 +277,19 @@ export default {
     async getEventCount() {
       this.eventCountCheck = await ApiEventService.publicEventCountCheck();
     },
+    setInitialButtonTarget() {
+      if (this.tenant.defaultEventCreationMode === "simple") {
+        this.buttonTarget = this.items[1];
+        this.activeTarget = 1;
+      } else {
+        this.buttonTarget = this.items[0];
+        this.activeTarget = 0;
+      }
+    },
   },
   async mounted() {
     await this.getEventCount();
+    this.setInitialButtonTarget();
   },
   created() {
     this.fetchEvents();
@@ -249,11 +299,33 @@ export default {
 </script>
 
 <style scoped>
+.main-btn {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  padding-right: 2px !important;
+}
+.actions-btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding: 0 !important;
+  min-width: 35px !important;
+  margin-left: 0.5px;
+}
+.split-btn {
+  display: inline-block;
+}
+
 .filter-field {
   border-radius: 15px;
 }
 
 .custom-alert {
   border-radius: 15px !important;
+}
+
+.floating-menu-container {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
 }
 </style>

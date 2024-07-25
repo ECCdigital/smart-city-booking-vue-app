@@ -279,6 +279,9 @@ export default {
     me: {
       type: Object,
     },
+    selectedPaymentApp: {
+      type: String,
+    },
   },
 
   data() {
@@ -331,7 +334,7 @@ export default {
         }
       );
 
-      const payload = {
+      return {
         timeBegin: this.timeBegin,
         timeEnd: this.timeEnd,
         bookableItems: bookableItems,
@@ -344,44 +347,96 @@ export default {
         mail: this.contactDetails.mail,
         phone: this.contactDetails.phone,
         comment: this.contactDetails.comment,
+        paymentMethod: this.selectedPaymentApp,
+        attachmentStatus: [this.leadItem, ...this.subsequentItems].flatMap(
+          (item) =>
+            item.bookable.attachments.map((attachment) => {
+              return {
+                id: attachment.id,
+                bookableId: item.bookableId,
+                accepted: attachment.accepted,
+              };
+            })
+        ),
       };
-
-      return payload;
     },
 
     async checkout() {
       this.isSubmitting = true;
 
       try {
-        const checkoutResponse = await ApiCheckoutService.checkout(
-          this.tenant,
-          this.compileBooking(),
-          false
-        );
-
-        if (checkoutResponse.status === 200) {
-          const booking = checkoutResponse.data;
-          if (this.totalPrice > 0 && this.isAutoCommit) {
-            const paymentResponse = await ApiPaymentService.payments(
-              booking.id,
-              this.tenant
-            );
-            const paymentUrl = paymentResponse.data?.paymentUrl;
-            if (paymentUrl) {
-              window.location.href = paymentUrl;
-            }
-          } else {
-            this.$router.push({
-              path: "/checkout/status",
-              query: { id: booking.id, tenant: booking.tenant },
-            });
-          }
+        const checkoutResponse = await this.performCheckout();
+        if (
+          checkoutResponse.data.isCommitted === true &&
+          checkoutResponse.data.isPayed === false
+        ) {
+          const paymentResponse = await this.processPayment(
+            checkoutResponse.data
+          );
+          await this.handlePaymentOutcome(paymentResponse);
+        } else {
+          await this.routeToStatus(checkoutResponse.data);
         }
       } catch (error) {
-        console.log(error);
+        console.error("Checkout process failed:", error.message);
       } finally {
         this.isSubmitting = false;
       }
+    },
+
+    async performCheckout() {
+      const response = await ApiCheckoutService.checkout(
+        this.tenant,
+        this.compileBooking(),
+        false
+      );
+      if (response.status !== 200) throw new Error("Checkout service failed");
+      return response;
+    },
+
+    async processPayment(booking) {
+      const response = await ApiPaymentService.payments(
+        booking.id,
+        booking.tenant
+      );
+      if (response.status !== 200) throw new Error("Payment processing failed");
+      return response;
+    },
+
+    async handlePaymentOutcome(paymentResponse) {
+      const finalBooking = paymentResponse.data.booking;
+
+      if (finalBooking.totalPrice <= 0 || !finalBooking.isCommitted) {
+        await this.routeToStatus(finalBooking);
+        return;
+      }
+
+      switch (finalBooking.paymentMethod) {
+        case "giroCockpit": {
+          const paymentUrl = paymentResponse.data?.paymentData;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          }
+          break;
+        }
+        case "invoice":
+          await this.routeToStatus(finalBooking, finalBooking.paymentMethod);
+          break;
+        default:
+          await this.routeToStatus(finalBooking);
+          break;
+      }
+    },
+
+    async routeToStatus(booking, paymentMethod = null) {
+      await this.$router.push({
+        path: "/checkout/status",
+        query: {
+          id: booking.id,
+          tenant: booking.tenant,
+          paymentMethod: paymentMethod,
+        },
+      });
     },
 
     redeemCoupon() {
