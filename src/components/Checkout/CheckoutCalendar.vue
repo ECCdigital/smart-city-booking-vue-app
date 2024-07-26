@@ -49,9 +49,8 @@
         locale="de"
         weekdays="1,2,3,4,5,6,0"
         :events="events"
-        :first-interval="7"
-        :interval-count="16"
         :event-ripple="false"
+        :interval-count="23"
         event-color="#999"
         :start="startDate"
         v-model="focus"
@@ -95,14 +94,16 @@ export default {
 
   computed: {
     events() {
-      const av = this.availabilityItems.map((item) => {
-        return {
-          name: "Nicht verfügbar",
-          start: new Date(item.timeBegin),
-          end: new Date(item.timeEnd),
-          timed: true,
-        };
-      });
+      const av = this.availabilityItems
+        .filter((ai) => ai.available === false)
+        .map((item) => {
+          return {
+            name: "Nicht verfügbar",
+            start: new Date(item.timeBegin),
+            end: new Date(item.timeEnd),
+            timed: true,
+          };
+        });
 
       av.push({
         name: "Ihre Buchung",
@@ -123,6 +124,9 @@ export default {
   watch: {
     bookingTimeBegin() {
       this.focus = new Date(this.bookingTimeBegin).toISOString().split("T")[0];
+      this.$refs.checkoutCalendar.scrollToTime(
+        new Date(this.bookingTimeBegin).toISOString().split("T")[1]
+      );
     },
     amount() {
       this.fetchedUntil = undefined;
@@ -181,6 +185,7 @@ export default {
 
   async mounted() {
     await this.fetchEvents();
+    this.$refs.checkoutCalendar.scrollToTime("09:00");
   },
 };
 </script>
