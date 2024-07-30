@@ -355,6 +355,7 @@ export default {
         priceEur: 0,
         isCommitted: false,
         isPayed: false,
+        attachmentStatus: [],
       };
       this.selectedBooking.tenant = this.tenant.id;
       this.openEditDialog = true;
