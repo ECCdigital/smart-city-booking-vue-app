@@ -39,7 +39,8 @@ const state = {
     isLongRange: false,
     longRangeOptions: null,
     lockerDetails: {active: false, units: []},
-    requiredFields: []
+    requiredFields: [],
+    bookingNotes: ""
   },
 };
 
