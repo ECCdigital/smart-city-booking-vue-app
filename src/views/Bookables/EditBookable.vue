@@ -547,6 +547,13 @@
       </v-col>
     </v-row>
 
+    <h3 class="mt-10 mb-4">Buchungshinweise</h3>
+    <v-row>
+      <v-col>
+        <Tiptap v-model="bookingNotes" label="Buchungshinweise"></Tiptap>
+      </v-col>
+    </v-row>
+
     <v-divider class="mt-10"></v-divider>
 
     <div class="d-flex mt-2">
@@ -785,6 +792,7 @@ export default {
             longRangeOptions,
             lockerDetails,
             requiredFields,
+            bookingNotes,
           } = response.data;
 
           this.restoreFromApi({
@@ -837,6 +845,7 @@ export default {
             longRangeOptions: longRangeOptions,
             lockerDetails: lockerDetails,
             requiredFields: requiredFields,
+            bookingNotes: bookingNotes,
           });
         })
         .finally(() => {
@@ -1214,6 +1223,14 @@ export default {
             ).filter((f) => f !== "comment"),
           });
         }
+      },
+    },
+    bookingNotes: {
+      get() {
+        return this.$store.state.bookables.form.bookingNotes;
+      },
+      set(value) {
+        this.updateValue({ field: "bookingNotes", value: value });
       },
     },
     mode: function () {
