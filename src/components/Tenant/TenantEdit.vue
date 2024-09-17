@@ -226,10 +226,16 @@
                   ></v-text-field>
                 </v-col>
                 <v-col class="">
-                  <password-field
-                    v-model="selectedTenant.noreplyPassword"
+                  <v-text-field
+                    background-color="accent"
+                    filled
+                    dense
                     label="Passwort"
-                  ></password-field>
+                    v-model="selectedTenant.noreplyPassword"
+                    :append-icon="showNoreplyPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                    @click:append="showNoreplyPassword = !showNoreplyPassword"
+                    :type="showNoreplyPassword ? 'text' : 'password'"
+                  ></v-text-field>
                 </v-col>
               </v-row>
 
@@ -374,10 +380,16 @@
                         </v-row>
                         <v-row>
                           <v-col>
-                            <password-field
-                              v-model="giroCockpitApp.paymentSecret"
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
                               label="Schlüssel"
-                            ></password-field>
+                              v-model="giroCockpitApp.paymentSecret"
+                              :append-icon="showPaymentSecret ? 'mdi-eye' : 'mdi-eye-off'"
+                              @click:append="showPaymentSecret = !showPaymentSecret"
+                              :type="showPaymentSecret ? 'text' : 'password'"
+                            ></v-text-field>
                           </v-col>
                           <v-col>
                             <v-text-field
@@ -583,9 +595,16 @@
                             ></v-text-field>
                           </v-col>
                           <v-col>
-                            <password-field
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Passwort"
                               v-model="parevaSystem.password"
-                            ></password-field>
+                              :append-icon="showParevaPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                              @click:append="showParevaPassword = !showParevaPassword"
+                              :type="showParevaPassword ? 'text' : 'password'"
+                            ></v-text-field>
                           </v-col>
                         </v-row>
                       </v-expansion-panel-content>
@@ -672,11 +691,9 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
-import PasswordField from "@/components/CommonComponents/PasswordField.vue";
 
 export default {
   name: "TenantEdit",
-  components: { PasswordField },
   props: {
     open: {
       type: Boolean,
@@ -689,6 +706,9 @@ export default {
   },
   data() {
     return {
+      showNoreplyPassword: false,
+      showPaymentSecret: false,
+      showParevaPassword: false,
       valid: false,
       originTenantId: null,
       inProgress: false,
