@@ -11,8 +11,8 @@
         <v-icon>mdi-chevron-right</v-icon>
       </v-btn>
 
-      <v-toolbar-title v-if="$refs.calendar" class="mx-4">
-        {{ $refs.calendar.title }}
+      <v-toolbar-title class="mx-4">
+        {{ calendarTitle }}
       </v-toolbar-title>
 
       <v-spacer></v-spacer>
@@ -176,6 +176,7 @@ export default {
       selectedEvent: {},
       selectedElement: null,
       selectedOpen: false,
+      calendarTitle: "",
     };
   },
   computed: {
@@ -246,9 +247,26 @@ export default {
     onOpenDeleteDialog(bookingId) {
       this.$emit("open-delete-dialog", bookingId);
     },
+    updateTitle() {
+      this.$nextTick(() => {
+        if (this.$refs.calendar) {
+          this.calendarTitle = this.$refs.calendar.title;
+        }
+      });
+    },
+  },
+  mounted() {
+    this.updateTitle();
+  },
+  watch: {
+    focus() {
+      this.updateTitle();
+    },
+    type() {
+      this.updateTitle();
+    },
   },
 };
 </script>
 
-<style scoped lang="scss">
-</style>
+<style scoped lang="scss"></style>
