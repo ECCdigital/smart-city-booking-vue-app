@@ -138,6 +138,7 @@ export default {
         { text: "Vorname", value: "firstName" },
         { text: "Nachname", value: "lastName" },
         { text: "E-Mail Adresse", value: "id" },
+        { text: "Firma", value: "company" },
         { text: "Mandant", value: "tenant" },
         { text: "Verifiziert", value: "isVerified" },
         { text: "Rollen", value: "roles" },

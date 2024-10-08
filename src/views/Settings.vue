@@ -127,7 +127,48 @@
           </v-card-subtitle>
           <v-card-text>
             <v-row>
-              <v-expansion-panels flat class="elevation-0" v-model="generalPanel" multiple>
+              <v-expansion-panels flat class="elevation-0" v-model="contactPanel" multiple>
+                <v-expansion-panel>
+                  <v-expansion-panel-header>
+                    <v-row  align="center" justify="space-between">
+                      <v-col class="darkgrey--text col-5">Firma ändern</v-col>
+                      <v-col class="darkgrey--text col-4">{{api.user.company}}</v-col>
+                      <v-col class="text-right"></v-col>
+                    </v-row>
+                    <template v-slot:actions>
+                      <v-tooltip bottom>
+                        <template v-slot:activator="{ on }">
+                          <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
+                        </template>
+                        <span>Firma ändern</span>
+                      </v-tooltip>
+                    </template>
+                  </v-expansion-panel-header>
+                  <v-expansion-panel-content>
+                    <v-row justify="center" align="center">
+                      <v-col>
+                        <v-text-field
+                          outlined
+                          hide-details
+                          v-model="company"
+                          label="Firma"
+                        ></v-text-field>
+                      </v-col>
+                      <v-spacer></v-spacer>
+                      <v-col class="text-right">
+                        <v-btn
+                          x-large
+                          color="primary"
+                          @click="updateUser"
+                          :loading="isLoading"
+                        >
+                          Änderungen speichern
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                  </v-expansion-panel-content>
+                  <v-divider></v-divider>
+                </v-expansion-panel>
                 <v-expansion-panel>
                   <v-expansion-panel-header>
                     <v-row  align="center" justify="space-between">
@@ -310,7 +351,7 @@
         class="mx-xs-auto"
         cols="12"
         sm="6">
-        <p class="text-subtitle-1">Einstellungen zum schützen deines Accounts</p>
+        <p class="text-subtitle-1">Einstellungen zum Schützen Ihres Accounts</p>
       </v-col>
     </v-row>
     <v-row no-gutters align="center" justify="center">
@@ -446,7 +487,7 @@
                 <v-expansion-panel disabled>
                   <v-expansion-panel-header>
                     <v-row no-gutters align="center" justify="space-between">
-                      <v-col class="darkgrey--text col-5">Updates zu deinen Veranstaltungen</v-col>
+                      <v-col class="darkgrey--text col-5">Updates zu Ihren Veranstaltungen</v-col>
                       <v-col class="col-4">Bald verfügbar...</v-col>
                       <v-col class="text-right"><v-icon color="darkgrey">mdi-lock</v-icon></v-col>
                     </v-row>
@@ -455,7 +496,7 @@
                         <template v-slot:activator="{ on }">
                           <v-icon v-on="on" color="darkgrey">mdi-chevron-right</v-icon>
                         </template>
-                        <span>Updates zu deinen Veranstaltungen einstellen</span>
+                        <span>Updates zu Ihren Veranstaltungen einstellen</span>
                       </v-tooltip>
                     </template>
                   </v-expansion-panel-header>
@@ -539,6 +580,7 @@ export default {
       valid: true,
       isLoading: false,
       generalPanel: [],
+      contactPanel: [],
       securePanel: [],
       password: "",
       passwordRepeat: "",
@@ -551,6 +593,7 @@ export default {
       },
       tempFirstName: "",
       tempLastName: "",
+      tempCompany: "",
       tempPhone: "",
       tempAddress: "",
       tempZip: "",
@@ -558,6 +601,7 @@ export default {
       headers: [
         {text: "Vorname", value: "firstName"},
         {text: "Nachname", value: "lastName"},
+        {text: "Firma", value: "company"},
         {text: "E-Mail Adresse", value: "id"},
         {text: "Mandant", value: "tenant"},
         {text: "Verifiziert", value: "isVerified"},
@@ -589,6 +633,14 @@ export default {
       },
       set(value) {
         this.tempLastName = value;
+      }
+    },
+    company: {
+      get() {
+        return this.api.user.company;
+      },
+      set(value) {
+        this.tempCompany = value;
       }
     },
     phone: {
@@ -660,6 +712,7 @@ export default {
       this.startLoading("update-user");
       this.api.user.firstName = this.tempFirstName;
       this.api.user.lastName = this.tempLastName;
+      this.api.user.company = this.tempCompany;
       this.api.user.phone = this.tempPhone;
       this.api.user.address = this.tempAddress;
       this.api.user.zipCode = this.tempZip;
@@ -713,6 +766,7 @@ export default {
   mounted() {
     this.tempFirstName = this.user.firstName;
     this.tempLastName = this.user.lastName;
+    this.tempCompany = this.user.company;
     this.tempPhone = this.user.phone;
     this.tempAddress = this.user.address;
     this.tempZip = this.user.zipCode;

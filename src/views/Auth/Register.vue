@@ -49,6 +49,15 @@
           ></v-text-field>
           <v-text-field
             outlined
+            hide-details
+            label="Firma"
+            placeholder="Ihre Firma"
+            class="mb-5"
+            v-model="company"
+            :rules="companyRules"
+          ></v-text-field>
+          <v-text-field
+            outlined
             label="Passwort"
             placeholder="Ihr Passwort"
             aria-details="password"
@@ -94,6 +103,7 @@ export default {
       id: "",
       firstName: "",
       lastName: "",
+      company: "",
       tenant: "",
       password: "",
       showPassword: false,
@@ -101,6 +111,7 @@ export default {
       tenantRules: [(v) => !!v || "Mandant ist erforderlich"],
       firstNameRules: [(v) => !!v || "Vorname ist erforderlich"],
       lastNameRules: [(v) => !!v || "Nachname ist erforderlich"],
+      companyRules: [(v) => !!v || "Firma ist erforderlich"],
       emailRules: [
         (v) => !!v || "E-Mail ist erforderlich",
         (v) => /.+@.+\..+/.test(v) || "E-Mail muss gültig sein",
@@ -127,6 +138,7 @@ export default {
           this.id,
           this.firstName,
           this.lastName,
+          this.company,
           this.password
         )
           .then((response) => {
