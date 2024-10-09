@@ -51,6 +51,7 @@
                     <v-row justify="center" align="center">
                       <v-col>
                         <v-text-field
+                          style="min-width: 100px"
                           outlined
                           hide-details
                           v-model="firstName"
@@ -59,16 +60,16 @@
                       </v-col>
                       <v-col>
                         <v-text-field
+                          style="min-width: 100px"
                           outlined
                           hide-details
                           v-model="lastName"
                           label="Nachname"
                         ></v-text-field>
                       </v-col>
-                      <v-spacer></v-spacer>
                       <v-col class="text-right">
                         <v-btn
-                          x-large
+                          large
                           color="primary"
                           @click="updateUser"
                           :loading="isLoading"
@@ -148,16 +149,16 @@
                     <v-row justify="center" align="center">
                       <v-col>
                         <v-text-field
+                          style="min-width: 200px"
                           outlined
                           hide-details
                           v-model="company"
                           label="Firma"
                         ></v-text-field>
                       </v-col>
-                      <v-spacer></v-spacer>
                       <v-col class="text-right">
                         <v-btn
-                          x-large
+                          large
                           color="primary"
                           @click="updateUser"
                           :loading="isLoading"
@@ -189,16 +190,16 @@
                     <v-row justify="center" align="center">
                       <v-col>
                         <v-text-field
+                          style="min-width: 200px"
                           outlined
                           hide-details
                           v-model="phone"
                           label="Telefonnummer"
                         ></v-text-field>
                       </v-col>
-                      <v-spacer></v-spacer>
                       <v-col class="text-right">
                         <v-btn
-                          x-large
+                          large
                           color="primary"
                           @click="updateUser"
                           :loading="isLoading"
@@ -230,16 +231,16 @@
                     <v-row justify="center" align="center">
                       <v-col>
                         <v-text-field
+                          style="min-width: 200px"
                           outlined
                           hide-details
                           v-model="address"
                           label="Straße und Hausnummer"
                         ></v-text-field>
                       </v-col>
-                      <v-spacer></v-spacer>
                       <v-col class="text-right">
                         <v-btn
-                          x-large
+                          large
                           color="primary"
                           @click="updateUser"
                           :loading="isLoading"
@@ -271,16 +272,16 @@
                     <v-row justify="center" align="center">
                       <v-col>
                         <v-text-field
+                          style="min-width: 200px"
                           outlined
                           hide-details
                           v-model="zip"
                           label="Postleitzahl"
                         ></v-text-field>
                       </v-col>
-                      <v-spacer></v-spacer>
                       <v-col class="text-right">
                         <v-btn
-                          x-large
+                          large
                           color="primary"
                           @click="updateUser"
                           :loading="isLoading"
@@ -312,16 +313,16 @@
                     <v-row justify="center" align="center">
                       <v-col>
                         <v-text-field
+                          style="min-width: 200px"
                           outlined
                           hide-details
                           v-model="city"
                           label="Wohnort"
                         ></v-text-field>
                       </v-col>
-                      <v-spacer></v-spacer>
                       <v-col class="text-right">
                         <v-btn
-                          x-large
+                          large
                           color="primary"
                           @click="updateUser"
                           :loading="isLoading"

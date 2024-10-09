@@ -50,11 +50,10 @@
           <v-text-field
             outlined
             hide-details
-            label="Firma"
+            label="Firma (optional)"
             placeholder="Ihre Firma"
             class="mb-5"
             v-model="company"
-            :rules="companyRules"
           ></v-text-field>
           <v-text-field
             outlined
@@ -111,7 +110,6 @@ export default {
       tenantRules: [(v) => !!v || "Mandant ist erforderlich"],
       firstNameRules: [(v) => !!v || "Vorname ist erforderlich"],
       lastNameRules: [(v) => !!v || "Nachname ist erforderlich"],
-      companyRules: [(v) => !!v || "Firma ist erforderlich"],
       emailRules: [
         (v) => !!v || "E-Mail ist erforderlich",
         (v) => /.+@.+\..+/.test(v) || "E-Mail muss gültig sein",
