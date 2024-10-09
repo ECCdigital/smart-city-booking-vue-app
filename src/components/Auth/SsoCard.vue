@@ -1,7 +1,7 @@
 <script>
 import Keycloak from "keycloak-js";
 import ApiAuthService from "@/services/api/ApiAuthService";
-import {mapActions, mapGetters} from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ToastService from "@/services/ToastService";
 import VueJwtDecode from "vue-jwt-decode";
@@ -11,6 +11,7 @@ export default {
 
   data() {
     return {
+      nextUrl: null,
       userEmail: "",
       keycloakToken: null,
       loading: false,
@@ -33,13 +34,17 @@ export default {
     ...mapGetters({
       tenant: "authStore/tenant",
     }),
+    checkoutContext() {
+      return this.$route.name === "checkout-sso";
+    },
   },
 
   methods: {
     ...mapActions({
       addToast: "toasts/add",
       updateUser: "user/update",
-      updateTenant: "tenants/update",
+      getNextUrl: "authStore/getNextUrl",
+      updateNextUrl: "authStore/setNextUrl",
     }),
     setState(state) {
       this.state = state;
@@ -84,13 +89,15 @@ export default {
           this.keycloakToken
         );
         if (response.status === 200) {
-          const tenant = await ApiTenantService.getTenant(response.data.tenant);
-          await this.updateTenant(tenant.data);
           await this.updateUser(response.data);
           await this.addToast(
             ToastService.createToast("login.success.default", "success")
           );
-          await this.$router.push({ name: "admin" });
+          if (this.nextUrl && this.checkoutContext) {
+            await this.$router.push(this.nextUrl);
+          } else {
+            await this.$router.push({ name: "admin" });
+          }
         } else {
           await this.addToast(
             ToastService.createToast("login.error.default", "error")
@@ -145,13 +152,18 @@ export default {
       keycloak.logout();
     },
     back() {
-      this.$router.push({ name: "login" });
+      if (this.nextUrl && this.checkoutContext) {
+        this.$router.push(this.nextUrl);
+      } else {
+        this.$router.push({ name: "login" });
+      }
     },
   },
 
   async mounted() {
     await this.fetchSsoConfig();
     await this.createKeycloakSession();
+    this.nextUrl = await this.getNextUrl();
   },
 };
 </script>
@@ -160,9 +172,7 @@ export default {
   <v-card flat max-width="500">
     <v-card-text class="px-10 pb-10">
       <v-row class="mb-2" align="center">
-        <v-col class="text-left cut-text">
-          Mandant: {{tenant?.name}}
-        </v-col>
+        <v-col class="text-left cut-text"> Mandant: {{ tenant?.name }} </v-col>
         <v-col class="col-auto">
           <v-btn text @click="back()">Ändern</v-btn>
         </v-col>
@@ -175,23 +185,49 @@ export default {
           size="24"
         ></v-progress-circular>
       </p>
-      <v-alert v-if="state === possibleStates.KC_AUTH_SUCCESS" dense text type="success">
+      <v-alert
+        v-if="state === possibleStates.KC_AUTH_SUCCESS"
+        dense
+        text
+        type="success"
+      >
         Sie wurden erfolgreich authentifiziert. Wollen Sie sich mit dem Benutzer
         <strong>{{ userEmail }}</strong> anmelden?
       </v-alert>
-      <v-alert v-if="state === possibleStates.KC_AUTH_ERROR" dense text type="error">
+      <v-alert
+        v-if="state === possibleStates.KC_AUTH_ERROR"
+        dense
+        text
+        type="error"
+      >
         Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.
       </v-alert>
-      <v-alert v-if="state === possibleStates.NO_USER_FOUND" dense text type="info">
-        Wir konnten keinen Benutzer finden. Möchten Sie sich mit dem Benutzer <strong>{{ userEmail }}</strong> registrieren?
+      <v-alert
+        v-if="state === possibleStates.NO_USER_FOUND"
+        dense
+        text
+        type="info"
+      >
+        Wir konnten keinen Benutzer finden. Möchten Sie sich mit dem Benutzer
+        <strong>{{ userEmail }}</strong> registrieren?
       </v-alert>
-      <v-alert v-if="state === possibleStates.SIGNUP_SUCCESS" dense text type="success">
+      <v-alert
+        v-if="state === possibleStates.SIGNUP_SUCCESS"
+        dense
+        text
+        type="success"
+      >
         Sie wurden erfolgreich registriert. Sie werden in Kürze angemeldet.
-      <template v-slot:prepend>
-        <v-progress-circular indeterminate></v-progress-circular>
-      </template>
+        <template v-slot:prepend>
+          <v-progress-circular indeterminate></v-progress-circular>
+        </template>
       </v-alert>
-      <v-alert v-if="state === possibleStates.SIGNUP_ERROR" dense text type="error">
+      <v-alert
+        v-if="state === possibleStates.SIGNUP_ERROR"
+        dense
+        text
+        type="error"
+      >
         Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.
       </v-alert>
     </v-card-text>

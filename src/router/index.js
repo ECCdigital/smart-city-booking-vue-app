@@ -358,6 +358,7 @@ const routes = [
     path: "/login/sso",
     name: "sso",
     component: lazyLoad("Auth/Sso"),
+    props: true,
     meta: {
       title: "SSO",
       requiresAuth: false,
@@ -378,6 +379,16 @@ const routes = [
     component: lazyLoad("BundleCheckout/CheckoutMain"),
     meta: {
       title: "Checkout",
+      requiresAuth: false,
+    },
+  },
+  {
+    path: "/checkout/sso",
+    name: "checkout-sso",
+    component: lazyLoad("Auth/Sso"),
+    props: true,
+    meta: {
+      title: "SSO",
       requiresAuth: false,
     },
   },

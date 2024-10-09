@@ -59,6 +59,11 @@
                 >Anmelden und weiter</v-btn
               >
             </div>
+            <div v-if="ssoConfig.active" class="mt-5">
+              <v-btn color="primary" block elevation="0" @click="sso"
+                >Mit Keycloak anmelden</v-btn
+              >
+            </div>
           </div>
         </v-card-text>
       </v-card>
@@ -80,6 +85,7 @@
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { mapActions } from "vuex";
 import ToastService from "@/services/ToastService";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   name: "CheckoutSignin",
@@ -88,11 +94,17 @@ export default {
     return {
       id: null,
       password: null,
+      ssoConfig: {
+        realm: null,
+        serverUrl: null,
+        clientId: null,
+        active: false,
+      },
     };
   },
 
   props: {
-    tenant: {
+    tenantId: {
       type: String,
       required: true,
     },
@@ -112,6 +124,8 @@ export default {
   methods: {
     ...mapActions({
       addToast: "toasts/add",
+      updateTenant: "authStore/update",
+      updateNextUrl: "authStore/setNextUrl",
     }),
 
     submit() {
@@ -161,6 +175,28 @@ export default {
         }
       });
     },
+    async setTenant() {
+      const response = await ApiTenantService.getTenant(this.tenantId);
+      await this.updateTenant(response.data || null);
+    },
+    async getSooConfig() {
+      this.ssoConfig = await ApiTenantService.tenantSsoConfig(this.tenantId);
+    },
+    sso() {
+      this.updateNextUrl(this.$route.fullPath);
+      this.$router.push({
+        name: "checkout-sso",
+      });
+    },
+  },
+  watch: {
+    tenantId() {
+      this.getSooConfig();
+    },
+  },
+  mounted() {
+    this.setTenant();
+    this.getSooConfig();
   },
 };
 </script>
