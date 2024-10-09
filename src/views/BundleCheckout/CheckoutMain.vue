@@ -348,7 +348,7 @@ export default {
         title: "Anmeldung",
         component: "checkout-signin",
         props: {
-          tenant: this.tenant,
+          tenantId: this.tenant,
           me: this.me,
         },
         events: {
@@ -362,7 +362,7 @@ export default {
         title: "Anmeldung",
         component: "checkout-signin",
         props: {
-          tenant: this.tenant,
+          tenantId: this.tenant,
           me: this.me,
           "show-back": false,
           "show-submit-guest": false,
