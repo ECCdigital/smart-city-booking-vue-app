@@ -10,7 +10,7 @@
       <img
         alt="Smart City Booking"
         src="@/assets/app-logo.png"
-        style="max-height: 50px; width: auto; max-width: 250px;"
+        style="max-height: 50px; width: auto; max-width: 250px"
       />
       <v-spacer></v-spacer>
       <span v-if="isProduction !== 'true'" class="font-weight-bold"
@@ -63,18 +63,17 @@
                 }}</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
-            <v-list-item>
+            <v-list-item @click="logout">
               <v-list-item-icon>
                 <v-icon> mdi-logout </v-icon>
               </v-list-item-icon>
               <v-list-item-content>
-                <v-list-item-title @click="logout">Abmelden</v-list-item-title>
+                <v-list-item-title>Abmelden</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
           </v-list-item-group>
         </v-list>
       </v-menu>
-
     </v-app-bar>
 
     <v-navigation-drawer
@@ -145,7 +144,7 @@ import { RolePermission } from "@/entities/role";
 export default {
   data: () => ({
     drawer: false,
-    isProduction: process.env.VUE_APP_IS_PRODUCTION ,
+    isProduction: process.env.VUE_APP_IS_PRODUCTION,
     profileItems: [
       {
         title: "Einstellungen",
