@@ -2,151 +2,59 @@
   <AdminLayout>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <v-skeleton-loader type="table" class="flex">
-          <v-text-field
-            v-model="search"
-            label="Buchung suchen..."
-            append-icon="mdi-magnify"
-            solo
-            clearable
-            class="search-field"
-          ></v-text-field>
-          <v-data-table
-            :headers="headers"
-            :sort-by="['timeCreated']"
-            :sort-desc="[true]"
-            :search="search"
-            :footer-props="{
-              'items-per-page-all-text': 'Alle',
-              'items-per-page-text': 'Buchungen pro Seite',
-            }"
-            :items="api.bookings"
-            class="accent elevation-1"
-            :loading="loading"
-            loading-text="Daten werden geladen..."
-            no-data-text="Keine Daten vorhanden"
-            fixed-header
-            :custom-filter="customSearch"
+        <v-btn-toggle v-model="currentView" mandatory rounded class="mb-4">
+          <v-btn
+            value="list"
+            :color="currentView === 'list' ? 'secondary' : ''"
+            :class="currentView === 'list' ? 'active-button' : ''"
           >
-            <template v-slot:item.id="{ item }">
-              <span v-if="BookingPermissionService.allowUpdate(item)"
-                ><a @click="onOpenBooking(item.id)">{{ item.id }}</a></span
-              >
-              <span v-else>{{ item.id }}</span>
-            </template>
-            <template v-slot:item.bookableIds="{ item }">
-              <v-chip
-                class="ml-1 mt-1"
-                color="secondary"
-                text-color="black"
-                v-for="(i, key) in item.bookableItems"
-                :key="key"
-                >{{ i._bookableUsed?.title }}</v-chip
-              >
-            </template>
-            <template v-slot:item.timeBegin="{ item }">
-              <span v-if="item.timeBegin">{{
-                Intl.DateTimeFormat("de-DE", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                }).format(new Date(item.timeBegin))
-              }}</span>
-            </template>
-            <template v-slot:item.timeEnd="{ item }">
-              <span v-if="item.timeEnd">{{
-                Intl.DateTimeFormat("de-DE", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                }).format(new Date(item.timeEnd))
-              }}</span>
-            </template>
-            <template v-slot:item.timeCreated="{ item }">
-              <span>{{
-                Intl.DateTimeFormat("de-DE", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                }).format(new Date(item.timeCreated))
-              }}</span>
-            </template>
-            <template v-slot:item.isCommitted="{ item }">
-              <span>{{
-                item.isCommitted == true ? "freigegeben" : "ausstehend"
-              }}</span>
-            </template>
-            <template v-slot:item.isPayed="{ item }">
-              <span>{{ item.isPayed ? "bezahlt" : "ausstehend" }}</span>
-            </template>
-            <template v-slot:item.priceEur="{ item }">
-              <span>{{
-                Intl.NumberFormat("de-DE", {
-                  style: "currency",
-                  currency: "EUR",
-                }).format(item.priceEur)
-              }}</span>
-            </template>
-            <template v-slot:item.payMethod="{ item }">
-              <span>{{ translatePayMethod(item.payMethod) }}</span>
-            </template>
-            <template v-slot:item.controls="{ item }">
-              <span>
-                <v-menu offset-y>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn icon v-bind="attrs" v-on="on" small>
-                      <v-icon>mdi-dots-horizontal</v-icon>
-                    </v-btn>
-                  </template>
-                  <v-list>
-                    <v-list-item
-                      link
-                      @click="onOpenBooking(item.id)"
-                      :disabled="!BookingPermissionService.allowUpdate(item)"
-                    >
-                      <v-list-item-icon>
-                        <v-icon>mdi-information</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title
-                        >Buchungsdetails ansehen</v-list-item-title
-                      >
-                    </v-list-item>
-                    <v-divider></v-divider>
-                    <v-list-item
-                      link
-                      @click="onOpenEditBooking(item.id)"
-                      :disabled="!BookingPermissionService.allowUpdate(item)"
-                    >
-                      <v-list-item-icon>
-                        <v-icon>mdi-pencil</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title>Buchung bearbeiten</v-list-item-title>
-                    </v-list-item>
-                    <v-list-item
-                      link
-                      @click="commitBooking(item.id)"
-                      :disabled="!BookingPermissionService.allowUpdate(item)"
-                    >
-                      <v-list-item-icon>
-                        <v-icon>mdi-checkbox-marked-circle</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title>Buchung freigeben</v-list-item-title>
-                    </v-list-item>
-                    <v-divider></v-divider>
-                    <v-list-item
-                      link
-                      @click="onOpenDeleteDialog(item.id)"
-                      class="red--text"
-                      :disabled="!BookingPermissionService.allowDelete(item)"
-                    >
-                      <v-list-item-icon>
-                        <v-icon color="red">mdi-delete</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title>Buchung löschen</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-              </span>
-            </template>
-          </v-data-table>
-        </v-skeleton-loader>
+            <v-icon left> mdi-list-box-outline </v-icon>
+            Listenansicht</v-btn
+          >
+          <v-btn
+            value="calendar"
+            :color="currentView === 'calendar' ? 'secondary' : ''"
+            :class="currentView === 'calendar' ? 'active-button' : ''"
+          >
+            <v-icon left> mdi-calendar-blank-outline </v-icon>
+            Kalenderansicht</v-btn
+          >
+        </v-btn-toggle>
+
+        <v-text-field
+          v-model="searchTerm"
+          label="Buchung suchen..."
+          append-icon="mdi-magnify"
+          solo
+          clearable
+          class="search-field"
+        ></v-text-field>
+
+        <!-- List view -->
+        <div v-if="currentView === 'list'">
+          <v-skeleton-loader type="table" class="flex">
+            <BookingTable
+              :bookings="filteredBookings"
+              :loading="loading"
+              @open-booking="onOpenBooking"
+              @open-edit-booking="onOpenEditBooking"
+              @commit-booking="commitBooking"
+              @open-delete-dialog="onOpenDeleteDialog"
+            />
+          </v-skeleton-loader>
+        </div>
+
+        <!-- Calendar view -->
+        <div v-else-if="currentView === 'calendar'">
+          <BookingOverviewCalendar
+            :bookings="filteredBookings"
+            :loading="loading"
+            @open-booking="onOpenBooking"
+            @open-edit-booking="onOpenEditBooking"
+            @commit-booking="commitBooking"
+            @open-delete-dialog="onOpenDeleteDialog"
+          ></BookingOverviewCalendar>
+        </div>
       </v-col>
     </v-row>
     <v-btn
@@ -183,6 +91,7 @@
 </template>
 
 <script>
+import Fuse from "fuse.js";
 import AdminLayout from "@/layouts/Admin.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiBookingService from "@/services/api/ApiBookingService";
@@ -191,9 +100,13 @@ import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteC
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import BookingDetails from "@/components/Booking/BookingDetails.vue";
+import BookingOverviewCalendar from "@/components/Booking/BookingOverviewCalendar.vue";
+import BookingTable from "@/components/Booking/BookingTable.vue";
 
 export default {
   components: {
+    BookingTable,
+    BookingOverviewCalendar,
     BookingDetails,
     BookingDeleteConformationDialog,
     AdminLayout,
@@ -201,9 +114,12 @@ export default {
   },
   data() {
     return {
-      search: "",
+      fuse: null,
+      value: "",
+      searchTerm: "",
       api: {
         users: [],
+        bookings: [],
       },
       headers: [
         {
@@ -227,6 +143,7 @@ export default {
       selectedBooking: {},
       bookables: [],
       openBookingDialog: false,
+      currentView: "list",
     };
   },
   computed: {
@@ -237,6 +154,44 @@ export default {
     BookingPermissionService() {
       return BookingPermissionService;
     },
+    filteredBookings() {
+      if (!this.searchTerm) {
+        return this.api.bookings || [];
+      }
+      const terms = this.searchTerm.trim().split(/\s+/);
+      const searchQuery = {
+        $and: terms.map((term) => ({
+          $or: [
+            { id: `'${term}` },
+            { mail: `'${term}` },
+            { comment: `'${term}` },
+            { name: `'${term}` },
+            { street: `'${term}` },
+            { zipCode: `'${term}` },
+            { location: `'${term}` },
+            { company: `'${term}` },
+            { phone: `'${term}` },
+            { "bookableItems.bookableId": `'${term}` },
+            { "bookableItems._bookableUsed.id": `'${term}` },
+            { "bookableItems._bookableUsed.title": `'${term}` },
+            { "bookableItems._bookableUsed.description": `'${term}` },
+            { "bookableItems._bookableUsed.type": `'${term}` },
+            { "bookableItems._bookableUsed.eventId": `'${term}` },
+            { "bookableItems._bookableUsed.priceEur": `'${term}` },
+            { "bookableItems._bookableUsed.attachments.id": `'${term}` },
+            { "bookableItems._bookableUsed.attachments.type": `'${term}` },
+            { "bookableItems._bookableUsed.attachments.title": `'${term}` },
+            { "bookableItems._bookableUsed.attachments.url": `'${term}` },
+            { "_populated.bookable.flags": `'${term}` },
+            { "_populated.bookable.tags": `'${term}` },
+            { "_populated.bookable.bookingNotes": `'${term}` },
+          ],
+        })),
+      };
+
+      const results = this.fuse.search(searchQuery);
+      return results.map((result) => result.item);
+    },
   },
   methods: {
     ...mapActions({
@@ -244,7 +199,6 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
-
     //create customSearch to get title of bookable by id
     customSearch(value, search) {
       // return bookables id of this.bookables if they include search string in title
@@ -288,6 +242,7 @@ export default {
         })
         .finally(() => {
           this.stopLoading("fetch-bookings");
+          this.initializeFuse();
         })
         .catch((error) => {
           console.log(error);
@@ -399,6 +354,41 @@ export default {
         this.api.bookings.find((booking) => booking.id === bookingId)
       );
     },
+    initializeFuse() {
+      const options = {
+        includeScore: true,
+        threshold: 0.3,
+        useExtendedSearch: true,
+        keys: [
+          "id",
+          "mail",
+          "comment",
+          "name",
+          "street",
+          "zipCode",
+          "location",
+          "company",
+          "phone",
+
+          "bookableItems.bookableId",
+          "bookableItems._bookableUsed.id",
+          "bookableItems._bookableUsed.title",
+          "bookableItems._bookableUsed.type",
+          "bookableItems._bookableUsed.eventId",
+          "bookableItems._bookableUsed.priceEur",
+
+          "bookableItems._bookableUsed.attachments.id",
+          "bookableItems._bookableUsed.attachments.type",
+          "bookableItems._bookableUsed.attachments.title",
+          "bookableItems._bookableUsed.attachments.url",
+
+          "_populated.bookable.flags",
+          "_populated.bookable.tags",
+          "_populated.bookable.bookingNotes",
+        ],
+      };
+      this.fuse = new Fuse(this.api.bookings, options);
+    },
   },
   created() {
     this.fetchBookings();
@@ -407,8 +397,11 @@ export default {
 };
 </script>
 
-<style scoped>
+<style scoped lanf="scss">
 .search-field {
   border-radius: 15px;
+}
+.active-button {
+  color: black !important;
 }
 </style>
