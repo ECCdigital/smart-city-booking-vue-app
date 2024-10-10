@@ -183,6 +183,7 @@ export default {
         this.me = data;
         this.contactDetails.mail = this.me.id;
         this.contactDetails.name = this.me.firstName + " " + this.me.lastName;
+        this.contactDetails.company = this.me.company;
         this.contactDetails.phone = this.me.phone;
         this.contactDetails.street = this.me.address;
         this.contactDetails.zipCode = this.me.zipCode;
@@ -191,6 +192,7 @@ export default {
         this.me = null;
         this.contactDetails.mail = null;
         this.contactDetails.name = null;
+        this.contactDetails.company = null;
         this.contactDetails.phone = null;
         this.contactDetails.street = null;
         this.contactDetails.zipCode = null;

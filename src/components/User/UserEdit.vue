@@ -56,6 +56,17 @@
                     <v-text-field
                       background-color="accent" filled
                       hide-details
+                      label="Firma"
+                      v-model="selectedUser.company"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col></v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent" filled
+                      hide-details
                       label="Telefon"
                       required
                       v-model="selectedUser.phone"

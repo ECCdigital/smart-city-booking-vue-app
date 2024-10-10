@@ -11,11 +11,12 @@ export default {
       withCredentials: true,
     });
   },
-  register(tenant, id, firstName, lastName, password) {
+  register(tenant, id, firstName, lastName, company, password) {
     const body = {
       id: id,
       firstName: firstName,
       lastName: lastName,
+      company: company,
       password: password,
     };
 

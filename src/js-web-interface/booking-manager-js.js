@@ -37,6 +37,7 @@ class BookingManager {
     this.url = url;
     this.tenant = tenant;
   }
+
   /**
    * Initialize the Booking Manager Integration.
    */
@@ -657,6 +658,7 @@ class BookingManager {
       const profileForm = document.getElementById("bm-user-profile");
       const userFirstName = profileForm.querySelector("input[name=firstname]");
       const userLastName = profileForm.querySelector("input[name=lastname]");
+      const userCompany = profileForm.querySelector("input[name=company]");
       const userEmail = profileForm.querySelector("input[name=email]");
       const userPhone = profileForm.querySelector("input[name=phone]");
       const userAddress = profileForm.querySelector("input[name=address]");
@@ -674,6 +676,7 @@ class BookingManager {
           const apiResponse = JSON.parse(text);
           userFirstName.value = apiResponse.firstName;
           userLastName.value = apiResponse.lastName;
+          userCompany.value = apiResponse.company;
           userEmail.value = apiResponse.id;
           userPhone.value = apiResponse.phone;
           userAddress.value = apiResponse.address;
@@ -690,6 +693,7 @@ class BookingManager {
         const lastName = profileForm.querySelector(
           "input[name=lastname]"
         ).value;
+        const company = profileForm.querySelector("input[name=company]").value;
         const phone = profileForm.querySelector("input[name=phone]").value;
         const address = profileForm.querySelector("input[name=address]").value;
         const zip = profileForm.querySelector("input[name=zip]").value;
@@ -701,6 +705,7 @@ class BookingManager {
           body: JSON.stringify({
             firstName: firstName,
             lastName: lastName,
+            company: company,
             phone: phone,
             address: address,
             zipCode: zip,
