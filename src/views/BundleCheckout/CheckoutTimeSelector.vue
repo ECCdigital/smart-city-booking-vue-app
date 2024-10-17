@@ -1,8 +1,12 @@
 <template>
   <div>
     <div class="d-flex mb-5">
+      <v-btn v-if="showBack" outlined small @click="back" >
+        <v-icon left small>mdi-arrow-left</v-icon>
+        Zurück
+      </v-btn>
       <v-spacer></v-spacer>
-      <v-btn :disabled="isNextButtonDisabled" color="primary" class="px-10" small @click="submit">
+      <v-btn :disabled="isNextButtonDisabled" color="primary" small @click="submit">
         Weiter
         <v-icon right small>mdi-arrow-right</v-icon>
       </v-btn>
@@ -242,6 +246,10 @@ export default {
     amount: {
       type: Number,
     },
+    showBack: {
+      type: Boolean,
+      default: true,
+    },
   },
 
   data() {
@@ -311,6 +319,9 @@ export default {
         }
         this.$emit("submit");
       }
+    },
+    back() {
+      this.$emit("back");
     },
   },
 

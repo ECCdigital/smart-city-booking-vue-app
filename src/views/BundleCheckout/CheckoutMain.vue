@@ -1,8 +1,8 @@
 <template>
   <div>
     <v-container>
-      <div v-if="!preventBooking">
-        <v-stepper alt-labels elevation="0" class="mb-10" v-model="step">
+      <div>
+        <v-stepper v-if="!preventBooking" alt-labels elevation="0" class="mb-10" v-model="step">
           <v-stepper-header>
             <template v-for="(step, index) in steps">
               <v-stepper-step
@@ -55,11 +55,6 @@
           </v-col>
         </v-row>
       </div>
-      <div v-else>
-        Leider ist die von Ihnen gewünschten Buchung nicht möglich. Bitte
-        versuchen Sie es erneut oder wenden Sie sich an unsere
-        Ansprechpartner*innen.
-      </div>
     </v-container>
   </div>
 </template>
@@ -78,6 +73,7 @@ import ApiCouponService from "@/services/api/ApiCouponService";
 import CheckoutNoPermission from "@/views/BundleCheckout/CheckoutNoPermission.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import CheckoutPaymentMethod from "@/views/BundleCheckout/CheckoutPaymentMethod.vue";
+import { mapActions, mapGetters } from "vuex";
 
 export default {
   name: "CheckoutMain",
@@ -94,6 +90,7 @@ export default {
 
   data() {
     return {
+      steps: [],
       loading: true,
       trace: false,
       preventBooking: false,
@@ -138,16 +135,169 @@ export default {
     this.leadItem.bookableId = this.$route.query.id;
     this.leadItem.amount = parseInt(this.$route.query.amount || 1);
     await this.init();
+    await this.fetchTenant();
   },
 
   methods: {
+    ...mapActions({
+      updateTenant: "tenants/update",
+    }),
     async init() {
       await this.fetchMe();
       await this.fetchLeadBookable();
       await this.fetchSubsequentBookables();
       await this.validateItems();
       await this.fetchActivePaymentApps();
+      this.steps = this.createSteps();
       this.loading = false;
+    },
+
+    createSteps() {
+      const permissionStep = {
+        title: "Berechtigung",
+        rules: [() => false],
+        component: "checkout-no-permission",
+        props: {
+          tenant: this.tenant,
+        },
+        events: {
+          "sign-out": this.init,
+        },
+      };
+
+      const loginStep = {
+        title: "Anmeldung",
+        component: "checkout-signin",
+        props: {
+          tenant: this.tenant,
+          me: this.me,
+          "show-back": false,
+        },
+        events: {
+          "update-me": this.fetchMe,
+          submit: this.nextPage,
+          back: this.previousPage,
+        },
+      };
+
+      const loginRequiredStep = {
+        title: "Anmeldung",
+        component: "checkout-signin",
+        props: {
+          tenant: this.tenant,
+          me: this.me,
+          "show-back": false,
+          "show-submit-guest": false,
+        },
+        events: {
+          "update-me": this.init,
+          login: this.init,
+          submit: this.nextPage,
+        },
+      };
+
+      const contactDetailsStep = {
+        title: "Kontaktdaten",
+        component: "checkout-contact-details",
+        props: {
+          me: this.me,
+          leadItem: this.leadItem,
+          contactDetails: this.contactDetails,
+        },
+        events: {
+          back: this.previousPage,
+          submit: this.nextPage,
+        },
+      };
+
+      const timeSelectorStep = {
+        title: "Buchungszeitraum",
+        component: "checkout-time-selector",
+        props: {
+          leadItem: this.leadItem,
+          subsequentItems: this.subsequentItems,
+          timeBegin: this.timeBegin,
+          timeEnd: this.timeEnd,
+          amount: this.leadItem.amount,
+          "show-back": false,
+        },
+        events: {
+          "booking-time-selected": this.setBookingTime,
+          submit: this.nextPage,
+          back: this.previousPage,
+        },
+      };
+
+      const additionalBookableOptions = {
+        title: "Ergänzungen",
+        component: "additional-bookables",
+        props: {
+          leadItem: this.leadItem,
+          subsequentItems: this.subsequentItems,
+          timeBegin: this.timeBegin,
+          timeEnd: this.timeEnd,
+        },
+        events: {
+          "item-selected": this.addSubsequentItem,
+          back: this.previousPage,
+          submit: this.nextPage,
+        },
+      };
+
+      const paymentStep = {
+        title: "Zahlungsmethode",
+        component: "checkout-payment-method",
+        props: {
+          activePaymentApps: this.activePaymentApps,
+        },
+        events: {
+          back: this.previousPage,
+          submit: this.setPaymentApp,
+        },
+      };
+
+      let stepsToReturn = [];
+
+      if (!this.bookingPermission) {
+        stepsToReturn.push(permissionStep);
+      }
+
+      if (this.loginRequired || !this.bookingPermission) {
+        stepsToReturn.push(loginRequiredStep);
+        timeSelectorStep.props["show-back"] = true;
+      }
+
+      if (!this.loginRequired && this.bookingPermission) {
+        timeSelectorStep.props["show-back"] = false;
+      }
+
+      if (
+        this.leadItem.bookable?.isScheduleRelated ||
+        this.leadItem.bookable?.isTimePeriodRelated ||
+        this.leadItem.bookable?.isLongRange
+      ) {
+        stepsToReturn.push(timeSelectorStep);
+      }
+
+      if (this.leadItem.bookable?.checkoutBookableIds?.length > 0) {
+        stepsToReturn.push(additionalBookableOptions);
+      }
+
+      stepsToReturn.push(contactDetailsStep);
+
+      if (
+        this.activePaymentApps.length > 1 &&
+        this.leadItem.bookable &&
+        (this.leadItem.bookable.priceEur > 0 || this.leadItem.userPriceEur > 0)
+      ) {
+        stepsToReturn.push(paymentStep);
+      }
+
+      stepsToReturn.push({
+        title: "Zusammenfassung",
+      });
+
+      return stepsToReturn;
     },
 
     resetState() {
@@ -358,152 +508,31 @@ export default {
       this.selectedPaymentApp = app;
       this.nextPage();
     },
+
+    async fetchTenant() {
+      try {
+        const response = await ApiTenantService.getTenant(this.tenant);
+        await this.updateTenant(response.data);
+      } catch (error) {
+        console.log("Error while fetching tenant");
+      }
+    },
+  },
+
+  watch: {
+    user() {
+      try {
+        this.fetchMe();
+      } catch (error) {
+        this.me = null;
+      }
+    },
   },
 
   computed: {
-    steps() {
-      const permissionStep = {
-        title: "Berechtigung",
-        rules: [() => false],
-        component: "checkout-no-permission",
-        props: {
-          tenant: this.tenant,
-        },
-        events: {
-          "sign-out": this.init,
-        },
-      };
-
-      const loginStep = {
-        title: "Anmeldung",
-        component: "checkout-signin",
-        props: {
-          tenant: this.tenant,
-          me: this.me,
-        },
-        events: {
-          "update-me": this.fetchMe,
-          submit: this.nextPage,
-          back: this.previousPage,
-        },
-      };
-
-      const loginRequiredStep = {
-        title: "Anmeldung",
-        component: "checkout-signin",
-        props: {
-          tenant: this.tenant,
-          me: this.me,
-          "show-back": false,
-          "show-submit-guest": false,
-        },
-        events: {
-          "update-me": this.init,
-          submit: this.nextPage,
-        },
-      };
-
-      const contactDetailsStep = {
-        title: "Kontaktdaten",
-        component: "checkout-contact-details",
-        props: {
-          me: this.me,
-          leadItem: this.leadItem,
-          contactDetails: this.contactDetails,
-        },
-        events: {
-          back: this.previousPage,
-          submit: this.nextPage,
-        },
-      };
-
-      const timeSelectorStep = {
-        title: "Buchungszeitraum",
-        component: "checkout-time-selector",
-        props: {
-          leadItem: this.leadItem,
-          subsequentItems: this.subsequentItems,
-          timeBegin: this.timeBegin,
-          timeEnd: this.timeEnd,
-          amount: this.leadItem.amount,
-        },
-        events: {
-          "booking-time-selected": this.setBookingTime,
-          submit: this.nextPage,
-          back: this.previousPage,
-        },
-      };
-
-      const additionalBookableOptions = {
-        title: "Ergänzungen",
-        component: "additional-bookables",
-        props: {
-          leadItem: this.leadItem,
-          subsequentItems: this.subsequentItems,
-          timeBegin: this.timeBegin,
-          timeEnd: this.timeEnd,
-        },
-        events: {
-          "item-selected": this.addSubsequentItem,
-          back: this.previousPage,
-          submit: this.nextPage,
-        },
-      };
-
-      const paymentStep = {
-        title: "Zahlungsmethode",
-        component: "checkout-payment-method",
-        props: {
-          activePaymentApps: this.activePaymentApps,
-        },
-        events: {
-          back: this.previousPage,
-          submit: this.setPaymentApp,
-        },
-      };
-
-      let stepsToReturn = [];
-
-      if (!this.bookingPermission) {
-        stepsToReturn.push(permissionStep);
-      }
-
-      if (this.loginRequired || !this.bookingPermission) {
-        stepsToReturn.push(loginRequiredStep);
-      }
-
-      if (
-        this.leadItem.bookable?.isScheduleRelated ||
-        this.leadItem.bookable?.isTimePeriodRelated ||
-        this.leadItem.bookable?.isLongRange
-      ) {
-        stepsToReturn.push(timeSelectorStep);
-      }
-
-      if (this.leadItem.bookable?.checkoutBookableIds?.length > 0) {
-        stepsToReturn.push(additionalBookableOptions);
-      }
-
-      if (!this.loginRequired && this.bookingPermission) {
-        stepsToReturn.push(loginStep);
-      }
-
-      stepsToReturn.push(contactDetailsStep);
-
-      if (
-        this.activePaymentApps.length > 1 &&
-        this.leadItem.bookable &&
-        (this.leadItem.bookable.priceEur > 0 || this.leadItem.userPriceEur > 0)
-      ) {
-        stepsToReturn.push(paymentStep);
-      }
-
-      stepsToReturn.push({
-        title: "Zusammenfassung",
-      });
-
-      return stepsToReturn;
-    },
+    ...mapGetters({
+      user: "user/user",
+    }),
   },
 };
 </script>

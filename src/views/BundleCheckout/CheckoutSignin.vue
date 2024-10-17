@@ -1,88 +1,54 @@
 <template>
   <div>
     <v-form>
-      <v-btn v-if="showBack" outlined small class="mb-5" @click="back">
-        <v-icon left small>mdi-arrow-left</v-icon>
-        Zurück
-      </v-btn>
+      <div v-if="me" class="d-flex mb-5">
+        <v-btn v-if="showBack" outlined small @click="back">
+          <v-icon left small>mdi-arrow-left</v-icon>
+          Zurück
+        </v-btn>
+        <v-spacer></v-spacer>
+        <v-btn color="primary" small @click="submit" :disabled="!me">
+          Weiter
+          <v-icon right small>mdi-arrow-right</v-icon></v-btn
+        >
+      </div>
 
-      <v-card class="rounded-sm pa-5" outlined>
-        <v-card-text>
-          <h1 class="mb-8">Anmeldung</h1>
+      <h2 v-if="me" class="mb-8">Anmeldung</h2>
 
-          <div v-if="me">
-            <v-card outlined class="rounded-sm">
-              <v-card-text>
-                Angemeldet als: {{ me.firstName }}
-                {{ me.lastName }}
-              </v-card-text>
-            </v-card>
-
-            <div class="d-flex mt-4">
-              <v-btn outlined elevation="0" @click="signOut(false)"
-                >Anderer Benutzer</v-btn
-              >
-              <v-spacer></v-spacer>
-              <v-btn color="primary" elevation="0" @click="submit"
-                >Weiter</v-btn
-              >
-            </div>
+      <v-toolbar v-if="me" flat color="primary" dark class="mb-8">
+        <div class="text-subtitle-1 d-flex align-center justify-center">
+          <v-icon left>mdi-account</v-icon>
+          <div>
+            Angemeldet als:
+            <strong>{{ me.firstName }} {{ me.lastName }}</strong>
           </div>
-          <div v-else>
-            <v-text-field
-              outlined
-              hide-details
-              label="Benutzername"
-              v-model="id"
-            ></v-text-field>
-            <v-text-field
-              outlined
-              hide-details
-              label="Passwort"
-              type="password"
-              class="mt-4"
-              v-model="password"
-            ></v-text-field>
-            <div class="mt-2">
-              <a href="/password/reset">Passwort vergessen?</a>
-            </div>
-            <div class="d-flex mt-4">
-              <v-btn outlined elevation="0" to="/registrieren"
-                >Konto erstellen</v-btn
-              >
-              <v-spacer></v-spacer>
-              <v-btn
-                color="primary"
-                elevation="0"
-                @click="signIn(true)"
-                :disabled="!id || !password"
-                >Anmelden und weiter</v-btn
-              >
-            </div>
-          </div>
-        </v-card-text>
-      </v-card>
+        </div>
 
-      <v-btn
-        v-if="showSubmitGuest"
-        block
-        large
-        outlined
-        @click="signOut(true)"
-        class="mt-10"
-        >Als Gast fortfahren</v-btn
-      >
+        <v-spacer></v-spacer>
+        <v-btn text @click="signOut(false)">Benutzer wechseln</v-btn>
+      </v-toolbar>
+      <div v-else class="d-flex align-center justify-center" style="height: 100vh">
+        <v-card outlined class="rounded-sm pa-5">
+          <LoginCard
+            :tenant="tenant"
+            @success="onSuccess"
+            style="width: 520px; max-width: 100vw"
+          >
+          </LoginCard>
+        </v-card>
+      </div>
     </v-form>
   </div>
 </template>
 
 <script>
 import ApiAuthService from "@/services/api/ApiAuthService";
-import { mapActions } from "vuex";
-import ToastService from "@/services/ToastService";
+import { mapActions, mapGetters } from "vuex";
+import LoginCard from "@/components/Auth/LoginCard.vue";
 
 export default {
   name: "CheckoutSignin",
+  components: { LoginCard },
 
   data() {
     return {
@@ -90,6 +56,8 @@ export default {
       password: null,
     };
   },
+
+  emits: ["login"],
 
   props: {
     tenant: {
@@ -122,34 +90,6 @@ export default {
       this.$emit("back");
     },
 
-    signIn(submit) {
-      ApiAuthService.login(this.tenant, this.id, this.password)
-        .then((response) => {
-          if (response.status === 200) {
-            this.$emit("update-me");
-
-            if (submit) {
-              this.submit();
-            }
-          }
-        })
-        .catch((error) => {
-          if (error.response.status === 401) {
-            this.addToast(
-              ToastService.createToast("login.error.wrong-email", "error")
-            );
-          } else if (error.response.status === 400) {
-            this.addToast(
-              ToastService.createToast("login.error.default", "error")
-            );
-          } else {
-            this.addToast(
-              ToastService.createToast("login.error.default", "error")
-            );
-          }
-        });
-    },
-
     signOut(submit) {
       ApiAuthService.logout(this.tenant).then((response) => {
         if (response.status === 200) {
@@ -161,6 +101,15 @@ export default {
         }
       });
     },
+    onSuccess() {
+      this.$emit("login");
+    },
+  },
+  computed: {
+    ...mapGetters({
+      tenant: "tenants/tenant",
+      user: "user/user",
+    }),
   },
 };
 </script>
