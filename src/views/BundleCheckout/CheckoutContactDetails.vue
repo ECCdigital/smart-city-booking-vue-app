@@ -22,17 +22,18 @@
 
       <v-toolbar flat color="primary" dark class="mb-8">
         <div
-          v-if="me"
+          v-if="user"
           class="text-subtitle-1 d-flex align-center justify-center"
         >
           <v-icon left>mdi-account</v-icon>
           <div>
-            Hallo, <strong> {{ me.firstName }} {{ me.lastName }}</strong>
+            Hallo, <strong> {{ user.firstName }} {{ user.lastName }}</strong>
           </div>
         </div>
 
         <v-spacer></v-spacer>
-        <v-btn v-if="me" text @click="signOut(false)">Benutzer wechseln</v-btn>
+        <v-btn v-if="user" text @click="signOut(true)">Benutzer wechseln</v-btn>
+        <v-btn v-if="user" text @click="signOut(false)">Logout</v-btn>
         <v-btn v-else text @click="goToLogin"
           >Bereits registriert? Anmelden</v-btn
         >
@@ -234,11 +235,13 @@ export default {
     goToLogin() {
       this.showLogin = true;
     },
-    async signOut() {
+    async signOut(showLogin) {
       try {
-        await ApiAuthService.logout();
+        await ApiAuthService.logout(this.me?.tenant);
         await this.deleteUser();
-        this.showLogin = true;
+        if (showLogin) {
+          this.showLogin = true;
+        }
       } catch (e) {
         console.error(e);
       }

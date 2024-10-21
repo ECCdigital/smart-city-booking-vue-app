@@ -2,16 +2,22 @@
   <div>
     <v-container>
       <div>
-        <v-stepper v-if="!preventBooking" alt-labels elevation="0" class="mb-10" v-model="step">
+        <v-stepper
+          v-if="!preventBooking && steps.length > 0"
+          alt-labels
+          elevation="0"
+          class="mb-10"
+          v-model="step"
+        >
           <v-stepper-header>
-            <template v-for="(step, index) in steps">
+            <template v-for="(_step, index) in steps">
               <v-stepper-step
                 :key="`step-${index}`"
                 :complete="stepComplete(index)"
                 :step="index + 1"
                 :rules="step.rules"
               >
-                {{ step.title }}
+                {{ _step.title }}
               </v-stepper-step>
               <v-divider
                 v-if="index < steps.length - 1"
@@ -96,7 +102,7 @@ export default {
       preventBooking: false,
       loginRequired: false,
       bookingPermission: true,
-      step: 1,
+      step: null,
       me: null,
       tenant: null,
       leadItem: {
@@ -149,6 +155,7 @@ export default {
       await this.validateItems();
       await this.fetchActivePaymentApps();
       this.steps = this.createSteps();
+      this.step = 1;
       this.loading = false;
     },
 
@@ -169,7 +176,7 @@ export default {
         title: "Anmeldung",
         component: "checkout-signin",
         props: {
-          tenant: this.tenant,
+          tenantId: this.tenant,
           me: this.me,
           "show-back": false,
         },
@@ -184,7 +191,7 @@ export default {
         title: "Anmeldung",
         component: "checkout-signin",
         props: {
-          tenant: this.tenant,
+          tenantId: this.tenant,
           me: this.me,
           "show-back": false,
           "show-submit-guest": false,
@@ -455,9 +462,7 @@ export default {
     },
 
     nextPage() {
-      //TODO: set step to length
-      console.log(this.steps.length);
-      if (this.step < 5) {
+      if (this.step < this.steps.length) {
         this.step++;
       }
     },
@@ -520,9 +525,9 @@ export default {
   },
 
   watch: {
-    user() {
+    async user() {
       try {
-        this.fetchMe();
+        await this.fetchMe();
       } catch (error) {
         this.me = null;
       }

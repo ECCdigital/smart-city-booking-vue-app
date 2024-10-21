@@ -60,7 +60,7 @@ export default {
   emits: ["login"],
 
   props: {
-    tenant: {
+    tenantId: {
       type: String,
       required: true,
     },
@@ -91,7 +91,7 @@ export default {
     },
 
     signOut(submit) {
-      ApiAuthService.logout(this.tenant).then((response) => {
+      ApiAuthService.logout(this.tenantId).then((response) => {
         if (response.status === 200) {
           this.$emit("update-me");
 
