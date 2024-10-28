@@ -1,6 +1,12 @@
 <template>
   <div>
     <v-form ref="form" v-model="valid">
+      <v-alert outlined v-if="isRestrictedBookable && !user" color="warning">
+        Sie können dieses Angebot nur buchen, wenn Sie angemeldet sind. Bitte
+        melden Sie sich an oder registrieren Sie sich, um die Buchung
+        abzuschließen.
+      </v-alert>
+
       <div class="d-flex mb-5">
         <v-btn outlined small @click="back">
           <v-icon left small>mdi-arrow-left</v-icon>
@@ -29,13 +35,16 @@
           <div>
             Hallo, <strong> {{ user.firstName }} {{ user.lastName }}</strong>
           </div>
+          <v-btn text small class="ml-1" @click="signOut(true)">Ändern</v-btn>
         </div>
+        <div v-if="!user">Buchung als <strong>Gast</strong></div>
 
         <v-spacer></v-spacer>
-        <v-btn v-if="user" text @click="signOut(true)">Benutzer wechseln</v-btn>
-        <v-btn v-if="user" text @click="signOut(false)">Logout</v-btn>
-        <v-btn v-else text @click="goToLogin"
-          >Bereits registriert? Anmelden</v-btn
+        <v-btn v-if="user && !isRestrictedBookable" text @click="signOut(false)"
+          >Als Gast fortfahren</v-btn
+        >
+        <v-btn v-if="!user" text @click="goToLogin"
+          >Anmelden oder Registrieren</v-btn
         >
       </v-toolbar>
 
@@ -254,7 +263,7 @@ export default {
       user: "user/user",
     }),
     isNextButtonDisabled() {
-      return !this.valid;
+      return !this.valid || (this.isRestrictedBookable && !this.user);
     },
     commentRequired() {
       return this.leadItem.bookable.requiredFields?.includes("comment");
@@ -263,6 +272,14 @@ export default {
       return this.commentRequired
         ? "Hinweise zur Buchung*"
         : "Hinweise zur Buchung";
+    },
+    isRestrictedBookable() {
+      return (
+        (this.leadItem.bookable.permittedUsers &&
+          this.leadItem.bookable.permittedUsers.length > 0) ||
+        (this.leadItem.bookable.permittedRoles &&
+          this.leadItem.bookable.permittedRoles.length > 0)
+      );
     },
   },
 };
