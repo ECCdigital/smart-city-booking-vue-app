@@ -45,6 +45,7 @@ export default {
       updateUser: "user/update",
       getNextUrl: "authStore/getNextUrl",
       updateNextUrl: "authStore/setNextUrl",
+      updateTenant: "tenants/update",
     }),
     setState(state) {
       this.state = state;
@@ -89,6 +90,7 @@ export default {
           this.keycloakToken
         );
         if (response.status === 200) {
+          await this.updateTenant(this.tenant);
           await this.updateUser(response.data);
           await this.addToast(
             ToastService.createToast("login.success.default", "success")
