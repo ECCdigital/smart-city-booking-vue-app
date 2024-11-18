@@ -629,7 +629,17 @@
                   </v-text-field>
                 </v-col>
               </v-row>
+              <v-switch
+                v-model="selectedTenant.enablePublicStatusView"
+                color="primary"
+                hint="Sofern aktiviert, kann der Status einer Buchung öffentlich abgefragt werden."
+                persistent-hint
+                label="Öffentlicher Buchungsstatus"
+                class="mt-2"
+              >
+              </v-switch>
               <h3 class="mb-5 mt-5">Events</h3>
+              <v-divider class="mb-5"></v-divider>
               <v-row>
                 <v-col>
                   <v-card flat height="120">

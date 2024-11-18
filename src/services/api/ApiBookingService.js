@@ -97,4 +97,15 @@ export default {
       }
     );
   },
+  checkPublicBookingStatus(id, lastname, tenantId) {
+    return ApiClient.get(
+      `api/${tenantId}/bookings/${id}/status/public`,
+      {
+        params: {
+          lastname: lastname,
+        },
+        withCredentials: true,
+      }
+    );
+  },
 };
