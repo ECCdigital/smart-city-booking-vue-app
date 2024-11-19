@@ -3,9 +3,12 @@
 # 2) nginx stage to serve frontend assets
 
 # Name the node stage "builder"
-FROM node:current-alpine AS builder
+FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
+
+# npm cache cleanup
+RUN npm cache clean --force
 
 # Copy all files from current directory to working dir in image
 COPY . .
