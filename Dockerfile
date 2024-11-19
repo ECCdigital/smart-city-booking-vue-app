@@ -10,7 +10,7 @@ WORKDIR /app
 # Copy all files from current directory to working dir in image
 COPY . .
 # install node modules and build assets
-RUN npm ci --omit=dev
+RUN npm ci
 RUN npm run build
 
 # nginx state for serving content
