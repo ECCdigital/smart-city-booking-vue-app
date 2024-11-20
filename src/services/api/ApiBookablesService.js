@@ -23,6 +23,17 @@ export default {
       formData.priceEur = Number(formData.priceEur);
     }
 
+    if (
+      formData.priceValueAddedTax &&
+      typeof formData.priceValueAddedTax === "string"
+    ) {
+      formData.priceValueAddedTax = formData.priceValueAddedTax.replace(
+        ",",
+        "."
+      );
+      formData.priceValueAddedTax = Number(formData.priceValueAddedTax);
+    }
+
     formData.specialOpeningHours = formData.specialOpeningHours.filter(
       (item) => item.date !== null
     );
@@ -32,13 +43,18 @@ export default {
     });
   },
   deleteBookable(bookableId) {
-    return ApiClient.delete(`api/${store.getters["tenants/tenant"].id}/bookables/${bookableId}`, {
-      withCredentials: true,
-    });
+    return ApiClient.delete(
+      `api/${store.getters["tenants/tenant"].id}/bookables/${bookableId}`,
+      {
+        withCredentials: true,
+      }
+    );
   },
   duplicateBookable(bookableId) {
     return new Promise((resolve, reject) => {
-      ApiClient.get(`api/${store.getters["tenants/tenant"].id}/bookables/${bookableId}`)
+      ApiClient.get(
+        `api/${store.getters["tenants/tenant"].id}/bookables/${bookableId}`
+      )
         .then((getBookingResponse) => {
           const bookable = Object.assign(new Object(), getBookingResponse.data);
 
@@ -48,9 +64,13 @@ export default {
           bookable.title = `${bookable.title} (Kopie)`;
 
           if (bookable) {
-            ApiClient.put(`api/${store.getters["tenants/tenant"].id}/bookables`, bookable, {
-              withCredentials: true,
-            })
+            ApiClient.put(
+              `api/${store.getters["tenants/tenant"].id}/bookables`,
+              bookable,
+              {
+                withCredentials: true,
+              }
+            )
               .then((putBookingResponse) => {
                 resolve(putBookingResponse);
               })
@@ -80,8 +100,10 @@ export default {
   },
   async publicBookableCountCheck(tenant) {
     const t = tenant || store.getters["tenants/tenant"].id;
-    return (await ApiClient.get(`api/${t}/bookables/count/check`, {
-      withCredentials: true,
-    })).data
-  }
+    return (
+      await ApiClient.get(`api/${t}/bookables/count/check`, {
+        withCredentials: true,
+      })
+    ).data;
+  },
 };

@@ -109,6 +109,8 @@ export default {
         valid: null,
         regularPriceEur: null,
         userPriceEur: null,
+        regularGrossPriceEur: null,
+        userGrossPriceEur: null,
       },
       subsequentItems: [],
       timeBegin: null,
@@ -159,6 +161,8 @@ export default {
         valid: null,
         regularPriceEur: null,
         userPriceEur: null,
+        regularGrossPriceEur: null,
+        userGrossPriceEur: null,
       };
       this.subsequentItems = [];
       this.timeBegin = null;
@@ -268,12 +272,17 @@ export default {
             if (response.status === 200) {
               item.regularPriceEur = response.data.regularPriceEur;
               item.userPriceEur = response.data.userPriceEur;
+              item.regularGrossPriceEur = response.data.regularGrossPriceEur;
+              item.userGrossPriceEur = response.data.userGrossPriceEur;
               item.valid = true;
               delete item.error;
             }
           } catch (error) {
             item.regularPriceEur = null;
             item.userPriceEur = null;
+            item.regurlarGroosPriceEur = null;
+            item.userGrossPriceEur = null;
+
             item.valid = false;
             item.error = error.response.data;
           }
@@ -292,6 +301,8 @@ export default {
         bookable: data,
         regularPriceEur: null,
         userPriceEur: null,
+        regularGrossPriceEur: null,
+        userGrossPriceEur: null,
       };
 
       this.subsequentItems.push(bookableItem);

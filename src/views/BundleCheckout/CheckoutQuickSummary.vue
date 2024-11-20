@@ -141,13 +141,29 @@
             - {{ formatCurrency(totalPriceOff) }}
           </v-col>
         </v-row>
+        <v-row no-gutters v-if="hasValueAddedTax">
+          <v-col class="font-weight-bold"> Gesamt (netto): </v-col>
+          <v-col class="text-right col-md-3 font-weight-bold">
+            <span v-if="allItemsValid">{{ formatCurrency(totalPrice) }}</span>
+          </v-col>
+        </v-row>
+        <v-row no-gutters v-if="hasValueAddedTax">
+          <v-col> zzgl. MwSt: </v-col>
+          <v-col class="text-right col-md-3">
+            <span v-if="allItemsValid">{{
+              formatCurrency(totalGrossPrice - totalPrice)
+            }}</span>
+          </v-col>
+        </v-row>
         <v-row>
           <v-col class="font-weight-bold"> Gesamt: </v-col>
           <v-col
             class="text-right col-md-3 font-weight-bold"
             style="font-size: large"
           >
-            <span v-if="allItemsValid">{{ formatCurrency(totalPrice) }}</span>
+            <span v-if="allItemsValid">{{
+              formatCurrency(totalGrossPrice)
+            }}</span>
           </v-col>
         </v-row>
       </v-card-text>
@@ -459,6 +475,15 @@ export default {
       return price;
     },
 
+    totalGrossPrice() {
+      let price = 0;
+      for (const item of [this.leadItem, ...this.subsequentItems]) {
+        price += item.userGrossPriceEur;
+      }
+
+      return price;
+    },
+
     totalPriceOff() {
       let off = 0;
       for (const item of [this.leadItem, ...this.subsequentItems]) {
@@ -466,8 +491,30 @@ export default {
           off += item.regularPriceEur - item.userPriceEur;
         }
       }
+    },
+
+    totalGrossPriceOff() {
+      let off = 0;
+      for (const item of [this.leadItem, ...this.subsequentItems]) {
+        if (item.regularGrossPriceEur > item.userGrossPriceEur) {
+          off += item.regularGrossPriceEur - item.userGrossPriceEur;
+        }
+      }
 
       return off;
+    },
+
+    hasValueAddedTax() {
+      for (const item of [this.leadItem, ...this.subsequentItems]) {
+        if (
+          item.bookable.priceValueAddedTax &&
+          item.bookable.priceValueAddedTax > 0
+        ) {
+          return true;
+        }
+      }
+
+      return false;
     },
 
     allItemsValid() {

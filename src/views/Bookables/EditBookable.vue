@@ -157,10 +157,20 @@
         <v-text-field
           background-color="accent"
           filled
-          label="Preis"
+          label="Preis (netto)"
           hide-details
           v-model="priceEur"
           suffix="Euro"
+        ></v-text-field>
+      </v-col>
+      <v-col class="col-2">
+        <v-text-field
+          background-color="accent"
+          filled
+          label="MwSt."
+          hide-details
+          v-model="priceValueAddedTax"
+          suffix="%"
         ></v-text-field>
       </v-col>
       <v-col>
@@ -774,6 +784,7 @@ export default {
             id,
             location,
             priceEur,
+            priceValueAddedTax,
             tags,
             tenant,
             title,
@@ -804,6 +815,7 @@ export default {
             description: description,
             location: location,
             priceEur: priceEur,
+            priceValueAddedTax: priceValueAddedTax,
             priceCategory: !_.isNil(priceCategory) ? priceCategory : false,
             amount: !_.isNil(amount) ? amount : 0,
             isScheduleRelated: !_.isNil(isScheduleRelated)
@@ -1056,6 +1068,14 @@ export default {
       },
       set(value) {
         this.updateValue({ field: "priceEur", value: value });
+      },
+    },
+    priceValueAddedTax: {
+      get() {
+        return this.$store.state.bookables.form.priceValueAddedTax;
+      },
+      set(value) {
+        this.updateValue({ field: "priceValueAddedTax", value: value });
       },
     },
     priceCategory: {
