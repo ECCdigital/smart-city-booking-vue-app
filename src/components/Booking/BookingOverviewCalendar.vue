@@ -195,7 +195,7 @@ export default {
               name: this.getBookingTitle(booking),
               start: start,
               end: end,
-              color: booking.color,
+              color: booking.isCommitted ? booking.color : "grey",
               timed: true,
             };
           }) || []
