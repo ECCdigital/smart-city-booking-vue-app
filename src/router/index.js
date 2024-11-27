@@ -438,6 +438,16 @@ const routes = [
       requiresAuth: false,
     },
   },
+  {
+    path: "/booking/status/:tenantId",
+    name: "booking-status",
+    component: lazyLoad("BookingStatus"),
+    meta: {
+      title: "Buchungsstatus",
+      requiresAuth: false,
+    },
+    props: true,
+  }
 ];
 
 const router = new VueRouter({

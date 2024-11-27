@@ -1,6 +1,6 @@
 class Tenant {
 
-  constructor(id, name, contactName, location, mail, phone, applications = []) {
+  constructor(id, name, contactName, location, mail, phone, applications = [], enablePublicStatusView) {
     this.id = id;
     this.name = name;
     this.contactName = contactName;
@@ -8,6 +8,7 @@ class Tenant {
     this.mail = mail;
     this.phone = phone;
     this.applications = applications;
+    this.enablePublicStatusView = enablePublicStatusView
   }
 }
 
