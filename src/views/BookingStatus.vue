@@ -114,6 +114,7 @@
               prepend-icon="mdi-account"
               label="Name"
               :rules="[rules.required]"
+              @keyup.enter="submitForm"
             ></v-text-field>
 
             <v-btn
