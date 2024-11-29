@@ -69,8 +69,9 @@
             hide-details
             dense
             filled
-            label="Firma"
+            :label="companyLabel"
             v-model="contactDetails.company"
+            :rules="companyRequired ? validationRules.required : []"
           ></v-text-field>
         </v-col>
       </v-row>
@@ -268,10 +269,16 @@ export default {
     commentRequired() {
       return this.leadItem.bookable.requiredFields?.includes("comment");
     },
+    companyRequired() {
+      return this.leadItem.bookable.requiredFields?.includes("company");
+    },
     commentLabel() {
       return this.commentRequired
         ? "Hinweise zur Buchung*"
         : "Hinweise zur Buchung";
+    },
+    companyLabel() {
+      return this.companyRequired ? "Firma*" : "Firma";
     },
     isRestrictedBookable() {
       return (

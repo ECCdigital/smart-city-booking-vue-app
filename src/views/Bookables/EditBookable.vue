@@ -550,6 +550,14 @@
       <v-col class="col-auto">
         <v-switch
           dense
+          label="Firma erforderlich"
+          hide-details
+          v-model="companyRequired"
+        ></v-switch>
+      </v-col>
+      <v-col class="col-auto">
+        <v-switch
+          dense
           label="Kommentarfeld erforderlich"
           hide-details
           v-model="commentRequired"
@@ -1241,6 +1249,37 @@ export default {
             value: (
               this.$store.state.bookables.form.requiredFields || []
             ).filter((f) => f !== "comment"),
+          });
+        }
+      },
+    },
+    companyRequired: {
+      get() {
+        return this.$store.state.bookables.form.requiredFields?.includes(
+          "company"
+        );
+      },
+      set(value) {
+        if (value) {
+          if (
+            !this.$store.state.bookables.form.requiredFields?.includes(
+              "company"
+            )
+          ) {
+            this.updateValue({
+              field: "requiredFields",
+              value: [
+                ...(this.$store.state.bookables.form.requiredFields || []),
+                "company",
+              ],
+            });
+          }
+        } else {
+          this.updateValue({
+            field: "requiredFields",
+            value: (
+              this.$store.state.bookables.form.requiredFields || []
+            ).filter((f) => f !== "company"),
           });
         }
       },
