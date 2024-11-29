@@ -1,12 +1,17 @@
 <template>
   <div>
     <div class="d-flex mb-5">
-      <v-btn v-if="showBack" outlined small @click="back" >
+      <v-btn v-if="showBack" outlined small @click="back">
         <v-icon left small>mdi-arrow-left</v-icon>
         Zurück
       </v-btn>
       <v-spacer></v-spacer>
-      <v-btn :disabled="isNextButtonDisabled" color="primary" small @click="submit">
+      <v-btn
+        :disabled="isNextButtonDisabled"
+        color="primary"
+        small
+        @click="submit"
+      >
         Weiter
         <v-icon right small>mdi-arrow-right</v-icon>
       </v-btn>
@@ -155,7 +160,10 @@
       </v-row>
       <v-row v-if="selectionType === 'time-period'">
         <v-col>
-          <checkout-time-period-picker v-model="selectedTimePeriod" :lead-item="leadItem"></checkout-time-period-picker>
+          <checkout-time-period-picker
+            v-model="selectedTimePeriod"
+            :lead-item="leadItem"
+          ></checkout-time-period-picker>
         </v-col>
       </v-row>
       <v-row v-if="selectionType === 'long-range-week'">
@@ -275,12 +283,7 @@ export default {
 
       validationRules: {
         required: [(v) => !!v],
-        dateBegin: [
-          (v) => !!v || "Bitte wählen Sie ein Datum aus",
-          (v) =>
-            new Date(v) >= new Date() ||
-            "Startdatum muss in der Zukunft liegen",
-        ],
+        dateBegin: [(v) => !!v || "Bitte wählen Sie ein Datum aus"],
         dateEnd: [
           (v) => !!v || "Bitte wählen Sie ein Datum aus",
           (v) =>
@@ -314,7 +317,12 @@ export default {
 
     submit() {
       if (this.$refs.form.validate()) {
-        if (!this.dateBeginModel || !this.timeBeginModel || !this.dateEndModel || !this.timeEndModel) {
+        if (
+          !this.dateBeginModel ||
+          !this.timeBeginModel ||
+          !this.dateEndModel ||
+          !this.timeEndModel
+        ) {
           return;
         }
         this.$emit("submit");
