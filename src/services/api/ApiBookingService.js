@@ -71,6 +71,14 @@ export default {
       }
     );
   },
+  rejectBooking(id) {
+    return ApiClient.get(
+      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/reject`,
+      {
+        withCredentials: true,
+      }
+    );
+  },
   deleteBooking(booking) {
     return ApiClient.delete(
       `api/${store.getters["tenants/tenant"].id}/bookings/${booking.id}`,
@@ -98,14 +106,11 @@ export default {
     );
   },
   checkPublicBookingStatus(id, lastname, tenantId) {
-    return ApiClient.get(
-      `api/${tenantId}/bookings/${id}/status/public`,
-      {
-        params: {
-          lastname: lastname,
-        },
-        withCredentials: true,
-      }
-    );
+    return ApiClient.get(`api/${tenantId}/bookings/${id}/status/public`, {
+      params: {
+        lastname: lastname,
+      },
+      withCredentials: true,
+    });
   },
 };

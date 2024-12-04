@@ -39,34 +39,34 @@ export default {
     }),
     translatePayMethod(value) {
       switch (value) {
-      case "1":
-        return "Giropay";
-      case "17":
-        return "Giropay";
-      case "18":
-        return "Giropay";
-      case "2":
-        return "eps";
-      case "12":
-        return "iDEAL";
-      case "11":
-        return "Kreditkarte";
-      case "6":
-        return "Lastschrift";
-      case "7":
-        return "Lastschrift";
-      case "26":
-        return "Bluecode";
-      case "33":
-        return "Maestro";
-      case "14":
-        return "PayPal";
-      case "23":
-        return "paydirekt";
-      case "27":
-        return "Sofortüberweisung";
-      default:
-        return "Unbekannt";
+        case "1":
+          return "Giropay";
+        case "17":
+          return "Giropay";
+        case "18":
+          return "Giropay";
+        case "2":
+          return "eps";
+        case "12":
+          return "iDEAL";
+        case "11":
+          return "Kreditkarte";
+        case "6":
+          return "Lastschrift";
+        case "7":
+          return "Lastschrift";
+        case "26":
+          return "Bluecode";
+        case "33":
+          return "Maestro";
+        case "14":
+          return "PayPal";
+        case "23":
+          return "paydirekt";
+        case "27":
+          return "Sofortüberweisung";
+        default:
+          return "Unbekannt";
       }
     },
     createReceipt(bookingId) {
@@ -202,9 +202,16 @@ export default {
               <v-list-item-title class="text-h">
                 Freigabestatus
               </v-list-item-title>
-              <v-list-item-subtitle>{{
-                booking.isCommitted == true ? "freigegeben" : "ausstehend"
-              }}</v-list-item-subtitle>
+              <v-list-item-subtitle
+                :class="{ 'error--text': booking.isRejected }"
+                >{{
+                  booking.isRejected
+                    ? "storniert"
+                    : booking.isCommitted == true
+                    ? "freigegeben"
+                    : "ausstehend"
+                }}</v-list-item-subtitle
+              >
             </v-list-item-content>
           </v-list-item>
         </v-col>
@@ -395,10 +402,7 @@ export default {
                   </v-list-item-title>
                   <v-list-item-subtitle>
                     Gelesen und akzeptiert:
-                    <v-icon
-                      v-if="item.accepted"
-                      color="success"
-                    >
+                    <v-icon v-if="item.accepted" color="success">
                       mdi-checkbox-marked-outline
                     </v-icon>
                     <v-icon v-else color="error">
@@ -407,7 +411,12 @@ export default {
                   </v-list-item-subtitle>
                 </v-list-item-content>
                 <v-list-item-action>
-                  <v-btn icon @click="downloadAttachment({url: item.url, label: item.title})">
+                  <v-btn
+                    icon
+                    @click="
+                      downloadAttachment({ url: item.url, label: item.title })
+                    "
+                  >
                     <v-icon color="primary">mdi-file-download</v-icon>
                   </v-btn>
                 </v-list-item-action>

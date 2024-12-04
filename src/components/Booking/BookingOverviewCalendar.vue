@@ -135,6 +135,16 @@
           <v-divider></v-divider>
           <v-list-item
             link
+            @click="rejectBooking(selectedEvent.id)"
+            :disabled="!BookingPermissionService.allowUpdate(selectedEvent)"
+          >
+            <v-list-item-icon>
+              <v-icon>mdi-close-circle</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>Buchung stornieren</v-list-item-title>
+          </v-list-item>
+          <v-list-item
+            link
             @click="onOpenDeleteDialog(selectedEvent.id)"
             class="red--text"
             :disabled="!BookingPermissionService.allowDelete(selectedEvent)"
@@ -186,7 +196,10 @@ export default {
     events() {
       return (
         this.bookings
-          .filter((booking) => booking.timeBegin && booking.timeEnd)
+          .filter(
+            (booking) =>
+              !booking.isRejected && booking.timeBegin && booking.timeEnd
+          )
           .map((booking) => {
             const start = Date.parse(booking.timeBegin) || booking.timeBegin;
             const end = Date.parse(booking.timeEnd) || booking.timeEnd;
@@ -243,6 +256,9 @@ export default {
     },
     commitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);
+    },
+    rejectBooking(bookingId) {
+      this.$emit("reject-booking", bookingId);
     },
     onOpenDeleteDialog(bookingId) {
       this.$emit("open-delete-dialog", bookingId);
