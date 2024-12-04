@@ -348,6 +348,7 @@ export default {
         this.contactDetails.street = this.me.address;
         this.contactDetails.zipCode = this.me.zipCode;
         this.contactDetails.location = this.me.city;
+        this.contactDetails.company = this.me.company;
       } catch (error) {
         this.me = null;
         this.contactDetails.mail = null;
@@ -356,6 +357,7 @@ export default {
         this.contactDetails.street = null;
         this.contactDetails.zipCode = null;
         this.contactDetails.location = null;
+        this.contactDetails.company = null;
       }
     },
 
