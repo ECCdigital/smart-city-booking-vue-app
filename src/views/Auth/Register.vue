@@ -49,6 +49,14 @@
           ></v-text-field>
           <v-text-field
             outlined
+            hide-details
+            label="Firma"
+            placeholder="Company"
+            class="mb-5"
+            v-model="company"
+          ></v-text-field>
+          <v-text-field
+            outlined
             label="Passwort"
             placeholder="Ihr Passwort"
             aria-details="password"
@@ -94,6 +102,7 @@ export default {
       id: "",
       firstName: "",
       lastName: "",
+      company: "",
       tenant: "",
       password: "",
       showPassword: false,
@@ -127,6 +136,7 @@ export default {
           this.id,
           this.firstName,
           this.lastName,
+          this.company,
           this.password
         )
           .then((response) => {
