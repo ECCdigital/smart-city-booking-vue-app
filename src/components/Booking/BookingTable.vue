@@ -55,7 +55,13 @@
       }}</span>
     </template>
     <template v-slot:item.isCommitted="{ item }">
-      <span>{{ item.isCommitted == true ? "freigegeben" : "ausstehend" }}</span>
+      <span>{{
+        item.isRejected
+          ? "storniert"
+          : item.isCommitted == true
+          ? "freigegeben"
+          : "ausstehend"
+      }}</span>
     </template>
     <template v-slot:item.isPayed="{ item }">
       <span>{{ item.isPayed ? "bezahlt" : "ausstehend" }}</span>
@@ -114,6 +120,16 @@
             <v-divider></v-divider>
             <v-list-item
               link
+              @click="rejectBooking(item.id)"
+              :disabled="!BookingPermissionService.allowUpdate(item)"
+            >
+              <v-list-item-icon>
+                <v-icon>mdi-close-circle</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>Buchung stornieren</v-list-item-title>
+            </v-list-item>
+            <v-list-item
+              link
               @click="onOpenDeleteDialog(item.id)"
               class="red--text"
               :disabled="!BookingPermissionService.allowDelete(item)"
@@ -137,8 +153,8 @@ export default {
   name: "BookingTable",
   computed: {
     BookingPermissionService() {
-      return BookingPermissionService
-    }
+      return BookingPermissionService;
+    },
   },
   props: {
     bookings: {
@@ -201,6 +217,9 @@ export default {
     },
     commitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);
+    },
+    rejectBooking(bookingId) {
+      this.$emit("reject-booking", bookingId);
     },
   },
 };

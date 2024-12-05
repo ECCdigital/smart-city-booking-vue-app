@@ -37,7 +37,7 @@
                 </v-col>
               </v-row>
               <v-row>
-                <v-col class="col-6">
+                <v-col class="col-3">
                   <v-text-field
                     background-color="accent"
                     filled
@@ -60,6 +60,13 @@
                     label="Ist freigegeben"
                     v-model="selectedBooking.isCommitted"
                     color="primary"
+                  ></v-checkbox>
+                </v-col>
+                <v-col>
+                  <v-checkbox
+                    label="Ist storniert"
+                    v-model="selectedBooking.isRejected"
+                    color="error"
                   ></v-checkbox>
                 </v-col>
               </v-row>
@@ -586,7 +593,7 @@ export default {
     timeTo: {
       get() {
         if (!this.selectedBooking.timeEnd) {
-          return this.formatTime(new Date())
+          return this.formatTime(new Date());
         }
         return this.formatTime(new Date(this.selectedBooking.timeEnd));
       },

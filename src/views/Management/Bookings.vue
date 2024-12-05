@@ -40,6 +40,7 @@
               @open-edit-booking="onOpenEditBooking"
               @commit-booking="commitBooking"
               @open-delete-dialog="onOpenDeleteDialog"
+              @reject-booking="rejectBooking"
             />
           </v-skeleton-loader>
         </div>
@@ -52,6 +53,7 @@
             @open-booking="onOpenBooking"
             @open-edit-booking="onOpenEditBooking"
             @commit-booking="commitBooking"
+            @reject-booking="rejectBooking"
             @open-delete-dialog="onOpenDeleteDialog"
           ></BookingOverviewCalendar>
         </div>
@@ -250,6 +252,17 @@ export default {
     },
     commitBooking(id) {
       ApiBookingService.commitBooking(id)
+        .then((response) => {
+          if (response.status === 200) {
+            this.fetchBookings();
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    rejectBooking(id) {
+      ApiBookingService.rejectBooking(id)
         .then((response) => {
           if (response.status === 200) {
             this.fetchBookings();
