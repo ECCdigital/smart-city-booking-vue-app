@@ -1,7 +1,7 @@
 <template>
-  <v-container class="text-center  fill-height fluid justify-center">
-    <v-card outlined class="mx-auto mt-sm-15" width="500">
-      <v-card-text class="px-10 pb-10">
+  <v-container class="text-center">
+    <v-card outlined class="mx-auto mt-sm-10" width="500">
+      <v-card-text class="px-10 pb-5">
         <v-img src="@/assets/app-logo.png" max-width="200" class="mx-auto"/>
         <h2 class="mt-8 mb-2">Passwort zurücksetzen</h2>
         <v-form ref="form" v-model="valid" lazy-validation>
@@ -9,39 +9,58 @@
             outlined
             label="Email Adresse"
             placeholder="jemand@domain.de"
+            prepend-inner-icon="mdi-email"
             class="mt-5"
             :rules="emailRules"
             v-model="id">
           </v-text-field>
-          <v-text-field
-            outlined
-            label="Neues Passwort"
-            placeholder="********"
-            class="mt-5"
-            :rules="passwordRules"
-            v-model="password"
-            :type="showPassword ? 'text' : 'password'"
-            :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-            @click:append="showPassword = !showPassword">
-          </v-text-field>
-          <v-text-field
-            outlined
-            label="Passwort wiederholen"
-            placeholder="********"
-            class="mt-5"
-            :rules="passwordRules"
-            :type="showPassword ? 'text' : 'password'"
-            v-model="passwordRepeat">
-          </v-text-field>
-          <v-select outlined hide-details label="Mandant" v-model="tenant" :items="tenants" item-text="name"
-                    return-object no-data-text="Keine Mandanten vorhanden" class="mt-5"></v-select>
+          <div class="d-flex flex-row">
+            <v-text-field
+              outlined
+              label="Neues Passwort"
+              placeholder="********"
+              prepend-inner-icon="mdi-key"
+              :rules="passwordRules"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+              class="mr-2"
+              @click:append="showPassword = !showPassword">
+            </v-text-field>
+            <v-text-field
+              outlined
+              label="Passwort wiederholen"
+              placeholder="********"
+              prepend-inner-icon="mdi-key"
+              :rules="passwordRules"
+              :type="showPassword ? 'text' : 'password'"
+              v-model="passwordRepeat">
+            </v-text-field>
+          </div>
+
         </v-form>
       </v-card-text>
-      <v-card-actions class="px-10 pb-10">
+      <v-card-actions class="px-10 pb-5">
         <v-btn outlined @click="goBack">zurück</v-btn>
         <v-spacer></v-spacer>
         <v-btn  color="primary" elevation="0" @click="resetPassword">Passwort zurücksetzen</v-btn>
       </v-card-actions>
+    </v-card>
+
+    <v-card elevation="0" max-width="500" class="mx-auto mt-2">
+      <v-card-text class="text-right pa-0">
+        <a
+          :href="'https://' + Utils.sanitizeUrl(instance?.dataProtectionUrl)"
+          target="_blank"
+        >Datenschutz</a
+        >
+        |
+        <a
+          :href="'https://' + Utils.sanitizeUrl(instance?.legalNoticeUrl)"
+          target="_blank"
+        >Nutzungsbedingungen</a
+        >
+      </v-card-text>
     </v-card>
   </v-container>
 
@@ -49,12 +68,21 @@
 
 <script>
 import ApiAuthService from "@/services/api/ApiAuthService";
-import {mapActions} from "vuex";
+import {mapActions, mapGetters} from "vuex";
 import ToastService from "@/services/ToastService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import Utils from "@/utils/Utils";
 
 export default {
   name: "PasswordReset",
+  computed: {
+    Utils() {
+      return Utils
+    },
+    ...mapGetters({
+      instance: "instance/instance",
+    }),
+  },
   data() {
     return {
       showPassword: false,
@@ -81,7 +109,7 @@ export default {
         // check if passwords match
         if (this.password === this.passwordRepeat) {
           // call api
-          ApiAuthService.resetPassword(this.id, this.password, this.tenant.id)
+          ApiAuthService.resetPassword(this.id, this.password)
             .then(() => {
               this.addToast(ToastService.createToast("password.reset.success", "success"))
               this.$router.push("/login");

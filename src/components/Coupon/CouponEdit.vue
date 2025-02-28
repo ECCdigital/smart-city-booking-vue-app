@@ -283,7 +283,7 @@
 
 <script>
 import ApiCouponService from "@/services/api/ApiCouponService";
-import {mapActions, mapGetters} from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 
 export default {
@@ -320,7 +320,7 @@ export default {
     };
   },
   computed: {
-    ...mapGetters({ tenant: "tenants/tenant" }),
+    ...mapGetters({ tenantId: "tenants/currentTenantId" }),
     openDialog: {
       get() {
         return this.open;
@@ -344,30 +344,36 @@ export default {
         this.inProgress = true;
 
         if (this.validDateFrom) {
-          this.selectedCoupon.validFrom = this.transformDateTime(this.validDateFrom, this.validTimeFrom);
+          this.selectedCoupon.validFrom = this.transformDateTime(
+            this.validDateFrom,
+            this.validTimeFrom
+          );
         } else {
           this.selectedCoupon.validFrom = null;
         }
 
         if (this.validDateTo) {
-          this.selectedCoupon.validTo = this.transformDateTime(this.validDateTo, this.validTimeTo);
+          this.selectedCoupon.validTo = this.transformDateTime(
+            this.validDateTo,
+            this.validTimeTo
+          );
         } else {
           this.selectedCoupon.validTo = null;
         }
 
+        this.selectedCoupon.tenantId = this.tenantId;
 
-        this.selectedCoupon.tenant = this.tenant.id;
-
-        await ApiCouponService.submitCoupon(
-          undefined,
-          this.selectedCoupon
-        ).then((response) => {
-          this.inProgress = false;
-          this.$emit("close");
-        }).catch((error) => {
-          this.addToast(ToastService.createToast("coupon.create.error", "error"));
-          this.inProgress = false;
-        });
+        await ApiCouponService.submitCoupon(undefined, this.selectedCoupon)
+          .then((response) => {
+            this.inProgress = false;
+            this.$emit("close");
+          })
+          .catch((error) => {
+            this.addToast(
+              ToastService.createToast("coupon.create.error", "error")
+            );
+            this.inProgress = false;
+          });
       }
     },
     padTo2Digits(num) {
@@ -401,8 +407,6 @@ export default {
 
       // the time zone should germany
 
-
-
       const timestamp = new Date(date).getTime();
       const dateObj = new Date(timestamp);
 
@@ -414,19 +418,19 @@ export default {
       }
 
       return dateObj.getTime();
-    }
+    },
   },
   watch: {
     coupon: {
       handler() {
-        if(this.coupon.validFrom){
+        if (this.coupon.validFrom) {
           this.validDateFrom = this.formatDate(new Date(this.coupon.validFrom));
           this.validTimeFrom = this.formatTime(new Date(this.coupon.validFrom));
         } else {
           this.validDateFrom = null;
           this.validTimeFrom = null;
         }
-        if(this.coupon.validTo){
+        if (this.coupon.validTo) {
           this.validDateTo = this.formatDate(new Date(this.coupon.validTo));
           this.validTimeTo = this.formatTime(new Date(this.coupon.validTo));
         } else {

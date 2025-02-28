@@ -5,7 +5,7 @@
         <v-icon>mdi-close</v-icon>
       </v-btn>
       <h2 class="mb-4">
-        Buchungsobjekt {{ this.mode == "create" ? "erstellen" : "bearbeiten" }}
+        Buchungsobjekt {{ this.mode === "create" ? "erstellen" : "bearbeiten" }}
       </h2>
     </div>
     <v-row>
@@ -29,7 +29,7 @@
           label="Mandant"
           hide-details
           disabled
-          v-model="tenant"
+          v-model="tenantId"
         ></v-text-field>
       </v-col>
     </v-row>
@@ -67,7 +67,7 @@
         <ChooseFile
           v-model="imgUrl"
           :allow-protected="false"
-          :tenant="tenant"
+          :tenant-id="tenantId"
           filled
           images-only
           label="Cover-Bild"
@@ -240,7 +240,7 @@
       </v-col>
     </v-row>
     <BookableLockingAttributes
-      :tenant="tenant"
+      :tenant-id="tenantId"
       :amount="amount"
     ></BookableLockingAttributes>
 
@@ -484,7 +484,7 @@
                   <ChooseFile
                     v-model="attachment.url"
                     :allow-protected="false"
-                    :tenant="tenant"
+                    :tenant-id="tenantId"
                     filled
                     label="Datei"
                     background-color="accent"
@@ -794,7 +794,7 @@ export default {
             priceEur,
             priceValueAddedTax,
             tags,
-            tenant,
+            tenantId,
             title,
             type,
             eventId,
@@ -817,7 +817,7 @@ export default {
           this.restoreFromApi({
             id: id,
             parent: parent,
-            tenant: tenant,
+            tenantId: tenantId,
             type: type,
             title: title,
             description: description,
@@ -987,7 +987,7 @@ export default {
       this.permittedUsers.splice(this.permittedUsers.indexOf(item), 1);
     },
     removePermittedRole(item) {
-      this.permittedRoles.splice(this.freeBookingUsers.indexOf(item), 1);
+      this.permittedRoles.splice(this.permittedRoles.indexOf(item), 1);
     },
     removeFreeBookingUser(item) {
       this.freeBookingUsers.splice(this.freeBookingUsers.indexOf(item), 1);
@@ -1006,6 +1006,7 @@ export default {
       isLoading: "loading/isLoading",
       attachments: "bookables/attachments",
       bookableForm: "bookables/form",
+      currentTenantId: "tenants/currentTenantId",
     }),
     id: {
       get() {
@@ -1015,16 +1016,16 @@ export default {
         this.updateValue({ field: "id", value: value });
       },
     },
-    tenant: {
+    tenantId: {
       get() {
         if (this.mode === "create") {
-          return this.$store.state.tenants.data.id;
+          return this.currentTenantId;
         } else {
-          return this.$store.state.bookables.form.tenant;
+          return this.$store.state.bookables.form.tenantId;
         }
       },
       set(value) {
-        this.updateValue({ field: "tenant", value: value });
+        this.updateValue({ field: "tenantId", value: value });
       },
     },
     type: {

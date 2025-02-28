@@ -8,7 +8,7 @@ import EventCreateEventLocation from "@/views/Bookables/Events/Form/EventLocatio
 import EventCreateEventOrganizer from "@/views/Bookables/Events/Form/EventOrganizer.vue";
 import EventCreateAttendees from "@/views/Bookables/Events/Form/Attendees.vue";
 import EventCreateAgenda from "@/views/Bookables/Events/Form/Agenda.vue";
-import EventCreateAttachements from "@/views/Bookables/Events/Form/Attachments.vue";
+import EventCreateAttachments from "@/views/Bookables/Events/Form/Attachments.vue";
 import EventCreateImages from "@/views/Bookables/Events/Form/Images.vue";
 import SimpleEventCreator from "@/views/Bookables/Events/SimpleEventCreator.vue";
 import Rooms from "@/views/Bookables/Rooms/Rooms.vue";
@@ -20,11 +20,14 @@ import Roles from "@/views/Management/Roles";
 import store from "@/store/index";
 import ToastService from "@/services/ToastService";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
-import Bookings from "@/views/Management/Bookings";
+import Bookings from "@/views/Bookings.vue";
 import Settings from "@/views/Settings";
 import EditBookable from "@/views/Bookables/EditBookable";
 import ApiAuthService from "@/services/api/ApiAuthService";
-import Coupons from "@/views/Management/Coupons";
+import Coupons from "@/views/Coupons.vue";
+import Instances from "@/views/Management/Instances.vue";
+import InstanceUsers from "@/views/Management/InstanceUsers.vue";
+import InstanceTenants from "@/views/Management/InstanceTenants.vue";
 
 Vue.use(VueRouter);
 
@@ -48,15 +51,45 @@ const routes = [
     name: "dashboard",
     component: Home,
     meta: {
-      title: "Dashboard",
+      title: "Ihre Mandanten",
       requiresAuth: true,
       interfaceName: "dashboard",
       public: true,
     },
   },
   {
+    path: "/admin/instanz",
+    name: "instances",
+    component: Instances,
+    meta: {
+      title: "Instanz verwalten",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/admin/instanz/mandanten",
+    name: "instance-tenants",
+    component: InstanceTenants,
+    meta: {
+      title: "Mandanten",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/admin/instanz/benutzer",
+    name: "instance-users",
+    component: InstanceUsers,
+    meta: {
+      title: "Benutzer",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
     path: "/admin/mandanten",
-    name: "tenants",
+    name: "tenant",
     component: Tenants,
     meta: {
       title: "Mandanten",
@@ -326,7 +359,7 @@ const routes = [
       {
         path: "anhaenge",
         name: "event-create-attachments",
-        component: EventCreateAttachements,
+        component: EventCreateAttachments,
         meta: {
           title: "Anhänge",
           requiresAuth: true,
@@ -347,7 +380,7 @@ const routes = [
   },
   {
     path: "/admin/einstellungen",
-    name: "einstellungen",
+    name: "settings",
     component: Settings,
     meta: {
       title: "Einstellungen",
@@ -393,7 +426,7 @@ const routes = [
     },
   },
   {
-    path: "/willkommen/:tenantId",
+    path: "/willkommen",
     name: "welcome",
     component: lazyLoad("Auth/Welcome"),
     meta: {
@@ -481,14 +514,14 @@ function isLoggedIn() {
 }
 
 function isAuthorized(ifce) {
-  console.log("isAuthorized", ifce);
   return store.getters["user/isAuthorized"](ifce);
 }
 
 router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
     const hasSession = await ApiAuthService.me()
-      .then(() => {
+      .then((response) => {
+        store.dispatch("user/update", response.data);
         return true;
       })
       .catch(() => {

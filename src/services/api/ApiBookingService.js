@@ -1,27 +1,27 @@
 import store from "@/store";
 export default {
   getBookings(tenant, populate) {
-    var t = tenant || store.getters["tenants/tenant"].id;
-    var p = populate || false;
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    const p = populate || false;
     return ApiClient.get(`api/${t}/bookings?populate=${p}`, {
       withCredentials: true,
     });
   },
   getBooking(id, tenant, populate) {
-    var t = tenant || store.getters["tenants/tenant"].id;
-    var p = populate || false;
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    const p = populate || false;
     return ApiClient.get(`api/${t}/bookings/${id}?populate=${p}`, {
       withCredentials: true,
     });
   },
   getPublicBookings(tenant) {
-    var t = tenant || store.getters["tenants/tenant"].id;
+    var t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/bookings?public=true`, {
       withCredentials: true,
     });
   },
   getBookingStatus(id, tenant) {
-    const t = tenant || store.getters["tenants/tenant"].id;
+    const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/bookings/${id}/status`, {
       withCredentials: true,
     });
@@ -33,10 +33,10 @@ export default {
     includeParentBookables,
     publicOnly
   ) {
-    var t = tenant || store.getters["tenants/tenant"].id;
-    var irb = includeRelatedBookables || false;
-    var ipb = includeParentBookables || false;
-    var po = publicOnly || false;
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    const irb = includeRelatedBookables || false;
+    const ipb = includeParentBookables || false;
+    const po = publicOnly || false;
 
     //TODO: check if typo-correction interferes anywhere
     return ApiClient.get(
@@ -46,9 +46,8 @@ export default {
   },
   storeBooking(booking) {
     const cleansedBooking = Object.assign(new Object(), booking);
-    delete cleansedBooking._populated;
     return ApiClient.put(
-      `api/${store.getters["tenants/tenant"].id}/bookings`,
+      `api/${store.getters["tenants/currentTenantId"]}/bookings`,
       cleansedBooking,
       {
         withCredentials: true,
@@ -56,7 +55,7 @@ export default {
     );
   },
   checkoutBooking(bookingAttempt, simulate, tenant) {
-    const t = tenant || store.getters["tenants/tenant"].id;
+    const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.post(
       `api/${t}/checkout?simulate=${simulate || false}`,
       bookingAttempt,
@@ -65,14 +64,14 @@ export default {
   },
   commitBooking(id) {
     return ApiClient.get(
-      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/commit`,
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/commit`,
       {
         withCredentials: true,
       }
     );
   },
   rejectBooking(id, tenantId, reason) {
-    const t = tenantId || store.getters["tenants/tenant"].id;
+    const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.post(
       `api/${t}/bookings/${id}/reject`,
       { reason: reason },
@@ -82,7 +81,7 @@ export default {
     );
   },
   requestRejectBooking(id, tenantId, reason) {
-    const t = tenantId || store.getters["tenants/tenant"].id;
+    const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.post(
       `api/${t}/bookings/${id}/request-reject`,
       { reason: reason },
@@ -92,14 +91,14 @@ export default {
     );
   },
   releaseBookingHook(id, tenantId, hookId) {
-    const t = tenantId || store.getters["tenants/tenant"].id;
+    const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/bookings/${id}/hooks/${hookId}/release`, {
       withCredentials: true,
     });
   },
   deleteBooking(booking) {
     return ApiClient.delete(
-      `api/${store.getters["tenants/tenant"].id}/bookings/${booking.id}`,
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${booking.id}`,
       {
         withCredentials: true,
       }
@@ -107,7 +106,7 @@ export default {
   },
   generateReceipt(id) {
     return ApiClient.post(
-      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/receipt`,
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/receipt`,
       {},
       {
         withCredentials: true,
@@ -116,7 +115,7 @@ export default {
   },
   getReceipt(id, receiptId) {
     return ApiClient.get(
-      `api/${store.getters["tenants/tenant"].id}/bookings/${id}/receipt/${receiptId}`,
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/receipt/${receiptId}`,
       {
         responseType: "blob",
         withCredentials: true,

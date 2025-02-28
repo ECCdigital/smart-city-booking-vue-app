@@ -37,36 +37,40 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
-    translatePayMethod(value) {
-      switch (value) {
-        case "1":
-          return "Giropay";
-        case "17":
-          return "Giropay";
-        case "18":
-          return "Giropay";
-        case "2":
-          return "eps";
-        case "12":
-          return "iDEAL";
-        case "11":
-          return "Kreditkarte";
-        case "6":
-          return "Lastschrift";
-        case "7":
-          return "Lastschrift";
-        case "26":
-          return "Bluecode";
-        case "33":
-          return "Maestro";
-        case "14":
-          return "PayPal";
-        case "23":
-          return "paydirekt";
-        case "27":
-          return "Sofortüberweisung";
-        default:
-          return "Unbekannt";
+    translatePayMethod(paymentMethod) {
+      switch (paymentMethod) {
+      case "CASH":
+        return "Bar";
+      case "TRANSFER":
+        return "Überweisung";
+      case "CREDIT_CARD":
+        return "Kreditkarte";
+      case "DEBIT_CARD":
+        return "EC-Karte";
+      case "PAYPAL":
+        return "PayPal";
+      case "OTHER":
+        return "Sonstiges";
+      case "GIROPAY":
+        return "Giropay";
+      case "APPLE_PAY":
+        return "Apple Pay";
+      case "GOOGLE_PAY":
+        return "Google Pay";
+      case "EPS":
+        return "EPS";
+      case "IDEAL":
+        return "iDEAL";
+      case "MAESTRO":
+        return "Maestro";
+      case "PAYDIRECT":
+        return "paydirekt";
+      case "SOFORT":
+        return "SOFORT-Überweisung";
+      case "BLUECODE":
+        return "Bluecode";
+      default:
+        return "Unbekannt";
       }
     },
     createReceipt(bookingId) {
@@ -160,7 +164,7 @@ export default {
         <v-col>
           <v-list-item two-line>
             <v-list-item-content>
-              <v-list-item-title class="text-h"> Preis </v-list-item-title>
+              <v-list-item-title class="text-h"> Gesamtpreis </v-list-item-title>
               <v-list-item-subtitle>{{
                 Intl.NumberFormat("de-DE", {
                   style: "currency",
@@ -174,10 +178,10 @@ export default {
           <v-list-item two-line>
             <v-list-item-content>
               <v-list-item-title class="text-h">
-                Zahlungsart
+                Bezahlt mit
               </v-list-item-title>
               <v-list-item-subtitle>{{
-                translatePayMethod(booking.payMethod)
+                translatePayMethod(booking.paymentMethod)
               }}</v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
@@ -258,6 +262,10 @@ export default {
                   <v-list-item-subtitle
                     >Anzahl: {{ item?.amount }}</v-list-item-subtitle
                   >
+                  <v-list-item-subtitle
+                    >Einzelpreis: {{ item.userGrossPriceEur }} € </v-list-item-subtitle
+                  >
+
                 </v-list-item-content>
               </v-list-item>
               <v-divider v-if="index < receipts.length - 1" :key="index" />

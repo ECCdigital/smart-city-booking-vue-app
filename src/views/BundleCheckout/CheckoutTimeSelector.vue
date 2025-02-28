@@ -214,7 +214,7 @@
       <checkout-calendar
         v-if="leadItem.bookable && selectionType !== 'time-period'"
         :bookableId="leadItem.bookable.id"
-        :tenant="leadItem.bookable.tenant"
+        :tenant="leadItem.bookable.tenantId"
         :booking-time-begin="timestampBegin"
         :booking-time-end="timestampEnd"
         :amount="amount"

@@ -167,7 +167,7 @@ export default {
     gotoCheckout() {
       const routeData = this.$router.resolve({
         name: "checkout",
-        query: { id: this.item.id, tenant: this.tenant.id, amount: 1 },
+        query: { id: this.item.id, tenant: this.tenantId, amount: 1 },
       });
       window.open(routeData.href, "_blank");
     },
@@ -182,7 +182,7 @@ export default {
   },
   computed: {
     ...mapGetters({
-      tenant: "tenants/tenant",
+      tenantId: "tenants/currentTenantId",
     }),
     duplicateDisabled() {
       return (

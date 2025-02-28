@@ -1,6 +1,6 @@
 <script>
 export default {
-  name: "CheckoutPaymentMethod",
+  name: "CheckoutPaymentProvider",
   props: {
     activePaymentApps: {
       type: Array,

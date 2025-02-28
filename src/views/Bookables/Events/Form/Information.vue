@@ -24,7 +24,7 @@
 
             <v-col cols="12">
               <ChooseFile
-                :tenant="tenant.id"
+                :tenant-id="tenantId"
                 v-model="teaserImage"
                 background-color="accent"
                 label="Titelbild der Veranstaltung"
@@ -234,7 +234,7 @@ export default {
   },
   computed: {
     ...mapGetters({
-      tenant: "tenants/tenant",
+      tenantId: "tenants/currentTenantId",
     }),
     name: {
       get() {

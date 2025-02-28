@@ -59,7 +59,7 @@ export default {
   },
   computed: {
     ...mapGetters({
-      tenant: "tenants/tenant",
+      tenantId: "tenants/currentTenantId",
     }),
     openDialog: {
       get() {
@@ -73,13 +73,16 @@ export default {
     },
     async onReject() {
       this.inProgress = true;
-      await ApiBookingService.rejectBooking(
-        this.toReject.id,
-        this.tenant.id,
-        this.rejectReason
-      );
-      this.inProgress = false;
-      this.closeDialog();
+      try {
+        await ApiBookingService.rejectBooking(
+          this.toReject.id,
+          this.tenantId,
+          this.rejectReason
+        );
+        this.closeDialog();
+      } finally {
+        this.inProgress = false;
+      }
     },
   },
 };

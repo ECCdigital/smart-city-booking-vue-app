@@ -1,4 +1,6 @@
+import store from "@/store";
 import PersistenceService from "@/services/PersistenceService";
+
 const namespaced = true;
 
 const state = {
@@ -23,22 +25,30 @@ const actions = {
   delete({ commit }) {
     commit("DELETE");
   },
+  reset({ commit }) {
+    commit("DELETE");
+  }
 };
 
 const getters = {
-  user: (state) => state.data,
-  tenant: (state) => state.data.tenant,
+  user: (state) => state.data.user,
   isLoggedIn: () => !_.isNil(state.data),
   isAuthorized: (state) => (ifce) => {
-    if (
-      state.data &&
-      state.data.permissions &&
-      state.data.permissions.adminInterfaces
-    ) {
-      return state.data.permissions.adminInterfaces.includes(ifce);
+    if (state.data && state.data.permissions) {
+      if(state.data.permissions.instanceOwner) return true;
+      const t = store.getters["tenants/currentTenantId"];
+      const adIfces = state.data.permissions.tenants.find((p) => p.tenantId === t);
+      if(!adIfces) return false;
+      return adIfces.adminInterfaces.includes(ifce);
     }
     return false;
   },
+  allowToCreateTenants: (state) => {
+    if (state.data && state.data.permissions) {
+      return state.data.permissions.allowCreateTenant;
+    }
+    return false;
+  }
 };
 
 export default {

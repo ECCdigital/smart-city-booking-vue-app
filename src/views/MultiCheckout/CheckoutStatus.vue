@@ -134,7 +134,7 @@ export default {
     this.bookingId = this.$route.query.id;
     this.tenant = this.$route.query.tenant;
     this.bookingStatus = this.$route.query.status;
-    this.paymentMethod = this.$route.query.paymentMethod;
+    this.paymentProvider = this.$route.query.paymentProvider;
 
     const tenantObj = await ApiTenantService.getTenant(this.tenant);
 
@@ -172,7 +172,7 @@ export default {
       } else if (!isCommitted) {
         this.status = "await-approval";
       } else if (isCommitted && !isPayed) {
-        if (this.paymentMethod === "invoice") {
+        if (this.paymentProvider === "invoice") {
           this.status = "await-payment";
         } else {
           this.status = "no-payment";

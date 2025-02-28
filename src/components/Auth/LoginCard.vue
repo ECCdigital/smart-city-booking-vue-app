@@ -10,10 +10,6 @@ export default {
   emits: ["success"],
 
   props: {
-    tenant: {
-      type: Object,
-      default: () => ({}),
-    },
     ssoActive: {
       type: Boolean,
       default: false,
@@ -41,16 +37,13 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
       updateUser: "user/update",
-      updateTenant: "tenants/update",
     }),
     signin() {
       if (!this.$refs.loginForm.validate()) {
         return;
       }
 
-      this.updateTenant(this.tenant);
-
-      ApiAuthService.login(this.tenant.id, this.id, this.password)
+      ApiAuthService.login(this.id, this.password)
         .then((response) => {
           if (response.status === 200) {
             return new Promise((resolve, reject) => {
@@ -105,9 +98,6 @@ export default {
   <v-card flat max-width="500" >
     <v-card-text class="text-center">
       <p class="subtitle-1">Mit Ihrem Account anmelden.</p>
-      <v-row class="mb-2" align="center">
-        <v-col class="text-left cut-text"> Mandant: {{ tenant?.name }} </v-col>
-      </v-row>
       <v-form ref="loginForm" @keydown.enter="signin">
         <v-text-field
           dense

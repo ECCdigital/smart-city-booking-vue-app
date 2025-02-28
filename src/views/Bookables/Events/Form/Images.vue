@@ -6,7 +6,7 @@
           <v-container>
             <FileList
               v-model="images"
-              :tenant="tenant.id"
+              :tenant="tenantId"
               images-only
               forced-subdirectory="events/images"
             ></FileList>
@@ -38,7 +38,7 @@ export default {
   computed: {
     ...mapGetters({
       images: "events/images",
-      tenant: "tenants/tenant",
+      tenantId: "tenants/currentTenantId",
     }),
     images: {
       get() {

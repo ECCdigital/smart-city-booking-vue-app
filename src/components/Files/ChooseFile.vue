@@ -177,7 +177,7 @@ export default {
     };
   },
   props: {
-    tenant: {
+    tenantId: {
       type: String,
       required: true,
     },
@@ -226,10 +226,10 @@ export default {
     async fetchFiles() {
       try {
         this.isFetching = true;
-        if (!this.tenant) return [];
+        if (!this.tenantId) return [];
 
         const response = await ApiFileService.getFiles(
-          this.tenant,
+          this.tenantId,
           this.allowProtected
         );
         this.files = response.data.filter((file) => {
@@ -243,7 +243,7 @@ export default {
     },
     link(accessLevel, filename) {
       if (!filename) return undefined;
-      return `${process.env.VUE_APP_SERVER_BASE_URL}/api/${this.tenant}/files/get?name=/${accessLevel}/${filename}`;
+      return `${process.env.VUE_APP_SERVER_BASE_URL}/api/${this.tenantId}/files/get?name=/${accessLevel}/${filename}`;
     },
     async runUpload() {
       this.isLoading = true;
@@ -258,7 +258,7 @@ export default {
           formData.append("file", this.uploadFile);
           formData.append("accessLevel", this.accessLevel);
           formData.append("customDirectory", path);
-          await ApiFileService.createFile(this.tenant, formData);
+          await ApiFileService.createFile(this.tenantId, formData);
           await this.fetchFiles();
           this.$emit(
             "input",

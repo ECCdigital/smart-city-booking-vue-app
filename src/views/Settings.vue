@@ -92,24 +92,6 @@
                       <v-col class="text-right"></v-col>
                     </v-row>
                   </v-expansion-panel-header>
-                  <v-divider></v-divider>
-                </v-expansion-panel>
-                <v-expansion-panel disabled>
-                  <v-expansion-panel-header>
-                    <v-row no-gutters align="center" justify="space-between">
-                      <v-col class="darkgrey--text">Rechte</v-col>
-                      <v-chip
-                        v-for="(permission, index) in permissions"
-                        class="ma-2"
-                        color="secondary"
-                        text-color="black"
-                        :key="index"
-                      >
-                        {{ permission }}
-                      </v-chip>
-                      <v-col class="text-md-right"></v-col>
-                    </v-row>
-                  </v-expansion-panel-header>
                 </v-expansion-panel>
               </v-expansion-panels>
             </v-row>
@@ -373,7 +355,7 @@
     <v-row no-gutters align="center" justify="center">
       <v-col class="mx-xs-auto" cols="12" sm="6">
         <p class="text-subtitle-1">
-          Einstellungen zum schützen deines Accounts
+          Einstellungen zum Schützen Ihres Accounts
         </p>
       </v-col>
     </v-row>
@@ -525,15 +507,6 @@ export default {
       tempAddress: "",
       tempZip: "",
       tempCity: "",
-      headers: [
-        { text: "Vorname", value: "firstName" },
-        { text: "Nachname", value: "lastName" },
-        { text: "E-Mail Adresse", value: "id" },
-        { text: "Mandant", value: "tenant" },
-        { text: "Verifiziert", value: "isVerified" },
-        { text: "Rollen", value: "permissions" },
-        { text: "Beigetreten", value: "created" },
-      ],
     };
   },
   components: {

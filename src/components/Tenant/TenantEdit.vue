@@ -1,903 +1,840 @@
 <template>
-  <v-row justify="center">
-    <v-dialog v-model="openDialog" persistent max-width="800px">
-      <v-card>
-        <v-card-title class="mx-3">
-          <span v-if="selectedTenant._id" class="text-h5"
-            >Mandanten bearbeiten</span
+  <v-container>
+    <v-form ref="form" v-model="valid">
+      <h3>Allgemeine Informationen</h3>
+      <v-progress-linear
+        :active="isLoading"
+        indeterminate
+        color="primary"
+      ></v-progress-linear>
+      <v-divider class="mb-5"></v-divider>
+      <v-row>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="ID"
+            readonly
+            disabled
+            v-model="tenant.id"
+          ></v-text-field>
+        </v-col>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Name"
+            :rules="validationRules.required"
+            v-model="tenant.name"
+          ></v-text-field>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Kontakt Person"
+            :rules="validationRules.required"
+            v-model="tenant.contactName"
+          ></v-text-field>
+        </v-col>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Adresse"
+            :rules="validationRules.required"
+            v-model="tenant.location"
+          ></v-text-field>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="E-Mail Adresse"
+            :rules="validationRules.mail"
+            type="mail"
+            v-model="tenant.mail"
+          ></v-text-field>
+        </v-col>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Telefonummer"
+            :rules="validationRules.required"
+            v-model="tenant.phone"
+          ></v-text-field>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Website"
+            :rules="validationRules.required"
+            type="text"
+            v-model="tenant.website"
+          ></v-text-field>
+        </v-col>
+      </v-row>
+      <h3 class="mt-10">Web-Schnittstelle</h3>
+      <v-divider class="mb-5"></v-divider>
+      <v-row>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Link zur Detailseite (Buchungsobjekt)"
+            placeholder="https://..."
+            :rules="validationRules.weblink"
+            v-model="tenant.bookableDetailLink"
+            suffix="?bkid=[ID]"
           >
-          <span v-else class="text-h5">Neuen Mandanten erstellen</span>
-        </v-card-title>
-        <v-divider class="mx-9 mb-5" />
-        <v-card-text>
-          <v-container>
-            <v-form ref="form" v-model="valid">
-              <h3>Allgemeine Informationen</h3>
-              <v-divider class="mb-5"></v-divider>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    v-if="selectedTenant._id"
-                    background-color="accent"
-                    filled
-                    dense
-                    label="ID"
-                    readonly
-                    disabled
-                    v-model="selectedTenant.id"
-                  ></v-text-field>
-                  <v-text-field
-                    v-else
-                    background-color="accent"
-                    filled
-                    dense
-                    label="ID"
-                    :rules="validationRules.required"
-                    v-model="selectedTenant.id"
-                  ></v-text-field>
-                </v-col>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Name"
-                    :rules="validationRules.required"
-                    v-model="selectedTenant.name"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Kontakt Person"
-                    :rules="validationRules.required"
-                    v-model="selectedTenant.contactName"
-                  ></v-text-field>
-                </v-col>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Adresse"
-                    :rules="validationRules.required"
-                    v-model="selectedTenant.location"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="E-Mail Adresse"
-                    :rules="validationRules.mail"
-                    type="mail"
-                    v-model="selectedTenant.mail"
-                  ></v-text-field>
-                </v-col>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Telefonummer"
-                    :rules="validationRules.required"
-                    v-model="selectedTenant.phone"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Website"
-                    :rules="validationRules.required"
-                    type="text"
-                    v-model="selectedTenant.website"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <h3 class="mt-10">Web-Schnittstelle</h3>
-              <v-divider class="mb-5"></v-divider>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Link zur Detailseite (Buchungsobjekt)"
-                    placeholder="https://..."
-                    :rules="validationRules.weblink"
-                    v-model="selectedTenant.bookableDetailLink"
-                    suffix="?bkid=[ID]"
-                  >
-                  </v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Link zur Detailseite (Event)"
-                    placeholder="https://..."
-                    :rules="validationRules.weblink"
-                    v-model="selectedTenant.eventDetailLink"
-                    suffix="?bkid=[ID]"
-                  >
-                  </v-text-field>
-                </v-col>
-              </v-row>
-              <h3 class="mt-10">E-Mail-Konfiguration</h3>
-              <v-divider class="mb-5"></v-divider>
-              <v-row>
-                <v-col class="">
-                  <v-card
-                    v-if="!!selectedTenant.genericMailTemplate"
-                    flat
-                    height="100"
-                  >
-                    <v-snackbar
-                      :timeout="-1"
-                      :value="true"
-                      absolute
-                      color="success"
-                      text
-                    >
-                      <v-icon left> mdi-check </v-icon>
-                      Es ist eine E-Mail-Vorlage hinterlegt. Um diese zu ändern,
-                      wenden Sie sich bitte an den Administrator.
-                    </v-snackbar>
-                  </v-card>
-                  <v-card v-else flat height="100">
-                    <v-snackbar
-                      :timeout="-1"
-                      :value="true"
-                      absolute
-                      color="error"
-                      text
-                    >
-                      <v-icon left> mdi-close </v-icon>
-                      Es ist keine E-Mail-Vorlage hinterlegt. Um eine
-                      E-Mail-Vorlage zu hinterlegen, wenden Sie sich bitte an
-                      den Administrator.
-                    </v-snackbar>
-                  </v-card>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="E-Mail-Adresse"
-                    :rules="validationRules.mail"
-                    v-model="selectedTenant.noreplyMail"
-                  ></v-text-field>
-                </v-col>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Anzeigename"
-                    v-model="selectedTenant.noreplyDisplayName"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <h4 class="mb-2">Email-Versandmethoden </h4>
-                </v-col>
-              </v-row>
-              <v-expansion-panels>
-                <v-expansion-panel>
-                  <v-expansion-panel-header
-                    color="accent"
-                    expand-icon="mdi-menu-down"
-                    class="panel-header"
-                  >
-                    <template v-slot:default="{ open }">
-                      <v-row no-gutters align="center">
-                        <v-col cols="4">
-                          <span class="text-subtitle-1">
-                            SMTP
-                          </span>
-                        </v-col>
-                        <v-col class="col-2">
-                          <v-fade-transition leave-absolute>
-                            <div v-if="!open">
-                              <v-icon
-                                v-if="!selectedTenant.noreplyUseGraphApi"
-                                color="success"
-                                >mdi-check</v-icon
-                              >
-                              <span
-                                v-if="!selectedTenant.noreplyUseGraphApi"
-                                class="ml-2"
-                                >Aktiv</span
-                              >
+          </v-text-field>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Link zur Detailseite (Event)"
+            placeholder="https://..."
+            :rules="validationRules.weblink"
+            v-model="tenant.eventDetailLink"
+            suffix="?bkid=[ID]"
+          >
+          </v-text-field>
+        </v-col>
+      </v-row>
+      <h3 class="mt-10">E-Mail-Konfiguration</h3>
+      <v-divider class="mb-5"></v-divider>
+      <v-switch
+        v-model="tenant.useInstanceMail"
+        color="primary"
+        label="Instanz E-Mail-Konfiguration verwenden"
+        class="mt-2"
+      ></v-switch>
+      <MailKonfiguration
+        :mail-config="tenantMailConfig"
+        :show-validation="!tenant.useInstanceMail"
+        @update="updateMailConfig"
+      />
 
-                              <v-icon
-                                v-if="selectedTenant.noreplyUseGraphApi"
-                                color="error"
-                                >mdi-close</v-icon
-                              >
-                              <span v-if="selectedTenant.noreplyUseGraphApi" class="ml-2"
-                                >Inaktiv</span
-                              >
-                            </div>
-                          </v-fade-transition>
-                        </v-col>
-                      </v-row>
-                    </template>
-                  </v-expansion-panel-header>
-                  <v-expansion-panel-content class="mt-3">
-                    <v-row>
-                      <v-col class="col-12">
-                        <v-switch
-                          v-model="selectedTenant.noreplyUseGraphApi"
-                          color="primary"
-                          hide-details
-                          :true-value="false"
-                          :false-value="true"
-                          label="SMTP als E-Mail-Versandmethode aktivieren"
-                          class="mt-2"
-                        ></v-switch>
-                      </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col class="">
-                        <v-text-field
-                          background-color="accent"
-                          filled
-                          dense
-                          label="SMTP-Server"
-                          v-model="selectedTenant.noreplyHost"
-                        ></v-text-field>
-                      </v-col>
-                      <v-col class="col-md-2">
-                        <v-text-field
-                          background-color="accent"
-                          filled
-                          dense
-                          label="Port"
-                          v-model="selectedTenant.noreplyPort"
-                        ></v-text-field>
-                      </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col class="">
-                        <v-text-field
-                          background-color="accent"
-                          filled
-                          dense
-                          hide-details
-                          label="Benutzername"
-                          v-model="selectedTenant.noreplyUser"
-                        ></v-text-field>
-                      </v-col>
-                      <v-col class="">
-                        <v-text-field
-                          background-color="accent"
-                          filled
-                          dense
-                          hide-details
-                          label="Passwort"
-                          v-model="selectedTenant.noreplyPassword"
-                          :append-icon="
-                            showNoreplyPassword ? 'mdi-eye' : 'mdi-eye-off'
-                          "
-                          @click:append="
-                            showNoreplyPassword = !showNoreplyPassword
-                          "
-                          :type="showNoreplyPassword ? 'text' : 'password'"
-                        ></v-text-field>
-                      </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col>
-                        <v-switch
-                          v-model="selectedTenant.noreplyStarttls"
-                          color="primary"
-                          label="StartTLS aktivieren"
-                          hide-details
-                        ></v-switch>
-                      </v-col>
-                    </v-row>
-                  </v-expansion-panel-content>
-                </v-expansion-panel>
-                <v-expansion-panel>
-                  <v-expansion-panel-header
-                    color="accent"
-                    expand-icon="mdi-menu-down"
-                    class="panel-header"
-                  >
-                    <template v-slot:default="{ open }">
-                      <v-row no-gutters align="center">
-                        <v-col cols="4">
-                          <span class="text-subtitle-1"> Graph Api (Office365) </span>
-                        </v-col>
-                        <v-col class="col-2">
-                          <v-fade-transition leave-absolute>
-                            <div v-if="!open">
-                              <v-icon
-                                v-if="selectedTenant.noreplyUseGraphApi"
-                                color="success"
-                                >mdi-check</v-icon
-                              >
-                              <span v-if="selectedTenant.noreplyUseGraphApi" class="ml-2"
-                                >Aktiv</span
-                              >
-
-                              <v-icon
-                                v-if="!selectedTenant.noreplyUseGraphApi"
-                                color="error"
-                                >mdi-close</v-icon
-                              >
-                              <span
-                                v-if="!selectedTenant.noreplyUseGraphApi"
-                                class="ml-2"
-                                >Inaktiv</span
-                              >
-                            </div>
-                          </v-fade-transition>
-                        </v-col>
-                      </v-row>
-                    </template>
-                  </v-expansion-panel-header>
-                  <v-expansion-panel-content class="mt-3">
-                    <v-row>
-                      <v-col class="col-12">
-                        <v-switch
-                          v-model="selectedTenant.noreplyUseGraphApi"
-                          color="primary"
-                          hide-details
-                          label="Graph Api als E-Mail-Versandmethode aktivieren"
-                          class="mt-2"
-                        ></v-switch>
-                      </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col class="">
-                        <v-text-field
-                          background-color="accent"
-                          filled
-                          dense
-                          label="Tenant ID"
-                          v-model="selectedTenant.noreplyGraphTenantId"
-                        ></v-text-field>
-                      </v-col>
-                      <v-col class="">
-                        <v-text-field
-                          background-color="accent"
-                          filled
-                          dense
-                          label="Client ID"
-                          v-model="selectedTenant.noreplyGraphClientId"
-                        ></v-text-field>
-                      </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col class="">
-                        <v-text-field
-                          background-color="accent"
-                          filled
-                          dense
-                          label="Client Secret"
-                          v-model="selectedTenant.noreplyGraphClientSecret"
-                          :append-icon="
-                            showClientSecret ? 'mdi-eye' : 'mdi-eye-off'
-                          "
-                          @click:append="
-                            showClientSecret = !showClientSecret
-                          "
-                          :type="showClientSecret ? 'text' : 'password'"
-                        ></v-text-field>
-                      </v-col>
-                    </v-row>
-                  </v-expansion-panel-content>
-                </v-expansion-panel>
-              </v-expansion-panels>
-
-              <h3 class="mt-10">Zahlungsbeleg</h3>
-              <v-divider class="mb-5"></v-divider>
-              <v-row>
-                <v-col>
-                  <v-card
-                    v-if="!!selectedTenant.receiptTemplate"
-                    flat
-                    height="100"
-                  >
-                    <v-snackbar
-                      :timeout="-1"
-                      :value="true"
-                      absolute
-                      color="success"
-                      text
-                    >
-                      <v-icon left> mdi-check </v-icon>
-                      Es ist eine Zahlungsbeleg-Vorlage hinterlegt. Um diese zu
-                      ändern, wenden Sie sich bitte an den Administrator.
-                    </v-snackbar>
-                  </v-card>
-                  <v-card flat height="120" v-else>
-                    <v-snackbar
-                      :timeout="-1"
-                      :value="true"
-                      absolute
-                      color="error"
-                      text
-                    >
-                      <v-icon left> mdi-close </v-icon>
-                      Es ist keine Zahlungsbelegvorlage hinterlegt. Um eine
-                      Zahlungsbelegvorlage zu hinterlegen, wenden Sie sich bitte
-                      an den Administrator.
-                    </v-snackbar>
-                  </v-card>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Belegnummer Präfix"
-                    v-model="selectedTenant.receiptNumberPrefix"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <h3 class="mt-10">Zahlungsmethoden</h3>
-              <v-divider class="mb-5"></v-divider>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    label="Ergänzung zum Verwendungszweck"
-                    prefix="[Buchungsnummer] - "
-                    :rules="validationRules.paymentPurposeSuffix"
-                    v-model="selectedTenant.paymentPurposeSuffix"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-expansion-panels flat multiple>
-                    <v-expansion-panel>
-                      <v-expansion-panel-header
-                        color="accent"
-                        expand-icon="mdi-menu-down"
-                        class="panel-header"
-                      >
-                        <template v-slot:default="{ open }">
-                          <v-row no-gutters align="center">
-                            <v-col cols="4">
-                              <span class="text-subtitle-1">
-                                S-Public Services
-                              </span>
-                            </v-col>
-                            <v-col class="col-2">
-                              <v-fade-transition leave-absolute>
-                                <div v-if="!open">
-                                  <v-icon
-                                    v-if="giroCockpitApp.active"
-                                    color="success"
-                                    >mdi-check</v-icon
-                                  >
-                                  <span
-                                    v-if="giroCockpitApp.active"
-                                    class="ml-2"
-                                    >Aktiv</span
-                                  >
-
-                                  <v-icon
-                                    v-if="giroCockpitApp.active === false"
-                                    color="error"
-                                    >mdi-close</v-icon
-                                  >
-                                  <span
-                                    v-if="giroCockpitApp.active === false"
-                                    class="ml-2"
-                                    >Inaktiv</span
-                                  >
-                                </div>
-                              </v-fade-transition>
-                            </v-col>
-                          </v-row>
-                        </template>
-                      </v-expansion-panel-header>
-                      <v-expansion-panel-content class="mt-3">
-                        <v-row>
-                          <v-col class="col-12">
-                            <v-switch
-                              v-model="giroCockpitApp.active"
-                              color="primary"
-                              hide-details
-                              label="S-Public Services als Zahlungsanbieter aktivieren"
-                              class="mt-2"
-                            ></v-switch>
-                          </v-col>
-                        </v-row>
-                        <v-row>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              label="Kundennummer"
-                              hide-details
-                              v-model="giroCockpitApp.paymentMerchantId"
-                            ></v-text-field>
-                          </v-col>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              label="Projektnummer"
-                              v-model="giroCockpitApp.paymentProjectId"
-                            ></v-text-field>
-                          </v-col>
-                        </v-row>
-                        <v-row>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              dense
-                              label="Schlüssel"
-                              v-model="giroCockpitApp.paymentSecret"
-                              :append-icon="
-                                showPaymentSecret ? 'mdi-eye' : 'mdi-eye-off'
-                              "
-                              @click:append="
-                                showPaymentSecret = !showPaymentSecret
-                              "
-                              :type="showPaymentSecret ? 'text' : 'password'"
-                            ></v-text-field>
-                          </v-col>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              prefix="[Buchungsnummer] - "
-                              :rules="validationRules.paymentPurposeSuffix"
-                              v-model="giroCockpitApp.paymentPurposeSuffix"
-                            ></v-text-field>
-                          </v-col>
-                        </v-row>
-                      </v-expansion-panel-content>
-                    </v-expansion-panel>
-                  </v-expansion-panels>
-                  <v-expansion-panels flat multiple class="mt-8">
-                    <v-expansion-panel>
-                      <v-expansion-panel-header
-                        color="accent"
-                        expand-icon="mdi-menu-down"
-                        class="panel-header"
-                      >
-                        <template v-slot:default="{ open }">
-                          <v-row no-gutters align="center">
-                            <v-col cols="4">
-                              <span class="text-subtitle-1"> Rechnung </span>
-                            </v-col>
-                            <v-col class="col-2">
-                              <v-fade-transition leave-absolute>
-                                <div v-if="!open">
-                                  <v-icon
-                                    v-if="invoiceApp.active"
-                                    color="success"
-                                    >mdi-check</v-icon
-                                  >
-                                  <span v-if="invoiceApp.active" class="ml-2"
-                                    >Aktiv</span
-                                  >
-
-                                  <v-icon
-                                    v-if="invoiceApp.active === false"
-                                    color="error"
-                                    >mdi-close</v-icon
-                                  >
-                                  <span
-                                    v-if="invoiceApp.active === false"
-                                    class="ml-2"
-                                    >Inaktiv</span
-                                  >
-                                </div>
-                              </v-fade-transition>
-                            </v-col>
-                          </v-row>
-                        </template>
-                      </v-expansion-panel-header>
-                      <v-expansion-panel-content class="mt-3">
-                        <v-row>
-                          <v-col class="col-12">
-                            <v-switch
-                              v-model="invoiceApp.active"
-                              color="primary"
-                              hide-details
-                              label="Rechnung als Zahlungsmittel aktivieren"
-                              class="mt-2"
-                            ></v-switch>
-                          </v-col>
-                        </v-row>
-                        <v-row>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              label="Bank"
-                              v-model="invoiceApp.bank"
-                            ></v-text-field>
-                          </v-col>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              label="IBAN"
-                              v-model="invoiceApp.iban"
-                            ></v-text-field>
-                          </v-col>
-                        </v-row>
-                        <v-row>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              label="BIC"
-                              v-model="invoiceApp.bic"
-                            ></v-text-field>
-                          </v-col>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              label="Kontoinhaber"
-                              v-model="invoiceApp.accountHolder"
-                            ></v-text-field>
-                          </v-col>
-                        </v-row>
-                        <v-row>
-                          <v-col class="col-12 col-md-6">
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              label="Zahlungsziel in Tagen"
-                              type="number"
-                              v-model="invoiceApp.daysUntilPaymentDue"
-                            ></v-text-field>
-                          </v-col>
-                        </v-row>
-                      </v-expansion-panel-content>
-                    </v-expansion-panel>
-                  </v-expansion-panels>
-                </v-col>
-              </v-row>
-              <h3 class="mt-10">Schließsysteme</h3>
-              <v-divider class="mb-5"></v-divider>
-              <v-row>
-                <v-col>
-                  <v-expansion-panels flat multiple>
-                    <v-expansion-panel>
-                      <v-expansion-panel-header
-                        color="accent"
-                        expand-icon="mdi-menu-down"
-                        class="penal-header"
-                      >
-                        <template v-slot:default="{ open }">
-                          <v-row no-gutters align="center">
-                            <v-col cols="4">
-                              <span class="text-subtitle-1"> Pareva </span>
-                            </v-col>
-                            <v-col class="col-2">
-                              <v-fade-transition leave-absolute>
-                                <div v-if="!open">
-                                  <v-icon
-                                    v-if="parevaSystem?.active"
-                                    color="success"
-                                    >mdi-check</v-icon
-                                  >
-                                  <span v-if="parevaSystem?.active" class="ml-2"
-                                    >Aktiv</span
-                                  >
-
-                                  <v-icon
-                                    v-if="parevaSystem?.active === false"
-                                    color="error"
-                                    >mdi-close</v-icon
-                                  >
-                                  <span
-                                    v-if="parevaSystem?.active === false"
-                                    class="ml-2"
-                                    >Inaktiv</span
-                                  >
-                                </div>
-                              </v-fade-transition>
-                            </v-col>
-                          </v-row>
-                        </template>
-                      </v-expansion-panel-header>
-                      <v-expansion-panel-content class="mt-3">
-                        <v-row>
-                          <v-col class="col-12">
-                            <v-switch
-                              v-model="parevaSystem.active"
-                              color="primary"
-                              hide-details
-                              label="Parava aktivieren"
-                              class="mt-2"
-                            ></v-switch>
-                          </v-col>
-                        </v-row>
-                        <v-row>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              dense
-                              label="Server-URL"
-                              v-model="parevaSystem.serverUrl"
-                            ></v-text-field>
-                          </v-col>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              dense
-                              label="Locker-ID"
-                              v-model="parevaSystem.lockerId"
-                            ></v-text-field>
-                          </v-col>
-                        </v-row>
-                        <v-row>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              dense
-                              label="Benutzername"
-                              v-model="parevaSystem.user"
-                            ></v-text-field>
-                          </v-col>
-                          <v-col>
-                            <v-text-field
-                              background-color="accent"
-                              filled
-                              dense
-                              label="Passwort"
-                              v-model="parevaSystem.password"
-                              :append-icon="
-                                showParevaPassword ? 'mdi-eye' : 'mdi-eye-off'
-                              "
-                              @click:append="
-                                showParevaPassword = !showParevaPassword
-                              "
-                              :type="showParevaPassword ? 'text' : 'password'"
-                            ></v-text-field>
-                          </v-col>
-                        </v-row>
-                      </v-expansion-panel-content>
-                    </v-expansion-panel>
-                  </v-expansion-panels>
-                </v-col>
-              </v-row>
-
-              <h3 class="mt-10">Buchungskonfiguration</h3>
-              <v-divider class="mb-5"></v-divider>
-              <v-row>
-                <v-col class="col-12 col-md-6">
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Vorausbuchungen möglich bis"
-                    type="number"
-                    suffix="Monate"
-                    v-model="selectedTenant.maxBookingAdvanceInMonths"
-                  >
-                  </v-text-field>
-                </v-col>
-              </v-row>
-              <v-switch
-                v-model="selectedTenant.enablePublicStatusView"
-                color="primary"
-                hint="Sofern aktiviert, kann der Status einer Buchung öffentlich abgefragt werden."
-                persistent-hint
-                label="Öffentlicher Buchungsstatus"
-                class="mt-2"
+      <h3 class="mt-10">Zahlungsbeleg</h3>
+      <v-divider class="mb-5"></v-divider>
+      <v-row>
+        <v-col>
+          <v-card v-if="!!tenant.receiptTemplate" flat height="100">
+            <v-snackbar
+              :timeout="-1"
+              :value="true"
+              absolute
+              color="success"
+              text
+            >
+              <v-icon left> mdi-check </v-icon>
+              Es ist eine Zahlungsbeleg-Vorlage hinterlegt. Um diese zu ändern,
+              wenden Sie sich bitte an den Administrator.
+            </v-snackbar>
+          </v-card>
+          <v-card flat height="120" v-else>
+            <v-snackbar :timeout="-1" :value="true" absolute color="error" text>
+              <v-icon left> mdi-close </v-icon>
+              Es ist keine Zahlungsbelegvorlage hinterlegt. Um eine
+              Zahlungsbelegvorlage zu hinterlegen, wenden Sie sich bitte an den
+              Administrator.
+            </v-snackbar>
+          </v-card>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Belegnummer Präfix"
+            v-model="tenant.receiptNumberPrefix"
+          ></v-text-field>
+        </v-col>
+      </v-row>
+      <h3 class="mt-10">Zahlungsmethoden</h3>
+      <v-divider class="mb-5"></v-divider>
+      <v-row>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            label="Ergänzung zum Verwendungszweck"
+            prefix="[Buchungsnummer] - "
+            :rules="validationRules.paymentPurposeSuffix"
+            v-model="tenant.paymentPurposeSuffix"
+          ></v-text-field>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-expansion-panels flat multiple>
+            <v-expansion-panel>
+              <v-expansion-panel-header
+                color="accent"
+                expand-icon="mdi-menu-down"
+                class="panel-header"
               >
-              </v-switch>
-              <h3 class="mb-5 mt-5">Events</h3>
-              <v-divider class="mb-5"></v-divider>
-              <v-row>
-                <v-col>
-                  <v-card flat height="120">
-                    <v-snackbar
-                      :timeout="-1"
-                      :value="true"
-                      absolute
-                      color="info"
-                      text
-                    >
-                      <v-icon color="info" left>
-                        mdi-information-outline
-                      </v-icon>
-                      <span>
-                        Mit dieser Option können Sie das Erstellen einer
-                        Veranstaltung standardmäßig auf den einfachen Modus
-                        umstellen. Dieser Modus ist für die meisten
-                        Anwendungsfälle ausreichend. Das Erstellen einer
-                        detaillierte Veranstaltung lässt sich weiterhin über den
-                        "Veranstaltung Erstellen" Knopf auswählen.
-                      </span>
-                    </v-snackbar>
-                  </v-card>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col class="col-12 col-md-6">
-                  <v-switch
-                    v-model="eventCreationMode"
-                    color="primary"
-                    hide-details
-                    label="Einfacher Event-Modus"
-                    class="mt-2"
-                  >
-                  </v-switch>
-                </v-col>
-              </v-row>
-            </v-form>
-          </v-container>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            class="mb-5"
-            color="primary"
-            @click="submitChanges"
-            :loading="inProgress"
+                <template v-slot:default="{ open }">
+                  <v-row no-gutters align="center">
+                    <v-col cols="4">
+                      <span class="text-subtitle-1"> S-Public Services </span>
+                    </v-col>
+                    <v-col class="col-2">
+                      <v-fade-transition leave-absolute>
+                        <div v-if="!open">
+                          <v-icon v-if="giroCockpitApp.active" color="success"
+                            >mdi-check</v-icon
+                          >
+                          <span v-if="giroCockpitApp.active" class="ml-2"
+                            >Aktiv</span
+                          >
+
+                          <v-icon
+                            v-if="giroCockpitApp.active === false"
+                            color="error"
+                            >mdi-close</v-icon
+                          >
+                          <span
+                            v-if="giroCockpitApp.active === false"
+                            class="ml-2"
+                            >Inaktiv</span
+                          >
+                        </div>
+                      </v-fade-transition>
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-expansion-panel-header>
+              <v-expansion-panel-content class="mt-3">
+                <v-row>
+                  <v-col class="col-12">
+                    <v-switch
+                      v-model="giroCockpitApp.active"
+                      color="primary"
+                      hide-details
+                      label="S-Public Services als Zahlungsanbieter aktivieren"
+                      class="mt-2"
+                    ></v-switch>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      label="Kundennummer"
+                      hide-details
+                      v-model="giroCockpitApp.paymentMerchantId"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      label="Projektnummer"
+                      v-model="giroCockpitApp.paymentProjectId"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Schlüssel"
+                      v-model="giroCockpitApp.paymentSecret"
+                      :append-icon="
+                        showPaymentSecret ? 'mdi-eye' : 'mdi-eye-off'
+                      "
+                      @click:append="showPaymentSecret = !showPaymentSecret"
+                      :type="showPaymentSecret ? 'text' : 'password'"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      prefix="[Buchungsnummer] - "
+                      :rules="validationRules.paymentPurposeSuffix"
+                      v-model="giroCockpitApp.paymentPurposeSuffix"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
+          <v-expansion-panels flat multiple class="mt-8">
+            <v-expansion-panel>
+              <v-expansion-panel-header
+                color="accent"
+                expand-icon="mdi-menu-down"
+                class="panel-header"
+              >
+                <template v-slot:default="{ open }">
+                  <v-row no-gutters align="center">
+                    <v-col cols="4">
+                      <span class="text-subtitle-1"> pmPayment </span>
+                    </v-col>
+                    <v-col class="col-auto">
+                      <v-fade-transition leave-absolute>
+                        <div class="flex d-inline" v-if="!open">
+                          <v-icon v-if="pmPaymentApp.active" color="success"
+                            >mdi-check</v-icon
+                          >
+                          <span v-if="pmPaymentApp.active" class="ml-2"
+                            >Aktiv</span
+                          >
+
+                          <v-icon
+                            v-if="pmPaymentApp.active === false"
+                            color="error"
+                            >mdi-close</v-icon
+                          >
+                          <span
+                            v-if="pmPaymentApp.active === false"
+                            class="ml-2"
+                            >Inaktiv</span
+                          >
+
+                          <v-icon
+                            v-if="
+                              pmPaymentApp.paymentMode === 'test' &&
+                              pmPaymentApp.active
+                            "
+                            color="info"
+                            class="ml-4"
+                            >mdi-information-outline</v-icon
+                          >
+                          <span
+                            v-if="
+                              pmPaymentApp.paymentMode === 'test' &&
+                              pmPaymentApp.active
+                            "
+                            class="ml-2"
+                            >Testmodus ist aktiv</span
+                          >
+                        </div>
+                      </v-fade-transition>
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-expansion-panel-header>
+              <v-expansion-panel-content class="mt-3">
+                <v-row>
+                  <v-col class="col-auto">
+                    <v-switch
+                      v-model="pmPaymentApp.active"
+                      color="primary"
+                      hide-details
+                      label="pmPayment als Zahlungsanbieter aktivieren"
+                      class="mt-2"
+                    ></v-switch>
+                  </v-col>
+                  <v-col>
+                    <v-switch
+                      v-model="pmPaymentApp.paymentMode"
+                      color="primary"
+                      hide-details
+                      true-value="test"
+                      false-value="prod"
+                      label="Testmodus"
+                      class="mt-2"
+                    ></v-switch>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      label="Amtlicher Gemeindeschlüssel"
+                      hide-details
+                      v-model="pmPaymentApp.paymentMerchantId"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      label="Verfahren"
+                      v-model="pmPaymentApp.paymentProjectId"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Salt Passwort"
+                      v-model="pmPaymentApp.paymentSecret"
+                      :append-icon="
+                        showPmPaymentSecret ? 'mdi-eye' : 'mdi-eye-off'
+                      "
+                      @click:append="showPmPaymentSecret = !showPmPaymentSecret"
+                      :type="showPmPaymentSecret ? 'text' : 'password'"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      prefix="[Buchungsnummer] - "
+                      :rules="validationRules.paymentPurposeSuffix"
+                      v-model="pmPaymentApp.paymentPurposeSuffix"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
+          <v-expansion-panels flat multiple class="mt-8">
+            <v-expansion-panel>
+              <v-expansion-panel-header
+                color="accent"
+                expand-icon="mdi-menu-down"
+                class="panel-header"
+              >
+                <template v-slot:default="{ open }">
+                  <v-row no-gutters align="center">
+                    <v-col cols="4">
+                      <span class="text-subtitle-1"> Rechnung </span>
+                    </v-col>
+                    <v-col class="col-2">
+                      <v-fade-transition leave-absolute>
+                        <div v-if="!open">
+                          <v-icon v-if="invoiceApp.active" color="success"
+                            >mdi-check</v-icon
+                          >
+                          <span v-if="invoiceApp.active" class="ml-2"
+                            >Aktiv</span
+                          >
+
+                          <v-icon
+                            v-if="invoiceApp.active === false"
+                            color="error"
+                            >mdi-close</v-icon
+                          >
+                          <span v-if="invoiceApp.active === false" class="ml-2"
+                            >Inaktiv</span
+                          >
+                        </div>
+                      </v-fade-transition>
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-expansion-panel-header>
+              <v-expansion-panel-content class="mt-3">
+                <v-row>
+                  <v-col class="col-12">
+                    <v-switch
+                      v-model="invoiceApp.active"
+                      color="primary"
+                      hide-details
+                      label="Rechnung als Zahlungsmittel aktivieren"
+                      class="mt-2"
+                    ></v-switch>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      label="Bank"
+                      v-model="invoiceApp.bank"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      label="IBAN"
+                      v-model="invoiceApp.iban"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      label="BIC"
+                      v-model="invoiceApp.bic"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      label="Kontoinhaber"
+                      v-model="invoiceApp.accountHolder"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col class="col-12 col-md-6">
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      label="Zahlungsziel in Tagen"
+                      type="number"
+                      v-model="invoiceApp.daysUntilPaymentDue"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
+        </v-col>
+      </v-row>
+      <h3 class="mt-10">Schließsysteme</h3>
+      <v-divider class="mb-5"></v-divider>
+      <v-row>
+        <v-col>
+          <v-expansion-panels flat multiple>
+            <v-expansion-panel>
+              <v-expansion-panel-header
+                color="accent"
+                expand-icon="mdi-menu-down"
+                class="penal-header"
+              >
+                <template v-slot:default="{ open }">
+                  <v-row no-gutters align="center">
+                    <v-col cols="4">
+                      <span class="text-subtitle-1"> Pareva </span>
+                    </v-col>
+                    <v-col class="col-2">
+                      <v-fade-transition leave-absolute>
+                        <div v-if="!open">
+                          <v-icon v-if="parevaSystem?.active" color="success"
+                            >mdi-check</v-icon
+                          >
+                          <span v-if="parevaSystem?.active" class="ml-2"
+                            >Aktiv</span
+                          >
+
+                          <v-icon
+                            v-if="parevaSystem?.active === false"
+                            color="error"
+                            >mdi-close</v-icon
+                          >
+                          <span
+                            v-if="parevaSystem?.active === false"
+                            class="ml-2"
+                            >Inaktiv</span
+                          >
+                        </div>
+                      </v-fade-transition>
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-expansion-panel-header>
+              <v-expansion-panel-content class="mt-3">
+                <v-row>
+                  <v-col class="col-12">
+                    <v-switch
+                      v-model="parevaSystem.active"
+                      color="primary"
+                      hide-details
+                      label="Parava aktivieren"
+                      class="mt-2"
+                    ></v-switch>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Server-URL"
+                      v-model="parevaSystem.serverUrl"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Locker-ID"
+                      v-model="parevaSystem.lockerId"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Benutzername"
+                      v-model="parevaSystem.user"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col>
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Passwort"
+                      v-model="parevaSystem.password"
+                      :append-icon="
+                        showParevaPassword ? 'mdi-eye' : 'mdi-eye-off'
+                      "
+                      @click:append="showParevaPassword = !showParevaPassword"
+                      :type="showParevaPassword ? 'text' : 'password'"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
+        </v-col>
+      </v-row>
+
+      <h3 class="mt-10">Buchungskonfiguration</h3>
+      <v-divider class="mb-5"></v-divider>
+      <v-row>
+        <v-col class="col-12 col-md-6">
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Vorausbuchungen möglich bis"
+            type="number"
+            suffix="Monate"
+            v-model="tenant.maxBookingAdvanceInMonths"
           >
-            Speichern
-          </v-btn>
-          <v-btn class="mb-5 mr-5" outlined @click="closeDialog">
-            Abbrechen
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </v-row>
+          </v-text-field>
+        </v-col>
+      </v-row>
+      <v-switch
+        v-model="tenant.enablePublicStatusView"
+        color="primary"
+        hint="Sofern aktiviert, kann der Status einer Buchung öffentlich abgefragt werden."
+        persistent-hint
+        label="Öffentlicher Buchungsstatus"
+        class="mt-2"
+      >
+      </v-switch>
+      <h3 class="mb-5 mt-5">Events</h3>
+      <v-divider class="mb-5"></v-divider>
+      <v-row>
+        <v-col>
+          <v-card flat height="120">
+            <v-snackbar :timeout="-1" :value="true" absolute color="info" text>
+              <v-icon color="info" left> mdi-information-outline </v-icon>
+              <span>
+                Mit dieser Option können Sie das Erstellen einer Veranstaltung
+                standardmäßig auf den einfachen Modus umstellen. Dieser Modus
+                ist für die meisten Anwendungsfälle ausreichend. Das Erstellen
+                einer detaillierte Veranstaltung lässt sich weiterhin über den
+                "Veranstaltung Erstellen" Knopf auswählen.
+              </span>
+            </v-snackbar>
+          </v-card>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col class="col-12 col-md-6">
+          <v-switch
+            v-model="eventCreationMode"
+            color="primary"
+            hide-details
+            label="Einfacher Event-Modus"
+            class="mt-2"
+          >
+          </v-switch>
+        </v-col>
+      </v-row>
+      <h3 class="mb-5 mt-5">Workflow</h3>
+      <v-divider class="mb-5"></v-divider>
+      <v-row>
+        <v-col>
+          <v-expansion-panels flat multiple>
+            <v-expansion-panel>
+              <v-expansion-panel-header
+                color="accent"
+                expand-icon="mdi-menu-down"
+                class="penal-header"
+              >
+                <template v-slot:default="{ open }">
+                  <v-row no-gutters align="center">
+                    <v-col cols="4">
+                      <span class="text-subtitle-1"> Workflow </span>
+                    </v-col>
+                    <v-col class="col-2">
+                      <v-fade-transition leave-absolute>
+                        <div v-if="!open">
+                          <v-icon v-if="workflow.active" color="success"
+                            >mdi-check</v-icon
+                          >
+                          <span v-if="workflow.active" class="ml-2">Aktiv</span>
+
+                          <v-icon v-if="workflow.active === false" color="error"
+                            >mdi-close</v-icon
+                          >
+                          <span v-if="workflow.active === false" class="ml-2"
+                            >Inaktiv</span
+                          >
+                        </div>
+                      </v-fade-transition>
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-expansion-panel-header>
+              <v-expansion-panel-content class="mt-3">
+                <v-row>
+                  <v-col class="col-12">
+                    <v-switch
+                      v-model="workflow.active"
+                      color="primary"
+                      hide-details
+                      label="Workflow aktivieren"
+                      class="mt-2"
+                    ></v-switch>
+                  </v-col>
+                </v-row>
+                <v-row v-if="workflow.states" no-gutters class="mt-4">
+                  <v-col cols="2">
+                    <span class="text-caption"> Status für neue Buchungen</span>
+                  </v-col>
+                </v-row>
+
+                <div v-for="(status, idx) in workflow.states" :key="status.id">
+                  <v-row>
+                    <v-col cols="2">
+                      <v-checkbox
+                        v-model="workflow.defaultState"
+                        :value="workflow.states[idx].id"
+                        color="primary"
+                        :label="idx === 0 ? '' : ''"
+                        class="mt-2"
+                      ></v-checkbox>
+                    </v-col>
+                    <v-col class="col-2 d-flex align-center justify-center">
+                      <v-btn
+                        v-if="idx !== 0"
+                        color="primary"
+                        @click="moveUp(idx)"
+                        class="mt-2"
+                        icon
+                      >
+                        <v-icon>mdi-arrow-up</v-icon>
+                      </v-btn>
+                      <v-btn
+                        v-if="idx !== workflow.states.length - 1"
+                        color="primary"
+                        @click="moveDown(idx)"
+                        class="mt-2"
+                        icon
+                      >
+                        <v-icon>mdi-arrow-down</v-icon>
+                      </v-btn>
+                    </v-col>
+                    <v-col class="d-flex justify-center">
+                      <v-text-field
+                        class="mx-1"
+                        background-color="accent"
+                        hide-details
+                        filled
+                        dense
+                        label="Statusname"
+                        v-model="workflow.states[idx].name"
+                      ></v-text-field>
+                    </v-col>
+                    <v-col class="d-flex justify-center">
+                      <v-text-field
+                        class="mx-1"
+                        background-color="accent"
+                        hide-details
+                        filled
+                        dense
+                        label="Benachrichtigung an"
+                        v-model="workflow.states[idx].actions[0].sendTo"
+                      ></v-text-field>
+                    </v-col>
+                    <v-col class="col-auto d-flex align-center justify-center">
+                      <v-btn
+                        color="error"
+                        @click="removeStatus(idx)"
+                        icon
+                        depressed
+                      >
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                  <v-divider class="my-2" />
+                </div>
+                <div class="d-flex justify-center">
+                  <v-btn @click="addStatus" class="mt-4" outlined>
+                    Workflow-Status hinzufügen
+                  </v-btn>
+                </div>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
+        </v-col>
+      </v-row>
+    </v-form>
+
+    <div class="flex mt-12">
+      <v-spacer />
+      <v-btn
+        class="mb-5"
+        color="primary"
+        @click="submitChanges"
+        :loading="inProgress"
+      >
+        Speichern
+      </v-btn>
+    </div>
+  </v-container>
 </template>
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
+import { mapActions, mapGetters } from "vuex";
+import ApiWorkflowService from "@/services/api/ApiWorkflowService";
+import { v4 as uuidv4 } from "uuid";
 
 export default {
   name: "TenantEdit",
-  props: {
-    open: {
-      type: Boolean,
-      required: true,
-    },
-    tenant: {
-      type: Object,
-      required: true,
-    },
-  },
+  components: { MailKonfiguration },
   data() {
     return {
+      isLoading: false,
       showNoreplyPassword: false,
       showPaymentSecret: false,
       showParevaPassword: false,
+      showPmPaymentSecret: false,
       showClientSecret: false,
       showRefreshToken: false,
       valid: false,
@@ -928,6 +865,16 @@ export default {
         paymentSecret: "",
         active: false,
       },
+      pmPaymentApp: {
+        type: "payment",
+        id: "pmPayment",
+        title: "pmPayment",
+        paymentMerchantId: "",
+        paymentProjectId: "",
+        paymentSecret: "",
+        paymentMode: "",
+        active: false,
+      },
       invoiceApp: {
         type: "payment",
         id: "invoice",
@@ -939,36 +886,51 @@ export default {
         daysUntilPaymentDue: null,
         active: false,
       },
+      workflow: {
+        active: false,
+        defaultState: "",
+        states: [],
+      },
+      tenant: {},
     };
   },
   computed: {
-    openDialog: {
+    ...mapGetters({
+      tenantId: "tenants/currentTenantId",
+    }),
+    tenantMailConfig: {
       get() {
-        return this.open;
-      },
-    },
-    selectedTenant: {
-      get() {
-        return this.tenant;
+        return {
+          genericMailTemplate: this.tenant.genericMailTemplate,
+          noreplyMail: this.tenant.noreplyMail,
+          noreplyDisplayName: this.tenant.noreplyDisplayName,
+          noreplyHost: this.tenant.noreplyHost,
+          noreplyPort: this.tenant.noreplyPort,
+          noreplyUser: this.tenant.noreplyUser,
+          noreplyPassword: this.tenant.noreplyPassword,
+          noreplyUseGraphApi: this.tenant.noreplyUseGraphApi,
+          noreplyStarttls: this.tenant.noreplyStarttls,
+          noreplyGraphTenantId: this.tenant.noreplyGraphTenantId,
+          noreplyGraphClientId: this.tenant.noreplyGraphClientId,
+          noreplyGraphClientSecret: this.tenant.noreplyGraphClientSecret,
+        };
       },
     },
     parevaSystem: {
       get() {
         return (
-          this.selectedTenant.applications?.find(
-            (app) => app.id === "pareva"
-          ) || {}
+          this.tenant.applications?.find((app) => app.id === "pareva") || {}
         );
       },
     },
     eventCreationMode: {
       get() {
-        const mode = this.selectedTenant.defaultEventCreationMode;
+        const mode = this.tenant.defaultEventCreationMode;
         return mode === "simple";
       },
       set(value) {
         this.$set(
-          this.selectedTenant,
+          this.tenant,
           "defaultEventCreationMode",
           value ? "simple" : "detailed"
         );
@@ -976,27 +938,77 @@ export default {
     },
   },
   watch: {
-    tenant(val) {
-      this.initializeGiroCockpit();
-      this.initializeInvoiceApp();
-      this.originTenantId = val.id;
+    async tenantId(val) {
+      if (val) {
+        this.tenant = {};
+        await this.fetchTenant();
+      }
+    },
+    async tenant(val) {
+      if (val) {
+        this.initializeGiroCockpit();
+        this.initializeInvoiceApp();
+        this.initializePmPayment();
+        this.originTenantId = val.id;
+        await this.fetchWorkflow();
+      }
     },
   },
   methods: {
-    closeDialog() {
-      this.$emit("close");
+    ...mapActions({ addToast: "toasts/add" }),
+    async fetchTenant() {
+      try {
+        this.isLoading = true;
+        const response = await ApiTenantService.getTenant(this.tenantId);
+        this.tenant = response.data;
+      } catch (e) {
+        console.error(e);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    updateMailConfig(newConfig) {
+      this.tenant.noreplyDisplayName = newConfig.noreplyDisplayName;
+      this.tenant.noreplyMail = newConfig.noreplyMail;
+      this.tenant.noreplyDisplayName = newConfig.noreplyDisplayName;
+      this.tenant.noreplyHost = newConfig.noreplyHost;
+      this.tenant.noreplyPort = newConfig.noreplyPort;
+      this.tenant.noreplyUser = newConfig.noreplyUser;
+      this.tenant.noreplyPassword = newConfig.noreplyPassword;
+      this.tenant.noreplyUseGraphApi = newConfig.noreplyUseGraphApi;
+      this.tenant.noreplyStarttls = newConfig.noreplyStarttls;
+      this.tenant.noreplyGraphTenantId = newConfig.noreplyGraphTenantId;
+      this.tenant.noreplyGraphClientId = newConfig.noreplyGraphClientId;
+      this.tenant.noreplyGraphClientSecret = newConfig.noreplyGraphClientSecret;
     },
     async submitChanges() {
       if (this.$refs.form.validate()) {
         this.replacePaymentApps();
         this.inProgress = true;
-        delete this.selectedTenant._id;
 
         try {
-          await ApiTenantService.submitTenant(this.selectedTenant);
+          await ApiTenantService.submitTenant(this.tenant);
+          if (this.workflow.id) {
+            this.workflow = await ApiWorkflowService.updateWorkflow(
+              this.workflow,
+              this.tenant.id
+            );
+          } else {
+            this.workflow = await ApiWorkflowService.createWorkflow(
+              this.workflow,
+              this.tenant.id
+            );
+          }
           this.inProgress = false;
-          this.closeDialog();
+          await this.addToast({
+            message: "Änderungen wurden erfolgreich gespeichert.",
+            type: "success",
+          });
         } catch (e) {
+          await this.addToast({
+            message: "Fehler beim Speichern der Änderungen.",
+            type: "error",
+          });
           this.inProgress = false;
         }
       } else {
@@ -1024,6 +1036,25 @@ export default {
         };
       }
     },
+    initializePmPayment() {
+      const application = this.tenant.applications?.find(
+        (app) => app.id === "pmPayment"
+      );
+      if (application) {
+        this.pmPaymentApp = application;
+      } else {
+        this.pmPaymentApp = {
+          type: "payment",
+          id: "pmPayment",
+          title: "pmPayment",
+          paymentMerchantId: "",
+          paymentProjectId: "",
+          paymentSecret: "",
+          paymentMode: "",
+          active: false,
+        };
+      }
+    },
 
     initializeInvoiceApp() {
       const application = this.tenant.applications?.find(
@@ -1047,34 +1078,85 @@ export default {
     },
 
     replacePaymentApps() {
-      const appIds = this.selectedTenant.applications.map((app) => app.id);
+      const appIds = this.tenant.applications.map((app) => app.id);
       const invoiceAppExists = appIds.includes("invoice");
       const giroCockpitAppExists = appIds.includes("giroCockpit");
+      const pmPaymentAppExists = appIds.includes("pmPayment");
 
-      this.selectedTenant.applications = this.selectedTenant.applications.map(
-        (app) => {
-          if (app.id === "invoice") {
-            return this.invoiceApp;
-          } else if (app.id === "giroCockpit") {
-            return this.giroCockpitApp;
-          } else {
-            return app;
-          }
+      this.tenant.applications = this.tenant.applications.map((app) => {
+        if (app.id === "invoice") {
+          return this.invoiceApp;
+        } else if (app.id === "giroCockpit") {
+          return this.giroCockpitApp;
+        } else if (app.id === "pmPayment") {
+          return this.pmPaymentApp;
+        } else {
+          return app;
         }
-      );
+      });
 
       if (!invoiceAppExists) {
-        this.selectedTenant.applications.push(this.invoiceApp);
+        this.tenant.applications.push(this.invoiceApp);
       }
 
       if (!giroCockpitAppExists) {
-        this.selectedTenant.applications.push(this.giroCockpitApp);
+        this.tenant.applications.push(this.giroCockpitApp);
+      }
+
+      if (!pmPaymentAppExists) {
+        this.tenant.applications.push(this.pmPaymentApp);
       }
     },
+
+    async fetchWorkflow() {
+      const data = await ApiWorkflowService.getWorkflow(this.tenant.id);
+      if (data.id) {
+        this.workflow = data;
+      } else {
+        this.workflow = {
+          active: false,
+          states: [],
+          archive: [],
+          description: "",
+          name: "",
+          defaultState: "",
+          tenantId: this.tenant.id,
+        };
+      }
+    },
+
+    addStatus() {
+      this.workflow.states.push({
+        id: uuidv4(),
+        name: "",
+        tasks: [],
+        actions: [{ type: "email", sendTo: "" }],
+      });
+    },
+    removeStatus(idx) {
+      this.workflow.states.splice(idx, 1);
+    },
+    moveUp(idx) {
+      this.workflow.states.splice(
+        idx - 1,
+        0,
+        this.workflow.states.splice(idx, 1)[0]
+      );
+    },
+    moveDown(idx) {
+      this.workflow.states.splice(
+        idx + 1,
+        0,
+        this.workflow.states.splice(idx, 1)[0]
+      );
+    },
   },
-  mounted() {
+  async mounted() {
+    await this.fetchTenant();
     this.initializeGiroCockpit();
     this.initializeInvoiceApp();
+    this.initializePmPayment();
+    await this.fetchWorkflow();
   },
 };
 </script>

@@ -74,8 +74,8 @@
         }).format(item.priceEur)
       }}</span>
     </template>
-    <template v-slot:item.payMethod="{ item }">
-      <span>{{ translatePayMethod(item.payMethod) }}</span>
+    <template v-slot:item.paymentMethod="{ item }">
+      <span>{{ translatePayMethod(item.paymentMethod) }}</span>
     </template>
     <template v-slot:item.controls="{ item }">
       <span>
@@ -182,28 +182,46 @@ export default {
         { text: "Preis", value: "priceEur" },
         { text: "Status", value: "isCommitted" },
         { text: "Zahlung", value: "isPayed" },
-        { text: "Zahlungart", value: "payMethod" },
+        { text: "Zahlungart", value: "paymentMethod" },
         { text: "", value: "controls", sortable: false },
       ],
     };
   },
   methods: {
-    translatePayMethod(payMethod) {
-      switch (payMethod) {
-        case "CASH":
-          return "Bar";
-        case "TRANSFER":
-          return "Überweisung";
-        case "CREDIT_CARD":
-          return "Kreditkarte";
-        case "DEBIT_CARD":
-          return "EC-Karte";
-        case "PAYPAL":
-          return "PayPal";
-        case "OTHER":
-          return "Sonstiges";
-        default:
-          return "Unbekannt";
+    translatePayMethod(paymentMethod) {
+      switch (paymentMethod) {
+      case "CASH":
+        return "Bar";
+      case "TRANSFER":
+        return "Überweisung";
+      case "CREDIT_CARD":
+        return "Kreditkarte";
+      case "DEBIT_CARD":
+        return "EC-Karte";
+      case "PAYPAL":
+        return "PayPal";
+      case "OTHER":
+        return "Sonstiges";
+      case "GIROPAY":
+        return "Giropay";
+      case "APPLE_PAY":
+        return "Apple Pay";
+      case "GOOGLE_PAY":
+        return "Google Pay";
+      case "EPS":
+        return "EPS";
+      case "IDEAL":
+        return "iDEAL";
+      case "MAESTRO":
+        return "Maestro";
+      case "PAYDIRECT":
+        return "paydirekt";
+      case "SOFORT":
+        return "SOFORT-Überweisung";
+      case "BLUECODE":
+        return "Bluecode";
+      default:
+        return "Unbekannt";
       }
     },
     onOpenBooking(bookingId) {

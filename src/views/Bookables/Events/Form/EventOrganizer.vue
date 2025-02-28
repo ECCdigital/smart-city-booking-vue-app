@@ -83,7 +83,7 @@
               </v-col>
               <v-col cols="12">
                 <ChooseFile
-                  :tenant="tenant.id"
+                  :tenant-id="tenantId"
                   v-model="contactPersonImage"
                   images-only
                   background-color="accent"
@@ -152,7 +152,7 @@
                     </v-col>
                     <v-col cols="12" md="6">
                       <ChooseFile
-                        :tenant="tenant.id"
+                        :tenant-id="tenantId"
                         v-model="speaker.image"
                         images-only
                         background-color="accent"
@@ -250,7 +250,7 @@ export default {
     ...mapGetters({
       form: "events/form",
       speakers: "events/speakers",
-      tenant: "tenants/tenant",
+      tenantId: "tenants/currentTenantId",
     }),
     name: {
       get() {

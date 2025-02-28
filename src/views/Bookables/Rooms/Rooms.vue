@@ -112,6 +112,7 @@ export default {
   computed: {
     ...mapGetters({
       loading: "loading/isLoading",
+      tenantId: "tenants/currentTenantId",
     }),
     createDisabled() {
       return !this.BookablePermissionService.allowCreate();
@@ -134,6 +135,12 @@ export default {
       }
 
       return this.api.rooms;
+    },
+  },
+  watch: {
+    tenantId() {
+      this.fetchRooms();
+      this.fetchFilterTags();
     },
   },
   methods: {

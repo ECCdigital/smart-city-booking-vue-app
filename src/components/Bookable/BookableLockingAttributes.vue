@@ -5,7 +5,7 @@ import { mapActions } from "vuex";
 export default {
   name: "BookableLockingAttributes",
   props: {
-    tenant: {
+    tenantId: {
       type: String,
       required: true,
     },
@@ -44,7 +44,7 @@ export default {
     }),
     async fetchLockerSystems() {
       try {
-        const tenant = await ApiTenantService.getTenant(this.tenant);
+        const tenant = await ApiTenantService.getTenant(this.tenantId);
         this.lockerSystems = tenant.data.applications?.filter(
           (app) => app.type === "locker" && app.active
         );

@@ -91,7 +91,7 @@ export default {
     },
 
     signOut(submit) {
-      ApiAuthService.logout(this.tenantId).then((response) => {
+      ApiAuthService.logout().then((response) => {
         if (response.status === 200) {
           this.$emit("update-me");
 
@@ -107,7 +107,7 @@ export default {
   },
   computed: {
     ...mapGetters({
-      tenant: "tenants/tenant",
+      tenant: "tenants/currentTenant",
       user: "user/user",
     }),
   },

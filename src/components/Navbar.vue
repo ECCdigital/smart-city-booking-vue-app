@@ -10,7 +10,7 @@
       <img
         alt="Smart City Booking"
         src="@/assets/app-logo.png"
-        style="max-height: 50px; width: auto; max-width: 250px;"
+        style="max-height: 50px; width: auto; max-width: 250px"
       />
       <v-spacer></v-spacer>
       <span v-if="isProduction !== 'true'" class="font-weight-bold"
@@ -52,29 +52,26 @@
             <v-list-item
               v-for="(item, i) in profileItems"
               :key="i"
-              :to="item.link"
+              :to="{ name: item.link }"
             >
               <v-list-item-icon>
                 <v-icon>{{ item.icon }}</v-icon>
               </v-list-item-icon>
               <v-list-item-content>
-                <v-list-item-title :href="item.link">{{
-                  item.title
-                }}</v-list-item-title>
+                <v-list-item-title>{{ item.title }}</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
-            <v-list-item>
+            <v-list-item @click="logout">
               <v-list-item-icon>
                 <v-icon> mdi-logout </v-icon>
               </v-list-item-icon>
               <v-list-item-content>
-                <v-list-item-title @click="logout">Abmelden</v-list-item-title>
+                <v-list-item-title>Abmelden</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
           </v-list-item-group>
         </v-list>
       </v-menu>
-
     </v-app-bar>
 
     <v-navigation-drawer
@@ -85,19 +82,26 @@
     >
       <div class="v-navigation-drawer__content">
         <v-list dense nav class="py-0" rounded>
-          <v-list-item class="my-2">
-            <v-list-item-avatar>
-              <v-icon class="primary" color="white">mdi-home-account</v-icon>
-            </v-list-item-avatar>
-            <v-list-item-content>
-              <v-list-item-title
-                class="subtitle-1 font-weight-medium primary--text"
-                >{{ tenant.name }}</v-list-item-title
-              >
-            </v-list-item-content>
-          </v-list-item>
+          <v-select
+            rounded
+            dense
+            filled
+            prepend-inner-icon="mdi-home-account"
+            background-color="accent"
+            v-model="currentTenant"
+            :items="tenants"
+            item-text="name"
+            item-value="id"
+            hide-details
+            class=" my-2 text-truncate"
+          >
+            <template v-slot:prepend-item>
+              <v-list-item class="my-2"> Mandant auswählen: </v-list-item>
+              <v-divider></v-divider>
+            </template>
+          </v-select>
 
-          <v-divider class="mt-2 mb-2"></v-divider>
+          <v-divider></v-divider>
           <div v-for="parentItem in navItems" :key="parentItem.header">
             <v-subheader
               v-if="parentItem.header"
@@ -109,7 +113,7 @@
               :key="item.title"
               link
               class="my-2"
-              :to="item.link"
+              :to="{ name: item.link }"
               exact
               active-class="active-item secondary"
             >
@@ -140,16 +144,16 @@
 import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
-import { RolePermission } from "@/entities/role";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   data: () => ({
     drawer: false,
-    isProduction: process.env.VUE_APP_IS_PRODUCTION ,
+    isProduction: process.env.VUE_APP_IS_PRODUCTION,
     profileItems: [
       {
         title: "Einstellungen",
-        link: "einstellungen",
+        link: "settings",
         icon: "mdi-cog-outline",
       },
     ],
@@ -158,44 +162,36 @@ export default {
         header: null,
         pages: [
           {
-            title: "Übersicht",
+            title: "Mandanten",
             link: "dashboard",
-            icon: "mdi-view-dashboard-outline",
+            icon: "mdi-view-dashboard",
+            showAlways: true,
           },
         ],
       },
       {
-        header: "Verwaltung",
+        header: "Mandant",
         pages: [
           {
-            title: "Mandanten",
-            link: "mandanten",
+            title: "Mandant verwalten",
+            link: "tenant",
             icon: "mdi-domain",
             interfaceName: "tenants",
+            context: "tenant",
           },
           {
-            title: "Benutzer",
-            link: "benutzer",
-            icon: "mdi-account-outline",
-            interfaceName: "users",
-          },
-          {
-            title: "Rollen",
-            link: "rollen",
+            title: "Mandant Benutzer",
+            link: "user",
             icon: "mdi-account-group-outline",
+            interfaceName: "users",
+            context: "tenant",
+          },
+          {
+            title: "Mandant Rollen",
+            link: "roles",
+            icon: "mdi-account-key-outline",
             interfaceName: "roles",
-          },
-          {
-            title: "Buchungen",
-            link: "buchungen",
-            icon: "mdi-book-outline",
-            interfaceName: "bookings",
-          },
-          {
-            title: "Gutscheine",
-            link: "gutscheine",
-            icon: "mdi-ticket-percent-outline",
-            interfaceName: "coupons",
+            context: "tenant",
           },
         ],
       },
@@ -203,34 +199,76 @@ export default {
         header: "Buchungsplattform",
         pages: [
           {
+            title: "Buchungen",
+            link: "bookings",
+            icon: "mdi-book-outline",
+            interfaceName: "bookings",
+            context: "tenant",
+          },
+          {
+            title: "Gutscheine",
+            link: "coupons",
+            icon: "mdi-ticket-percent-outline",
+            interfaceName: "coupons",
+            context: "tenant",
+          },
+          {
             title: "Veranstaltungsorte",
-            link: "veranstaltungsorte",
+            link: "event-locations",
             icon: "mdi-map-marker-outline",
             interfaceName: "locations",
+            context: "tenant",
           },
           {
             title: "Räume",
-            link: "raeume",
+            link: "rooms",
             icon: "mdi-door",
             interfaceName: "rooms",
+            context: "tenant",
           },
           {
             title: "Ressourcen",
-            link: "ressourcen",
+            link: "resources",
             icon: "mdi-hammer-wrench",
             interfaceName: "resources",
+            context: "tenant",
           },
           {
             title: "Tickets",
             link: "tickets",
             icon: "mdi-ticket",
             interfaceName: "tickets",
+            context: "tenant",
           },
           {
             title: "Veranstaltungen",
-            link: "veranstaltungen",
+            link: "events",
             icon: "mdi-calendar",
             interfaceName: "events",
+            context: "tenant",
+          },
+        ],
+      },
+      {
+        header: "System",
+        pages: [
+          {
+            title: "Instanz verwalten",
+            link: "instances",
+            icon: "mdi-home-edit-outline",
+            interfaceName: "instance",
+          },
+          {
+            title: "Mandanten",
+            link: "instance-tenants",
+            icon: "mdi-domain",
+            interfaceName: "instance",
+          },
+          {
+            title: "Benutzer",
+            link: "instance-users",
+            icon: "mdi-account-group-outline",
+            interfaceName: "instance",
           },
         ],
       },
@@ -239,7 +277,7 @@ export default {
         pages: [
           {
             title: "Einstellungen",
-            link: "einstellungen",
+            link: "settings",
             icon: "mdi-cog-outline",
             interfaceName: "settings",
             showAlways: true,
@@ -247,17 +285,24 @@ export default {
         ],
       },
     ],
+    //currentTenant: "",
+    tenants: [],
   }),
   components: {},
   methods: {
     ...mapActions({
       addToast: "toasts/add",
       deleteUser: "user/delete",
+      selectTenant: "tenants/select",
     }),
+    resetStores() {
+      this.$store.dispatch('reset');
+    },
     logout() {
       ApiAuthService.logout()
         .then(() => {
           this.addToast(ToastService.createToast("logout.success", "success"));
+          this.resetStores();
           this.$router.push({ name: "login" });
         })
         .finally(() => {
@@ -267,13 +312,26 @@ export default {
     darkMode() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
     },
+    fetchTenants() {
+      ApiTenantService.getTenants(true).then((response) => {
+        this.tenants = response.data;
+      });
+    },
   },
   computed: {
     ...mapGetters({
       user: "user/user",
-      tenant: "tenants/tenant",
       isAuthorized: "user/isAuthorized",
+      getCurrentTenant: "tenants/currentTenantId",
     }),
+    currentTenant: {
+      get: function () {
+        return this.getCurrentTenant;
+      },
+      set: function (newValue) {
+        this.selectTenant(newValue);
+      },
+    },
     navItems() {
       // reduce items to only those that are allowed for the current user
       return this.items
@@ -284,7 +342,10 @@ export default {
               if (page.showAlways) {
                 return true;
               }
-              return this.isAuthorized(page.interfaceName);
+              return (
+                this.isAuthorized(page.interfaceName) &&
+                (page.context !== "tenant" || this.getCurrentTenant)
+              );
             }),
           };
         })
@@ -295,6 +356,7 @@ export default {
   },
   mounted() {
     this.drawer = !this.$vuetify.breakpoint.mdAndDown;
+    this.fetchTenants();
   },
 };
 </script>

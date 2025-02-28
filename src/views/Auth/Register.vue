@@ -1,6 +1,6 @@
 <template>
-  <div class="text-center">
-    <v-card outlined max-width="500" class="mx-auto mt-sm-15">
+  <v-container class="text-center">
+    <v-card outlined max-width="500" class="mx-auto mt-sm-10">
       <v-card-text class="text-center pa-10">
         <v-img src="@/assets/app-logo.png" max-width="200" class="mx-auto" />
 
@@ -8,69 +8,78 @@
         <p class="subtitle-2 mb-10">Erstellen Sie einen Account.</p>
 
         <v-form ref="form">
-          <v-select
-            outlined
-            hide-details
-            v-model="tenant"
-            :items="tenants"
-            label="Mandant"
-            item-text="name"
-            item-value="id"
-            placeholder="Mandant auswählen"
-            class="mb-5"
-            :rules="tenantRules"
-          ></v-select>
-          <v-text-field
-            outlined
-            label="Email Adresse"
-            placeholder="jemand@domain.de"
-            hide-details
-            class="mb-5"
-            v-model="id"
-            :rules="emailRules"
-          ></v-text-field>
-          <v-text-field
-            outlined
-            hide-details
-            label="Vorname"
-            placeholder="John"
-            class="mb-5"
-            v-model="firstName"
-            :rules="firstNameRules"
-          ></v-text-field>
-          <v-text-field
-            outlined
-            hide-details
-            label="Nachname"
-            placeholder="Doe"
-            class="mb-5"
-            v-model="lastName"
-            :rules="lastNameRules"
-          ></v-text-field>
+          <div class="d-flex flex-row">
+            <v-text-field
+              outlined
+              hide-details
+              label="Vorname"
+              placeholder="John"
+              prepend-inner-icon="mdi-account"
+              class="mb-5 mr-2"
+              v-model="firstName"
+              :rules="firstNameRules"
+            ></v-text-field>
+            <v-text-field
+              outlined
+              hide-details
+              label="Nachname"
+              placeholder="Doe"
+              prepend-inner-icon="mdi-account"
+              class="mb-5"
+              v-model="lastName"
+              :rules="lastNameRules"
+            ></v-text-field>
+          </div>
           <v-text-field
             outlined
             hide-details
             label="Firma"
             placeholder="Company"
+            prepend-inner-icon="mdi-home"
             class="mb-5"
             v-model="company"
           ></v-text-field>
           <v-text-field
             outlined
-            label="Passwort"
-            placeholder="Ihr Passwort"
-            aria-details="password"
-            v-model="password"
-            :type="showPassword ? 'text' : 'password'"
-            :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-            @click:append="showPassword = !showPassword"
-            :rules="passwordRules"
+            label="Email Adresse"
+            placeholder="jemand@domain.de"
+            prepend-inner-icon="mdi-email"
+            hide-details
+            class="mb-5"
+            v-model="id"
+            :rules="emailRules"
           ></v-text-field>
+          <div class="d-flex flex-row">
+            <v-text-field
+              outlined
+              label="Passwort"
+              placeholder="Ihr Passwort"
+              prepend-inner-icon="mdi-key"
+              aria-details="password"
+              class="mr-2"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+              @click:append="showPassword = !showPassword"
+              :rules="passwordRules"
+              validate-on="lazy input"
+            ></v-text-field>
+            <v-text-field
+              outlined
+              label="Passwort wiederholen"
+              placeholder="Ihr Passwort"
+              prepend-inner-icon="mdi-key"
+              aria-details="password"
+              v-model="passwordRepeat"
+              :type="showPassword ? 'text' : 'password'"
+              :rules="passwordCheckRule"
+            ></v-text-field>
+          </div>
 
           <ContactInformation />
         </v-form>
       </v-card-text>
-      <v-card-actions class="px-10 pb-10">
+      <v-card-actions class="px-10 pb-5">
         <v-btn to="/login" outlined>Konto vorhanden?</v-btn>
         <v-spacer></v-spacer>
         <v-btn color="primary" elevation="0" @click="register"
@@ -81,21 +90,39 @@
 
     <v-card elevation="0" max-width="500" class="mx-auto mt-2">
       <v-card-text class="text-right pa-0">
-        <router-link to="/datenschutz">Datenschutz</router-link> |
-        <router-link to="/nutzungsbedingungen">Nutzungsbedingungen</router-link>
+        <a
+          :href="'https://' + Utils.sanitizeUrl(instance?.dataProtectionUrl)"
+          target="_blank"
+        >Datenschutz</a
+        >
+        |
+        <a
+          :href="'https://' + Utils.sanitizeUrl(instance?.legalNoticeUrl)"
+          target="_blank"
+        >Nutzungsbedingungen</a
+        >
       </v-card-text>
     </v-card>
-  </div>
+  </v-container>
 </template>
 
 <script>
 import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
-import { mapActions } from "vuex";
+import {mapActions, mapGetters} from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ContactInformation from "@/components/ContactInformation.vue";
+import Utils from "@/utils/Utils";
 
 export default {
+  computed: {
+    Utils() {
+      return Utils
+    },
+    ...mapGetters({
+      instance: "instance/instance",
+    }),
+  },
   components: { ContactInformation },
   data() {
     return {
@@ -105,6 +132,7 @@ export default {
       company: "",
       tenant: "",
       password: "",
+      passwordRepeat: "",
       showPassword: false,
       tenants: [],
       tenantRules: [(v) => !!v || "Mandant ist erforderlich"],
@@ -117,6 +145,9 @@ export default {
       passwordRules: [
         (v) => !!v || "Passwort ist erforderlich",
         (v) => v.length >= 8 || "Passwort muss mindestens 8 Zeichen lang sein",
+      ],
+      passwordCheckRule: [
+        (v) => v === this.password || "Passwörter stimmen nicht überein"
       ],
     };
   },

@@ -260,7 +260,7 @@ export default {
 
   computed: {
     ...mapGetters({
-      tenant: "tenants/tenant",
+      tenant: "tenants/currentTenant",
       user: "user/user",
     }),
     isNextButtonDisabled() {

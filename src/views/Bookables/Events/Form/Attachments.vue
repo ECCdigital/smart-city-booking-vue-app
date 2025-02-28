@@ -3,7 +3,7 @@
     <v-col cols="12">
       <validation-observer ref="observer" v-slot="{ invalid }">
         <v-container>
-          <FileList :tenant="tenant.id" v-model="attachments" forced-subdirectory="events/attachments"></FileList>
+          <FileList :tenant="tenantId" v-model="attachments" forced-subdirectory="events/attachments"></FileList>
         </v-container>
         <Pager :invalid="invalid" />
       </validation-observer>
@@ -31,7 +31,7 @@ export default {
   computed: {
     ...mapGetters({
       attachments: "events/attachments",
-      tenant: "tenants/tenant",
+      tenantId: "tenants/currentTenantId",
     }),
     attachments: {
       get() {

@@ -2,24 +2,42 @@
   <AdminLayout>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <v-btn-toggle v-model="currentView" mandatory rounded class="mb-4">
-          <v-btn
-            value="list"
-            :color="currentView === 'list' ? 'secondary' : ''"
-            :class="currentView === 'list' ? 'active-button' : ''"
+        <div class="d-flex align-center mb-3 justify-space-between">
+          <v-btn-toggle
+            v-model="currentView"
+            mandatory
+            rounded
+            active-class="active-button"
           >
-            <v-icon left> mdi-list-box-outline </v-icon>
-            Listenansicht</v-btn
-          >
-          <v-btn
-            value="calendar"
-            :color="currentView === 'calendar' ? 'secondary' : ''"
-            :class="currentView === 'calendar' ? 'active-button' : ''"
-          >
-            <v-icon left> mdi-calendar-blank-outline </v-icon>
-            Kalenderansicht</v-btn
-          >
-        </v-btn-toggle>
+            <v-btn value="list">
+              <v-icon left> mdi-list-box-outline </v-icon>
+              Liste
+            </v-btn>
+            <v-btn value="calendar">
+              <v-icon left> mdi-calendar-blank-outline </v-icon>
+              Kalender
+            </v-btn>
+            <v-btn v-if="workflow.active" value="kanban">
+              <v-icon left> mdi-table-column </v-icon>
+              Kanban
+            </v-btn>
+          </v-btn-toggle>
+
+          <v-tooltip v-if="currentView === 'kanban'" bottom>
+            <template v-slot:activator="{ on }">
+              <v-btn
+                v-on="on"
+                fab
+                small
+                class="ml-2 elevation-0 active-button"
+                @click="showBacklog = !showBacklog"
+              >
+                <v-icon>mdi-tray-full</v-icon>
+              </v-btn>
+            </template>
+            <span>Backlog ein-/ausblenden</span>
+          </v-tooltip>
+        </div>
 
         <v-text-field
           v-model="searchTerm"
@@ -57,6 +75,18 @@
             @open-delete-dialog="onOpenDeleteDialog"
           ></BookingOverviewCalendar>
         </div>
+
+        <div v-else-if="currentView === 'kanban'">
+          <BookingKanban
+            :bookings="filteredBookings"
+            :loading="loading"
+            :show-backlog="showBacklog"
+            @open-booking="onOpenBooking"
+            @open-edit-booking="onOpenEditBooking"
+            @commit-booking="commitBooking"
+          >
+          </BookingKanban>
+        </div>
       </v-col>
     </v-row>
     <v-btn
@@ -75,6 +105,7 @@
       :booking="selectedBooking"
       :open="openEditDialog"
       :bookables="bookables"
+      :workflow="workflow"
       @close="onCloseEditDialog"
     />
     <BookingDeleteConformationDialog
@@ -102,14 +133,16 @@ import Fuse from "fuse.js";
 import AdminLayout from "@/layouts/Admin.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiBookingService from "@/services/api/ApiBookingService";
-import BookingEdit from "@/components/Booking/BookingEdit";
-import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteConformationDialog";
-import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog";
+import BookingEdit from "@/components/Booking/BookingEdit.vue";
+import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteConformationDialog.vue";
+import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import BookingDetails from "@/components/Booking/BookingDetails.vue";
 import BookingOverviewCalendar from "@/components/Booking/BookingOverviewCalendar.vue";
 import BookingTable from "@/components/Booking/BookingTable.vue";
+import BookingKanban from "@/components/Booking/BookingKanban.vue";
+import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 
 export default {
   components: {
@@ -120,9 +153,11 @@ export default {
     BookingRejectConformationDialog,
     AdminLayout,
     BookingEdit,
+    BookingKanban,
   },
   data() {
     return {
+      showBacklog: false,
       fuse: null,
       value: "",
       searchTerm: "",
@@ -154,12 +189,13 @@ export default {
       bookables: [],
       openBookingDialog: false,
       currentView: "list",
+      workflow: {},
     };
   },
   computed: {
     ...mapGetters({
       loading: "loading/isLoading",
-      tenant: "tenants/tenant",
+      tenantId: "tenants/currentTenantId",
     }),
     BookingPermissionService() {
       return BookingPermissionService;
@@ -201,6 +237,12 @@ export default {
 
       const results = this.fuse.search(searchQuery);
       return results.map((result) => result.item);
+    },
+  },
+  watch: {
+    tenantId() {
+      this.fetchBookings();
+      this.fetchBookables();
     },
   },
   methods: {
@@ -270,7 +312,7 @@ export default {
         });
     },
     rejectBooking(id) {
-      ApiBookingService.rejectBooking(id, this.tenant.id)
+      ApiBookingService.rejectBooking(id, this.tenantId)
         .then((response) => {
           if (response.status === 200) {
             this.fetchBookings();
@@ -325,26 +367,32 @@ export default {
     },
     onOpenCreateBookings() {
       this.selectedBooking = {
-        tenant: this.tenant,
+        id: null,
+        tenant: this.tenantId,
         assignedUserId: null,
-        timeBegin: Date.now(),
-        timeEnd: Date.now(),
+        attachments: [],
         bookableItems: [],
-        couponCode: null,
-        name: null,
-        company: null,
-        street: null,
-        zipCode: null,
-        location: null,
-        email: null,
-        phone: null,
         comment: null,
-        priceEur: 0,
+        company: null,
+        couponCode: null,
         isCommitted: false,
         isPayed: false,
-        attachmentStatus: [],
+        location: null,
+        lockerInfo: null,
+        mail: null,
+        name: null,
+        paymentProvider: null,
+        paymentMethod: null,
+        phone: null,
+        priceEur: 0,
+        street: null,
+        timeBegin: Date.now(),
+        timeCreated: Date.now(),
+        timeEnd: Date.now(),
+        vatIncludedEur: null,
+        zipCode: null,
       };
-      this.selectedBooking.tenant = this.tenant.id;
+      this.selectedBooking.tenantId = this.tenantId;
       this.openEditDialog = true;
     },
     translatePayMethod(value) {
@@ -421,19 +469,24 @@ export default {
       };
       this.fuse = new Fuse(this.api.bookings, options);
     },
+    async fetchWorkflow() {
+      this.workflow = await ApiWorkflowService.getWorkflowStates();
+    },
   },
   created() {
     this.fetchBookings();
     this.fetchBookables();
+    this.fetchWorkflow();
   },
 };
 </script>
 
-<style scoped lanf="scss">
+<style scoped lang="scss">
 .search-field {
   border-radius: 15px;
 }
-.active-button {
+::v-deep .active-button {
   color: black !important;
+  background-color: var(--v-secondary-base) !important;
 }
 </style>

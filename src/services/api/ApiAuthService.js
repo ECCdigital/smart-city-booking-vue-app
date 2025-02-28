@@ -1,13 +1,11 @@
-import store from "@/store";
-
 export default {
-  login(tenant, id, password) {
+  login(userId, password) {
     const body = {
-      id: id,
+      id: userId,
       password: password,
     };
 
-    return ApiClient.post(`auth/${tenant}/signin`, body, {
+    return ApiClient.post("auth/signin", body, {
       withCredentials: true,
     });
   },
@@ -20,35 +18,30 @@ export default {
       password: password,
     };
 
-    return ApiClient.post(`auth/${tenant}/signup`, body, {
+    return ApiClient.post("auth/signup", body, {
       withCredentials: true,
     }).then(async (response) => {
       return response;
     });
   },
-  logout(tenant) {
-    const currentTenant = tenant || store.getters["tenants/tenant"].id;
-    return ApiClient.get(`auth/${currentTenant}/signout`, {
+  logout() {
+    return ApiClient.get("auth/signout", {
       withCredentials: true,
     });
   },
-  me(tenant, populatePermissions) {
-    let currentTenant = tenant || store.getters["tenants/tenant"].id;
+  me(populatePermissions) {
     return ApiClient.get(
-      `auth/${currentTenant}/me?populatePermissions=${
-        populatePermissions ? 1 : 0
-      }`,
+      `auth/me?populatePermissions=${populatePermissions ? 1 : 0}`,
       { withCredentials: true }
     );
   },
-  resetPassword(id, password, tenantId) {
-    const currentTenant = tenantId || store.getters["tenants/tenant"].id;
+  resetPassword(id, password) {
     const body = {
       id: id,
       password: password,
     };
 
-    return ApiClient.post(`auth/${currentTenant}/resetpassword`, body, {
+    return ApiClient.post("auth/resetpassword", body, {
       withCredentials: true,
     });
   },
@@ -59,7 +52,7 @@ export default {
     };
 
     return ApiClient.post(
-      `auth/${store.getters["tenants/tenant"].id}/reset`,
+      "auth/reset",
       body,
       { withCredentials: true }
     );

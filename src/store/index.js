@@ -7,6 +7,7 @@ import toasts from "./modules/toasts";
 import events from "./modules/events";
 import bookables from "./modules/bookables";
 import loading from "./modules/loading";
+import instance from "./modules/instance";
 
 Vue.use(Vuex);
 
@@ -17,6 +18,17 @@ export default new Vuex.Store({
     toasts,
     events,
     bookables,
-    loading
+    loading,
+    instance
   },
+  actions: {
+    reset({ dispatch }) {
+      dispatch("user/reset");
+      dispatch("tenants/reset");
+      dispatch("toasts/reset");
+      dispatch("events/reset");
+      dispatch("bookables/reset");
+      dispatch("loading/reset");
+    }
+  }
 });
