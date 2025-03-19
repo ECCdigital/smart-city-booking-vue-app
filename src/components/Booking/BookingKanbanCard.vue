@@ -1,5 +1,5 @@
 <template>
-  <v-card class="mb-2" style="max-width: 450px">
+  <v-card class="mb-2 cursor-pointer" style="max-width: 350px">
     <v-app-bar flat>
       <v-toolbar-title class="text-h6 pl-0">
         <div v-if="element.bookingItem">
@@ -159,4 +159,10 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+</style>
