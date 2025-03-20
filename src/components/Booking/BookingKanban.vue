@@ -149,6 +149,7 @@ export default {
           newIndex: evt.added.newIndex,
         });
         this.backlog = await ApiWorkflowService.getBacklog();
+        this.$emit("update:booking", evt.added.element.id)
       }
       if (evt.moved) {
         this.workflow = await ApiWorkflowService.updateTask({
@@ -158,6 +159,7 @@ export default {
           newIndex: evt.moved.newIndex,
         });
         this.backlog = await ApiWorkflowService.getBacklog();
+        this.$emit("update:booking", evt.added.element.id)
       }
     },
     archiveTask: async function (taskId) {

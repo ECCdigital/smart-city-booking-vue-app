@@ -83,6 +83,7 @@
           @open-booking="onOpenBooking"
           @open-edit-booking="onOpenEditBooking"
           @commit-booking="commitBooking"
+          @update:booking="fetchBooking"
         >
         </BookingKanban>
       </div>
@@ -294,6 +295,21 @@ export default {
         .finally(() => {
           this.stopLoading("fetch-bookings");
           this.initializeFuse();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    async fetchBooking(id) {
+      await ApiBookingService.getBooking(id, undefined, true)
+        .then((response) => {
+          const booking = response.data;
+          const index = this.api.bookings.findIndex((b) => b.id === id);
+          if (index !== -1) {
+            this.api.bookings[index] = booking;
+          } else {
+            this.api.bookings.push(booking);
+          }
         })
         .catch((error) => {
           console.log(error);
