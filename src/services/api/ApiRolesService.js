@@ -2,7 +2,7 @@ import store from "@/store";
 
 export default {
   getRoles() {
-    return ApiClient.get(`api/roles`, { withCredentials: true });
+    return ApiClient.get("api/roles", { withCredentials: true });
   },
   getTenantRoles() {
     const t = store.getters["tenants/currentTenantId"];
