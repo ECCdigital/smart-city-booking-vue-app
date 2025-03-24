@@ -37,6 +37,7 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
       updateUser: "user/update",
+      updateNextUrl: "authStore/setNextUrl",
     }),
     signin() {
       if (!this.$refs.loginForm.validate()) {
@@ -83,6 +84,9 @@ export default {
         });
     },
     sso() {
+      if(this.$route.fullPath.includes("checkout")) {
+        this.updateNextUrl(this.$route.fullPath);
+      }
       this.$router.push({ name: "sso" });
     },
     toStep(step) {
@@ -100,20 +104,18 @@ export default {
       <p class="subtitle-1">Mit Ihrem Account anmelden.</p>
       <v-form ref="loginForm" @keydown.enter="signin">
         <v-text-field
-          dense
-          filled
+          outlined
           hide-details
           label="Email Adresse"
           placeholder="jemand@domain.de"
           class="mb-5"
           v-model="id"
           :rules="[rules.required, rules.email]"
-          prepend-icon="mdi-email"
+          prepend-inner-icon="mdi-email"
           @keydown.enter="signin"
         ></v-text-field>
         <v-text-field
-          dense
-          filled
+          outlined
           hide-details
           label="Passwort"
           placeholder="Ihr Passwort"
@@ -122,7 +124,7 @@ export default {
           :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
           @click:append="showPassword = !showPassword"
           :rules="[rules.required]"
-          prepend-icon="mdi-lock"
+          prepend-inner-icon="mdi-lock"
           @keydown.enter="signin"
         ></v-text-field>
       </v-form>
@@ -149,8 +151,9 @@ export default {
       </v-row>
     </v-card-text>
     <v-card-actions v-if="ssoActive" class="px-4">
-      <v-btn color="primary" block elevation="0" @click="sso"
-      >Mit Keycloak anmelden</v-btn
+      <v-btn  block elevation="0" @click="sso"
+      ><v-img src="@/assets/keycloak.svg" max-width="100" class="mx-auto" alt="Keycloak"
+      /></v-btn
       >
     </v-card-actions>
   </v-card>

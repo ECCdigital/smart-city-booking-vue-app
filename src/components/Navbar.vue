@@ -296,14 +296,14 @@ export default {
       selectTenant: "tenants/select",
     }),
     resetStores() {
-      this.$store.dispatch('reset');
+      this.$store.dispatch("reset");
     },
     logout() {
       ApiAuthService.logout()
         .then(() => {
           this.addToast(ToastService.createToast("logout.success", "success"));
           this.resetStores();
-          this.$router.push({ name: "login" });
+          window.location.href = "/";
         })
         .finally(() => {
           this.deleteUser();

@@ -892,7 +892,7 @@ export default {
     },
 
     async fetchRoles() {
-      await ApiRolesService.getRoles().then((result) => {
+      await ApiRolesService.getTenantRoles().then((result) => {
         this.availableRoles = result?.data;
       });
     },
