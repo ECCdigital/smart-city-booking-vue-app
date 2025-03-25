@@ -25,40 +25,59 @@ export default {
       withCredentials: withCredentials,
     });
   },
-  addTenantUser(tenantId, userId, roles) {
-    return ApiClient.post(
+  async addTenantUser(tenantId, userId, roles) {
+    const response = await ApiClient.post(
       `/api/tenants/${tenantId}/add-user`,
-      { userId, roles },
-      { withCredentials: true }
+      {userId, roles},
+      {withCredentials: true}
     );
+    return response.data;
   },
-  removeTenantUser(tenantId, userId) {
-    return ApiClient.post(
+  async removeTenantUser(tenantId, userId) {
+    const response = await ApiClient.post(
       `/api/tenants/${tenantId}/remove-user`,
-      { userId },
-      { withCredentials: true }
+      {userId},
+      {withCredentials: true}
     );
+    return response.data;
   },
-  removeTenantUserRole(tenantId, userId, roleId) {
-    return ApiClient.post(
+  async getTenantUsers(tenantId) {
+    const response = await ApiClient.get(`api/${tenantId}/users`, {
+      withCredentials: true,
+    });
+    return response.data;
+  },
+  async removeTenantUserRole(tenantId, userId, roleId) {
+    const response = await ApiClient.post(
       `/api/tenants/${tenantId}/remove-user-role`,
-      { userId, roleId },
-      { withCredentials: true }
+      {userId, roleId},
+      {withCredentials: true}
     );
+    return response.data;
   },
-  addTenantOwner(tenantId, userId) {
-    return ApiClient.post(
+  async addTenantOwner(tenantId, userId) {
+    const response = await ApiClient.post(
       `/api/tenants/${tenantId}/add-owner`,
-      { userId },
-      { withCredentials: true }
+      {userId},
+      {withCredentials: true}
     );
+    return response.data;
   },
-  removeTenantOwner(tenantId, userId) {
-    return ApiClient.post(
+  async removeTenantOwner(tenantId, userId) {
+    const response = await ApiClient.post(
       `/api/tenants/${tenantId}/remove-owner`,
-      { userId },
-      { withCredentials: true }
+      {userId},
+      {withCredentials: true}
     );
+    return response.data;
+  },
+  async editTenantUserRoles(tenantId, userId, roles) {
+    const response = await ApiClient.post(
+      `/api/tenants/${tenantId}/edit-user-roles`,
+      {userId, roles},
+      {withCredentials: true}
+    );
+    return response.data;
   },
   async tenantCountCheck() {
     return (

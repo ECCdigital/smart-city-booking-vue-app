@@ -93,7 +93,7 @@
             item-text="name"
             item-value="id"
             hide-details
-            class=" my-2 text-truncate"
+            class="my-2 text-truncate"
           >
             <template v-slot:prepend-item>
               <v-list-item class="my-2"> Mandant auswählen: </v-list-item>
@@ -296,7 +296,7 @@ export default {
       selectTenant: "tenants/select",
     }),
     resetStores() {
-      this.$store.dispatch('reset');
+      this.$store.dispatch("reset");
     },
     logout() {
       ApiAuthService.logout()
