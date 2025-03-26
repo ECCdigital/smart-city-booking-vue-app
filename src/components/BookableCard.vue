@@ -53,34 +53,45 @@
     </v-card-subtitle>
 
     <v-card-text
-      class="font-weight-bold title pb-0"
+      class="font-weight-bold pb-0"
       color="grey darken-1"
       v-if="
         item.priceCategories &&
         item.priceCategories.some((pC) => pC.priceEur) > 0
       "
     >
-      <v-list flat style="background-color: transparent">
-        <v-list-item
-          v-for="(priceCategory, index) in item.priceCategories"
-          :key="index"
+      <v-row
+        dense
+        v-for="(priceCategory, index) in item.priceCategories"
+        :key="index"
+      >
+        <v-col class="col-6 col-md-3">
+          {{ priceCategory.priceEur | currency("EUR", "de-DE") }}
+        </v-col>
+
+        <v-col
+          v-if="priceCategory.interval.end || priceCategory.interval.start"
         >
-          <v-list-item-content>
-            <v-list-item-subtitle>
-              {{ priceCategory.priceEur | currency("EUR", "de-DE") }}
-            </v-list-item-subtitle>
-          </v-list-item-content>
-          <v-list-item-content
-            v-if="priceCategory.interval.end || priceCategory.interval.start"
+          {{
+            getPrice(
+              priceCategory.interval.start,
+              priceCategory.interval.end,
+              item.priceType
+            )
+          }}
+        </v-col>
+
+        <v-col>
+          <v-chip
+            v-if="priceCategory.fixedPrice"
+            small
+            color="secondary"
+            text-color="black"
           >
-            <v-list-item-subtitle>
-              {{ priceCategory.interval.start }} -
-              {{ priceCategory.interval.end }}
-              {{ intervalSuffix(item.priceType) }}
-            </v-list-item-subtitle>
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
+            Pauschalpreis
+          </v-chip>
+        </v-col>
+      </v-row>
     </v-card-text>
     <v-card-text
       class="font-weight-bold title pb-0"
@@ -181,6 +192,24 @@ export default {
     };
   },
   methods: {
+    getPrice(start, end, priceType) {
+      const suffix = this.intervalSuffix(priceType);
+
+      let interval = "";
+      if (!start) {
+        interval = `bis ${end}`;
+      }
+
+      if (!end) {
+        interval = `ab ${start}`;
+      }
+
+      if (start && end) {
+        interval = `${start} - ${end}`;
+      }
+
+      return `${interval} ${suffix}`;
+    },
     intervalSuffix(type) {
       if (type === "per-hour") {
         return "Std.";
