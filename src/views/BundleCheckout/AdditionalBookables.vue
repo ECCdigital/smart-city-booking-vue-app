@@ -100,29 +100,33 @@ export default {
   methods: {
     // Add a bookable to the booking
     async fetchBookables() {
-      const response = await ApiBookablesService.getPublicBookables(
-        this.leadItem.bookable.tenant
-      );
+      try {
+        const response = await ApiBookablesService.getPublicBookables(
+          this.leadItem.bookable.tenantId
+        );
 
-      this.items = response.data
-        .filter((bookable) => {
-          return this.leadItem.bookable.checkoutBookableIds.includes(
-            bookable.id
-          );
-        })
-        .map((bookable) => {
-          return {
-            bookable: bookable,
-            isAvailable: null,
-          };
-        });
+        this.items = response.data
+          .filter((bookable) => {
+            return this.leadItem.bookable.checkoutBookableIds.includes(
+              bookable.id
+            );
+          })
+          .map((bookable) => {
+            return {
+              bookable: bookable,
+              isAvailable: null,
+            };
+          });
+      } catch (error) {
+        console.error(error);
+      }
     },
 
     async checkBookableAvailability() {
       for (const item of this.items) {
         try {
           const response = await ApiCheckoutService.validateCheckoutItem(
-            item.bookable.tenant,
+            item.bookable.tenantId,
             {
               bookableId: item.bookable.id,
               amount: 1,

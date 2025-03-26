@@ -476,6 +476,7 @@ export default {
     totalPrice() {
       let price = 0;
       for (const item of [this.leadItem, ...this.subsequentItems]) {
+        console.log(item);
         price += item.userPriceEur;
       }
 

@@ -55,9 +55,32 @@
     <v-card-text
       class="font-weight-bold title pb-0"
       color="grey darken-1"
-      v-if="item.priceEur && item.priceEur > 0"
+      v-if="
+        item.priceCategories &&
+        item.priceCategories.some((pC) => pC.priceEur) > 0
+      "
     >
-      {{ item.priceEur | currency("EUR", "de-DE") }}
+      <v-list flat style="background-color: transparent">
+        <v-list-item
+          v-for="(priceCategory, index) in item.priceCategories"
+          :key="index"
+        >
+          <v-list-item-content>
+            <v-list-item-subtitle>
+              {{ priceCategory.priceEur | currency("EUR", "de-DE") }}
+            </v-list-item-subtitle>
+          </v-list-item-content>
+          <v-list-item-content
+            v-if="priceCategory.interval.end || priceCategory.interval.start"
+          >
+            <v-list-item-subtitle>
+              {{ priceCategory.interval.start }} -
+              {{ priceCategory.interval.end }}
+              {{ intervalSuffix(item.priceType) }}
+            </v-list-item-subtitle>
+          </v-list-item-content>
+        </v-list-item>
+      </v-list>
     </v-card-text>
     <v-card-text
       class="font-weight-bold title pb-0"
@@ -158,6 +181,16 @@ export default {
     };
   },
   methods: {
+    intervalSuffix(type) {
+      if (type === "per-hour") {
+        return "Std.";
+      } else if (type === "per-day") {
+        return "Tage";
+      } else {
+        return "Stück";
+      }
+    },
+
     emitDeleteAction() {
       this.$emit("delete");
     },
