@@ -9,7 +9,13 @@ const state = {
     title: "",
     description: "",
     location: "",
-    priceCategories: [],
+    priceCategories: [
+      {
+        priceEur: 0,
+        interval: { start: null, end: null },
+        fixedPrice: false,
+      },
+    ],
     priceType: "",
     priceValueAddedTax: 0,
     amount: 0,
@@ -39,9 +45,9 @@ const state = {
     isPublic: false,
     isLongRange: false,
     longRangeOptions: null,
-    lockerDetails: {active: false, units: []},
+    lockerDetails: { active: false, units: [] },
     requiredFields: [],
-    bookingNotes: ""
+    bookingNotes: "",
   },
 };
 
@@ -71,7 +77,13 @@ const mutations = {
       title: "",
       description: "",
       location: "",
-      priceCategories: [],
+      priceCategories: [
+        {
+          priceEur: 0,
+          interval: { start: null, end: null },
+          fixedPrice: false,
+        },
+      ],
       priceType: "",
       priceValueAddedTax: 0,
       amount: 0,
@@ -101,8 +113,8 @@ const mutations = {
       isPublic: false,
       isLongRange: false,
       longRangeOptions: null,
-      lockerDetails: {active: false, units: []},
-      requiredFields: []
+      lockerDetails: { active: false, units: [] },
+      requiredFields: [],
     };
   },
 };
@@ -128,7 +140,7 @@ const actions = {
   },
   reset({ commit }) {
     commit("CLEAR");
-  }
+  },
 };
 
 const getters = {

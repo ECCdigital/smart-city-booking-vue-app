@@ -166,38 +166,17 @@
           item-value="id"
         ></v-select>
       </v-col>
-      <v-col class="col-12 col-md-3">
+      <v-col class="col-12 col-md-2">
         <v-text-field
           background-color="accent"
           filled
           label="Verfügbare Anzahl"
           hide-details
           v-model.number="amount"
-          suffix="Stück"
+          :suffix="priceType === 'per-square-meter' ? 'm²' : 'Stück'"
         ></v-text-field>
       </v-col>
-      <v-col v-if="!useGraduatedPrices">
-        <v-switch
-          dense
-          label="Staffelpreise"
-          hide-details
-          v-model="useGraduatedPrices"
-        ></v-switch>
-      </v-col>
-      <v-col v-else class="col-12 col-md-2">
-        <v-text-field
-          background-color="accent"
-          filled
-          label="MwSt."
-          hide-details
-          v-model="priceValueAddedTax"
-          suffix="%"
-        ></v-text-field>
-      </v-col>
-    </v-row>
-
-    <v-row v-if="!useGraduatedPrices">
-      <v-col class="col-12 col-md-3">
+      <v-col v-if="!useGraduatedPrices" class="col-12 col-md-3">
         <v-text-field
           v-if="priceCategories[0]"
           background-color="accent"
@@ -218,7 +197,8 @@
           suffix="%"
         ></v-text-field>
       </v-col>
-      <v-col class="col-12 col-md-1">
+
+      <v-col v-if="!useGraduatedPrices" class="col-12 col-md-1">
         <v-tooltip top max-width="300" open-delay="400">
           <template v-slot:activator="{ on, attrs }">
             <div v-bind="attrs" v-on="on">
@@ -230,14 +210,20 @@
               </v-checkbox>
             </div>
           </template>
-          <span >
-            Bei Aktivierung wird immer der Grundpreis berechnet.
-          </span>
+          <span> Bei Aktivierung wird immer der Grundpreis berechnet. </span>
         </v-tooltip>
       </v-col>
     </v-row>
 
-    <v-card v-else flat outlined rounded class="mt-3">
+    <v-row>
+      <v-col v-if="!useGraduatedPrices">
+        <v-btn dense outlined hide-details @click="useGraduatedPrices = true">
+          Staffelpreise
+        </v-btn>
+      </v-col>
+    </v-row>
+
+    <v-card v-if="useGraduatedPrices" flat outlined rounded class="mt-3">
       <v-card-subtitle
         class="d-flex justify-space-between mb-4"
         style="background-color: var(--v-accent-base)"
@@ -799,6 +785,10 @@ export default {
           id: "per-day",
           name: "pro Tag",
         },
+        {
+          id: "per-square-meter",
+          name: "pro m²",
+        },
       ],
       tagsAvailable: [],
       flagsAvailable: [],
@@ -870,21 +860,16 @@ export default {
       stopLoading: "loading/stop",
     }),
     checkNull(field) {
-      console.log(this);
       if (this[field] === "") {
         this[field] = null;
       }
     },
     setUseGraduatedPrices() {
-      if (
+      this.useGraduatedPrices = !!(
         this.priceCategories.length > 1 ||
         this.priceCategories.some((pC) => pC.interval.start !== null) ||
         this.priceCategories.some((pC) => pC.interval.end !== null)
-      ) {
-        this.useGraduatedPrices = true;
-      } else {
-        this.useGraduatedPrices = false;
-      }
+      );
     },
     addPriceCategory() {
       this.priceCategories.push({
@@ -987,7 +972,16 @@ export default {
             title: title,
             description: description,
             location: location,
-            priceCategories: priceCategories,
+            priceCategories: priceCategories || [
+              {
+                priceEur: 0,
+                interval: {
+                  start: null,
+                  end: null,
+                },
+                fixedPrice: false,
+              },
+            ],
             priceType: !_.isNil(priceType) ? priceType : false,
             priceValueAddedTax: !_.isNil(priceValueAddedTax)
               ? priceValueAddedTax
@@ -1181,6 +1175,8 @@ export default {
           return "Std.";
         } else if (this.priceType === "per-day") {
           return "Tage";
+        } else if (this.priceType === "per-square-meter") {
+          return "m²";
         } else {
           return "Stück";
         }

@@ -194,20 +194,16 @@ export default {
   methods: {
     getPrice(start, end, priceType) {
       const suffix = this.intervalSuffix(priceType);
-
       let interval = "";
       if (!start) {
         interval = `bis ${end}`;
       }
-
       if (!end) {
         interval = `ab ${start}`;
       }
-
       if (start && end) {
         interval = `${start} - ${end}`;
       }
-
       return `${interval} ${suffix}`;
     },
     intervalSuffix(type) {
@@ -215,7 +211,9 @@ export default {
         return "Std.";
       } else if (type === "per-day") {
         return "Tage";
-      } else {
+      } else if (type === "per-square-meter")
+        return "m²";
+      else {
         return "Stück";
       }
     },

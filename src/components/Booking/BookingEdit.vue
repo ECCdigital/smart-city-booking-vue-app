@@ -156,10 +156,16 @@
                         <v-col class="col-4">
                           <v-text-field
                             :value="
-                              getPriceCategory(bookableItem.bookableId, 'priceEur')
+                              getPriceCategory(
+                                bookableItem.bookableId,
+                                'priceEur'
+                              )
                             "
                             @input="
-                              updatePriceCategory(bookableItem.bookableId, $event)
+                              updatePriceCategory(
+                                bookableItem.bookableId,
+                                $event
+                              )
                             "
                             filled
                             prefix="€"
@@ -168,7 +174,10 @@
                             :suffix="
                               isTimeRelated(
                                 bookableItem._bookableUsed,
-                                getPriceCategory(bookableItem.bookableId, 'fixedPrice')
+                                getPriceCategory(
+                                  bookableItem.bookableId,
+                                  'fixedPrice'
+                                )
                               )
                             "
                             label="Preis (netto)"
@@ -188,7 +197,10 @@
                                     )
                                   "
                                   @change="
-                                    updateFixedPrice(bookableItem.bookableId, $event)
+                                    updateFixedPrice(
+                                      bookableItem.bookableId,
+                                      $event
+                                    )
                                   "
                                   label="Pauschalpreis"
                                 >
@@ -781,11 +793,13 @@ export default {
       addToast: "toasts/add",
     }),
     getPriceCategory(bookableId, field) {
-      const bookableItem = this.bookableItems.find((b) => b.bookableId === bookableId);
+      const bookableItem = this.bookableItems.find(
+        (b) => b.bookableId === bookableId
+      );
       const { priceCategories, priceType } = bookableItem._bookableUsed;
 
       if (priceCategories.length === 1) {
-        if(field) {
+        if (field) {
           return priceCategories[0][field];
         }
         return priceCategories[0];
@@ -802,6 +816,9 @@ export default {
           valueToCheck = bookingDurationInMinutes / 60 / 24;
           break;
         case "per-item":
+          valueToCheck = bookableItem.amount;
+          break;
+        case "per-square-meter":
           valueToCheck = bookableItem.amount;
           break;
         default:
@@ -997,7 +1014,6 @@ export default {
         return "";
       }
 
-      console.log(bookable.priceType);
       switch (bookable.priceType) {
         case "per-item":
           return "pro Stück";
@@ -1005,6 +1021,8 @@ export default {
           return "pro Stunde";
         case "per-day":
           return "pro Tag";
+        case "per-square-meter":
+          return "pro m²";
         default:
           return "pro Stück";
       }

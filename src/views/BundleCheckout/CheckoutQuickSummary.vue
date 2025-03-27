@@ -90,7 +90,7 @@
         <v-divider class="mb-3"></v-divider>
         <v-row no-gutters>
           <v-col><small>Name</small></v-col>
-          <v-col class="col-md-2 text-right"><small>Anzahl</small></v-col>
+          <v-col class="col-md-2 text-center"><small>Anzahl</small></v-col>
           <v-col class="col-md-3 text-right"><small>Preis</small></v-col>
         </v-row>
         <v-row
@@ -108,14 +108,27 @@
               (Prüfen...)
             </span>
           </v-col>
-          <v-col class="text-right col-md-2">
-            <v-btn icon x-small class="me-1" @click="decreaseItemAmount(item)">
-              <v-icon>mdi-minus</v-icon>
-            </v-btn>
-            {{ item.amount }}
-            <v-btn icon x-small class="ms-1" @click="increaseItemAmount(item)">
-              <v-icon>mdi-plus</v-icon>
-            </v-btn>
+          <v-col class="col-md-2">
+            <v-text-field
+              class="centered-input"
+              dense
+              flat
+              hide-details
+              :suffix="item.bookable.priceType === 'per-square-meter' ? 'm²' : ''"
+              v-model="item.amount"
+            >
+              <template v-slot:prepend>
+                <v-btn icon x-small @click="decreaseItemAmount(item)">
+                  <v-icon>mdi-minus</v-icon>
+                </v-btn>
+              </template>
+
+              <template v-slot:append-outer>
+                <v-btn icon x-small @click="increaseItemAmount(item)">
+                  <v-icon>mdi-plus</v-icon>
+                </v-btn>
+              </template>
+            </v-text-field>
           </v-col>
           <v-col class="text-right col-md-3">
             <span
@@ -428,26 +441,26 @@ export default {
       }
 
       switch (finalBooking.paymentProvider) {
-      case "giroCockpit": {
-        const paymentUrl = paymentResponse.data?.paymentData;
-        if (paymentUrl) {
-          window.location.href = paymentUrl;
+        case "giroCockpit": {
+          const paymentUrl = paymentResponse.data?.paymentData;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          }
+          break;
         }
-        break;
-      }
-      case "pmPayment": {
-        const paymentUrl = paymentResponse.data?.paymentData;
-        if (paymentUrl) {
-          window.location.href = paymentUrl;
+        case "pmPayment": {
+          const paymentUrl = paymentResponse.data?.paymentData;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          }
+          break;
         }
-        break;
-      }
-      case "invoice":
-        await this.routeToStatus(finalBooking, finalBooking.paymentProvider);
-        break;
-      default:
-        await this.routeToStatus(finalBooking);
-        break;
+        case "invoice":
+          await this.routeToStatus(finalBooking, finalBooking.paymentProvider);
+          break;
+        default:
+          await this.routeToStatus(finalBooking);
+          break;
       }
     },
 
@@ -555,4 +568,8 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style>
+.centered-input .v-text-field__slot input {
+  text-align: center;
+}
+</style>
