@@ -190,7 +190,7 @@
                               <div v-bind="attrs" v-on="on">
                                 <v-checkbox
                                   dense
-                                  :value="
+                                  :input-value="
                                     getPriceCategory(
                                       bookableItem.bookableId,
                                       'fixedPrice'
@@ -857,7 +857,7 @@ export default {
     },
     updateFixedPrice(bookableId, value) {
       const category = this.getPriceCategory(bookableId);
-      category.fixedPrice = value;
+      category.fixedPrice = !!value;
     },
     remove(item) {
       // remove item from  selectedBooking.bookableIds

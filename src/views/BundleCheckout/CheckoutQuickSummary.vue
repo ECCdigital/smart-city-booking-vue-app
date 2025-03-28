@@ -114,17 +114,31 @@
               dense
               flat
               hide-details
-              :suffix="item.bookable.priceType === 'per-square-meter' ? 'm²' : ''"
-              v-model="item.amount"
+              :suffix="
+                item.bookable.priceType === 'per-square-meter' ? 'm²' : ''
+              "
+              :value="item.amount"
+              @change="setItemAmount(item.bookableId, $event)"
+              :disabled="item.mandatory"
             >
               <template v-slot:prepend>
-                <v-btn icon x-small @click="decreaseItemAmount(item)">
+                <v-btn
+                  icon
+                  x-small
+                  @click="decreaseItemAmount(item)"
+                  :disabled="item.mandatory"
+                >
                   <v-icon>mdi-minus</v-icon>
                 </v-btn>
               </template>
 
               <template v-slot:append-outer>
-                <v-btn icon x-small @click="increaseItemAmount(item)">
+                <v-btn
+                  icon
+                  x-small
+                  @click="increaseItemAmount(item)"
+                  :disabled="item.mandatory"
+                >
                   <v-icon>mdi-plus</v-icon>
                 </v-btn>
               </template>
@@ -332,15 +346,50 @@ export default {
 
       return CheckoutUtils.formatCurrency(value);
     },
+    setAmountOfMandatoryItems(item) {
+      const mandatoryItemIds = item.bookable.checkoutBookableIds
+        .filter((cb) => cb.mandatory)
+        .map((cb) => cb.bookableId);
+      if (mandatoryItemIds.length > 0) {
+        for (const mandatoryItemId of mandatoryItemIds) {
+          const mandatoryItem = this.subsequentItems.find(
+            (item) => item.bookableId === mandatoryItemId
+          );
+          if (mandatoryItem) {
+            mandatoryItem.amount = item.amount;
+          }
+        }
+      }
+    },
+
+    setItemAmount(bookableId, amount) {
+      const item = [this.leadItem, ...this.subsequentItems].find(
+        (item) => item.bookableId === bookableId
+      );
+      if (item) {
+        item.amount = amount;
+        this.setAmountOfMandatoryItems(item);
+      }
+
+      this.$emit("validate-items");
+
+    },
+
     increaseItemAmount(item) {
       item.amount++;
+      this.setAmountOfMandatoryItems(item);
+
       this.$emit("validate-items");
     },
     decreaseItemAmount(item) {
       if (item.amount > 1) {
         item.amount--;
+        this.setAmountOfMandatoryItems(item);
       } else {
-        this.subsequentItems.splice(this.subsequentItems.indexOf(item), 1);
+        const index = this.subsequentItems.indexOf(item);
+        if(index > -1) {
+          this.subsequentItems.splice(index, 1);
+        }
       }
 
       this.$emit("validate-items");
@@ -489,7 +538,6 @@ export default {
     totalPrice() {
       let price = 0;
       for (const item of [this.leadItem, ...this.subsequentItems]) {
-        console.log(item);
         price += item.userPriceEur;
       }
 

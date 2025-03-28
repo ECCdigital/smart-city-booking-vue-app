@@ -172,7 +172,7 @@
           filled
           label="Verfügbare Anzahl"
           hide-details
-          v-model.number="amount"
+          v-model="amount"
           :suffix="priceType === 'per-square-meter' ? 'm²' : 'Stück'"
         ></v-text-field>
       </v-col>
@@ -351,9 +351,20 @@
       </v-col>
     </v-row>
     <BookableLockingAttributes
+      v-if="amount"
       :tenant-id="tenantId"
       :amount="amount"
     ></BookableLockingAttributes>
+
+    <v-alert
+      v-else
+      type="warning"
+      dense
+      outlined
+    >
+      Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl der verfügbaren Buchungsobjekte an.
+    </v-alert>
+
 
     <h3 class="mt-10">Individuelle Berechtigungen</h3>
 
@@ -517,20 +528,12 @@
     </p>
     <v-row>
       <v-col>
-        <SortableList
+        <BookableCheckoutBookables
           :items="checkoutBookableIds"
           :available-items="bookablesWithoutSelf"
-          item-value="id"
-          item-text="title"
-          item-detail="type"
         >
-          <template v-slot:text="{ itemObject }">
-            {{ itemObject.title }}
-          </template>
-          <template v-slot:detail="{ itemObject }">
-            {{ itemLabel(`editBookables.types.${itemObject.type}`) }}
-          </template>
-        </SortableList>
+
+        </BookableCheckoutBookables>
       </v-col>
     </v-row>
 
@@ -715,10 +718,12 @@ import Tiptap from "@/components/Tiptap";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ChooseFile from "@/components/Files/ChooseFile.vue";
 import BookableLockingAttributes from "@/components/Bookable/BookableLockingAttributes";
+import BookableCheckoutBookables from "@/components/Bookable/BookableCheckoutBookables.vue";
 
 export default {
   name: "EditBookable",
   components: {
+    BookableCheckoutBookables,
     ChooseFile,
     SortableList,
     BookableTimeDependantAttributes,
@@ -986,7 +991,7 @@ export default {
             priceValueAddedTax: !_.isNil(priceValueAddedTax)
               ? priceValueAddedTax
               : 0,
-            amount: !_.isNil(amount) ? amount : 0,
+            amount: !_.isNil(amount) ? amount : null,
             isScheduleRelated: !_.isNil(isScheduleRelated)
               ? isScheduleRelated
               : false,
@@ -1275,6 +1280,11 @@ export default {
         return this.$store.state.bookables.form.amount;
       },
       set(value) {
+        if(value === "" || value === undefined) {
+          value = null
+        } else if(value !== null) {
+          value = parseInt(value);
+        }
         this.updateValue({ field: "amount", value: value });
       },
     },

@@ -80,6 +80,7 @@ import ApiCouponService from "@/services/api/ApiCouponService";
 import CheckoutNoPermission from "@/views/BundleCheckout/CheckoutNoPermission.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import CheckoutPaymentProvider from "@/views/BundleCheckout/CheckoutPaymentProvider.vue";
+import CheckoutAmountSelector from "@/views/BundleCheckout/CheckoutAmountSelector.vue";
 import { mapActions, mapGetters } from "vuex";
 
 export default {
@@ -93,6 +94,7 @@ export default {
     CheckoutTimeSelector,
     CheckoutContactDetails,
     CheckoutNoPermission,
+    CheckoutAmountSelector,
   },
 
   data() {
@@ -239,6 +241,21 @@ export default {
         },
       };
 
+      const amountStep = {
+        title: "Anzahl",
+        component: "checkout-amount-selector",
+        props: {
+          leadItem: this.leadItem,
+          subsequentItems: this.subsequentItems,
+          maxSquares: this.leadItem.bookable.amount,
+        },
+        events: {
+          back: this.previousPage,
+          submit: this.nextPage,
+          "validate-items": this.validateItems,
+        },
+      }
+
       const additionalBookableOptions = {
         title: "Ergänzungen",
         component: "additional-bookables",
@@ -288,6 +305,10 @@ export default {
         this.leadItem.bookable?.isLongRange
       ) {
         stepsToReturn.push(timeSelectorStep);
+      }
+
+      if(this.leadItem.bookable.priceType === "per-square-meter") {
+        stepsToReturn.push(amountStep);
       }
 
       if (this.leadItem.bookable?.checkoutBookableIds?.length > 0) {
@@ -468,6 +489,10 @@ export default {
         regularGrossPriceEur: null,
         userGrossPriceEur: null,
       };
+
+      if(this.subsequentItems.find((i) => i.bookableId === item.bookableId)) {
+        return;
+      }
 
       this.subsequentItems.push(bookableItem);
       await this.validateItems();
