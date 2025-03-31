@@ -55,16 +55,37 @@
       }}</span>
     </template>
     <template v-slot:item.isCommitted="{ item }">
-      <span>{{
-        item.isRejected
-          ? "storniert"
-          : item.isCommitted == true
-          ? "freigegeben"
-          : "ausstehend"
-      }}</span>
+      <v-chip
+        small
+        :color="item.isRejected ? 'error' : item.isCommitted ? 'success' : ''"
+      >
+        <v-icon left small>
+          {{
+            item.isRejected
+              ? "mdi-cancel"
+              : item.isCommitted == true
+              ? "mdi-check"
+              : "mdi-timer-sand-empty"
+          }}
+        </v-icon>
+        {{
+          item.isRejected && !item.isCommitted
+            ? "abgelehnt"
+            : item.isRejected && item.isCommitted
+            ? "stoniert"
+            : item.isCommitted == true
+            ? "freigegeben"
+            : "ausstehend"
+        }}
+      </v-chip>
     </template>
     <template v-slot:item.isPayed="{ item }">
-      <span>{{ item.isPayed ? "bezahlt" : "ausstehend" }}</span>
+      <v-chip small :color="item.isPayed ? 'success' : ''">
+        <v-icon left small>
+          {{ item.isPayed ? "mdi-check" : "mdi-timer-sand-empty" }}
+        </v-icon>
+        {{ item.isPayed ? "bezahlt" : "ausstehend" }}
+      </v-chip>
     </template>
     <template v-slot:item.priceEur="{ item }">
       <span>{{
@@ -126,7 +147,9 @@
               <v-list-item-icon>
                 <v-icon>mdi-close-circle</v-icon>
               </v-list-item-icon>
-              <v-list-item-title>Buchung stornieren</v-list-item-title>
+              <v-list-item-title>{{
+                item.isCommitted ? "Buchung stornieren" : "Buchung ablehnen"
+              }}</v-list-item-title>
             </v-list-item>
             <v-list-item
               link
@@ -190,38 +213,38 @@ export default {
   methods: {
     translatePayMethod(paymentMethod) {
       switch (paymentMethod) {
-      case "CASH":
-        return "Bar";
-      case "TRANSFER":
-        return "Überweisung";
-      case "CREDIT_CARD":
-        return "Kreditkarte";
-      case "DEBIT_CARD":
-        return "EC-Karte";
-      case "PAYPAL":
-        return "PayPal";
-      case "OTHER":
-        return "Sonstiges";
-      case "GIROPAY":
-        return "Giropay";
-      case "APPLE_PAY":
-        return "Apple Pay";
-      case "GOOGLE_PAY":
-        return "Google Pay";
-      case "EPS":
-        return "EPS";
-      case "IDEAL":
-        return "iDEAL";
-      case "MAESTRO":
-        return "Maestro";
-      case "PAYDIRECT":
-        return "paydirekt";
-      case "SOFORT":
-        return "SOFORT-Überweisung";
-      case "BLUECODE":
-        return "Bluecode";
-      default:
-        return "Unbekannt";
+        case "CASH":
+          return "Bar";
+        case "TRANSFER":
+          return "Überweisung";
+        case "CREDIT_CARD":
+          return "Kreditkarte";
+        case "DEBIT_CARD":
+          return "EC-Karte";
+        case "PAYPAL":
+          return "PayPal";
+        case "OTHER":
+          return "Sonstiges";
+        case "GIROPAY":
+          return "Giropay";
+        case "APPLE_PAY":
+          return "Apple Pay";
+        case "GOOGLE_PAY":
+          return "Google Pay";
+        case "EPS":
+          return "EPS";
+        case "IDEAL":
+          return "iDEAL";
+        case "MAESTRO":
+          return "Maestro";
+        case "PAYDIRECT":
+          return "paydirekt";
+        case "SOFORT":
+          return "SOFORT-Überweisung";
+        case "BLUECODE":
+          return "Bluecode";
+        default:
+          return "Unbekannt";
       }
     },
     onOpenBooking(bookingId) {
