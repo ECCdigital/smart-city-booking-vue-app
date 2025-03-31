@@ -139,26 +139,37 @@
       <v-divider class="mb-5"></v-divider>
       <v-row>
         <v-col>
-          <v-card v-if="!!tenant.receiptTemplate" flat height="100">
-            <v-snackbar
-              :timeout="-1"
-              :value="true"
-              absolute
-              color="success"
-              text
+          <v-card
+            v-if="!!tenant.receiptTemplate"
+            color="success lighten-5"
+            class="rounded"
+          >
+            <v-card-text
+              class="success--text text--darken-1 d-flex justify-space-between align-center"
             >
-              <v-icon left> mdi-check </v-icon>
-              Es ist eine Zahlungsbeleg-Vorlage hinterlegt. Um diese zu ändern,
-              wenden Sie sich bitte an den Administrator.
-            </v-snackbar>
+              <div>
+                <v-icon left> mdi-check </v-icon>
+                Es ist eine Zahlungsbeleg-Vorlage hinterlegt.
+              </div>
+
+              <v-btn small outlined @click="showEditTemplateDialog = true"
+                >bearbeiten</v-btn
+              >
+            </v-card-text>
           </v-card>
-          <v-card flat height="120" v-else>
-            <v-snackbar :timeout="-1" :value="true" absolute color="error" text>
-              <v-icon left> mdi-close </v-icon>
-              Es ist keine Zahlungsbelegvorlage hinterlegt. Um eine
-              Zahlungsbelegvorlage zu hinterlegen, wenden Sie sich bitte an den
-              Administrator.
-            </v-snackbar>
+          <v-card v-else color="error lighten-5" class="rounded">
+            <v-card-text
+              class="error--text text--darken-1 d-flex justify-space-between align-center"
+            >
+              <div>
+                <v-icon left> mdi-close </v-icon>
+                Es ist keine Zahlungsbelegvorlage hinterlegt.
+              </div>
+
+              <v-btn small outlined @click="showEditTemplateDialog = true"
+                >bearbeiten</v-btn
+              >
+            </v-card-text>
           </v-card>
         </v-col>
       </v-row>
@@ -458,6 +469,48 @@
                       label="Rechnung als Zahlungsmittel aktivieren"
                       class="mt-2"
                     ></v-switch>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-card
+                      v-if="!!tenant.invoiceTemplate"
+                      color="success lighten-5"
+                      class="rounded"
+                    >
+                      <v-card-text
+                        class="success--text text--darken-1 d-flex justify-space-between align-center"
+                      >
+                        <div>
+                          <v-icon left> mdi-check </v-icon>
+                          Es ist eine Rechnungs-Vorlage hinterlegt.
+                        </div>
+
+                        <v-btn
+                          small
+                          outlined
+                          @click="showEditInvoiceTemplateDialog = true"
+                          >bearbeiten</v-btn
+                        >
+                      </v-card-text>
+                    </v-card>
+                    <v-card v-else color="error lighten-5" class="rounded">
+                      <v-card-text
+                        class="error--text text--darken-1 d-flex justify-space-between align-center"
+                      >
+                        <div>
+                          <v-icon left> mdi-close </v-icon>
+                          Es ist keine Rechnungs-Vorlage hinterlegt.
+                        </div>
+
+                        <v-btn
+                          small
+                          outlined
+                          @click="showEditInvoiceTemplateDialog = true"
+                          >bearbeiten</v-btn
+                        >
+                      </v-card-text>
+                    </v-card>
                   </v-col>
                 </v-row>
                 <v-row>
@@ -815,6 +868,18 @@
         Speichern
       </v-btn>
     </div>
+    <ReceiptTemplateDialog
+      :open="showEditTemplateDialog"
+      :receipt-template="tenant.receiptTemplate"
+      @close="showEditTemplateDialog = false"
+      @submit="onSubmitReceiptTemplate"
+    />
+    <InvoiceTemplateDialog
+      :open="showEditInvoiceTemplateDialog"
+      :invoice-template="tenant.invoiceTemplate"
+      @close="showEditInvoiceTemplateDialog = false"
+      @submit="onSubmitInvoiceTemplate"
+    />
   </v-container>
 </template>
 
@@ -824,13 +889,21 @@ import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import { v4 as uuidv4 } from "uuid";
+import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
+import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
 
 export default {
   name: "TenantEdit",
-  components: { MailKonfiguration },
+  components: {
+    InvoiceTemplateDialog,
+    ReceiptTemplateDialog,
+    MailKonfiguration,
+  },
   data() {
     return {
       isLoading: false,
+      showEditTemplateDialog: false,
+      showEditInvoiceTemplateDialog: false,
       showNoreplyPassword: false,
       showPaymentSecret: false,
       showParevaPassword: false,
@@ -980,6 +1053,7 @@ export default {
       this.tenant.noreplyGraphTenantId = newConfig.noreplyGraphTenantId;
       this.tenant.noreplyGraphClientId = newConfig.noreplyGraphClientId;
       this.tenant.noreplyGraphClientSecret = newConfig.noreplyGraphClientSecret;
+      this.tenant.genericMailTemplate = newConfig.genericMailTemplate;
     },
     async submitChanges() {
       if (this.$refs.form.validate()) {
@@ -987,6 +1061,7 @@ export default {
         this.inProgress = true;
 
         try {
+          console.log("this.tenant", this.tenant);
           await ApiTenantService.submitTenant(this.tenant);
           if (this.workflow.id) {
             this.workflow = await ApiWorkflowService.updateWorkflow(
@@ -1149,6 +1224,14 @@ export default {
         0,
         this.workflow.states.splice(idx, 1)[0]
       );
+    },
+    onSubmitReceiptTemplate(template) {
+      this.tenant.receiptTemplate = template;
+      this.showEditTemplateDialog = false;
+    },
+    onSubmitInvoiceTemplate(template) {
+      this.tenant.invoiceTemplate = template;
+      this.showEditInvoiceTemplateDialog = false;
     },
   },
   async mounted() {
