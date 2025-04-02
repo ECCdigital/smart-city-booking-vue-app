@@ -93,7 +93,7 @@
             item-text="name"
             item-value="id"
             hide-details
-            class=" my-2 text-truncate"
+            class="my-2 text-truncate"
           >
             <template v-slot:prepend-item>
               <v-list-item class="my-2"> Mandant auswählen: </v-list-item>

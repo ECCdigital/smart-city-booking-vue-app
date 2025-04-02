@@ -215,6 +215,7 @@ export default {
           name: "Rollen",
           value: "roles",
         },
+        { name: "Benutzer", value: "users" },
         {
           name: "Buchungen",
           value: "bookings",
@@ -248,6 +249,10 @@ export default {
         {
           name: "Rollen",
           value: "manageRoles",
+        },
+        {
+          name: "Benutzer",
+          value: "manageUsers",
         },
         {
           name: "Buchungen",

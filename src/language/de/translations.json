@@ -138,6 +138,19 @@
     }
   },
 
+  "tenant": {
+    "error": {
+      "user-exists": {
+        "title": "Benutzer existiert bereits",
+        "message": "Der Benutzer existiert bereits."
+      },
+      "user-not-found": {
+        "title": "Benutzer nicht gefunden",
+        "message": "Der Benutzer konnte nicht gefunden werden. Um den angeforderten Benutzer zum Mandanten hinzuzufügen, muss dieser zuerst registriert sein"
+      }
+    }
+  },
+
   "password": {
     "reset": {
       "success": {
@@ -309,7 +322,7 @@
       "locations": "Veranstaltungsorte",
       "events": "Veranstaltungen",
       "resources": "Ressourcen",
-      "tickets":  "Tickets",
+      "tickets": "Tickets",
       "bookings": "Buchungen",
       "coupons": "Gutscheine",
       "none": "-",
