@@ -887,7 +887,12 @@ import TenantEditWorkflowStatusDialog from "@/components/Tenant/TenantEditWorkfl
 
 export default {
   name: "TenantEdit",
-  components: { TenantEditWorkflowStatusDialog, MailKonfiguration, InvoiceTemplateDialog, ReceiptTemplateDialog },
+  components: {
+    TenantEditWorkflowStatusDialog,
+    MailKonfiguration,
+    InvoiceTemplateDialog,
+    ReceiptTemplateDialog,
+  },
   data() {
     return {
       isLoading: false,
@@ -1052,7 +1057,6 @@ export default {
         this.inProgress = true;
 
         try {
-          console.log("this.tenant", this.tenant);
           await ApiTenantService.submitTenant(this.tenant);
           if (this.workflow.id) {
             this.workflow = await ApiWorkflowService.updateWorkflow(
@@ -1192,12 +1196,15 @@ export default {
     },
 
     addStatus() {
+      const id = uuidv4();
       this.workflow.states.push({
-        id: uuidv4(),
+        id: id,
         name: "",
         tasks: [],
         actions: [],
       });
+      this.selectedSatus = this.workflow.states.find((s) => s.id === id);
+      this.showEditStatusDialog = true;
     },
     editStatus(idx) {
       this.showEditStatusDialog = true;

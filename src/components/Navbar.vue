@@ -320,7 +320,7 @@ export default {
   },
   computed: {
     ...mapGetters({
-      user: "user/user",
+      user: "user/getUser",
       isAuthorized: "user/isAuthorized",
       getCurrentTenant: "tenants/currentTenantId",
     }),

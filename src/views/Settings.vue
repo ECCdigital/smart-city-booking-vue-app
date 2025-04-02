@@ -524,7 +524,7 @@ export default {
     ...mapGetters({
       loading: "loading/isLoading",
       hasPermission: "user/isAuthorized",
-      user: "user/user",
+      user: "user/getUser",
     }),
     firstName: {
       get() {

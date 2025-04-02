@@ -275,7 +275,7 @@
           </v-col>
         </v-row>
 
-        <v-card outlined>
+        <v-card outlined v-if="keycloak">
           <v-card-text>
             <v-row>
               <v-col>
