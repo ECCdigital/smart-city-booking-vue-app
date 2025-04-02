@@ -30,6 +30,16 @@
         >{{ i._bookableUsed?.title }}</v-chip
       >
     </template>
+    <template v-slot:item.groupBooking="{ item }">
+      <v-chip
+        v-if="item.groupBooking"
+        class="ml-1 mt-1"
+        color="secondary"
+        text-color="black"
+        @click="onOpenGroupBooking(item.groupBooking)"
+        >{{ item.groupBooking }}</v-chip
+      >
+    </template>
     <template v-slot:item.timeBegin="{ item }">
       <span v-if="item.timeBegin">{{
         Intl.DateTimeFormat("de-DE", {
@@ -151,11 +161,6 @@ import BookingPermissionService from "@/services/permissions/BookingPermissionSe
 
 export default {
   name: "BookingTable",
-  computed: {
-    BookingPermissionService() {
-      return BookingPermissionService;
-    },
-  },
   props: {
     bookings: {
       type: Array,
@@ -165,16 +170,21 @@ export default {
       type: Boolean,
       default: false,
     },
+    showGroupBooking: {
+      type: Boolean,
+      default: true,
+    },
   },
   data() {
     return {
-      headers: [
+      defaultHeaders: [
         {
           text: "Id",
           align: "start",
           value: "id",
         },
         { text: "Buchungsobjekte", value: "bookableIds" },
+        { text: "Serienbuchung", value: "groupBooking" },
         { text: "Von", value: "timeBegin" },
         { text: "Bis", value: "timeEnd" },
         { text: "Erstellt am", value: "timeCreated" },
@@ -187,41 +197,53 @@ export default {
       ],
     };
   },
+  computed: {
+    BookingPermissionService() {
+      return BookingPermissionService;
+    },
+    headers() {
+      return this.showGroupBooking
+        ? this.defaultHeaders
+        : this.defaultHeaders.filter(
+            (header) => header.value !== "groupBooking"
+          );
+    },
+  },
   methods: {
     translatePayMethod(paymentMethod) {
       switch (paymentMethod) {
-      case "CASH":
-        return "Bar";
-      case "TRANSFER":
-        return "Überweisung";
-      case "CREDIT_CARD":
-        return "Kreditkarte";
-      case "DEBIT_CARD":
-        return "EC-Karte";
-      case "PAYPAL":
-        return "PayPal";
-      case "OTHER":
-        return "Sonstiges";
-      case "GIROPAY":
-        return "Giropay";
-      case "APPLE_PAY":
-        return "Apple Pay";
-      case "GOOGLE_PAY":
-        return "Google Pay";
-      case "EPS":
-        return "EPS";
-      case "IDEAL":
-        return "iDEAL";
-      case "MAESTRO":
-        return "Maestro";
-      case "PAYDIRECT":
-        return "paydirekt";
-      case "SOFORT":
-        return "SOFORT-Überweisung";
-      case "BLUECODE":
-        return "Bluecode";
-      default:
-        return "Unbekannt";
+        case "CASH":
+          return "Bar";
+        case "TRANSFER":
+          return "Überweisung";
+        case "CREDIT_CARD":
+          return "Kreditkarte";
+        case "DEBIT_CARD":
+          return "EC-Karte";
+        case "PAYPAL":
+          return "PayPal";
+        case "OTHER":
+          return "Sonstiges";
+        case "GIROPAY":
+          return "Giropay";
+        case "APPLE_PAY":
+          return "Apple Pay";
+        case "GOOGLE_PAY":
+          return "Google Pay";
+        case "EPS":
+          return "EPS";
+        case "IDEAL":
+          return "iDEAL";
+        case "MAESTRO":
+          return "Maestro";
+        case "PAYDIRECT":
+          return "paydirekt";
+        case "SOFORT":
+          return "SOFORT-Überweisung";
+        case "BLUECODE":
+          return "Bluecode";
+        default:
+          return "Unbekannt";
       }
     },
     onOpenBooking(bookingId) {
@@ -232,6 +254,9 @@ export default {
     },
     onOpenDeleteDialog(bookingId) {
       this.$emit("open-delete-dialog", bookingId);
+    },
+    onOpenGroupBooking(groupBookingId) {
+      this.$emit("open-group-booking", groupBookingId);
     },
     commitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);
