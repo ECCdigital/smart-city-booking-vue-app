@@ -728,7 +728,7 @@
       <h3 class="mb-5 mt-5">Workflow</h3>
       <v-divider class="mb-5"></v-divider>
       <v-row>
-        <v-col>
+        <v-col class="col-12 col-md-6">
           <v-expansion-panels flat multiple>
             <v-expansion-panel>
               <v-expansion-panel-header
@@ -810,29 +810,15 @@
                         <v-icon>mdi-arrow-down</v-icon>
                       </v-btn>
                     </v-col>
-                    <v-col class="d-flex justify-center">
-                      <v-text-field
-                        class="mx-1"
-                        background-color="accent"
-                        hide-details
-                        filled
-                        dense
-                        label="Statusname"
-                        v-model="workflow.states[idx].name"
-                      ></v-text-field>
-                    </v-col>
-                    <v-col class="d-flex justify-center">
-                      <v-text-field
-                        class="mx-1"
-                        background-color="accent"
-                        hide-details
-                        filled
-                        dense
-                        label="Benachrichtigung an"
-                        v-model="workflow.states[idx].actions[0].sendTo"
-                      ></v-text-field>
+                    <v-col class="d-flex align-center">
+                      <span>
+                        <strong> {{ workflow.states[idx].name }}</strong>
+                      </span>
                     </v-col>
                     <v-col class="col-auto d-flex align-center justify-center">
+                      <v-btn @click="editStatus(idx)" icon depressed>
+                        <v-icon>mdi-pencil</v-icon>
+                      </v-btn>
                       <v-btn
                         color="error"
                         @click="removeStatus(idx)"
@@ -880,6 +866,12 @@
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
     />
+    <TenantEditWorkflowStatusDialog
+      :open="showEditStatusDialog"
+      :states="selectedSatus"
+      @close="showEditStatusDialog = false"
+      @save="updateStatus"
+    />
   </v-container>
 </template>
 
@@ -891,14 +883,11 @@ import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import { v4 as uuidv4 } from "uuid";
 import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
 import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
+import TenantEditWorkflowStatusDialog from "@/components/Tenant/TenantEditWorkflowStatusDialog.vue";
 
 export default {
   name: "TenantEdit",
-  components: {
-    InvoiceTemplateDialog,
-    ReceiptTemplateDialog,
-    MailKonfiguration,
-  },
+  components: { TenantEditWorkflowStatusDialog, MailKonfiguration, InvoiceTemplateDialog, ReceiptTemplateDialog },
   data() {
     return {
       isLoading: false,
@@ -910,6 +899,8 @@ export default {
       showPmPaymentSecret: false,
       showClientSecret: false,
       showRefreshToken: false,
+      showEditStatusDialog: false,
+      selectedSatus: {},
       valid: false,
       originTenantId: null,
       inProgress: false,
@@ -1205,11 +1196,20 @@ export default {
         id: uuidv4(),
         name: "",
         tasks: [],
-        actions: [{ type: "email", sendTo: "" }],
+        actions: [],
       });
+    },
+    editStatus(idx) {
+      this.showEditStatusDialog = true;
+      this.selectedSatus = this.workflow.states[idx];
     },
     removeStatus(idx) {
       this.workflow.states.splice(idx, 1);
+    },
+    updateStatus(status) {
+      const idx = this.workflow.states.findIndex((s) => s.id === status.id);
+      this.workflow.states.splice(idx, 1, status);
+      this.showEditStatusDialog = false;
     },
     moveUp(idx) {
       this.workflow.states.splice(

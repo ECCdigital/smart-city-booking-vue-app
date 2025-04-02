@@ -2,38 +2,37 @@
   <AdminLayout>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <v-row>
-          <v-col>
-            <v-autocomplete
-              outlined
-              dense
-              hide-details
-              placeholder="Benutzer"
-              clearable
-              v-model="newUserId"
-              :items="api.users"
-              item-text="id"
-              item-value="id"
-            >
-            </v-autocomplete>
-          </v-col>
-          <v-col>
-            <v-select
-              outlined
-              dense
-              multiple
-              v-model="newRoleIds"
-              :items="api.roles"
-              item-text="name"
-              item-value="id"
-              clearable
-              small-chips
-            ></v-select>
-          </v-col>
-          <v-col cols="auto">
-            <v-btn color="primary" @click="addTenantUser">Hinzufügen</v-btn>
-          </v-col>
-        </v-row>
+        <v-form ref="form" v-model="valid" lazy-validation>
+          <v-row>
+            <v-col>
+              <v-text-field
+                outlined
+                dense
+                placeholder="Benutzer"
+                clearable
+                v-model="newUserId"
+                :rules="rules.email"
+              >
+              </v-text-field>
+            </v-col>
+            <v-col>
+              <v-select
+                outlined
+                dense
+                multiple
+                v-model="newRoleIds"
+                :items="api.roles"
+                item-text="name"
+                item-value="id"
+                clearable
+                small-chips
+              ></v-select>
+            </v-col>
+            <v-col cols="auto">
+              <v-btn color="primary" @click="addTenantUser">Hinzufügen</v-btn>
+            </v-col>
+          </v-row>
+        </v-form>
 
         <v-data-table
           :headers="headers"
@@ -55,7 +54,6 @@
               color="secondary"
               v-for="(roleId, i) in item.roles"
               :key="i"
-
               @click:close="removeTenantUserRole(item.userId, roleId)"
               >{{ getRoleById(roleId)?.name }}</v-chip
             >
@@ -72,6 +70,12 @@
                   </v-btn>
                 </template>
                 <v-list>
+                  <v-list-item link @click="editUserRoles(item.userId)">
+                    <v-list-item-icon>
+                      <v-icon>mdi-pencil</v-icon>
+                    </v-list-item-icon>
+                    <v-list-item-title>Rollen bearbeiten</v-list-item-title>
+                  </v-list-item>
                   <v-list-item link @click="removeTenantUser(item.userId)">
                     <v-list-item-icon>
                       <v-icon>mdi-close</v-icon>
@@ -105,22 +109,41 @@
         </v-data-table>
       </v-col>
     </v-row>
+    <TenantUserEditRoleDialog
+      v-if="selectedUser"
+      :user="selectedUser"
+      :roles="api.roles"
+      :open="showEditRolesDialog"
+      @close="showEditRolesDialog = false"
+      @save="editTenantUserRoles"
+    />
   </AdminLayout>
 </template>
 
 <script>
 import AdminLayout from "@/layouts/Admin.vue";
 import { mapActions, mapGetters } from "vuex";
-import ApiUsersService from "@/services/api/ApiUsersService";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ToastService from "@/services/ToastService";
+import TenantUserEditRoleDialog from "@/components/Tenant/TenantUserEditRoleDialog.vue";
 
 export default {
   components: {
+    TenantUserEditRoleDialog,
     AdminLayout,
   },
   data() {
     return {
+      valid: true,
+      rules: {
+        email: [
+          (v) => !!v || "E-Mail ist erforderlich",
+          (v) => /.+@.+\..+/.test(v) || "E-Mail muss gültig sein",
+        ],
+      },
+      showEditRolesDialog: false,
+      selectedUser: null,
       isLoading: false,
       newUserId: null,
       newRoleIds: [],
@@ -131,6 +154,7 @@ export default {
       api: {
         users: [],
         roles: [],
+        owner: [],
       },
       headers: [
         {
@@ -158,16 +182,16 @@ export default {
       tenantId: "tenants/currentTenantId",
     }),
     members() {
-      const members = this.tenant.users.map((userRef) => ({
+      const members = this.api.users.map((userRef) => ({
         ...userRef,
-        _isOwner: this.tenant.ownerUserIds.includes(userRef.userId),
+        _isOwner: this.api.owner.includes(userRef.userId),
       }));
 
       // There might be users marked as owners that do not have any roles assigned and therefore do not occur in tenant user references.
-      const shadowMembers = this.tenant.ownerUserIds
+      const shadowMembers = this.api.owner
         .filter(
           (userId) =>
-            !this.tenant.users.some((userRef) => userRef.userId === userId)
+            !this.api.users.some((userRef) => userRef.userId === userId)
         )
         .map((userId) => ({
           userId: userId,
@@ -189,31 +213,28 @@ export default {
     ...mapActions({
       startLoading: "loading/start",
       stopLoading: "loading/stop",
+      addToast: "toasts/add",
     }),
-    async fetchTenant() {
-      try {
-        this.isLoading = true;
-        const response = await ApiTenantService.getTenant(this.tenantId);
-        this.tenant = response.data;
-      } catch (e) {
-        console.error(e);
-      } finally {
-        this.isLoading = false;
-      }
+
+    editUserRoles(userId) {
+      this.selectedUser = this.api.users.find((user) => user.userId === userId);
+      this.showEditRolesDialog = true;
     },
 
     async fetchRoles() {
-      const response = await ApiRolesService.getRoles(this.currentTenantId);
+      const response = await ApiRolesService.getTenantRoles(this.currentTenantId);
       this.api.roles = response.data;
     },
 
-    async fetchUsers() {
+    async fetchTenantUsers() {
       await this.startLoading("fetch-users");
-
-      const users = await ApiUsersService.getUsers();
-      this.api.users = users;
-
-      await this.stopLoading("fetch-users");
+      try {
+        const response = await ApiTenantService.getTenantUsers(this.tenantId);
+        this.api.users = response.users;
+        this.api.owner = response.owner;
+      } finally {
+        await this.stopLoading("fetch-users");
+      }
     },
     async removeTenantUser(userId) {
       try {
@@ -231,6 +252,9 @@ export default {
       }
     },
     async addTenantUser() {
+      if (!this.$refs.form.validate()) {
+        return;
+      }
       try {
         this.isLoading = true;
         const response = await ApiTenantService.addTenantUser(
@@ -242,8 +266,16 @@ export default {
         this.newUserId = null;
         this.newRoleIds = [];
 
-        this.tenant = response.data;
+        this.api.users = response.users;
+        this.api.owner = response.owner;
       } catch (e) {
+        if (e.response.status === 404) {
+          await this.addToast(
+            ToastService.createToast("tenant.error.user-not-found", "error")
+          );
+        } else {
+          console.error(e);
+        }
         console.error(e);
       } finally {
         this.isLoading = false;
@@ -258,7 +290,8 @@ export default {
           roleId
         );
 
-        this.tenant = response.data;
+        this.api.users = response.users;
+        this.api.owner = response.owner;
       } catch (e) {
         console.error(e);
       } finally {
@@ -272,7 +305,7 @@ export default {
           this.tenantId,
           userId
         );
-        this.tenant = response.data;
+        this.api.owner = response.owner;
       } catch (e) {
         console.error(e);
       } finally {
@@ -286,7 +319,25 @@ export default {
           this.tenantId,
           userId
         );
-        this.tenant = response.data;
+        this.api.owner = response.owner;
+      } catch (e) {
+        console.error(e);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async editTenantUserRoles(userId, roleIds) {
+      try {
+        this.isLoading = true;
+        const response = await ApiTenantService.editTenantUserRoles(
+          this.tenantId,
+          userId,
+          roleIds
+        );
+
+        this.api.users = response.users;
+        this.api.owner = response.owner;
+        this.showEditRolesDialog = false;
       } catch (e) {
         console.error(e);
       } finally {
@@ -299,9 +350,8 @@ export default {
     },
   },
   async created() {
-    await this.fetchTenant();
     await this.fetchRoles();
-    await this.fetchUsers();
+    await this.fetchTenantUsers();
   },
 };
 </script>

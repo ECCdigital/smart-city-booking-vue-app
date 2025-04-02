@@ -405,12 +405,20 @@
                   </v-expansion-panel-content>
                   <v-divider></v-divider>
                 </v-expansion-panel>
-                <v-expansion-panel>
+                <v-expansion-panel
+                  :disabled="api.user?.authType === 'keycloak'"
+                >
                   <v-expansion-panel-header>
                     <v-row no-gutters align="center" justify="space-between">
                       <v-col class="darkgrey--text">Passwort ändern</v-col>
                       <v-col class=""></v-col>
-                      <v-col class="text-right"></v-col>
+                      <v-col class="text-right">
+                        <v-icon
+                          v-if="api.user?.authType === 'keycloak'"
+                          color="darkgrey"
+                        >mdi-lock</v-icon
+                        >
+                      </v-col>
                     </v-row>
                     <template v-slot:actions>
                       <v-tooltip bottom>
