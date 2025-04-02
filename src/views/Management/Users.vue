@@ -203,7 +203,7 @@ export default {
     },
 
     async fetchRoles() {
-      const response = await ApiRolesService.getRoles(this.currentTenantId);
+      const response = await ApiRolesService.getTenantRoles(this.currentTenantId);
       this.api.roles = response.data;
     },
 

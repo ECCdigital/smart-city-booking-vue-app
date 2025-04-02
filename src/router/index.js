@@ -399,6 +399,16 @@ const routes = [
     },
   },
   {
+    path: "/login/sso",
+    name: "sso",
+    component: lazyLoad("Auth/SsoLogin"),
+    props: true,
+    meta: {
+      title: "SSO",
+      requiresAuth: false,
+    },
+  },
+  {
     path: "/registrieren",
     name: "register",
     component: lazyLoad("Auth/Register"),

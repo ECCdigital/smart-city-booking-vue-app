@@ -170,7 +170,7 @@ export default {
     }),
     fetchRoles() {
       this.startLoading("fetch-roles");
-      ApiRolesService.getRoles()
+      ApiRolesService.getTenantRoles()
         .then((response) => {
           this.api.roles = response.data;
         })

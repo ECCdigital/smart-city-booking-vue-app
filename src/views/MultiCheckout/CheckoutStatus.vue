@@ -136,9 +136,13 @@ export default {
     this.bookingStatus = this.$route.query.status;
     this.paymentProvider = this.$route.query.paymentProvider;
 
-    const tenantObj = await ApiTenantService.getTenant(this.tenant);
+    try {
+      const tenantObj = await ApiTenantService.getTenant(this.tenant);
+      this.websiteLink = tenantObj?.data?.website;
+    } catch (err) {
+      console.error("Error fetching tenant:", err);
+    }
 
-    this.websiteLink = tenantObj?.data?.website;
 
     if (this.bookingId && this.tenant) {
       this.fetchBookingStatus();
