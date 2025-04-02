@@ -18,7 +18,7 @@ const state = {
     ],
     priceType: "",
     priceValueAddedTax: 0,
-    amount: null,
+    amount: 1,
     isScheduleRelated: false,
     isTimePeriodRelated: false,
     isOpeningHoursRelated: false,

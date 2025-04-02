@@ -89,9 +89,9 @@
         <h3 class="mb-1 mt-5">Buchungsobjekte</h3>
         <v-divider class="mb-3"></v-divider>
         <v-row no-gutters>
-          <v-col><small>Name</small></v-col>
-          <v-col class="col-md-2 text-center"><small>Anzahl</small></v-col>
-          <v-col class="col-md-3 text-right"><small>Preis</small></v-col>
+          <v-col class="col-6"><small>Name</small></v-col>
+          <v-col class="col-4 text-center"><small>Anzahl</small></v-col>
+          <v-col class="col-2 text-right"><small>Preis</small></v-col>
         </v-row>
         <v-row
           v-for="item in [leadItem, ...subsequentItems]"
@@ -99,7 +99,7 @@
           class="mt-2"
           no-gutters
         >
-          <v-col>
+          <v-col class="col-6">
             <v-icon v-if="item.valid === false" color="red" small
               >mdi-exclamation</v-icon
             >
@@ -108,7 +108,7 @@
               (Prüfen...)
             </span>
           </v-col>
-          <v-col class="col-md-2">
+          <v-col class="col-4">
             <v-text-field
               class="centered-input"
               dense
@@ -144,7 +144,7 @@
               </template>
             </v-text-field>
           </v-col>
-          <v-col class="text-right col-md-3">
+          <v-col class="text-right">
             <span
               class="text-decoration-line-through"
               v-if="item.regularPriceEur > item.userPriceEur"

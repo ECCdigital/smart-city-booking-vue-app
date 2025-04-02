@@ -877,11 +877,12 @@ export default {
       );
     },
     addPriceCategory() {
+      const lastCategory = this.priceCategories[this.priceCategories.length - 1];
       this.priceCategories.push({
         priceEur: 0,
         priceValueAddedTax: 0,
         interval: {
-          start: null,
+          start: lastCategory ? lastCategory.interval.end : null,
           end: null,
         },
         fixedPrice: false,

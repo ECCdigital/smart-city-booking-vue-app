@@ -254,7 +254,7 @@ export default {
           submit: this.nextPage,
           "validate-items": this.validateItems,
         },
-      }
+      };
 
       const additionalBookableOptions = {
         title: "Ergänzungen",
@@ -307,7 +307,7 @@ export default {
         stepsToReturn.push(timeSelectorStep);
       }
 
-      if(this.leadItem.bookable.priceType === "per-square-meter") {
+      if (this.leadItem.bookable.priceType === "per-square-meter") {
         stepsToReturn.push(amountStep);
       }
 
@@ -320,7 +320,8 @@ export default {
       if (
         this.activePaymentApps.length > 1 &&
         this.leadItem.bookable &&
-        (this.leadItem.bookable.priceEur > 0 || this.leadItem.userPriceEur > 0)
+        (this.leadItem.bookable.priceCategories.some((pC) => pC.priceEur > 0) ||
+          this.leadItem.userPriceEur > 0)
       ) {
         stepsToReturn.push(paymentStep);
       }
@@ -490,7 +491,7 @@ export default {
         userGrossPriceEur: null,
       };
 
-      if(this.subsequentItems.find((i) => i.bookableId === item.bookableId)) {
+      if (this.subsequentItems.find((i) => i.bookableId === item.bookableId)) {
         return;
       }
 

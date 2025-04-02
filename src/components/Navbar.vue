@@ -170,32 +170,6 @@ export default {
         ],
       },
       {
-        header: "Mandant",
-        pages: [
-          {
-            title: "Mandant verwalten",
-            link: "tenant",
-            icon: "mdi-domain",
-            interfaceName: "tenants",
-            context: "tenant",
-          },
-          {
-            title: "Mandant Benutzer",
-            link: "user",
-            icon: "mdi-account-group-outline",
-            interfaceName: "users",
-            context: "tenant",
-          },
-          {
-            title: "Mandant Rollen",
-            link: "roles",
-            icon: "mdi-account-key-outline",
-            interfaceName: "roles",
-            context: "tenant",
-          },
-        ],
-      },
-      {
         header: "Buchungsplattform",
         pages: [
           {
@@ -245,6 +219,32 @@ export default {
             link: "events",
             icon: "mdi-calendar",
             interfaceName: "events",
+            context: "tenant",
+          },
+        ],
+      },
+      {
+        header: "Mandant",
+        pages: [
+          {
+            title: "Mandant verwalten",
+            link: "tenant",
+            icon: "mdi-domain",
+            interfaceName: "tenants",
+            context: "tenant",
+          },
+          {
+            title: "Mandant Benutzer",
+            link: "user",
+            icon: "mdi-account-group-outline",
+            interfaceName: "users",
+            context: "tenant",
+          },
+          {
+            title: "Mandant Rollen",
+            link: "roles",
+            icon: "mdi-account-key-outline",
+            interfaceName: "roles",
             context: "tenant",
           },
         ],
@@ -315,6 +315,9 @@ export default {
     fetchTenants() {
       ApiTenantService.getTenants(true).then((response) => {
         this.tenants = response.data;
+        if(!this.currentTenant && this.tenants.length === 1) {
+          this.currentTenant = this.tenants[0].id;
+        }
       });
     },
   },
@@ -354,7 +357,7 @@ export default {
         });
     },
   },
-  mounted() {
+  async mounted() {
     this.drawer = !this.$vuetify.breakpoint.mdAndDown;
     this.fetchTenants();
   },
