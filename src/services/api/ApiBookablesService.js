@@ -8,7 +8,7 @@ export default {
   },
   getPublicBookables(tenant, populate) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/public/bookables?populate=${populate}`, {
+    return ApiClient.get(`api/${t}/bookables/public?populate=${populate}`, {
       withCredentials: true,
     });
   },

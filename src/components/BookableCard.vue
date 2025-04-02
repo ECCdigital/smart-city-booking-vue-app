@@ -53,11 +53,45 @@
     </v-card-subtitle>
 
     <v-card-text
-      class="font-weight-bold title pb-0"
+      class="font-weight-bold pb-0"
       color="grey darken-1"
-      v-if="item.priceEur && item.priceEur > 0"
+      v-if="
+        item.priceCategories &&
+        item.priceCategories.some((pC) => pC.priceEur) > 0
+      "
     >
-      {{ item.priceEur | currency("EUR", "de-DE") }}
+      <v-row
+        dense
+        v-for="(priceCategory, index) in item.priceCategories"
+        :key="index"
+      >
+        <v-col class="col-6 col-md-3">
+          {{ priceCategory.priceEur | currency("EUR", "de-DE") }}
+        </v-col>
+
+        <v-col
+          v-if="priceCategory.interval.end || priceCategory.interval.start"
+        >
+          {{
+            getPrice(
+              priceCategory.interval.start,
+              priceCategory.interval.end,
+              item.priceType
+            )
+          }}
+        </v-col>
+
+        <v-col>
+          <v-chip
+            v-if="priceCategory.fixedPrice"
+            small
+            color="secondary"
+            text-color="black"
+          >
+            Pauschalpreis
+          </v-chip>
+        </v-col>
+      </v-row>
     </v-card-text>
     <v-card-text
       class="font-weight-bold title pb-0"
@@ -158,6 +192,32 @@ export default {
     };
   },
   methods: {
+    getPrice(start, end, priceType) {
+      const suffix = this.intervalSuffix(priceType);
+      let interval = "";
+      if (!start) {
+        interval = `bis ${end}`;
+      }
+      if (!end) {
+        interval = `ab ${start}`;
+      }
+      if (start && end) {
+        interval = `${start} - ${end}`;
+      }
+      return `${interval} ${suffix}`;
+    },
+    intervalSuffix(type) {
+      if (type === "per-hour") {
+        return "Std.";
+      } else if (type === "per-day") {
+        return "Tage";
+      } else if (type === "per-square-meter")
+        return "m²";
+      else {
+        return "Stück";
+      }
+    },
+
     emitDeleteAction() {
       this.$emit("delete");
     },

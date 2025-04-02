@@ -100,29 +100,54 @@ export default {
   methods: {
     // Add a bookable to the booking
     async fetchBookables() {
-      const response = await ApiBookablesService.getPublicBookables(
-        this.leadItem.bookable.tenant
-      );
+      try {
+        const response = await ApiBookablesService.getPublicBookables(
+          this.leadItem.bookable.tenantId
+        );
 
-      this.items = response.data
-        .filter((bookable) => {
-          return this.leadItem.bookable.checkoutBookableIds.includes(
-            bookable.id
-          );
-        })
-        .map((bookable) => {
-          return {
-            bookable: bookable,
-            isAvailable: null,
-          };
-        });
+        this.items = response.data
+          .filter((bookable) => {
+            return this.leadItem.bookable.checkoutBookableIds.find(
+              (cb) => cb.bookableId === bookable.id
+            );
+          })
+          .map((bookable) => {
+            const checkoutInfo =
+              this.leadItem.bookable.checkoutBookableIds.find(
+                (cb) => cb.bookableId === bookable.id
+              );
+
+            return {
+              bookable: bookable,
+              isAvailable: null,
+              mandatory: checkoutInfo?.mandatory ?? false,
+            };
+          });
+
+        for (const item of this.items) {
+          if (item.mandatory) {
+            this.selectMandatoryItem(item.bookable, this.leadItem.amount);
+          }
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    },
+
+    selectMandatoryItem(bookable, amount = 1) {
+      this.$emit("item-selected", {
+        bookableId: bookable.id,
+        amount: amount,
+        valid: true,
+        mandatory: true,
+      });
     },
 
     async checkBookableAvailability() {
       for (const item of this.items) {
         try {
           const response = await ApiCheckoutService.validateCheckoutItem(
-            item.bookable.tenant,
+            item.bookable.tenantId,
             {
               bookableId: item.bookable.id,
               amount: 1,

@@ -90,7 +90,7 @@
         <v-divider class="mb-3"></v-divider>
         <v-row no-gutters>
           <v-col><small>Name</small></v-col>
-          <v-col class="col-md-2 text-right"><small>Anzahl</small></v-col>
+          <v-col class="col-md-2 text-center"><small>Anzahl</small></v-col>
           <v-col class="col-md-3 text-right"><small>Preis</small></v-col>
         </v-row>
         <v-row
@@ -108,14 +108,41 @@
               (Prüfen...)
             </span>
           </v-col>
-          <v-col class="text-right col-md-2">
-            <v-btn icon x-small class="me-1" @click="decreaseItemAmount(item)">
-              <v-icon>mdi-minus</v-icon>
-            </v-btn>
-            {{ item.amount }}
-            <v-btn icon x-small class="ms-1" @click="increaseItemAmount(item)">
-              <v-icon>mdi-plus</v-icon>
-            </v-btn>
+          <v-col class="col-md-2">
+            <v-text-field
+              class="centered-input"
+              dense
+              flat
+              hide-details
+              :suffix="
+                item.bookable.priceType === 'per-square-meter' ? 'm²' : ''
+              "
+              :value="item.amount"
+              @change="setItemAmount(item.bookableId, $event)"
+              :disabled="item.mandatory"
+            >
+              <template v-slot:prepend>
+                <v-btn
+                  icon
+                  x-small
+                  @click="decreaseItemAmount(item)"
+                  :disabled="item.mandatory"
+                >
+                  <v-icon>mdi-minus</v-icon>
+                </v-btn>
+              </template>
+
+              <template v-slot:append-outer>
+                <v-btn
+                  icon
+                  x-small
+                  @click="increaseItemAmount(item)"
+                  :disabled="item.mandatory"
+                >
+                  <v-icon>mdi-plus</v-icon>
+                </v-btn>
+              </template>
+            </v-text-field>
           </v-col>
           <v-col class="text-right col-md-3">
             <span
@@ -319,15 +346,50 @@ export default {
 
       return CheckoutUtils.formatCurrency(value);
     },
+    setAmountOfMandatoryItems(item) {
+      const mandatoryItemIds = item.bookable.checkoutBookableIds
+        .filter((cb) => cb.mandatory)
+        .map((cb) => cb.bookableId);
+      if (mandatoryItemIds.length > 0) {
+        for (const mandatoryItemId of mandatoryItemIds) {
+          const mandatoryItem = this.subsequentItems.find(
+            (item) => item.bookableId === mandatoryItemId
+          );
+          if (mandatoryItem) {
+            mandatoryItem.amount = item.amount;
+          }
+        }
+      }
+    },
+
+    setItemAmount(bookableId, amount) {
+      const item = [this.leadItem, ...this.subsequentItems].find(
+        (item) => item.bookableId === bookableId
+      );
+      if (item) {
+        item.amount = amount;
+        this.setAmountOfMandatoryItems(item);
+      }
+
+      this.$emit("validate-items");
+
+    },
+
     increaseItemAmount(item) {
       item.amount++;
+      this.setAmountOfMandatoryItems(item);
+
       this.$emit("validate-items");
     },
     decreaseItemAmount(item) {
       if (item.amount > 1) {
         item.amount--;
+        this.setAmountOfMandatoryItems(item);
       } else {
-        this.subsequentItems.splice(this.subsequentItems.indexOf(item), 1);
+        const index = this.subsequentItems.indexOf(item);
+        if(index > -1) {
+          this.subsequentItems.splice(index, 1);
+        }
       }
 
       this.$emit("validate-items");
@@ -428,26 +490,26 @@ export default {
       }
 
       switch (finalBooking.paymentProvider) {
-      case "giroCockpit": {
-        const paymentUrl = paymentResponse.data?.paymentData;
-        if (paymentUrl) {
-          window.location.href = paymentUrl;
+        case "giroCockpit": {
+          const paymentUrl = paymentResponse.data?.paymentData;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          }
+          break;
         }
-        break;
-      }
-      case "pmPayment": {
-        const paymentUrl = paymentResponse.data?.paymentData;
-        if (paymentUrl) {
-          window.location.href = paymentUrl;
+        case "pmPayment": {
+          const paymentUrl = paymentResponse.data?.paymentData;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          }
+          break;
         }
-        break;
-      }
-      case "invoice":
-        await this.routeToStatus(finalBooking, finalBooking.paymentProvider);
-        break;
-      default:
-        await this.routeToStatus(finalBooking);
-        break;
+        case "invoice":
+          await this.routeToStatus(finalBooking, finalBooking.paymentProvider);
+          break;
+        default:
+          await this.routeToStatus(finalBooking);
+          break;
       }
     },
 
@@ -554,4 +616,8 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style>
+.centered-input .v-text-field__slot input {
+  text-align: center;
+}
+</style>
