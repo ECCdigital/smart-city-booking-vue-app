@@ -1,93 +1,70 @@
 <template>
-  <div>
-    <div class="d-flex overflow-x-auto my-scrollbar" style="width: 100%">
+  <div class="kanban-wrapper">
+    <div v-if="showScrollLeft" class="scroll-indicator-left">
+      <v-icon @click="scrollLeft">mdi-chevron-left</v-icon>
+    </div>
+    <div v-if="showScrollRight" class="scroll-indicator-right">
+      <v-icon @click="scrollRight">mdi-chevron-right</v-icon>
+    </div>
+    <div
+      class="d-flex kanban-container"
+      ref="kanbanContainer"
+      style="width: 100%"
+      @scroll="onScroll"
+    >
       <v-slide-x-transition>
-        <div v-if="showBacklog" class="mx-2 pa-1 task-panel">
-          <div class="mb-4 d-flex">
-            <div class="text-overline">
-              Backlog {{ combinedBacklog.length }}
-            </div>
-            <v-spacer> </v-spacer>
-            <v-progress-circular
-              v-if="isLoading"
-              indeterminate
-              color="primary"
-              size="20"
-            ></v-progress-circular>
-          </div>
-          <draggable
-            style="height: 100%; max-height: 940px; overflow-y: auto;"
-            :list="combinedBacklog"
-            group="bookings"
-            @change="moveTask($event, 'backlog')"
-            class="my-scrollbar"
-          >
-            <BookingKanbanCard
-              class="mx-2"
-              v-for="element in combinedBacklog"
-              :key="element._id"
-              :element="element"
-              :backlog="true"
-              @open-booking="onOpenBooking"
-              @open-edit-booking="onOpenEditBooking"
-              @commit-booking="commitBooking"
-              @reject-booking="rejectBooking"
-              @archive-task="archiveTask"
-              @move-task="moveTask"
-            ></BookingKanbanCard>
-          </draggable>
-        </div>
+        <BookingKanbanColumn
+          v-if="showBacklog"
+          statusId="backlog"
+          :tasks="combinedBacklog"
+          title="Backlog"
+          :count="combinedBacklog.length"
+          :is-loading="isLoading"
+          :dragging="dragging"
+          @change-task="handleChangeTask"
+          @drag-start="onDragStart"
+          @drag-end="onDragEnd"
+          @drag-move="onMove"
+          @open-booking="onOpenBooking"
+          @open-edit-booking="onOpenEditBooking"
+          @commit-booking="commitBooking"
+          @reject-booking="rejectBooking"
+          @archive-task="archiveTask"
+          @move-task="moveTask"
+        />
       </v-slide-x-transition>
-      <div
-        v-for="(status, id) in combinedWorkflow"
-        class="mx-2 pa-1 task-panel"
-        :key="id"
-      >
-        <div class="mb-4 d-flex">
-          <div class="text-overline">
-            {{ status.name }} {{ status.tasks.length }}
-          </div>
-          <v-spacer> </v-spacer>
-          <v-progress-circular
-            v-if="isLoading"
-            indeterminate
-            color="primary"
-            size="20"
-          ></v-progress-circular>
-        </div>
-        <draggable
-          style="height: 100%; max-height: 940px;min-width: 320px ; overflow-y: auto"
-          :list="status.tasks"
-          group="bookings"
-          @change="moveTask($event, status.id)"
-          class="my-scrollbar pa-2"
-        >
-          <BookingKanbanCard
-            class="mx-2"
-            v-for="element in status.tasks"
-            :key="element.id"
-            :element="element"
-            @open-booking="onOpenBooking"
-            @open-edit-booking="onOpenEditBooking"
-            @commit-booking="commitBooking"
-            @reject-booking="rejectBooking"
-            @archive-task="archiveTask"
-            @move-task="moveTask"
-          >
-          </BookingKanbanCard>
-        </draggable>
-      </div>
+
+      <BookingKanbanColumn
+        v-for="status in combinedWorkflow"
+        :key="status.id"
+        :statusId="status.id"
+        :tasks="status.tasks"
+        :title="status.name"
+        :count="status.tasks.length"
+        :is-loading="isLoading"
+        :dragging="dragging"
+        @change-task="handleChangeTask"
+        @drag-start="onDragStart"
+        @drag-end="onDragEnd"
+        @drag-move="onMove"
+        @open-booking="onOpenBooking"
+        @open-edit-booking="onOpenEditBooking"
+        @commit-booking="commitBooking"
+        @reject-booking="rejectBooking"
+        @archive-task="archiveTask"
+        @move-task="moveTask"
+      />
     </div>
   </div>
 </template>
 
 <script>
-import draggable from "vuedraggable";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
-import BookingKanbanCard from "@/components/Booking/BookingKanbanCard.vue";
+import BookingKanbanColumn from "@/components/Booking/KanbanColumn.vue";
+
 export default {
   name: "BookingWorkflow",
-  components: { BookingKanbanCard, draggable },
+  components: { BookingKanbanColumn },
   props: {
     bookings: {
       type: Array,
@@ -109,6 +86,10 @@ export default {
       combinedWorkflow: [],
       combinedBacklog: [],
       internalLoading: true,
+      lastHoveredContainer: null,
+      dragging: false,
+      showScrollLeft: false,
+      showScrollRight: false,
     };
   },
   computed: {
@@ -168,6 +149,7 @@ export default {
           newIndex: evt.added.newIndex,
         });
         this.backlog = await ApiWorkflowService.getBacklog();
+        this.$emit("update:booking", evt.added.element.id)
       }
       if (evt.moved) {
         this.workflow = await ApiWorkflowService.updateTask({
@@ -177,6 +159,7 @@ export default {
           newIndex: evt.moved.newIndex,
         });
         this.backlog = await ApiWorkflowService.getBacklog();
+        this.$emit("update:booking", evt.added.element.id)
       }
     },
     archiveTask: async function (taskId) {
@@ -197,6 +180,69 @@ export default {
     },
     rejectBooking(bookingId) {
       this.$emit("reject-booking", bookingId);
+    },
+    onMove(evt) {
+      if (this.lastHoveredContainer && this.lastHoveredContainer !== evt.to) {
+        this.lastHoveredContainer.classList.remove("drop-in");
+      }
+      evt.to.classList.add("drop-in");
+      this.lastHoveredContainer = evt.to;
+    },
+    onDragStart() {
+      this.dragging = true;
+    },
+    onDragEnd() {
+      if (this.lastHoveredContainer) {
+        this.lastHoveredContainer.classList.remove("drop-in");
+        this.lastHoveredContainer = null;
+      }
+      this.dragging = false;
+    },
+    onScroll() {
+      this.updateScrollIndicators();
+    },
+    updateScrollIndicators() {
+      const container = this.$refs.kanbanContainer;
+
+      if (!container) return;
+
+      this.showScrollLeft = container.scrollLeft > 0;
+
+      this.showScrollRight =
+        container.scrollWidth > container.clientWidth + container.scrollLeft;
+    },
+    scrollLeft() {
+      const container = this.$refs.kanbanContainer;
+      container.scrollBy({
+        left: -200, // Anzahl Pixel die gescrollt werden soll
+        behavior: "smooth",
+      });
+    },
+    scrollRight() {
+      const container = this.$refs.kanbanContainer;
+      container.scrollBy({
+        left: 200,
+        behavior: "smooth",
+      });
+    },
+    handleDragOver(evt) {
+      if (!this.dragging) return;
+
+      const container = this.$refs.kanbanContainer;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+
+      const threshold = 100;
+
+      if (evt.clientX < rect.left + threshold) {
+        container.scrollBy({ left: -10, behavior: "smooth" });
+      } else if (evt.clientX > rect.right - threshold) {
+        container.scrollBy({ left: 10, behavior: "smooth" });
+      }
+    },
+    handleChangeTask(evt, statusId) {
+      this.moveTask(evt, statusId);
     },
   },
   watch: {
@@ -231,6 +277,14 @@ export default {
     this.backlog = await ApiWorkflowService.getBacklog();
 
     this.combineWorkflow();
+
+    this.updateScrollIndicators();
+    window.addEventListener("resize", this.updateScrollIndicators);
+    document.addEventListener("dragover", this.handleDragOver);
+  },
+  beforeDestroy() {
+    window.removeEventListener("resize", this.updateScrollIndicators);
+    document.removeEventListener("dragover", this.handleDragOver);
   },
 };
 </script>
@@ -250,9 +304,42 @@ export default {
   }
 }
 
-.task-panel {
-  background-color: var(--v-accent-base) !important;
-  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.1);
+.kanban-wrapper {
+  position: relative;
+  overflow-x: hidden;
 }
 
+.kanban-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+.task-panel {
+  background-color: var(--v-accent-base);
+  border-radius: 10px;
+}
+
+.scroll-indicator-left,
+.scroll-indicator-right {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 999;
+  pointer-events: none;
+}
+
+.scroll-indicator-left {
+  left: 0;
+}
+
+.scroll-indicator-right {
+  right: 0;
+}
+
+.scroll-indicator-left > .v-icon,
+.scroll-indicator-right > .v-icon {
+  font-size: 48px;
+  pointer-events: auto;
+}
 </style>

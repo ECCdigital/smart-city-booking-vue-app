@@ -1,94 +1,94 @@
 <template>
   <AdminLayout>
-    <v-row gutters align="stretch" class="mb-16">
-      <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <div class="d-flex align-center mb-3 justify-space-between">
-          <v-btn-toggle
-            v-model="currentView"
-            mandatory
-            rounded
-            active-class="active-button"
-          >
-            <v-btn value="list">
-              <v-icon left> mdi-list-box-outline </v-icon>
-              Liste
+    <div class="page-header">
+      <div class="d-flex align-center mb-3 justify-space-between">
+        <v-btn-toggle
+          v-model="currentView"
+          mandatory
+          rounded
+          active-class="active-button"
+        >
+          <v-btn value="list">
+            <v-icon left> mdi-list-box-outline </v-icon>
+            Liste
+          </v-btn>
+          <v-btn value="calendar">
+            <v-icon left> mdi-calendar-blank-outline </v-icon>
+            Kalender
+          </v-btn>
+          <v-btn v-if="workflow.active" value="kanban">
+            <v-icon left> mdi-table-column </v-icon>
+            Kanban
+          </v-btn>
+        </v-btn-toggle>
+
+        <v-tooltip v-if="currentView === 'kanban'" bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn
+              v-on="on"
+              fab
+              small
+              class="ml-2 elevation-0 active-button"
+              @click="showBacklog = !showBacklog"
+            >
+              <v-icon>mdi-tray-full</v-icon>
             </v-btn>
-            <v-btn value="calendar">
-              <v-icon left> mdi-calendar-blank-outline </v-icon>
-              Kalender
-            </v-btn>
-            <v-btn v-if="workflow.active" value="kanban">
-              <v-icon left> mdi-table-column </v-icon>
-              Kanban
-            </v-btn>
-          </v-btn-toggle>
+          </template>
+          <span>Backlog ein-/ausblenden</span>
+        </v-tooltip>
+      </div>
 
-          <v-tooltip v-if="currentView === 'kanban'" bottom>
-            <template v-slot:activator="{ on }">
-              <v-btn
-                v-on="on"
-                fab
-                small
-                class="ml-2 elevation-0 active-button"
-                @click="showBacklog = !showBacklog"
-              >
-                <v-icon>mdi-tray-full</v-icon>
-              </v-btn>
-            </template>
-            <span>Backlog ein-/ausblenden</span>
-          </v-tooltip>
-        </div>
+      <v-text-field
+        v-model="searchTerm"
+        label="Buchung suchen..."
+        append-icon="mdi-magnify"
+        solo
+        clearable
+        class="search-field"
+      ></v-text-field>
+    </div>
 
-        <v-text-field
-          v-model="searchTerm"
-          label="Buchung suchen..."
-          append-icon="mdi-magnify"
-          solo
-          clearable
-          class="search-field"
-        ></v-text-field>
-
-        <!-- List view -->
-        <div v-if="currentView === 'list'">
-          <v-skeleton-loader type="table" class="flex">
-            <BookingTable
-              :bookings="filteredBookings"
-              :loading="loading"
-              @open-booking="onOpenBooking"
-              @open-edit-booking="onOpenEditBooking"
-              @commit-booking="commitBooking"
-              @open-delete-dialog="onOpenDeleteDialog"
-              @reject-booking="onOpenRejectDialog"
-            />
-          </v-skeleton-loader>
-        </div>
-
-        <!-- Calendar view -->
-        <div v-else-if="currentView === 'calendar'">
-          <BookingOverviewCalendar
+    <div class="page-content">
+      <div v-if="currentView === 'list'">
+        <v-skeleton-loader type="table" class="flex">
+          <BookingTable
             :bookings="filteredBookings"
             :loading="loading"
             @open-booking="onOpenBooking"
             @open-edit-booking="onOpenEditBooking"
             @commit-booking="commitBooking"
-            @reject-booking="onOpenRejectDialog"
             @open-delete-dialog="onOpenDeleteDialog"
-          ></BookingOverviewCalendar>
-        </div>
+            @reject-booking="onOpenRejectDialog"
+          />
+        </v-skeleton-loader>
+      </div>
 
-        <div v-else-if="currentView === 'kanban'">
-          <BookingKanban
-            :bookings="filteredBookings"
-            :loading="loading"
-            :show-backlog="showBacklog"
-            @open-booking="onOpenBooking"
-            @open-edit-booking="onOpenEditBooking"
-            @commit-booking="commitBooking"
-          >
-          </BookingKanban>
-        </div>
-      </v-col>
-    </v-row>
+      <div v-else-if="currentView === 'calendar'">
+        <BookingOverviewCalendar
+          :bookings="filteredBookings"
+          :loading="loading"
+          @open-booking="onOpenBooking"
+          @open-edit-booking="onOpenEditBooking"
+          @commit-booking="commitBooking"
+          @reject-booking="onOpenRejectDialog"
+          @open-delete-dialog="onOpenDeleteDialog"
+        ></BookingOverviewCalendar>
+      </div>
+
+      <div v-else-if="currentView === 'kanban'">
+        <BookingKanban
+          :bookings="filteredBookings"
+          :loading="loading"
+          :show-backlog="showBacklog"
+          @open-booking="onOpenBooking"
+          @open-edit-booking="onOpenEditBooking"
+          @commit-booking="commitBooking"
+          @update:booking="fetchBooking"
+        >
+        </BookingKanban>
+      </div>
+    </div>
+
     <v-btn
       color="primary"
       fixed
@@ -300,6 +300,21 @@ export default {
           console.log(error);
         });
     },
+    async fetchBooking(id) {
+      await ApiBookingService.getBooking(id, undefined, true)
+        .then((response) => {
+          const booking = response.data;
+          const index = this.api.bookings.findIndex((b) => b.id === id);
+          if (index !== -1) {
+            this.api.bookings[index] = booking;
+          } else {
+            this.api.bookings.push(booking);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
     commitBooking(id) {
       ApiBookingService.commitBooking(id)
         .then((response) => {
@@ -488,5 +503,36 @@ export default {
 ::v-deep .active-button {
   color: black !important;
   background-color: var(--v-secondary-base) !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+.page-container {
+  /* page-container selbst muss nicht zwingend Flex sein,
+     wenn du in AdminLayout schon Flex-Logik nutzt.
+     Kann aber, wenn man Header/Footer explizit abgrenzen möchte. */
+  display: flex;
+  flex-direction: column;
+  /* Hier KEIN fixed height nötig, wir vererben die "Höhe" vom AdminLayout her. */
+}
+
+.page-header {
+  /* Nimmt nur so viel Platz, wie nötig */
+  flex: 0 0 auto;
+}
+
+.page-content {
+  /* Hier könnte ebenfalls overflow, wenn du den inneren Bereich nochmals eigenständig scrollen lassen willst.
+     Falls das jedoch global im AdminLayout schon geregelt wird, kannst du es hier auch simpler halten. */
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.page-footer {
+  flex: 0 0 auto;
 }
 </style>
