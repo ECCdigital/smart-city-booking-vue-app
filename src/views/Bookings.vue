@@ -126,10 +126,7 @@
         @close="onCloseBookingDialog"
       ></BookingDetails>
     </v-dialog>
-    <v-dialog
-      v-model="openGroupBookingDialog"
-      max-width="70vw"
-    >
+    <v-dialog v-model="openGroupBookingDialog" max-width="70vw">
       <div style="overflow: hidden">
         <GroupBookingDetails
           :group-booking="selectedGroupBooking"
@@ -137,6 +134,15 @@
         ></GroupBookingDetails>
       </div>
     </v-dialog>
+    <GroupBookingCommitDialog
+      v-if="selectedBooking.id"
+      :booking-id="selectedBooking.id"
+      :open="openCommitGroupBookingDialog"
+      :in-progress="loading"
+      @close="openCommitGroupBookingDialog = false"
+      @commit-single-booking="commitBooking(selectedBooking.id, true)"
+      @commit-group-booking="commitGroupBooking(selectedGroupBooking.id)"
+    />
   </AdminLayout>
 </template>
 
@@ -157,9 +163,11 @@ import BookingTable from "@/components/Booking/BookingTable.vue";
 import BookingKanban from "@/components/Booking/BookingKanban.vue";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import GroupBookingDetails from "@/components/Booking/GroupBookingDetails.vue";
+import GroupBookingCommitDialog from "@/components/Booking/GroupBookingCommitDialog.vue";
 
 export default {
   components: {
+    GroupBookingCommitDialog,
     GroupBookingDetails,
     BookingTable,
     BookingOverviewCalendar,
@@ -201,6 +209,7 @@ export default {
       openDeleteDialog: false,
       openRejectDialog: false,
       openGroupBookingDialog: false,
+      openCommitGroupBookingDialog: false,
       selectedBooking: {},
       selectedGroupBooking: {},
       bookables: [],
@@ -344,16 +353,35 @@ export default {
           console.log(error);
         });
     },
-    commitBooking(id) {
-      ApiBookingService.commitBooking(id)
-        .then((response) => {
-          if (response.status === 200) {
-            this.fetchBookings();
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+    async commitBooking(id, force = false) {
+      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
+        groupBooking.bookingIds.includes(id)
+      );
+      if (!force && hasGroupBooking) {
+        this.selectedBooking = Object.assign(
+          {},
+          this.api.bookings.find((booking) => booking.id === id)
+        );
+        this.openCommitGroupBookingDialog = true;
+      } else {
+        try {
+          await this.startLoading("commit-booking");
+          await ApiBookingService.commitBooking(id);
+          await this.fetchBookings();
+          this.openCommitGroupBookingDialog = false;
+        } finally {
+          await this.stopLoading("commit-booking");
+        }
+      }
+    },
+    async commitGroupBooking(id) {
+      try {
+        await this.startLoading("commit-booking");
+        await ApiGroupBookingService.commitGroupBooking(id);
+        await this.fetchBookings();
+      } finally {
+        await this.stopLoading("commit-booking");
+      }
     },
     rejectBooking(id) {
       ApiBookingService.rejectBooking(id, this.tenantId)
