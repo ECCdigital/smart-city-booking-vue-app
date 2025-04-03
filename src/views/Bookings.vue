@@ -126,7 +126,7 @@
         @close="onCloseBookingDialog"
       ></BookingDetails>
     </v-dialog>
-    <v-dialog v-model="openGroupBookingDialog" max-width="70vw">
+    <v-dialog v-model="openGroupBookingDialog" max-width="1200px">
       <div style="overflow: hidden">
         <GroupBookingDetails
           :group-booking="selectedGroupBooking"
