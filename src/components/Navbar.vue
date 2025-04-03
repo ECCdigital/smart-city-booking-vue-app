@@ -93,7 +93,7 @@
             item-text="name"
             item-value="id"
             hide-details
-            class=" my-2 text-truncate"
+            class="my-2 text-truncate"
           >
             <template v-slot:prepend-item>
               <v-list-item class="my-2"> Mandant auswählen: </v-list-item>
@@ -170,32 +170,6 @@ export default {
         ],
       },
       {
-        header: "Mandant",
-        pages: [
-          {
-            title: "Mandant verwalten",
-            link: "tenant",
-            icon: "mdi-domain",
-            interfaceName: "tenants",
-            context: "tenant",
-          },
-          {
-            title: "Mandant Benutzer",
-            link: "user",
-            icon: "mdi-account-group-outline",
-            interfaceName: "users",
-            context: "tenant",
-          },
-          {
-            title: "Mandant Rollen",
-            link: "roles",
-            icon: "mdi-account-key-outline",
-            interfaceName: "roles",
-            context: "tenant",
-          },
-        ],
-      },
-      {
         header: "Buchungsplattform",
         pages: [
           {
@@ -250,6 +224,32 @@ export default {
         ],
       },
       {
+        header: "Mandant",
+        pages: [
+          {
+            title: "Mandant verwalten",
+            link: "tenant",
+            icon: "mdi-domain",
+            interfaceName: "tenants",
+            context: "tenant",
+          },
+          {
+            title: "Mandant Benutzer",
+            link: "user",
+            icon: "mdi-account-group-outline",
+            interfaceName: "users",
+            context: "tenant",
+          },
+          {
+            title: "Mandant Rollen",
+            link: "roles",
+            icon: "mdi-account-key-outline",
+            interfaceName: "roles",
+            context: "tenant",
+          },
+        ],
+      },
+      {
         header: "System",
         pages: [
           {
@@ -296,14 +296,14 @@ export default {
       selectTenant: "tenants/select",
     }),
     resetStores() {
-      this.$store.dispatch('reset');
+      this.$store.dispatch("reset");
     },
     logout() {
       ApiAuthService.logout()
         .then(() => {
           this.addToast(ToastService.createToast("logout.success", "success"));
           this.resetStores();
-          this.$router.push({ name: "login" });
+          window.location.href = "/";
         })
         .finally(() => {
           this.deleteUser();
@@ -315,12 +315,15 @@ export default {
     fetchTenants() {
       ApiTenantService.getTenants(true).then((response) => {
         this.tenants = response.data;
+        if(!this.currentTenant && this.tenants.length === 1) {
+          this.currentTenant = this.tenants[0].id;
+        }
       });
     },
   },
   computed: {
     ...mapGetters({
-      user: "user/user",
+      user: "user/getUser",
       isAuthorized: "user/isAuthorized",
       getCurrentTenant: "tenants/currentTenantId",
     }),
@@ -354,7 +357,7 @@ export default {
         });
     },
   },
-  mounted() {
+  async mounted() {
     this.drawer = !this.$vuetify.breakpoint.mdAndDown;
     this.fetchTenants();
   },

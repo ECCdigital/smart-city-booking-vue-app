@@ -1,5 +1,5 @@
 <template>
-  <v-card class="mb-2" style="max-width: 450px">
+  <v-card class="mb-2 cursor-pointer" style="max-width: 350px">
     <v-app-bar flat>
       <v-toolbar-title class="text-h6 pl-0">
         <div v-if="element.bookingItem">
@@ -86,25 +86,36 @@
 
     <v-card-actions>
       <v-spacer></v-spacer>
-      <v-rating
-        v-if="!backlog"
-        class="mr-4"
-        empty-icon="mdi-circle-outline"
-        full-icon="mdi-circle"
-        readonly
-        dense
-        length="4"
-        size="10"
-        background-color="purple lighten-3"
-        :color="
-          durationInStatus(element.added) >= 4
-            ? 'error'
-            : durationInStatus(element.added) >= 2
-            ? 'warning'
-            : 'success'
-        "
-        :value="durationInStatus(element.added)"
-      ></v-rating>
+      <v-tooltip top>
+        <template v-slot:activator="{ on, attrs }">
+          <div v-bind="attrs" v-on="on">
+            <v-rating
+              v-if="!backlog"
+              class="mr-4"
+              empty-icon="mdi-circle-outline"
+              full-icon="mdi-circle"
+              readonly
+              dense
+              length="4"
+              size="10"
+              background-color="purple lighten-3"
+              :color="
+                durationInStatus(element.added) >= 4
+                  ? 'error'
+                  : durationInStatus(element.added) >= 2
+                  ? 'warning'
+                  : 'success'
+              "
+              :value="durationInStatus(element.added)"
+            ></v-rating>
+          </div>
+        </template>
+        <span
+          >Die Buchung befindet sich seit {{ durationInStatus(element.added) }}
+          {{ durationInStatus(element.added) === 1 ? "Tag" : "Tagen" }} in
+          diesem Status
+        </span>
+      </v-tooltip>
     </v-card-actions>
   </v-card>
 </template>
@@ -124,17 +135,7 @@ export default {
       const now = Date.now();
       const diff = now - dateAdded;
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      if (days >= 7) {
-        return 4;
-      } else if (days >= 5) {
-        return 3;
-      } else if (days >= 3) {
-        return 2;
-      } else if (days >= 1) {
-        return 1;
-      } else {
-        return 1;
-      }
+      return days;
     },
 
     onOpenBooking(bookingId) {
@@ -159,4 +160,8 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.cursor-pointer {
+  cursor: pointer;
+}
+</style>

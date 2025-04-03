@@ -15,7 +15,7 @@ import Rooms from "@/views/Bookables/Rooms/Rooms.vue";
 import Resources from "@/views/Bookables/Resources/Resources.vue";
 import Locations from "@/views/Bookables/Locations/Locations";
 import Tenants from "@/views/Management/Tenants";
-import Users from "@/views/Management/Users";
+import Users from "@/views/Management/TenantUsers.vue";
 import Roles from "@/views/Management/Roles";
 import store from "@/store/index";
 import ToastService from "@/services/ToastService";
@@ -395,6 +395,16 @@ const routes = [
     component: lazyLoad("Auth/Login"),
     meta: {
       title: "Login",
+      requiresAuth: false,
+    },
+  },
+  {
+    path: "/login/sso",
+    name: "sso",
+    component: lazyLoad("Auth/SsoLogin"),
+    props: true,
+    meta: {
+      title: "SSO",
       requiresAuth: false,
     },
   },

@@ -139,6 +139,7 @@
                   </p>
                 </v-col>
               </v-row>
+
               <v-divider class="" />
               <v-list>
                 <v-list-item
@@ -154,14 +155,63 @@
                         <v-spacer></v-spacer>
                         <v-col class="col-4">
                           <v-text-field
-                            v-model="bookableItem._bookableUsed.priceEur"
+                            :value="
+                              getPriceCategory(
+                                bookableItem.bookableId,
+                                'priceEur'
+                              )
+                            "
+                            @input="
+                              updatePriceCategory(
+                                bookableItem.bookableId,
+                                $event
+                              )
+                            "
                             filled
                             prefix="€"
                             background-color="accent"
                             hide-details
-                            :label="isTimeRelated(bookableItem._bookableUsed)"
+                            :suffix="
+                              isTimeRelated(
+                                bookableItem._bookableUsed,
+                                getPriceCategory(
+                                  bookableItem.bookableId,
+                                  'fixedPrice'
+                                )
+                              )
+                            "
+                            label="Preis (netto)"
                             type="number"
                           ></v-text-field>
+                        </v-col>
+                        <v-col class="col-4">
+                          <v-tooltip top max-width="300" open-delay="400">
+                            <template v-slot:activator="{ on, attrs }">
+                              <div v-bind="attrs" v-on="on">
+                                <v-checkbox
+                                  dense
+                                  :input-value="
+                                    getPriceCategory(
+                                      bookableItem.bookableId,
+                                      'fixedPrice'
+                                    )
+                                  "
+                                  @change="
+                                    updateFixedPrice(
+                                      bookableItem.bookableId,
+                                      $event
+                                    )
+                                  "
+                                  label="Pauschalpreis"
+                                >
+                                </v-checkbox>
+                              </div>
+                            </template>
+                            <span>
+                              Bei Aktivierung wird immer der Grundpreis
+                              berechnet.
+                            </span>
+                          </v-tooltip>
                         </v-col>
                         <v-col class="col-auto">
                           <div class="d-flex">
@@ -742,6 +792,73 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    getPriceCategory(bookableId, field) {
+      const bookableItem = this.bookableItems.find(
+        (b) => b.bookableId === bookableId
+      );
+      const { priceCategories, priceType } = bookableItem._bookableUsed;
+
+      if (priceCategories.length === 1) {
+        if (field) {
+          return priceCategories[0][field];
+        }
+        return priceCategories[0];
+      }
+
+      const bookingDurationInMinutes = this.getBookingDuration();
+
+      let valueToCheck;
+      switch (priceType) {
+        case "per-hour":
+          valueToCheck = bookingDurationInMinutes / 60;
+          break;
+        case "per-day":
+          valueToCheck = bookingDurationInMinutes / 60 / 24;
+          break;
+        case "per-item":
+          valueToCheck = bookableItem.amount;
+          break;
+        case "per-square-meter":
+          valueToCheck = bookableItem.amount;
+          break;
+        default:
+          return null;
+      }
+
+      const category =
+        priceCategories.find(({ interval }) => {
+          const { start, end } = interval;
+          return (
+            (start === null || start <= valueToCheck) &&
+            (end === null || end >= valueToCheck)
+          );
+        }) || priceCategories[0];
+
+      if (field) {
+        return category[field];
+      }
+      return category;
+    },
+    getBookingDuration() {
+      if (
+        !this.selectedBooking ||
+        !this.selectedBooking.timeEnd ||
+        !this.selectedBooking.timeBegin
+      ) {
+        return 0;
+      }
+      return Math.round(
+        (this.selectedBooking.timeEnd - this.selectedBooking.timeBegin) / 60000
+      );
+    },
+    updatePriceCategory(bookableId, newPrice) {
+      const category = this.getPriceCategory(bookableId);
+      category.priceEur = Number(newPrice);
+    },
+    updateFixedPrice(bookableId, value) {
+      const category = this.getPriceCategory(bookableId);
+      category.fixedPrice = !!value;
+    },
     remove(item) {
       // remove item from  selectedBooking.bookableIds
       this.selectedBooking.bookableIds =
@@ -892,16 +1009,22 @@ export default {
         console.log(error);
       }
     },
-    isTimeRelated(bookable) {
-      switch (bookable.priceCategory) {
-      case "per-item":
-        return "pro Stück";
-      case "per-hour":
-        return "pro Stunde";
-      case "per-day":
-        return "pro Tag";
-      default:
-        return "pro Stück";
+    isTimeRelated(bookable, isFixedPrice) {
+      if (isFixedPrice) {
+        return "";
+      }
+
+      switch (bookable.priceType) {
+        case "per-item":
+          return "pro Stück";
+        case "per-hour":
+          return "pro Stunde";
+        case "per-day":
+          return "pro Tag";
+        case "per-square-meter":
+          return "pro m²";
+        default:
+          return "pro Stück";
       }
     },
   },

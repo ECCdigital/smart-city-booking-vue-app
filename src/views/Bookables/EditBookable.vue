@@ -152,18 +152,42 @@
       </v-col>
     </v-row>
 
+    <h3 class="mt-10 mb-4">Preis</h3>
     <v-row>
-      <v-col>
+      <v-col class="col-12 col-md-3">
+        <v-select
+          background-color="accent"
+          filled
+          label="Preisart"
+          hide-details
+          v-model="priceType"
+          :items="priceTypes"
+          item-text="name"
+          item-value="id"
+        ></v-select>
+      </v-col>
+      <v-col class="col-12 col-md-2">
         <v-text-field
+          background-color="accent"
+          filled
+          label="Verfügbare Anzahl"
+          hide-details
+          v-model="amount"
+          :suffix="priceType === 'per-square-meter' ? 'm²' : 'Stück'"
+        ></v-text-field>
+      </v-col>
+      <v-col v-if="!useGraduatedPrices" class="col-12 col-md-3">
+        <v-text-field
+          v-if="priceCategories[0]"
           background-color="accent"
           filled
           label="Preis (netto)"
           hide-details
-          v-model="priceEur"
+          v-model="priceCategories[0].priceEur"
           suffix="Euro"
         ></v-text-field>
       </v-col>
-      <v-col class="col-2">
+      <v-col class="col-12 col-md-2">
         <v-text-field
           background-color="accent"
           filled
@@ -173,29 +197,116 @@
           suffix="%"
         ></v-text-field>
       </v-col>
-      <v-col>
-        <v-select
-          background-color="accent"
-          filled
-          label="Preisart"
-          hide-details
-          v-model="priceCategory"
-          :items="priceCategories"
-          item-text="name"
-          item-value="id"
-        ></v-select>
-      </v-col>
-      <v-col>
-        <v-text-field
-          background-color="accent"
-          filled
-          label="Verfügbare Anzahl"
-          hide-details
-          v-model.number="amount"
-          suffix="Stück"
-        ></v-text-field>
+
+      <v-col v-if="!useGraduatedPrices" class="col-12 col-md-1">
+        <v-tooltip top max-width="300" open-delay="400">
+          <template v-slot:activator="{ on, attrs }">
+            <div v-bind="attrs" v-on="on">
+              <v-checkbox
+                v-if="priceCategories[0]"
+                v-model="priceCategories[0].fixedPrice"
+                label="Pauschalpreis"
+              >
+              </v-checkbox>
+            </div>
+          </template>
+          <span> Bei Aktivierung wird immer der Grundpreis berechnet. </span>
+        </v-tooltip>
       </v-col>
     </v-row>
+
+    <v-row>
+      <v-col v-if="!useGraduatedPrices">
+        <v-btn dense outlined hide-details @click="useGraduatedPrices = true">
+          Staffelpreise
+        </v-btn>
+      </v-col>
+    </v-row>
+
+    <v-card v-if="useGraduatedPrices" flat outlined rounded class="mt-3">
+      <v-card-subtitle
+        class="d-flex justify-space-between mb-4"
+        style="background-color: var(--v-accent-base)"
+      >
+        <span class="text-h6">Preis-Kategorien</span>
+      </v-card-subtitle>
+      <v-card-text>
+        <div v-for="(price, idx) in priceCategories" :key="idx">
+          <div class="d-flex">
+            <v-row>
+              <v-col class="col-12 col-md-3">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  label="Preis (netto)"
+                  hide-details
+                  v-model="price.priceEur"
+                  suffix="Euro"
+                ></v-text-field>
+              </v-col>
+              <v-col class="col-6 col-md-2">
+                <v-text-field
+                  v-model="price.interval.start"
+                  background-color="accent"
+                  filled
+                  label="Gültig ab"
+                  type="number"
+                  :suffix="intervalSuffix"
+                  @blur="checkNull('price.interval.start')"
+                ></v-text-field>
+              </v-col>
+              <v-col class="col-6 col-md-2">
+                <v-text-field
+                  v-model="price.interval.end"
+                  background-color="accent"
+                  filled
+                  label="Gültig bis"
+                  type="number"
+                  :suffix="intervalSuffix"
+                  @blur="checkNull('price.interval.start')"
+                ></v-text-field>
+              </v-col>
+              <v-col class="col-12 col-md-1">
+                <v-tooltip top max-width="300" open-delay="400">
+                  <template v-slot:activator="{ on, attrs }">
+                    <div v-bind="attrs" v-on="on">
+                      <v-checkbox
+                        v-model="price.fixedPrice"
+                        label="Pauschalpreis"
+                      >
+                      </v-checkbox>
+                    </div>
+                  </template>
+                  <span>
+                    Bei Aktivierung wird immer der Grundpreis berechnet.
+                  </span>
+                </v-tooltip>
+              </v-col>
+            </v-row>
+            <v-btn
+              :disabled="idx === 0"
+              icon
+              @click="removePriceCategory(idx)"
+              class="mt-4"
+              color="error"
+            >
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+          </div>
+          <v-divider
+            v-if="
+              priceCategories.length > 1 && idx !== priceCategories.length - 1
+            "
+            class="mb-5"
+          ></v-divider>
+        </div>
+        <div>
+          <v-btn outlined class="mt-2" @click="addPriceCategory"
+            >Neue Preis-Kategorie</v-btn
+          >
+        </div>
+      </v-card-text>
+    </v-card>
 
     <h3 class="mt-10 mb-4">Öffnungszeiten und Buchungszeiträume</h3>
     <BookableTimeDependantAttributes
@@ -240,9 +351,20 @@
       </v-col>
     </v-row>
     <BookableLockingAttributes
+      v-if="amount"
       :tenant-id="tenantId"
       :amount="amount"
     ></BookableLockingAttributes>
+
+    <v-alert
+      v-else
+      type="warning"
+      dense
+      outlined
+    >
+      Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl der verfügbaren Buchungsobjekte an.
+    </v-alert>
+
 
     <h3 class="mt-10">Individuelle Berechtigungen</h3>
 
@@ -406,20 +528,12 @@
     </p>
     <v-row>
       <v-col>
-        <SortableList
+        <BookableCheckoutBookables
           :items="checkoutBookableIds"
           :available-items="bookablesWithoutSelf"
-          item-value="id"
-          item-text="title"
-          item-detail="type"
         >
-          <template v-slot:text="{ itemObject }">
-            {{ itemObject.title }}
-          </template>
-          <template v-slot:detail="{ itemObject }">
-            {{ itemLabel(`editBookables.types.${itemObject.type}`) }}
-          </template>
-        </SortableList>
+
+        </BookableCheckoutBookables>
       </v-col>
     </v-row>
 
@@ -604,10 +718,12 @@ import Tiptap from "@/components/Tiptap";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ChooseFile from "@/components/Files/ChooseFile.vue";
 import BookableLockingAttributes from "@/components/Bookable/BookableLockingAttributes";
+import BookableCheckoutBookables from "@/components/Bookable/BookableCheckoutBookables.vue";
 
 export default {
   name: "EditBookable",
   components: {
+    BookableCheckoutBookables,
     ChooseFile,
     SortableList,
     BookableTimeDependantAttributes,
@@ -617,6 +733,7 @@ export default {
 
   data() {
     return {
+      useGraduatedPrices: false,
       allowPublic: true,
       bookableType: null,
       bookable: {},
@@ -660,7 +777,7 @@ export default {
           name: "Produktinformationen",
         },
       ],
-      priceCategories: [
+      priceTypes: [
         {
           id: "per-item",
           name: "pro Stück",
@@ -672,6 +789,10 @@ export default {
         {
           id: "per-day",
           name: "pro Tag",
+        },
+        {
+          id: "per-square-meter",
+          name: "pro m²",
         },
       ],
       tagsAvailable: [],
@@ -723,6 +844,14 @@ export default {
       },
       deep: true,
     },
+    priceCategories: {
+      handler: function () {
+        if (!this.useGraduatedPrices) {
+          this.setUseGraduatedPrices();
+        }
+      },
+      deep: true,
+    },
   },
   methods: {
     ...mapActions({
@@ -735,6 +864,33 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+    checkNull(field) {
+      if (this[field] === "") {
+        this[field] = null;
+      }
+    },
+    setUseGraduatedPrices() {
+      this.useGraduatedPrices = !!(
+        this.priceCategories.length > 1 ||
+        this.priceCategories.some((pC) => pC.interval.start !== null) ||
+        this.priceCategories.some((pC) => pC.interval.end !== null)
+      );
+    },
+    addPriceCategory() {
+      const lastCategory = this.priceCategories[this.priceCategories.length - 1];
+      this.priceCategories.push({
+        priceEur: 0,
+        priceValueAddedTax: 0,
+        interval: {
+          start: lastCategory ? lastCategory.interval.end : null,
+          end: null,
+        },
+        fixedPrice: false,
+      });
+    },
+    removePriceCategory(index) {
+      this.priceCategories.splice(index, 1);
+    },
     itemLabel(key) {
       return this.$i18n.t(key);
     },
@@ -776,7 +932,6 @@ export default {
             attachments,
             parent,
             amount,
-            priceCategory,
             autoCommitBooking,
             minBookingDuration,
             maxBookingDuration,
@@ -791,7 +946,8 @@ export default {
             flags,
             id,
             location,
-            priceEur,
+            priceCategories,
+            priceType,
             priceValueAddedTax,
             tags,
             tenantId,
@@ -822,10 +978,21 @@ export default {
             title: title,
             description: description,
             location: location,
-            priceEur: priceEur,
-            priceValueAddedTax: priceValueAddedTax,
-            priceCategory: !_.isNil(priceCategory) ? priceCategory : false,
-            amount: !_.isNil(amount) ? amount : 0,
+            priceCategories: priceCategories || [
+              {
+                priceEur: 0,
+                interval: {
+                  start: null,
+                  end: null,
+                },
+                fixedPrice: false,
+              },
+            ],
+            priceType: !_.isNil(priceType) ? priceType : false,
+            priceValueAddedTax: !_.isNil(priceValueAddedTax)
+              ? priceValueAddedTax
+              : 0,
+            amount: !_.isNil(amount) ? amount : null,
             isScheduleRelated: !_.isNil(isScheduleRelated)
               ? isScheduleRelated
               : false,
@@ -892,7 +1059,7 @@ export default {
     },
 
     async fetchRoles() {
-      await ApiRolesService.getRoles().then((result) => {
+      await ApiRolesService.getTenantRoles().then((result) => {
         this.availableRoles = result?.data;
       });
     },
@@ -1008,6 +1175,20 @@ export default {
       bookableForm: "bookables/form",
       currentTenantId: "tenants/currentTenantId",
     }),
+    intervalSuffix: {
+      get() {
+        if (this.priceType === "per-hour") {
+          return "Std.";
+        } else if (this.priceType === "per-day") {
+          return "Tage";
+        } else if (this.priceType === "per-square-meter") {
+          return "m²";
+        } else {
+          return "Stück";
+        }
+      },
+    },
+
     id: {
       get() {
         return this.$store.state.bookables.form.id;
@@ -1071,12 +1252,20 @@ export default {
         this.updateValue({ field: "location", value: value });
       },
     },
-    priceEur: {
+    priceCategories: {
       get() {
-        return this.$store.state.bookables.form.priceEur;
+        return this.$store.state.bookables.form.priceCategories;
       },
       set(value) {
-        this.updateValue({ field: "priceEur", value: value });
+        this.updateValue({ field: "priceCategories", value: value });
+      },
+    },
+    priceType: {
+      get() {
+        return this.$store.state.bookables.form.priceType;
+      },
+      set(value) {
+        this.updateValue({ field: "priceType", value: value });
       },
     },
     priceValueAddedTax: {
@@ -1087,19 +1276,16 @@ export default {
         this.updateValue({ field: "priceValueAddedTax", value: value });
       },
     },
-    priceCategory: {
-      get() {
-        return this.$store.state.bookables.form.priceCategory;
-      },
-      set(value) {
-        this.updateValue({ field: "priceCategory", value: value });
-      },
-    },
     amount: {
       get() {
         return this.$store.state.bookables.form.amount;
       },
       set(value) {
+        if(value === "" || value === undefined) {
+          value = null
+        } else if(value !== null) {
+          value = parseInt(value);
+        }
         this.updateValue({ field: "amount", value: value });
       },
     },
@@ -1308,6 +1494,7 @@ export default {
   mounted() {
     this.initialize();
     this.allowSetPublic();
+    this.setUseGraduatedPrices();
   },
 };
 </script>

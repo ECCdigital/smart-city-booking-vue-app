@@ -138,6 +138,7 @@ export default {
           value: "name",
         },
         { text: "Admin-Bereiche", value: "adminInterfaces" },
+        { text: "Benutzer", value: "manageUsers" },
         { text: "Ressourcen", value: "manageBookables" },
         { text: "Buchungen", value: "manageBookings" },
         { text: "Rollen", value: "manageRoles" },
@@ -170,7 +171,7 @@ export default {
     }),
     fetchRoles() {
       this.startLoading("fetch-roles");
-      ApiRolesService.getRoles()
+      ApiRolesService.getTenantRoles()
         .then((response) => {
           this.api.roles = response.data;
         })

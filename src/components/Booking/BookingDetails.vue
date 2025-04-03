@@ -39,38 +39,38 @@ export default {
     }),
     translatePayMethod(paymentMethod) {
       switch (paymentMethod) {
-      case "CASH":
-        return "Bar";
-      case "TRANSFER":
-        return "Überweisung";
-      case "CREDIT_CARD":
-        return "Kreditkarte";
-      case "DEBIT_CARD":
-        return "EC-Karte";
-      case "PAYPAL":
-        return "PayPal";
-      case "OTHER":
-        return "Sonstiges";
-      case "GIROPAY":
-        return "Giropay";
-      case "APPLE_PAY":
-        return "Apple Pay";
-      case "GOOGLE_PAY":
-        return "Google Pay";
-      case "EPS":
-        return "EPS";
-      case "IDEAL":
-        return "iDEAL";
-      case "MAESTRO":
-        return "Maestro";
-      case "PAYDIRECT":
-        return "paydirekt";
-      case "SOFORT":
-        return "SOFORT-Überweisung";
-      case "BLUECODE":
-        return "Bluecode";
-      default:
-        return "Unbekannt";
+        case "CASH":
+          return "Bar";
+        case "TRANSFER":
+          return "Überweisung";
+        case "CREDIT_CARD":
+          return "Kreditkarte";
+        case "DEBIT_CARD":
+          return "EC-Karte";
+        case "PAYPAL":
+          return "PayPal";
+        case "OTHER":
+          return "Sonstiges";
+        case "GIROPAY":
+          return "Giropay";
+        case "APPLE_PAY":
+          return "Apple Pay";
+        case "GOOGLE_PAY":
+          return "Google Pay";
+        case "EPS":
+          return "EPS";
+        case "IDEAL":
+          return "iDEAL";
+        case "MAESTRO":
+          return "Maestro";
+        case "PAYDIRECT":
+          return "paydirekt";
+        case "SOFORT":
+          return "SOFORT-Überweisung";
+        case "BLUECODE":
+          return "Bluecode";
+        default:
+          return "Unbekannt";
       }
     },
     createReceipt(bookingId) {
@@ -164,7 +164,9 @@ export default {
         <v-col>
           <v-list-item two-line>
             <v-list-item-content>
-              <v-list-item-title class="text-h"> Gesamtpreis </v-list-item-title>
+              <v-list-item-title class="text-h">
+                Gesamtpreis
+              </v-list-item-title>
               <v-list-item-subtitle>{{
                 Intl.NumberFormat("de-DE", {
                   style: "currency",
@@ -209,8 +211,10 @@ export default {
               <v-list-item-subtitle
                 :class="{ 'error--text': booking.isRejected }"
                 >{{
-                  booking.isRejected
-                    ? "storniert"
+                  booking.isRejected && !booking.isCommitted
+                    ? "abgelehnt"
+                    : booking.isRejected && booking.isCommitted
+                    ? "stoniert"
                     : booking.isCommitted == true
                     ? "freigegeben"
                     : "ausstehend"
@@ -263,9 +267,8 @@ export default {
                     >Anzahl: {{ item?.amount }}</v-list-item-subtitle
                   >
                   <v-list-item-subtitle
-                    >Einzelpreis: {{ item.userGrossPriceEur }} € </v-list-item-subtitle
-                  >
-
+                    >Einzelpreis: {{ item.userGrossPriceEur }} €
+                  </v-list-item-subtitle>
                 </v-list-item-content>
               </v-list-item>
               <v-divider v-if="index < receipts.length - 1" :key="index" />

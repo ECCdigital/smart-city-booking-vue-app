@@ -31,6 +31,7 @@
         <v-card outlined class="rounded-sm pa-5">
           <LoginCard
             :tenant="tenant"
+            :sso-active="ssoActive"
             @success="onSuccess"
             style="width: 520px; max-width: 100vw"
           >
@@ -109,7 +110,13 @@ export default {
     ...mapGetters({
       tenant: "tenants/currentTenant",
       user: "user/user",
+      instance: "instance/instance",
     }),
+    ssoActive() {
+      return !!this.instance?.applications.find(
+        (app) => app.id === "keycloak" && app.active
+      );
+    },
   },
 };
 </script>
