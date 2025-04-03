@@ -37,7 +37,6 @@
           <span>Backlog ein-/ausblenden</span>
         </v-tooltip>
       </div>
-
       <v-text-field
         v-model="searchTerm"
         label="Buchung suchen..."
@@ -47,6 +46,21 @@
         class="search-field"
       ></v-text-field>
     </div>
+        <!-- List view -->
+        <div v-if="currentView === 'list'">
+          <v-skeleton-loader type="table" class="flex">
+            <BookingTable
+              :bookings="filteredBookings"
+              :loading="loading"
+              @open-booking="onOpenBooking"
+              @open-group-booking="onOpenGroupBooking"
+              @open-edit-booking="onOpenEditBooking"
+              @commit-booking="commitBooking"
+              @open-delete-dialog="onOpenDeleteDialog"
+              @reject-booking="onOpenRejectDialog"
+            />
+          </v-skeleton-loader>
+        </div>
 
     <div class="page-content">
       <div v-if="currentView === 'list'">
@@ -125,6 +139,23 @@
         @close="onCloseBookingDialog"
       ></BookingDetails>
     </v-dialog>
+    <v-dialog v-model="openGroupBookingDialog" max-width="1200px">
+      <div style="overflow: hidden">
+        <GroupBookingDetails
+          :group-booking="selectedGroupBooking"
+          @close="openGroupBookingDialog = false"
+        ></GroupBookingDetails>
+      </div>
+    </v-dialog>
+    <GroupBookingCommitDialog
+      v-if="selectedBooking.id"
+      :booking-id="selectedBooking.id"
+      :open="openCommitGroupBookingDialog"
+      :in-progress="loading"
+      @close="openCommitGroupBookingDialog = false"
+      @commit-single-booking="commitBooking(selectedBooking.id, true)"
+      @commit-group-booking="commitGroupBooking(selectedGroupBooking.id)"
+    />
   </AdminLayout>
 </template>
 
@@ -133,6 +164,7 @@ import Fuse from "fuse.js";
 import AdminLayout from "@/layouts/Admin.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiBookingService from "@/services/api/ApiBookingService";
+import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import BookingEdit from "@/components/Booking/BookingEdit.vue";
 import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteConformationDialog.vue";
 import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
@@ -143,9 +175,13 @@ import BookingOverviewCalendar from "@/components/Booking/BookingOverviewCalenda
 import BookingTable from "@/components/Booking/BookingTable.vue";
 import BookingKanban from "@/components/Booking/BookingKanban.vue";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
+import GroupBookingDetails from "@/components/Booking/GroupBookingDetails.vue";
+import GroupBookingCommitDialog from "@/components/Booking/GroupBookingCommitDialog.vue";
 
 export default {
   components: {
+    GroupBookingCommitDialog,
+    GroupBookingDetails,
     BookingTable,
     BookingOverviewCalendar,
     BookingDetails,
@@ -185,7 +221,10 @@ export default {
       openEditDialog: false,
       openDeleteDialog: false,
       openRejectDialog: false,
+      openGroupBookingDialog: false,
+      openCommitGroupBookingDialog: false,
       selectedBooking: {},
+      selectedGroupBooking: {},
       bookables: [],
       openBookingDialog: false,
       currentView: "list",
@@ -200,9 +239,19 @@ export default {
     BookingPermissionService() {
       return BookingPermissionService;
     },
+    mappedBookings() {
+      return this.api.bookings.map((booking) => {
+        return {
+          ...booking,
+          groupBooking: this.api.groupBookings.find((groupBooking) =>
+            groupBooking.bookingIds.includes(booking.id)
+          )?.id,
+        };
+      });
+    },
     filteredBookings() {
       if (!this.searchTerm) {
-        return this.api.bookings || [];
+        return this.mappedBookings || [];
       }
       const terms = this.searchTerm.trim().split(/\s+/);
       const searchQuery = {
@@ -231,6 +280,7 @@ export default {
             { "_populated.bookable.flags": `'${term}` },
             { "_populated.bookable.tags": `'${term}` },
             { "_populated.bookable.bookingNotes": `'${term}` },
+            { groupBooking: `'${term}` },
           ],
         })),
       };
@@ -243,6 +293,7 @@ export default {
     tenantId() {
       this.fetchBookings();
       this.fetchBookables();
+      this.fetchGroupBookings();
     },
   },
   methods: {
@@ -317,14 +368,51 @@ export default {
     },
     commitBooking(id) {
       ApiBookingService.commitBooking(id)
+
+    async fetchGroupBookings() {
+      await this.startLoading("fetch-bookings");
+
+      await ApiGroupBookingService.getGroupBookings()
         .then((response) => {
-          if (response.status === 200) {
-            this.fetchBookings();
-          }
+          this.api.groupBookings = response.data;
+        })
+        .finally(() => {
+          this.stopLoading("fetch-bookings");
+          this.initializeFuse();
         })
         .catch((error) => {
           console.log(error);
         });
+    },
+    async commitBooking(id, force = false) {
+      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
+        groupBooking.bookingIds.includes(id)
+      );
+      if (!force && hasGroupBooking) {
+        this.selectedBooking = Object.assign(
+          {},
+          this.api.bookings.find((booking) => booking.id === id)
+        );
+        this.openCommitGroupBookingDialog = true;
+      } else {
+        try {
+          await this.startLoading("commit-booking");
+          await ApiBookingService.commitBooking(id);
+          await this.fetchBookings();
+          this.openCommitGroupBookingDialog = false;
+        } finally {
+          await this.stopLoading("commit-booking");
+        }
+      }
+    },
+    async commitGroupBooking(id) {
+      try {
+        await this.startLoading("commit-booking");
+        await ApiGroupBookingService.commitGroupBooking(id);
+        await this.fetchBookings();
+      } finally {
+        await this.stopLoading("commit-booking");
+      }
     },
     rejectBooking(id) {
       ApiBookingService.rejectBooking(id, this.tenantId)
@@ -343,6 +431,23 @@ export default {
         this.api.bookings.find((booking) => booking.id === bookingId)
       );
       this.openBookingDialog = true;
+    },
+    onOpenGroupBooking(groupBookingId) {
+      const groupBooking = this.api.groupBookings.find(
+        (groupBooking) => groupBooking.id === groupBookingId
+      );
+      this.selectedGroupBooking = Object.assign(
+        {},
+        {
+          ...groupBooking,
+          bookings: groupBooking.bookingIds.map((bookingId) => {
+            return this.api.bookings.find(
+              (booking) => booking.id === bookingId
+            );
+          }),
+        }
+      );
+      this.openGroupBookingDialog = true;
     },
     onOpenEditBooking(bookingId) {
       this.selectedBooking = Object.assign(
@@ -480,9 +585,11 @@ export default {
           "_populated.bookable.flags",
           "_populated.bookable.tags",
           "_populated.bookable.bookingNotes",
+
+          "groupBooking",
         ],
       };
-      this.fuse = new Fuse(this.api.bookings, options);
+      this.fuse = new Fuse(this.mappedBookings, options);
     },
     async fetchWorkflow() {
       this.workflow = await ApiWorkflowService.getWorkflowStates();
@@ -492,6 +599,7 @@ export default {
     this.fetchBookings();
     this.fetchBookables();
     this.fetchWorkflow();
+    this.fetchGroupBookings();
   },
 };
 </script>
