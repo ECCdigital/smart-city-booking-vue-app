@@ -427,6 +427,15 @@ const routes = [
     },
   },
   {
+    path: "/checkout/group",
+    name: "checkout-group-booking",
+    component: lazyLoad("BundleCheckout/CheckoutGroupBooking"),
+    meta: {
+      title: "Checkout",
+      requiresAuth: false,
+    },
+  },
+  {
     path: "/checkout/status",
     name: "checkout-status",
     component: lazyLoad("MultiCheckout/CheckoutStatus"),

@@ -17,6 +17,11 @@ export default {
       }
     );
   },
+  groupCheckout(tenantId, payload, simulate = true) {
+    return ApiClient.post(`api/${tenantId}/checkout/group?simulate=${simulate}`, payload, {
+      withCredentials: true,
+    });
+  },
   getCheckoutPermissions(tenantId, id) {
     return ApiClient.get(`api/${tenantId}/checkout/permissions/${id}`, {
       withCredentials: true,

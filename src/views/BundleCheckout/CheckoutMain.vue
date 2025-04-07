@@ -165,6 +165,18 @@ export default {
       this.loading = false;
     },
 
+    goToGroupBooking() {
+      console.log("jep");
+      this.$router.push({
+        name: "checkout-group-booking",
+        query: {
+          tenant: this.tenant,
+          id: this.leadItem.bookableId,
+          amount: this.leadItem.amount,
+        },
+      });
+    },
+
     createSteps() {
       const permissionStep = {
         title: "Berechtigung",
@@ -238,6 +250,7 @@ export default {
           "booking-time-selected": this.setBookingTime,
           submit: this.nextPage,
           back: this.previousPage,
+          "group-booking": this.goToGroupBooking,
         },
       };
 

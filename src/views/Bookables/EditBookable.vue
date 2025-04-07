@@ -677,6 +677,14 @@
           v-model="commentRequired"
         ></v-switch>
       </v-col>
+      <v-col class="col-auto">
+        <v-switch
+          dense
+          label="Serienbuchung erlauben"
+          hide-details
+          v-model="allowGroupBooking"
+        ></v-switch>
+      </v-col>
     </v-row>
 
     <h3 class="mt-10 mb-4">Buchungshinweise</h3>
@@ -929,6 +937,7 @@ export default {
       ApiBookablesService.getBookable(bookableId)
         .then((response) => {
           const {
+            allowGroupBooking,
             attachments,
             parent,
             amount,
@@ -971,6 +980,7 @@ export default {
           } = response.data;
 
           this.restoreFromApi({
+            allowGroupBooking: allowGroupBooking,
             id: id,
             parent: parent,
             tenantId: tenantId,
@@ -1407,6 +1417,15 @@ export default {
       },
       set(value) {
         this.updateValue({ field: "checkoutBookableIds", value: value });
+      },
+    },
+    allowGroupBooking: {
+      get() {
+        console.log(this.$store.state.bookables.form)
+        return this.$store.state.bookables.form.allowGroupBooking;
+      },
+      set(value) {
+        this.updateValue({ field: "allowGroupBooking", value: value });
       },
     },
     commentRequired: {

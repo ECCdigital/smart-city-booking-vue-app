@@ -20,6 +20,15 @@
       <h2>Buchungszeitraum</h2>
       <p>Bitte wählen Sie den Zeitraum für Ihre Buchung.</p>
 
+      <v-btn
+        v-if="leadItem.bookable.allowGroupBooking === true"
+        color="primary"
+        small
+        @click="onGroupBooking"
+        >
+        Ab zur Gruppenbuchung
+      </v-btn>
+
       <v-row v-if="selectionType === 'schedule'">
         <v-col>
           <v-menu
@@ -330,6 +339,9 @@ export default {
     },
     back() {
       this.$emit("back");
+    },
+    onGroupBooking() {
+      this.$emit("group-booking");
     },
   },
 

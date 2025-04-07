@@ -6,10 +6,30 @@ export default {
       withCredentials: true,
     });
   },
-  commitGroupBooking(tenantId, groupBooking) {
+  commitGroupBooking(tenantId, groupBookingId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`api/${t}/group-bookings/commit`, groupBooking, {
+    return ApiClient.post(
+      `api/${t}/group-bookings/${groupBookingId}/commit`,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
+  },
+  rejectGroupBooking(tenantId, groupBookingId, reason) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/${t}/group-bookings/${groupBookingId}/reject`,
+      { reason: reason },
+      {
+        withCredentials: true,
+      }
+    );
+  },
+  deleteGroupBooking(tenantId, groupBookingId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.delete(`api/${t}/group-bookings/${groupBookingId}`, {
       withCredentials: true,
     });
-  }
+  },
 };
