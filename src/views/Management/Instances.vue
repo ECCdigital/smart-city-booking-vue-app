@@ -275,8 +275,6 @@
           </v-col>
         </v-row>
 
-        {{ instance.applications}}
-
         <v-card outlined v-if="keycloak">
           <v-card-text>
             <v-row>
