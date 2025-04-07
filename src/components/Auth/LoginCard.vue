@@ -101,7 +101,6 @@ export default {
 <template>
   <v-card flat max-width="500" >
     <v-card-text class="text-center">
-      <p class="subtitle-1">Mit Ihrem Account anmelden.</p>
       <v-form ref="loginForm" @keydown.enter="signin">
         <v-text-field
           outlined
@@ -110,7 +109,7 @@ export default {
           placeholder="jemand@domain.de"
           class="mb-5"
           v-model="id"
-          :rules="[rules.required, rules.email]"
+          :rules="[rules.required]"
           prepend-inner-icon="mdi-email"
           @keydown.enter="signin"
         ></v-text-field>

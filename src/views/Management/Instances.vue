@@ -275,6 +275,8 @@
           </v-col>
         </v-row>
 
+        {{ instance.applications}}
+
         <v-card outlined v-if="keycloak">
           <v-card-text>
             <v-row>
@@ -637,6 +639,7 @@ export default {
         if (!application) {
           this.instance.applications?.push({
             id: "keycloak",
+            type: "auth",
             active: false,
             serverUrl: "",
             realm: "",
