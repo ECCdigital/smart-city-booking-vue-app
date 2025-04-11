@@ -1,7 +1,7 @@
 import store from "@/store";
 export default {
-  payments(bookingId, tenant) {
+  payments(bookingIds, tenant, aggregated) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`api/${t}/payments`, { bookingId : bookingId }, { withCredentials : true });
+    return ApiClient.post(`api/${t}/payments`, { bookingIds : bookingIds, aggregated }, { withCredentials : true });
   }
 };

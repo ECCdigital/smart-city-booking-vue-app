@@ -134,7 +134,12 @@ export default {
     async performGroupCheckout() {
       const response = await ApiCheckoutService.groupCheckout(
         this.tenantId,
-        this.bookingAttempts,
+        {
+          contactData: {
+            mail: "marvin.anders@e-c-crew.de"
+          },
+          bookingAttempts: this.bookingAttempts
+        },
         false
       );
       if (response.status !== 200) throw new Error("Checkout service failed");

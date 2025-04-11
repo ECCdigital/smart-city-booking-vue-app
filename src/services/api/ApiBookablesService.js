@@ -65,7 +65,10 @@ export default {
   duplicateBookable(bookableId) {
     return new Promise((resolve, reject) => {
       ApiClient.get(
-        `api/${store.getters["tenants/currentTenantId"]}/bookables/${bookableId}`
+        `api/${store.getters["tenants/currentTenantId"]}/bookables/${bookableId}`,
+        {
+          withCredentials: true,
+        }
       )
         .then((getBookingResponse) => {
           const bookable = Object.assign(new Object(), getBookingResponse.data);
