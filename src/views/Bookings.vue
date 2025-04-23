@@ -125,6 +125,7 @@
     <v-dialog v-model="openBookingDialog" max-width="800px">
       <BookingDetails
         :booking="selectedBooking"
+        :group-booking="selectedGroupBooking"
         @update="updateBooking"
         @close="onCloseBookingDialog"
       ></BookingDetails>
@@ -487,6 +488,19 @@ export default {
         {},
         this.api.bookings.find((booking) => booking.id === bookingId)
       );
+      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
+        groupBooking.bookingIds.includes(bookingId)
+      );
+      if (hasGroupBooking) {
+        this.selectedGroupBooking = Object.assign(
+          {},
+          this.api.groupBookings.find((groupBooking) =>
+            groupBooking.bookingIds.includes(bookingId)
+          )
+        );
+      } else {
+        this.selectedGroupBooking = null;
+      }
       this.openBookingDialog = true;
     },
     onOpenGroupBooking(groupBookingId) {

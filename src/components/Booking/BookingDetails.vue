@@ -2,19 +2,27 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
+import GroupBookingCreateReceipt from "@/components/Booking/GroupBookingCreateReceipt.vue";
+import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 
 export default {
   name: "BookingDetails",
+  components: { GroupBookingCreateReceipt },
   props: {
     booking: {
       type: Object,
       required: true,
+    },
+    groupBooking: {
+      type: Object,
+      default: null,
     },
   },
   events: "update",
   data() {
     return {
       creatingReceipt: false,
+      openCreateAggregatedReceipt: false,
     };
   },
   computed: {
@@ -74,6 +82,13 @@ export default {
       }
     },
     createReceipt(bookingId) {
+      if (this.groupBooking) {
+        this.openCreateAggregatedReceipt = true;
+      } else {
+        this.createSingleReceipt(bookingId);
+      }
+    },
+    createSingleReceipt(bookingId) {
       this.creatingReceipt = true;
       ApiBookingService.generateReceipt(bookingId)
         .then((response) => {
@@ -83,6 +98,31 @@ export default {
               ToastService.createToast("receipt.create.success", "success")
             );
           }
+        })
+        .catch(() => {
+          this.addToast(
+            ToastService.createToast("receipt.create.error", "error")
+          );
+          this.openCreateAggregatedReceipt = false;
+        })
+        .finally(() => {
+          this.creatingReceipt = false;
+        });
+    },
+    createGroupReceipt(bookingId) {
+      this.creatingReceipt = true;
+      ApiGroupBookingService.generateGroupReceipt(
+        undefined,
+        this.groupBooking.id
+      )
+        .then((response) => {
+          if (response.status === 200) {
+            this.$emit("update", bookingId);
+            this.addToast(
+              ToastService.createToast("receipt.create.success", "success")
+            );
+          }
+          this.openCreateAggregatedReceipt = false;
         })
         .catch(() => {
           this.addToast(
@@ -446,6 +486,14 @@ export default {
       <v-spacer />
       <v-btn class="mb-5 mr-5" outlined @click="closeDialog"> Schließen </v-btn>
     </v-card-actions>
+    <GroupBookingCreateReceipt
+      :open="openCreateAggregatedReceipt"
+      :booking-id="booking.id"
+      :in-progress="creatingReceipt"
+      @close="openCreateAggregatedReceipt = false"
+      @create-single-booking-receipt="createSingleReceipt(booking.id)"
+      @create-group-booking-receipt="createGroupReceipt(booking.id)"
+    />
   </v-card>
 </template>
 

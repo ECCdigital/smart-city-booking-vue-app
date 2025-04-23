@@ -32,4 +32,14 @@ export default {
       withCredentials: true,
     });
   },
+  generateGroupReceipt(tenantId, groupBookingId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/${t}/group-bookings/${groupBookingId}/receipt`,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
+  }
 };
