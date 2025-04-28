@@ -474,7 +474,6 @@ export default {
         await ApiGroupBookingService.rejectGroupBooking(
           null,
           groupBooking.id,
-          this.tenantId,
           rejectReason
         );
         await this.fetchBookings();

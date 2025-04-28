@@ -42,17 +42,14 @@
 
           <template v-slot:item.price="{ item }">
             <span>
-              {{ item.priceEur != null ? item.priceEur.toFixed(2) + " €" : "-" }}
+              {{
+                item.priceEur != null ? item.priceEur.toFixed(2) + " €" : "-"
+              }}
             </span>
           </template>
 
           <template v-slot:item.actions="{ item }">
-            <v-btn
-              :href="item.url"
-              target="_blank"
-              color="primary"
-              small
-            >
+            <v-btn :href="item.url" target="_blank" color="primary" small>
               Jetzt bezahlen
             </v-btn>
           </template>
@@ -143,7 +140,7 @@ export default {
           if (paymentData.length === 1 && paymentData[0].url) {
             window.location.href = paymentData[0].url;
           } else if (paymentData.length > 1) {
-            const bookingData =  res.data.bookings
+            const bookingData = res.data.bookings;
             this.payments = paymentData.map((item) => {
               const booking = bookingData.find(
                 (booking) => booking.id === item.bookingId

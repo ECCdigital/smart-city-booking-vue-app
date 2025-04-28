@@ -51,14 +51,33 @@
             </p>
           </div>
 
-          <div v-if="status === 'not-found' && bookingStatus === 'fail'">
-            <v-icon size="75" class="mb-5" color="">mdi-alert</v-icon>
+          <div v-if="status === 'rejected'">
+            <v-icon size="75" class="mb-5" color="warning">mdi-alert</v-icon>
+            <h1 class="warning--text">Ihre Buchung wurde abgelehnt</h1>
+            <p class="lead mt-5">
+              Ihre Buchungsanfrage konnte leider nicht bestätigt werden. Bitte
+              wenden Sie sich an unsere Koordinator*innen für weitere Info.
+            </p>
+          </div>
+
+          <div v-if="status === 'cancelled'">
+            <v-icon size="75" class="mb-5" color="warning">mdi-alert</v-icon>
+            <h1 class="warning--text">Ihre Buchung wurde storniert</h1>
+            <p class="lead mt-5">
+              Ihre Buchungsanfrage wurde storniert. Bitte wenden Sie sich an
+              unsere Koordinator*innen für weitere Info.
+            </p>
+          </div>
+
+          <div v-if="status === 'not-found'">
+            <v-icon size="75" class="mb-5" color="error">mdi-alert</v-icon>
             <h1>Es ist ein Fehler aufgetreten.</h1>
             <p class="lead mt-5">
               Bitte versuchen Sie es später erneut. Wenn es dennoch nicht geht
               wenden Sie sich an unsere Koordinator*innen.
             </p>
           </div>
+
           <v-btn
             v-if="!!websiteLink"
             elevation="0"
@@ -106,6 +125,7 @@
               {{ statusText(item) }}
             </template>
           </v-data-table>
+
           <v-btn
             v-if="!!websiteLink"
             elevation="0"
@@ -141,7 +161,6 @@ export default {
         { text: "Preis", value: "price", sortable: false },
         { text: "Status", value: "status", sortable: false },
       ],
-      bookingsStatus: [],
       pollIntervalId: null,
       pollTimeoutId: null,
       pollIntervalMs: 15 * 1000,
@@ -192,6 +211,7 @@ export default {
         minute: "2-digit",
       });
     },
+
     async fetchBookingStatus(tenantId, bookingIds) {
       try {
         const res = await ApiBookingService.getBookingStatus(
@@ -201,7 +221,7 @@ export default {
         this.bookingStatuses = Array.isArray(res.data) ? res.data : [res.data];
 
         const pending = this.bookingStatuses
-          .filter((b) => !(b.isCommitted && b.isPayed))
+          .filter((b) => !((b.isCommitted && b.isPayed) || b.isRejected))
           .map((b) => b.bookingId);
 
         if (pending.length === 0) {
@@ -213,6 +233,7 @@ export default {
         this.startPolling();
       } catch (err) {
         this.status = "error";
+        this.isLoading = false;
       }
     },
 
@@ -226,7 +247,16 @@ export default {
     },
 
     applySingleStatus(obj) {
-      const { isCommitted, isPayed } = obj;
+      const { isCommitted, isPayed, isRejected } = obj;
+      if (isRejected && !isCommitted) {
+        this.status = "rejected";
+        return;
+      }
+
+      if (isRejected && isCommitted) {
+        this.status = "cancelled";
+        return;
+      }
       if (isCommitted && isPayed) {
         this.status = "success";
       } else if (!isCommitted) {
@@ -238,6 +268,12 @@ export default {
     },
 
     statusText(booking) {
+      if (booking.isRejected && !booking.isCommitted) {
+        return "Abgelehnt";
+      }
+      if (booking.isRejected && booking.isCommitted) {
+        return "Storniert";
+      }
       if (booking.isCommitted && booking.isPayed) {
         return "Abgeschlossen";
       }
@@ -247,32 +283,34 @@ export default {
       if (booking.isCommitted && !booking.isPayed) {
         return "Zahlung ausstehend";
       }
-      if (booking.isRejected) {
-        return "Abgelehnt";
-      }
       return "Unbekannt";
     },
 
     iconName(booking) {
       const txt = this.statusText(booking);
+      if (txt === "Storniert") return "mdi-cancel";
+      if (txt === "Abgelehnt") return "mdi-alert";
       if (txt === "Abgeschlossen") return "mdi-check";
       if (txt === "In Prüfung") return "mdi-timer-sand-empty";
       if (txt === "Zahlung ausstehend") return "mdi-clock-outline";
-      if (txt === "Zahlung fehlgeschlagen" || txt === "Abgelehnt")
-        return "mdi-alert";
+      if (txt === "Zahlung fehlgeschlagen") return "mdi-alert";
       return "mdi-help";
     },
 
     iconColor(booking) {
       const txt = this.statusText(booking);
+      if (
+        txt === "Abgelehnt" ||
+        txt === "Zahlung fehlgeschlagen" ||
+        txt === "Storniert"
+      )
+        return "warning";
       if (txt === "Abgeschlossen") return "success";
       if (txt === "In Prüfung" || txt === "Zahlung ausstehend") return "info";
-      if (txt === "Zahlung fehlgeschlagen" || txt === "Abgelehnt")
-        return "warning";
       return "";
     },
+
     startPolling() {
-      this.isLoading = true;
       this.pollIntervalId = setInterval(this.doPoll, this.pollIntervalMs);
       this.pollTimeoutId = setTimeout(() => {
         clearInterval(this.pollIntervalId);
@@ -283,7 +321,7 @@ export default {
 
     async doPoll() {
       const pending = this.bookingStatuses
-        .filter((b) => !(b.isCommitted && b.isPayed))
+        .filter((b) => !((b.isCommitted && b.isPayed) || b.isRejected))
         .map((b) => b.bookingId);
 
       if (pending.length === 0) {
@@ -291,7 +329,6 @@ export default {
         clearTimeout(this.pollTimeoutId);
         this.pollIntervalId = null;
         this.pollTimeoutId = null;
-        this.isLoading = false;
         this.finalizeStatus();
         return;
       }

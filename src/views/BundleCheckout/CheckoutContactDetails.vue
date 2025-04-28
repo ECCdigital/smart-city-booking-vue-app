@@ -266,7 +266,7 @@ export default {
     }),
     ssoActive() {
       return !!this.instance?.applications.find(
-        (app) => app.id === "keycloak" && app.active
+        (app) => app?.id === "keycloak" && app.active
       );
     },
     isNextButtonDisabled() {
