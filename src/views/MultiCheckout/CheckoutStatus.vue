@@ -1,112 +1,121 @@
 <template>
   <div>
     <v-container class="text-center mt-15">
-      <div v-if="status === 'success'">
-        <v-icon size="75" class="mb-5" color="primary">mdi-check</v-icon>
-        <h1>Vielen Dank für Ihre Buchung</h1>
+      <div v-if="isLoading">
+        <v-progress-circular
+          indeterminate
+          color="primary"
+          size="75"
+          width="5"
+        ></v-progress-circular>
+        <h1 class="mt-5">Bitte warten...</h1>
         <p class="lead mt-5">
-          Ihre Buchung wurde von uns entgegengenommen und freigegeben.
+          Wir prüfen den Status Ihrer Buchung. Dies kann einige Sekunden in
+          Anspruch nehmen.
         </p>
-        <a
-          v-if="!!websiteLink"
-          elevation="0"
-          outlined
-          color="primary mt-15"
-          :href="websiteLink"
-          >Zurück zur Website</a
-        >
       </div>
 
-      <div v-if="status === 'await-approval'">
-        <v-icon size="75" class="mb-5" color="primary"
-          >mdi-timer-sand-empty</v-icon
-        >
-        <h1>Vielen Dank für Ihre Anfrage</h1>
-        <p class="lead mt-5">
-          Ihre Buchungsanfrage ist bei uns eingegangen. Unsere Koordinator*innen
-          prüfen ihre Anfrage und kommen so schnell wie möglich auf Sie zu.
-        </p>
-        <v-btn
-          v-if="!!websiteLink"
-          elevation="0"
-          outlined
-          color="primary mt-15"
-          :href="websiteLink"
-          >Zurück zur Website</v-btn
-        >
-      </div>
+      <div v-else>
+        <div v-if="status !== 'multiple'">
+          <div v-if="status === 'success'">
+            <v-icon size="75" class="mb-5" color="primary">mdi-check</v-icon>
+            <h1>Vielen Dank für Ihre Buchung</h1>
+            <p class="lead mt-5">
+              Ihre Buchung wurde von uns entgegengenommen und freigegeben.
+            </p>
+          </div>
 
-      <div v-if="status === 'no-payment'">
-        <v-icon size="75" class="mb-5" color="warning"
-          >mdi-timer-sand-empty</v-icon
-        >
-        <h1 class="warning--text">
-          Die Zahlung konnte nicht abgeschlossen werden
-        </h1>
-        <p class="lead mt-5">
-          Leider konnte die Buchung nicht korrekt abgeschlossen werden. Bitte
-          versuchen Sie es zu einem späteren Zeitpunkt erneut oder wenden Sie
-          sich an unsere Koordinator*innen.
-        </p>
-        <v-btn
-          v-if="!!websiteLink"
-          elevation="0"
-          outlined
-          class="mt-15"
-          :href="websiteLink"
-          >Zurück zur Website</v-btn
-        >
-      </div>
+          <div v-if="status === 'await-approval'">
+            <v-icon size="75" class="mb-5" color="primary"
+              >mdi-timer-sand-empty</v-icon
+            >
+            <h1>Vielen Dank für Ihre Anfrage</h1>
+            <p class="lead mt-5">
+              Ihre Buchungsanfrage ist bei uns eingegangen. Unsere
+              Koordinator*innen prüfen ihre Anfrage und kommen so schnell wie
+              möglich auf Sie zu.
+            </p>
+          </div>
 
-      <div v-if="status === 'not-found' && bookingStatus !== 'fail'">
-        <v-icon size="75" class="mb-5" color="">mdi-help</v-icon>
-        <h1>Keine Buchung gefunden</h1>
-        <p class="lead mt-5">
-          Leider konnten wir Ihre Buchung nicht finden. Bitte wenden Sie sich an
-          unsere Koordinator*innen.
-        </p>
-        <v-btn
-          v-if="!!websiteLink"
-          elevation="0"
-          outlined
-          class="mt-15"
-          :href="websiteLink"
-          >Zurück zur Website</v-btn
-        >
-      </div>
+          <div v-if="status === 'no-payment'">
+            <v-icon size="75" class="mb-5" color="warning"
+              >mdi-timer-sand-empty</v-icon
+            >
+            <h1 class="warning--text">
+              Die Zahlung konnte nicht abgeschlossen werden
+            </h1>
+            <p class="lead mt-5">
+              Leider konnte die Buchung nicht korrekt abgeschlossen werden.
+              Bitte versuchen Sie es zu einem späteren Zeitpunkt erneut oder
+              wenden Sie sich an unsere Koordinator*innen.
+            </p>
+          </div>
 
-      <div v-if="status === 'not-found' && bookingStatus === 'fail'">
-        <v-icon size="75" class="mb-5" color="">mdi-alert</v-icon>
-        <h1>Es ist ein Fehler aufgetreten.</h1>
-        <p class="lead mt-5">
-          Bitte versuchen Sie es später erneut. Wenn es dennoch nicht geht
-          wenden Sie sich an unsere Koordinator*innen.
-        </p>
-        <v-btn
-          v-if="!!websiteLink"
-          elevation="0"
-          outlined
-          class="mt-15"
-          :href="websiteLink"
-          >Zurück zur Website</v-btn
-        >
-      </div>
+          <div v-if="status === 'not-found' && bookingStatus === 'fail'">
+            <v-icon size="75" class="mb-5" color="">mdi-alert</v-icon>
+            <h1>Es ist ein Fehler aufgetreten.</h1>
+            <p class="lead mt-5">
+              Bitte versuchen Sie es später erneut. Wenn es dennoch nicht geht
+              wenden Sie sich an unsere Koordinator*innen.
+            </p>
+          </div>
+          <v-btn
+            v-if="!!websiteLink"
+            elevation="0"
+            outlined
+            color="primary mt-15"
+            :href="websiteLink"
+          >
+            Zurück zur Website
+          </v-btn>
+        </div>
 
-      <div v-if="status === 'await-payment'">
-        <v-icon size="75" class="mb-5" color="primary">mdi-check</v-icon>
-        <h1>Ihre Buchung ist bei uns eingegangen</h1>
-        <p class="lead mt-5">
-          In Kürze werden Sie von uns eine Email mit der Zahlungsaufforderung
-          erhalten.
-        </p>
-        <v-btn
-          v-if="!!websiteLink"
-          elevation="0"
-          outlined
-          class="mt-15"
-          :href="websiteLink"
-          >Zurück zur Website</v-btn
-        >
+        <div v-else>
+          <h1>Übersicht Ihrer Buchungen</h1>
+          <v-data-table
+            :headers="headers"
+            :items="bookingStatuses"
+            disable-pagination
+            hide-default-footer
+            class="elevation-1 mt-5"
+          >
+            <template v-slot:item.bookingId="{ item }">
+              <strong>{{ item.bookingId }}</strong>
+            </template>
+
+            <template v-slot:item.timeRange="{ item }">
+              <span v-if="item.timeBegin && item.timeEnd">
+                {{ formatDate(item.timeBegin) }} -
+                {{ formatDate(item.timeEnd) }}
+              </span>
+              <span v-else>-</span>
+            </template>
+
+            <template v-slot:item.price="{ item }">
+              <span>
+                {{
+                  item.priceEur != null ? item.priceEur.toFixed(2) + " €" : "-"
+                }}
+              </span>
+            </template>
+
+            <template v-slot:item.status="{ item }">
+              <v-icon :color="iconColor(item)" size="24" class="mr-2">
+                {{ iconName(item) }}
+              </v-icon>
+              {{ statusText(item) }}
+            </template>
+          </v-data-table>
+          <v-btn
+            v-if="!!websiteLink"
+            elevation="0"
+            outlined
+            class="mt-5"
+            :href="websiteLink"
+          >
+            Zurück zur Website
+          </v-btn>
+        </div>
       </div>
     </v-container>
   </div>
@@ -121,66 +130,192 @@ export default {
 
   data() {
     return {
-      bookingId: undefined,
+      bookingStatuses: [],
       tenant: undefined,
       status: undefined,
-      bookingStatus: undefined,
       websiteLink: undefined,
-      booking: {},
+      paymentProvider: undefined,
+      headers: [
+        { text: "Buchungs-ID", value: "bookingId", sortable: false },
+        { text: "Zeitraum", value: "timeRange", sortable: false },
+        { text: "Preis", value: "price", sortable: false },
+        { text: "Status", value: "status", sortable: false },
+      ],
+      bookingsStatus: [],
+      pollIntervalId: null,
+      pollTimeoutId: null,
+      pollIntervalMs: 15 * 1000,
+      pollTimeoutMs: 2 * 60 * 1000,
+      isLoading: false,
     };
   },
 
   async mounted() {
-    this.bookingId = this.$route.query.id;
-    this.tenant = this.$route.query.tenant;
-    this.bookingStatus = this.$route.query.status;
-    this.paymentProvider = this.$route.query.paymentProvider;
+    const { id, ids, tenant, status, paymentProvider } = this.$route.query;
+    this.paymentProvider = paymentProvider;
+    this.tenant = tenant;
+
+    let allIds = [];
+    if (ids) {
+      allIds = ids
+        .split(",")
+        .map((i) => i.trim())
+        .filter(Boolean);
+    }
+    if (id) allIds.push(id);
 
     try {
-      const tenantObj = await ApiTenantService.getTenant(this.tenant);
-      this.websiteLink = tenantObj?.data?.website;
-    } catch (err) {
-      console.error("Error fetching tenant:", err);
+      const r = await ApiTenantService.getTenant(this.tenant);
+      this.websiteLink = r?.data?.website;
+    } catch (e) {
+      console.error("Error fetching tenant:", e);
     }
 
-
-    if (this.bookingId && this.tenant) {
-      this.fetchBookingStatus();
+    if (allIds.length && this.tenant) {
+      await this.fetchBookingStatus(this.tenant, allIds);
     }
   },
 
-  methods: {
-    fetchBookingStatus: async function () {
-      try {
-        const response = await ApiBookingService.getBookingStatus(
-          this.bookingId,
-          this.tenant
-        );
-        this.bookingStatus = response.data;
+  beforeDestroy() {
+    if (this.pollIntervalId) clearInterval(this.pollIntervalId);
+    if (this.pollTimeoutId) clearTimeout(this.pollTimeoutId);
+  },
 
-        if (!this.bookingStatus.bookingId) {
-          this.status = "not-found";
-        } else {
-          this.determineStatus();
+  methods: {
+    formatDate(timestamp) {
+      if (!timestamp) return "-";
+      return new Date(timestamp).toLocaleString("de-DE", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    },
+    async fetchBookingStatus(tenantId, bookingIds) {
+      try {
+        const res = await ApiBookingService.getBookingStatus(
+          bookingIds,
+          tenantId
+        );
+        this.bookingStatuses = Array.isArray(res.data) ? res.data : [res.data];
+
+        const pending = this.bookingStatuses
+          .filter((b) => !(b.isCommitted && b.isPayed))
+          .map((b) => b.bookingId);
+
+        if (pending.length === 0) {
+          this.finalizeStatus();
+          return;
         }
+
+        this.isLoading = true;
+        this.startPolling();
       } catch (err) {
-        console.error("Error fetching booking status:", err);
         this.status = "error";
       }
     },
-    determineStatus: function () {
-      const { isCommitted, isPayed } = this.bookingStatus;
 
+    finalizeStatus() {
+      this.isLoading = false;
+      if (this.bookingStatuses.length === 1) {
+        this.applySingleStatus(this.bookingStatuses[0]);
+      } else {
+        this.status = "multiple";
+      }
+    },
+
+    applySingleStatus(obj) {
+      const { isCommitted, isPayed } = obj;
       if (isCommitted && isPayed) {
         this.status = "success";
       } else if (!isCommitted) {
         this.status = "await-approval";
       } else if (isCommitted && !isPayed) {
-        if (this.paymentProvider === "invoice") {
-          this.status = "await-payment";
-        } else {
-          this.status = "no-payment";
-        }
+        this.status =
+          this.paymentProvider === "invoice" ? "await-payment" : "no-payment";
+      }
+    },
+
+    statusText(booking) {
+      if (booking.isCommitted && booking.isPayed) {
+        return "Abgeschlossen";
+      }
+      if (!booking.isCommitted) {
+        return "In Prüfung";
+      }
+      if (booking.isCommitted && !booking.isPayed) {
+        return "Zahlung ausstehend";
+      }
+      if (booking.isRejected) {
+        return "Abgelehnt";
+      }
+      return "Unbekannt";
+    },
+
+    iconName(booking) {
+      const txt = this.statusText(booking);
+      if (txt === "Abgeschlossen") return "mdi-check";
+      if (txt === "In Prüfung") return "mdi-timer-sand-empty";
+      if (txt === "Zahlung ausstehend") return "mdi-clock-outline";
+      if (txt === "Zahlung fehlgeschlagen" || txt === "Abgelehnt")
+        return "mdi-alert";
+      return "mdi-help";
+    },
+
+    iconColor(booking) {
+      const txt = this.statusText(booking);
+      if (txt === "Abgeschlossen") return "success";
+      if (txt === "In Prüfung" || txt === "Zahlung ausstehend") return "info";
+      if (txt === "Zahlung fehlgeschlagen" || txt === "Abgelehnt")
+        return "warning";
+      return "";
+    },
+    startPolling() {
+      this.isLoading = true;
+      this.pollIntervalId = setInterval(this.doPoll, this.pollIntervalMs);
+      this.pollTimeoutId = setTimeout(() => {
+        clearInterval(this.pollIntervalId);
+        this.pollIntervalId = null;
+        this.finalizeStatus();
+      }, this.pollTimeoutMs);
+    },
+
+    async doPoll() {
+      const pending = this.bookingStatuses
+        .filter((b) => !(b.isCommitted && b.isPayed))
+        .map((b) => b.bookingId);
+
+      if (pending.length === 0) {
+        clearInterval(this.pollIntervalId);
+        clearTimeout(this.pollTimeoutId);
+        this.pollIntervalId = null;
+        this.pollTimeoutId = null;
+        this.isLoading = false;
+        this.finalizeStatus();
+        return;
+      }
+
+      try {
+        const res = await ApiBookingService.getBookingStatus(
+          pending,
+          this.tenant
+        );
+        const updates = Array.isArray(res.data) ? res.data : [res.data];
+
+        updates.forEach((u) => {
+          const idx = this.bookingStatuses.findIndex(
+            (b) => b.bookingId === u.bookingId
+          );
+          if (idx !== -1) {
+            this.$set(this.bookingStatuses, idx, {
+              ...this.bookingStatuses[idx],
+              ...u,
+            });
+          }
+        });
+      } catch (e) {
+        console.error("Polling-Error:", e);
       }
     },
   },
