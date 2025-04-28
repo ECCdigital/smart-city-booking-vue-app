@@ -6,25 +6,28 @@ export default {
       withCredentials: true,
     });
   },
-  commitGroupBooking(tenantId, groupBookingId) {
+  async commitGroupBooking(tenantId, groupBookingId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(
+
+    const response = await ApiClient.post(
       `api/${t}/group-bookings/${groupBookingId}/commit`,
       {},
       {
         withCredentials: true,
       }
     );
+    return response.data;
   },
-  rejectGroupBooking(tenantId, groupBookingId, reason) {
+  async rejectGroupBooking(tenantId, groupBookingId, reason) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(
+    const response = await ApiClient.post(
       `api/${t}/group-bookings/${groupBookingId}/reject`,
-      { reason: reason },
+      {reason: reason},
       {
         withCredentials: true,
       }
     );
+    return response.data;
   },
   deleteGroupBooking(tenantId, groupBookingId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
@@ -32,14 +35,15 @@ export default {
       withCredentials: true,
     });
   },
-  generateGroupReceipt(tenantId, groupBookingId) {
+  async generateGroupReceipt(tenantId, groupBookingId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(
+    const response = await ApiClient.post(
       `api/${t}/group-bookings/${groupBookingId}/receipt`,
       {},
       {
         withCredentials: true,
       }
     );
+    return response.data;
   }
 };

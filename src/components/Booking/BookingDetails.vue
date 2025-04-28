@@ -5,6 +5,20 @@ import { mapActions } from "vuex";
 import GroupBookingCreateReceipt from "@/components/Booking/GroupBookingCreateReceipt.vue";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 
+const GROUP_BOOKING_ERROR_MESSAGES = {
+  OWNER_MISMATCH: "Die Buchungen haben unterschiedliche Personen zugewiesen.",
+  STATUS_MISMATCH: "Die Buchungen haben unterschiedliche Status.",
+  PAYMENT_PROVIDER_MISMATCH:
+    "Die Buchungen haben unterschiedliche Zahlungsanbieter.",
+  PAYED_STATUS: "Die Buchungen sind noch nicht bezahlt.",
+};
+function getBookingErrorMessage(code) {
+  return (
+    GROUP_BOOKING_ERROR_MESSAGES[code] ||
+    "Ein unbekannter Fehler ist aufgetreten."
+  );
+}
+
 export default {
   name: "BookingDetails",
   components: { GroupBookingCreateReceipt },
@@ -23,6 +37,9 @@ export default {
     return {
       creatingReceipt: false,
       openCreateAggregatedReceipt: false,
+      errors: {
+        receipt: null,
+      },
     };
   },
   computed: {
@@ -109,29 +126,35 @@ export default {
           this.creatingReceipt = false;
         });
     },
-    createGroupReceipt(bookingId) {
+
+    handleBookingError(action, errors) {
+      const code = errors[0]?.code;
+      this.addToast(
+        ToastService.createToast(`group-booking.${action}.error`, "error")
+      );
+      this.errors[action] = getBookingErrorMessage(code);
+    },
+
+    async createGroupReceipt(bookingId) {
       this.creatingReceipt = true;
-      ApiGroupBookingService.generateGroupReceipt(
-        undefined,
-        this.groupBooking.id
-      )
-        .then((response) => {
-          if (response.status === 200) {
-            this.$emit("update", bookingId);
-            this.addToast(
-              ToastService.createToast("receipt.create.success", "success")
-            );
-          }
-          this.openCreateAggregatedReceipt = false;
-        })
-        .catch(() => {
-          this.addToast(
-            ToastService.createToast("receipt.create.error", "error")
+      try {
+        const response = await ApiGroupBookingService.generateGroupReceipt(
+          undefined,
+          this.groupBooking.id
+        );
+        if (!response.success) {
+          this.handleBookingError("receipt", response.errors);
+        } else {
+          await this.addToast(
+            ToastService.createToast("receipt.create.success", "success")
           );
-        })
-        .finally(() => {
-          this.creatingReceipt = false;
-        });
+          this.errors.receipt = null;
+          this.$emit("update", bookingId);
+          this.openCreateAggregatedReceipt = false;
+        }
+      } finally {
+        this.creatingReceipt = false;
+      }
     },
     downloadReceipt(name) {
       ApiBookingService.getReceipt(this.booking.id, name).then((response) => {
@@ -159,6 +182,10 @@ export default {
     },
     closeDialog() {
       this.$emit("close");
+    },
+    closeAggregatedReceipt() {
+      this.errors.receipt = null;
+      this.openCreateAggregatedReceipt = false;
     },
   },
 };
@@ -490,7 +517,8 @@ export default {
       :open="openCreateAggregatedReceipt"
       :booking-id="booking.id"
       :in-progress="creatingReceipt"
-      @close="openCreateAggregatedReceipt = false"
+      :error="errors.receipt"
+      @close="closeAggregatedReceipt"
       @create-single-booking-receipt="createSingleReceipt(booking.id)"
       @create-group-booking-receipt="createGroupReceipt(booking.id)"
     />

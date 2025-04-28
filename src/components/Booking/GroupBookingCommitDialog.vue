@@ -12,6 +12,11 @@
           Sie die gesamte Serie freigeben?
         </span>
       </v-card-text>
+      <v-card-text v-if="error" class="text-center">
+        <v-alert type="error" border="left" elevation="2">
+          {{ error }}
+        </v-alert>
+      </v-card-text>
       <v-card-text class="d-flex justify-center">
         <v-col cols="auto">
           <v-btn
@@ -51,6 +56,10 @@ export default {
     inProgress: {
       type: Boolean,
       default: false,
+    },
+    error: {
+      type: String,
+      default: null,
     },
   },
   computed: {

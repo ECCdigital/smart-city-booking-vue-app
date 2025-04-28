@@ -12,6 +12,11 @@
           Möchten Sie die gesamte Serie stornieren?
         </span>
       </v-card-text>
+      <v-card-text v-if="error" class="text-center">
+        <v-alert type="error" border="left" elevation="2">
+          {{ error }}
+        </v-alert>
+      </v-card-text>
       <v-card-text>
         <v-textarea
           outlined
@@ -62,6 +67,10 @@ export default {
     inProgress: {
       type: Boolean,
       default: false,
+    },
+    error: {
+      type: String,
+      default: null,
     },
   },
 

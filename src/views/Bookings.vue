@@ -134,7 +134,7 @@
       <div style="overflow: hidden">
         <GroupBookingDetails
           :group-booking="selectedGroupBooking"
-          @close="openGroupBookingDialog = false"
+          @close="closeDialog('groupBooking')"
         ></GroupBookingDetails>
       </div>
     </v-dialog>
@@ -143,7 +143,8 @@
       :booking-id="selectedBooking.id"
       :open="openCommitGroupBookingDialog"
       :in-progress="loading"
-      @close="openCommitGroupBookingDialog = false"
+      :error="errors.commit"
+      @close="closeDialog('commitGroupBooking')"
       @commit-single-booking="commitBooking(selectedBooking.id, true)"
       @commit-group-booking="commitGroupBooking(selectedGroupBooking.id)"
     />
@@ -151,7 +152,8 @@
       :to-reject="selectedBooking"
       :open="openRejectGroupBookingDialog"
       :in-progress="loading"
-      @close="openRejectGroupBookingDialog = false"
+      :error="errors.reject"
+      @close="closeDialog('rejectGroupBooking')"
       @reject-single-booking="rejectBooking"
       @reject-group-booking="rejectGroupBooking"
     />
@@ -159,7 +161,7 @@
       v-if="selectedBooking.id"
       :booking-id="selectedBooking.id"
       :open="openDeleteGroupBookingDialog"
-      @close="openDeleteGroupBookingDialog = false"
+      @close="closeDialog('deleteGroupBooking')"
       @delete-single-booking="deleteBooking"
       @delete-group-booking="deleteGroupBooking"
     />
@@ -186,6 +188,20 @@ import GroupBookingDetails from "@/components/Booking/GroupBookingDetails.vue";
 import GroupBookingCommitDialog from "@/components/Booking/GroupBookingCommitDialog.vue";
 import GroupBookingRejectConformationDialog from "@/components/Booking/GroupBookingRejectConformationDialog.vue";
 import GroupBookingDeleteConformationDialog from "@/components/Booking/GroupBookingDeleteConformationDialog.vue";
+import ToastService from "@/services/ToastService";
+
+const GROUP_BOOKING_ERROR_MESSAGES = {
+  OWNER_MISMATCH: "Die Buchungen haben unterschiedliche Personen zugewiesen.",
+  STATUS_MISMATCH: "Die Buchungen haben unterschiedliche Status.",
+  PAYMENT_PROVIDER_MISMATCH:
+    "Die Buchungen haben unterschiedliche Zahlungsanbieter.",
+};
+function getGroupBookingErrorMessage(code) {
+  return (
+    GROUP_BOOKING_ERROR_MESSAGES[code] ||
+    "Ein unbekannter Fehler ist aufgetreten."
+  );
+}
 
 export default {
   components: {
@@ -242,6 +258,10 @@ export default {
       openBookingDialog: false,
       currentView: "list",
       workflow: {},
+      errors: {
+        commit: null,
+        reject: null,
+      },
     };
   },
   computed: {
@@ -340,6 +360,14 @@ export default {
       }
     },
 
+    handleGroupBookingError(action, errors) {
+      const code = errors[0]?.code;
+      this.addToast(
+        ToastService.createToast(`group-booking.${action}.error`, "error")
+      );
+      this.errors[action] = getGroupBookingErrorMessage(code);
+    },
+
     fetchBookables() {
       ApiBookablesService.getBookables()
         .then((response) => {
@@ -393,6 +421,38 @@ export default {
         .catch((error) => {
           console.log(error);
         });
+    },
+    closeDialog(type) {
+      switch (type) {
+        case "edit":
+          this.openEditDialog = false;
+          break;
+        case "delete":
+          this.openDeleteDialog = false;
+          break;
+        case "reject":
+          this.errors.reject = null;
+          break;
+        case "booking":
+          this.openBookingDialog = false;
+          break;
+        case "groupBooking":
+          this.openGroupBookingDialog = false;
+          break;
+        case "commitGroupBooking":
+          this.errors.commit = null;
+          this.openCommitGroupBookingDialog = false;
+          break;
+        case "deleteGroupBooking":
+          this.openDeleteGroupBookingDialog = false;
+          break;
+        case "rejectGroupBooking":
+          this.errors.reject = null;
+          this.openRejectGroupBookingDialog = false;
+          break;
+        default:
+          break;
+      }
     },
     async deleteBooking(bookingId) {
       try {
@@ -448,9 +508,21 @@ export default {
     async commitGroupBooking(id) {
       try {
         await this.startLoading("commit-booking");
-        await ApiGroupBookingService.commitGroupBooking(null, id);
-        await this.fetchBookings();
-        this.openCommitGroupBookingDialog = false;
+        const response = await ApiGroupBookingService.commitGroupBooking(
+          null,
+          id
+        );
+
+        if (!response.success) {
+          this.handleGroupBookingError("commit", response.errors);
+        } else {
+          await this.addToast(
+            ToastService.createToast("group-booking.commit.success", "success")
+          );
+          this.errors.commit = null;
+          await this.fetchBookings();
+          this.openCommitGroupBookingDialog = false;
+        }
       } finally {
         await this.stopLoading("commit-booking");
       }
@@ -471,13 +543,22 @@ export default {
         groupBooking.bookingIds.includes(id)
       );
       try {
-        await ApiGroupBookingService.rejectGroupBooking(
+        const response = await ApiGroupBookingService.rejectGroupBooking(
           null,
           groupBooking.id,
           rejectReason
         );
-        await this.fetchBookings();
-        this.openRejectGroupBookingDialog = false;
+
+        if (!response.success) {
+          this.handleGroupBookingError("reject", response.errors);
+        } else {
+          await this.addToast(
+            ToastService.createToast("group-booking.reject.success", "success")
+          );
+          this.errors.reject = null;
+          await this.fetchBookings();
+          this.openRejectGroupBookingDialog = false;
+        }
       } finally {
         await this.stopLoading("reject-booking");
       }
