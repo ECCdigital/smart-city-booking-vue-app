@@ -209,6 +209,16 @@
         "title": "Zeitkonflikt",
         "message": "Die Buchung konnte nicht bearbeitet werden, da es zu einem Zeitkonflikt kommt."
       }
+    },
+    "receipt": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Der Buchungsbeleg wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Der Buchungsbeleg konnte nicht erstellt werden."
+      }
     }
   },
   "group-booking": {

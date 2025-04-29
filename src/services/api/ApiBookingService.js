@@ -104,14 +104,15 @@ export default {
       }
     );
   },
-  generateReceipt(id) {
-    return ApiClient.post(
+  async generateReceipt(id) {
+    const response = await ApiClient.post(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/receipt`,
       {},
       {
         withCredentials: true,
       }
     );
+    return response.data;
   },
   getReceipt(id, receiptId) {
     return ApiClient.get(

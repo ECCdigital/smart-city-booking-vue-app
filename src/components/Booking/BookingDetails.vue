@@ -12,10 +12,20 @@ const GROUP_BOOKING_ERROR_MESSAGES = {
     "Die Buchungen haben unterschiedliche Zahlungsanbieter.",
   PAYED_STATUS: "Die Buchungen sind noch nicht bezahlt.",
 };
-function getBookingErrorMessage(code) {
+const BOOKING_ERROR_MESSAGES = {
+  PAYED_STATUS: "Die Buchung ist noch nicht bezahlt.",
+};
+
+function getGroupBookingErrorMessage(code) {
   return (
     GROUP_BOOKING_ERROR_MESSAGES[code] ||
     "Ein unbekannter Fehler ist aufgetreten."
+  );
+}
+
+function getBookingErrorMessage(code) {
+  return (
+    BOOKING_ERROR_MESSAGES[code] || "Ein unbekannter Fehler ist aufgetreten."
   );
 }
 
@@ -105,36 +115,38 @@ export default {
         this.createSingleReceipt(bookingId);
       }
     },
-    createSingleReceipt(bookingId) {
+    async createSingleReceipt(bookingId) {
       this.creatingReceipt = true;
-      ApiBookingService.generateReceipt(bookingId)
-        .then((response) => {
-          if (response.status === 200) {
-            this.$emit("update", bookingId);
-            this.addToast(
-              ToastService.createToast("receipt.create.success", "success")
-            );
-          }
-        })
-        .catch(() => {
-          this.addToast(
-            ToastService.createToast("receipt.create.error", "error")
+      try {
+        const response = await ApiBookingService.generateReceipt(bookingId);
+        if (!response.success) {
+          this.handleBookingError("receipt", response.errors);
+        } else {
+          this.$emit("update", bookingId);
+          await this.addToast(
+            ToastService.createToast("receipt.create.success", "success")
           );
+          this.errors.receipt = null;
           this.openCreateAggregatedReceipt = false;
-        })
-        .finally(() => {
-          this.creatingReceipt = false;
-        });
+        }
+      } finally {
+        this.creatingReceipt = false;
+      }
     },
-
     handleBookingError(action, errors) {
+      const code = errors[0]?.code;
+      this.addToast(
+        ToastService.createToast(`booking.${action}.error`, "error")
+      );
+      this.errors[action] = getBookingErrorMessage(code);
+    },
+    handleGroupBookingError(action, errors) {
       const code = errors[0]?.code;
       this.addToast(
         ToastService.createToast(`group-booking.${action}.error`, "error")
       );
-      this.errors[action] = getBookingErrorMessage(code);
+      this.errors[action] = getGroupBookingErrorMessage(code);
     },
-
     async createGroupReceipt(bookingId) {
       this.creatingReceipt = true;
       try {
@@ -143,7 +155,7 @@ export default {
           this.groupBooking.id
         );
         if (!response.success) {
-          this.handleBookingError("receipt", response.errors);
+          this.handleGroupBookingError("receipt", response.errors);
         } else {
           await this.addToast(
             ToastService.createToast("receipt.create.success", "success")
