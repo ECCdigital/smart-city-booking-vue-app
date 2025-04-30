@@ -266,7 +266,6 @@
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
 import FormatService from "@/services/FormatService";
-import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   name: "BookingStatus",
@@ -297,7 +296,6 @@ export default {
       formValid: false,
       bookingInfo: null,
       errorMessage: "",
-      tenant: "",
       rules: {
         required: (value) => !!value || "Dieses Feld ist erforderlich",
       },
@@ -323,7 +321,7 @@ export default {
         const response = await ApiBookingService.checkPublicBookingStatus(
           bookingId,
           name,
-          this.tenant
+          this.tenantId
         );
         this.bookingInfo = response.data;
         this.errorMessage = "";
@@ -335,6 +333,8 @@ export default {
           this.preSetName = "";
         } else if (error.response && error.response.status === 405) {
           this.publicStatusViewEnabled = false;
+          this.errorMessage =
+            "Die Abfrage des Buchungsstatus ist nicht verfügbar.";
         } else {
           this.errorMessage = "Ein Fehler ist aufgetreten";
         }
@@ -354,19 +354,11 @@ export default {
   async mounted() {
     try {
       this.fetching = true;
-      const tenant = await ApiTenantService.getTenant(this.tenantId, false);
 
-      if (tenant.data.enablePublicStatusView) {
-        this.errorMessage = "";
-        this.publicStatusViewEnabled = true;
-        this.tenant = tenant.data.id;
-        if (this.preSetBookingNumber && this.preSetName) {
-          await this.fetchBookingStatus();
-        }
-      } else {
-        this.publicStatusViewEnabled = false;
-        this.errorMessage =
-          "Die Abfrage des Buchungsstatus ist nicht verfügbar.";
+      this.errorMessage = "";
+      this.publicStatusViewEnabled = true;
+      if (this.preSetBookingNumber && this.preSetName) {
+        await this.fetchBookingStatus();
       }
     } catch (error) {
       this.errorMessage = "Ein Fehler ist aufgetreten.";
