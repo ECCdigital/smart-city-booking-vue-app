@@ -86,9 +86,7 @@ export default {
 
     async validateItems(bookingAttempts) {
       for ( const bookingAttempt of bookingAttempts) {
-        console.log(bookingAttempt);
         for (const item of bookingAttempt.bookableItems) {
-          console.log(item);
           if (
             (item.bookable?.isScheduleRelated ||
               item.bookable?.isTimePeriodRelated ||
@@ -138,7 +136,8 @@ export default {
           contactData: {
             mail: "marvin.anders@e-c-crew.de"
           },
-          bookingAttempts: this.bookingAttempts
+          bookingAttempts: this.bookingAttempts,
+          paymentProvider: "pmPayment",
         },
         false
       );
