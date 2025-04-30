@@ -46,7 +46,7 @@ export default {
   computed: {
     ...mapGetters({
       toasts: "toasts/all",
-      user: "user/user",
+      user: "user/getUser",
       instance: "instance/instance",
     }),
   },

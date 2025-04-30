@@ -63,7 +63,8 @@ export default {
         timePeriods.forEach((timePeriod, index) => {
           if (
             timePeriod.timeBegin >= occupation.timeBegin &&
-            timePeriod.timeEnd <= occupation.timeEnd
+            timePeriod.timeEnd <= occupation.timeEnd &&
+            occupation.available === false
           ) {
             timePeriods.splice(index, 1);
           }
@@ -102,7 +103,7 @@ export default {
       try {
         const response = await ApiBookablesService.getBookableAvailability(
           this.leadItem.bookable.id,
-          this.leadItem.bookable.tenant,
+          this.leadItem.bookable.tenantId,
           timeBegin,
           timeEnd,
           this.leadItem.amount
