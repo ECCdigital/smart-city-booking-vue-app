@@ -221,7 +221,7 @@ export default {
         this.bookingStatuses = Array.isArray(res.data) ? res.data : [res.data];
 
         const pending = this.bookingStatuses
-          .filter((b) => !((b.isCommitted && b.isPayed) || b.isRejected))
+          .filter((b) => ((b.isCommitted && !b.isPayed) || b.isRejected))
           .map((b) => b.bookingId);
 
         if (pending.length === 0) {

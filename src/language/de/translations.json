@@ -219,6 +219,16 @@
         "title": "Fehler beim Erstellen",
         "message": "Der Buchungsbeleg konnte nicht erstellt werden."
       }
+    },
+    "commit": {
+      "success": {
+        "title": "Erfolgreich freigegeben",
+        "message": "Die Buchung wurde erfolgreich freigegeben."
+      },
+      "error": {
+        "title": "Fehler beim Freigeben",
+        "message": "Die Buchung konnte nicht freigegeben werden."
+      }
     }
   },
   "group-booking": {

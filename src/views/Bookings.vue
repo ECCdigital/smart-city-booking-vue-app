@@ -189,19 +189,10 @@ import GroupBookingCommitDialog from "@/components/Booking/GroupBookingCommitDia
 import GroupBookingRejectConformationDialog from "@/components/Booking/GroupBookingRejectConformationDialog.vue";
 import GroupBookingDeleteConformationDialog from "@/components/Booking/GroupBookingDeleteConformationDialog.vue";
 import ToastService from "@/services/ToastService";
-
-const GROUP_BOOKING_ERROR_MESSAGES = {
-  OWNER_MISMATCH: "Die Buchungen haben unterschiedliche Personen zugewiesen.",
-  STATUS_MISMATCH: "Die Buchungen haben unterschiedliche Status.",
-  PAYMENT_PROVIDER_MISMATCH:
-    "Die Buchungen haben unterschiedliche Zahlungsanbieter.",
-};
-function getGroupBookingErrorMessage(code) {
-  return (
-    GROUP_BOOKING_ERROR_MESSAGES[code] ||
-    "Ein unbekannter Fehler ist aufgetreten."
-  );
-}
+import {
+  getBookingErrorMessage,
+  getGroupBookingErrorMessage,
+} from "@/utils/errorMessages";
 
 export default {
   components: {
@@ -367,6 +358,13 @@ export default {
       );
       this.errors[action] = getGroupBookingErrorMessage(code);
     },
+    handleBookingError(action, errors) {
+      const code = errors[0]?.code;
+      this.addToast(
+        ToastService.createToast(`booking.${action}.error`, "error")
+      );
+      this.errors[action] = getBookingErrorMessage(code);
+    },
 
     fetchBookables() {
       ApiBookablesService.getBookables()
@@ -497,9 +495,21 @@ export default {
       } else {
         try {
           await this.startLoading("commit-booking");
-          await ApiBookingService.commitBooking(id);
-          await this.fetchBookings();
-          this.openCommitGroupBookingDialog = false;
+          const data = await ApiBookingService.commitBooking(id);
+
+          if (!data.success) {
+            this.handleBookingError("commit", data.errors);
+          } else {
+            await this.addToast(
+              ToastService.createToast(
+                "booking.commit.success",
+                "success"
+              )
+            );
+            this.errors.commit = null;
+            await this.fetchBookings();
+            this.openCommitGroupBookingDialog = false;
+          }
         } finally {
           await this.stopLoading("commit-booking");
         }

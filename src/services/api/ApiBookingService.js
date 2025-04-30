@@ -62,13 +62,14 @@ export default {
       { withCredentials: true }
     );
   },
-  commitBooking(id) {
-    return ApiClient.get(
+  async commitBooking(id) {
+    const response = await ApiClient.get(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/commit`,
       {
         withCredentials: true,
       }
     );
+    return response.data;
   },
   rejectBooking(id, tenantId, reason) {
     const t = tenantId || store.getters["tenants/currentTenantId"];

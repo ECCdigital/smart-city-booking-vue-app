@@ -4,30 +4,11 @@ import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 import GroupBookingCreateReceipt from "@/components/Booking/GroupBookingCreateReceipt.vue";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
+import {
+  getBookingErrorMessage,
+  getGroupBookingErrorMessage,
+} from "@/utils/errorMessages";
 
-const GROUP_BOOKING_ERROR_MESSAGES = {
-  OWNER_MISMATCH: "Die Buchungen haben unterschiedliche Personen zugewiesen.",
-  STATUS_MISMATCH: "Die Buchungen haben unterschiedliche Status.",
-  PAYMENT_PROVIDER_MISMATCH:
-    "Die Buchungen haben unterschiedliche Zahlungsanbieter.",
-  PAYED_STATUS: "Die Buchungen sind noch nicht bezahlt.",
-};
-const BOOKING_ERROR_MESSAGES = {
-  PAYED_STATUS: "Die Buchung ist noch nicht bezahlt.",
-};
-
-function getGroupBookingErrorMessage(code) {
-  return (
-    GROUP_BOOKING_ERROR_MESSAGES[code] ||
-    "Ein unbekannter Fehler ist aufgetreten."
-  );
-}
-
-function getBookingErrorMessage(code) {
-  return (
-    BOOKING_ERROR_MESSAGES[code] || "Ein unbekannter Fehler ist aufgetreten."
-  );
-}
 
 export default {
   name: "BookingDetails",
@@ -193,6 +174,7 @@ export default {
       }
     },
     closeDialog() {
+      this.errors.receipt = null;
       this.$emit("close");
     },
     closeAggregatedReceipt() {
@@ -436,6 +418,11 @@ export default {
           <v-icon>mdi-plus</v-icon>Buchungsbeleg erstellen
         </v-btn>
       </div>
+      <v-card-text v-if="errors.receipt" class="text-center">
+        <v-alert type="error" border="left" elevation="2">
+          {{ errors.receipt }}
+        </v-alert>
+      </v-card-text>
       <v-divider />
       <v-row no-gutters>
         <v-col>
