@@ -40,9 +40,9 @@ export default {
         return false;
       }
 
-      return this.getTimePeriods(val).length > 0;
+      return this.filterTimePeriods(val).length > 0;
     },
-    getTimePeriods(val) {
+    filterTimePeriods(val) {
       if (val == null) {
         return [];
       }
@@ -199,10 +199,10 @@ export default {
     </v-row>
     <div v-if="!loading">
       <div v-if="date">
-        <v-row v-if="getTimePeriods(date).length > 0" class="primary">
+        <v-row v-if="filterTimePeriods(date).length > 0" class="primary">
           <v-col
             class="col-12 col-md-4"
-            v-for="timePeriod in getTimePeriods(date)"
+            v-for="timePeriod in filterTimePeriods(date)"
             :key="timePeriod.value.id"
           >
             <v-btn
