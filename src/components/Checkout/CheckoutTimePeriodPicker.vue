@@ -51,10 +51,10 @@ export default {
       const weekday = date.getDay();
 
       const periods = this.leadItem.bookable.timePeriods
-        .filter((tp) => tp.weekdays.includes(weekday))
-        .map((tp) => {
-          const [sh, sm] = tp.startTime.split(":").map(Number);
-          const [eh, em] = tp.endTime.split(":").map(Number);
+        .filter((timePeriod) => timePeriod.weekdays.includes(weekday))
+        .map((timePeriod) => {
+          const [sh, sm] = timePeriod.startTime.split(":").map(Number);
+          const [eh, em] = timePeriod.endTime.split(":").map(Number);
           const dateOnly = new Date(val);
           const timeBegin = new Date(
             dateOnly.getFullYear(),
@@ -71,8 +71,8 @@ export default {
             em
           ).getTime();
           return {
-            text: `${tp.startTime} - ${tp.endTime}`,
-            value: tp,
+            text: `${timePeriod.startTime} - ${timePeriod.endTime}`,
+            value: timePeriod,
             timeBegin,
             timeEnd,
           };
