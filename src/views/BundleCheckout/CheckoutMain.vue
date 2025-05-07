@@ -166,13 +166,14 @@ export default {
     },
 
     goToGroupBooking() {
-      console.log("jep");
       this.$router.push({
         name: "checkout-group-booking",
         query: {
           tenant: this.tenant,
           id: this.leadItem.bookableId,
           amount: this.leadItem.amount,
+          timeBegin: this.timeBegin,
+          timeEnd: this.timeEnd,
         },
       });
     },
@@ -190,20 +191,21 @@ export default {
         },
       };
 
-      const loginStep = {
-        title: "Anmeldung",
-        component: "checkout-signin",
-        props: {
-          tenantId: this.tenant,
-          me: this.me,
-          "show-back": false,
-        },
-        events: {
-          "update-me": this.fetchMe,
-          submit: this.nextPage,
-          back: this.previousPage,
-        },
-      };
+      // Unused login step - keeping for reference
+      // const loginStep = {
+      //   title: "Anmeldung",
+      //   component: "checkout-signin",
+      //   props: {
+      //     tenantId: this.tenant,
+      //     me: this.me,
+      //     "show-back": false,
+      //   },
+      //   events: {
+      //     "update-me": this.fetchMe,
+      //     submit: this.nextPage,
+      //     back: this.previousPage,
+      //   },
+      // };
 
       const loginRequiredStep = {
         title: "Anmeldung",
