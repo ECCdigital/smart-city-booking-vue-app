@@ -31,7 +31,7 @@ const actions = {
 };
 
 const getters = {
-  getUser: (state) => state.data.user,
+  getUser: (state) => state.data?.user,
   isLoggedIn: () => !_.isNil(state.data.user),
   isAuthorized: (state) => (ifce) => {
     if (state.data && state.data.permissions) {

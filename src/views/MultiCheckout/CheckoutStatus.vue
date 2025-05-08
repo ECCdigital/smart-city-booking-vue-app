@@ -83,7 +83,7 @@
             elevation="0"
             outlined
             color="primary mt-15"
-            :href="websiteLink"
+            :href="'https://'+websiteLink"
           >
             Zurück zur Website
           </v-btn>
@@ -125,13 +125,12 @@
               {{ statusText(item) }}
             </template>
           </v-data-table>
-
           <v-btn
             v-if="!!websiteLink"
             elevation="0"
             outlined
             class="mt-5"
-            :href="websiteLink"
+            :href="'https://'+websiteLink"
           >
             Zurück zur Website
           </v-btn>

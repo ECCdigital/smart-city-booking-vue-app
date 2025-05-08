@@ -1,365 +1,40 @@
 <template>
   <div>
     <v-container>
-      <h1 class="mb-4">Serienbuchung</h1>
-      <p class="mb-6">
-        Hier können Sie eine Serienbuchung für das ausgewählte Buchungsobjekt erstellen.
-      </p>
       <div>
-        <v-stepper v-model="currentStep">
-          <!-- Step 1: Booking Attempts -->
-          <v-stepper-step :complete="currentStep > 1" step="1">
-            Serienbuchung erstellen
-          </v-stepper-step>
-          <v-stepper-content step="1">
-            <v-card flat class="rounded-sm">
-              <v-card-text>
-                <v-card outlined class="rounded-sm mb-6">
-                  <v-card-title class="d-flex justify-space-between">
-                    <span>
-                      {{ leadItem.bookable.title }}
-                    </span>
-                    <v-btn outlined> ändern </v-btn>
-                  </v-card-title>
-
-                  <v-card-text>
-                    <v-row>
-                      <v-col>
-                        <v-text-field
-                          v-model="dateBeginModel"
-                          label="Startdatum"
-                          prepend-icon="mdi-calendar"
-                          disabled
-                        ></v-text-field>
-                      </v-col>
-                      <v-col>
-                        <v-text-field
-                          v-model="timeBeginModel"
-                          label="Startzeit"
-                          prepend-icon="mdi-clock-time-four-outline"
-                          disabled
-                        ></v-text-field>
-                      </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col>
-                        <v-text-field
-                          v-model="dateEndModel"
-                          label="Enddatum"
-                          prepend-icon="mdi-calendar"
-                          disabled
-                        ></v-text-field>
-                      </v-col>
-                      <v-col>
-                        <v-text-field
-                          v-model="timeEndModel"
-                          label="Endzeit"
-                          prepend-icon="mdi-clock-time-four-outline"
-                          disabled
-                        ></v-text-field>
-                      </v-col>
-                    </v-row>
-                  </v-card-text>
-                </v-card>
-
-                <v-card outlined class="rounded-sm mb-6">
-                  <v-card-title>Serienbuchung erstellen</v-card-title>
-                  <v-card-text>
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-menu
-                          ref="startDateMenu"
-                          v-model="startDateMenu"
-                          :close-on-content-click="false"
-                          transition="scale-transition"
-                          offset-y
-                          min-width="auto"
-                        >
-                          <template v-slot:activator="{ on, attrs }">
-                            <v-text-field
-                              v-model="seriesStartDate"
-                              label="Startdatum"
-                              prepend-icon="mdi-calendar"
-                              readonly
-                              v-bind="attrs"
-                              v-on="on"
-                              :rules="[
-                                (v) => !!v || 'Startdatum ist erforderlich',
-                              ]"
-                            ></v-text-field>
-                          </template>
-                          <v-date-picker
-                            v-model="seriesStartDate"
-                            no-title
-                            scrollable
-                            color="primary"
-                            locale="de"
-                            :first-day-of-week="1"
-                            :min="minBookingDate"
-                            @input="startDateMenu = false"
-                          >
-                          </v-date-picker>
-                        </v-menu>
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-menu
-                          ref="endDateMenu"
-                          v-model="endDateMenu"
-                          :close-on-content-click="false"
-                          transition="scale-transition"
-                          offset-y
-                          min-width="auto"
-                        >
-                          <template v-slot:activator="{ on, attrs }">
-                            <v-text-field
-                              v-model="seriesEndDate"
-                              label="Enddatum"
-                              prepend-icon="mdi-calendar"
-                              readonly
-                              v-bind="attrs"
-                              v-on="on"
-                              :rules="[
-                                (v) => !!v || 'Enddatum ist erforderlich',
-                                (v) =>
-                                  new Date(v) >= new Date(seriesStartDate) ||
-                                  'Enddatum muss nach dem Startdatum liegen',
-                              ]"
-                            ></v-text-field>
-                          </template>
-                          <v-date-picker
-                            v-model="seriesEndDate"
-                            no-title
-                            scrollable
-                            color="primary"
-                            locale="de"
-                            :first-day-of-week="1"
-                            :min="seriesStartDate"
-                            @input="endDateMenu = false"
-                          >
-                          </v-date-picker>
-                        </v-menu>
-                      </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-select
-                          v-model="seriesFrequency"
-                          :items="frequencyOptions"
-                          label="Häufigkeit"
-                          item-text="text"
-                          item-value="value"
-                          prepend-icon="mdi-calendar-sync"
-                        ></v-select>
-                      </v-col>
-                    </v-row>
-                    <v-btn
-                      color="primary"
-                      @click="generateSeriesBookings"
-                      class="mt-4"
-                    >
-                      <v-icon left>mdi-calendar-multiple</v-icon>
-                      Serie generieren
-                    </v-btn>
-                  </v-card-text>
-                </v-card>
-
-                <div v-if="bookingAttempts.length > 0">
-                  <h3 class="mb-4">Generierte Buchungen</h3>
-
-                  <v-card outlined class="rounded-sm mb-6">
-                    <v-data-table
-                      :headers="headers"
-                      :items="bookingAttempts"
-                      disable-pagination
-                      hide-default-footer
-                      hide-default-header
-                      class="rounded-sm"
-                    >
-                      <template v-slot:header="{ props }">
-                        <tr>
-                          <th v-for="header in props.headers" :key="header.value">
-                            {{ header.text }}
-                          </th>
-                        </tr>
-                      </template>
-
-                      <template v-slot:item.timeBegin="{ item }">
-                        {{ formatDateTime(item.timeBegin) }}
-                      </template>
-                      <template v-slot:item.timeEnd="{ item }">
-                        {{ formatDateTime(item.timeEnd) }}
-                      </template>
-
-                      <template v-slot:item.price="{ item }">
-                        {{ formatCurrency(item.userPriceEur) }}
-                      </template>
-
-                      <template v-slot:item.valid="{ item }">
-                        <v-icon
-                          v-if="item.valid"
-                          color="green"
-                          size="24"
-                          class="mr-2"
-                        >
-                          mdi-check-circle
-                        </v-icon>
-                        <v-icon
-                          v-else-if="item.error"
-                          color="red"
-                          size="24"
-                          class="mr-2"
-                        >
-                          mdi-alert-circle
-                        </v-icon>
-                        <span v-if="item.error">{{ item.error }}</span>
-                        <span v-else>verfügbar</span>
-                      </template>
-
-                      <template v-slot:item.actions="{ item, index }">
-                        <v-btn icon @click="removeBookingAttempt(index)">
-                          <v-icon>mdi-delete</v-icon>
-                        </v-btn>
-                      </template>
-                    </v-data-table>
-                  </v-card>
-                </div>
-
-                <v-btn
-                  color="primary"
-                  @click="validateAndContinue"
-                  block
-                  class="mt-6"
-                >
-                  Weiter
-                  <v-icon right>mdi-arrow-right</v-icon>
-                </v-btn>
-              </v-card-text>
-            </v-card>
-          </v-stepper-content>
-
-          <!-- Step 2: Contact Details -->
-          <v-stepper-step :complete="currentStep > 2" step="2">
-            Kontaktdaten
-          </v-stepper-step>
-          <v-stepper-content step="2">
-            <v-card flat>
-              <v-card-text>
-                <checkout-contact-details
-                  :lead-item="leadItem"
-                  :me="me"
-                  :contact-details="contactDetails"
-                  @back="currentStep = 1"
-                  @submit="currentStep = 3"
-                ></checkout-contact-details>
-              </v-card-text>
-            </v-card>
-          </v-stepper-content>
-
-          <!-- Step 3: Payment Provider -->
-          <v-stepper-step :complete="currentStep > 3" step="3">
-            Zahlungsmethode
-          </v-stepper-step>
-          <v-stepper-content step="3">
-            <v-card flat>
-              <v-card-text>
-                <checkout-payment-provider
-                  :active-payment-apps="activePaymentApps"
-                  @back="currentStep = 2"
-                  @submit="setPaymentApp"
-                ></checkout-payment-provider>
-              </v-card-text>
-            </v-card>
-          </v-stepper-content>
-
-          <!-- Step 4: Summary -->
-          <v-stepper-step step="4"> Zusammenfassung </v-stepper-step>
-          <v-stepper-content step="4">
-            <v-card flat>
-              <v-card-text>
-                <h2 class="mb-4">Zusammenfassung Ihrer Buchungen</h2>
-
-                <div
-                  v-for="(attempt, index) in bookingAttempts"
-                  :key="index"
-                  class="mb-4"
-                >
-                  <v-card outlined>
-                    <v-card-title>Buchung {{ index + 1 }}</v-card-title>
-                    <v-card-text>
-                      <div v-if="attempt.timeBegin && attempt.timeEnd">
-                        <p>
-                          <strong>Zeitraum:</strong>
-                          {{ formatDateTime(attempt.timeBegin) }} -
-                          {{ formatDateTime(attempt.timeEnd) }}
-                        </p>
-                      </div>
-
-                      <div
-                        v-for="(
-                          bookableItem, itemIndex
-                        ) in attempt.bookableItems"
-                        :key="itemIndex"
-                      >
-                        <div v-if="bookableItem.valid">
-                          <p>
-                            <strong>{{ bookableItem.bookable?.title }}</strong>
-                          </p>
-                          <p>
-                            Preis:
-                            {{ formatCurrency(bookableItem.userPriceEur) }}
-                          </p>
-                        </div>
-                        <div v-else-if="bookableItem.error" class="red--text">
-                          <p>Fehler: {{ bookableItem.error }}</p>
-                        </div>
-                      </div>
-                    </v-card-text>
-                  </v-card>
-                </div>
-
-                <v-divider class="my-4"></v-divider>
-
-                <h3>Kontaktdaten</h3>
-                <p><strong>Name:</strong> {{ contactDetails.name }}</p>
-                <p v-if="contactDetails.company">
-                  <strong>Firma:</strong> {{ contactDetails.company }}
-                </p>
-                <p><strong>E-Mail:</strong> {{ contactDetails.mail }}</p>
-                <p v-if="contactDetails.phone">
-                  <strong>Telefon:</strong> {{ contactDetails.phone }}
-                </p>
-                <p>
-                  <strong>Adresse:</strong> {{ contactDetails.street }},
-                  {{ contactDetails.zipCode }} {{ contactDetails.location }}
-                </p>
-                <p v-if="contactDetails.comment">
-                  <strong>Hinweise:</strong> {{ contactDetails.comment }}
-                </p>
-
-                <v-divider class="my-4"></v-divider>
-
-                <h3>Zahlungsmethode</h3>
-                <p>
-                  <strong>{{ getSelectedPaymentAppTitle() }}</strong>
-                </p>
-
-                <v-btn
-                  color="primary"
-                  @click="performGroupCheckout"
-                  block
-                  class="mt-6"
-                  :loading="isSubmitting"
-                >
-                  Jetzt verbindlich buchen
-                </v-btn>
-
-                <v-btn text @click="currentStep = 3" class="mt-2">
-                  Zurück
-                </v-btn>
-              </v-card-text>
-            </v-card>
-          </v-stepper-content>
+        <v-stepper
+          v-if="steps.length > 0"
+          v-model="currentStep"
+          alt-labels
+          elevation="0"
+          class="mb-10"
+        >
+          <v-stepper-header>
+            <template v-for="(_step, index) in steps">
+              <v-stepper-step
+                v-if="currentStep"
+                :key="`step-${index}`"
+                :complete="stepComplete(index)"
+                :step="index + 1"
+              >
+                {{ _step.title }}
+              </v-stepper-step>
+              <v-divider
+                v-if="index < steps.length - 1"
+                :key="index"
+              ></v-divider>
+            </template>
+          </v-stepper-header>
         </v-stepper>
+        <v-row>
+          <v-col>
+            <component
+              :is="steps[currentStep - 1]?.component"
+              v-bind="steps[currentStep - 1]?.props"
+              v-on="steps[currentStep - 1]?.events"
+            ></component>
+          </v-col>
+        </v-row>
       </div>
     </v-container>
   </div>
@@ -372,14 +47,18 @@ import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import CheckoutContactDetails from "@/views/BundleCheckout/CheckoutContactDetails.vue";
 import CheckoutPaymentProvider from "@/views/BundleCheckout/CheckoutPaymentProvider.vue";
-import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
+import CheckoutSeriesBooking from "@/views/BundleCheckout/CheckoutSeriesBooking.vue";
+import CheckoutGroupBookingSummary from "@/views/BundleCheckout/CheckoutGroupBookingSummary.vue";
 import { mapGetters } from "vuex";
+import ApiCouponService from "@/services/api/ApiCouponService";
 
 export default {
   name: "CheckoutGroupBooking",
   components: {
     CheckoutContactDetails,
     CheckoutPaymentProvider,
+    CheckoutSeriesBooking,
+    CheckoutGroupBookingSummary: CheckoutGroupBookingSummary,
   },
   data() {
     return {
@@ -411,6 +90,8 @@ export default {
       activePaymentApps: [],
       selectedPaymentApp: null,
 
+      coupon: null,
+
       // First booking data
       dateBeginModel: null,
       dateEndModel: null,
@@ -438,44 +119,142 @@ export default {
     ...mapGetters({
       user: "user/getUser",
     }),
-    minBookingDate() {
-      return new Date().toISOString().split("T")[0];
+    steps() {
+      return this.createSteps();
     },
   },
   methods: {
-    async generateSeriesBookings() {
+    createSteps() {
+      const seriesBookingStep = {
+        title: "Serie erstellen",
+        component: CheckoutSeriesBooking,
+        props: {
+          leadItem: this.leadItem,
+          bookingAttempts: this.bookingAttempts,
+          dateBeginModel: this.dateBeginModel,
+          dateEndModel: this.dateEndModel,
+          timeBeginModel: this.timeBeginModel,
+          timeEndModel: this.timeEndModel,
+          firstBookingDate: this.seriesStartDate,
+        },
+        events: {
+          back: this.backToSingleBooking,
+          "generate-series-bookings": this.generateSeriesBookings,
+          "remove-booking-attempt": this.removeBookingAttempt,
+          "validate-and-continue": this.validateAndContinue,
+          "change-booking-time": this.changeBookingTime,
+        },
+      };
+
+      const contactDetailsStep = {
+        title: "Kontaktdaten",
+        component: CheckoutContactDetails,
+        props: {
+          leadItem: this.leadItem,
+          me: this.me,
+          contactDetails: this.contactDetails,
+        },
+        events: {
+          back: () => (this.currentStep--),
+          submit: () => (this.currentStep++),
+        },
+      };
+
+      const paymentStep = {
+        title: "Zahlungsmethode",
+        component: CheckoutPaymentProvider,
+        props: {
+          activePaymentApps: this.activePaymentApps,
+        },
+        events: {
+          back: () => (this.currentStep--),
+          submit: this.setPaymentApp,
+        },
+      };
+
+      const summaryStep = {
+        title: "Zusammenfassung",
+        component: CheckoutGroupBookingSummary,
+        props: {
+          bookingAttempts: this.bookingAttempts,
+          contactDetails: this.contactDetails,
+          activePaymentApps: this.activePaymentApps,
+          selectedPaymentApp: this.selectedPaymentApp,
+          isSubmitting: this.isSubmitting,
+          coupon: this.coupon,
+        },
+        events: {
+          back: () => (this.currentStep--),
+          "perform-checkout": this.performGroupCheckout,
+          "redeem-coupon": this.redeemCoupon,
+          "remove-coupon": this.removeCoupon,
+        },
+      };
+
+      const steps = [seriesBookingStep, contactDetailsStep];
+
+      if (this.activePaymentApps.length > 1) {
+        steps.push(paymentStep);
+      }
+
+      steps.push(summaryStep);
+
+      return steps;
+    },
+
+    async redeemCoupon(code) {
+      try {
+        const coupon = await ApiCouponService.getCoupon(this.tenant, code);
+        this.coupon = coupon.data;
+      } catch (e) {
+        if (e.response.status === 404) {
+          this.coupon = null;
+        }
+      } finally {
+        await this.validateItems(this.bookingAttempts);
+      }
+    },
+
+    async removeCoupon() {
+      this.coupon = null;
+      await this.validateItems(this.bookingAttempts);
+    },
+
+    stepComplete(index) {
+      return this.currentStep > index + 1;
+    },
+
+    backToSingleBooking() {
+      this.$router.push({
+        name: "checkout",
+        query: {
+          id: this.leadItem.bookableId,
+          tenant: this.tenantId,
+        },
+      });
+    },
+
+    async generateSeriesBookings(data) {
       this.bookingAttempts = [];
 
-      if (
-        !this.firstBookingDate ||
-        !this.timeBeginModel ||
-        !this.timeEndModel ||
-        !this.seriesStartDate ||
-        !this.seriesEndDate
-      ) {
-        alert("Bitte füllen Sie alle Felder aus.");
-        return;
-      }
+      this.seriesStartDate = data.seriesStartDate;
+      this.seriesEndDate = data.seriesEndDate;
+      this.seriesFrequency = data.seriesFrequency;
 
       const startDate = new Date(this.seriesStartDate);
       const endDate = new Date(this.seriesEndDate);
 
-      if (startDate > endDate) {
-        alert("Das Startdatum muss vor dem Enddatum liegen.");
-        return;
-      }
-
       // Add the first booking
-      const firstBookingDate = new Date(this.firstBookingDate);
+      const firstBookingDate = new Date(this.seriesStartDate);
       const [firstHours, firstMinutes] = this.timeBeginModel
         .split(":")
         .map(Number);
       const [endHours, endMinutes] = this.timeEndModel.split(":").map(Number);
 
-      const firstTimeBegin = new Date(firstBookingDate);
+      const firstTimeBegin = new Date(this.dateBeginModel);
       firstTimeBegin.setHours(firstHours, firstMinutes, 0, 0);
 
-      const firstTimeEnd = new Date(firstBookingDate);
+      const firstTimeEnd = new Date(this.dateEndModel);
       firstTimeEnd.setHours(endHours, endMinutes, 0, 0);
 
       const attempts = [];
@@ -507,15 +286,17 @@ export default {
           currentDate.setDate(currentDate.getDate() + 7);
         }
       }
-
-      // Create booking attempts for each date in the series
-
+      // Calculate the date offset
+      const dateOffset =
+        new Date(this.dateEndModel).getDate() -
+        new Date(this.dateBeginModel).getDate();
 
       for (const date of dates) {
         const timeBegin = new Date(date);
         timeBegin.setHours(firstHours, firstMinutes, 0, 0);
 
         const timeEnd = new Date(date);
+        timeEnd.setDate(timeEnd.getDate() + dateOffset);
         timeEnd.setHours(endHours, endMinutes, 0, 0);
 
         const bookingAttempt = {
@@ -531,7 +312,6 @@ export default {
       }
       await this.validateItems(attempts);
       this.bookingAttempts = attempts;
-
     },
 
     async fetchMe() {
@@ -591,40 +371,20 @@ export default {
     },
 
     async validateAndContinue() {
-      // Validate all booking attempts
       await this.validateItems(this.bookingAttempts);
 
-      // Check if all items are valid
       const allValid = this.bookingAttempts.every((attempt) =>
         attempt.bookableItems.every((item) => item.valid)
       );
 
       if (allValid) {
-        this.currentStep = 2;
-      } else {
-        // Show error message
-        alert("Bitte korrigieren Sie die Fehler in Ihren Buchungen.");
+        this.currentStep++;
       }
     },
 
     setPaymentApp(app) {
       this.selectedPaymentApp = app;
-      this.currentStep = 4;
-    },
-
-    getSelectedPaymentAppTitle() {
-      const app = this.activePaymentApps.find(
-        (app) => app.id === this.selectedPaymentApp
-      );
-      return app ? app.title : "";
-    },
-
-    formatDateTime(timestamp) {
-      return checkoutUtils.dateToLocaleString(timestamp);
-    },
-
-    formatCurrency(value) {
-      return checkoutUtils.formatCurrency(value);
+      this.currentStep++;
     },
 
     async validateItems(bookingAttempts) {
@@ -687,6 +447,15 @@ export default {
           (sum, item) => sum + (item.userGrossPriceEur || 0),
           0
         );
+        bookingAttempt.error = bookingAttempt.bookableItems.reduce(
+          (acc, item) => {
+            if (item.error) {
+              acc.push(item.error);
+            }
+            return acc;
+          },
+          []
+        );
       }
     },
 
@@ -704,13 +473,11 @@ export default {
         );
 
         if (response.status === 200) {
-          // Redirect to success page or show success message
           await this.$router.push({
-            name: "booking-status",
+            path: "/checkout/status",
             query: {
+              ids: response.data.bookingIds.join(","),
               tenant: this.tenantId,
-              status: "success",
-              bookingId: response.data.id,
             },
           });
         } else {
@@ -718,30 +485,28 @@ export default {
         }
       } catch (error) {
         console.error("Error during checkout:", error);
-        alert(
-          "Bei der Buchung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
-        );
       } finally {
         this.isSubmitting = false;
       }
     },
-  },
+    async changeBookingTime(data) {
+      const { timeBegin, timeEnd } = data;
+      this.setBookingTime(timeBegin, timeEnd);
+      this.bookingAttempts = [];
 
-  async mounted() {
-    this.tenantId = this.$route.query.tenant;
-    this.leadItem.bookableId = this.$route.query.id;
-    this.leadItem.amount = parseInt(this.$route.query.amount || 1);
-
-    await this.fetchLeadBookable();
-    await this.fetchMe();
-    await this.fetchActivePaymentApps();
-
-    const today = new Date();
-    this.firstBookingDate = today.toISOString().split("T")[0];
-
-    if (this.$route.query.timeBegin && this.$route.query.timeEnd) {
-      const timeBegin = new Date(parseInt(this.$route.query.timeBegin));
-      const timeEnd = new Date(parseInt(this.$route.query.timeEnd));
+      await this.$router.push({
+        name: "checkout-group-booking",
+        query: {
+          id: this.leadItem.bookableId,
+          tenant: this.tenantId,
+          timeBegin: timeBegin,
+          timeEnd: timeEnd,
+        },
+      });
+    },
+    setBookingTime(timestampBegin, timestampEnd) {
+      const timeBegin = new Date(parseInt(timestampBegin));
+      const timeEnd = new Date(parseInt(timestampEnd));
 
       this.dateBeginModel = timeBegin.toISOString().split("T")[0];
       this.dateEndModel = timeEnd.toISOString().split("T")[0];
@@ -754,6 +519,23 @@ export default {
         hour: "2-digit",
         minute: "2-digit",
       });
+    },
+  },
+
+  async mounted() {
+    this.tenantId = this.$route.query.tenant;
+    this.leadItem.bookableId = this.$route.query.id;
+    this.leadItem.amount = parseInt(this.$route.query.amount || 1);
+
+    await this.fetchLeadBookable();
+    await this.fetchMe();
+    await this.fetchActivePaymentApps();
+
+    if (this.$route.query.timeBegin && this.$route.query.timeEnd) {
+      this.setBookingTime(
+        this.$route.query.timeBegin,
+        this.$route.query.timeEnd
+      );
     }
 
     if (this.dateBeginModel) {
@@ -762,7 +544,7 @@ export default {
       this.seriesStartDate = new Date().toISOString().split("T")[0];
     }
 
-    const endDate = new Date(this.firstBookingDate);
+    const endDate = new Date(this.seriesStartDate);
     endDate.setMonth(endDate.getMonth() + 1);
     this.seriesEndDate = endDate.toISOString().split("T")[0];
 

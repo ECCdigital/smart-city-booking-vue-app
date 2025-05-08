@@ -7,6 +7,7 @@
       </v-btn>
       <v-spacer></v-spacer>
       <v-btn
+        v-if="showContinue"
         :disabled="isNextButtonDisabled"
         color="primary"
         small
@@ -19,15 +20,6 @@
     <v-form v-model="valid" ref="form">
       <h2>Buchungszeitraum</h2>
       <p>Bitte wählen Sie den Zeitraum für Ihre Buchung.</p>
-
-      <v-btn
-        v-if="leadItem.bookable.allowGroupBooking === true"
-        color="primary"
-        small
-        @click="onGroupBooking"
-        >
-        Ab zur Gruppenbuchung
-      </v-btn>
 
       <v-row v-if="selectionType === 'schedule'">
         <v-col>
@@ -220,6 +212,17 @@
         </v-col>
       </v-row>
 
+      <v-btn
+        v-if="leadItem.bookable.allowGroupBooking === true && showSeries"
+        outlined
+        small
+        class="mt-2"
+        :disabled="!timestampBegin || !timestampEnd"
+        @click="onGroupBooking"
+      >
+        Serie erstellen
+      </v-btn>
+
       <checkout-calendar
         v-if="leadItem.bookable && selectionType !== 'time-period'"
         :bookableId="leadItem.bookable.id"
@@ -264,6 +267,14 @@ export default {
       type: Number,
     },
     showBack: {
+      type: Boolean,
+      default: true,
+    },
+    showContinue: {
+      type: Boolean,
+      default: true,
+    },
+    showSeries: {
       type: Boolean,
       default: true,
     },
