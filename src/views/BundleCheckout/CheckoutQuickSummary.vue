@@ -560,6 +560,7 @@ export default {
           off += item.regularPriceEur - item.userPriceEur;
         }
       }
+      return off;
     },
 
     totalGrossPriceOff() {
