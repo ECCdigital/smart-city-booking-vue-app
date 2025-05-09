@@ -999,6 +999,7 @@ export default {
           this.isLongRange = value;
         } else {
           this.updateValue({ field: "longRangeOptions", value: null });
+          this.isLongRange = value;
         }
       },
     },
@@ -1019,6 +1020,7 @@ export default {
           this.isLongRange = value;
         } else {
           this.updateValue({ field: "longRangeOptions", value: null });
+          this.isLongRange = value;
         }
       },
     },
