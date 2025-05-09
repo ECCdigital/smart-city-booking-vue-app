@@ -109,7 +109,7 @@ export default {
   computed: {
     ...mapGetters({
       tenant: "tenants/currentTenant",
-      user: "user/user",
+      user: "user/getUser",
       instance: "instance/instance",
     }),
     ssoActive() {

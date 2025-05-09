@@ -104,7 +104,7 @@
               <v-list-item
                 v-for="(item, index) in items"
                 :key="index"
-                @click="setButtonTarget(item)"
+                :to="{ name: item.to }"
               >
                 <v-list-item-title>{{ item.title }}</v-list-item-title>
               </v-list-item>
@@ -212,6 +212,8 @@ export default {
     }),
     setButtonTarget(target) {
       this.buttonTarget = target;
+      // Update activeTarget based on the selected item
+      this.activeTarget = this.items.findIndex(item => item.to === target.to);
     },
     remove(item) {
       this.filters.splice(this.filters.indexOf(item), 1);
@@ -285,7 +287,7 @@ export default {
       this.eventCountCheck = await ApiEventService.publicEventCountCheck();
     },
     setInitialButtonTarget() {
-      if (this.tenant.defaultEventCreationMode === "simple") {
+      if (this.tenant?.defaultEventCreationMode === "simple") {
         this.buttonTarget = this.items[1];
         this.activeTarget = 1;
       } else {

@@ -13,18 +13,23 @@ export default {
     },
   },
   data: function () {
+    const todayStr = new Date().toISOString().split("T")[0];
+
     return {
-      test: null,
-      date: new Date().toISOString().split("T")[0],
+      date: null,
       timePeriod: null,
       occupations: [],
-      displayedMonth: null,
+      displayedMonth: todayStr,
       loading: false,
+      availabilityLoaded: false,
     };
   },
   computed: {},
   methods: {
     allowedDates(val) {
+      if (!this.availabilityLoaded || this.loading) {
+        return false;
+      }
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -35,41 +40,53 @@ export default {
         return false;
       }
 
-      return this.getTimePeriods(val).length > 0;
+      return this.filterTimePeriods(val).length > 0;
     },
-    getTimePeriods(val) {
+    filterTimePeriods(val) {
       if (val == null) {
         return [];
       }
-      const weekday = new Date(val).getDay();
-      const timePeriods = this.leadItem.bookable.timePeriods
+
+      const date = new Date(val);
+      const weekday = date.getDay();
+
+      const periods = this.leadItem.bookable.timePeriods
         .filter((timePeriod) => timePeriod.weekdays.includes(weekday))
         .map((timePeriod) => {
+          const [sh, sm] = timePeriod.startTime.split(":").map(Number);
+          const [eh, em] = timePeriod.endTime.split(":").map(Number);
+          const dateOnly = new Date(val);
+          const timeBegin = new Date(
+            dateOnly.getFullYear(),
+            dateOnly.getMonth(),
+            dateOnly.getDate(),
+            sh,
+            sm
+          ).getTime();
+          const timeEnd = new Date(
+            dateOnly.getFullYear(),
+            dateOnly.getMonth(),
+            dateOnly.getDate(),
+            eh,
+            em
+          ).getTime();
           return {
-            text: timePeriod.startTime + " - " + timePeriod.endTime,
+            text: `${timePeriod.startTime} - ${timePeriod.endTime}`,
             value: timePeriod,
-            timeBegin: new Date(val).setHours(
-              timePeriod.startTime.split(":")[0],
-              timePeriod.startTime.split(":")[1]
-            ),
-            timeEnd: new Date(val).setHours(
-              timePeriod.endTime.split(":")[0],
-              timePeriod.endTime.split(":")[1]
-            ),
+            timeBegin,
+            timeEnd,
           };
         });
 
-      this.occupations.forEach((occupation) => {
-        timePeriods.forEach((timePeriod, index) => {
-          if (
-            timePeriod.timeBegin >= occupation.timeBegin &&
-            timePeriod.timeEnd <= occupation.timeEnd
-          ) {
-            timePeriods.splice(index, 1);
-          }
-        });
-      });
-      return timePeriods;
+      return periods.filter((period) =>
+        this.occupations.every(
+          (occ) =>
+            occ.available === true ||
+            !(
+              period.timeBegin >= occ.timeBegin && period.timeEnd <= occ.timeEnd
+            )
+        )
+      );
     },
     transformDate(date) {
       return date.split("-").reverse().join(".");
@@ -84,6 +101,7 @@ export default {
 
     async validateAvailability() {
       this.loading = true;
+      this.availabilityLoaded = false;
       const dateObj = new Date(this.displayedMonth);
       const firstDayOfMonth = new Date(
         dateObj.getFullYear(),
@@ -102,18 +120,23 @@ export default {
       try {
         const response = await ApiBookablesService.getBookableAvailability(
           this.leadItem.bookable.id,
-          this.leadItem.bookable.tenant,
+          this.leadItem.bookable.tenantId,
           timeBegin,
           timeEnd,
           this.leadItem.amount
         );
         if (response.data) {
-          this.occupations = response.data;
+          this.occupations = response.data.map((occ) => ({
+            ...occ,
+            timeBegin: new Date(occ.timeBegin).getTime(),
+            timeEnd: new Date(occ.timeEnd).getTime(),
+          }));
         }
       } catch (error) {
         console.error(error);
       } finally {
         this.loading = false;
+        this.availabilityLoaded = true;
       }
     },
     updateDisplayedMonth(val) {
@@ -174,30 +197,34 @@ export default {
         >
       </v-col>
     </v-row>
-    <v-row v-if="getTimePeriods(date).length > 0" class="primary">
-      <v-col
-        class="col-12 col-md-4"
-        v-for="timePeriod in getTimePeriods(date)"
-        :key="timePeriod.value.id"
-      >
-        <v-btn
-          outlined
-          small
-          block
-          :color="isSelected(timePeriod) ? 'secondary' : 'white'"
-          @click="selectTimePeriod(timePeriod)"
-          >{{ timePeriod.text }}
-          <v-icon right dark> mdi-chevron-right </v-icon></v-btn
-        >
-      </v-col>
-    </v-row>
-    <v-row v-else class="primary">
-      <v-col>
-        <span class="subtitle-1 secondary--text"
-          >Für den ausgewählten Tag sind keine Zeiträume verfügbar.</span
-        >
-      </v-col>
-    </v-row>
+    <div v-if="!loading">
+      <div v-if="date">
+        <v-row v-if="filterTimePeriods(date).length > 0" class="primary">
+          <v-col
+            class="col-12 col-md-4"
+            v-for="timePeriod in filterTimePeriods(date)"
+            :key="timePeriod.value.id"
+          >
+            <v-btn
+              outlined
+              small
+              block
+              :color="isSelected(timePeriod) ? 'secondary' : 'white'"
+              @click="selectTimePeriod(timePeriod)"
+              >{{ timePeriod.text }}
+              <v-icon right dark> mdi-chevron-right </v-icon></v-btn
+            >
+          </v-col>
+        </v-row>
+        <v-row v-else class="primary">
+          <v-col>
+            <span class="subtitle-1 secondary--text"
+              >Für den ausgewählten Tag sind keine Zeiträume verfügbar.</span
+            >
+          </v-col>
+        </v-row>
+      </div>
+    </div>
   </div>
 </template>
 

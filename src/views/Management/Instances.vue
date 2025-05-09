@@ -637,6 +637,7 @@ export default {
         if (!application) {
           this.instance.applications?.push({
             id: "keycloak",
+            type: "auth",
             active: false,
             serverUrl: "",
             realm: "",
