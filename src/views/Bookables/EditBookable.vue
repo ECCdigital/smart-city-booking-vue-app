@@ -231,8 +231,8 @@
         <span class="text-h6">Preis-Kategorien</span>
       </v-card-subtitle>
       <v-card-text>
-        <div v-for="(price, idx) in priceCategories" :key="idx">
-          <div class="d-flex">
+        <div v-for="(priceCategory, idx) in priceCategories" :key="idx">
+          <div>
             <v-row>
               <v-col class="col-12 col-md-3">
                 <v-text-field
@@ -240,13 +240,13 @@
                   filled
                   label="Preis (netto)"
                   hide-details
-                  v-model="price.priceEur"
+                  v-model="priceCategory.priceEur"
                   suffix="Euro"
                 ></v-text-field>
               </v-col>
               <v-col class="col-6 col-md-2">
                 <v-text-field
-                  v-model="price.interval.start"
+                  v-model="priceCategory.interval.start"
                   background-color="accent"
                   filled
                   label="Gültig ab"
@@ -257,7 +257,7 @@
               </v-col>
               <v-col class="col-6 col-md-2">
                 <v-text-field
-                  v-model="price.interval.end"
+                  v-model="priceCategory.interval.end"
                   background-color="accent"
                   filled
                   label="Gültig bis"
@@ -266,12 +266,12 @@
                   @blur="checkNull('price.interval.start')"
                 ></v-text-field>
               </v-col>
-              <v-col class="col-12 col-md-1">
+              <v-col class="col-12 col-md-2">
                 <v-tooltip top max-width="300" open-delay="400">
                   <template v-slot:activator="{ on, attrs }">
                     <div v-bind="attrs" v-on="on">
                       <v-checkbox
-                        v-model="price.fixedPrice"
+                        v-model="priceCategory.fixedPrice"
                         label="Pauschalpreis"
                       >
                       </v-checkbox>
@@ -282,16 +282,66 @@
                   </span>
                 </v-tooltip>
               </v-col>
+              <v-col class="" style="text-align: right">
+                <v-btn
+                  :disabled="idx === 0"
+                  icon
+                  @click="removePriceCategory(idx)"
+                  class="mt-4"
+                  color="error"
+                >
+                  <v-icon>mdi-delete</v-icon>
+                </v-btn>
+              </v-col>
             </v-row>
-            <v-btn
-              :disabled="idx === 0"
-              icon
-              @click="removePriceCategory(idx)"
-              class="mt-4"
-              color="error"
-            >
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
+            <v-row>
+              <v-col>
+                <v-select
+                  background-color="accent"
+                  filled
+                  label="Wochentage"
+                  hide-details
+                  v-model="priceCategory.weekdays"
+                  multiple
+                  chips
+                  :items="weekdays"
+                  item-text="name"
+                  item-value="id"
+                ></v-select>
+              </v-col>
+              <v-col>
+                <v-combobox
+                  background-color="accent"
+                  filled
+                  multiple
+                  chips
+                  clearable
+                  label="Feiertage"
+                  :items="availableHolidays"
+                  item-text="name"
+                  item-value="date"
+                  v-model="priceCategory.holidays"
+                >
+                  <template v-slot:prepend-item>
+                    <v-list-item ripple>
+                      <v-select
+                        v-model="selectedState"
+                        :items="states"
+                        item-text="text"
+                        item-value="value"
+                        dense
+                        hide-details
+                        outlined
+                        label="Bundesland"
+                        prepend-icon="mdi-filter"
+                        @change="fetchHolidays"
+                      />
+                    </v-list-item>
+                    <v-divider class="mx-2" />
+                  </template>
+                </v-combobox>
+              </v-col>
+            </v-row>
           </div>
           <v-divider
             v-if="
@@ -356,15 +406,10 @@
       :amount="amount"
     ></BookableLockingAttributes>
 
-    <v-alert
-      v-else
-      type="warning"
-      dense
-      outlined
-    >
-      Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl der verfügbaren Buchungsobjekte an.
+    <v-alert v-else type="warning" dense outlined>
+      Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl der
+      verfügbaren Buchungsobjekte an.
     </v-alert>
-
 
     <h3 class="mt-10">Individuelle Berechtigungen</h3>
 
@@ -532,7 +577,6 @@
           :items="checkoutBookableIds"
           :available-items="bookablesWithoutSelf"
         >
-
         </BookableCheckoutBookables>
       </v-col>
     </v-row>
@@ -727,6 +771,7 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import ChooseFile from "@/components/Files/ChooseFile.vue";
 import BookableLockingAttributes from "@/components/Bookable/BookableLockingAttributes";
 import BookableCheckoutBookables from "@/components/Bookable/BookableCheckoutBookables.vue";
+import ApiHolidaysService from "@/services/api/ApiHolidaysService";
 
 export default {
   name: "EditBookable",
@@ -839,6 +884,27 @@ export default {
       ],
       availableUsers: [],
       availableRoles: [],
+      availableHolidays: [],
+      selectedState: null,
+      states: [
+        { text: "Bundesweit", value: null },
+        { text: "Brandenburg", value: "BB" },
+        { text: "Berlin", value: "BE" },
+        { text: "Baden-Württemberg", value: "BW" },
+        { text: "Bayern", value: "BY" },
+        { text: "Hansestadt Bremen", value: "HB" },
+        { text: "Hessen", value: "HE" },
+        { text: "Hansestadt Hamburg", value: "HH" },
+        { text: "Mecklenburg Vorpommern", value: "MV" },
+        { text: "Niedersachsen", value: "NI" },
+        { text: "Nordrhein-Westfalen", value: "NW" },
+        { text: "Rheinland-Pfalz", value: "RP" },
+        { text: "Schleswig-Holstein", value: "SH" },
+        { text: "Saarland", value: "SL" },
+        { text: "Sachsen", value: "SN" },
+        { text: "Sachsen-Anhalt", value: "ST" },
+        { text: "Thüringen", value: "TH" },
+      ],
     };
   },
   watch: {
@@ -885,7 +951,8 @@ export default {
       );
     },
     addPriceCategory() {
-      const lastCategory = this.priceCategories[this.priceCategories.length - 1];
+      const lastCategory =
+        this.priceCategories[this.priceCategories.length - 1];
       this.priceCategories.push({
         priceEur: 0,
         priceValueAddedTax: 0,
@@ -1177,6 +1244,23 @@ export default {
         await ApiBookablesService.publicBookableCountCheck();
       this.allowPublic = bookableCountCheck || this.isPublic;
     },
+    async fetchHolidays() {
+      const response = await ApiHolidaysService.getHolidays(
+        "DE",
+        this.selectedState
+      );
+      this.availableHolidays = response.data
+        .map((holiday) =>
+          holiday.type === "public"
+            ? {
+                name: holiday.name,
+                countryCode: "DE",
+                stateCode: this.selectedState,
+              }
+            : null
+        )
+        .filter(Boolean);
+    },
   },
   computed: {
     ...mapGetters({
@@ -1291,9 +1375,9 @@ export default {
         return this.$store.state.bookables.form.amount;
       },
       set(value) {
-        if(value === "" || value === undefined) {
-          value = null
-        } else if(value !== null) {
+        if (value === "" || value === undefined) {
+          value = null;
+        } else if (value !== null) {
           value = parseInt(value);
         }
         this.updateValue({ field: "amount", value: value });
@@ -1421,7 +1505,7 @@ export default {
     },
     allowGroupBooking: {
       get() {
-        console.log(this.$store.state.bookables.form)
+        console.log(this.$store.state.bookables.form);
         return this.$store.state.bookables.form.allowGroupBooking;
       },
       set(value) {
@@ -1508,12 +1592,16 @@ export default {
         return this.bookables.filter((b) => b.id !== this.id);
       }
     },
+    availableHolidaysFiltered() {
+      return () => this.availableHolidays;
+    },
   },
 
   mounted() {
     this.initialize();
     this.allowSetPublic();
     this.setUseGraduatedPrices();
+    this.fetchHolidays();
   },
 };
 </script>
