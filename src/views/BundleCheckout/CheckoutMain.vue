@@ -82,6 +82,7 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import CheckoutPaymentProvider from "@/views/BundleCheckout/CheckoutPaymentProvider.vue";
 import CheckoutAmountSelector from "@/views/BundleCheckout/CheckoutAmountSelector.vue";
 import { mapActions, mapGetters } from "vuex";
+import ApiRolesService from "@/services/api/ApiRolesService";
 
 export default {
   name: "CheckoutMain",
@@ -136,6 +137,7 @@ export default {
 
       activePaymentApps: [],
       selectedPaymentApp: null,
+      allowSeriesFlag: false,
     };
   },
 
@@ -160,6 +162,7 @@ export default {
       await this.fetchSubsequentBookables();
       await this.validateItems();
       await this.fetchActivePaymentApps();
+      await this.checkAllowSeries();
       this.steps = this.createSteps();
       this.step = 1;
       this.loading = false;
@@ -247,6 +250,7 @@ export default {
           timeEnd: this.timeEnd,
           amount: this.leadItem.amount,
           "show-back": false,
+          "show-series": this.allowSeries,
         },
         events: {
           "booking-time-selected": this.setBookingTime,
@@ -581,6 +585,32 @@ export default {
         console.log("Error while fetching tenant");
       }
     },
+    async checkAllowSeries() {
+      this.allowSeriesFlag = false;
+
+      const item = this.leadItem;
+      if (!item?.bookable || !item.bookable.groupBooking?.enabled) {
+        return;
+      }
+
+      const permitted = item.bookable.groupBooking.permittedRoles;
+      if (permitted.length === 0) {
+        this.allowSeriesFlag = true;
+        return;
+      }
+
+      try {
+        const response = await ApiRolesService.getUserRolesByTenant(
+          undefined,
+          true
+        );
+        this.allowSeriesFlag = response.data.some((role) =>
+          permitted.includes(role.id)
+        );
+      } catch (error) {
+        console.log("Error while fetching user roles", error);
+      }
+    },
   },
 
   watch: {
@@ -597,6 +627,9 @@ export default {
     ...mapGetters({
       user: "user/getUser",
     }),
+    allowSeries() {
+      return this.allowSeriesFlag;
+    },
   },
 };
 </script>
