@@ -356,15 +356,10 @@
       :amount="amount"
     ></BookableLockingAttributes>
 
-    <v-alert
-      v-else
-      type="warning"
-      dense
-      outlined
-    >
-      Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl der verfügbaren Buchungsobjekte an.
+    <v-alert v-else type="warning" dense outlined>
+      Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl der
+      verfügbaren Buchungsobjekte an.
     </v-alert>
-
 
     <h3 class="mt-10">Individuelle Berechtigungen</h3>
 
@@ -478,17 +473,27 @@
       </v-col>
     </v-row>
 
+    <h3 class="mt-10">Serienbuchungen</h3>
+    <v-row>
+      <v-col class="col-auto">
+        <v-switch
+          dense
+          label="Serienbuchung erlauben"
+          hide-details
+          v-model="allowGroupBooking"
+        ></v-switch>
+      </v-col>
+    </v-row>
     <v-row>
       <v-col>
         <p>
-          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses
-          Objekt kostenfrei zu buchen.
+          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, die für
+          diese Objekt eine Buchungsserie erstellen dürfen
         </p>
-
         <v-combobox
-          v-model="freeBookingRoles"
+          v-model="permittedGroupBookingRoles"
           :items="availableRoles"
-          label="Rollen, die kostenfrei buchen dürfen"
+          label="Rollen, die eine Buchungsserie erstellen dürfen"
           item-text="name"
           item-value="id"
           hide-selected
@@ -507,7 +512,7 @@
               close
               color="secondary"
               @click="select"
-              @click:close="removeFreeBookingRole(item)"
+              @click:close="removeGroupBookingRole(item)"
             >
               <strong>{{
                 availableRoles.find((r) => r.id === item)?.name
@@ -532,7 +537,6 @@
           :items="checkoutBookableIds"
           :available-items="bookablesWithoutSelf"
         >
-
         </BookableCheckoutBookables>
       </v-col>
     </v-row>
@@ -675,14 +679,6 @@
           label="Kommentarfeld erforderlich"
           hide-details
           v-model="commentRequired"
-        ></v-switch>
-      </v-col>
-      <v-col class="col-auto">
-        <v-switch
-          dense
-          label="Serienbuchung erlauben"
-          hide-details
-          v-model="allowGroupBooking"
         ></v-switch>
       </v-col>
     </v-row>
@@ -885,7 +881,8 @@ export default {
       );
     },
     addPriceCategory() {
-      const lastCategory = this.priceCategories[this.priceCategories.length - 1];
+      const lastCategory =
+        this.priceCategories[this.priceCategories.length - 1];
       this.priceCategories.push({
         priceEur: 0,
         priceValueAddedTax: 0,
@@ -937,7 +934,7 @@ export default {
       ApiBookablesService.getBookable(bookableId)
         .then((response) => {
           const {
-            allowGroupBooking,
+            groupBooking,
             attachments,
             parent,
             amount,
@@ -980,7 +977,7 @@ export default {
           } = response.data;
 
           this.restoreFromApi({
-            allowGroupBooking: allowGroupBooking,
+            groupBooking: groupBooking,
             id: id,
             parent: parent,
             tenantId: tenantId,
@@ -1069,7 +1066,7 @@ export default {
     },
 
     async fetchRoles() {
-      await ApiRolesService.getTenantRoles().then((result) => {
+      await ApiRolesService.getTenantRoles(true).then((result) => {
         this.availableRoles = result?.data;
       });
     },
@@ -1168,6 +1165,12 @@ export default {
     },
     removeFreeBookingUser(item) {
       this.freeBookingUsers.splice(this.freeBookingUsers.indexOf(item), 1);
+    },
+    removeGroupBookingRole(item) {
+      this.permittedGroupBookingRoles.splice(
+        this.permittedGroupBookingRoles.indexOf(item),
+        1
+      );
     },
     removeFreeBookingRole(item) {
       this.freeBookingRoles.splice(this.freeBookingRoles.indexOf(item), 1);
@@ -1291,9 +1294,9 @@ export default {
         return this.$store.state.bookables.form.amount;
       },
       set(value) {
-        if(value === "" || value === undefined) {
-          value = null
-        } else if(value !== null) {
+        if (value === "" || value === undefined) {
+          value = null;
+        } else if (value !== null) {
           value = parseInt(value);
         }
         this.updateValue({ field: "amount", value: value });
@@ -1421,11 +1424,21 @@ export default {
     },
     allowGroupBooking: {
       get() {
-        console.log(this.$store.state.bookables.form)
-        return this.$store.state.bookables.form.allowGroupBooking;
+        return this.$store.state.bookables.form.groupBooking.enabled;
       },
       set(value) {
-        this.updateValue({ field: "allowGroupBooking", value: value });
+        this.updateValue({ field: "groupBooking.enabled", value: value });
+      },
+    },
+    permittedGroupBookingRoles: {
+      get() {
+        return this.$store.state.bookables.form.groupBooking.permittedRoles;
+      },
+      set(value) {
+        this.updateValue({
+          field: "groupBooking.permittedRoles",
+          value: value,
+        });
       },
     },
     commentRequired: {

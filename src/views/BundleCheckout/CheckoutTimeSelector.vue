@@ -213,7 +213,7 @@
       </v-row>
 
       <v-btn
-        v-if="leadItem.bookable.allowGroupBooking === true && showSeries"
+        v-if="showSeries"
         outlined
         small
         class="mt-2"
@@ -276,7 +276,7 @@ export default {
     },
     showSeries: {
       type: Boolean,
-      default: true,
+      default: false,
     },
   },
 
