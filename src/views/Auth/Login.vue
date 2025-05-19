@@ -61,9 +61,8 @@ export default {
       nextUrl: "authStore/nextUrl",
     }),
     ssoActive() {
-      return !!this.instance?.applications.find(
-        (app) => app?.id === "keycloak" && app.active
-      );
+      return (this.instance?.applications || [])
+        .some(app => app.id === "keycloak" && app.active);
     },
   },
 
