@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="max-width : 1200px; margin: auto;">
     <v-container>
       <div>
         <v-stepper
