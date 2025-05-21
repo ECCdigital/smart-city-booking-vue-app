@@ -29,7 +29,7 @@
           </v-alert>
 
           <v-img
-            src="@/assets/app-logo.png"
+            src="/app-logo.png"
             max-width="150"
             class="mb-4 mx-auto"
           />

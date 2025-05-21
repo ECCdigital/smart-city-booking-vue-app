@@ -2,7 +2,7 @@
   <v-container class="text-center  fill-height fluid justify-center">
     <v-card outlined class="text-center">
       <v-card-text>
-        <v-img src="@/assets/app-logo.png" max-width="200" class="mx-auto"/>
+        <v-img src="/app-logo.png" max-width="200" class="mx-auto"/>
         <h2 class="mt-8 mb-2">Passwort-Bestätigung</h2>
         <v-alert
           type="success"

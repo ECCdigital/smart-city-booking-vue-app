@@ -13,7 +13,7 @@ export default {
     <v-card outlined max-width="500" class="mx-auto mt-sm-15">
       <v-card-text>
         <v-img
-          src="@/assets/app-logo.png"
+          src="/app-logo.png"
           max-width="200"
           class="mx-auto mt-4"
         />
