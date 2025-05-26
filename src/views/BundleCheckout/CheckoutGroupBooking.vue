@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="max-width : 1200px; margin: auto;">
     <v-container>
       <div>
         <v-stepper
@@ -91,6 +91,7 @@ export default {
       selectedPaymentApp: null,
 
       coupon: null,
+      couponError: null,
 
       // First booking data
       dateBeginModel: null,
@@ -104,7 +105,12 @@ export default {
       seriesStartDate: null,
       seriesEndDate: null,
       seriesFrequency: "weekly",
-      frequencyOptions: [{ text: "Wöchentlich", value: "weekly" }],
+      seriesInterval: 1,
+      selectedWeekdays: [],
+      frequencyOptions: [
+        { text: "Wöchentlich", value: "weekly" },
+        { text: "Monatlich", value: "monthly" },
+      ],
 
       headers: [
         { text: "Startzeit", value: "timeBegin" },
@@ -155,8 +161,8 @@ export default {
           contactDetails: this.contactDetails,
         },
         events: {
-          back: () => (this.currentStep--),
-          submit: () => (this.currentStep++),
+          back: () => this.currentStep--,
+          submit: () => this.currentStep++,
         },
       };
 
@@ -167,7 +173,7 @@ export default {
           activePaymentApps: this.activePaymentApps,
         },
         events: {
-          back: () => (this.currentStep--),
+          back: () => this.currentStep--,
           submit: this.setPaymentApp,
         },
       };
@@ -182,9 +188,10 @@ export default {
           selectedPaymentApp: this.selectedPaymentApp,
           isSubmitting: this.isSubmitting,
           coupon: this.coupon,
+          couponError: this.couponError,
         },
         events: {
-          back: () => (this.currentStep--),
+          back: () => this.currentStep--,
           "perform-checkout": this.performGroupCheckout,
           "redeem-coupon": this.redeemCoupon,
           "remove-coupon": this.removeCoupon,
@@ -204,11 +211,17 @@ export default {
 
     async redeemCoupon(code) {
       try {
-        const coupon = await ApiCouponService.getCoupon(this.tenant, code);
-        this.coupon = coupon.data;
+        const response = await ApiCouponService.getCoupon(this.tenant, code);
+        if (response.data.type !== "percentage") {
+          this.couponError = "Sie können nur Gutscheine mit einem Rabatt in Prozent verwenden.";
+        } else {
+          this.couponError = null;
+          this.coupon = response.data;
+        }
       } catch (e) {
         if (e.response.status === 404) {
           this.coupon = null;
+          this.couponError = "Gutschein nicht gefunden.";
         }
       } finally {
         await this.validateItems(this.bookingAttempts);
@@ -240,11 +253,24 @@ export default {
       this.seriesStartDate = data.seriesStartDate;
       this.seriesEndDate = data.seriesEndDate;
       this.seriesFrequency = data.seriesFrequency;
+      this.seriesInterval = data.seriesInterval;
+      this.selectedWeekdays = data.selectedWeekdays;
+
+      const monthlyOptions = {};
+      if (data.seriesFrequency === "monthly") {
+        monthlyOptions.monthlyOptionType = data.monthlyOptionType;
+
+        if (data.monthlyOptionType === "day") {
+          monthlyOptions.selectedDayOfMonth = data.selectedDayOfMonth;
+        } else if (data.monthlyOptionType === "weekday") {
+          monthlyOptions.selectedWeekdayOption = data.selectedWeekdayOption;
+          monthlyOptions.selectedWeekday = data.selectedWeekday;
+        }
+      }
 
       const startDate = new Date(this.seriesStartDate);
       const endDate = new Date(this.seriesEndDate);
 
-      // Add the first booking
       const firstBookingDate = new Date(this.seriesStartDate);
       const [firstHours, firstMinutes] = this.timeBeginModel
         .split(":")
@@ -271,22 +297,77 @@ export default {
 
       attempts.push(firstBookingAttempt);
 
-      // Generate dates based on frequency
       const dates = [];
       let currentDate = new Date(startDate);
 
       while (currentDate <= endDate) {
-        // Skip the first booking date if it's in the series range
         if (currentDate.toDateString() !== firstBookingDate.toDateString()) {
           dates.push(new Date(currentDate));
         }
 
-        // Add days based on frequency
         if (this.seriesFrequency === "weekly") {
-          currentDate.setDate(currentDate.getDate() + 7);
+          currentDate.setDate(currentDate.getDate() + 1);
+
+          if (this.selectedWeekdays && this.selectedWeekdays.length > 0) {
+            let daysAdded = 0;
+            const maxDaysToCheck = 7 * this.seriesInterval;
+
+            while (daysAdded < maxDaysToCheck) {
+              const dayOfWeek = currentDate.getDay();
+
+              if (this.selectedWeekdays.includes(dayOfWeek)) {
+                break;
+              }
+
+              currentDate.setDate(currentDate.getDate() + 1);
+              daysAdded++;
+            }
+
+            if (daysAdded >= maxDaysToCheck) {
+              currentDate.setDate(
+                currentDate.getDate() + 7 * this.seriesInterval - daysAdded
+              );
+            }
+          } else {
+            currentDate.setDate(
+              currentDate.getDate() + 7 * this.seriesInterval - 1
+            );
+          }
+        } else if (this.seriesFrequency === "monthly") {
+          currentDate.setMonth(currentDate.getMonth() + this.seriesInterval);
+
+          if (monthlyOptions.monthlyOptionType === "day") {
+            currentDate.setDate(1);
+
+            const lastDayOfMonth = new Date(
+              currentDate.getFullYear(),
+              currentDate.getMonth() + 1,
+              0
+            ).getDate();
+
+            const day = monthlyOptions.selectedDayOfMonth;
+            currentDate.setDate(Math.min(day, lastDayOfMonth));
+          } else if (monthlyOptions.monthlyOptionType === "weekday") {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const option = monthlyOptions.selectedWeekdayOption;
+            const weekday = monthlyOptions.selectedWeekday;
+
+            const next = this.getNthWeekdayOfMonth(
+              year,
+              month,
+              weekday,
+              option
+            );
+            if (next) {
+              currentDate = next;
+            } else {
+              const lastDay = new Date(year, month + 2, 0);
+              currentDate = lastDay;
+            }
+          }
         }
       }
-      // Calculate the date offset
       const dateOffset =
         new Date(this.dateEndModel).getDate() -
         new Date(this.dateBeginModel).getDate();
@@ -312,6 +393,22 @@ export default {
       }
       await this.validateItems(attempts);
       this.bookingAttempts = attempts;
+    },
+
+    getNthWeekdayOfMonth(year, month, weekday, n) {
+      if (n === "last") {
+        const lastDay = new Date(year, month + 1, 0);
+        const offset = (lastDay.getDay() - weekday + 7) % 7;
+        return new Date(year, month, lastDay.getDate() - offset);
+      }
+      const ordinal = { first: 1, second: 2, third: 3, fourth: 4 }[n];
+      const firstOfMonth = new Date(year, month, 1);
+      const firstDow = firstOfMonth.getDay();
+      const delta = (weekday - firstDow + 7) % 7;
+      const day = 1 + delta + (ordinal - 1) * 7;
+      const lastDate = new Date(year, month + 1, 0).getDate();
+      if (day > lastDate) return null;
+      return new Date(year, month, day);
     },
 
     async fetchMe() {

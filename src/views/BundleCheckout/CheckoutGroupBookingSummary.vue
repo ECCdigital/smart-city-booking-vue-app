@@ -154,7 +154,19 @@
       </v-row>
     </v-card-text>
 
-    <!--
+    <v-alert
+        v-if="couponError"
+        type="error"
+        border="left"
+        class="mt-5"
+        elevation="2"
+        icon="mdi-alert-circle"
+    >
+      <template v-slot:default>
+        {{ couponError }}
+      </template>
+    </v-alert>
+
     <v-expansion-panels flat v-if="!coupon">
       <v-expansion-panel>
         <v-expansion-panel-header>
@@ -180,7 +192,6 @@
         </v-expansion-panel-content>
       </v-expansion-panel>
     </v-expansion-panels>
-    -->
 
     <v-card class="mt-5 rounded-sm" outlined v-if="!isAutoCommit">
       <v-card-text>
@@ -236,6 +247,9 @@ export default {
     },
     coupon: {
       type: Object,
+    },
+    couponError: {
+      type: String,
     },
   },
   data() {

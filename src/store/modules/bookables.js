@@ -20,7 +20,10 @@ const state = {
     maxBookingDuration: null,
     autoCommitBooking: false,
     bookingNotes: "",
-    allowGroupBooking: false,
+    groupBooking: {
+      enabled: false,
+      permittedRoles: [],
+    },
 
     isScheduleRelated: false,
     isTimePeriodRelated: false,
@@ -59,7 +62,19 @@ const state = {
 
 const mutations = {
   UPDATE(state, payload) {
-    state.form[payload.field] = payload.value;
+    if (payload.field.includes(".")) {
+      const fields = payload.field.split(".");
+      let obj = state.form;
+      for (let i = 0; i < fields.length - 1; i++) {
+        if (!obj[fields[i]]) {
+          obj[fields[i]] = {};
+        }
+        obj = obj[fields[i]];
+      }
+      obj[fields[fields.length - 1]] = payload.value;
+    } else {
+      state.form[payload.field] = payload.value;
+    }
   },
   RESTORE(state, payload) {
     state.form = payload;
@@ -95,7 +110,10 @@ const mutations = {
       maxBookingDuration: null,
       autoCommitBooking: false,
       bookingNotes: "",
-      allowGroupBooking: false,
+      groupBooking: {
+        enabled: false,
+        permittedRoles: [],
+      },
 
       isScheduleRelated: false,
       isTimePeriodRelated: false,

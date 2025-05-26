@@ -163,7 +163,19 @@
           </v-col>
         </v-row>
         <v-row>
-          <v-col cols="12" md="6">
+          <v-col cols="12" md="3">
+            <v-text-field
+              label="Intervall"
+              v-model.number="seriesInterval"
+              type="number"
+              min="1"
+              step="1"
+              :rules="intervalRules"
+              prepend-icon="mdi-calendar-range"
+            >
+            </v-text-field>
+          </v-col>
+          <v-col cols="12" md="3">
             <v-select
               v-model="seriesFrequency"
               :items="frequencyOptions"
@@ -173,8 +185,90 @@
               prepend-icon="mdi-calendar-sync"
             ></v-select>
           </v-col>
+          <template v-if="seriesFrequency === 'monthly'">
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="monthlyOptionType"
+                :items="monthlyOptionTypes"
+                label="Monatliche Wiederholung"
+                item-text="text"
+                item-value="value"
+                prepend-icon="mdi-calendar-month"
+              ></v-select>
+            </v-col>
+          </template>
+
+          <template v-if="seriesFrequency === 'weekly'">
+            <v-col cols="12" md="6" class="d-flex align-center justify-center">
+              <v-icon> mdi-calendar-range </v-icon>
+              <v-row class="ml-2">
+                <v-col
+                  v-for="day in weekdays"
+                  :key="day.value"
+                  cols="auto"
+                  class="pa-1"
+                >
+                  <v-btn
+                    :color="
+                      selectedWeekdays.includes(day.value) ? 'primary' : ''
+                    "
+                    :outlined="!selectedWeekdays.includes(day.value)"
+                    @click="toggleWeekday(day.value)"
+                    class="weekday-btn"
+                    small
+                  >
+                    {{ day.text.charAt(0) }}
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-col>
+          </template>
         </v-row>
-        <v-btn color="primary" @click="generateSeriesBookings" class="mt-4">
+
+        <template v-if="seriesFrequency === 'monthly'">
+          <v-row v-if="monthlyOptionType === 'day'">
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="selectedDayOfMonth"
+                :items="daysOfMonth"
+                label="Tag des Monats"
+                item-text="text"
+                item-value="value"
+                prepend-icon="mdi-calendar-today"
+              ></v-select>
+            </v-col>
+          </v-row>
+
+          <v-row v-if="monthlyOptionType === 'weekday'">
+            <v-col cols="12" md="3">
+              <v-select
+                v-model="selectedWeekdayOption"
+                :items="weekdayOptions"
+                label="Welcher"
+                item-text="text"
+                item-value="value"
+                prepend-icon="mdi-calendar-week"
+              ></v-select>
+            </v-col>
+            <v-col cols="12" md="3">
+              <v-select
+                v-model="selectedWeekday"
+                :items="weekdays"
+                label="Wochentag"
+                item-text="text"
+                item-value="value"
+                prepend-icon="mdi-calendar-weekend"
+              ></v-select>
+            </v-col>
+          </v-row>
+        </template>
+
+        <v-btn
+          color="primary"
+          @click="validateAndGenerateSeriesBookings"
+          class="mt-4"
+          :disabled="!isFormValid"
+        >
           <v-icon left>mdi-calendar-multiple</v-icon>
           Serie generieren
         </v-btn>
@@ -288,7 +382,57 @@ export default {
       seriesStartDate: null,
       seriesEndDate: null,
       seriesFrequency: "weekly",
-      frequencyOptions: [{ text: "Wöchentlich", value: "weekly" }],
+      seriesInterval: 1,
+      intervalRules: [
+        (v) => (v !== null && v > 0) || "Bitte eine Zahl größer 0 eingeben",
+      ],
+      frequencyOptions: [
+        { text: "Wöchentlich", value: "weekly" },
+        { text: "Monatlich", value: "monthly" },
+      ],
+      intervalOptions: [
+        { text: "Jede(n)", value: 1 },
+        { text: "Alle 2", value: 2 },
+        { text: "Alle 3", value: 3 },
+        { text: "Alle 4", value: 4 },
+        { text: "Alle 5", value: 5 },
+        { text: "Alle 6", value: 6 },
+        { text: "Alle 7", value: 7 },
+        { text: "Alle 8", value: 8 },
+        { text: "Alle 9", value: 9 },
+        { text: "Alle 10", value: 10 },
+        { text: "Alle 11", value: 11 },
+        { text: "Alle 12", value: 12 },
+      ],
+      monthlyOptionType: "day",
+      monthlyOptionTypes: [
+        { text: "Tag des Monats", value: "day" },
+        { text: "Wochentag", value: "weekday" },
+      ],
+      selectedDayOfMonth: 1,
+      daysOfMonth: Array.from({ length: 31 }, (_, i) => ({
+        text: `${i + 1}.`,
+        value: i + 1,
+      })),
+      selectedWeekdayOption: "first",
+      weekdayOptions: [
+        { text: "Ersten", value: "first" },
+        { text: "Zweiten", value: "second" },
+        { text: "Dritten", value: "third" },
+        { text: "Vierten", value: "fourth" },
+        { text: "Letzten", value: "last" },
+      ],
+      selectedWeekday: 1,
+      weekdays: [
+        { text: "Montag", value: 1 },
+        { text: "Dienstag", value: 2 },
+        { text: "Mittwoch", value: 3 },
+        { text: "Donnerstag", value: 4 },
+        { text: "Freitag", value: 5 },
+        { text: "Samstag", value: 6 },
+        { text: "Sonntag", value: 0 },
+      ],
+      selectedWeekdays: [],
       localDateBeginModel: null,
       localTimeBeginModel: null,
       localDateEndModel: null,
@@ -305,14 +449,62 @@ export default {
     allValid() {
       return this.bookingAttempts.every((attempt) => attempt.valid);
     },
+    isFormValid() {
+      const isIntervalValid =
+        this.seriesInterval !== null && this.seriesInterval > 0;
+
+      const isStartDateValid = !!this.seriesStartDate;
+      const isEndDateValid =
+        !!this.seriesEndDate &&
+        new Date(this.seriesEndDate) >= new Date(this.seriesStartDate);
+
+      const isWeekdayValid =
+        this.seriesFrequency !== "weekly" || this.selectedWeekdays.length > 0;
+
+      return (
+        isIntervalValid && isStartDateValid && isEndDateValid && isWeekdayValid
+      );
+    },
   },
   methods: {
+    toggleWeekday(dayValue) {
+      const index = this.selectedWeekdays.indexOf(dayValue);
+      if (index === -1) {
+        this.selectedWeekdays.push(dayValue);
+      } else {
+        this.selectedWeekdays.splice(index, 1);
+      }
+    },
+    validateAndGenerateSeriesBookings() {
+      if (this.isFormValid) {
+        this.generateSeriesBookings();
+      }
+    },
     generateSeriesBookings() {
-      this.$emit("generate-series-bookings", {
+      const seriesData = {
         seriesStartDate: this.seriesStartDate,
         seriesEndDate: this.seriesEndDate,
         seriesFrequency: this.seriesFrequency,
-      });
+        seriesInterval: this.seriesInterval,
+      };
+
+      if (this.seriesFrequency === "weekly") {
+        if (this.selectedWeekdays.length === 0) {
+          this.preSelectFirstBookingDay();
+        }
+        seriesData.selectedWeekdays = this.selectedWeekdays;
+      } else if (this.seriesFrequency === "monthly") {
+        seriesData.monthlyOptionType = this.monthlyOptionType;
+
+        if (this.monthlyOptionType === "day") {
+          seriesData.selectedDayOfMonth = this.selectedDayOfMonth;
+        } else if (this.monthlyOptionType === "weekday") {
+          seriesData.selectedWeekdayOption = this.selectedWeekdayOption;
+          seriesData.selectedWeekday = this.selectedWeekday;
+        }
+      }
+
+      this.$emit("generate-series-bookings", seriesData);
     },
     removeBookingAttempt(index) {
       this.$emit("remove-booking-attempt", index);
@@ -322,9 +514,6 @@ export default {
     },
     formatDateTime(timestamp) {
       return checkoutUtils.dateToLocaleString(timestamp);
-    },
-    formatCurrency(value) {
-      return checkoutUtils.formatCurrency(value);
     },
     onChangeBooking() {
       this.changeBooking = !this.changeBooking;
@@ -356,6 +545,15 @@ export default {
       });
       this.changeBooking = false;
     },
+    preSelectFirstBookingDay() {
+      if (this.firstBookingDate) {
+        const firstDate = new Date(this.firstBookingDate);
+        const dayOfWeek = firstDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
+
+        // Clear the array and add the day of the first booking
+        this.selectedWeekdays = [dayOfWeek];
+      }
+    },
   },
   watch: {
     dateBeginModel(newVal) {
@@ -376,6 +574,14 @@ export default {
         const endDate = new Date(newVal || new Date());
         endDate.setMonth(endDate.getMonth() + 1);
         this.seriesEndDate = endDate.toISOString().split("T")[0];
+
+        // Pre-select the day of the first booking
+        this.preSelectFirstBookingDay();
+      }
+    },
+    seriesFrequency(newVal) {
+      if (newVal === "weekly") {
+        this.preSelectFirstBookingDay();
       }
     },
   },
@@ -397,6 +603,9 @@ export default {
     const endDate = new Date(this.firstBookingDate || new Date());
     endDate.setMonth(endDate.getMonth() + 1);
     this.seriesEndDate = endDate.toISOString().split("T")[0];
+
+    // Pre-select the day of the first booking
+    this.preSelectFirstBookingDay();
   },
 };
 </script>
@@ -427,5 +636,12 @@ export default {
 
 .v-data-table table tr:last-child:hover td:last-child {
   border-bottom-right-radius: 0 !important;
+}
+
+.weekday-btn {
+  min-width: 36px !important;
+  width: 36px;
+  height: 36px;
+  font-weight: bold;
 }
 </style>
