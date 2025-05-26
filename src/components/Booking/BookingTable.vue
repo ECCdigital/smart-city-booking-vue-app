@@ -30,6 +30,16 @@
         >{{ i._bookableUsed?.title }}</v-chip
       >
     </template>
+    <template v-slot:item.groupBooking="{ item }">
+      <v-chip
+        v-if="item.groupBooking"
+        class="ml-1 mt-1"
+        color="secondary"
+        text-color="black"
+        @click="onOpenGroupBooking(item.groupBooking)"
+        >{{ item.groupBooking }}</v-chip
+      >
+    </template>
     <template v-slot:item.timeBegin="{ item }">
       <span v-if="item.timeBegin">{{
         Intl.DateTimeFormat("de-DE", {
@@ -174,11 +184,6 @@ import BookingPermissionService from "@/services/permissions/BookingPermissionSe
 
 export default {
   name: "BookingTable",
-  computed: {
-    BookingPermissionService() {
-      return BookingPermissionService;
-    },
-  },
   props: {
     bookings: {
       type: Array,
@@ -188,16 +193,21 @@ export default {
       type: Boolean,
       default: false,
     },
+    showGroupBooking: {
+      type: Boolean,
+      default: true,
+    },
   },
   data() {
     return {
-      headers: [
+      defaultHeaders: [
         {
           text: "Id",
           align: "start",
           value: "id",
         },
         { text: "Buchungsobjekte", value: "bookableIds" },
+        { text: "Serienbuchung", value: "groupBooking" },
         { text: "Von", value: "timeBegin" },
         { text: "Bis", value: "timeEnd" },
         { text: "Erstellt am", value: "timeCreated" },
@@ -209,6 +219,18 @@ export default {
         { text: "", value: "controls", sortable: false },
       ],
     };
+  },
+  computed: {
+    BookingPermissionService() {
+      return BookingPermissionService;
+    },
+    headers() {
+      return this.showGroupBooking
+        ? this.defaultHeaders
+        : this.defaultHeaders.filter(
+            (header) => header.value !== "groupBooking"
+          );
+    },
   },
   methods: {
     translatePayMethod(paymentMethod) {
@@ -255,6 +277,9 @@ export default {
     },
     onOpenDeleteDialog(bookingId) {
       this.$emit("open-delete-dialog", bookingId);
+    },
+    onOpenGroupBooking(groupBookingId) {
+      this.$emit("open-group-booking", groupBookingId);
     },
     commitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);

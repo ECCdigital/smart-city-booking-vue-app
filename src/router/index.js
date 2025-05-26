@@ -17,17 +17,20 @@ import Locations from "@/views/Bookables/Locations/Locations";
 import Tenants from "@/views/Management/Tenants";
 import Users from "@/views/Management/TenantUsers.vue";
 import Roles from "@/views/Management/Roles";
-import store from "@/store/index";
-import ToastService from "@/services/ToastService";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
 import Bookings from "@/views/Bookings.vue";
 import Settings from "@/views/Settings";
 import EditBookable from "@/views/Bookables/EditBookable";
-import ApiAuthService from "@/services/api/ApiAuthService";
 import Coupons from "@/views/Coupons.vue";
 import Instances from "@/views/Management/Instances.vue";
 import InstanceUsers from "@/views/Management/InstanceUsers.vue";
 import InstanceTenants from "@/views/Management/InstanceTenants.vue";
+import { pipeline } from "./middleware";
+
+import { requiresAuth } from "./middlewares/auth";
+import { checkGroupBooking } from "./middlewares/groupBooking";
+import { checkInterface } from "./middlewares/interface";
+import { finalAuthRedirect } from "./middlewares/finalAuth";
 
 Vue.use(VueRouter);
 
@@ -427,6 +430,16 @@ const routes = [
     },
   },
   {
+    path: "/checkout/group",
+    name: "checkout-group-booking",
+    component: lazyLoad("BundleCheckout/CheckoutGroupBooking"),
+    meta: {
+      title: "Checkout",
+      requiresAuth: false,
+      groupBooking: true,
+    },
+  },
+  {
     path: "/checkout/status",
     name: "checkout-status",
     component: lazyLoad("MultiCheckout/CheckoutStatus"),
@@ -519,50 +532,16 @@ const router = new VueRouter({
   routes,
 });
 
-function isLoggedIn() {
-  return store.getters["user/isLoggedIn"];
-}
-
-function isAuthorized(ifce) {
-  return store.getters["user/isAuthorized"](ifce);
-}
-
-router.beforeEach(async (to, from, next) => {
-  if (to.meta.requiresAuth) {
-    const hasSession = await ApiAuthService.me()
-      .then((response) => {
-        store.dispatch("user/update", response.data);
-        return true;
-      })
-      .catch(() => {
-        return false;
-      });
-
-    if (!hasSession) {
-      next({ name: "home" });
-      await store.dispatch(
-        "toasts/add",
-        ToastService.createToast("session.expired", "error")
-      );
-      return;
-    }
-  }
-
-  if (!!isAuthorized(to.meta.interfaceName) && !!to.meta.isPublic) {
-    next({ name: "home" });
-  } else {
-    next();
-  }
-
-  if (to.meta.requiresAuth && !isLoggedIn()) {
-    next({ name: "login", query: { redirectUrl: to.name } });
-    await store.dispatch(
-      "toasts/add",
-      ToastService.createToast("errors.unauthenticated", "error")
-    );
-  } else {
-    next();
-  }
+router.beforeEach((to, from, next) => {
+  const middlewares = [
+    requiresAuth,
+    checkGroupBooking,
+    checkInterface,
+    finalAuthRedirect,
+  ];
+  const context = { to, from, next, router };
+  const first = pipeline(context, middlewares, 0);
+  return first();
 });
 router.afterEach((to) => {
   Vue.nextTick(() => {

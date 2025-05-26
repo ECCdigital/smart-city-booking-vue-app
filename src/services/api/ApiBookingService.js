@@ -62,13 +62,14 @@ export default {
       { withCredentials: true }
     );
   },
-  commitBooking(id) {
-    return ApiClient.get(
+  async commitBooking(id) {
+    const response = await ApiClient.get(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/commit`,
       {
         withCredentials: true,
       }
     );
+    return response.data;
   },
   rejectBooking(id, tenantId, reason) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
@@ -104,14 +105,15 @@ export default {
       }
     );
   },
-  generateReceipt(id) {
-    return ApiClient.post(
+  async generateReceipt(id) {
+    const response = await ApiClient.post(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/receipt`,
       {},
       {
         withCredentials: true,
       }
     );
+    return response.data;
   },
   getReceipt(id, receiptId) {
     return ApiClient.get(

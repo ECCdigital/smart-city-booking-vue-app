@@ -7,6 +7,7 @@
       </v-btn>
       <v-spacer></v-spacer>
       <v-btn
+        v-if="showContinue"
         :disabled="isNextButtonDisabled"
         color="primary"
         small
@@ -211,6 +212,17 @@
         </v-col>
       </v-row>
 
+      <v-btn
+        v-if="showSeries"
+        outlined
+        small
+        class="mt-2"
+        :disabled="!timestampBegin || !timestampEnd"
+        @click="onGroupBooking"
+      >
+        Serie erstellen
+      </v-btn>
+
       <checkout-calendar
         v-if="leadItem.bookable && selectionType !== 'time-period'"
         :bookableId="leadItem.bookable.id"
@@ -257,6 +269,14 @@ export default {
     showBack: {
       type: Boolean,
       default: true,
+    },
+    showContinue: {
+      type: Boolean,
+      default: true,
+    },
+    showSeries: {
+      type: Boolean,
+      default: false,
     },
   },
 
@@ -330,6 +350,9 @@ export default {
     },
     back() {
       this.$emit("back");
+    },
+    onGroupBooking() {
+      this.$emit("group-booking");
     },
   },
 

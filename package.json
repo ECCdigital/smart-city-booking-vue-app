@@ -1,7 +1,7 @@
 {
   "name": "smart-city-booking-vue-app",
   "description": "A VueJS Frontend for the Smart City Booking System",
-  "version": "3.1.10",
+  "version": "3.2.0-rc.3",
   "private": true,
   "scripts": {
     "start": "node --max_old_space_size=4096 node_modules/@vue/cli-service/bin/vue-cli-service.js serve --mode production",
@@ -11,6 +11,10 @@
     "release:major": "npm version $(semver $npm_package_version -i major)",
     "release:minor": "npm version $(semver $npm_package_version -i minor)",
     "release:patch": "npm version $(semver $npm_package_version -i patch)",
+    "release:premajor": "npm version premajor --preid=rc",
+    "release:preminor": "npm version preminor --preid=rc",
+    "release:prepatch": "npm version prepatch --preid=rc",
+    "release:rc": "npm version prerelease --preid=rc",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
     "lint:check": "eslint .",

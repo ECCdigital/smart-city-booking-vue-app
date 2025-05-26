@@ -174,6 +174,7 @@ export default {
       await this.getBookableCount();
     },
     async duplicateBookable(bookableId) {
+      console.log("duplicateBookable", bookableId);
       await this.startLoading("fetch-duplicate-bookable");
 
       ApiBookablesService.duplicateBookable(bookableId)

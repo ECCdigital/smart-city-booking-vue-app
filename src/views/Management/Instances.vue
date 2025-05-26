@@ -631,7 +631,7 @@ export default {
     keycloak: {
       get() {
         const application = this.instance.applications?.find(
-          (app) => app.id === "keycloak"
+          (app) => app?.id === "keycloak"
         );
 
         if (!application) {
@@ -650,14 +650,14 @@ export default {
             },
           });
           return this.instance.applications?.find(
-            (app) => app.id === "keycloak"
+            (app) => app?.id === "keycloak"
           );
         }
         return application;
       },
       set(value) {
         this.instance.applications = this.instance.applications.map((app) =>
-          app.id === "keycloak" ? value : app
+          app?.id === "keycloak" ? value : app
         );
       },
     },
