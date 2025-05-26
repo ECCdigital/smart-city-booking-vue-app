@@ -1,5 +1,5 @@
 export default {
-  getHolidays(countryCode, stateCode, year) {
+  getHolidays(countryCode, stateCode, year = null) {
     return ApiClient.get("api/holidays", {
       params: {
         countryCode: countryCode || "DE",

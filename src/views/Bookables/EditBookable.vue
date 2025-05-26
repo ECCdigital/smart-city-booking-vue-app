@@ -252,7 +252,7 @@
                   label="Gültig ab"
                   type="number"
                   :suffix="intervalSuffix"
-                  @blur="checkNull('price.interval.start')"
+                  @blur="checkNull('priceCategories.interval.start')"
                 ></v-text-field>
               </v-col>
               <v-col class="col-6 col-md-2">
@@ -263,7 +263,7 @@
                   label="Gültig bis"
                   type="number"
                   :suffix="intervalSuffix"
-                  @blur="checkNull('price.interval.start')"
+                  @blur="checkNull('priceCategories.interval.start')"
                 ></v-text-field>
               </v-col>
               <v-col class="col-12 col-md-2">
@@ -1609,9 +1609,6 @@ export default {
       } else {
         return this.bookables.filter((b) => b.id !== this.id);
       }
-    },
-    availableHolidaysFiltered() {
-      return () => this.availableHolidays;
     },
   },
 
