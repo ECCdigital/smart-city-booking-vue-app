@@ -617,6 +617,7 @@ export default {
     async user() {
       try {
         await this.fetchMe();
+        await this.validateItems();
       } catch (error) {
         this.me = null;
       }

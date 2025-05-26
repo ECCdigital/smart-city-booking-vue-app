@@ -89,8 +89,6 @@ export default {
           await this.addToast(
             ToastService.createToast("login.success.default", "success")
           );
-          console.log("heloo")
-          console.log(this.nextUrl)
           if (this.nextUrl) {
             this.$router.push(this.nextUrl);
             this.updateNextUrl(null);

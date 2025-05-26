@@ -9,7 +9,7 @@
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <img
         alt="Smart City Booking"
-        src="@/assets/app-logo.png"
+        src="/app-logo.png"
         style="max-height: 50px; width: auto; max-width: 250px"
       />
       <v-spacer></v-spacer>
