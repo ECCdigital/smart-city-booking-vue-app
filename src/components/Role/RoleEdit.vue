@@ -3,7 +3,7 @@
     <v-dialog v-model="openDialog" persistent max-width="800px">
       <v-card>
         <v-card-title class="mx-3">
-          <span v-if="selectedRole._id" class="text-h5">Rolle bearbeiten</span>
+          <span v-if="selectedRole.id" class="text-h5">Rolle bearbeiten</span>
           <span v-else class="text-h5">Neue Rolle erstellen</span>
         </v-card-title>
         <v-divider class="mx-9 mb-5" />

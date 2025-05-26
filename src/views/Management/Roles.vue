@@ -210,7 +210,7 @@ export default {
     },
     translateAccessLevels(accessLevels) {
       if (!accessLevels) {
-        return i18n.t(`permissions.accessLevels.none`);
+        return i18n.t("permissions.accessLevels.none");
       }
 
       const activeAccessLevelNames = Object.keys(accessLevels).filter(
