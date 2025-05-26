@@ -231,8 +231,8 @@
         <span class="text-h6">Preis-Kategorien</span>
       </v-card-subtitle>
       <v-card-text>
-        <div v-for="(price, idx) in priceCategories" :key="idx">
-          <div class="d-flex">
+        <div v-for="(priceCategory, idx) in priceCategories" :key="idx">
+          <div>
             <v-row>
               <v-col class="col-12 col-md-3">
                 <v-text-field
@@ -240,38 +240,38 @@
                   filled
                   label="Preis (netto)"
                   hide-details
-                  v-model="price.priceEur"
+                  v-model="priceCategory.priceEur"
                   suffix="Euro"
                 ></v-text-field>
               </v-col>
               <v-col class="col-6 col-md-2">
                 <v-text-field
-                  v-model="price.interval.start"
+                  v-model="priceCategory.interval.start"
                   background-color="accent"
                   filled
                   label="Gültig ab"
                   type="number"
                   :suffix="intervalSuffix"
-                  @blur="checkNull('price.interval.start')"
+                  @blur="checkNull('priceCategories.interval.start')"
                 ></v-text-field>
               </v-col>
               <v-col class="col-6 col-md-2">
                 <v-text-field
-                  v-model="price.interval.end"
+                  v-model="priceCategory.interval.end"
                   background-color="accent"
                   filled
                   label="Gültig bis"
                   type="number"
                   :suffix="intervalSuffix"
-                  @blur="checkNull('price.interval.start')"
+                  @blur="checkNull('priceCategories.interval.start')"
                 ></v-text-field>
               </v-col>
-              <v-col class="col-12 col-md-1">
+              <v-col class="col-12 col-md-2">
                 <v-tooltip top max-width="300" open-delay="400">
                   <template v-slot:activator="{ on, attrs }">
                     <div v-bind="attrs" v-on="on">
                       <v-checkbox
-                        v-model="price.fixedPrice"
+                        v-model="priceCategory.fixedPrice"
                         label="Pauschalpreis"
                       >
                       </v-checkbox>
@@ -282,16 +282,66 @@
                   </span>
                 </v-tooltip>
               </v-col>
+              <v-col class="" style="text-align: right">
+                <v-btn
+                  :disabled="idx === 0"
+                  icon
+                  @click="removePriceCategory(idx)"
+                  class="mt-4"
+                  color="error"
+                >
+                  <v-icon>mdi-delete</v-icon>
+                </v-btn>
+              </v-col>
             </v-row>
-            <v-btn
-              :disabled="idx === 0"
-              icon
-              @click="removePriceCategory(idx)"
-              class="mt-4"
-              color="error"
-            >
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
+            <v-row>
+              <v-col>
+                <v-select
+                  background-color="accent"
+                  filled
+                  label="Wochentage"
+                  hide-details
+                  v-model="priceCategory.weekdays"
+                  multiple
+                  chips
+                  :items="weekdays"
+                  item-text="name"
+                  item-value="id"
+                ></v-select>
+              </v-col>
+              <v-col>
+                <v-combobox
+                  background-color="accent"
+                  filled
+                  multiple
+                  chips
+                  clearable
+                  label="Feiertage"
+                  :items="availableHolidays"
+                  item-text="name"
+                  item-value="date"
+                  v-model="priceCategory.holidays"
+                >
+                  <template v-slot:prepend-item>
+                    <v-list-item ripple>
+                      <v-select
+                        v-model="selectedState"
+                        :items="states"
+                        item-text="text"
+                        item-value="value"
+                        dense
+                        hide-details
+                        outlined
+                        label="Bundesland"
+                        prepend-icon="mdi-filter"
+                        @change="fetchHolidays"
+                      />
+                    </v-list-item>
+                    <v-divider class="mx-2" />
+                  </template>
+                </v-combobox>
+              </v-col>
+            </v-row>
           </div>
           <v-divider
             v-if="
@@ -723,6 +773,7 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import ChooseFile from "@/components/Files/ChooseFile.vue";
 import BookableLockingAttributes from "@/components/Bookable/BookableLockingAttributes";
 import BookableCheckoutBookables from "@/components/Bookable/BookableCheckoutBookables.vue";
+import ApiHolidaysService from "@/services/api/ApiHolidaysService";
 
 export default {
   name: "EditBookable",
@@ -835,6 +886,27 @@ export default {
       ],
       availableUsers: [],
       availableRoles: [],
+      availableHolidays: [],
+      selectedState: null,
+      states: [
+        { text: "Bundesweit", value: null },
+        { text: "Brandenburg", value: "BB" },
+        { text: "Berlin", value: "BE" },
+        { text: "Baden-Württemberg", value: "BW" },
+        { text: "Bayern", value: "BY" },
+        { text: "Hansestadt Bremen", value: "HB" },
+        { text: "Hessen", value: "HE" },
+        { text: "Hansestadt Hamburg", value: "HH" },
+        { text: "Mecklenburg Vorpommern", value: "MV" },
+        { text: "Niedersachsen", value: "NI" },
+        { text: "Nordrhein-Westfalen", value: "NW" },
+        { text: "Rheinland-Pfalz", value: "RP" },
+        { text: "Schleswig-Holstein", value: "SH" },
+        { text: "Saarland", value: "SL" },
+        { text: "Sachsen", value: "SN" },
+        { text: "Sachsen-Anhalt", value: "ST" },
+        { text: "Thüringen", value: "TH" },
+      ],
     };
   },
   watch: {
@@ -1179,6 +1251,23 @@ export default {
       const bookableCountCheck =
         await ApiBookablesService.publicBookableCountCheck();
       this.allowPublic = bookableCountCheck || this.isPublic;
+    },
+    async fetchHolidays() {
+      const response = await ApiHolidaysService.getHolidays(
+        "DE",
+        this.selectedState
+      );
+      this.availableHolidays = response.data
+        .map((holiday) =>
+          holiday.type === "public"
+            ? {
+                name: holiday.name,
+                countryCode: "DE",
+                stateCode: this.selectedState,
+              }
+            : null
+        )
+        .filter(Boolean);
     },
   },
   computed: {
@@ -1527,6 +1616,7 @@ export default {
     this.initialize();
     this.allowSetPublic();
     this.setUseGraduatedPrices();
+    this.fetchHolidays();
   },
 };
 </script>
