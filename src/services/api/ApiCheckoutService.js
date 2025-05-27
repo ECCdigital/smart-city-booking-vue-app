@@ -1,8 +1,8 @@
 export default {
-  validateCheckoutItem(tenant, item, timeBegin, timeEnd, couponCode) {
+  validateCheckoutItem(tenant, item, timeBegin, timeEnd, couponCode, bookWithPrice ) {
     return ApiClient.post(
       `api/${tenant}/checkout/validateItem`,
-      { ...item, tenant, timeBegin, timeEnd, couponCode },
+      { ...item, tenant, timeBegin, timeEnd, couponCode, bookWithPrice },
       {
         withCredentials: true,
       }

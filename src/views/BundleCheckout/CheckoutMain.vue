@@ -54,10 +54,12 @@
               :trace="trace"
               :final-check="step === steps.length"
               :me="me"
+              :free-booking-allowed="leadItem.freeBookingAllowed"
               @back="previousPage()"
               @validate-items="validateItems()"
               @redeem-coupon="redeemCoupon"
               @remove-coupon="removeCoupon"
+              @set-book-with-price="validateItems"
             ></checkout-quick-summary>
           </v-col>
         </v-row>
@@ -138,6 +140,7 @@ export default {
       activePaymentApps: [],
       selectedPaymentApp: null,
       allowSeriesFlag: false,
+      bookWithPrice: false,
     };
   },
 
@@ -454,7 +457,10 @@ export default {
       }
     },
 
-    async validateItems() {
+    async validateItems(options = {}) {
+      if (options.bookWithPrice !== undefined) {
+        this.bookWithPrice = options.bookWithPrice;
+      }
       for (let item of [this.leadItem, ...this.subsequentItems]) {
         if (
           (item.bookable?.isScheduleRelated ||
@@ -471,7 +477,8 @@ export default {
               item,
               this.timeBegin,
               this.timeEnd,
-              this.coupon?.id
+              this.coupon?.id,
+              this.bookWithPrice
             );
 
             if (response.status === 200) {
@@ -480,6 +487,9 @@ export default {
               item.regularGrossPriceEur = response.data.regularGrossPriceEur;
               item.userGrossPriceEur = response.data.userGrossPriceEur;
               item.valid = true;
+              item.freeBookingAllowed =
+                response.data.freeBookingAllowed || false;
+
               delete item.error;
             }
           } catch (error) {
@@ -487,6 +497,7 @@ export default {
             item.userPriceEur = null;
             item.regurlarGroosPriceEur = null;
             item.userGrossPriceEur = null;
+            item.freeBookingAllowed = false;
 
             item.valid = false;
             item.error = error.response.data;
