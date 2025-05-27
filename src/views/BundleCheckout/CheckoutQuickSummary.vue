@@ -364,7 +364,7 @@ export default {
     setBookWithPrice(value) {
       this.bookWithPrice = value;
       this.$emit("update:initialBookWithPrice", value);
-      this.$emit("set-book-with-price", { bookWithPrice: value });
+      this.$emit("set-book-with-price", value);
     },
 
     dateToLocaleString: function (value) {

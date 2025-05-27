@@ -60,7 +60,7 @@
               @validate-items="validateItems()"
               @redeem-coupon="redeemCoupon"
               @remove-coupon="removeCoupon"
-              @set-book-with-price="validateItems"
+              @set-book-with-price="setBookWithPrice"
             ></checkout-quick-summary>
           </v-col>
         </v-row>
@@ -458,10 +458,7 @@ export default {
       }
     },
 
-    async validateItems(options = {}) {
-      if (options.bookWithPrice !== undefined) {
-        this.bookWithPrice = options.bookWithPrice;
-      }
+    async validateItems() {
       for (let item of [this.leadItem, ...this.subsequentItems]) {
         if (
           (item.bookable?.isScheduleRelated ||
@@ -622,6 +619,10 @@ export default {
       } catch (error) {
         console.log("Error while fetching user roles", error);
       }
+    },
+    async setBookWithPrice(value) {
+      this.bookWithPrice = value;
+      await this.validateItems();
     },
   },
 
