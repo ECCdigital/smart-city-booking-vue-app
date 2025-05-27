@@ -45,6 +45,8 @@ const state = {
     priceType: "per-item",
     priceValueAddedTax: 0,
 
+    enableCoupons: true,
+
     permittedUsers: [],
     permittedRoles: [],
     freeBookingUsers: [],
@@ -134,6 +136,8 @@ const mutations = {
       ],
       priceType: "per-item",
       priceValueAddedTax: 0,
+
+      enableCoupons: true,
 
       permittedUsers: [],
       permittedRoles: [],

@@ -150,6 +150,7 @@ export default {
   watch: {
     date: {
       handler: function (old, val) {
+        this.timePeriod = null;
         if (old && val) {
           this.scrollToElement("time-periods");
         }
