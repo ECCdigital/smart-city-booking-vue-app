@@ -495,7 +495,7 @@ export default {
           } catch (error) {
             item.regularPriceEur = null;
             item.userPriceEur = null;
-            item.regurlarGroosPriceEur = null;
+            item.regurlarGrossPriceEur = null;
             item.userGrossPriceEur = null;
             item.freeBookingAllowed = false;
 
