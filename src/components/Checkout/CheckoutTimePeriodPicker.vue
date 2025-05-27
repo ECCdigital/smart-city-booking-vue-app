@@ -159,7 +159,6 @@ export default {
     },
     timePeriod: {
       handler: function (val) {
-        console.log("Selected time period:", val);
         this.$emit("input", val);
       },
       immediate: true,
