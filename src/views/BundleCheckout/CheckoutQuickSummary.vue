@@ -254,6 +254,22 @@
       </v-card-text>
     </v-card>
 
+    <v-card class="mt-5 rounded-sm" outlined v-if="freeBookingAllowed">
+      <v-card-text>
+        <strong>Kostenfreie Buchung</strong> Sie sind berechtigt, diese Buchung
+        kostenfrei abzuschließen. Wenn Sie dennoch eine kostenpflichtige Buchung
+        wünschen, können Sie dies tun, indem Sie den Schalter unten aktivieren.
+
+        <v-switch
+          v-model="bookWithPrice"
+          @change="setBookWithPrice($event)"
+          label="Kostenpflichtig buchen"
+          class="mt-4"
+        >
+        </v-switch>
+      </v-card-text>
+    </v-card>
+
     <v-card class="mt-5 rounded-sm" outlined v-if="!isAutoCommit">
       <v-card-text>
         <strong>Manuelle Freigabe Ihrer Buchung:</strong> Diese Buchung enthält
@@ -325,6 +341,14 @@ export default {
     selectedPaymentApp: {
       type: String,
     },
+    freeBookingAllowed: {
+      type: Boolean,
+      default: false,
+    },
+    initialBookWithPrice: {
+      type: Boolean,
+      default: false,
+    },
   },
 
   data() {
@@ -332,10 +356,17 @@ export default {
       validating: false,
       isSubmitting: false,
       couponCode: null,
+      bookWithPrice: this.initialBookWithPrice,
     };
   },
 
   methods: {
+    setBookWithPrice(value) {
+      this.bookWithPrice = value;
+      this.$emit("update:initialBookWithPrice", value);
+      this.$emit("set-book-with-price", value);
+    },
+
     dateToLocaleString: function (value) {
       return CheckoutUtils.dateToLocaleString(value);
     },
@@ -372,7 +403,6 @@ export default {
       }
 
       this.$emit("validate-items");
-
     },
 
     increaseItemAmount(item) {
@@ -387,7 +417,7 @@ export default {
         this.setAmountOfMandatoryItems(item);
       } else {
         const index = this.subsequentItems.indexOf(item);
-        if(index > -1) {
+        if (index > -1) {
           this.subsequentItems.splice(index, 1);
         }
       }

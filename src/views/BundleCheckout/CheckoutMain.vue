@@ -54,10 +54,13 @@
               :trace="trace"
               :final-check="step === steps.length"
               :me="me"
+              :free-booking-allowed="leadItem.freeBookingAllowed"
+              :initial-book-with-price="bookWithPrice"
               @back="previousPage()"
               @validate-items="validateItems()"
               @redeem-coupon="redeemCoupon"
               @remove-coupon="removeCoupon"
+              @set-book-with-price="setBookWithPrice"
             ></checkout-quick-summary>
           </v-col>
         </v-row>
@@ -138,6 +141,7 @@ export default {
       activePaymentApps: [],
       selectedPaymentApp: null,
       allowSeriesFlag: false,
+      bookWithPrice: false,
     };
   },
 
@@ -471,7 +475,8 @@ export default {
               item,
               this.timeBegin,
               this.timeEnd,
-              this.coupon?.id
+              this.coupon?.id,
+              this.bookWithPrice
             );
 
             if (response.status === 200) {
@@ -480,13 +485,17 @@ export default {
               item.regularGrossPriceEur = response.data.regularGrossPriceEur;
               item.userGrossPriceEur = response.data.userGrossPriceEur;
               item.valid = true;
+              item.freeBookingAllowed =
+                response.data.freeBookingAllowed || false;
+
               delete item.error;
             }
           } catch (error) {
             item.regularPriceEur = null;
             item.userPriceEur = null;
-            item.regurlarGroosPriceEur = null;
+            item.regularGrossPriceEur = null;
             item.userGrossPriceEur = null;
+            item.freeBookingAllowed = false;
 
             item.valid = false;
             item.error = error.response.data;
@@ -610,6 +619,10 @@ export default {
       } catch (error) {
         console.log("Error while fetching user roles", error);
       }
+    },
+    async setBookWithPrice(value) {
+      this.bookWithPrice = value;
+      await this.validateItems();
     },
   },
 
