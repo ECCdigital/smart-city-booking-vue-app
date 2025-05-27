@@ -243,7 +243,7 @@
 
     <v-card
       class="mt-5 rounded-sm"
-      color="red lighten-4"
+      :color="$vuetify.theme.dark ? 'red' : 'red lighten-4'"
       outlined
       v-if="allItemsValid === false"
     >
