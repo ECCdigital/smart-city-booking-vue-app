@@ -345,9 +345,6 @@ export default {
       type: Boolean,
       default: false,
     },
-  },
-
-  props: {
     initialBookWithPrice: {
       type: Boolean,
       default: false,

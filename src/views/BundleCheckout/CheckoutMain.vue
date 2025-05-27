@@ -55,6 +55,7 @@
               :final-check="step === steps.length"
               :me="me"
               :free-booking-allowed="leadItem.freeBookingAllowed"
+              :initial-book-with-price="bookWithPrice"
               @back="previousPage()"
               @validate-items="validateItems()"
               @redeem-coupon="redeemCoupon"
