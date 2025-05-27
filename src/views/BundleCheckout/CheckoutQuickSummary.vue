@@ -347,18 +347,26 @@ export default {
     },
   },
 
+  props: {
+    initialBookWithPrice: {
+      type: Boolean,
+      default: false,
+    },
+  },
+
   data() {
     return {
       validating: false,
       isSubmitting: false,
       couponCode: null,
-      bookWithPrice: false,
+      bookWithPrice: this.initialBookWithPrice,
     };
   },
 
   methods: {
     setBookWithPrice(value) {
       this.bookWithPrice = value;
+      this.$emit("update:initialBookWithPrice", value);
       this.$emit("set-book-with-price", { bookWithPrice: value });
     },
 
