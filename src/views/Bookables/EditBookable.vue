@@ -152,7 +152,25 @@
       </v-col>
     </v-row>
 
-    <h3 class="mt-10 mb-4">Preis</h3>
+    <h3 class="mt-10 mb-4">Preise</h3>
+    <div class="d-flex align-center mb-4">
+      <v-tooltip bottom max-width="300" open-delay="200">
+        <template v-slot:activator="{ on, attrs }">
+          <div v-on="on" v-bind="attrs">
+            <v-switch
+              dense
+              label="Gutscheine aktivieren"
+              hide-details
+              v-model="enableCoupons"
+            ></v-switch>
+          </div>
+        </template>
+        <span>
+          Aktivieren Sie diese Option, um Gutscheine für dieses Buchungsobjekt
+          zu ermöglichen. Gutscheine können dann beim Checkout eingelöst werden.
+        </span>
+      </v-tooltip>
+    </div>
     <v-row>
       <v-col class="col-12 col-md-3">
         <v-select
@@ -171,7 +189,8 @@
           background-color="accent"
           filled
           label="Verfügbare Anzahl"
-          hide-details
+          :hint="!amount ? 'Anzahl ist unbegrenzt!' : ''"
+          :persistent-hint="!amount"
           v-model="amount"
           :suffix="priceType === 'per-square-meter' ? 'm²' : 'Stück'"
         ></v-text-field>
@@ -1027,6 +1046,7 @@ export default {
             priceCategories,
             priceType,
             priceValueAddedTax,
+            enableCoupons,
             tags,
             tenantId,
             title,
@@ -1071,6 +1091,7 @@ export default {
             priceValueAddedTax: !_.isNil(priceValueAddedTax)
               ? priceValueAddedTax
               : 0,
+            enableCoupons: enableCoupons,
             amount: !_.isNil(amount) ? amount : null,
             isScheduleRelated: !_.isNil(isScheduleRelated)
               ? isScheduleRelated
@@ -1352,6 +1373,14 @@ export default {
       },
       set(value) {
         this.updateValue({ field: "location", value: value });
+      },
+    },
+    enableCoupons: {
+      get() {
+        return this.$store.state.bookables.form.enableCoupons;
+      },
+      set(value) {
+        this.updateValue({ field: "enableCoupons", value: value });
       },
     },
     priceCategories: {

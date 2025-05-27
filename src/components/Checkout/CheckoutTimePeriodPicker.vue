@@ -150,6 +150,7 @@ export default {
   watch: {
     date: {
       handler: function (old, val) {
+        this.timePeriod = null;
         if (old && val) {
           this.scrollToElement("time-periods");
         }
@@ -158,6 +159,7 @@ export default {
     },
     timePeriod: {
       handler: function (val) {
+        console.log("Selected time period:", val);
         this.$emit("input", val);
       },
       immediate: true,

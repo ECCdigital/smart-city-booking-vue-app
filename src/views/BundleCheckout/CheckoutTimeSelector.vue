@@ -322,17 +322,10 @@ export default {
       return minutes === m;
     },
     notifyBookingTimeSelected() {
-      if (
-        this.timeBeginModel != null &&
-        this.timeEndModel != null &&
-        this.dateBeginModel != null &&
-        this.dateEndModel != null
-      ) {
-        this.$emit("booking-time-selected", {
-          begin: this.timestampBegin,
-          end: this.timestampEnd,
-        });
-      }
+      this.$emit("booking-time-selected", {
+        begin: this.timestampBegin,
+        end: this.timestampEnd,
+      });
     },
 
     submit() {
@@ -548,6 +541,13 @@ export default {
     },
 
     selectedTimePeriod: function () {
+      if (!this.selectedTimePeriod) {
+        this.dateBeginModel = null;
+        this.timeBeginModel = null;
+        this.dateEndModel = null;
+        this.timeEndModel = null;
+        return;
+      }
       const dateBegin = new Date(this.selectedTimePeriod.timeBegin);
       const dateEnd = new Date(this.selectedTimePeriod.timeEnd);
       this.dateBeginModel = dateBegin.toISOString().split("T")[0];
