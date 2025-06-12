@@ -36,7 +36,7 @@
             <component
               :is="steps[step - 1].component"
               v-if="!loading"
-              v-bind="steps[step - 1].props"
+              v-bind="currentStepProps"
               v-on="steps[step - 1].events"
             ></component>
           </v-col>
@@ -583,6 +583,61 @@ export default {
     ...mapGetters({
       user: "user/getUser",
     }),
+    currentStepProps() {
+      if (this.step && this.steps.length >= this.step) {
+        const currentStep = this.steps[this.step - 1];
+
+        if (currentStep.component === "checkout-no-permission") {
+          return {
+            tenantId: this.tenant,
+          };
+        } else if (currentStep.component === "checkout-signin") {
+          return {
+            tenantId: this.tenant,
+            me: this.me,
+            "show-back": false,
+            "show-submit-guest": false,
+          };
+        } else if (currentStep.component === "checkout-contact-details") {
+          return {
+            me: this.me,
+            leadItem: this.leadItem,
+            contactDetails: this.contactDetails,
+          };
+        } else if (currentStep.component === "checkout-time-selector") {
+          const props = {
+            leadItem: this.leadItem,
+            subsequentItems: this.subsequentItems,
+            timeBegin: this.timeBegin,
+            timeEnd: this.timeEnd,
+            amount: this.leadItem.amount,
+          };
+
+          currentStep.props["show-back"] = !(!this.loginRequired && this.bookingPermission);
+
+          return props;
+        } else if (currentStep.component === "checkout-amount-selector") {
+          return {
+            leadItem: this.leadItem,
+            subsequentItems: this.subsequentItems,
+            maxSquares: this.leadItem.bookable.amount,
+          };
+        } else if (currentStep.component === "additional-bookables") {
+          return {
+            leadItem: this.leadItem,
+            subsequentItems: this.subsequentItems,
+            timeBegin: this.timeBegin,
+            timeEnd: this.timeEnd,
+          };
+        } else if (currentStep.component === "checkout-payment-provider") {
+          return {
+            activePaymentApps: this.activePaymentApps,
+          };
+        }
+        return currentStep.props || {};
+      }
+      return {};
+    },
   },
 };
 </script>

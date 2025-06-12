@@ -5,7 +5,7 @@ export default {
   name: "CheckoutNoPermission",
 
   props: {
-    tenant: {
+    tenantId: {
       type: String,
       required: true,
     },
@@ -13,7 +13,7 @@ export default {
 
   methods: {
     signOut() {
-      ApiAuthService.logout(this.tenant).then((response) => {
+      ApiAuthService.logout(this.tenantId).then((response) => {
         if (response.status === 200) {
           this.$emit("sign-out");
         }
