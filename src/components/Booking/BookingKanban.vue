@@ -55,16 +55,28 @@
         @move-task="moveTask"
       />
     </div>
+
+    <BookingConfirmStatusChangeDialog
+      v-if="confirmStatusChange"
+      :open="confirmStatusChange"
+      :status="onChangeBookingStatus"
+      :status-key="currentStatusKey"
+      @reject="statusChangeRejected"
+      @confirm="statusChangeConfirmed"
+      :in-progress="isLoading"
+    />
   </div>
 </template>
 
 <script>
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import BookingKanbanColumn from "@/components/Booking/KanbanColumn.vue";
+import BookingConfirmStatusChangeDialog from "@/components/Booking/BookingConfirmStatusChangeDialog.vue";
+import { mapActions, mapGetters } from "vuex";
 
 export default {
   name: "BookingWorkflow",
-  components: { BookingKanbanColumn },
+  components: { BookingConfirmStatusChangeDialog, BookingKanbanColumn },
   props: {
     bookings: {
       type: Array,
@@ -90,14 +102,22 @@ export default {
       dragging: false,
       showScrollLeft: false,
       showScrollRight: false,
+      confirmStatusChange: false,
+      onChangeBookingStatus: [],
+      newStatusId: null,
+      oldStatusId: null,
+      temporaryEvent: null,
+      currentStatusKey: null,
     };
   },
   computed: {
+    ...mapGetters("userPreferences", ["shouldSkipStatusConfirmation"]),
     isLoading() {
       return this.loading || this.internalLoading;
     },
   },
   methods: {
+    ...mapActions("userPreferences", ["loadSkipStatusConfirmations"]),
     combineWorkflow() {
       this.combinedWorkflow = this.workflow.states.map((state) => {
         const filteredTasks = state.tasks
@@ -149,7 +169,7 @@ export default {
           newIndex: evt.added.newIndex,
         });
         this.backlog = await ApiWorkflowService.getBacklog();
-        this.$emit("update:booking", evt.added.element.id)
+        this.$emit("update:booking", evt.added.element.id);
       }
       if (evt.moved) {
         this.workflow = await ApiWorkflowService.updateTask({
@@ -159,7 +179,7 @@ export default {
           newIndex: evt.moved.newIndex,
         });
         this.backlog = await ApiWorkflowService.getBacklog();
-        this.$emit("update:booking", evt.added.element.id)
+        this.$emit("update:booking", evt.moved.element.id);
       }
     },
     archiveTask: async function (taskId) {
@@ -214,7 +234,7 @@ export default {
     scrollLeft() {
       const container = this.$refs.kanbanContainer;
       container.scrollBy({
-        left: -200, // Anzahl Pixel die gescrollt werden soll
+        left: -200,
         behavior: "smooth",
       });
     },
@@ -242,7 +262,92 @@ export default {
       }
     },
     handleChangeTask(evt, statusId) {
-      this.moveTask(evt, statusId);
+      if (!evt.added) {
+        this.moveTask(evt, statusId);
+        return;
+      }
+
+      const taskId = evt.added.element.id;
+      const oldStatus = this.findTaskCurrentStatus(taskId);
+      const newStatus = this.workflow.states.find(
+        (state) => state.id === statusId
+      );
+
+      const statusChangeActions =
+        newStatus.actions?.filter(
+          (action) => action.type === "bookingStatus"
+        ) || [];
+
+      if (statusChangeActions.length > 0) {
+        const statusKey = this.generateStatusKey(
+          oldStatus.id,
+          statusId,
+          statusChangeActions
+        );
+
+        if (this.shouldSkipStatusConfirmation(statusKey)) {
+          this.moveTask(evt, statusId);
+        } else {
+          this.showStatusChangeConfirmation(
+            evt,
+            statusId,
+            oldStatus.id,
+            statusChangeActions,
+            statusKey
+          );
+        }
+      } else {
+        this.moveTask(evt, statusId);
+      }
+    },
+
+    generateStatusKey(fromStatus, toStatus, actions) {
+      const actionTypes = actions
+        .map((action) => action.bookingStatus)
+        .flat()
+        .sort()
+        .join("_");
+
+      return `${fromStatus}_to_${toStatus}_${actionTypes}`;
+    },
+
+    findTaskCurrentStatus(taskId) {
+      return this.workflow.states.find((state) =>
+        state.tasks.some((task) => task.id === taskId)
+      );
+    },
+
+    showStatusChangeConfirmation(evt, newStatusId, oldStatusId, actions, statusKey) {
+      this.onChangeBookingStatus = actions
+        .map(action => action.bookingStatus)
+        .flat();
+
+      this.newStatusId = newStatusId;
+      this.oldStatusId = oldStatusId;
+      this.temporaryEvent = evt;
+      this.currentStatusKey = statusKey;
+      this.confirmStatusChange = true;
+    },
+
+    statusChangeConfirmed() {
+      this.executeStatusChange(this.newStatusId);
+    },
+
+    statusChangeRejected() {
+      this.executeStatusChange(this.oldStatusId);
+    },
+
+    executeStatusChange(statusId) {
+      this.moveTask(this.temporaryEvent, statusId);
+      this.resetStatusChangeState();
+    },
+
+    resetStatusChangeState() {
+      this.onChangeBookingStatus = [];
+      this.temporaryEvent = null;
+      this.newStatusId = null;
+      this.oldStatusId = null;
+      this.confirmStatusChange = false;
     },
   },
   watch: {
@@ -273,6 +378,7 @@ export default {
     },
   },
   async mounted() {
+    await this.loadSkipStatusConfirmations();
     this.workflow = await ApiWorkflowService.getWorkflowStates();
     this.backlog = await ApiWorkflowService.getBacklog();
 

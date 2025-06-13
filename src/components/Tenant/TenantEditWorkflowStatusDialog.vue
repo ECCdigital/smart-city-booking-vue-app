@@ -165,7 +165,7 @@
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
-        <v-btn color="primary" @click="saveWorkflowStatus">Speichern</v-btn>
+        <v-btn color="primary" @click="saveWorkflowStatus">Übernehmen</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

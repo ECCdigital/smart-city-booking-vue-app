@@ -10,6 +10,7 @@ import loading from "./modules/loading";
 import instance from "./modules/instance";
 import authStore from "@/store/modules/authStore";
 import theme from "./modules/theme";
+import userPreferences from "./modules/userPreferences";
 
 Vue.use(Vuex);
 
@@ -23,7 +24,8 @@ export default new Vuex.Store({
     loading,
     instance,
     authStore,
-    theme
+    theme,
+    userPreferences
   },
   actions: {
     reset({ dispatch }) {
