@@ -179,7 +179,7 @@ export default {
           newIndex: evt.moved.newIndex,
         });
         this.backlog = await ApiWorkflowService.getBacklog();
-        this.$emit("update:booking", evt.added.element.id);
+        this.$emit("update:booking", evt.moved.element.id);
       }
     },
     archiveTask: async function (taskId) {
