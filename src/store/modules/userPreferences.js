@@ -24,10 +24,14 @@ const actions = {
   loadSkipStatusConfirmations({ commit }) {
     const saved = localStorage.getItem("skipStatusChangeConfirmations");
     if (saved) {
-      const preferences = JSON.parse(saved);
-      Object.entries(preferences).forEach(([statusKey, skip]) => {
-        commit("SET_SKIP_STATUS_CONFIRMATION", { statusKey, skip });
-      });
+      try {
+        const preferences = JSON.parse(saved);
+        Object.entries(preferences).forEach(([statusKey, skip]) => {
+          commit("SET_SKIP_STATUS_CONFIRMATION", { statusKey, skip });
+        });
+      } catch (error) {
+        console.error("Failed to parse skipStatusChangeConfirmations from localStorage:", error);
+      }
     }
   },
 };
