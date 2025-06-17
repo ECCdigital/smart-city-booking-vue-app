@@ -218,6 +218,7 @@ export default {
       api: {
         users: [],
         bookings: [],
+        groupBookings: [],
       },
       headers: [
         {
@@ -318,6 +319,13 @@ export default {
       this.fetchBookings();
       this.fetchBookables();
       this.fetchGroupBookings();
+    },
+    currentView(newView) {
+      this.$router.replace({ query: { view: newView } }).catch(err => {
+        if (err.name !== "NavigationDuplicated") {
+          throw err;
+        }
+      });
     },
   },
   methods: {
@@ -770,11 +778,20 @@ export default {
       this.workflow = await ApiWorkflowService.getWorkflowStates();
     },
   },
-  created() {
-    this.fetchBookings();
-    this.fetchBookables();
-    this.fetchWorkflow();
-    this.fetchGroupBookings();
+  async created() {
+    try {
+      await this.fetchBookings();
+      await this.fetchBookables();
+      await this.fetchWorkflow();
+      await this.fetchGroupBookings();
+    } catch (error) {
+      console.error("Error fetching initial data:", error);
+    }
+
+    const viewFromQuery = this.$route.query.view;
+    if (viewFromQuery && ["list", "calendar", "kanban"].includes(viewFromQuery)) {
+      this.currentView = viewFromQuery;
+    }
   },
 };
 </script>
