@@ -34,8 +34,8 @@
         sm="6"
         md="4"
         lg="3"
-        v-for="(event, index) in displayedEvents.slice().reverse()"
-        :key="index"
+        v-for="(event) in displayedEvents.slice().reverse()"
+        :key="event.id"
         class="mx-xs-auto d-flex flex-column"
         height="100%"
       >

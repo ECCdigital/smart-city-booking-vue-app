@@ -14,7 +14,6 @@
         <v-data-table
           :headers="headers"
           :items="displayedCoupons"
-          :search="search"
           :footer-props="{
             'items-per-page-all-text': 'Alle',
             'items-per-page-text': 'Gutscheine pro Seite',

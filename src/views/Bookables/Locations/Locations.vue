@@ -31,8 +31,8 @@
         sm="6"
         md="4"
         lg="3"
-        v-for="(location, index) in displayedLocations"
-        :key="index"
+        v-for="(location) in displayedLocations"
+        :key="location.id"
         class="mx-xs-auto d-flex flex-column"
         height="100%"
       >
