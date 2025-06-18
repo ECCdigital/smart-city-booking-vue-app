@@ -77,6 +77,17 @@
                   ></v-checkbox>
                 </v-col>
               </v-row>
+              <v-row v-if="selectedBooking.isRejected">
+                <v-col>
+                  <v-textarea
+                    background-color="accent"
+                    filled
+                    hide-details
+                    label="Ablehnungsgrund"
+                    v-model="selectedBooking.rejectionReason"
+                  ></v-textarea>
+                </v-col>
+              </v-row>
               <v-row>
                 <v-col>
                   <v-select
@@ -553,6 +564,17 @@
                     label="Bemerkung"
                     required
                     v-model="selectedBooking.comment"
+                  ></v-textarea>
+                </v-col>
+              </v-row>
+              <v-row class="mt-5">
+                <v-col>
+                  <v-textarea
+                    background-color="accent"
+                    filled
+                    hide-details
+                    label="Interne Bemerkung"
+                    v-model="selectedBooking.internalComments"
                   ></v-textarea>
                 </v-col>
               </v-row>

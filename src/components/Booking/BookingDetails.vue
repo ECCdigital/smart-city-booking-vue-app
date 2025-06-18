@@ -285,6 +285,18 @@ export default {
           </v-list-item>
         </v-col>
       </v-row>
+      <v-row v-if="booking.isRejected && booking.rejectionReason" no-gutters>
+        <v-col>
+          <v-list-item two-line>
+            <v-list-item-content>
+              <v-list-item-title class="text-h">
+                Ablehnungsgrund
+              </v-list-item-title>
+              <v-list-item-subtitle class="error--text">{{ booking.rejectionReason }}</v-list-item-subtitle>
+            </v-list-item-content>
+          </v-list-item>
+        </v-col>
+      </v-row>
       <v-row no-gutters>
         <v-col>
           <v-list-item two-line>
@@ -462,6 +474,15 @@ export default {
       <v-row>
         <v-col>
           <p>{{ booking.comment }}</p>
+        </v-col>
+      </v-row>
+      <div class="mt-6">
+        <span class="text-h6">interne Bemerkung</span>
+      </div>
+      <v-divider />
+      <v-row>
+        <v-col>
+          <p>{{ booking.internalComments }}</p>
         </v-col>
       </v-row>
       <div class="mt-6">
