@@ -477,7 +477,7 @@ export default {
         </v-col>
       </v-row>
       <div class="mt-6">
-        <span class="text-h6">interne Bemerkung</span>
+        <span class="text-h6">Interne Bemerkung</span>
       </div>
       <v-divider />
       <v-row>
