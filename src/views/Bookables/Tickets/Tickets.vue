@@ -1,45 +1,24 @@
 <template>
   <AdminLayout class="pb-15">
-    <v-row>
+    <v-row v-if="!bookableCountCheck">
       <v-col class="col-auto">
-        <v-alert
-          class="custom-alert"
-          v-if="!bookableCountCheck"
-          type="info"
-          elevation="2"
-        >
-          Sie haben die maximale Anzahl an öffentlichen Buchungsobjekten erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Buchungsobjekte.
+        <v-alert class="custom-alert" type="info" elevation="2">
+          Sie haben die maximale Anzahl an öffentlichen Buchungsobjekten
+          erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr
+          benötigte Buchungsobjekte.
         </v-alert>
       </v-col>
     </v-row>
     <v-row>
       <v-col cols="12">
-        <v-select
-          class="filter-field"
-          v-model="filters"
-          :items="api.tags"
-          prepend-inner-icon="mdi-filter-variant"
-          label="Filtern"
-          hide-selected
-          no-data-text="Keine Filtermöglichkeiten gefunden"
-          multiple
-          clearable
-          chips
-          solo
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              color="secondary"
-              @click="select"
-              @click:close="remove(item)"
-            >
-              <strong>{{ item }}</strong>
-            </v-chip>
-          </template>
-        </v-select>
+        <Search
+          :items="api.tickets"
+          v-model="searchResults"
+          placeholder="Ticket suchen…"
+          :keys="searchKeys"
+          filter-key="tags"
+          :filter-options="api.tags"
+        ></Search>
       </v-col>
     </v-row>
     <v-row gutters align="stretch">
@@ -48,8 +27,8 @@
         sm="6"
         md="4"
         lg="3"
-        v-for="(ticket, index) in filteredTickets.slice().reverse()"
-        :key="index"
+        v-for="(ticket) in displayedTickets.slice().reverse()"
+        :key="ticket.id"
         class="mx-xs-auto d-flex flex-column"
         height="100%"
       >
@@ -94,9 +73,11 @@ import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiTagsService from "@/services/api/ApiTagsService";
 import ToastService from "@/services/ToastService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
+import Search from "@/components/commons/Search.vue";
 
 export default {
   components: {
+    Search,
     AdminLayout,
     BookableCard,
   },
@@ -108,6 +89,8 @@ export default {
       },
       filters: [],
       bookableCountCheck: true,
+      searchResults: [],
+      searchKeys: ["title", "id"],
     };
   },
   computed: {
@@ -116,7 +99,10 @@ export default {
       tenantId: "tenants/currentTenantId",
     }),
     createDisabled() {
-      return !this.BookablePermissionService.allowCreate() || !this.bookableCountCheck;
+      return (
+        !this.BookablePermissionService.allowCreate() ||
+        !this.bookableCountCheck
+      );
     },
     BookablePermissionService() {
       return BookablePermissionService;
@@ -136,6 +122,9 @@ export default {
       }
 
       return this.api.tickets;
+    },
+    displayedTickets() {
+      return this.searchResults;
     },
   },
   watch: {
@@ -188,7 +177,10 @@ export default {
         })
         .catch((error) => {
           this.addToast(
-            ToastService.createToast("bookable.duplicate.errors.something-wrong", "error")
+            ToastService.createToast(
+              "bookable.duplicate.errors.something-wrong",
+              "error"
+            )
           );
           console.log(error);
         });
@@ -223,7 +215,8 @@ export default {
         });
     },
     async getBookableCount() {
-      this.bookableCountCheck = await ApiBookablesService.publicBookableCountCheck();
+      this.bookableCountCheck =
+        await ApiBookablesService.publicBookableCountCheck();
     },
   },
   async mounted() {
