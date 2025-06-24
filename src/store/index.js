@@ -9,6 +9,7 @@ import bookables from "./modules/bookables";
 import loading from "./modules/loading";
 import instance from "./modules/instance";
 import authStore from "@/store/modules/authStore";
+import viewedNotifications from "./modules/viewedNotifications";
 
 Vue.use(Vuex);
 
@@ -21,7 +22,8 @@ export default new Vuex.Store({
     bookables,
     loading,
     instance,
-    authStore
+    authStore,
+    viewedNotifications
   },
   actions: {
     reset({ dispatch }) {
@@ -33,6 +35,7 @@ export default new Vuex.Store({
       dispatch("loading/reset");
       dispatch("instance/reset");
       dispatch("authStore/reset");
+      dispatch("viewedNotifications/reset");
     }
   }
 });

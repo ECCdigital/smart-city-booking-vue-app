@@ -31,6 +31,7 @@
         </template>
         <span>Theme wechseln</span>
       </v-tooltip>
+      <NotificationDisplay class="mr-2" />
       <v-menu offset-y>
         <template v-slot:activator="{ on: menu, attrs }">
           <v-tooltip bottom>
@@ -145,6 +146,7 @@ import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import NotificationDisplay from "@/components/NotificationDisplay";
 
 export default {
   data: () => ({
@@ -288,7 +290,9 @@ export default {
     //currentTenant: "",
     tenants: [],
   }),
-  components: {},
+  components: {
+    NotificationDisplay,
+  },
   methods: {
     ...mapActions({
       addToast: "toasts/add",
