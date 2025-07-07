@@ -231,9 +231,14 @@ export default {
 
   methods: {
     async fetchRoles() {
-      await ApiRolesService.getTenantRoles(true).then((result) => {
-        this.availableRoles = result?.data;
-      });
+      try {
+        await ApiRolesService.getTenantRoles().then((result) => {
+          this.availableRoles = result?.data;
+        });
+      } catch (error) {
+        console.error("Error fetching roles:", error);
+        this.availableRoles = [];
+      }
     },
     async fetchUsers() {
       await ApiUsersService.getUsers().then((result) => {
