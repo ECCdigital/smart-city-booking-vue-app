@@ -231,7 +231,7 @@ export default {
 
   methods: {
     async fetchRoles() {
-      await ApiRolesService.getRoles().then((result) => {
+      await ApiRolesService.getTenantRoles(true).then((result) => {
         this.availableRoles = result?.data;
       });
     },
