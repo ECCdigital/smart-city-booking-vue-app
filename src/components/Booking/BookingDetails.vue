@@ -2,19 +2,35 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
+import GroupBookingCreateReceipt from "@/components/Booking/GroupBookingCreateReceipt.vue";
+import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
+import {
+  getBookingErrorMessage,
+  getGroupBookingErrorMessage,
+} from "@/utils/errorMessages";
+
 
 export default {
   name: "BookingDetails",
+  components: { GroupBookingCreateReceipt },
   props: {
     booking: {
       type: Object,
       required: true,
+    },
+    groupBooking: {
+      type: Object,
+      default: null,
     },
   },
   events: "update",
   data() {
     return {
       creatingReceipt: false,
+      openCreateAggregatedReceipt: false,
+      errors: {
+        receipt: null,
+      },
     };
   },
   computed: {
@@ -74,24 +90,64 @@ export default {
       }
     },
     createReceipt(bookingId) {
+      if (this.groupBooking) {
+        this.openCreateAggregatedReceipt = true;
+      } else {
+        this.createSingleReceipt(bookingId);
+      }
+    },
+    async createSingleReceipt(bookingId) {
       this.creatingReceipt = true;
-      ApiBookingService.generateReceipt(bookingId)
-        .then((response) => {
-          if (response.status === 200) {
-            this.$emit("update", bookingId);
-            this.addToast(
-              ToastService.createToast("receipt.create.success", "success")
-            );
-          }
-        })
-        .catch(() => {
-          this.addToast(
-            ToastService.createToast("receipt.create.error", "error")
+      try {
+        const response = await ApiBookingService.generateReceipt(bookingId);
+        if (!response.success) {
+          this.handleBookingError("receipt", response.errors);
+        } else {
+          this.$emit("update", bookingId);
+          await this.addToast(
+            ToastService.createToast("receipt.create.success", "success")
           );
-        })
-        .finally(() => {
-          this.creatingReceipt = false;
-        });
+          this.errors.receipt = null;
+          this.openCreateAggregatedReceipt = false;
+        }
+      } finally {
+        this.creatingReceipt = false;
+      }
+    },
+    handleBookingError(action, errors) {
+      const code = errors[0]?.code;
+      this.addToast(
+        ToastService.createToast(`booking.${action}.error`, "error")
+      );
+      this.errors[action] = getBookingErrorMessage(code);
+    },
+    handleGroupBookingError(action, errors) {
+      const code = errors[0]?.code;
+      this.addToast(
+        ToastService.createToast(`group-booking.${action}.error`, "error")
+      );
+      this.errors[action] = getGroupBookingErrorMessage(code);
+    },
+    async createGroupReceipt(bookingId) {
+      this.creatingReceipt = true;
+      try {
+        const response = await ApiGroupBookingService.generateGroupReceipt(
+          undefined,
+          this.groupBooking.id
+        );
+        if (!response.success) {
+          this.handleGroupBookingError("receipt", response.errors);
+        } else {
+          await this.addToast(
+            ToastService.createToast("receipt.create.success", "success")
+          );
+          this.errors.receipt = null;
+          this.$emit("update", bookingId);
+          this.openCreateAggregatedReceipt = false;
+        }
+      } finally {
+        this.creatingReceipt = false;
+      }
     },
     downloadReceipt(name) {
       ApiBookingService.getReceipt(this.booking.id, name).then((response) => {
@@ -118,7 +174,12 @@ export default {
       }
     },
     closeDialog() {
+      this.errors.receipt = null;
       this.$emit("close");
+    },
+    closeAggregatedReceipt() {
+      this.errors.receipt = null;
+      this.openCreateAggregatedReceipt = false;
     },
   },
 };
@@ -220,6 +281,18 @@ export default {
                     : "ausstehend"
                 }}</v-list-item-subtitle
               >
+            </v-list-item-content>
+          </v-list-item>
+        </v-col>
+      </v-row>
+      <v-row v-if="booking.isRejected && booking.rejectionReason" no-gutters>
+        <v-col>
+          <v-list-item two-line>
+            <v-list-item-content>
+              <v-list-item-title class="text-h">
+                Ablehnungsgrund
+              </v-list-item-title>
+              <v-list-item-subtitle class="error--text">{{ booking.rejectionReason }}</v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
         </v-col>
@@ -357,6 +430,11 @@ export default {
           <v-icon>mdi-plus</v-icon>Buchungsbeleg erstellen
         </v-btn>
       </div>
+      <v-card-text v-if="errors.receipt" class="text-center">
+        <v-alert type="error" border="left" elevation="2">
+          {{ errors.receipt }}
+        </v-alert>
+      </v-card-text>
       <v-divider />
       <v-row no-gutters>
         <v-col>
@@ -396,6 +474,15 @@ export default {
       <v-row>
         <v-col>
           <p>{{ booking.comment }}</p>
+        </v-col>
+      </v-row>
+      <div class="mt-6">
+        <span class="text-h6">Interne Bemerkung</span>
+      </div>
+      <v-divider />
+      <v-row>
+        <v-col>
+          <p>{{ booking.internalComments }}</p>
         </v-col>
       </v-row>
       <div class="mt-6">
@@ -446,6 +533,15 @@ export default {
       <v-spacer />
       <v-btn class="mb-5 mr-5" outlined @click="closeDialog"> Schließen </v-btn>
     </v-card-actions>
+    <GroupBookingCreateReceipt
+      :open="openCreateAggregatedReceipt"
+      :booking-id="booking.id"
+      :in-progress="creatingReceipt"
+      :error="errors.receipt"
+      @close="closeAggregatedReceipt"
+      @create-single-booking-receipt="createSingleReceipt(booking.id)"
+      @create-group-booking-receipt="createGroupReceipt(booking.id)"
+    />
   </v-card>
 </template>
 

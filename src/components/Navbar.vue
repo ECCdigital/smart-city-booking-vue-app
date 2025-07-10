@@ -314,7 +314,9 @@ export default {
         });
     },
     darkMode() {
-      this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
+      this.$store.dispatch("theme/toggleDarkMode").then(isDarkMode => {
+        this.$vuetify.theme.dark = isDarkMode;
+      });
     },
     fetchTenants() {
       ApiTenantService.getTenants(true).then((response) => {

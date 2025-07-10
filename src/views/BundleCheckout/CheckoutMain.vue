@@ -54,10 +54,13 @@
               :trace="trace"
               :final-check="step === steps.length"
               :me="me"
+              :free-booking-allowed="leadItem.freeBookingAllowed"
+              :initial-book-with-price="bookWithPrice"
               @back="previousPage()"
               @validate-items="validateItems()"
               @redeem-coupon="redeemCoupon"
               @remove-coupon="removeCoupon"
+              @set-book-with-price="setBookWithPrice"
             ></checkout-quick-summary>
           </v-col>
         </v-row>
@@ -82,6 +85,7 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import CheckoutPaymentProvider from "@/views/BundleCheckout/CheckoutPaymentProvider.vue";
 import CheckoutAmountSelector from "@/views/BundleCheckout/CheckoutAmountSelector.vue";
 import { mapActions, mapGetters } from "vuex";
+import ApiRolesService from "@/services/api/ApiRolesService";
 
 export default {
   name: "CheckoutMain",
@@ -136,6 +140,8 @@ export default {
 
       activePaymentApps: [],
       selectedPaymentApp: null,
+      allowSeriesFlag: false,
+      bookWithPrice: false,
     };
   },
 
@@ -160,9 +166,23 @@ export default {
       await this.fetchSubsequentBookables();
       await this.validateItems();
       await this.fetchActivePaymentApps();
+      await this.checkAllowSeries();
       this.steps = this.createSteps();
       this.step = 1;
       this.loading = false;
+    },
+
+    goToGroupBooking() {
+      this.$router.push({
+        name: "checkout-group-booking",
+        query: {
+          tenant: this.tenant,
+          id: this.leadItem.bookableId,
+          amount: this.leadItem.amount,
+          timeBegin: this.timeBegin,
+          timeEnd: this.timeEnd,
+        },
+      });
     },
 
     createSteps() {
@@ -178,20 +198,21 @@ export default {
         },
       };
 
-      const loginStep = {
-        title: "Anmeldung",
-        component: "checkout-signin",
-        props: {
-          tenantId: this.tenant,
-          me: this.me,
-          "show-back": false,
-        },
-        events: {
-          "update-me": this.fetchMe,
-          submit: this.nextPage,
-          back: this.previousPage,
-        },
-      };
+      // Unused login step - keeping for reference
+      // const loginStep = {
+      //   title: "Anmeldung",
+      //   component: "checkout-signin",
+      //   props: {
+      //     tenantId: this.tenant,
+      //     me: this.me,
+      //     "show-back": false,
+      //   },
+      //   events: {
+      //     "update-me": this.fetchMe,
+      //     submit: this.nextPage,
+      //     back: this.previousPage,
+      //   },
+      // };
 
       const loginRequiredStep = {
         title: "Anmeldung",
@@ -233,11 +254,13 @@ export default {
           timeEnd: this.timeEnd,
           amount: this.leadItem.amount,
           "show-back": false,
+          "show-series": this.allowSeries,
         },
         events: {
           "booking-time-selected": this.setBookingTime,
           submit: this.nextPage,
           back: this.previousPage,
+          "group-booking": this.goToGroupBooking,
         },
       };
 
@@ -452,7 +475,8 @@ export default {
               item,
               this.timeBegin,
               this.timeEnd,
-              this.coupon?.id
+              this.coupon?.id,
+              this.bookWithPrice
             );
 
             if (response.status === 200) {
@@ -461,13 +485,17 @@ export default {
               item.regularGrossPriceEur = response.data.regularGrossPriceEur;
               item.userGrossPriceEur = response.data.userGrossPriceEur;
               item.valid = true;
+              item.freeBookingAllowed =
+                response.data.freeBookingAllowed || false;
+
               delete item.error;
             }
           } catch (error) {
             item.regularPriceEur = null;
             item.userPriceEur = null;
-            item.regurlarGroosPriceEur = null;
+            item.regularGrossPriceEur = null;
             item.userGrossPriceEur = null;
+            item.freeBookingAllowed = false;
 
             item.valid = false;
             item.error = error.response.data;
@@ -566,6 +594,36 @@ export default {
         console.log("Error while fetching tenant");
       }
     },
+    async checkAllowSeries() {
+      this.allowSeriesFlag = false;
+
+      const item = this.leadItem;
+      if (!item?.bookable || !item.bookable.groupBooking?.enabled) {
+        return;
+      }
+
+      const permitted = item.bookable.groupBooking.permittedRoles;
+      if (permitted.length === 0) {
+        this.allowSeriesFlag = true;
+        return;
+      }
+
+      try {
+        const response = await ApiRolesService.getUserRolesByTenant(
+          undefined,
+          true
+        );
+        this.allowSeriesFlag = response.data.some((role) =>
+          permitted.includes(role.id)
+        );
+      } catch (error) {
+        console.log("Error while fetching user roles", error);
+      }
+    },
+    async setBookWithPrice(value) {
+      this.bookWithPrice = value;
+      await this.validateItems();
+    },
   },
 
   watch: {
@@ -583,6 +641,9 @@ export default {
     ...mapGetters({
       user: "user/getUser",
     }),
+    allowSeries() {
+      return this.allowSeriesFlag;
+    },
     currentStepProps() {
       if (this.step && this.steps.length >= this.step) {
         const currentStep = this.steps[this.step - 1];

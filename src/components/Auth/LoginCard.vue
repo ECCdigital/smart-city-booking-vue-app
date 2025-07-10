@@ -111,6 +111,10 @@ export default {
           v-model="id"
           :rules="[rules.required]"
           prepend-inner-icon="mdi-email"
+          autocomplete="email"
+          id="email"
+          name="email"
+          type="email"
           @keydown.enter="signin"
         ></v-text-field>
         <v-text-field
@@ -124,6 +128,9 @@ export default {
           @click:append="showPassword = !showPassword"
           :rules="[rules.required]"
           prepend-inner-icon="mdi-lock"
+          autocomplete="current-password"
+          id="password"
+          name="password"
           @keydown.enter="signin"
         ></v-text-field>
       </v-form>

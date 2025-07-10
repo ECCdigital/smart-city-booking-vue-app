@@ -1,45 +1,28 @@
 <template>
   <AdminLayout class="pb-15">
-    <v-row>
+    <v-row v-if="!bookableCountCheck">
       <v-col class="col-auto">
         <v-alert
           class="custom-alert"
-          v-if="!bookableCountCheck"
           type="info"
           elevation="2"
         >
-          Sie haben die maximale Anzahl an öffentlichen Buchungsobjekten erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte Buchungsobjekte.
+          Sie haben die maximale Anzahl an öffentlichen Buchungsobjekten
+          erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr
+          benötigte Buchungsobjekte.
         </v-alert>
       </v-col>
     </v-row>
     <v-row>
       <v-col cols="12">
-        <v-select
-          class="filter-field"
-          v-model="filters"
-          :items="api.tags"
-          prepend-inner-icon="mdi-filter-variant"
-          label="Filtern"
-          hide-selected
-          no-data-text="Keine Filtermöglichkeiten gefunden"
-          multiple
-          clearable
-          chips
-          solo
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              color="secondary"
-              @click="select"
-              @click:close="remove(item)"
-            >
-              <strong>{{ item }}</strong>
-            </v-chip>
-          </template>
-        </v-select>
+        <Search
+          :items="api.locations"
+          v-model="searchResults"
+          placeholder="Veranstaltungsort suchen…"
+          :keys="searchKeys"
+          filter-key="tags"
+          :filter-options="api.tags"
+        ></Search>
       </v-col>
     </v-row>
     <v-row gutters align="stretch">
@@ -48,8 +31,8 @@
         sm="6"
         md="4"
         lg="3"
-        v-for="(location, index) in filteredLocations"
-        :key="index"
+        v-for="(location) in displayedLocations"
+        :key="location.id"
         class="mx-xs-auto d-flex flex-column"
         height="100%"
       >
@@ -94,9 +77,11 @@ import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiTagsService from "@/services/api/ApiTagsService";
 import ToastService from "@/services/ToastService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
+import Search from "@/components/commons/Search.vue";
 
 export default {
   components: {
+    Search,
     AdminLayout,
     BookableCard,
   },
@@ -108,6 +93,8 @@ export default {
       },
       filters: [],
       bookableCountCheck: true,
+      searchResults: [],
+      searchKeys: ["title", "id", "location"],
     };
   },
   computed: {
@@ -121,21 +108,8 @@ export default {
     BookablePermissionService() {
       return BookablePermissionService;
     },
-    filteredLocations() {
-      // Check if filter is set
-      if (this.filters.length > 0) {
-        return this.api.locations.filter((location) => {
-          // Check if element has tags
-          if (_.isNil(location.tags) || location.tags.length === 0) {
-            return false;
-          }
-
-          // Check if the element includes every selected chip/service
-          return this.filters.every((chip) => location.tags.includes(chip));
-        });
-      }
-
-      return this.api.locations;
+    displayedLocations() {
+      return this.searchResults;
     },
   },
   watch: {
@@ -164,7 +138,10 @@ export default {
         })
         .catch((error) => {
           this.addToast(
-            ToastService.createToast("bookable.duplicate.errors.something-wrong", "error")
+            ToastService.createToast(
+              "bookable.duplicate.errors.something-wrong",
+              "error"
+            )
           );
           console.log(error);
         });
@@ -223,7 +200,8 @@ export default {
         });
     },
     async getBookableCount() {
-      this.bookableCountCheck = await ApiBookablesService.publicBookableCountCheck();
+      this.bookableCountCheck =
+        await ApiBookablesService.publicBookableCountCheck();
     },
   },
   async mounted() {
@@ -237,9 +215,6 @@ export default {
 </script>
 
 <style scoped>
-.filter-field {
-  border-radius: 15px;
-}
 .custom-alert {
   border-radius: 15px !important;
 }

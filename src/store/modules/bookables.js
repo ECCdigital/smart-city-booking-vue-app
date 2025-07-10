@@ -1,14 +1,40 @@
 const namespaced = true;
-import uniqueId from "lodash/uniqueId";
 
 const state = {
   form: {
     id: null,
     tenantId: "",
+    parent: "",
     type: "",
     title: "",
     description: "",
+    isPublic: false,
+    imgUrl: "",
+    flags: [],
+    tags: [],
     location: "",
+
+    isBookable: false,
+    amount: 1,
+    minBookingDuration: null,
+    maxBookingDuration: null,
+    autoCommitBooking: false,
+    bookingNotes: "",
+    groupBooking: {
+      enabled: false,
+      permittedRoles: [],
+    },
+
+    isScheduleRelated: false,
+    isTimePeriodRelated: false,
+    timePeriods: [],
+    isOpeningHoursRelated: false,
+    openingHours: [],
+    isSpecialOpeningHoursRelated: false,
+    specialOpeningHours: [],
+    isLongRange: false,
+    longRangeOptions: null,
+
     priceCategories: [
       {
         priceEur: 0,
@@ -16,44 +42,41 @@ const state = {
         fixedPrice: false,
       },
     ],
-    priceType: "",
+    priceType: "per-item",
     priceValueAddedTax: 0,
-    amount: 1,
-    isScheduleRelated: false,
-    isTimePeriodRelated: false,
-    isOpeningHoursRelated: false,
-    isSpecialOpeningHoursRelated: false,
-    specialOpeningHours: [],
-    timePeriods: [],
-    openingHours: [],
-    minBookingDuration: null,
-    maxBookingDuration: null,
-    autoCommitBooking: false,
-    attachments: [
-      {
-        id: uniqueId(),
-        title: "",
-        type: "",
-        url: "",
-      },
-    ],
-    tags: [],
-    flags: [],
-    relatedBookablesIds: [],
+
+    enableCoupons: true,
+
+    permittedUsers: [],
+    permittedRoles: [],
+    freeBookingUsers: [],
+    freeBookingRoles: [],
+    relatedBookableIds: [],
     checkoutBookableIds: [],
-    isBookable: false,
-    isPublic: false,
-    isLongRange: false,
-    longRangeOptions: null,
+
+    attachments: [],
     lockerDetails: { active: false, units: [] },
     requiredFields: [],
-    bookingNotes: "",
+    eventId: null,
+    ownerUserId: "",
   },
 };
 
 const mutations = {
   UPDATE(state, payload) {
-    state.form[payload.field] = payload.value;
+    if (payload.field.includes(".")) {
+      const fields = payload.field.split(".");
+      let obj = state.form;
+      for (let i = 0; i < fields.length - 1; i++) {
+        if (!obj[fields[i]]) {
+          obj[fields[i]] = {};
+        }
+        obj = obj[fields[i]];
+      }
+      obj[fields[fields.length - 1]] = payload.value;
+    } else {
+      state.form[payload.field] = payload.value;
+    }
   },
   RESTORE(state, payload) {
     state.form = payload;
@@ -73,10 +96,37 @@ const mutations = {
     state.form = {
       id: null,
       tenantId: "",
+      parent: "",
       type: "",
       title: "",
       description: "",
+      isPublic: false,
+      imgUrl: "",
+      flags: [],
+      tags: [],
       location: "",
+
+      isBookable: false,
+      amount: 1,
+      minBookingDuration: null,
+      maxBookingDuration: null,
+      autoCommitBooking: false,
+      bookingNotes: "",
+      groupBooking: {
+        enabled: false,
+        permittedRoles: [],
+      },
+
+      isScheduleRelated: false,
+      isTimePeriodRelated: false,
+      timePeriods: [],
+      isOpeningHoursRelated: false,
+      openingHours: [],
+      isSpecialOpeningHoursRelated: false,
+      specialOpeningHours: [],
+      isLongRange: false,
+      longRangeOptions: null,
+
       priceCategories: [
         {
           priceEur: 0,
@@ -84,37 +134,23 @@ const mutations = {
           fixedPrice: false,
         },
       ],
-      priceType: "",
+      priceType: "per-item",
       priceValueAddedTax: 0,
-      amount: 0,
-      isScheduleRelated: false,
-      isTimePeriodRelated: false,
-      isOpeningHoursRelated: false,
-      isSpecialOpeningHoursRelated: false,
-      specialOpeningHours: [],
-      timePeriods: [],
-      openingHours: [],
-      minBookingDuration: null,
-      maxBookingDuration: null,
-      autoCommitBooking: false,
-      attachments: [
-        {
-          id: uniqueId(),
-          title: "",
-          type: "",
-          url: "",
-        },
-      ],
-      tags: [],
-      flags: [],
+
+      enableCoupons: true,
+
+      permittedUsers: [],
+      permittedRoles: [],
+      freeBookingUsers: [],
+      freeBookingRoles: [],
       relatedBookableIds: [],
       checkoutBookableIds: [],
-      isBookable: false,
-      isPublic: false,
-      isLongRange: false,
-      longRangeOptions: null,
+
+      attachments: [],
       lockerDetails: { active: false, units: [] },
       requiredFields: [],
+      eventId: null,
+      ownerUserId: "",
     };
   },
 };

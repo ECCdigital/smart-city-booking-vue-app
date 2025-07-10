@@ -9,6 +9,8 @@ import bookables from "./modules/bookables";
 import loading from "./modules/loading";
 import instance from "./modules/instance";
 import authStore from "@/store/modules/authStore";
+import theme from "./modules/theme";
+import userPreferences from "./modules/userPreferences";
 import viewedNotifications from "./modules/viewedNotifications";
 
 Vue.use(Vuex);
@@ -23,6 +25,8 @@ export default new Vuex.Store({
     loading,
     instance,
     authStore,
+    theme,
+    userPreferences,
     viewedNotifications
   },
   actions: {
@@ -35,6 +39,7 @@ export default new Vuex.Store({
       dispatch("loading/reset");
       dispatch("instance/reset");
       dispatch("authStore/reset");
+      dispatch("theme/reset");
       dispatch("viewedNotifications/reset");
     }
   }

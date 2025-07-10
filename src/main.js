@@ -49,6 +49,7 @@ new Vue({
 
   created() {
     this.initializeApp();
+    this.initializeTheme();
   },
   mounted() {
     this.loadUsersnap();
@@ -57,6 +58,7 @@ new Vue({
     ...mapActions({
       updateUser: "user/update",
       deleteUser: "user/delete",
+      initDarkMode: "theme/initDarkMode",
     }),
     initializeApp() {
       const userName = PersistenceService.getFromLocalStorage("user");
@@ -77,6 +79,12 @@ new Vue({
       script.defer = true;
       script.src = `https://widget.usersnap.com/load/${process.env.VUE_APP_USERSNAP_API_KEY}?onload=onUsersnapLoad`;
       document.getElementsByTagName("head")[0].appendChild(script);
+    },
+    initializeTheme() {
+      // Initialize dark mode from localStorage
+      this.initDarkMode().then(isDarkMode => {
+        this.$vuetify.theme.dark = isDarkMode;
+      });
     },
   },
 }).$mount("#app");

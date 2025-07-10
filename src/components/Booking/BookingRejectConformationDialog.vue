@@ -23,9 +23,7 @@
       <v-card-actions>
         <v-spacer />
         <v-col class="shrink">
-          <v-btn color="primary" :loading="inProgress" @click="onReject"
-            >Ja</v-btn
-          >
+          <v-btn color="primary" :loading="loading" @click="onReject">Ja</v-btn>
         </v-col>
         <v-col class="shrink">
           <v-btn outlined @click="closeDialog">Nein</v-btn>
@@ -36,9 +34,6 @@
 </template>
 
 <script>
-import ApiBookingService from "@/services/api/ApiBookingService";
-import { mapGetters } from "vuex";
-
 export default {
   name: "BookingDeleteConformationDialog",
   props: {
@@ -50,17 +45,17 @@ export default {
       type: Object,
       required: true,
     },
+    loading: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
-      inProgress: false,
       rejectReason: null,
     };
   },
   computed: {
-    ...mapGetters({
-      tenantId: "tenants/currentTenantId",
-    }),
     openDialog: {
       get() {
         return this.open;
@@ -72,17 +67,7 @@ export default {
       this.$emit("close");
     },
     async onReject() {
-      this.inProgress = true;
-      try {
-        await ApiBookingService.rejectBooking(
-          this.toReject.id,
-          this.tenantId,
-          this.rejectReason
-        );
-        this.closeDialog();
-      } finally {
-        this.inProgress = false;
-      }
+      this.$emit("reject-booking", this.toReject.id, this.rejectReason);
     },
   },
 };

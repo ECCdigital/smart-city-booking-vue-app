@@ -131,8 +131,15 @@
               </v-row>
               <h3 class="mt-10">E-Mail-Konfiguration</h3>
               <v-divider class="mb-5"></v-divider>
+              <v-switch
+                v-model="tenant.useInstanceMail"
+                color="primary"
+                label="Instanz E-Mail-Konfiguration verwenden"
+                class="mt-2"
+              ></v-switch>
               <MailKonfiguration
                 :mail-config="tenantMailConfig"
+                :show-validation="!tenant.useInstanceMail"
                 @update="updateMailConfig"
               />
 
@@ -733,7 +740,7 @@
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
 import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
-import { mapActions, mapGetters } from "vuex";
+import { mapActions } from "vuex";
 
 export default {
   name: "TenantEdit",

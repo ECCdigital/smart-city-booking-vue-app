@@ -33,8 +33,9 @@ export default {
         Zurück
       </v-btn>
       <v-spacer></v-spacer>
-      <v-btn color="primary" class="px-10" small @click="submit">
+      <v-btn color="primary" small @click="submit">
         Weiter
+        <v-icon right small>mdi-arrow-right</v-icon>
       </v-btn>
     </div>
 

@@ -1,13 +1,8 @@
 <template>
   <AdminLayout class="pb-15">
-    <v-row>
+    <v-row v-if="!eventCountCheck">
       <v-col class="col-auto">
-        <v-alert
-          class="custom-alert"
-          v-if="!eventCountCheck"
-          type="info"
-          elevation="2"
-        >
+        <v-alert class="custom-alert" type="info" elevation="2">
           Sie haben die maximale Anzahl an öffentlichen Events erreicht.
           Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr benötigte
           Events.
@@ -16,32 +11,14 @@
     </v-row>
     <v-row>
       <v-col>
-        <v-select
-          class="filter-field"
-          v-model="filters"
-          :items="api.tags"
-          prepend-inner-icon="mdi-filter-variant"
-          label="Filtern"
-          hide-selected
-          no-data-text="Keine Filtermöglichkeiten gefunden"
-          multiple
-          clearable
-          chips
-          solo
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              color="secondary"
-              @click="select"
-              @click:close="remove(item)"
-            >
-              <strong>{{ item }}</strong>
-            </v-chip>
-          </template>
-        </v-select>
+        <Search
+          :items="api.events"
+          v-model="searchResults"
+          placeholder="Veranstaltung suchen…"
+          :keys="searchKeys"
+          filter-key="information.tags"
+          :filter-options="api.tags"
+        ></Search>
       </v-col>
       <v-col cols="auto">
         <v-checkbox
@@ -57,8 +34,8 @@
         sm="6"
         md="4"
         lg="3"
-        v-for="(event, index) in filteredEvents.slice().reverse()"
-        :key="index"
+        v-for="(event) in displayedEvents.slice().reverse()"
+        :key="event.id"
         class="mx-xs-auto d-flex flex-column"
         height="100%"
       >
@@ -124,9 +101,11 @@ import ApiEventService from "@/services/api/ApiEventService";
 import ToastService from "@/services/ToastService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { slice } from "lodash";
+import Search from "@/components/commons/Search.vue";
 
 export default {
   components: {
+    Search,
     AdminLayout,
     EventCard,
   },
@@ -142,9 +121,14 @@ export default {
       buttonTarget: null,
       activeTarget: null,
       items: [
-        { title: "Detaillierte Event-Erstellung", to: "event-create-information" },
+        {
+          title: "Detaillierte Event-Erstellung",
+          to: "event-create-information",
+        },
         { title: "Einfache Event-Erstellung", to: "simple-event-creator" },
       ],
+      searchResults: [],
+      searchKeys: ["id", "information.name", "eventOrganizer.name"],
     };
   },
   computed: {
@@ -159,42 +143,8 @@ export default {
     BookablePermissionService() {
       return BookablePermissionService;
     },
-    filteredEvents() {
-      // Check if filter is set
-
-      return this.api.events
-        .filter((event) => {
-          // Check if element has tags
-          if (this.filters.length > 0) {
-            if (
-              _.isNil(event.information.tags) ||
-              event.information.tags.length === 0
-            ) {
-              return false;
-            }
-
-            // Check if the element includes every selected chip/service
-            return this.filters.every((chip) =>
-              event.information.tags.includes(chip)
-            );
-          }
-
-          if (
-            this.hidePastEvents === true &&
-            (_.isNil(event.information.startDate) ||
-              new Date(event.information.endDate) < new Date())
-          ) {
-            return false;
-          }
-
-          return true;
-        })
-        .sort((a, b) => {
-          return (
-            new Date(b.information.startDate) -
-            new Date(a.information.startDate)
-          );
-        });
+    displayedEvents() {
+      return this.searchResults;
     },
   },
   watch: {
@@ -213,7 +163,7 @@ export default {
     setButtonTarget(target) {
       this.buttonTarget = target;
       // Update activeTarget based on the selected item
-      this.activeTarget = this.items.findIndex(item => item.to === target.to);
+      this.activeTarget = this.items.findIndex((item) => item.to === target.to);
     },
     remove(item) {
       this.filters.splice(this.filters.indexOf(item), 1);

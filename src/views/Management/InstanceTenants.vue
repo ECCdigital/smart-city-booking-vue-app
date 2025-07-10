@@ -37,19 +37,13 @@
                   </v-btn>
                 </template>
                 <v-list>
-                  <v-list-item
-                    link
-                    @click="onOpenEditTenant(item.id)"
-                  >
+                  <v-list-item link @click="onOpenEditTenant(item.id)">
                     <v-list-item-icon>
                       <v-icon>mdi-pencil</v-icon>
                     </v-list-item-icon>
                     <v-list-item-title>Mandanten bearbeiten</v-list-item-title>
                   </v-list-item>
-                  <v-list-item
-                    link
-                    @click="onOpenDeleteDialog(item.id)"
-                  >
+                  <v-list-item link @click="onOpenDeleteDialog(item.id)">
                     <v-list-item-icon>
                       <v-icon>mdi-delete</v-icon>
                     </v-list-item-icon>
@@ -67,12 +61,26 @@
       :open="openEditDialog"
       :tenant-id="selectedTenant.id"
       @close="onCloseDialog"
-      ></TenantEditDialog>
+    ></TenantEditDialog>
     <DeleteConformationDialog
       :open="openDeleteDialog"
       :toDelete="selectedTenant"
       @close="onCloseDeleteDialog"
     />
+    <v-btn
+      v-if="allowCreate"
+      color="primary"
+      fixed
+      large
+      bottom
+      right
+      rounded
+      @click="onOpenCreateTenant()"
+      class="v-btn"
+    >
+      <v-icon>mdi-plus</v-icon> Mandanten anlegen
+    </v-btn>
+    <TenantCreate :open="openCreateDialog" @close="onCloseCreateDialog" />
   </AdminLayout>
 </template>
 
@@ -81,11 +89,12 @@ import AdminLayout from "@/layouts/Admin.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import DeleteConformationDialog from "@/components/Tenant/tenantDeleteConformationDialog";
-import Tenant from "@/entities/tenant";
 import TenantEditDialog from "@/components/Tenant/TenantEditDialog.vue";
+import TenantCreate from "@/components/Tenant/TenantCreate.vue";
 
 export default {
   components: {
+    TenantCreate,
     DeleteConformationDialog,
     AdminLayout,
     TenantEditDialog,
@@ -114,11 +123,13 @@ export default {
       openDeleteDialog: false,
       selectedTenant: {},
       tenantCountCheck: true,
+      openCreateDialog: false,
     };
   },
   computed: {
     ...mapGetters({
       loading: "loading/isLoading",
+      allowCreate: "user/allowToCreateTenants",
     }),
   },
   methods: {
@@ -126,6 +137,10 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+    async onCloseCreateDialog() {
+      this.openCreateDialog = false;
+      await this.fetchTenants();
+    },
     fetchTenants() {
       this.startLoading("fetch-tenants");
       ApiTenantService.getTenants()
@@ -164,8 +179,7 @@ export default {
       await this.getTenantCountCheck();
     },
     onOpenCreateTenant() {
-      this.selectedTenant = new Tenant();
-      this.openEditDialog = true;
+      this.openCreateDialog = true;
     },
     async getTenantCountCheck() {
       this.tenantCountCheck = await ApiTenantService.tenantCountCheck();

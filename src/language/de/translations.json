@@ -209,6 +209,78 @@
         "title": "Zeitkonflikt",
         "message": "Die Buchung konnte nicht bearbeitet werden, da es zu einem Zeitkonflikt kommt."
       }
+    },
+    "receipt": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Der Buchungsbeleg wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Der Buchungsbeleg konnte nicht erstellt werden."
+      }
+    },
+    "commit": {
+      "success": {
+        "title": "Erfolgreich freigegeben",
+        "message": "Die Buchung wurde erfolgreich freigegeben."
+      },
+      "error": {
+        "title": "Fehler beim Freigeben",
+        "message": "Die Buchung konnte nicht freigegeben werden."
+      }
+    }
+  },
+  "group-booking": {
+    "create": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Die Gruppenbuchung wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Die Gruppenbuchung konnte nicht erstellt werden."
+      }
+    },
+    "edit": {
+      "success": {
+        "title": "Erfolgreich bearbeitet",
+        "message": "Die Gruppenbuchung wurde erfolgreich bearbeitet."
+      },
+      "error": {
+        "title": "Fehler beim Bearbeiten",
+        "message": "Die Gruppenbuchung konnte nicht bearbeitet werden."
+      }
+    },
+    "commit": {
+      "success": {
+        "title": "Erfolgreich freigegeben",
+        "message": "Die Buchungen wurden erfolgreich freigegeben."
+      },
+      "error": {
+        "title": "Fehler beim Freigeben",
+        "message": "Die Buchungen konnten nicht freigegeben werden."
+      }
+    },
+    "reject": {
+      "success": {
+        "title": "Erfolgreich abgelehnt",
+        "message": "Die Buchungen wurden erfolgreich abgelehnt."
+      },
+      "error": {
+        "title": "Fehler beim Ablehnen",
+        "message": "Die Buchungen konnten nicht abgelehnt werden."
+      }
+    },
+    "receipt": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Der Buchungsbeleg wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Der Buchungsbeleg konnte nicht erstellt werden."
+      }
     }
   },
   "checkout": {

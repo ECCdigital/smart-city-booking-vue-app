@@ -7,6 +7,7 @@
       </v-btn>
       <v-spacer></v-spacer>
       <v-btn
+        v-if="showContinue"
         :disabled="isNextButtonDisabled"
         color="primary"
         small
@@ -211,6 +212,17 @@
         </v-col>
       </v-row>
 
+      <v-btn
+        v-if="showSeries"
+        outlined
+        small
+        class="mt-2"
+        :disabled="!timestampBegin || !timestampEnd"
+        @click="onGroupBooking"
+      >
+        Serie erstellen
+      </v-btn>
+
       <checkout-calendar
         v-if="leadItem.bookable && selectionType !== 'time-period'"
         :bookableId="leadItem.bookable.id"
@@ -258,6 +270,14 @@ export default {
       type: Boolean,
       default: true,
     },
+    showContinue: {
+      type: Boolean,
+      default: true,
+    },
+    showSeries: {
+      type: Boolean,
+      default: false,
+    },
   },
 
   data() {
@@ -302,17 +322,10 @@ export default {
       return minutes === m;
     },
     notifyBookingTimeSelected() {
-      if (
-        this.timeBeginModel != null &&
-        this.timeEndModel != null &&
-        this.dateBeginModel != null &&
-        this.dateEndModel != null
-      ) {
-        this.$emit("booking-time-selected", {
-          begin: this.timestampBegin,
-          end: this.timestampEnd,
-        });
-      }
+      this.$emit("booking-time-selected", {
+        begin: this.timestampBegin,
+        end: this.timestampEnd,
+      });
     },
 
     submit() {
@@ -330,6 +343,9 @@ export default {
     },
     back() {
       this.$emit("back");
+    },
+    onGroupBooking() {
+      this.$emit("group-booking");
     },
   },
 
@@ -525,6 +541,13 @@ export default {
     },
 
     selectedTimePeriod: function () {
+      if (!this.selectedTimePeriod) {
+        this.dateBeginModel = null;
+        this.timeBeginModel = null;
+        this.dateEndModel = null;
+        this.timeEndModel = null;
+        return;
+      }
       const dateBegin = new Date(this.selectedTimePeriod.timeBegin);
       const dateEnd = new Date(this.selectedTimePeriod.timeEnd);
       this.dateBeginModel = dateBegin.toISOString().split("T")[0];

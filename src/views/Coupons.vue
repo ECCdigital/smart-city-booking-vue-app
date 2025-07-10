@@ -1,19 +1,19 @@
 <template>
-  <AdminLayout>
+  <AdminLayout class="pb-15">
     <v-row gutters align="stretch" class="mb-16">
+      <v-col cols="12">
+        <Search
+          :items="api.coupons"
+          v-model="searchResults"
+          placeholder="Gutschein suchen…"
+          :keys="searchKeys"
+          :show-filters="false"
+        ></Search>
+      </v-col>
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <v-text-field
-          v-model="search"
-          label="Gutschein suchen..."
-          append-icon="mdi-magnify"
-          solo
-          clearable
-          class="search-field"
-        ></v-text-field>
         <v-data-table
           :headers="headers"
-          :items="api.coupons"
-          :search="search"
+          :items="displayedCoupons"
           :footer-props="{
             'items-per-page-all-text': 'Alle',
             'items-per-page-text': 'Gutscheine pro Seite',
@@ -120,10 +120,12 @@ import { mapActions, mapGetters } from "vuex";
 import ApiCouponService from "@/services/api/ApiCouponService";
 import CouponDeleteConformationDialog from "@/components/Coupon/CouponDeleteConformationDialog.vue";
 import CouponPermissionService from "@/services/permissions/CouponPermissionService";
+import Search from "@/components/commons/Search.vue";
 
 export default {
   name: "Coupons",
   components: {
+    Search,
     CouponDeleteConformationDialog,
     CouponEdit,
     AdminLayout,
@@ -168,6 +170,8 @@ export default {
       ],
       selectedCoupon: {},
       openDeleteDialog: false,
+      searchResults: [],
+      searchKeys: ["id", "description"],
     };
   },
   computed: {
@@ -177,6 +181,9 @@ export default {
     }),
     CouponPermissionService() {
       return CouponPermissionService;
+    },
+    displayedCoupons() {
+      return this.searchResults;
     },
   },
   watch: {

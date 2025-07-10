@@ -354,9 +354,7 @@
     </v-row>
     <v-row no-gutters align="center" justify="center">
       <v-col class="mx-xs-auto" cols="12" sm="6">
-        <p class="text-subtitle-1">
-          Einstellungen zum Schützen Ihres Accounts
-        </p>
+        <p class="text-subtitle-1">Einstellungen zum Schützen Ihres Accounts</p>
       </v-col>
     </v-row>
     <v-row no-gutters align="center" justify="center">
@@ -416,7 +414,7 @@
                         <v-icon
                           v-if="api.user?.authType === 'keycloak'"
                           color="darkgrey"
-                        >mdi-lock</v-icon
+                          >mdi-lock</v-icon
                         >
                       </v-col>
                     </v-row>
@@ -447,6 +445,9 @@
                               showPassword ? 'mdi-eye' : 'mdi-eye-off'
                             "
                             @click:append="showPassword = !showPassword"
+                            name="password"
+                            id="new-password"
+                            autocomplete="new-password"
                           >
                           </v-text-field>
                         </v-col>
@@ -459,6 +460,9 @@
                             :rules="passwordRules"
                             :type="showPassword ? 'text' : 'password'"
                             v-model="passwordRepeat"
+                            name="confirm-password"
+                            id="confirm-password"
+                            autocomplete="new-password"
                           >
                           </v-text-field>
                         </v-col>

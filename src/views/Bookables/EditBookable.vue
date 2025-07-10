@@ -152,7 +152,25 @@
       </v-col>
     </v-row>
 
-    <h3 class="mt-10 mb-4">Preis</h3>
+    <h3 class="mt-10 mb-4">Preise</h3>
+    <div class="d-flex align-center mb-4">
+      <v-tooltip bottom max-width="300" open-delay="200">
+        <template v-slot:activator="{ on, attrs }">
+          <div v-on="on" v-bind="attrs">
+            <v-switch
+              dense
+              label="Gutscheine aktivieren"
+              hide-details
+              v-model="enableCoupons"
+            ></v-switch>
+          </div>
+        </template>
+        <span>
+          Aktivieren Sie diese Option, um Gutscheine für dieses Buchungsobjekt
+          zu ermöglichen. Gutscheine können dann beim Checkout eingelöst werden.
+        </span>
+      </v-tooltip>
+    </div>
     <v-row>
       <v-col class="col-12 col-md-3">
         <v-select
@@ -171,7 +189,8 @@
           background-color="accent"
           filled
           label="Verfügbare Anzahl"
-          hide-details
+          :hint="!amount ? 'Anzahl ist unbegrenzt!' : ''"
+          :persistent-hint="!amount"
           v-model="amount"
           :suffix="priceType === 'per-square-meter' ? 'm²' : 'Stück'"
         ></v-text-field>
@@ -231,8 +250,8 @@
         <span class="text-h6">Preis-Kategorien</span>
       </v-card-subtitle>
       <v-card-text>
-        <div v-for="(price, idx) in priceCategories" :key="idx">
-          <div class="d-flex">
+        <div v-for="(priceCategory, idx) in priceCategories" :key="idx">
+          <div>
             <v-row>
               <v-col class="col-12 col-md-3">
                 <v-text-field
@@ -240,38 +259,38 @@
                   filled
                   label="Preis (netto)"
                   hide-details
-                  v-model="price.priceEur"
+                  v-model="priceCategory.priceEur"
                   suffix="Euro"
                 ></v-text-field>
               </v-col>
               <v-col class="col-6 col-md-2">
                 <v-text-field
-                  v-model="price.interval.start"
+                  v-model="priceCategory.interval.start"
                   background-color="accent"
                   filled
                   label="Gültig ab"
                   type="number"
                   :suffix="intervalSuffix"
-                  @blur="checkNull('price.interval.start')"
+                  @blur="checkNull('priceCategories.interval.start')"
                 ></v-text-field>
               </v-col>
               <v-col class="col-6 col-md-2">
                 <v-text-field
-                  v-model="price.interval.end"
+                  v-model="priceCategory.interval.end"
                   background-color="accent"
                   filled
                   label="Gültig bis"
                   type="number"
                   :suffix="intervalSuffix"
-                  @blur="checkNull('price.interval.start')"
+                  @blur="checkNull('priceCategories.interval.start')"
                 ></v-text-field>
               </v-col>
-              <v-col class="col-12 col-md-1">
+              <v-col class="col-12 col-md-2">
                 <v-tooltip top max-width="300" open-delay="400">
                   <template v-slot:activator="{ on, attrs }">
                     <div v-bind="attrs" v-on="on">
                       <v-checkbox
-                        v-model="price.fixedPrice"
+                        v-model="priceCategory.fixedPrice"
                         label="Pauschalpreis"
                       >
                       </v-checkbox>
@@ -282,16 +301,66 @@
                   </span>
                 </v-tooltip>
               </v-col>
+              <v-col class="" style="text-align: right">
+                <v-btn
+                  :disabled="idx === 0"
+                  icon
+                  @click="removePriceCategory(idx)"
+                  class="mt-4"
+                  color="error"
+                >
+                  <v-icon>mdi-delete</v-icon>
+                </v-btn>
+              </v-col>
             </v-row>
-            <v-btn
-              :disabled="idx === 0"
-              icon
-              @click="removePriceCategory(idx)"
-              class="mt-4"
-              color="error"
-            >
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
+            <v-row>
+              <v-col>
+                <v-select
+                  background-color="accent"
+                  filled
+                  label="Wochentage"
+                  hide-details
+                  v-model="priceCategory.weekdays"
+                  multiple
+                  chips
+                  :items="weekdays"
+                  item-text="name"
+                  item-value="id"
+                ></v-select>
+              </v-col>
+              <v-col>
+                <v-combobox
+                  background-color="accent"
+                  filled
+                  multiple
+                  chips
+                  clearable
+                  label="Feiertage"
+                  :items="availableHolidays"
+                  item-text="name"
+                  item-value="date"
+                  v-model="priceCategory.holidays"
+                >
+                  <template v-slot:prepend-item>
+                    <v-list-item ripple>
+                      <v-select
+                        v-model="selectedState"
+                        :items="states"
+                        item-text="text"
+                        item-value="value"
+                        dense
+                        hide-details
+                        outlined
+                        label="Bundesland"
+                        prepend-icon="mdi-filter"
+                        @change="fetchHolidays"
+                      />
+                    </v-list-item>
+                    <v-divider class="mx-2" />
+                  </template>
+                </v-combobox>
+              </v-col>
+            </v-row>
           </div>
           <v-divider
             v-if="
@@ -356,15 +425,10 @@
       :amount="amount"
     ></BookableLockingAttributes>
 
-    <v-alert
-      v-else
-      type="warning"
-      dense
-      outlined
-    >
-      Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl der verfügbaren Buchungsobjekte an.
+    <v-alert v-else type="warning" dense outlined>
+      Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl der
+      verfügbaren Buchungsobjekte an.
     </v-alert>
-
 
     <h3 class="mt-10">Individuelle Berechtigungen</h3>
 
@@ -478,17 +542,27 @@
       </v-col>
     </v-row>
 
+    <h3 class="mt-10">Serienbuchungen</h3>
+    <v-row>
+      <v-col class="col-auto">
+        <v-switch
+          dense
+          label="Serienbuchung erlauben"
+          hide-details
+          v-model="allowGroupBooking"
+        ></v-switch>
+      </v-col>
+    </v-row>
     <v-row>
       <v-col>
         <p>
-          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses
-          Objekt kostenfrei zu buchen.
+          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, die für
+          diese Objekt eine Buchungsserie erstellen dürfen
         </p>
-
         <v-combobox
-          v-model="freeBookingRoles"
+          v-model="permittedGroupBookingRoles"
           :items="availableRoles"
-          label="Rollen, die kostenfrei buchen dürfen"
+          label="Rollen, die eine Buchungsserie erstellen dürfen"
           item-text="name"
           item-value="id"
           hide-selected
@@ -507,7 +581,7 @@
               close
               color="secondary"
               @click="select"
-              @click:close="removeFreeBookingRole(item)"
+              @click:close="removeGroupBookingRole(item)"
             >
               <strong>{{
                 availableRoles.find((r) => r.id === item)?.name
@@ -532,7 +606,6 @@
           :items="checkoutBookableIds"
           :available-items="bookablesWithoutSelf"
         >
-
         </BookableCheckoutBookables>
       </v-col>
     </v-row>
@@ -719,6 +792,7 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import ChooseFile from "@/components/Files/ChooseFile.vue";
 import BookableLockingAttributes from "@/components/Bookable/BookableLockingAttributes";
 import BookableCheckoutBookables from "@/components/Bookable/BookableCheckoutBookables.vue";
+import ApiHolidaysService from "@/services/api/ApiHolidaysService";
 
 export default {
   name: "EditBookable",
@@ -831,6 +905,27 @@ export default {
       ],
       availableUsers: [],
       availableRoles: [],
+      availableHolidays: [],
+      selectedState: null,
+      states: [
+        { text: "Bundesweit", value: null },
+        { text: "Brandenburg", value: "BB" },
+        { text: "Berlin", value: "BE" },
+        { text: "Baden-Württemberg", value: "BW" },
+        { text: "Bayern", value: "BY" },
+        { text: "Hansestadt Bremen", value: "HB" },
+        { text: "Hessen", value: "HE" },
+        { text: "Hansestadt Hamburg", value: "HH" },
+        { text: "Mecklenburg Vorpommern", value: "MV" },
+        { text: "Niedersachsen", value: "NI" },
+        { text: "Nordrhein-Westfalen", value: "NW" },
+        { text: "Rheinland-Pfalz", value: "RP" },
+        { text: "Schleswig-Holstein", value: "SH" },
+        { text: "Saarland", value: "SL" },
+        { text: "Sachsen", value: "SN" },
+        { text: "Sachsen-Anhalt", value: "ST" },
+        { text: "Thüringen", value: "TH" },
+      ],
     };
   },
   watch: {
@@ -877,7 +972,8 @@ export default {
       );
     },
     addPriceCategory() {
-      const lastCategory = this.priceCategories[this.priceCategories.length - 1];
+      const lastCategory =
+        this.priceCategories[this.priceCategories.length - 1];
       this.priceCategories.push({
         priceEur: 0,
         priceValueAddedTax: 0,
@@ -929,6 +1025,7 @@ export default {
       ApiBookablesService.getBookable(bookableId)
         .then((response) => {
           const {
+            groupBooking,
             attachments,
             parent,
             amount,
@@ -949,6 +1046,7 @@ export default {
             priceCategories,
             priceType,
             priceValueAddedTax,
+            enableCoupons,
             tags,
             tenantId,
             title,
@@ -971,6 +1069,7 @@ export default {
           } = response.data;
 
           this.restoreFromApi({
+            groupBooking: groupBooking,
             id: id,
             parent: parent,
             tenantId: tenantId,
@@ -992,6 +1091,7 @@ export default {
             priceValueAddedTax: !_.isNil(priceValueAddedTax)
               ? priceValueAddedTax
               : 0,
+            enableCoupons: enableCoupons,
             amount: !_.isNil(amount) ? amount : null,
             isScheduleRelated: !_.isNil(isScheduleRelated)
               ? isScheduleRelated
@@ -1059,7 +1159,7 @@ export default {
     },
 
     async fetchRoles() {
-      await ApiRolesService.getTenantRoles().then((result) => {
+      await ApiRolesService.getTenantRoles(true).then((result) => {
         this.availableRoles = result?.data;
       });
     },
@@ -1159,6 +1259,12 @@ export default {
     removeFreeBookingUser(item) {
       this.freeBookingUsers.splice(this.freeBookingUsers.indexOf(item), 1);
     },
+    removeGroupBookingRole(item) {
+      this.permittedGroupBookingRoles.splice(
+        this.permittedGroupBookingRoles.indexOf(item),
+        1
+      );
+    },
     removeFreeBookingRole(item) {
       this.freeBookingRoles.splice(this.freeBookingRoles.indexOf(item), 1);
     },
@@ -1166,6 +1272,23 @@ export default {
       const bookableCountCheck =
         await ApiBookablesService.publicBookableCountCheck();
       this.allowPublic = bookableCountCheck || this.isPublic;
+    },
+    async fetchHolidays() {
+      const response = await ApiHolidaysService.getHolidays(
+        "DE",
+        this.selectedState
+      );
+      this.availableHolidays = response.data
+        .map((holiday) =>
+          holiday.type === "public"
+            ? {
+                name: holiday.name,
+                countryCode: "DE",
+                stateCode: this.selectedState,
+              }
+            : null
+        )
+        .filter(Boolean);
     },
   },
   computed: {
@@ -1252,6 +1375,14 @@ export default {
         this.updateValue({ field: "location", value: value });
       },
     },
+    enableCoupons: {
+      get() {
+        return this.$store.state.bookables.form.enableCoupons;
+      },
+      set(value) {
+        this.updateValue({ field: "enableCoupons", value: value });
+      },
+    },
     priceCategories: {
       get() {
         return this.$store.state.bookables.form.priceCategories;
@@ -1281,9 +1412,9 @@ export default {
         return this.$store.state.bookables.form.amount;
       },
       set(value) {
-        if(value === "" || value === undefined) {
-          value = null
-        } else if(value !== null) {
+        if (value === "" || value === undefined) {
+          value = null;
+        } else if (value !== null) {
           value = parseInt(value);
         }
         this.updateValue({ field: "amount", value: value });
@@ -1409,6 +1540,25 @@ export default {
         this.updateValue({ field: "checkoutBookableIds", value: value });
       },
     },
+    allowGroupBooking: {
+      get() {
+        return this.$store.state.bookables.form.groupBooking.enabled;
+      },
+      set(value) {
+        this.updateValue({ field: "groupBooking.enabled", value: value });
+      },
+    },
+    permittedGroupBookingRoles: {
+      get() {
+        return this.$store.state.bookables.form.groupBooking.permittedRoles;
+      },
+      set(value) {
+        this.updateValue({
+          field: "groupBooking.permittedRoles",
+          value: value,
+        });
+      },
+    },
     commentRequired: {
       get() {
         return this.$store.state.bookables.form.requiredFields?.includes(
@@ -1495,6 +1645,7 @@ export default {
     this.initialize();
     this.allowSetPublic();
     this.setUseGraduatedPrices();
+    this.fetchHolidays();
   },
 };
 </script>
