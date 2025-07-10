@@ -200,7 +200,7 @@
       </v-row>
       <v-row>
         <v-col>
-          <v-expansion-panels flat multiple>
+          <v-expansion-panels flat multiple v-if="apps.giroCockpit">
             <v-expansion-panel>
               <v-expansion-panel-header
                 color="accent"
@@ -215,20 +215,22 @@
                     <v-col class="col-2">
                       <v-fade-transition leave-absolute>
                         <div v-if="!open">
-                          <v-icon v-if="giroCockpitApp.active" color="success"
+                          <v-icon
+                            v-if="apps.giroCockpit?.active"
+                            color="success"
                             >mdi-check</v-icon
                           >
-                          <span v-if="giroCockpitApp.active" class="ml-2"
+                          <span v-if="apps.giroCockpit?.active" class="ml-2"
                             >Aktiv</span
                           >
 
                           <v-icon
-                            v-if="giroCockpitApp.active === false"
+                            v-if="apps.giroCockpit?.active === false"
                             color="error"
                             >mdi-close</v-icon
                           >
                           <span
-                            v-if="giroCockpitApp.active === false"
+                            v-if="apps.giroCockpit?.active === false"
                             class="ml-2"
                             >Inaktiv</span
                           >
@@ -242,7 +244,7 @@
                 <v-row>
                   <v-col class="col-12">
                     <v-switch
-                      v-model="giroCockpitApp.active"
+                      v-model="apps.giroCockpit.active"
                       color="primary"
                       hide-details
                       label="S-Public Services als Zahlungsanbieter aktivieren"
@@ -257,7 +259,7 @@
                       filled
                       label="Kundennummer"
                       hide-details
-                      v-model="giroCockpitApp.paymentMerchantId"
+                      v-model="apps.giroCockpit.paymentMerchantId"
                     ></v-text-field>
                   </v-col>
                   <v-col>
@@ -265,7 +267,7 @@
                       background-color="accent"
                       filled
                       label="Projektnummer"
-                      v-model="giroCockpitApp.paymentProjectId"
+                      v-model="apps.giroCockpit.paymentProjectId"
                     ></v-text-field>
                   </v-col>
                 </v-row>
@@ -276,7 +278,7 @@
                       filled
                       dense
                       label="Schlüssel"
-                      v-model="giroCockpitApp.paymentSecret"
+                      v-model="apps.giroCockpit.paymentSecret"
                       :append-icon="
                         showPaymentSecret ? 'mdi-eye' : 'mdi-eye-off'
                       "
@@ -290,14 +292,14 @@
                       filled
                       prefix="[Buchungsnummer] - "
                       :rules="validationRules.paymentPurposeSuffix"
-                      v-model="giroCockpitApp.paymentPurposeSuffix"
+                      v-model="apps.giroCockpit.paymentPurposeSuffix"
                     ></v-text-field>
                   </v-col>
                 </v-row>
               </v-expansion-panel-content>
             </v-expansion-panel>
           </v-expansion-panels>
-          <v-expansion-panels flat multiple class="mt-8">
+          <v-expansion-panels flat multiple class="mt-8" v-if="apps.pmPayment">
             <v-expansion-panel>
               <v-expansion-panel-header
                 color="accent"
@@ -312,28 +314,28 @@
                     <v-col class="col-auto">
                       <v-fade-transition leave-absolute>
                         <div class="flex d-inline" v-if="!open">
-                          <v-icon v-if="pmPaymentApp.active" color="success"
+                          <v-icon v-if="apps.pmPayment?.active" color="success"
                             >mdi-check</v-icon
                           >
-                          <span v-if="pmPaymentApp.active" class="ml-2"
+                          <span v-if="apps.pmPayment?.active" class="ml-2"
                             >Aktiv</span
                           >
 
                           <v-icon
-                            v-if="pmPaymentApp.active === false"
+                            v-if="apps.pmPayment?.active === false"
                             color="error"
                             >mdi-close</v-icon
                           >
                           <span
-                            v-if="pmPaymentApp.active === false"
+                            v-if="apps.pmPayment?.active === false"
                             class="ml-2"
                             >Inaktiv</span
                           >
 
                           <v-icon
                             v-if="
-                              pmPaymentApp.paymentMode === 'test' &&
-                              pmPaymentApp.active
+                              apps.pmPayment.paymentMode === 'test' &&
+                              apps.pmPayment?.active
                             "
                             color="info"
                             class="ml-4"
@@ -341,8 +343,8 @@
                           >
                           <span
                             v-if="
-                              pmPaymentApp.paymentMode === 'test' &&
-                              pmPaymentApp.active
+                              apps.pmPayment.paymentMode === 'test' &&
+                              apps.pmPayment?.active
                             "
                             class="ml-2"
                             >Testmodus ist aktiv</span
@@ -357,7 +359,7 @@
                 <v-row>
                   <v-col class="col-auto">
                     <v-switch
-                      v-model="pmPaymentApp.active"
+                      v-model="apps.pmPayment.active"
                       color="primary"
                       hide-details
                       label="pmPayment als Zahlungsanbieter aktivieren"
@@ -366,7 +368,7 @@
                   </v-col>
                   <v-col>
                     <v-switch
-                      v-model="pmPaymentApp.paymentMode"
+                      v-model="apps.pmPayment.paymentMode"
                       color="primary"
                       hide-details
                       true-value="test"
@@ -383,7 +385,7 @@
                       filled
                       label="Amtlicher Gemeindeschlüssel"
                       hide-details
-                      v-model="pmPaymentApp.paymentMerchantId"
+                      v-model="apps.pmPayment.paymentMerchantId"
                     ></v-text-field>
                   </v-col>
                   <v-col>
@@ -391,7 +393,7 @@
                       background-color="accent"
                       filled
                       label="Verfahren"
-                      v-model="pmPaymentApp.paymentProjectId"
+                      v-model="apps.pmPayment.paymentProjectId"
                     ></v-text-field>
                   </v-col>
                 </v-row>
@@ -402,7 +404,7 @@
                       filled
                       dense
                       label="Salt Passwort"
-                      v-model="pmPaymentApp.paymentSecret"
+                      v-model="apps.pmPayment.paymentSecret"
                       :append-icon="
                         showPmPaymentSecret ? 'mdi-eye' : 'mdi-eye-off'
                       "
@@ -416,14 +418,14 @@
                       filled
                       prefix="[Buchungsnummer] - "
                       :rules="validationRules.paymentPurposeSuffix"
-                      v-model="pmPaymentApp.paymentPurposeSuffix"
+                      v-model="apps.pmPayment.paymentPurposeSuffix"
                     ></v-text-field>
                   </v-col>
                 </v-row>
               </v-expansion-panel-content>
             </v-expansion-panel>
           </v-expansion-panels>
-          <v-expansion-panels flat multiple class="mt-8">
+          <v-expansion-panels flat multiple class="mt-8" v-if="apps.invoice">
             <v-expansion-panel>
               <v-expansion-panel-header
                 color="accent"
@@ -438,19 +440,21 @@
                     <v-col class="col-2">
                       <v-fade-transition leave-absolute>
                         <div v-if="!open">
-                          <v-icon v-if="invoiceApp.active" color="success"
+                          <v-icon v-if="apps.invoice?.active" color="success"
                             >mdi-check</v-icon
                           >
-                          <span v-if="invoiceApp.active" class="ml-2"
+                          <span v-if="apps.invoice?.active" class="ml-2"
                             >Aktiv</span
                           >
 
                           <v-icon
-                            v-if="invoiceApp.active === false"
+                            v-if="apps.invoice?.active === false"
                             color="error"
                             >mdi-close</v-icon
                           >
-                          <span v-if="invoiceApp.active === false" class="ml-2"
+                          <span
+                            v-if="apps.invoice?.active === false"
+                            class="ml-2"
                             >Inaktiv</span
                           >
                         </div>
@@ -463,7 +467,7 @@
                 <v-row>
                   <v-col class="col-12">
                     <v-switch
-                      v-model="invoiceApp.active"
+                      v-model="apps.invoice.active"
                       color="primary"
                       hide-details
                       label="Rechnung als Zahlungsmittel aktivieren"
@@ -519,7 +523,7 @@
                       background-color="accent"
                       filled
                       label="Bank"
-                      v-model="invoiceApp.bank"
+                      v-model="apps.invoice.bank"
                     ></v-text-field>
                   </v-col>
                   <v-col>
@@ -527,7 +531,7 @@
                       background-color="accent"
                       filled
                       label="IBAN"
-                      v-model="invoiceApp.iban"
+                      v-model="apps.invoice.iban"
                     ></v-text-field>
                   </v-col>
                 </v-row>
@@ -537,7 +541,7 @@
                       background-color="accent"
                       filled
                       label="BIC"
-                      v-model="invoiceApp.bic"
+                      v-model="apps.invoice.bic"
                     ></v-text-field>
                   </v-col>
                   <v-col>
@@ -545,7 +549,7 @@
                       background-color="accent"
                       filled
                       label="Kontoinhaber"
-                      v-model="invoiceApp.accountHolder"
+                      v-model="apps.invoice.accountHolder"
                     ></v-text-field>
                   </v-col>
                 </v-row>
@@ -556,7 +560,7 @@
                       filled
                       label="Zahlungsziel in Tagen"
                       type="number"
-                      v-model="invoiceApp.daysUntilPaymentDue"
+                      v-model="apps.invoice.daysUntilPaymentDue"
                     ></v-text-field>
                   </v-col>
                 </v-row>
@@ -569,7 +573,7 @@
       <v-divider class="mb-5"></v-divider>
       <v-row>
         <v-col>
-          <v-expansion-panels flat multiple>
+          <v-expansion-panels flat multiple v-if="apps.pareva">
             <v-expansion-panel>
               <v-expansion-panel-header
                 color="accent"
@@ -584,20 +588,20 @@
                     <v-col class="col-2">
                       <v-fade-transition leave-absolute>
                         <div v-if="!open">
-                          <v-icon v-if="parevaSystem?.active" color="success"
+                          <v-icon v-if="apps.pareva?.active" color="success"
                             >mdi-check</v-icon
                           >
-                          <span v-if="parevaSystem?.active" class="ml-2"
+                          <span v-if="apps.pareva?.active" class="ml-2"
                             >Aktiv</span
                           >
 
                           <v-icon
-                            v-if="parevaSystem?.active === false"
+                            v-if="apps.pareva?.active === false"
                             color="error"
                             >mdi-close</v-icon
                           >
                           <span
-                            v-if="parevaSystem?.active === false"
+                            v-if="apps.pareva?.active === false"
                             class="ml-2"
                             >Inaktiv</span
                           >
@@ -611,7 +615,7 @@
                 <v-row>
                   <v-col class="col-12">
                     <v-switch
-                      v-model="parevaSystem.active"
+                      v-model="apps.pareva.active"
                       color="primary"
                       hide-details
                       label="Parava aktivieren"
@@ -626,7 +630,7 @@
                       filled
                       dense
                       label="Server-URL"
-                      v-model="parevaSystem.serverUrl"
+                      v-model="apps.pareva.serverUrl"
                     ></v-text-field>
                   </v-col>
                   <v-col>
@@ -635,7 +639,7 @@
                       filled
                       dense
                       label="Locker-ID"
-                      v-model="parevaSystem.lockerId"
+                      v-model="apps.pareva.lockerId"
                     ></v-text-field>
                   </v-col>
                 </v-row>
@@ -646,7 +650,7 @@
                       filled
                       dense
                       label="Benutzername"
-                      v-model="parevaSystem.user"
+                      v-model="apps.pareva.user"
                     ></v-text-field>
                   </v-col>
                   <v-col>
@@ -655,7 +659,7 @@
                       filled
                       dense
                       label="Passwort"
-                      v-model="parevaSystem.password"
+                      v-model="apps.pareva.password"
                       :append-icon="
                         showParevaPassword ? 'mdi-eye' : 'mdi-eye-off'
                       "
@@ -925,36 +929,50 @@ export default {
             "Ungültige URL.",
         ],
       },
-      giroCockpitApp: {
-        type: "payment",
-        id: "giroCockpit",
-        title: "Online-Zahlung",
-        paymentMerchantId: "",
-        paymentProjectId: "",
-        paymentSecret: "",
-        active: false,
+      defaultApps: {
+        giroCockpit: {
+          type: "payment",
+          id: "giroCockpit",
+          title: "S-Public Services",
+          paymentMerchantId: "",
+          paymentProjectId: "",
+          paymentSecret: "",
+          paymentPurposeSuffix: "",
+          active: false,
+        },
+        pmPayment: {
+          type: "payment",
+          id: "pmPayment",
+          title: "pmPayment",
+          paymentMerchantId: "",
+          paymentProjectId: "",
+          paymentSecret: "",
+          paymentMode: "",
+          active: false,
+        },
+        invoice: {
+          type: "payment",
+          id: "invoice",
+          title: "Rechnung",
+          bank: "",
+          iban: "",
+          bic: "",
+          accountHolder: "",
+          daysUntilPaymentDue: null,
+          active: false,
+        },
+        pareva: {
+          type: "locker",
+          id: "pareva",
+          title: "Pareva",
+          serverUrl: "",
+          lockerId: "",
+          user: "",
+          password: "",
+          active: false,
+        },
       },
-      pmPaymentApp: {
-        type: "payment",
-        id: "pmPayment",
-        title: "pmPayment",
-        paymentMerchantId: "",
-        paymentProjectId: "",
-        paymentSecret: "",
-        paymentMode: "",
-        active: false,
-      },
-      invoiceApp: {
-        type: "payment",
-        id: "invoice",
-        title: "Rechnung",
-        bank: "",
-        iban: "",
-        bic: "",
-        accountHolder: "",
-        daysUntilPaymentDue: null,
-        active: false,
-      },
+      apps: {},
       workflow: {
         active: false,
         defaultState: "",
@@ -985,13 +1003,6 @@ export default {
         };
       },
     },
-    parevaSystem: {
-      get() {
-        return (
-          this.tenant.applications?.find((app) => app.id === "pareva") || {}
-        );
-      },
-    },
     eventCreationMode: {
       get() {
         const mode = this.tenant.defaultEventCreationMode;
@@ -1015,9 +1026,7 @@ export default {
     },
     async tenant(val) {
       if (val) {
-        this.initializeGiroCockpit();
-        this.initializeInvoiceApp();
-        this.initializePmPayment();
+        this.initializeApps();
         this.originTenantId = val.id;
         await this.fetchWorkflow();
       }
@@ -1053,7 +1062,7 @@ export default {
     },
     async submitChanges() {
       if (this.$refs.form.validate()) {
-        this.replacePaymentApps();
+        this.replaceApps();
         this.inProgress = true;
 
         try {
@@ -1088,94 +1097,23 @@ export default {
         }, 4000);
       }
     },
-    initializeGiroCockpit() {
-      const application = this.tenant.applications?.find(
-        (app) => app.id === "giroCockpit"
-      );
-      if (application) {
-        this.giroCockpitApp = application;
-      } else {
-        this.giroCockpitApp = {
-          type: "payment",
-          id: "giroCockpit",
-          title: "Online-Zahlung",
-          paymentMerchantId: "",
-          paymentProjectId: "",
-          paymentSecret: "",
-          active: false,
-        };
-      }
-    },
-    initializePmPayment() {
-      const application = this.tenant.applications?.find(
-        (app) => app.id === "pmPayment"
-      );
-      if (application) {
-        this.pmPaymentApp = application;
-      } else {
-        this.pmPaymentApp = {
-          type: "payment",
-          id: "pmPayment",
-          title: "pmPayment",
-          paymentMerchantId: "",
-          paymentProjectId: "",
-          paymentSecret: "",
-          paymentMode: "",
-          active: false,
-        };
-      }
-    },
+    initializeApps() {
+      const existing = this.tenant.applications || [];
 
-    initializeInvoiceApp() {
-      const application = this.tenant.applications?.find(
-        (app) => app.id === "invoice"
-      );
-      if (application) {
-        this.invoiceApp = application;
-      } else {
-        this.invoiceApp = {
-          type: "payment",
-          id: "invoice",
-          title: "Rechnung",
-          bank: "",
-          iban: "",
-          bic: "",
-          accountHolder: "",
-          daysUntilPaymentDue: null,
-          active: false,
-        };
-      }
-    },
-
-    replacePaymentApps() {
-      const appIds = this.tenant.applications.map((app) => app.id);
-      const invoiceAppExists = appIds.includes("invoice");
-      const giroCockpitAppExists = appIds.includes("giroCockpit");
-      const pmPaymentAppExists = appIds.includes("pmPayment");
-
-      this.tenant.applications = this.tenant.applications.map((app) => {
-        if (app.id === "invoice") {
-          return this.invoiceApp;
-        } else if (app.id === "giroCockpit") {
-          return this.giroCockpitApp;
-        } else if (app.id === "pmPayment") {
-          return this.pmPaymentApp;
+      Object.keys(this.defaultApps).forEach((appId) => {
+        const found = existing.find((a) => a.id === appId);
+        if (found) {
+          this.$set(this.apps, appId, { ...found });
         } else {
-          return app;
+          this.$set(this.apps, appId, { ...this.defaultApps[appId] });
         }
       });
+    },
 
-      if (!invoiceAppExists) {
-        this.tenant.applications.push(this.invoiceApp);
-      }
-
-      if (!giroCockpitAppExists) {
-        this.tenant.applications.push(this.giroCockpitApp);
-      }
-
-      if (!pmPaymentAppExists) {
-        this.tenant.applications.push(this.pmPaymentApp);
-      }
+    replaceApps() {
+      this.tenant.applications = Object.values(this.apps).map((app) => {
+        return { ...app };
+      });
     },
 
     async fetchWorkflow() {
@@ -1243,9 +1181,7 @@ export default {
   },
   async mounted() {
     await this.fetchTenant();
-    this.initializeGiroCockpit();
-    this.initializeInvoiceApp();
-    this.initializePmPayment();
+    this.initializeApps();
     await this.fetchWorkflow();
   },
 };

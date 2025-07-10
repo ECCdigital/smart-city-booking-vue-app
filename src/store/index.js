@@ -11,6 +11,7 @@ import instance from "./modules/instance";
 import authStore from "@/store/modules/authStore";
 import theme from "./modules/theme";
 import userPreferences from "./modules/userPreferences";
+import viewedNotifications from "./modules/viewedNotifications";
 
 Vue.use(Vuex);
 
@@ -25,7 +26,8 @@ export default new Vuex.Store({
     instance,
     authStore,
     theme,
-    userPreferences
+    userPreferences,
+    viewedNotifications
   },
   actions: {
     reset({ dispatch }) {
@@ -38,6 +40,7 @@ export default new Vuex.Store({
       dispatch("instance/reset");
       dispatch("authStore/reset");
       dispatch("theme/reset");
+      dispatch("viewedNotifications/reset");
     }
   }
 });
