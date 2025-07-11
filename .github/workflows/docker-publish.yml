@@ -30,8 +30,6 @@ jobs:
   build:
     runs-on:
       - ${{ github.event.inputs.runner_type }}
-      - linux
-      - x64
     permissions:
       contents: read
       packages: write
