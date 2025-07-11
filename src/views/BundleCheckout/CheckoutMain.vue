@@ -672,6 +672,8 @@ export default {
             timeBegin: this.timeBegin,
             timeEnd: this.timeEnd,
             amount: this.leadItem.amount,
+            "show-series": this.allowSeries,
+            "show-back": false,
           };
 
           currentStep.props["show-back"] = !(!this.loginRequired && this.bookingPermission);
