@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       runner_type:
-        description: 'Which runner to use for the build?'
+        description: 'Runner-Typ'
         required: true
         type: choice
         options:
@@ -28,11 +28,8 @@ env:
 
 jobs:
   build:
-
     runs-on:
-      - ${{ github.event_name == 'workflow_dispatch'
-          ? github.event.inputs.runner_type
-          : 'self-hosted' } }
+      - ${{ github.event.inputs.runner_type }}
       - linux
       - x64
     permissions:
