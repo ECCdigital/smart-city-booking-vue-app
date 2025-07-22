@@ -52,7 +52,6 @@
           class="accent elevation-1"
           fixed-header
           :search="search"
-          :custom-filter="customFilter"
           :loading="loading"
           loading-text="Daten werden geladen..."
         >
@@ -226,25 +225,6 @@ export default {
       stopLoading: "loading/stop",
       addToast: "toasts/add",
     }),
-
-    customFilter(value, search) {
-      if (value?.toString().toLowerCase().includes(search.toLowerCase())) {
-        return true;
-      } else if (typeof value === "object" && value?.length > 0) {
-        const roleIds = this.api.roles.map((role) => role.id);
-        for (const key in value) {
-          if (roleIds.includes(value[key])) {
-            if (
-              this.getRoleName(value[key])
-                .toLowerCase()
-                .includes(search.toLowerCase())
-            ) {
-              return true;
-            }
-          }
-        }
-      }
-    },
 
     editUserRoles(userId) {
       this.selectedUser = this.api.users.find((user) => user.userId === userId);
