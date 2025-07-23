@@ -129,7 +129,7 @@
         <v-list dense>
           <v-list-item
             link
-            :href="eventBookingsDownloadLink(item.id, item.tenant)"
+            :href="eventBookingsDownloadLink(item.id, item.tenantId)"
             target="_blank"
             :disabled="!BookablePermissionService.allowUpdate(item)"
           >
