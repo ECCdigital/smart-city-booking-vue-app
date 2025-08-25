@@ -512,9 +512,9 @@ export default {
     },
 
     async handlePaymentOutcome(paymentResponse) {
-      const finalBooking = paymentResponse.data.booking;
+      const finalBooking = paymentResponse.data.bookings[0];
 
-      if (finalBooking.totalPrice <= 0 || !finalBooking.isCommitted) {
+      if (finalBooking?.totalPrice <= 0 || !finalBooking?.isCommitted) {
         await this.routeToStatus(finalBooking);
         return;
       }
