@@ -2,27 +2,21 @@ import store from "@/store";
 export default {
   getBookables(tenant, populate) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/bookables?populate=${populate}`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(`api/${t}/bookables?populate=${populate}`);
   },
   getPublicBookables(tenant, populate) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/bookables/public?populate=${populate}`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(`api/${t}/bookables/public?populate=${populate}`);
   },
   getBookable(id, tenant, populate) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/bookables/${id}?populate=${populate}`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(`api/${t}/bookables/${id}?populate=${populate}`);
   },
   getPublicBookable(id, tenant, populate) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/bookables/public/${id}?populate=${populate}`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(
+      `api/${t}/bookables/public/${id}?populate=${populate}`
+    );
   },
   createOrUpdateBookable(tenant) {
     const bookablesForm = store.getters["bookables/form"];
@@ -50,25 +44,17 @@ export default {
       (item) => item.date !== null
     );
 
-    return ApiClient.put(`api/${t}/bookables`, formData, {
-      withCredentials: true,
-    });
+    return ApiClient.put(`api/${t}/bookables`, formData);
   },
   deleteBookable(bookableId) {
     return ApiClient.delete(
-      `api/${store.getters["tenants/currentTenantId"]}/bookables/${bookableId}`,
-      {
-        withCredentials: true,
-      }
+      `api/${store.getters["tenants/currentTenantId"]}/bookables/${bookableId}`
     );
   },
   duplicateBookable(bookableId) {
     return new Promise((resolve, reject) => {
       ApiClient.get(
-        `api/${store.getters["tenants/currentTenantId"]}/bookables/${bookableId}`,
-        {
-          withCredentials: true,
-        }
+        `api/${store.getters["tenants/currentTenantId"]}/bookables/${bookableId}`
       )
         .then((getBookingResponse) => {
           const bookable = Object.assign(new Object(), getBookingResponse.data);
@@ -81,10 +67,7 @@ export default {
           if (bookable) {
             ApiClient.put(
               `api/${store.getters["tenants/currentTenantId"]}/bookables`,
-              bookable,
-              {
-                withCredentials: true,
-              }
+              bookable
             )
               .then((putBookingResponse) => {
                 resolve(putBookingResponse);
@@ -101,24 +84,15 @@ export default {
   },
   getRelatedOpeningHours(bookableId, tenantId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/bookables/${bookableId}/openingHours`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(`api/${t}/bookables/${bookableId}/openingHours`);
   },
   getBookableAvailability(bookableId, tenantId, startDate, endDate, amount) {
     return ApiClient.get(
-      `api/${tenantId}/bookables/${bookableId}/availability?startDate=${startDate}&endDate=${endDate}&amount=${amount}`,
-      {
-        withCredentials: true,
-      }
+      `api/${tenantId}/bookables/${bookableId}/availability?startDate=${startDate}&endDate=${endDate}&amount=${amount}`
     );
   },
   async publicBookableCountCheck(tenantId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return (
-      await ApiClient.get(`api/${t}/bookables/count/check`, {
-        withCredentials: true,
-      })
-    ).data;
+    return (await ApiClient.get(`api/${t}/bookables/count/check`)).data;
   },
 };

@@ -74,6 +74,7 @@ export default {
       updateNextUrl: "authStore/setNextUrl",
     }),
     signedIn() {
+      console.log("signed in");
       this.$router.push("/admin/dashboard");
     },
     sso() {

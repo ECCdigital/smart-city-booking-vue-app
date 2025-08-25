@@ -22,7 +22,8 @@ export default {
   computed: {
     lockerDetails: {
       get() {
-        return this.$store.state.bookables.form.lockerDetails;
+        const details = this.$store.state.bookables.form.lockerDetails;
+        return details || { active: false, units: [] };
       },
       set(value) {
         this.updateValue({ key: "lockerDetails", value });
@@ -67,6 +68,8 @@ export default {
 
 <template>
   <div>
+    {{ lockerDetails }}
+    {{this.$store.state.bookables.form}}
     <v-row>
       <v-col>
         <v-expansion-panels flat multiple>

@@ -845,6 +845,9 @@
           </v-expansion-panels>
         </v-col>
       </v-row>
+      <h3 class="mb-5 mt-5">Katalog</h3>
+      <v-divider class="mb-5"></v-divider>
+      <CatalogSettings :catalog.sync="catalog" :allow-type-change="false" />
     </v-form>
 
     <div class="flex mt-12">
@@ -888,10 +891,13 @@ import { v4 as uuidv4 } from "uuid";
 import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
 import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
 import TenantEditWorkflowStatusDialog from "@/components/Tenant/TenantEditWorkflowStatusDialog.vue";
+import ApiCatalogService from "@/services/api/ApiCatalogService";
+import CatalogSettings from "@/components/Catalog/CatalogSettings.vue";
 
 export default {
   name: "TenantEdit",
   components: {
+    CatalogSettings,
     TenantEditWorkflowStatusDialog,
     MailKonfiguration,
     InvoiceTemplateDialog,
@@ -979,6 +985,16 @@ export default {
         states: [],
       },
       tenant: {},
+      catalog: {},
+      defaultCatalog: {
+        type: "single",
+        tenantId: "",
+        tenantIds: [],
+        slug: "",
+        name: "",
+        active: false,
+        visibility: "public",
+      },
     };
   },
   computed: {
@@ -1022,6 +1038,7 @@ export default {
       if (val) {
         this.tenant = {};
         await this.fetchTenant();
+        await this.fetchCatalog();
       }
     },
     async tenant(val) {
@@ -1041,6 +1058,19 @@ export default {
         this.tenant = response.data;
       } catch (e) {
         console.error(e);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async fetchCatalog() {
+      try {
+        this.isLoading = true;
+        const response = await ApiCatalogService.getCatalog(this.tenantId);
+        this.catalog = response.data;
+      } catch (e) {
+        if (e.response && e.response.status === 404) {
+          this.catalog = { ...this.defaultCatalog, tenantId: this.tenantId };
+        }
       } finally {
         this.isLoading = false;
       }
@@ -1067,6 +1097,21 @@ export default {
 
         try {
           await ApiTenantService.submitTenant(this.tenant);
+
+          const removeTenantID = (obj) => {
+            const { tenantId, ...rest } = obj;
+            return rest;
+          };
+
+          const catalogWithoutTenantID = removeTenantID(this.catalog);
+          const defaultCatalogWithoutTenantID = removeTenantID(this.defaultCatalog);
+          const areEqual =
+            JSON.stringify(catalogWithoutTenantID) ===
+            JSON.stringify(defaultCatalogWithoutTenantID);
+          if (!areEqual) {
+            await ApiCatalogService.updateCatalog(this.tenant.id, this.catalog);
+          }
+
           if (this.workflow.id) {
             this.workflow = await ApiWorkflowService.updateWorkflow(
               this.workflow,
@@ -1183,6 +1228,7 @@ export default {
     await this.fetchTenant();
     this.initializeApps();
     await this.fetchWorkflow();
+    await this.fetchCatalog();
   },
 };
 </script>

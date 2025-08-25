@@ -3,28 +3,20 @@ export default {
   getBookings(tenant, populate) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const p = populate || false;
-    return ApiClient.get(`api/${t}/bookings?populate=${p}`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(`api/${t}/bookings?populate=${p}`);
   },
   getBooking(id, tenant, populate) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const p = populate || false;
-    return ApiClient.get(`api/${t}/bookings/${id}?populate=${p}`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(`api/${t}/bookings/${id}?populate=${p}`);
   },
   getPublicBookings(tenant) {
     var t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/bookings?public=true`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(`api/${t}/bookings?public=true`);
   },
   getBookingStatus(id, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/bookings/${id}/status`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(`api/${t}/bookings/${id}/status`);
   },
   getRelatedBookings(
     bookableId,
@@ -40,18 +32,14 @@ export default {
 
     //TODO: check if typo-correction interferes anywhere
     return ApiClient.get(
-      `api/${t}/bookables/${bookableId}/bookings?related=${irb}&parent=${ipb}&public=${po}`,
-      { withCredentials: true }
+      `api/${t}/bookables/${bookableId}/bookings?related=${irb}&parent=${ipb}&public=${po}`
     );
   },
   storeBooking(booking) {
     const cleansedBooking = Object.assign(new Object(), booking);
     return ApiClient.put(
       `api/${store.getters["tenants/currentTenantId"]}/bookings`,
-      cleansedBooking,
-      {
-        withCredentials: true,
-      }
+      cleansedBooking
     );
   },
   checkoutBooking(bookingAttempt, simulate, tenant) {
@@ -64,54 +52,33 @@ export default {
   },
   async commitBooking(id) {
     const response = await ApiClient.get(
-      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/commit`,
-      {
-        withCredentials: true,
-      }
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/commit`
     );
     return response.data;
   },
   rejectBooking(id, tenantId, reason) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(
-      `api/${t}/bookings/${id}/reject`,
-      { reason: reason },
-      {
-        withCredentials: true,
-      }
-    );
+    return ApiClient.post(`api/${t}/bookings/${id}/reject`, { reason: reason });
   },
   requestRejectBooking(id, tenantId, reason) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(
-      `api/${t}/bookings/${id}/request-reject`,
-      { reason: reason },
-      {
-        withCredentials: true,
-      }
-    );
+    return ApiClient.post(`api/${t}/bookings/${id}/request-reject`, {
+      reason: reason,
+    });
   },
   releaseBookingHook(id, tenantId, hookId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/bookings/${id}/hooks/${hookId}/release`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(`api/${t}/bookings/${id}/hooks/${hookId}/release`);
   },
   deleteBooking(booking) {
     return ApiClient.delete(
-      `api/${store.getters["tenants/currentTenantId"]}/bookings/${booking.id}`,
-      {
-        withCredentials: true,
-      }
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${booking.id}`
     );
   },
   async generateReceipt(id) {
     const response = await ApiClient.post(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/receipt`,
-      {},
-      {
-        withCredentials: true,
-      }
+      {}
     );
     return response.data;
   },
@@ -120,7 +87,6 @@ export default {
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/receipt/${receiptId}`,
       {
         responseType: "blob",
-        withCredentials: true,
       }
     );
   },
@@ -129,7 +95,6 @@ export default {
       params: {
         lastname: lastname,
       },
-      withCredentials: true,
     });
   },
   verifyBookingOwnership(tenantId, bookingId, bookingName) {
@@ -139,7 +104,6 @@ export default {
         params: {
           name: bookingName,
         },
-        withCredentials: true,
       }
     );
   },
