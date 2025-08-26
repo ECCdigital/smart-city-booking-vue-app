@@ -51,7 +51,7 @@ export default {
     }),
   },
   async mounted() {
-    await this.updateInstance(await ApiInstanceService.getInstance(true));
+    await this.updateInstance(await ApiInstanceService.getPublicInstance());
   },
 };
 </script>

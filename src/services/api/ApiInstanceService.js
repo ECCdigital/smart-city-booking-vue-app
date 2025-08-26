@@ -1,8 +1,11 @@
 class ApiInstanceService {
-  static async getInstance(publicInstance = true) {
-    const response = await ApiClient.get(
-      `api/instances?publicInstance=${publicInstance}`
-    );
+  static async getInstance() {
+    const response = await ApiClient.get("api/instances");
+    return response.data;
+  }
+
+  static async getPublicInstance() {
+    const response = await ApiClient.get("api/instances/public");
     return response.data;
   }
 

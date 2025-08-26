@@ -68,8 +68,6 @@ export default {
 
 <template>
   <div>
-    {{ lockerDetails }}
-    {{this.$store.state.bookables.form}}
     <v-row>
       <v-col>
         <v-expansion-panels flat multiple>

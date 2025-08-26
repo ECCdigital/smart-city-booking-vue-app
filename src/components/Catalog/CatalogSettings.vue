@@ -1,6 +1,36 @@
 <template>
   <div>
-    <v-row>
+    <div
+      class="d-flex justify-center"
+      v-if="!instance.enableCatalog"
+    >
+      <v-card flat height="200" width="1000px">
+        <v-snackbar
+          :timeout="-1"
+          :value="true"
+          absolute
+          color="warning"
+          text
+          max-width="1000px"
+        >
+          <div>
+            <div>
+              In dieser Instanz ist die Funktion zur Konfiguration von Katalogen
+              derzeit nicht verfügbar. Die Möglichkeit, Kataloge anzulegen oder
+              zu bearbeiten, muss auf Instanzebene aktiviert werden.
+            </div>
+            <div class="mt-4">
+              Wenn Sie Kataloge für Ihre Anwendung benötigen, wenden Sie sich
+              bitte an den zuständigen <strong>Instanz-Administrator</strong>.
+              Dieser kann die erforderlichen Einstellungen vornehmen oder Ihnen
+              weitere Informationen zum Vorgehen geben.
+            </div>
+          </div>
+        </v-snackbar>
+      </v-card>
+    </div>
+
+    <v-row class="mt-4">
       <v-col cols="6" md="3">
         <v-switch
           v-model="isActive"
@@ -9,8 +39,6 @@
           class="mt-2"
         ></v-switch>
       </v-col>
-    </v-row>
-    <v-row>
       <v-col cols="6" md="3">
         <v-select
           v-model="catalogVisibility"
@@ -21,6 +49,21 @@
           dense
         ></v-select>
       </v-col>
+    </v-row>
+    <v-row>
+      <v-col cols="6" md="3">
+        <v-text-field
+          v-model="catalogTitle"
+          label="Katalog-Titel"
+          background-color="accent"
+          filled
+          dense
+          required
+          :rules="isActive ? titleRules : []"
+          hint="max. 100 Zeichen"
+          persistent-hint
+        ></v-text-field>
+      </v-col>
       <v-col cols="6" md="3">
         <v-text-field
           v-model="catalogSlug"
@@ -29,9 +72,9 @@
           filled
           dense
           required
-          :rules="isActive? slugRules : []"
+          :rules="isActive ? slugRules : []"
           hint="3-50 Zeichen, Kleinbuchstaben"
-          prefix="example.com/catalog/"
+          :prefix="instance.catalogUrl + '/catalog/'"
           persistent-hint
           :loading="slugChecking"
           :error="slugAvailable === false"
@@ -160,6 +203,7 @@
 
 <script>
 import ApiCatalogService from "@/services/api/ApiCatalogService";
+import { mapGetters } from "vuex";
 
 export default {
   name: "CatalogSettings",
@@ -194,6 +238,10 @@ export default {
           /^[a-z0-9-]+$/.test(v) ||
           "Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten",
         this.validateSlugAvailability,
+      ],
+      titleRules: [
+        (v) => !!v || "Titel ist erforderlich",
+        (v) => v.length <= 100 || "Titel darf maximal 100 Zeichen lang sein",
       ],
       slugAvailable: null,
       slugChecking: false,
@@ -238,12 +286,24 @@ export default {
   },
 
   computed: {
+    ...mapGetters({
+      instance: "instance/instance",
+    }),
     catalogType: {
       get() {
         return this.catalog.type || "single";
       },
       set(value) {
         this.$emit("update:catalog", { ...this.catalog, type: value });
+      },
+    },
+
+    catalogTitle: {
+      get() {
+        return this.catalog.name || "";
+      },
+      set(value) {
+        this.$emit("update:catalog", { ...this.catalog, name: value });
       },
     },
 
