@@ -151,7 +151,8 @@ export default {
           (v) => /.+@.+\..+/.test(v) || "E-Mail muss gültig sein",
         ],
       },
-      search : "",
+      toRemove: null,
+      search: "",
       showEditRolesDialog: false,
       selectedUser: null,
       isLoading: false,
@@ -232,7 +233,9 @@ export default {
     },
 
     async fetchRoles() {
-      const response = await ApiRolesService.getTenantRoles(this.currentTenantId);
+      const response = await ApiRolesService.getTenantRoles(
+        this.currentTenantId
+      );
       this.api.roles = response.data;
     },
 
@@ -254,7 +257,8 @@ export default {
           userId
         );
 
-        this.tenant = response.data;
+        this.api.owner = response.owner;
+        this.api.users = response.users;
       } catch (e) {
         console.error(e);
       } finally {
