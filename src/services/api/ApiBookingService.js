@@ -97,9 +97,9 @@ export default {
       withCredentials: true,
     });
   },
-  deleteBooking(booking) {
+  deleteBooking(id) {
     return ApiClient.delete(
-      `api/${store.getters["tenants/currentTenantId"]}/bookings/${booking.id}`,
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}`,
       {
         withCredentials: true,
       }
