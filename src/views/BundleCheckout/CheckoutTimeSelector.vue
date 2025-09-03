@@ -355,7 +355,7 @@ export default {
     },
     timestampBegin() {
       if (this.dateBeginModel == null || this.timeBeginModel == null) {
-        return 0;
+        return null;
       }
       const d = new Date(this.dateBeginModel + " " + this.timeBeginModel);
       return d.getTime();
@@ -363,7 +363,7 @@ export default {
 
     timestampEnd() {
       if (this.dateEndModel == null || this.timeEndModel == null) {
-        return 0;
+        return null;
       }
       const d = new Date(this.dateEndModel + " " + this.timeEndModel);
       return d.getTime();
