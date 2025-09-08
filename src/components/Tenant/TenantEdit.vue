@@ -175,6 +175,16 @@
       </v-row>
       <v-row>
         <v-col>
+          <v-switch
+            v-model="tenant.receiptEnableBCC"
+            color="primary"
+            label="Zahlungsbeleg als Kopie an Mandanten senden"
+            class="mt-2"
+            ></v-switch>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
           <v-text-field
             background-color="accent"
             filled
