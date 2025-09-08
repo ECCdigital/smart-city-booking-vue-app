@@ -148,6 +148,26 @@
         "title": "Benutzer nicht gefunden",
         "message": "Der Benutzer konnte nicht gefunden werden. Um den angeforderten Benutzer zum Mandanten hinzuzufügen, muss dieser zuerst registriert sein"
       }
+    },
+    "addUser": {
+      "success": {
+        "title": "Benutzer hinzugefügt",
+        "message": "Der Benutzer wurde erfolgreich zum Mandanten hinzugefügt."
+      },
+      "error": {
+        "title": "Fehler beim Hinzufügen",
+        "message": "Der Benutzer konnte nicht zum Mandanten hinzugefügt werden."
+      }
+    },
+    "updateStatus": {
+      "success": {
+        "title": "Status aktualisiert",
+        "message": "Der Mandantenstatus wurde erfolgreich aktualisiert."
+      },
+      "error": {
+        "title": "Fehler beim Aktualisieren",
+        "message": "Der Mandantenstatus konnte nicht aktualisiert werden."
+      }
     }
   },
 
@@ -309,6 +329,31 @@
     "expired": {
       "title": "Sitzung abgelaufen",
       "message": "Ihre Sitzung ist abgelaufen. Bitte loggen Sie sich erneut ein."
+    }
+  },
+  "invitation": {
+    "title": "Einladung annehmen",
+    "subtitle": "Bitte melden Sie sich an, um die Einladung zu akzeptieren",
+    "login_required": "Sie müssen angemeldet sein, um die Einladung zu akzeptieren",
+    "login_button": "Anmelden",
+    "verifying": "Einladung wird überprüft...",
+    "verified": "Einladung wurde erfolgreich überprüft",
+    "accept_button": "Einladung annehmen",
+    "accepted": "Einladung wurde erfolgreich angenommen",
+    "continue_button": "Fortfahren",
+    "error": {
+      "invalid_params": "Ungültige Parameter",
+      "verification_failed": "Überprüfung der Einladung fehlgeschlagen",
+      "acceptance_failed": {
+        "title": "Fehler",
+        "message": "Annahme der Einladung fehlgeschlagen. Bitte versuchen Sie es erneut."
+      }
+    },
+    "success": {
+      "accepted": {
+        "title": "Einladung angenommen",
+        "message": "Sie haben die Einladung erfolgreich angenommen"
+      }
     }
   },
   "user": {

@@ -25,19 +25,29 @@ export default {
       withCredentials: withCredentials,
     });
   },
-  async addTenantUser(tenantId, userId, roles) {
+  verifyInvitation(tenantId, token) {
+    return ApiClient.get(`/api/${tenantId}/invitations/${token}/verify`, {
+      withCredentials: true,
+    });
+  },
+  acceptInvitation(tenantId, token) {
+    return ApiClient.post(`/api/${tenantId}/invitations/${token}/accept`, {}, {
+      withCredentials: true,
+    });
+  },
+  async addTenantUser(tenantId, userId, roles, type) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/add-user`,
-      {userId, roles},
-      {withCredentials: true}
+      { userId, roles, type },
+      { withCredentials: true }
     );
     return response.data;
   },
   async removeTenantUser(tenantId, userId) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/remove-user`,
-      {userId},
-      {withCredentials: true}
+      { userId },
+      { withCredentials: true }
     );
     return response.data;
   },
@@ -50,32 +60,32 @@ export default {
   async removeTenantUserRole(tenantId, userId, roleId) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/remove-user-role`,
-      {userId, roleId},
-      {withCredentials: true}
+      { userId, roleId },
+      { withCredentials: true }
     );
     return response.data;
   },
   async addTenantOwner(tenantId, userId) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/add-owner`,
-      {userId},
-      {withCredentials: true}
+      { userId },
+      { withCredentials: true }
     );
     return response.data;
   },
   async removeTenantOwner(tenantId, userId) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/remove-owner`,
-      {userId},
-      {withCredentials: true}
+      { userId },
+      { withCredentials: true }
     );
     return response.data;
   },
   async editTenantUserRoles(tenantId, userId, roles) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/edit-user-roles`,
-      {userId, roles},
-      {withCredentials: true}
+      { userId, roles },
+      { withCredentials: true }
     );
     return response.data;
   },
@@ -85,5 +95,13 @@ export default {
         withCredentials: true,
       })
     ).data;
+  },
+  async updateUserStatus(tenantId, userId, status) {
+    const response = await ApiClient.post(
+      `/api/tenants/${tenantId}/update-user-status`,
+      { userId, status },
+      { withCredentials: true }
+    );
+    return response.data;
   },
 };
