@@ -1,30 +1,55 @@
 <template>
-  <v-container class="text-center">
-    <v-card outlined max-width="500" class="mx-auto mt-sm-10">
+  <v-container
+    style="
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    "
+  >
+    <v-card
+      class="pa-4 rounded-sm"
+      style="overflow: hidden; width: 100%; min-width: 350px; max-width: 500px"
+    >
       <v-card-text class="text-center">
-        <v-img src="/app-logo.png" max-width="200" class="mx-auto" />
+        <v-img src="/app-logo.png" max-width="150" class="mb-4 mx-auto" />
 
-        <h2 class="mt-8 mb-2">{{ $t('invitation.title') }}</h2>
-        <p class="subtitle-2 mb-10">{{ $t('invitation.subtitle') }}</p>
+        <h2 class="mt-8 mb-2">{{ $t("invitation.title") }}</h2>
 
         <div v-if="!isLoggedIn">
-          <p>{{ $t('invitation.login_required') }}</p>
-          <v-btn color="primary" elevation="0" class="mt-4" :to="{ name: 'login', query: { next: currentPath } }">
-            {{ $t('invitation.login_button') }}
+          <p class="subtitle-2 mb-10">{{ $t("invitation.subtitle") }}</p>
+          <p>{{ $t("invitation.login_required") }}</p>
+          <v-btn
+            color="primary"
+            elevation="0"
+            block
+            class="mt-4"
+            :to="{ name: 'login', query: { next: currentPath } }"
+          >
+            {{ $t("invitation.login_button") }}
           </v-btn>
         </div>
 
         <div v-else-if="isVerifying">
-          <v-progress-circular indeterminate color="primary"></v-progress-circular>
-          <p class="mt-4">{{ $t('invitation.verifying') }}</p>
+          <v-progress-circular
+            indeterminate
+            color="primary"
+          ></v-progress-circular>
+          <p class="mt-4">{{ $t("invitation.verifying") }}</p>
         </div>
 
         <div v-else-if="isAccepted">
           <v-alert type="success">
-            {{ $t('invitation.accepted') }}
+            {{ $t("invitation.accepted") }}
           </v-alert>
-          <v-btn color="primary" elevation="0" class="mt-4" :to="{ name: 'dashboard' }">
-            {{ $t('invitation.continue_button') }}
+          <v-btn
+            color="primary"
+            elevation="0"
+            block
+            class="mt-4"
+            :to="{ name: 'dashboard' }"
+          >
+            {{ $t("invitation.continue_button") }}
           </v-btn>
         </div>
 
@@ -32,19 +57,24 @@
           <v-alert v-if="verificationError" type="error" class="mb-4">
             {{ verificationError }}
           </v-alert>
-          <v-alert v-else type="success" class="mb-4">
-            {{ $t('invitation.verified') }}
-          </v-alert>
+          <div v-else>
+            <p>
+              Sie wurden eingeladen dem Mandanten
+              <strong>{{ tenantName }}</strong> beizutreten. Wollen Sie die
+              Einladung annehmen?
+            </p>
+          </div>
 
           <v-btn
             v-if="!verificationError"
             color="primary"
             elevation="0"
+            block
             class="mt-4"
             @click="acceptInvitation"
             :loading="isAccepting"
           >
-            {{ $t('invitation.accept_button') }}
+            {{ $t("invitation.accept_button") }}
           </v-btn>
         </div>
 
@@ -57,7 +87,6 @@
 <script>
 import { mapActions, mapGetters } from "vuex";
 import ContactInformation from "@/components/ContactInformation.vue";
-import Utils from "@/utils/Utils";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ToastService from "@/services/ToastService";
 
@@ -67,6 +96,7 @@ export default {
   },
   data() {
     return {
+      tenantName: null,
       isVerifying: false,
       isVerified: false,
       isAccepting: false,
@@ -75,9 +105,6 @@ export default {
     };
   },
   computed: {
-    Utils() {
-      return Utils;
-    },
     ...mapGetters({
       instance: "instance/instance",
       user: "user/getUser",
@@ -108,12 +135,18 @@ export default {
 
       this.isVerifying = true;
       try {
-        await ApiTenantService.verifyInvitation(this.tenantId, this.token);
+        const response = await ApiTenantService.verifyInvitation(
+          this.tenantId,
+          this.token
+        );
+        this.tenantName = response.data?.tenantName;
         this.isVerified = true;
         this.verificationError = null;
       } catch (error) {
         console.error("Verification error:", error);
-        this.verificationError = error.response?.data?.message || this.$t("invitation.error.verification_failed");
+        this.verificationError =
+          error.response?.data?.message ||
+          this.$t("invitation.error.verification_failed");
         this.isVerified = true;
       } finally {
         this.isVerifying = false;
@@ -130,7 +163,10 @@ export default {
       } catch (error) {
         console.error("Acceptance error:", error);
         this.addToast(
-          ToastService.createToast("invitation.error.acceptance_failed", "error")
+          ToastService.createToast(
+            "invitation.error.acceptance_failed",
+            "error"
+          )
         );
       } finally {
         this.isAccepting = false;

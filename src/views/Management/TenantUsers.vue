@@ -2,60 +2,7 @@
   <AdminLayout>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <!-- Header mit Add User Form -->
-        <div class="mb-4 px-4 pt-3 border rounded-xl">
-          <div class="pb-2">
-            <v-icon left>mdi-account-plus</v-icon>
-            Neuen Benutzer hinzufügen
-          </div>
-          <div>
-            <v-form ref="form" v-model="valid" lazy-validation>
-              <v-row>
-                <v-col cols="12" md="5">
-                  <v-text-field
-                    outlined
-                    dense
-                    label="E-Mail Adresse"
-                    placeholder="benutzer@example.com"
-                    clearable
-                    v-model="newUserId"
-                    :rules="rules.email"
-                    prepend-inner-icon="mdi-email"
-                  />
-                </v-col>
-                <v-col cols="12" md="5">
-                  <v-select
-                    outlined
-                    dense
-                    multiple
-                    label="Rollen zuweisen"
-                    v-model="newRoleIds"
-                    :items="api.roles"
-                    item-text="name"
-                    item-value="id"
-                    clearable
-                    small-chips
-                    prepend-inner-icon="mdi-shield-account"
-                  />
-                </v-col>
-                <v-col cols="12" md="2">
-                  <v-btn
-                    color="primary"
-                    @click="addTenantUser"
-                    :loading="isLoading"
-                    block
-                  >
-                    <v-icon left>mdi-send</v-icon>
-                    Hinzufügen
-                  </v-btn>
-                </v-col>
-              </v-row>
-            </v-form>
-          </div>
-        </div>
-
         <!-- Search, Filter and View Controls -->
-
         <v-text-field
           v-model="search"
           label="Benutzer suchen..."
@@ -63,44 +10,74 @@
           solo
           clearable
           style="border-radius: 15px"
-        ></v-text-field>
+        >
+          <template v-slot:prepend-inner>
+            <v-menu bottom left>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn icon v-bind="attrs" v-on="on">
+                  <v-icon>mdi-filter-variant</v-icon>
+                </v-btn>
+              </template>
 
-        <v-row>
-          <v-col cols="12" md="2">
-            <v-select
-              v-model="statusFilter"
-              label="Status"
-              :items="statusOptions"
-              outlined
-              dense
-              clearable
-              hide-details
-            />
-          </v-col>
-          <v-col cols="12" md="2">
-            <v-select
-              v-model="roleFilter"
-              label="Rolle"
-              :items="api.roles"
-              item-text="name"
-              item-value="id"
-              outlined
-              dense
-              clearable
-              hide-details
-            />
-          </v-col>
-          <v-col cols="12" md="2">
-            <v-select
-              v-model="itemsPerPage"
-              label="Pro Seite"
-              :items="[20, 50, 100, 200]"
-              outlined
-              dense
-              hide-details
-            />
-          </v-col>
-        </v-row>
+              <v-list dense>
+                <v-subheader>Status</v-subheader>
+                <v-list-item
+                  dense
+                  v-for="(opt, i) in statusOptions"
+                  :key="i"
+                  @click="
+                    {
+                      const index = statusFilter.indexOf(opt.value);
+                      if (index > -1) {
+                        statusFilter.splice(index, 1);
+                      } else {
+                        statusFilter.push(opt.value);
+                      }
+                    }
+                  "
+                >
+                  <v-list-item-action>
+                    <v-checkbox
+                      :input-value="statusFilter.includes(opt.value)"
+                      @change.prevent
+                    />
+                  </v-list-item-action>
+                  <v-list-item-content>
+                    <v-list-item-title>{{ opt.text }}</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list>
+              <v-list dense>
+                <v-subheader>Rolle</v-subheader>
+                <v-list-item
+                  dense
+                  v-for="(opt, i) in api.roles"
+                  :key="i"
+                  @click="
+                    {
+                      const index = roleFilter.indexOf(opt.id);
+                      if (index > -1) {
+                        roleFilter.splice(index, 1);
+                      } else {
+                        roleFilter.push(opt.id);
+                      }
+                    }
+                  "
+                >
+                  <v-list-item-action>
+                    <v-checkbox
+                      :input-value="roleFilter.includes(opt.id)"
+                      @change.prevent
+                    />
+                  </v-list-item-action>
+                  <v-list-item-content>
+                    <v-list-item-title>{{ opt.name }}</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+          </template>
+        </v-text-field>
 
         <!-- Stats -->
         <v-row class="mb-3">
@@ -319,6 +296,32 @@
       </v-col>
     </v-row>
 
+    <v-btn
+      fixed
+      large
+      bottom
+      right
+      rounded
+      color="primary"
+      @click="showInviteDialog = true"
+    >
+      <v-icon class="mr-2">mdi-account-plus</v-icon>
+      Benutzer einladen
+    </v-btn>
+
+    <TenantInviteUserDialog
+      :open="showInviteDialog"
+      :roles="api.roles"
+      :members="members"
+      :invitation-links.sync="api.invitations"
+      :tenantId="tenantId"
+      @close="showInviteDialog = false"
+      @invite="inviteMultipleUsers"
+      @toast="addToast"
+      @createLink="createInvitationLink"
+      @deleteLink="deleteLink"
+    ></TenantInviteUserDialog>
+
     <TenantUserEditRoleDialog
       v-if="selectedUser"
       :user="selectedUser"
@@ -335,12 +338,15 @@ import AdminLayout from "@/layouts/Admin.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiInvitationService from "@/services/api/ApiInvitationService";
 import ToastService from "@/services/ToastService";
 import TenantUserEditRoleDialog from "@/components/Tenant/TenantUserEditRoleDialog.vue";
 import Fuse from "fuse.js";
+import TenantInviteUserDialog from "@/components/Tenant/TenantInviteUserDialog.vue";
 
 export default {
   components: {
+    TenantInviteUserDialog,
     TenantUserEditRoleDialog,
     AdminLayout,
   },
@@ -354,8 +360,8 @@ export default {
         ],
       },
       search: "",
-      statusFilter: null,
-      roleFilter: null,
+      statusFilter: [],
+      roleFilter: [],
       showEditRolesDialog: false,
       selectedUser: null,
       isLoading: false,
@@ -365,10 +371,12 @@ export default {
       viewMode: "compact",
       currentPage: 1,
       itemsPerPage: 50,
+      showInviteDialog: false,
       api: {
         users: [],
         roles: [],
         userDetails: [],
+        invitations: [],
       },
       inviteOptions: [
         { text: "Einladen (E-Mail senden)", value: "invite" },
@@ -414,13 +422,15 @@ export default {
         filtered = fuse.search(this.search).map((result) => result.item);
       }
 
-      if (this.statusFilter) {
-        filtered = filtered.filter((user) => user.status === this.statusFilter);
+      if (this.statusFilter.length > 0) {
+        filtered = filtered.filter((user) =>
+          this.statusFilter.includes(user.status)
+        );
       }
 
-      if (this.roleFilter) {
-        filtered = filtered.filter(
-          (user) => user.roles && user.roles.includes(this.roleFilter)
+      if (this.roleFilter.length > 0) {
+        filtered = filtered.filter((user) =>
+          user.roles.some((role) => this.roleFilter.includes(role))
         );
       }
 
@@ -524,6 +534,13 @@ export default {
       this.api.roles = response.data;
     },
 
+    async fetchInvitations() {
+      const response = await ApiInvitationService.getTenantInvitations(
+        this.tenantId
+      );
+      this.api.invitations = response.data;
+    },
+
     async fetchTenantUsers() {
       await this.startLoading("fetch-users");
       try {
@@ -532,6 +549,37 @@ export default {
         this.api.userDetails = response.userDetails;
       } finally {
         await this.stopLoading("fetch-users");
+      }
+    },
+
+    async inviteMultipleUsers(users) {
+      try {
+        this.isLoading = true;
+
+        for (const user of users) {
+          await ApiTenantService.addTenantUser(
+            this.tenantId,
+            user.email,
+            user.roles,
+            "invite"
+          );
+        }
+
+        const response = await ApiTenantService.getTenantUsers(this.tenantId);
+        this.api.users = response.users;
+        this.api.userDetails = response.userDetails;
+
+        await this.addToast({
+          type: "success",
+          message: `${users.length} Benutzer wurden erfolgreich eingeladen.`,
+        });
+      } catch (error) {
+        await this.addToast({
+          type: "error",
+          message: `Fehler beim Einladen der Benutzer: ${error.message}`,
+        });
+      } finally {
+        this.isLoading = false;
       }
     },
 
@@ -693,11 +741,55 @@ export default {
     getRoleById(roleId) {
       return this.api.roles.find((role) => role.id === roleId);
     },
+
+    async createInvitationLink(linkData) {
+      try {
+        this.isLoading = true;
+
+        await ApiInvitationService.createMultiUseInvitation({
+          tenantId: this.tenantId,
+          roles: linkData.roles,
+          expiresAt: linkData.expiresAt,
+          maxUses: linkData.maxUses,
+        });
+
+        await this.fetchInvitations();
+
+        await this.addToast({
+          type: "success",
+          message: "Einladungslink wurde erfolgreich erstellt",
+        });
+      } catch (error) {
+        await this.addToast({
+          type: "error",
+          message: "Fehler beim Erstellen des Einladungslinks",
+        });
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async deleteLink(linkId) {
+      try {
+        this.isLoading = true;
+        await ApiInvitationService.deleteInvitation(this.tenantId, linkId);
+        await this.fetchInvitations();
+        await this.addToast({
+          type: "success",
+          message: "Einladungslink wurde erfolgreich gelöscht",
+        });
+      } catch (error) {
+        console.error("Failed to delete invitation link:", error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
   },
 
   async created() {
     await this.fetchRoles();
     await this.fetchTenantUsers();
+    await this.fetchInvitations();
   },
 };
 </script>
@@ -738,5 +830,12 @@ export default {
 .suspended-card {
   border-left-color: #f44336;
   opacity: 0.8;
+}
+</style>
+
+<style>
+/* Make list items lighter in dark mode */
+.theme--dark .v-list-item.elevation-2 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 </style>

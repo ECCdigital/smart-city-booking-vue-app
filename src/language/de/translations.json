@@ -332,7 +332,7 @@
     }
   },
   "invitation": {
-    "title": "Einladung annehmen",
+    "title": "Einladung",
     "subtitle": "Bitte melden Sie sich an, um die Einladung zu akzeptieren",
     "login_required": "Sie müssen angemeldet sein, um die Einladung zu akzeptieren",
     "login_button": "Anmelden",
