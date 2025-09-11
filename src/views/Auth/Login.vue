@@ -76,7 +76,7 @@ export default {
     signedIn() {
       if (this.nextUrl) {
         this.$router.push(this.nextUrl);
-        this.updateNextUrl(null); // Clear the nextUrl after use
+        this.updateNextUrl(null);
       } else {
         this.$router.push("/admin/dashboard");
       }
@@ -86,7 +86,6 @@ export default {
     },
   },
   mounted() {
-    // Check if there's a next parameter in the URL
     const next = this.$route.query.next;
     if (next) {
       this.updateNextUrl(next);

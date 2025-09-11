@@ -20,5 +20,38 @@ export default {
     return ApiClient.delete(`api/${tenantId}/invitations/${token}`, {
       withCredentials: true,
     });
-  }
+  },
+  getMyInvitations() {
+    return ApiClient.get("api/invitations/my", {
+      withCredentials: true,
+    });
+  },
+  rejectInvitation(tenantId, token) {
+    return ApiClient.post(
+      `api/${tenantId}/invitations/${token}/reject`,
+      {},
+      { withCredentials: true }
+    );
+  },
+  resendInvitation(tenantId, userId) {
+    return ApiClient.post(
+      `api/${tenantId}/invitations/resend`,
+      { userId },
+      { withCredentials: true }
+    );
+  },
+  acceptInvitation(tenantId, token) {
+    return ApiClient.post(
+      `/api/${tenantId}/invitations/${token}/accept`,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
+  },
+  verifyInvitation(tenantId, token) {
+    return ApiClient.get(`/api/${tenantId}/invitations/${token}/verify`, {
+      withCredentials: true,
+    });
+  },
 };

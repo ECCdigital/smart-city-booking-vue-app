@@ -17,13 +17,14 @@ export default {
       withCredentials: true,
     });
   },
-  register(tenant, id, firstName, lastName, company, password) {
+  register(tenant, id, firstName, lastName, company, password, nextUrl = null) {
     const body = {
       id: id,
       firstName: firstName,
       lastName: lastName,
       company: company,
       password: password,
+      nextUrl: nextUrl,
     };
 
     return ApiClient.post("auth/signup", body, {

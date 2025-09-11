@@ -25,16 +25,6 @@ export default {
       withCredentials: withCredentials,
     });
   },
-  verifyInvitation(tenantId, token) {
-    return ApiClient.get(`/api/${tenantId}/invitations/${token}/verify`, {
-      withCredentials: true,
-    });
-  },
-  acceptInvitation(tenantId, token) {
-    return ApiClient.post(`/api/${tenantId}/invitations/${token}/accept`, {}, {
-      withCredentials: true,
-    });
-  },
   async addTenantUser(tenantId, userId, roles, type) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/add-user`,

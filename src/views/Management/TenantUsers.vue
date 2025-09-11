@@ -2,7 +2,6 @@
   <AdminLayout>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <!-- Search, Filter and View Controls -->
         <v-text-field
           v-model="search"
           label="Benutzer suchen..."
@@ -99,7 +98,6 @@
           </v-col>
         </v-row>
 
-        <!-- Compact List View -->
         <div v-if="viewMode === 'compact' && paginatedMembers.length > 0">
           <v-virtual-scroll
             :items="paginatedMembers"
@@ -190,7 +188,10 @@
                       </v-list-item>
 
                       <v-list-item
-                        v-if="item.status === 'pending'"
+                        v-if="
+                          item.status === 'pending' ||
+                          item.status === 'rejected'
+                        "
                         link
                         @click="resendInvite(item.userId)"
                       >
@@ -386,6 +387,7 @@ export default {
         { text: "Ausstehend", value: "pending" },
         { text: "Aktiv", value: "active" },
         { text: "Gesperrt", value: "suspended" },
+        { text: "Abgelehnt", value: "rejected" },
       ],
     };
   },
@@ -478,7 +480,8 @@ export default {
       return {
         "owner-item": user.owner,
         "pending-item": user.status === "pending",
-        "suspended-item": user.status === "suspended",
+        "suspended-item":
+          user.status === "suspended" || user.status === "rejected",
       };
     },
 
@@ -520,6 +523,7 @@ export default {
         active: "Aktiv",
         pending: "Ausstehend",
         suspended: "Gesperrt",
+        rejected: "Abgelehnt",
       };
       return texts[status] || status;
     },
@@ -621,10 +625,12 @@ export default {
     async resendInvite(userId) {
       try {
         this.isLoading = true;
-        await ApiTenantService.resendInvite(this.tenantId, userId);
+        await ApiInvitationService.resendInvitation(this.tenantId, userId);
         await this.addToast(
-          ToastService.createToast("Einladung wurde erneut gesendet", "success")
+          ToastService.createToast("invitation.resend", "success")
         );
+        await this.fetchTenantUsers();
+        await this.fetchInvitations();
       } catch (e) {
         console.error(e);
       } finally {

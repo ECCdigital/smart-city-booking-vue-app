@@ -336,23 +336,48 @@
     "subtitle": "Bitte melden Sie sich an, um die Einladung zu akzeptieren",
     "login_required": "Sie müssen angemeldet sein, um die Einladung zu akzeptieren",
     "login_button": "Anmelden",
+    "login_different_user": "Mit anderem Benutzer anmelden",
     "verifying": "Einladung wird überprüft...",
     "verified": "Einladung wurde erfolgreich überprüft",
     "accept_button": "Einladung annehmen",
-    "accepted": "Einladung wurde erfolgreich angenommen",
+    "reject_button": "Einladung ablehnen",
+    "accepted": {
+      "title": "Einladung angenommen",
+      "message": "Sie haben die Einladung erfolgreich angenommen"
+    },
+    "declined": {
+      "title": "Einladung abgelehnt",
+      "message": "Sie haben die Einladung erfolgreich abgelehnt"
+    },
+    "resend": {
+      "title": "Einladung erneut senden",
+      "message": "Die Einladung wurde erfolgreich erneut gesendet."
+    },
     "continue_button": "Fortfahren",
     "error": {
       "invalid_params": "Ungültige Parameter",
       "verification_failed": "Überprüfung der Einladung fehlgeschlagen",
+      "already_member": "Sie sind bereits Mitglied dieses Mandanten",
+      "forbidden": "Sie haben keine Berechtigung, diese Einladung anzunehmen",
+      "not_found": "Einladung nicht gefunden",
+      "expired": "Die Einladung ist abgelaufen",
       "acceptance_failed": {
         "title": "Fehler",
         "message": "Annahme der Einladung fehlgeschlagen. Bitte versuchen Sie es erneut."
+      },
+      "declining_failed": {
+        "title": "Fehler",
+        "message": "Ablehnung der Einladung fehlgeschlagen. Bitte versuchen Sie es erneut."
       }
     },
     "success": {
       "accepted": {
         "title": "Einladung angenommen",
         "message": "Sie haben die Einladung erfolgreich angenommen"
+      },
+      "rejected": {
+        "title": "Einladung abgelehnt",
+        "message": "Sie haben die Einladung erfolgreich abgelehnt"
       }
     }
   },
