@@ -124,7 +124,6 @@
             </v-list-item-icon>
             <v-list-item-title>Buchung bearbeiten</v-list-item-title>
           </v-list-item>
-          <v-divider></v-divider>
           <v-list-item
             link
             @click="commitBooking(selectedEvent.id)"
@@ -135,7 +134,19 @@
             </v-list-item-icon>
             <v-list-item-title>Buchung freigeben</v-list-item-title>
           </v-list-item>
-          <v-divider></v-divider>
+          <v-list-item
+            link
+            @click="payBooking(selectedEvent.id)"
+            :disabled="
+              !BookingPermissionService.allowUpdate(selectedEvent) ||
+              selectedEvent.isPayed
+            "
+          >
+            <v-list-item-icon>
+              <v-icon>mdi-cash-check</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>Buchung als bezahlt markieren</v-list-item-title>
+          </v-list-item>
           <v-list-item
             link
             @click="rejectBooking(selectedEvent.id)"
@@ -146,6 +157,7 @@
             </v-list-item-icon>
             <v-list-item-title>Buchung stornieren</v-list-item-title>
           </v-list-item>
+          <v-divider />
           <v-list-item
             link
             @click="onOpenDeleteDialog(selectedEvent.id)"
@@ -214,6 +226,9 @@ export default {
               color: booking.isCommitted ? booking.color : "grey",
               timed: true,
               user: booking.name,
+              isPayed: booking.isPayed,
+              isCommitted: booking.isCommitted,
+              isRejected: booking.isRejected,
             };
           }) || []
       );
@@ -273,6 +288,9 @@ export default {
           this.calendarTitle = this.$refs.calendar.title;
         }
       });
+    },
+    payBooking(bookingId) {
+      this.$emit("pay-booking", bookingId);
     },
   },
   mounted() {

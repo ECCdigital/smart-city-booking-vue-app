@@ -71,6 +71,16 @@ export default {
     );
     return response.data;
   },
+  async payBooking(id, paymentMethod) {
+    const response = await ApiClient.post(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/pay`,
+      { paymentMethod: paymentMethod },
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  },
   rejectBooking(id, tenantId, reason) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.post(
