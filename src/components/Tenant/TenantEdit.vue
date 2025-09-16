@@ -701,6 +701,14 @@
         </v-col>
       </v-row>
       <v-switch
+        v-model="tenant.notifyOnNewBooking"
+        color="primary"
+        hint="Sofern aktiviert, erhält der Mandant eine E-Mail bei jeder neuen Buchung."
+        persistent-hint
+        label="Benachrichtigung bei neuer Buchung"
+        class="mt-2"
+      ></v-switch>
+      <v-switch
         v-model="tenant.enablePublicStatusView"
         color="primary"
         hint="Sofern aktiviert, kann der Status einer Buchung öffentlich abgefragt werden."
