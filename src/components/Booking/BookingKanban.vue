@@ -50,6 +50,7 @@
         @open-booking="onOpenBooking"
         @open-edit-booking="onOpenEditBooking"
         @commit-booking="commitBooking"
+        @pay-booking="payBooking"
         @reject-booking="rejectBooking"
         @archive-task="archiveTask"
         @move-task="moveTask"
@@ -198,6 +199,9 @@ export default {
     commitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);
     },
+    payBooking(id) {
+      this.$emit("pay-booking", id);
+    },
     rejectBooking(bookingId) {
       this.$emit("reject-booking", bookingId);
     },
@@ -317,9 +321,15 @@ export default {
       );
     },
 
-    showStatusChangeConfirmation(evt, newStatusId, oldStatusId, actions, statusKey) {
+    showStatusChangeConfirmation(
+      evt,
+      newStatusId,
+      oldStatusId,
+      actions,
+      statusKey
+    ) {
       this.onChangeBookingStatus = actions
-        .map(action => action.bookingStatus)
+        .map((action) => action.bookingStatus)
         .flat();
 
       this.newStatusId = newStatusId;

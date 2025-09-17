@@ -18,11 +18,23 @@ export default {
     );
     return response.data;
   },
+  async payGroupBooking({ tenantId, id, paymentMethod }) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+
+    const response = await ApiClient.post(
+      `api/${t}/group-bookings/${id}/pay`,
+      { paymentMethod: paymentMethod },
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  },
   async rejectGroupBooking(tenantId, groupBookingId, reason) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     const response = await ApiClient.post(
       `api/${t}/group-bookings/${groupBookingId}/reject`,
-      {reason: reason},
+      { reason: reason },
       {
         withCredentials: true,
       }
@@ -45,5 +57,5 @@ export default {
       }
     );
     return response.data;
-  }
+  },
 };

@@ -229,6 +229,16 @@
         "title": "Fehler beim Freigeben",
         "message": "Die Buchung konnte nicht freigegeben werden."
       }
+    },
+    "pay": {
+      "success": {
+        "title": "Erfolgreich bezahlt",
+        "message": "Die Buchung wurde erfolgreich als bezahlt markiert."
+      },
+      "error": {
+        "title": "Fehler beim Bezahlen",
+        "message": "Die Buchung konnte nicht als bezahlt markiert werden."
+      }
     }
   },
   "group-booking": {

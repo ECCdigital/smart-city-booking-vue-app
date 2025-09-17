@@ -58,6 +58,7 @@
             @open-group-booking="onOpenGroupBooking"
             @open-edit-booking="onOpenEditBooking"
             @commit-booking="commitBooking"
+            @pay-booking="onPayBooking"
             @open-delete-dialog="onOpenDeleteDialog"
             @reject-booking="onOpenRejectDialog"
           />
@@ -71,6 +72,7 @@
           @open-booking="onOpenBooking"
           @open-edit-booking="onOpenEditBooking"
           @commit-booking="commitBooking"
+          @pay-booking="onPayBooking"
           @reject-booking="onOpenRejectDialog"
           @open-delete-dialog="onOpenDeleteDialog"
         ></BookingOverviewCalendar>
@@ -83,6 +85,7 @@
           :show-backlog="showBacklog"
           @open-booking="onOpenBooking"
           @open-edit-booking="onOpenEditBooking"
+          @pay-booking="onPayBooking"
           @commit-booking="commitBooking"
           @update:booking="fetchBooking"
         >
@@ -138,6 +141,16 @@
         ></GroupBookingDetails>
       </div>
     </v-dialog>
+    <BookingPayDialog
+      v-if="selectedBooking.id"
+      :booking-id="selectedBooking.id"
+      :open="openPayDialog"
+      :has-group-booking="!!selectedGroupBooking?.id"
+      @close="openPayDialog = false"
+      @pay-single-booking="payBooking"
+      @pay-group-booking="payGroupBooking"
+    />
+
     <GroupBookingCommitDialog
       v-if="selectedBooking.id"
       :booking-id="selectedBooking.id"
@@ -193,9 +206,11 @@ import {
   getBookingErrorMessage,
   getGroupBookingErrorMessage,
 } from "@/utils/errorMessages";
+import BookingPayDialog from "@/components/Booking/BookingPayDialog.vue";
 
 export default {
   components: {
+    BookingPayDialog,
     GroupBookingDeleteConformationDialog,
     GroupBookingRejectConformationDialog,
     GroupBookingCommitDialog,
@@ -244,6 +259,7 @@ export default {
       openCommitGroupBookingDialog: false,
       openRejectGroupBookingDialog: false,
       openDeleteGroupBookingDialog: false,
+      openPayDialog: false,
       selectedBooking: {},
       selectedGroupBooking: {},
       bookables: [],
@@ -253,6 +269,7 @@ export default {
       errors: {
         commit: null,
         reject: null,
+        pay: null,
       },
     };
   },
@@ -321,7 +338,7 @@ export default {
       this.fetchGroupBookings();
     },
     currentView(newView) {
-      this.$router.replace({ query: { view: newView } }).catch(err => {
+      this.$router.replace({ query: { view: newView } }).catch((err) => {
         if (err.name !== "NavigationDuplicated") {
           throw err;
         }
@@ -334,15 +351,12 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
-    //create customSearch to get title of bookable by id
     customSearch(value, search) {
-      // return bookables id of this.bookables if they include search string in title
       const bookableIds = this.bookables
         .filter((bookable) =>
           bookable.title.toLowerCase().includes(search.toLowerCase())
         )
         .map((bookable) => bookable.id);
-      // return value if value is one of the bookables id
       if (bookableIds.includes(value?.toString())) {
         return true;
       } else if (
@@ -350,7 +364,6 @@ export default {
       ) {
         return true;
       } else if (typeof value === "object" && value?.length > 0) {
-        // for key in value check if value[key] is one of the bookables id
         for (const key in value) {
           if (bookableIds.includes(value[key]?.toString())) {
             return true;
@@ -361,12 +374,18 @@ export default {
 
     handleGroupBookingError(action, errors) {
       const code = errors[0]?.code;
+      if(errors.length === 0) {
+        return;
+      }
       this.addToast(
         ToastService.createToast(`group-booking.${action}.error`, "error")
       );
       this.errors[action] = getGroupBookingErrorMessage(code);
     },
     handleBookingError(action, errors) {
+      if(errors.length === 0) {
+        return;
+      }
       const code = errors[0]?.code;
       this.addToast(
         ToastService.createToast(`booking.${action}.error`, "error")
@@ -509,10 +528,7 @@ export default {
             this.handleBookingError("commit", data.errors);
           } else {
             await this.addToast(
-              ToastService.createToast(
-                "booking.commit.success",
-                "success"
-              )
+              ToastService.createToast("booking.commit.success", "success")
             );
             this.errors.commit = null;
             await this.fetchBookings();
@@ -521,6 +537,69 @@ export default {
         } finally {
           await this.stopLoading("commit-booking");
         }
+      }
+    },
+    hasGroupBooking(id) {
+      return !!this.api.groupBookings.find((groupBooking) =>
+        groupBooking.bookingIds.includes(id)
+      );
+    },
+    async onPayBooking(id) {
+      this.selectedBooking = Object.assign(
+        {},
+        this.api.bookings.find((booking) => booking.id === id)
+      );
+      if(this.hasGroupBooking(id)) {
+        this.selectedGroupBooking = Object.assign(
+          {},
+          this.api.groupBookings.find((groupBooking) =>
+            groupBooking.bookingIds.includes(id)
+          )
+        );
+      } else {
+        this.selectedGroupBooking = null;
+      }
+      this.openPayDialog = true;
+    },
+    async payBooking({ id, paymentMethod }) {
+      try {
+        await this.startLoading("pay-booking");
+        const data = await ApiBookingService.payBooking(id, paymentMethod);
+
+        if (!data.success) {
+          this.handleBookingError("pay", data.errors);
+        } else {
+          await this.addToast(
+            ToastService.createToast("booking.pay.success", "success")
+          );
+          this.errors.pay = null;
+          await this.fetchBookings();
+        }
+      } finally {
+        await this.stopLoading("pay-booking");
+      }
+    },
+    async payGroupBooking(paymentMethod) {
+
+      try {
+        await this.startLoading("pay-booking");
+        const response = await ApiGroupBookingService.payGroupBooking({
+          id: this.selectedGroupBooking.id,
+          paymentMethod,
+        });
+
+        if (!response.success) {
+          this.handleGroupBookingError("pay", response.errors);
+        } else {
+          await this.addToast(
+            ToastService.createToast("group-booking.pay.success", "success")
+          );
+          this.errors.pay = null;
+          await this.fetchBookings();
+          this.openPayDialog = false;
+        }
+      } finally {
+        await this.stopLoading("pay-booking");
       }
     },
     async commitGroupBooking(id) {
@@ -789,7 +868,10 @@ export default {
     }
 
     const viewFromQuery = this.$route.query.view;
-    if (viewFromQuery && ["list", "calendar", "kanban"].includes(viewFromQuery)) {
+    if (
+      viewFromQuery &&
+      ["list", "calendar", "kanban"].includes(viewFromQuery)
+    ) {
       this.currentView = viewFromQuery;
     }
   },

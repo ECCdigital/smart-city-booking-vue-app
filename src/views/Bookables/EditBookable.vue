@@ -542,6 +542,46 @@
       </v-col>
     </v-row>
 
+    <v-row>
+      <v-col>
+        <p>
+          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses
+          Objekt kostenfrei zu buchen.
+        </p>
+
+        <v-combobox
+          v-model="freeBookingRoles"
+          :items="availableRoles"
+          label="Kostenfrei für Rollen"
+          item-text="name"
+          item-value="id"
+          hide-selected
+          no-data-text="Keine Rollen verfügbar"
+          multiple
+          background-color="accent"
+          clearable
+          chips
+          filled
+          :return-object="false"
+        >
+          <template v-slot:selection="{ attrs, item, select, selected }">
+            <v-chip
+              v-bind="attrs"
+              :input-value="selected"
+              close
+              color="secondary"
+              @click="select"
+              @click:close="removeFreeBookingRole(item)"
+            >
+              <strong>{{
+                availableRoles.find((r) => r.id === item)?.name
+              }}</strong>
+            </v-chip>
+          </template>
+        </v-combobox>
+      </v-col>
+    </v-row>
+
     <h3 class="mt-10">Serienbuchungen</h3>
     <v-row>
       <v-col class="col-auto">
