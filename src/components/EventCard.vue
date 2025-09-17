@@ -64,6 +64,34 @@
       <p class="mt-2 mb-0" v-html="item.information?.teaserText"></p>
     </v-card-subtitle>
 
+    <v-card-text class="pt-2">
+      <div class="d-flex align-center mb-1">
+        <v-icon class="pe-2" size="23">mdi-account</v-icon>
+
+        <span
+          v-if="item.attendees?.maxAttendees"
+          class="subtitle-1"
+        >
+      {{ bookedSeatsCount }} / {{ item.attendees.maxAttendees }} Plätze belegt
+    </span>
+
+        <span
+          v-else
+          class="subtitle-1"
+        >
+      {{ bookedSeatsCount }} Plätze gebucht
+    </span>
+      </div>
+
+      <v-progress-linear
+        v-if="item.attendees?.maxAttendees"
+        :value="(bookedSeatsCount / item.attendees.maxAttendees) * 100"
+        height="10"
+        color="primary"
+        rounded
+      ></v-progress-linear>
+    </v-card-text>
+
     <v-card-text
       class="font-weight-bold title pb-0"
       color="grey darken-1"
@@ -78,16 +106,6 @@
     >
       <!-- An neue Struktur anpassen, wenn klar -->
       {{ item.attendees?.priceCategories.price | currency("EUR", "de-DE") }}
-    </v-card-text>
-
-    <v-card-text
-      class="font-weight-bold title pb-0"
-      color="grey darken-1"
-      v-if="item.attendees?.maxAttendees"
-      title="Maximale Teilnehmerzahl"
-    >
-      <v-icon class="pe-2" size="23">mdi-account</v-icon>
-      <span class="subtitle-1">{{ item.attendees?.maxAttendees }}</span>
     </v-card-text>
 
     <v-card-text color="grey darken-1" v-if="item.information?.flags">
@@ -186,6 +204,7 @@ export default {
     return {
       defaultImage: require("@/assets/bookable-default.jpg"),
       isDuplicateAllowed: true,
+      seatsBooked: null,
     };
   },
   computed: {
@@ -197,6 +216,9 @@ export default {
         !this.BookablePermissionService.allowCreate() ||
         !this.isDuplicateAllowed
       );
+    },
+    bookedSeatsCount() {
+      return this.seatsBooked;
     },
   },
   methods: {
@@ -213,10 +235,19 @@ export default {
       const eventCountCheck = await ApiEventService.publicEventCountCheck();
       this.isDuplicateAllowed = eventCountCheck || !this.item.isPublic;
     },
+    async fetchBookedSeats() {
+      const result = await ApiEventService.getBookedSeatsCount(this.item.id);
+      if(result && result.bookedSeats) {
+        this.seatsBooked = result.bookedSeats;
+      } else {
+        this.seatsBooked = 0;
+      }
+    },
   },
   created() {},
-  mounted() {
-    this.setAllowDuplicate();
+  async mounted() {
+    await this.fetchBookedSeats();
+    await this.setAllowDuplicate();
   },
 };
 </script>

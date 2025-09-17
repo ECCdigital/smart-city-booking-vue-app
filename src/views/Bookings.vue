@@ -598,7 +598,6 @@ export default {
           this.errors.pay = null;
           this.openPayDialog = false;
           await this.fetchBookings();
-          this.openPayDialog = false;
         }
       } finally {
         await this.stopLoading("pay-booking");

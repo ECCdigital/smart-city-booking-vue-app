@@ -272,6 +272,16 @@
         "message": "Die Buchungen konnten nicht freigegeben werden."
       }
     },
+    "pay": {
+      "success": {
+        "title": "Erfolgreich bezahlt",
+        "message": "Die Buchungen wurden erfolgreich als bezahlt markiert."
+      },
+      "error": {
+        "title": "Fehler beim Bezahlen",
+        "message": "Die Buchungen konnten nicht als bezahlt markiert werden."
+      }
+    },
     "reject": {
       "success": {
         "title": "Erfolgreich abgelehnt",
