@@ -572,6 +572,7 @@ export default {
           await this.addToast(
             ToastService.createToast("booking.pay.success", "success")
           );
+          this.openPayDialog = false;
           this.errors.pay = null;
           await this.fetchBookings();
         }
@@ -595,6 +596,7 @@ export default {
             ToastService.createToast("group-booking.pay.success", "success")
           );
           this.errors.pay = null;
+          this.openPayDialog = false;
           await this.fetchBookings();
           this.openPayDialog = false;
         }
