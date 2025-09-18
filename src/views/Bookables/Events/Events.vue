@@ -22,9 +22,9 @@
           :sort-options="[
             { text: 'Titel', value: 'information.name' },
             { text: 'Datum', value: 'information.startDate' },
-            { text: 'Öffentlich' , value: 'isPublic' },
-            { text: 'Kostenfrei' , value: 'attendees.free' },
-            { text: 'Max. Teilnehmer' , value: 'attendees.maxAttendees' }
+            { text: 'Öffentlich', value: 'isPublic' },
+            { text: 'Kostenfrei', value: 'attendees.free' },
+            { text: 'Max. Teilnehmer', value: 'attendees.maxAttendees' },
           ]"
         ></Search>
       </v-col>
@@ -45,7 +45,7 @@
         </v-chip>
       </v-col>
       <v-col cols="auto">
-        <v-chip color="grey lighten-2"  small>
+        <v-chip color="grey lighten-2" small>
           Gesamt: {{ totalEventsCount }}
         </v-chip>
       </v-col>

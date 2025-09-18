@@ -22,8 +22,8 @@
           :sort-options="[
             { text: 'Titel', value: 'title' },
             { text: 'Erstellt', value: 'timeCreated' },
-            { text: 'Öffentlich' , value: 'isPublic' },
-            { text: 'Buchbar' , value: 'isBookable' }
+            { text: 'Öffentlich', value: 'isPublic' },
+            { text: 'Buchbar', value: 'isBookable' },
           ]"
         ></Search>
       </v-col>

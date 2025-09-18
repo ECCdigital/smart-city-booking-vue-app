@@ -22,9 +22,12 @@
           :sort-options="[
             { text: 'Titel', value: 'title' },
             { text: 'Erstellt', value: 'timeCreated' },
-            { text: 'Öffentlich' , value: 'isPublic' },
-            { text: 'Buchbar' , value: 'isBookable' },
-            { text: 'Veranstaltung' , value: '_populated.event.information.name' }
+            { text: 'Öffentlich', value: 'isPublic' },
+            { text: 'Buchbar', value: 'isBookable' },
+            {
+              text: 'Veranstaltung',
+              value: '_populated.event.information.name',
+            },
           ]"
         ></Search>
       </v-col>
@@ -35,7 +38,7 @@
         sm="6"
         md="4"
         lg="3"
-        v-for="(ticket) in displayedTickets.slice().reverse()"
+        v-for="ticket in displayedTickets.slice().reverse()"
         :key="ticket.id"
         class="mx-xs-auto d-flex flex-column"
         height="100%"

@@ -39,9 +39,7 @@
             {{ transformDate(item.validTo) }}
           </template>
           <template v-slot:item.expired="{ item }">
-            <v-chip v-if="item.expired">
-              inaktiv
-            </v-chip>
+            <v-chip v-if="item.expired"> inaktiv </v-chip>
             <v-chip v-else color="secondary" text-color="black"> aktiv </v-chip>
             <v-chip
               v-if="!hasAmount(item.maxAmount, item.usedAmount)"
@@ -187,7 +185,6 @@ export default {
         ...coupon,
         expired: this.transformExpired(coupon.validTo, coupon.validFrom),
       }));
-
     },
   },
   watch: {

@@ -88,7 +88,13 @@
               {{ opt.text }}
             </v-chip>
           </v-chip-group>
-          <v-btn-toggle v-model="sortDir" class="ml-2 sort-buttons" active-class="secondary--text" mandatory dense>
+          <v-btn-toggle
+            v-model="sortDir"
+            class="ml-2 sort-buttons"
+            active-class="secondary--text"
+            mandatory
+            dense
+          >
             <v-btn small value="asc">
               <v-icon small>mdi-arrow-up</v-icon>
             </v-btn>
@@ -204,33 +210,42 @@ export default {
           const valA = this.getNestedValue(a, this.sortBy);
           const valB = this.getNestedValue(b, this.sortBy);
 
-          // Handle strings
           if (typeof valA === "string" && typeof valB === "string") {
             return this.sortDir === "asc"
               ? valA.localeCompare(valB)
               : valB.localeCompare(valA);
           }
-          // Handle numbers
           if (typeof valA === "number" && typeof valB === "number") {
-            return this.sortDir === "asc"
-              ? valA - valB
-              : valB - valA;
+            return this.sortDir === "asc" ? valA - valB : valB - valA;
           }
-          // Handle booleans
           if (typeof valA === "boolean" && typeof valB === "boolean") {
             return this.sortDir === "asc"
-              ? (valA === valB ? 0 : valA ? 1 : -1)
-              : (valA === valB ? 0 : valA ? -1 : 1);
+              ? valA === valB
+                ? 0
+                : valA
+                  ? 1
+                  : -1
+              : valA === valB
+                ? 0
+                : valA
+                  ? -1
+                  : 1;
           }
-          // Handle Date objects or ISO date strings
-          const dateA = (valA instanceof Date) ? valA : (typeof valA === "string" && !isNaN(Date.parse(valA)) ? new Date(valA) : null);
-          const dateB = (valB instanceof Date) ? valB : (typeof valB === "string" && !isNaN(Date.parse(valB)) ? new Date(valB) : null);
+          const dateA =
+            valA instanceof Date
+              ? valA
+              : typeof valA === "string" && !isNaN(Date.parse(valA))
+                ? new Date(valA)
+                : null;
+          const dateB =
+            valB instanceof Date
+              ? valB
+              : typeof valB === "string" && !isNaN(Date.parse(valB))
+                ? new Date(valB)
+                : null;
           if (dateA && dateB) {
-            return this.sortDir === "asc"
-              ? dateA - dateB
-              : dateB - dateA;
+            return this.sortDir === "asc" ? dateA - dateB : dateB - dateA;
           }
-          // Fallback: compare as strings
           const strA = valA !== undefined && valA !== null ? String(valA) : "";
           const strB = valB !== undefined && valB !== null ? String(valB) : "";
           return this.sortDir === "asc"
