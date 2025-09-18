@@ -18,6 +18,14 @@
           :keys="searchKeys"
           filter-key="tags"
           :filter-options="api.tags"
+          :sortable="true"
+          :sort-options="[
+            { text: 'Titel', value: 'title' },
+            { text: 'Erstellt', value: 'timeCreated' },
+            { text: 'Öffentlich' , value: 'isPublic' },
+            { text: 'Buchbar' , value: 'isBookable' },
+            { text: 'Veranstaltung' , value: '_populated.event.information.name' }
+          ]"
         ></Search>
       </v-col>
     </v-row>

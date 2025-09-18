@@ -39,7 +39,7 @@
             {{ transformDate(item.validTo) }}
           </template>
           <template v-slot:item.expired="{ item }">
-            <v-chip v-if="transformExpired(item.validTo, item.validFrom)">
+            <v-chip v-if="item.expired">
               inaktiv
             </v-chip>
             <v-chip v-else color="secondary" text-color="black"> aktiv </v-chip>
@@ -183,7 +183,11 @@ export default {
       return CouponPermissionService;
     },
     displayedCoupons() {
-      return this.searchResults;
+      return this.searchResults.map((coupon) => ({
+        ...coupon,
+        expired: this.transformExpired(coupon.validTo, coupon.validFrom),
+      }));
+
     },
   },
   watch: {

@@ -18,6 +18,13 @@
           :keys="searchKeys"
           filter-key="tags"
           :filter-options="api.tags"
+          :sortable="true"
+          :sort-options="[
+            { text: 'Titel', value: 'title' },
+            { text: 'Erstellt', value: 'timeCreated' },
+            { text: 'Öffentlich' , value: 'isPublic' },
+            { text: 'Buchbar' , value: 'isBookable' }
+          ]"
         ></Search>
       </v-col>
     </v-row>
@@ -27,7 +34,7 @@
         sm="6"
         md="4"
         lg="3"
-        v-for="(resource) in displayedResources.slice().reverse()"
+        v-for="resource in displayedResources.slice().reverse()"
         :key="resource.id"
         class="mx-xs-auto d-flex flex-column"
         height="100%"
