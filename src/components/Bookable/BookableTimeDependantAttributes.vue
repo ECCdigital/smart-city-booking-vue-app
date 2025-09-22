@@ -103,10 +103,15 @@
               <template v-slot:default="{ open }">
                 <v-row no-gutters align="center">
                   <v-col cols="4">
-                    <span class="text-subtitle-1"> Feste Buchungszeiten </span>
+                    <span class="text-subtitle-1"> Feste Zeitfenster </span>
                     <br />
                     <span class="text-caption">
-                      Feste Buchungszeiten sind nicht über den Kalender buchbar.
+                      Vordefinierte, buchbare Zeitfenster (z.B. Montangs 09:00 -
+                      12:00)
+                      <br>
+                      <strong>Hinweis:</strong>
+                      Feste Buchungszeiten sind nicht über den Kalender
+                      buchbar.
                     </span>
                   </v-col>
                   <v-col class="col-2">
@@ -129,7 +134,7 @@
                     <v-fade-transition leave-absolute>
                       <v-alert type="info" dense outlined v-if="open">
                         Wenn Buchungen über den Kalender gebucht werden können,
-                        können diese nicht feste Buchungszeiten haben.
+                        können diese nicht feste Zeitfenster haben.
                       </v-alert>
                       <div v-else>
                         <v-list
@@ -164,7 +169,7 @@
                                 </v-col>
                                 <div v-else>
                                   <v-alert type="warning" dense outlined>
-                                    Keine Buchungszeiträume angegeben
+                                    Keine Zeitfenster angegeben
                                   </v-alert>
                                 </div>
                               </v-row>
@@ -308,7 +313,7 @@
                       <v-icon>mdi-delete</v-icon>
                     </v-btn>
                   </template>
-                  <span>Buchungszeit entfernen</span>
+                  <span>Zeitfenster entfernen</span>
                 </v-tooltip>
               </v-row>
               <v-row>
@@ -322,10 +327,10 @@
                         :disabled="!isTimePeriodRelated"
                         @click="addNewTimePeriod"
                       >
-                        Buchungszeit hinzufügen
+                        Zeitfenster hinzufügen
                       </v-btn>
                     </template>
-                    <span>Eine weitere Buchungszeit hinzufügen</span>
+                    <span>Eine weiteres Zeitfenster hinzufügen</span>
                   </v-tooltip>
                 </v-col>
               </v-row>
@@ -342,7 +347,7 @@
                 <v-row no-gutters align="center">
                   <v-col cols="4">
                     <span class="text-subtitle-1">
-                      Wiederkehrende Buchungszeiträume
+                      Öffungszeiten
                     </span>
                     <br />
                     <span class="text-caption">
@@ -403,7 +408,7 @@
                                 </v-col>
                                 <div v-else>
                                   <v-alert type="warning" dense outlined>
-                                    Keine Buchungszeiträume angegeben
+                                    Keine Öffungszeiten angegeben
                                   </v-alert>
                                 </div>
                               </v-row>
@@ -425,7 +430,7 @@
                 <v-col class="col-12 col-md-4">
                   <v-switch
                     dense
-                    label="Buchungsobjekt hat wiederkehrende Buchungszeiträume"
+                    label="Buchungsobjekt hat Öffungszeiten"
                     hide-details
                     v-model="isOpeningHoursRelated"
                     class="pt-3"
@@ -549,7 +554,7 @@
                       <v-icon>mdi-delete</v-icon>
                     </v-btn>
                   </template>
-                  <span>Buchungszeitraum entfernen</span>
+                  <span>Öffnungszeit entfernen</span>
                 </v-tooltip>
               </v-row>
               <v-row>
@@ -563,10 +568,10 @@
                         :disabled="!isOpeningHoursRelated"
                         @click="addNewOpeningHours"
                       >
-                        Buchungszeiträume hinzufügen
+                        Öffnungszeit hinzufügen
                       </v-btn>
                     </template>
-                    <span>Buchungszeiträume hinzufügen</span>
+                    <span>Öffungszeit hinzufügen</span>
                   </v-tooltip>
                 </v-col>
               </v-row>
@@ -582,12 +587,11 @@
                 <v-row no-gutters align="center">
                   <v-col cols="4">
                     <span class="text-subtitle-1">
-                      Buchungszeiträume für bestimmte Daten
+                      Öffungzeiten für bestimmte Daten
                     </span>
                     <br />
                     <span class="text-caption">
-                      Buchungszeiträume für bestimmte Daten können hier
-                      definiert werden.
+                      Hier können Öffnungszeiten für bestimmte Daten definiert werden.
                     </span>
                   </v-col>
                   <v-col class="col-2">
@@ -669,7 +673,7 @@
                 <v-col class="col-12 col-md-4">
                   <v-switch
                     dense
-                    label="Buchungsobjekt hat feste Buchungszeiträume"
+                    label="Buchungsobjekt hat Öffungszeiten für bestimmte Daten"
                     hide-details
                     v-model="isSpecialOpeningHoursRelated"
                     class="pt-3"
@@ -847,7 +851,9 @@
                     <v-fade-transition leave-absolute>
                       <div v-if="!open">
                         <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isLongRangeWeek" class="ml-2">Aktiviert</span>
+                        <span v-if="isLongRangeWeek" class="ml-2"
+                          >Aktiviert</span
+                        >
                         <span v-else class="ml-2">Inaktiviert</span>
                       </div>
                     </v-fade-transition>
@@ -906,7 +912,9 @@
                     <v-fade-transition leave-absolute>
                       <div v-if="!open">
                         <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isLongRangeMonth" class="ml-2">Aktiviert</span>
+                        <span v-if="isLongRangeMonth" class="ml-2"
+                          >Aktiviert</span
+                        >
                         <span v-else class="ml-2">Inaktiviert</span>
                       </div>
                     </v-fade-transition>

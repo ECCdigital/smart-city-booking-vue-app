@@ -52,12 +52,13 @@ export default {
       >
         <div slot="label">
           {{ agreement.caption }}
-          <span v-if="agreement.required">*</span> (<a
-            :href="agreement.url"
-            target="_blank"
-            @click.stop
-            >{{ agreement.title }}</a
-          >)
+          <span v-if="agreement.required">*</span>
+          <span v-if="agreement.url">
+            (<a :href="agreement.url" target="_blank" @click.stop>{{
+              agreement.title
+            }}</a
+            >)
+          </span>
         </div>
       </v-checkbox>
     </section>

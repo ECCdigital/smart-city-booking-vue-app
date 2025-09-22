@@ -49,5 +49,11 @@ export default {
     return (await ApiClient.get(`api/${t}/events/count/check`, {
       withCredentials: true,
     })).data
+  },
+  async getBookedSeatsCount(eventId, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return (await ApiClient.get(`api/${t}/events/${eventId}/count`, {
+      withCredentials: true,
+    })).data
   }
 };
