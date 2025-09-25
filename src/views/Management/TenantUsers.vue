@@ -156,12 +156,16 @@
                       {{ getStatusText(item.status) }}
                     </v-chip>
                     <span
-                      v-if="item.roles && item.roles.length > 0"
+                      v-if="item.roleStatuses && item.roleStatuses.length > 0"
                       class="text-caption"
                     >
-                      {{ item.roles.length }} Rolle(n):
-                      {{ getRoleNames(item.roles).slice(0, 3).join(", ") }}
-                      <span v-if="item.roles.length > 3">...</span>
+                      {{ item.roleStatuses.length }} Rolle(n):
+                      {{
+                        getRoleNames(item.roleStatuses.map((r) => r.role))
+                          .slice(0, 3)
+                          .join(", ")
+                      }}
+                      <span v-if="item.roleStatuses.length > 3">...</span>
                     </span>
                   </v-list-item-subtitle>
                 </v-list-item-content>
