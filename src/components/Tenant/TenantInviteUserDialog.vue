@@ -48,7 +48,9 @@
                 </v-col>
               </v-row>
             </div>
-            <div v-if="parsedEmails.length > 0" class="text-subtitle-2 mt-2">Einladung senden an</div>
+            <div v-if="parsedEmails.length > 0" class="text-subtitle-2 mt-2">
+              Einladung senden an
+            </div>
             <div v-if="parsedEmails.length > 0">
               <v-list>
                 <v-list-item
@@ -221,13 +223,20 @@
                     }}</span>
                   </v-list-item-title>
                   <v-list-item-subtitle>
-                    <v-chip x-small :color="expired(link) ? 'error' : 'success'" class="mr-1" v-if="link.expiresAt">
-                      <v-icon x-small left
-                        >mdi-clock-outline</v-icon
-                      >
+                    <v-chip
+                      x-small
+                      :color="expired(link) ? 'error' : 'success'"
+                      class="mr-1"
+                      v-if="link.expiresAt"
+                    >
+                      <v-icon x-small left>mdi-clock-outline</v-icon>
                       Läuft ab: {{ formatDate(link.expiresAt) }}
                     </v-chip>
-                    <v-chip x-small :color="maxUseReached(link) ? 'error' : 'success'" class="mr-1">
+                    <v-chip
+                      x-small
+                      :color="maxUseReached(link) ? 'error' : 'success'"
+                      class="mr-1"
+                    >
                       <v-icon x-small left>mdi-account-multiple</v-icon>
                       Nutzungen: {{ link.usedCount }} /
                       {{ link.maxUses ? link.maxUses : "∞" }}
@@ -235,7 +244,7 @@
                     <v-chip
                       x-small
                       class="mr-1"
-                      v-for="role in mapRolesById(link.roles)"
+                      v-for="role in mapRolesById(link.roleAssignments)"
                       :key="role.id"
                       color="blue lighten-4"
                     >

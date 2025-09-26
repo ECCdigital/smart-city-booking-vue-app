@@ -9,13 +9,13 @@
       </div>
     </v-card-title>
     <v-divider />
-    <v-card-text class="pt-4">
-      <slot />
-    </v-card-text>
-    <v-card-subtitle v-if="hint" class="pt-0">
+    <v-card-subtitle v-if="hint" class="">
       <v-icon left small color="info">mdi-information-outline</v-icon>
       {{ hint }}
     </v-card-subtitle>
+    <v-card-text class="">
+      <slot />
+    </v-card-text>
   </v-card>
 </template>
 
