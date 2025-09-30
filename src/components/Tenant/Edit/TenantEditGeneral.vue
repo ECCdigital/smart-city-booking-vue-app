@@ -92,8 +92,6 @@ export default {
             label="E-Mail Adresse"
             :rules="[
               (v) => !!v || 'Pflichtfeld',
-              (v) =>
-                /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v) || 'Muss gültig sein.',
             ]"
             type="email"
             v-model="model.mail"

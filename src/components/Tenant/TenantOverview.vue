@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <div class="page-content" ref="contentCol">
     <v-form ref="rootForm" v-model="validRoot">
       <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
@@ -22,53 +22,48 @@
         </v-chip>
       </div>
 
-      <v-tabs
-        v-model="activeTab"
-        background-color="transparent"
-        color="primary"
-        show-arrows
-        class="mb-4"
-      >
-        <v-tab v-for="t in tabs" :key="t.key">
-          <v-icon left small>{{ t.icon }}</v-icon>
-          {{ t.label }}
-        </v-tab>
-      </v-tabs>
-
-      <keep-alive>
-        <component
-          :is="currentComponent"
-          ref="activeChild"
-          :tenant="tenant"
-          :apps="apps"
-          :workflow="workflow"
-          @update:tenant="onUpdateTenant"
-          @update:apps="onUpdateApps"
-          @update:workflow="onUpdateWorkflow"
-          @open-receipt-template="openReceiptTemplate"
-          @open-invoice-template="openInvoiceTemplate"
-        />
-      </keep-alive>
+      <v-row>
+        <v-col class="col-12 col-md-auto">
+          <v-tabs
+            v-model="activeTab"
+            color="primary"
+            show-arrows
+            :vertical="$vuetify.breakpoint.mdAndUp"
+          >
+            <v-tab v-for="t in tabs" :key="t.key" class="d-flex justify-start" style="text-transform: none;">
+              <v-icon left small>{{ t.icon }}</v-icon>
+              {{ t.label }}
+            </v-tab>
+          </v-tabs></v-col
+        >
+        <v-col  class="col-12 col-md-9">
+          <keep-alive>
+            <component
+              :is="currentComponent"
+              ref="activeChild"
+              :tenant="tenant"
+              :apps="apps"
+              :workflow="workflow"
+              :roles="roles"
+              :challenges="verificationChallenges"
+              @update:tenant="onUpdateTenant"
+              @update:apps="onUpdateApps"
+              @update:workflow="onUpdateWorkflow"
+              @update:challenges="onUpdateChallenges"
+              @open-receipt-template="openReceiptTemplate"
+              @open-invoice-template="openInvoiceTemplate"
+            />
+          </keep-alive>
+        </v-col>
+      </v-row>
     </v-form>
 
-    <v-sheet class="save-bar" color="white" elevation="6">
-      <div class="d-flex align-center">
-        <v-icon color="primary" class="mr-2">mdi-content-save</v-icon>
-        <span class="mr-4">Änderungen speichern</span>
-        <v-spacer />
-        <v-btn text @click="resetCurrentValidation" class="mr-2">
-          Validierung zurücksetzen
-        </v-btn>
-        <v-btn
-          color="primary"
-          :loading="inProgress"
-          :disabled="inProgress || isLoading || !hasUnsavedChanges || !validRoot"
-          @click="submitChanges"
-        >
-          Speichern
-        </v-btn>
-      </div>
-    </v-sheet>
+    <SaveBar
+        :anchor-el="$refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)"
+        @submit="submitChanges"
+        :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
+        :in-progress="inProgress"
+    />
 
     <ReceiptTemplateDialog
       :open="showEditTemplateDialog"
@@ -82,7 +77,7 @@
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
     />
-  </v-container>
+  </div>
 </template>
 
 <script>
@@ -90,7 +85,6 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import { mapActions, mapGetters } from "vuex";
 
-// Unterkomponenten
 import TenantEditGeneral from "@/components/Tenant/Edit/TenantEditGeneral.vue";
 import TenantEditWeb from "@/components/Tenant/Edit/TenantEditWeb.vue";
 import TenantEditEmail from "@/components/Tenant/Edit/TenantEditEmail.vue";
@@ -103,10 +97,14 @@ import TenantEditVerificationChallenges from "@/components/Tenant/Edit/TenantEdi
 
 import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
 import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
+import ApiRolesService from "@/services/api/ApiRolesService";
+import ApiChallengeService from "@/services/api/ApiChallengeService";
+import SaveBar from "@/components/commons/SaveBar.vue";
 
 export default {
   name: "TenantOverview",
   components: {
+    SaveBar,
     TenantEditGeneral,
     TenantEditWeb,
     TenantEditEmail,
@@ -125,6 +123,7 @@ export default {
       inProgress: false,
       validRoot: true,
       activeTab: 0,
+      roles: [],
       tabs: [
         {
           key: "general",
@@ -174,7 +173,7 @@ export default {
           label: "Verifikation",
           icon: "mdi-check-decagram",
           comp: "TenantEditVerificationChallenges",
-        }
+        },
       ],
       originalSnapshot: null,
       tenant: {},
@@ -184,6 +183,7 @@ export default {
         defaultState: "",
         states: [],
       },
+      verificationChallenges: [],
       showEditTemplateDialog: false,
       showEditInvoiceTemplateDialog: false,
       defaultApps: {
@@ -241,6 +241,7 @@ export default {
           tenant: this.tenant,
           apps: this.apps,
           workflow: this.workflow,
+          verificationChallenges: this.verificationChallenges,
         }) !== this.originalSnapshot
       );
     },
@@ -250,6 +251,14 @@ export default {
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
+    async fetchRoles() {
+      try {
+        const response = await ApiRolesService.getTenantRoles(true);
+        this.roles = response.data || [];
+      } catch (e) {
+        console.error(e);
+      }
+    },
     async fetchTenant() {
       try {
         this.isLoading = true;
@@ -257,6 +266,7 @@ export default {
         this.tenant = response.data || {};
         this.initializeApps();
         await this.fetchWorkflow();
+        await this.fetchChallenges();
       } catch (e) {
         console.error(e);
       } finally {
@@ -267,6 +277,7 @@ export default {
           tenant: this.tenant,
           apps: this.apps,
           workflow: this.workflow,
+          verificationChallenges: this.verificationChallenges,
         });
       });
     },
@@ -302,6 +313,16 @@ export default {
             tenantId: this.tenant.id,
           };
     },
+    async fetchChallenges() {
+      try {
+        const response = await ApiChallengeService.getChallenges(
+          this.tenant.id
+        );
+        this.verificationChallenges = response.data || [];
+      } catch (e) {
+        console.error(e);
+      }
+    },
     onUpdateTenant(next) {
       this.tenant = { ...this.tenant, ...next };
     },
@@ -309,8 +330,10 @@ export default {
       this.apps = { ...this.apps, ...next };
     },
     onUpdateWorkflow(next) {
-      console.log("onUpdateWorkflow", next);
       this.workflow = { ...this.workflow, ...next };
+    },
+    onUpdateChallenges(next) {
+      this.verificationChallenges = next;
     },
     async validateActiveChild() {
       const ref = this.$refs.activeChild;
@@ -350,10 +373,25 @@ export default {
           );
         }
 
+        for (const challenge of this.verificationChallenges) {
+          if (challenge.id) {
+            await ApiChallengeService.updateChallenge(
+              this.tenant.id,
+              challenge
+            );
+          } else {
+            await ApiChallengeService.createChallenge(
+              this.tenant.id,
+              challenge
+            );
+          }
+        }
+
         this.originalSnapshot = JSON.stringify({
           tenant: this.tenant,
           apps: this.apps,
           workflow: this.workflow,
+          verificationChallenges: this.verificationChallenges,
         });
 
         await this.addToast({
@@ -386,16 +424,13 @@ export default {
   },
   async mounted() {
     await this.fetchTenant();
+    await this.fetchRoles();
   },
 };
 </script>
 
 <style scoped>
-.save-bar {
-  position: sticky;
-  bottom: 16px;
-  border-radius: 12px;
-  padding: 12px 16px;
-  z-index: 1;
+.page-content {
+  padding-bottom: 26px;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <v-expansion-panels flat multiple>
+  <v-expansion-panels multiple>
     <v-expansion-panel>
       <v-expansion-panel-header color="accent" expand-icon="mdi-menu-down">
         <template v-slot:default="{ open }">

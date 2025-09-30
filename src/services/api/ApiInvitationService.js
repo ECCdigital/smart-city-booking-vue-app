@@ -9,10 +9,11 @@ export default {
     roles = [],
     expiresAt = null,
     maxUses = null,
+    challenges = [],
   }) {
     return ApiClient.post(
       `api/${tenantId}/invitations`,
-      { type: "multi", roles, expiresAt, maxUses },
+      { type: "multi", roles, expiresAt, maxUses, challenges },
       { withCredentials: true }
     );
   },

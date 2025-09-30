@@ -121,15 +121,17 @@ export default {
 </script>
 
 <template>
-  <BaseSection title="Workflow Konfiguration" icon="mdi-chart-tree">
+  <BaseSection
+    title="Workflow Konfiguration"
+    icon="mdi-chart-tree"
+    hint="Hier können Sie den Workflow für Buchungen konfigurieren. Ein Workflow besteht aus mehreren Status, die nacheinander durchlaufen werden können. Jedem Status können Aktionen zugewiesen werden."
+  >
     <v-row class="mb-3">
       <v-col class="col-12 col-md-8"> </v-col>
       <v-col class="col-12 col-md-4 d-flex justify-end align-center">
         <v-btn color="primary" @click="addStatus">
           <v-icon left>mdi-plus</v-icon>
           Workflow-Status hinzufügen
-
-
         </v-btn>
       </v-col>
     </v-row>

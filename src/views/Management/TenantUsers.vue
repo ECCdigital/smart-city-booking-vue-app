@@ -156,16 +156,12 @@
                       {{ getStatusText(item.status) }}
                     </v-chip>
                     <span
-                      v-if="item.roleStatuses && item.roleStatuses.length > 0"
+                      v-if="item.roles && item.roles?.length > 0"
                       class="text-caption"
                     >
-                      {{ item.roleStatuses.length }} Rolle(n):
-                      {{
-                        getRoleNames(item.roleStatuses.map((r) => r.role))
-                          .slice(0, 3)
-                          .join(", ")
-                      }}
-                      <span v-if="item.roleStatuses.length > 3">...</span>
+                      {{ item.roles.length }} Rolle(n):
+                      {{ getRoleNames(item.roles).slice(0, 3).join(", ") }}
+                      <span v-if="item.roles.length > 3">...</span>
                     </span>
                   </v-list-item-subtitle>
                 </v-list-item-content>
@@ -317,6 +313,7 @@
     <TenantInviteUserDialog
       :open="showInviteDialog"
       :roles="api.roles"
+      :challenges="api.challenges"
       :members="members"
       :invitation-links.sync="api.invitations"
       :tenantId="tenantId"
@@ -348,6 +345,7 @@ import ToastService from "@/services/ToastService";
 import TenantUserEditRoleDialog from "@/components/Tenant/TenantUserEditRoleDialog.vue";
 import Fuse from "fuse.js";
 import TenantInviteUserDialog from "@/components/Tenant/TenantInviteUserDialog.vue";
+import ApiChallengeService from "@/services/api/ApiChallengeService";
 
 export default {
   components: {
@@ -382,6 +380,7 @@ export default {
         roles: [],
         userDetails: [],
         invitations: [],
+        challenges: [],
       },
       inviteOptions: [
         { text: "Einladen (E-Mail senden)", value: "invite" },
@@ -540,6 +539,13 @@ export default {
     async fetchRoles() {
       const response = await ApiRolesService.getTenantRoles(this.tenantId);
       this.api.roles = response.data;
+    },
+
+    async fetchChallenges() {
+      const response = await ApiChallengeService.getChallenges(
+        this.tenantId
+      );
+      this.api.challenges = response.data;
     },
 
     async fetchInvitations() {
@@ -761,6 +767,7 @@ export default {
           roles: linkData.roles,
           expiresAt: linkData.expiresAt,
           maxUses: linkData.maxUses,
+          challenges: linkData.challenges || [],
         });
 
         await this.fetchInvitations();
@@ -800,6 +807,7 @@ export default {
     await this.fetchRoles();
     await this.fetchTenantUsers();
     await this.fetchInvitations();
+    await this.fetchChallenges();
   },
 };
 </script>

@@ -3,8 +3,7 @@
     title="Verifikationsprozesse"
     icon="mdi-check-decagram"
     hint="Definiere, wie neue Benutzer verifiziert werden, bevor sie eine Rolle
-          erhalten. Eine Challenge kann als Standard für Einladungen markiert
-          werden."
+          erhalten."
   >
     <v-row class="mb-3">
       <v-col class="col-12 col-md-8"> </v-col>
@@ -16,7 +15,7 @@
       </v-col>
     </v-row>
 
-    <v-expansion-panels flat multiple>
+    <v-expansion-panels  multiple >
       <v-expansion-panel
         v-for="(c, idx) in localChallenges"
         :key="c.key + '-' + idx"
@@ -41,37 +40,40 @@
               <v-col class="col-3 d-flex align-center">
                 <v-icon left small color="primary">mdi-account-key</v-icon>
                 <span class="text--secondary">
-                  Rolle: {{ roleLabel(c.roleToAssign) }}
+                  Rollen: {{ roleLabels(c.rolesToAssign) }}
                 </span>
-                <v-chip
-                  v-if="localDefaultKey === c.key"
-                  small
-                  class="ml-2"
-                  color="primary"
-                  text-color="white"
-                  label
-                >
-                  Standard
-                </v-chip>
               </v-col>
 
-              <v-col class="col-3 d-flex justify-end">
-                <v-btn icon :disabled="idx === 0" @click.stop="moveUp(idx)">
-                  <v-icon>mdi-arrow-up</v-icon>
-                </v-btn>
-                <v-btn
-                  icon
-                  :disabled="idx === localChallenges.length - 1"
-                  @click.stop="moveDown(idx)"
-                >
-                  <v-icon>mdi-arrow-down</v-icon>
-                </v-btn>
-                <v-btn icon @click.stop="editChallenge(idx)">
-                  <v-icon>mdi-pencil</v-icon>
-                </v-btn>
-                <v-btn icon color="error" @click.stop="askRemove(idx)">
-                  <v-icon>mdi-delete</v-icon>
-                </v-btn>
+              <v-col class="col-3 d-flex justify-end align-center">
+                <v-tooltip bottom>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn
+                      icon
+                      small
+                      v-bind="attrs"
+                      v-on="on"
+                      @click.stop="editChallenge(idx)"
+                    >
+                      <v-icon>mdi-pencil</v-icon>
+                    </v-btn>
+                  </template>
+                  <span>Bearbeiten</span>
+                </v-tooltip>
+                <v-tooltip bottom>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn
+                      icon
+                      small
+                      color="error"
+                      v-bind="attrs"
+                      v-on="on"
+                      @click.stop="askRemove(idx)"
+                    >
+                      <v-icon>mdi-delete</v-icon>
+                    </v-btn>
+                  </template>
+                  <span>Löschen</span>
+                </v-tooltip>
               </v-col>
             </v-row>
           </template>
@@ -97,15 +99,6 @@
                 class="mt-2"
                 @change="emitAll()"
               />
-              <v-radio-group
-                v-model="localDefaultKey"
-                @change="emitDefaultKey()"
-              >
-                <v-radio
-                  :value="c.key"
-                  label="Als Standard für Einladungen verwenden"
-                />
-              </v-radio-group>
             </v-col>
           </v-row>
         </v-expansion-panel-content>
@@ -152,8 +145,10 @@
                 <v-autocomplete
                   :items="roles"
                   label="Rolle nach Verifikation"
-                  :rules="[(v) => !!v || 'Pflichtfeld']"
-                  v-model="editModel.roleToAssign"
+                  v-model="editModel.rolesToAssign"
+                  item-value="id"
+                  item-text="name"
+                  multiple
                   clearable
                 />
               </v-col>
@@ -181,6 +176,7 @@
             <div v-if="editModel.key === 'domainEmail'">
               <v-combobox
                 v-model="editModel.defaultConfig.allowedDomains"
+                ref="allowedDomainsInput"
                 label="Erlaubte Domains"
                 multiple
                 chips
@@ -188,9 +184,11 @@
                 hide-selected
                 small-chips
                 :rules="[
-                  (arr) => (arr && arr.length) || 'Mindestens eine Domain',
+                  (arr) => (arr && arr.length > 0) || 'Mindestens eine Domain',
                   (arr) =>
-                    arr.every(isValidDomain) || 'Ungültige Domain enthalten',
+                    Array.isArray(arr) && arr.every(isValidDomain)
+                      ? true
+                      : 'Ungültige Domain enthalten',
                 ]"
                 hint="Beispiele: firma.de, example.org"
                 persistent-hint
@@ -253,7 +251,7 @@ export default {
     challenges: { type: Array, default: () => [] },
     roles: {
       type: Array,
-      default: () => ["admin", "editor", "viewer"],
+      default: () => [],
     },
     approverGroups: {
       type: Array,
@@ -264,7 +262,6 @@ export default {
   data() {
     return {
       localChallenges: [],
-      localDefaultKey: "",
       editDialog: { open: false, isNew: true, idx: -1 },
       editModel: this.emptyChallenge(),
       editValid: false,
@@ -281,12 +278,6 @@ export default {
       immediate: true,
       handler(v) {
         this.localChallenges = JSON.parse(JSON.stringify(v || []));
-      },
-    },
-    defaultKey: {
-      immediate: true,
-      handler(v) {
-        this.localDefaultKey = v || "";
       },
     },
   },
@@ -307,7 +298,7 @@ export default {
         defaultConfig: {},
         label: "",
         description: "",
-        roleToAssign: "",
+        rolesToAssign: [],
       };
     },
     keyLabel(k) {
@@ -317,8 +308,12 @@ export default {
       };
       return map[k] || k || "Unbekannt";
     },
-    roleLabel(r) {
-      return r || "—";
+    roleLabels(roles) {
+      if (!roles || !roles.length) return "Keine";
+      const names = this.roles
+        .filter((r) => roles.includes(r.id))
+        .map((r) => r.name);
+      return names.length ? names.join(", ") : "Keine";
     },
     pretty(obj) {
       try {
@@ -349,37 +344,26 @@ export default {
       const idx = this.confirm.idx;
       if (idx > -1) {
         const removed = this.localChallenges.splice(idx, 1)[0];
-        if (removed?.key === this.localDefaultKey) {
-          this.localDefaultKey = "";
-          this.emitDefaultKey();
-        }
         this.emitAll();
       }
       this.confirm.open = false;
-    },
-    moveUp(idx) {
-      if (idx <= 0) return;
-      this.localChallenges.splice(
-        idx - 1,
-        0,
-        this.localChallenges.splice(idx, 1)[0]
-      );
-      this.emitAll();
-    },
-    moveDown(idx) {
-      if (idx >= this.localChallenges.length - 1) return;
-      this.localChallenges.splice(
-        idx + 1,
-        0,
-        this.localChallenges.splice(idx, 1)[0]
-      );
-      this.emitAll();
     },
 
     closeEdit() {
       this.editDialog.open = false;
     },
-    saveEdit() {
+    async saveEdit() {
+      try {
+        this.$refs.allowedDomainsInput?.blur?.();
+      } catch (e) {
+        // ignore
+      }
+
+      if (document && document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+      }
+      await this.$nextTick();
+
       const ok = this.$refs.editForm ? this.$refs.editForm.validate() : true;
       if (!ok) return;
 
@@ -397,12 +381,11 @@ export default {
           JSON.parse(JSON.stringify(this.editModel))
         );
       }
-      if (!this.localDefaultKey && this.editModel.enabled) {
-        this.localDefaultKey = this.editModel.key;
-        this.emitDefaultKey();
-      }
+      console.log("Saved", this.localChallenges);
       this.emitAll();
+      console.log("Emitted", this.localChallenges);
       this.closeEdit();
+      console.log("Closed");
     },
 
     ensureDefaultConfigShape(model) {
@@ -420,15 +403,11 @@ export default {
     emitAll() {
       this._emitDebounced();
     },
-    emitDefaultKey() {
-      this.$emit("update:defaultKey", this.localDefaultKey);
-    },
 
     async validate() {
       return true;
     },
-    resetValidation() {
-    },
+    resetValidation() {},
   },
 };
 </script>

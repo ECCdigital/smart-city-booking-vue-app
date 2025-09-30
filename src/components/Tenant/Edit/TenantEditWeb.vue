@@ -23,7 +23,7 @@ export default {
         weblink: [
           (v) =>
             !v ||
-            /https?\:\/\/([a-z\.A-Z\-]+)\/.*/g.test(v) ||
+            /https?:\/\/([a-z\.A-Z\-]+)\/.*/g.test(v) ||
             "Ungültige URL.",
         ],
       },
@@ -62,7 +62,6 @@ export default {
             dense
             label="Link zur Detailseite (Buchungsobjekt)"
             placeholder="https://..."
-            :rules="validationRules.weblink"
             v-model="localTenant.bookableDetailLink"
             suffix="?bkid=[ID]"
             @input="emitTenant()"
@@ -78,7 +77,6 @@ export default {
             dense
             label="Link zur Detailseite (Event)"
             placeholder="https://..."
-            :rules="validationRules.weblink"
             v-model="localTenant.eventDetailLink"
             suffix="?bkid=[ID]"
             @input="emitTenant()"
