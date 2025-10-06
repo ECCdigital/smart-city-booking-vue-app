@@ -250,6 +250,19 @@
         <span class="text-h6">Preis-Kategorien</span>
       </v-card-subtitle>
       <v-card-text>
+        <div v-if="priceType === 'per-hour'">
+          <v-alert type="info" border="left" elevation="1" colored-border>
+            <span>
+              <strong>Hinweis:</strong>
+              Wenn die Preisart „pro Stunde“ gewählt ist, gelten die definierten
+              Preisintervalle ausschließlich für den jeweiligen Kalendertag.
+              Beispiel: 0–18 Stunden = Preis A, ab 18 Stunden = Preis B. Preis B
+              ist nur bis 24:00 gültig, da am nächsten Tag der Preis neu
+              berechnet wird. Dadurch erfolgt die Preisberechnung tageweise.
+            </span>
+          </v-alert>
+        </div>
+
         <div v-for="(priceCategory, idx) in priceCategories" :key="idx">
           <div>
             <v-row>
