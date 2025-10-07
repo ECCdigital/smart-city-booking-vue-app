@@ -356,11 +356,12 @@
     "continue_button": "Fortfahren",
     "error": {
       "invalid_params": "Ungültige Parameter",
-      "verification_failed": "Überprüfung der Einladung fehlgeschlagen",
-      "already_member": "Sie sind bereits Mitglied dieses Mandanten",
-      "forbidden": "Sie haben keine Berechtigung, diese Einladung anzunehmen",
-      "not_found": "Einladung nicht gefunden",
-      "expired": "Die Einladung ist abgelaufen",
+      "verification_failed": "Es gab ein Problem bei der Überprüfung der Einladung. Bitte versuchen Sie es erneut.",
+      "already_member": "Sie sind bereits Mitglied dieses Mandanten.",
+      "forbidden": "Es scheint, dass Sie mit dem falschen Konto angemeldet sind. Bitte melden Sie sich mit dem Konto an, das zur Annahme dieser Einladung berechtigt ist.",
+      "not_found": "Es scheint, dass die Einladung nicht mehr existiert. Bitte fordern Sie eine neue Einladung an.",
+      "expired": "Es scheint, dass die Einladung abgelaufen ist. Bitte fordern Sie eine neue Einladung an.",
+      "membership_suspended": "Es scheint, dass Ihre Mitgliedschaft in diesem Mandanten ausgesetzt wurde. Bitte wenden Sie sich an den Mandantenadministrator.",
       "acceptance_failed": {
         "title": "Fehler",
         "message": "Annahme der Einladung fehlgeschlagen. Bitte versuchen Sie es erneut."

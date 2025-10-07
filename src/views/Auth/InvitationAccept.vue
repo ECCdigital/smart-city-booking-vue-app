@@ -1,41 +1,68 @@
 <template>
-  <v-container
-    style="
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    "
-  >
+  <v-container class="invite-page d-flex align-center justify-center">
     <v-card
-      class="pa-6 rounded-lg elevation-4"
+      class="pa-8 rounded-xl elevation-6 invite-card"
       style="overflow: hidden; width: 100%; min-width: 350px; max-width: 750px"
     >
-      <v-card-text class="text-center">
-        <v-img src="/app-logo.png" max-width="120" class="mb-6 mx-auto" />
+      <v-card-text class="text-center px-6 px-sm-10">
+        <v-img
+          src="/app-logo.png"
+          max-width="120"
+          contain
+          alt="App Logo"
+          class="mb-6 mx-auto"
+        />
 
-        <h2 class="mb-2 font-weight-bold">
-          {{ $t("invitation.title") }}
-        </h2>
+        <h2 class="mb-1 font-weight-bold">Einladung</h2>
+
+        <div class="subtitle-2 text--secondary mb-6">
+          Beitreten und sofort loslegen
+        </div>
 
         <div v-if="!isLoggedIn">
-          <p class="subtitle-2 text--secondary mb-6">
-            {{ $t("invitation.subtitle") }}
-          </p>
-          <v-alert type="info" outlined dense>
-            {{ $t("invitation.login_required") }}
-          </v-alert>
-          <v-btn
-            color="primary"
-            elevation="2"
-            block
-            large
-            class="mt-6"
-            :to="{ name: 'login', query: { next: currentPath } }"
+          <v-alert
+            type="info"
+            dense
+            text
+            border="left"
+            colored-border
+            class="mb-6"
           >
-            <v-icon left>mdi-login</v-icon>
-            {{ $t("invitation.login_button") }}
-          </v-btn>
+            Um die Einladung anzunehmen, bitte zuerst anmelden oder ein Konto
+            erstellen.
+          </v-alert>
+
+          <v-row dense>
+            <v-col cols="12" sm="6">
+              <v-btn
+                color="primary"
+                elevation="2"
+                large
+                block
+                class="mt-2"
+                :to="{ name: 'login', query: { next: currentPath } }"
+                aria-label="Zur Anmeldung"
+              >
+                <v-icon left>mdi-login</v-icon>
+                Anmelden
+              </v-btn>
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-btn
+                color="secondary"
+                elevation="2"
+                outlined
+                large
+                block
+                class="mt-2"
+                :to="{ name: 'register', query: { next: currentPath } }"
+                aria-label="Zur Registrierung"
+              >
+                <v-icon left>mdi-account-plus</v-icon>
+                Konto erstellen
+              </v-btn>
+            </v-col>
+          </v-row>
         </div>
 
         <div v-else-if="isVerifying">
@@ -44,12 +71,12 @@
             size="40"
             color="primary"
           ></v-progress-circular>
-          <p class="mt-4">{{ $t("invitation.verifying") }}</p>
+          <p class="mt-4">Einladung wird überprüft...</p>
         </div>
 
         <div v-else-if="isAccepted">
-          <v-alert type="success" border="left" colored-border>
-            {{ $t("invitation.accepted.title") }}
+          <v-alert type="success" border="left" elevation="2" colored-border>
+            Einladung angenommen
           </v-alert>
           <v-btn
             color="primary"
@@ -60,13 +87,13 @@
             :to="{ name: 'dashboard' }"
           >
             <v-icon left>mdi-arrow-right</v-icon>
-            {{ $t("invitation.continue_button") }}
+            Fortfahren
           </v-btn>
         </div>
 
         <div v-else-if="isVerified">
           <div v-if="verificationError">
-            <v-alert type="error" class="mb-4">
+            <v-alert type="error" text colored-border border="left"  class="mb-4">
               {{ verificationError }}
             </v-alert>
             <v-btn
@@ -77,9 +104,10 @@
               large
               class="mt-6"
               @click="onChangeUser"
+              aria-label="Mit anderem Benutzer anmelden"
             >
               <v-icon left>mdi-login</v-icon>
-              {{ $t("invitation.login_different_user") }}
+              Mit anderem Benutzer anmelden
             </v-btn>
           </div>
 
@@ -101,9 +129,11 @@
                 large
                 @click="acceptInvitation"
                 :loading="isAccepting"
+                :disabled="isRejecting"
+                aria-label="Einladung annehmen"
               >
                 <v-icon left>mdi-check</v-icon>
-                {{ $t("invitation.accept_button") }}
+                Einladung annehmen
               </v-btn>
             </v-col>
             <v-col cols="6">
@@ -114,15 +144,18 @@
                 large
                 @click="rejectInvitation"
                 :loading="isRejecting"
+                :disabled="isAccepting"
+                aria-label="Einladung ablehnen"
               >
                 <v-icon left>mdi-close</v-icon>
-                {{ $t("invitation.reject_button") || "Ablehnen" }}
+                Einladung ablehnen
               </v-btn>
             </v-col>
           </v-row>
         </div>
 
-        <ContactInformation class="mt-10" />
+        <v-divider class="my-8"></v-divider>
+        <ContactInformation class="mt-4" />
       </v-card-text>
     </v-card>
   </v-container>
@@ -154,6 +187,7 @@ export default {
         403: this.$t("invitation.error.forbidden"),
         404: this.$t("invitation.error.not_found"),
         410: this.$t("invitation.error.expired"),
+        423: this.$t("invitation.error.membership_suspended"),
       },
       errorCode: null,
     };
@@ -278,3 +312,24 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.invite-page {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.invite-card {
+  backdrop-filter: saturate(1.1) blur(2px);
+}
+
+@media (max-width: 600px) {
+  .invite-card {
+    padding: 20px !important;
+  }
+}
+
+.text--secondary {
+  opacity: 0.85;
+}
+</style>

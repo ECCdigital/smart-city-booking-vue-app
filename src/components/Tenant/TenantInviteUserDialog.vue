@@ -15,7 +15,7 @@
         </v-tabs>
 
         <v-tabs-items v-model="model">
-          <v-tab-item class="mt-4">
+          <v-tab-item class="mt-4 mx-2">
             <div class="text-body-1">
               Lade Benutzer zu diesem Mandanten ein.
             </div>
@@ -83,133 +83,104 @@
               <v-divider class="my-4"></v-divider>
 
               <div>
-                <div class="text-subtitle-2 mb-2">Direkte Rollen zuweisen</div>
-                <span class="text-caption">
-                  Eingeladene Benutzer werden diesen Rollen direkt zugewiesen
-                </span>
-                <v-select
-                  v-model="selectedRoles"
-                  :items="roles"
-                  item-text="name"
-                  item-value="id"
-                  label="Rollen"
-                  multiple
-                  chips
-                  small-chips
-                  outlined
-                  dense
-                  class="mt-2"
-                ></v-select>
-              </div>
-
-              <v-divider class="my-4"></v-divider>
-
-              <div>
                 <div class="text-subtitle-2 mb-2">
-                  Rollen über Verifiaktionsprozess zuweisen
+                  Verifikationsprozess (optional)
                 </div>
-                <span class="text-caption">
-                  Eingeladene Benutzer können durch das Absolvieren eines
-                  Verifikationsprozesses zusätzliche Rollen erhalten
-                </span>
-
+                <v-alert
+                  type="info"
+                  dense
+                  elevation="2"
+                  border="left"
+                  colored-border
+                >
+                  Du kannst optional einen Verifikationsprozess auswählen, die
+                  eingeladene Benutzer bestehen müssen, bevor sie aktiv im
+                  Mandanten arbeiten können. Erst dann werden die zugehörigen
+                  Rollen automatisch zugewiesen. Wenn kein Verifikationsprozess
+                  definiert ist, werden Benutzer direkt nach Annahme der
+                  Einladung hinzugefügt und erhalten sofort die ausgewählten
+                  Rollen.
+                </v-alert>
                 <v-select
-                  v-model="selectedChallenges"
+                  v-model="selectedChallenge"
                   :items="challenges"
                   item-text="label"
                   item-value="id"
-                  label="Verifikationsprozesses auswählen"
-                  multiple
-                  chips
-                  small-chips
+                  label="Verifikationsprozess auswählen"
                   outlined
                   dense
-                  class="mt-2"
-                  :hint="
-                    selectedChallenges.length === 0
-                      ? 'Optional – Einladungen funktionieren auch ohne Challenges'
-                      : ''
-                  "
+                  clearable
+                  :hint="'Optional – Rollen können auch direkt ohne Verifikationsprozess vergeben werden'"
                   persistent-hint
                 >
-                  <template v-slot:selection="data">
-                    <v-chip
-                      v-bind="data.attrs"
-                      :input-value="data.selected"
-                      close
-                      @click:close="
-                        selectedChallenges = selectedChallenges.filter(
-                          (c) => c !== data.item.id
-                        )
-                      "
-                      class="ma-1"
-                      small
-                    >
-                      <v-icon left small>
-                        {{
-                          data.item.key === "manualApproval"
-                            ? "mdi-account-check-outline"
-                            : "mdi-shield-check"
-                        }}
-                      </v-icon>
-                      {{ data.item.label }}
-                    </v-chip>
-                  </template>
-                  <template v-slot:item="slot">
-                    <template v-if="slot.item">
-                      <v-list-item v-bind="slot.attrs" v-on="slot.on">
-                        <v-list-item-content>
-                          <v-list-item-title class="d-flex align-center">
-                            <v-icon left small class="mr-1">
-                              {{
-                                slot.item.key === "manualApproval"
-                                  ? "mdi-account-check-outline"
-                                  : "mdi-shield-check"
-                              }}
-                            </v-icon>
-                            <span class="mr-2">{{ slot.item.label }}</span>
-                          </v-list-item-title>
-                          <v-list-item-subtitle class="d-flex flex-wrap">
-                            <span class="mr-2" v-if="slot.item.defaultConfig?.allowedDomains"
-                              >Domains:
-                              {{
-                                slot.item.defaultConfig.allowedDomains.join(
-                                  ", "
-                                )
-                              }}</span
-                            >
-                            <span>
-                              Rollen:
-                              {{
-                                getRoleNames(slot.item.rolesToAssign).join(", ")
-                              }}
-                            </span>
-                          </v-list-item-subtitle>
-                        </v-list-item-content>
-                      </v-list-item>
-                    </template>
+                  <template v-slot:item="{ item, attrs, on }">
+                    <v-list-item v-bind="attrs" v-on="on">
+                      <v-list-item-content>
+                        <v-list-item-title class="d-flex align-center">
+                          <v-icon
+                            left
+                            small
+                            :color="
+                              item.key === 'manualApproval' ? 'blue' : 'green'
+                            "
+                          >
+                            {{
+                              item.key === "manualApproval"
+                                ? "mdi-account-check-outline"
+                                : "mdi-shield-check"
+                            }}
+                          </v-icon>
+                          {{ item.label }}
+                        </v-list-item-title>
+                        <v-list-item-subtitle>
+                          Rollen:
+                          {{ getRoleNames(item.rolesToAssign).join(", ") }}
+                        </v-list-item-subtitle>
+                      </v-list-item-content>
+                    </v-list-item>
                   </template>
                 </v-select>
-                <div
-                  v-if="challengeRolePreview.length"
-                  class="mt-2 d-flex flex-wrap align-center"
-                >
-                  <span class="text-caption mr-2"
-                    >Zusätzliche Rollen nach Verifikation:</span
-                  >
+
+                <div v-if="selectedChallenge" class="mt-2">
+                  <span class="text-caption">
+                    Diese Rollen werden durch den ausgewählten
+                    Verifikationsprozess automatisch vergeben:
+                  </span>
                   <v-chip
-                    v-for="r in challengeRolePreview"
+                    v-for="r in challengeRoles"
                     :key="r.id"
                     small
-                    class="mr-1 mb-1"
                     color="blue lighten-5"
+                    class="ma-1"
                   >
                     <v-icon left x-small>mdi-shield-account</v-icon>
                     {{ r.name }}
                   </v-chip>
                 </div>
               </div>
+
+              <v-divider class="my-4"></v-divider>
+              <div>
+                <div class="text-subtitle-2 mb-2">
+                  Zusätzliche Rollen vergeben (optional)
+                </div>
+                <v-select
+                  v-model="selectedRoles"
+                  :items="availableRoles"
+                  item-text="name"
+                  item-value="id"
+                  label="Rollen auswählen"
+                  multiple
+                  chips
+                  small-chips
+                  outlined
+                  dense
+                  hint="Optional – Wählen Sie zusätzliche Rollen, die Benutzer erhalten sollen. Wenn keinen Verifikationsprozess ausgewählt ist, erhalten Benutzer diese Rollen direkt nach Annahme der Einladung."
+                  persistent-hint
+                ></v-select>
+              </div>
             </div>
+
             <div class="d-flex align-end justify-end mt-4">
               <v-btn
                 class="mr-4"
@@ -223,251 +194,289 @@
               <v-btn class="" outlined @click="closeDialog"> Schließen </v-btn>
             </div>
           </v-tab-item>
-          <v-tab-item>
-            <div class="text-body-1 mt-4">
-              Verwalte die Einladungslinks für diesen Mandanten.
-            </div>
-            <div class="text-caption mb-4">
-              Erstelle Einladungslinks, die du mit anderen teilen kannst, um
-              Benutzern den Beitritt zu diesem Mandanten zu ermöglichen.
-            </div>
-
-            <span>
-              <v-icon left>mdi-link-plus</v-icon>
-              Neuen Einladungslink erstellen
-            </span>
-
-            <v-form ref="newLinkForm">
-              <v-row class="mt-2">
-                <v-col cols="12" md="6">
-                  <v-menu
-                    v-model="expiryDateMenu"
-                    :close-on-content-click="false"
-                    transition="scale-transition"
-                    offset-y
-                    min-width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
-                        v-model="newLink.expiresAt"
-                        label="Ablaufdatum (optional)"
-                        prepend-icon="mdi-calendar"
-                        readonly
-                        dense
-                        v-bind="attrs"
-                        v-on="on"
-                        clearable
-                        @click:clear="newLink.expiresAt = null"
-                      ></v-text-field>
-                    </template>
-                    <v-date-picker
-                      v-model="newLink.expiresAt"
-                      @input="expiryDateMenu = false"
-                      :min="tomorrow"
-                    ></v-date-picker>
-                  </v-menu>
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-text-field
-                    v-model.number="newLink.maxUses"
-                    label="Maximale Nutzungen (optional)"
-                    type="number"
-                    min="1"
-                    dense
-                    prepend-icon="mdi-account-multiple"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-
-              <v-select
-                v-model="newLink.roles"
-                :items="roles"
-                item-text="name"
-                item-value="id"
-                label="Rollen zuweisen (optional)"
-                multiple
-                chips
-                dense
-                small-chips
-                prepend-icon="mdi-shield-account"
-              ></v-select>
-
-              <v-select
-                v-model="newLink.challenges"
-                :items="challenges"
-                item-text="label"
-                item-value="id"
-                label="Verifiaktionsprozess hinzufügen (optional)"
-                multiple
-                chips
-                dense
-                small-chips
-                prepend-icon="mdi-shield-check"
-                class="mt-2"
-              >
-                <template v-slot:item="slot">
-                  <template v-if="slot.item">
-                    <v-list-item v-bind="slot.attrs" v-on="slot.on">
-                      <v-list-item-content>
-                        <v-list-item-title class="d-flex align-center">
-                          <v-icon left small class="mr-1">
-                            {{
-                              slot.item.key === "manualApproval"
-                                ? "mdi-account-check-outline"
-                                : "mdi-shield-check"
-                            }}
-                          </v-icon>
-                          <span class="mr-2">{{ slot.item.label }}</span>
-                        </v-list-item-title>
-                        <v-list-item-subtitle class="d-flex flex-wrap">
-                          <span class="mr-2" v-if="slot.item.defaultConfig?.allowedDomains"
-                            >Domains:
-                            {{
-                              slot.item.defaultConfig.allowedDomains.join(", ")
-                            }}</span
-                          >
-                          <span>
-                             Rollen:
-                            {{
-                              getRoleNames(slot.item.rolesToAssign).join(", ")
-                            }}
-                          </span>
-                        </v-list-item-subtitle>
-                      </v-list-item-content>
-                    </v-list-item>
-                  </template>
-                </template>
-                <template v-slot:selection="data">
-                  <v-chip
-                    v-bind="data.attrs"
-                    :input-value="data.selected"
-                    close
-                    @click:close="
-                      newLink.challenges = newLink.challenges.filter(
-                        (c) => c !== data.item.id
-                      )
-                    "
-                    class="ma-1"
-                    small
-                  >
-                    <v-icon left small>
-                      {{
-                        data.item.key === "manualApproval"
-                          ? "mdi-account-check-outline"
-                          : "mdi-shield-check"
-                      }}
-                    </v-icon>
-                    {{ data.item.label }}
-                  </v-chip>
-                </template>
-              </v-select>
-
-              <div class="d-flex justify-end mt-4">
-                <v-btn
-                  color="primary"
-                  @click="createInvitationLink"
-                  :loading="creatingLink"
-                >
-                  <v-icon left>mdi-link-plus</v-icon>
-                  Link erstellen
-                </v-btn>
+          <v-tab-item class="mx-2">
+            <div class="d-flex align-center justify-space-between mt-4">
+              <div>
+                <div class="text-body-1">
+                  Verwalte die Einladungslinks für diesen Mandanten.
+                </div>
+                <div class="text-caption">
+                  Erstelle Einladungslinks und teile sie, damit Benutzer dem
+                  Mandanten beitreten können.
+                </div>
               </div>
-            </v-form>
+
+              <v-btn v-if="!createLinkMode" color="primary" @click="createLinkMode = true">
+                <v-icon left>mdi-link-plus</v-icon>
+                Neuen Einladungslink erstellen
+              </v-btn>
+            </div>
 
             <v-divider class="my-4" />
 
-            <span>
-              <v-icon left>mdi-link-variant</v-icon>
-              Bestehende Einladungslinks
-            </span>
-            <div
-              v-if="invitationLinks.length === 0"
-              class="text-center pa-4 grey--text"
-            >
-              Keine Einladungslinks vorhanden
+            <div v-if="!createLinkMode">
+              <span>
+                <v-icon left>mdi-link-variant</v-icon>
+                Bestehende Einladungslinks
+              </span>
+              <div
+                v-if="invitationLinks.length === 0"
+                class="text-center pa-4 grey--text"
+              > <v-icon color="grey">mdi-link-off</v-icon>
+                Keine Einladungslinks vorhanden
+              </div>
+              <v-list v-else dense>
+                <v-list-item
+                  v-for="(link, index) in invitationLinks"
+                  :key="index"
+                  :class="{
+                    'text--disabled': expired(link) || maxUseReached(link),
+                  }"
+                >
+                  <v-list-item-content>
+                    <v-list-item-title class="d-flex align-center">
+                      <span class="text-truncate">{{
+                        combineTokenUrl(link.token)
+                      }}</span>
+                    </v-list-item-title>
+                    <v-list-item-subtitle>
+                      <v-chip
+                        x-small
+                        :color="expired(link) ? 'error' : 'success'"
+                        class="mr-1"
+                        v-if="link.expiresAt"
+                      >
+                        <v-icon x-small left>mdi-clock-outline</v-icon>
+                        Läuft ab: {{ formatDate(link.expiresAt) }}
+                      </v-chip>
+                      <v-chip
+                        x-small
+                        :color="maxUseReached(link) ? 'error' : 'success'"
+                        class="mr-1"
+                      >
+                        <v-icon x-small left>mdi-account-multiple</v-icon>
+                        Nutzungen: {{ link.usedCount }} /
+                        {{ link.maxUses ? link.maxUses : "∞" }}
+                      </v-chip>
+                      <v-chip
+                        x-small
+                        class="mr-1"
+                        v-for="role in mapRolesById(link.roles)"
+                        :key="role.id"
+                        color="blue lighten-4"
+                      >
+                        <v-icon x-small left>mdi-shield-account</v-icon>
+                        {{ role.name }}
+                      </v-chip>
+                      <v-chip
+                        x-small
+                        class="mr-1"
+                        v-for="challenge in challenges.filter((c) =>
+                          link.challenges.some(
+                            (linkChallenge) => linkChallenge.id === c.id
+                          )
+                        )"
+                        :key="challenge.id"
+                        color="green lighten-4"
+                      >
+                        <v-icon x-small left>mdi-shield-check</v-icon>
+                        {{ challenge.label }}
+                      </v-chip>
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                  <v-list-item-action>
+                    <div>
+                      <v-btn
+                        icon
+                        small
+                        :disabled="expired(link) || maxUseReached(link)"
+                        @click="copyInvitationLink(combineTokenUrl(link.token))"
+                      >
+                        <v-icon small>mdi-content-copy</v-icon>
+                      </v-btn>
+
+                      <v-btn icon small @click="onDeleteLink(link.token)">
+                        <v-icon small>mdi-delete</v-icon>
+                      </v-btn>
+                    </div>
+                  </v-list-item-action>
+                </v-list-item>
+              </v-list>
+              <div class="d-flex align-end justify-end mt-4">
+                <v-btn class="mt-4" outlined @click="closeDialog">
+                  Schließen
+                </v-btn>
+              </div>
             </div>
-            <v-list v-else dense>
-              <v-list-item
-                v-for="(link, index) in invitationLinks"
-                :key="index"
-                :class="{
-                  'text--disabled': expired(link) || maxUseReached(link),
-                }"
-              >
-                <v-list-item-content>
-                  <v-list-item-title class="d-flex align-center">
-                    <span class="text-truncate">{{
-                      combineTokenUrl(link.token)
-                    }}</span>
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    <v-chip
-                      x-small
-                      :color="expired(link) ? 'error' : 'success'"
-                      class="mr-1"
-                      v-if="link.expiresAt"
-                    >
-                      <v-icon x-small left>mdi-clock-outline</v-icon>
-                      Läuft ab: {{ formatDate(link.expiresAt) }}
-                    </v-chip>
-                    <v-chip
-                      x-small
-                      :color="maxUseReached(link) ? 'error' : 'success'"
-                      class="mr-1"
-                    >
-                      <v-icon x-small left>mdi-account-multiple</v-icon>
-                      Nutzungen: {{ link.usedCount }} /
-                      {{ link.maxUses ? link.maxUses : "∞" }}
-                    </v-chip>
-                    <v-chip
-                      x-small
-                      class="mr-1"
-                      v-for="role in mapRolesById(link.roles)"
-                      :key="role.id"
-                      color="blue lighten-4"
-                    >
-                      <v-icon x-small left>mdi-shield-account</v-icon>
-                      {{ role.name }}
-                    </v-chip>
-                    <v-chip
-                      x-small
-                      class="mr-1"
-                      v-for="challenge in challenges.filter((c) =>
-                        link.challenges.some(
-                          (linkChallenge) => linkChallenge.id === c.id
-                        )
-                      )"
-                      :key="challenge.id"
-                      color="green lighten-4"
-                    >
-                      <v-icon x-small left>mdi-shield-check</v-icon>
-                      {{ challenge.label }}
-                    </v-chip>
-                  </v-list-item-subtitle>
-                </v-list-item-content>
-                <v-list-item-action>
-                  <div>
-                    <v-btn
-                      icon
-                      small
-                      :disabled="expired(link) || maxUseReached(link)"
-                      @click="copyInvitationLink(combineTokenUrl(link.token))"
-                    >
-                      <v-icon small>mdi-content-copy</v-icon>
-                    </v-btn>
 
-                    <v-btn icon small @click="onDeleteLink(link.token)">
-                      <v-icon small>mdi-delete</v-icon>
-                    </v-btn>
-                  </div>
-                </v-list-item-action>
-              </v-list-item>
-            </v-list>
+            <div v-else>
+              <span class="d-flex align-center">
+                <v-icon left>mdi-link-plus</v-icon> Neuen Einladungslink
+                erstellen
+              </span>
 
-            <div class="d-flex align-end justify-end mt-4">
-              <v-btn class="mt-4" outlined @click="closeDialog">
-                Schließen
-              </v-btn>
+              <v-form ref="newLinkForm">
+                <v-row class="mt-2">
+                  <v-col cols="12" md="6">
+                    <v-menu
+                      v-model="expiryDateMenu"
+                      :close-on-content-click="false"
+                      transition="scale-transition"
+                      offset-y
+                      min-width="290px"
+                    >
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                          v-model="newLink.expiresAt"
+                          label="Ablaufdatum (optional)"
+                          prepend-icon="mdi-calendar"
+                          readonly
+                          dense
+                          v-bind="attrs"
+                          v-on="on"
+                          clearable
+                          @click:clear="newLink.expiresAt = null"
+                        ></v-text-field>
+                      </template>
+                      <v-date-picker
+                        v-model="newLink.expiresAt"
+                        @input="expiryDateMenu = false"
+                        :min="tomorrow"
+                      ></v-date-picker>
+                    </v-menu>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model.number="newLink.maxUses"
+                      label="Maximale Nutzungen (optional)"
+                      type="number"
+                      min="1"
+                      dense
+                      prepend-icon="mdi-account-multiple"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+
+                <v-row>
+                  <v-col class="col-12">
+                    <div>
+                      <div class="text-subtitle-2 mb-2">
+                        Verifikationsprozess (optional)
+                      </div>
+                      <v-alert
+                        type="info"
+                        dense
+                        elevation="2"
+                        border="left"
+                        colored-border
+                      >
+                        Du kannst optional einen Verifikationsprozess auswählen,
+                        die eingeladene Benutzer bestehen müssen, bevor sie
+                        aktiv im Mandanten arbeiten können. Erst dann werden die
+                        zugehörigen Rollen automatisch zugewiesen. Wenn kein
+                        Verifikationsprozess definiert ist, werden Benutzer
+                        direkt nach Annahme der Einladung hinzugefügt und
+                        erhalten sofort die ausgewählten Rollen.
+                      </v-alert>
+                      <v-select
+                        v-model="linkSelectedChallenge"
+                        :items="challenges"
+                        item-text="label"
+                        item-value="id"
+                        label="Verifikationsprozess auswählen"
+                        outlined
+                        dense
+                        clearable
+                        :hint="'Optional – Rollen können auch direkt ohne Verifikationsprozess vergeben werden'"
+                        persistent-hint
+                      >
+                        <template v-slot:item="{ item, attrs, on }">
+                          <v-list-item v-bind="attrs" v-on="on">
+                            <v-list-item-content>
+                              <v-list-item-title class="d-flex align-center">
+                                <v-icon
+                                  left
+                                  small
+                                  :color="
+                                    item.key === 'manualApproval'
+                                      ? 'blue'
+                                      : 'green'
+                                  "
+                                >
+                                  {{
+                                    item.key === "manualApproval"
+                                      ? "mdi-account-check-outline"
+                                      : "mdi-shield-check"
+                                  }}
+                                </v-icon>
+                                {{ item.label }}
+                              </v-list-item-title>
+                              <v-list-item-subtitle>
+                                Rollen:
+                                {{
+                                  getRoleNames(item.rolesToAssign).join(", ")
+                                }}
+                              </v-list-item-subtitle>
+                            </v-list-item-content>
+                          </v-list-item>
+                        </template>
+                      </v-select>
+
+                      <div v-if="linkSelectedChallenge" class="mt-2">
+                        <span class="text-caption">
+                          Diese Rollen werden durch den ausgewählten
+                          Verifikationsprozess automatisch vergeben:
+                        </span>
+                        <v-chip
+                          v-for="r in linkChallengeRoles"
+                          :key="r.id"
+                          small
+                          color="blue lighten-5"
+                          class="ma-1"
+                        >
+                          <v-icon left x-small>mdi-shield-account</v-icon>
+                          {{ r.name }}
+                        </v-chip>
+                      </div>
+                    </div>
+
+                    <v-divider class="my-4"></v-divider>
+                    <div>
+                      <div class="text-subtitle-2 mb-2">
+                        Zusätzliche Rollen vergeben (optional)
+                      </div>
+                      <v-select
+                        v-model="linkSelectedRoles"
+                        :items="linkAvailableRoles"
+                        item-text="name"
+                        item-value="id"
+                        label="Rollen auswählen"
+                        multiple
+                        chips
+                        small-chips
+                        outlined
+                        dense
+                        hint="Optional – Wählen Sie zusätzliche Rollen, die Benutzer erhalten sollen. Wenn keinen Verifikationsprozess ausgewählt ist, erhalten Benutzer diese Rollen direkt nach Annahme der Einladung."
+                        persistent-hint
+                      ></v-select>
+                    </div>
+                  </v-col>
+                </v-row>
+
+                <div class="d-flex justify-end mt-4">
+                  <v-btn class="mr-2" outlined @click="cancelCreateLink">
+                    Abbrechen
+                  </v-btn>
+                  <v-btn
+                    color="primary"
+                    @click="createInvitationLink"
+                    :loading="creatingLink"
+                  >
+                    <v-icon left>mdi-link-plus</v-icon>
+                    Link erstellen
+                  </v-btn>
+                </div>
+              </v-form>
             </div>
           </v-tab-item>
         </v-tabs-items>
@@ -535,7 +544,10 @@ export default {
       emailInput: "",
       parsedEmails: [],
       selectedRoles: [],
-      selectedChallenges: [],
+      selectedChallenge: null,
+      linkSelectedRoles: [],
+      linkSelectedChallenge: null,
+      createLinkMode: false,
       expiryDateMenu: false,
       creatingLink: false,
       newLink: {
@@ -562,12 +574,45 @@ export default {
       tomorrow.setDate(tomorrow.getDate() + 1);
       return tomorrow.toISOString().substr(0, 10);
     },
-    challengeRolePreview() {
-      const roleIds = new Set();
-      this.challenges
-        .filter((c) => this.selectedChallenges?.includes(c.id))
-        .forEach((c) => (c.rolesToAssign || []).forEach((r) => roleIds.add(r)));
-      return this.roles.filter((r) => roleIds.has(r.id));
+    challengeRoles() {
+      if (!this.selectedChallenge) return [];
+      const challenge = this.challenges.find(
+        (c) => c.id === this.selectedChallenge
+      );
+      return challenge
+        ? this.roles.filter((r) => challenge.rolesToAssign?.includes(r.id))
+        : [];
+    },
+    finalSelectedRoles() {
+      const all = [
+        ...this.selectedRoles,
+        ...this.challengeRoles.map((r) => r.id),
+      ];
+      return [...new Set(all)];
+    },
+    availableRoles() {
+      const challengeRoleIds = this.challengeRoles.map((r) => r.id);
+      return this.roles.filter((role) => !challengeRoleIds.includes(role.id));
+    },
+    linkChallengeRoles() {
+      if (!this.linkSelectedChallenge) return [];
+      const challenge = this.challenges.find(
+        (c) => c.id === this.linkSelectedChallenge
+      );
+      return challenge
+        ? this.roles.filter((r) => challenge.rolesToAssign?.includes(r.id))
+        : [];
+    },
+    linkFinalSelectedRoles() {
+      const all = [
+        ...this.linkSelectedRoles,
+        ...this.linkChallengeRoles.map((r) => r.id),
+      ];
+      return [...new Set(all)];
+    },
+    linkAvailableRoles() {
+      const challengeRoleIds = this.linkChallengeRoles.map((r) => r.id);
+      return this.roles.filter((role) => !challengeRoleIds.includes(role.id));
     },
   },
   methods: {
@@ -602,7 +647,6 @@ export default {
           message: "Link wurde in die Zwischenablage kopiert",
         });
       } catch (error) {
-        console.error("Failed to copy link:", error);
         this.$emit("toast", {
           type: "error",
           message: "Link konnte nicht kopiert werden",
@@ -612,19 +656,19 @@ export default {
     async createInvitationLink() {
       this.creatingLink = true;
       try {
-        this.$emit("createLink", {
-          roles: this.newLink.roles,
+        const payload = {
+          roles: this.linkFinalSelectedRoles,
           expiresAt: this.newLink.expiresAt,
           maxUses: this.newLink.maxUses,
-          challenges: this.newLink.challenges,
-        });
-
-        this.newLink = {
-          expiresAt: null,
-          maxUses: null,
-          roles: [],
-          challenges: [],
+          challenges: this.linkSelectedChallenge
+            ? [{ id: this.linkSelectedChallenge }]
+            : [],
         };
+
+        this.$emit("createLink", payload);
+
+        this.resetCreateLinkForm();
+        this.createLinkMode = false;
       } catch (error) {
         console.error("Failed to prepare invitation link:", error);
         this.$emit("toast", {
@@ -669,26 +713,37 @@ export default {
     removeEmail(index) {
       this.parsedEmails.splice(index, 1);
     },
+    cancelCreateLink() {
+      this.resetCreateLinkForm();
+      this.createLinkMode = false;
+    },
+    resetCreateLinkForm() {
+      this.newLink = {
+        expiresAt: null,
+        maxUses: null,
+        roles: [],
+        challenges: [],
+      };
+      this.linkSelectedChallenge = null;
+      this.linkSelectedRoles = [];
+    },
     inviteUsers() {
       if (this.validEmailCount === 0) return;
       this.parsedEmails = this.parsedEmails.map((e) => {
         if (!e.exists) {
           return {
             ...e,
-            roles: this.selectedRoles,
-            challenges: this.selectedChallenges,
+            roles: this.finalSelectedRoles,
+            challenge: this.selectedChallenge,
           };
         }
         return e;
       });
-
       this.$emit("invite", this.parsedEmails);
-
       this.emailInput = "";
       this.parsedEmails = [];
       this.selectedRoles = [];
-      this.selectedChallenges = [];
-
+      this.selectedChallenge = null;
       this.closeDialog();
     },
     onDeleteLink(linkToken) {
