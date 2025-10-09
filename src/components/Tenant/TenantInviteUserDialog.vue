@@ -206,7 +206,11 @@
                 </div>
               </div>
 
-              <v-btn v-if="!createLinkMode" color="primary" @click="createLinkMode = true">
+              <v-btn
+                v-if="!createLinkMode"
+                color="primary"
+                @click="createLinkMode = true"
+              >
                 <v-icon left>mdi-link-plus</v-icon>
                 Neuen Einladungslink erstellen
               </v-btn>
@@ -222,7 +226,8 @@
               <div
                 v-if="invitationLinks.length === 0"
                 class="text-center pa-4 grey--text"
-              > <v-icon color="grey">mdi-link-off</v-icon>
+              >
+                <v-icon color="grey">mdi-link-off</v-icon>
                 Keine Einladungslinks vorhanden
               </div>
               <v-list v-else dense>
@@ -261,7 +266,7 @@
                       <v-chip
                         x-small
                         class="mr-1"
-                        v-for="role in mapRolesById(link.roles)"
+                        v-for="role in getLinkRoles(link)"
                         :key="role.id"
                         color="blue lighten-4"
                       >
@@ -583,13 +588,6 @@ export default {
         ? this.roles.filter((r) => challenge.rolesToAssign?.includes(r.id))
         : [];
     },
-    finalSelectedRoles() {
-      const all = [
-        ...this.selectedRoles,
-        ...this.challengeRoles.map((r) => r.id),
-      ];
-      return [...new Set(all)];
-    },
     availableRoles() {
       const challengeRoleIds = this.challengeRoles.map((r) => r.id);
       return this.roles.filter((role) => !challengeRoleIds.includes(role.id));
@@ -603,13 +601,6 @@ export default {
         ? this.roles.filter((r) => challenge.rolesToAssign?.includes(r.id))
         : [];
     },
-    linkFinalSelectedRoles() {
-      const all = [
-        ...this.linkSelectedRoles,
-        ...this.linkChallengeRoles.map((r) => r.id),
-      ];
-      return [...new Set(all)];
-    },
     linkAvailableRoles() {
       const challengeRoleIds = this.linkChallengeRoles.map((r) => r.id);
       return this.roles.filter((role) => !challengeRoleIds.includes(role.id));
@@ -619,8 +610,13 @@ export default {
     closeDialog() {
       this.$emit("close");
     },
-    mapRolesById(roleIds) {
-      return this.roles.filter((role) => roleIds?.includes(role.id));
+    getLinkRoles(link) {
+      const roles = link.roles || [];
+      const challengeRoles = this.challenges
+        .filter((c) => link.challenges.some((lc) => lc === c.id))
+        ?.flatMap((c) => c.rolesToAssign || []);
+      const allRoles = [...new Set([...roles, ...challengeRoles])];
+      return this.roles.filter((role) => allRoles.includes(role.id));
     },
 
     formatDate(dateString) {
@@ -657,11 +653,11 @@ export default {
       this.creatingLink = true;
       try {
         const payload = {
-          roles: this.linkFinalSelectedRoles,
+          roles: this.linkSelectedRoles,
           expiresAt: this.newLink.expiresAt,
           maxUses: this.newLink.maxUses,
           challenges: this.linkSelectedChallenge
-            ? [{ id: this.linkSelectedChallenge }]
+            ? [this.linkSelectedChallenge]
             : [],
         };
 
@@ -670,7 +666,6 @@ export default {
         this.resetCreateLinkForm();
         this.createLinkMode = false;
       } catch (error) {
-        console.error("Failed to prepare invitation link:", error);
         this.$emit("toast", {
           type: "error",
           message: "Fehler beim Vorbereiten des Einladungslinks",
@@ -733,8 +728,8 @@ export default {
         if (!e.exists) {
           return {
             ...e,
-            roles: this.finalSelectedRoles,
-            challenge: this.selectedChallenge,
+            roles: this.selectedRoles,
+            challenges: [this.selectedChallenge],
           };
         }
         return e;

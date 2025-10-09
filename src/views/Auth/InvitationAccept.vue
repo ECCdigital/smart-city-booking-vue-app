@@ -74,9 +74,27 @@
           <p class="mt-4">Einladung wird überprüft...</p>
         </div>
 
+        <div v-else-if="pendingApproval">
+          <v-alert type="info" border="left" elevation="2" colored-border>
+            Ihre Einladung wurde angenommen und wartet auf die Genehmigung durch
+            einen Administrator.
+          </v-alert>
+          <v-btn
+            color="primary"
+            elevation="2"
+            block
+            large
+            class="mt-6"
+            :to="{ name: 'dashboard' }"
+          >
+            <v-icon left>mdi-arrow-right</v-icon>
+            Fortfahren
+          </v-btn>
+        </div>
+
         <div v-else-if="isAccepted">
           <v-alert type="success" border="left" elevation="2" colored-border>
-            Einladung angenommen
+            Einladung erfolgreich angenommen
           </v-alert>
           <v-btn
             color="primary"
@@ -181,6 +199,7 @@ export default {
       isAccepted: false,
       isRejecting: false,
       isRejected: false,
+      pendingApproval: false,
       verificationError: null,
       errorMessage: {
         400: this.$t("invitation.error.invalid_params"),
@@ -253,8 +272,10 @@ export default {
     async acceptInvitation() {
       this.isAccepting = true;
       try {
-        await ApiInvitationService.acceptInvitation(this.tenantId, this.token);
+        const response = await ApiInvitationService.acceptInvitation(this.tenantId, this.token);
+        console.log("Acceptance response:", response);
         this.isAccepted = true;
+        this.pendingApproval = response.data?.pendingApproval || false;
         await this.addToast(
           ToastService.createToast("invitation.success.accepted", "success")
         );

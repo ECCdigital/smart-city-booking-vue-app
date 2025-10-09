@@ -164,6 +164,39 @@
                       <span v-if="item.roles.length > 3">...</span>
                     </span>
                   </v-list-item-subtitle>
+
+                  <v-list-item-subtitle
+                    v-if="hasFailedInvitation(item)"
+                    class="d-flex align-center flex-wrap mt-1"
+                  >
+                    <v-chip x-small color="red" text-color="white" class="mr-2">
+                      Einladung fehlgeschlagen
+                    </v-chip>
+                    <span class="text-caption">
+                      {{
+                        getFailedInvitations(item)
+                          .map((fi) => fi.reasonText)
+                          .join(" | ")
+                      }}
+                    </span>
+                  </v-list-item-subtitle>
+
+                  <v-list-item-subtitle
+                    v-if="
+                      hasPendingApprovalInvitation(item) &&
+                      item.status !== 'suspended'
+                    "
+                    class="d-flex align-center flex-wrap mt-1"
+                  >
+                    <v-chip
+                      x-small
+                      color="blue darken-1"
+                      text-color="white"
+                      class="mr-2"
+                    >
+                      Wartet auf Freigabe
+                    </v-chip>
+                  </v-list-item-subtitle>
                 </v-list-item-content>
 
                 <v-list-item-action v-if="item.id !== 'super-admin'">
@@ -215,7 +248,7 @@
                       </v-list-item>
 
                       <v-list-item
-                        v-if="item.status === 'active'"
+                        v-if="item.status !== 'suspended'"
                         link
                         @click="suspendUser(item.userId)"
                       >
@@ -225,6 +258,19 @@
                           >
                         </v-list-item-icon>
                         <v-list-item-title>Sperren</v-list-item-title>
+                      </v-list-item>
+
+                      <v-list-item
+                        v-if="hasPendingApprovalInvitation(item)"
+                        link
+                        @click="approveInvitation(item.userId)"
+                      >
+                        <v-list-item-icon>
+                          <v-icon small color="blue darken-1"
+                            >mdi-account-check</v-icon
+                          >
+                        </v-list-item-icon>
+                        <v-list-item-title>Freigeben</v-list-item-title>
                       </v-list-item>
 
                       <v-divider />
@@ -313,7 +359,7 @@
     <TenantInviteUserDialog
       :open="showInviteDialog"
       :roles="api.roles"
-      :challenges="api.challenges"
+      :challenges="api.challenges.filter((c) => c.enabled)"
       :members="members"
       :invitation-links.sync="api.invitations"
       :tenantId="tenantId"
@@ -542,9 +588,7 @@ export default {
     },
 
     async fetchChallenges() {
-      const response = await ApiChallengeService.getChallenges(
-        this.tenantId
-      );
+      const response = await ApiChallengeService.getChallenges(this.tenantId);
       this.api.challenges = response.data;
     },
 
@@ -575,6 +619,7 @@ export default {
             this.tenantId,
             user.email,
             user.roles,
+            user.challenges,
             "invite"
           );
         }
@@ -801,6 +846,88 @@ export default {
         this.isLoading = false;
       }
     },
+
+    mapInvitationReasonToGerman(code) {
+      const map = {
+        INVALID_DOMAIN: "Ungültige Domain",
+        BOUNCED: "E-Mail konnte nicht zugestellt werden",
+        BLOCKED: "E-Mail blockiert",
+        RATE_LIMIT: "Zu viele Versuche",
+        EXPIRED: "Einladungslink abgelaufen",
+        ALREADY_MEMBER: "Benutzer ist bereits Mitglied",
+        NOT_ALLOWED: "Nicht erlaubt",
+        UNKNOWN: "Unbekannter Fehler",
+      };
+      return map[code] || code;
+    },
+    getFailedInvitations(user) {
+      if (!user?.invitations?.length) return [];
+      return user.invitations
+        .filter((i) => i.status === "failed")
+        .map((i) => {
+          const reasons =
+            typeof i.reason === "string" && i.reason.length > 0
+              ? i.reason
+                  .split(";")
+                  .map((r) => r.trim())
+                  .filter(Boolean)
+              : [];
+          const reasonText =
+            reasons.length > 0
+              ? reasons.map(this.mapInvitationReasonToGerman).join(", ")
+              : "Fehler";
+          return { ...i, reasons, reasonText };
+        });
+    },
+    hasFailedInvitation(user) {
+      return this.getFailedInvitations(user).length > 0;
+    },
+    getPendingApprovalInvitations(user) {
+      if (!user?.invitations?.length) return [];
+      return user.invitations.filter((i) => i.status === "pending_approval");
+    },
+    hasPendingApprovalInvitation(user) {
+      return this.getPendingApprovalInvitations(user).length > 0;
+    },
+    async approveInvitation(userID) {
+      const invitation = this.getPendingApprovalInvitations(
+        this.api.users.find((u) => u.userId === userID)
+      )[0];
+      if (!invitation) {
+        return;
+      }
+      const challengeID = invitation.challengeStates.find(
+        (cs) => cs.status === "pending_approval"
+      )?.challengeId;
+
+      if (challengeID) {
+        try {
+          this.isLoading = true;
+          await ApiInvitationService.approveChallenge(
+            this.tenantId,
+            challengeID,
+            invitation.token,
+            userID
+          );
+
+          await this.addToast({
+            type: "success",
+            message: "Einladung wurde freigegeben.",
+          });
+
+          await this.fetchTenantUsers();
+          await this.fetchInvitations();
+        } catch (e) {
+          await this.addToast({
+            type: "error",
+            message: "Freigabe der Einladung ist fehlgeschlagen.",
+          });
+          console.error(e);
+        } finally {
+          this.isLoading = false;
+        }
+      }
+    },
   },
 
   async created() {
@@ -855,5 +982,12 @@ export default {
 /* Make list items lighter in dark mode */
 .theme--dark .v-list-item.elevation-2 {
   background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.invite-failed {
+  color: #e53935;
+}
+.invite-pending {
+  color: #1976d2;
 }
 </style>

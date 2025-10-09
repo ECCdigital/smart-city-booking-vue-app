@@ -55,4 +55,17 @@ export default {
       withCredentials: true,
     });
   },
+  approveChallenge(tenantId, challengeID, token, userID) {
+    return ApiClient.post(
+      `/api/${tenantId}/invitations/approve`,
+      {
+        challengeId: challengeID,
+        token: token,
+        userId: userID,
+      },
+      {
+        withCredentials: true,
+      }
+    );
+  },
 };

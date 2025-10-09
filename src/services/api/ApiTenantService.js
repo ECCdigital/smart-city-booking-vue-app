@@ -25,10 +25,10 @@ export default {
       withCredentials: withCredentials,
     });
   },
-  async addTenantUser(tenantId, userId, roles, type) {
+  async addTenantUser(tenantId, userId, roles, challenges, type) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/add-user`,
-      { userId, roles, type },
+      { userId, roles, challenges, type },
       { withCredentials: true }
     );
     return response.data;
