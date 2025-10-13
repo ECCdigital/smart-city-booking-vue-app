@@ -1,12 +1,13 @@
 <template>
   <v-dialog v-model="openDialog" persistent max-width="800px">
     <v-card class="">
-      <v-card-title>
+      <v-card-title class="py-4 px-6">
         <span class="text-h5">
           <v-icon left>mdi-account-plus</v-icon> Neue Benutzer hinzufügen</span
         >
       </v-card-title>
-      <v-card-text>
+      <v-divider></v-divider>
+      <v-card-text class="pt-6 pb-2 px-8">
         <v-tabs v-model="model" fixed-tabs>
           <v-tab
             ><v-icon class="mr-2">mdi-email</v-icon> Per E-Mail einladen</v-tab
@@ -182,8 +183,9 @@
             </div>
 
             <div class="d-flex align-end justify-end mt-4">
+              <v-btn class="mr-4" outlined @click="closeDialog"> Abbrechen </v-btn>
               <v-btn
-                class="mr-4"
+                class=""
                 color="primary"
                 @click="inviteUsers"
                 :disabled="validEmailCount === 0"
@@ -191,7 +193,6 @@
                 <v-icon left>mdi-send</v-icon>
                 {{ validEmailCount }} Benutzer einladen
               </v-btn>
-              <v-btn class="" outlined @click="closeDialog"> Schließen </v-btn>
             </div>
           </v-tab-item>
           <v-tab-item class="mx-2">
@@ -309,7 +310,7 @@
               </v-list>
               <div class="d-flex align-end justify-end mt-4">
                 <v-btn class="mt-4" outlined @click="closeDialog">
-                  Schließen
+                  Abbrechen
                 </v-btn>
               </div>
             </div>
