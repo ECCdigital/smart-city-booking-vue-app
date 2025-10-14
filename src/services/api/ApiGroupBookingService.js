@@ -13,6 +13,16 @@ export default {
     );
     return response.data;
   },
+  async payGroupBooking({ tenantId, id, paymentMethod }) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+
+    const response = await ApiClient.post(
+      `api/${t}/group-bookings/${id}/pay`,
+      { paymentMethod: paymentMethod }
+
+    );
+    return response.data;
+  },
   async rejectGroupBooking(tenantId, groupBookingId, reason) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     const response = await ApiClient.post(

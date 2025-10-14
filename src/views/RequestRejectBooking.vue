@@ -18,54 +18,59 @@
         "
         v-if="!rejectSuccess"
       >
-        <v-card-text class="text-center custom-card">
-          <v-alert
-            v-if="showVerificationError"
-            type="warning"
-            class="mb-10"
-            dense
-          >
-            Die eingegebene Name entspricht nicht der Buchung.
-          </v-alert>
-
-          <v-img
-            src="/app-logo.png"
-            max-width="150"
-            class="mb-4 mx-auto"
-          />
-
-          <p>
-            <strong
-              >Möchten Sie die Buchung #{{ bookingNumber }} wirklich
-              stornieren?</strong
+        <v-form ref="form" v-model="valid" @submit.prevent="sendRejectRequest">
+          <v-card-text class="text-center custom-card">
+            <v-alert
+              v-if="showVerificationError"
+              type="warning"
+              class="mb-10"
+              dense
             >
-          </p>
+              Die eingegebene Name entspricht nicht der Buchung.
+            </v-alert>
 
-          <v-text-field
-            outlined
-            v-model="verificationName"
-            label="Ihr Name (wie in der Buchung)"
-            hint="Bitte geben Sie Ihren Namen ein, so wie er auch in der Buchung hinterlegt wurde."
-            persistent-hint
-          ></v-text-field>
-          <v-textarea
-            outlined
-            v-model="rejectReason"
-            rows="3"
-            label="Hinweis zur Stornierung (optional)"
-            class="mt-3"
-          ></v-textarea>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn
-            :loading="fetching"
-            block
-            color="primary"
-            @click="sendRejectRequest"
-          >
-            Buchung jetzt stornieren</v-btn
-          >
-        </v-card-actions>
+            <v-img src="/app-logo.png" max-width="150" class="mb-4 mx-auto" />
+
+            <p>
+              <strong
+                >Möchten Sie die Buchung #{{ bookingNumber }} wirklich
+                stornieren?</strong
+              >
+            </p>
+
+            <v-text-field
+              outlined
+              v-model="verificationName"
+              label="Ihr Name (wie in der Buchung)"
+              hint="Bitte geben Sie Ihren Namen ein, so wie er auch in der Buchung hinterlegt wurde."
+              :rules="[
+                (v) => !!v || 'Bitte geben Sie Ihren Namen ein.',
+              ]"
+              persistent-hint
+            ></v-text-field>
+            <v-textarea
+              outlined
+              v-model="rejectReason"
+              rows="3"
+              label="Hinweis zur Stornierung"
+              :rules="[
+                (v) => !!v || 'Bitte geben Sie einen Grund für die Stornierung an.',
+              ]"
+              class="mt-3"
+            ></v-textarea>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn
+              :loading="fetching"
+              block
+              color="primary"
+              type="submit"
+              :disabled="!valid || fetching"
+            >
+              Buchung jetzt stornieren</v-btn
+            >
+          </v-card-actions>
+        </v-form>
       </v-card>
 
       <v-card
@@ -114,6 +119,7 @@ export default {
       showVerificationError: false,
       rejectSuccess: false,
       fetching: false,
+      valid: false,
     };
   },
   methods: {

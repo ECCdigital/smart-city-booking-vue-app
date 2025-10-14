@@ -175,6 +175,16 @@
       </v-row>
       <v-row>
         <v-col>
+          <v-switch
+            v-model="tenant.receiptEnableBCC"
+            color="primary"
+            label="Zahlungsbeleg als Kopie an Mandanten senden"
+            class="mt-2"
+          ></v-switch>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
           <v-text-field
             background-color="accent"
             filled
@@ -691,6 +701,14 @@
         </v-col>
       </v-row>
       <v-switch
+        v-model="tenant.notifyOnNewBooking"
+        color="primary"
+        hint="Sofern aktiviert, erhält der Mandant eine E-Mail bei jeder neuen Buchung."
+        persistent-hint
+        label="Benachrichtigung bei neuer Buchung"
+        class="mt-2"
+      ></v-switch>
+      <v-switch
         v-model="tenant.enablePublicStatusView"
         color="primary"
         hint="Sofern aktiviert, kann der Status einer Buchung öffentlich abgefragt werden."
@@ -702,10 +720,8 @@
       <h3 class="mb-5 mt-5">Events</h3>
       <v-divider class="mb-5"></v-divider>
       <v-row>
-        <v-col>
-          <v-card flat height="120">
-            <v-snackbar :timeout="-1" :value="true" absolute color="info" text>
-              <v-icon color="info" left> mdi-information-outline </v-icon>
+        <v-col class="col-12 col-md-6">
+            <v-alert type="info" border="left" elevation="1" colored-border>
               <span>
                 Mit dieser Option können Sie das Erstellen einer Veranstaltung
                 standardmäßig auf den einfachen Modus umstellen. Dieser Modus
@@ -713,8 +729,7 @@
                 einer detaillierte Veranstaltung lässt sich weiterhin über den
                 "Veranstaltung Erstellen" Knopf auswählen.
               </span>
-            </v-snackbar>
-          </v-card>
+            </v-alert>
         </v-col>
       </v-row>
       <v-row>
@@ -777,68 +792,108 @@
                     ></v-switch>
                   </v-col>
                 </v-row>
-                <v-row v-if="workflow.states" no-gutters class="mt-4">
-                  <v-col cols="2">
-                    <span class="text-caption"> Status für neue Buchungen</span>
+
+                <v-row no-gutters class="mt-4">
+                  <v-col cols="12">
+                    <v-alert type="info" border="left" elevation="1" colored-border>
+                      Weisen Sie jedem Ereignis (Buchungs-Event) einen Status
+                      zu.
+                      <br />
+                      <strong>Hinweis:</strong> Wenn eine Buchung einen neuen
+                      Status erhält, weil eine <em>Action</em> im Workflow dies
+                      auslöst, wird <u>nicht</u> der hier konfigurierte
+                      Workflow-Status verwendet.
+                    </v-alert>
                   </v-col>
                 </v-row>
 
-                <div v-for="(status, idx) in workflow.states" :key="status.id">
-                  <v-row>
-                    <v-col cols="2">
-                      <v-checkbox
-                        v-model="workflow.defaultState"
-                        :value="workflow.states[idx].id"
-                        color="primary"
-                        :label="idx === 0 ? '' : ''"
-                        class="mt-2"
-                      ></v-checkbox>
-                    </v-col>
-                    <v-col class="col-2 d-flex align-center justify-center">
-                      <v-btn
-                        v-if="idx !== 0"
-                        color="primary"
-                        @click="moveUp(idx)"
-                        class="mt-2"
-                        icon
+                <v-row
+                  dense
+                  no-gutters
+                  v-for="event in workflowEvents"
+                  :key="event.key"
+                >
+                  <v-col cols="12" md="4">
+                    <span class="font-weight-medium">{{ event.label }}</span>
+                  </v-col>
+                  <v-col cols="12" md="8">
+                    <v-select
+                      :items="availableStatesFor(event.key)"
+                      item-text="name"
+                      item-value="id"
+                      v-model="workflow.eventStateMapping[event.key]"
+                      label="Status auswählen"
+                      outlined
+                      dense
+                      :hint="event.hint"
+                      persistent-hint
+                    ></v-select>
+                  </v-col>
+                </v-row>
+
+                <v-divider class="my-6"></v-divider>
+
+                <div>
+                  <h4 class="mb-2">Workflow-Status</h4>
+                  <div
+                    v-for="(status, idx) in workflow.states"
+                    :key="status.id"
+                  >
+                    <v-row>
+                      <!-- Buttons für Move -->
+                      <v-col class="col-2 d-flex align-center justify-center">
+                        <v-btn
+                          v-if="idx !== 0"
+                          color="primary"
+                          @click="moveUp(idx)"
+                          class="mt-2"
+                          icon
+                        >
+                          <v-icon>mdi-arrow-up</v-icon>
+                        </v-btn>
+                        <v-btn
+                          v-if="idx !== workflow.states.length - 1"
+                          color="primary"
+                          @click="moveDown(idx)"
+                          class="mt-2"
+                          icon
+                        >
+                          <v-icon>mdi-arrow-down</v-icon>
+                        </v-btn>
+                      </v-col>
+
+                      <!-- Name -->
+                      <v-col class="d-flex align-center">
+                        <span>
+                          <strong>{{ status.name || "Unbenannt" }}</strong>
+                        </span>
+                      </v-col>
+
+                      <!-- Edit/Delete -->
+                      <v-col
+                        class="col-auto d-flex align-center justify-center"
                       >
-                        <v-icon>mdi-arrow-up</v-icon>
-                      </v-btn>
-                      <v-btn
-                        v-if="idx !== workflow.states.length - 1"
-                        color="primary"
-                        @click="moveDown(idx)"
-                        class="mt-2"
-                        icon
-                      >
-                        <v-icon>mdi-arrow-down</v-icon>
-                      </v-btn>
-                    </v-col>
-                    <v-col class="d-flex align-center">
-                      <span>
-                        <strong> {{ workflow.states[idx].name }}</strong>
-                      </span>
-                    </v-col>
-                    <v-col class="col-auto d-flex align-center justify-center">
-                      <v-btn @click="editStatus(idx)" icon depressed>
-                        <v-icon>mdi-pencil</v-icon>
-                      </v-btn>
-                      <v-btn
-                        color="error"
-                        @click="removeStatus(idx)"
-                        icon
-                        depressed
-                      >
-                        <v-icon>mdi-delete</v-icon>
-                      </v-btn>
-                    </v-col>
-                  </v-row>
-                  <v-divider class="my-2" />
-                </div>
-                <div class="d-flex justify-center">
-                  <v-btn @click="addStatus" class="mt-4" outlined>
-                    Workflow-Status hinzufügen
-                  </v-btn>
+                        <v-btn @click="editStatus(idx)" icon depressed>
+                          <v-icon>mdi-pencil</v-icon>
+                        </v-btn>
+                        <v-btn
+                          color="error"
+                          @click="removeStatus(idx)"
+                          icon
+                          depressed
+                        >
+                          <v-icon>mdi-delete</v-icon>
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                    <v-divider class="my-2" />
+                  </div>
+
+                  <div class="d-flex justify-center">
+                    <v-btn @click="addStatus" class="mt-4" outlined>
+                      Workflow-Status hinzufügen
+                    </v-btn>
+                  </div>
                 </div>
               </v-expansion-panel-content>
             </v-expansion-panel>
@@ -983,6 +1038,12 @@ export default {
         active: false,
         defaultState: "",
         states: [],
+        eventStateMapping: {
+          onCreate: null,
+          onCommit: null,
+          onReject: null,
+          onPay: null,
+        },
       },
       tenant: {},
       catalog: {},
@@ -1001,6 +1062,30 @@ export default {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
     }),
+    workflowEvents() {
+      return [
+        {
+          key: "onCreate",
+          label: "Bei Erstellung",
+          hint: "Neuerstellung einer Buchung",
+        },
+        {
+          key: "onCommit",
+          label: "Bei Freigabe",
+          hint: "Wenn eine Buchung freigegeben wird",
+        },
+        {
+          key: "onReject",
+          label: "Bei Ablehnung",
+          hint: "Wenn eine Buchung abgelehnt wird",
+        },
+        {
+          key: "onPay",
+          label: "Bei Zahlung",
+          hint: "Wenn eine Buchung als bezahlt markiert wird",
+        },
+      ];
+    },
     tenantMailConfig: {
       get() {
         return {
@@ -1061,6 +1146,13 @@ export default {
       } finally {
         this.isLoading = false;
       }
+    },
+    availableStatesFor(eventKey) {
+      const usedStates = Object.entries(this.workflow.eventStateMapping)
+        .filter(([k, v]) => k !== eventKey && !!v)
+        .map(([k, v]) => v);
+
+      return this.workflow.states.filter((s) => !usedStates.includes(s.id));
     },
     async fetchCatalog() {
       try {
@@ -1172,7 +1264,12 @@ export default {
           archive: [],
           description: "",
           name: "",
-          defaultState: "",
+          eventStateMapping: {
+            onCreate: null,
+            onCommit: null,
+            onReject: null,
+            onPay: null,
+          },
           tenantId: this.tenant.id,
         };
       }

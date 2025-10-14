@@ -30,19 +30,23 @@ export default {
     }).format(number);
   },
   date(date, dateStyle = "short", locale = "de-DE") {
+    if (!date) return "";
     return new Intl.DateTimeFormat(locale, { dateStyle }).format(
       createDateTimeObject(date)
     );
   },
   time(time, timeStyle = "short", locale = "de-DE") {
+    if (!time) return "";
     return new Intl.DateTimeFormat(locale, { timeStyle }).format(
       createDateTimeObject(time)
     );
   },
   fullDateTime(dateString) {
+    if (!dateString) return "";
     return moment(dateString).format("LLLL");
   },
   fullDateTimeRange(startDate, endDate) {
+    if (!startDate && !endDate) return "";
     if (startDate && endDate) {
       const start = moment(startDate).format("LLLL");
       const end = moment(endDate).format("LLLL");

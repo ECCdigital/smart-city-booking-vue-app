@@ -200,7 +200,7 @@ export default {
 
       const steps = [seriesBookingStep, contactDetailsStep];
 
-      if (this.activePaymentApps.length > 1) {
+      if (this.activePaymentApps.length > 1 && this.bookingAttempts.some((attempt) => attempt.userPriceEur > 0)) {
         steps.push(paymentStep);
       }
 

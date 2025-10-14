@@ -19,11 +19,11 @@ export default {
       withCredentials: withCredentials,
     });
   },
-  async addTenantUser(tenantId, userId, roles) {
-    const response = await ApiClient.post(`/api/tenants/${tenantId}/add-user`, {
-      userId,
-      roles,
-    });
+  async addTenantUser(tenantId, userId, roles, challenges, type) {
+    const response = await ApiClient.post(
+      `/api/tenants/${tenantId}/add-user`,
+      { userId, roles, challenges, type }
+    );
     return response.data;
   },
   async removeTenantUser(tenantId, userId) {
@@ -67,5 +67,12 @@ export default {
   },
   async tenantCountCheck() {
     return (await ApiClient.get("api/tenants/count/check")).data;
+  },
+  async updateUserStatus(tenantId, userId, status) {
+    const response = await ApiClient.post(
+      `/api/tenants/${tenantId}/update-user-status`,
+      { userId, status },
+    );
+    return response.data;
   },
 };

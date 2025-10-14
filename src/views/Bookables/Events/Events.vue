@@ -18,8 +18,17 @@
           :keys="searchKeys"
           filter-key="information.tags"
           :filter-options="api.tags"
+          :sortable="true"
+          :sort-options="[
+            { text: 'Titel', value: 'information.name' },
+            { text: 'Datum', value: 'information.startDate' },
+            { text: 'Öffentlich', value: 'isPublic' },
+            { text: 'Kostenfrei', value: 'attendees.free' },
+            { text: 'Max. Teilnehmer', value: 'attendees.maxAttendees' },
+          ]"
         ></Search>
       </v-col>
+      <!--
       <v-col cols="auto">
         <v-checkbox
           v-model="hidePastEvents"
@@ -27,14 +36,27 @@
           class="mt-2"
         ></v-checkbox>
       </v-col>
+      -->
     </v-row>
-    <v-row gutters align="stretch">
+    <v-row no-gutters class="mt-3">
+      <v-col cols="auto" class="mr-2">
+        <v-chip color="primary" small>
+          Sichtbar: {{ publicEventsCount }}
+        </v-chip>
+      </v-col>
+      <v-col cols="auto">
+        <v-chip color="grey lighten-2" small>
+          Gesamt: {{ totalEventsCount }}
+        </v-chip>
+      </v-col>
+    </v-row>
+    <v-row gutters align="stretch" class="mt-1">
       <v-col
         cols="12"
         sm="6"
         md="4"
         lg="3"
-        v-for="(event) in displayedEvents.slice().reverse()"
+        v-for="event in displayedEvents.slice().reverse()"
         :key="event.id"
         class="mx-xs-auto d-flex flex-column"
         height="100%"
@@ -145,6 +167,12 @@ export default {
     },
     displayedEvents() {
       return this.searchResults;
+    },
+    publicEventsCount() {
+      return this.api.events.filter((event) => event.isPublic).length;
+    },
+    totalEventsCount() {
+      return this.api.events.length;
     },
   },
   watch: {

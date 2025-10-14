@@ -512,23 +512,23 @@ export default {
     },
 
     async handlePaymentOutcome(paymentResponse) {
-      const finalBooking = paymentResponse.data.booking;
+      const finalBooking = paymentResponse.data.bookings[0];
 
-      if (finalBooking.totalPrice <= 0 || !finalBooking.isCommitted) {
+      if (finalBooking?.totalPrice <= 0 || !finalBooking?.isCommitted) {
         await this.routeToStatus(finalBooking);
         return;
       }
 
       switch (finalBooking.paymentProvider) {
         case "giroCockpit": {
-          const paymentUrl = paymentResponse.data?.paymentData;
+          const paymentUrl = paymentResponse.data?.paymentData[0]?.url;
           if (paymentUrl) {
             window.location.href = paymentUrl;
           }
           break;
         }
         case "pmPayment": {
-          const paymentUrl = paymentResponse.data?.paymentData;
+          const paymentUrl = paymentResponse.data?.paymentData[0]?.url;
           if (paymentUrl) {
             window.location.href = paymentUrl;
           }

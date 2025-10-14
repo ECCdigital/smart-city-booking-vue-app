@@ -37,6 +37,18 @@
             </p>
           </div>
 
+          <div v-if="status === 'await-payment'">
+            <v-icon size="75" class="mb-5" color="primary"
+              >mdi-timer-sand-empty</v-icon
+            >
+            <h1>Vielen Dank für Ihre Buchung</h1>
+            <p class="lead mt-5">
+              Ihre Buchung wurde von uns entgegengenommen und freigegeben. Bitte
+              überweisen Sie den fälligen Betrag zeitnah, damit die Buchung
+              endgültig abgeschlossen werden kann.
+            </p>
+          </div>
+
           <div v-if="status === 'no-payment'">
             <v-icon size="75" class="mb-5" color="warning"
               >mdi-timer-sand-empty</v-icon
@@ -323,7 +335,7 @@ export default {
         .filter((b) => !((b.isCommitted && b.isPayed) || b.isRejected))
         .map((b) => b.bookingId);
 
-      if (pending.length === 0) {
+      if (pending.length === 0 || this.paymentProvider === "invoice") {
         clearInterval(this.pollIntervalId);
         clearTimeout(this.pollTimeoutId);
         this.pollIntervalId = null;

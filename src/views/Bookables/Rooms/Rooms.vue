@@ -1,12 +1,8 @@
 <template>
   <AdminLayout class="pb-15">
-    <v-row  v-if="!bookableCountCheck">
+    <v-row v-if="!bookableCountCheck">
       <v-col class="col-auto">
-        <v-alert
-          class="custom-alert"
-          type="info"
-          elevation="2"
-        >
+        <v-alert class="custom-alert" type="info" elevation="2">
           Sie haben die maximale Anzahl an öffentlichen Buchungsobjekten
           erreicht. Erweitern Sie Ihr Kontingent, oder löschen Sie nicht mehr
           benötigte Buchungsobjekte.
@@ -22,6 +18,13 @@
           :keys="searchKeys"
           filter-key="tags"
           :filter-options="api.tags"
+          :sortable="true"
+          :sort-options="[
+            { text: 'Titel', value: 'title' },
+            { text: 'Erstellt', value: 'timeCreated' },
+            { text: 'Öffentlich', value: 'isPublic' },
+            { text: 'Buchbar', value: 'isBookable' },
+          ]"
         ></Search>
       </v-col>
     </v-row>

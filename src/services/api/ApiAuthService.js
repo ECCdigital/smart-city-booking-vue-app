@@ -28,13 +28,14 @@ export default {
       throw error;
     }
   },
-  async register(tenant, id, firstName, lastName, company, password) {
+ async register(tenant, id, firstName, lastName, company, password, nextUrl = null) {
     const body = {
       id: id,
       firstName: firstName,
       lastName: lastName,
       company: company,
       password: password,
+      nextUrl: nextUrl,
     };
 
     try {

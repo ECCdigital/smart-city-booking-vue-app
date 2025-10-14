@@ -14,6 +14,24 @@
         ></v-text-field>
       </v-card-text>
       <v-card-text>
+        <v-alert type="info" border="left" elevation="1" colored-border>
+          <strong>Hinweis zur Workflow-Konfiguration:</strong><br />
+          Hier können Sie definieren, welche Aktionen ausgeführt werden sollen,
+          wenn eine Buchung in diesen Workflow-Status wechselt.
+          <ul class="mt-2 mb-2">
+            <li>
+              <strong>E-Mail-Aktion:</strong> Versendet eine Nachricht entweder
+              an bestimmte Benutzer der ausgewählte Rolle, oder direkt an
+              eine benutzerdefinierte E-Mail-Adresse.
+            </li>
+            <li>
+              <strong>Buchungsstatus-Aktion:</strong> Ändert den Status einer
+              Buchung, z.B. auf <em>freigegeben</em>,
+              <em>abgelehnt/storniert</em> oder <em>bezahlt</em>.
+            </li>
+          </ul>
+          Mehrere Aktionen können kombiniert werden.
+        </v-alert>
         <h3>Workflow Aktionen</h3>
         <div v-for="(action, idx) in workflowStatus.actions" :key="idx">
           <v-divider class="my-2" />

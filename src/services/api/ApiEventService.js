@@ -57,4 +57,9 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return (await ApiClient.get(`api/${t}/events/count/check`)).data;
   },
+
+  async getBookedSeatsCount(eventId, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return (await ApiClient.get(`api/${t}/events/${eventId}/count`)).data
+  }
 };

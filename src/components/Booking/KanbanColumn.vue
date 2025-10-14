@@ -28,7 +28,6 @@
         overflow-y: auto;
       "
     >
-      <!-- Einzelne Karten -->
       <BookingKanbanCard
         v-for="element in tasks"
         :key="element.id"
@@ -37,6 +36,7 @@
         @open-booking="onOpenBooking"
         @open-edit-booking="onOpenEditBooking"
         @commit-booking="onCommitBooking"
+        @pay-booking="onPayBooking"
         @reject-booking="onRejectBooking"
         @archive-task="onArchiveTask"
         @move-task="onMoveTask"
@@ -105,6 +105,9 @@ export default {
     },
     onCommitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);
+    },
+    onPayBooking(id) {
+      this.$emit("pay-booking", id);
     },
     onRejectBooking(bookingId) {
       this.$emit("reject-booking", bookingId);

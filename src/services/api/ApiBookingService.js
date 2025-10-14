@@ -11,7 +11,7 @@ export default {
     return ApiClient.get(`api/${t}/bookings/${id}?populate=${p}`);
   },
   getPublicBookings(tenant) {
-    var t = tenant || store.getters["tenants/currentTenantId"];
+    const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/bookings?public=true`);
   },
   getBookingStatus(id, tenant) {
@@ -47,12 +47,18 @@ export default {
     return ApiClient.post(
       `api/${t}/checkout?simulate=${simulate || false}`,
       bookingAttempt,
-      { withCredentials: true }
     );
   },
   async commitBooking(id) {
     const response = await ApiClient.get(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/commit`
+    );
+    return response.data;
+  },
+  async payBooking(id, paymentMethod) {
+    const response = await ApiClient.post(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/pay`,
+      { paymentMethod: paymentMethod }
     );
     return response.data;
   },
@@ -70,9 +76,9 @@ export default {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/bookings/${id}/hooks/${hookId}/release`);
   },
-  deleteBooking(booking) {
+  deleteBooking(id) {
     return ApiClient.delete(
-      `api/${store.getters["tenants/currentTenantId"]}/bookings/${booking.id}`
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}`
     );
   },
   async generateReceipt(id) {

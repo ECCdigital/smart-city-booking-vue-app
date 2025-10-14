@@ -1,8 +1,8 @@
 <template>
-  <v-container class="text-center  fill-height fluid justify-center">
+  <v-container class="text-center fill-height fluid justify-center">
     <v-card outlined class="text-center">
       <v-card-text>
-        <v-img src="/app-logo.png" max-width="200" class="mx-auto"/>
+        <v-img src="/app-logo.png" max-width="200" class="mx-auto" />
         <h2 class="mt-8 mb-2">Email-Bestätigung</h2>
         <v-alert
           type="success"
@@ -13,11 +13,7 @@
         >
           Ihre Email-Adresse wurde erfolgreich bestätigt.
         </v-alert>
-        <v-btn
-          color="primary"
-          class="white--text"
-          @click="login"
-        >
+        <v-btn color="primary" class="white--text" @click="login">
           Weiter zum Login
         </v-btn>
       </v-card-text>
@@ -28,19 +24,24 @@
 <script>
 export default {
   name: "EmailVerify",
-  components: {  },
+  components: {},
   data() {
     return {
-    }
+      nextUrl: null,
+    };
   },
   methods: {
     login() {
-      this.$router.push("/login");
+      this.$router.push({ name: "login", query: { next: this.nextUrl } });
+    },
+  },
+  mounted() {
+    const next = this.$route.query.next;
+    if (next) {
+      this.nextUrl = next;
     }
   },
-}
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>
