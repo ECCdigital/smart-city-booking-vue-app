@@ -74,14 +74,24 @@ export default {
       updateNextUrl: "authStore/setNextUrl",
     }),
     signedIn() {
-      this.$router.push("/admin/dashboard");
+      if (this.nextUrl) {
+        this.$router.push(this.nextUrl);
+        this.updateNextUrl(null);
+      } else {
+        this.$router.push("/admin/dashboard");
+      }
     },
     sso() {
       this.$router.push({ name: "sso" });
     },
   },
   mounted() {
-    this.updateNextUrl(null);
+    const next = this.$route.query.next;
+    if (next) {
+      this.updateNextUrl(next);
+    } else {
+      this.updateNextUrl(null);
+    }
   },
 };
 </script>

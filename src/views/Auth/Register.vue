@@ -137,6 +137,7 @@ export default {
     },
     ...mapGetters({
       instance: "instance/instance",
+      nextUrl: "authStore/nextUrl",
     }),
   },
   components: { ContactInformation },
@@ -184,7 +185,8 @@ export default {
           this.firstName,
           this.lastName,
           this.company,
-          this.password
+          this.password,
+          this.nextUrl
         )
           .then((response) => {
             if (response.status === 201) {

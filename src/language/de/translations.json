@@ -148,6 +148,26 @@
         "title": "Benutzer nicht gefunden",
         "message": "Der Benutzer konnte nicht gefunden werden. Um den angeforderten Benutzer zum Mandanten hinzuzufügen, muss dieser zuerst registriert sein"
       }
+    },
+    "addUser": {
+      "success": {
+        "title": "Benutzer hinzugefügt",
+        "message": "Der Benutzer wurde erfolgreich zum Mandanten hinzugefügt."
+      },
+      "error": {
+        "title": "Fehler beim Hinzufügen",
+        "message": "Der Benutzer konnte nicht zum Mandanten hinzugefügt werden."
+      }
+    },
+    "updateStatus": {
+      "success": {
+        "title": "Status aktualisiert",
+        "message": "Der Mandantenstatus wurde erfolgreich aktualisiert."
+      },
+      "error": {
+        "title": "Fehler beim Aktualisieren",
+        "message": "Der Mandantenstatus konnte nicht aktualisiert werden."
+      }
     }
   },
 
@@ -329,6 +349,57 @@
     "expired": {
       "title": "Sitzung abgelaufen",
       "message": "Ihre Sitzung ist abgelaufen. Bitte loggen Sie sich erneut ein."
+    }
+  },
+  "invitation": {
+    "title": "Einladung",
+    "subtitle": "Bitte melden Sie sich an, um die Einladung zu akzeptieren",
+    "login_required": "Sie müssen angemeldet sein, um die Einladung zu akzeptieren",
+    "login_button": "Anmelden",
+    "login_different_user": "Mit anderem Benutzer anmelden",
+    "verifying": "Einladung wird überprüft...",
+    "verified": "Einladung wurde erfolgreich überprüft",
+    "accept_button": "Einladung annehmen",
+    "reject_button": "Einladung ablehnen",
+    "accepted": {
+      "title": "Einladung angenommen",
+      "message": "Sie haben die Einladung erfolgreich angenommen"
+    },
+    "declined": {
+      "title": "Einladung abgelehnt",
+      "message": "Sie haben die Einladung erfolgreich abgelehnt"
+    },
+    "resend": {
+      "title": "Einladung erneut senden",
+      "message": "Die Einladung wurde erfolgreich erneut gesendet."
+    },
+    "continue_button": "Fortfahren",
+    "error": {
+      "invalid_params": "Ungültige Parameter",
+      "verification_failed": "Es gab ein Problem bei der Überprüfung der Einladung. Bitte versuchen Sie es erneut.",
+      "already_member": "Sie sind bereits Mitglied dieses Mandanten.",
+      "forbidden": "Es scheint, dass Sie mit dem falschen Konto angemeldet sind. Bitte melden Sie sich mit dem Konto an, das zur Annahme dieser Einladung berechtigt ist.",
+      "not_found": "Es scheint, dass die Einladung nicht mehr existiert. Bitte fordern Sie eine neue Einladung an.",
+      "expired": "Es scheint, dass die Einladung abgelaufen ist. Bitte fordern Sie eine neue Einladung an.",
+      "membership_suspended": "Es scheint, dass Ihre Mitgliedschaft in diesem Mandanten ausgesetzt wurde. Bitte wenden Sie sich an den Mandantenadministrator.",
+      "acceptance_failed": {
+        "title": "Fehler",
+        "message": "Annahme der Einladung fehlgeschlagen. Bitte versuchen Sie es erneut."
+      },
+      "declining_failed": {
+        "title": "Fehler",
+        "message": "Ablehnung der Einladung fehlgeschlagen. Bitte versuchen Sie es erneut."
+      }
+    },
+    "success": {
+      "accepted": {
+        "title": "Einladung angenommen",
+        "message": "Sie haben die Einladung erfolgreich angenommen"
+      },
+      "rejected": {
+        "title": "Einladung abgelehnt",
+        "message": "Sie haben die Einladung erfolgreich abgelehnt"
+      }
     }
   },
   "user": {

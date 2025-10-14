@@ -486,6 +486,16 @@ const routes = [
     },
   },
   {
+    path: "/auth/invitation/:tenantId",
+    name: "invitation-accept",
+    component: lazyLoad("Auth/InvitationAccept"),
+    meta: {
+      title: "Einladung annehmen",
+      requiresAuth: false,
+    },
+    props: true,
+  },
+  {
     path: "/payment/redirection",
     name: "payment-redirection",
     component: lazyLoad("MultiCheckout/PaymentRedirection"),
