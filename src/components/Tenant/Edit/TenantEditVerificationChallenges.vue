@@ -5,7 +5,7 @@
     hint="Definiere, wie neue Benutzer verifiziert werden, bevor sie eine Rolle
           erhalten."
   >
-    <v-row class="mb-3">
+    <v-row class="mb-1">
       <v-col class="col-12 col-md-8"> </v-col>
       <v-col class="col-12 col-md-4 d-flex justify-end align-center">
         <v-btn color="primary" @click="addChallenge">

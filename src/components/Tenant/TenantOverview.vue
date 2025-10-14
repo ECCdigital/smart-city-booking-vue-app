@@ -198,8 +198,14 @@ export default {
       apps: {},
       workflow: {
         active: false,
-        defaultState: "",
         states: [],
+        archive: [],
+        eventStateMapping: {
+          onCommit: "",
+          onReject: "",
+          onPay: "",
+          onCreate: "",
+        },
       },
       verificationChallenges: [],
       showEditTemplateDialog: false,
@@ -349,7 +355,7 @@ export default {
             archive: [],
             description: "",
             name: "",
-            defaultState: "",
+            eventStateMapping: "",
             tenantId: this.tenant.id,
           };
     },
@@ -402,35 +408,57 @@ export default {
       this.inProgress = true;
 
       try {
-        await ApiTenantService.submitTenant(this.tenant);
-
-        if (this.workflow.id) {
-          this.workflow = await ApiWorkflowService.updateWorkflow(
-            this.workflow,
-            this.tenant.id
-          );
-        } else {
-          this.workflow = await ApiWorkflowService.createWorkflow(
-            this.workflow,
-            this.tenant.id
-          );
+        if (
+          JSON.stringify(this.tenant) !==
+          JSON.stringify(JSON.parse(this.originalSnapshot).tenant)
+        ) {
+          await ApiTenantService.submitTenant(this.tenant);
         }
 
-        for (const challenge of this.verificationChallenges) {
-          if (challenge.id) {
-            await ApiChallengeService.updateChallenge(
-              this.tenant.id,
-              challenge
+        if (
+          JSON.stringify(this.workflow) !==
+          JSON.stringify(JSON.parse(this.originalSnapshot).workflow)
+        ) {
+          if (this.workflow.id) {
+            this.workflow = await ApiWorkflowService.updateWorkflow(
+              this.workflow,
+              this.tenant.id
             );
           } else {
-            await ApiChallengeService.createChallenge(
-              this.tenant.id,
-              challenge
+            this.workflow = await ApiWorkflowService.createWorkflow(
+              this.workflow,
+              this.tenant.id
             );
           }
         }
 
-        await ApiCatalogService.updateCatalog(this.tenant.id, this.catalog);
+        if (
+          JSON.stringify(this.verificationChallenges) !==
+          JSON.stringify(
+            JSON.parse(this.originalSnapshot).verificationChallenges
+          )
+        ) {
+          for (const challenge of this.verificationChallenges) {
+            if (challenge.id) {
+              await ApiChallengeService.updateChallenge(
+                this.tenant.id,
+                challenge
+              );
+            } else {
+              await ApiChallengeService.createChallenge(
+                this.tenant.id,
+                challenge
+              );
+            }
+          }
+        }
+
+        if (
+          JSON.stringify(this.catalog) !==
+          JSON.stringify(JSON.parse(this.originalSnapshot).catalog)
+        ) {
+          await ApiCatalogService.updateCatalog(this.tenant.id, this.catalog);
+        }
 
         this.originalSnapshot = JSON.stringify({
           tenant: this.tenant,

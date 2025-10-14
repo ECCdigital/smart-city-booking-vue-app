@@ -140,9 +140,6 @@ export default {
       this.confirmOpen = true;
     },
     removeStatus() {
-      this.localWorkflow.states.splice(this.statusToRemove, 1);
-      this.confirmOpen = false;
-      this.emitWorkflow();
       const removed = this.localWorkflow.states.splice(
         this.statusToRemove,
         1
@@ -286,7 +283,11 @@ export default {
       </v-col>
     </v-row>
 
-    <v-expansion-panels multiple class="mt-4">
+    <v-expansion-panels
+      v-if="localWorkflow.states.length"
+      multiple
+      class="mt-4"
+    >
       <v-expansion-panel
         v-for="(status, idx) in localWorkflow.states"
         :key="status.id"
