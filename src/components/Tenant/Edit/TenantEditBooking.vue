@@ -69,6 +69,15 @@ export default {
       </v-col>
     </v-row>
     <v-switch
+      v-model="localTenant.notifyOnNewBooking"
+      color="primary"
+      hint="Sofern aktiviert, erhält der Mandant eine E-Mail bei jeder neuen Buchung."
+      persistent-hint
+      label="Benachrichtigung bei neuer Buchung"
+      class="mt-2"
+      @change="emitTenant()"
+    ></v-switch>
+    <v-switch
       v-model="localTenant.enablePublicStatusView"
       color="primary"
       hint="Sofern aktiviert, kann der Status einer Buchung öffentlich abgefragt werden."

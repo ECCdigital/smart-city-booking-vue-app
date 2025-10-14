@@ -55,8 +55,16 @@ export default {
   <BaseSection
     title="Event Konfiguration"
     icon="mdi-calendar-multiselect"
-    hint="Mit dieser Option können Sie das Erstellen einer Veranstaltung standardmäßig auf den einfachen Modus umstellen. Dieser Modus ist für die meisten Anwendungsfälle ausreichend. Das Erstellen einer detaillierte Veranstaltung lässt sich weiterhin über den Veranstaltung Erstellen Knopf auswählen."
   >
+    <v-alert type="info" border="left" elevation="1" colored-border max-width="750px">
+              <span>
+                Mit dieser Option können Sie das Erstellen einer Veranstaltung
+                standardmäßig auf den einfachen Modus umstellen. Dieser Modus
+                ist für die meisten Anwendungsfälle ausreichend. Das Erstellen
+                einer detaillierte Veranstaltung lässt sich weiterhin über den
+                "Veranstaltung Erstellen" Knopf auswählen.
+              </span>
+    </v-alert>
     <v-row>
       <v-col class="col-12 col-md-6">
         <v-switch

@@ -30,13 +30,18 @@
             show-arrows
             :vertical="$vuetify.breakpoint.mdAndUp"
           >
-            <v-tab v-for="t in tabs" :key="t.key" class="d-flex justify-start" style="text-transform: none;">
+            <v-tab
+              v-for="t in tabs"
+              :key="t.key"
+              class="d-flex justify-start"
+              style="text-transform: none"
+            >
               <v-icon left small>{{ t.icon }}</v-icon>
               {{ t.label }}
             </v-tab>
           </v-tabs></v-col
         >
-        <v-col  class="col-12 col-md-9">
+        <v-col class="col-12 col-md-9">
           <keep-alive>
             <component
               :is="currentComponent"
@@ -46,10 +51,12 @@
               :workflow="workflow"
               :roles="roles"
               :challenges="verificationChallenges"
+              :catalog="catalog"
               @update:tenant="onUpdateTenant"
               @update:apps="onUpdateApps"
               @update:workflow="onUpdateWorkflow"
               @update:challenges="onUpdateChallenges"
+              @update:catalog="onUpdateCatalog"
               @open-receipt-template="openReceiptTemplate"
               @open-invoice-template="openInvoiceTemplate"
             />
@@ -59,10 +66,12 @@
     </v-form>
 
     <SaveBar
-        :anchor-el="$refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)"
-        @submit="submitChanges"
-        :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
-        :in-progress="inProgress"
+      :anchor-el="
+        $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
+      "
+      @submit="submitChanges"
+      :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
+      :in-progress="inProgress"
     />
 
     <ReceiptTemplateDialog
@@ -94,12 +103,14 @@ import TenantEditBooking from "@/components/Tenant/Edit/TenantEditBooking.vue";
 import TenantEditEvents from "@/components/Tenant/Edit/TenantEditEvents.vue";
 import TenantEditWorkflow from "@/components/Tenant/Edit/TenantEditWorkflow.vue";
 import TenantEditVerificationChallenges from "@/components/Tenant/Edit/TenantEditVerificationChallenges.vue";
+import TenantEditCatalogs from "@/components/Tenant/Edit/TenantEditCatalogs.vue";
 
 import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
 import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import SaveBar from "@/components/commons/SaveBar.vue";
+import ApiCatalogService from "@/services/api/ApiCatalogService";
 
 export default {
   name: "TenantOverview",
@@ -116,6 +127,7 @@ export default {
     ReceiptTemplateDialog,
     InvoiceTemplateDialog,
     TenantEditVerificationChallenges,
+    TenantEditCatalogs,
   },
   data() {
     return {
@@ -174,6 +186,12 @@ export default {
           icon: "mdi-check-decagram",
           comp: "TenantEditVerificationChallenges",
         },
+        {
+          key: "catalogs",
+          label: "Kataloge",
+          icon: "mdi-book-open-page-variant",
+          comp: "TenantEditCatalogs",
+        },
       ],
       originalSnapshot: null,
       tenant: {},
@@ -229,6 +247,16 @@ export default {
           active: false,
         },
       },
+      catalog: {},
+      defaultCatalog: {
+        type: "single",
+        tenantId: "",
+        tenantIds: [],
+        slug: "",
+        name: "",
+        active: false,
+        visibility: "public",
+      },
     };
   },
   computed: {
@@ -242,11 +270,21 @@ export default {
           apps: this.apps,
           workflow: this.workflow,
           verificationChallenges: this.verificationChallenges,
+          catalog: this.catalog,
         }) !== this.originalSnapshot
       );
     },
     currentComponent() {
       return this.tabs[this.activeTab]?.comp || "TenantEditGeneral";
+    },
+  },
+  watch: {
+    activeTab(newIndex) {
+      const tabKey = this.tabs[newIndex].key;
+      if (this.$route.query.tab === tabKey) return;
+      this.$router.replace({
+        query: { ...this.$route.query, tab: tabKey },
+      });
     },
   },
   methods: {
@@ -267,6 +305,7 @@ export default {
         this.initializeApps();
         await this.fetchWorkflow();
         await this.fetchChallenges();
+        await this.fetchCatalog();
       } catch (e) {
         console.error(e);
       } finally {
@@ -278,6 +317,7 @@ export default {
           apps: this.apps,
           workflow: this.workflow,
           verificationChallenges: this.verificationChallenges,
+          catalog: this.catalog,
         });
       });
     },
@@ -335,6 +375,9 @@ export default {
     onUpdateChallenges(next) {
       this.verificationChallenges = next;
     },
+    onUpdateCatalog(next) {
+      this.catalog = { ...this.catalog, ...next };
+    },
     async validateActiveChild() {
       const ref = this.$refs.activeChild;
       if (ref && typeof ref.validate === "function") {
@@ -387,11 +430,14 @@ export default {
           }
         }
 
+        await ApiCatalogService.updateCatalog(this.tenant.id, this.catalog);
+
         this.originalSnapshot = JSON.stringify({
           tenant: this.tenant,
           apps: this.apps,
           workflow: this.workflow,
           verificationChallenges: this.verificationChallenges,
+          catalog: this.catalog,
         });
 
         await this.addToast({
@@ -421,8 +467,25 @@ export default {
       this.tenant.invoiceTemplate = template;
       this.showEditInvoiceTemplateDialog = false;
     },
+    async fetchCatalog() {
+      try {
+        this.isLoading = true;
+        const response = await ApiCatalogService.getCatalog(this.tenantId);
+        this.catalog = response.data;
+      } catch (e) {
+        if (e.response && e.response.status === 404) {
+          this.catalog = { ...this.defaultCatalog, tenantId: this.tenantId };
+        }
+      } finally {
+        this.isLoading = false;
+      }
+    },
   },
   async mounted() {
+    const queryTabKey = this.$route.query.tab;
+    const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
+    this.activeTab = foundIndex !== -1 ? foundIndex : 0;
+
     await this.fetchTenant();
     await this.fetchRoles();
   },

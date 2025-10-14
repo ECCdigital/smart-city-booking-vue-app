@@ -1,37 +1,31 @@
 <template>
   <div>
-    <div
-      class="d-flex justify-center"
+    <v-alert
       v-if="!instance.enableCatalog"
+      type="warning"
+      border="left"
+      colored-border
+      elevation="2"
+      dense
+      class="mb-6"
     >
-      <v-card flat height="200" width="1000px">
-        <v-snackbar
-          :timeout="-1"
-          :value="true"
-          absolute
-          color="warning"
-          text
-          max-width="1000px"
-        >
-          <div>
-            <div>
-              In dieser Instanz ist die Funktion zur Konfiguration von Katalogen
-              derzeit nicht verfügbar. Die Möglichkeit, Kataloge anzulegen oder
-              zu bearbeiten, muss auf Instanzebene aktiviert werden.
-            </div>
-            <div class="mt-4">
-              Wenn Sie Kataloge für Ihre Anwendung benötigen, wenden Sie sich
-              bitte an den zuständigen <strong>Instanz-Administrator</strong>.
-              Dieser kann die erforderlichen Einstellungen vornehmen oder Ihnen
-              weitere Informationen zum Vorgehen geben.
-            </div>
-          </div>
-        </v-snackbar>
-      </v-card>
-    </div>
+      <div>
+        <div>
+          In dieser Instanz ist die Funktion zur Konfiguration von Katalogen
+          derzeit nicht verfügbar. Die Möglichkeit, Kataloge anzulegen oder zu
+          bearbeiten, muss auf Instanzebene aktiviert werden.
+        </div>
+        <div class="mt-4">
+          Wenn Sie Kataloge für Ihre Anwendung benötigen, wenden Sie sich bitte
+          an den zuständigen <strong>Instanz-Administrator</strong>. Dieser kann
+          die erforderlichen Einstellungen vornehmen oder Ihnen weitere
+          Informationen zum Vorgehen geben.
+        </div>
+      </div>
+    </v-alert>
 
     <v-row class="mt-4">
-      <v-col cols="6" md="3">
+      <v-col cols="12" md="6">
         <v-switch
           v-model="isActive"
           color="primary"
@@ -39,7 +33,7 @@
           class="mt-2"
         ></v-switch>
       </v-col>
-      <v-col cols="6" md="3">
+      <v-col cols="12" md="6">
         <v-select
           v-model="catalogVisibility"
           :items="visibilityOptions"
@@ -51,7 +45,7 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-col cols="6" md="3">
+      <v-col cols="12" md="6">
         <v-text-field
           v-model="catalogTitle"
           label="Katalog-Titel"
@@ -60,11 +54,11 @@
           dense
           required
           :rules="isActive ? titleRules : []"
-          hint="max. 100 Zeichen"
+          counter="100"
           persistent-hint
         ></v-text-field>
       </v-col>
-      <v-col cols="6" md="3">
+      <v-col cols="12" md="6">
         <v-text-field
           v-model="catalogSlug"
           label="Katalog-URL"
@@ -86,7 +80,7 @@
     </v-row>
 
     <v-row v-if="allowTypeChange">
-      <v-col cols="6" md="3">
+      <v-col cols="12" md="6">
         <v-select
           v-model="catalogType"
           :items="typeOptions"
@@ -98,7 +92,7 @@
           required
         ></v-select>
       </v-col>
-      <v-col cols="6" md="3" v-if="catalogType === 'aggregate'">
+      <v-col cols="12" md="6" v-if="catalogType === 'aggregate'">
         <v-combobox
           v-model="tenantIds"
           label="Tenant IDs"
@@ -122,7 +116,7 @@
     </v-row>
 
     <v-row>
-      <v-col cols="6" md="3">
+      <v-col cols="12" md="6">
         <v-switch
           v-model="useCustomTheme"
           color="primary"
@@ -133,7 +127,7 @@
     </v-row>
 
     <v-row>
-      <v-col cols="6" md="3">
+      <v-col cols="12" md="6">
         <v-text-field
           v-model="primaryColor"
           label="Primärfarbe"
@@ -165,7 +159,7 @@
           </template>
         </v-text-field>
       </v-col>
-      <v-col cols="6" md="3">
+      <v-col cols="12" md="6">
         <v-text-field
           v-model="secondaryColor"
           label="Sekundärfarbe"
@@ -414,4 +408,27 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+
+.catalog-settings {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Flacher Look für Inputs (outlined, ohne Schatten, etwas Radius) */
+::v-deep .flat-input .v-input__control {
+  box-shadow: none !important;
+}
+
+::v-deep .flat-input.v-text-field--outlined .v-input__slot,
+::v-deep .flat-input.v-select--outlined .v-input__slot {
+  border-radius: 8px;
+}
+
+/* Headline-Style */
+.section-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+</style>
