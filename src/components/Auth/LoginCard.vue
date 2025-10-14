@@ -39,52 +39,36 @@ export default {
       updateUser: "user/update",
       updateNextUrl: "authStore/setNextUrl",
     }),
-    signin() {
+    async signin() {
       if (!this.$refs.loginForm.validate()) {
         return;
       }
-
-      ApiAuthService.login(this.id, this.password)
-        .then((response) => {
-          if (response.status === 200) {
-            return new Promise((resolve, reject) => {
-              this.updateUser(response.data)
-                .then((response) => {
-                  this.addToast(
-                    ToastService.createToast("login.success.default", "success")
-                  );
-                  this.id = "";
-                  this.password = "";
-                  this.$emit("success");
-                  resolve(response);
-                })
-                .catch((error) => {
-                  this.addToast(
-                    ToastService.createToast("errors.something-wrong", "error")
-                  );
-                  reject(error);
-                });
-            });
-          }
-        })
-        .catch((error) => {
-          if (error.response.status === 401) {
-            this.addToast(
-              ToastService.createToast("login.error.wrong-email", "error")
-            );
-          } else if (error.response.status === 400) {
-            this.addToast(
-              ToastService.createToast("login.error.default", "error")
-            );
-          } else {
-            this.addToast(
-              ToastService.createToast("login.error.default", "error")
-            );
-          }
-        });
+      try {
+        const { user, permissions } = await ApiAuthService.login(
+          this.id,
+          this.password
+        );
+        await this.updateUser({ user, permissions });
+        await this.addToast(
+          ToastService.createToast("login.success.default", "success")
+        );
+        this.id = "";
+        this.password = "";
+        this.$emit("success");
+      } catch (error) {
+        if (error.response.status === 401) {
+          await this.addToast(
+            ToastService.createToast("login.error.wrong-email", "error")
+          );
+        } else {
+          await this.addToast(
+            ToastService.createToast("login.error.default", "error")
+          );
+        }
+      }
     },
     sso() {
-      if(this.$route.fullPath.includes("checkout")) {
+      if (this.$route.fullPath.includes("checkout")) {
         this.updateNextUrl(this.$route.fullPath);
       }
       this.$router.push({ name: "sso" });
@@ -99,7 +83,7 @@ export default {
 </script>
 
 <template>
-  <v-card flat max-width="500" >
+  <v-card flat max-width="500">
     <v-card-text class="text-center">
       <v-form ref="loginForm" @keydown.enter="signin">
         <v-text-field
@@ -157,10 +141,13 @@ export default {
       </v-row>
     </v-card-text>
     <v-card-actions v-if="ssoActive" class="px-4">
-      <v-btn  block elevation="0" @click="sso"
-      ><v-img src="@/assets/keycloak.svg" max-width="100" class="mx-auto" alt="Keycloak"
-      /></v-btn
-      >
+      <v-btn block elevation="0" @click="sso"
+        ><v-img
+          src="@/assets/keycloak.svg"
+          max-width="100"
+          class="mx-auto"
+          alt="Keycloak"
+      /></v-btn>
     </v-card-actions>
   </v-card>
 </template>

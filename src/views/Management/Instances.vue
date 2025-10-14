@@ -478,6 +478,40 @@
           </v-card-text>
         </v-card>
 
+
+        <v-row class="mt-6">
+          <v-col>
+            <h3 class="mb-5 mt-5">Katalog</h3>
+          </v-col>
+        </v-row>
+
+        <v-card outlined class="mt-12 mb-6 pa-4">
+          <v-card-text>
+            <v-row>
+              <v-col>
+                <v-switch
+                  v-model="instance.enableCatalog"
+                  color="primary"
+                  hide-details
+                  label="Katalog aktivieren"
+                  class="mt-2"/>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col>
+                <v-text-field
+                  v-model="instance.catalogUrl"
+                  background-color="accent"
+                  filled
+                  dense
+                  label="Katalog-URL"
+                  hint="Die URL zu Ihrem Katalog"
+                />
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+
         <div class="d-flex mt-12">
           <v-btn text outlined @click="fetchInstance"> Zurücksetzen </v-btn>
           <v-btn class="ml-2" color="primary" @click="updateInstance">
@@ -578,6 +612,7 @@ export default {
     },
     async updateInstance() {
       try {
+        console.log(this.instance);
         this.instance = await ApiInstanceService.updateInstance(this.instance);
         await this.addToast({
           message: "Instanz erfolgreich aktualisiert",
@@ -591,7 +626,7 @@ export default {
       }
     },
     async fetchInstance() {
-      this.instance = await ApiInstanceService.getInstance(false);
+      this.instance = await ApiInstanceService.getInstance();
     },
     async fetchUsers() {
       this.availableUserIds = await ApiUsersService.getUsers();
