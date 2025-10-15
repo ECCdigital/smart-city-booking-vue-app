@@ -1,8 +1,8 @@
 <template>
-  <v-container class="text-center  fill-height fluid justify-center">
+  <v-container class="text-center fill-height fluid justify-center">
     <v-card outlined class="text-center">
       <v-card-text>
-        <v-img src="/app-logo.png" max-width="200" class="mx-auto"/>
+        <v-img :src="appLogo" max-width="200" class="mx-auto" />
         <h2 class="mt-8 mb-2">Passwort-Bestätigung</h2>
         <v-alert
           type="success"
@@ -13,11 +13,7 @@
         >
           Ihr Passwort wurde erfolgreich zurückgesetzt.
         </v-alert>
-        <v-btn
-          color="primary"
-          class="white--text"
-          @click="login"
-        >
+        <v-btn color="primary" class="white--text" @click="login">
           Weiter zum Login
         </v-btn>
       </v-card-text>
@@ -28,19 +24,21 @@
 <script>
 export default {
   name: "PasswordConfirmed",
-  components: {  },
+  components: {},
   data() {
-    return {
-    }
+    return {};
+  },
+  computed: {
+    appLogo() {
+      return process.env.BASE_URL + "/app-logo.png";
+    },
   },
   methods: {
     login() {
       this.$router.push("/login");
-    }
+    },
   },
-}
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

@@ -13,11 +13,7 @@
       style="overflow: hidden; width: 100%; min-width: 350px; max-width: 500px"
     >
       <v-card-text class="text-center custom-card">
-        <v-img
-          src="/app-logo.png"
-          max-width="150"
-          class="mb-4 mx-auto"
-        />
+        <v-img :src="appLogo" max-width="150" class="mb-4 mx-auto" />
         <div v-if="bookingInfo">
           <div class="text-h5 font-weight-bold">
             {{ bookingInfo.title }}
@@ -287,6 +283,9 @@ export default {
     },
     activeStatus() {
       return this.bookingInfo && this.bookingInfo.status.activeStatus;
+    },
+    appLogo() {
+      return process.env.BASE_URL + "/app-logo.png";
     },
   },
   data() {

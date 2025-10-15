@@ -5,6 +5,11 @@ import ContactInformation from "@/components/ContactInformation.vue";
 export default {
   name: "SsoLogin",
   components: { ContactInformation, KeycloakCard },
+  computed: {
+    appLogo() {
+      return process.env.BASE_URL + "/app-logo.png";
+    },
+  },
 };
 </script>
 
@@ -13,7 +18,7 @@ export default {
     <v-card outlined max-width="500" class="mx-auto mt-sm-15">
       <v-card-text>
         <v-img
-          src="/app-logo.png"
+          :src="appLogo"
           max-width="200"
           class="mx-auto mt-4"
         />

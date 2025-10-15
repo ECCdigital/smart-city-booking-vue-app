@@ -29,7 +29,7 @@
               Die eingegebene Name entspricht nicht der Buchung.
             </v-alert>
 
-            <v-img src="/app-logo.png" max-width="150" class="mb-4 mx-auto" />
+            <v-img :src="appLogo" max-width="150" class="mb-4 mx-auto" />
 
             <p>
               <strong
@@ -43,9 +43,7 @@
               v-model="verificationName"
               label="Ihr Name (wie in der Buchung)"
               hint="Bitte geben Sie Ihren Namen ein, so wie er auch in der Buchung hinterlegt wurde."
-              :rules="[
-                (v) => !!v || 'Bitte geben Sie Ihren Namen ein.',
-              ]"
+              :rules="[(v) => !!v || 'Bitte geben Sie Ihren Namen ein.']"
               persistent-hint
             ></v-text-field>
             <v-textarea
@@ -54,7 +52,8 @@
               rows="3"
               label="Hinweis zur Stornierung"
               :rules="[
-                (v) => !!v || 'Bitte geben Sie einen Grund für die Stornierung an.',
+                (v) =>
+                  !!v || 'Bitte geben Sie einen Grund für die Stornierung an.',
               ]"
               class="mt-3"
             ></v-textarea>
@@ -110,7 +109,11 @@ export default {
       type: String,
     },
   },
-  computed: {},
+  computed: {
+    appLogo() {
+      return process.env.BASE_URL + "/app-logo.png";
+    },
+  },
   data() {
     return {
       bookingNumber: this.$route.query.id,

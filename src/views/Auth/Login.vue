@@ -2,7 +2,7 @@
   <v-container class="text-center">
     <v-card outlined max-width="500" class="mx-auto mt-sm-10">
       <v-card-text class="text-center">
-        <v-img src="/app-logo.png" max-width="200" class="mx-auto" />
+        <v-img :src="appLogo" max-width="200" class="mx-auto" />
 
         <h2 class="mt-8 mb-2">Anmeldung</h2>
         <p class="subtitle-2 mb-10">Mit Ihrem Account anmelden.</p>
@@ -63,6 +63,9 @@ export default {
     ssoActive() {
       return (this.instance?.applications || [])
         .some(app => app.id === "keycloak" && app.active);
+    },
+    appLogo() {
+      return process.env.BASE_URL + "/app-logo.png";
     },
   },
 

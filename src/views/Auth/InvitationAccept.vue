@@ -6,7 +6,7 @@
     >
       <v-card-text class="text-center px-6 px-sm-10">
         <v-img
-          src="/app-logo.png"
+          :src="appLogo"
           max-width="120"
           contain
           alt="App Logo"
@@ -227,6 +227,9 @@ export default {
     },
     currentPath() {
       return this.$route.fullPath;
+    },
+    appLogo() {
+      return process.env.BASE_URL + "/app-logo.png";
     },
   },
   methods: {
