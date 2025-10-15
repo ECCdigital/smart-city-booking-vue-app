@@ -1,12 +1,5 @@
 <template>
   <div>
-    <v-progress-linear
-      v-if="loadingInvitations"
-      indeterminate
-      color="primary"
-      class="mb-2"
-    ></v-progress-linear>
-
     <v-alert
       v-for="invitation in pendingInvitations"
       :key="invitation.tenantId"

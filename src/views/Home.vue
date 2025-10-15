@@ -7,7 +7,7 @@
       class="mb-2"
     ></v-progress-linear>
     <PendingApprovals></PendingApprovals>
-      <PendingTenantInvitations
+    <PendingTenantInvitations
       @invitation:accepted="fetchTenants"
       @invitation:rejected="fetchTenants"
     />
