@@ -41,6 +41,7 @@
     "@vue/cli-plugin-router": "^5.0.8",
     "@vue/cli-service": "^5.0.8",
     "axios": "^1.6.2",
+    "buffer-equal-constant-time": "^1.0.1",
     "core-js": "^3.34.0",
     "date-fns": "^3.0.1",
     "fuse.js": "^7.0.0",
