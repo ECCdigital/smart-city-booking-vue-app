@@ -536,11 +536,20 @@ const routes = [
   },
 ];
 
-const router = new VueRouter({
+const routerConfig = {
   mode: "history",
-  base: process.env.BASE_URL,
   routes,
-});
+};
+
+
+if (process.env.BASE_URL) {
+  console.log("Setting router base to", process.env.BASE_URL);
+  routerConfig.base = process.env.BASE_URL;
+}
+
+
+const router = new VueRouter(routerConfig);
+
 
 router.beforeEach((to, from, next) => {
   const middlewares = [

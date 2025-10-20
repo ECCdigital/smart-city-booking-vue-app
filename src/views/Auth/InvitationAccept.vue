@@ -229,7 +229,9 @@ export default {
       return this.$route.fullPath;
     },
     appLogo() {
-      return process.env.BASE_URL + "/app-logo.png";
+      return process.env.BASE_URL && process.env.BASE_URL.trim()
+        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
+        : "/app-logo.png";
     },
   },
   methods: {

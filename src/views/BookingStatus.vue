@@ -285,7 +285,9 @@ export default {
       return this.bookingInfo && this.bookingInfo.status.activeStatus;
     },
     appLogo() {
-      return process.env.BASE_URL + "/app-logo.png";
+      return process.env.BASE_URL && process.env.BASE_URL.trim()
+        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
+        : "/app-logo.png";
     },
   },
   data() {
