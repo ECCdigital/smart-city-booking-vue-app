@@ -51,12 +51,10 @@
               :workflow="workflow"
               :roles="roles"
               :challenges="verificationChallenges"
-              :catalog="catalog"
               @update:tenant="onUpdateTenant"
               @update:apps="onUpdateApps"
               @update:workflow="onUpdateWorkflow"
               @update:challenges="onUpdateChallenges"
-              @update:catalog="onUpdateCatalog"
               @open-receipt-template="openReceiptTemplate"
               @open-invoice-template="openInvoiceTemplate"
             />
@@ -103,14 +101,13 @@ import TenantEditBooking from "@/components/Tenant/Edit/TenantEditBooking.vue";
 import TenantEditEvents from "@/components/Tenant/Edit/TenantEditEvents.vue";
 import TenantEditWorkflow from "@/components/Tenant/Edit/TenantEditWorkflow.vue";
 import TenantEditVerificationChallenges from "@/components/Tenant/Edit/TenantEditVerificationChallenges.vue";
-import TenantEditCatalogs from "@/components/Tenant/Edit/TenantEditCatalogs.vue";
+import TenantEditCatalog from "@/components/Tenant/Edit/TenantEditCatalog.vue";
 
 import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
 import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import SaveBar from "@/components/commons/SaveBar.vue";
-import ApiCatalogService from "@/services/api/ApiCatalogService";
 
 export default {
   name: "TenantOverview",
@@ -127,7 +124,7 @@ export default {
     ReceiptTemplateDialog,
     InvoiceTemplateDialog,
     TenantEditVerificationChallenges,
-    TenantEditCatalogs,
+    TenantEditCatalog,
   },
   data() {
     return {
@@ -190,7 +187,7 @@ export default {
           key: "catalogs",
           label: "Kataloge",
           icon: "mdi-book-open-page-variant",
-          comp: "TenantEditCatalogs",
+          comp: "TenantEditCatalog",
         },
       ],
       originalSnapshot: null,
@@ -253,16 +250,6 @@ export default {
           active: false,
         },
       },
-      catalog: {},
-      defaultCatalog: {
-        type: "single",
-        tenantId: "",
-        tenantIds: [],
-        slug: "",
-        name: "",
-        active: false,
-        visibility: "public",
-      },
     };
   },
   computed: {
@@ -276,7 +263,6 @@ export default {
           apps: this.apps,
           workflow: this.workflow,
           verificationChallenges: this.verificationChallenges,
-          catalog: this.catalog,
         }) !== this.originalSnapshot
       );
     },
@@ -311,7 +297,6 @@ export default {
         this.initializeApps();
         await this.fetchWorkflow();
         await this.fetchChallenges();
-        await this.fetchCatalog();
       } catch (e) {
         console.error(e);
       } finally {
@@ -380,9 +365,6 @@ export default {
     },
     onUpdateChallenges(next) {
       this.verificationChallenges = next;
-    },
-    onUpdateCatalog(next) {
-      this.catalog = { ...this.catalog, ...next };
     },
     async validateActiveChild() {
       const ref = this.$refs.activeChild;
@@ -453,19 +435,12 @@ export default {
           }
         }
 
-        if (
-          JSON.stringify(this.catalog) !==
-          JSON.stringify(JSON.parse(this.originalSnapshot).catalog)
-        ) {
-          await ApiCatalogService.updateCatalog(this.tenant.id, this.catalog);
-        }
 
         this.originalSnapshot = JSON.stringify({
           tenant: this.tenant,
           apps: this.apps,
           workflow: this.workflow,
           verificationChallenges: this.verificationChallenges,
-          catalog: this.catalog,
         });
 
         await this.addToast({
@@ -494,19 +469,6 @@ export default {
     onSubmitInvoiceTemplate(template) {
       this.tenant.invoiceTemplate = template;
       this.showEditInvoiceTemplateDialog = false;
-    },
-    async fetchCatalog() {
-      try {
-        this.isLoading = true;
-        const response = await ApiCatalogService.getCatalog(this.tenantId);
-        this.catalog = response.data;
-      } catch (e) {
-        if (e.response && e.response.status === 404) {
-          this.catalog = { ...this.defaultCatalog, tenantId: this.tenantId };
-        }
-      } finally {
-        this.isLoading = false;
-      }
     },
   },
   async mounted() {
