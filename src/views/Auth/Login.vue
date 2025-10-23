@@ -84,7 +84,7 @@ export default {
         this.$router.push(this.nextUrl);
         this.updateNextUrl(null);
       } else {
-        this.$router.push("/admin/dashboard");
+        this.$router.push({name: "dashboard"});
       }
     },
     sso() {
