@@ -1,525 +1,70 @@
 <template>
   <AdminLayout>
-    <v-row>
-      <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <v-row>
-          <v-col>
-            <h3 class="mb-5 mt-5">Allgemein</h3>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <p class="text-subtitle-1">Kontaktangaben zu Ihrer Instanz</p>
-          </v-col>
-        </v-row>
+    <div class="page-content" ref="contentCol">
+      <v-form ref="rootForm" v-model="validRoot">
+        <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
-        <!-- Kontakt -->
-        <v-row>
-          <v-col>
-            <v-card outlined class="mx-auto pa-2">
-              <v-card-title class="ml-3">
-                <h4 class="mb-5 mt-5">Kontakt</h4>
-              </v-card-title>
-              <v-card-subtitle class="mt-1 ml-3">
-                Ändern Sie Ihre Kontaktdaten.
-              </v-card-subtitle>
-              <v-card-text>
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Kontaktadresse"
-                  placeholder="Muster Amt, Musterstraße 1, 12345 Musterstadt"
-                  v-model="instance.contactAddress"
-                ></v-text-field>
-
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  placeholder="example.com"
-                  label="Webseite"
-                  v-model="instance.contactUrl"
-                ></v-text-field>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-
-        <!-- Weiterleitungen -->
-        <v-row>
-          <v-col>
-            <v-card outlined class="mx-auto pa-2">
-              <v-card-title class="darkgrey--text ml-3">
-                <h4 class="mb-5 mt-5">Weiterleitungen</h4>
-              </v-card-title>
-              <v-card-subtitle class="mt-1 ml-3">
-                Ändern Sie hier Ihre Weiterleitung zum Datenschutz und zum
-                Impressum.
-              </v-card-subtitle>
-              <v-card-text>
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Link zum Datenschutz"
-                  placeholder="example.com/datenschutz"
-                  v-model="instance.dataProtectionUrl"
-                ></v-text-field>
-
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Link zum Impressum"
-                  placeholder="example.com/impressum"
-                  v-model="instance.legalNoticeUrl"
-                ></v-text-field>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-
-        <!-- Mail-Konfiguration -->
-        <v-row>
-          <v-col>
-            <h3 class="mb-5 mt-5">Mail-Konfiguration</h3>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <p class="text-subtitle-1">E-Mail-Konfiguration zu Ihrer Instanz</p>
-          </v-col>
-        </v-row>
-
-        <v-row>
-          <v-col>
-            <v-card outlined class="mx-auto pa-2">
-              <v-card-title class="darkgrey--text ml-3">
-                <h4 class="mb-5 mt-5">E-Mail</h4>
-              </v-card-title>
-              <v-card-subtitle class="mt-1 ml-3">
-                Ändern Sie hier die E-Mail-Konfiguration zu Ihrer Instanz.
-              </v-card-subtitle>
-              <v-card-text>
-                <v-row>
-                  <v-col class="col-12 col-md-3">
-                    <v-text-field
-                      background-color="accent"
-                      filled
-                      label="E-Mail zum Empfangen von Sytem-E-Mails"
-                      v-model="instance.mailAddress"
-                    ></v-text-field>
-                  </v-col>
-                </v-row>
-                <v-row>
-                  <v-col class="col-12">
-                    <v-switch
-                      v-model="instance.mailEnabled"
-                      color="primary"
-                      hide-details
-                      label="E-Mail-Versand aktivieren"
-                      class="mt-2"
-                    ></v-switch>
-                  </v-col>
-                </v-row>
-                <MailKonfiguration
-                  v-if="instance.mailEnabled"
-                  :mail-config="instanceMailConfig"
-                  @update="updateMailConfig"
-                />
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-
-        <!-- Besitzer -->
-        <v-row>
-          <v-col>
-            <h3 class="mb-5 mt-5">Besitzer</h3>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <p class="text-subtitle-1">Besitzer Ihrer Instanz</p>
-          </v-col>
-        </v-row>
-
-        <v-row>
-          <v-col>
-            <v-card outlined class="mx-auto pa-2">
-              <v-autocomplete
-                hide-details
-                placeholder="Besitzer Hinzufügen"
-                clearable
-                v-model="selectedOwner"
-                :items="filtersUsers(instance.ownerUserIds)"
-                item-text="id"
-                item-value="id"
-                class="ma-5"
-              >
-                <template v-slot:append-outer>
-                  <v-btn small color="primary" @click="addOwner">
-                    <v-icon left> mdi-plus</v-icon>
-                    Hinzufügen
-                  </v-btn>
-                </template>
-              </v-autocomplete>
-              <v-list dense>
-                <v-list-item-group v-model="selectedUser" color="primary">
-                  <v-list-item
-                    v-for="(item, i) in instance.ownerUserIds"
-                    :key="i"
-                  >
-                    <v-list-item-icon>
-                      <v-icon> mdi-account</v-icon>
-                    </v-list-item-icon>
-                    <v-list-item-content>
-                      <v-list-item-title>{{ item }}</v-list-item-title>
-                    </v-list-item-content>
-                    <v-list-item-icon>
-                      <v-icon @click="removeOwner(item)"> mdi-delete</v-icon>
-                    </v-list-item-icon>
-                  </v-list-item>
-                </v-list-item-group>
-              </v-list>
-            </v-card>
-          </v-col>
-        </v-row>
-
-        <v-row>
-          <v-col>
-            <h3 class="mb-5 mt-5">Mandanten</h3>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <p class="text-subtitle-1">Mandanten Einstellungen</p>
-          </v-col>
-        </v-row>
-
-        <v-card outlined>
-          <v-card-title class="darkgrey--text">
-            <h4 class="mb-5 mt-5">Mandanten erstellen</h4>
-          </v-card-title>
-          <v-card-subtitle class="mt-1">
-            Spezifizieren Sie hier wer Mandanten erstellen darf.
-          </v-card-subtitle>
-          <v-card-text>
-            <v-row class="mx-4">
-              <v-col class="col-12">
-                <v-switch
-                  v-model="instance.allowAllUsersToCreateTenant"
-                  color="primary"
-                  hide-details
-                  label="Erlauben Sie allen Benutzern Mandanten zu erstellen"
-                ></v-switch>
-              </v-col>
-            </v-row>
-            <v-card-title class="darkgrey--text">
-              <h4 class="mt-14">Benutzer die Mandanten erstellen dürfen</h4>
-            </v-card-title>
-            <v-row>
-              <v-col class="col-12">
-                <v-autocomplete
-                  hide-details
-                  placeholder="Benutzer Hinzufügen"
-                  clearable
-                  v-model="selectedUserToCreateTenant"
-                  :items="filtersUsers(instance.allowedUsersToCreateTenant)"
-                  item-text="id"
-                  item-value="id"
-                  class="ma-5"
-                >
-                  <template v-slot:append-outer>
-                    <v-btn small color="primary" @click="addUser">
-                      <v-icon left> mdi-plus</v-icon>
-                      Hinzufügen
-                    </v-btn>
-                  </template>
-                </v-autocomplete>
-                <v-list dense>
-                  <v-list-item-group
-                    v-model="selectedUserToCreateTenant"
-                    color="primary"
-                  >
-                    <v-list-item
-                      v-for="(item, i) in instance.allowedUsersToCreateTenant"
-                      :key="i"
-                    >
-                      <v-list-item-icon>
-                        <v-icon> mdi-account</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-content>
-                        <v-list-item-title>{{ item }}</v-list-item-title>
-                      </v-list-item-content>
-                      <v-list-item-icon>
-                        <v-icon @click="removeUser(item)"> mdi-delete</v-icon>
-                      </v-list-item-icon>
-                    </v-list-item>
-                  </v-list-item-group>
-                </v-list>
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
-
-        <v-row class="mt-6">
-          <v-col>
-            <h3 class="mb-5 mt-5">Single-Sign On</h3>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <p class="text-subtitle-1">SSO Einstellungen</p>
-          </v-col>
-        </v-row>
-
-        <v-card outlined v-if="keycloak">
-          <v-card-text>
-            <v-row>
-              <v-col>
-                <v-expansion-panels flat multiple>
-                  <v-expansion-panel>
-                    <v-expansion-panel-header
-                      color="accent"
-                      expand-icon="mdi-menu-down"
-                      class="penal-header"
-                    >
-                      <template v-slot:default="{ open }">
-                        <v-row no-gutters align="center">
-                          <v-col cols="4">
-                            <span class="text-subtitle-1"> Keycloak </span>
-                          </v-col>
-                          <v-col class="col-2">
-                            <v-fade-transition leave-absolute>
-                              <div v-if="!open">
-                                <v-icon v-if="keycloak?.active" color="success"
-                                  >mdi-check</v-icon
-                                >
-                                <span v-if="keycloak?.active" class="ml-2"
-                                  >Aktiv</span
-                                >
-
-                                <v-icon
-                                  v-if="keycloak?.active === false"
-                                  color="error"
-                                  >mdi-close</v-icon
-                                >
-                                <span
-                                  v-if="keycloak?.active === false"
-                                  class="ml-2"
-                                  >Inaktiv</span
-                                >
-                              </div>
-                            </v-fade-transition>
-                          </v-col>
-                        </v-row>
-                      </template>
-                    </v-expansion-panel-header>
-                    <v-expansion-panel-content class="mt-3">
-                      <v-row>
-                        <v-col>
-                          <v-switch
-                            v-model="keycloak.active"
-                            color="primary"
-                            hide-details
-                            label="Keycloak aktivieren"
-                            class="mt-2"
-                          ></v-switch>
-                        </v-col>
-                      </v-row>
-                      <v-row>
-                        <v-col>
-                          <v-text-field
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Keycloak-URL"
-                            v-model="keycloak.serverUrl"
-                          ></v-text-field>
-                        </v-col>
-                        <v-col>
-                          <v-text-field
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Realm"
-                            v-model="keycloak.realm"
-                          ></v-text-field>
-                        </v-col>
-                      </v-row>
-                      <v-row>
-                        <v-col>
-                          <v-text-field
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Client-ID für Web-Anwendung"
-                            v-model="keycloak.publicClient"
-                          ></v-text-field>
-                        </v-col>
-                        <v-col> </v-col>
-                      </v-row>
-                      <v-row>
-                        <v-col>
-                          <v-text-field
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Client-ID für Api-Zugriff"
-                            v-model="keycloak.privateClient"
-                          ></v-text-field>
-                        </v-col>
-                        <v-col>
-                          <v-text-field
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Client Secret"
-                            v-model="keycloak.privateClientSecret"
-                            :append-icon="
-                              showKeycloakClientSecret
-                                ? 'mdi-eye'
-                                : 'mdi-eye-off'
-                            "
-                            @click:append="
-                              showKeycloakClientSecret =
-                                !showKeycloakClientSecret
-                            "
-                            :type="
-                              showKeycloakClientSecret ? 'text' : 'password'
-                            "
-                          ></v-text-field>
-                        </v-col>
-                      </v-row>
-                      <v-row>
-                        <v-col>
-                          <v-switch
-                            v-model="keycloak.roleMapping.active"
-                            label="Rollenzuordnung"
-                          ></v-switch>
-                        </v-col>
-                      </v-row>
-                      <v-row
-                        v-for="(role, idx) in keycloak.roleMapping.roles"
-                        :key="idx"
-                        align="center"
-                      >
-                        <v-col>
-                          <v-select
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Mandant"
-                            :items="tenants"
-                            item-value="id"
-                            item-text="name"
-                            v-model="role.tenantId"
-                            @change="role.tenantRoleId = null"
-                          ></v-select> </v-col
-                        ><v-col>
-                          <v-text-field
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Keycloak-Rolle"
-                            v-model="role.keycloakRole"
-                          ></v-text-field>
-                        </v-col>
-                        <v-col>
-                          <v-select
-                            v-model="role.tenantRoleId"
-                            background-color="accent"
-                            :items="filterRoles(role.tenantId)"
-                            item-text="name"
-                            item-value="id"
-                            filled
-                            dense
-                            label="Rollen-Mapping"
-                          ></v-select>
-                        </v-col>
-                        <v-tooltip bottom>
-                          <template v-slot:activator="{ on }">
-                            <v-btn
-                              v-on="on"
-                              icon
-                              @click="removeKeycloakRole(idx)"
-                            >
-                              <v-icon>mdi-delete</v-icon>
-                            </v-btn>
-                          </template>
-                          <span>Rollenzuweisung löschen</span>
-                        </v-tooltip>
-                      </v-row>
-                      <v-row>
-                        <v-col class="text-center">
-                          <v-tooltip bottom offset-y>
-                            <template v-slot:activator="{ on }">
-                              <v-btn
-                                class="align-center add-time-period"
-                                v-on="on"
-                                outlined
-                                :disabled="!keycloak.roleMapping?.active"
-                                @click="addKeycloakRole"
-                              >
-                                Weitere Rollenzuweisung hinzufügen
-                              </v-btn>
-                            </template>
-                            <span>Weitere Rollenzuweisung hinzufügen</span>
-                          </v-tooltip>
-                        </v-col>
-                      </v-row>
-                    </v-expansion-panel-content>
-                  </v-expansion-panel>
-                </v-expansion-panels>
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
-
-
-        <v-row class="mt-6">
-          <v-col>
-            <h3 class="mb-5 mt-5">Katalog</h3>
-          </v-col>
-        </v-row>
-
-        <v-card outlined class="mt-12 mb-6 pa-4">
-          <v-card-text>
-            <v-row>
-              <v-col>
-                <v-switch
-                  v-model="instance.enableCatalog"
-                  color="primary"
-                  hide-details
-                  label="Katalog aktivieren"
-                  class="mt-2"/>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col>
-                <v-text-field
-                  v-model="instance.catalogUrl"
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Katalog-URL"
-                  hint="Die URL zu Ihrem Katalog"
-                />
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
-
-        <div class="d-flex mt-12">
-          <v-btn text outlined @click="fetchInstance"> Zurücksetzen </v-btn>
-          <v-btn class="ml-2" color="primary" @click="updateInstance">
-            speichern
-          </v-btn>
+        <div class="d-flex align-center mb-2">
+          <v-spacer />
+          <v-chip
+            :style="{ visibility: hasUnsavedChanges ? 'visible' : 'hidden' }"
+            color="warning"
+            text-color="black"
+            small
+            class="mr-2"
+            label
+          >
+            Ungespeicherte Änderungen
+          </v-chip>
         </div>
-      </v-col>
-    </v-row>
+
+        <v-row>
+          <v-col class="col-12 col-md-auto">
+            <v-tabs
+              v-model="activeTab"
+              color="primary"
+              show-arrows
+              :vertical="$vuetify.breakpoint.mdAndUp"
+            >
+              <v-tab
+                v-for="t in tabs"
+                :key="t.key"
+                class="d-flex justify-start"
+                style="text-transform: none"
+              >
+                <v-icon left small>{{ t.icon }}</v-icon>
+                {{ t.label }}
+              </v-tab>
+            </v-tabs>
+          </v-col>
+
+          <v-col class="col-12 col-md-9">
+            <keep-alive>
+              <component
+                :is="currentComponent"
+                ref="activeChild"
+                :instance="instance"
+                :tenants="tenants"
+                :catalog="catalog"
+                :available-users="availableUserIds"
+                :available-roles="availableRoles"
+                @update:instance="onUpdateInstance"
+                @update:catalog="onUpdateCatalog"
+              />
+            </keep-alive>
+          </v-col>
+        </v-row>
+      </v-form>
+
+      <SaveBar
+        :anchor-el="
+          $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
+        "
+        @submit="submitChanges"
+        :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
+        :in-progress="inProgress"
+      />
+    </div>
   </AdminLayout>
 </template>
 
@@ -530,121 +75,88 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
 import ApiUsersService from "@/services/api/ApiUsersService";
 import { mapActions, mapGetters } from "vuex";
+import SaveBar from "@/components/commons/SaveBar.vue";
+
+// new child components
+import InstanceEditGeneral from "@/components/Instance/Edit/InstanceEditGeneral.vue";
+import InstanceEditMail from "@/components/Instance/Edit/InstanceEditMail.vue";
+import InstanceEditOwners from "@/components/Instance/Edit/InstanceEditOwners.vue";
+import InstanceEditSSO from "@/components/Instance/Edit/InstanceEditSSO.vue";
+import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
+import ApiCatalogService from "@/services/api/ApiCatalogService";
 
 export default {
   name: "Instances",
-  components: { MailKonfiguration, AdminLayout },
+  components: {
+    MailKonfiguration,
+    AdminLayout,
+    SaveBar,
+    InstanceEditGeneral,
+    InstanceEditMail,
+    InstanceEditOwners,
+    InstanceEditSSO,
+    InstanceEditCatalog,
+  },
   data() {
     return {
       instance: {},
       isLoading: false,
-      addressPanel: false,
-      urlPanel: false,
-      dataProtectionPanel: false,
-      legalNoticePanel: false,
-      tempContactAddress: "",
-      tempContactUrl: "",
-      tempDataProtectionUrl: "",
-      tempLegalNoticeUrl: "",
+      inProgress: false,
+      validRoot: true,
+      originalSnapshot: null,
       selectedOwner: null,
       availableUserIds: null,
-      selectedUser: null,
-      selectedUserToCreateTenant: null,
       showKeycloakClientSecret: false,
       availableRoles: [],
+      activeTab: 0,
+      tabs: [
+        {
+          key: "general",
+          label: "Allgemein",
+          icon: "mdi-home",
+          comp: "InstanceEditGeneral",
+        },
+        {
+          key: "mail",
+          label: "E-Mail",
+          icon: "mdi-email",
+          comp: "InstanceEditMail",
+        },
+        {
+          key: "owners",
+          label: "Admin",
+          icon: "mdi-shield-crown",
+          comp: "InstanceEditOwners",
+        },
+        {
+          key: "sso",
+          label: "Single-Sign On",
+          icon: "mdi-lock",
+          comp: "InstanceEditSSO",
+        },
+        {
+          key: "catalog",
+          label: "Katalog",
+          icon: "mdi-book-open",
+          comp: "InstanceEditCatalog",
+        },
+      ],
+      catalog: {
+        type: "instanze",
+        theme: {
+          active: false,
+          colors: { primary: "", secondary: "" },
+        },
+      },
     };
-  },
-  methods: {
-    ...mapActions({
-      addToast: "toasts/add",
-    }),
-    updateMailConfig(newConfig) {
-      this.instance.noreplyDisplayName = newConfig.noreplyDisplayName;
-      this.instance.noreplyMail = newConfig.noreplyMail;
-      this.instance.noreplyDisplayName = newConfig.noreplyDisplayName;
-      this.instance.noreplyHost = newConfig.noreplyHost;
-      this.instance.noreplyPort = newConfig.noreplyPort;
-      this.instance.noreplyUser = newConfig.noreplyUser;
-      this.instance.noreplyPassword = newConfig.noreplyPassword;
-      this.instance.noreplyUseGraphApi = newConfig.noreplyUseGraphApi;
-      this.instance.noreplyStarttls = newConfig.noreplyStarttls;
-      this.instance.noreplyGraphTenantId = newConfig.noreplyGraphTenantId;
-      this.instance.noreplyGraphClientId = newConfig.noreplyGraphClientId;
-      this.instance.noreplyGraphClientSecret =
-        newConfig.noreplyGraphClientSecret;
-    },
-    addOwner() {
-      this.instance.ownerUserIds.push(this.selectedOwner);
-      this.selectedOwner = null;
-    },
-    removeOwner(userId) {
-      this.instance.ownerUserIds.splice(
-        this.instance.ownerUserIds.indexOf(userId),
-        1
-      );
-    },
-    addUser() {
-      this.instance.allowedUsersToCreateTenant.push(
-        this.selectedUserToCreateTenant
-      );
-      this.selectedUserToCreateTenant = null;
-    },
-    removeUser(userId) {
-      this.instance.allowedUsersToCreateTenant.splice(
-        this.instance.allowedUsersToCreateTenant.indexOf(userId),
-        1
-      );
-    },
-    addKeycloakRole() {
-      this.keycloak.roleMapping.roles.push({
-        tenantId: null,
-        keycloakRole: "",
-        tenantRoleId: null,
-      });
-    },
-    removeKeycloakRole(idx) {
-      this.keycloak.roleMapping.roles.splice(idx, 1);
-    },
-    filterRoles(tenantId) {
-      return (
-        this.availableRoles.filter((role) => role.tenantId === tenantId) || []
-      );
-    },
-    async updateInstance() {
-      try {
-        console.log(this.instance);
-        this.instance = await ApiInstanceService.updateInstance(this.instance);
-        await this.addToast({
-          message: "Instanz erfolgreich aktualisiert",
-          type: "success",
-        });
-      } catch (e) {
-        await this.addToast({
-          message: "Fehler beim Aktualisieren der Instanz",
-          type: "error",
-        });
-      }
-    },
-    async fetchInstance() {
-      this.instance = await ApiInstanceService.getInstance();
-    },
-    async fetchUsers() {
-      this.availableUserIds = await ApiUsersService.getUsers();
-    },
-    async fetchRoles() {
-      const response = await ApiRolesService.getRoles();
-      this.availableRoles = response.data;
-    },
-    filtersUsers(usersToExclude) {
-      return this.availableUserIds?.filter(
-        (user) => !usersToExclude.includes(user.id)
-      );
-    },
   },
   computed: {
     ...mapGetters({
       tenants: "tenants/tenants",
     }),
+    currentComponent() {
+      return this.tabs[this.activeTab]?.comp || "InstanceEditGeneral";
+    },
     instanceMailConfig: {
       get() {
         return {
@@ -663,41 +175,123 @@ export default {
         };
       },
     },
-    keycloak: {
-      get() {
-        const application = this.instance.applications?.find(
-          (app) => app?.id === "keycloak"
-        );
+    hasUnsavedChanges() {
+      return (
+        JSON.stringify({ instance: this.instance, catalog: this.catalog }) !==
+        this.originalSnapshot
+      );
+    },
+  },
+  watch: {
+    activeTab(newIndex) {
+      const tabKey = this.tabs[newIndex].key;
+      if (this.$route.query.tab === tabKey) return;
+      this.$router.replace({
+        query: { ...this.$route.query, tab: tabKey },
+      });
+    },
+  },
+  methods: {
+    ...mapActions({
+      addToast: "toasts/add",
+    }),
+    onUpdateInstance(next) {
+      this.instance = { ...this.instance, ...next };
+    },
+    onUpdateCatalog(next) {
+      this.catalog = { ...this.catalog, ...next };
+    },
+    async fetchInstance() {
+      this.instance = await ApiInstanceService.getInstance();
+      await this.fetchCatalog();
 
-        if (!application) {
-          this.instance.applications?.push({
-            id: "keycloak",
-            type: "auth",
+      // ensure applications array exists and has a keycloak entry
+      if (!this.instance.applications) this.instance.applications = [];
+      const hasKeycloak = this.instance.applications.some(
+        (app) => app?.id === "keycloak"
+      );
+      if (!hasKeycloak) {
+        this.instance.applications.push({
+          id: "keycloak",
+          type: "auth",
+          active: false,
+          serverUrl: "",
+          realm: "",
+          publicClient: "",
+          privateClient: "",
+          privateClientSecret: "",
+          roleMapping: {
             active: false,
-            serverUrl: "",
-            realm: "",
-            publicClient: "",
-            privateClient: "",
-            privateClientSecret: "",
-            roleMapping: {
-              active: false,
-              roles: [],
-            },
-          });
-          return this.instance.applications?.find(
-            (app) => app?.id === "keycloak"
-          );
-        }
-        return application;
-      },
-      set(value) {
-        this.instance.applications = this.instance.applications.map((app) =>
-          app?.id === "keycloak" ? value : app
+            roles: [],
+          },
+        });
+      }
+
+      // snapshot after fetching
+      this.$nextTick(() => {
+        this.originalSnapshot = JSON.stringify({
+          instance: this.instance,
+          catalog: this.catalog,
+        });
+      });
+    },
+
+    async fetchCatalog() {
+      try {
+        const response = await ApiCatalogService.getCatalog(
+          this.instance.id
         );
-      },
+        this.catalog = response.data;
+      } catch (e) {
+        // ignore error and load default catalog
+      }
+    },
+
+    async fetchUsers() {
+      this.availableUserIds = await ApiUsersService.getUsers();
+    },
+    async fetchRoles() {
+      const response = await ApiRolesService.getRoles();
+      this.availableRoles = response.data;
+    },
+    async validateActiveChild() {
+      const ref = this.$refs.activeChild;
+      if (ref && typeof ref.validate === "function") {
+        return await ref.validate();
+      }
+      return true;
+    },
+    async submitChanges() {
+      const ok = await this.validateActiveChild();
+      if (!ok) return;
+
+      this.inProgress = true;
+      try {
+        await ApiInstanceService.updateInstance(this.instance);
+        await ApiCatalogService.updateCatalog(this.catalog);
+        this.originalSnapshot = JSON.stringify({
+          instance: this.instance,
+          catalog: this.catalog,
+        });
+        await this.addToast({
+          message: "Instanz erfolgreich aktualisiert",
+          type: "success",
+        });
+      } catch (e) {
+        await this.addToast({
+          message: "Fehler beim Aktualisieren der Instanz",
+          type: "error",
+        });
+      } finally {
+        this.inProgress = false;
+      }
     },
   },
   async mounted() {
+    const queryTabKey = this.$route.query.tab;
+    const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
+    this.activeTab = foundIndex !== -1 ? foundIndex : 0;
+
     await this.fetchInstance();
     await this.fetchUsers();
     await this.fetchRoles();
