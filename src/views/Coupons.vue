@@ -10,7 +10,7 @@
           :show-filters="false"
         ></Search>
       </v-col>
-      <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
+      <v-col cols="12" class="mx-xs-auto d-flex flex-column mb-10" height="100%">
         <v-data-table
           :headers="headers"
           :items="displayedCoupons"
