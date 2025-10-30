@@ -195,7 +195,7 @@ export default {
         )
           .then((response) => {
             if (response.status === 201) {
-              this.$router.push(`/willkommen/${this.tenant}`).then(() => {
+              this.$router.push(`/welcome/${this.tenant}`).then(() => {
                 this.addToast(
                   ToastService.createToast(
                     "register.success.default",
