@@ -16,7 +16,7 @@
                 </slot>
               </v-list-item-subtitle>
             </v-list-item-content>
-            <v-list-item-content >
+            <v-list-item-content>
               <v-checkbox
                 class="ml-6"
                 dense
@@ -126,9 +126,8 @@ export default {
 
   computed: {
     unselectedItems() {
-      return this.availableItems.filter(
-        (item) => !this.items.includes(item.id)
-      );
+      const selectedIds = new Set(this.items.map((i) => i.bookableId));
+      return this.availableItems.filter((item) => !selectedIds.has(item.id));
     },
   },
 };

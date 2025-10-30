@@ -1,9 +1,12 @@
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
 import { mapActions } from "vuex";
+import BaseSection from "@/components/commons/BaseSection.vue";
 
 export default {
   name: "BookableLockingAttributes",
+  components: { BaseSection },
+  //TODO
   props: {
     tenantId: {
       type: String,
@@ -13,16 +16,21 @@ export default {
       type: Number,
       required: true,
     },
+    bookable: {
+      type: Object,
+      required: true,
+    },
   },
   data() {
     return {
       lockerSystems: [],
+      localBookable: { ...this.bookable },
     };
   },
   computed: {
     lockerDetails: {
       get() {
-        return this.$store.state.bookables.form.lockerDetails;
+        return this.localBookable.lockerDetails;
       },
       set(value) {
         this.updateValue({ key: "lockerDetails", value });
@@ -30,11 +38,19 @@ export default {
     },
     lockerUnitCount: {
       get() {
-        return Number(
-          this.lockerDetails.units
-            .map((unit) => unit.amount)
-            .reduce((acc, val) => Number(acc) + Number(val))
-        );
+        const units = Array.isArray(this.lockerDetails.units)
+          ? this.lockerDetails.units
+          : [];
+        return units
+          .map((u) => Number(u?.amount ?? 0))
+          .reduce((acc, val) => acc + (Number.isFinite(val) ? val : 0), 0);
+      },
+    },
+  },
+  watch: {
+    bookable: {
+      handler(v) {
+        this.localBookable = { ...v };
       },
     },
   },
@@ -42,6 +58,9 @@ export default {
     ...mapActions({
       updateValue: "bookables/updateForm",
     }),
+    emitUpdate() {
+      this.$emit("update:bookable", this.localBookable);
+    },
     async fetchLockerSystems() {
       try {
         const tenant = await ApiTenantService.getTenant(this.tenantId);
@@ -66,7 +85,7 @@ export default {
 </script>
 
 <template>
-  <div>
+  <BaseSection title="Schließsysteme" icon="mdi-lock-open-outline" hint=" Buchungsobjekte, die mit Schließsystemen verbunden sind, können automatisch geöffnet und geschlossen werden.">
     <v-row>
       <v-col>
         <v-expansion-panels flat multiple>
@@ -104,7 +123,7 @@ export default {
                         dense
                         outlined
                         v-if="
-                          lockerDetails.active && lockerUnitCount !== amount
+                          lockerDetails.active && lockerUnitCount !== localBookable.amount
                         "
                       >
                         Die Anzahl der verfügbaren Buchungsobjekte passt nicht
@@ -198,7 +217,7 @@ export default {
         </v-expansion-panels>
       </v-col>
     </v-row>
-  </div>
+  </BaseSection>
 </template>
 
 <style scoped>

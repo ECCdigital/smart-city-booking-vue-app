@@ -46,10 +46,6 @@ export default {
       formData.priceValueAddedTax = Number(formData.priceValueAddedTax);
     }
 
-    formData.specialOpeningHours = formData.specialOpeningHours.filter(
-      (item) => item.date !== null
-    );
-
     return ApiClient.put(`api/${t}/bookables`, formData, {
       withCredentials: true,
     });

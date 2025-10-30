@@ -1,6 +1,7 @@
 <template>
-  <div>
-    <v-row>
+  <BaseSection title="Verfügbarkeit" icon="mdi-calendar-clock">
+
+  <v-row>
       <v-col>
         <v-expansion-panels flat multiple>
           <v-expansion-panel class="mb-6 panel">
@@ -20,7 +21,7 @@
                     <v-fade-transition leave-absolute>
                       <div v-if="!open">
                         <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isScheduleRelated" class="ml-2"
+                        <span v-if="scheduledRelated" class="ml-2"
                           >Aktiviert</span
                         >
                         <span v-else class="ml-2">Inaktiviert</span>
@@ -40,13 +41,13 @@
                       </v-alert>
                       <div v-else>
                         <span
-                          v-if="isScheduleRelated && minBookingDuration > 0"
+                          v-if="scheduledRelated && minBookingDuration > 0"
                           class="mr-4"
                           >Minimale Buchungsdauer:
                           <strong>{{ minBookingDuration }}</strong>
                           Stunden</span
                         >
-                        <span v-if="isScheduleRelated && maxBookingDuration > 0"
+                        <span v-if="scheduledRelated && maxBookingDuration > 0"
                           >Maximale Buchungsdauer:
                           <strong>{{ maxBookingDuration }}</strong>
                           Stunden</span
@@ -65,8 +66,8 @@
                     dense
                     label="Buchungen über Kalender"
                     hide-details
-                    v-model="isScheduleRelated"
-                    :disabled="isTimePeriodRelated"
+                    v-model="timeRelation"
+                    value="schedule"
                   ></v-switch>
                 </v-col>
                 <v-col>
@@ -77,7 +78,7 @@
                     hide-details
                     v-model.number="minBookingDuration"
                     suffix="Stunden"
-                    :disabled="!isScheduleRelated"
+                    :disabled="!scheduledRelated"
                   ></v-text-field>
                 </v-col>
                 <v-col>
@@ -88,7 +89,7 @@
                     hide-details
                     v-model.number="maxBookingDuration"
                     suffix="Stunden"
-                    :disabled="!isScheduleRelated"
+                    :disabled="!scheduledRelated"
                   ></v-text-field>
                 </v-col>
               </v-row>
@@ -108,17 +109,16 @@
                     <span class="text-caption">
                       Vordefinierte, buchbare Zeitfenster (z.B. Montangs 09:00 -
                       12:00)
-                      <br>
+                      <br />
                       <strong>Hinweis:</strong>
-                      Feste Buchungszeiten sind nicht über den Kalender
-                      buchbar.
+                      Feste Buchungszeiten sind nicht über den Kalender buchbar.
                     </span>
                   </v-col>
                   <v-col class="col-2">
                     <v-fade-transition leave-absolute>
                       <div v-if="!open">
                         <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isTimePeriodRelated" class="ml-2"
+                        <span v-if="timePeriodRelated" class="ml-2"
                           >Aktiviert</span
                         >
                         <span v-else class="ml-2">Inaktiviert</span>
@@ -139,7 +139,7 @@
                       <div v-else>
                         <v-list
                           dense
-                          v-if="isTimePeriodRelated && timePeriods.length"
+                          v-if="timePeriodRelated && timePeriods.length"
                           color="accent"
                         >
                           <template v-for="(timePeriod, index) in timePeriods">
@@ -193,8 +193,8 @@
                     dense
                     label="Buchungen nur für feste Zeiträume"
                     hide-details
-                    v-model="isTimePeriodRelated"
-                    :disabled="isScheduleRelated"
+                    v-model="timeRelation"
+                    value="time-period"
                     class="pt-3"
                   ></v-switch>
                 </v-col>
@@ -216,7 +216,7 @@
                     v-model="timePeriod.weekdays"
                     multiple
                     chips
-                    :disabled="!isTimePeriodRelated"
+                    :disabled="!timePeriodRelated"
                     hide-selected
                     hide-details
                   >
@@ -256,7 +256,7 @@
                         suffix="Uhr"
                         v-bind="attrs"
                         v-on="on"
-                        :disabled="!isTimePeriodRelated"
+                        :disabled="!timePeriodRelated"
                         hide-details
                       ></v-text-field>
                     </template>
@@ -289,7 +289,7 @@
                         v-bind="attrs"
                         v-on="on"
                         suffix="Uhr"
-                        :disabled="!isTimePeriodRelated"
+                        :disabled="!timePeriodRelated"
                         hide-details
                       ></v-text-field>
                     </template>
@@ -306,7 +306,7 @@
                   <template v-slot:activator="{ on }">
                     <v-btn
                       v-on="on"
-                      :disabled="!isTimePeriodRelated"
+                      :disabled="!timePeriodRelated"
                       icon
                       @click="removeTimePeriod(idx)"
                     >
@@ -324,7 +324,7 @@
                         class="align-center add-time-period"
                         v-on="on"
                         outlined
-                        :disabled="!isTimePeriodRelated"
+                        :disabled="!timePeriodRelated"
                         @click="addNewTimePeriod"
                       >
                         Zeitfenster hinzufügen
@@ -346,9 +346,7 @@
               <template v-slot:default="{ open }">
                 <v-row no-gutters align="center">
                   <v-col cols="4">
-                    <span class="text-subtitle-1">
-                      Öffungszeiten
-                    </span>
+                    <span class="text-subtitle-1"> Öffnungszeiten </span>
                     <br />
                     <span class="text-caption">
                       Innerhalb dieser Zeiträume können Buchungen getätigt
@@ -359,7 +357,7 @@
                     <v-fade-transition leave-absolute>
                       <div v-if="!open">
                         <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isOpeningHoursRelated" class="ml-2"
+                        <span v-if="regularOpeningHours.enabled" class="ml-2"
                           >Aktiviert</span
                         >
                         <span v-else class="ml-2">Inaktiviert</span>
@@ -376,11 +374,16 @@
                       <div v-if="!open">
                         <v-list
                           dense
-                          v-if="isOpeningHoursRelated && openingHours.length"
+                          v-if="
+                            regularOpeningHours.enabled &&
+                            regularOpeningHours.hours?.length
+                          "
                           color="accent"
                         >
                           <template
-                            v-for="(openingHour, index) in openingHours"
+                            v-for="(
+                              openingHour, index
+                            ) in regularOpeningHours.hours"
                           >
                             <v-list-item :key="openingHour.id">
                               <v-row dense align="center">
@@ -390,7 +393,7 @@
                                       v-for="(
                                         weekday, index
                                       ) in getFormattedWeekdays(
-                                        openingHour.weekdays
+                                        openingHour.daysOfWeek
                                       )"
                                       :key="index"
                                     >
@@ -400,21 +403,24 @@
                                 </v-col>
                                 <v-col
                                   v-if="
-                                    openingHour.startTime && openingHour.endTime
+                                    openingHour.openTime &&
+                                    openingHour.closeTime
                                   "
                                 >
-                                  {{ openingHour.startTime }} -
-                                  {{ openingHour.endTime }}
+                                  {{ openingHour.openTime }} -
+                                  {{ openingHour.closeTime }}
                                 </v-col>
                                 <div v-else>
                                   <v-alert type="warning" dense outlined>
-                                    Keine Öffungszeiten angegeben
+                                    Keine Öffnungszeiten angegeben
                                   </v-alert>
                                 </div>
                               </v-row>
                             </v-list-item>
                             <v-divider
-                              v-if="index < openingHours.length - 1"
+                              v-if="
+                                index < regularOpeningHours.hours.length - 1
+                              "
                               :key="index"
                             ></v-divider>
                           </template>
@@ -430,15 +436,15 @@
                 <v-col class="col-12 col-md-4">
                   <v-switch
                     dense
-                    label="Buchungsobjekt hat Öffungszeiten"
+                    label="Buchungsobjekt hat Öffnungszeiten"
                     hide-details
-                    v-model="isOpeningHoursRelated"
+                    v-model="regularOpeningHours.enabled"
                     class="pt-3"
                   ></v-switch>
                 </v-col>
               </v-row>
               <v-row
-                v-for="(openingHour, idx) in openingHours"
+                v-for="(openingHour, idx) in regularOpeningHours.hours"
                 :key="idx"
                 align="center"
               >
@@ -450,10 +456,10 @@
                     :items="weekdays"
                     item-value="id"
                     item-text="name"
-                    v-model="openingHour.weekdays"
+                    v-model="openingHour.daysOfWeek"
                     multiple
                     chips
-                    :disabled="!isOpeningHoursRelated"
+                    :disabled="!regularOpeningHours.enabled"
                     hide-selected
                     hide-details
                   >
@@ -487,22 +493,22 @@
                       <v-text-field
                         background-color="accent"
                         filled
-                        v-model="openingHour.startTime"
+                        v-model="openingHour.openTime"
                         label="Startzeit"
                         readonly
                         suffix="Uhr"
                         v-bind="attrs"
                         v-on="on"
-                        :disabled="!isOpeningHoursRelated"
+                        :disabled="!regularOpeningHours.enabled"
                         hide-details
                       ></v-text-field>
                     </template>
                     <v-time-picker
                       v-if="timeStartOpeningHoursMenu[idx]"
-                      v-model="openingHour.startTime"
+                      v-model="openingHour.openTime"
                       full-width
                       @click:minute="
-                        setStartOpeningHoursTime(idx, openingHour.startTime)
+                        setStartOpeningHoursTime(idx, openingHour.openTime)
                       "
                       format="24hr"
                     ></v-time-picker>
@@ -522,22 +528,22 @@
                       <v-text-field
                         background-color="accent"
                         filled
-                        v-model="openingHour.endTime"
+                        v-model="openingHour.closeTime"
                         label="Endzeit"
                         readonly
                         v-bind="attrs"
                         v-on="on"
                         suffix="Uhr"
-                        :disabled="!isOpeningHoursRelated"
+                        :disabled="!regularOpeningHours.enabled"
                         hide-details
                       ></v-text-field>
                     </template>
                     <v-time-picker
                       v-if="timeEndOpeningHoursMenu[idx]"
-                      v-model="openingHour.endTime"
+                      v-model="openingHour.closeTime"
                       full-width
                       @click:minute="
-                        setEndOpeningHoursTime(idx, openingHour.endTime)
+                        setEndOpeningHoursTime(idx, openingHour.closeTime)
                       "
                       format="24hr"
                     ></v-time-picker>
@@ -547,7 +553,7 @@
                   <template v-slot:activator="{ on }">
                     <v-btn
                       v-on="on"
-                      :disabled="!isOpeningHoursRelated"
+                      :disabled="!regularOpeningHours.enabled"
                       icon
                       @click="removeOpeningHours(idx)"
                     >
@@ -565,13 +571,13 @@
                         class="align-center add-time-period"
                         v-on="on"
                         outlined
-                        :disabled="!isOpeningHoursRelated"
+                        :disabled="!regularOpeningHours.enabled"
                         @click="addNewOpeningHours"
                       >
                         Öffnungszeit hinzufügen
                       </v-btn>
                     </template>
-                    <span>Öffungszeit hinzufügen</span>
+                    <span>Öffnungszeit hinzufügen</span>
                   </v-tooltip>
                 </v-col>
               </v-row>
@@ -587,18 +593,19 @@
                 <v-row no-gutters align="center">
                   <v-col cols="4">
                     <span class="text-subtitle-1">
-                      Öffungzeiten für bestimmte Daten
+                      Öffnungzeiten für bestimmte Daten
                     </span>
                     <br />
                     <span class="text-caption">
-                      Hier können Öffnungszeiten für bestimmte Daten definiert werden.
+                      Hier können Öffnungszeiten für bestimmte Daten definiert
+                      werden.
                     </span>
                   </v-col>
                   <v-col class="col-2">
                     <v-fade-transition leave-absolute>
                       <div v-if="!open">
                         <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isSpecialOpeningHoursRelated" class="ml-2"
+                        <span v-if="specificOpeningHours.enabled" class="ml-2"
                           >Aktiviert</span
                         >
                         <span v-else class="ml-2">Inaktiviert</span>
@@ -622,15 +629,15 @@
                         <v-list
                           dense
                           v-if="
-                            isSpecialOpeningHoursRelated &&
-                            specialOpeningHours.length
+                            specificOpeningHours.enabled &&
+                            specificOpeningHours.hours?.length
                           "
                           color="accent"
                         >
                           <template
                             v-for="(
                               specialOpeningHour, index
-                            ) in specialOpeningHours"
+                            ) in specificOpeningHours.hours"
                           >
                             <v-list-item :key="specialOpeningHour.id">
                               <v-row dense align="center">
@@ -639,14 +646,14 @@
                                 </v-col>
                                 <v-col
                                   v-if="
-                                    specialOpeningHour.startTime &&
-                                    specialOpeningHour.endTime &&
-                                    specialOpeningHour.startTime !==
-                                      specialOpeningHour.endTime
+                                    specialOpeningHour.openTime &&
+                                    specialOpeningHour.closeTime &&
+                                    specialOpeningHour.openTime !==
+                                      specialOpeningHour.closeTime
                                   "
                                 >
-                                  {{ specialOpeningHour.startTime }} -
-                                  {{ specialOpeningHour.endTime }}
+                                  {{ specialOpeningHour.openTime }} -
+                                  {{ specialOpeningHour.closeTime }}
                                 </v-col>
                                 <v-col v-else>
                                   <v-icon color="darkgrey"
@@ -656,10 +663,6 @@
                                 </v-col>
                               </v-row>
                             </v-list-item>
-                            <v-divider
-                              v-if="index < specialOpeningHours.length - 1"
-                              :key="index"
-                            ></v-divider>
                           </template>
                         </v-list>
                       </div>
@@ -673,15 +676,15 @@
                 <v-col class="col-12 col-md-4">
                   <v-switch
                     dense
-                    label="Buchungsobjekt hat Öffungszeiten für bestimmte Daten"
+                    label="Buchungsobjekt hat Öffnungszeiten für bestimmte Daten"
                     hide-details
-                    v-model="isSpecialOpeningHoursRelated"
+                    v-model="specificOpeningHours.enabled"
                     class="pt-3"
                   ></v-switch>
                 </v-col>
               </v-row>
               <v-row
-                v-for="(specialOpeningHour, idx) in specialOpeningHours"
+                v-for="(specialOpeningHour, idx) in specificOpeningHours.hours"
                 :key="idx"
                 align="center"
               >
@@ -736,24 +739,24 @@
                       <v-text-field
                         background-color="accent"
                         filled
-                        v-model="specialOpeningHour.startTime"
+                        v-model="specialOpeningHour.openTime"
                         label="Startzeit"
                         readonly
                         suffix="Uhr"
                         v-bind="attrs"
                         v-on="on"
-                        :disabled="!isSpecialOpeningHoursRelated"
+                        :disabled="!specificOpeningHours.enabled"
                         hide-details
                       ></v-text-field>
                     </template>
                     <v-time-picker
                       v-if="timeStartSpecialOpeningHoursMenu[idx]"
-                      v-model="specialOpeningHour.startTime"
+                      v-model="specialOpeningHour.openTime"
                       full-width
                       @click:minute="
                         setStartSpecialOpeningHoursTime(
                           idx,
-                          specialOpeningHour.startTime
+                          specialOpeningHour.openTime
                         )
                       "
                       format="24hr"
@@ -774,24 +777,24 @@
                       <v-text-field
                         background-color="accent"
                         filled
-                        v-model="specialOpeningHour.endTime"
+                        v-model="specialOpeningHour.closeTime"
                         label="Endzeit"
                         readonly
                         v-bind="attrs"
                         v-on="on"
                         suffix="Uhr"
-                        :disabled="!isSpecialOpeningHoursRelated"
+                        :disabled="!specificOpeningHours.enabled"
                         hide-details
                       ></v-text-field>
                     </template>
                     <v-time-picker
                       v-if="timeEndSpecialOpeningMenu[idx]"
-                      v-model="specialOpeningHour.endTime"
+                      v-model="specialOpeningHour.closeTime"
                       full-width
                       @click:minute="
                         setEndSpecialOpeningHoursTime(
                           idx,
-                          specialOpeningHour.endTime
+                          specialOpeningHour.closeTime
                         )
                       "
                       format="24hr"
@@ -802,7 +805,7 @@
                   <template v-slot:activator="{ on }">
                     <v-btn
                       v-on="on"
-                      :disabled="!isSpecialOpeningHoursRelated"
+                      :disabled="!specificOpeningHours.enabled"
                       icon
                       @click="removeSpecialOpeningHours(idx)"
                     >
@@ -820,7 +823,7 @@
                         class="align-center add-time-period"
                         v-on="on"
                         outlined
-                        :disabled="!isSpecialOpeningHoursRelated"
+                        :disabled="!specificOpeningHours.enabled"
                         @click="addNewSpecialOpeningHours"
                       >
                         Öffnungszeiten hinzufügen
@@ -851,9 +854,7 @@
                     <v-fade-transition leave-absolute>
                       <div v-if="!open">
                         <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isLongRangeWeek" class="ml-2"
-                          >Aktiviert</span
-                        >
+                        <span v-if="longRangeWeek" class="ml-2">Aktiviert</span>
                         <span v-else class="ml-2">Inaktiviert</span>
                       </div>
                     </v-fade-transition>
@@ -886,7 +887,8 @@
                     dense
                     label="Buchungen für ganze Kalenderwochen"
                     hide-details
-                    v-model="isLongRangeWeek"
+                    v-model="timeRelation"
+                    value="long-range-week"
                     class="pt-3"
                   ></v-switch>
                 </v-col>
@@ -912,7 +914,7 @@
                     <v-fade-transition leave-absolute>
                       <div v-if="!open">
                         <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isLongRangeMonth" class="ml-2"
+                        <span v-if="longRangeMonth" class="ml-2"
                           >Aktiviert</span
                         >
                         <span v-else class="ml-2">Inaktiviert</span>
@@ -947,7 +949,8 @@
                     dense
                     label="Buchungen für ganze Monate"
                     hide-details
-                    v-model="isLongRangeMonth"
+                    v-model="timeRelation"
+                    value="long-range-month"
                     class="pt-3"
                   ></v-switch>
                 </v-col>
@@ -957,17 +960,23 @@
         </v-expansion-panels>
       </v-col>
     </v-row>
-  </div>
+  </BaseSection>
 </template>
 
 <script>
 import { mapActions } from "vuex";
+import BaseSection from "@/components/commons/BaseSection.vue";
 
 export default {
   name: "BookableTimeDependantAttributes",
-  props: { bookableType: { type: String, required: true } },
+  components: { BaseSection },
+  props: {
+    bookableType: { type: String, required: true },
+    bookable: { type: Object, required: true },
+  },
   data() {
     return {
+      localBookable: { ...this.bookable },
       weekdays: [
         { id: 1, name: "Montag" },
         { id: 2, name: "Dienstag" },
@@ -990,167 +999,144 @@ export default {
     };
   },
   computed: {
-    isLongRangeWeek: {
+    regularOpeningHours: {
       get() {
-        return (
-          this.$store.state.bookables.form.longRangeOptions?.type === "week"
-        );
+        return this.localBookable.openingHours?.regular;
       },
       set(value) {
-        if (value) {
-          this.updateValue({
-            field: "longRangeOptions",
-            value: {
-              type: "week",
-            },
-          });
-          this.isLongRange = value;
-        } else {
-          this.updateValue({ field: "longRangeOptions", value: null });
-          this.isLongRange = value;
-        }
+        this.localBookable.openingHours = {
+          ...this.localBookable.openingHours,
+          regular: value,
+        };
+        this.emitUpdate();
       },
     },
-    isLongRangeMonth: {
+    specificOpeningHours: {
       get() {
-        return (
-          this.$store.state.bookables.form.longRangeOptions?.type === "month"
-        );
+        return this.localBookable.openingHours?.specific;
       },
       set(value) {
-        if (value) {
-          this.updateValue({
-            field: "longRangeOptions",
-            value: {
-              type: "month",
-            },
-          });
-          this.isLongRange = value;
-        } else {
-          this.updateValue({ field: "longRangeOptions", value: null });
-          this.isLongRange = value;
-        }
+        this.localBookable.openingHours = {
+          ...this.localBookable.openingHours,
+          specific: value,
+        };
+        this.emitUpdate();
       },
     },
-    isScheduleRelated: {
+
+    bookingKind() {
+      return this.localBookable.bookingKind;
+    },
+
+    timeRelation: {
       get() {
-        return this.$store.state.bookables.form.isScheduleRelated;
+        return this.localBookable.timeRelation;
       },
       set(value) {
-        this.updateValue({ field: "isScheduleRelated", value: value });
+        this.localBookable.timeRelation = value;
+        this.emitUpdate();
       },
     },
-    isTimePeriodRelated: {
-      get() {
-        return this.$store.state.bookables.form.isTimePeriodRelated;
-      },
-      set(value) {
-        this.updateValue({ field: "isTimePeriodRelated", value: value });
-      },
+
+    scheduledRelated() {
+      return this.localBookable.timeRelation === "schedule";
+    },
+
+    timePeriodRelated() {
+      return this.localBookable.timeRelation === "time-period";
+    },
+    longRangeWeek() {
+      return this.localBookable.timeRelation === "long-range-week";
+    },
+    longRangeMonth() {
+      return this.localBookable.timeRelation === "long-range-month";
     },
     timePeriods: {
       get() {
-        return this.$store.state.bookables.form.timePeriods;
+        return this.localBookable.timePeriods;
       },
       set(value) {
-        this.updateValue({ field: "timePeriods", value: value });
-      },
-    },
-    isOpeningHoursRelated: {
-      get() {
-        return this.$store.state.bookables.form.isOpeningHoursRelated;
-      },
-      set(value) {
-        this.updateValue({ field: "isOpeningHoursRelated", value: value });
-      },
-    },
-    openingHours: {
-      get() {
-        return this.$store.state.bookables.form.openingHours;
-      },
-      set(value) {
-        this.updateValue({ field: "openingHours", value: value });
+        this.localBookable.timePeriods = value;
+        this.emitUpdate();
       },
     },
     minBookingDuration: {
       get() {
-        return this.$store.state.bookables.form.minBookingDuration;
+        return this.localBookable.minBookingDuration;
       },
       set(value) {
         if (typeof value === "string") {
           value = null;
         }
-        this.updateValue({ field: "minBookingDuration", value: value });
+        this.localBookable.minBookingDuration = value;
+        this.emitUpdate();
       },
     },
     maxBookingDuration: {
       get() {
-        return this.$store.state.bookables.form.maxBookingDuration;
+        return this.localBookable.maxBookingDuration;
       },
       set(value) {
         if (typeof value === "string") {
           value = null;
         }
-        this.updateValue({ field: "maxBookingDuration", value: value });
-      },
-    },
-    isSpecialOpeningHoursRelated: {
-      get() {
-        return this.$store.state.bookables.form.isSpecialOpeningHoursRelated;
-      },
-      set(value) {
-        this.updateValue({
-          field: "isSpecialOpeningHoursRelated",
-          value: value,
-        });
+        this.localBookable.maxBookingDuration = value;
+        this.emitUpdate();
       },
     },
     specialOpeningHours: {
       get() {
-        return this.$store.state.bookables.form.specialOpeningHours;
+        return this.localBookable.specialOpeningHours;
       },
       set(value) {
-        this.updateValue({ field: "specialOpeningHours", value: value });
+        this.localBookable.specialOpeningHours = value;
+        this.emitUpdate();
       },
     },
     isLongRange: {
       get() {
-        return this.$store.state.bookables.form.isLongRange;
+        return this.localBookable.isLongRange;
       },
       set(value) {
-        this.updateValue({ field: "isLongRange", value: value });
+        this.localBookable.isLongRange = value;
+        this.emitUpdate();
       },
     },
     longRangeOptions: {
       get() {
-        return this.$store.state.bookables.form.longRangeOptions;
+        return this.localBookable.longRangeOptions;
       },
       set(value) {
-        this.updateValue({ field: "longRangeOptions", value: value });
+        this.localBookable.longRangeOptions = value;
+        this.emitUpdate();
       },
     },
   },
   watch: {
-    isOpeningHoursRelated(val) {
-      if (val && this.openingHours.length === 0) {
+    bookable: {
+      handler(v) {
+        this.localBookable = { ...v };
+      },
+    },
+    timePeriodRelated(val) {
+      if (val && this.timePeriods.length === 0) this.addNewTimePeriod();
+    },
+    "regularOpeningHours.enabled"(val) {
+      if (val && this.regularOpeningHours.hours.length === 0)
         this.addNewOpeningHours();
-      }
     },
-    isTimePeriodRelated(val) {
-      if (val && this.timePeriods.length === 0) {
-        this.addNewTimePeriod();
-      }
-    },
-    isSpecialOpeningHoursRelated(val) {
-      if (val && this.specialOpeningHours.length === 0) {
+    "specificOpeningHours.enabled"(val) {
+      if (val && this.specificOpeningHours.hours.length === 0)
         this.addNewSpecialOpeningHours();
-      }
     },
   },
   methods: {
     ...mapActions({
       updateValue: "bookables/updateForm",
     }),
+    emitUpdate() {
+      this.$emit("update:bookable", this.localBookable);
+    },
     addNewTimePeriod() {
       this.timeStartMenu.push(false);
       this.timeEndMenu.push(false);
@@ -1183,51 +1169,51 @@ export default {
       this.timeStartSpecialOpeningHoursMenu.push(false);
       this.timeEndSpecialOpeningMenu.push(false);
       this.specialOpeningHoursDateMenu.push(false);
-      this.specialOpeningHours.push({
+      this.specificOpeningHours.hours.push({
         date: null,
-        startTime: null,
-        endTime: null,
+        openTime: null,
+        closeTime: null,
       });
     },
     removeSpecialOpeningHours(index) {
-      this.specialOpeningHours.splice(index, 1);
+      this.specificOpeningHours.hours.splice(index, 1);
       this.timeStartSpecialOpeningHoursMenu.splice(index, 1);
       this.timeEndSpecialOpeningMenu.splice(index, 1);
       this.specialOpeningHoursDateMenu.splice(index, 1);
     },
     setEndSpecialOpeningHoursTime(index, time) {
-      this.specialOpeningHours[index].endTime = time;
+      this.specificOpeningHours.hours[index].closeTime = time;
       this.timeEndSpecialOpeningMenu[index] = false;
     },
     setStartSpecialOpeningHoursTime(index, time) {
-      this.specialOpeningHours[index].startTime = time;
+      this.specificOpeningHours.hours[index].openTime = time;
       this.timeStartSpecialOpeningHoursMenu[index] = false;
     },
     addNewOpeningHours() {
       this.timeStartOpeningHoursMenu.push(false);
       this.timeEndOpeningHoursMenu.push(false);
-      this.openingHours.push({
-        weekdays: null,
-        startTime: null,
-        endTime: null,
+      this.regularOpeningHours.hours.push({
+        daysOfWeek: [],
+        openTime: null,
+        closeTime: null,
       });
     },
     setEndOpeningHoursTime(index, time) {
-      this.openingHours[index].endTime = time;
+      this.regularOpeningHours.hours[index].closeTime = time;
       this.timeEndOpeningHoursMenu[index] = false;
     },
     setStartOpeningHoursTime(index, time) {
-      this.openingHours[index].startTime = time;
+      this.regularOpeningHours.hours[index].openTime = time;
       this.timeStartOpeningHoursMenu[index] = false;
     },
     removeOpeningHoursWeekdays(index, item) {
-      this.openingHours[index].weekdays.splice(
-        this.openingHours[index].weekdays.indexOf(item),
+      this.regularOpeningHours.hours[index].daysOfWeek.splice(
+        this.regularOpeningHours.hours[index].daysOfWeek.indexOf(item),
         1
       );
     },
     removeOpeningHours(index) {
-      this.openingHours.splice(index, 1);
+      this.regularOpeningHours.hours.splice(index, 1);
       this.timeStartOpeningHoursMenu.splice(index, 1);
       this.timeEndOpeningHoursMenu.splice(index, 1);
     },
