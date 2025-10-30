@@ -13,6 +13,8 @@ replace_env_var() {
         done
 }
 
+replace_env_var "$BASE_URL" "BASE_URL_PLACEHOLDER" "/"
+
 # Replace env vars in files served by NGINX
 replace_env_var "$VUE_APP_SERVER_BASE_URL" "VUE_APP_SERVER_BASE_URL_PLACEHOLDER"
 replace_env_var "$VUE_APP_NAME" "VUE_APP_NAME_PLACEHOLDER"
