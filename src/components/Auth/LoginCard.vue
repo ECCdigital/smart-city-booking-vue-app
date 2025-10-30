@@ -119,11 +119,20 @@ export default {
         ></v-text-field>
       </v-form>
       <div class="text-left mt-2">
-        <a href="/password/reset" target="_blank">Passwort vergessen?</a>
+        <router-link
+          :to="{ name: 'password-reset' }"
+          class="forgot-link"
+          rel="noopener"
+          target="_blank"
+        >
+          Passwort vergessen?
+        </router-link>
       </div>
     </v-card-text>
     <v-card-actions class="px-4">
-      <v-btn to="/registrieren" target="_blank" outlined>Konto erstellen</v-btn>
+      <v-btn :to="{ name: 'register' }" target="_blank" outlined
+        >Konto erstellen</v-btn
+      >
       <v-spacer></v-spacer>
       <v-btn color="primary" elevation="0" @click="signin">Anmelden</v-btn>
     </v-card-actions>
