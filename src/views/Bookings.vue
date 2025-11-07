@@ -913,6 +913,7 @@ body {
      Falls das jedoch global im AdminLayout schon geregelt wird, kannst du es hier auch simpler halten. */
   flex: 1 1 auto;
   overflow-y: auto;
+  margin-bottom: 80px; /* Platz für den Fixed-Button unten lassen */
 }
 
 .page-footer {

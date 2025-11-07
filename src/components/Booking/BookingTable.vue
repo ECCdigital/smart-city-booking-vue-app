@@ -9,7 +9,7 @@
         'items-per-page-text': 'Buchungen pro Seite',
       }"
       :items="bookings"
-      class="accent elevation-1"
+      class="accent elevation-1 mb-1"
       :loading="loading"
       loading-text="Daten werden geladen..."
       no-data-text="Keine Daten vorhanden"
