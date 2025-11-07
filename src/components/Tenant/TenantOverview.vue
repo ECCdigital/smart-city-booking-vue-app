@@ -183,12 +183,14 @@ export default {
           icon: "mdi-check-decagram",
           comp: "TenantEditVerificationChallenges",
         },
+        /** This feature is currently disabled
         {
           key: "catalogs",
           label: "Kataloge",
           icon: "mdi-book-open-page-variant",
           comp: "TenantEditCatalog",
         },
+  **/
       ],
       originalSnapshot: null,
       tenant: {},
@@ -434,7 +436,6 @@ export default {
             }
           }
         }
-
 
         this.originalSnapshot = JSON.stringify({
           tenant: this.tenant,

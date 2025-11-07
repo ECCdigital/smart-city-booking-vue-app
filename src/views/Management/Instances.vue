@@ -134,12 +134,14 @@ export default {
           icon: "mdi-lock",
           comp: "InstanceEditSSO",
         },
-        {
-          key: "catalog",
-          label: "Katalog",
-          icon: "mdi-book-open",
-          comp: "InstanceEditCatalog",
-        },
+        /** This feature is currently disabled
+         {
+         key: "catalog",
+         label: "Katalog",
+         icon: "mdi-book-open",
+         comp: "InstanceEditCatalog",
+         },
+        */
       ],
       catalog: {
         type: "instanze",
@@ -238,9 +240,7 @@ export default {
 
     async fetchCatalog() {
       try {
-        const response = await ApiCatalogService.getCatalog(
-          this.instance.id
-        );
+        const response = await ApiCatalogService.getCatalog(this.instance.id);
         this.catalog = response.data;
       } catch (e) {
         // ignore error and load default catalog
