@@ -9,7 +9,7 @@
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <img
         alt="Smart City Booking"
-        src="/app-logo.png"
+        :src="appLogo"
         style="max-height: 50px; width: auto; max-width: 250px"
       />
       <v-spacer></v-spacer>
@@ -340,6 +340,11 @@ export default {
       set: function (newValue) {
         this.selectTenant(newValue);
       },
+    },
+    appLogo() {
+      return process.env.BASE_URL && process.env.BASE_URL.trim()
+        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
+        : "/app-logo.png";
     },
     navItems() {
       // reduce items to only those that are allowed for the current user

@@ -2,13 +2,11 @@ import store from "@/store";
 
 export default {
   getRoles() {
-    return ApiClient.get("api/roles", { withCredentials: true });
+    return ApiClient.get("api/roles");
   },
   getTenantRoles(publicRoles = false) {
     const t = store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/roles?public=${publicRoles}`, {
-      withCredentials: true,
-    });
+    return ApiClient.get(`api/${t}/roles?public=${publicRoles}`);
   },
   getUserRolesByTenant(tenantId, publicRoles = false) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
@@ -19,12 +17,10 @@ export default {
   submitRole(role) {
     const t = store.getters["tenants/currentTenantId"];
 
-    return ApiClient.put(`api/${t}/roles`, role, { withCredentials: true });
+    return ApiClient.put(`api/${t}/roles`, role);
   },
   deleteRole(role) {
     const t = store.getters["tenants/currentTenantId"];
-    return ApiClient.delete(`api/${t}/roles/${role.id}`, {
-      withCredentials: true,
-    });
+    return ApiClient.delete(`api/${t}/roles/${role.id}`);
   },
 };

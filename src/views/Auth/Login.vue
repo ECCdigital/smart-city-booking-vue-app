@@ -2,7 +2,7 @@
   <v-container class="text-center">
     <v-card outlined max-width="500" class="mx-auto mt-sm-10">
       <v-card-text class="text-center">
-        <v-img src="/app-logo.png" max-width="200" class="mx-auto" />
+        <v-img :src="appLogo" max-width="200" class="mx-auto" />
 
         <h2 class="mt-8 mb-2">Anmeldung</h2>
         <p class="subtitle-2 mb-10">Mit Ihrem Account anmelden.</p>
@@ -61,8 +61,14 @@ export default {
       nextUrl: "authStore/nextUrl",
     }),
     ssoActive() {
-      return (this.instance?.applications || [])
-        .some(app => app.id === "keycloak" && app.active);
+      return (this.instance?.applications || []).some(
+        (app) => app.id === "keycloak" && app.active
+      );
+    },
+    appLogo() {
+      return process.env.BASE_URL && process.env.BASE_URL.trim()
+        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
+        : "/app-logo.png";
     },
   },
 
@@ -74,14 +80,24 @@ export default {
       updateNextUrl: "authStore/setNextUrl",
     }),
     signedIn() {
-      this.$router.push("/admin/dashboard");
+      if (this.nextUrl) {
+        this.$router.push(this.nextUrl);
+        this.updateNextUrl(null);
+      } else {
+        this.$router.push({name: "dashboard"});
+      }
     },
     sso() {
       this.$router.push({ name: "sso" });
     },
   },
   mounted() {
-    this.updateNextUrl(null);
+    const next = this.$route.query.next;
+    if (next) {
+      this.updateNextUrl(next);
+    } else {
+      this.updateNextUrl(null);
+    }
   },
 };
 </script>

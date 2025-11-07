@@ -1,72 +1,101 @@
 export default {
-  login(userId, password) {
-    const body = {
-      id: userId,
-      password: password,
-    };
+  async login(userId, password) {
+    const body = { id: userId, password: password };
 
-    return ApiClient.post("auth/signin", body, {
-      withCredentials: true,
-    });
+    try {
+      const response = await ApiClient.post("auth/signin", body);
+
+      const { accessToken, refreshToken, user, permissions } = response.data;
+
+      ApiClient.setTokens(accessToken, refreshToken);
+
+      return { user, permissions };
+    } catch (error) {
+      throw error;
+    }
   },
-  ssoLogin(token) {
-    const body = {
-      token: token,
-    };
-    return ApiClient.post("auth/sso/signin", body, {
-      withCredentials: true,
-    });
+  async ssoLogin(token) {
+    const body = { token: token };
+
+    try {
+      const response = await ApiClient.post("auth/sso/signin", body);
+      const { accessToken, refreshToken, user } = response.data;
+
+      ApiClient.setTokens(accessToken, refreshToken);
+
+      return user;
+    } catch (error) {
+      throw error;
+    }
   },
-  register(tenant, id, firstName, lastName, company, password) {
+ async register(tenant, id, firstName, lastName, company, password, nextUrl = null) {
     const body = {
       id: id,
       firstName: firstName,
       lastName: lastName,
       company: company,
       password: password,
+      nextUrl: nextUrl,
     };
 
-    return ApiClient.post("auth/signup", body, {
-      withCredentials: true,
-    }).then(async (response) => {
+    try {
+      const response = await ApiClient.post("auth/signup", body);
       return response;
-    });
+    } catch (error) {
+      throw error;
+    }
   },
-  ssoRegister(token) {
-    const body = {
-      token: token,
-    };
-    return ApiClient.post("auth/sso/signup", body, {
-      withCredentials: true,
-    });
-  },
-  logout() {
-    return ApiClient.get("auth/signout", {
-      withCredentials: true,
-    });
-  },
-  me(populatePermissions) {
-    return ApiClient.get(
-      `auth/me?populatePermissions=${populatePermissions ? 1 : 0}`,
-      { withCredentials: true }
-    );
-  },
-  resetPassword(id, password) {
-    const body = {
-      id: id,
-      password: password,
-    };
+  async ssoRegister(token) {
+    const body = { token: token };
 
-    return ApiClient.post("auth/resetpassword", body, {
-      withCredentials: true,
-    });
+    try {
+      const response = await ApiClient.post("auth/sso/signup", body);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+  async logout() {
+    try {
+      await ApiClient.get("auth/signout");
+    } catch (error) {
+      console.warn("Server logout failed:", error);
+    } finally {
+      ApiClient.clearTokens();
+    }
+  },
+  async me(populatePermissions) {
+    try {
+      const response = await ApiClient.get(
+        `auth/me?populatePermissions=${populatePermissions ? 1 : 0}`
+      );
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+  async resetPassword(id, password) {
+    const body = { id: id, password: password };
+
+    try {
+      const response = await ApiClient.post("auth/resetpassword", body);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   },
   //request password reset
-  requestPasswordReset(email) {
-    const body = {
-      email: email,
-    };
+  async requestPasswordReset(email) {
+    const body = { email: email };
 
-    return ApiClient.post("auth/reset", body, { withCredentials: true });
+    try {
+      const response = await ApiClient.post("auth/reset", body);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+  isAuthenticated() {
+    return ApiClient.isAuthenticated();
   },
 };

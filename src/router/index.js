@@ -45,12 +45,7 @@ const routes = [
     redirect: "/login",
   },
   {
-    path: "/admin/",
-    name: "admin",
-    redirect: "/admin/dashboard",
-  },
-  {
-    path: "/admin/dashboard",
+    path: "/dashboard",
     name: "dashboard",
     component: Home,
     meta: {
@@ -61,7 +56,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/instanz",
+    path: "/instance",
     name: "instances",
     component: Instances,
     meta: {
@@ -71,7 +66,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/instanz/mandanten",
+    path: "/instance/mandanten",
     name: "instance-tenants",
     component: InstanceTenants,
     meta: {
@@ -81,7 +76,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/instanz/benutzer",
+    path: "/instance/benutzer",
     name: "instance-users",
     component: InstanceUsers,
     meta: {
@@ -91,7 +86,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/mandanten",
+    path: "/tenant",
     name: "tenant",
     component: Tenants,
     meta: {
@@ -101,7 +96,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/benutzer",
+    path: "/tenant/members",
     name: "user",
     component: Users,
     meta: {
@@ -111,7 +106,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/rollen",
+    path: "/tenant/roles",
     name: "roles",
     component: Roles,
     meta: {
@@ -121,7 +116,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/gutscheine",
+    path: "/coupons",
     name: "coupons",
     component: Coupons,
     meta: {
@@ -131,7 +126,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/buchungen",
+    path: "/bookings",
     name: "bookings",
     component: Bookings,
     meta: {
@@ -141,7 +136,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/veranstaltungsorte",
+    path: "/event-locations",
     name: "event-locations",
     component: Locations,
     meta: {
@@ -151,7 +146,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/veranstaltungsorte/edit",
+    path: "/event-locations/edit",
     name: "location-edit",
     component: EditBookable,
     meta: {
@@ -162,7 +157,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/veranstaltungsorte/create",
+    path: "/event-locations/create",
     name: "location-create",
     component: EditBookable,
     meta: {
@@ -173,7 +168,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/raeume",
+    path: "/rooms",
     name: "rooms",
     component: Rooms,
     meta: {
@@ -183,7 +178,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/raeume/edit",
+    path: "/rooms/edit",
     name: "room-edit",
     component: EditBookable,
     meta: {
@@ -194,7 +189,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/raeume/create",
+    path: "/rooms/create",
     name: "room-create",
     component: EditBookable,
     meta: {
@@ -205,7 +200,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/ressourcen",
+    path: "/resources",
     name: "resources",
     component: Resources,
     meta: {
@@ -216,7 +211,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/resources/edit",
+    path: "/resources/edit",
     name: "resource-edit",
     component: EditBookable,
     meta: {
@@ -227,7 +222,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/resources/create",
+    path: "/resources/create",
     name: "resource-create",
     component: EditBookable,
     meta: {
@@ -238,7 +233,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/tickets",
+    path: "/tickets",
     name: "tickets",
     component: Tickets,
     meta: {
@@ -248,7 +243,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/tickets/edit",
+    path: "/tickets/edit",
     name: "ticket-edit",
     component: EditBookable,
     meta: {
@@ -259,7 +254,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/tickets/create",
+    path: "/tickets/create",
     name: "ticket-create",
     component: EditBookable,
     meta: {
@@ -270,7 +265,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/veranstaltungen",
+    path: "/events",
     name: "events",
     component: Events,
     meta: {
@@ -280,7 +275,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/veranstaltungen/edit",
+    path: "/events/edit",
     name: "event-edit",
     component: EventCreate,
     meta: {
@@ -290,7 +285,7 @@ const routes = [
     },
   },
   {
-    path: "/admin/veranstaltungen/create",
+    path: "/events/create",
     name: "event-create",
     component: EventCreate,
     meta: {
@@ -320,7 +315,7 @@ const routes = [
         },
       },
       {
-        path: "veranstaltungsort",
+        path: "location",
         name: "event-create-event-location",
         component: EventCreateEventLocation,
         meta: {
@@ -330,7 +325,7 @@ const routes = [
         },
       },
       {
-        path: "veranstalter",
+        path: "organiser",
         name: "event-create-organizer",
         component: EventCreateEventOrganizer,
         meta: {
@@ -340,7 +335,7 @@ const routes = [
         },
       },
       {
-        path: "teilnehmer",
+        path: "participants",
         name: "event-create-attendees",
         component: EventCreateAttendees,
         meta: {
@@ -360,7 +355,7 @@ const routes = [
         },
       },
       {
-        path: "anhaenge",
+        path: "attachments",
         name: "event-create-attachments",
         component: EventCreateAttachments,
         meta: {
@@ -370,7 +365,7 @@ const routes = [
         },
       },
       {
-        path: "bilder",
+        path: "pictures",
         name: "event-create-images",
         component: EventCreateImages,
         meta: {
@@ -382,7 +377,7 @@ const routes = [
     ],
   },
   {
-    path: "/admin/einstellungen",
+    path: "/settings",
     name: "settings",
     component: Settings,
     meta: {
@@ -412,7 +407,7 @@ const routes = [
     },
   },
   {
-    path: "/registrieren",
+    path: "/register",
     name: "register",
     component: lazyLoad("Auth/Register"),
     meta: {
@@ -449,7 +444,7 @@ const routes = [
     },
   },
   {
-    path: "/willkommen",
+    path: "/welcome",
     name: "welcome",
     component: lazyLoad("Auth/Welcome"),
     meta: {
@@ -484,6 +479,16 @@ const routes = [
       title: "Passwort zurückgesetzt",
       requiresAuth: false,
     },
+  },
+  {
+    path: "/auth/invitation/:tenantId",
+    name: "invitation-accept",
+    component: lazyLoad("Auth/InvitationAccept"),
+    meta: {
+      title: "Einladung annehmen",
+      requiresAuth: false,
+    },
+    props: true,
   },
   {
     path: "/payment/redirection",
@@ -526,11 +531,20 @@ const routes = [
   },
 ];
 
-const router = new VueRouter({
+const routerConfig = {
   mode: "history",
-  base: process.env.BASE_URL,
   routes,
-});
+};
+
+
+if (process.env.BASE_URL) {
+  console.log("Setting router base to", process.env.BASE_URL);
+  routerConfig.base = process.env.BASE_URL;
+}
+
+
+const router = new VueRouter(routerConfig);
+
 
 router.beforeEach((to, from, next) => {
   const middlewares = [
