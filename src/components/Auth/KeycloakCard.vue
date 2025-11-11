@@ -81,25 +81,18 @@ export default {
     },
     async signIn() {
       try {
-        const response = await ApiAuthService.ssoLogin(
-          this.keycloakToken
+        const response = await ApiAuthService.ssoLogin(this.keycloakToken);
+
+        await this.updateUser(response.data);
+        await this.addToast(
+          ToastService.createToast("login.success.default", "success")
         );
-        if (response.status === 200) {
-          await this.updateUser(response.data);
-          await this.addToast(
-            ToastService.createToast("login.success.default", "success")
-          );
-          if (this.nextUrl) {
-            this.$router.push(this.nextUrl);
-            this.updateNextUrl(null);
-            return;
-          } else {
-            await this.$router.push({ name: "admin" });
-          }
+        if (this.nextUrl) {
+          this.$router.push(this.nextUrl);
+          this.updateNextUrl(null);
+          return;
         } else {
-          await this.addToast(
-            ToastService.createToast("login.error.default", "error")
-          );
+          await this.$router.push({ name: "dashboard" });
         }
       } catch (error) {
         if (error.response?.status === 404) {
@@ -115,9 +108,7 @@ export default {
     async signUp() {
       try {
         this.loading = true;
-        const response = await ApiAuthService.ssoRegister(
-          this.keycloakToken
-        );
+        const response = await ApiAuthService.ssoRegister(this.keycloakToken);
         if (response.status === 201) {
           await this.addToast(
             ToastService.createToast("register.success.default", "success")

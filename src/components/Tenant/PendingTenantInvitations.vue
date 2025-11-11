@@ -85,7 +85,6 @@ export default {
       this.loadingInvitations = true;
       try {
         const response = await ApiInvitationService.getMyInvitations();
-        console.log("Pending invitations:", response.data);
         this.pendingInvitations = response.data;
       } catch (error) {
         console.error("Error fetching pending invitations:", error);
