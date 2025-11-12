@@ -134,14 +134,12 @@ export default {
           icon: "mdi-lock",
           comp: "InstanceEditSSO",
         },
-        /** This feature is currently disabled
          {
          key: "catalog",
          label: "Katalog",
          icon: "mdi-book-open",
          comp: "InstanceEditCatalog",
          },
-        */
       ],
       catalog: {
         type: "instanze",
