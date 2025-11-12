@@ -57,7 +57,13 @@ export default {
   },
   async logout() {
     try {
-      await ApiClient.get("auth/signout");
+      const refreshToken = ApiClient.getRefreshToken();
+
+      if (refreshToken) {
+        await ApiClient.post("auth/signout", { refreshToken });
+      } else {
+        await ApiClient.get("auth/signout");
+      }
     } catch (error) {
       console.warn("Server logout failed:", error);
     } finally {

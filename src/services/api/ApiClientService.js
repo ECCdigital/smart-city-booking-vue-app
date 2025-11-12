@@ -14,7 +14,19 @@ class ApiClientService {
     this.accessToken = localStorage.getItem("accessToken");
     this.refreshToken = localStorage.getItem("refreshToken");
 
+    this.isRefreshing = false;
+    this.refreshSubscribers = [];
+
     this.setupInterceptors();
+  }
+
+  onTokenRefreshed(newToken) {
+    this.refreshSubscribers.forEach(callback => callback(newToken));
+    this.refreshSubscribers = [];
+  }
+
+  addRefreshSubscriber(callback) {
+    this.refreshSubscribers.push(callback);
   }
 
   setupInterceptors() {
@@ -38,18 +50,38 @@ class ApiClientService {
         if (
           error.response?.status === 401 &&
           !originalRequest._retry &&
+          !originalRequest.url?.includes("/auth/refresh") &&
           this.refreshToken
         ) {
+          if (this.isRefreshing) {
+            return new Promise((resolve) => {
+              this.addRefreshSubscriber((newToken) => {
+                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                resolve(this.client(originalRequest));
+              });
+            });
+          }
+
           originalRequest._retry = true;
+          this.isRefreshing = true;
 
           try {
             await this.refreshAccessToken();
+
+            this.onTokenRefreshed(this.accessToken);
+
             originalRequest.headers.Authorization = `Bearer ${this.accessToken}`;
             return this.client(originalRequest);
           } catch (refreshError) {
             this.clearTokens();
-            window.location.href = "/login";
+
+            if (window.location.pathname !== "/login") {
+              window.location.href = "/login";
+            }
+
             return Promise.reject(refreshError);
+          } finally {
+            this.isRefreshing = false;
           }
         }
 
@@ -92,10 +124,12 @@ class ApiClientService {
       );
 
       const { accessToken, refreshToken } = response.data;
+
       this.setTokens(accessToken, refreshToken);
 
       return accessToken;
     } catch (error) {
+      console.error("Token refresh failed:", error.response?.data || error.message);
       this.clearTokens();
       throw error;
     }
@@ -103,6 +137,10 @@ class ApiClientService {
 
   isAuthenticated() {
     return !!this.accessToken;
+  }
+
+  getRefreshToken() {
+    return this.refreshToken;
   }
 
   get(url, config = {}) {
