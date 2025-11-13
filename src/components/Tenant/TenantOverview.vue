@@ -68,6 +68,8 @@
         $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
       "
       @submit="submitChanges"
+      @cancel="fetchTenant"
+      show-restore
       :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
       :in-progress="inProgress"
     />
@@ -415,23 +417,42 @@ export default {
             );
           }
         }
+        const oldChallenges = JSON.parse(
+          this.originalSnapshot
+        ).verificationChallenges;
 
         if (
           JSON.stringify(this.verificationChallenges) !==
-          JSON.stringify(
-            JSON.parse(this.originalSnapshot).verificationChallenges
-          )
+          JSON.stringify(oldChallenges)
         ) {
+          const oldChallengesMap = new Map(oldChallenges.map((c) => [c.id, c]));
+          const newChallengesMap = new Map(
+            this.verificationChallenges.map((c) => [c.id, c])
+          );
+
           for (const challenge of this.verificationChallenges) {
-            if (challenge.id) {
+            const oldChallenge = oldChallengesMap.get(challenge.id);
+
+            if (!oldChallenge) {
+              await ApiChallengeService.createChallenge(
+                this.tenant.id,
+                challenge
+              );
+            } else if (
+              JSON.stringify(challenge) !== JSON.stringify(oldChallenge)
+            ) {
               await ApiChallengeService.updateChallenge(
                 this.tenant.id,
                 challenge
               );
-            } else {
-              await ApiChallengeService.createChallenge(
+            }
+          }
+
+          for (const oldChallenge of oldChallenges) {
+            if (!newChallengesMap.has(oldChallenge.id)) {
+              await ApiChallengeService.deleteChallenge(
                 this.tenant.id,
-                challenge
+                oldChallenge.id
               );
             }
           }

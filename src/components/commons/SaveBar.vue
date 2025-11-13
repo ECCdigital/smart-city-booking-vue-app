@@ -5,6 +5,7 @@ export default {
     inProgress: { type: Boolean, required: true },
     disabled: { type: Boolean, required: true },
     showCancel: { type: Boolean, default: false },
+    showRestore: { type: Boolean, default: false },
     anchorEl: {
       type: [Object, HTMLElement],
       default: null,
@@ -114,6 +115,9 @@ export default {
         <v-spacer />
         <v-btn v-if="showCancel" text @click="cancelChanges" class="mr-2">
           abbrechen
+        </v-btn>
+        <v-btn v-if="showRestore" :disabled="inProgress || !disabled" text @click="cancelChanges" class="mr-2">
+          Änderungen zurücksetzen
         </v-btn>
         <v-btn
           color="primary"

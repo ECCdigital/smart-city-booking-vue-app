@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="openDialog" persistent max-width="800px">
+  <v-dialog v-model="openDialog" persistent max-width="1200px">
     <v-card>
       <v-card-title>
         <span class="text-h5">E-Mail Vorlage bearbeiten</span>
@@ -13,7 +13,12 @@
         </div>
       </v-card-subtitle>
       <v-card-text>
-        <v-textarea filled v-model="internalTemplate" rows="20"> </v-textarea>
+        <HTMLTemplateEditor
+          v-model="internalTemplate"
+          :initial-template="mailTemplate"
+          :default-template="defaultTemplate"
+          :variables="mailVariables"
+        />
       </v-card-text>
       <v-card-actions>
         <v-spacer />
@@ -25,8 +30,11 @@
 </template>
 
 <script>
+import HTMLTemplateEditor from "@/components/HTMLTemplateEditor.vue";
+
 export default {
   name: "MailTemplateDialog",
+  components: { HTMLTemplateEditor },
   props: {
     open: {
       type: Boolean,
@@ -40,6 +48,20 @@ export default {
   data() {
     return {
       internalTemplate: "",
+      mailVariables: [
+        {
+          name: "title",
+          placeholder: "{{title}}",
+          description: "Titel der Nachricht",
+        },
+        {
+          name: "content",
+          placeholder: "{{{content}}}",
+          description: "Hauptinhalt der Nachricht",
+        },
+      ],
+      defaultTemplate:
+        '<!DOCTYPE html>\n<html lang="de">\n  <head>\n    <style>\n      .content {\n        text-align: left;\n        background-color: white;\n        border: 1px solid grey;\n        padding: 10px 40px;\n        border-radius: 2px;\n        margin: auto;\n        max-width: 750px;\n      }\n\n      body {\n        align-content: center;\n      }\n\n      .layer {\n        text-align: center;\n      }\n    </style>\n    <meta charset="UTF-8" />\n    <meta http-equiv="X-UA-Compatible" content="IE=edge" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>{{ title }}</title>\n  </head>\n\n  <body>\n    <div class="layer">\n      <div class="content">\n        <h1>{{ title }}</h1>\n        <p>{{{ content }}}</p>\n      </div>\n    </div>\n  </body>\n  <footer class="footer"></footer>\n</html>',
     };
   },
   computed: {

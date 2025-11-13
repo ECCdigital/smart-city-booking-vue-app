@@ -219,7 +219,7 @@ import AppPanel from "@/components/AppPanel.vue";
 
 export default {
   name: "MailKonfiguration",
-  components: { AppPanel, MailTemplateDialog },
+  components: { MailTemplateDialog, AppPanel },
   props: {
     mailConfig: {
       type: Object,
