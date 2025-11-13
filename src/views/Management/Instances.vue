@@ -61,6 +61,8 @@
           $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
         "
         @submit="submitChanges"
+        @cancel="fetchInstance"
+        show-restore
         :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
         :in-progress="inProgress"
       />

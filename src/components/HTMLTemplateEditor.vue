@@ -479,14 +479,6 @@ export default {
     loadDefaultTemplate() {
       const template = this.defaultTemplate || this.getBuiltInDefaultTemplate();
 
-      if (
-        this.internalTemplate &&
-        !confirm(
-          "Möchten Sie die aktuelle Vorlage durch die Standardvorlage ersetzen?"
-        )
-      ) {
-        return;
-      }
 
       this.internalTemplate = template;
       this.onTemplateChange();
@@ -536,12 +528,6 @@ export default {
     },
 
     clearTemplate() {
-      if (
-        this.internalTemplate &&
-        !confirm("Möchten Sie die E-Mail-Vorlage wirklich löschen?")
-      ) {
-        return;
-      }
 
       this.internalTemplate = "";
       this.onTemplateChange();
