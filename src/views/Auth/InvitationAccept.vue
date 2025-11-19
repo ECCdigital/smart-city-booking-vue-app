@@ -278,14 +278,12 @@ export default {
       this.isAccepting = true;
       try {
         const response = await ApiInvitationService.acceptInvitation(this.tenantId, this.token);
-        console.log("Acceptance response:", response);
         this.isAccepted = true;
         this.pendingApproval = response.data?.pendingApproval || false;
         await this.addToast(
           ToastService.createToast("invitation.success.accepted", "success")
         );
       } catch (error) {
-        console.error("Acceptance error:", error);
         await this.addToast(
           ToastService.createToast(
             "invitation.error.acceptance_failed",

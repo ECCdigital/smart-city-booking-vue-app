@@ -91,6 +91,9 @@
             <v-chip class="mr-2" small color="orange" text-color="white">
               {{ getStatusCount("pending") }} Ausstehend
             </v-chip>
+            <v-chip class="mr-2" small color="red" text-color="white">
+              {{ getStatusCount("suspended") }} Gesperrt
+            </v-chip>
             <v-chip class="mr-2" small color="amber" text-color="black">
               <v-icon left x-small>mdi-crown</v-icon>
               {{ getOwnerCount() }} Besitzer
@@ -110,6 +113,7 @@
                 class="elevation-2 mx-1"
                 :class="getListItemClass(item)"
                 dense
+                @click="openUserDetail(item)"
               >
                 <v-list-item-avatar>
                   <v-avatar
@@ -213,13 +217,6 @@
                       </v-btn>
                     </template>
                     <v-list dense>
-                      <v-list-item link @click="editUserRoles(item.userId)">
-                        <v-list-item-icon>
-                          <v-icon small>mdi-pencil</v-icon>
-                        </v-list-item-icon>
-                        <v-list-item-title>Rollen bearbeiten</v-list-item-title>
-                      </v-list-item>
-
                       <v-list-item
                         v-if="
                           item.status === 'pending' ||
@@ -356,6 +353,23 @@
       Benutzer einladen
     </v-btn>
 
+    <TenantUserDetailDialog
+      :open="showUserDetailDialog"
+      :user="selectedUser"
+      :roles="api.roles"
+      :challenges="api.challenges"
+      @close="closeUserDetail"
+      @save-roles="updateUserRoles"
+      @update-status="updateUserStatus"
+      @resend-invite="resendInvite(selectedUser?.userId)"
+      @approve-challenge="approveChallenge"
+      @reject-challenge="rejectChallenge"
+      @add-owner="addTenantOwner(selectedUser?.userId)"
+      @remove-owner="removeTenantOwner(selectedUser?.userId)"
+      @delete-user="removeTenantUser(selectedUser?.userId)"
+      @delete-invitation="handleDeleteInvitation"
+    />
+
     <TenantInviteUserDialog
       :open="showInviteDialog"
       :roles="api.roles"
@@ -369,15 +383,6 @@
       @createLink="createInvitationLink"
       @deleteLink="deleteLink"
     ></TenantInviteUserDialog>
-
-    <TenantUserEditRoleDialog
-      v-if="selectedUser"
-      :user="selectedUser"
-      :roles="api.roles"
-      :open="showEditRolesDialog"
-      @close="showEditRolesDialog = false"
-      @save="editTenantUserRoles"
-    />
   </AdminLayout>
 </template>
 
@@ -388,35 +393,26 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiInvitationService from "@/services/api/ApiInvitationService";
 import ToastService from "@/services/ToastService";
-import TenantUserEditRoleDialog from "@/components/Tenant/TenantUserEditRoleDialog.vue";
 import Fuse from "fuse.js";
 import TenantInviteUserDialog from "@/components/Tenant/TenantInviteUserDialog.vue";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
+import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.vue";
 
 export default {
   components: {
+    TenantUserDetailDialog,
     TenantInviteUserDialog,
-    TenantUserEditRoleDialog,
     AdminLayout,
   },
   data() {
     return {
       valid: true,
-      rules: {
-        email: [
-          (v) => !!v || "E-Mail ist erforderlich",
-          (v) => /.+@.+\..+/.test(v) || "E-Mail muss gültig sein",
-        ],
-      },
       search: "",
       statusFilter: [],
       roleFilter: [],
-      showEditRolesDialog: false,
+      showUserDetailDialog: false,
       selectedUser: null,
       isLoading: false,
-      newUserId: null,
-      newRoleIds: [],
-      inviteType: "invite",
       viewMode: "compact",
       currentPage: 1,
       itemsPerPage: 50,
@@ -428,10 +424,6 @@ export default {
         invitations: [],
         challenges: [],
       },
-      inviteOptions: [
-        { text: "Einladen (E-Mail senden)", value: "invite" },
-        { text: "Direkt hinzufügen", value: "manual" },
-      ],
       statusOptions: [
         { text: "Ausstehend", value: "pending" },
         { text: "Aktiv", value: "active" },
@@ -512,6 +504,108 @@ export default {
       addToast: "toasts/add",
     }),
 
+    openUserDetail(user) {
+      this.selectedUser = user;
+      this.showUserDetailDialog = true;
+    },
+
+    closeUserDetail() {
+      this.showUserDetailDialog = false;
+      this.selectedUser = null;
+    },
+
+    async updateUserRoles(roleIds) {
+      try {
+        this.isLoading = true;
+        const response = await ApiTenantService.editTenantUserRoles(
+          this.tenantId,
+          this.selectedUser.userId,
+          roleIds
+        );
+        this.api.users = response.users;
+        this.api.userDetails = response.userDetails;
+
+        // Update selected user
+        this.selectedUser = this.members.find(
+          (u) => u.userId === this.selectedUser.userId
+        );
+
+        await this.addToast({
+          type: "success",
+          message: "Rollen wurden erfolgreich aktualisiert",
+        });
+      } catch (e) {
+        console.error(e);
+        await this.addToast({
+          type: "error",
+          message: "Fehler beim Aktualisieren der Rollen",
+        });
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async updateUserStatus(status) {
+      try {
+        this.isLoading = true;
+        const response = await ApiTenantService.updateUserStatus(
+          this.tenantId,
+          this.selectedUser.userId,
+          status
+        );
+        this.api.users = response.users;
+        this.api.userDetails = response.userDetails;
+
+        this.selectedUser = this.members.find(
+          (u) => u.userId === this.selectedUser.userId
+        );
+
+        await this.addToast({
+          type: "success",
+          message: "Status wurde erfolgreich aktualisiert",
+        });
+      } catch (e) {
+        console.error(e);
+        await this.addToast({
+          type: "error",
+          message: "Fehler beim Aktualisieren des Status",
+        });
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async handleDeleteInvitation(token) {
+      try {
+        this.isLoading = true;
+        await ApiInvitationService.deleteUserInvitation(
+          this.tenantId,
+          this.selectedUser.userId,
+          token
+        );
+
+        await this.fetchTenantUsers();
+        await this.fetchInvitations();
+
+        this.selectedUser = this.members.find(
+          (u) => u.userId === this.selectedUser.userId
+        );
+
+        await this.addToast({
+          type: "success",
+          message: "Einladung wurde erfolgreich gelöscht",
+        });
+      } catch (error) {
+        await this.addToast({
+          type: "error",
+          message: "Fehler beim Löschen der Einladung",
+        });
+        console.error(error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     getStatusCount(status) {
       return this.filteredMembers.filter((user) => user.status === status)
         .length;
@@ -577,11 +671,6 @@ export default {
       return texts[status] || status;
     },
 
-    editUserRoles(userId) {
-      this.selectedUser = this.api.users.find((user) => user.userId === userId);
-      this.showEditRolesDialog = true;
-    },
-
     async fetchRoles() {
       const response = await ApiRolesService.getTenantRoles(this.tenantId);
       this.api.roles = response.data;
@@ -637,41 +726,6 @@ export default {
           type: "error",
           message: `Fehler beim Einladen der Benutzer: ${error.message}`,
         });
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async addTenantUser() {
-      if (!this.$refs.form.validate()) {
-        return;
-      }
-      try {
-        this.isLoading = true;
-        const response = await ApiTenantService.addTenantUser(
-          this.tenantId,
-          this.newUserId,
-          this.newRoleIds,
-          this.inviteType
-        );
-
-        this.newUserId = null;
-        this.newRoleIds = [];
-
-        this.api.users = response.users;
-        this.api.userDetails = response.userDetails;
-
-        await this.addToast(
-          ToastService.createToast("tenant.addUser.success", "success")
-        );
-      } catch (e) {
-        if (e.response?.status === 404) {
-          await this.addToast(
-            ToastService.createToast("tenant.error.user-not-found", "error")
-          );
-        } else {
-          console.error(e);
-        }
       } finally {
         this.isLoading = false;
       }
@@ -742,6 +796,7 @@ export default {
         );
         this.api.users = response.users;
         this.api.userDetails = response.userDetails;
+        this.openUserDetailDialog = false;
       } catch (e) {
         console.error(e);
       } finally {
@@ -758,6 +813,10 @@ export default {
         );
         this.api.users = response.users;
         this.api.userDetails = response.userDetails;
+
+        this.selectedUser = this.members.find(
+          (u) => u.userId === this.selectedUser.userId
+        );
       } catch (e) {
         console.error(e);
       } finally {
@@ -774,24 +833,10 @@ export default {
         );
         this.api.users = response.users;
         this.api.userDetails = response.userDetails;
-      } catch (e) {
-        console.error(e);
-      } finally {
-        this.isLoading = false;
-      }
-    },
 
-    async editTenantUserRoles(userId, roleIds) {
-      try {
-        this.isLoading = true;
-        const response = await ApiTenantService.editTenantUserRoles(
-          this.tenantId,
-          userId,
-          roleIds
+        this.selectedUser = this.members.find(
+          (u) => u.userId === this.selectedUser.userId
         );
-        this.api.users = response.users;
-        this.api.userDetails = response.userDetails;
-        this.showEditRolesDialog = false;
       } catch (e) {
         console.error(e);
       } finally {
@@ -889,6 +934,72 @@ export default {
     hasPendingApprovalInvitation(user) {
       return this.getPendingApprovalInvitations(user).length > 0;
     },
+    async approveChallenge({ challengeId, invitationToken }) {
+      try {
+        this.isLoading = true;
+        await ApiInvitationService.approveChallenge(
+          this.tenantId,
+          challengeId,
+          invitationToken,
+          this.selectedUser.userId
+        );
+
+        await this.addToast({
+          type: "success",
+          message: "Challenge wurde erfolgreich freigegeben",
+        });
+
+        await this.fetchTenantUsers();
+        await this.fetchInvitations();
+
+        // Update selected user
+        this.selectedUser = this.members.find(
+          (u) => u.userId === this.selectedUser.userId
+        );
+      } catch (e) {
+        await this.addToast({
+          type: "error",
+          message: "Freigabe der Challenge ist fehlgeschlagen",
+        });
+        console.error(e);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async rejectChallenge({ challengeId, invitationToken }) {
+      try {
+        this.isLoading = true;
+        await ApiInvitationService.rejectChallenge(
+          this.tenantId,
+          challengeId,
+          invitationToken,
+          this.selectedUser.userId
+        );
+
+        await this.addToast({
+          type: "success",
+          message: "Challenge wurde abgelehnt",
+        });
+
+        await this.fetchTenantUsers();
+        await this.fetchInvitations();
+
+        // Update selected user
+        this.selectedUser = this.members.find(
+          (u) => u.userId === this.selectedUser.userId
+        );
+      } catch (e) {
+        await this.addToast({
+          type: "error",
+          message: "Ablehnung der Challenge ist fehlgeschlagen",
+        });
+        console.error(e);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     async approveInvitation(userID) {
       const invitation = this.getPendingApprovalInvitations(
         this.api.users.find((u) => u.userId === userID)

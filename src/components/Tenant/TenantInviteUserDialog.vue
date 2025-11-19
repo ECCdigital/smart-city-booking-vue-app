@@ -183,7 +183,7 @@
             </div>
 
             <div class="d-flex align-end justify-end mt-4">
-              <v-btn class="mr-4" outlined @click="closeDialog"> Abbrechen </v-btn>
+              <v-btn class="mr-4" outlined @click="closeDialog"> schließen </v-btn>
               <v-btn
                 class=""
                 color="primary"
@@ -310,7 +310,7 @@
               </v-list>
               <div class="d-flex align-end justify-end mt-4">
                 <v-btn class="mt-4" outlined @click="closeDialog">
-                  Abbrechen
+                  schließen
                 </v-btn>
               </div>
             </div>

@@ -68,4 +68,24 @@ export default {
       }
     );
   },
+  rejectChallenge(tenantId, challengeID, token, userID) {
+    return ApiClient.post(
+      `/api/${tenantId}/invitations/reject`,
+      {
+        challengeId: challengeID,
+        token: token,
+        userId: userID,
+      },
+      {
+        withCredentials: true,
+      }
+    );
+  },
+  deleteUserInvitation(tenantId, userId, token) {
+    return ApiClient.delete(`api/${tenantId}/invitations/user/${userId}`, {
+      data: { token: token },
+      withCredentials: true,
+    });
+  },
+
 };
