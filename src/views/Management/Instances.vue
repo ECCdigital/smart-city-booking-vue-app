@@ -86,6 +86,7 @@ import InstanceEditOwners from "@/components/Instance/Edit/InstanceEditOwners.vu
 import InstanceEditSSO from "@/components/Instance/Edit/InstanceEditSSO.vue";
 import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
+import InstanceEditTenants from "@/components/Instance/Edit/InstanceEditTenants.vue";
 
 export default {
   name: "Instances",
@@ -98,6 +99,7 @@ export default {
     InstanceEditOwners,
     InstanceEditSSO,
     InstanceEditCatalog,
+    InstanceEditTenants,
   },
   data() {
     return {
@@ -135,6 +137,12 @@ export default {
           label: "Single-Sign On",
           icon: "mdi-lock",
           comp: "InstanceEditSSO",
+        },
+        {
+          key: "tenants",
+          label: "Mandanten",
+          icon: "mdi-domain",
+          comp: "InstanceEditTenants",
         },
         /** This feature is currently disabled
          {
