@@ -1,5 +1,9 @@
 <template>
-  <BaseSection title="Single Sign-On (SSO) mit Keycloak" icon="mdi-lock">
+  <BaseSection
+    v-if="localKeycloak && localKeycloak.roleMapping"
+    title="Single Sign-On (SSO) mit Keycloak"
+    icon="mdi-lock"
+  >
     <v-row>
       <v-col>
         <v-switch
@@ -178,7 +182,6 @@ export default {
   },
   methods: {
     emitUpdate() {
-      // merge keycloak back into a minimal update for the instance
       this.$emit("update:instance", {
         applications: [{ ...this.localKeycloak }],
       });
@@ -203,7 +206,6 @@ export default {
       this.emitUpdate();
     },
     onRoleChange(idx) {
-      // clear tenantRoleId when tenant changes
       this.localKeycloak.roleMapping.roles[idx].tenantRoleId = null;
       this.emitUpdate();
     },

@@ -48,21 +48,6 @@
     </v-row>
 
     <h3 class="mb-2">Zahlungsmethoden</h3>
-    <v-row>
-      <v-col>
-        <v-text-field
-          background-color="accent"
-          filled
-          label="Ergänzung zum Verwendungszweck"
-          prefix="[Buchungsnummer] - "
-          :rules="[
-            (v) => !v || v.length <= 12 || 'Maximal 12 Zeichen erlaubt.',
-          ]"
-          v-model="modelTenant.paymentPurposeSuffix"
-        />
-      </v-col>
-    </v-row>
-
     <AppPanel
       v-if="modelApps.giroCockpit"
       :title="'GiroCockpit'"
@@ -295,6 +280,20 @@
             v-model="modelApps.invoice.daysUntilPaymentDue"
           />
         </v-col>
+
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            label="Ergänzung zum Verwendungszweck"
+            prefix="[Buchungsnummer] - "
+            :rules="[
+            (v) => !v || v.length <= 12 || 'Maximal 12 Zeichen erlaubt.',
+          ]"
+            v-model="modelTenant.paymentPurposeSuffix"
+          />
+        </v-col>
+
       </v-row>
     </AppPanel>
   </BaseSection>

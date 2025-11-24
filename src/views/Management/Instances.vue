@@ -41,6 +41,7 @@
           <v-col class="col-12 col-md-9">
             <keep-alive>
               <component
+                v-if="instance"
                 :is="currentComponent"
                 ref="activeChild"
                 :instance="instance"
@@ -103,7 +104,7 @@ export default {
   },
   data() {
     return {
-      instance: {},
+      instance: null,
       isLoading: false,
       inProgress: false,
       validRoot: true,
@@ -160,6 +161,21 @@ export default {
           colors: { primary: "", secondary: "" },
         },
       },
+      defaultKeycloak: {
+        id: "keycloak",
+        type: "auth",
+        active: false,
+        title: "",
+        serverUrl: "",
+        realm: "",
+        publicClient: "",
+        privateClient: "",
+        privateClientSecret: "",
+        roleMapping: {
+          active: false,
+          roles: [],
+        },
+      },
     };
   },
   computed: {
@@ -207,6 +223,28 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    normalizeKeycloakApp(raw = {}) {
+      const merged = {
+        ...this.defaultKeycloak,
+        ...raw,
+      };
+
+      merged.roleMapping = {
+        ...this.defaultKeycloak.roleMapping,
+        ...(raw.roleMapping || {}),
+      };
+
+      merged.roleMapping.roles = Array.isArray(merged.roleMapping.roles)
+        ? merged.roleMapping.roles.map((r) => ({
+            tenantId: r.tenantId ?? null,
+            keycloakRole: r.keycloakRole ?? "",
+            tenantRoleId: r.tenantRoleId ?? null,
+          }))
+        : [];
+
+      return merged;
+    },
+
     onUpdateInstance(next) {
       this.instance = { ...this.instance, ...next };
     },
@@ -219,24 +257,19 @@ export default {
 
       // ensure applications array exists and has a keycloak entry
       if (!this.instance.applications) this.instance.applications = [];
-      const hasKeycloak = this.instance.applications.some(
+
+      const idx = this.instance.applications.findIndex(
         (app) => app?.id === "keycloak"
       );
-      if (!hasKeycloak) {
-        this.instance.applications.push({
-          id: "keycloak",
-          type: "auth",
-          active: false,
-          serverUrl: "",
-          realm: "",
-          publicClient: "",
-          privateClient: "",
-          privateClientSecret: "",
-          roleMapping: {
-            active: false,
-            roles: [],
-          },
-        });
+
+      if (idx === -1) {
+        this.instance.applications.push(this.defaultKeycloak);
+      } else {
+        this.instance.applications.splice(
+          idx,
+          1,
+          this.normalizeKeycloakApp(this.instance.applications[idx])
+        );
       }
 
       // snapshot after fetching
