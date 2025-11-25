@@ -1,45 +1,59 @@
 <template>
-  <v-dialog v-model="openDialog" persistent max-width="800px">
-    <v-card>
-      <v-card-title class="mx-3">
-        <span class="text-h5">Benutzer Rollen bearbeiten</span>
+  <v-dialog v-model="openDialog" persistent max-width="700px">
+    <v-card elevation="10" class="rounded-xl">
+      <v-card-title class="d-flex align-center py-4 px-6">
+        <v-icon left class="mr-3">mdi-account-cog</v-icon>
+        <span class="text-h5 font-weight-medium"
+          >Benutzerrollen bearbeiten</span
+        >
+        <v-spacer></v-spacer>
       </v-card-title>
-      <v-divider class="mx-9 mb-5" />
-      <v-card-text>
+
+      <v-divider class=""></v-divider>
+
+      <v-card-text class="pt-2 pb-0 px-8">
+        <div class="text-caption text-grey--text">
+          Benutzer-ID:
+          <span class="text-body-2 font-weight-medium text--primary">
+            {{ userCopy.userId }}
+          </span>
+        </div>
+      </v-card-text>
+
+      <v-card-text class="pt-0 px-8 pb-4">
+        <v-subheader class="pl-0 text-h6">Rollen</v-subheader>
+        <v-divider class="mb-4"></v-divider>
+
         <v-row>
-          <v-col>
-            <v-text-field
-              background-color="accent"
-              filled
-              hide-details
-              label="ID"
-              readonly
-              disabled
-              v-model="userCopy.userId"
-            ></v-text-field>
+          <v-col v-for="(role, i) in roles" :key="i" cols="12" sm="6" md="4">
+            <v-card outlined rounded="lg" class="hoverable pa-2">
+              <v-list-item dense>
+                <v-list-item-action>
+                  <v-checkbox
+                    v-model="userCopy.roles"
+                    :value="role.id"
+                    color="primary"
+                    hide-details
+                  />
+                </v-list-item-action>
+                <v-list-item-content>
+                  <v-list-item-title class="font-weight-medium">
+                    {{ role.name }}
+                  </v-list-item-title>
+                  <v-list-item-subtitle v-if="role.description">
+                    {{ role.description }}
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+            </v-card>
           </v-col>
         </v-row>
       </v-card-text>
-      <v-card-text>
-        <v-list>
-          <v-list-item-title>  <span class="text-h6">Rollen</span></v-list-item-title>
-          <v-list-item v-for="(role, i) in roles" :key="i">
-            <v-list-item-action>
-              <v-checkbox
-                v-model="userCopy.roles"
-                :value="role.id"
-              ></v-checkbox>
-            </v-list-item-action>
-            <v-list-item-content>
-              <v-list-item-title>{{ role.name }}</v-list-item-title>
-            </v-list-item-content>
-          </v-list-item>
-        </v-list>
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer />
-        <v-btn outlined @click="closeDialog">Abbrechen</v-btn>
-        <v-btn color="primary" @click="saveUserRoles">Speichern</v-btn>
+
+      <v-divider></v-divider>
+      <v-card-actions class="justify-end pr-6 pb-4 pt-2">
+        <v-btn outlined color="" @click="closeDialog"> Abbrechen </v-btn>
+        <v-btn color="primary" dark @click="saveUserRoles"> Speichern </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -49,18 +63,9 @@
 export default {
   name: "TenantUserEditRoleDialog",
   props: {
-    open: {
-      type: Boolean,
-      required: true,
-    },
-    user: {
-      type: Object,
-      required: true,
-    },
-    roles: {
-      type: Array,
-      required: true,
-    },
+    open: Boolean,
+    user: Object,
+    roles: Array,
   },
   data() {
     return {

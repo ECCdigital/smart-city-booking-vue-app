@@ -21,7 +21,7 @@
             <v-icon size="75" class="mb-5" color="primary">mdi-check</v-icon>
             <h1>Vielen Dank für Ihre Buchung</h1>
             <p class="lead mt-5">
-              Ihre Buchung wurde von uns entgegengenommen und freigegeben.
+              Ihre Buchung wurde erfolgreich abgeschlossen.
             </p>
           </div>
 

@@ -2,7 +2,7 @@
   <v-container class="text-center">
     <v-card outlined max-width="500" class="mx-auto mt-sm-10">
       <v-card-text class="text-center pa-10">
-        <v-img src="/app-logo.png" max-width="200" class="mx-auto" />
+        <v-img :src="appLogo" max-width="200" class="mx-auto" />
 
         <h2 class="mt-8 mb-2">Registrieren</h2>
         <p class="subtitle-2 mb-10">Erstellen Sie einen Account.</p>
@@ -137,7 +137,13 @@ export default {
     },
     ...mapGetters({
       instance: "instance/instance",
+      nextUrl: "authStore/nextUrl",
     }),
+    appLogo() {
+      return process.env.BASE_URL && process.env.BASE_URL.trim()
+        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
+        : "/app-logo.png";
+    },
   },
   components: { ContactInformation },
   data() {
@@ -184,11 +190,12 @@ export default {
           this.firstName,
           this.lastName,
           this.company,
-          this.password
+          this.password,
+          this.nextUrl
         )
           .then((response) => {
             if (response.status === 201) {
-              this.$router.push(`/willkommen/${this.tenant}`).then(() => {
+              this.$router.push(`/welcome/${this.tenant}`).then(() => {
                 this.addToast(
                   ToastService.createToast(
                     "register.success.default",

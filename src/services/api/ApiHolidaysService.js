@@ -6,7 +6,6 @@ export default {
         stateCode,
         year,
       },
-      withCredentials: true,
     });
   },
 };

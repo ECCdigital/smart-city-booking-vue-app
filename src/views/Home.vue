@@ -6,6 +6,11 @@
       color="primary"
       class="mb-2"
     ></v-progress-linear>
+    <PendingApprovals></PendingApprovals>
+    <PendingTenantInvitations
+      @invitation:accepted="fetchTenants"
+      @invitation:rejected="fetchTenants"
+    />
     <v-row gutters>
       <v-col
         v-for="tenant in tenants"
@@ -51,10 +56,14 @@ import AdminLayout from "@/layouts/Admin";
 import { mapActions, mapGetters } from "vuex";
 import TenantCreate from "@/components/Tenant/TenantCreate.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import PendingTenantInvitations from "@/components/Tenant/PendingTenantInvitations.vue";
+import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
 
 export default {
   name: "HomeView",
   components: {
+    PendingApprovals: PendingApprovals,
+    PendingTenantInvitations,
     TenantCreate,
     AdminLayout,
   },

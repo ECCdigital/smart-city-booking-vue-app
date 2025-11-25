@@ -22,7 +22,8 @@ export default {
   computed: {
     lockerDetails: {
       get() {
-        return this.$store.state.bookables.form.lockerDetails;
+        const details = this.$store.state.bookables.form.lockerDetails;
+        return details || { active: false, units: [] };
       },
       set(value) {
         this.updateValue({ key: "lockerDetails", value });

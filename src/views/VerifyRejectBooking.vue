@@ -17,8 +17,10 @@
           color="primary"
           size="64"
         ></v-progress-circular>
+        <p class="mt-4">Bitte warten, Ihre Stornierung wird verarbeitet...</p>
       </v-card-text>
-      <v-card-text class="text-center" v-if="!fetching && rejectSuccess">
+
+      <v-card-text class="text-center" v-else-if="rejectSuccess">
         <v-icon size="45px" color="success">mdi-check</v-icon>
         <p class="text-h6 font-weight-bold">Stornierung bestätigt</p>
         <p>
@@ -26,13 +28,42 @@
           eine Bestätigung per E-Mail.
         </p>
       </v-card-text>
-      <v-card-text class="text-center" v-if="!fetching && !rejectSuccess">
+
+      <v-card-text class="text-center" v-else-if="rejectError">
         <v-icon size="45px" color="error">mdi-close</v-icon>
         <p class="text-h6 font-weight-bold">Stornierung nicht möglich</p>
         <p>
-          Die Stornerung konnte nicht durchgeführt werden. Bitte versuchen Sie
+          Die Stornierung konnte nicht durchgeführt werden. Bitte versuchen Sie
           es erneut oder kontaktieren Sie Ihren Ansprechpartner.
         </p>
+
+        <v-btn
+          color="primary"
+          class="mt-4"
+          @click="releaseRejectHook"
+          :disabled="fetching"
+        >
+          Erneut versuchen
+        </v-btn>
+      </v-card-text>
+
+      <v-card-text class="text-center" v-else>
+        <v-icon size="45px" color="warning">mdi-help-circle-outline</v-icon>
+        <p class="text-h6 font-weight-bold">Stornierung bestätigen</p>
+        <p>
+          Möchten Sie die Buchung mit der Nummer
+          <strong>{{ bookingNumber }}</strong> wirklich stornieren?
+        </p>
+
+        <div class="mt-4" style="display: flex; justify-content: center; gap: 8px">
+          <v-btn
+            color="primary"
+            @click="releaseRejectHook"
+            :disabled="fetching"
+          >
+            Stornierung bestätigen
+          </v-btn>
+        </div>
       </v-card-text>
     </v-card>
   </v-container>
@@ -48,20 +79,21 @@ export default {
       type: String,
     },
   },
-  computed: {},
   data() {
     return {
       bookingNumber: this.$route.query.id,
       hookId: this.$route.query.hookId,
       rejectSuccess: false,
+      rejectError: false,
       fetching: false,
     };
   },
   methods: {
     async releaseRejectHook() {
-      try {
-        this.fetching = true;
+      this.fetching = true;
+      this.rejectError = false;
 
+      try {
         const response = await ApiBookingService.releaseBookingHook(
           this.bookingNumber,
           this.tenantId,
@@ -70,16 +102,18 @@ export default {
 
         if (response.status === 200) {
           this.rejectSuccess = true;
+        } else {
+          this.rejectError = true;
         }
       } catch (error) {
         console.error(error);
+        this.rejectError = true;
       } finally {
         this.fetching = false;
       }
     },
   },
-  async mounted() {
-    await this.releaseRejectHook();
+  mounted() {
   },
 };
 </script>
