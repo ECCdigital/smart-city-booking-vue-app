@@ -13,9 +13,16 @@
           <template v-slot:prepend-inner>
             <v-menu bottom left>
               <template v-slot:activator="{ on, attrs }">
-                <v-btn icon v-bind="attrs" v-on="on">
-                  <v-icon>mdi-filter-variant</v-icon>
-                </v-btn>
+                <v-badge
+                  :value="hasActiveFilters"
+                  color="primary"
+                  dot
+                  overlap
+                >
+                  <v-btn icon v-bind="attrs" v-on="on">
+                    <v-icon>mdi-filter-variant</v-icon>
+                  </v-btn>
+                </v-badge>
               </template>
 
               <v-list dense>
@@ -46,6 +53,19 @@
                   </v-list-item-content>
                 </v-list-item>
               </v-list>
+
+              <v-list dense>
+                <v-subheader>Besitzer</v-subheader>
+                <v-list-item @click="ownerOnly = !ownerOnly">
+                  <v-list-item-action>
+                    <v-checkbox :input-value="ownerOnly" @change.prevent />
+                  </v-list-item-action>
+                  <v-list-item-content>
+                    <v-list-item-title>Nur Besitzer anzeigen</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list>
+
               <v-list dense>
                 <v-subheader>Rolle</v-subheader>
                 <v-list-item
@@ -410,12 +430,13 @@ export default {
       search: "",
       statusFilter: [],
       roleFilter: [],
+      ownerOnly: false,
       showUserDetailDialog: false,
       selectedUser: null,
       isLoading: false,
       viewMode: "compact",
       currentPage: 1,
-      itemsPerPage: 50,
+      itemsPerPage: 8,
       showInviteDialog: false,
       api: {
         users: [],
@@ -477,6 +498,10 @@ export default {
         );
       }
 
+      if (this.ownerOnly) {
+        filtered = filtered.filter((user) => user.owner);
+      }
+
       return filtered;
     },
     totalPages() {
@@ -486,6 +511,14 @@ export default {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
       return this.filteredMembers.slice(start, end);
+    },
+
+    hasActiveFilters() {
+      return (
+        this.statusFilter.length > 0 ||
+        this.roleFilter.length > 0 ||
+        this.ownerOnly
+      );
     },
   },
   watch: {
