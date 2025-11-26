@@ -36,7 +36,7 @@
                 v-model="dateBeginModel"
                 label="Startdatum"
                 prepend-icon="mdi-calendar"
-                readonly
+                type="date"
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.dateBegin"
@@ -72,7 +72,7 @@
                 v-model="timeBeginModel"
                 label="Startzeit"
                 prepend-icon="mdi-clock-time-four-outline"
-                readonly
+                type="time"
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.required"
@@ -104,7 +104,7 @@
                 v-model="dateEndModel"
                 label="Enddatum"
                 prepend-icon="mdi-calendar"
-                readonly
+                type="date"
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.dateEnd"
@@ -140,7 +140,7 @@
                 v-model="timeEndModel"
                 label="Endzeit"
                 prepend-icon="mdi-clock-time-four-outline"
-                readonly
+                type="time"
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.required"
