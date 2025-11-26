@@ -59,6 +59,7 @@ export default {
     ...mapGetters({
       instance: "instance/instance",
       nextUrl: "authStore/nextUrl",
+      isLoggedIn: "user/isLoggedIn",
     }),
     ssoActive() {
       return (this.instance?.applications || []).some(
@@ -97,6 +98,9 @@ export default {
       this.updateNextUrl(next);
     } else {
       this.updateNextUrl(null);
+    }
+    if (this.isLoggedIn) {
+      this.signedIn()
     }
   },
 };
