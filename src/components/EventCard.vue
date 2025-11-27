@@ -68,19 +68,14 @@
       <div class="d-flex align-center mb-1">
         <v-icon class="pe-2" size="23">mdi-account</v-icon>
 
-        <span
-          v-if="item.attendees?.maxAttendees"
-          class="subtitle-1"
-        >
-      {{ bookedSeatsCount }} / {{ item.attendees.maxAttendees }} Plätze belegt
-    </span>
+        <span v-if="item.attendees?.maxAttendees" class="subtitle-1">
+          {{ bookedSeatsCount }} / {{ item.attendees.maxAttendees }} Plätze
+          belegt
+        </span>
 
-        <span
-          v-else
-          class="subtitle-1"
-        >
-      {{ bookedSeatsCount }} Plätze gebucht
-    </span>
+        <span v-else class="subtitle-1">
+          {{ bookedSeatsCount }} Plätze gebucht
+        </span>
       </div>
 
       <v-progress-linear
@@ -147,8 +142,7 @@
         <v-list dense>
           <v-list-item
             link
-            :href="eventBookingsDownloadLink(item.id, item.tenantId)"
-            target="_blank"
+            @click="downloadEventBookings(item.id, item.tenantId)"
             :disabled="!BookablePermissionService.allowUpdate(item)"
           >
             <v-list-item-icon>
@@ -191,6 +185,7 @@
 <script>
 import ApiEventService from "@/services/api/ApiEventService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
+import ApiExportService from "@/services/api/ApiExportService";
 
 export default {
   props: {
@@ -228,8 +223,24 @@ export default {
     emitDuplicateAction() {
       this.$emit("duplicate");
     },
-    eventBookingsDownloadLink(id, tenantId) {
-      return `${process.env.VUE_APP_SERVER_BASE_URL}/csv/${tenantId}/events/${id}/bookings`;
+    async downloadEventBookings(id, tenantId) {
+      const response = await ApiExportService.getEventBookingsExport(
+        tenantId,
+        id
+      );
+      const eventTitle = this.item.information?.name || "Veranstaltung";
+      const blob = new Blob([response.data], {
+        type: "text/csv;charset=utf-8;",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Teilnehmerliste_${eventTitle}_${id}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     },
     async setAllowDuplicate() {
       const eventCountCheck = await ApiEventService.publicEventCountCheck();
@@ -237,7 +248,7 @@ export default {
     },
     async fetchBookedSeats() {
       const result = await ApiEventService.getBookedSeatsCount(this.item.id);
-      if(result && result.bookedSeats) {
+      if (result && result.bookedSeats) {
         this.seatsBooked = result.bookedSeats;
       } else {
         this.seatsBooked = 0;
