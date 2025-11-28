@@ -610,7 +610,7 @@ export default {
 
       try {
         const response = await ApiRolesService.getUserRolesByTenant(
-          undefined,
+          this.tenant,
           true
         );
         this.allowSeriesFlag = response.data.some((role) =>
