@@ -1,5 +1,5 @@
 <template>
-  <div style="max-width : 1200px; margin: auto;">
+  <div style="max-width: 1200px; margin: auto">
     <v-container>
       <div>
         <v-stepper
@@ -200,7 +200,10 @@ export default {
 
       const steps = [seriesBookingStep, contactDetailsStep];
 
-      if (this.activePaymentApps.length > 1 && this.bookingAttempts.some((attempt) => attempt.userPriceEur > 0)) {
+      if (
+        this.activePaymentApps.length > 1 &&
+        this.bookingAttempts.some((attempt) => attempt.userPriceEur > 0)
+      ) {
         steps.push(paymentStep);
       }
 
@@ -213,7 +216,8 @@ export default {
       try {
         const response = await ApiCouponService.getCoupon(this.tenant, code);
         if (response.data.type !== "percentage") {
-          this.couponError = "Sie können nur Gutscheine mit einem Rabatt in Prozent verwenden.";
+          this.couponError =
+            "Sie können nur Gutscheine mit einem Rabatt in Prozent verwenden.";
         } else {
           this.couponError = null;
           this.coupon = response.data;
@@ -300,40 +304,34 @@ export default {
       const dates = [];
       let currentDate = new Date(startDate);
 
-      while (currentDate <= endDate) {
-        if (currentDate.toDateString() !== firstBookingDate.toDateString()) {
-          dates.push(new Date(currentDate));
-        }
+      if (this.seriesFrequency === "weekly") {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
 
-        if (this.seriesFrequency === "weekly") {
-          currentDate.setDate(currentDate.getDate() + 1);
+        let current = new Date(start);
 
-          if (this.selectedWeekdays && this.selectedWeekdays.length > 0) {
-            let daysAdded = 0;
-            const maxDaysToCheck = 7 * this.seriesInterval;
+        while (current <= end) {
+          const dayOfWeek = current.getDay();
 
-            while (daysAdded < maxDaysToCheck) {
-              const dayOfWeek = currentDate.getDay();
+          const daysSinceStart = Math.floor(
+            (current.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          const weeksSinceStart = Math.floor(daysSinceStart / 7);
 
-              if (this.selectedWeekdays.includes(dayOfWeek)) {
-                break;
-              }
+          const isInCorrectWeek = weeksSinceStart % this.seriesInterval === 0;
+          const isSelectedWeekday = this.selectedWeekdays.includes(dayOfWeek);
 
-              currentDate.setDate(currentDate.getDate() + 1);
-              daysAdded++;
-            }
-
-            if (daysAdded >= maxDaysToCheck) {
-              currentDate.setDate(
-                currentDate.getDate() + 7 * this.seriesInterval - daysAdded
-              );
-            }
-          } else {
-            currentDate.setDate(
-              currentDate.getDate() + 7 * this.seriesInterval - 1
-            );
+          if (isInCorrectWeek && isSelectedWeekday) {
+            dates.push(new Date(current));
           }
-        } else if (this.seriesFrequency === "monthly") {
+
+          current.setDate(current.getDate() + 1);
+        }
+      } else if (this.seriesFrequency === "monthly") {
+        while (currentDate <= endDate) {
+          if (currentDate.toDateString() !== firstBookingDate.toDateString()) {
+            dates.push(new Date(currentDate));
+          }
           currentDate.setMonth(currentDate.getMonth() + this.seriesInterval);
 
           if (monthlyOptions.monthlyOptionType === "day") {
@@ -368,6 +366,7 @@ export default {
           }
         }
       }
+
       const dateOffset =
         new Date(this.dateEndModel).getDate() -
         new Date(this.dateBeginModel).getDate();
@@ -391,8 +390,17 @@ export default {
         };
         attempts.push(bookingAttempt);
       }
-      await this.validateItems(attempts);
-      this.bookingAttempts = attempts;
+
+      const uniqueAttempts = new Map();
+      for (const attempt of attempts) {
+        const key = `${attempt.timeBegin}-${attempt.timeEnd}`;
+        if (!uniqueAttempts.has(key)) {
+          uniqueAttempts.set(key, attempt);
+        }
+      }
+
+      await this.validateItems(Array.from(uniqueAttempts.values()));
+      this.bookingAttempts = Array.from(uniqueAttempts.values());
     },
 
     getNthWeekdayOfMonth(year, month, weekday, n) {
