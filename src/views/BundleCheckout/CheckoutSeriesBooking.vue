@@ -104,7 +104,7 @@
                   v-model="seriesStartDate"
                   label="Startdatum"
                   prepend-icon="mdi-calendar"
-                  readonly
+                  type="date"
                   v-bind="attrs"
                   v-on="on"
                   :rules="[(v) => !!v || 'Startdatum ist erforderlich']"
@@ -137,7 +137,7 @@
                   v-model="seriesEndDate"
                   label="Enddatum"
                   prepend-icon="mdi-calendar"
-                  readonly
+                  type="date"
                   v-bind="attrs"
                   v-on="on"
                   :rules="[
