@@ -36,10 +36,11 @@
                 v-model="dateBeginModel"
                 label="Startdatum"
                 prepend-icon="mdi-calendar"
-                readonly
+                type="date"
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.dateBegin"
+                @change="$refs.dateBeginMenu.save(dateBeginModel)"
               ></v-text-field>
             </template>
             <v-date-picker
@@ -72,7 +73,7 @@
                 v-model="timeBeginModel"
                 label="Startzeit"
                 prepend-icon="mdi-clock-time-four-outline"
-                readonly
+                type="time"
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.required"
@@ -104,10 +105,11 @@
                 v-model="dateEndModel"
                 label="Enddatum"
                 prepend-icon="mdi-calendar"
-                readonly
+                type="date"
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.dateEnd"
+                @change="$refs.dateEndMenu.save(dateEndModel)"
               ></v-text-field>
             </template>
             <v-date-picker
@@ -140,7 +142,7 @@
                 v-model="timeEndModel"
                 label="Endzeit"
                 prepend-icon="mdi-clock-time-four-outline"
-                readonly
+                type="time"
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.required"
