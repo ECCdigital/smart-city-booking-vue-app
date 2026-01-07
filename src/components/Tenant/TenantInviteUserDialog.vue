@@ -637,13 +637,11 @@ export default {
       const originUrl = window.location.origin.replace(/\/+$/, "");
       const basePath = (process.env.BASE_URL || "/").replace(/^\/+|\/+$/g, "");
       const safeBasePath = basePath ? `${basePath}/` : "";
-      console.log('Origin URL:', originUrl);
-      console.log('Base Path:', basePath);
 
-      const url = new URL(`${originUrl}/${safeBasePath}auth/invitation/${this.tenantId}`);
+      const url = new URL(
+        `${originUrl}/${safeBasePath}auth/invitation/${this.tenantId}`
+      );
       url.searchParams.set("token", token);
-      console.log(' URL:', url);
-      console.log('Generated Invitation URL:', url.toString());
       return url.toString();
     },
 
