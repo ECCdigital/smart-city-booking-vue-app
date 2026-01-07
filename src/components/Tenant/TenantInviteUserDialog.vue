@@ -183,7 +183,9 @@
             </div>
 
             <div class="d-flex align-end justify-end mt-4">
-              <v-btn class="mr-4" outlined @click="closeDialog"> Abbrechen </v-btn>
+              <v-btn class="mr-4" outlined @click="closeDialog">
+                Abbrechen
+              </v-btn>
               <v-btn
                 class=""
                 color="primary"
@@ -632,8 +634,17 @@ export default {
 
     combineTokenUrl(token) {
       if (!this.tenantId) return "";
-      const baseUrl = window.location.origin;
-      return `${baseUrl}/auth/invitation/${this.tenantId}?token=${token}`;
+      const originUrl = window.location.origin.replace(/\/+$/, "");
+      const basePath = (process.env.BASE_URL || "/").replace(/^\/+|\/+$/g, "");
+      const safeBasePath = basePath ? `${basePath}/` : "";
+      console.log('Origin URL:', originUrl);
+      console.log('Base Path:', basePath);
+
+      const url = new URL(`${originUrl}/${safeBasePath}auth/invitation/${this.tenantId}`);
+      url.searchParams.set("token", token);
+      console.log(' URL:', url);
+      console.log('Generated Invitation URL:', url.toString());
+      return url.toString();
     },
 
     async copyInvitationLink(link) {
