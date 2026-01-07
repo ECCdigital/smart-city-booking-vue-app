@@ -1,6 +1,11 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 
+const DEFAULT_CATALOG_PARTICIPATION = {
+  visible: false,
+  restricted: false,
+};
+
 export default {
   name: "TenantEditCatalog",
   components: { BaseSection },
@@ -10,7 +15,7 @@ export default {
   data() {
     return {
       valid: false,
-      localTenant: { ...this.tenant },
+      localTenant: { },
     };
   },
   watch: {
@@ -18,10 +23,20 @@ export default {
       deep: true,
       handler(v) {
         this.localTenant = { ...v };
+        this.ensureCatalogParticipation();
       },
     },
   },
   methods: {
+    ensureCatalogParticipation() {
+      if (!this.localTenant.catalogParticipation) {
+        this.$set(
+          this.localTenant,
+          "catalogParticipation",
+          DEFAULT_CATALOG_PARTICIPATION
+        );
+      }
+    },
     emitTenant() {
       this.$emit("update:tenant", this.localTenant);
     },
