@@ -636,7 +636,9 @@ export default {
       const basePath = (process.env.BASE_URL || "/").replace(/^\/+|\/+$/g, "");
       const safeBasePath = basePath ? `${basePath}/` : "";
 
-      const url = new URL(`${originUrl}/${safeBasePath}auth/invitation/${this.tenantId}`);
+      const url = new URL(
+        `${originUrl}/${safeBasePath}auth/invitation/${this.tenantId}`
+      );
       url.searchParams.set("token", token);
       return url.toString();
     },
