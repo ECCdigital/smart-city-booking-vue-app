@@ -25,6 +25,7 @@
         <v-col>
           <v-menu
             ref="dateBeginMenu"
+            v-model="dateBeginMenu"
             :close-on-content-click="false"
             :return-value.sync="dateBeginModel"
             transition="scale-transition"
@@ -40,7 +41,9 @@
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.dateBegin"
-              ></v-text-field>
+                class="no-native-date-icon"
+                @change="$refs.dateBeginMenu.save(dateBeginModel)"
+              />
             </template>
             <v-date-picker
               v-model="dateBeginModel"
@@ -52,8 +55,7 @@
               :show-current="minBookingDate"
               :min="minBookingDate"
               @click:date="$refs.dateBeginMenu.save(dateBeginModel)"
-            >
-            </v-date-picker>
+            />
           </v-menu>
         </v-col>
         <v-col>
@@ -76,7 +78,8 @@
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.required"
-              ></v-text-field>
+                class="no-native-timee-icon"
+              />
             </template>
             <v-time-picker
               v-if="timeBeginMenu"
@@ -84,7 +87,7 @@
               full-width
               format="24hr"
               @click:minute="$refs.timeBeginMenuRef.save(timeBeginModel)"
-            ></v-time-picker>
+            />
           </v-menu>
         </v-col>
       </v-row>
@@ -108,7 +111,10 @@
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.dateEnd"
-              ></v-text-field>
+                class="no-native-date-icon"
+                @change="$refs.dateEndMenu.save(dateEndModel)"
+
+              />
             </template>
             <v-date-picker
               v-model="dateEndModel"
@@ -120,8 +126,7 @@
               :show-current="minBookingDate"
               :min="dateBeginModel || minBookingDate"
               @click:date="$refs.dateEndMenu.save(dateEndModel)"
-            >
-            </v-date-picker>
+            />
           </v-menu>
         </v-col>
         <v-col>
@@ -144,7 +149,8 @@
                 v-bind="attrs"
                 v-on="on"
                 :rules="validationRules.required"
-              ></v-text-field>
+                class="no-native-timee-icon"
+              />
             </template>
             <v-time-picker
               v-if="timeEndMenu"
@@ -155,7 +161,7 @@
               full-width
               @click:minute="$refs.timeEndMenuRef.save(timeEndModel)"
               format="24hr"
-            ></v-time-picker>
+            />
           </v-menu>
         </v-col>
       </v-row>
@@ -164,7 +170,7 @@
           <checkout-time-period-picker
             v-model="selectedTimePeriod"
             :lead-item="leadItem"
-          ></checkout-time-period-picker>
+          />
         </v-col>
       </v-row>
       <v-row v-if="selectionType === 'long-range-week'">
@@ -177,7 +183,7 @@
             item-text="label"
             v-model="longRangeWeekModel"
             return-object
-          ></v-select>
+          />
         </v-col>
       </v-row>
       <v-row v-if="selectionType === 'long-range-month'">
@@ -231,8 +237,7 @@
         :booking-time-end="timestampEnd"
         :amount="amount"
         class="mt-10 mb-15"
-      >
-      </checkout-calendar>
+      />
     </v-form>
   </div>
 </template>
@@ -609,4 +614,14 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.no-native-date-icon >>> input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.no-native-timee-icon >>> input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  pointer-events: none;
+}
+</style>
