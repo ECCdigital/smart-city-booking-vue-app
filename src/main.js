@@ -10,6 +10,7 @@ import PersistenceService from "@/services/PersistenceService";
 import ApiClientService from "./services/api/ApiClientService";
 import "vuetify/dist/vuetify.min.css"
 import { mapActions } from "vuex";
+import VueTheMask from "vue-the-mask"
 
 import "@/scss/main.scss";
 import FormatService from "@/services/FormatService";
@@ -23,6 +24,8 @@ window.ApiClient = ApiClientService;
 Vue.config.productionTip = false;
 
 Vue.use(VueAxios, axios);
+
+Vue.use(VueTheMask)
 
 Vue.filter("currency", (number, currency, locale) => {
   return FormatService.currency(number, currency, locale);

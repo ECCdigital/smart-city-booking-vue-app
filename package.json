@@ -60,6 +60,7 @@
     "vue-i18n": "^8.28.2",
     "vue-jwt-decode": "^0.1.0",
     "vue-router": "^3.6.5",
+    "vue-the-mask": "^0.11.1",
     "vue2-filters": "^0.14.0",
     "vuedraggable": "^2.24.3",
     "vuetify": "^2.6.8",
