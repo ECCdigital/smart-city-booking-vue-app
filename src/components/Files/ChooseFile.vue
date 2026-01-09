@@ -304,7 +304,6 @@ export default {
         }
       } catch (err) {
         this.isUploadError = true;
-        console.log(err);
       } finally {
         this.isLoading = false;
       }
@@ -329,7 +328,6 @@ export default {
       this.$emit("update");
     },
     isImageFile(file) {
-      console.log("isImageFile", file);
       if (!file) return false;
       if (file.mime) return file.mime.startsWith("image/");
       const name = (file.basename || file.filename || "").toLowerCase();

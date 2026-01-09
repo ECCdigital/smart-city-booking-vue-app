@@ -84,14 +84,11 @@
     </v-row>
 
     <v-row>
-      <v-col>
-        <v-text-field
-          background-color="accent"
-          filled
-          label="Ort"
-          hide-details
+      <v-col >
+        <AddressLookup
           v-model="location"
-        ></v-text-field>
+          label="Adresse"
+        />
       </v-col>
     </v-row>
 
@@ -833,10 +830,12 @@ import ChooseFile from "@/components/Files/ChooseFile.vue";
 import BookableLockingAttributes from "@/components/Bookable/BookableLockingAttributes";
 import BookableCheckoutBookables from "@/components/Bookable/BookableCheckoutBookables.vue";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
+import AddressLookup from "@/components/commons/AddressLookup.vue";
 
 export default {
   name: "EditBookable",
   components: {
+    AddressLookup,
     BookableCheckoutBookables,
     ChooseFile,
     SortableList,
@@ -1409,7 +1408,14 @@ export default {
     },
     location: {
       get() {
-        return this.$store.state.bookables.form.location;
+        const loc = this.$store.state.bookables.form.location;
+        if (typeof loc === "string") {
+          return {
+            display_address: loc,
+          };
+        }
+
+        return loc || { display_address: null, lat: null, lng: null };
       },
       set(value) {
         this.updateValue({ field: "location", value: value });
