@@ -1,7 +1,7 @@
 <template>
   <v-autocomplete
     v-model="selectedAddress"
-    :items="suggestions"
+    :items="displayItems"
     :loading="loading"
     :search-input.sync="searchQuery"
     item-text="display_address"
@@ -19,7 +19,21 @@
   >
     <template #item="{ item }">
       <v-list-item-content>
-        <v-list-item-title>{{ item.display_address }}</v-list-item-title>
+        <!-- Manuelle Eingabe Option -->
+        <template v-if="item.isManualEntry">
+          <v-list-item-title class="font-italic">
+            <v-icon small left>mdi-pencil</v-icon>
+            "{{ item.display_address }}" übernehmen
+          </v-list-item-title>
+          <v-list-item-subtitle class="text--secondary">
+            Adresse ohne Koordinaten speichern
+          </v-list-item-subtitle>
+        </template>
+
+        <!-- Normale Suchergebnisse -->
+        <template v-else>
+          <v-list-item-title>{{ item.display_address }}</v-list-item-title>
+        </template>
       </v-list-item-content>
     </template>
   </v-autocomplete>
@@ -42,6 +56,10 @@ export default {
       type: String,
       default: "Adresse eingeben...",
     },
+    allowManualEntry: {
+      type: Boolean,
+      default: true,
+    },
   },
 
   data() {
@@ -54,6 +72,35 @@ export default {
       isInitialized: false,
       originalDisplayAddress: "",
     };
+  },
+
+  computed: {
+    /**
+     * Prüft ob manuelle Option angezeigt werden soll
+     */
+    canShowManualOption() {
+      return (
+        this.allowManualEntry &&
+        this.searchQuery &&
+        this.searchQuery.length >= 3 &&
+        !this.loading &&
+        // Nicht anzeigen wenn Query exakt einem Ergebnis entspricht
+        !this.suggestions.some(
+          (s) => s.display_address === this.searchQuery
+        )
+      );
+    },
+
+    /**
+     * Items für die Anzeige - fügt manuelle Option am Ende hinzu
+     */
+    displayItems() {
+      if (!this.canShowManualOption) {
+        return this.suggestions;
+      }
+
+      return [...this.suggestions, this.createManualEntry(this.searchQuery)];
+    },
   },
 
   watch: {
@@ -102,8 +149,21 @@ export default {
 
   methods: {
     /**
-     * Parst eingehende Werte (neues Format, altes Format, oder String)
+     * Erstellt einen manuellen Eintrag
      */
+    createManualEntry(text) {
+      return {
+        display_address: text,
+        coordinates: null,
+        address: null,
+        meta: {
+          source: "manual",
+          fetched_at: new Date().toISOString(),
+        },
+        isManualEntry: true,
+      };
+    },
+
     parseIncomingValue(val) {
       if (typeof val === "string") {
         return {
@@ -114,7 +174,6 @@ export default {
 
       if (typeof val !== "object") return null;
 
-      // Neues Format mit GeoJSON location
       if (val.coordinates?.points) {
         return {
           display_address: val.display_address,
@@ -125,7 +184,6 @@ export default {
         };
       }
 
-      // Altes Format mit lat/lon oder lat/lng (und display_name oder display_address)
       const displayAddr = val.display_address || val.display_name;
       if (displayAddr) {
         return {
@@ -139,9 +197,6 @@ export default {
       return null;
     },
 
-    /**
-     * Baut GeoJSON Point aus lat/lon
-     */
     buildGeoLocation(lat, lon) {
       if (!lat || !lon) return null;
 
@@ -151,35 +206,25 @@ export default {
       };
     },
 
-    /**
-     * Baut display_address aus Adress-Komponenten
-     */
     buildDisplayAddress(item) {
       if (!item.address) {
         return item.display_name;
       }
 
       const addr = item.address;
-
       const street = [addr.road, addr.house_number].filter(Boolean).join(" ");
-
       const city =
         addr.city ||
         addr.town ||
         addr.village ||
         addr.municipality ||
         addr.county;
-
       const plzCity = [addr.postcode, city].filter(Boolean).join(" ");
-
       const country = addr.country;
 
       return [street, plzCity, country].filter(Boolean).join(", ");
     },
 
-    /**
-     * Transformiert Nominatim-Response zum DB-Format
-     */
     transformToDbFormat(item) {
       const addr = item.address || {};
 
@@ -226,7 +271,6 @@ export default {
         );
 
         const data = await response.json();
-
         this.suggestions = data.map((item) => this.transformToDbFormat(item));
       } catch (error) {
         console.error("Adress-Lookup fehlgeschlagen:", error);
@@ -239,6 +283,25 @@ export default {
     onSelect(item) {
       if (!item) return;
 
+      // Manuelle Eingabe
+      if (item.isManualEntry) {
+        const locationData = {
+          coordinates: null,
+          display_address: item.display_address,
+          address: null,
+          meta: {
+            source: "manual",
+            fetched_at: new Date().toISOString(),
+          },
+        };
+
+        this.originalDisplayAddress = item.display_address;
+        this.$emit("input", locationData);
+        this.$emit("change", locationData);
+        return;
+      }
+
+      // Normale Auswahl
       const locationData = item.isLegacy
         ? {
           coordinates: item.coordinates,
