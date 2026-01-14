@@ -142,10 +142,17 @@ export default {
     fetchEvents() {
       // Date Begin is the last fetched date + 1
       let dateBegin = new Date();
+
+      if (this.focus) {
+        dateBegin = new Date(this.focus);
+      }
+
+      /**
       if (this.fetchedUntil) {
         dateBegin = new Date(this.fetchedUntil);
         dateBegin.setTime(dateBegin.getTime() + 1000 * 60 * 60 * 24);
       }
+      */
 
       // The date until data should be loaded is 3 days after the current focus date
       const dateEnd = new Date(this.focus);
@@ -164,8 +171,7 @@ export default {
         dateEnd.toISOString().split("T")[0],
         this.amount
       ).then((response) => {
-        // Add new fetched data to the existing data and set new fetchedUntil date
-        this.availabilityItems = this.availabilityItems.concat(response.data);
+        this.availabilityItems = response.data;
         this.fetchedUntil = dateEnd.toISOString().split("T")[0];
         this.loading = false;
       });
