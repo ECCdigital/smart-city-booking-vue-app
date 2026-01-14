@@ -171,8 +171,7 @@ export default {
         dateEnd.toISOString().split("T")[0],
         this.amount
       ).then((response) => {
-        // Add new fetched data to the existing data and set new fetchedUntil date
-        this.availabilityItems = this.availabilityItems.concat(response.data);
+        this.availabilityItems = response.data;
         this.fetchedUntil = dateEnd.toISOString().split("T")[0];
         this.loading = false;
       });
