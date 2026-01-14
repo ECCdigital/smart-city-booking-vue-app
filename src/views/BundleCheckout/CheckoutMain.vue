@@ -1,4 +1,4 @@
-<template>
+<template xmlns="http://www.w3.org/1999/html">
   <div>
     <v-container>
       <div>
@@ -54,7 +54,7 @@
               :trace="trace"
               :final-check="step === steps.length"
               :me="me"
-              :free-booking-allowed="leadItem.freeBookingAllowed"
+              :free-booking-allowed="step === steps.length ? false: leadItem.freeBookingAllowed"
               :initial-book-with-price="bookWithPrice"
               @back="previousPage()"
               @validate-items="validateItems()"
@@ -121,6 +121,7 @@ export default {
         userPriceEur: null,
         regularGrossPriceEur: null,
         userGrossPriceEur: null,
+        freeBookingAllowed: false,
       },
       subsequentItems: [],
       timeBegin: null,
@@ -340,12 +341,7 @@ export default {
 
       stepsToReturn.push(contactDetailsStep);
 
-      if (
-        this.activePaymentApps.length > 1 &&
-        this.leadItem.bookable &&
-        (this.leadItem.bookable.priceCategories.some((pC) => pC.priceEur > 0) ||
-          this.leadItem.userPriceEur > 0)
-      ) {
+      if (this.shouldShowPaymentStep()) {
         stepsToReturn.push(paymentStep);
       }
 
@@ -354,6 +350,19 @@ export default {
       });
 
       return stepsToReturn;
+    },
+
+    shouldShowPaymentStep() {
+      if (this.leadItem.freeBookingAllowed && !this.bookWithPrice) {
+        return false;
+      }
+
+      return (
+        this.activePaymentApps.length > 1 &&
+        this.leadItem.bookable &&
+        (this.leadItem.bookable.priceCategories.some((pC) => pC.priceEur > 0) ||
+          this.leadItem.userPriceEur > 0)
+      );
     },
 
     resetState() {
@@ -367,6 +376,7 @@ export default {
         userPriceEur: null,
         regularGrossPriceEur: null,
         userGrossPriceEur: null,
+        freeBookingAllowed: false,
       };
       this.subsequentItems = [];
       this.timeBegin = null;
@@ -499,6 +509,12 @@ export default {
 
             item.valid = false;
             item.error = error.response.data;
+          } finally {
+            const previousStepCount = this.steps.length;
+
+            this.steps = this.createSteps();
+
+            this.adjustStepAfterRebuild(previousStepCount);
           }
         }
       }
@@ -624,6 +640,19 @@ export default {
       this.bookWithPrice = value;
       await this.validateItems();
     },
+
+    adjustStepAfterRebuild(previousStepCount) {
+      const newStepCount = this.steps.length;
+
+      if (this.step > newStepCount) {
+        this.step = newStepCount;
+      }
+
+      if (this.step === previousStepCount && newStepCount !== previousStepCount) {
+        this.step = newStepCount;
+      }
+    },
+
   },
 
   watch: {
