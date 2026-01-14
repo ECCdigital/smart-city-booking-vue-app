@@ -466,6 +466,7 @@ export default {
               };
             })
         ),
+        bookWithPrice: this.bookWithPrice,
       };
     },
 

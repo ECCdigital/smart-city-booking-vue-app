@@ -30,10 +30,11 @@
               >mdi-timer-sand-empty</v-icon
             >
             <h1>Vielen Dank für Ihre Anfrage</h1>
-            <p class="lead mt-5">
-              Ihre Buchungsanfrage ist bei uns eingegangen. Unsere
-              Koordinator*innen prüfen ihre Anfrage und kommen so schnell wie
-              möglich auf Sie zu.
+            <p class="lead mt-5" style="max-width: 600px; margin: auto;">
+              Ihre Buchungsanfrage ist bei uns eingegangen und wird derzeit zur
+              Freigabe geprüft. Unsere Koordinator*innen melden sich so schnell
+              wie möglich bei Ihnen. Sobald Ihre Anfrage freigegeben wurde,
+              erhalten Sie eine Benachrichtigung.
             </p>
           </div>
 
@@ -42,7 +43,7 @@
               >mdi-timer-sand-empty</v-icon
             >
             <h1>Vielen Dank für Ihre Buchung</h1>
-            <p class="lead mt-5">
+            <p class="lead mt-5" style="max-width: 600px; margin: auto;">
               Ihre Buchung wurde von uns entgegengenommen und freigegeben. Bitte
               überweisen Sie den fälligen Betrag zeitnah, damit die Buchung
               endgültig abgeschlossen werden kann.
@@ -56,7 +57,7 @@
             <h1 class="warning--text">
               Die Zahlung konnte nicht abgeschlossen werden
             </h1>
-            <p class="lead mt-5">
+            <p class="lead mt-5" style="max-width: 600px; margin: auto;">
               Leider konnte die Buchung nicht korrekt abgeschlossen werden.
               Bitte versuchen Sie es zu einem späteren Zeitpunkt erneut oder
               wenden Sie sich an unsere Koordinator*innen.
@@ -94,8 +95,9 @@
             v-if="!!websiteLink"
             elevation="0"
             outlined
-            color="primary mt-15"
-            :href="'https://'+websiteLink"
+            color="primary"
+            class="mt-10"
+            :href="'https://' + websiteLink"
           >
             Zurück zur Website
           </v-btn>
@@ -141,8 +143,8 @@
             v-if="!!websiteLink"
             elevation="0"
             outlined
-            class="mt-5"
-            :href="'https://'+websiteLink"
+            class="mt-10"
+            :href="'https://' + websiteLink"
           >
             Zurück zur Website
           </v-btn>
@@ -232,7 +234,7 @@ export default {
         this.bookingStatuses = Array.isArray(res.data) ? res.data : [res.data];
 
         const pending = this.bookingStatuses
-          .filter((b) => ((b.isCommitted && !b.isPayed) || b.isRejected))
+          .filter((b) => (b.isCommitted && !b.isPayed) || b.isRejected)
           .map((b) => b.bookingId);
 
         if (pending.length === 0) {
