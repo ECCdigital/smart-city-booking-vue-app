@@ -165,6 +165,37 @@
         />
       </v-col>
     </v-row>
+
+    <v-row>
+      <v-col cols="12">
+        <h4>Kopfbereich</h4>
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <v-col cols="12" md="6">
+        <v-text-field
+          v-model="localCatalog.hero.title"
+          label="Überschrift im Kopfbereich"
+          background-color="accent"
+          placeholder="Marktplatz"
+          filled
+          dense
+          @input="emitCatalog"
+        />
+      </v-col>
+      <v-col ols="12" md="6">
+        <v-text-field
+          v-model="localCatalog.hero.subtitle"
+          label="Unterzeile im Kopfbereich"
+          background-color="accent"
+          placeholder="Entdecken Sie unsere Angebote"
+          filled
+          dense
+          @input="emitCatalog"
+        />
+      </v-col>
+    </v-row>
   </BaseSection>
 </template>
 
