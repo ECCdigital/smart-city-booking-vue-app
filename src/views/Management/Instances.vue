@@ -158,6 +158,10 @@ export default {
           active: false,
           colors: { primary: "", secondary: "" },
         },
+        hero: {
+          title: "",
+          subtitle: "",
+        },
       },
       defaultKeycloak: {
         id: "keycloak",
