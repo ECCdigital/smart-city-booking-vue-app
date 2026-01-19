@@ -13,12 +13,7 @@
           <template v-slot:prepend-inner>
             <v-menu bottom left>
               <template v-slot:activator="{ on, attrs }">
-                <v-badge
-                  :value="hasActiveFilters"
-                  color="primary"
-                  dot
-                  overlap
-                >
+                <v-badge :value="hasActiveFilters" color="primary" dot overlap>
                   <v-btn icon v-bind="attrs" v-on="on">
                     <v-icon>mdi-filter-variant</v-icon>
                   </v-btn>
@@ -29,10 +24,7 @@
                 <v-subheader>Status</v-subheader>
                 <v-list-item dense @click="verifiedFilter = !verifiedFilter">
                   <v-list-item-action>
-                    <v-checkbox
-                      :input-value="verifiedFilter"
-                      @change.prevent
-                    />
+                    <v-checkbox :input-value="verifiedFilter" @change.prevent />
                   </v-list-item-action>
                   <v-list-item-content>
                     <v-list-item-title>Nur verifiziert</v-list-item-title>
@@ -71,26 +63,6 @@
                   </v-list-item-content>
                 </v-list-item>
               </v-list>
-
-              <v-list dense>
-                <v-subheader>Rolle</v-subheader>
-                <v-list-item
-                  dense
-                  v-for="(role, i) in api.roles"
-                  :key="i"
-                  @click="toggleRoleFilter(role.id)"
-                >
-                  <v-list-item-action>
-                    <v-checkbox
-                      :input-value="roleFilter.includes(role.id)"
-                      @change.prevent
-                    />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ role.name }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
             </v-menu>
           </template>
         </v-text-field>
@@ -117,7 +89,7 @@
           <v-virtual-scroll
             :items="paginatedUsers"
             :item-height="100"
-            height="700"
+            height="650"
           >
             <template v-slot:default="{ item }">
               <v-list-item
@@ -195,12 +167,7 @@
                       :color="membership.owner ? 'amber' : 'blue-grey'"
                       :text-color="membership.owner ? 'black' : 'white'"
                     >
-                      <v-icon
-                        v-if="membership.owner"
-                        left
-                        x-small
-                        class="mr-1"
-                      >
+                      <v-icon v-if="membership.owner" left x-small class="mr-1">
                         mdi-crown
                       </v-icon>
                       {{ getTenantName(membership.tenantId) }}
@@ -210,6 +177,16 @@
                       class="text-caption"
                     >
                       +{{ getUserMemberships(item.id).length - 2 }} weitere
+                    </span>
+                  </v-list-item-subtitle>
+
+                  <v-list-item-subtitle
+                    v-else
+                    class="d-flex align-center flex-wrap mt-1"
+                  >
+                    <v-icon x-small class="mr-1">mdi-domain-off</v-icon>
+                    <span class="text-caption">
+                      Keine Mandanten Zugehörigkeit
                     </span>
                   </v-list-item-subtitle>
 
@@ -303,6 +280,8 @@
     <UserEdit
       :user="selectedUser"
       :roles="api.roles"
+      :tenants="tenants"
+      :memberships="selectedUserMemberships"
       :open="openEditDialog"
       @close="onCloseDialog"
     />
@@ -341,13 +320,13 @@ export default {
       search: "",
       verifiedFilter: false,
       suspendedFilter: false,
-      roleFilter: [],
       tenantFilter: [],
       openEditDialog: false,
       openDeleteDialog: false,
       selectedUser: {},
+      selectedUserMemberships: [],
       currentPage: 1,
-      itemsPerPage: 8,
+      itemsPerPage: 6,
     };
   },
   computed: {
@@ -362,7 +341,6 @@ export default {
       return (
         this.verifiedFilter ||
         this.suspendedFilter ||
-        this.roleFilter.length > 0 ||
         this.tenantFilter.length > 0
       );
     },
@@ -387,13 +365,6 @@ export default {
       // Suspended filter
       if (this.suspendedFilter) {
         filtered = filtered.filter((user) => user.isSuspended);
-      }
-
-      // Role filter
-      if (this.roleFilter.length > 0) {
-        filtered = filtered.filter((user) =>
-          user.roles?.some((role) => this.roleFilter.includes(role))
-        );
       }
 
       // Tenant filter
@@ -455,15 +426,6 @@ export default {
         this.api.memberships = response.data || response;
       } catch (error) {
         console.error(error);
-      }
-    },
-
-    toggleRoleFilter(roleId) {
-      const index = this.roleFilter.indexOf(roleId);
-      if (index > -1) {
-        this.roleFilter.splice(index, 1);
-      } else {
-        this.roleFilter.push(roleId);
       }
     },
 
@@ -541,6 +503,7 @@ export default {
         {},
         this.api.users.find((user) => user.id === userId)
       );
+      this.selectedUserMemberships = this.getUserMemberships(userId);
       this.openEditDialog = true;
     },
 
@@ -571,16 +534,7 @@ export default {
 };
 </script>
 
-<style scoped>
-.verified-item {
-  border-left: 3px solid #4caf50;
-}
-
-.suspended-item {
-  border-left: 3px solid #ff9800;
-  opacity: 0.8;
-}
-</style>
+<style scoped></style>
 
 <style>
 /* Make list items lighter in dark mode */

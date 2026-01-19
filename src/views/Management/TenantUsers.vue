@@ -4,7 +4,7 @@
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
         <v-text-field
           v-model="search"
-          label="Benutzer suchen..."
+          label="Mitglied suchen..."
           append-icon="mdi-magnify"
           solo
           clearable
@@ -103,7 +103,7 @@
           <v-col>
             <v-chip class="mr-2" small>
               <v-icon left x-small>mdi-account-group</v-icon>
-              {{ filteredMembers.length }} Benutzer
+              {{ filteredMembers.length }} Mitglieder
             </v-chip>
             <v-chip class="mr-2" small color="green" text-color="white">
               {{ getStatusCount("active") }} Aktiv
@@ -354,7 +354,7 @@
         >
           <v-icon size="48" color="grey lighten-2">mdi-account-group</v-icon>
           <v-card-title class="justify-center grey--text">
-            Keine Benutzer gefunden
+            Keine Mitglied gefunden
           </v-card-title>
         </v-card>
       </v-col>
@@ -370,7 +370,7 @@
       @click="showInviteDialog = true"
     >
       <v-icon class="mr-2">mdi-account-plus</v-icon>
-      Benutzer einladen
+      Mitglied einladen
     </v-btn>
 
     <TenantUserDetailDialog
@@ -752,12 +752,12 @@ export default {
 
         await this.addToast({
           type: "success",
-          message: `${users.length} Benutzer wurden erfolgreich eingeladen.`,
+          message: `${users.length} Mitglied wurden erfolgreich eingeladen.`,
         });
       } catch (error) {
         await this.addToast({
           type: "error",
-          message: `Fehler beim Einladen der Benutzer: ${error.message}`,
+          message: `Fehler beim Einladen der Mitglied: ${error.message}`,
         });
       } finally {
         this.isLoading = false;
