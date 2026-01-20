@@ -378,4 +378,46 @@ export default {
 .active-item {
   color: black !important;
 }
+
+/* Light Mode Scrollbar */
+#nav ::-webkit-scrollbar {
+  width: 8px;
+}
+
+#nav ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+#nav ::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+#nav ::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Dark Mode Scrollbar */
+.theme--dark #nav ::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.theme--dark #nav ::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.theme--dark #nav ::-webkit-scrollbar-thumb:hover {
+  background: #888;
+}
+
+/* Firefox Support */
+#nav {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+.theme--dark #nav {
+  scrollbar-color: #555 #1e1e1e;
+}
 </style>

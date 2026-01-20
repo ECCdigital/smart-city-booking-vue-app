@@ -1,173 +1,249 @@
 <template>
-  <v-card class="mx-auto accent flex d-flex flex-column" height="100%">
-    <div>
+  <v-card
+    :class="[
+      'bookable-card',
+      'fill-height',
+      'd-flex',
+      'flex-column',
+      { 'bookable-card--unavailable': !item.isBookable || !item.isPublic },
+    ]"
+    @click="navigateToEdit"
+    hover
+    outlined
+  >
+    <div class="bookable-card-header position-relative">
+      <div class="menu-container">
+        <v-menu offset-y>
+          <template v-slot:activator="{ on: menu, attrs }">
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on: tooltip }">
+                <v-btn
+                  icon
+                  v-bind="attrs"
+                  v-on="{ ...tooltip, ...menu }"
+                  @click.stop
+                >
+                  <v-icon>mdi-dots-vertical</v-icon>
+                </v-btn>
+              </template>
+              <span>Aktionen</span>
+            </v-tooltip>
+          </template>
+          <v-list dense>
+            <v-list-item
+              link
+              @click.stop="emitDuplicateAction"
+              :disabled="duplicateDisabled"
+            >
+              <v-list-item-icon>
+                <v-icon>mdi-content-copy</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>Duplizieren</v-list-item-title>
+            </v-list-item>
+            <v-list-item link @click.stop="gotoCheckout">
+              <v-list-item-icon>
+                <v-icon>mdi-cart</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>Zur Buchung</v-list-item-title>
+            </v-list-item>
+            <v-divider
+              v-if="BookablePermissionService.allowDelete(item)"
+            ></v-divider>
+            <v-list-item
+              link
+              class="red--text"
+              @click.stop="emitDeleteAction"
+              :disabled="!BookablePermissionService.allowUpdate(item)"
+              v-if="BookablePermissionService.allowDelete(item)"
+            >
+              <v-list-item-icon>
+                <v-icon color="red">mdi-delete</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>Löschen</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </div>
+
       <v-img
+        v-if="item.imgUrl"
         :lazy-src="item.imgUrl"
         aspect-ratio="16/9"
-        :src="item.imgUrl ? item.imgUrl : defaultImage"
-        class="rounded-img"
+        :src="item.imgUrl"
+        class="bookable-image"
+        height="200"
       >
-        <v-overlay
-          :absolute="true"
-          :value="!item.isBookable || !item.isPublic"
-          class="align-start justify-start"
+        <div
+          v-if="!item.isBookable || !item.isPublic"
+          class="status-badges pa-3"
         >
           <v-tooltip bottom>
             <template v-slot:activator="{ on }">
-              <v-icon class="ml-2" v-on="on" v-if="!item.isPublic" size="75"
-                >mdi-eye-off-outline</v-icon
+              <v-chip
+                v-if="!item.isPublic"
+                small
+                color="warning"
+                class="mr-2 elevation-2"
+                v-on="on"
               >
+                <v-icon small left>mdi-eye-off</v-icon>
+                Nicht gelistet
+              </v-chip>
             </template>
-            <span
-              >Das Buchungsobjekt ist für die Öffentlichkeit nicht
-              sichtbar</span
-            >
+            <span>Nicht öffentlich sichtbar</span>
           </v-tooltip>
+
           <v-tooltip bottom>
             <template v-slot:activator="{ on }">
-              <v-icon class="ml-2" v-on="on" v-if="!item.isBookable" size="75"
-                >mdi-cancel</v-icon
+              <v-chip
+                v-if="!item.isBookable"
+                small
+                color="error"
+                class="elevation-2"
+                v-on="on"
               >
+                <v-icon small left>mdi-cancel</v-icon>
+                Nicht buchbar
+              </v-chip>
             </template>
-            <span>Das Buchungsobjekt ist nicht buchbar</span>
+            <span>Nicht buchbar</span>
           </v-tooltip>
-        </v-overlay>
+        </div>
       </v-img>
-    </div>
-    <v-card-title>{{ item.title }}</v-card-title>
-    <v-card-subtitle class="pb-4">
-      <v-row no-gutters v-if="item.type === 'ticket'">
-        <v-col class="col-4 font-weight-bold">
-          <small>Veranstaltung:</small>
-        </v-col>
-        <v-col>
-          {{ item._populated?.event?.information?.name || "Unbekannt" }}
-        </v-col>
-      </v-row>
 
-      <p
-        class="mt-2 mb-0"
-        v-if="item.description"
-        v-html="shortenText(item.description)"
-      ></p>
-    </v-card-subtitle>
+      <div v-else class="placeholder-container">
+        <PlaceholderPattern variant="poly" :theme="isDark ? 'dark' : 'light'" />
 
-    <v-card-text
-      class="font-weight-bold pb-0"
-      color="grey darken-1"
-      v-if="
-        item.priceCategories &&
-        item.priceCategories.some((pC) => pC.priceEur) > 0
-      "
-    >
-      <v-row
-        dense
-        v-for="(priceCategory, index) in item.priceCategories"
-        :key="index"
-      >
-        <v-col class="col-6 col-md-3">
-          {{ priceCategory.priceEur | currency("EUR", "de-DE") }}
-        </v-col>
-
-        <v-col
-          v-if="priceCategory.interval.end || priceCategory.interval.start"
+        <div
+          v-if="!item.isBookable || !item.isPublic"
+          class="status-badges pa-3"
         >
-          {{
-            getPrice(
-              priceCategory.interval.start,
-              priceCategory.interval.end,
-              item.priceType
-            )
-          }}
-        </v-col>
-
-        <v-col>
-          <v-chip
-            v-if="priceCategory.fixedPrice"
-            small
-            color="secondary"
-            text-color="black"
-          >
-            Pauschalpreis
-          </v-chip>
-        </v-col>
-      </v-row>
-    </v-card-text>
-    <v-card-text
-      class="font-weight-bold title pb-0"
-      color="grey darken-1"
-      v-else
-    >
-      Kostenfrei
-    </v-card-text>
-
-    <v-card-text color="grey darken-1" v-if="item.flags">
-      <ul class="unstyled-list">
-        <li v-for="flag in item.flags" :key="flag" class="d-flex">
-          <v-icon class="pe-2" size="23">mdi-check</v-icon>
-          <div class="subtitle-1">{{ flag }}</div>
-        </li>
-      </ul>
-    </v-card-text>
-
-    <v-card-actions class="py-4 mt-auto" v-if="editRoute">
-      <v-spacer></v-spacer>
-      <v-btn
-        class="secondary"
-        color="black"
-        rounded
-        text
-        :to="{ name: editRoute, query: { id: item.id, fromRoute: fromRoute } }"
-        :disabled="!BookablePermissionService.allowUpdate(item)"
-      >
-        Bearbeiten
-      </v-btn>
-      <v-menu offset-y>
-        <template v-slot:activator="{ on: menu, attrs }">
           <v-tooltip bottom>
-            <template v-slot:activator="{ on: tooltip }">
-              <v-btn icon v-bind="attrs" v-on="{ ...tooltip, ...menu }">
-                <v-icon size="25">mdi-dots-vertical</v-icon>
-              </v-btn>
+            <template v-slot:activator="{ on }">
+              <v-chip
+                v-if="!item.isPublic"
+                small
+                color="warning"
+                class="mr-2 elevation-2"
+                v-on="on"
+              >
+                <v-icon small left>mdi-eye-off</v-icon>
+                Nicht gelistet
+              </v-chip>
             </template>
-            <span>Einstellungen</span>
+            <span>Nicht öffentlich sichtbar</span>
           </v-tooltip>
-        </template>
-        <v-list dense>
-          <v-list-item
-            link
-            @click="emitDuplicateAction"
-            :disabled="duplicateDisabled"
+
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on }">
+              <v-chip
+                v-if="!item.isBookable"
+                small
+                color="error"
+                class="elevation-2"
+                v-on="on"
+              >
+                <v-icon small left>mdi-cancel</v-icon>
+                Nicht buchbar
+              </v-chip>
+            </template>
+            <span>Nicht buchbar</span>
+          </v-tooltip>
+        </div>
+      </div>
+    </div>
+
+    <div class="bookable-card-title pa-4 text-center">
+      <h3 class="text-h6 font-weight-bold mb-1">
+        {{ item.title }}
+      </h3>
+      <p v-if="item.type === 'ticket'" class="text-caption grey--text mb-0">
+        <v-icon x-small class="mr-1">mdi-calendar-star</v-icon>
+        {{ item._populated?.event?.information?.name || "Unbekannt" }}
+      </p>
+    </div>
+
+    <v-divider></v-divider>
+
+    <v-card-text class="flex-grow-1 pa-4">
+      <div v-if="item.description" class="mb-3 text-body-2">
+        <p
+          class="grey--text text--darken-2 mb-0"
+          v-html="shortenText(item.description)"
+        ></p>
+      </div>
+
+      <div class="mb-3" v-if="hasPriceCategories">
+        <div class="d-flex align-center mb-2">
+          <v-icon small color="grey darken-1" class="mr-2"> mdi-cash </v-icon>
+          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
+            Preise
+          </span>
+        </div>
+        <div
+          v-for="(priceCategory, index) in item.priceCategories"
+          :key="index"
+          class="ml-7 mb-1"
+        >
+          <div class="d-flex align-center justify-space-between text-body-2">
+            <div class="d-flex align-center">
+              <span class="font-weight-bold primary--text mr-2">
+                {{ priceCategory.priceEur | currency("EUR", "de-DE") }}
+              </span>
+              <v-chip
+                v-if="priceCategory.fixedPrice"
+                x-small
+                color="secondary"
+                text-color="black"
+              >
+                Pauschal
+              </v-chip>
+            </div>
+            <span
+              v-if="priceCategory.interval.end || priceCategory.interval.start"
+              class="grey--text text--darken-1"
+            >
+              {{
+                getPrice(
+                  priceCategory.interval.start,
+                  priceCategory.interval.end,
+                  item.priceType
+                )
+              }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div v-else class="d-flex align-center mb-3 text-body-2">
+        <v-icon small color="success" class="mr-2">mdi-cash-check</v-icon>
+        <span class="success--text font-weight-bold">Kostenfrei</span>
+      </div>
+
+      <div v-if="item.flags && item.flags.length > 0">
+        <div class="d-flex align-center mb-2">
+          <v-icon small color="grey darken-1" class="mr-2"> mdi-star </v-icon>
+          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
+            Ausstattung
+          </span>
+        </div>
+        <div class="ml-7">
+          <div
+            v-for="(flag, index) in item.flags.slice(0, 3)"
+            :key="index"
+            class="d-flex align-center mb-1 text-body-2"
           >
-            <v-list-item-icon>
-              <v-icon>mdi-content-copy</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Duplizieren</v-list-item-title>
-          </v-list-item>
-          <v-list-item link @click="gotoCheckout">
-            <v-list-item-icon>
-              <v-icon>mdi-cart</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Zur Buchung</v-list-item-title>
-          </v-list-item>
-          <v-divider
-            v-if="BookablePermissionService.allowDelete(item)"
-          ></v-divider>
-          <v-list-item
-            link
-            class="red--text"
-            @click="emitDeleteAction"
-            :disabled="!BookablePermissionService.allowUpdate(item)"
-            v-if="BookablePermissionService.allowDelete(item)"
+            <v-icon x-small color="success" class="mr-2">mdi-check</v-icon>
+            <span class="grey--text text--darken-2">{{ flag }}</span>
+          </div>
+          <span
+            v-if="item.flags.length > 3"
+            class="text-caption grey--text ml-5"
           >
-            <v-list-item-icon>
-              <v-icon color="red">mdi-delete</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Löschen</v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
-    </v-card-actions>
+            +{{ item.flags.length - 3 }} weitere
+          </span>
+        </div>
+      </div>
+    </v-card-text>
   </v-card>
 </template>
 
@@ -175,8 +251,10 @@
 import { mapGetters } from "vuex";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
 
 export default {
+  components: { PlaceholderPattern },
   props: {
     editRoute: String,
     fromRoute: String,
@@ -192,6 +270,17 @@ export default {
     };
   },
   methods: {
+    navigateToEdit() {
+      if (
+        this.editRoute &&
+        this.BookablePermissionService.allowUpdate(this.item)
+      ) {
+        this.$router.push({
+          name: this.editRoute,
+          query: { id: this.item.id, fromRoute: this.fromRoute },
+        });
+      }
+    },
     getPrice(start, end, priceType) {
       const suffix = this.intervalSuffix(priceType);
       let interval = "";
@@ -211,8 +300,7 @@ export default {
         return "Std.";
       } else if (type === "per-day") {
         return "Tage";
-      } else if (type === "per-square-meter")
-        return "m²";
+      } else if (type === "per-square-meter") return "m²";
       else {
         return "Stück";
       }
@@ -232,7 +320,7 @@ export default {
       window.open(routeData.href, "_blank");
     },
     shortenText(text) {
-      return text.substring(0, 140) + (text.length > 140 ? " ..." : "");
+      return text.substring(0, 120) + (text.length > 120 ? " ..." : "");
     },
     async setAllowDuplicate() {
       const bookableCountCheck =
@@ -244,6 +332,9 @@ export default {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
     }),
+    isDark() {
+      return this.$vuetify?.theme?.dark || false;
+    },
     duplicateDisabled() {
       return (
         !this.BookablePermissionService.allowCreate() ||
@@ -253,6 +344,12 @@ export default {
     BookablePermissionService() {
       return BookablePermissionService;
     },
+    hasPriceCategories() {
+      return (
+        this.item.priceCategories &&
+        this.item.priceCategories.some((pC) => pC.priceEur > 0)
+      );
+    },
   },
   mounted() {
     this.setAllowDuplicate();
@@ -261,16 +358,143 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.unstyled-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.placeholder-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
-.rounded-img {
-  border-top-left-radius: 25px !important;
-  border-top-right-radius: 25px !important;
-  height: 200px;
-  max-height: 200px;
+.bookable-card {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+  cursor: pointer;
+  position: relative;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.bookable-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.bookable-card--unavailable {
+  opacity: 0.85;
+}
+
+.bookable-card-header {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.02) 0%,
+    rgba(0, 0, 0, 0.01) 100%
+  );
+}
+
+.bookable-card-title {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.02) 0%,
+    rgba(0, 0, 0, 0.01) 100%
+  );
+}
+
+.theme--dark .bookable-card-header,
+.theme--dark .bookable-card-title {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+}
+
+.bookable-image {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.status-badges {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.4) 0%,
+    transparent 100%
+  );
+}
+
+.v-card {
+  transition: all 0.3s ease;
+}
+
+.bookable-card:hover .bookable-image {
+  transform: scale(1.02);
+}
+
+.bookable-image {
+  transition: transform 0.3s ease;
+}
+
+.position-relative {
+  position: relative;
+}
+
+.bookable-card {
+  max-width: 400px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+  cursor: pointer;
+  position: relative;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.flex-grow-1 {
+  max-height: 300px; // Passe dies nach Bedarf an
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+  }
+}
+
+.theme--dark .flex-grow-1 {
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+}
+
+.menu-container {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
 }
 </style>

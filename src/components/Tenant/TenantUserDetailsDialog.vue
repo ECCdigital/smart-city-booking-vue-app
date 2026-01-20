@@ -255,7 +255,7 @@
                 <span class="text-h6 font-weight-medium">Rollen verwalten</span>
               </div>
               <p class="text-body-2 grey--text mb-0">
-                Wählen Sie die Rollen aus, die diesem Benutzer zugewiesen werden
+                Wählen Sie die Rollen aus, die diesem Mitglied zugewiesen werden
                 sollen.
               </p>
             </div>
@@ -495,11 +495,11 @@
             <div class="mb-4">
               <div class="d-flex align-center mb-2">
                 <v-icon color="primary" class="mr-2">mdi-cog</v-icon>
-                <span class="text-h6 font-weight-medium">Benutzeraktionen</span>
+                <span class="text-h6 font-weight-medium">Aktionen</span>
               </div>
               <p class="text-body-2 grey--text mb-0">
                 Verwalten Sie den Status und die Berechtigungen dieses
-                Benutzers.
+                Mitglieds.
               </p>
             </div>
 
@@ -519,10 +519,10 @@
                   <div class="d-flex flex-column flex-sm-row align-start">
                     <div class="flex-grow-1 mb-4 mb-sm-0">
                       <div class="text-body-1 font-weight-medium mb-1">
-                        Benutzer-Status ändern
+                        Mitglieds-Status ändern
                       </div>
                       <div class="text-body-2 grey--text">
-                        Aktivieren oder sperren Sie den Zugang dieses Benutzers
+                        Aktivieren oder sperren Sie den Zugang dieses Mitglieds.
                       </div>
                       <div class="mt-3">
                         <v-chip
@@ -591,8 +591,8 @@
                       <div class="text-body-2 grey--text">
                         {{
                           user?.owner
-                            ? "Dieser Benutzer hat Besitzer-Rechte"
-                            : "Erteilen Sie diesem Benutzer Besitzer-Rechte"
+                            ? "Dieses Mitglied hat Besitzer-Rechte"
+                            : "Erteilen Sie diesem Mitglied Besitzer-Rechte"
                         }}
                       </div>
                     </div>
@@ -603,7 +603,7 @@
                       @click="$emit('add-owner')"
                     >
                       <v-icon left>mdi-crown</v-icon>
-                      Besitzer machen
+                      Zum Besitzer ernennen
                     </v-btn>
                     <v-btn
                       v-else
@@ -635,7 +635,7 @@
                     <div class="flex-grow-1 mb-3 mb-sm-0">
                       <div class="text-body-1 font-weight-medium mb-1">
                         <v-icon color="red" class="mr-1">mdi-delete</v-icon>
-                        Benutzer entfernen
+                        Mitglied entfernen
                       </div>
                       <div class="text-body-2 grey--text">
                         Diese Aktion kann nicht rückgängig gemacht werden
@@ -664,10 +664,10 @@
       <v-card>
         <v-card-title class="red--text">
           <v-icon color="red" left>mdi-alert</v-icon>
-          Benutzer entfernen?
+          Mitglied entfernen?
         </v-card-title>
         <v-card-text>
-          Möchten Sie den Benutzer <strong>{{ userName }}</strong> wirklich aus
+          Möchten Sie das Mitglied <strong>{{ userName }}</strong> wirklich aus
           dem Tenant entfernen? Diese Aktion kann nicht rückgängig gemacht
           werden.
         </v-card-text>
