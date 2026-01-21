@@ -46,6 +46,17 @@
 
               <v-list dense>
                 <v-subheader>Mandant</v-subheader>
+
+                <v-list-item dense @click="noTenantFilter = !noTenantFilter">
+                  <v-list-item-action>
+                    <v-checkbox :input-value="noTenantFilter" @change.prevent />
+                  </v-list-item-action>
+                  <v-list-item-content>
+                    <v-list-item-title>Ohne Mandantenzuordnung</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+                <v-divider/>
+
                 <v-list-item
                   dense
                   v-for="(tenant, i) in tenants"
@@ -320,6 +331,7 @@ export default {
       search: "",
       verifiedFilter: false,
       suspendedFilter: false,
+      noTenantFilter: false,
       tenantFilter: [],
       openEditDialog: false,
       openDeleteDialog: false,
@@ -341,6 +353,7 @@ export default {
       return (
         this.verifiedFilter ||
         this.suspendedFilter ||
+        this.noTenantFilter ||
         this.tenantFilter.length > 0
       );
     },
@@ -367,6 +380,12 @@ export default {
         filtered = filtered.filter((user) => user.isSuspended);
       }
 
+      if (this.noTenantFilter) {
+        filtered = filtered.filter(
+          (user) => this.getUserMemberships(user.id).length === 0
+        );
+      }
+
       // Tenant filter
       if (this.tenantFilter.length > 0) {
         filtered = filtered.filter((user) => {
@@ -391,6 +410,11 @@ export default {
   watch: {
     filteredUsers() {
       this.currentPage = 1;
+    },
+    noTenantFilter(val) {
+      if (val) {
+        this.tenantFilter = [];
+      }
     },
   },
   methods: {
@@ -430,6 +454,8 @@ export default {
     },
 
     toggleTenantFilter(tenantId) {
+      if (this.noTenantFilter) this.noTenantFilter = false;
+
       const index = this.tenantFilter.indexOf(tenantId);
       if (index > -1) {
         this.tenantFilter.splice(index, 1);

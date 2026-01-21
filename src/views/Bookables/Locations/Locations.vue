@@ -34,6 +34,7 @@
         sm="6"
         md="4"
         lg="3"
+        xl="2"
         v-for="location in displayedLocations"
         :key="location.id"
         class="mx-xs-auto d-flex flex-column"

@@ -34,6 +34,7 @@
         sm="6"
         md="4"
         lg="3"
+        xl="2"
         v-for="resource in displayedResources.slice().reverse()"
         :key="resource.id"
         class="mx-xs-auto d-flex flex-column"

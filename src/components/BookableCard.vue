@@ -26,7 +26,7 @@
                   <v-icon>mdi-dots-vertical</v-icon>
                 </v-btn>
               </template>
-              <span>Aktionen</span>
+              <span>Schnellaktionen</span>
             </v-tooltip>
           </template>
           <v-list dense>
@@ -220,13 +220,7 @@
       </div>
 
       <div v-if="item.flags && item.flags.length > 0">
-        <div class="d-flex align-center mb-2">
-          <v-icon small color="grey darken-1" class="mr-2"> mdi-star </v-icon>
-          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
-            Ausstattung
-          </span>
-        </div>
-        <div class="ml-7">
+        <div class="ml-3">
           <div
             v-for="(flag, index) in item.flags.slice(0, 3)"
             :key="index"

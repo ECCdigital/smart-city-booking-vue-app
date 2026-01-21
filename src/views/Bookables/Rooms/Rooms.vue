@@ -28,12 +28,13 @@
         ></Search>
       </v-col>
     </v-row>
-    <v-row gutters align="stretch">
+    <v-row gutters >
       <v-col
         cols="12"
         sm="6"
         md="4"
         lg="3"
+        xl="2"
         v-for="room in displayedRooms"
         :key="room.id"
         class="mx-xs-auto d-flex flex-column"

@@ -38,6 +38,7 @@
         sm="6"
         md="4"
         lg="3"
+        xl="2"
         v-for="ticket in displayedTickets.slice().reverse()"
         :key="ticket.id"
         class="mx-xs-auto d-flex flex-column"
