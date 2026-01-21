@@ -166,7 +166,7 @@ export default {
           {
             title: "Mandanten",
             link: "dashboard",
-            icon: "mdi-view-dashboard",
+            icon: "mdi-domain-switch",
             showAlways: true,
           },
         ],
@@ -205,14 +205,14 @@ export default {
           {
             title: "Ressourcen",
             link: "resources",
-            icon: "mdi-hammer-wrench",
+            icon: "mdi-package-variant",
             interfaceName: "resources",
             context: "tenant",
           },
           {
             title: "Tickets",
             link: "tickets",
-            icon: "mdi-ticket",
+            icon: "mdi-ticket-confirmation-outline",
             interfaceName: "tickets",
             context: "tenant",
           },
@@ -236,16 +236,16 @@ export default {
             context: "tenant",
           },
           {
-            title: "Mandant Benutzer",
+            title: "Mitglieder",
             link: "user",
-            icon: "mdi-account-group-outline",
+            icon: "mdi-account-multiple-outline",
             interfaceName: "users",
             context: "tenant",
           },
           {
-            title: "Mandant Rollen",
+            title: "Rollen",
             link: "roles",
-            icon: "mdi-account-key-outline",
+            icon: "mdi-shield-account-outline",
             interfaceName: "roles",
             context: "tenant",
           },
@@ -377,5 +377,47 @@ export default {
 <style>
 .active-item {
   color: black !important;
+}
+
+/* Light Mode Scrollbar */
+#nav ::-webkit-scrollbar {
+  width: 8px;
+}
+
+#nav ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+#nav ::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+#nav ::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Dark Mode Scrollbar */
+.theme--dark #nav ::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.theme--dark #nav ::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.theme--dark #nav ::-webkit-scrollbar-thumb:hover {
+  background: #888;
+}
+
+/* Firefox Support */
+#nav {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+.theme--dark #nav {
+  scrollbar-color: #555 #1e1e1e;
 }
 </style>

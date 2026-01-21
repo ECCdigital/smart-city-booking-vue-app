@@ -8,102 +8,291 @@
           append-icon="mdi-magnify"
           solo
           clearable
-          class="search-field"
-        ></v-text-field>
-        <v-skeleton-loader type="table" class="flex">
-          <v-data-table
-            :headers="headers"
-            :sort-by="['created']"
-            :sort-desc="[true]"
-            :search="search"
-            :custom-filter="customFilter"
-            :footer-props="{
-              'items-per-page-all-text': 'Alle',
-              'items-per-page-text': 'Benutzer pro Seite',
-            }"
-            :items="api.users"
-            class="accent elevation-1"
-            :loading="loading"
-            loading-text="Daten werden geladen..."
-            no-data-text="Keine Daten vorhanden"
-            fixed-header
+          style="border-radius: 15px"
+        >
+          <template v-slot:prepend-inner>
+            <v-menu bottom left>
+              <template v-slot:activator="{ on, attrs }">
+                <v-badge :value="hasActiveFilters" color="primary" dot overlap>
+                  <v-btn icon v-bind="attrs" v-on="on">
+                    <v-icon>mdi-filter-variant</v-icon>
+                  </v-btn>
+                </v-badge>
+              </template>
+
+              <v-list dense>
+                <v-subheader>Status</v-subheader>
+                <v-list-item dense @click="verifiedFilter = !verifiedFilter">
+                  <v-list-item-action>
+                    <v-checkbox :input-value="verifiedFilter" @change.prevent />
+                  </v-list-item-action>
+                  <v-list-item-content>
+                    <v-list-item-title>Nur verifiziert</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+                <v-list-item dense @click="suspendedFilter = !suspendedFilter">
+                  <v-list-item-action>
+                    <v-checkbox
+                      :input-value="suspendedFilter"
+                      @change.prevent
+                    />
+                  </v-list-item-action>
+                  <v-list-item-content>
+                    <v-list-item-title>Nur suspendiert</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list>
+
+              <v-list dense>
+                <v-subheader>Mandant</v-subheader>
+
+                <v-list-item dense @click="noTenantFilter = !noTenantFilter">
+                  <v-list-item-action>
+                    <v-checkbox :input-value="noTenantFilter" @change.prevent />
+                  </v-list-item-action>
+                  <v-list-item-content>
+                    <v-list-item-title>Ohne Mandantenzuordnung</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+                <v-divider/>
+
+                <v-list-item
+                  dense
+                  v-for="(tenant, i) in tenants"
+                  :key="i"
+                  @click="toggleTenantFilter(tenant.id)"
+                >
+                  <v-list-item-action>
+                    <v-checkbox
+                      :input-value="tenantFilter.includes(tenant.id)"
+                      @change.prevent
+                    />
+                  </v-list-item-action>
+                  <v-list-item-content>
+                    <v-list-item-title>{{ tenant.name }}</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+          </template>
+        </v-text-field>
+
+        <!-- Stats -->
+        <v-row class="mb-3">
+          <v-col>
+            <v-chip class="mr-2" small>
+              <v-icon left x-small>mdi-account-group</v-icon>
+              {{ filteredUsers.length }} Benutzer
+            </v-chip>
+            <v-chip class="mr-2" small color="green" text-color="white">
+              <v-icon left x-small>mdi-check-circle</v-icon>
+              {{ getVerifiedCount() }} Verifiziert
+            </v-chip>
+            <v-chip class="mr-2" small color="orange" text-color="white">
+              <v-icon left x-small>mdi-alert-circle</v-icon>
+              {{ getSuspendedCount() }} Suspendiert
+            </v-chip>
+          </v-col>
+        </v-row>
+
+        <div v-if="paginatedUsers.length > 0">
+          <v-virtual-scroll
+            :items="paginatedUsers"
+            :item-height="100"
+            height="650"
           >
-            <template v-slot:header.name="{ header }">
-              {{ header.text.toUpperCase() }}
-            </template>
-            <template v-slot:item.isVerified="{ item }">
-              <v-checkbox
-                v-model="item.isVerified"
-                color="primary"
-                readonly
-              ></v-checkbox>
-            </template>
-            <template v-slot:item.isSuspended="{ item }">
-              <v-checkbox
-                v-model="item.isSuspended"
-                color="primary"
-                readonly
-              ></v-checkbox>
-            </template>
-            <template v-slot:item.roles="{ item }">
-              <v-chip
-                v-for="(role, index) in item.roles"
-                class="ma-2"
-                color="secondary"
-                text-color="black"
-                :key="index"
+            <template v-slot:default="{ item }">
+              <v-list-item
+                :key="item.id"
+                class="elevation-2 mx-1 mb-2"
+                :class="getListItemClass(item)"
+                dense
+                @click="openUserDetail(item)"
               >
-                {{ getRoleName(role) }}
-              </v-chip>
-            </template>
-            <template v-slot:item.created="{ item }">
-              <span>{{
-                Intl.DateTimeFormat("de-DE", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                }).format(new Date(item.created))
-              }}</span>
-            </template>
-            <template v-slot:item.controls="{ item }">
-              <span v-if="item.id !== 'super-admin'">
-                <v-menu offset-y>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn icon v-bind="attrs" v-on="on" small>
-                      <v-icon>mdi-dots-horizontal</v-icon>
-                    </v-btn>
-                  </template>
-                  <v-list>
-                    <v-list-item
-                      link
-                      @click="onOpenEditUser(item.id)"
-                      :disabled="!UserPermissionService.allowUpdate(item)"
+                <v-list-item-avatar>
+                  <v-avatar
+                    :color="getAvatarColor(item)"
+                    size="40"
+                    class="white--text font-weight-bold"
+                  >
+                    {{ getUserInitials(item) }}
+                  </v-avatar>
+                </v-list-item-avatar>
+
+                <v-list-item-content>
+                  <v-list-item-title class="d-flex align-center">
+                    <span>{{ getUserName(item) }}</span>
+                    <v-icon
+                      v-if="item.isVerified"
+                      left
+                      x-small
+                      class="ml-1"
+                      color="success"
                     >
-                      <v-list-item-icon>
-                        <v-icon>mdi-pencil</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title>Benutzer bearbeiten</v-list-item-title>
-                    </v-list-item>
-                    <v-list-item
-                      link
-                      @click="onOpenDeleteDialog(item.id)"
-                      :disabled="!UserPermissionService.allowDelete(item)"
+                      mdi-check-decagram
+                    </v-icon>
+                    <v-chip
+                      v-if="item.isSuspended"
+                      color="orange"
+                      text-color="white"
+                      x-small
+                      class="ml-1"
                     >
-                      <v-list-item-icon>
-                        <v-icon>mdi-delete</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-title>Benutzer löschen</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-              </span>
+                      <v-icon left x-small>mdi-alert</v-icon>
+                      Suspendiert
+                    </v-chip>
+                  </v-list-item-title>
+
+                  <v-list-item-subtitle class="d-flex align-center flex-wrap">
+                    <span class="">{{ item.id }}</span>
+                  </v-list-item-subtitle>
+
+                  <v-list-item-subtitle class="d-flex align-center flex-wrap">
+                    <span
+                      v-if="item.roles && item.roles?.length > 0"
+                      class="text-caption"
+                    >
+                      {{ item.roles.length }} Rolle(n):
+                      {{ getRoleNames(item.roles).slice(0, 3).join(", ") }}
+                      <span v-if="item.roles.length > 3">...</span>
+                    </span>
+                  </v-list-item-subtitle>
+
+                  <!-- Mandanten Zugehörigkeit -->
+                  <v-list-item-subtitle
+                    v-if="getUserMemberships(item.id).length > 0"
+                    class="d-flex align-center flex-wrap mt-1"
+                  >
+                    <v-icon x-small class="mr-1">mdi-domain</v-icon>
+                    <span class="text-caption mr-1">
+                      {{ getUserMemberships(item.id).length }} Mandant(en):
+                    </span>
+                    <v-chip
+                      v-for="(membership, idx) in getUserMemberships(
+                        item.id
+                      ).slice(0, 2)"
+                      :key="idx"
+                      x-small
+                      class="mr-1"
+                      :color="membership.owner ? 'amber' : 'blue-grey'"
+                      :text-color="membership.owner ? 'black' : 'white'"
+                    >
+                      <v-icon v-if="membership.owner" left x-small class="mr-1">
+                        mdi-crown
+                      </v-icon>
+                      {{ getTenantName(membership.tenantId) }}
+                    </v-chip>
+                    <span
+                      v-if="getUserMemberships(item.id).length > 2"
+                      class="text-caption"
+                    >
+                      +{{ getUserMemberships(item.id).length - 2 }} weitere
+                    </span>
+                  </v-list-item-subtitle>
+
+                  <v-list-item-subtitle
+                    v-else
+                    class="d-flex align-center flex-wrap mt-1"
+                  >
+                    <v-icon x-small class="mr-1">mdi-domain-off</v-icon>
+                    <span class="text-caption">
+                      Keine Mandanten Zugehörigkeit
+                    </span>
+                  </v-list-item-subtitle>
+
+                  <v-list-item-subtitle
+                    v-if="item.created"
+                    class="text-caption mt-1"
+                  >
+                    Beigetreten:
+                    {{
+                      Intl.DateTimeFormat("de-DE", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      }).format(new Date(item.created))
+                    }}
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+
+                <v-list-item-action v-if="item.id !== 'super-admin'">
+                  <v-menu offset-y>
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-btn
+                        icon
+                        v-bind="attrs"
+                        v-on="on"
+                        small
+                        color="grey darken-1"
+                      >
+                        <v-icon small>mdi-dots-vertical</v-icon>
+                      </v-btn>
+                    </template>
+                    <v-list dense>
+                      <v-list-item
+                        link
+                        @click="onOpenEditUser(item.id)"
+                        :disabled="!UserPermissionService.allowUpdate(item)"
+                      >
+                        <v-list-item-icon>
+                          <v-icon small>mdi-pencil</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>
+                          Benutzer bearbeiten
+                        </v-list-item-title>
+                      </v-list-item>
+
+                      <v-divider />
+
+                      <v-list-item
+                        link
+                        @click="onOpenDeleteDialog(item.id)"
+                        :disabled="!UserPermissionService.allowDelete(item)"
+                      >
+                        <v-list-item-icon>
+                          <v-icon small color="red">mdi-delete</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>Benutzer löschen</v-list-item-title>
+                      </v-list-item>
+                    </v-list>
+                  </v-menu>
+                </v-list-item-action>
+              </v-list-item>
             </template>
-          </v-data-table>
-        </v-skeleton-loader>
+          </v-virtual-scroll>
+        </div>
+
+        <!-- Pagination -->
+        <v-pagination
+          v-if="totalPages > 1"
+          v-model="currentPage"
+          :length="totalPages"
+          :total-visible="7"
+          class="mt-4"
+        />
+
+        <!-- Loading State -->
+        <v-progress-linear v-if="loading" indeterminate />
+
+        <!-- Empty State -->
+        <v-card
+          v-if="!loading && filteredUsers.length === 0"
+          class="text-center py-8"
+          flat
+        >
+          <v-icon size="48" color="grey lighten-2">mdi-account-group</v-icon>
+          <v-card-title class="justify-center grey--text">
+            Keine Benutzer gefunden
+          </v-card-title>
+        </v-card>
       </v-col>
     </v-row>
+
     <UserEdit
       :user="selectedUser"
       :roles="api.roles"
+      :tenants="tenants"
+      :memberships="selectedUserMemberships"
       :open="openEditDialog"
       @close="onCloseDialog"
     />
@@ -119,9 +308,12 @@
 import AdminLayout from "@/layouts/Admin.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiUsersService from "@/services/api/ApiUsersService";
+import ApiRolesService from "@/services/api/ApiRolesService";
 import UserEdit from "@/components/User/UserEdit";
 import UserDeleteConformationDialog from "@/components/User/userDeleteConformationDialog";
 import UserPermissionService from "@/services/permissions/UserPermissionService";
+import Fuse from "fuse.js";
+import ApiMembershipService from "@/services/api/ApiMembershipService";
 
 export default {
   components: {
@@ -133,33 +325,96 @@ export default {
     return {
       api: {
         users: [],
+        roles: [],
+        memberships: [],
       },
-      headers: [
-        {
-          text: "Id",
-          align: "start",
-          value: "id",
-        },
-        { text: "Vorname", value: "firstName" },
-        { text: "Nachname", value: "lastName" },
-        { text: "E-Mail Adresse", value: "id" },
-        { text: "Verifiziert", value: "isVerified" },
-        { text: "Suspendiert", value: "isSuspended" },
-        { text: "Beigetreten", value: "created" },
-        { text: "", value: "controls", sortable: false },
-      ],
       search: "",
+      verifiedFilter: false,
+      suspendedFilter: false,
+      noTenantFilter: false,
+      tenantFilter: [],
       openEditDialog: false,
       openDeleteDialog: false,
       selectedUser: {},
+      selectedUserMemberships: [],
+      currentPage: 1,
+      itemsPerPage: 6,
     };
   },
   computed: {
     ...mapGetters({
       loading: "loading/isLoading",
+      tenants: "tenants/tenants",
     }),
     UserPermissionService() {
       return UserPermissionService;
+    },
+    hasActiveFilters() {
+      return (
+        this.verifiedFilter ||
+        this.suspendedFilter ||
+        this.noTenantFilter ||
+        this.tenantFilter.length > 0
+      );
+    },
+    filteredUsers() {
+      let filtered = this.api.users;
+
+      // Search filter
+      if (this.search) {
+        const fuse = new Fuse(filtered, {
+          keys: ["id", "firstName", "lastName"],
+          threshold: 0.4,
+          ignoreLocation: true,
+        });
+        filtered = fuse.search(this.search).map((result) => result.item);
+      }
+
+      // Verified filter
+      if (this.verifiedFilter) {
+        filtered = filtered.filter((user) => user.isVerified);
+      }
+
+      // Suspended filter
+      if (this.suspendedFilter) {
+        filtered = filtered.filter((user) => user.isSuspended);
+      }
+
+      if (this.noTenantFilter) {
+        filtered = filtered.filter(
+          (user) => this.getUserMemberships(user.id).length === 0
+        );
+      }
+
+      // Tenant filter
+      if (this.tenantFilter.length > 0) {
+        filtered = filtered.filter((user) => {
+          const userMemberships = this.getUserMemberships(user.id);
+          return userMemberships.some((m) =>
+            this.tenantFilter.includes(m.tenantId)
+          );
+        });
+      }
+
+      return filtered;
+    },
+    totalPages() {
+      return Math.ceil(this.filteredUsers.length / this.itemsPerPage);
+    },
+    paginatedUsers() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.filteredUsers.slice(start, end);
+    },
+  },
+  watch: {
+    filteredUsers() {
+      this.currentPage = 1;
+    },
+    noTenantFilter(val) {
+      if (val) {
+        this.tenantFilter = [];
+      }
     },
   },
   methods: {
@@ -168,27 +423,116 @@ export default {
       stopLoading: "loading/stop",
     }),
 
-    fetchUsers() {
-      this.startLoading("fetch-users");
-
-      ApiUsersService.getUsers()
-        .then((response) => {
-          this.api.users = response;
-        })
-        .finally(() => {
-          this.stopLoading("fetch-users");
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+    async fetchUsers() {
+      await this.startLoading("fetch-users");
+      try {
+        const response = await ApiUsersService.getUsers();
+        this.api.users = response;
+      } catch (error) {
+        console.error(error);
+      } finally {
+        await this.stopLoading("fetch-users");
+      }
     },
+
+    async fetchRoles() {
+      try {
+        const response = await ApiRolesService.getRoles();
+        this.api.roles = response.data || response;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+
+    async fetchMemberships() {
+      try {
+        const response = await ApiMembershipService.getMemberships();
+        this.api.memberships = response.data || response;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+
+    toggleTenantFilter(tenantId) {
+      if (this.noTenantFilter) this.noTenantFilter = false;
+
+      const index = this.tenantFilter.indexOf(tenantId);
+      if (index > -1) {
+        this.tenantFilter.splice(index, 1);
+      } else {
+        this.tenantFilter.push(tenantId);
+      }
+    },
+
+    getUserMemberships(userId) {
+      return this.api.memberships.filter((m) => m.userId === userId);
+    },
+
+    getTenantName(tenantId) {
+      const tenant = this.tenants.find((t) => t.id === tenantId);
+      return tenant?.name || tenantId.substring(0, 8);
+    },
+
+    getVerifiedCount() {
+      return this.filteredUsers.filter((user) => user.isVerified).length;
+    },
+
+    getSuspendedCount() {
+      return this.filteredUsers.filter((user) => user.isSuspended).length;
+    },
+
+    getUserInitials(user) {
+      if (user.firstName && user.lastName) {
+        return (
+          user.firstName.charAt(0).toUpperCase() +
+          user.lastName.charAt(0).toUpperCase()
+        );
+      }
+      return user.id.substring(0, 2).toUpperCase();
+    },
+
+    getUserName(user) {
+      if (user.firstName && user.lastName) {
+        return `${user.firstName} ${user.lastName}`;
+      }
+      return user.id;
+    },
+
+    getAvatarColor(user) {
+      if (user.isSuspended) return "orange";
+      if (user.isVerified) return "green";
+      return "blue-grey";
+    },
+
+    getListItemClass(user) {
+      return {
+        "suspended-item": user.isSuspended,
+        "verified-item": user.isVerified && !user.isSuspended,
+      };
+    },
+
+    getRoleNames(roleIds) {
+      if (!roleIds) return [];
+      return roleIds.map((id) => this.getRoleName(id)).filter(Boolean);
+    },
+
+    getRoleName(roleId) {
+      return this.api.roles.find((role) => role.id === roleId)?.name || roleId;
+    },
+
+    openUserDetail(user) {
+      this.onOpenEditUser(user.id);
+    },
+
     onOpenEditUser(userId) {
       this.selectedUser = Object.assign(
         {},
         this.api.users.find((user) => user.id === userId)
       );
+      this.selectedUserMemberships = this.getUserMemberships(userId);
       this.openEditDialog = true;
     },
+
     onOpenDeleteDialog(userId) {
       this.selectedUser = Object.assign(
         {},
@@ -196,44 +540,31 @@ export default {
       );
       this.openDeleteDialog = true;
     },
+
     onCloseDialog() {
       this.fetchUsers();
       this.openEditDialog = false;
     },
+
     onCloseDeleteDialog() {
       this.fetchUsers();
       this.openDeleteDialog = false;
     },
-    getRoleName(roleId) {
-      return this.api.roles.find((role) => role.id === roleId)?.name;
-    },
-    customFilter(value, search) {
-      if (value?.toString().toLowerCase().includes(search.toLowerCase())) {
-        return true;
-      } else if (typeof value === "object" && value?.length > 0) {
-        const roleIds = this.api.roles.map((role) => role.id);
-        for (const key in value) {
-          if (roleIds.includes(value[key])) {
-            if (
-              this.getRoleName(value[key])
-                .toLowerCase()
-                .includes(search.toLowerCase())
-            ) {
-              return true;
-            }
-          }
-        }
-      }
-    },
   },
-  created() {
-    this.fetchUsers();
+
+  async created() {
+    await this.fetchRoles();
+    await this.fetchUsers();
+    await this.fetchMemberships();
   },
 };
 </script>
 
-<style scoped>
-.search-field {
-  border-radius: 15px;
+<style scoped></style>
+
+<style>
+/* Make list items lighter in dark mode */
+.theme--dark .v-list-item.elevation-2 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 </style>

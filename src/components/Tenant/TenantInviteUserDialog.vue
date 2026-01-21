@@ -3,7 +3,7 @@
     <v-card class="">
       <v-card-title class="py-4 px-6">
         <span class="text-h5">
-          <v-icon left>mdi-account-plus</v-icon> Neue Benutzer hinzufügen</span
+          <v-icon left>mdi-account-plus</v-icon> Neues Mitglied hinzufügen</span
         >
       </v-card-title>
       <v-divider></v-divider>
@@ -68,7 +68,7 @@
                       </div>
                       <div v-if="email.exists" class="text-caption">
                         <span class="text--disabled"
-                          >Benutzer existiert bereits</span
+                          >Mitglied existiert bereits</span
                         >
                       </div>
                     </v-list-item-title>

@@ -49,7 +49,7 @@ const routes = [
     name: "dashboard",
     component: Home,
     meta: {
-      title: "Ihre Mandanten",
+      title: "Meine Mandanten",
       requiresAuth: true,
       interfaceName: "dashboard",
       public: true,
@@ -90,7 +90,7 @@ const routes = [
     name: "tenant",
     component: Tenants,
     meta: {
-      title: "Mandanten",
+      title: "Mandant",
       requiresAuth: true,
       interfaceName: "tenants",
     },
@@ -100,7 +100,7 @@ const routes = [
     name: "user",
     component: Users,
     meta: {
-      title: "Benutzer",
+      title: "Mitglieder",
       requiresAuth: true,
       interfaceName: "users",
     },

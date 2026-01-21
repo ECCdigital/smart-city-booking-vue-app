@@ -59,7 +59,7 @@ const actions = {
 };
 
 const getters = {
-  tenants: (state) => state.tenants,
+  tenants: (state) => state.tenants || [],
   currentTenantId: (state) => state.currentTenantId,
   currentTenant: (state) => {
     return state.tenants?.find((t) => t.id === state.currentTenantId);

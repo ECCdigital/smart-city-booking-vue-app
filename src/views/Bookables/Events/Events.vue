@@ -56,6 +56,7 @@
         sm="6"
         md="4"
         lg="3"
+        xl="2"
         v-for="event in displayedEvents.slice().reverse()"
         :key="event.id"
         class="mx-xs-auto d-flex flex-column"
