@@ -172,6 +172,7 @@ export default {
       if (!this.items.length) {
         this.fuse = null;
         this.searchResults = [];
+        this.$emit("input", this.searchResults);
         return;
       }
       const opts = {

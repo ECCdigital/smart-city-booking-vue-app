@@ -211,7 +211,7 @@ export default {
     fetchCoupons() {
       this.startLoading("fetch-coupons");
 
-      ApiCouponService.getCoupons(undefined)
+      ApiCouponService.getCoupons(this.tenantId)
         .then((response) => {
           this.api.coupons = response.data;
         })

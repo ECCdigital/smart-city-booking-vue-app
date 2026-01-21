@@ -282,6 +282,12 @@ export default {
         query: { ...this.$route.query, tab: tabKey },
       });
     },
+    tenantId: {
+      async handler() {
+        await this.fetchTenant();
+        await this.fetchRoles();
+      },
+    },
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
