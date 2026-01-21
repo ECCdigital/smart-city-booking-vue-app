@@ -231,7 +231,7 @@ export default {
         { text: "Preis", value: "priceEur" },
         { text: "Status", value: "isCommitted" },
         { text: "Zahlung", value: "isPayed" },
-        { text: "Zahlungart", value: "paymentMethod" },
+        { text: "Zahlungsart", value: "paymentMethod" },
         { text: "", value: "controls", sortable: false },
       ],
     };
