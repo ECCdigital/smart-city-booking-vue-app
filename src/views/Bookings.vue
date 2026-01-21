@@ -249,7 +249,7 @@ export default {
         { text: "Preis", value: "priceEur" },
         { text: "Status", value: "isCommitted" },
         { text: "Zahlung", value: "isPayed" },
-        { text: "Zahlungart", value: "payMethod" },
+        { text: "Zahlungsart", value: "payMethod" },
         { text: "", value: "controls", sortable: false },
       ],
       openEditDialog: false,
@@ -374,7 +374,7 @@ export default {
 
     handleGroupBookingError(action, errors) {
       const code = errors[0]?.code;
-      if(errors.length === 0) {
+      if (errors.length === 0) {
         return;
       }
       this.addToast(
@@ -383,7 +383,7 @@ export default {
       this.errors[action] = getGroupBookingErrorMessage(code);
     },
     handleBookingError(action, errors) {
-      if(errors.length === 0) {
+      if (errors.length === 0) {
         return;
       }
       const code = errors[0]?.code;
@@ -521,6 +521,20 @@ export default {
         this.openCommitGroupBookingDialog = true;
       } else {
         try {
+          const booking = this.api.bookings.find(
+            (booking) => booking.id === id
+          );
+
+          if (booking.priceEur > 0 && !booking.paymentMethod) {
+            await this.addToast(
+              ToastService.createToast(
+                "booking.commit.no-payment-method",
+                "error"
+              )
+            );
+            return;
+          }
+
           await this.startLoading("commit-booking");
           const data = await ApiBookingService.commitBooking(id);
 
@@ -549,7 +563,7 @@ export default {
         {},
         this.api.bookings.find((booking) => booking.id === id)
       );
-      if(this.hasGroupBooking(id)) {
+      if (this.hasGroupBooking(id)) {
         this.selectedGroupBooking = Object.assign(
           {},
           this.api.groupBookings.find((groupBooking) =>
@@ -581,7 +595,6 @@ export default {
       }
     },
     async payGroupBooking(paymentMethod) {
-
       try {
         await this.startLoading("pay-booking");
         const response = await ApiGroupBookingService.payGroupBooking({

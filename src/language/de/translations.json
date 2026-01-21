@@ -248,6 +248,10 @@
       "error": {
         "title": "Fehler beim Freigeben",
         "message": "Die Buchung konnte nicht freigegeben werden."
+      },
+      "no-payment-method": {
+        "title": "Keine Zahlungsmethode",
+        "message": "Die Buchung konnte nicht freigegeben werden, da keine Zahlungsmethode hinterlegt ist."
       }
     },
     "pay": {
