@@ -525,7 +525,7 @@ export default {
             (booking) => booking.id === id
           );
 
-          if (booking.priceEur > 0 && !booking.paymentMethod) {
+          if (booking.priceEur > 0 && !booking.paymentProvider) {
             await this.addToast(
               ToastService.createToast(
                 "booking.commit.no-payment-method",
