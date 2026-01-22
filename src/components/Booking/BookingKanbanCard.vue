@@ -1,7 +1,7 @@
 <template>
   <v-card
     class="kanban-card mb-2"
-    :class="[statusClass, { 'kanban-card--dragging': isDragging }]"
+    :class=" { 'kanban-card--dragging': isDragging }"
     @click="onOpenBooking(element.bookingItem.id)"
     hover
     outlined
@@ -151,18 +151,13 @@ export default {
     },
   },
   computed: {
-    statusClass() {
-      if (this.element.bookingItem?.isPayed) return "status--paid";
-      if (this.element.bookingItem?.isCommitted) return "status--committed";
-      return "";
-    },
     bookableTitle() {
       return this.element.bookingItem?.bookableItems?.[0]?._bookableUsed?.title;
     },
     daysInStatus() {
       const now = Date.now();
       const diff = now - this.element.added;
-      return Math.floor(diff / (1000 * 60 * 60 * 24));
+      return Math.floor(diff / (1000 * 60 * 60 * 24), 0);
     },
     durationClass() {
       const days = this.daysInStatus;
@@ -200,7 +195,6 @@ export default {
 <style scoped lang="scss">
 .kanban-card {
   border-radius: 8px !important;
-  border-left: 3px solid transparent;
   transition: all 0.2s cubic-bezier(0.25, 0.8, 0.5, 1);
   cursor: grab;
   min-width: 200px;
@@ -220,14 +214,6 @@ export default {
     transform: rotate(2deg);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
   }
-}
-
-.status--paid {
-  border-left-color: var(--v-success-base);
-}
-
-.status--committed {
-  border-left-color: var(--v-primary-base);
 }
 
 .duration-indicator {
