@@ -1,18 +1,33 @@
 <template>
   <div class="kanban-wrapper">
-    <div v-if="showScrollLeft" class="scroll-indicator-left">
-      <v-icon @click="scrollLeft">mdi-chevron-left</v-icon>
-    </div>
-    <div v-if="showScrollRight" class="scroll-indicator-right">
-      <v-icon @click="scrollRight">mdi-chevron-right</v-icon>
-    </div>
+    <transition name="fade">
+      <v-btn
+        v-if="showScrollLeft"
+        class="scroll-btn scroll-btn--left"
+        icon
+        @click="scrollLeft"
+      >
+        <v-icon>mdi-chevron-left</v-icon>
+      </v-btn>
+    </transition>
+
+    <transition name="fade">
+      <v-btn
+        v-if="showScrollRight"
+        class="scroll-btn scroll-btn--right"
+        icon
+        @click="scrollRight"
+      >
+        <v-icon>mdi-chevron-right</v-icon>
+      </v-btn>
+    </transition>
+
     <div
-      class="d-flex kanban-container"
       ref="kanbanContainer"
-      style="width: 100%"
+      class="kanban-container custom-scrollbar"
       @scroll="onScroll"
     >
-      <v-slide-x-transition>
+      <transition name="slide-x">
         <BookingKanbanColumn
           v-if="showBacklog"
           statusId="backlog"
@@ -32,7 +47,7 @@
           @archive-task="archiveTask"
           @move-task="moveTask"
         />
-      </v-slide-x-transition>
+      </transition>
 
       <BookingKanbanColumn
         v-for="status in combinedWorkflow"
@@ -119,6 +134,7 @@ export default {
   },
   methods: {
     ...mapActions("userPreferences", ["loadSkipStatusConfirmations"]),
+
     combineWorkflow() {
       this.combinedWorkflow = this.workflow.states.map((state) => {
         const filteredTasks = state.tasks
@@ -144,6 +160,7 @@ export default {
         };
       });
     },
+
     combineBacklog() {
       this.combinedBacklog = this.backlog
         .map((task) => {
@@ -161,7 +178,8 @@ export default {
         })
         .filter((task) => task !== null);
     },
-    moveTask: async function (evt, status) {
+
+    async moveTask(evt, status) {
       if (evt.added) {
         this.workflow = await ApiWorkflowService.updateTask({
           taskId: evt.added.element.id,
@@ -183,10 +201,9 @@ export default {
         this.$emit("update:booking", evt.moved.element.id);
       }
     },
-    archiveTask: async function (taskId) {
-      this.workflow = await ApiWorkflowService.archiveTask({
-        taskId: taskId,
-      });
+
+    async archiveTask(taskId) {
+      this.workflow = await ApiWorkflowService.archiveTask({ taskId });
       this.backlog = await ApiWorkflowService.getBacklog();
     },
 
@@ -205,6 +222,7 @@ export default {
     rejectBooking(bookingId) {
       this.$emit("reject-booking", bookingId);
     },
+
     onMove(evt) {
       if (this.lastHoveredContainer && this.lastHoveredContainer !== evt.to) {
         this.lastHoveredContainer.classList.remove("drop-in");
@@ -212,43 +230,43 @@ export default {
       evt.to.classList.add("drop-in");
       this.lastHoveredContainer = evt.to;
     },
+
     onDragStart() {
       this.dragging = true;
+      document.body.style.cursor = "grabbing";
     },
+
     onDragEnd() {
       if (this.lastHoveredContainer) {
         this.lastHoveredContainer.classList.remove("drop-in");
         this.lastHoveredContainer = null;
       }
       this.dragging = false;
+      document.body.style.cursor = "";
     },
+
     onScroll() {
       this.updateScrollIndicators();
     },
+
     updateScrollIndicators() {
       const container = this.$refs.kanbanContainer;
-
       if (!container) return;
 
-      this.showScrollLeft = container.scrollLeft > 0;
-
+      this.showScrollLeft = container.scrollLeft > 20;
       this.showScrollRight =
-        container.scrollWidth > container.clientWidth + container.scrollLeft;
+        container.scrollWidth >
+        container.clientWidth + container.scrollLeft + 20;
     },
+
     scrollLeft() {
-      const container = this.$refs.kanbanContainer;
-      container.scrollBy({
-        left: -200,
-        behavior: "smooth",
-      });
+      this.$refs.kanbanContainer?.scrollBy({ left: -300, behavior: "smooth" });
     },
+
     scrollRight() {
-      const container = this.$refs.kanbanContainer;
-      container.scrollBy({
-        left: 200,
-        behavior: "smooth",
-      });
+      this.$refs.kanbanContainer?.scrollBy({ left: 300, behavior: "smooth" });
     },
+
     handleDragOver(evt) {
       if (!this.dragging) return;
 
@@ -256,15 +274,15 @@ export default {
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
-
-      const threshold = 100;
+      const threshold = 80;
 
       if (evt.clientX < rect.left + threshold) {
-        container.scrollBy({ left: -10, behavior: "smooth" });
+        container.scrollBy({ left: -15, behavior: "auto" });
       } else if (evt.clientX > rect.right - threshold) {
-        container.scrollBy({ left: 10, behavior: "smooth" });
+        container.scrollBy({ left: 15, behavior: "auto" });
       }
     },
+
     handleChangeTask(evt, statusId) {
       if (!evt.added) {
         this.moveTask(evt, statusId);
@@ -278,9 +296,7 @@ export default {
       );
 
       const statusChangeActions =
-        newStatus.actions?.filter(
-          (action) => action.type === "bookingStatus"
-        ) || [];
+        newStatus.actions?.filter((a) => a.type === "bookingStatus") || [];
 
       if (statusChangeActions.length > 0) {
         const statusKey = this.generateStatusKey(
@@ -307,11 +323,10 @@ export default {
 
     generateStatusKey(fromStatus, toStatus, actions) {
       const actionTypes = actions
-        .map((action) => action.bookingStatus)
+        .map((a) => a.bookingStatus)
         .flat()
         .sort()
         .join("_");
-
       return `${fromStatus}_to_${toStatus}_${actionTypes}`;
     },
 
@@ -328,10 +343,7 @@ export default {
       actions,
       statusKey
     ) {
-      this.onChangeBookingStatus = actions
-        .map((action) => action.bookingStatus)
-        .flat();
-
+      this.onChangeBookingStatus = actions.map((a) => a.bookingStatus).flat();
       this.newStatusId = newStatusId;
       this.oldStatusId = oldStatusId;
       this.temporaryEvent = evt;
@@ -360,44 +372,40 @@ export default {
       this.confirmStatusChange = false;
     },
   },
+
   watch: {
     bookings() {
-      try {
-        this.internalLoading = true;
-        this.combineWorkflow();
-        this.combineBacklog();
-      } finally {
-        this.internalLoading = false;
-      }
+      this.internalLoading = true;
+      this.combineWorkflow();
+      this.combineBacklog();
+      this.internalLoading = false;
     },
     workflow() {
-      try {
-        this.internalLoading = true;
-        this.combineWorkflow();
-      } finally {
-        this.internalLoading = false;
-      }
+      this.internalLoading = true;
+      this.combineWorkflow();
+      this.internalLoading = false;
     },
     backlog() {
-      try {
-        this.internalLoading = true;
-        this.combineBacklog();
-      } finally {
-        this.internalLoading = false;
-      }
+      this.internalLoading = true;
+      this.combineBacklog();
+      this.internalLoading = false;
     },
   },
+
   async mounted() {
     await this.loadSkipStatusConfirmations();
     this.workflow = await ApiWorkflowService.getWorkflowStates();
     this.backlog = await ApiWorkflowService.getBacklog();
-
     this.combineWorkflow();
 
-    this.updateScrollIndicators();
+    this.$nextTick(() => {
+      this.updateScrollIndicators();
+    });
+
     window.addEventListener("resize", this.updateScrollIndicators);
     document.addEventListener("dragover", this.handleDragOver);
   },
+
   beforeDestroy() {
     window.removeEventListener("resize", this.updateScrollIndicators);
     document.removeEventListener("dragover", this.handleDragOver);
@@ -406,56 +414,102 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.my-scrollbar {
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-  &::-webkit-scrollbar-track {
-    background-color: #fff;
-    border-radius: 10px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: #999;
-    border-radius: 10px;
-  }
-}
-
 .kanban-wrapper {
   position: relative;
-  overflow-x: hidden;
+  width: 100%;
+  height: calc(100vh - 180px);
+  min-height: 400px;
 }
 
 .kanban-container {
+  display: flex;
+  gap: 8px;
+  padding: 16px 8px;
+  height: 100%;
   overflow-x: auto;
   overflow-y: hidden;
-  white-space: nowrap;
+  scroll-behavior: smooth;
 }
 
-.task-panel {
-  background-color: var(--v-accent-base);
-  border-radius: 10px;
-}
-
-.scroll-indicator-left,
-.scroll-indicator-right {
+.scroll-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 999;
-  pointer-events: none;
+  z-index: 10;
+  background: var(--v-surface-base) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+
+  &--left {
+    left: 8px;
+  }
+
+  &--right {
+    right: 8px;
+  }
+
+  &:hover {
+    background: var(--v-primary-lighten4) !important;
+  }
 }
 
-.scroll-indicator-left {
-  left: 0;
+.custom-scrollbar {
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+  }
 }
 
-.scroll-indicator-right {
-  right: 0;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.scroll-indicator-left > .v-icon,
-.scroll-indicator-right > .v-icon {
-  font-size: 48px;
-  pointer-events: auto;
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-x-enter-active,
+.slide-x-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-x-enter,
+.slide-x-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.theme--dark {
+  .scroll-btn {
+    background: rgba(40, 40, 40, 0.95) !important;
+  }
+
+  .custom-scrollbar {
+    &::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+    }
+  }
 }
 </style>

@@ -41,7 +41,7 @@
                   <v-select
                     :items="[
                       ...workflow.states,
-                      { name: 'Archive', id: 'archive' },
+                      { name: 'Archiv', id: 'archive' },
                     ]"
                     v-model="selectedBooking._populated.workflowStatus"
                     label="Workflow Status"
