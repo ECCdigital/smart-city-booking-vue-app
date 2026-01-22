@@ -30,6 +30,7 @@
           <v-col>
             <component
               :is="steps[currentStep - 1]?.component"
+              :progress="progress"
               v-bind="steps[currentStep - 1]?.props"
               v-on="steps[currentStep - 1]?.events"
             ></component>
@@ -64,6 +65,10 @@ export default {
     return {
       currentStep: 1,
       isSubmitting: false,
+      progress: {
+        loading: false,
+        percentage: 0,
+      },
       leadItem: {
         bookableId: null,
         amount: null,
@@ -493,6 +498,8 @@ export default {
     },
 
     async validateItems(bookingAttempts) {
+      this.progress.loading = true;
+      this.progress.percentage = 0;
       for (const bookingAttempt of bookingAttempts) {
         for (const item of bookingAttempt.bookableItems) {
           if (
@@ -528,6 +535,10 @@ export default {
 
               item.valid = false;
               item.error = error.response.data;
+            } finally {
+              this.progress.percentage +=
+                100 /
+                (bookingAttempts.length * bookingAttempt.bookableItems.length);
             }
           }
         }
@@ -562,6 +573,7 @@ export default {
           []
         );
       }
+      this.progress.loading = false;
     },
 
     async performGroupCheckout() {
