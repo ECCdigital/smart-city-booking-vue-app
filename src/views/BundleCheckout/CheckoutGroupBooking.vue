@@ -31,6 +31,7 @@
             <component
               :is="steps[currentStep - 1]?.component"
               :progress="progress"
+              :loading="loading"
               v-bind="steps[currentStep - 1]?.props"
               v-on="steps[currentStep - 1]?.events"
             ></component>
@@ -69,6 +70,7 @@ export default {
         loading: false,
         percentage: 0,
       },
+      loading: false,
       leadItem: {
         bookableId: null,
         amount: null,
@@ -404,7 +406,9 @@ export default {
         }
       }
 
+      this.progress.loading = true;
       await this.validateItems(Array.from(uniqueAttempts.values()));
+      this.progress.loading = false;
       this.bookingAttempts = Array.from(uniqueAttempts.values());
     },
 
@@ -481,11 +485,13 @@ export default {
     },
 
     async validateAndContinue() {
+      this.loading = true;
       await this.validateItems(this.bookingAttempts);
 
       const allValid = this.bookingAttempts.every((attempt) =>
         attempt.bookableItems.every((item) => item.valid)
       );
+      this.loading = false;
 
       if (allValid) {
         this.currentStep++;
@@ -498,7 +504,6 @@ export default {
     },
 
     async validateItems(bookingAttempts) {
-      this.progress.loading = true;
       this.progress.percentage = 0;
       for (const bookingAttempt of bookingAttempts) {
         for (const item of bookingAttempt.bookableItems) {
@@ -573,7 +578,6 @@ export default {
           []
         );
       }
-      this.progress.loading = false;
     },
 
     async performGroupCheckout() {

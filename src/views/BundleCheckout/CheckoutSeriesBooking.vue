@@ -9,6 +9,7 @@
       <v-btn
         color="primary"
         :disabled="!allValid || bookingAttempts.length < 1"
+        :loading="loading"
         small
         @click="validateAndContinue"
       >
@@ -394,6 +395,10 @@ export default {
     progress: {
       type: Object,
       default: () => ({ loading: false, percentage: 0 }),
+    },
+    loading: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
