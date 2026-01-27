@@ -55,10 +55,10 @@ export default {
     );
     return response.data;
   },
-  async payBooking(id, paymentMethod) {
+  async payBooking(id, paymentMethod, timePaid) {
     const response = await ApiClient.post(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/pay`,
-      { paymentMethod: paymentMethod }
+      { paymentMethod: paymentMethod, timePaid }
     );
     return response.data;
   },
@@ -91,6 +91,14 @@ export default {
   getReceipt(id, receiptId) {
     return ApiClient.get(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/receipt/${receiptId}`,
+      {
+        responseType: "blob",
+      }
+    );
+  },
+  getInvoice(id, invoiceId) {
+    return ApiClient.get(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/invoice/${invoiceId}`,
       {
         responseType: "blob",
       }
