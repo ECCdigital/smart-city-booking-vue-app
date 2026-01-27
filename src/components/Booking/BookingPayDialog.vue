@@ -26,6 +26,10 @@ export default {
   data() {
     return {
       selectedPaymentMethod: null,
+      dateMenu: false,
+      timeMenu: false,
+      selectedDate: null,
+      selectedTime: null,
       paymentMethods: [
         { text: "Bar", value: "CASH" },
         { text: "Überweisung", value: "TRANSFER" },
@@ -51,19 +55,59 @@ export default {
         return this.open;
       },
     },
+    timePaid() {
+      if (!this.selectedDate) return null;
+
+      const dateTime = new Date(this.selectedDate);
+      if (this.selectedTime) {
+        const [hours, minutes] = this.selectedTime.split(":");
+        dateTime.setHours(parseInt(hours));
+        dateTime.setMinutes(parseInt(minutes));
+      }
+
+      return dateTime.getTime();
+    },
+    formattedDateTime() {
+      if (!this.selectedDate) return "";
+
+      const date = new Date(this.selectedDate);
+      if (this.selectedTime) {
+        const [hours, minutes] = this.selectedTime.split(":");
+        date.setHours(parseInt(hours));
+        date.setMinutes(parseInt(minutes));
+      }
+
+      return new Intl.DateTimeFormat("de-DE", {
+        dateStyle: "medium",
+        timeStyle: this.selectedTime ? "short" : undefined,
+      }).format(date);
+    },
   },
   methods: {
     paySingleBooking() {
       this.$emit("pay-single-booking", {
         id: this.bookingId,
         paymentMethod: this.selectedPaymentMethod,
+        timePaid: this.timePaid,
       });
     },
     payGroupBooking() {
-      this.$emit("pay-group-booking", this.selectedPaymentMethod);
+      this.$emit("pay-group-booking", {
+        paymentMethod: this.selectedPaymentMethod,
+        timePaid: this.timePaid,
+      });
     },
     closeDialog() {
       this.$emit("close");
+    },
+    clearDateTime() {
+      this.selectedDate = null;
+      this.selectedTime = null;
+    },
+    setNow() {
+      const now = new Date();
+      this.selectedDate = now.toISOString().substr(0, 10);
+      this.selectedTime = now.toTimeString().substr(0, 5);
     },
   },
 };
@@ -74,9 +118,9 @@ export default {
     <v-card>
       <v-card-title class="d-flex align-center">
         <v-icon class="mr-2" color="primary">mdi-cash-check</v-icon>
-        <span class="text-h5 font-weight-medium"
-          >Buchung als bezahlt markieren</span
-        >
+        <span class="text-h5 font-weight-medium">
+          Buchung als bezahlt markieren
+        </span>
       </v-card-title>
 
       <v-card-text>
@@ -99,9 +143,114 @@ export default {
             </v-col>
           </v-row>
 
+          <v-row>
+            <v-col cols="12" sm="6">
+              <v-menu
+                v-model="dateMenu"
+                :close-on-content-click="false"
+                transition="scale-transition"
+                offset-y
+                min-width="auto"
+              >
+                <template v-slot:activator="{ on, attrs }">
+                  <v-text-field
+                    :value="
+                      selectedDate
+                        ? new Date(selectedDate).toLocaleDateString('de-DE')
+                        : ''
+                    "
+                    label="Datum (optional)"
+                    prepend-icon="mdi-calendar"
+                    readonly
+                    outlined
+                    dense
+                    clearable
+                    @click:clear="selectedDate = null"
+                    v-bind="attrs"
+                    v-on="on"
+                  ></v-text-field>
+                </template>
+                <v-date-picker
+                  v-model="selectedDate"
+                  locale="de-DE"
+                  first-day-of-week="1"
+                  @input="dateMenu = false"
+                ></v-date-picker>
+              </v-menu>
+            </v-col>
+
+            <v-col cols="12" sm="6">
+              <v-menu
+                v-model="timeMenu"
+                :close-on-content-click="false"
+                :nudge-right="40"
+                transition="scale-transition"
+                offset-y
+                max-width="290px"
+                min-width="290px"
+              >
+                <template v-slot:activator="{ on, attrs }">
+                  <v-text-field
+                    v-model="selectedTime"
+                    label="Uhrzeit (optional)"
+                    prepend-icon="mdi-clock-outline"
+                    readonly
+                    outlined
+                    dense
+                    clearable
+                    @click:clear="selectedTime = null"
+                    v-bind="attrs"
+                    v-on="on"
+                  ></v-text-field>
+                </template>
+                <v-time-picker
+                  v-if="timeMenu"
+                  v-model="selectedTime"
+                  format="24hr"
+                  full-width
+                  @click:minute="timeMenu = false"
+                ></v-time-picker>
+              </v-menu>
+            </v-col>
+          </v-row>
+
+          <v-row v-if="selectedDate || selectedTime">
+            <v-col cols="12" class="py-0">
+              <div class="d-flex align-center">
+                <v-chip small color="primary" outlined class="mr-2">
+                  <v-icon small left>mdi-calendar-clock</v-icon>
+                  {{ formattedDateTime }}
+                </v-chip>
+                <v-btn x-small text color="primary" @click="setNow">
+                  <v-icon small left>mdi-clock-fast</v-icon>
+                  Jetzt
+                </v-btn>
+                <v-btn x-small text color="error" @click="clearDateTime">
+                  <v-icon small left>mdi-close</v-icon>
+                  Löschen
+                </v-btn>
+              </div>
+            </v-col>
+          </v-row>
+
+          <v-row v-else>
+            <v-col cols="12" class="py-0">
+              <v-btn x-small text color="primary" @click="setNow">
+                <v-icon small left>mdi-clock-fast</v-icon>
+                Aktuelles Datum/Uhrzeit verwenden
+              </v-btn>
+            </v-col>
+          </v-row>
+
           <v-row v-if="hasGroupBooking">
             <v-col cols="12">
-              <v-alert type="info" border="left" elevation="1" colored-border dense>
+              <v-alert
+                type="info"
+                border="left"
+                elevation="1"
+                colored-border
+                dense
+              >
                 <span class="text-subtitle-1">
                   Die Buchung <strong>{{ bookingId }}</strong> ist Teil einer
                   Serienbuchung.<br />
@@ -138,7 +287,7 @@ export default {
           :loading="inProgress"
           @click="paySingleBooking"
         >
-          Nur diese Buchung alt bezahlt markieren
+          Nur diese Buchung als bezahlt markieren
         </v-btn>
       </v-card-text>
 

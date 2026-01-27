@@ -1,282 +1,368 @@
 <template>
   <v-row justify="center">
     <v-dialog v-model="openDialog" persistent max-width="800px">
-      <v-card v-if="coupon">
-        <v-card-title class="mx-3">
-          <span v-if="coupon.id" class="text-h5">Gutschein bearbeiten</span>
-          <span v-else class="text-h5">Neuen Gutschein erstellen</span>
-        </v-card-title>
-        <v-divider class="mx-9 mb-5" />
-        <v-card-text>
-          <v-container>
-            <v-form ref="form" v-model="valid">
-              <v-row>
-                <v-col class="col-6">
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    hide-details
-                    label="Gutscheinnummer"
-                    v-model="selectedCoupon.id"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col class="col-6">
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    hide-details
-                    label="Bezeichnung"
-                    v-model="selectedCoupon.description"
-                  ></v-text-field>
-                </v-col>
-                <v-col class="col-6">
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    hide-details
-                    type="number"
-                    label="maximale Anzahl"
-                    v-model="selectedCoupon.maxAmount"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col class="col-6">
-                  <v-select
-                    background-color="accent"
-                    filled
-                    label="Typ"
-                    :items="couponTypes"
-                    v-model="selectedCoupon.type"
-                    hide-details
-                  >
-                  </v-select>
-                </v-col>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    hide-details
-                    label="Wert"
-                    :rules="[rules.required]"
-                    v-model="selectedCoupon.discount"
-                    :append-icon="
-                      selectedCoupon.type === 'percentage' ? '%' : '€'
-                    "
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row no-gutters class="mt-4">
-                <v-col class="col-12">
-                  <p class="text-uppercase">
-                    <strong>Gültig ab</strong>
-                  </p>
-                </v-col>
-                <v-col class="mr-5">
-                  <v-dialog
-                    ref="validFromDialog"
-                    v-model="validFromModal"
-                    :return-value.sync="validDateFrom"
-                    persistent
-                    width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
+      <v-form ref="form" v-model="valid">
+        <v-card class="coupon-edit" elevation="0">
+          <div class="px-6 py-5 d-flex align-center">
+            <v-icon large class="mr-3">
+              {{ coupon.id ? "mdi-pencil" : "mdi-plus-circle" }}
+            </v-icon>
+            <span class="text-h5 font-weight-bold">
+              {{
+                coupon.id ? "Gutschein bearbeiten" : "Neuen Gutschein erstellen"
+              }}
+            </span>
+          </div>
+
+          <v-divider></v-divider>
+
+          <v-card-text class="px-6 py-6 coupon-edit-content">
+            <v-card class="mb-6 section-card" elevation="2" outlined>
+              <v-card-title class="section-header pa-4">
+                <v-icon class="mr-2">mdi-ticket-outline</v-icon>
+                <span class="text-h6 font-weight-bold">Grundinformationen</span>
+              </v-card-title>
+              <v-divider></v-divider>
+              <v-card-text class="pa-4">
+                <v-row>
+                  <v-col cols="12">
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Gutscheinnummer"
+                      v-model="selectedCoupon.id"
+                      hide-details
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Bezeichnung"
+                      v-model="selectedCoupon.description"
+                      hide-details
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      type="number"
+                      label="Maximale Anzahl"
+                      v-model="selectedCoupon.maxAmount"
+                      hide-details
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-card-text>
+            </v-card>
+
+            <v-card class="mb-6 section-card" elevation="2" outlined>
+              <v-card-title class="section-header pa-4">
+                <v-icon class="mr-2">mdi-sale</v-icon>
+                <span class="text-h6 font-weight-bold"
+                >Rabatt-Einstellungen</span
+                >
+              </v-card-title>
+              <v-divider></v-divider>
+              <v-card-text class="pa-4">
+                <v-row>
+                  <v-col cols="12" md="6">
+                    <v-select
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Typ"
+                      :items="couponTypes"
+                      v-model="selectedCoupon.type"
+                      hide-details
+                    >
+                      <template #selection="{ item }">
+                        <v-chip small text-color="white" color="primary">
+                          {{ item.text }}
+                        </v-chip>
+                      </template>
+                    </v-select>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Wert"
+                      :rules="[rules.required]"
+                      v-model="selectedCoupon.discount"
+                      :suffix="
+                        selectedCoupon.type === 'percentage' ? '%' : '€'
+                      "
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-card-text>
+            </v-card>
+
+            <v-card class="mb-6 section-card" elevation="2" outlined>
+              <v-card-title class="section-header pa-4">
+                <v-icon class="mr-2">mdi-calendar-range</v-icon>
+                <span class="text-h6 font-weight-bold"
+                >Gültigkeitszeitraum</span
+                >
+              </v-card-title>
+              <v-divider></v-divider>
+              <v-card-text class="pa-4">
+                <v-row>
+                  <v-col cols="12">
+                    <div class="info-label mb-2">
+                      <v-icon small class="mr-2">mdi-calendar-start</v-icon>
+                      Gültig ab
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-dialog
+                      ref="validFromDialog"
+                      v-model="validFromModal"
+                      :return-value.sync="validDateFrom"
+                      persistent
+                      width="290px"
+                    >
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                          v-model="validDateFrom"
+                          label="Datum"
+                          prepend-icon="mdi-calendar"
+                          background-color="accent"
+                          filled
+                          dense
+                          readonly
+                          clearable
+                          @click:clear="validDateFrom = null"
+                          hide-details
+                          v-bind="attrs"
+                          v-on="on"
+                        ></v-text-field>
+                      </template>
+                      <v-date-picker
                         v-model="validDateFrom"
-                        label="Gültig ab"
-                        prepend-icon="mdi-calendar"
-                        background-color="accent"
-                        filled
-                        readonly
-                        v-bind="attrs"
-                        v-on="on"
-                      ></v-text-field>
-                    </template>
-                    <v-date-picker v-model="validDateFrom" scrollable>
-                      <v-spacer></v-spacer>
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="$refs.validFromDialog.save([])"
-                        >Löschen</v-btn
+                        scrollable
+                        locale="de"
+                        :first-day-of-week="1"
                       >
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="validFromModal = false"
-                        >Abbrechen</v-btn
-                      >
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="$refs.validFromDialog.save(validDateFrom)"
-                        >Speichern</v-btn
-                      >
-                    </v-date-picker>
-                  </v-dialog>
-                </v-col>
-                <v-col>
-                  <v-dialog
-                    ref="validTimeFromDialog"
-                    v-model="validTimeFromModal"
-                    :return-value.sync="validTimeFrom"
-                    persistent
-                    width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="$refs.validFromDialog.save([])"
+                        >
+                          Löschen
+                        </v-btn>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="validFromModal = false"
+                        >
+                          Abbrechen
+                        </v-btn>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="$refs.validFromDialog.save(validDateFrom)"
+                        >
+                          Speichern
+                        </v-btn>
+                      </v-date-picker>
+                    </v-dialog>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-dialog
+                      ref="validTimeFromDialog"
+                      v-model="validTimeFromModal"
+                      :return-value.sync="validTimeFrom"
+                      persistent
+                      width="290px"
+                    >
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                          v-model="validTimeFrom"
+                          label="Uhrzeit"
+                          prepend-icon="mdi-clock-time-four-outline"
+                          background-color="accent"
+                          filled
+                          dense
+                          readonly
+                          clearable
+                          @click:clear="validTimeFrom = null"
+                          hide-details
+                          v-bind="attrs"
+                          v-on="on"
+                        ></v-text-field>
+                      </template>
+                      <v-time-picker
                         v-model="validTimeFrom"
-                        label="Uhrzeit"
-                        prepend-icon="mdi-clock-time-four-outline"
-                        background-color="accent"
-                        filled
-                        readonly
-                        v-bind="attrs"
-                        v-on="on"
-                      ></v-text-field>
-                    </template>
-                    <v-time-picker
-                      v-model="validTimeFrom"
-                      full-width
-                      format="24hr"
+                        full-width
+                        format="24hr"
+                      >
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="$refs.validTimeFromDialog.save([])"
+                        >
+                          Löschen
+                        </v-btn>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="validTimeFromModal = false"
+                        >
+                          Abbrechen
+                        </v-btn>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="$refs.validTimeFromDialog.save(validTimeFrom)"
+                        >
+                          Speichern
+                        </v-btn>
+                      </v-time-picker>
+                    </v-dialog>
+                  </v-col>
+                </v-row>
+
+                <v-row class="mt-4">
+                  <v-col cols="12">
+                    <div class="info-label mb-2">
+                      <v-icon small class="mr-2">mdi-calendar-end</v-icon>
+                      Gültig bis
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-dialog
+                      ref="validToDialog"
+                      v-model="validToModal"
+                      :return-value.sync="validDateTo"
+                      persistent
+                      width="290px"
                     >
-                      <v-spacer></v-spacer>
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="$refs.validTimeFromDialog.save([])"
-                        >Löschen</v-btn
-                      >
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="validTimeFromModal = false"
-                        >Abbrechen</v-btn
-                      >
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="$refs.validTimeFromDialog.save(validTimeFrom)"
-                        >Speichern</v-btn
-                      >
-                    </v-time-picker>
-                  </v-dialog>
-                </v-col>
-              </v-row>
-              <v-row no-gutters>
-                <v-col class="col-12">
-                  <p class="text-uppercase">
-                    <strong>Gültig bis</strong>
-                  </p>
-                </v-col>
-                <v-col class="mr-5">
-                  <v-dialog
-                    ref="validToDialog"
-                    v-model="validToModal"
-                    :return-value.sync="validDateTo"
-                    persistent
-                    width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                          v-model="validDateTo"
+                          label="Datum"
+                          prepend-icon="mdi-calendar"
+                          background-color="accent"
+                          filled
+                          dense
+                          readonly
+                          clearable
+                          @click:clear="validDateTo = null"
+                          hide-details
+                          v-bind="attrs"
+                          v-on="on"
+                        ></v-text-field>
+                      </template>
+                      <v-date-picker
                         v-model="validDateTo"
-                        label="Datum"
-                        prepend-icon="mdi-calendar"
-                        background-color="accent"
-                        filled
-                        readonly
-                        v-bind="attrs"
-                        v-on="on"
-                      ></v-text-field>
-                    </template>
-                    <v-date-picker v-model="validDateTo" scrollable>
-                      <v-spacer></v-spacer>
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="$refs.validToDialog.save([])"
-                        >Löschen</v-btn
+                        scrollable
+                        locale="de"
+                        :first-day-of-week="1"
                       >
-                      <v-btn text color="primary" @click="validToModal = false"
-                        >Abbrechen</v-btn
-                      >
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="$refs.validToDialog.save(validDateTo)"
-                        >Speichern</v-btn
-                      >
-                    </v-date-picker>
-                  </v-dialog>
-                </v-col>
-                <v-col>
-                  <v-dialog
-                    ref="validTimeToDialog"
-                    v-model="validTimeToModal"
-                    :return-value.sync="validTimeTo"
-                    persistent
-                    width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
-                        v-model="validTimeTo"
-                        label="Uhrzeit"
-                        prepend-icon="mdi-clock-time-four-outline"
-                        background-color="accent"
-                        filled
-                        readonly
-                        v-bind="attrs"
-                        v-on="on"
-                      ></v-text-field>
-                    </template>
-                    <v-time-picker
-                      v-model="validTimeTo"
-                      full-width
-                      format="24hr"
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="$refs.validToDialog.save([])"
+                        >
+                          Löschen
+                        </v-btn>
+                        <v-btn text color="primary" @click="validToModal = false">
+                          Abbrechen
+                        </v-btn>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="$refs.validToDialog.save(validDateTo)"
+                        >
+                          Speichern
+                        </v-btn>
+                      </v-date-picker>
+                    </v-dialog>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-dialog
+                      ref="validTimeToDialog"
+                      v-model="validTimeToModal"
+                      :return-value.sync="validTimeTo"
+                      persistent
+                      width="290px"
                     >
-                      <v-spacer></v-spacer>
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="$refs.validTimeToDialog.save([])"
-                        >Löschen</v-btn
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                          v-model="validTimeTo"
+                          label="Uhrzeit"
+                          prepend-icon="mdi-clock-time-four-outline"
+                          background-color="accent"
+                          filled
+                          dense
+                          readonly
+                          clearable
+                          @click:clear="validTimeTo = null"
+                          hide-details
+                          v-bind="attrs"
+                          v-on="on"
+                        ></v-text-field>
+                      </template>
+                      <v-time-picker
+                        v-model="validTimeTo"
+                        full-width
+                        format="24hr"
                       >
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="validTimeToModal = false"
-                        >Abbrechen</v-btn
-                      >
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="$refs.validTimeToDialog.save(validTimeTo)"
-                        >Speichern</v-btn
-                      >
-                    </v-time-picker>
-                  </v-dialog>
-                </v-col>
-              </v-row>
-            </v-form>
-          </v-container>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            class="mb-5"
-            color="primary"
-            @click="submitChanges"
-            :loading="inProgress"
-          >
-            Speichern
-          </v-btn>
-          <v-btn class="mb-5 mr-5" outlined @click="closeDialog">
-            Abbrechen
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="$refs.validTimeToDialog.save([])"
+                        >
+                          Löschen
+                        </v-btn>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="validTimeToModal = false"
+                        >
+                          Abbrechen
+                        </v-btn>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="$refs.validTimeToDialog.save(validTimeTo)"
+                        >
+                          Speichern
+                        </v-btn>
+                      </v-time-picker>
+                    </v-dialog>
+                  </v-col>
+                </v-row>
+              </v-card-text>
+            </v-card>
+          </v-card-text>
+
+          <v-divider></v-divider>
+
+          <v-card-actions class="px-6 py-4">
+            <v-spacer />
+            <v-btn color="primary" @click="submitChanges" :loading="inProgress">
+              <v-icon left>mdi-content-save</v-icon>
+              Speichern
+            </v-btn>
+            <v-btn outlined @click="closeDialog">
+              <v-icon left>mdi-close</v-icon>
+              Abbrechen
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-form>
     </v-dialog>
   </v-row>
 </template>
@@ -405,8 +491,6 @@ export default {
         return null;
       }
 
-      // the time zone should germany
-
       const timestamp = new Date(date).getTime();
       const dateObj = new Date(timestamp);
 
@@ -444,4 +528,73 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+.coupon-edit {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.coupon-edit-content {
+  max-height: 70vh;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+
+  }
+}
+
+.theme--dark .coupon-edit-content {
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+
+  }
+}
+
+.section-card {
+  border-radius: 8px !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+}
+
+.section-header {
+  background: linear-gradient(
+      135deg,
+      rgba(0, 0, 0, 0.02) 0%,
+      rgba(0, 0, 0, 0.01) 100%
+  );
+}
+
+.theme--dark .section-header {
+  background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.02) 100%
+  );
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.theme--dark .info-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+</style>

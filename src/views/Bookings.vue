@@ -106,6 +106,7 @@
       <v-icon>mdi-plus</v-icon>Buchung erstellen
     </v-btn>
     <BookingEdit
+      v-if="selectedBooking.id !== undefined"
       :booking="selectedBooking"
       :open="openEditDialog"
       :bookables="bookables"
@@ -575,10 +576,14 @@ export default {
       }
       this.openPayDialog = true;
     },
-    async payBooking({ id, paymentMethod }) {
+    async payBooking({ id, paymentMethod, timePaid }) {
       try {
         await this.startLoading("pay-booking");
-        const data = await ApiBookingService.payBooking(id, paymentMethod);
+        const data = await ApiBookingService.payBooking(
+          id,
+          paymentMethod,
+          timePaid
+        );
 
         if (!data.success) {
           this.handleBookingError("pay", data.errors);
@@ -594,12 +599,13 @@ export default {
         await this.stopLoading("pay-booking");
       }
     },
-    async payGroupBooking(paymentMethod) {
+    async payGroupBooking(paymentMethod, timePaid) {
       try {
         await this.startLoading("pay-booking");
         const response = await ApiGroupBookingService.payGroupBooking({
           id: this.selectedGroupBooking.id,
           paymentMethod,
+          timePaid,
         });
 
         if (!response.success) {
