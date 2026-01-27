@@ -8,7 +8,6 @@
       { 'event-card--unavailable': !item.isPublic },
     ]"
     hover
-    outlined
     @click="navigateToEdit"
   >
     <div class="event-card-header position-relative">

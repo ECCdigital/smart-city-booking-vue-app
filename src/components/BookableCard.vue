@@ -9,7 +9,6 @@
     ]"
     @click="navigateToEdit"
     hover
-    outlined
   >
     <div class="bookable-card-header position-relative">
       <div class="menu-container">

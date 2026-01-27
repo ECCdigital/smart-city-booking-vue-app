@@ -96,6 +96,7 @@
         <v-row
           v-for="item in [leadItem, ...subsequentItems]"
           :class="item.valid === false ? 'red--text' : ''"
+          :key="item.bookableId"
           class="mt-2"
           no-gutters
         >

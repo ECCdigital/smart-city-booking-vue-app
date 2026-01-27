@@ -53,7 +53,6 @@
           ]"
           @click="selectTenant(tenant.id)"
           hover
-          outlined
         >
           <div class="tenant-card-header pa-4 text-center">
             <v-avatar
