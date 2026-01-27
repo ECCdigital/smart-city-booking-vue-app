@@ -46,9 +46,9 @@
         class="search-field"
       ></v-text-field>
     </div>
-    <!-- List view -->
 
     <div class="page-content">
+      <!-- List view -->
       <div v-if="currentView === 'list'">
         <v-skeleton-loader type="table" class="flex">
           <BookingTable
@@ -65,6 +65,7 @@
         </v-skeleton-loader>
       </div>
 
+      <!-- Calendar view -->
       <div v-else-if="currentView === 'calendar'">
         <BookingOverviewCalendar
           :bookings="filteredBookings"
@@ -78,6 +79,7 @@
         ></BookingOverviewCalendar>
       </div>
 
+      <!-- Kanban view -->
       <div v-else-if="currentView === 'kanban'">
         <BookingKanban
           :bookings="filteredBookings"
@@ -178,6 +180,7 @@
       @delete-single-booking="deleteBooking"
       @delete-group-booking="deleteGroupBooking"
     />
+    <ProcessingIndicator ref="processingIndicator" />
   </AdminLayout>
 </template>
 
@@ -207,9 +210,12 @@ import {
   getGroupBookingErrorMessage,
 } from "@/utils/errorMessages";
 import BookingPayDialog from "@/components/Booking/BookingPayDialog.vue";
+import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
+import ProcessingService from "@/services/ProcessingService";
 
 export default {
   components: {
+    ProcessingIndicator,
     BookingPayDialog,
     GroupBookingDeleteConformationDialog,
     GroupBookingRejectConformationDialog,
@@ -351,26 +357,6 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
-    customSearch(value, search) {
-      const bookableIds = this.bookables
-        .filter((bookable) =>
-          bookable.title.toLowerCase().includes(search.toLowerCase())
-        )
-        .map((bookable) => bookable.id);
-      if (bookableIds.includes(value?.toString())) {
-        return true;
-      } else if (
-        value?.toString().toLowerCase().includes(search.toLowerCase())
-      ) {
-        return true;
-      } else if (typeof value === "object" && value?.length > 0) {
-        for (const key in value) {
-          if (bookableIds.includes(value[key]?.toString())) {
-            return true;
-          }
-        }
-      }
-    },
 
     handleGroupBookingError(action, errors) {
       const code = errors[0]?.code;
@@ -409,38 +395,41 @@ export default {
         .then((response) => {
           this.api.bookings = response.data;
         })
-        .finally(() => {
-          this.stopLoading("fetch-bookings");
+        .finally(async () => {
           this.initializeFuse();
+          this.stopLoading("fetch-bookings");
         })
         .catch((error) => {
           console.log(error);
         });
     },
     async fetchBooking(id) {
-      await ApiBookingService.getBooking(id, undefined, true)
-        .then((response) => {
-          const booking = response.data;
-          const index = this.api.bookings.findIndex((b) => b.id === id);
-          if (index !== -1) {
-            this.api.bookings[index] = booking;
-          } else {
-            this.api.bookings.push(booking);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      try {
+        const response = await ApiBookingService.getBooking(
+          id,
+          undefined,
+          true
+        );
+        const booking = response.data;
+        const index = this.api.bookings.findIndex((b) => b.id === id);
+        if (index !== -1) {
+          this.api.bookings[index] = booking;
+        } else {
+          this.api.bookings.push(booking);
+        }
+      } catch (error) {
+        console.log(error);
+      }
     },
     async fetchGroupBookings() {
-      await this.startLoading("fetch-bookings");
+      await this.startLoading("fetch-grp-bookings");
 
       await ApiGroupBookingService.getGroupBookings()
         .then((response) => {
           this.api.groupBookings = response.data;
         })
         .finally(() => {
-          this.stopLoading("fetch-bookings");
+          this.stopLoading("fetch-grp-bookings");
           this.initializeFuse();
         })
         .catch((error) => {
@@ -480,6 +469,7 @@ export default {
       }
     },
     async deleteBooking(bookingId) {
+      const optionId = ProcessingService.showOverlay("Lösche Buchung...");
       try {
         await this.startLoading("delete-booking");
         await ApiBookingService.deleteBooking(bookingId);
@@ -488,18 +478,22 @@ export default {
         this.openDeleteGroupBookingDialog = false;
       } finally {
         await this.stopLoading("delete-booking");
+        ProcessingService.hide(optionId);
       }
     },
     async deleteGroupBooking(bookingId) {
       const groupBooking = this.api.groupBookings.find((groupBooking) =>
         groupBooking.bookingIds.includes(bookingId)
       );
+      const optionId = ProcessingService.showOverlay("Lösche Serienbuchung...");
       try {
+        await this.startLoading("delete-booking");
         await ApiGroupBookingService.deleteGroupBooking(null, groupBooking.id);
         await this.fetchBookings();
         this.openDeleteDialog = false;
         this.openDeleteGroupBookingDialog = false;
       } finally {
+        ProcessingService.hide(optionId);
         await this.stopLoading("delete-booking");
       }
     },
@@ -520,6 +514,9 @@ export default {
         );
         this.openCommitGroupBookingDialog = true;
       } else {
+        const operationId = ProcessingService.showOverlay(
+          "Buchung wird freigegeben..."
+        );
         try {
           const booking = this.api.bookings.find(
             (booking) => booking.id === id
@@ -534,8 +531,6 @@ export default {
             );
             return;
           }
-
-          await this.startLoading("commit-booking");
           const data = await ApiBookingService.commitBooking(id);
 
           if (!data.success) {
@@ -549,7 +544,7 @@ export default {
             this.openCommitGroupBookingDialog = false;
           }
         } finally {
-          await this.stopLoading("commit-booking");
+          ProcessingService.hide(operationId);
         }
       }
     },
@@ -576,6 +571,9 @@ export default {
       this.openPayDialog = true;
     },
     async payBooking({ id, paymentMethod }) {
+      const operationId = ProcessingService.showOverlay(
+        "Zahlung wird verarbeitet..."
+      );
       try {
         await this.startLoading("pay-booking");
         const data = await ApiBookingService.payBooking(id, paymentMethod);
@@ -592,9 +590,13 @@ export default {
         }
       } finally {
         await this.stopLoading("pay-booking");
+        ProcessingService.hide(operationId);
       }
     },
     async payGroupBooking(paymentMethod) {
+      const operationId = ProcessingService.showOverlay(
+        "Zahlung wird verarbeitet..."
+      );
       try {
         await this.startLoading("pay-booking");
         const response = await ApiGroupBookingService.payGroupBooking({
@@ -614,11 +616,14 @@ export default {
         }
       } finally {
         await this.stopLoading("pay-booking");
+        ProcessingService.hide(operationId);
       }
     },
     async commitGroupBooking(id) {
+      const operationId = ProcessingService.showOverlay(
+        "Serienbuchung wird freigegeben..."
+      );
       try {
-        await this.startLoading("commit-booking");
         const response = await ApiGroupBookingService.commitGroupBooking(
           null,
           id
@@ -635,25 +640,33 @@ export default {
           this.openCommitGroupBookingDialog = false;
         }
       } finally {
-        await this.stopLoading("commit-booking");
+        ProcessingService.hide(operationId);
       }
     },
     async rejectBooking(id, rejectReason) {
+      const operationId = ProcessingService.showOverlay(
+        "Buchung wird abgelehnt..."
+      );
       try {
-        await ApiBookingService.rejectBooking(id, this.tenantId, rejectReason);
         await this.startLoading("reject-booking");
+        await ApiBookingService.rejectBooking(id, this.tenantId, rejectReason);
         await this.fetchBookings();
         this.openRejectDialog = false;
         this.openRejectGroupBookingDialog = false;
       } finally {
         await this.stopLoading("reject-booking");
+        ProcessingService.hide(operationId);
       }
     },
     async rejectGroupBooking(id, rejectReason) {
       const groupBooking = this.api.groupBookings.find((groupBooking) =>
         groupBooking.bookingIds.includes(id)
       );
+      const operationId = ProcessingService.showOverlay(
+        "Serienbuchung wird abgelehnt..."
+      );
       try {
+        await this.startLoading("reject-booking");
         const response = await ApiGroupBookingService.rejectGroupBooking(
           null,
           groupBooking.id,
@@ -672,6 +685,7 @@ export default {
         }
       } finally {
         await this.stopLoading("reject-booking");
+        ProcessingService.hide(operationId);
       }
     },
     onOpenBooking(bookingId) {
@@ -791,38 +805,6 @@ export default {
       this.selectedBooking.tenantId = this.tenantId;
       this.openEditDialog = true;
     },
-    translatePayMethod(value) {
-      switch (value) {
-        case "1":
-          return "Giropay";
-        case "17":
-          return "Giropay";
-        case "18":
-          return "Giropay";
-        case "2":
-          return "eps";
-        case "12":
-          return "iDEAL";
-        case "11":
-          return "Kreditkarte";
-        case "6":
-          return "Lastschrift";
-        case "7":
-          return "Lastschrift";
-        case "26":
-          return "Bluecode";
-        case "33":
-          return "Maestro";
-        case "14":
-          return "PayPal";
-        case "23":
-          return "paydirekt";
-        case "27":
-          return "Sofortüberweisung";
-        default:
-          return "Unbekannt";
-      }
-    },
     async updateBooking(bookingId) {
       await this.fetchBookings();
       this.selectedBooking = Object.assign(
@@ -871,7 +853,9 @@ export default {
       this.workflow = await ApiWorkflowService.getWorkflowStates();
     },
   },
-  async created() {
+  async mounted() {
+    ProcessingService.setComponent(this.$refs.processingIndicator);
+
     try {
       await this.fetchBookings();
       await this.fetchBookables();
@@ -880,7 +864,8 @@ export default {
     } catch (error) {
       console.error("Error fetching initial data:", error);
     }
-
+  },
+  async created() {
     const viewFromQuery = this.$route.query.view;
     if (
       viewFromQuery &&
@@ -908,25 +893,18 @@ body {
 }
 
 .page-container {
-  /* page-container selbst muss nicht zwingend Flex sein,
-     wenn du in AdminLayout schon Flex-Logik nutzt.
-     Kann aber, wenn man Header/Footer explizit abgrenzen möchte. */
   display: flex;
   flex-direction: column;
-  /* Hier KEIN fixed height nötig, wir vererben die "Höhe" vom AdminLayout her. */
 }
 
 .page-header {
-  /* Nimmt nur so viel Platz, wie nötig */
   flex: 0 0 auto;
 }
 
 .page-content {
-  /* Hier könnte ebenfalls overflow, wenn du den inneren Bereich nochmals eigenständig scrollen lassen willst.
-     Falls das jedoch global im AdminLayout schon geregelt wird, kannst du es hier auch simpler halten. */
   flex: 1 1 auto;
   overflow-y: auto;
-  margin-bottom: 80px; /* Platz für den Fixed-Button unten lassen */
+  margin-bottom: 80px;
 }
 
 .page-footer {
