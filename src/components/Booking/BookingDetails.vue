@@ -9,6 +9,19 @@
       <v-divider></v-divider>
 
       <v-card-text class="px-6 py-6 booking-details-content">
+        <v-alert
+          v-if="groupBooking.id"
+          type="info"
+          dense
+          outlined
+          border="left"
+          class="mx-6 my-4"
+        >
+          Diese Buchung ist Teil der Gruppenbuchung
+          <strong>#{{ groupBooking.id }}</strong>. Änderungen an dieser Buchung
+          können Auswirkungen auf die gesamte Gruppenbuchung haben.
+        </v-alert>
+
         <v-card class="mb-6 section-card" elevation="2" outlined>
           <v-card-title class="section-header pa-4">
             <v-icon class="mr-2">mdi-information-outline</v-icon>
@@ -207,7 +220,13 @@
                       </span>
                       <span>
                         <v-icon x-small>mdi-currency-eur</v-icon>
-                        Einzelpreis: {{ item.userGrossPriceEur }} €
+                        Einzelpreis:
+                        {{
+                          Intl.NumberFormat("de-DE", {
+                            style: "currency",
+                            currency: "EUR",
+                          }).format(item.userGrossPriceEur)
+                        }}
                       </span>
                     </v-list-item-subtitle>
                   </v-list-item-content>
