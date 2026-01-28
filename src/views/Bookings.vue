@@ -572,7 +572,7 @@ export default {
       this.openPayDialog = true;
     },
 
-    async payBooking({ id, paymentMethod, timePaid  }) {
+    async payBooking({ id, paymentMethod, timePaid }) {
       const operationId = ProcessingService.showOverlay(
         "Zahlung wird verarbeitet..."
       );

@@ -34,7 +34,11 @@
           <p
             v-if="displayOptions.subtitle"
             class="text-body-2 mb-4"
-            :class="isDark ? 'grey--text text--lighten-1' : 'grey--text text--darken-1'"
+            :class="
+              isDark
+                ? 'grey--text text--lighten-1'
+                : 'grey--text text--darken-1'
+            "
           >
             {{ displayOptions.subtitle }}
           </p>
@@ -55,7 +59,11 @@
               displayOptions.progress !== -1
             "
             class="text-caption"
-            :class="isDark ? 'grey--text text--lighten-1' : 'grey--text text--darken-1'"
+            :class="
+              isDark
+                ? 'grey--text text--lighten-1'
+                : 'grey--text text--darken-1'
+            "
           >
             {{ displayOptions.progress }}%
           </span>
@@ -101,7 +109,11 @@
               <div
                 v-if="displayOptions.subtitle"
                 class="text-caption"
-                :class="isDark ? 'grey--text text--lighten-1' : 'grey--text text--darken-1'"
+                :class="
+                  isDark
+                    ? 'grey--text text--lighten-1'
+                    : 'grey--text text--darken-1'
+                "
               >
                 {{ displayOptions.subtitle }}
               </div>
