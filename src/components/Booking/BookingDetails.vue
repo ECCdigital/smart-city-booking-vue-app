@@ -10,7 +10,7 @@
 
       <v-card-text class="px-6 py-6 booking-details-content">
         <v-alert
-          v-if="groupBooking.id"
+          v-if="groupBooking && groupBooking.id"
           type="info"
           dense
           outlined
@@ -18,8 +18,9 @@
           class="mx-6 my-4"
         >
           Diese Buchung ist Teil der Gruppenbuchung
-          <strong>#{{ groupBooking.id }}</strong>. Änderungen an dieser Buchung
-          können Auswirkungen auf die gesamte Gruppenbuchung haben.
+          <strong>#{{ groupBooking.id }}</strong
+          >. Änderungen an dieser Buchung können Auswirkungen auf die gesamte
+          Gruppenbuchung haben.
         </v-alert>
 
         <v-card class="mb-6 section-card" elevation="2" outlined>
@@ -737,6 +738,9 @@ export default {
       }
     },
     downloadReceipt(name) {
+      const operationId = ProcessingService.showSnackbar(
+        "Stelle Zahlungsbeleg bereit..."
+      );
       ApiBookingService.getReceipt(this.booking.id, name).then((response) => {
         const blob = new Blob([response.data], { type: "application/pdf" });
         const url = window.URL.createObjectURL(blob);
@@ -745,9 +749,13 @@ export default {
         link.setAttribute("download", name);
         document.body.appendChild(link);
         link.click();
+        ProcessingService.hide(operationId);
       });
     },
     downloadInvoice(name) {
+      const operationId = ProcessingService.showSnackbar(
+        "Stelle Rechnung bereit..."
+      );
       ApiBookingService.getInvoice(this.booking.id, name).then((response) => {
         const blob = new Blob([response.data], { type: "application/pdf" });
         const url = window.URL.createObjectURL(blob);
@@ -756,9 +764,13 @@ export default {
         link.setAttribute("download", name);
         document.body.appendChild(link);
         link.click();
+        ProcessingService.hide(operationId);
       });
     },
     downloadAttachment({ url, label }) {
+      const operationId = ProcessingService.showSnackbar(
+        "Stelle Anhang bereit..."
+      );
       try {
         const link = document.createElement("a");
         link.href = url;
@@ -769,6 +781,8 @@ export default {
         this.addToast(
           ToastService.createToast("attachment.download.error", "error")
         );
+      } finally {
+        ProcessingService.hide(operationId);
       }
     },
     closeDialog() {
