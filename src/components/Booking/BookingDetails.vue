@@ -79,6 +79,26 @@
                   </div>
                 </div>
               </v-col>
+              <v-col cols="12" md="6">
+                <div class="info-item">
+                  <div class="info-label">
+                    <v-icon small class="mr-2">mdi-shield-check-outline</v-icon>
+                    Freigabestatus
+                  </div>
+                  <div class="info-value">
+                    <v-chip
+                      small
+                      :color="getApprovalStatusColor()"
+                      text-color="white"
+                    >
+                      <v-icon left x-small>
+                        {{ getApprovalStatusIcon() }}
+                      </v-icon>
+                      {{ getApprovalStatusText() }}
+                    </v-chip>
+                  </div>
+                </div>
+              </v-col>
             </v-row>
           </v-card-text>
         </v-card>
@@ -114,7 +134,16 @@
                     Bezahlt mit
                   </div>
                   <div class="info-value">
-                    {{ translatePayMethod(booking.paymentMethod) }}
+                    <v-chip
+                      :color="getPaymentMethodColor(booking.paymentMethod)"
+                      text-color="white"
+                      small
+                    >
+                      <v-icon left small>
+                        {{ getPaymentMethodIcon(booking.paymentMethod) }}
+                      </v-icon>
+                      {{ translatePayMethod(booking.paymentMethod) }}
+                    </v-chip>
                   </div>
                 </div>
               </v-col>
@@ -143,6 +172,155 @@
               <v-col
                 cols="12"
                 md="6"
+                v-if="booking.priceEur && booking.priceEur > 0"
+              >
+                <div class="info-item">
+                  <div class="info-label">
+                    <v-icon small class="mr-2">mdi-bank-transfer</v-icon>
+                    Zahlungsanbieter
+                  </div>
+                  <div class="info-value">
+                    <v-chip
+                      :color="getPaymentProviderColor(booking.paymentProvider)"
+                      text-color="white"
+                      small
+                    >
+                      <v-icon left small>
+                        {{ getPaymentProviderIcon(booking.paymentProvider) }}
+                      </v-icon>
+                      {{ translatePaymentProvider(booking.paymentProvider) }}
+                    </v-chip>
+                  </div>
+                </div>
+              </v-col>
+              <v-col
+                cols="12"
+                v-if="
+                  !booking.isPayed &&
+                  booking.isCommitted &&
+                  booking.paymentProvider &&
+                  booking.paymentProvider !== 'invoice'
+                "
+              >
+                <v-alert type="info" dense outlined border="left" class="mb-0">
+                  <div class="d-flex align-center mb-2">
+                    <v-icon class="mr-2">mdi-credit-card-clock-outline</v-icon>
+                    <span class="font-weight-medium">
+                      Die Zahlung steht noch aus. Zahlungslink bereitstellen:
+                    </span>
+                  </div>
+
+                  <div v-if="!groupBooking" class="d-flex gap-2 flex-wrap mt-3">
+                    <v-btn
+                      small
+                      outlined
+                      @click="copyPaymentLink(false)"
+                    >
+                      <v-icon left small>
+                        {{
+                          paymentLinkCopied ? "mdi-check" : "mdi-content-copy"
+                        }}
+                      </v-icon>
+                      {{ paymentLinkCopied ? "Kopiert!" : "Link kopieren" }}
+                    </v-btn>
+                    <v-btn
+                      small
+                      color="primary"
+                      @click="openPaymentLink(false)"
+                    >
+                      <v-icon left small>mdi-open-in-new</v-icon>
+                      Link öffnen
+                    </v-btn>
+                  </div>
+
+                  <div v-else class="mt-3">
+                    <div class="mb-2 text-caption">
+                      <v-icon x-small class="mr-1">mdi-information</v-icon>
+                      Diese Buchung gehört zur Gruppenbuchung #{{
+                        groupBooking.id
+                      }}
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap">
+                      <v-btn
+                        small
+                        outlined
+                        @click="copyPaymentLink(false)"
+                      >
+                        <v-icon left small>
+                          {{
+                            singlePaymentLinkCopied
+                              ? "mdi-check"
+                              : "mdi-content-copy"
+                          }}
+                        </v-icon>
+                        {{
+                          singlePaymentLinkCopied
+                            ? "Kopiert!"
+                            : "Nur diese Buchung"
+                        }}
+                      </v-btn>
+
+                      <v-btn
+                        small
+                        color="primary"
+                        @click="copyPaymentLink(true)"
+                      >
+                        <v-icon left small>
+                          {{
+                            groupPaymentLinkCopied
+                              ? "mdi-check"
+                              : "mdi-content-copy"
+                          }}
+                        </v-icon>
+                        {{
+                          groupPaymentLinkCopied ? "Kopiert!" : "Gesamte Gruppe"
+                        }}
+                      </v-btn>
+
+                      <v-menu offset-y>
+                        <template v-slot:activator="{ on, attrs }">
+                          <v-btn small color="primary" v-bind="attrs" v-on="on">
+                            <v-icon left small>mdi-open-in-new</v-icon>
+                            Link öffnen
+                            <v-icon right small>mdi-chevron-down</v-icon>
+                          </v-btn>
+                        </template>
+                        <v-list dense>
+                          <v-list-item @click="openPaymentLink(false)">
+                            <v-list-item-icon>
+                              <v-icon small>mdi-file-document-outline</v-icon>
+                            </v-list-item-icon>
+                            <v-list-item-content>
+                              <v-list-item-title
+                                >Nur diese Buchung</v-list-item-title
+                              >
+                            </v-list-item-content>
+                          </v-list-item>
+                          <v-list-item @click="openPaymentLink(true)">
+                            <v-list-item-icon>
+                              <v-icon small
+                                >mdi-file-document-multiple-outline</v-icon
+                              >
+                            </v-list-item-icon>
+                            <v-list-item-content>
+                              <v-list-item-title>
+                                Gesamte Gruppe ({{
+                                  groupBooking.bookingIds?.length || 0
+                                }}
+                                Buchungen)
+                              </v-list-item-title>
+                            </v-list-item-content>
+                          </v-list-item>
+                        </v-list>
+                      </v-menu>
+                    </div>
+                  </div>
+                </v-alert>
+              </v-col>
+              <v-col
+                cols="12"
+                md="6"
                 v-if="booking.isPayed && booking.timePaid"
               >
                 <div class="info-item">
@@ -157,26 +335,6 @@
                         timeStyle: "short",
                       }).format(new Date(booking.timePaid))
                     }}
-                  </div>
-                </div>
-              </v-col>
-              <v-col cols="12" md="6">
-                <div class="info-item">
-                  <div class="info-label">
-                    <v-icon small class="mr-2">mdi-shield-check-outline</v-icon>
-                    Freigabestatus
-                  </div>
-                  <div class="info-value">
-                    <v-chip
-                      small
-                      :color="getApprovalStatusColor()"
-                      text-color="white"
-                    >
-                      <v-icon left x-small>
-                        {{ getApprovalStatusIcon() }}
-                      </v-icon>
-                      {{ getApprovalStatusText() }}
-                    </v-chip>
                   </div>
                 </div>
               </v-col>
@@ -580,6 +738,12 @@ export default {
       errors: {
         receipt: null,
       },
+      paymentLinkCopied: false,
+      singlePaymentLinkCopied: false,
+      groupPaymentLinkCopied: false,
+      paymentLinkCopiedTimeout: null,
+      singlePaymentLinkCopiedTimeout: null,
+      groupPaymentLinkCopiedTimeout: null,
     };
   },
   computed: {
@@ -609,6 +773,20 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+    translatePaymentProvider(provider) {
+      switch (provider) {
+        case "giroCockpit":
+          return "GiroCockpit (Online bezahlen)";
+        case "pmPayment":
+          return "pmPayment (Online bezahlen)";
+        case "invoice":
+          return "Rechnung";
+        case "manual":
+          return "Manuelle Zahlung";
+        default:
+          return "Unbekannt";
+      }
+    },
     translatePayMethod(paymentMethod) {
       switch (paymentMethod) {
         case "CASH":
@@ -793,9 +971,135 @@ export default {
       this.errors.receipt = null;
       this.openCreateAggregatedReceipt = false;
     },
+    // Payment Provider
+    getPaymentProviderColor(provider) {
+      const colors = {
+        giroCockpit: "blue darken-2",
+        pmPayment: "purple darken-1",
+        invoice: "orange darken-1",
+        manual: "grey darken-1",
+      };
+      return colors[provider] || "grey";
+    },
+
+    getPaymentProviderIcon(provider) {
+      const icons = {
+        giroCockpit: "mdi-bank",
+        pmPayment: "mdi-credit-card-multiple",
+        invoice: "mdi-file-document",
+        manual: "mdi-hand-coin",
+      };
+      return icons[provider] || "mdi-help-circle";
+    },
+    getPaymentMethodColor(method) {
+      const colors = {
+        CASH: "green darken-1",
+        TRANSFER: "blue darken-1",
+        CREDIT_CARD: "deep-purple darken-1",
+        DEBIT_CARD: "indigo darken-1",
+        PAYPAL: "blue darken-3",
+        GIROPAY: "red darken-1",
+        APPLE_PAY: "grey darken-4",
+        GOOGLE_PAY: "blue darken-2",
+        EPS: "pink darken-1",
+        IDEAL: "pink darken-2",
+        MAESTRO: "blue darken-4",
+        PAYDIRECT: "orange darken-2",
+        SOFORT: "pink darken-3",
+        BLUECODE: "light-blue darken-1",
+        OTHER: "grey darken-2",
+      };
+      return colors[method] || "grey";
+    },
+
+    getPaymentMethodIcon(method) {
+      const icons = {
+        CASH: "mdi-cash",
+        TRANSFER: "mdi-bank-transfer",
+        CREDIT_CARD: "mdi-credit-card",
+        DEBIT_CARD: "mdi-card",
+        PAYPAL: "mdi-paypal",
+        GIROPAY: "mdi-bank",
+        APPLE_PAY: "mdi-apple",
+        GOOGLE_PAY: "mdi-google",
+        EPS: "mdi-credit-card-fast",
+        IDEAL: "mdi-credit-card-check",
+        MAESTRO: "mdi-credit-card-wireless",
+        PAYDIRECT: "mdi-contactless-payment",
+        SOFORT: "mdi-flash",
+        BLUECODE: "mdi-qrcode",
+        OTHER: "mdi-dots-horizontal",
+      };
+      return icons[method] || "mdi-help-circle";
+    },
+    getPaymentLink(isGroupBooking = false) {
+      const baseUrl = `${window.location.origin}${process.env.BASE_URL}payment/redirection`;
+      const sanitizedBaseUrl = baseUrl.replace(/\/+$/, "");
+
+      let ids;
+      let aggregated;
+
+      if (isGroupBooking && this.groupBooking?.bookingIds) {
+        ids = this.groupBooking.bookingIds.join(",");
+        aggregated = true;
+      } else {
+        ids = this.booking.id;
+        aggregated = false;
+      }
+
+      return `${sanitizedBaseUrl}?ids=${ids}&tenant=${this.booking.tenantId}&aggregated=${aggregated}`;
+    },
+    async copyPaymentLink(isGroupBooking = false) {
+      const link = this.getPaymentLink(isGroupBooking);
+      await navigator.clipboard.writeText(link);
+
+      if (this.groupBooking) {
+        if (isGroupBooking) {
+          this.groupPaymentLinkCopied = true;
+          if (this.groupPaymentLinkCopiedTimeout) {
+            clearTimeout(this.groupPaymentLinkCopiedTimeout);
+          }
+          this.groupPaymentLinkCopiedTimeout = setTimeout(() => {
+            this.groupPaymentLinkCopied = false;
+          }, 2000);
+        } else {
+          this.singlePaymentLinkCopied = true;
+          if (this.singlePaymentLinkCopiedTimeout) {
+            clearTimeout(this.singlePaymentLinkCopiedTimeout);
+          }
+          this.singlePaymentLinkCopiedTimeout = setTimeout(() => {
+            this.singlePaymentLinkCopied = false;
+          }, 2000);
+        }
+      } else {
+        this.paymentLinkCopied = true;
+        if (this.paymentLinkCopiedTimeout) {
+          clearTimeout(this.paymentLinkCopiedTimeout);
+        }
+        this.paymentLinkCopiedTimeout = setTimeout(() => {
+          this.paymentLinkCopied = false;
+        }, 2000);
+      }
+    },
+
+    openPaymentLink(isGroupBooking = false) {
+      const link = this.getPaymentLink(isGroupBooking);
+      window.open(link, "_blank", "noopener,noreferrer");
+    },
   },
   mounted() {
     ProcessingService.setComponent(this.$refs.processingIndicator);
+  },
+  beforeDestroy() {
+    if (this.paymentLinkCopiedTimeout) {
+      clearTimeout(this.paymentLinkCopiedTimeout);
+    }
+    if (this.singlePaymentLinkCopiedTimeout) {
+      clearTimeout(this.singlePaymentLinkCopiedTimeout);
+    }
+    if (this.groupPaymentLinkCopiedTimeout) {
+      clearTimeout(this.groupPaymentLinkCopiedTimeout);
+    }
   },
 };
 </script>
@@ -932,5 +1236,20 @@ export default {
 
 .theme--dark .v-list-item:hover {
   background-color: rgba(255, 255, 255, 0.05);
+}
+.gap-2 {
+  gap: 8px;
+}
+
+.info-value {
+  font-size: 1rem;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.87);
+  padding-left: 28px;
+
+  .v-chip {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
 }
 </style>
