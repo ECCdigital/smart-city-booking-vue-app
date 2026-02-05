@@ -141,7 +141,7 @@
                     <v-select
                       :items="activePaymentApps"
                       v-model="selectedBooking.paymentProvider"
-                      label="Zahlungsmethode"
+                      label="Zahlungsanbieter"
                       item-text="title"
                       item-value="id"
                       filled
@@ -1071,8 +1071,13 @@ export default {
     timeTo: function () {
       this.getEvents();
     },
+    "booking.tenantId": {
+      immediate: true,
+      handler() {
+        if (this.booking?.tenantId) this.fetchActivePaymentApps();
+      },
+    },
     booking: function (newBooking) {
-      this.fetchActivePaymentApps();
       if (newBooking.timePaid) {
         this.timePaid = newBooking.timePaid;
       } else {
