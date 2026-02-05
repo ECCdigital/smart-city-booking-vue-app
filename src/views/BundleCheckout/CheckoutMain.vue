@@ -1,4 +1,4 @@
-<template xmlns="http://www.w3.org/1999/html">
+<template>
   <div>
     <v-container>
       <div>
@@ -30,7 +30,7 @@
           <v-col
             v-if="step < steps.length"
             :class="
-              leadItem.bookable && !preventBooking ? 'col-md-7' : 'col-md'
+              leadItem.bookable && !preventBooking ? 'col-md-8' : 'col-md'
             "
           >
             <component

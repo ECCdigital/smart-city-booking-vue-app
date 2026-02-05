@@ -1,5 +1,7 @@
 <template>
   <div>
+    <TimezoneWarning system-timezone="Europe/Berlin" />
+
     <div class="d-flex mb-5">
       <v-btn v-if="showBack" outlined small @click="back">
         <v-icon left small>mdi-arrow-left</v-icon>
@@ -243,10 +245,11 @@
 import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
 import CheckoutTimePeriodPicker from "@/components/Checkout/CheckoutTimePeriodPicker.vue";
+import TimezoneWarning from "@/components/TimezoneWarning.vue";
 
 export default {
   name: "CheckoutTimeSelector",
-  components: { CheckoutTimePeriodPicker, CheckoutCalendar },
+  components: { TimezoneWarning, CheckoutTimePeriodPicker, CheckoutCalendar },
 
   props: {
     trace: {
