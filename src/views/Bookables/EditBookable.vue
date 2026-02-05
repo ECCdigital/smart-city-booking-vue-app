@@ -1,824 +1,1002 @@
 <template>
   <v-container v-if="!isLoading" style="max-width: 1200px">
-    <div class="d-flex">
-      <v-btn icon class="ms-n14 me-5 accent" @click="goBack">
+    <!-- Header -->
+    <div class="d-flex align-center mb-6">
+      <v-btn icon class="me-3 accent" @click="goBack">
         <v-icon>mdi-close</v-icon>
       </v-btn>
-      <h2 class="mb-4">
-        Buchungsobjekt {{ this.mode === "create" ? "erstellen" : "bearbeiten" }}
-      </h2>
+      <div class="d-flex align-center">
+        <v-icon large class="mr-3">
+          {{ this.mode === "create" ? "mdi-plus-circle" : "mdi-pencil" }}
+        </v-icon>
+        <h2 class="text-h5 font-weight-bold">
+          Buchungsobjekt
+          {{ this.mode === "create" ? "erstellen" : "bearbeiten" }}
+        </h2>
+      </div>
     </div>
-    <v-row>
-      <v-col>
-        <v-select
-          background-color="accent"
-          filled
-          label="Typ"
-          hide-details
-          v-model="type"
-          :items="bookableTypes"
-          item-text="title"
-          item-value="key"
-          disabled
-        ></v-select>
-      </v-col>
-      <v-col>
-        <v-text-field
-          background-color="accent"
-          filled
-          label="Mandant"
-          hide-details
-          disabled
-          v-model="tenantId"
-        ></v-text-field>
-      </v-col>
-    </v-row>
 
-    <v-row v-if="type === 'ticket'">
-      <v-col>
-        <v-select
-          background-color="accent"
-          filled
-          label="Veranstaltung"
-          hide-details
-          v-model="eventId"
-          item-value="id"
-          name="information.name"
-          item-text="information.name"
-          :items="events"
-        ></v-select>
-      </v-col>
-    </v-row>
+    <v-divider class="mb-6"></v-divider>
 
-    <v-row>
-      <v-col>
-        <v-text-field
-          background-color="accent"
-          filled
-          label="Bezeichnung"
-          hide-details
-          v-model="title"
-        ></v-text-field>
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col>
-        <ChooseFile
-          v-model="imgUrl"
-          :allow-protected="false"
-          :tenant-id="tenantId"
-          filled
-          images-only
-          label="Cover-Bild"
-          background-color="accent"
-          forced-subdirectory="rooms"
-        />
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col>
-        <Tiptap v-model="description" label="Beschreibung"></Tiptap>
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col>
-        <v-text-field
-          background-color="accent"
-          filled
-          label="Ort"
-          hide-details
-          v-model="location"
-        ></v-text-field>
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col>
-        <v-combobox
-          v-model="tags"
-          :items="tagsAvailable"
-          label="Tags"
-          hide-selected
-          no-data-text="Keine Tags angelegt"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              color="secondary"
-              @click="select"
-              @click:close="removeTags(item)"
-            >
-              <strong>{{ item }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
-      </v-col>
-      <v-col>
-        <v-combobox
-          v-model="flags"
-          :items="flagsAvailable"
-          label="Flags"
-          hide-selected
-          no-data-text="Keine Flags angelegt"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              color="secondary"
-              @click="select"
-              @click:close="removeFlags(item)"
-            >
-              <strong>{{ item }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
-      </v-col>
-    </v-row>
-
-    <h3 class="mt-10 mb-4">Preise</h3>
-    <div class="d-flex align-center mb-4">
-      <v-tooltip bottom max-width="300" open-delay="200">
-        <template v-slot:activator="{ on, attrs }">
-          <div v-on="on" v-bind="attrs">
-            <v-switch
-              dense
-              label="Gutscheine aktivieren"
-              hide-details
-              v-model="enableCoupons"
-            ></v-switch>
-          </div>
-        </template>
-        <span>
-          Aktivieren Sie diese Option, um Gutscheine für dieses Buchungsobjekt
-          zu ermöglichen. Gutscheine können dann beim Checkout eingelöst werden.
-        </span>
-      </v-tooltip>
-    </div>
-    <v-row>
-      <v-col class="col-12 col-md-3">
-        <v-select
-          background-color="accent"
-          filled
-          label="Preisart"
-          hide-details
-          v-model="priceType"
-          :items="priceTypes"
-          item-text="name"
-          item-value="id"
-        ></v-select>
-      </v-col>
-      <v-col class="col-12 col-md-2">
-        <v-text-field
-          background-color="accent"
-          filled
-          label="Verfügbare Anzahl"
-          :hint="!amount ? 'Anzahl ist unbegrenzt!' : ''"
-          :persistent-hint="!amount"
-          v-model="amount"
-          :suffix="priceType === 'per-square-meter' ? 'm²' : 'Stück'"
-        ></v-text-field>
-      </v-col>
-      <v-col v-if="!useGraduatedPrices" class="col-12 col-md-3">
-        <v-text-field
-          v-if="priceCategories[0]"
-          background-color="accent"
-          filled
-          label="Preis (netto)"
-          hide-details
-          v-model="priceCategories[0].priceEur"
-          suffix="Euro"
-        ></v-text-field>
-      </v-col>
-      <v-col class="col-12 col-md-2">
-        <v-text-field
-          background-color="accent"
-          filled
-          label="MwSt."
-          hide-details
-          v-model="priceValueAddedTax"
-          suffix="%"
-        ></v-text-field>
-      </v-col>
-
-      <v-col v-if="!useGraduatedPrices" class="col-12 col-md-1">
-        <v-tooltip top max-width="300" open-delay="400">
-          <template v-slot:activator="{ on, attrs }">
-            <div v-bind="attrs" v-on="on">
-              <v-checkbox
-                v-if="priceCategories[0]"
-                v-model="priceCategories[0].fixedPrice"
-                label="Pauschalpreis"
-              >
-              </v-checkbox>
-            </div>
-          </template>
-          <span> Bei Aktivierung wird immer der Grundpreis berechnet. </span>
-        </v-tooltip>
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col v-if="!useGraduatedPrices">
-        <v-btn dense outlined hide-details @click="useGraduatedPrices = true">
-          Staffelpreise
-        </v-btn>
-      </v-col>
-    </v-row>
-
-    <v-card v-if="useGraduatedPrices" flat outlined rounded class="mt-3">
-      <v-card-subtitle
-        class="d-flex justify-space-between mb-4"
-        style="background-color: var(--v-accent-base)"
-      >
-        <span class="text-h6">Preis-Kategorien</span>
-      </v-card-subtitle>
-      <v-card-text>
-        <div v-for="(priceCategory, idx) in priceCategories" :key="idx">
-          <div>
-            <v-row>
-              <v-col class="col-12 col-md-3">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  label="Preis (netto)"
-                  hide-details
-                  v-model="priceCategory.priceEur"
-                  suffix="Euro"
-                ></v-text-field>
-              </v-col>
-              <v-col class="col-6 col-md-2">
-                <v-text-field
-                  v-model="priceCategory.interval.start"
-                  background-color="accent"
-                  filled
-                  label="Gültig ab"
-                  type="number"
-                  :suffix="intervalSuffix"
-                  @blur="checkNull('priceCategories.interval.start')"
-                ></v-text-field>
-              </v-col>
-              <v-col class="col-6 col-md-2">
-                <v-text-field
-                  v-model="priceCategory.interval.end"
-                  background-color="accent"
-                  filled
-                  label="Gültig bis"
-                  type="number"
-                  :suffix="intervalSuffix"
-                  @blur="checkNull('priceCategories.interval.start')"
-                ></v-text-field>
-              </v-col>
-              <v-col class="col-12 col-md-2">
-                <v-tooltip top max-width="300" open-delay="400">
-                  <template v-slot:activator="{ on, attrs }">
-                    <div v-bind="attrs" v-on="on">
-                      <v-checkbox
-                        v-model="priceCategory.fixedPrice"
-                        label="Pauschalpreis"
-                      >
-                      </v-checkbox>
-                    </div>
-                  </template>
-                  <span>
-                    Bei Aktivierung wird immer der Grundpreis berechnet.
-                  </span>
-                </v-tooltip>
-              </v-col>
-              <v-col class="" style="text-align: right">
-                <v-btn
-                  :disabled="idx === 0"
-                  icon
-                  @click="removePriceCategory(idx)"
-                  class="mt-4"
-                  color="error"
-                >
-                  <v-icon>mdi-delete</v-icon>
-                </v-btn>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col>
-                <v-select
-                  background-color="accent"
-                  filled
-                  label="Wochentage"
-                  hide-details
-                  v-model="priceCategory.weekdays"
-                  multiple
-                  chips
-                  :items="weekdays"
-                  item-text="name"
-                  item-value="id"
-                ></v-select>
-              </v-col>
-              <v-col>
-                <v-combobox
-                  background-color="accent"
-                  filled
-                  multiple
-                  chips
-                  clearable
-                  label="Feiertage"
-                  :items="availableHolidays"
-                  item-text="name"
-                  item-value="date"
-                  v-model="priceCategory.holidays"
-                >
-                  <template v-slot:prepend-item>
-                    <v-list-item ripple>
-                      <v-select
-                        v-model="selectedState"
-                        :items="states"
-                        item-text="text"
-                        item-value="value"
-                        dense
-                        hide-details
-                        outlined
-                        label="Bundesland"
-                        prepend-icon="mdi-filter"
-                        @change="fetchHolidays"
-                      />
-                    </v-list-item>
-                    <v-divider class="mx-2" />
-                  </template>
-                </v-combobox>
-              </v-col>
-            </v-row>
-          </div>
-          <v-divider
-            v-if="
-              priceCategories.length > 1 && idx !== priceCategories.length - 1
-            "
-            class="mb-5"
-          ></v-divider>
-        </div>
-        <div>
-          <v-btn outlined class="mt-2" @click="addPriceCategory"
-            >Neue Preis-Kategorie</v-btn
-          >
-        </div>
-      </v-card-text>
-    </v-card>
-
-    <h3 class="mt-10 mb-4">Öffnungszeiten und Buchungszeiträume</h3>
-    <BookableTimeDependantAttributes
-      :bookable-type="type"
-    ></BookableTimeDependantAttributes>
-
-    <v-row>
-      <v-col class="col-md-3 col-12">
-        <v-switch
-          dense
-          label="Buchungen automatisch freigeben"
-          hide-details
-          v-model="autoCommitBooking"
-        ></v-switch>
-      </v-col>
-      <v-col class="col-md-3 col-sm-12">
-        <v-switch
-          dense
-          label="Buchungsobjekt ist buchbar"
-          hide-details
-          v-model="isBookable"
-        ></v-switch>
-      </v-col>
-      <v-col class="col-md-3 col-sm-12">
-        <v-switch
-          :disabled="!allowPublic"
-          dense
-          label="Buchungsobjekt ist sichtbar"
-          hide-details
-          v-model="isPublic"
-        ></v-switch>
-      </v-col>
-    </v-row>
-
-    <h3 class="mt-10">Schließsysteme</h3>
-    <v-row>
-      <v-col>
-        <p>
-          Buchungsobjekte, die mit Schließsystemen verbunden sind, können
-          automatisch geöffnet und geschlossen werden.
-        </p>
-      </v-col>
-    </v-row>
-    <BookableLockingAttributes
-      v-if="amount"
-      :tenant-id="tenantId"
-      :amount="amount"
-    ></BookableLockingAttributes>
-
-    <v-alert v-else type="warning" dense outlined>
-      Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl der
-      verfügbaren Buchungsobjekte an.
-    </v-alert>
-
-    <h3 class="mt-10">Individuelle Berechtigungen</h3>
-
-    <v-row>
-      <v-col>
-        <p>
-          Berechtigen Sie <strong>bestimmte Benutzer</strong>, dieses Objekt zu
-          sehen. Werden keine Benutzer explizit zur Ansicht berechtigt, bleibt
-          dieses Buchungsobjekt für öffentlich einsehbar.
-        </p>
-
-        <v-combobox
-          v-model="permittedUsers"
-          :items="availableUsers"
-          label="Verfügbar für Benutzer"
-          hide-selected
-          no-data-text="Keine Benutzer verfügbar"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              color="secondary"
-              @click="select"
-              @click:close="removePermittedUser(item)"
-            >
-              <strong>{{ item }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col>
-        <p>
-          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses
-          Objekt zu sehen. Werden keine Benutzer explizit zur Ansicht
-          berechtigt, bleibt dieses Buchungsobjekt öffentlich einsehbar.
-        </p>
-
-        <v-combobox
-          v-model="permittedRoles"
-          :items="availableRoles"
-          label="Verfügbar für Rollen"
-          item-text="name"
-          item-value="id"
-          hide-selected
-          no-data-text="Keine Rollen verfügbar"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-          :return-object="false"
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              color="secondary"
-              @click="select"
-              @click:close="removePermittedRole(item)"
-            >
-              <strong>{{
-                availableRoles.find((r) => r.id === item)?.name
-              }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
-      </v-col>
-    </v-row>
-
-    <h3 class="mt-10">Kostenfreie Buchungen</h3>
-    <v-row>
-      <v-col>
-        <p>Berechtigen Sie Nutzer dieses Objekt kostenfrei zu buchen.</p>
-
-        <v-combobox
-          v-model="freeBookingUsers"
-          :items="availableUsers"
-          label="Kostenfrei für Benutzer"
-          hide-selected
-          no-data-text="Keine Benutzer verfügbar"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              color="secondary"
-              @click="select"
-              @click:close="removeFreeBookingUser(item)"
-            >
-              <strong>{{ item }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col>
-        <p>
-          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses
-          Objekt kostenfrei zu buchen.
-        </p>
-
-        <v-combobox
-          v-model="freeBookingRoles"
-          :items="availableRoles"
-          label="Kostenfrei für Rollen"
-          item-text="name"
-          item-value="id"
-          hide-selected
-          no-data-text="Keine Rollen verfügbar"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-          :return-object="false"
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              color="secondary"
-              @click="select"
-              @click:close="removeFreeBookingRole(item)"
-            >
-              <strong>{{
-                availableRoles.find((r) => r.id === item)?.name
-              }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
-      </v-col>
-    </v-row>
-
-    <h3 class="mt-10">Serienbuchungen</h3>
-    <v-row>
-      <v-col class="col-auto">
-        <v-switch
-          dense
-          label="Serienbuchung erlauben"
-          hide-details
-          v-model="allowGroupBooking"
-        ></v-switch>
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col>
-        <p>
-          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, die für
-          diese Objekt eine Buchungsserie erstellen dürfen
-        </p>
-        <v-combobox
-          v-model="permittedGroupBookingRoles"
-          :items="availableRoles"
-          label="Rollen, die eine Buchungsserie erstellen dürfen"
-          item-text="name"
-          item-value="id"
-          hide-selected
-          no-data-text="Keine Rollen verfügbar"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-          :return-object="false"
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              color="secondary"
-              @click="select"
-              @click:close="removeGroupBookingRole(item)"
-            >
-              <strong>{{
-                availableRoles.find((r) => r.id === item)?.name
-              }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
-      </v-col>
-    </v-row>
-
-    <h2 class="mt-10">Beziehungen zu anderen Buchungsobjekten</h2>
-
-    <h3 class="mt-5">Zusätzliche Buchungsoptionen</h3>
-    <p>
-      Buchungsobjekte, die Sie als zusätzliche Buchungsoptionen definieren,
-      werden ihren Kund*innen beim Checkout als ergänzende Buchungsobjekte
-      angezeigt.
-    </p>
-    <v-row>
-      <v-col>
-        <BookableCheckoutBookables
-          :items="checkoutBookableIds"
-          :available-items="bookablesWithoutSelf"
-        >
-        </BookableCheckoutBookables>
-      </v-col>
-    </v-row>
-
-    <h3 class="mt-10">Abhängige Objekte (Hierarchie)</h3>
-    <p>
-      Es gibt abhängige Buchungsobjekte, die darauf basieren, dass eine Buchung
-      nur durchgeführt werden kann, wenn das dazugehörige Elternobjekt noch
-      verfügbar ist und das zugehörige Kinderobjekt noch keine gleichzeitige
-      Buchung hat.
-    </p>
-    <p>
-      Dieses Buchungsobjekte wird über die Schnittstelle mit allen hier
-      definierten abhängigen Objekten ausgegeben.
-    </p>
-    <v-row>
-      <v-col>
-        <SortableList
-          :items="relatedBookableIds"
-          :available-items="bookablesWithoutSelf"
-          item-value="id"
-          item-text="title"
-          item-detail="type"
-        >
-          <template v-slot:detail="{ itemObject }">
-            {{ itemLabel(`editBookables.types.${itemObject.type}`) }}
-          </template>
-        </SortableList>
-      </v-col>
-    </v-row>
-
-    <h3 class="mt-10 mb-4">Anhänge</h3>
-    <div v-for="(attachment, index) in attachments" :key="attachment.id">
-      <v-card flat outlined rounded>
-        <v-card-text>
-          <v-row class="">
-            <v-col class="col">
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    dense
-                    background-color="accent"
-                    filled
-                    label="Titel"
-                    hide-details
-                    v-model="attachment.title"
-                  ></v-text-field>
-                </v-col>
-                <v-col>
-                  <v-select
-                    dense
-                    background-color="accent"
-                    filled
-                    label="Typ"
-                    hide-details
-                    v-model="attachment.type"
-                    :items="attachmentTypes"
-                    item-text="name"
-                    item-value="id"
-                  ></v-select>
-                </v-col>
-                <v-col>
-                  <ChooseFile
-                    v-model="attachment.url"
-                    :allow-protected="false"
-                    :tenant-id="tenantId"
-                    filled
-                    label="Datei"
-                    background-color="accent"
-                    forced-subdirectory="agreements"
-                  />
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-text-field
-                    dense
-                    background-color="accent"
-                    filled
-                    label="Beschreibung"
-                    placeholder="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."
-                    hide-details
-                    v-model="attachment.caption"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col>
-                  <v-switch
-                    dense
-                    label="Im Buchungsprozess anzeigen"
-                    hide-details
-                    v-model="attachment.show"
-                  ></v-switch>
-                </v-col>
-                <v-col>
-                  <v-switch
-                    dense
-                    label="Muss vom Nutzer akzeptiert werden"
-                    hide-details
-                    v-model="attachment.required"
-                  ></v-switch>
-                </v-col>
-              </v-row>
+    <div class=" ">
+      <!-- Grundinformationen -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-information-outline</v-icon>
+          <span class="text-h6 font-weight-bold">Grundinformationen</span>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-select
+                background-color="accent"
+                filled
+                dense
+                label="Typ"
+                hide-details
+                v-model="type"
+                :items="bookableTypes"
+                item-text="title"
+                item-value="key"
+                disabled
+              ></v-select>
             </v-col>
-            <v-col class="col-auto">
-              <v-btn icon small @click="removeAttachment(attachment.id)">
-                <v-icon>mdi-delete</v-icon>
-              </v-btn>
+            <v-col cols="12" md="6">
+              <v-text-field
+                background-color="accent"
+                filled
+                dense
+                label="Mandant"
+                hide-details
+                disabled
+                v-model="tenantId"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+
+          <v-row v-if="type === 'ticket'" class="mt-2">
+            <v-col cols="12">
+              <v-select
+                background-color="accent"
+                filled
+                dense
+                label="Veranstaltung"
+                hide-details
+                v-model="eventId"
+                item-value="id"
+                name="information.name"
+                item-text="information.name"
+                :items="events"
+              ></v-select>
+            </v-col>
+          </v-row>
+
+          <v-row class="mt-2">
+            <v-col cols="12">
+              <v-text-field
+                background-color="accent"
+                filled
+                dense
+                label="Bezeichnung"
+                hide-details
+                v-model="title"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+
+          <v-row class="mt-2">
+            <v-col cols="12">
+              <ChooseFile
+                v-model="imgUrl"
+                :allow-protected="false"
+                :tenant-id="tenantId"
+                filled
+                dense
+                images-only
+                label="Cover-Bild"
+                background-color="accent"
+                forced-subdirectory="rooms"
+              />
+            </v-col>
+          </v-row>
+
+          <v-row class="mt-2">
+            <v-col cols="12">
+              <Tiptap v-model="description" label="Beschreibung"></Tiptap>
+            </v-col>
+          </v-row>
+
+          <v-row class="mt-2">
+            <v-col cols="12">
+              <v-text-field
+                background-color="accent"
+                filled
+                dense
+                label="Ort"
+                hide-details
+                v-model="location"
+              ></v-text-field>
             </v-col>
           </v-row>
         </v-card-text>
       </v-card>
-      <v-divider
-        class="my-5"
-        v-if="index < attachments.length - 1"
-        :key="`divider-${index}`"
-      />
-    </div>
-    <v-row>
-      <v-col class="col-auto">
-        <v-btn outlined class="mt-2" @click="addNewAttachment()"
-          >Neuer Anhang</v-btn
+
+      <!-- Tags & Flags -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-tag-multiple-outline</v-icon>
+          <span class="text-h6 font-weight-bold">Tags & Flags</span>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-combobox
+                v-model="tags"
+                :items="tagsAvailable"
+                label="Tags"
+                hide-selected
+                no-data-text="Keine Tags angelegt"
+                multiple
+                background-color="accent"
+                clearable
+                chips
+                filled
+                dense
+              >
+                <template v-slot:selection="{ attrs, item, select, selected }">
+                  <v-chip
+                    v-bind="attrs"
+                    :input-value="selected"
+                    close
+                    small
+                    color="secondary"
+                    @click="select"
+                    @click:close="removeTags(item)"
+                  >
+                    <strong>{{ item }}</strong>
+                  </v-chip>
+                </template>
+              </v-combobox>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-combobox
+                v-model="flags"
+                :items="flagsAvailable"
+                label="Flags"
+                hide-selected
+                no-data-text="Keine Flags angelegt"
+                multiple
+                background-color="accent"
+                clearable
+                chips
+                filled
+                dense
+              >
+                <template v-slot:selection="{ attrs, item, select, selected }">
+                  <v-chip
+                    v-bind="attrs"
+                    :input-value="selected"
+                    close
+                    small
+                    color="secondary"
+                    @click="select"
+                    @click:close="removeFlags(item)"
+                  >
+                    <strong>{{ item }}</strong>
+                  </v-chip>
+                </template>
+              </v-combobox>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+
+      <!-- Preise -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-cash-multiple</v-icon>
+          <span class="text-h6 font-weight-bold">Preise</span>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <div class="d-flex align-center mb-4">
+            <v-tooltip bottom max-width="300" open-delay="200">
+              <template v-slot:activator="{ on, attrs }">
+                <div v-on="on" v-bind="attrs">
+                  <v-switch
+                    dense
+                    label="Gutscheine aktivieren"
+                    hide-details
+                    v-model="enableCoupons"
+                  ></v-switch>
+                </div>
+              </template>
+              <span>
+                Aktivieren Sie diese Option, um Gutscheine für dieses
+                Buchungsobjekt zu ermöglichen. Gutscheine können dann beim
+                Checkout eingelöst werden.
+              </span>
+            </v-tooltip>
+          </div>
+
+          <v-row no-gutters>
+            <v-col cols="12" md="3">
+              <v-text-field
+                background-color="accent"
+                filled
+                dense
+                label="Verfügbare Anzahl"
+                :hint="!amount ? 'Anzahl ist unbegrenzt!' : ''"
+                :persistent-hint="!amount"
+                v-model="amount"
+                :suffix="priceType === 'per-square-meter' ? 'm²' : 'Stück'"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="12" md="3">
+              <v-select
+                background-color="accent"
+                filled
+                dense
+                label="Preisart"
+                hide-details
+                v-model="priceType"
+                :items="priceTypes"
+                item-text="name"
+                item-value="id"
+              ></v-select>
+            </v-col>
+            <v-col v-if="!useGraduatedPrices" cols="12" md="3">
+              <v-text-field
+                v-if="priceCategories[0]"
+                background-color="accent"
+                filled
+                dense
+                label="Preis (netto)"
+                hide-details
+                v-model="priceCategories[0].priceEur"
+                suffix="Euro"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" md="2">
+              <v-text-field
+                background-color="accent"
+                filled
+                dense
+                label="MwSt."
+                hide-details
+                v-model="priceValueAddedTax"
+                suffix="%"
+              ></v-text-field>
+            </v-col>
+            <v-col v-if="!useGraduatedPrices" cols="12" md="1">
+              <v-tooltip top max-width="300" open-delay="400">
+                <template v-slot:activator="{ on, attrs }">
+                  <div v-bind="attrs" v-on="on">
+                    <v-checkbox
+                      v-if="priceCategories[0]"
+                      v-model="priceCategories[0].fixedPrice"
+                      label="Pauschal"
+                      dense
+                    >
+                    </v-checkbox>
+                  </div>
+                </template>
+                <span>
+                  Bei Aktivierung wird immer der Grundpreis berechnet.
+                </span>
+              </v-tooltip>
+            </v-col>
+          </v-row>
+
+          <v-row v-if="!useGraduatedPrices" class="mt-2">
+            <v-col>
+              <v-btn dense outlined @click="useGraduatedPrices = true">
+                <v-icon left small>mdi-chart-line-variant</v-icon>
+                Staffelpreise aktivieren
+              </v-btn>
+            </v-col>
+          </v-row>
+
+          <!-- Staffelpreise -->
+          <v-card v-if="useGraduatedPrices" flat outlined rounded class="mt-4">
+            <v-card-subtitle
+              class="d-flex justify-space-between align-center pa-3"
+              style="background-color: var(--v-accent-base)"
+            >
+              <span class="font-weight-bold">Preis-Kategorien</span>
+            </v-card-subtitle>
+            <v-divider></v-divider>
+            <v-card-text class="pa-3">
+              <div v-for="(priceCategory, idx) in priceCategories" :key="idx">
+                <v-row>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Preis (netto)"
+                      hide-details
+                      v-model="priceCategory.priceEur"
+                      suffix="Euro"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" md="2">
+                    <v-text-field
+                      v-model="priceCategory.interval.start"
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Gültig ab"
+                      type="number"
+                      hide-details
+                      :suffix="intervalSuffix"
+                      @blur="checkNull('priceCategories.interval.start')"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6" md="2">
+                    <v-text-field
+                      v-model="priceCategory.interval.end"
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Gültig bis"
+                      type="number"
+                      hide-details
+                      :suffix="intervalSuffix"
+                      @blur="checkNull('priceCategories.interval.start')"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="2">
+                    <v-tooltip top max-width="300" open-delay="400">
+                      <template v-slot:activator="{ on, attrs }">
+                        <div v-bind="attrs" v-on="on">
+                          <v-checkbox
+                            v-model="priceCategory.fixedPrice"
+                            label="Pauschalpreis"
+                            dense
+                            hide-details
+                          >
+                          </v-checkbox>
+                        </div>
+                      </template>
+                      <span>
+                        Bei Aktivierung wird immer der Grundpreis berechnet.
+                      </span>
+                    </v-tooltip>
+                  </v-col>
+                  <v-col
+                    cols="12"
+                    md="3"
+                    class="d-flex align-center justify-end"
+                  >
+                    <v-btn
+                      :disabled="idx === 0"
+                      icon
+                      small
+                      @click="removePriceCategory(idx)"
+                      color="error"
+                    >
+                      <v-icon>mdi-delete</v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
+                <v-row class="mt-2">
+                  <v-col cols="12" md="6">
+                    <v-select
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Wochentage"
+                      hide-details
+                      v-model="priceCategory.weekdays"
+                      multiple
+                      chips
+                      small-chips
+                      :items="weekdays"
+                      item-text="name"
+                      item-value="id"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-combobox
+                      background-color="accent"
+                      filled
+                      dense
+                      multiple
+                      chips
+                      small-chips
+                      clearable
+                      label="Feiertage"
+                      hide-details
+                      :items="availableHolidays"
+                      item-text="name"
+                      item-value="date"
+                      v-model="priceCategory.holidays"
+                    >
+                      <template v-slot:prepend-item>
+                        <v-list-item ripple>
+                          <v-select
+                            v-model="selectedState"
+                            :items="states"
+                            item-text="text"
+                            item-value="value"
+                            dense
+                            hide-details
+                            outlined
+                            label="Bundesland"
+                            prepend-icon="mdi-filter"
+                            @change="fetchHolidays"
+                          />
+                        </v-list-item>
+                        <v-divider class="mx-2" />
+                      </template>
+                    </v-combobox>
+                  </v-col>
+                </v-row>
+                <v-divider
+                  v-if="
+                    priceCategories.length > 1 &&
+                    idx !== priceCategories.length - 1
+                  "
+                  class="my-4"
+                ></v-divider>
+              </div>
+              <div class="mt-3">
+                <v-btn outlined small @click="addPriceCategory">
+                  <v-icon left small>mdi-plus</v-icon>
+                  Neue Preis-Kategorie
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-card-text>
+      </v-card>
+
+      <BookableTimeDependantAttributes
+        :bookable-type="type"
+      ></BookableTimeDependantAttributes>
+
+      <!-- Einstellungen -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-cog-outline</v-icon>
+          <span class="text-h6 font-weight-bold">Einstellungen</span>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <v-row>
+            <v-col cols="12" md="4">
+              <v-switch
+                dense
+                label="Buchungen automatisch freigeben"
+                hide-details
+                v-model="autoCommitBooking"
+              ></v-switch>
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-switch
+                dense
+                label="Buchungsobjekt ist buchbar"
+                hide-details
+                v-model="isBookable"
+              ></v-switch>
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-switch
+                :disabled="!allowPublic"
+                dense
+                label="Buchungsobjekt ist sichtbar"
+                hide-details
+                v-model="isPublic"
+              ></v-switch>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+
+      <!-- Schließsysteme -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-lock-outline</v-icon>
+          <span class="text-h6 font-weight-bold">Schließsysteme</span>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <p class="mb-4">
+            Buchungsobjekte, die mit Schließsystemen verbunden sind, können
+            automatisch geöffnet und geschlossen werden.
+          </p>
+          <BookableLockingAttributes
+            v-if="amount"
+            :tenant-id="tenantId"
+            :amount="amount"
+          ></BookableLockingAttributes>
+          <v-alert v-else type="warning" dense outlined>
+            Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl der
+            verfügbaren Buchungsobjekte an.
+          </v-alert>
+        </v-card-text>
+      </v-card>
+
+      <!-- Individuelle Berechtigungen -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-account-lock-outline</v-icon>
+          <span class="text-h6 font-weight-bold"
+            >Individuelle Berechtigungen</span
+          >
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <div class="info-label mb-3">
+            <v-icon small class="mr-2">mdi-account-multiple</v-icon>
+            Verfügbar für Benutzer
+          </div>
+          <p class="mb-3 text-caption">
+            Berechtigen Sie <strong>bestimmte Benutzer</strong>, dieses Objekt
+            zu sehen. Werden keine Benutzer explizit zur Ansicht berechtigt,
+            bleibt dieses Buchungsobjekt für öffentlich einsehbar.
+          </p>
+          <v-combobox
+            v-model="permittedUsers"
+            :items="availableUsers"
+            label="Verfügbar für Benutzer"
+            hide-selected
+            no-data-text="Keine Benutzer verfügbar"
+            multiple
+            background-color="accent"
+            clearable
+            chips
+            filled
+            dense
+          >
+            <template v-slot:selection="{ attrs, item, select, selected }">
+              <v-chip
+                v-bind="attrs"
+                :input-value="selected"
+                close
+                small
+                color="secondary"
+                @click="select"
+                @click:close="removePermittedUser(item)"
+              >
+                <strong>{{ item }}</strong>
+              </v-chip>
+            </template>
+          </v-combobox>
+
+          <div class="info-label mb-3 mt-5">
+            <v-icon small class="mr-2">mdi-account-group</v-icon>
+            Verfügbar für Rollen
+          </div>
+          <p class="mb-3 text-caption">
+            Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses
+            Objekt zu sehen. Werden keine Benutzer explizit zur Ansicht
+            berechtigt, bleibt dieses Buchungsobjekt öffentlich einsehbar.
+          </p>
+          <v-combobox
+            v-model="permittedRoles"
+            :items="availableRoles"
+            label="Verfügbar für Rollen"
+            item-text="name"
+            item-value="id"
+            hide-selected
+            no-data-text="Keine Rollen verfügbar"
+            multiple
+            background-color="accent"
+            clearable
+            chips
+            filled
+            dense
+            :return-object="false"
+          >
+            <template v-slot:selection="{ attrs, item, select, selected }">
+              <v-chip
+                v-bind="attrs"
+                :input-value="selected"
+                close
+                small
+                color="secondary"
+                @click="select"
+                @click:close="removePermittedRole(item)"
+              >
+                <strong>{{
+                  availableRoles.find((r) => r.id === item)?.name
+                }}</strong>
+              </v-chip>
+            </template>
+          </v-combobox>
+        </v-card-text>
+      </v-card>
+
+      <!-- Kostenfreie Buchungen -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-ticket-percent-outline</v-icon>
+          <span class="text-h6 font-weight-bold">Kostenfreie Buchungen</span>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <div class="info-label mb-3">
+            <v-icon small class="mr-2">mdi-account-multiple</v-icon>
+            Kostenfrei für Benutzer
+          </div>
+          <p class="mb-3 text-caption">
+            Berechtigen Sie Nutzer dieses Objekt kostenfrei zu buchen.
+          </p>
+          <v-combobox
+            v-model="freeBookingUsers"
+            :items="availableUsers"
+            label="Kostenfrei für Benutzer"
+            hide-selected
+            no-data-text="Keine Benutzer verfügbar"
+            multiple
+            background-color="accent"
+            clearable
+            chips
+            filled
+            dense
+          >
+            <template v-slot:selection="{ attrs, item, select, selected }">
+              <v-chip
+                v-bind="attrs"
+                :input-value="selected"
+                close
+                small
+                color="secondary"
+                @click="select"
+                @click:close="removeFreeBookingUser(item)"
+              >
+                <strong>{{ item }}</strong>
+              </v-chip>
+            </template>
+          </v-combobox>
+
+          <div class="info-label mb-3 mt-5">
+            <v-icon small class="mr-2">mdi-account-group</v-icon>
+            Kostenfrei für Rollen
+          </div>
+          <p class="mb-3 text-caption">
+            Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses
+            Objekt kostenfrei zu buchen.
+          </p>
+          <v-combobox
+            v-model="freeBookingRoles"
+            :items="availableRoles"
+            label="Kostenfrei für Rollen"
+            item-text="name"
+            item-value="id"
+            hide-selected
+            no-data-text="Keine Rollen verfügbar"
+            multiple
+            background-color="accent"
+            clearable
+            chips
+            filled
+            dense
+            :return-object="false"
+          >
+            <template v-slot:selection="{ attrs, item, select, selected }">
+              <v-chip
+                v-bind="attrs"
+                :input-value="selected"
+                close
+                small
+                color="secondary"
+                @click="select"
+                @click:close="removeFreeBookingRole(item)"
+              >
+                <strong>{{
+                  availableRoles.find((r) => r.id === item)?.name
+                }}</strong>
+              </v-chip>
+            </template>
+          </v-combobox>
+        </v-card-text>
+      </v-card>
+
+      <!-- Serienbuchungen -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-calendar-multiple</v-icon>
+          <span class="text-h6 font-weight-bold">Serienbuchungen</span>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <v-row>
+            <v-col cols="12">
+              <v-switch
+                dense
+                label="Serienbuchung erlauben"
+                hide-details
+                v-model="allowGroupBooking"
+              ></v-switch>
+            </v-col>
+          </v-row>
+          <v-row class="mt-4">
+            <v-col cols="12">
+              <p class="mb-3 text-caption">
+                Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, die
+                für diese Objekt eine Buchungsserie erstellen dürfen
+              </p>
+              <v-combobox
+                v-model="permittedGroupBookingRoles"
+                :items="availableRoles"
+                label="Rollen, die eine Buchungsserie erstellen dürfen"
+                item-text="name"
+                item-value="id"
+                hide-selected
+                no-data-text="Keine Rollen verfügbar"
+                multiple
+                background-color="accent"
+                clearable
+                chips
+                filled
+                dense
+                :return-object="false"
+              >
+                <template v-slot:selection="{ attrs, item, select, selected }">
+                  <v-chip
+                    v-bind="attrs"
+                    :input-value="selected"
+                    close
+                    small
+                    color="secondary"
+                    @click="select"
+                    @click:close="removeGroupBookingRole(item)"
+                  >
+                    <strong>{{
+                      availableRoles.find((r) => r.id === item)?.name
+                    }}</strong>
+                  </v-chip>
+                </template>
+              </v-combobox>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+
+      <!-- Beziehungen zu anderen Buchungsobjekten -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-link-variant</v-icon>
+          <span class="text-h6 font-weight-bold"
+            >Beziehungen zu anderen Buchungsobjekten</span
+          >
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <div class="info-label mb-3">
+            <v-icon small class="mr-2">mdi-cart-plus</v-icon>
+            Zusätzliche Buchungsoptionen
+          </div>
+          <p class="mb-3 text-caption">
+            Buchungsobjekte, die Sie als zusätzliche Buchungsoptionen
+            definieren, werden ihren Kund*innen beim Checkout als ergänzende
+            Buchungsobjekte angezeigt.
+          </p>
+          <BookableCheckoutBookables
+            :items="checkoutBookableIds"
+            :available-items="bookablesWithoutSelf"
+          >
+          </BookableCheckoutBookables>
+
+          <div class="info-label mb-3 mt-5">
+            <v-icon small class="mr-2">mdi-file-tree</v-icon>
+            Abhängige Objekte (Hierarchie)
+          </div>
+          <p class="mb-3 text-caption">
+            Es gibt abhängige Buchungsobjekte, die darauf basieren, dass eine
+            Buchung nur durchgeführt werden kann, wenn das dazugehörige
+            Elternobjekt noch verfügbar ist und das zugehörige Kinderobjekt noch
+            keine gleichzeitige Buchung hat. Dieses Buchungsobjekte wird über
+            die Schnittstelle mit allen hier definierten abhängigen Objekten
+            ausgegeben.
+          </p>
+          <SortableList
+            :items="relatedBookableIds"
+            :available-items="bookablesWithoutSelf"
+            item-value="id"
+            item-text="title"
+            item-detail="type"
+          >
+            <template v-slot:detail="{ itemObject }">
+              {{ itemLabel(`editBookables.types.${itemObject.type}`) }}
+            </template>
+          </SortableList>
+        </v-card-text>
+      </v-card>
+
+      <!-- Anhänge -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title
+          class="section-header pa-4 d-flex justify-space-between align-center"
         >
-      </v-col>
-    </v-row>
-    <h3 class="mt-10 mb-4">Zusätzliche Optionen</h3>
-    <v-row>
-      <v-col class="col-auto">
-        <v-switch
-          dense
-          label="Firma erforderlich"
-          hide-details
-          v-model="companyRequired"
-        ></v-switch>
-      </v-col>
-      <v-col class="col-auto">
-        <v-switch
-          dense
-          label="Kommentarfeld erforderlich"
-          hide-details
-          v-model="commentRequired"
-        ></v-switch>
-      </v-col>
-    </v-row>
+          <div class="d-flex align-center">
+            <v-icon class="mr-2">mdi-paperclip</v-icon>
+            <span class="text-h6 font-weight-bold">Anhänge</span>
+          </div>
+          <v-btn small outlined @click="addNewAttachment()">
+            <v-icon left small>mdi-plus</v-icon>
+            Neuer Anhang
+          </v-btn>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text v-if="attachments.length > 0" class="pa-0">
+          <v-list dense>
+            <template v-for="(attachment, index) in attachments">
+              <v-list-item :key="attachment.id" class="px-4 py-3">
+                <v-list-item-content>
+                  <v-row>
+                    <v-col cols="12" md="4">
+                      <v-text-field
+                        dense
+                        background-color="accent"
+                        filled
+                        label="Titel"
+                        hide-details
+                        v-model="attachment.title"
+                      ></v-text-field>
+                    </v-col>
+                    <v-col cols="12" md="4">
+                      <v-select
+                        dense
+                        background-color="accent"
+                        filled
+                        label="Typ"
+                        hide-details
+                        v-model="attachment.type"
+                        :items="attachmentTypes"
+                        item-text="name"
+                        item-value="id"
+                      ></v-select>
+                    </v-col>
+                    <v-col cols="12" md="4">
+                      <ChooseFile
+                        v-model="attachment.url"
+                        :allow-protected="false"
+                        :tenant-id="tenantId"
+                        filled
+                        dense
+                        label="Datei"
+                        background-color="accent"
+                        forced-subdirectory="agreements"
+                      />
+                    </v-col>
+                  </v-row>
+                  <v-row class="mt-2">
+                    <v-col cols="12">
+                      <v-text-field
+                        dense
+                        background-color="accent"
+                        filled
+                        label="Beschreibung"
+                        placeholder="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."
+                        hide-details
+                        v-model="attachment.caption"
+                      ></v-text-field>
+                    </v-col>
+                  </v-row>
+                  <v-row class="mt-2">
+                    <v-col cols="12" md="5">
+                      <v-switch
+                        dense
+                        label="Im Buchungsprozess anzeigen"
+                        hide-details
+                        v-model="attachment.show"
+                      ></v-switch>
+                    </v-col>
+                    <v-col cols="12" md="5">
+                      <v-switch
+                        dense
+                        label="Muss vom Nutzer akzeptiert werden"
+                        hide-details
+                        v-model="attachment.required"
+                      ></v-switch>
+                    </v-col>
+                    <v-col
+                      cols="12"
+                      md="2"
+                      class="d-flex align-center justify-end"
+                    >
+                      <v-btn
+                        icon
+                        small
+                        @click="removeAttachment(attachment.id)"
+                        color="error"
+                      >
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                </v-list-item-content>
+              </v-list-item>
+              <v-divider
+                v-if="index < attachments.length - 1"
+                :key="`divider-${index}`"
+              />
+            </template>
+          </v-list>
+        </v-card-text>
+        <v-card-text v-else class="pa-4 text-center grey--text">
+          <v-icon large color="grey lighten-1" class="mb-2">
+            mdi-paperclip-off
+          </v-icon>
+          <div>Keine Anhänge vorhanden</div>
+        </v-card-text>
+      </v-card>
 
-    <h3 class="mt-10 mb-4">Buchungshinweise</h3>
-    <v-row>
-      <v-col>
-        <Tiptap v-model="bookingNotes" label="Buchungshinweise"></Tiptap>
-      </v-col>
-    </v-row>
+      <!-- Zusätzliche Optionen -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-tune</v-icon>
+          <span class="text-h6 font-weight-bold">Zusätzliche Optionen</span>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-switch
+                dense
+                label="Firma erforderlich"
+                hide-details
+                v-model="companyRequired"
+              ></v-switch>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-switch
+                dense
+                label="Kommentarfeld erforderlich"
+                hide-details
+                v-model="commentRequired"
+              ></v-switch>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
 
-    <v-divider class="mt-10"></v-divider>
+      <!-- Buchungshinweise -->
+      <v-card class="mb-6 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-information-variant</v-icon>
+          <span class="text-h6 font-weight-bold">Buchungshinweise</span>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pa-4">
+          <Tiptap v-model="bookingNotes" label="Buchungshinweise"></Tiptap>
+        </v-card-text>
+      </v-card>
+    </div>
 
-    <div class="d-flex mt-2">
-      <v-spacer></v-spacer>
+    <!-- Footer Actions -->
+    <v-divider class="my-6"></v-divider>
+
+    <div class="d-flex justify-end">
       <v-btn
         large
         color="primary"
         elevation="0"
         class="me-3"
         @click="createOrUpdate"
-        >{{ this.mode === "create" ? "Erstellen" : "Speichern" }}</v-btn
       >
-      <v-btn large outlined elevation="0" @click="goBack">Abbrechen</v-btn>
+        <v-icon left>mdi-content-save</v-icon>
+        {{ this.mode === "create" ? "Erstellen" : "Speichern" }}
+      </v-btn>
+      <v-btn large outlined elevation="0" @click="goBack">
+        <v-icon left>mdi-close</v-icon>
+        Abbrechen
+      </v-btn>
     </div>
-
-    <!--{{bookable}}-->
   </v-container>
 </template>
 
 <script>
+// ... (dein bestehender Script-Teil bleibt unverändert)
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import { mapActions, mapGetters } from "vuex";
 import _ from "lodash";
@@ -1040,10 +1218,7 @@ export default {
       });
     },
     prepareCreateForm() {
-      // Clear all form fields
       this.clearForm();
-
-      // Set default bookable type based on route meta settings
       this.updateValue({
         field: "type",
         value: this.$router.currentRoute.meta.type,
@@ -1690,14 +1865,86 @@ export default {
 };
 </script>
 
-<style scoped>
-.add-time-period[disabled] {
-  opacity: 0.6;
+<style scoped lang="scss">
+.edit-bookable-content {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+  }
 }
-.panel {
-  box-shadow: 0 1px 1px rgb(0 0 0 / 0.2);
+
+.theme--dark .edit-bookable-content {
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
 }
-.panel-header {
-  padding: 13px 13px 13px 13px;
+
+.section-card {
+  border-radius: 8px !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+}
+
+.section-header {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.02) 0%,
+    rgba(0, 0, 0, 0.01) 100%
+  );
+}
+
+.theme--dark .section-header {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.theme--dark .info-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.v-list-item {
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+}
+
+.theme--dark .v-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 </style>
