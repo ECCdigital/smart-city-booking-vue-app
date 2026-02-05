@@ -600,7 +600,7 @@ export default {
       }
     },
 
-    async payGroupBooking(paymentMethod, timePaid) {
+    async payGroupBooking({ paymentMethod, timePaid }) {
       const operationId = ProcessingService.showOverlay(
         "Zahlung wird verarbeitet..."
       );
