@@ -147,8 +147,16 @@
                       filled
                       dense
                       background-color="accent"
-                      hide-details
-                    ></v-select>
+                      :rules="paymentProviderRules"
+                      :required="hasPayableItems"
+                    >
+                      <template #label>
+                        Zahlungsanbieter
+                        <span v-if="hasPayableItems" class="error--text"
+                          >*</span
+                        >
+                      </template>
+                    </v-select>
                   </v-col>
                   <v-col cols="12" md="6">
                     <v-select
@@ -1049,6 +1057,18 @@ export default {
         ).getTime();
       },
     },
+    hasPayableItems() {
+      return this.bookableItems.some((item) => {
+        const priceEur = this.getPriceCategory(item.bookableId, "priceEur");
+        return priceEur && Number(priceEur) > 0;
+      });
+    },
+    paymentProviderRules() {
+      if (this.hasPayableItems) {
+        return [(v) => !!v || "Zahlungsanbieter ist erforderlich"];
+      }
+      return [];
+    },
     bookableItems: {
       get() {
         return this.selectedBooking.bookableItems;
@@ -1092,6 +1112,29 @@ export default {
       if (!isPayed) {
         //this.clearPaymentDateTime();
       }
+    },
+    activePaymentApps: {
+      immediate: true,
+      handler(apps) {
+        if (
+          apps.length === 1 &&
+          !this.selectedBooking.id &&
+          !this.selectedBooking.paymentProvider
+        ) {
+          this.selectedBooking.paymentProvider = apps[0].id;
+        }
+      },
+    },
+    "selectedBooking.id": {
+      handler(id) {
+        if (
+          id &&
+          this.activePaymentApps.length === 1 &&
+          !this.selectedBooking.paymentProvider
+        ) {
+          this.selectedBooking.paymentProvider = this.activePaymentApps[0].id;
+        }
+      },
     },
   },
   methods: {
