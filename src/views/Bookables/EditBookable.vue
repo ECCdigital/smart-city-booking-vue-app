@@ -159,15 +159,15 @@
           <div v-on="on" v-bind="attrs">
             <v-switch
               dense
-              label="Gutscheine aktivieren"
+              label="Rabattcodes aktivieren"
               hide-details
               v-model="enableCoupons"
             ></v-switch>
           </div>
         </template>
         <span>
-          Aktivieren Sie diese Option, um Gutscheine für dieses Buchungsobjekt
-          zu ermöglichen. Gutscheine können dann beim Checkout eingelöst werden.
+          Aktivieren Sie diese Option, um Rabatte für dieses Buchungsobjekt
+          zu ermöglichen. Rabattcodes können bei der Buchung eingelöst werden.
         </span>
       </v-tooltip>
     </div>

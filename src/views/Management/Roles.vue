@@ -142,7 +142,7 @@ export default {
         { text: "Ressourcen", value: "manageBookables" },
         { text: "Buchungen", value: "manageBookings" },
         { text: "Rollen", value: "manageRoles" },
-        { text: "Gutscheine", value: "manageCoupons" },
+        { text: "Rabatte", value: "manageCoupons" },
         { text: "", value: "controls", sortable: false },
       ],
       openEditDialog: false,

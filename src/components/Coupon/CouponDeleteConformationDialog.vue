@@ -3,11 +3,11 @@
     <v-card color="accent">
       <v-card-title>
         <v-icon class="mr-2" color="error">mdi-alert</v-icon>
-        <span class="text-h5">Gutschein löschen</span>
+        <span class="text-h5">Rabattcode löschen</span>
       </v-card-title>
       <v-card-text>
         <span class="text-h6">
-          Sind Sie sicher, dass Sie den Gutschein
+          Sind Sie sicher, dass Sie den Rabattcode
           <strong>{{ toDelete.id }}</strong> löschen wollen?
         </span>
       </v-card-text>

@@ -221,7 +221,7 @@ export default {
           value: "bookings",
         },
         {
-          name: "Gutscheine",
+          name: "Rabatte",
           value: "coupons",
         },
         {
@@ -259,7 +259,7 @@ export default {
           value: "manageBookings",
         },
         {
-          name: "Gutscheine",
+          name: "Rabatte",
           value: "manageCoupons",
         },
         {

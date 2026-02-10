@@ -120,7 +120,7 @@ const routes = [
     name: "coupons",
     component: Coupons,
     meta: {
-      title: "Gutscheine",
+      title: "Rabatte",
       requiresAuth: true,
       interfaceName: "coupons",
     },

@@ -296,7 +296,7 @@
                     <div class="info-item">
                       <div class="info-label">
                         <v-icon small class="mr-2">mdi-ticket-percent</v-icon>
-                        Genutzter Gutschein
+                        Genutzter Rabattcode
                       </div>
                       <div class="info-value">
                         {{ selectedBooking._couponUsed.id }}

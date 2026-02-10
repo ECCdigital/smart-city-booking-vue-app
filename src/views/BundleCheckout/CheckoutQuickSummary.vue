@@ -199,7 +199,7 @@
       <v-card-text v-if="!!coupon">
         <v-row no-gutters>
           <v-col class="col font-weight-bold">
-            Gutschein: {{ coupon.description }}
+            Rabatt: {{ coupon.description }}
             <v-btn
               text
               x-small
@@ -218,12 +218,12 @@
       <v-expansion-panels flat v-if="!coupon">
         <v-expansion-panel>
           <v-expansion-panel-header>
-            Gutschein einlösen
+            Rabattcode einlösen
           </v-expansion-panel-header>
           <v-expansion-panel-content>
             <v-text-field
               v-model="couponCode"
-              placeholder="Gutscheincode"
+              placeholder="Rabattcode"
               @keyup.enter="redeemCoupon"
             ></v-text-field>
 

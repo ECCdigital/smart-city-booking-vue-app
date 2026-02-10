@@ -182,7 +182,7 @@ export default {
             context: "tenant",
           },
           {
-            title: "Gutscheine",
+            title: "Rabatte",
             link: "coupons",
             icon: "mdi-ticket-percent-outline",
             interfaceName: "coupons",

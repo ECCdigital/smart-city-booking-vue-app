@@ -224,7 +224,7 @@ export default {
         const response = await ApiCouponService.getCoupon(this.tenant, code);
         if (response.data.type !== "percentage") {
           this.couponError =
-            "Sie können nur Gutscheine mit einem Rabatt in Prozent verwenden.";
+            "Sie können nur Rabattcodes mit einem Nachlass in Prozent verwenden.";
         } else {
           this.couponError = null;
           this.coupon = response.data;
@@ -232,7 +232,7 @@ export default {
       } catch (e) {
         if (e.response.status === 404) {
           this.coupon = null;
-          this.couponError = "Gutschein nicht gefunden.";
+          this.couponError = "Rabattcode nicht gefunden.";
         }
       } finally {
         await this.validateItems(this.bookingAttempts);

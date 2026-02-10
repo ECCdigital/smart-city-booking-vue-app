@@ -9,7 +9,7 @@
             </v-icon>
             <span class="text-h5 font-weight-bold">
               {{
-                coupon.id ? "Gutschein bearbeiten" : "Neuen Gutschein erstellen"
+                coupon.id ? "Rabatt bearbeiten" : "Neuen Rabatt erstellen"
               }}
             </span>
           </div>
@@ -19,7 +19,7 @@
           <v-card-text class="px-6 py-6 coupon-edit-content">
             <v-card class="mb-6 section-card" elevation="2" outlined>
               <v-card-title class="section-header pa-4">
-                <v-icon class="mr-2">mdi-ticket-outline</v-icon>
+                <v-icon class="mr-2">mdi-ticket-percent-outline</v-icon>
                 <span class="text-h6 font-weight-bold">Grundinformationen</span>
               </v-card-title>
               <v-divider></v-divider>
@@ -30,7 +30,7 @@
                       background-color="accent"
                       filled
                       dense
-                      label="Gutscheinnummer"
+                      label="Rabattcode"
                       v-model="selectedCoupon.id"
                       hide-details
                     ></v-text-field>
@@ -62,7 +62,7 @@
 
             <v-card class="mb-6 section-card" elevation="2" outlined>
               <v-card-title class="section-header pa-4">
-                <v-icon class="mr-2">mdi-sale</v-icon>
+                <v-icon class="mr-2">mdi-sale-outline</v-icon>
                 <span class="text-h6 font-weight-bold"
                 >Rabatt-Einstellungen</span
                 >
