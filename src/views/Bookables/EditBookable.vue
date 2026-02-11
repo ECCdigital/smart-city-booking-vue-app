@@ -166,8 +166,8 @@
           </div>
         </template>
         <span>
-          Aktivieren Sie diese Option, um Rabatte für dieses Buchungsobjekt
-          zu ermöglichen. Rabattcodes können bei der Buchung eingelöst werden.
+          Aktivieren Sie diese Option, um Rabatte für dieses Buchungsobjekt zu
+          ermöglichen. Rabattcodes können bei der Buchung eingelöst werden.
         </span>
       </v-tooltip>
     </div>
@@ -749,6 +749,14 @@
                     v-model="attachment.required"
                   ></v-switch>
                 </v-col>
+                <v-col>
+                  <v-switch
+                    dense
+                    label="Anhang in Bestätigungs-E-Mail einfügen"
+                    hide-details
+                    v-model="attachment.mailAttach"
+                  ></v-switch>
+                </v-col>
               </v-row>
             </v-col>
             <v-col class="col-auto">
@@ -1037,6 +1045,9 @@ export default {
         caption: "",
         type: "",
         url: "",
+        show: false,
+        required: false,
+        mailAttach: false,
       });
     },
     prepareCreateForm() {
