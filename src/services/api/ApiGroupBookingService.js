@@ -13,12 +13,12 @@ export default {
     );
     return response.data;
   },
-  async payGroupBooking({ tenantId, id, paymentMethod }) {
+  async payGroupBooking({ tenantId, id, paymentMethod, timePaid }) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
 
     const response = await ApiClient.post(
       `api/${t}/group-bookings/${id}/pay`,
-      { paymentMethod: paymentMethod }
+      { paymentMethod: paymentMethod, timePaid }
 
     );
     return response.data;

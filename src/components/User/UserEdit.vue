@@ -721,7 +721,7 @@
                               </v-simple-table>
                             </div>
 
-                            <!-- Gutscheine -->
+                            <!-- Rabatte -->
                             <div
                               v-if="hasAnyPermission(roleId, 'manageCoupons')"
                               class="mb-4"
@@ -731,7 +731,7 @@
                                   mdi-ticket-percent
                                 </v-icon>
                                 <span class="font-weight-medium"
-                                  >Gutscheine</span
+                                  >Rabatte</span
                                 >
                               </div>
                               <v-simple-table dense class="permission-table">
@@ -1194,7 +1194,7 @@ export default {
         manageUsers: "Benutzer",
         manageBookables: "Buchbare Objekte",
         manageBookings: "Buchungen",
-        manageCoupons: "Gutscheine",
+        manageCoupons: "Rabatte",
         manageRoles: "Rollen",
       };
       return map[group] || group;
@@ -1248,7 +1248,7 @@ export default {
         roles: "Rollen",
         users: "Mitglieder",
         bookings: "Buchungen",
-        coupons: "Gutscheine",
+        coupons: "Rabatte",
         locations: "Veranstaltungsorte",
         rooms: "Räume",
         resources: "Ressourcen",

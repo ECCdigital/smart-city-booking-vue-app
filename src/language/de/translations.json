@@ -440,31 +440,31 @@
     "delete": {
       "success": {
         "title": "Erfolgreich gelöscht",
-        "message": "Der Gutschein wurde erfolgreich gelöscht."
+        "message": "Der Rabattcode wurde erfolgreich gelöscht."
       },
       "error": {
         "title": "Fehler beim Löschen",
-        "message": "Der Gutschein konnte nicht gelöscht werden."
+        "message": "Der Rabattcode konnte nicht gelöscht werden."
       }
     },
     "create": {
       "success": {
         "title": "Erfolgreich erstellt",
-        "message": "Der Gutschein wurde erfolgreich erstellt."
+        "message": "Der Rabattcode wurde erfolgreich erstellt."
       },
       "error": {
         "title": "Fehler beim Erstellen",
-        "message": "Der Gutschein konnte nicht erstellt werden. Der Gutscheincode muss einmalig sein."
+        "message": "Der Rabattcode konnte nicht erstellt werden. Der Rabattcode muss einmalig sein."
       }
     },
     "edit": {
       "success": {
         "title": "Erfolgreich bearbeitet",
-        "message": "Der Gutschein wurde erfolgreich bearbeitet."
+        "message": "Der Rabatt wurde erfolgreich bearbeitet."
       },
       "error": {
         "title": "Fehler beim Bearbeiten",
-        "message": "Der Gutschein konnte nicht bearbeitet werden."
+        "message": "Der Rabatt konnte nicht bearbeitet werden."
       }
     }
   },
@@ -491,7 +491,7 @@
       "resources": "Ressourcen",
       "tickets": "Tickets",
       "bookings": "Buchungen",
-      "coupons": "Gutscheine",
+      "coupons": "Rabatte",
       "none": "-",
       "all": "Alle"
     }

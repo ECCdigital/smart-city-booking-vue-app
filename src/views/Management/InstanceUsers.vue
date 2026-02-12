@@ -52,14 +52,16 @@
                     <v-checkbox :input-value="noTenantFilter" @change.prevent />
                   </v-list-item-action>
                   <v-list-item-content>
-                    <v-list-item-title>Ohne Mandantenzuordnung</v-list-item-title>
+                    <v-list-item-title
+                      >Ohne Mandantenzuordnung</v-list-item-title
+                    >
                   </v-list-item-content>
                 </v-list-item>
-                <v-divider/>
+                <v-divider />
 
                 <v-list-item
                   dense
-                  v-for="(tenant, i) in tenants"
+                  v-for="(tenant, i) in api.tenants"
                   :key="i"
                   @click="toggleTenantFilter(tenant.id)"
                 >
@@ -291,7 +293,7 @@
     <UserEdit
       :user="selectedUser"
       :roles="api.roles"
-      :tenants="tenants"
+      :tenants="api.tenants"
       :memberships="selectedUserMemberships"
       :open="openEditDialog"
       @close="onCloseDialog"
@@ -314,6 +316,7 @@ import UserDeleteConformationDialog from "@/components/User/userDeleteConformati
 import UserPermissionService from "@/services/permissions/UserPermissionService";
 import Fuse from "fuse.js";
 import ApiMembershipService from "@/services/api/ApiMembershipService";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   components: {
@@ -327,6 +330,7 @@ export default {
         users: [],
         roles: [],
         memberships: [],
+        tenants: [],
       },
       search: "",
       verifiedFilter: false,
@@ -344,7 +348,6 @@ export default {
   computed: {
     ...mapGetters({
       loading: "loading/isLoading",
-      tenants: "tenants/tenants",
     }),
     UserPermissionService() {
       return UserPermissionService;
@@ -360,7 +363,6 @@ export default {
     filteredUsers() {
       let filtered = this.api.users;
 
-      // Search filter
       if (this.search) {
         const fuse = new Fuse(filtered, {
           keys: ["id", "firstName", "lastName"],
@@ -370,12 +372,10 @@ export default {
         filtered = fuse.search(this.search).map((result) => result.item);
       }
 
-      // Verified filter
       if (this.verifiedFilter) {
         filtered = filtered.filter((user) => user.isVerified);
       }
 
-      // Suspended filter
       if (this.suspendedFilter) {
         filtered = filtered.filter((user) => user.isSuspended);
       }
@@ -386,7 +386,6 @@ export default {
         );
       }
 
-      // Tenant filter
       if (this.tenantFilter.length > 0) {
         filtered = filtered.filter((user) => {
           const userMemberships = this.getUserMemberships(user.id);
@@ -453,6 +452,15 @@ export default {
       }
     },
 
+    async fetchTenants() {
+      try {
+        const response = await ApiTenantService.getTenants();
+        this.api.tenants = response.data;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
     toggleTenantFilter(tenantId) {
       if (this.noTenantFilter) this.noTenantFilter = false;
 
@@ -469,7 +477,7 @@ export default {
     },
 
     getTenantName(tenantId) {
-      const tenant = this.tenants.find((t) => t.id === tenantId);
+      const tenant = this.api.tenants.find((t) => t.id === tenantId);
       return tenant?.name || tenantId.substring(0, 8);
     },
 
@@ -556,6 +564,7 @@ export default {
     await this.fetchRoles();
     await this.fetchUsers();
     await this.fetchMemberships();
+    await this.fetchTenants();
   },
 };
 </script>

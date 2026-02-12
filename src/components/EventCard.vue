@@ -8,7 +8,6 @@
       { 'event-card--unavailable': !item.isPublic },
     ]"
     hover
-    outlined
     @click="navigateToEdit"
   >
     <div class="event-card-header position-relative">
@@ -114,7 +113,11 @@
     </div>
 
     <div class="event-card-title pa-4 text-center">
-      <h3 class="text-h6 font-weight-bold mb-1">
+      <h3
+        class="font-weight-bold mb-1 title-dynamic"
+        :class="titleSizeClass"
+        :title="item.information?.name"
+      >
         {{ item.information?.name }}
       </h3>
     </div>
@@ -261,6 +264,12 @@ export default {
     };
   },
   computed: {
+    titleSizeClass() {
+      const len = this.item.information?.name?.length || 0;
+      if (len <= 25) return 'text-h6';
+      if (len <= 50) return 'text-subtitle-1';
+      return 'text-body-2';
+    },
     BookablePermissionService() {
       return BookablePermissionService;
     },
@@ -368,6 +377,10 @@ export default {
 }
 
 .event-card-title {
+  height: 80px; // Feste Höhe – anpassen nach Bedarf
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(
       135deg,
       rgba(0, 0, 0, 0.02) 0%,
@@ -457,4 +470,13 @@ export default {
   right: 8px;
   z-index: 2;
 }
+.title-dynamic {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  transition: font-size 0.2s ease;
+}
+
 </style>

@@ -156,15 +156,15 @@
           <div v-on="on" v-bind="attrs">
             <v-switch
               dense
-              label="Gutscheine aktivieren"
+              label="Rabattcodes aktivieren"
               hide-details
               v-model="enableCoupons"
             ></v-switch>
           </div>
         </template>
         <span>
-          Aktivieren Sie diese Option, um Gutscheine für dieses Buchungsobjekt
-          zu ermöglichen. Gutscheine können dann beim Checkout eingelöst werden.
+          Aktivieren Sie diese Option, um Rabatte für dieses Buchungsobjekt zu
+          ermöglichen. Rabattcodes können bei der Buchung eingelöst werden.
         </span>
       </v-tooltip>
     </div>
@@ -746,6 +746,14 @@
                     v-model="attachment.required"
                   ></v-switch>
                 </v-col>
+                <v-col>
+                  <v-switch
+                    dense
+                    label="Anhang in Bestätigungs-E-Mail einfügen"
+                    hide-details
+                    v-model="attachment.mailAttach"
+                  ></v-switch>
+                </v-col>
               </v-row>
             </v-col>
             <v-col class="col-auto">
@@ -1036,6 +1044,9 @@ export default {
         caption: "",
         type: "",
         url: "",
+        show: false,
+        required: false,
+        mailAttach: false,
       });
     },
     prepareCreateForm() {

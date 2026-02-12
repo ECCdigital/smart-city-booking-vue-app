@@ -1,47 +1,67 @@
 <template>
-  <div class="mx-2 pa-1 task-panel">
-    <div class="mb-4 d-flex">
-      <div class="text-overline">{{ title }} {{ count }}</div>
-      <v-spacer></v-spacer>
+  <div class="kanban-column" :class="{ 'kanban-column--dragging': dragging }">
+    <div class="kanban-column-header">
+      <div class="d-flex align-center">
+        <span class="text-subtitle-2 font-weight-bold">{{ title }}</span>
+        <v-chip
+          x-small
+          :color="count > 0 ? 'primary' : 'grey'"
+          text-color="white"
+          class="ml-2"
+        >
+          {{ count }}
+        </v-chip>
+      </div>
       <v-progress-circular
         v-if="isLoading"
         indeterminate
         color="primary"
-        size="20"
+        size="16"
+        width="2"
       />
     </div>
 
-    <draggable
-      class="my-scrollbar pa-2"
-      :list="tasks"
-      group="bookings"
-      :move="onMove"
-      :class="dragging ? 'dragging' : ''"
-      @change="onChange"
-      @end="onDragEnd"
-      @start="onDragStart"
-      style="
-        height: 70vh;
+    <div class="kanban-column-body">
+      <draggable
+        class="kanban-column-content custom-scrollbar"
+        :list="tasks"
+        group="bookings"
+        :move="onMove"
+        ghost-class="ghost-card"
+        chosen-class="chosen-card"
+        drag-class="drag-card"
+        @change="onChange"
+        @end="onDragEnd"
+        @start="onDragStart"
+      >
+        <transition-group
+          type="transition"
+          name="flip-list"
+          tag="div"
+          class="kanban-drop-zone"
+        >
+          <BookingKanbanCard
+            v-for="element in tasks"
+            :key="element.id"
+            :element="element"
+            :backlog="statusId === 'backlog'"
+            @open-booking="onOpenBooking"
+            @open-edit-booking="onOpenEditBooking"
+            @commit-booking="onCommitBooking"
+            @pay-booking="onPayBooking"
+            @reject-booking="onRejectBooking"
+            @archive-task="onArchiveTask"
+            @move-task="onMoveTask"
+          />
+        </transition-group>
+      </draggable>
 
-        min-width: 150px;
-        max-width: 350px;
-        overflow-y: auto;
-      "
-    >
-      <BookingKanbanCard
-        v-for="element in tasks"
-        :key="element.id"
-        :element="element"
-        class="mx-2"
-        @open-booking="onOpenBooking"
-        @open-edit-booking="onOpenEditBooking"
-        @commit-booking="onCommitBooking"
-        @pay-booking="onPayBooking"
-        @reject-booking="onRejectBooking"
-        @archive-task="onArchiveTask"
-        @move-task="onMoveTask"
-      />
-    </draggable>
+      <!-- Empty State Overlay -->
+      <div v-if="tasks.length === 0" class="empty-state-overlay">
+        <v-icon color="grey lighten-1" size="32">mdi-inbox-outline</v-icon>
+        <span class="text-caption grey--text mt-2">Keine Buchungen</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -84,19 +104,16 @@ export default {
     onChange(evt) {
       this.$emit("change-task", evt, this.statusId);
     },
-
     onDragStart(evt) {
       this.$emit("drag-start", evt);
     },
-
     onDragEnd(evt) {
       this.$emit("drag-end", evt);
     },
-
     onMove(evt) {
       this.$emit("drag-move", evt);
+      return true;
     },
-
     onOpenBooking(bookingId) {
       this.$emit("open-booking", bookingId);
     },
@@ -123,33 +140,140 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.task-panel {
-  background-color: var(--v-accent-base);
-  border-radius: 10px;
+.kanban-column {
+  flex: 0 0 auto;
+  width: 240px;
+  min-width: 240px;
+  max-width: 320px;
+  margin: 0 6px;
+  display: flex;
+  flex-direction: column;
+  background: var(--v-accent-base);
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
-.my-scrollbar {
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+.kanban-column-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 0;
+}
+
+.kanban-column-content {
+  flex: 1;
+  padding: 8px;
+  min-height: 100%;
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: all 0.2s ease;
+  border-radius: 0 0 12px 12px;
+}
+
+.kanban-drop-zone {
+  flex: 1;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-state-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.kanban-column--dragging {
+  .kanban-column-content {
+    background: var(--v-accent-darken1);
+    border: 2px dashed var(--v-primary-lighten2);
+  }
+
+  .empty-state-overlay {
+    opacity: 0.3;
+  }
+}
+
+.ghost-card {
+  opacity: 0.4;
+  background: var(--v-primary-lighten4) !important;
+  border: 2px dashed var(--v-primary-base) !important;
+}
+
+.chosen-card {
+  opacity: 0.9;
+}
+
+.drag-card {
+  transform: rotate(3deg);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+.flip-list-move {
+  transition: transform 0.3s ease;
+}
+
+.custom-scrollbar {
   &::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
   }
+
   &::-webkit-scrollbar-track {
-    background-color: #fff;
-    border-radius: 10px;
+    background: transparent;
+    border-radius: 3px;
   }
+
   &::-webkit-scrollbar-thumb {
-    background-color: #999;
-    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.25);
+    }
   }
 }
 
-.dragging {
-  outline: 2px dashed var(--v-accent-darken4);
-  outline-offset: -2px; // verschiebt den Outline etwas nach innen
-  border-radius: 10px; // Rundungen gelten weiterhin für das Element
-  background-color: var(--v-accent-darken1);
+.theme--dark {
+  .kanban-column {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .kanban-column-header {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .custom-scrollbar {
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+    }
+  }
 }
 
 .drop-in {
-  background-color: var(--v-accent-darken2) !important;
+  background: var(--v-primary-lighten5) !important;
 }
 </style>

@@ -30,6 +30,8 @@
           <v-col>
             <component
               :is="steps[currentStep - 1]?.component"
+              :progress="progress"
+              :loading="loading"
               v-bind="steps[currentStep - 1]?.props"
               v-on="steps[currentStep - 1]?.events"
             ></component>
@@ -64,6 +66,11 @@ export default {
     return {
       currentStep: 1,
       isSubmitting: false,
+      progress: {
+        loading: false,
+        percentage: 0,
+      },
+      loading: false,
       leadItem: {
         bookableId: null,
         amount: null,
@@ -217,7 +224,7 @@ export default {
         const response = await ApiCouponService.getCoupon(this.tenant, code);
         if (response.data.type !== "percentage") {
           this.couponError =
-            "Sie können nur Gutscheine mit einem Rabatt in Prozent verwenden.";
+            "Sie können nur Rabattcodes mit einem Nachlass in Prozent verwenden.";
         } else {
           this.couponError = null;
           this.coupon = response.data;
@@ -225,7 +232,7 @@ export default {
       } catch (e) {
         if (e.response.status === 404) {
           this.coupon = null;
-          this.couponError = "Gutschein nicht gefunden.";
+          this.couponError = "Rabattcode nicht gefunden.";
         }
       } finally {
         await this.validateItems(this.bookingAttempts);
@@ -399,7 +406,9 @@ export default {
         }
       }
 
+      this.progress.loading = true;
       await this.validateItems(Array.from(uniqueAttempts.values()));
+      this.progress.loading = false;
       this.bookingAttempts = Array.from(uniqueAttempts.values());
     },
 
@@ -476,11 +485,13 @@ export default {
     },
 
     async validateAndContinue() {
+      this.loading = true;
       await this.validateItems(this.bookingAttempts);
 
       const allValid = this.bookingAttempts.every((attempt) =>
         attempt.bookableItems.every((item) => item.valid)
       );
+      this.loading = false;
 
       if (allValid) {
         this.currentStep++;
@@ -493,6 +504,7 @@ export default {
     },
 
     async validateItems(bookingAttempts) {
+      this.progress.percentage = 0;
       for (const bookingAttempt of bookingAttempts) {
         for (const item of bookingAttempt.bookableItems) {
           if (
@@ -528,6 +540,10 @@ export default {
 
               item.valid = false;
               item.error = error.response.data;
+            } finally {
+              this.progress.percentage +=
+                100 /
+                (bookingAttempts.length * bookingAttempt.bookableItems.length);
             }
           }
         }

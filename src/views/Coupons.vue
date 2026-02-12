@@ -5,7 +5,7 @@
         <Search
           :items="api.coupons"
           v-model="searchResults"
-          placeholder="Gutschein suchen…"
+          placeholder="Rabatt suchen…"
           :keys="searchKeys"
           :show-filters="false"
         ></Search>
@@ -16,7 +16,7 @@
           :items="displayedCoupons"
           :footer-props="{
             'items-per-page-all-text': 'Alle',
-            'items-per-page-text': 'Gutscheine pro Seite',
+            'items-per-page-text': 'Rabattcodes pro Seite',
           }"
           class="accent elevation-1"
           fixed-header
@@ -46,7 +46,7 @@
               color="red"
               class="ml-1"
             >
-              Keine Gutscheine mehr verfügbar
+              Keine Rabattcodes mehr verfügbar
             </v-chip>
           </template>
           <template v-slot:item.controls="{ item }">
@@ -66,7 +66,7 @@
                     <v-list-item-icon>
                       <v-icon>mdi-pencil</v-icon>
                     </v-list-item-icon>
-                    <v-list-item-title>Gutschein bearbeiten</v-list-item-title>
+                    <v-list-item-title>Rabatt bearbeiten</v-list-item-title>
                   </v-list-item>
                   <v-list-item
                     link
@@ -76,7 +76,7 @@
                     <v-list-item-icon>
                       <v-icon>mdi-delete</v-icon>
                     </v-list-item-icon>
-                    <v-list-item-title>Gutschein löschen</v-list-item-title>
+                    <v-list-item-title>Rabatt löschen</v-list-item-title>
                   </v-list-item>
                 </v-list>
               </v-menu>
@@ -96,7 +96,7 @@
       @click="onOpenCreateCoupon"
       :disabled="!CouponPermissionService.allowCreate()"
     >
-      <v-icon>mdi-plus</v-icon> Gutschein erstellen
+      <v-icon>mdi-plus</v-icon> Rabatt erstellen
     </v-btn>
     <CouponEdit
       :coupon="selectedCoupon"
@@ -137,7 +137,7 @@ export default {
       },
       headers: [
         {
-          text: "Gutschein-Nummer",
+          text: "Rabattcode",
           value: "id",
         },
         {

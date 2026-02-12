@@ -9,7 +9,6 @@
     ]"
     @click="navigateToEdit"
     hover
-    outlined
   >
     <div class="bookable-card-header position-relative">
       <div class="menu-container">
@@ -154,10 +153,18 @@
     </div>
 
     <div class="bookable-card-title pa-4 text-center">
-      <h3 class="text-h6 font-weight-bold mb-1">
+      <h3
+        class="font-weight-bold mb-1 title-dynamic"
+        :class="titleSizeClass"
+        :title="item.title"
+      >
         {{ item.title }}
       </h3>
-      <p v-if="item.type === 'ticket'" class="text-caption grey--text mb-0">
+      <p
+        v-if="item.type === 'ticket'"
+        class="text-caption grey--text mb-0 event-name-clamp"
+        :title="item._populated?.event?.information?.name"
+      >
         <v-icon x-small class="mr-1">mdi-calendar-star</v-icon>
         {{ item._populated?.event?.information?.name || "Unbekannt" }}
       </p>
@@ -344,6 +351,12 @@ export default {
         this.item.priceCategories.some((pC) => pC.priceEur > 0)
       );
     },
+    titleSizeClass() {
+      const len = this.item.title?.length || 0;
+      if (len <= 25) return "text-h6";
+      if (len <= 50) return "text-subtitle-1";
+      return "text-body-2";
+    },
   },
   mounted() {
     this.setAllowDuplicate();
@@ -387,6 +400,11 @@ export default {
 }
 
 .bookable-card-title {
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(
     135deg,
     rgba(0, 0, 0, 0.02) 0%,
@@ -490,5 +508,25 @@ export default {
   top: 8px;
   right: 8px;
   z-index: 2;
+}
+
+.title-dynamic {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  transition: font-size 0.2s ease;
+  width: 100%;
+}
+
+.event-name-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  word-break: break-all;
 }
 </style>

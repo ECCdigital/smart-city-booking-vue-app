@@ -1,155 +1,172 @@
 <template>
-  <div>
-    <v-card class="mb-2 cursor-pointer" style="max-width: 350px">
-      <v-app-bar flat>
-        <v-toolbar-title class="text-h6 pl-0">
-          <div v-if="element.bookingItem">
-            {{ element.bookingItem.name || "Unbekannt" }}
+  <v-card
+    class="kanban-card mb-2"
+    :class=" { 'kanban-card--dragging': isDragging }"
+    @click="onOpenBooking(element.bookingItem.id)"
+    hover
+    outlined
+  >
+    <div class="d-flex align-center pa-2 pb-0">
+      <div class="flex-grow-1 overflow-hidden">
+        <div class="text-subtitle-2 font-weight-medium text-truncate">
+          {{ element.bookingItem?.name || "Unbekannt" }}
+        </div>
+        <div class="text-caption grey--text text-truncate">
+          #{{ element.bookingItem?.id }}
+        </div>
+      </div>
+
+      <v-menu offset-y left>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn icon x-small v-bind="attrs" v-on="on" @click.stop>
+            <v-icon small>mdi-dots-vertical</v-icon>
+          </v-btn>
+        </template>
+        <v-list dense>
+          <v-list-item @click.stop="onOpenBooking(element.bookingItem.id)">
+            <v-list-item-icon>
+              <v-icon small>mdi-information</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>Details</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item @click.stop="onOpenEditBooking(element.bookingItem.id)">
+            <v-list-item-icon>
+              <v-icon small>mdi-pencil</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>Bearbeiten</v-list-item-title>
+          </v-list-item>
+
+          <v-divider />
+
+          <v-list-item @click.stop="commitBooking(element.bookingItem.id)">
+            <v-list-item-icon>
+              <v-icon small color="success">mdi-check-circle</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>Freigeben</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item @click.stop="payBooking(element.bookingItem.id)">
+            <v-list-item-icon>
+              <v-icon small color="success">mdi-cash-check</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>Bezahlt</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item @click.stop="archiveTask(element.id)">
+            <v-list-item-icon>
+              <v-icon small>mdi-archive</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>Archivieren</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item
+            v-if="!backlog"
+            @click.stop="
+              moveTask(
+                { added: { element: { id: element.id }, newIndex: 0 } },
+                'backlog'
+              )
+            "
+          >
+            <v-list-item-icon>
+              <v-icon small>mdi-inbox-arrow-down</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>Ins Backlog</v-list-item-title>
+          </v-list-item>
+
+          <v-divider />
+
+          <v-list-item @click.stop="rejectBooking(element.id)">
+            <v-list-item-icon>
+              <v-icon small color="error">mdi-cancel</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>Stornieren</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    </div>
+
+    <div class="px-2 py-1">
+      <div
+        v-if="bookableTitle"
+        class="text-caption text-truncate"
+        :title="bookableTitle"
+      >
+        <v-icon x-small class="mr-1">mdi-package-variant</v-icon>
+        {{ bookableTitle }}
+      </div>
+    </div>
+
+    <div class="d-flex align-center justify-space-between px-2 pb-2">
+      <div class="d-flex align-center flex-wrap" style="gap: 4px">
+        <v-chip
+          v-if="element.bookingItem?.isPayed"
+          x-small
+          color="success"
+          text-color="white"
+        >
+          <v-icon x-small left>mdi-check</v-icon>
+          Bezahlt
+        </v-chip>
+
+        <v-chip
+          v-if="element.bookingItem?.isCommitted"
+          x-small
+          color="primary"
+          text-color="white"
+        >
+          Freigegeben
+        </v-chip>
+      </div>
+
+      <v-tooltip v-if="!backlog" top>
+        <template v-slot:activator="{ on, attrs }">
+          <div v-bind="attrs" v-on="on" class="duration-indicator">
+            <div class="duration-dot" :class="durationClass" />
+            <span class="text-caption grey--text">{{ daysInStatus }}d</span>
           </div>
-        </v-toolbar-title>
-
-        <v-spacer></v-spacer>
-
-        <v-menu offset-y>
-          <template v-slot:activator="{ on, attrs }">
-            <v-btn icon v-bind="attrs" v-on="on">
-              <v-icon>mdi-dots-vertical</v-icon>
-            </v-btn>
-          </template>
-          <v-list dense>
-            <v-list-item @click="onOpenBooking(element.bookingItem.id)">
-              <v-list-item-icon>
-                <v-icon>mdi-information</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>Buchungsdetails anzeigen</v-list-item-title>
-            </v-list-item>
-
-            <v-divider></v-divider>
-
-            <v-list-item @click="onOpenEditBooking(element.bookingItem.id)">
-              <v-list-item-icon>
-                <v-icon>mdi-pencil</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>Buchung bearbeiten</v-list-item-title>
-            </v-list-item>
-
-            <v-list-item @click="commitBooking(element.bookingItem.id)">
-              <v-list-item-icon>
-                <v-icon>mdi-checkbox-marked-circle</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>Buchung freigeben</v-list-item-title>
-            </v-list-item>
-
-            <v-list-item @click="payBooking(element.bookingItem.id)">
-              <v-list-item-icon>
-                <v-icon>mdi-cash-check</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title
-                >Buchung als bezahlt markieren</v-list-item-title
-              >
-            </v-list-item>
-
-            <v-list-item @click="archiveTask(element.id)">
-              <v-list-item-icon>
-                <v-icon>mdi-archive</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>Buchung archivieren</v-list-item-title>
-            </v-list-item>
-
-            <v-list-item
-              v-if="!backlog"
-              @click="
-                moveTask(
-                  { added: { element: { id: element.id }, newIndex: 0 } },
-                  'backlog'
-                )
-              "
-            >
-              <v-list-item-icon>
-                <v-icon>mdi-database</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>In Backlog verschieben</v-list-item-title>
-            </v-list-item>
-
-            <v-divider> </v-divider>
-
-            <v-list-item link @click="rejectBooking(element.id)">
-              <v-list-item-icon>
-                <v-icon>mdi-close-circle</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>Buchung stornieren</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-      </v-app-bar>
-
-      <v-card-text v-if="element.bookingItem">
-        <v-row no-gutters>
-          <v-col>
-            {{ element.bookingItem.bookableItems[0]?._bookableUsed?.title }}
-          </v-col>
-        </v-row>
-        <v-row no-gutters>
-          <v-col> Buchungsnummer: {{ element.bookingItem?.id }} </v-col>
-        </v-row>
-      </v-card-text>
-
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-tooltip top>
-          <template v-slot:activator="{ on, attrs }">
-            <div v-bind="attrs" v-on="on">
-              <v-rating
-                v-if="!backlog"
-                class="mr-4"
-                empty-icon="mdi-circle-outline"
-                full-icon="mdi-circle"
-                readonly
-                dense
-                length="4"
-                size="10"
-                background-color="purple lighten-3"
-                :color="
-                  durationInStatus(element.added) >= 4
-                    ? 'error'
-                    : durationInStatus(element.added) >= 2
-                    ? 'warning'
-                    : 'success'
-                "
-                :value="durationInStatus(element.added)"
-              ></v-rating>
-            </div>
-          </template>
-          <span
-            >Die Buchung befindet sich seit
-            {{ durationInStatus(element.added) }}
-            {{ durationInStatus(element.added) === 1 ? "Tag" : "Tagen" }} in
-            diesem Status
-          </span>
-        </v-tooltip>
-      </v-card-actions>
-    </v-card>
-  </div>
+        </template>
+        <span>{{ daysInStatus }} Tag(e) in diesem Status</span>
+      </v-tooltip>
+    </div>
+  </v-card>
 </template>
 
 <script>
 export default {
   name: "BookingKanbanCard",
   props: {
-    element: Object,
+    element: {
+      type: Object,
+      required: true,
+    },
     backlog: {
       type: Boolean,
       default: false,
     },
+    isDragging: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  computed: {
+    bookableTitle() {
+      return this.element.bookingItem?.bookableItems?.[0]?._bookableUsed?.title;
+    },
+    daysInStatus() {
+      const now = Date.now();
+      const diff = now - this.element.added;
+      return Math.floor(diff / (1000 * 60 * 60 * 24), 0);
+    },
+    durationClass() {
+      const days = this.daysInStatus;
+      if (days >= 4) return "duration--critical";
+      if (days >= 2) return "duration--warning";
+      return "duration--ok";
+    },
   },
   methods: {
-    durationInStatus(dateAdded) {
-      const now = Date.now();
-      const diff = now - dateAdded;
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      return days;
-    },
-
     onOpenBooking(bookingId) {
       this.$emit("open-booking", bookingId);
     },
@@ -175,8 +192,66 @@ export default {
 };
 </script>
 
-<style scoped>
-.cursor-pointer {
-  cursor: pointer;
+<style scoped lang="scss">
+.kanban-card {
+  border-radius: 8px !important;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.5, 1);
+  cursor: grab;
+  min-width: 200px;
+  max-width: 220px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &--dragging {
+    opacity: 0.8;
+    transform: rotate(2deg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+  }
+}
+
+.duration-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.duration-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.duration--ok {
+  background-color: var(--v-success-base);
+}
+
+.duration--warning {
+  background-color: var(--v-warning-base);
+}
+
+.duration--critical {
+  background-color: var(--v-error-base);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.theme--dark .kanban-card {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 </style>

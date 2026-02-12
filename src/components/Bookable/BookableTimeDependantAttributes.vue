@@ -347,7 +347,7 @@
                 <v-row no-gutters align="center">
                   <v-col cols="4">
                     <span class="text-subtitle-1">
-                      Öffungszeiten
+                      Öffnungszeiten
                     </span>
                     <br />
                     <span class="text-caption">
@@ -408,7 +408,7 @@
                                 </v-col>
                                 <div v-else>
                                   <v-alert type="warning" dense outlined>
-                                    Keine Öffungszeiten angegeben
+                                    Keine Öffnungszeiten angegeben
                                   </v-alert>
                                 </div>
                               </v-row>
@@ -430,7 +430,7 @@
                 <v-col class="col-12 col-md-4">
                   <v-switch
                     dense
-                    label="Buchungsobjekt hat Öffungszeiten"
+                    label="Buchungsobjekt hat Öffnungszeiten"
                     hide-details
                     v-model="isOpeningHoursRelated"
                     class="pt-3"
@@ -571,7 +571,7 @@
                         Öffnungszeit hinzufügen
                       </v-btn>
                     </template>
-                    <span>Öffungszeit hinzufügen</span>
+                    <span>Öffnungszeit hinzufügen</span>
                   </v-tooltip>
                 </v-col>
               </v-row>
@@ -673,7 +673,7 @@
                 <v-col class="col-12 col-md-4">
                   <v-switch
                     dense
-                    label="Buchungsobjekt hat Öffungszeiten für bestimmte Daten"
+                    label="Buchungsobjekt hat Öffnungszeiten für bestimmte Daten"
                     hide-details
                     v-model="isSpecialOpeningHoursRelated"
                     class="pt-3"

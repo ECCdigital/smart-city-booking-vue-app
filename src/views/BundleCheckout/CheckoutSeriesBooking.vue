@@ -9,6 +9,7 @@
       <v-btn
         color="primary"
         :disabled="!allValid || bookingAttempts.length < 1"
+        :loading="loading"
         small
         @click="validateAndContinue"
       >
@@ -275,11 +276,28 @@
       </v-card-text>
     </v-card>
 
-    <div v-if="bookingAttempts.length > 0">
+    <div v-if="progress.loading || bookingAttempts.length > 0">
       <v-card outlined class="rounded-sm mb-6">
         <v-card-title> Serie </v-card-title>
         <v-card-text>
-          <v-simple-table class="rounded-sm">
+          <div v-if="progress.loading" class="mb-4">
+            <div class="d-flex align-center mb-2">
+              <v-icon left color="primary" class="rotating">mdi-loading</v-icon>
+              <span>Serie wird generiert...</span>
+              <v-spacer></v-spacer>
+              <span class="text-caption"
+                >{{ Math.round(progress.percentage) }}%</span
+              >
+            </div>
+            <v-progress-linear
+              :value="progress.percentage"
+              color="primary"
+              height="8"
+              rounded
+            ></v-progress-linear>
+          </div>
+
+          <v-simple-table v-if="bookingAttempts.length > 0" class="rounded-sm">
             <template v-slot:default>
               <thead class="rounded-sm">
                 <tr>
@@ -373,6 +391,14 @@ export default {
     firstBookingDate: {
       type: String,
       default: null,
+    },
+    progress: {
+      type: Object,
+      default: () => ({ loading: false, percentage: 0 }),
+    },
+    loading: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
@@ -643,5 +669,18 @@ export default {
   width: 36px;
   height: 36px;
   font-weight: bold;
+}
+
+.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
