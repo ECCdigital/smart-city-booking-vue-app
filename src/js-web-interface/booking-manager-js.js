@@ -36,6 +36,8 @@ class BookingManager {
   constructor(url, tenant) {
     this.url = url;
     this.tenant = tenant;
+    this._availabilityCache = new Map();
+    this._occupancyCache = new Map();
   }
   /**
    * Initialize the Booking Manager Integration.
@@ -58,6 +60,7 @@ class BookingManager {
         this.fetchEventItem_old();
         this.initializeEventCalendars();
         this.initializeOccupancyCalendars();
+        this.initializeAvailabilityCalendars();
         this.initializeLoginForm();
         this.initializeLogoutButton();
         this.initializeBookingsTable();
@@ -500,9 +503,63 @@ class BookingManager {
         `Binding data to element with class bm-occupancy-calendar and initial view ${initialView}`
       );
 
-      this._fetchOccupancies(bookableIds).then((occupancy) => {
-        this._initCalendar(calendarEl, initialView, occupancy);
-      });
+      const eventFunction = (fetchInfo, successCallback, failureCallback) => {
+        const startDate = fetchInfo.startStr.split("T")[0];
+        const endDate = fetchInfo.endStr.split("T")[0];
+        const cacheKey = `${
+          bookableIds?.join(",") || "all"
+        }_${startDate}_${endDate}`;
+
+        // Check cache first
+        if (this._occupancyCache.has(cacheKey)) {
+          console.log("Using cached occupancy data");
+          successCallback(this._occupancyCache.get(cacheKey));
+          return;
+        }
+
+        this._fetchOccupancies(bookableIds, startDate, endDate)
+          .then((occupancy) => {
+            this._occupancyCache.set(cacheKey, occupancy);
+            successCallback(occupancy);
+          })
+          .catch(failureCallback);
+      };
+
+      this._initCalendar(calendarEl, initialView, eventFunction);
+    }
+  }
+
+  initializeAvailabilityCalendars() {
+    const calendarEls = document.getElementsByClassName(
+      "bm-availability-calendar"
+    );
+
+    for (let i = 0; i < calendarEls.length; i++) {
+      const calendarEl = calendarEls[i];
+      const bookableIds = calendarEl.getAttribute("data-id")?.split(",");
+      const initialView =
+        calendarEl.getAttribute("data-view") || "dayGridMonth";
+
+      const eventFunction = (fetchInfo, successCallback, failureCallback) => {
+        const startDate = fetchInfo.startStr.split("T")[0];
+        const endDate = fetchInfo.endStr.split("T")[0];
+        const cacheKey = `${bookableIds.join(",")}_${startDate}_${endDate}`;
+
+        if (this._availabilityCache.has(cacheKey)) {
+          console.log("Using cached availability data");
+          successCallback(this._availabilityCache.get(cacheKey));
+          return;
+        }
+
+        this._fetchAvailability(bookableIds, startDate, endDate)
+          .then((availability) => {
+            this._availabilityCache.set(cacheKey, availability);
+            successCallback(availability);
+          })
+          .catch(failureCallback);
+      };
+
+      this._initCalendar(calendarEl, initialView, eventFunction);
     }
   }
 
@@ -795,6 +852,38 @@ class BookingManager {
     } catch (err) {
       console.warn(`Could not fetch data from ${fetchUrl}`, err);
     }
+  }
+
+  async _fetchAvailability(bookableIds, startDate, endDate) {
+    const promises = bookableIds.map(async (bookableId) => {
+      const params = new URLSearchParams({
+        amount: 1,
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
+      });
+
+      const fetchUrl = `${this.url}/api/${this.tenant}/bookables/${bookableId}/availability?${params}`;
+
+      try {
+        const response = await fetch(fetchUrl);
+        return await response.json();
+      } catch (err) {
+        return { availability: [] };
+      }
+    });
+
+    const results = await Promise.all(promises);
+
+    return results
+      .flatMap(({ title, availability }) =>
+        availability.map((period) => ({
+          title: title,
+          start: period.timeBegin,
+          end: period.timeEnd,
+          available: period.available,
+        }))
+      )
+      .filter((period) => !period.available);
   }
 
   /**

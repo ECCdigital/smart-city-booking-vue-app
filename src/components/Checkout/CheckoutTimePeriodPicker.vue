@@ -125,8 +125,8 @@ export default {
           timeEnd,
           this.leadItem.amount
         );
-        if (response.data) {
-          this.occupations = response.data.map((occ) => ({
+        if (response.data?.availability) {
+          this.occupations = response.data?.availability.map((occ) => ({
             ...occ,
             timeBegin: new Date(occ.timeBegin).getTime(),
             timeEnd: new Date(occ.timeEnd).getTime(),
