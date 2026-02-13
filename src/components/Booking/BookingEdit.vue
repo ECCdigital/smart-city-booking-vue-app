@@ -1227,34 +1227,52 @@ export default {
       this.$emit("close");
     },
     async submitChanges() {
-      if (!this.selectedBooking._id) {
-        if (this.$refs.form.validate() || !this.selectedBooking.mail) {
-          this.inProgress = true;
-          await ApiBookingService.storeBooking(this.selectedBooking)
-            .then(() => {
-              this.inProgress = false;
-              this.closeDialog();
-            })
-            .catch(() => {
+      if (!this.selectedBooking.id) {
+        this.inProgress = true;
+        await ApiBookingService.storeBooking(this.selectedBooking)
+          .then(() => {
+            this.inProgress = false;
+            this.closeDialog();
+          })
+          .catch((err) => {
+            const data = err.response?.data;
+            if (data?.error === "ValidationError" && data.details?.length) {
+              data.details.forEach((detail) => {
+                this.addToast(
+                  ToastService.createBookingValidationToast(detail)
+                );
+              });
+            } else {
               this.addToast(
                 ToastService.createToast("booking.create.error", "error")
               );
-              this.inProgress = false;
-            });
-        }
+            }
+            this.inProgress = false;
+          });
       } else {
         this.inProgress = true;
         delete this.selectedBooking._id;
         await ApiBookingService.storeBooking(this.selectedBooking)
-          .then()
-          .catch(() => {
-            this.addToast(
-              ToastService.createToast("booking.edit.error", "error")
-            );
+          .then(() => {
+            this.inProgress = false;
+            this.closeDialog();
+          })
+          .catch((err) => {
+            const data = err.response?.data;
+            console.log("ERRE", err);
+            if (data?.error === "ValidationError" && data.details?.length) {
+              data.details.forEach((detail) => {
+                this.addToast(
+                  ToastService.createBookingValidationToast(detail)
+                );
+              });
+            } else {
+              this.addToast(
+                ToastService.createToast("booking.edit.error", "error")
+              );
+            }
             this.inProgress = false;
           });
-        this.inProgress = false;
-        this.closeDialog();
       }
     },
     padTo2Digits(num) {

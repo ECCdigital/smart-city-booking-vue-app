@@ -9,7 +9,7 @@
     "success": {
       "default": {
         "title": "Erfolgreich angemeldet",
-        "message": "Sie haben sich erfolgreich im Kundenbereich angemeldet"
+        "message": "Sie haben sich erfolgreich im Admin angemeldet"
       }
     },
     "error": {
@@ -262,6 +262,41 @@
       "error": {
         "title": "Fehler beim Bezahlen",
         "message": "Die Buchung konnte nicht als bezahlt markiert werden."
+      }
+    },
+    "validation": {
+      "bookableItems": {
+        "min_items": {
+          "title": "Buchbare Artikel fehlen",
+          "message": "Es muss mindestens ein Buchungsobjekte ausgewählt werden."
+        }
+      },
+      "mail": {
+        "required": {
+          "title": "E-Mail fehlt",
+          "message": "Bitte geben Sie eine E-Mail-Adresse an."
+        }
+      },
+      "timeEnd": {
+        "greater_than": {
+          "title": "Ungültige Endzeit",
+          "message": "Die Endzeit muss nach der Startzeit liegen."
+        },
+        "greater_equal_than": {
+          "title": "Ungültige Endzeit",
+          "message": "Die Endzeit muss gleich oder nach der Startzeit liegen."
+        }
+      },
+      "paymentProvider": {
+        "required": {
+          "title": "Zahlungsanbieter fehlt",
+          "message": "Bitte wählen Sie einen Zahlungsanbieter aus."
+        }
+      },
+
+      "fallback": {
+        "title": "Validierungsfehler",
+        "message": "Bitte überprüfen Sie Ihre Eingaben."
       }
     }
   },
