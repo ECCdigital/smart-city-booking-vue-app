@@ -203,7 +203,7 @@ export default {
       this.fetchEvents();
     },
     async focus() {
-      await this.fetchEvents();
+      this.fetchEvents();
     },
   },
 
@@ -277,7 +277,7 @@ export default {
         this.amount
       )
         .then((response) => {
-          this.availabilityItems = response.data;
+          this.availabilityItems = response.data?.availability || [];
           this.fetchedUntil = dateEnd.toISOString().split("T")[0];
         })
         .finally(() => {

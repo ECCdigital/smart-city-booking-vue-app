@@ -587,7 +587,7 @@
                 <v-row no-gutters align="center">
                   <v-col cols="4">
                     <span class="text-subtitle-1">
-                      Öffungzeiten für bestimmte Daten
+                      Öffnungszeiten für bestimmte Daten
                     </span>
                     <br />
                     <span class="text-caption">
