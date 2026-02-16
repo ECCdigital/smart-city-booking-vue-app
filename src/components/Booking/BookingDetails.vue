@@ -211,11 +211,7 @@
                   </div>
 
                   <div v-if="!groupBooking" class="d-flex gap-2 flex-wrap mt-3">
-                    <v-btn
-                      small
-                      outlined
-                      @click="copyPaymentLink(false)"
-                    >
+                    <v-btn small outlined @click="copyPaymentLink(false)">
                       <v-icon left small>
                         {{
                           paymentLinkCopied ? "mdi-check" : "mdi-content-copy"
@@ -242,11 +238,7 @@
                     </div>
 
                     <div class="d-flex gap-2 flex-wrap">
-                      <v-btn
-                        small
-                        outlined
-                        @click="copyPaymentLink(false)"
-                      >
+                      <v-btn small outlined @click="copyPaymentLink(false)">
                         <v-icon left small>
                           {{
                             singlePaymentLinkCopied
@@ -361,7 +353,7 @@
             <span class="text-h6 font-weight-bold">Buchungsobjekte</span>
           </v-card-title>
           <v-divider></v-divider>
-          <v-card-text class="pa-0">
+          <v-card-text class="pa-0 mb-1">
             <v-list dense>
               <template v-for="(item, name, index) in booking.bookableItems">
                 <v-list-item :key="name" class="px-4">
@@ -372,6 +364,9 @@
                     <v-list-item-title class="font-weight-bold">
                       {{ item._bookableUsed?.title }}
                     </v-list-item-title>
+                    <v-list-item-subtitle>
+                      <BookableTypeChip :type="item._bookableUsed?.type" />
+                    </v-list-item-subtitle>
                     <v-list-item-subtitle>
                       <span class="mr-4">
                         <v-icon x-small>mdi-counter</v-icon>
@@ -717,10 +712,15 @@ import {
 } from "@/utils/errorMessages";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
+import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 
 export default {
   name: "BookingDetails",
-  components: { ProcessingIndicator, GroupBookingCreateReceipt },
+  components: {
+    BookableTypeChip,
+    ProcessingIndicator,
+    GroupBookingCreateReceipt,
+  },
   props: {
     booking: {
       type: Object,

@@ -646,6 +646,9 @@
           :items="checkoutBookableIds"
           :available-items="bookablesWithoutSelf"
         >
+          <template v-slot:detail="{ itemObject }">
+            <BookableTypeChip :type="itemObject.type" />
+          </template>
         </BookableCheckoutBookables>
       </v-col>
     </v-row>
@@ -671,7 +674,7 @@
           item-detail="type"
         >
           <template v-slot:detail="{ itemObject }">
-            {{ itemLabel(`editBookables.types.${itemObject.type}`) }}
+            <BookableTypeChip :type="itemObject.type" />
           </template>
         </SortableList>
       </v-col>
@@ -841,10 +844,12 @@ import ChooseFile from "@/components/Files/ChooseFile.vue";
 import BookableLockingAttributes from "@/components/Bookable/BookableLockingAttributes";
 import BookableCheckoutBookables from "@/components/Bookable/BookableCheckoutBookables.vue";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
+import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 
 export default {
   name: "EditBookable",
   components: {
+    BookableTypeChip,
     BookableCheckoutBookables,
     ChooseFile,
     SortableList,

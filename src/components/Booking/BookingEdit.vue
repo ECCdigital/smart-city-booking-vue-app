@@ -349,9 +349,14 @@
                         <v-icon color="primary">mdi-cube-outline</v-icon>
                       </v-list-item-avatar>
                       <v-list-item-content>
-                        <v-list-item-title class="font-weight-bold mb-2">
+                        <v-list-item-title class="font-weight-bold">
                           {{ bookableItem._bookableUsed?.title }}
                         </v-list-item-title>
+                        <v-list-item-subtitle class="mb-2">
+                          <BookableTypeChip
+                            :type="bookableItem._bookableUsed?.type"
+                          />
+                        </v-list-item-subtitle>
                         <v-list-item-subtitle>
                           <v-row dense class="align-center">
                             <v-col cols="12" sm="5">
@@ -449,7 +454,7 @@
                   <v-col cols="12">
                     <v-autocomplete
                       hide-details
-                      placeholder="Ein weiteres Buchungobjekt hinzufügen"
+                      placeholder="Ein weiteres Buchungsobjekt hinzufügen"
                       v-model="addBookableValue"
                       :items="bookables"
                       item-value="id"
@@ -458,6 +463,29 @@
                       dense
                       background-color="accent"
                     >
+                      <template v-slot:item="{ item }">
+                        <v-list-item-avatar>
+                          <v-icon :color="getTypeColor(item.type)">
+                            {{ getTypeIcon(item.type) }}
+                          </v-icon>
+                        </v-list-item-avatar>
+                        <v-list-item-content>
+                          <v-list-item-title>{{
+                            item.title
+                          }}</v-list-item-title>
+                          <v-list-item-subtitle class="text--disabled">{{
+                            getTypeText(item.type)
+                          }}</v-list-item-subtitle>
+                        </v-list-item-content>
+                      </template>
+
+                      <template v-slot:selection="{ item }">
+                        <v-icon small left :color="getTypeIcon(item.type)">
+                          {{ getTypeIcon(item.type) }}
+                        </v-icon>
+                        <span>{{ item.title }}</span>
+                      </template>
+
                       <template v-slot:append-outer>
                         <v-btn small color="primary" @click="addBookable">
                           <v-icon left small>mdi-plus</v-icon>
@@ -836,9 +864,12 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import { mapActions } from "vuex";
 import ToastService from "@/services/ToastService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
+import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
 
 export default {
   name: "BookingEdit",
+  components: { BookableTypeChip },
   props: {
     open: {
       type: Boolean,
@@ -1138,6 +1169,9 @@ export default {
     },
   },
   methods: {
+    getTypeIcon,
+    getTypeText,
+    getTypeColor,
     ...mapActions({
       addToast: "toasts/add",
     }),
