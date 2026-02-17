@@ -45,6 +45,8 @@ class BookingManager {
   init() {
     console.log("Initializing Booking Manager Integration.");
 
+    this._injectDefaultStyles();
+
     this.addLibScripts([
       "https://cdn.jsdelivr.net/npm/fullcalendar@6.0.3/index.global.min.js",
       "https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/locales-all.global.min.js",
@@ -71,6 +73,52 @@ class BookingManager {
       });
   }
 
+  _injectDefaultStyles() {
+    if (document.getElementById('bm-default-styles')) return;
+
+    const styleEl = document.createElement('style');
+    styleEl.id = 'bm-default-styles';
+    styleEl.textContent = `
+    :root {
+      --bm-calendar-loading-bg: rgba(255, 255, 255, 0.8);
+      --bm-calendar-loading-color: #333;
+      --bm-calendar-loading-opacity: 0.6;
+      --bm-calendar-primary-color: #3498db;
+    }
+
+    .bm-calendar-loading {
+      position: relative;
+      opacity: var(--bm-calendar-loading-opacity);
+      pointer-events: none;
+    }
+
+    .bm-calendar-loading::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bm-calendar-loading-bg);
+      z-index: 100;
+      border-radius: 4px;
+    }
+
+    .bm-calendar-loading::after {
+      content: 'Lädt...';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 101;
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--bm-calendar-loading-color);
+    }
+  `;
+
+    document.head.insertBefore(styleEl, document.head.firstChild);
+  }
   /**
    * Dynamically load required Library Scripts.
    * @param scriptUrls List of script urls to load
@@ -512,7 +560,6 @@ class BookingManager {
 
         // Check cache first
         if (this._occupancyCache.has(cacheKey)) {
-          console.log("Using cached occupancy data");
           successCallback(this._occupancyCache.get(cacheKey));
           return;
         }
@@ -546,15 +593,22 @@ class BookingManager {
         const cacheKey = `${bookableIds.join(",")}_${startDate}_${endDate}`;
 
         if (this._availabilityCache.has(cacheKey)) {
-          console.log("Using cached availability data");
           successCallback(this._availabilityCache.get(cacheKey));
           return;
         }
 
         this._fetchAvailability(bookableIds, startDate, endDate)
           .then((availability) => {
-            this._availabilityCache.set(cacheKey, availability);
-            successCallback(availability);
+            const availabilityMapped = availability.map((item) => {
+              return {
+                title: item.title + " nicht verfügbar",
+                start: item.start,
+                end: item.end,
+                available: item.available,
+              };
+            });
+            this._availabilityCache.set(cacheKey, availabilityMapped);
+            successCallback(availabilityMapped);
           })
           .catch(failureCallback);
       };
@@ -900,6 +954,13 @@ class BookingManager {
     const config = {
       initialView: initialView,
       events: calenderItems,
+      loading: (isLoading) => {
+        if (isLoading) {
+          calendarEl.classList.add("bm-calendar-loading");
+        } else {
+          calendarEl.classList.remove("bm-calendar-loading");
+        }
+      },
       ...this.calendar,
     };
     // eslint-disable-next-line no-undef
