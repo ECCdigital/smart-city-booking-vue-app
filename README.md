@@ -1,5 +1,4 @@
-```markdown
-# smart-city-booking (Vue Frontend)
+# Smart City Booking (Vue Frontend)
 
 The **smart-city-booking** platform is an open-source software system designed
 for Smart Cities and Smart Regions. It provides an efficient solution that
@@ -201,4 +200,3 @@ submit a **Pull Request**.
 ## License
 
 *Please add the license information for your project here.*
-```
