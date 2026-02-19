@@ -53,6 +53,27 @@
       :item-value="itemValue"
       :item-text="itemText"
     >
+      <template v-slot:item="{ item }">
+        <v-list-item-avatar>
+          <v-icon :color="getTypeColor(item.type)">
+            {{ getTypeIcon(item.type) }}
+          </v-icon>
+        </v-list-item-avatar>
+        <v-list-item-content>
+          <v-list-item-title>{{ item.title }}</v-list-item-title>
+          <v-list-item-subtitle class="text--disabled">{{
+            getTypeText(item.type)
+          }}</v-list-item-subtitle>
+        </v-list-item-content>
+      </template>
+
+      <template v-slot:selection="{ item }">
+        <v-icon small left :color="getTypeIcon(item.type)">
+          {{ getTypeIcon(item.type) }}
+        </v-icon>
+        <span>{{ item.title }}</span>
+      </template>
+
       <template v-slot:append-outer>
         <v-btn small color="primary" @click="add">
           <v-icon left> mdi-plus</v-icon>
@@ -64,6 +85,8 @@
 </template>
 
 <script>
+import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
+
 export default {
   name: "SortableList",
   props: ["items", "availableItems", "itemValue", "itemText", "itemDetail"],
@@ -75,6 +98,9 @@ export default {
   },
 
   methods: {
+    getTypeIcon,
+    getTypeText,
+    getTypeColor,
     moveUp(index) {
       if (index > 0) {
         const item = this.items[index];

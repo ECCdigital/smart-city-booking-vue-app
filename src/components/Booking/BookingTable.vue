@@ -28,8 +28,10 @@
           text-color="black"
           v-for="(i, key) in item.bookableItems"
           :key="key"
-          >{{ i._bookableUsed?.title }}</v-chip
+          :title="i._bookableUsed?.title"
         >
+          {{ truncate(i._bookableUsed?.title, 25) }}
+        </v-chip>
       </template>
       <template v-slot:item.groupBooking="{ item }">
         <v-chip
@@ -305,6 +307,10 @@ export default {
     },
     payBooking(bookingId) {
       this.$emit("pay-booking", bookingId);
+    },
+    truncate(text, max = 25) {
+      if (!text) return "";
+      return text.length > max ? text.slice(0, max - 1) + "…" : text;
     },
   },
 };
