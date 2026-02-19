@@ -199,4 +199,8 @@ submit a **Pull Request**.
 
 ## License
 
-*Please add the license information for your project here.*
+
+This project is licensed under the
+[GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html). See the
+[LICENSE.md](LICENSE.md) file for details.
+
