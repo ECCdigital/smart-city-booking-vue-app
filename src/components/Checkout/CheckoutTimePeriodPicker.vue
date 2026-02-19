@@ -43,6 +43,7 @@
           :allowed-dates="allowedDates"
           :color="primaryColor"
           full-width
+          first-day-of-week="1"
           class="elevation-0 custom-date-picker"
           @update:picker-date="updateDisplayedMonth"
         />
