@@ -21,10 +21,8 @@
               :loading="loading"
               class="mr-2"
             >
-              <v-icon x-small left :color="textColor"
-                >mdi-lightning-bolt</v-icon
-              >
-              Schnellwahl
+              <v-icon left>mdi-skip-next</v-icon>
+              Nächster freier Termin
             </v-btn>
           </v-col>
         </v-row>
