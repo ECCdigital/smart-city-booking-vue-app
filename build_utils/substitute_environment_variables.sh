@@ -25,7 +25,6 @@ esac
 
 echo "==> Replacing BASE_URL placeholder with: ${BASE_URL}"
 
-
 find "$ROOT_DIR" -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) \
   -exec sed -i "s|__BASE_URL_PLACEHOLDER__/|${BASE_URL}|g" {} +
 find "$ROOT_DIR" -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) \
@@ -34,9 +33,7 @@ find "$ROOT_DIR" -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) \
 # ==========================================
 # Nginx Config
 # ==========================================
-LOCATION_PATH="${BASE_URL%/}"
-if [ -z "$LOCATION_PATH" ]; then
-  cat > /etc/nginx/nginx.conf <<EOF
+cat > /etc/nginx/nginx.conf <<'EOF'
 user  nginx;
 worker_processes  1;
 error_log  /var/log/nginx/error.log warn;
@@ -47,9 +44,9 @@ events {
 http {
   include       /etc/nginx/mime.types;
   default_type  application/octet-stream;
-  log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
-                    '\$status \$body_bytes_sent "\$http_referer" '
-                    '"\$http_user_agent" "\$http_x_forwarded_for"';
+  log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
   access_log  /var/log/nginx/access.log  main;
   sendfile        on;
   keepalive_timeout  65;
@@ -59,7 +56,7 @@ http {
     location / {
       root   /app;
       index  index.html;
-      try_files \$uri \$uri/ /index.html;
+      try_files $uri $uri/ /index.html;
     }
     error_page   500 502 503 504  /50x.html;
     location = /50x.html {
@@ -68,42 +65,8 @@ http {
   }
 }
 EOF
-else
-  cat > /etc/nginx/nginx.conf <<EOF
-user  nginx;
-worker_processes  1;
-error_log  /var/log/nginx/error.log warn;
-pid        /var/run/nginx.pid;
-events {
-  worker_connections  1024;
-}
-http {
-  include       /etc/nginx/mime.types;
-  default_type  application/octet-stream;
-  log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
-                    '\$status \$body_bytes_sent "\$http_referer" '
-                    '"\$http_user_agent" "\$http_x_forwarded_for"';
-  access_log  /var/log/nginx/access.log  main;
-  sendfile        on;
-  keepalive_timeout  65;
-  server {
-    listen       80;
-    server_name  localhost;
-    location ${LOCATION_PATH} {
-      alias /app/;
-      index index.html;
-      try_files \$uri \$uri/ ${BASE_URL}index.html;
-    }
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-      root   /usr/share/nginx/html;
-    }
-  }
-}
-EOF
-fi
 
-echo "==> Generated nginx.conf with location: ${LOCATION_PATH:-/}"
+echo "==> Generated nginx.conf (location /)"
 
 # ==========================================
 # Replace VUE_APP_* env vars
@@ -137,6 +100,5 @@ replace_env_var "$VUE_APP_DARKGREY_COLOR_DARK" "VUE_APP_DARKGREY_COLOR_DARK_PLAC
 
 replace_env_var "$VUE_APP_USERSNAP_API_KEY" "VUE_APP_USERSNAP_API_KEY_PLACEHOLDER" ""
 
-# Starting NGINX
 echo "==> Starting nginx"
 nginx -g 'daemon off;'
