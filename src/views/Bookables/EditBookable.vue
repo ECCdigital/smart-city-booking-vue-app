@@ -655,14 +655,19 @@
 
     <h3 class="mt-10">Abhängige Objekte (Hierarchie)</h3>
     <p>
-      Es gibt abhängige Buchungsobjekte, die darauf basieren, dass eine Buchung
-      nur durchgeführt werden kann, wenn das dazugehörige Elternobjekt noch
-      verfügbar ist und das zugehörige Kinderobjekt noch keine gleichzeitige
-      Buchung hat.
+      Hier definieren Sie die untergeordneten (Kinder-)Buchungsobjekte dieses
+      Buchungsobjekts. Das aktuell bearbeitete Buchungsobjekt fungiert dabei als
+      Eltern-Element.
     </p>
     <p>
-      Dieses Buchungsobjekte wird über die Schnittstelle mit allen hier
-      definierten abhängigen Objekten ausgegeben.
+      Eine Buchung eines hier definierten Kinderobjekts ist nur möglich, wenn das
+      zugehörige Elternobjekt (dieses Buchungsobjekt) im gewählten Zeitraum
+      verfügbar ist und für das Kinderobjekt selbst keine zeitgleiche Buchung
+      besteht.
+    </p>
+    <p>
+      Dieses Buchungsobjekt wird über die Schnittstelle gemeinsam mit allen hier
+      definierten Kinderobjekten ausgegeben.
     </p>
     <v-row>
       <v-col>
