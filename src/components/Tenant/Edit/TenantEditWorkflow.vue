@@ -220,7 +220,7 @@ export default {
     bookingStatusLabel(v) {
       return (
         {
-          commit: "Buchung freigeben",
+          commit: "Buchung freigegeben",
           paid: "Buchung bezahlt",
           reject: "Buchung storniert",
         }[v] || v
