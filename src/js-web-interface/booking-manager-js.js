@@ -960,6 +960,27 @@ class BookingManager {
         minute: "2-digit",
         meridiem: false,
       },
+      eventContent: (arg) => {
+        const start = arg.event.start;
+        const end = arg.event.end;
+
+        const formatTime = (date) => {
+          return date
+            ? date.toLocaleTimeString("de-DE", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "";
+        };
+
+        const timeText = `${formatTime(start)} - ${formatTime(end)}`;
+        const titleText = arg.event.title;
+
+        return {
+          html: `<div class="fc-event-time">${timeText}</div>
+           <div class="fc-event-title">${titleText}</div>`,
+        };
+      },
       loading: (isLoading) => {
         if (isLoading) {
           calendarEl.classList.add("bm-calendar-loading");
