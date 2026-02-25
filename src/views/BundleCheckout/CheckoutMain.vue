@@ -54,7 +54,9 @@
               :trace="trace"
               :final-check="step === steps.length"
               :me="me"
-              :free-booking-allowed="step === steps.length ? false: leadItem.freeBookingAllowed"
+              :free-booking-allowed="
+                step === steps.length ? false : leadItem.freeBookingAllowed
+              "
               :initial-book-with-price="bookWithPrice"
               @back="previousPage()"
               @validate-items="validateItems()"
@@ -86,6 +88,7 @@ import CheckoutPaymentProvider from "@/views/BundleCheckout/CheckoutPaymentProvi
 import CheckoutAmountSelector from "@/views/BundleCheckout/CheckoutAmountSelector.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiRolesService from "@/services/api/ApiRolesService";
+import ToastService from "@/services/ToastService";
 
 export default {
   name: "CheckoutMain",
@@ -159,6 +162,7 @@ export default {
   methods: {
     ...mapActions({
       updateTenant: "tenants/update",
+      addToast: "toasts/add",
     }),
     async init() {
       await this.fetchMe();
@@ -564,10 +568,27 @@ export default {
     async redeemCoupon(code) {
       try {
         const coupon = await ApiCouponService.getCoupon(this.tenant, code);
+
         this.coupon = coupon.data;
+        await this.addToast(
+          ToastService.createToast("checkout.redeemCoupon.success", "success")
+        );
       } catch (e) {
         if (e.response.status === 404) {
           this.coupon = null;
+          await this.addToast(
+            ToastService.createToast(
+              "checkout.redeemCoupon.error.invalid-code",
+              "error"
+            )
+          );
+        } else {
+          await this.addToast(
+            ToastService.createToast(
+              "checkout.redeemCoupon.error.unexpected-error",
+              "error"
+            )
+          );
         }
       } finally {
         await this.validateItems();
@@ -648,11 +669,13 @@ export default {
         this.step = newStepCount;
       }
 
-      if (this.step === previousStepCount && newStepCount !== previousStepCount) {
+      if (
+        this.step === previousStepCount &&
+        newStepCount !== previousStepCount
+      ) {
         this.step = newStepCount;
       }
     },
-
   },
 
   watch: {
@@ -705,7 +728,9 @@ export default {
             "show-back": false,
           };
 
-          currentStep.props["show-back"] = !(!this.loginRequired && this.bookingPermission);
+          currentStep.props["show-back"] = !(
+            !this.loginRequired && this.bookingPermission
+          );
 
           return props;
         } else if (currentStep.component === "checkout-amount-selector") {
