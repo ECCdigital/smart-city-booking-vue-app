@@ -25,7 +25,9 @@
                 @click="today()"
                 class="today-btn"
               >
-                <v-icon x-small left :color="textColor">mdi-calendar-today</v-icon>
+                <v-icon x-small left :color="textColor"
+                  >mdi-calendar-today</v-icon
+                >
                 Heute
               </v-btn>
               <v-btn
@@ -156,27 +158,30 @@ export default {
     },
 
     events() {
-      const av = this.availabilityItems
+      const rawEvents = this.availabilityItems
         .filter((ai) => ai.available === false)
         .map((item) => ({
           name: "Nicht verfügbar",
           start: new Date(item.timeBegin),
           end: new Date(item.timeEnd),
-          timed: true,
           color: "grey",
         }));
 
       if (this.bookingTimeBegin && this.bookingTimeEnd) {
-        av.push({
+        rawEvents.push({
           name: "Ihre Buchung",
           start: new Date(this.bookingTimeBegin),
           end: new Date(this.bookingTimeEnd),
-          timed: true,
           color: "primary",
         });
       }
 
-      return av;
+      const splitEvents = [];
+      for (const event of rawEvents) {
+        splitEvents.push(...this.splitMultiDayEvent(event));
+      }
+
+      return splitEvents;
     },
 
     allowPrevPage() {
@@ -283,6 +288,66 @@ export default {
         .finally(() => {
           this.loading = false;
         });
+    },
+
+    splitMultiDayEvent(event) {
+      const segments = [];
+      const start = new Date(event.start);
+      const end = new Date(event.end);
+
+      if (
+        start.getFullYear() === end.getFullYear() &&
+        start.getMonth() === end.getMonth() &&
+        start.getDate() === end.getDate()
+      ) {
+        return [{ ...event, timed: true }];
+      }
+
+      const endOfFirstDay = new Date(start);
+      endOfFirstDay.setHours(23, 59, 59, 999);
+      segments.push({
+        ...event,
+        start: new Date(start),
+        end: endOfFirstDay,
+        timed: true,
+      });
+
+      const nextDay = new Date(start);
+      nextDay.setDate(nextDay.getDate() + 1);
+      nextDay.setHours(0, 0, 0, 0);
+
+      while (
+        nextDay.getFullYear() < end.getFullYear() ||
+        nextDay.getMonth() < end.getMonth() ||
+        nextDay.getDate() < end.getDate()
+      ) {
+        const dayEnd = new Date(nextDay);
+        dayEnd.setHours(23, 59, 59, 999);
+        segments.push({
+          ...event,
+          start: new Date(nextDay),
+          end: dayEnd,
+          timed: true,
+        });
+        nextDay.setDate(nextDay.getDate() + 1);
+      }
+
+      if (
+        end.getHours() !== 0 ||
+        end.getMinutes() !== 0 ||
+        end.getSeconds() !== 0
+      ) {
+        const lastDayStart = new Date(end);
+        lastDayStart.setHours(0, 0, 0, 0);
+        segments.push({
+          ...event,
+          start: lastDayStart,
+          end: new Date(end),
+          timed: true,
+        });
+      }
+
+      return segments;
     },
 
     next() {
