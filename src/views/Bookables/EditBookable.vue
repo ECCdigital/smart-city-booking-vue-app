@@ -654,21 +654,132 @@
     </v-row>
 
     <h3 class="mt-10">Abhängige Objekte (Hierarchie)</h3>
-    <p>
-      Hier definieren Sie die untergeordneten (Kinder-)Buchungsobjekte dieses
-      Buchungsobjekts. Das aktuell bearbeitete Buchungsobjekt fungiert dabei als
-      Eltern-Element.
-    </p>
-    <p>
-      Eine Buchung eines hier definierten Kinderobjekts ist nur möglich, wenn das
-      zugehörige Elternobjekt (dieses Buchungsobjekt) im gewählten Zeitraum
-      verfügbar ist und für das Kinderobjekt selbst keine zeitgleiche Buchung
-      besteht.
-    </p>
-    <p>
-      Dieses Buchungsobjekt wird über die Schnittstelle gemeinsam mit allen hier
-      definierten Kinderobjekten ausgegeben.
-    </p>
+    <v-alert
+      color="info"
+      outlined
+      dense
+      border="left"
+      class="mb-4"
+      icon="mdi-information-outline"
+    >
+      <div class="text-subtitle-1 font-weight-medium mb-2">
+        Wie funktioniert die Hierarchie?
+      </div>
+      <div class="text-body-2">
+        Das aktuell bearbeitete Objekt ist das <strong>Elternobjekt</strong>.
+        Hier legen Sie die untergeordneten <strong>Kinderobjekte</strong> fest.
+      </div>
+    </v-alert>
+
+    <v-row>
+      <v-col cols="12" md="6">
+        <v-card outlined class="h-100">
+          <v-card-subtitle class="pb-2" style="background-color: var(--v-success-lighten4)">
+            <v-icon small color="success" class="mr-2">mdi-check-circle</v-icon>
+            <span class="font-weight-medium">Buchungsregeln</span>
+          </v-card-subtitle>
+          <v-card-text>
+            <v-list dense>
+              <v-list-item>
+                <v-list-item-icon class="mr-3">
+                  <v-icon small color="success">mdi-arrow-right</v-icon>
+                </v-list-item-icon>
+                <v-list-item-content>
+                  <v-list-item-subtitle class="text-wrap">
+                    Kinderobjekte sind nur buchbar, wenn das Elternobjekt
+                    im gewählten Zeitraum verfügbar ist
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+
+              <v-list-item>
+                <v-list-item-icon class="mr-3">
+                  <v-icon small color="success">mdi-arrow-right</v-icon>
+                </v-list-item-icon>
+                <v-list-item-content>
+                  <v-list-item-subtitle class="text-wrap">
+                    Mehrere Kinderobjekte sind unabhängig voneinander buchbar
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+
+              <v-list-item>
+                <v-list-item-icon class="mr-3">
+                  <v-icon small color="success">mdi-arrow-right</v-icon>
+                </v-list-item-icon>
+                <v-list-item-content>
+                  <v-list-item-subtitle class="text-wrap">
+                    Bei Buchung eines Kindes bleiben andere Kinder verfügbar
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" md="6">
+        <v-card outlined class="h-100">
+          <v-card-subtitle class="pb-2" style="background-color: var(--v-warning-lighten4)">
+            <v-icon small color="warning" class="mr-2">mdi-alert-circle</v-icon>
+            <span class="font-weight-medium">Wichtige Hinweise</span>
+          </v-card-subtitle>
+          <v-card-text>
+            <v-list dense>
+              <v-list-item>
+                <v-list-item-icon class="mr-3">
+                  <v-icon small color="warning">mdi-lock</v-icon>
+                </v-list-item-icon>
+                <v-list-item-content>
+                  <v-list-item-subtitle class="text-wrap">
+                    <strong>Elternobjekt gebucht:</strong> Alle Kinderobjekte
+                    werden im selben Zeitraum blockiert
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+
+              <v-list-item>
+                <v-list-item-icon class="mr-3">
+                  <v-icon small color="warning">mdi-lock-outline</v-icon>
+                </v-list-item-icon>
+                <v-list-item-content>
+                  <v-list-item-subtitle class="text-wrap">
+                    <strong>Kindobjekt gebucht:</strong> Das Elternobjekt
+                    wird im selben Zeitraum blockiert
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+
+              <v-list-item>
+                <v-list-item-icon class="mr-3">
+                  <v-icon small color="orange">mdi-ticket-confirmation-outline</v-icon>
+                </v-list-item-icon>
+                <v-list-item-content>
+                  <v-list-item-subtitle class="text-wrap">
+                    <strong>Sonderfall Ticket:</strong> Die Buchung eines
+                    Tickets blockiert alle weiteren Tickets des Elternobjekts
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+
+              <v-list-item>
+                <v-list-item-icon class="mr-3">
+                  <v-icon small color="info">mdi-api</v-icon>
+                </v-list-item-icon>
+                <v-list-item-content>
+                  <v-list-item-subtitle class="text-wrap">
+                    <strong>API-Ausgabe:</strong> Elternobjekt wird zusammen
+                    mit allen Kinderobjekten ausgeliefert
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <v-divider class="my-5"></v-divider>
     <v-row>
       <v-col>
         <SortableList
