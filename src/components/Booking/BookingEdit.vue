@@ -341,6 +341,11 @@
                 </div>
               </v-card-title>
               <v-divider></v-divider>
+              <v-text-field
+                v-show="false"
+                :value="bookableItems.length"
+                :rules="validationRules.minBookings"
+              ></v-text-field>
               <v-card-text class="pa-0" v-if="bookableItems.length > 0">
                 <v-list dense>
                   <template v-for="(bookableItem, index) in bookableItems">
@@ -447,6 +452,9 @@
                   mdi-package-variant-closed
                 </v-icon>
                 <div>Keine Buchungsobjekte vorhanden</div>
+                <div class="caption grey--text mt-1">
+                  Mindestens ein Objekt erforderlich
+                </div>
               </v-card-text>
               <v-divider></v-divider>
               <v-card-text class="pa-4">
@@ -753,11 +761,14 @@
                       background-color="accent"
                       filled
                       dense
-                      label="E-Mail*"
                       required
                       :rules="validationRules.mail"
                       v-model="selectedBooking.mail"
-                    ></v-text-field>
+                    >
+                      <template #label>
+                        E-Mail <span class="error--text">*</span>
+                      </template>
+                    </v-text-field>
                   </v-col>
                   <v-col cols="12" md="6">
                     <v-text-field
@@ -912,7 +923,19 @@ export default {
 
       events: [],
       validationRules: {
-        mail: [(v) => /.+@.+\..+/.test(v) || "E-Mail muss gültig sein"],
+        minBookings: [
+          () =>
+            this.bookableItems.length > 0 ||
+            "Mindestens ein Buchungsobjekt muss hinzugefügt werden",
+        ],
+        required: [(v) => !!v || "Dieses Feld ist erforderlich"],
+        mail: [
+          (v) => !!v || "E-Mail ist erforderlich",
+          (v) => /.+@.+\..+/.test(v) || "E-Mail muss gültig sein",
+        ],
+        name: [(v) => !!v || "Name ist erforderlich"],
+        zipCode: [(v) => !!v || "PLZ ist erforderlich"],
+        location: [(v) => !!v || "Stadt ist erforderlich"],
       },
       paymentMethod: [
         {
@@ -1263,6 +1286,25 @@ export default {
     async submitChanges() {
       if (!this.selectedBooking.id) {
         this.inProgress = true;
+        if (!this.$refs.form.validate()) {
+          await this.addToast(
+            ToastService.createToast(
+              "booking.validation.required",
+              "error"
+            )
+          );
+          if (this.bookableItems.length === 0) {
+            await this.addToast(
+              ToastService.createToast(
+                "booking.validation.bookableItems.min_items",
+                "error"
+              )
+            );
+          }
+          this.inProgress = false;
+          return;
+        }
+
         await ApiBookingService.storeBooking(this.selectedBooking)
           .then(() => {
             this.inProgress = false;

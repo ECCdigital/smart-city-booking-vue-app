@@ -265,6 +265,10 @@
       }
     },
     "validation": {
+      "required": {
+        "title": "Fehlende Angaben",
+        "message": "Bitte füllen Sie alle Pflichtfelder aus und versuchen Sie es erneut."
+      },
       "bookableItems": {
         "min_items": {
           "title": "Buchbare Artikel fehlen",
