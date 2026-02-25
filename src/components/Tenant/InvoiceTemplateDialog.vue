@@ -54,6 +54,11 @@ export default {
           description: "Rechnungsnummer der Rechnung",
         },
         {
+          name: "invoiceDate",
+          placeholder: "{{invoiceDate}}",
+          description: "Datum der Rechnungsausstellung",
+        },
+        {
           name: "invoiceAddress",
           placeholder: "{{invoiceAddress}}",
           description: "Rechnungsadresse",
@@ -69,9 +74,19 @@ export default {
           description: "Hauptinhalt der Rechnung (HTML formatiert)",
         },
         {
+          name: "bookingId",
+          placeholder: "{{bookingId}}",
+          description: "ID der Buchung",
+        },
+        {
           name: "bookingDate",
           placeholder: "{{bookingDate}}",
           description: "Datum der Buchung",
+        },
+        {
+          name: "bookingPeriod",
+          placeholder: "{{bookingPeriod}}",
+          description: "Buchungszeitraum",
         },
         {
           name: "totalAmount",
@@ -279,6 +294,8 @@ export default {
           <br />
         </p>
       </div>
+      Buchungsnummer:{{bookingId}} </br>
+      Zeitraum: {{bookingPeriod}} </br>
       {{{ mainContent }}}
       <div class="information">
         Dieses Schreiben wurde maschinell erstellt und ist ohne Unterschrift
