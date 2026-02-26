@@ -74,10 +74,10 @@ class BookingManager {
   }
 
   _injectDefaultStyles() {
-    if (document.getElementById('bm-default-styles')) return;
+    if (document.getElementById("bm-default-styles")) return;
 
-    const styleEl = document.createElement('style');
-    styleEl.id = 'bm-default-styles';
+    const styleEl = document.createElement("style");
+    styleEl.id = "bm-default-styles";
     styleEl.textContent = `
     :root {
       --bm-calendar-loading-bg: rgba(255, 255, 255, 0.8);
@@ -954,6 +954,33 @@ class BookingManager {
     const config = {
       initialView: initialView,
       events: calenderItems,
+      displayEventEnd: true,
+      eventTimeFormat: {
+        hour: "2-digit",
+        minute: "2-digit",
+        meridiem: false,
+      },
+      eventContent: (arg) => {
+        const start = arg.event.start;
+        const end = arg.event.end;
+
+        const formatTime = (date) => {
+          return date
+            ? date.toLocaleTimeString("de-DE", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "";
+        };
+
+        const timeText = `${formatTime(start)} - ${formatTime(end)}`;
+        const titleText = arg.event.title;
+
+        return {
+          html: `<div class="fc-event-time">${timeText}</div>
+           <div class="fc-event-title">${titleText}</div>`,
+        };
+      },
       loading: (isLoading) => {
         if (isLoading) {
           calendarEl.classList.add("bm-calendar-loading");

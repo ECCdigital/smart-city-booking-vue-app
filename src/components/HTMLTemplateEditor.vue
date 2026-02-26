@@ -557,6 +557,8 @@ export default {
         userEmail: "max@beispiel.de",
         subject: "Beispiel-Betreff",
         title: "E-Mail Titel",
+        bookingId: "BK-2024-0001",
+        bookingPeriod: "14.10.2024, 10:00 - 14.10.2024, 20:00",
         content:
           "<p>Dies ist der Hauptinhalt der E-Mail.</p><p>Mit mehreren Absätzen.</p>",
         companyName: "Ihre Firma GmbH",
@@ -578,8 +580,6 @@ export default {
         daysUntilPaymentDue: "14",
         totalAmount: "297,50 EUR",
         mainContent: `
- <strong>Buchungsnummer: </strong> BK-2024-0001<br/>
-  <strong>Zeitraum: </strong> 14.10.2024, 10:00 - 14.10.2024, 20:00 <br/>
 
  <table  class="booked-items" style="width:100%; border-collapse: collapse;">
   <tr style="background: #eee; border-bottom: 1px solid #ddd;">

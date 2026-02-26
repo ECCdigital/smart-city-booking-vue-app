@@ -265,6 +265,10 @@
       }
     },
     "validation": {
+      "required": {
+        "title": "Fehlende Angaben",
+        "message": "Bitte füllen Sie alle Pflichtfelder aus und versuchen Sie es erneut."
+      },
       "bookableItems": {
         "min_items": {
           "title": "Buchbare Artikel fehlen",
@@ -381,6 +385,34 @@
       "max-booking-duration": {
         "title": "Maximale Buchungsdauer beachten",
         "message": "Bitte beachten Sie die maximale Buchungsdauer und versuchen Sie es erneut."
+      }
+    },
+    "redeemCoupon": {
+      "success": {
+        "title": "Erfolgreich eingelöst",
+        "message": "Der Rabattcode wurde erfolgreich eingelöst."
+      },
+      "error": {
+        "invalid-code": {
+          "title": "Ungültiger Rabattcode",
+          "message": "Der Rabattcode ist ungültig. Bitte überprüfen Sie den Code und versuchen Sie es erneut."
+        },
+        "expired-code": {
+          "title": "Abgelaufener Rabattcode",
+          "message": "Der Rabattcode ist abgelaufen. Bitte überprüfen Sie den Code und versuchen Sie es erneut."
+        },
+        "usage-limit-reached": {
+          "title": "Nutzungslimit erreicht",
+          "message": "Der Rabattcode hat sein Nutzungslimit erreicht und kann nicht mehr eingelöst werden."
+        },
+        "booking-requirements-not-met": {
+          "title": "Buchungsanforderungen nicht erfüllt",
+          "message": "Die Anforderungen für die Einlösung des Rabattcodes wurden nicht erfüllt. Bitte überprüfen Sie Ihre Buchung und versuchen Sie es erneut."
+        },
+        "unexpected-error": {
+          "title": "Ein Fehler ist aufgetreten",
+          "message": "Leider ist bei der Einlösung des Rabattcodes ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+        }
       }
     }
   },
