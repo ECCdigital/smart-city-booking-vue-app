@@ -11,7 +11,16 @@
         ></Search>
       </v-col>
       <v-col cols="12" class="mx-xs-auto d-flex flex-column mb-10" height="100%">
+        <div v-if="loading" class="elevation-2" style="border-radius: 25px; overflow: hidden;">
+          <v-skeleton-loader
+            type="table-thead, table-tbody, table-tfoot"
+            :types="{
+          'table-tbody': 'table-row-divider@6',
+        }"
+          ></v-skeleton-loader>
+        </div>
         <v-data-table
+          v-else
           :headers="headers"
           :items="displayedCoupons"
           :footer-props="{
