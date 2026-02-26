@@ -21,10 +21,9 @@
         'items-per-page-text': 'Buchungen pro Seite',
       }"
       fixed-header
-      @click:row="onOpenBooking"
     >
       <template v-slot:item.id="{ item }">
-        <div class="d-flex align-center">
+        <div class="d-flex align-center cursor-pointer" @click="onOpenBooking(item)">
           <v-avatar
             :color="getStatusColor(item)"
             size="32"

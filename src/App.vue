@@ -142,7 +142,6 @@ export default {
 /* Row Hover Effects */
 .v-data-table tbody tr {
   transition: background-color 0.2s ease, transform 0.1s ease;
-  cursor: pointer;
 }
 
 .theme--light.v-data-table tbody tr:hover {
@@ -256,5 +255,9 @@ export default {
   .v-data-footer__pagination {
     font-size: 0.75rem !important;
   }
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>
