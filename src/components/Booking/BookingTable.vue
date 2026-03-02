@@ -1,6 +1,10 @@
 <template>
   <div class="pa-4">
-    <div v-if="loading" class="elevation-2" style="border-radius: 25px; overflow: hidden;">
+    <div
+      v-if="loading"
+      class="elevation-2"
+      style="border-radius: 25px; overflow: hidden"
+    >
       <v-skeleton-loader
         type="table-thead, table-tbody, table-tfoot"
         :types="{
@@ -21,16 +25,13 @@
         'items-per-page-text': 'Buchungen pro Seite',
       }"
       fixed-header
+      dense
     >
       <template v-slot:item.id="{ item }">
-        <div class="d-flex align-center cursor-pointer" @click="onOpenBooking(item)">
-          <v-avatar
-            :color="getStatusColor(item)"
-            size="32"
-            class="mr-2 white--text"
-          >
-            <v-icon small dark>{{ getStatusIcon(item) }}</v-icon>
-          </v-avatar>
+        <div
+          class="d-flex align-center cursor-pointer"
+          @click="onOpenBooking(item)"
+        >
           <span
             v-if="BookingPermissionService.allowUpdate(item)"
             class="font-weight-medium primary--text cursor-pointer"
@@ -44,27 +45,27 @@
       </template>
 
       <template v-slot:item.name="{ item }">
-        <div class="py-2">
+        <div>
           <div class="font-weight-bold">{{ item.name }}</div>
+          <div class="text-caption grey--text">
+            {{ truncate(item.company, 20) }}
+          </div>
         </div>
       </template>
 
       <template v-slot:item.timeCreated="{ item }">
         <div class="d-flex align-center">
-          <v-icon small class="mr-1" color="grey">mdi-calendar-plus</v-icon>
-          <span class="text-body-2">
-            {{
-              Intl.DateTimeFormat("de-DE", {
-                dateStyle: "short",
-                timeStyle: "short",
-              }).format(new Date(item.timeCreated))
-            }}
-          </span>
+          <div>
+            <div>{{ formatDate(item.timeCreated) }}</div>
+            <div class="text-caption grey--text">
+              {{ formatTime(item.timeCreated) }}
+            </div>
+          </div>
         </div>
       </template>
 
       <template v-slot:item.bookableIds="{ item }">
-        <div class="py-2">
+        <div class="">
           <v-chip
             v-for="(bookable, key) in item.bookableItems.slice(0, 2)"
             :key="key"
@@ -105,37 +106,30 @@
 
       <template v-slot:item.timeBegin="{ item }">
         <div v-if="item.timeBegin" class="d-flex align-center">
-          <v-icon small class="mr-1" color="grey">mdi-calendar-start</v-icon>
-          <span class="text-body-2">
-            {{
-              Intl.DateTimeFormat("de-DE", {
-                dateStyle: "short",
-                timeStyle: "short",
-              }).format(new Date(item.timeBegin))
-            }}
-          </span>
+          <div>
+            <div>{{ formatDate(item.timeCreated) }}</div>
+            <div class="text-caption grey--text">
+              {{ formatTime(item.timeCreated) }}
+            </div>
+          </div>
         </div>
         <span v-else class="grey--text">—</span>
       </template>
 
       <template v-slot:item.timeEnd="{ item }">
         <div v-if="item.timeEnd" class="d-flex align-center">
-          <v-icon small class="mr-1" color="grey">mdi-calendar-end</v-icon>
-          <span class="text-body-2">
-            {{
-              Intl.DateTimeFormat("de-DE", {
-                dateStyle: "short",
-                timeStyle: "short",
-              }).format(new Date(item.timeEnd))
-            }}
-          </span>
+          <div>
+            <div>{{ formatDate(item.timeEnd) }}</div>
+            <div class="text-caption grey--text">
+              {{ formatTime(item.timeEnd) }}
+            </div>
+          </div>
         </div>
         <span v-else class="grey--text">—</span>
       </template>
 
       <template v-slot:item.priceEur="{ item }">
         <div class="font-weight-bold text-body-2">
-          <v-icon small class="mr-1">mdi-currency-eur</v-icon>
           {{ formatCurrency(item.priceEur) }}
         </div>
       </template>
@@ -304,19 +298,18 @@ export default {
           text: "Buchung",
           align: "start",
           value: "id",
-          width: "180px",
         },
-        { text: "Name", value: "name", width: "200px" },
-        { text: "Buchungsdatum", value: "timeCreated", width: "180px" },
+        { text: "Name", value: "name" },
+        { text: "Buchungsdatum", value: "timeCreated" },
         { text: "Buchungsobjekte", value: "bookableIds", sortable: false },
-        { text: "Serie", value: "groupBooking", width: "140px" },
-        { text: "Von", value: "timeBegin", width: "180px" },
-        { text: "Bis", value: "timeEnd", width: "180px" },
-        { text: "Preis", value: "priceEur", width: "120px" },
-        { text: "Status", value: "isCommitted", width: "140px" },
-        { text: "Zahlung", value: "isPayed", width: "130px" },
-        { text: "Zahlungsart", value: "paymentMethod", width: "140px" },
-        { text: "", value: "controls", sortable: false, width: "80px" },
+        { text: "Serie", value: "groupBooking" },
+        { text: "Von", value: "timeBegin" },
+        { text: "Bis", value: "timeEnd" },
+        { text: "Preis", value: "priceEur" },
+        { text: "Status", value: "isCommitted" },
+        { text: "Zahlung", value: "isPayed" },
+        { text: "Zahlungsart", value: "paymentMethod" },
+        { text: "", value: "controls", sortable: false },
       ],
     };
   },
@@ -337,6 +330,16 @@ export default {
       if (item.isRejected) return "red";
       if (item.isCommitted) return "green";
       return "orange";
+    },
+    formatDate(date) {
+      return Intl.DateTimeFormat("de-DE", {
+        dateStyle: "short",
+      }).format(new Date(date));
+    },
+    formatTime(date) {
+      return Intl.DateTimeFormat("de-DE", {
+        timeStyle: "short",
+      }).format(new Date(date));
     },
     getStatusIcon(item) {
       if (item.isRejected) return "mdi-cancel";
@@ -402,7 +405,7 @@ export default {
       return text.length > max ? text.slice(0, max - 1) + "…" : text;
     },
     onOpenBooking(bookingId) {
-      if(typeof bookingId === "object" && bookingId.id) {
+      if (typeof bookingId === "object" && bookingId.id) {
         bookingId = bookingId.id;
       }
 
