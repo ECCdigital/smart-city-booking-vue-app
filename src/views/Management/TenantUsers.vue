@@ -13,12 +13,7 @@
           <template v-slot:prepend-inner>
             <v-menu bottom left>
               <template v-slot:activator="{ on, attrs }">
-                <v-badge
-                  :value="hasActiveFilters"
-                  color="primary"
-                  dot
-                  overlap
-                >
+                <v-badge :value="hasActiveFilters" color="primary" dot overlap>
                   <v-btn icon v-bind="attrs" v-on="on">
                     <v-icon>mdi-filter-variant</v-icon>
                   </v-btn>
@@ -402,6 +397,7 @@
       @toast="addToast"
       @createLink="createInvitationLink"
       @deleteLink="deleteLink"
+      @add-direct="addUserDirectly"
     ></TenantInviteUserDialog>
   </AdminLayout>
 </template>
@@ -669,6 +665,51 @@ export default {
         );
       }
       return user.userId.substring(0, 2).toUpperCase();
+    },
+
+    async addUserDirectly({ email, roles, asOwner }) {
+      try {
+        this.isLoading = true;
+
+        await ApiTenantService.addTenantUser(
+          this.tenantId,
+          email,
+          roles,
+          [],
+          "manually"
+        );
+
+        if (asOwner) {
+          await ApiTenantService.addTenantOwner(this.tenantId, email);
+        }
+
+        const response = await ApiTenantService.getTenantUsers(this.tenantId);
+        this.api.users = response.users;
+        this.api.userDetails = response.userDetails;
+
+        await this.addToast(
+          await this.addToast(
+            ToastService.createToast("tenant.addUser.success", "success")
+          )
+        );
+
+        this.showInviteDialog = false;
+      } catch (error) {
+        if (error.response.status === 404) {
+          await this.addToast(
+            ToastService.createToast("tenant.addUser.error.not-found", "error")
+          );
+        } else {
+          await this.addToast(
+            ToastService.createToast(
+              "tenant.addUser.error.something-wrong",
+              "error"
+            )
+          );
+        }
+      } finally {
+        this.isLoading = false;
+      }
     },
 
     getUserName(user) {

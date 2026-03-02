@@ -13,6 +13,9 @@
             ><v-icon class="mr-2">mdi-email</v-icon> Per E-Mail einladen</v-tab
           >
           <v-tab><v-icon class="mr-2">mdi-link</v-icon> Einladungslink </v-tab>
+          <v-tab>
+            <v-icon class="mr-2">mdi-account-plus</v-icon> Manuell hinzufügen
+          </v-tab>
         </v-tabs>
 
         <v-tabs-items v-model="model">
@@ -183,7 +186,9 @@
             </div>
 
             <div class="d-flex align-end justify-end mt-4">
-              <v-btn class="mr-4" outlined @click="closeDialog"> schließen </v-btn>
+              <v-btn class="mr-4" outlined @click="closeDialog">
+                schließen
+              </v-btn>
               <v-btn
                 class=""
                 color="primary"
@@ -485,6 +490,76 @@
               </v-form>
             </div>
           </v-tab-item>
+          <v-tab-item class="mt-4 mx-2">
+            <div class="text-body-1">
+              Benutzer direkt zum Mandanten hinzufügen.
+            </div>
+            <div class="text-caption mb-4">
+              Der Benutzer wird sofort als aktives Mitglied hinzugefügt – ohne
+              Einladung oder Verifikationsprozess. Die angegebene E-Mail-Adresse
+              muss einem existierenden Benutzerkonto entsprechen.
+            </div>
+
+            <v-form ref="directAddForm" v-model="directAddValid">
+              <v-text-field
+                v-model="directAddEmail"
+                label="E-Mail-Adresse des Benutzers"
+                outlined
+                dense
+                :rules="directAddEmailRules"
+                @keyup.enter="addUserDirectly"
+              />
+
+              <v-alert
+                v-if="directAddEmailExists"
+                type="warning"
+                dense
+                border="left"
+                colored-border
+                class="mb-4"
+              >
+                Dieser Benutzer ist bereits Mitglied des Mandanten.
+              </v-alert>
+
+              <div class="text-subtitle-2 mb-2">Rollen vergeben (optional)</div>
+              <v-select
+                v-model="directAddRoles"
+                :items="roles"
+                item-text="name"
+                item-value="id"
+                label="Rollen auswählen"
+                multiple
+                chips
+                small-chips
+                outlined
+                dense
+                hint="Diese Rollen werden dem Benutzer sofort zugewiesen."
+                persistent-hint
+              />
+
+              <v-checkbox
+                v-model="directAddAsOwner"
+                label="Als Besitzer hinzufügen"
+                dense
+                class="mt-2"
+              />
+            </v-form>
+
+            <div class="d-flex align-end justify-end mt-4">
+              <v-btn class="mr-4" outlined @click="closeDialog">
+                schließen
+              </v-btn>
+              <v-btn
+                color="primary"
+                @click="addUserDirectly"
+                :disabled="!directAddValid || directAddEmailExists"
+                :loading="directAddLoading"
+              >
+                <v-icon left>mdi-account-plus</v-icon>
+                Benutzer hinzufügen
+              </v-btn>
+            </div>
+          </v-tab-item>
         </v-tabs-items>
       </v-card-text>
     </v-card>
@@ -564,6 +639,15 @@ export default {
       },
       openDeleteDialog: false,
       linkToDelete: null,
+      directAddEmail: "",
+      directAddRoles: [],
+      directAddAsOwner: false,
+      directAddValid: false,
+      directAddLoading: false,
+      directAddEmailRules: [
+        (v) => !!v || "E-Mail-Adresse ist erforderlich",
+        (v) => /.+@.+\..+/.test(v) || "E-Mail-Adresse muss gültig sein",
+      ],
     };
   },
   computed: {
@@ -571,6 +655,12 @@ export default {
       get() {
         return this.open;
       },
+    },
+    directAddEmailExists() {
+      if (!this.directAddEmail) return false;
+      return this.members.some(
+        (m) => m.userId?.toLowerCase() === this.directAddEmail.toLowerCase()
+      );
     },
     validEmailCount() {
       return this.parsedEmails.filter((e) => !e.exists).length;
@@ -674,6 +764,21 @@ export default {
       } finally {
         this.creatingLink = false;
       }
+    },
+    addUserDirectly() {
+      if (!this.directAddValid || this.directAddEmailExists) return;
+
+      this.directAddLoading = true;
+      this.$emit("add-direct", {
+        email: this.directAddEmail.trim().toLowerCase(),
+        roles: this.directAddRoles,
+        asOwner: this.directAddAsOwner,
+      });
+
+      this.directAddEmail = "";
+      this.directAddRoles = [];
+      this.directAddAsOwner = false;
+      this.directAddLoading = false;
     },
     parseEmails() {
       if (!this.emailInput) {

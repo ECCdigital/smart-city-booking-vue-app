@@ -155,8 +155,18 @@
         "message": "Der Benutzer wurde erfolgreich zum Mandanten hinzugefügt."
       },
       "error": {
-        "title": "Fehler beim Hinzufügen",
-        "message": "Der Benutzer konnte nicht zum Mandanten hinzugefügt werden."
+        "not-found": {
+          "title": "Benutzer nicht gefunden",
+          "message": "Der Benutzer konnte nicht gefunden werden. Um den angeforderten Benutzer zum Mandanten hinzuzufügen, muss dieser zuerst registriert sein"
+        },
+        "user-exists": {
+          "title": "Benutzer existiert bereits",
+          "message": "Der Benutzer ist bereits Mitglied dieses Mandanten."
+        },
+        "something-wrong": {
+          "title": "Fehler",
+          "message": "Leider ist ein Fehler beim Hinzufügen des Benutzers zum Mandanten aufgetreten. Bitte versuchen Sie es erneut."
+        }
       }
     },
     "updateStatus": {
