@@ -107,9 +107,9 @@
       <template v-slot:item.timeBegin="{ item }">
         <div v-if="item.timeBegin" class="d-flex align-center">
           <div>
-            <div>{{ formatDate(item.timeCreated) }}</div>
+            <div>{{ formatDate(item.timeBegin) }}</div>
             <div class="text-caption grey--text">
-              {{ formatTime(item.timeCreated) }}
+              {{ formatTime(item.timeBegin) }}
             </div>
           </div>
         </div>
