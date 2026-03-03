@@ -510,7 +510,11 @@ export default {
 </script>
 
 <style scoped>
+
 .page-content {
-  padding-bottom: 26px;
+  padding-bottom: calc(
+    56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
+    /* extra spacing */
+  );
 }
 </style>

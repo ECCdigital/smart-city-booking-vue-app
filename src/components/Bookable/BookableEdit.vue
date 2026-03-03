@@ -207,11 +207,15 @@ export default {
     async createOrUpdate() {
       try {
         this.inProgress = true;
-        const response = await ApiBookablesService.createOrUpdateBookable(this.bookable);
+        const response = await ApiBookablesService.createOrUpdateBookable(
+          this.bookable
+        );
         this.bookable = _.cloneDeep(response.data);
 
         if (!this.bookableID) {
-          this.$router.replace({ query: { ...this.$route.query, id: this.bookable.id } });
+          this.$router.replace({
+            query: { ...this.$route.query, id: this.bookable.id },
+          });
         }
 
         this.originalSnapshot = JSON.stringify({
@@ -293,4 +297,11 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.page-content {
+  padding-bottom: calc(
+    56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
+      /* extra spacing */
+  );
+}
+</style>
