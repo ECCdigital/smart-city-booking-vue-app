@@ -2,959 +2,667 @@
   <div>
     <v-row>
       <v-col>
-        <v-expansion-panels flat multiple>
-          <v-expansion-panel class="mb-6 panel">
-            <v-expansion-panel-header
-              color="accent"
-              expand-icon="mdi-menu-down"
-              class="panel-header"
-            >
-              <template v-slot:default="{ open }">
-                <v-row no-gutters align="center">
-                  <v-col cols="4">
-                    <span class="text-subtitle-1">
-                      Buchungen über Kalender
-                    </span>
-                  </v-col>
-                  <v-col class="col-2">
-                    <v-fade-transition leave-absolute>
-                      <div v-if="!open">
-                        <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isScheduleRelated" class="ml-2"
-                          >Aktiviert</span
-                        >
-                        <span v-else class="ml-2">Inaktiviert</span>
-                      </div>
-                    </v-fade-transition>
-                  </v-col>
-                  <v-col
-                    cols="4"
-                    offset="1"
-                    r-offset="1"
-                    class="text--secondary"
-                  >
-                    <v-fade-transition leave-absolute>
-                      <v-alert type="info" dense outlined v-if="open">
-                        Wenn Buchungen feste Buchungszeiten haben, können diese
-                        nicht über den Kalender gebucht werden.
-                      </v-alert>
-                      <div v-else>
-                        <span
-                          v-if="isScheduleRelated && minBookingDuration > 0"
-                          class="mr-4"
-                          >Minimale Buchungsdauer:
-                          <strong>{{ minBookingDuration }}</strong>
-                          Stunden</span
-                        >
-                        <span v-if="isScheduleRelated && maxBookingDuration > 0"
-                          >Maximale Buchungsdauer:
-                          <strong>{{ maxBookingDuration }}</strong>
-                          Stunden</span
-                        >
-                      </div>
-                    </v-fade-transition>
-                  </v-col>
-                </v-row>
-              </template>
-            </v-expansion-panel-header>
-            <v-expansion-panel-content class="mt-3">
-              <v-row align="center">
-                <v-col class="col-2">
-                  <v-switch
-                    class="mt-0 pt-0"
-                    dense
-                    label="Buchungen über Kalender"
-                    hide-details
-                    v-model="isScheduleRelated"
-                    :disabled="isTimePeriodRelated"
-                  ></v-switch>
-                </v-col>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    label="Minimale Buchungsdauer"
-                    hide-details
-                    v-model.number="minBookingDuration"
-                    suffix="Stunden"
-                    :disabled="!isScheduleRelated"
-                  ></v-text-field>
-                </v-col>
-                <v-col>
-                  <v-text-field
-                    background-color="accent"
-                    filled
-                    label="Maximale Buchungsdauer"
-                    hide-details
-                    v-model.number="maxBookingDuration"
-                    suffix="Stunden"
-                    :disabled="!isScheduleRelated"
-                  ></v-text-field>
-                </v-col>
-              </v-row>
-            </v-expansion-panel-content>
-          </v-expansion-panel>
-          <v-expansion-panel class="my-6 panel">
-            <v-expansion-panel-header
-              color="accent"
-              expand-icon="mdi-menu-down"
-              class="panel-header"
-            >
-              <template v-slot:default="{ open }">
-                <v-row no-gutters align="center">
-                  <v-col cols="4">
-                    <span class="text-subtitle-1"> Feste Zeitfenster </span>
-                    <br />
-                    <span class="text-caption">
-                      Vordefinierte, buchbare Zeitfenster (z.B. Montangs 09:00 -
+        <v-card class="mb-6 section-card" elevation="2" outlined>
+          <v-card-title class="section-header pa-4">
+            <v-icon class="mr-2">mdi-calendar-clock</v-icon>
+            <span class="text-h6 font-weight-bold">Buchungsart</span>
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text class="pa-4">
+            <v-alert type="info" dense outlined class="mb-4">
+              Wählen Sie aus, wie Kunden dieses Objekt buchen können.
+            </v-alert>
+
+            <v-radio-group v-model="bookingType" @change="onBookingTypeChange">
+              <v-radio value="schedule" class="mb-3">
+                <template v-slot:label>
+                  <div>
+                    <div class="font-weight-bold">
+                      <v-icon small class="mr-2">mdi-calendar-range</v-icon>
+                      Freie Zeitwahl über Kalender
+                    </div>
+                    <div class="text-caption text--secondary mt-1">
+                      Kunden können Start- und Endzeitpunkt frei wählen
+                    </div>
+                  </div>
+                </template>
+              </v-radio>
+
+              <v-radio value="timePeriod" class="mb-3">
+                <template v-slot:label>
+                  <div>
+                    <div class="font-weight-bold">
+                      <v-icon small class="mr-2">mdi-clock-outline</v-icon>
+                      Feste Zeitfenster
+                    </div>
+                    <div class="text-caption text--secondary mt-1">
+                      Vordefinierte, buchbare Zeitfenster (z.B. Montags 09:00 -
                       12:00)
-                      <br>
-                      <strong>Hinweis:</strong>
-                      Feste Buchungszeiten sind nicht über den Kalender
-                      buchbar.
-                    </span>
-                  </v-col>
-                  <v-col class="col-2">
-                    <v-fade-transition leave-absolute>
-                      <div v-if="!open">
-                        <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isTimePeriodRelated" class="ml-2"
-                          >Aktiviert</span
-                        >
-                        <span v-else class="ml-2">Inaktiviert</span>
-                      </div>
-                    </v-fade-transition>
-                  </v-col>
-                  <v-col
-                    cols="4"
-                    offset="1"
-                    r-offset="1"
-                    class="text--secondary"
-                  >
-                    <v-fade-transition leave-absolute>
-                      <v-alert type="info" dense outlined v-if="open">
-                        Wenn Buchungen über den Kalender gebucht werden können,
-                        können diese nicht feste Zeitfenster haben.
-                      </v-alert>
-                      <div v-else>
-                        <v-list
-                          dense
-                          v-if="isTimePeriodRelated && timePeriods.length"
-                          color="accent"
-                        >
-                          <template v-for="(timePeriod, index) in timePeriods">
-                            <v-list-item :key="timePeriod.id">
-                              <v-row dense align="center">
-                                <v-col class="align-center">
-                                  <v-list dense color="accent">
-                                    <v-list-item
-                                      v-for="(
-                                        weekday, index
-                                      ) in getFormattedWeekdays(
-                                        timePeriod.weekdays
-                                      )"
-                                      :key="index"
-                                    >
-                                      {{ weekday }}
-                                    </v-list-item>
-                                  </v-list>
-                                </v-col>
-                                <v-col
-                                  v-if="
-                                    timePeriod.startTime && timePeriod.endTime
-                                  "
-                                >
-                                  {{ timePeriod.startTime }} -
-                                  {{ timePeriod.endTime }}
-                                </v-col>
-                                <div v-else>
-                                  <v-alert type="warning" dense outlined>
-                                    Keine Zeitfenster angegeben
-                                  </v-alert>
-                                </div>
-                              </v-row>
-                            </v-list-item>
-                            <v-divider
-                              v-if="index < timePeriods.length - 1"
-                              :key="index"
-                            ></v-divider>
-                          </template>
-                        </v-list>
-                      </div>
-                    </v-fade-transition>
-                  </v-col>
-                </v-row>
-              </template>
-            </v-expansion-panel-header>
-            <v-expansion-panel-content class="mt-3">
-              <v-row>
-                <v-col class="col-12 col-md-4">
-                  <v-switch
-                    dense
-                    label="Buchungen nur für feste Zeiträume"
-                    hide-details
-                    v-model="isTimePeriodRelated"
-                    :disabled="isScheduleRelated"
-                    class="pt-3"
-                  ></v-switch>
-                </v-col>
-              </v-row>
-              <v-row
-                v-for="(timePeriod, idx) in timePeriods"
-                :key="idx"
-                justify="end"
-                align="center"
-              >
-                <v-col class="col-12 col-md-6">
-                  <v-select
-                    background-color="accent"
-                    filled
-                    label="Wochentag(e)"
-                    :items="weekdays"
-                    item-value="id"
-                    item-text="name"
-                    v-model="timePeriod.weekdays"
-                    multiple
-                    chips
-                    :disabled="!isTimePeriodRelated"
-                    hide-selected
-                    hide-details
-                  >
-                    <template
-                      v-slot:selection="{ attrs, item, select, selected }"
-                    >
-                      <v-chip
-                        v-bind="attrs"
-                        :input-value="selected"
-                        close
-                        color="secondary"
-                        @click="select"
-                        @click:close="removeWeekdays(idx, item.id)"
+                    </div>
+                  </div>
+                </template>
+              </v-radio>
+
+              <v-radio value="week" class="mb-3">
+                <template v-slot:label>
+                  <div>
+                    <div class="font-weight-bold">
+                      <v-icon small class="mr-2">mdi-calendar-week</v-icon>
+                      Ganze Kalenderwochen
+                    </div>
+                    <div class="text-caption text--secondary mt-1">
+                      Buchung für komplette Wochen (Montag bis Freitag)
+                    </div>
+                  </div>
+                </template>
+              </v-radio>
+
+              <v-radio value="month" class="mb-3">
+                <template v-slot:label>
+                  <div>
+                    <div class="font-weight-bold">
+                      <v-icon small class="mr-2">mdi-calendar-month</v-icon>
+                      Ganze Monate
+                    </div>
+                    <div class="text-caption text--secondary mt-1">
+                      Buchung für komplette Kalendermonate
+                    </div>
+                  </div>
+                </template>
+              </v-radio>
+
+              <v-radio value="independent">
+                <template v-slot:label>
+                  <div>
+                    <div class="font-weight-bold">
+                      <v-icon small class="mr-2"
+                        >mdi-clock-remove-outline</v-icon
                       >
-                        <strong>{{ item.name }}</strong>
-                      </v-chip>
-                    </template>
-                  </v-select>
-                </v-col>
-                <v-col>
-                  <v-menu
-                    v-model="timeStartMenu[idx]"
-                    :close-on-content-click="false"
-                    :nudge-right="40"
-                    transition="scale-transition"
-                    offset-y
-                    max-width="290px"
-                    min-width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
-                        background-color="accent"
-                        filled
-                        v-model="timePeriod.startTime"
-                        label="Startzeit"
-                        readonly
-                        suffix="Uhr"
-                        v-bind="attrs"
-                        v-on="on"
-                        :disabled="!isTimePeriodRelated"
-                        hide-details
-                      ></v-text-field>
-                    </template>
-                    <v-time-picker
-                      v-if="timeStartMenu[idx]"
-                      v-model="timePeriod.startTime"
-                      full-width
-                      @click:minute="setStartTime(idx, timePeriod.startTime)"
-                      format="24hr"
-                    ></v-time-picker>
-                  </v-menu>
-                </v-col>
-                <v-col>
-                  <v-menu
-                    v-model="timeEndMenu[idx]"
-                    :close-on-content-click="false"
-                    :nudge-right="40"
-                    transition="scale-transition"
-                    offset-y
-                    max-width="290px"
-                    min-width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
-                        background-color="accent"
-                        filled
-                        v-model="timePeriod.endTime"
-                        label="Endzeit"
-                        readonly
-                        v-bind="attrs"
-                        v-on="on"
-                        suffix="Uhr"
-                        :disabled="!isTimePeriodRelated"
-                        hide-details
-                      ></v-text-field>
-                    </template>
-                    <v-time-picker
-                      v-if="timeEndMenu[idx]"
-                      v-model="timePeriod.endTime"
-                      full-width
-                      @click:minute="setEndTime(idx, timePeriod.endTime)"
-                      format="24hr"
-                    ></v-time-picker>
-                  </v-menu>
-                </v-col>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
-                    <v-btn
-                      v-on="on"
-                      :disabled="!isTimePeriodRelated"
-                      icon
-                      @click="removeTimePeriod(idx)"
-                    >
-                      <v-icon>mdi-delete</v-icon>
-                    </v-btn>
-                  </template>
-                  <span>Zeitfenster entfernen</span>
-                </v-tooltip>
-              </v-row>
-              <v-row>
-                <v-col class="text-center">
-                  <v-tooltip bottom offset-y>
-                    <template v-slot:activator="{ on }">
-                      <v-btn
-                        class="align-center add-time-period"
-                        v-on="on"
-                        outlined
-                        :disabled="!isTimePeriodRelated"
-                        @click="addNewTimePeriod"
-                      >
-                        Zeitfenster hinzufügen
-                      </v-btn>
-                    </template>
-                    <span>Eine weiteres Zeitfenster hinzufügen</span>
-                  </v-tooltip>
-                </v-col>
-              </v-row>
-              <v-divider class="mt-5"></v-divider>
-            </v-expansion-panel-content>
-          </v-expansion-panel>
-          <v-expansion-panel class="my-6 panel">
-            <v-expansion-panel-header
-              color="accent"
-              expand-icon="mdi-menu-down"
-              class="panel-header"
-            >
-              <template v-slot:default="{ open }">
-                <v-row no-gutters align="center">
-                  <v-col cols="4">
-                    <span class="text-subtitle-1">
-                      Öffnungszeiten
-                    </span>
-                    <br />
-                    <span class="text-caption">
-                      Innerhalb dieser Zeiträume können Buchungen getätigt
-                      werden.
-                    </span>
-                  </v-col>
-                  <v-col class="col-2">
-                    <v-fade-transition leave-absolute>
-                      <div v-if="!open">
-                        <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isOpeningHoursRelated" class="ml-2"
-                          >Aktiviert</span
-                        >
-                        <span v-else class="ml-2">Inaktiviert</span>
-                      </div>
-                    </v-fade-transition>
-                  </v-col>
-                  <v-col
-                    cols="4"
-                    offset="1"
-                    r-offset="1"
-                    class="text--secondary"
-                  >
-                    <v-fade-transition leave-absolute>
-                      <div v-if="!open">
-                        <v-list
+                      Zeitunabhängig
+                    </div>
+                    <div class="text-caption text--secondary mt-1">
+                      Keine zeitlichen Einschränkungen
+                    </div>
+                  </div>
+                </template>
+              </v-radio>
+            </v-radio-group>
+          </v-card-text>
+        </v-card>
+
+        <!-- Buchungsdauer (nur bei Kalender) -->
+        <v-card
+          v-if="bookingType === 'schedule'"
+          class="mb-6 section-card"
+          elevation="2"
+          outlined
+        >
+          <v-card-title class="section-header pa-4">
+            <v-icon class="mr-2">mdi-timer-outline</v-icon>
+            <span class="text-h6 font-weight-bold">Buchungsdauer</span>
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text class="pa-4">
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  label="Minimale Buchungsdauer"
+                  v-model.number="minBookingDuration"
+                  suffix="Stunden"
+                  type="number"
+                  min="0"
+                  hide-details
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  label="Maximale Buchungsdauer"
+                  v-model.number="maxBookingDuration"
+                  suffix="Stunden"
+                  type="number"
+                  min="0"
+                  hide-details
+                ></v-text-field>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+
+        <!-- Feste Zeitfenster (nur bei timePeriod) -->
+        <v-card
+          v-if="bookingType === 'timePeriod'"
+          class="mb-6 section-card"
+          elevation="2"
+          outlined
+        >
+          <v-card-title
+            class="section-header pa-4 d-flex justify-space-between align-center"
+          >
+            <div class="d-flex align-center">
+              <v-icon class="mr-2">mdi-clock-outline</v-icon>
+              <span class="text-h6 font-weight-bold">Feste Zeitfenster</span>
+            </div>
+            <v-btn small color="primary" @click="addNewTimePeriod">
+              <v-icon left small>mdi-plus</v-icon>
+              Hinzufügen
+            </v-btn>
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text class="pa-0" v-if="timePeriods.length > 0">
+            <v-list dense>
+              <template v-for="(timePeriod, idx) in timePeriods">
+                <v-list-item :key="`period-${idx}`" class="px-4 py-3">
+                  <v-list-item-content>
+                    <v-row align="center">
+                      <v-col cols="12" md="6">
+                        <v-select
+                          background-color="accent"
+                          filled
                           dense
-                          v-if="isOpeningHoursRelated && openingHours.length"
-                          color="accent"
+                          label="Wochentag(e)"
+                          :items="weekdays"
+                          item-value="id"
+                          item-text="name"
+                          v-model="timePeriod.weekdays"
+                          multiple
+                          chips
+                          hide-selected
+                          hide-details
                         >
                           <template
-                            v-for="(openingHour, index) in openingHours"
+                            v-slot:selection="{ attrs, item, select, selected }"
                           >
-                            <v-list-item :key="openingHour.id">
-                              <v-row dense align="center">
-                                <v-col class="align-center">
-                                  <v-list dense color="accent">
-                                    <v-list-item
-                                      v-for="(
-                                        weekday, index
-                                      ) in getFormattedWeekdays(
-                                        openingHour.weekdays
-                                      )"
-                                      :key="index"
-                                    >
-                                      {{ weekday }}
-                                    </v-list-item>
-                                  </v-list>
-                                </v-col>
-                                <v-col
-                                  v-if="
-                                    openingHour.startTime && openingHour.endTime
-                                  "
-                                >
-                                  {{ openingHour.startTime }} -
-                                  {{ openingHour.endTime }}
-                                </v-col>
-                                <div v-else>
-                                  <v-alert type="warning" dense outlined>
-                                    Keine Öffnungszeiten angegeben
-                                  </v-alert>
-                                </div>
-                              </v-row>
-                            </v-list-item>
-                            <v-divider
-                              v-if="index < openingHours.length - 1"
-                              :key="index"
-                            ></v-divider>
+                            <v-chip
+                              v-bind="attrs"
+                              :input-value="selected"
+                              close
+                              small
+                              color="secondary"
+                              @click="select"
+                              @click:close="removeWeekdays(idx, item.id)"
+                            >
+                              <strong>{{ item.name }}</strong>
+                            </v-chip>
                           </template>
-                        </v-list>
-                      </div>
-                    </v-fade-transition>
-                  </v-col>
-                </v-row>
-              </template>
-            </v-expansion-panel-header>
-            <v-expansion-panel-content class="mt-3">
-              <v-row>
-                <v-col class="col-12 col-md-4">
-                  <v-switch
-                    dense
-                    label="Buchungsobjekt hat Öffnungszeiten"
-                    hide-details
-                    v-model="isOpeningHoursRelated"
-                    class="pt-3"
-                  ></v-switch>
-                </v-col>
-              </v-row>
-              <v-row
-                v-for="(openingHour, idx) in openingHours"
-                :key="idx"
-                align="center"
-              >
-                <v-col class="col-12 col-md-6">
-                  <v-select
-                    background-color="accent"
-                    filled
-                    label="Wochentag(e)"
-                    :items="weekdays"
-                    item-value="id"
-                    item-text="name"
-                    v-model="openingHour.weekdays"
-                    multiple
-                    chips
-                    :disabled="!isOpeningHoursRelated"
-                    hide-selected
-                    hide-details
-                  >
-                    <template
-                      v-slot:selection="{ attrs, item, select, selected }"
-                    >
-                      <v-chip
-                        v-bind="attrs"
-                        :input-value="selected"
-                        close
-                        color="secondary"
-                        @click="select"
-                        @click:close="removeOpeningHoursWeekdays(idx, item.id)"
-                      >
-                        <strong>{{ item.name }}</strong>
-                      </v-chip>
-                    </template>
-                  </v-select>
-                </v-col>
-                <v-col>
-                  <v-menu
-                    v-model="timeStartOpeningHoursMenu[idx]"
-                    :close-on-content-click="false"
-                    :nudge-right="40"
-                    transition="scale-transition"
-                    offset-y
-                    max-width="290px"
-                    min-width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
-                        background-color="accent"
-                        filled
-                        v-model="openingHour.startTime"
-                        label="Startzeit"
-                        readonly
-                        suffix="Uhr"
-                        v-bind="attrs"
-                        v-on="on"
-                        :disabled="!isOpeningHoursRelated"
-                        hide-details
-                      ></v-text-field>
-                    </template>
-                    <v-time-picker
-                      v-if="timeStartOpeningHoursMenu[idx]"
-                      v-model="openingHour.startTime"
-                      full-width
-                      @click:minute="
-                        setStartOpeningHoursTime(idx, openingHour.startTime)
-                      "
-                      format="24hr"
-                    ></v-time-picker>
-                  </v-menu>
-                </v-col>
-                <v-col>
-                  <v-menu
-                    v-model="timeEndOpeningHoursMenu[idx]"
-                    :close-on-content-click="false"
-                    :nudge-right="40"
-                    transition="scale-transition"
-                    offset-y
-                    max-width="290px"
-                    min-width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
-                        background-color="accent"
-                        filled
-                        v-model="openingHour.endTime"
-                        label="Endzeit"
-                        readonly
-                        v-bind="attrs"
-                        v-on="on"
-                        suffix="Uhr"
-                        :disabled="!isOpeningHoursRelated"
-                        hide-details
-                      ></v-text-field>
-                    </template>
-                    <v-time-picker
-                      v-if="timeEndOpeningHoursMenu[idx]"
-                      v-model="openingHour.endTime"
-                      full-width
-                      @click:minute="
-                        setEndOpeningHoursTime(idx, openingHour.endTime)
-                      "
-                      format="24hr"
-                    ></v-time-picker>
-                  </v-menu>
-                </v-col>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
-                    <v-btn
-                      v-on="on"
-                      :disabled="!isOpeningHoursRelated"
-                      icon
-                      @click="removeOpeningHours(idx)"
-                    >
-                      <v-icon>mdi-delete</v-icon>
-                    </v-btn>
-                  </template>
-                  <span>Öffnungszeit entfernen</span>
-                </v-tooltip>
-              </v-row>
-              <v-row>
-                <v-col class="text-center">
-                  <v-tooltip bottom offset-y>
-                    <template v-slot:activator="{ on }">
-                      <v-btn
-                        class="align-center add-time-period"
-                        v-on="on"
-                        outlined
-                        :disabled="!isOpeningHoursRelated"
-                        @click="addNewOpeningHours"
-                      >
-                        Öffnungszeit hinzufügen
-                      </v-btn>
-                    </template>
-                    <span>Öffnungszeit hinzufügen</span>
-                  </v-tooltip>
-                </v-col>
-              </v-row>
-            </v-expansion-panel-content>
-          </v-expansion-panel>
-          <v-expansion-panel class="my-6 panel">
-            <v-expansion-panel-header
-              color="accent"
-              expand-icon="mdi-menu-down"
-              class="panel-header"
-            >
-              <template v-slot:default="{ open }">
-                <v-row no-gutters align="center">
-                  <v-col cols="4">
-                    <span class="text-subtitle-1">
-                      Öffnungszeiten für bestimmte Daten
-                    </span>
-                    <br />
-                    <span class="text-caption">
-                      Hier können Öffnungszeiten für bestimmte Daten definiert werden.
-                    </span>
-                  </v-col>
-                  <v-col class="col-2">
-                    <v-fade-transition leave-absolute>
-                      <div v-if="!open">
-                        <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isSpecialOpeningHoursRelated" class="ml-2"
-                          >Aktiviert</span
+                        </v-select>
+                      </v-col>
+                      <v-col cols="12" md="3">
+                        <v-menu
+                          v-model="timeStartMenu[idx]"
+                          :close-on-content-click="false"
+                          :nudge-right="40"
+                          transition="scale-transition"
+                          offset-y
+                          max-width="290px"
+                          min-width="290px"
                         >
-                        <span v-else class="ml-2">Inaktiviert</span>
+                          <template v-slot:activator="{ on, attrs }">
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              v-model="timePeriod.startTime"
+                              label="Von"
+                              readonly
+                              suffix="Uhr"
+                              v-bind="attrs"
+                              v-on="on"
+                              hide-details
+                            ></v-text-field>
+                          </template>
+                          <v-time-picker
+                            v-if="timeStartMenu[idx]"
+                            v-model="timePeriod.startTime"
+                            full-width
+                            @click:minute="
+                              setStartTime(idx, timePeriod.startTime)
+                            "
+                            format="24hr"
+                          ></v-time-picker>
+                        </v-menu>
+                      </v-col>
+                      <v-col cols="12" md="2">
+                        <v-menu
+                          v-model="timeEndMenu[idx]"
+                          :close-on-content-click="false"
+                          :nudge-right="40"
+                          transition="scale-transition"
+                          offset-y
+                          max-width="290px"
+                          min-width="290px"
+                        >
+                          <template v-slot:activator="{ on, attrs }">
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              v-model="timePeriod.endTime"
+                              label="Bis"
+                              readonly
+                              suffix="Uhr"
+                              v-bind="attrs"
+                              v-on="on"
+                              hide-details
+                            ></v-text-field>
+                          </template>
+                          <v-time-picker
+                            v-if="timeEndMenu[idx]"
+                            v-model="timePeriod.endTime"
+                            full-width
+                            @click:minute="setEndTime(idx, timePeriod.endTime)"
+                            format="24hr"
+                          ></v-time-picker>
+                        </v-menu>
+                      </v-col>
+                      <v-col cols="12" md="1" class="text-right">
+                        <v-btn icon small @click="removeTimePeriod(idx)">
+                          <v-icon small>mdi-delete-outline</v-icon>
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                  </v-list-item-content>
+                </v-list-item>
+                <v-divider
+                  v-if="idx < timePeriods.length - 1"
+                  :key="`divider-${idx}`"
+                />
+              </template>
+            </v-list>
+          </v-card-text>
+          <v-card-text v-else class="pa-4 text-center grey--text">
+            <v-icon large color="grey lighten-1" class="mb-2">
+              mdi-clock-outline
+            </v-icon>
+            <div>Noch keine Zeitfenster definiert</div>
+            <v-btn
+              small
+              text
+              color="primary"
+              @click="addNewTimePeriod"
+              class="mt-2"
+            >
+              Erstes Zeitfenster hinzufügen
+            </v-btn>
+          </v-card-text>
+        </v-card>
+
+        <!-- Öffnungszeiten (nur bei schedule oder timePeriod) -->
+        <v-card
+          v-if="bookingType === 'schedule' || bookingType === 'timePeriod'"
+          class="mb-6 section-card"
+          elevation="2"
+          outlined
+        >
+          <v-card-title class="section-header pa-4">
+            <v-icon class="mr-2">mdi-store-clock-outline</v-icon>
+            <span class="text-h6 font-weight-bold">Öffnungszeiten</span>
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text class="pa-4">
+            <v-row>
+              <v-col cols="12">
+                <v-switch
+                  v-model="isOpeningHoursRelated"
+                  label="Öffnungszeiten aktivieren"
+                  hide-details
+                  color="primary"
+                  class="mt-0"
+                >
+                  <template v-slot:label>
+                    <div>
+                      <div class="font-weight-medium">
+                        Öffnungszeiten aktivieren
                       </div>
-                    </v-fade-transition>
-                  </v-col>
-                  <v-col
-                    cols="4"
-                    offset="1"
-                    r-offset="1"
-                    class="text--secondary"
-                  >
-                    <v-fade-transition leave-absolute>
-                      <div v-if="open">
-                        <v-alert type="info" dense outlined v-if="open">
-                          Um das Buchen für einen ganzen Tag zu deaktivieren,
-                          wähle den gleichen Start- und Endzeitpunkt aus.
-                        </v-alert>
+                      <div class="text-caption text--secondary">
+                        Buchungen sind nur innerhalb dieser Zeiten möglich
                       </div>
-                      <div v-else>
-                        <v-list
-                          dense
-                          v-if="
-                            isSpecialOpeningHoursRelated &&
-                            specialOpeningHours.length
+                    </div>
+                  </template>
+                </v-switch>
+              </v-col>
+            </v-row>
+
+            <template v-if="isOpeningHoursRelated">
+              <v-divider class="my-4"></v-divider>
+
+              <!-- Öffnungszeiten Liste -->
+              <div v-if="openingHours.length > 0">
+                <v-row
+                  v-for="(openingHour, idx) in openingHours"
+                  :key="`opening-${idx}`"
+                  align="center"
+                  class="mb-3"
+                >
+                  <v-col cols="12" md="6">
+                    <v-select
+                      background-color="accent"
+                      filled
+                      dense
+                      label="Wochentag(e)"
+                      :items="weekdays"
+                      item-value="id"
+                      item-text="name"
+                      v-model="openingHour.weekdays"
+                      multiple
+                      chips
+                      hide-selected
+                      hide-details
+                    >
+                      <template
+                        v-slot:selection="{ attrs, item, select, selected }"
+                      >
+                        <v-chip
+                          v-bind="attrs"
+                          :input-value="selected"
+                          close
+                          small
+                          color="secondary"
+                          @click="select"
+                          @click:close="
+                            removeOpeningHoursWeekdays(idx, item.id)
                           "
-                          color="accent"
                         >
-                          <template
-                            v-for="(
-                              specialOpeningHour, index
-                            ) in specialOpeningHours"
-                          >
-                            <v-list-item :key="specialOpeningHour.id">
-                              <v-row dense align="center">
-                                <v-col class="align-center">
-                                  {{ formatDate(specialOpeningHour.date) }}
-                                </v-col>
-                                <v-col
-                                  v-if="
-                                    specialOpeningHour.startTime &&
-                                    specialOpeningHour.endTime &&
-                                    specialOpeningHour.startTime !==
-                                      specialOpeningHour.endTime
-                                  "
-                                >
-                                  {{ specialOpeningHour.startTime }} -
-                                  {{ specialOpeningHour.endTime }}
-                                </v-col>
-                                <v-col v-else>
-                                  <v-icon color="darkgrey"
-                                    >mdi-information</v-icon
-                                  >
-                                  <span class="ml-2">geschlossen</span>
-                                </v-col>
-                              </v-row>
-                            </v-list-item>
-                            <v-divider
-                              v-if="index < specialOpeningHours.length - 1"
-                              :key="index"
-                            ></v-divider>
-                          </template>
-                        </v-list>
-                      </div>
-                    </v-fade-transition>
+                          <strong>{{ item.name }}</strong>
+                        </v-chip>
+                      </template>
+                    </v-select>
                   </v-col>
-                </v-row>
-              </template>
-            </v-expansion-panel-header>
-            <v-expansion-panel-content>
-              <v-row>
-                <v-col class="col-12 col-md-4">
-                  <v-switch
-                    dense
-                    label="Buchungsobjekt hat Öffnungszeiten für bestimmte Daten"
-                    hide-details
-                    v-model="isSpecialOpeningHoursRelated"
-                    class="pt-3"
-                  ></v-switch>
-                </v-col>
-              </v-row>
-              <v-row
-                v-for="(specialOpeningHour, idx) in specialOpeningHours"
-                :key="idx"
-                align="center"
-              >
-                <v-col class="col-12 col-md-6">
-                  <v-dialog
-                    v-model="specialOpeningHoursDateMenu[idx]"
-                    width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
-                        v-model="specialOpeningHour.date"
-                        label="Datum"
-                        prepend-icon="mdi-calendar"
-                        background-color="accent"
-                        filled
-                        hide-details
-                        readonly
-                        v-bind="attrs"
-                        v-on="on"
-                      ></v-text-field>
-                    </template>
-                    <v-date-picker v-model="specialOpeningHour.date" scrollable>
-                      <v-spacer></v-spacer>
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="$set(specialOpeningHoursDateMenu, idx, false)"
-                      >
-                        Cancel
-                      </v-btn>
-                      <v-btn
-                        text
-                        color="primary"
-                        @click="$set(specialOpeningHoursDateMenu, idx, false)"
-                      >
-                        OK
-                      </v-btn>
-                    </v-date-picker>
-                  </v-dialog>
-                </v-col>
-                <v-col>
-                  <v-menu
-                    v-model="timeStartSpecialOpeningHoursMenu[idx]"
-                    :close-on-content-click="false"
-                    :nudge-right="40"
-                    transition="scale-transition"
-                    offset-y
-                    max-width="290px"
-                    min-width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
-                        background-color="accent"
-                        filled
-                        v-model="specialOpeningHour.startTime"
-                        label="Startzeit"
-                        readonly
-                        suffix="Uhr"
-                        v-bind="attrs"
-                        v-on="on"
-                        :disabled="!isSpecialOpeningHoursRelated"
-                        hide-details
-                      ></v-text-field>
-                    </template>
-                    <v-time-picker
-                      v-if="timeStartSpecialOpeningHoursMenu[idx]"
-                      v-model="specialOpeningHour.startTime"
-                      full-width
-                      @click:minute="
-                        setStartSpecialOpeningHoursTime(
-                          idx,
-                          specialOpeningHour.startTime
-                        )
-                      "
-                      format="24hr"
-                    ></v-time-picker>
-                  </v-menu>
-                </v-col>
-                <v-col>
-                  <v-menu
-                    v-model="timeEndSpecialOpeningMenu[idx]"
-                    :close-on-content-click="false"
-                    :nudge-right="40"
-                    transition="scale-transition"
-                    offset-y
-                    max-width="290px"
-                    min-width="290px"
-                  >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-text-field
-                        background-color="accent"
-                        filled
-                        v-model="specialOpeningHour.endTime"
-                        label="Endzeit"
-                        readonly
-                        v-bind="attrs"
-                        v-on="on"
-                        suffix="Uhr"
-                        :disabled="!isSpecialOpeningHoursRelated"
-                        hide-details
-                      ></v-text-field>
-                    </template>
-                    <v-time-picker
-                      v-if="timeEndSpecialOpeningMenu[idx]"
-                      v-model="specialOpeningHour.endTime"
-                      full-width
-                      @click:minute="
-                        setEndSpecialOpeningHoursTime(
-                          idx,
-                          specialOpeningHour.endTime
-                        )
-                      "
-                      format="24hr"
-                    ></v-time-picker>
-                  </v-menu>
-                </v-col>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
-                    <v-btn
-                      v-on="on"
-                      :disabled="!isSpecialOpeningHoursRelated"
-                      icon
-                      @click="removeSpecialOpeningHours(idx)"
+                  <v-col cols="12" md="2">
+                    <v-menu
+                      v-model="timeStartOpeningHoursMenu[idx]"
+                      :close-on-content-click="false"
+                      :nudge-right="40"
+                      transition="scale-transition"
+                      offset-y
+                      max-width="290px"
+                      min-width="290px"
                     >
-                      <v-icon>mdi-delete</v-icon>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                          background-color="accent"
+                          filled
+                          dense
+                          v-model="openingHour.startTime"
+                          label="Von"
+                          readonly
+                          suffix="Uhr"
+                          v-bind="attrs"
+                          v-on="on"
+                          hide-details
+                        ></v-text-field>
+                      </template>
+                      <v-time-picker
+                        v-if="timeStartOpeningHoursMenu[idx]"
+                        v-model="openingHour.startTime"
+                        full-width
+                        @click:minute="
+                          setStartOpeningHoursTime(idx, openingHour.startTime)
+                        "
+                        format="24hr"
+                      ></v-time-picker>
+                    </v-menu>
+                  </v-col>
+                  <v-col cols="12" md="2">
+                    <v-menu
+                      v-model="timeEndOpeningHoursMenu[idx]"
+                      :close-on-content-click="false"
+                      :nudge-right="40"
+                      transition="scale-transition"
+                      offset-y
+                      max-width="290px"
+                      min-width="290px"
+                    >
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                          background-color="accent"
+                          filled
+                          dense
+                          v-model="openingHour.endTime"
+                          label="Bis"
+                          readonly
+                          suffix="Uhr"
+                          v-bind="attrs"
+                          v-on="on"
+                          hide-details
+                        ></v-text-field>
+                      </template>
+                      <v-time-picker
+                        v-if="timeEndOpeningHoursMenu[idx]"
+                        v-model="openingHour.endTime"
+                        full-width
+                        @click:minute="
+                          setEndOpeningHoursTime(idx, openingHour.endTime)
+                        "
+                        format="24hr"
+                      ></v-time-picker>
+                    </v-menu>
+                  </v-col>
+                  <v-col cols="12" md="2" class="text-right">
+                    <v-btn icon small @click="removeOpeningHours(idx)">
+                      <v-icon small>mdi-delete-outline</v-icon>
                     </v-btn>
+                  </v-col>
+                </v-row>
+              </div>
+
+              <v-row>
+                <v-col cols="12" class="text-center">
+                  <v-btn
+                    small
+                    outlined
+                    color="primary"
+                    @click="addNewOpeningHours"
+                  >
+                    <v-icon left small>mdi-plus</v-icon>
+                    Öffnungszeit hinzufügen
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </template>
+          </v-card-text>
+        </v-card>
+
+        <!-- Spezielle Öffnungszeiten (nur bei schedule oder timePeriod) -->
+        <v-card
+          v-if="bookingType === 'schedule' || bookingType === 'timePeriod'"
+          class="mb-6 section-card"
+          elevation="2"
+          outlined
+        >
+          <v-card-title class="section-header pa-4">
+            <v-icon class="mr-2">mdi-calendar-star</v-icon>
+            <span class="text-h6 font-weight-bold">
+              Spezielle Öffnungszeiten
+            </span>
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text class="pa-4">
+            <v-row>
+              <v-col cols="12">
+                <v-switch
+                  v-model="isSpecialOpeningHoursRelated"
+                  label="Spezielle Öffnungszeiten aktivieren"
+                  hide-details
+                  color="primary"
+                  class="mt-0"
+                >
+                  <template v-slot:label>
+                    <div>
+                      <div class="font-weight-medium">
+                        Spezielle Öffnungszeiten aktivieren
+                      </div>
+                      <div class="text-caption text--secondary">
+                        Abweichende Öffnungszeiten für bestimmte Daten
+                      </div>
+                    </div>
                   </template>
-                  <span>Öffnungszeiten entfernen</span>
-                </v-tooltip>
-              </v-row>
-              <v-row>
-                <v-col class="text-center">
-                  <v-tooltip bottom offset-y>
-                    <template v-slot:activator="{ on }">
-                      <v-btn
-                        class="align-center add-time-period"
-                        v-on="on"
-                        outlined
-                        :disabled="!isSpecialOpeningHoursRelated"
-                        @click="addNewSpecialOpeningHours"
+                </v-switch>
+              </v-col>
+            </v-row>
+
+            <template v-if="isSpecialOpeningHoursRelated">
+              <v-divider class="my-4"></v-divider>
+
+              <v-alert type="info" dense outlined class="mb-4">
+                <v-icon small class="mr-2">mdi-information-outline</v-icon>
+                Gleiche Start- und Endzeit = geschlossen
+              </v-alert>
+
+              <!-- Spezielle Öffnungszeiten Liste -->
+              <div v-if="specialOpeningHours.length > 0">
+                <v-row
+                  v-for="(specialOpeningHour, idx) in specialOpeningHours"
+                  :key="`special-${idx}`"
+                  align="center"
+                  class="mb-3"
+                >
+                  <v-col cols="12" md="4">
+                    <v-dialog
+                      v-model="specialOpeningHoursDateMenu[idx]"
+                      width="290px"
+                    >
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                          v-model="specialOpeningHour.date"
+                          label="Datum"
+                          prepend-inner-icon="mdi-calendar"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details
+                          readonly
+                          v-bind="attrs"
+                          v-on="on"
+                        ></v-text-field>
+                      </template>
+                      <v-date-picker
+                        v-model="specialOpeningHour.date"
+                        scrollable
+                        locale="de"
+                        :first-day-of-week="1"
                       >
-                        Öffnungszeiten hinzufügen
-                      </v-btn>
-                    </template>
-                    <span>Öffnungszeiten hinzufügen</span>
-                  </v-tooltip>
-                </v-col>
-              </v-row>
-            </v-expansion-panel-content>
-          </v-expansion-panel>
-          <v-expansion-panel class="my-6 panel">
-            <v-expansion-panel-header
-              color="accent"
-              expand-icon="mdi-menu-down"
-              class="panel-header"
-            >
-              <template v-slot:default="{ open }">
-                <v-row no-gutters align="center">
-                  <v-col cols="4">
-                    <span class="text-subtitle-1"> Kalenderwochen </span>
-                    <br />
-                    <span class="text-caption">
-                      Buchungen für ganze Kalenderwochen (Montag bis Freitag)
-                    </span>
-                  </v-col>
-                  <v-col class="col-2">
-                    <v-fade-transition leave-absolute>
-                      <div v-if="!open">
-                        <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isLongRangeWeek" class="ml-2"
-                          >Aktiviert</span
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="$set(specialOpeningHoursDateMenu, idx, false)"
                         >
-                        <span v-else class="ml-2">Inaktiviert</span>
-                      </div>
-                    </v-fade-transition>
+                          Abbrechen
+                        </v-btn>
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="$set(specialOpeningHoursDateMenu, idx, false)"
+                        >
+                          OK
+                        </v-btn>
+                      </v-date-picker>
+                    </v-dialog>
                   </v-col>
-                  <v-col
-                    cols="4"
-                    offset="1"
-                    r-offset="1"
-                    class="text--secondary"
-                  >
-                    <v-fade-transition leave-absolute>
-                      <div v-if="open">
-                        <!--<v-alert type="info" dense outlined v-if="open">
-                          Um das Buchen für einen ganzen Tag zu deaktivieren,
-                          wähle den gleichen Start- und Endzeitpunkt aus.
-                        </v-alert>-->
-                      </div>
-                      <div v-else>
-                        <!-- Details -->
-                      </div>
-                    </v-fade-transition>
+                  <v-col cols="12" md="3">
+                    <v-menu
+                      v-model="timeStartSpecialOpeningHoursMenu[idx]"
+                      :close-on-content-click="false"
+                      :nudge-right="40"
+                      transition="scale-transition"
+                      offset-y
+                      max-width="290px"
+                      min-width="290px"
+                    >
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                          background-color="accent"
+                          filled
+                          dense
+                          v-model="specialOpeningHour.startTime"
+                          label="Von"
+                          readonly
+                          suffix="Uhr"
+                          v-bind="attrs"
+                          v-on="on"
+                          hide-details
+                        ></v-text-field>
+                      </template>
+                      <v-time-picker
+                        v-if="timeStartSpecialOpeningHoursMenu[idx]"
+                        v-model="specialOpeningHour.startTime"
+                        full-width
+                        @click:minute="
+                          setStartSpecialOpeningHoursTime(
+                            idx,
+                            specialOpeningHour.startTime
+                          )
+                        "
+                        format="24hr"
+                      ></v-time-picker>
+                    </v-menu>
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-menu
+                      v-model="timeEndSpecialOpeningMenu[idx]"
+                      :close-on-content-click="false"
+                      :nudge-right="40"
+                      transition="scale-transition"
+                      offset-y
+                      max-width="290px"
+                      min-width="290px"
+                    >
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                          background-color="accent"
+                          filled
+                          dense
+                          v-model="specialOpeningHour.endTime"
+                          label="Bis"
+                          readonly
+                          suffix="Uhr"
+                          v-bind="attrs"
+                          v-on="on"
+                          hide-details
+                        ></v-text-field>
+                      </template>
+                      <v-time-picker
+                        v-if="timeEndSpecialOpeningMenu[idx]"
+                        v-model="specialOpeningHour.endTime"
+                        full-width
+                        @click:minute="
+                          setEndSpecialOpeningHoursTime(
+                            idx,
+                            specialOpeningHour.endTime
+                          )
+                        "
+                        format="24hr"
+                      ></v-time-picker>
+                    </v-menu>
+                  </v-col>
+                  <v-col cols="12" md="2" class="text-right">
+                    <v-btn icon small @click="removeSpecialOpeningHours(idx)">
+                      <v-icon small>mdi-delete-outline</v-icon>
+                    </v-btn>
                   </v-col>
                 </v-row>
-              </template>
-            </v-expansion-panel-header>
-            <v-expansion-panel-content>
+              </div>
+
               <v-row>
-                <v-col class="col-12 col-md-6">
-                  <v-switch
-                    dense
-                    label="Buchungen für ganze Kalenderwochen"
-                    hide-details
-                    v-model="isLongRangeWeek"
-                    class="pt-3"
-                  ></v-switch>
-                </v-col>
-              </v-row>
-            </v-expansion-panel-content>
-          </v-expansion-panel>
-          <v-expansion-panel class="my-6 panel">
-            <v-expansion-panel-header
-              color="accent"
-              expand-icon="mdi-menu-down"
-              class="panel-header"
-            >
-              <template v-slot:default="{ open }">
-                <v-row no-gutters align="center">
-                  <v-col cols="4">
-                    <span class="text-subtitle-1"> Monat </span>
-                    <br />
-                    <span class="text-caption">
-                      Buchungen für ganze Monate
-                    </span>
-                  </v-col>
-                  <v-col class="col-2">
-                    <v-fade-transition leave-absolute>
-                      <div v-if="!open">
-                        <v-icon color="darkgrey">mdi-information</v-icon>
-                        <span v-if="isLongRangeMonth" class="ml-2"
-                          >Aktiviert</span
-                        >
-                        <span v-else class="ml-2">Inaktiviert</span>
-                      </div>
-                    </v-fade-transition>
-                  </v-col>
-                  <v-col
-                    cols="4"
-                    offset="1"
-                    r-offset="1"
-                    class="text--secondary"
+                <v-col cols="12" class="text-center">
+                  <v-btn
+                    small
+                    outlined
+                    color="primary"
+                    @click="addNewSpecialOpeningHours"
                   >
-                    <v-fade-transition leave-absolute>
-                      <div v-if="open">
-                        <!--<v-alert type="info" dense outlined v-if="open">
-                          Um das Buchen für einen ganzen Tag zu deaktivieren,
-                          wähle den gleichen Start- und Endzeitpunkt aus.
-                        </v-alert>-->
-                      </div>
-                      <div v-else>
-                        <!-- Details -->
-                      </div>
-                    </v-fade-transition>
-                  </v-col>
-                </v-row>
-              </template>
-            </v-expansion-panel-header>
-            <v-expansion-panel-content>
-              <v-row>
-                <v-col class="col-12 col-md-6">
-                  <v-switch
-                    dense
-                    label="Buchungen für ganze Monate"
-                    hide-details
-                    v-model="isLongRangeMonth"
-                    class="pt-3"
-                  ></v-switch>
+                    <v-icon left small>mdi-plus</v-icon>
+                    Spezielle Öffnungszeit hinzufügen
+                  </v-btn>
                 </v-col>
               </v-row>
-            </v-expansion-panel-content>
-          </v-expansion-panel>
-        </v-expansion-panels>
+            </template>
+          </v-card-text>
+        </v-card>
       </v-col>
     </v-row>
   </div>
@@ -965,7 +673,12 @@ import { mapActions } from "vuex";
 
 export default {
   name: "BookableTimeDependantAttributes",
-  props: { bookableType: { type: String, required: true } },
+  props: {
+    bookableType: {
+      type: String,
+      required: true,
+    },
+  },
   data() {
     return {
       weekdays: [
@@ -984,12 +697,49 @@ export default {
       timeEndOpeningHoursMenu: [],
       timeStartOpeningHoursMenu: [],
       specialOpeningHoursDateMenu: [],
-      specialOpeningsDate: [],
-      timeStartSpecialOpeningHours: [],
-      timeEndSpecialOpeningHours: [],
     };
   },
   computed: {
+    bookingType: {
+      get() {
+        if (this.isScheduleRelated) return "schedule";
+        if (this.isTimePeriodRelated) return "timePeriod";
+        if (this.isLongRangeWeek) return "week";
+        if (this.isLongRangeMonth) return "month";
+        return "independent";
+      },
+      set(value) {
+        // Reset all booking types
+        this.isScheduleRelated = false;
+        this.isTimePeriodRelated = false;
+        this.updateValue({ field: "longRangeOptions", value: null });
+        this.isLongRange = false;
+
+        // Set the selected type
+        switch (value) {
+          case "schedule":
+            this.isScheduleRelated = true;
+            break;
+          case "timePeriod":
+            this.isTimePeriodRelated = true;
+            break;
+          case "week":
+            this.updateValue({
+              field: "longRangeOptions",
+              value: { type: "week" },
+            });
+            this.isLongRange = true;
+            break;
+          case "month":
+            this.updateValue({
+              field: "longRangeOptions",
+              value: { type: "month" },
+            });
+            this.isLongRange = true;
+            break;
+        }
+      },
+    },
     isLongRangeWeek: {
       get() {
         return (
@@ -1000,9 +750,7 @@ export default {
         if (value) {
           this.updateValue({
             field: "longRangeOptions",
-            value: {
-              type: "week",
-            },
+            value: { type: "week" },
           });
           this.isLongRange = value;
         } else {
@@ -1021,9 +769,7 @@ export default {
         if (value) {
           this.updateValue({
             field: "longRangeOptions",
-            value: {
-              type: "month",
-            },
+            value: { type: "month" },
           });
           this.isLongRange = value;
         } else {
@@ -1121,14 +867,6 @@ export default {
         this.updateValue({ field: "isLongRange", value: value });
       },
     },
-    longRangeOptions: {
-      get() {
-        return this.$store.state.bookables.form.longRangeOptions;
-      },
-      set(value) {
-        this.updateValue({ field: "longRangeOptions", value: value });
-      },
-    },
   },
   watch: {
     isOpeningHoursRelated(val) {
@@ -1151,11 +889,14 @@ export default {
     ...mapActions({
       updateValue: "bookables/updateForm",
     }),
+    onBookingTypeChange() {
+      // Optional: Clear related data when switching types
+    },
     addNewTimePeriod() {
       this.timeStartMenu.push(false);
       this.timeEndMenu.push(false);
       this.timePeriods.push({
-        weekdays: null,
+        weekdays: [],
         startTime: null,
         endTime: null,
       });
@@ -1207,7 +948,7 @@ export default {
       this.timeStartOpeningHoursMenu.push(false);
       this.timeEndOpeningHoursMenu.push(false);
       this.openingHours.push({
-        weekdays: null,
+        weekdays: [],
         startTime: null,
         endTime: null,
       });
@@ -1231,105 +972,55 @@ export default {
       this.timeStartOpeningHoursMenu.splice(index, 1);
       this.timeEndOpeningHoursMenu.splice(index, 1);
     },
-    getFormattedWeekdays(weekdays) {
-      let result = [];
-      if (weekdays) {
-        let weekdaysCopy = weekdays?.slice();
-        if (weekdaysCopy?.length > 1) {
-          if (this.weekdaysAreContinuous(weekdaysCopy)) {
-            weekdaysCopy.sort((a, b) => {
-              if (a === 0) {
-                return 1;
-              }
-              if (b === 0) {
-                return -1;
-              }
-              return a - b;
-            });
-            result.push(
-              this.weekdays.find((day) => {
-                return day.id === weekdaysCopy[0];
-              }).name +
-                " - " +
-                this.weekdays.find((day) => {
-                  return day.id === weekdaysCopy[weekdaysCopy.length - 1];
-                }).name
-            );
-            return result;
-          } else {
-            weekdaysCopy.forEach((weekday) => {
-              result.push(
-                this.weekdays.find((day) => {
-                  return day.id === weekday;
-                }).name
-              );
-            });
-            return result;
-          }
-        }
-        return weekdays.map((weekday) => {
-          return this.weekdays.find((day) => {
-            return day.id === weekday;
-          }).name;
-        });
-      } else {
-        return result;
-      }
-    },
-    weekdaysAreContinuous(weekdays) {
-      let isFollowEachOther = true;
-      //if weekday is 0 replace with 7 for better sorting
-      let weekdaysCopy = weekdays?.slice()?.map((item) => {
-        if (item === 0) {
-          return 7;
-        }
-        return item;
-      });
-      weekdaysCopy.sort((a, b) => a - b);
-      if (weekdaysCopy.length > 2) {
-        for (let i = 0; i < weekdaysCopy.length - 1; i++) {
-          if (weekdaysCopy[i] + 1 !== weekdaysCopy[i + 1]) {
-            isFollowEachOther = false;
-          }
-        }
-      } else {
-        isFollowEachOther = false;
-      }
-      return isFollowEachOther;
-    },
-    formatDate(date) {
-      if (typeof date !== "string") {
-        return "";
-      }
-
-      if (date === null || date === undefined || date === "") {
-        return "";
-      }
-
-      if (date.split("-").length !== 3) {
-        return "";
-      }
-
-      let parts = date.split("-");
-      const [year, month, day] = parts;
-      if (isNaN(Date.parse(`${year}-${month}-${day}`))) {
-        return "";
-      }
-
-      return parts.reverse().join(".");
-    },
   },
 };
 </script>
 
-<style scoped>
-.add-time-period[disabled] {
-  opacity: 0.6;
+<style scoped lang="scss">
+.section-card {
+  border-radius: 8px !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
 }
-.panel {
-  box-shadow: 0 1px 1px rgb(0 0 0 / 0.2);
+
+.section-header {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.02) 0%,
+    rgba(0, 0, 0, 0.01) 100%
+  );
 }
-.panel-header {
-  padding: 13px 13px 13px 13px;
+
+.theme--dark .section-header {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+}
+
+::v-deep .v-radio {
+  padding: 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+}
+
+.theme--dark ::v-deep .v-radio:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.v-list-item {
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+}
+
+.theme--dark .v-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 </style>

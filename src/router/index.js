@@ -148,7 +148,7 @@ const routes = [
   {
     path: "/event-locations/edit",
     name: "location-edit",
-    component: EditBookable,
+    component: lazyLoad("Bookables/Locations/LocationEdit"),
     meta: {
       type: "event-location",
       title: "Raum bearbeiten",
