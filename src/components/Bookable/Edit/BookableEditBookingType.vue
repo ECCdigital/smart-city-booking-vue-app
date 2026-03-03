@@ -9,13 +9,13 @@ export default {
     return {
       valid: false,
       weekdays: [
-        { id: 1, name: "Montag" },
-        { id: 2, name: "Dienstag" },
-        { id: 3, name: "Mittwoch" },
-        { id: 4, name: "Donnerstag" },
-        { id: 5, name: "Freitag" },
-        { id: 6, name: "Samstag" },
-        { id: 0, name: "Sonntag" },
+        { id: 1, name: "Montag", short: "Mo" },
+        { id: 2, name: "Dienstag", short: "Di" },
+        { id: 3, name: "Mittwoch", short: "Mi" },
+        { id: 4, name: "Donnerstag", short: "Do" },
+        { id: 5, name: "Freitag", short: "Fr" },
+        { id: 6, name: "Samstag", short: "Sa" },
+        { id: 0, name: "Sonntag", short: "So" },
       ],
       timeEndMenu: [],
       timeStartMenu: [],
@@ -93,6 +93,10 @@ export default {
         endTime: null,
       });
     },
+    getWeekdayName(id) {
+      const day = this.weekdays.find((d) => d.id === id);
+      return day ? day.name.substring(0, 2) : "";
+    },
     removeWeekdays(index, item) {
       this.model.timePeriods[index].weekdays.splice(
         this.model.timePeriods[index].weekdays.indexOf(item),
@@ -118,8 +122,9 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <BaseSection title="Buchungsart" icon="mdi-calendar-clock">
-      <v-alert type="info" dense outlined class="mb-4">
+    <BaseSection title="Buchungstyp" icon="mdi-calendar-clock">
+      <v-alert color="info" dense text class="mb-4">
+        <v-icon class="mr-3" color="info"> mdi-information-outline </v-icon>
         Wählen Sie aus, wie Kunden dieses Objekt buchen können.
       </v-alert>
 
@@ -129,7 +134,7 @@ export default {
             <div>
               <div class="font-weight-bold">
                 <v-icon small class="mr-2">mdi-calendar-range</v-icon>
-                Freie Zeitwahl über Kalender
+                Freie Zeitwahl
               </div>
               <div class="text-caption text--secondary mt-1">
                 Kunden können Start- und Endzeitpunkt frei wählen
@@ -157,10 +162,10 @@ export default {
             <div>
               <div class="font-weight-bold">
                 <v-icon small class="mr-2">mdi-calendar-week</v-icon>
-                Ganze Kalenderwochen
+                Wochenbuchung
               </div>
               <div class="text-caption text--secondary mt-1">
-                Buchung für komplette Wochen (Montag bis Freitag)
+                Buchung für komplette Wochen
               </div>
             </div>
           </template>
@@ -171,7 +176,7 @@ export default {
             <div>
               <div class="font-weight-bold">
                 <v-icon small class="mr-2">mdi-calendar-month</v-icon>
-                Ganze Monate
+                Monatsbuchung
               </div>
               <div class="text-caption text--secondary mt-1">
                 Buchung für komplette Kalendermonate
@@ -195,41 +200,50 @@ export default {
         </v-radio>
       </v-radio-group>
 
-      <div class="mt-4" v-if="bookingType === 'schedule'">
-        <h3 class="mb-2">
-          <v-icon class="mr-2">mdi-timer-outline</v-icon>Buchungsdauer
-        </h3>
+      <v-card class="mt-4 section-card" v-if="bookingType === 'schedule'">
+        <v-card-subtitle
+          class="section-header d-flex justify-space-between align-center"
+        >
+          <h3 class="mb-2">
+            <v-icon class="mr-2">mdi-timer-outline</v-icon>Buchungsdauer
+          </h3>
+        </v-card-subtitle>
+        <v-divider />
 
-        <v-row>
-          <v-col cols="12" md="6">
-            <v-text-field
-              background-color="accent"
-              filled
-              label="Minimale Buchungsdauer"
-              v-model.number="model.minBookingDuration"
-              suffix="Stunden"
-              type="number"
-              min="0"
-              hide-details
-            ></v-text-field>
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field
-              background-color="accent"
-              filled
-              label="Maximale Buchungsdauer"
-              v-model.number="model.maxBookingDuration"
-              suffix="Stunden"
-              type="number"
-              min="0"
-              hide-details
-            ></v-text-field>
-          </v-col>
-        </v-row>
-      </div>
+        <v-card-text class="pa-3">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-text-field
+                background-color="accent"
+                filled
+                label="Minimale Buchungsdauer"
+                v-model.number="model.minBookingDuration"
+                suffix="Stunden"
+                type="number"
+                min="0"
+                hide-details
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-text-field
+                background-color="accent"
+                filled
+                label="Maximale Buchungsdauer"
+                v-model.number="model.maxBookingDuration"
+                suffix="Stunden"
+                type="number"
+                min="0"
+                hide-details
+              ></v-text-field>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
 
-      <div class="mt-4" v-if="bookingType === 'timePeriod'">
-        <div class="d-flex justify-space-between align-center">
+      <v-card class="mt-4 section-card" v-if="bookingType === 'timePeriod'">
+        <v-card-subtitle
+          class="section-header d-flex justify-space-between align-center"
+        >
           <h3 class="mb-2">
             <v-icon class="mr-2">mdi-clock-outline</v-icon>Feste Zeitfenster
           </h3>
@@ -237,15 +251,53 @@ export default {
             <v-icon left small>mdi-plus</v-icon>
             Hinzufügen
           </v-btn>
-        </div>
+        </v-card-subtitle>
+        <v-divider />
 
-        <div class="pa-0" v-if="model.timePeriods.length > 0">
-          <v-list dense>
-            <template v-for="(timePeriod, idx) in model.timePeriods">
-              <v-list-item :key="`period-${idx}`" class="px-4 py-3">
-                <v-list-item-content>
-                  <v-row align="center">
-                    <v-col cols="12" md="6">
+        <v-card-text class="pa-4" v-if="model.timePeriods.length > 0">
+          <v-list two-line class="py-0">
+            <v-list-item
+              v-for="(timePeriod, idx) in model.timePeriods"
+              :key="`period-${idx}`"
+              class="time-period-item elevation-1 mb-3 rounded pa-4"
+            >
+              <v-list-item-avatar>
+                <v-avatar color="primary" size="40">
+                  <v-icon dark small>mdi-clock-outline</v-icon>
+                </v-avatar>
+              </v-list-item-avatar>
+
+              <v-list-item-content>
+                <v-list-item-title class="mb-2">
+                  <v-chip
+                    v-for="dayId in timePeriod.weekdays"
+                    :key="dayId"
+                    small
+                    color="primary"
+                    class="mr-1"
+                  >
+                    {{ getWeekdayName(dayId) }}
+                  </v-chip>
+                  <v-chip
+                    v-if="timePeriod.weekdays.length === 0"
+                    small
+                    color="grey"
+                  >
+                    Keine Tage gewählt
+                  </v-chip>
+                </v-list-item-title>
+
+                <v-list-item-subtitle class="d-flex align-center">
+                  <v-icon small class="mr-1">mdi-clock-outline</v-icon>
+                  <span v-if="timePeriod.startTime && timePeriod.endTime">
+                    {{ timePeriod.startTime }} - {{ timePeriod.endTime }} Uhr
+                  </span>
+                  <span v-else class="grey--text">Zeit nicht gesetzt</span>
+                </v-list-item-subtitle>
+
+                <div class="mt-3">
+                  <v-row dense>
+                    <v-col cols="12" sm="6">
                       <v-select
                         background-color="accent"
                         filled
@@ -277,7 +329,8 @@ export default {
                         </template>
                       </v-select>
                     </v-col>
-                    <v-col cols="12" md="3">
+
+                    <v-col cols="6" sm="3">
                       <v-menu
                         v-model="timeStartMenu[idx]"
                         :close-on-content-click="false"
@@ -312,7 +365,8 @@ export default {
                         ></v-time-picker>
                       </v-menu>
                     </v-col>
-                    <v-col cols="12" md="2">
+
+                    <v-col cols="6" sm="3">
                       <v-menu
                         v-model="timeEndMenu[idx]"
                         :close-on-content-click="false"
@@ -345,26 +399,26 @@ export default {
                         ></v-time-picker>
                       </v-menu>
                     </v-col>
-                    <v-col cols="12" md="1" class="text-right">
-                      <v-btn icon small @click="removeTimePeriod(idx)">
-                        <v-icon small>mdi-delete-outline</v-icon>
-                      </v-btn>
-                    </v-col>
                   </v-row>
-                </v-list-item-content>
-              </v-list-item>
-              <v-divider
-                v-if="idx < model.timePeriods.length - 1"
-                :key="`divider-${idx}`"
-              />
-            </template>
+                </div>
+              </v-list-item-content>
+
+              <v-list-item-action>
+                <v-btn icon small @click="removeTimePeriod(idx)" color="error">
+                  <v-icon small>mdi-delete-outline</v-icon>
+                </v-btn>
+              </v-list-item-action>
+            </v-list-item>
           </v-list>
-        </div>
-        <v-card-text v-else class="pa-4 text-center grey--text">
+        </v-card-text>
+
+        <v-card-text v-else class="text-center py-8">
           <v-icon large color="grey lighten-1" class="mb-2">
             mdi-clock-outline
           </v-icon>
-          <div>Noch keine Zeitfenster definiert</div>
+          <div class="text-h6 grey--text mb-2">
+            Noch keine Zeitfenster definiert
+          </div>
           <v-btn
             small
             text
@@ -372,12 +426,32 @@ export default {
             @click="addNewTimePeriod"
             class="mt-2"
           >
-            Erstes Zeitfenster hinzufügen
+            <v-icon left small>mdi-plus</v-icon>
+            Zeitfenster hinzufügen
           </v-btn>
         </v-card-text>
-      </div>
+      </v-card>
     </BaseSection>
   </v-form>
 </template>
 
-<style scoped></style>
+<style scoped>
+.section-card {
+  border-radius: 8px !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+}
+.section-header {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.02) 0%,
+    rgba(0, 0, 0, 0.01) 100%
+  );
+}
+.theme--dark .section-header {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+}
+</style>

@@ -18,10 +18,9 @@ export default {
       `api/${t}/bookables/public/${id}?populate=${populate}`
     );
   },
-  createOrUpdateBookable(tenant) {
-    const bookablesForm = store.getters["bookables/form"];
+  async createOrUpdateBookable(bookable, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    const formData = { ...bookablesForm };
+    const formData = { ...bookable };
     formData.tenantId = t;
 
     if (formData.priceEur && typeof formData.priceEur === "string") {

@@ -1,26 +1,24 @@
 <script>
-import AdminLayout from "@/layouts/Admin.vue";
 import BookableEdit from "@/components/Bookable/BookableEdit.vue";
+import AdminLayout from "@/layouts/Admin.vue";
 
 export default {
-  name: "LocationEdit",
-  components: { BookableEdit, AdminLayout },
+  name: "RoomEdit",
+  components: { AdminLayout, BookableEdit },
   computed: {
     bookableID() {
       return this.$route.query.id;
     },
     pageTitle() {
-      return this.bookableID
-        ? "Veranstaltungsort bearbeiten"
-        : "Veranstaltungsort erstellen";
+      return this.bookableID ? "Raum bearbeiten" : "Raum erstellen";
     },
-  }
+  },
 };
 </script>
 
 <template>
   <AdminLayout :title="pageTitle">
-    <BookableEdit type="event-location"> </BookableEdit>
+    <BookableEdit type="room"> </BookableEdit>
   </AdminLayout>
 </template>
 

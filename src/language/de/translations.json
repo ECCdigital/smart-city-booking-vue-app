@@ -90,6 +90,20 @@
       "success": {
         "title": "Erfolgreich erstellt",
         "message": "Das Element wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Das Element konnte nicht erstellt werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
+      }
+    },
+    "update": {
+      "success": {
+        "title": "Erfolgreich gespeichert",
+        "message": "Die Änderungen wurden erfolgreich gespeichert."
+      },
+      "error": {
+        "title": "Fehler beim Speichern",
+        "message": "Die Änderungen konnten nicht gespeichert werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
       }
     },
     "duplicate": {

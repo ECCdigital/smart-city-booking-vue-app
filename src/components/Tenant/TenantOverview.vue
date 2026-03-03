@@ -386,7 +386,6 @@ export default {
     async submitChanges() {
       const ok = await this.validateActiveChild();
       if (!ok) {
-        // optional: nach 4s Validierung der aktiven Unterseite zurücksetzen
         setTimeout(() => {
           const ref = this.$refs.activeChild;
           if (ref && typeof ref.resetValidation === "function") {
