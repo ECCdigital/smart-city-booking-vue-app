@@ -59,15 +59,16 @@ export default {
     },
     async fetchEvents() {
       await ApiEventService.getEvents().then((result) => {
+        console.log("Fetched events for bookable edit:", result);
         this.events = result?.data;
       });
     },
   },
   watch: {
-    "bookable.id": {
+    "model.id": {
       immediate: true,
       handler() {
-        if (this.type === "ticket") {
+        if (this.model.type === "ticket") {
           this.fetchEvents();
         }
       },
