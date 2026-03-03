@@ -997,28 +997,6 @@ export default {
           key: "ticket",
         },
       ],
-      attachmentTypes: [
-        {
-          id: "agreement",
-          name: "Nutzervereinbarung",
-        },
-        {
-          id: "privacy-agreement",
-          name: "Datenschutzerklärung",
-        },
-        {
-          id: "user-manual",
-          name: "Betriebsanleitung",
-        },
-        {
-          id: "security-information",
-          name: "Sicherheitshinweise",
-        },
-        {
-          id: "product-information",
-          name: "Produktinformationen",
-        },
-      ],
       priceTypes: [
         {
           id: "per-item",
