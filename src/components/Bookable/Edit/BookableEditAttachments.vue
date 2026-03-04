@@ -175,7 +175,6 @@ export default {
                       icon
                       small
                       @click.stop="removeAttachment(attachment.id)"
-                      color="error"
                     >
                       <v-icon small>mdi-delete-outline</v-icon>
                     </v-btn>

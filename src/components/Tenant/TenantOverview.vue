@@ -253,6 +253,15 @@ export default {
           password: "",
           active: false,
         },
+        ifbs: {
+          type: "locker",
+          id: "ifbs",
+          title: "Parkraumservice",
+          serverUrl: "",
+          apiKeyID: "",
+          apiKey: "",
+          active: false,
+        },
       },
     };
   },
