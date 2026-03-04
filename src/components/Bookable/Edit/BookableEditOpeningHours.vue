@@ -25,6 +25,8 @@ export default {
       timeEndOpeningHoursMenu: [],
       timeStartOpeningHoursMenu: [],
       specialOpeningHoursDateMenu: [],
+      expandedItemsOpeningHours: [],
+      expandedItemsSpecialHours: [],
     };
   },
   computed: {
@@ -43,9 +45,7 @@ export default {
       return "independent";
     },
     hasOpeningHours() {
-      return (
-        this.model.openingHours && this.model.openingHours.length > 0
-      );
+      return this.model.openingHours && this.model.openingHours.length > 0;
     },
     hasSpecialOpeningHours() {
       return (
@@ -73,8 +73,11 @@ export default {
       this.model.openingHours.splice(index, 1);
       this.timeStartOpeningHoursMenu.splice(index, 1);
       this.timeEndOpeningHoursMenu.splice(index, 1);
+      const idx = this.expandedItemsOpeningHours.indexOf(index);
+      if (idx > -1) this.expandedItemsOpeningHours.splice(idx, 1);
     },
     addNewOpeningHours() {
+      const index = this.model.openingHours.length;
       this.timeStartOpeningHoursMenu.push(false);
       this.timeEndOpeningHoursMenu.push(false);
       this.model.openingHours.push({
@@ -82,6 +85,7 @@ export default {
         startTime: null,
         endTime: null,
       });
+      this.expandedItemsOpeningHours.push(index);
     },
     setStartSpecialOpeningHoursTime(index, time) {
       this.model.specialOpeningHours[index].startTime = time;
@@ -92,6 +96,7 @@ export default {
       this.timeEndSpecialOpeningMenu[index] = false;
     },
     addNewSpecialOpeningHours() {
+      const index = this.model.specialOpeningHours.length;
       this.timeStartSpecialOpeningHoursMenu.push(false);
       this.timeEndSpecialOpeningMenu.push(false);
       this.specialOpeningHoursDateMenu.push(false);
@@ -100,16 +105,26 @@ export default {
         startTime: null,
         endTime: null,
       });
+      this.expandedItemsSpecialHours.push(index);
     },
     removeSpecialOpeningHours(index) {
       this.model.specialOpeningHours.splice(index, 1);
       this.timeStartSpecialOpeningHoursMenu.splice(index, 1);
       this.timeEndSpecialOpeningMenu.splice(index, 1);
       this.specialOpeningHoursDateMenu.splice(index, 1);
+      const idx = this.expandedItemsSpecialHours.indexOf(index);
+      if (idx > -1) this.expandedItemsSpecialHours.splice(idx, 1);
     },
     getWeekdayName(id) {
       const day = this.weekdays.find((d) => d.id === id);
       return day ? day.short : "";
+    },
+    getWeekdayNamesFormatted(weekdays) {
+      if (!weekdays || weekdays.length === 0) return "";
+      return weekdays
+        .map((id) => this.getWeekdayName(id))
+        .filter(Boolean)
+        .join(", ");
     },
     formatDate(dateStr) {
       if (!dateStr) return "";
@@ -119,6 +134,28 @@ export default {
         month: "2-digit",
         year: "numeric",
       });
+    },
+    toggleExpandOpeningHours(index) {
+      const idx = this.expandedItemsOpeningHours.indexOf(index);
+      if (idx > -1) {
+        this.expandedItemsOpeningHours.splice(idx, 1);
+      } else {
+        this.expandedItemsOpeningHours.push(index);
+      }
+    },
+    isExpandedOpeningHours(index) {
+      return this.expandedItemsOpeningHours.includes(index);
+    },
+    toggleExpandSpecialHours(index) {
+      const idx = this.expandedItemsSpecialHours.indexOf(index);
+      if (idx > -1) {
+        this.expandedItemsSpecialHours.splice(idx, 1);
+      } else {
+        this.expandedItemsSpecialHours.push(index);
+      }
+    },
+    isExpandedSpecialHours(index) {
+      return this.expandedItemsSpecialHours.includes(index);
     },
   },
 };
@@ -179,9 +216,7 @@ export default {
 
             <v-alert color="info" dense text class="mb-4">
               <div class="d-flex align-center">
-                <v-icon class="mr-3" color="info">
-                  mdi-calendar-alert
-                </v-icon>
+                <v-icon class="mr-3" color="info"> mdi-calendar-alert </v-icon>
                 <div>
                   <strong>Wichtig:</strong> Nur Wochentage mit definierten
                   Öffnungszeiten sind buchbar. Alle anderen Tage gelten als
@@ -192,54 +227,86 @@ export default {
 
             <div v-if="hasOpeningHours">
               <v-list two-line class="py-0">
-                <v-list-item
-                  v-for="(openingHour, idx) in model.openingHours"
-                  :key="`opening-${idx}`"
-                  class="opening-hours-item elevation-1 mb-3 rounded pa-4"
-                >
-                  <v-list-item-avatar>
-                    <v-avatar color="primary" size="40">
-                      <v-icon dark small>mdi-calendar-week</v-icon>
-                    </v-avatar>
-                  </v-list-item-avatar>
-
-                  <v-list-item-content>
-                    <v-list-item-title class="mb-2">
-                      <v-chip
-                        v-for="dayId in openingHour.weekdays"
-                        :key="dayId"
-                        small
-                        color="primary"
-                        class="mr-1"
+                <template v-for="(openingHour, idx) in model.openingHours">
+                  <v-list-item
+                    :key="`opening-${idx}`"
+                    class="opening-hours-item elevation-1 mb-3 rounded"
+                    @click="toggleExpandOpeningHours(idx)"
+                  >
+                    <v-list-item-avatar>
+                      <v-avatar
+                        :color="
+                          openingHour.weekdays.length > 0 ? 'primary' : 'grey'
+                        "
+                        size="40"
                       >
-                        {{ getWeekdayName(dayId) }}
-                      </v-chip>
-                      <v-chip
-                        v-if="openingHour.weekdays.length === 0"
-                        small
-                        color="grey"
+                        <v-icon dark small>mdi-calendar-week</v-icon>
+                      </v-avatar>
+                    </v-list-item-avatar>
+
+                    <v-list-item-content>
+                      <v-list-item-title class="d-flex align-center">
+                        <span class="font-weight-medium">
+                          {{
+                            getWeekdayNamesFormatted(openingHour.weekdays) ||
+                            "Keine Tage gewählt"
+                          }}
+                        </span>
+                      </v-list-item-title>
+
+                      <v-list-item-subtitle
+                        class="d-flex align-center flex-wrap"
                       >
-                        Keine Tage gewählt
-                      </v-chip>
-                    </v-list-item-title>
+                        <v-icon small class="mr-1">mdi-clock-outline</v-icon>
+                        <span
+                          v-if="openingHour.startTime && openingHour.endTime"
+                        >
+                          {{ openingHour.startTime }} -
+                          {{ openingHour.endTime }} Uhr
+                        </span>
+                        <span v-else class="grey--text"
+                          >Zeit nicht gesetzt</span
+                        >
+                      </v-list-item-subtitle>
+                    </v-list-item-content>
 
-                    <v-list-item-subtitle class="d-flex align-center">
-                      <v-icon small class="mr-1">mdi-clock-outline</v-icon>
-                      <span v-if="openingHour.startTime && openingHour.endTime">
-                        {{ openingHour.startTime }} - {{ openingHour.endTime }}
-                        Uhr
-                      </span>
-                      <span v-else class="grey--text">Zeit nicht gesetzt</span>
-                    </v-list-item-subtitle>
+                    <v-list-item-action>
+                      <div class="d-flex align-center">
+                        <v-btn
+                          icon
+                          small
+                          @click.stop="removeOpeningHours(idx)"
+                          color="error"
+                        >
+                          <v-icon small>mdi-delete-outline</v-icon>
+                        </v-btn>
+                        <v-btn icon small>
+                          <v-icon>
+                            {{
+                              isExpandedOpeningHours(idx)
+                                ? "mdi-chevron-up"
+                                : "mdi-chevron-down"
+                            }}
+                          </v-icon>
+                        </v-btn>
+                      </div>
+                    </v-list-item-action>
+                  </v-list-item>
 
-                    <div class="mt-3">
-                      <v-row dense>
-                        <v-col cols="12" sm="6">
+                  <v-expand-transition :key="`expand-opening-${idx}`">
+                    <v-card
+                      v-show="isExpandedOpeningHours(idx)"
+                      flat
+                      class="mx-3 mb-3 pa-4 opening-hours-card"
+                      color="grey lighten-5"
+                    >
+                      <v-row>
+                        <v-col cols="12">
                           <v-select
+                            dense
                             background-color="accent"
                             filled
-                            dense
-                            label="Wochentag(e)"
+                            label="Wochentag(e) *"
                             :items="weekdays"
                             item-value="id"
                             item-text="name"
@@ -247,7 +314,12 @@ export default {
                             multiple
                             chips
                             hide-selected
-                            hide-details
+                            hide-details="auto"
+                            :rules="[
+                              (v) =>
+                                (v && v.length > 0) ||
+                                'Mindestens ein Wochentag erforderlich',
+                            ]"
                           >
                             <template
                               v-slot:selection="{
@@ -273,8 +345,10 @@ export default {
                             </template>
                           </v-select>
                         </v-col>
+                      </v-row>
 
-                        <v-col cols="6" sm="3">
+                      <v-row>
+                        <v-col cols="12" md="6">
                           <v-menu
                             v-model="timeStartOpeningHoursMenu[idx]"
                             :close-on-content-click="false"
@@ -286,16 +360,19 @@ export default {
                           >
                             <template v-slot:activator="{ on, attrs }">
                               <v-text-field
+                                dense
                                 background-color="accent"
                                 filled
-                                dense
                                 v-model="openingHour.startTime"
-                                label="Von"
+                                label="Von *"
                                 readonly
                                 suffix="Uhr"
                                 v-bind="attrs"
                                 v-on="on"
-                                hide-details
+                                hide-details="auto"
+                                :rules="[
+                                  (v) => !!v || 'Startzeit ist erforderlich',
+                                ]"
                               ></v-text-field>
                             </template>
                             <v-time-picker
@@ -313,7 +390,7 @@ export default {
                           </v-menu>
                         </v-col>
 
-                        <v-col cols="6" sm="3">
+                        <v-col cols="12" md="6">
                           <v-menu
                             v-model="timeEndOpeningHoursMenu[idx]"
                             :close-on-content-click="false"
@@ -325,16 +402,19 @@ export default {
                           >
                             <template v-slot:activator="{ on, attrs }">
                               <v-text-field
+                                dense
                                 background-color="accent"
                                 filled
-                                dense
                                 v-model="openingHour.endTime"
-                                label="Bis"
+                                label="Bis *"
                                 readonly
                                 suffix="Uhr"
                                 v-bind="attrs"
                                 v-on="on"
-                                hide-details
+                                hide-details="auto"
+                                :rules="[
+                                  (v) => !!v || 'Endzeit ist erforderlich',
+                                ]"
                               ></v-text-field>
                             </template>
                             <v-time-picker
@@ -349,20 +429,15 @@ export default {
                           </v-menu>
                         </v-col>
                       </v-row>
-                    </div>
-                  </v-list-item-content>
+                    </v-card>
+                  </v-expand-transition>
 
-                  <v-list-item-action>
-                    <v-btn
-                      icon
-                      small
-                      @click="removeOpeningHours(idx)"
-                      color="error"
-                    >
-                      <v-icon small>mdi-delete-outline</v-icon>
-                    </v-btn>
-                  </v-list-item-action>
-                </v-list-item>
+                  <v-divider
+                    v-if="idx < model.openingHours.length - 1"
+                    :key="`divider-opening-${idx}`"
+                    class="my-2"
+                  />
+                </template>
               </v-list>
             </div>
 
@@ -373,15 +448,12 @@ export default {
               <div class="text-h6 grey--text mb-2">
                 Noch keine Öffnungszeiten definiert
               </div>
-              <v-btn
-                small
-                text
-                color="primary"
-                @click="addNewOpeningHours"
-                class="mt-2"
-              >
+              <div class="text-body-2 grey--text text--darken-1 mb-4">
+                Fügen Sie wiederkehrende Öffnungszeiten für Wochentage hinzu
+              </div>
+              <v-btn small text color="primary" @click="addNewOpeningHours">
                 <v-icon left small>mdi-plus</v-icon>
-                Öffnungszeiten hinzufügen
+                Erste Öffnungszeit hinzufügen
               </v-btn>
             </div>
           </template>
@@ -395,9 +467,7 @@ export default {
         >
           <div>
             <v-icon class="mr-2">mdi-calendar-star</v-icon>
-            <span class="text-h6 font-weight-bold">
-              Sonderöffnungszeiten
-            </span>
+            <span class="text-h6 font-weight-bold"> Sonderöffnungszeiten </span>
           </div>
           <v-btn
             v-if="model.isSpecialOpeningHoursRelated"
@@ -459,60 +529,102 @@ export default {
 
             <div v-if="hasSpecialOpeningHours">
               <v-list two-line class="py-0">
-                <v-list-item
-                  v-for="(
-                    specialOpeningHour, idx
-                  ) in model.specialOpeningHours"
-                  :key="`special-${idx}`"
-                  class="special-hours-item elevation-1 mb-3 rounded pa-4"
+                <template
+                  v-for="(specialOpeningHour, idx) in model.specialOpeningHours"
                 >
-                  <v-list-item-avatar>
-                    <v-avatar color="orange" size="40">
-                      <v-icon dark small>mdi-calendar-star</v-icon>
-                    </v-avatar>
-                  </v-list-item-avatar>
-
-                  <v-list-item-content>
-                    <v-list-item-title class="mb-2">
-                      <v-chip small color="orange" text-color="white">
-                        {{ formatDate(specialOpeningHour.date) ||
-                      "Kein Datum" }}
-                      </v-chip>
-                    </v-list-item-title>
-
-                    <v-list-item-subtitle class="d-flex align-center">
-                      <v-icon small class="mr-1">mdi-clock-outline</v-icon>
-                      <span
-                        v-if="
-                          specialOpeningHour.startTime &&
-                          specialOpeningHour.endTime
-                        "
+                  <v-list-item
+                    :key="`special-${idx}`"
+                    class="special-hours-item elevation-1 mb-3 rounded"
+                    @click="toggleExpandSpecialHours(idx)"
+                  >
+                    <v-list-item-avatar>
+                      <v-avatar
+                        :color="specialOpeningHour.date ? 'orange' : 'grey'"
+                        size="40"
                       >
-                        {{ specialOpeningHour.startTime }} -
-                        {{ specialOpeningHour.endTime }} Uhr
-                      </span>
-                      <span v-else class="grey--text">Zeit nicht gesetzt</span>
-                    </v-list-item-subtitle>
+                        <v-icon dark small>mdi-calendar-star</v-icon>
+                      </v-avatar>
+                    </v-list-item-avatar>
 
-                    <div class="mt-3">
-                      <v-row dense>
-                        <v-col cols="12" sm="6">
+                    <v-list-item-content>
+                      <v-list-item-title class="d-flex align-center">
+                        <span class="font-weight-medium">
+                          {{
+                            formatDate(specialOpeningHour.date) || "Kein Datum"
+                          }}
+                        </span>
+                      </v-list-item-title>
+
+                      <v-list-item-subtitle
+                        class="d-flex align-center flex-wrap"
+                      >
+                        <v-icon small class="mr-1">mdi-clock-outline</v-icon>
+                        <span
+                          v-if="
+                            specialOpeningHour.startTime &&
+                            specialOpeningHour.endTime
+                          "
+                        >
+                          {{ specialOpeningHour.startTime }} -
+                          {{ specialOpeningHour.endTime }} Uhr
+                        </span>
+                        <span v-else class="grey--text"
+                          >Zeit nicht gesetzt</span
+                        >
+                      </v-list-item-subtitle>
+                    </v-list-item-content>
+
+                    <v-list-item-action>
+                      <div class="d-flex align-center">
+                        <v-btn
+                          icon
+                          small
+                          @click.stop="removeSpecialOpeningHours(idx)"
+                          color="error"
+                        >
+                          <v-icon small>mdi-delete-outline</v-icon>
+                        </v-btn>
+                        <v-btn icon small>
+                          <v-icon>
+                            {{
+                              isExpandedSpecialHours(idx)
+                                ? "mdi-chevron-up"
+                                : "mdi-chevron-down"
+                            }}
+                          </v-icon>
+                        </v-btn>
+                      </div>
+                    </v-list-item-action>
+                  </v-list-item>
+
+                  <v-expand-transition :key="`expand-special-${idx}`">
+                    <v-card
+                      v-show="isExpandedSpecialHours(idx)"
+                      flat
+                      class="mx-3 mb-3 pa-4 special-hours-card"
+                      color="grey lighten-5"
+                    >
+                      <v-row>
+                        <v-col cols="12">
                           <v-dialog
                             v-model="specialOpeningHoursDateMenu[idx]"
                             width="290px"
                           >
                             <template v-slot:activator="{ on, attrs }">
                               <v-text-field
+                                dense
                                 v-model="specialOpeningHour.date"
-                                label="Datum"
+                                label="Datum *"
                                 prepend-inner-icon="mdi-calendar"
                                 background-color="accent"
                                 filled
-                                dense
-                                hide-details
+                                hide-details="auto"
                                 readonly
                                 v-bind="attrs"
                                 v-on="on"
+                                :rules="[
+                                  (v) => !!v || 'Datum ist erforderlich',
+                                ]"
                               ></v-text-field>
                             </template>
                             <v-date-picker
@@ -526,11 +638,7 @@ export default {
                                 text
                                 color="primary"
                                 @click="
-                                  $set(
-                                    specialOpeningHoursDateMenu,
-                                    idx,
-                                    false
-                                  )
+                                  $set(specialOpeningHoursDateMenu, idx, false)
                                 "
                               >
                                 Abbrechen
@@ -539,11 +647,7 @@ export default {
                                 text
                                 color="primary"
                                 @click="
-                                  $set(
-                                    specialOpeningHoursDateMenu,
-                                    idx,
-                                    false
-                                  )
+                                  $set(specialOpeningHoursDateMenu, idx, false)
                                 "
                               >
                                 OK
@@ -551,8 +655,10 @@ export default {
                             </v-date-picker>
                           </v-dialog>
                         </v-col>
+                      </v-row>
 
-                        <v-col cols="6" sm="3">
+                      <v-row>
+                        <v-col cols="12" md="6">
                           <v-menu
                             v-model="timeStartSpecialOpeningHoursMenu[idx]"
                             :close-on-content-click="false"
@@ -564,16 +670,19 @@ export default {
                           >
                             <template v-slot:activator="{ on, attrs }">
                               <v-text-field
+                                dense
                                 background-color="accent"
                                 filled
-                                dense
                                 v-model="specialOpeningHour.startTime"
-                                label="Von"
+                                label="Von *"
                                 readonly
                                 suffix="Uhr"
                                 v-bind="attrs"
                                 v-on="on"
-                                hide-details
+                                hide-details="auto"
+                                :rules="[
+                                  (v) => !!v || 'Startzeit ist erforderlich',
+                                ]"
                               ></v-text-field>
                             </template>
                             <v-time-picker
@@ -591,7 +700,7 @@ export default {
                           </v-menu>
                         </v-col>
 
-                        <v-col cols="6" sm="3">
+                        <v-col cols="12" md="6">
                           <v-menu
                             v-model="timeEndSpecialOpeningMenu[idx]"
                             :close-on-content-click="false"
@@ -603,16 +712,19 @@ export default {
                           >
                             <template v-slot:activator="{ on, attrs }">
                               <v-text-field
+                                dense
                                 background-color="accent"
                                 filled
-                                dense
                                 v-model="specialOpeningHour.endTime"
-                                label="Bis"
+                                label="Bis *"
                                 readonly
                                 suffix="Uhr"
                                 v-bind="attrs"
                                 v-on="on"
-                                hide-details
+                                hide-details="auto"
+                                :rules="[
+                                  (v) => !!v || 'Endzeit ist erforderlich',
+                                ]"
                               ></v-text-field>
                             </template>
                             <v-time-picker
@@ -630,20 +742,15 @@ export default {
                           </v-menu>
                         </v-col>
                       </v-row>
-                    </div>
-                  </v-list-item-content>
+                    </v-card>
+                  </v-expand-transition>
 
-                  <v-list-item-action>
-                    <v-btn
-                      icon
-                      small
-                      @click="removeSpecialOpeningHours(idx)"
-                      color="error"
-                    >
-                      <v-icon small>mdi-delete-outline</v-icon>
-                    </v-btn>
-                  </v-list-item-action>
-                </v-list-item>
+                  <v-divider
+                    v-if="idx < model.specialOpeningHours.length - 1"
+                    :key="`divider-special-${idx}`"
+                    class="my-2"
+                  />
+                </template>
               </v-list>
             </div>
 
@@ -654,15 +761,17 @@ export default {
               <div class="text-h6 grey--text mb-2">
                 Noch keine Sonderöffnungszeiten definiert
               </div>
+              <div class="text-body-2 grey--text text--darken-1 mb-4">
+                Fügen Sie abweichende Öffnungszeiten für einzelne Daten hinzu
+              </div>
               <v-btn
                 small
                 text
                 color="primary"
                 @click="addNewSpecialOpeningHours"
-                class="mt-2"
               >
                 <v-icon left small>mdi-plus</v-icon>
-                Sonderöffnungszeiten hinzufügen
+                Erste Sonderöffnungszeit hinzufügen
               </v-btn>
             </div>
           </template>
@@ -688,8 +797,8 @@ export default {
           bookingType === "week"
             ? "Wochenbuchung"
             : bookingType === "month"
-              ? "Monatsbuchung"
-              : "Zeitunabhängig"
+            ? "Monatsbuchung"
+            : "Zeitunabhängig"
         }}
       </v-chip>
     </div>
@@ -718,16 +827,19 @@ export default {
   );
 }
 
-.opening-hours-item {
-  border-left-color: var(--v-primary-base);
-}
-
+.opening-hours-item,
 .special-hours-item {
-  border-left-color: var(--v-orange-base);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .theme--dark .opening-hours-item,
 .theme--dark .special-hours-item {
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+.opening-hours-card,
+.special-hours-card {
+  border-radius: 8px !important;
 }
 </style>

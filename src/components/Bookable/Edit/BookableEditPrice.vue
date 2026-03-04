@@ -514,14 +514,14 @@ export default {
                     <v-card
                       v-show="isExpanded(idx)"
                       flat
-                      class="mx-3 mb-3 pa-4"
+                      class="mx-3 mb-3 pa-4 price-card"
                       color="grey lighten-5"
                     >
                       <!-- Price and Fixed Price -->
                       <v-row>
                         <v-col cols="12" md="4">
                           <v-text-field
-                            background-color="white"
+                            background-color="accent"
                             filled
                             dense
                             label="Preis (netto) *"
@@ -570,7 +570,7 @@ export default {
                         <v-col cols="12" md="6">
                           <v-text-field
                             v-model="priceCategory.interval.start"
-                            background-color="white"
+                            background-color="accent"
                             filled
                             dense
                             label="Gültig ab"
@@ -583,7 +583,7 @@ export default {
                         <v-col cols="12" md="6">
                           <v-text-field
                             v-model="priceCategory.interval.end"
-                            background-color="white"
+                            background-color="accent"
                             filled
                             dense
                             label="Gültig bis"
@@ -605,7 +605,7 @@ export default {
                       <v-row>
                         <v-col cols="12" md="6">
                           <v-select
-                            background-color="white"
+                            background-color="accent"
                             filled
                             dense
                             label="Wochentage"
@@ -645,7 +645,7 @@ export default {
 
                         <v-col cols="12" md="6">
                           <v-combobox
-                            background-color="white"
+                            background-color="accent"
                             filled
                             dense
                             multiple
@@ -767,5 +767,9 @@ export default {
 
 .theme--dark .price-category-item {
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+.price-card {
+  border-radius: 8px !important;
 }
 </style>

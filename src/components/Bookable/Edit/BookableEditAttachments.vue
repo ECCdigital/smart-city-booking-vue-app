@@ -196,14 +196,14 @@ export default {
                 <v-card
                   v-show="isExpanded(attachment.id)"
                   flat
-                  class="mx-3 mb-3 pa-4"
+                  class="mx-3 mb-3 pa-4 attachment-card"
                   color="grey lighten-5"
                 >
                   <v-row>
                     <v-col cols="12" md="6">
                       <v-text-field
                         dense
-                        background-color="white"
+                        background-color="accent"
                         filled
                         label="Titel *"
                         hide-details="auto"
@@ -214,7 +214,7 @@ export default {
                     <v-col cols="12" md="6">
                       <v-select
                         dense
-                        background-color="white"
+                        background-color="accent"
                         filled
                         label="Typ *"
                         hide-details="auto"
@@ -235,7 +235,7 @@ export default {
                         :tenant-id="tenantId"
                         filled
                         label="Datei *"
-                        background-color="white"
+                        background-color="accent"
                         forced-subdirectory="agreements"
                         hide-details="auto"
                         :rules="[(v) => !!v || 'Datei ist erforderlich']"
@@ -247,7 +247,7 @@ export default {
                     <v-col cols="12">
                       <v-text-field
                         dense
-                        background-color="white"
+                        background-color="accent"
                         filled
                         label="Beschreibung"
                         placeholder="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."
@@ -347,5 +347,9 @@ export default {
 
 .theme--dark .attachment-item {
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+.attachment-card {
+  border-radius: 8px !important;
 }
 </style>
