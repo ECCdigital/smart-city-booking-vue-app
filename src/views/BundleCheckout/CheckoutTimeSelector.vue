@@ -115,7 +115,7 @@
                 v-model="dateEndDisplay"
                 v-bind="attrs"
                 v-on="on"
-                label="Startdatum"
+                label="Enddatum"
                 prepend-icon="mdi-calendar"
                 type="text"
                 v-mask="'##.##.####'"

@@ -920,7 +920,7 @@ export default {
         "Stelle Zahlungsbeleg bereit..."
       );
       ApiBookingService.getReceipt(this.booking.id, name).then((response) => {
-        const blob = new Blob([response.data], { type: "application/pdf" });
+        const blob = response.data
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
