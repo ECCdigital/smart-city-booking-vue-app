@@ -43,4 +43,12 @@ export default {
     );
     return response.data;
   },
+  async updateGroupBooking(tenantId, groupBookingId, updateData) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const response = await ApiClient.put(
+      `api/${t}/group-bookings/${groupBookingId}`,
+      { updateData }
+    );
+    return response.data;
+  },
 };

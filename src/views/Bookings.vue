@@ -113,6 +113,7 @@
       :open="openEditDialog"
       :bookables="bookables"
       :workflow="workflow"
+      :group-booking="selectedGroupBooking"
       @close="onCloseEditDialog"
     />
     <BookingDeleteConformationDialog
@@ -437,36 +438,37 @@ export default {
           console.log(error);
         });
     },
-    closeDialog(type) {
+    async closeDialog(type) {
       switch (type) {
-        case "edit":
-          this.openEditDialog = false;
-          break;
-        case "delete":
-          this.openDeleteDialog = false;
-          break;
-        case "reject":
-          this.errors.reject = null;
-          break;
-        case "booking":
-          this.openBookingDialog = false;
-          break;
-        case "groupBooking":
-          this.openGroupBookingDialog = false;
-          break;
-        case "commitGroupBooking":
-          this.errors.commit = null;
-          this.openCommitGroupBookingDialog = false;
-          break;
-        case "deleteGroupBooking":
-          this.openDeleteGroupBookingDialog = false;
-          break;
-        case "rejectGroupBooking":
-          this.errors.reject = null;
-          this.openRejectGroupBookingDialog = false;
-          break;
-        default:
-          break;
+      case "edit":
+        this.openEditDialog = false;
+        break;
+      case "delete":
+        this.openDeleteDialog = false;
+        break;
+      case "reject":
+        this.errors.reject = null;
+        break;
+      case "booking":
+        this.openBookingDialog = false;
+        break;
+      case "groupBooking":
+        await this.fetchGroupBookings();
+        this.openGroupBookingDialog = false;
+        break;
+      case "commitGroupBooking":
+        this.errors.commit = null;
+        this.openCommitGroupBookingDialog = false;
+        break;
+      case "deleteGroupBooking":
+        this.openDeleteGroupBookingDialog = false;
+        break;
+      case "rejectGroupBooking":
+        this.errors.reject = null;
+        this.openRejectGroupBookingDialog = false;
+        break;
+      default:
+        break;
       }
     },
     async deleteBooking(bookingId) {
@@ -475,6 +477,7 @@ export default {
         await this.startLoading("delete-booking");
         await ApiBookingService.deleteBooking(bookingId);
         await this.fetchBookings();
+        await this.fetchGroupBookings();
         this.openDeleteDialog = false;
         this.openDeleteGroupBookingDialog = false;
       } finally {
@@ -491,6 +494,7 @@ export default {
         await this.startLoading("delete-booking");
         await ApiGroupBookingService.deleteGroupBooking(null, groupBooking.id);
         await this.fetchBookings();
+        await this.fetchGroupBookings();
         this.openDeleteDialog = false;
         this.openDeleteGroupBookingDialog = false;
       } finally {
@@ -542,6 +546,7 @@ export default {
             );
             this.errors.commit = null;
             await this.fetchBookings();
+            await this.fetchGroupBookings();
             this.openCommitGroupBookingDialog = false;
           }
         } finally {
@@ -593,6 +598,7 @@ export default {
           this.openPayDialog = false;
           this.errors.pay = null;
           await this.fetchBookings();
+          await this.fetchGroupBookings();
         }
       } finally {
         await this.stopLoading("pay-booking");
@@ -621,6 +627,7 @@ export default {
           this.errors.pay = null;
           this.openPayDialog = false;
           await this.fetchBookings();
+          await this.fetchGroupBookings();
         }
       } finally {
         await this.stopLoading("pay-booking");
@@ -645,6 +652,7 @@ export default {
           );
           this.errors.commit = null;
           await this.fetchBookings();
+          await this.fetchGroupBookings();
           this.openCommitGroupBookingDialog = false;
         }
       } finally {
@@ -659,6 +667,7 @@ export default {
         await this.startLoading("reject-booking");
         await ApiBookingService.rejectBooking(id, this.tenantId, rejectReason);
         await this.fetchBookings();
+        await this.fetchGroupBookings();
         this.openRejectDialog = false;
         this.openRejectGroupBookingDialog = false;
       } finally {
@@ -689,6 +698,7 @@ export default {
           );
           this.errors.reject = null;
           await this.fetchBookings();
+          await this.fetchGroupBookings();
           this.openRejectGroupBookingDialog = false;
         }
       } finally {
@@ -738,6 +748,19 @@ export default {
         {},
         this.api.bookings.find((booking) => booking.id === bookingId)
       );
+      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
+        groupBooking.bookingIds.includes(bookingId)
+      );
+      if (hasGroupBooking) {
+        this.selectedGroupBooking = Object.assign(
+          {},
+          this.api.groupBookings.find((groupBooking) =>
+            groupBooking.bookingIds.includes(bookingId)
+          )
+        );
+      } else {
+        this.selectedGroupBooking = null;
+      }
       this.openEditDialog = true;
     },
     onOpenDeleteDialog(bookingId) {
@@ -770,14 +793,17 @@ export default {
     },
     onCloseEditDialog() {
       this.fetchBookings();
+      this.fetchGroupBookings();
       this.openEditDialog = false;
     },
     onCloseDeleteDialog() {
       this.fetchBookings();
+      this.fetchGroupBookings();
       this.openDeleteDialog = false;
     },
     onCloseRejectDialog() {
       this.fetchBookings();
+      this.fetchGroupBookings();
       this.openRejectDialog = false;
     },
     onCloseBookingDialog() {
@@ -815,6 +841,7 @@ export default {
     },
     async updateBooking(bookingId) {
       await this.fetchBookings();
+      await this.fetchGroupBookings();
       this.selectedBooking = Object.assign(
         {},
         this.api.bookings.find((booking) => booking.id === bookingId)

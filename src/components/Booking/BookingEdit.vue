@@ -846,6 +846,20 @@
                       rows="3"
                     ></v-textarea>
                   </v-col>
+                  <v-col
+                    v-if="groupBooking && Object.keys(groupBooking)"
+                    cols="12"
+                  >
+                    <v-textarea
+                      background-color="accent"
+                      filled
+                      dense
+                      hide-details
+                      label="Interne Bemerkung der Serie"
+                      v-model="selectedGroupBooking.internalComments"
+                      rows="3"
+                    ></v-textarea>
+                  </v-col>
                 </v-row>
               </v-card-text>
             </v-card>
@@ -877,6 +891,7 @@ import ToastService from "@/services/ToastService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
+import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 
 export default {
   name: "BookingEdit",
@@ -895,6 +910,10 @@ export default {
       required: true,
     },
     workflow: {
+      type: Object,
+      required: false,
+    },
+    groupBooking: {
       type: Object,
       required: false,
     },
@@ -1003,6 +1022,8 @@ export default {
           title: "Bluecode",
         },
       ],
+
+      originalGroupInternalComments: null,
     };
   },
   computed: {
@@ -1018,6 +1039,9 @@ export default {
       get() {
         return this.booking;
       },
+    },
+    selectedGroupBooking() {
+      return this.groupBooking;
     },
     timePaid: {
       get() {
@@ -1058,6 +1082,13 @@ export default {
         dateStyle: "medium",
         timeStyle: this.paymentTime ? "short" : undefined,
       }).format(date);
+    },
+    groupCommentsChanged() {
+      return (
+        this.groupBooking &&
+        this.selectedGroupBooking.internalComments !==
+          this.originalGroupInternalComments
+      );
     },
     dateFrom: {
       get() {
@@ -1157,6 +1188,10 @@ export default {
       } else {
         this.paymentDate = null;
         this.paymentTime = null;
+      }
+      if (this.groupBooking) {
+        this.originalGroupInternalComments =
+          this.groupBooking.internalComments ?? null;
       }
     },
     timePaid: function (newValue) {
@@ -1288,10 +1323,7 @@ export default {
         this.inProgress = true;
         if (!this.$refs.form.validate()) {
           await this.addToast(
-            ToastService.createToast(
-              "booking.validation.required",
-              "error"
-            )
+            ToastService.createToast("booking.validation.required", "error")
           );
           if (this.bookableItems.length === 0) {
             await this.addToast(
@@ -1306,7 +1338,8 @@ export default {
         }
 
         await ApiBookingService.storeBooking(this.selectedBooking)
-          .then(() => {
+          .then(async () => {
+            await this.saveGroupBookingIfNeeded();
             this.inProgress = false;
             this.closeDialog();
           })
@@ -1329,7 +1362,8 @@ export default {
         this.inProgress = true;
         delete this.selectedBooking._id;
         await ApiBookingService.storeBooking(this.selectedBooking)
-          .then(() => {
+          .then(async () => {
+            await this.saveGroupBookingIfNeeded();
             this.inProgress = false;
             this.closeDialog();
           })
@@ -1377,6 +1411,17 @@ export default {
     },
     formatDateTime: function (d) {
       return Date.parse(d);
+    },
+    async saveGroupBookingIfNeeded() {
+      if (this.groupCommentsChanged) {
+        await ApiGroupBookingService.updateGroupBooking(
+          this.groupBooking.tenantId,
+          this.groupBooking.id,
+          {
+            internalComments: this.selectedGroupBooking.internalComments,
+          }
+        );
+      }
     },
     getEvents() {
       ApiBookingService.getPublicBookings(this.tenant)
@@ -1485,6 +1530,10 @@ export default {
     }
     if (this.selectedBooking.timePaid) {
       this.timePaid = this.selectedBooking.timePaid;
+    }
+    if (this.groupBooking) {
+      this.originalGroupInternalComments =
+        this.groupBooking.internalComments ?? null;
     }
   },
 };

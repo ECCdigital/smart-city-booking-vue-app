@@ -609,6 +609,15 @@
                 {{ booking.internalComments }}
               </div>
             </div>
+            <div v-if="groupBooking.internalComments">
+              <div class="info-label mb-2">
+                <v-icon small class="mr-2">mdi-comment-alert-outline</v-icon>
+                Interne Bemerkung der Serie
+              </div>
+              <div class="comment-box internal">
+                {{ groupBooking.internalComments }}
+              </div>
+            </div>
           </v-card-text>
         </v-card>
 
