@@ -318,21 +318,31 @@
     "create": {
       "success": {
         "title": "Erfolgreich erstellt",
-        "message": "Die Gruppenbuchung wurde erfolgreich erstellt."
+        "message": "Die Serienbuchung wurde erfolgreich erstellt."
       },
       "error": {
         "title": "Fehler beim Erstellen",
-        "message": "Die Gruppenbuchung konnte nicht erstellt werden."
+        "message": "Die Serienbuchung konnte nicht erstellt werden."
+      }
+    },
+    "update": {
+      "success": {
+        "title": "Erfolgreich aktualisiert",
+        "message": "Die Serienbuchung wurde erfolgreich aktualisiert."
+      },
+      "error": {
+        "title": "Fehler beim Aktualisieren",
+        "message": "Die Serienbuchung konnte nicht aktualisiert werden."
       }
     },
     "edit": {
       "success": {
         "title": "Erfolgreich bearbeitet",
-        "message": "Die Gruppenbuchung wurde erfolgreich bearbeitet."
+        "message": "Die Serienbuchung wurde erfolgreich bearbeitet."
       },
       "error": {
         "title": "Fehler beim Bearbeiten",
-        "message": "Die Gruppenbuchung konnte nicht bearbeitet werden."
+        "message": "Die Serienbuchung konnte nicht bearbeitet werden."
       }
     },
     "commit": {
