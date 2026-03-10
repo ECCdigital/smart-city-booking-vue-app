@@ -583,7 +583,7 @@
           class="mb-6 section-card"
           elevation="2"
           outlined
-          v-if="booking.comment || booking.internalComments"
+          v-if="booking.comment || booking.internalComments || groupBooking?.internalComments"
         >
           <v-card-title class="section-header pa-4">
             <v-icon class="mr-2">mdi-comment-text-outline</v-icon>

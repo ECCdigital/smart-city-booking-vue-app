@@ -39,8 +39,7 @@
           </v-col>
           <v-col
             v-if="bookingAttempts.length > 0 && currentStep !== steps.length"
-            cols="12"
-            md="4"
+            cols="4"
           >
             <booking-sidebar
               :booking-attempts="bookingAttempts"
