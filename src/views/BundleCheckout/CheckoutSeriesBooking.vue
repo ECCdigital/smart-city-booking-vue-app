@@ -8,9 +8,10 @@
       <v-spacer></v-spacer>
       <v-btn
         color="primary"
+        class="px-10"
+        small
         :disabled="!allValid || bookingAttempts.length < 1"
         :loading="loading"
-        small
         @click="validateAndContinue"
       >
         Weiter
