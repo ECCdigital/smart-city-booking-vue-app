@@ -635,7 +635,6 @@ export default {
 
     async validateAndContinue() {
       this.loading = true;
-      await this.validateItems(this.bookingAttempts);
 
       const allValid = this.bookingAttempts.every((attempt) =>
         attempt.bookableItems.every((item) => item.valid)
