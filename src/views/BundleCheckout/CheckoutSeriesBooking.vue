@@ -10,7 +10,7 @@
         color="primary"
         class="px-10"
         small
-        :disabled="!allValid || bookingAttempts.length < 1"
+        :disabled="!allValid || bookingAttempts.length < 1 || progress.loading"
         :loading="loading"
         @click="validateAndContinue"
       >
@@ -269,91 +269,50 @@
           color="primary"
           @click="validateAndGenerateSeriesBookings"
           class="mt-4"
-          :disabled="!isFormValid"
+          :disabled="!isFormValid || progress.loading"
+          :loading="progress.loading"
         >
           <v-icon left>mdi-calendar-multiple</v-icon>
           Serie generieren
         </v-btn>
-      </v-card-text>
-    </v-card>
 
-    <div v-if="progress.loading || bookingAttempts.length > 0">
-      <v-card outlined class="rounded-sm mb-6">
-        <v-card-title> Serie </v-card-title>
-        <v-card-text>
-          <div v-if="progress.loading" class="mb-4">
-            <div class="d-flex align-center mb-2">
-              <v-icon left color="primary" class="rotating">mdi-loading</v-icon>
-              <span>Serie wird generiert...</span>
-              <v-spacer></v-spacer>
-              <span class="text-caption"
-                >{{ Math.round(progress.percentage) }}%</span
-              >
-            </div>
+        <v-expand-transition>
+          <div v-if="progress.loading" class="mt-6">
+            <v-alert
+              type="info"
+              color="primary"
+              outlined
+              dense
+              class="mb-3"
+            >
+              <div class="d-flex align-center">
+                <v-progress-circular
+                  indeterminate
+                  size="20"
+                  width="2"
+                  color="primary"
+                  class="mr-3"
+                ></v-progress-circular>
+                <span>
+                  Serie wird erstellt &amp; geprüft… Bitte warten.
+                </span>
+              </div>
+            </v-alert>
             <v-progress-linear
               :value="progress.percentage"
               color="primary"
               height="8"
               rounded
             ></v-progress-linear>
+            <div class="text-caption text-right mt-1 grey--text">
+              {{ Math.round(progress.percentage) }}% geprüft
+            </div>
           </div>
+        </v-expand-transition>
+      </v-card-text>
+    </v-card>
 
-          <v-simple-table v-if="bookingAttempts.length > 0" class="rounded-sm">
-            <template v-slot:default>
-              <thead class="rounded-sm">
-                <tr>
-                  <th>Zeitraum</th>
-                  <th>Preis</th>
-                  <th>Buchbar</th>
-                  <th class="text-right">Aktion</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="(attempt, index) in bookingAttempts">
-                  <tr :key="index" :class="{ error: attempt.valid === false }">
-                    <td>
-                      <span v-if="attempt.timeBegin && attempt.timeEnd">
-                        {{ formatDateTime(attempt.timeBegin) }} –
-                        {{ formatDateTime(attempt.timeEnd) }}
-                      </span>
-                    </td>
-                    <td>
-                      {{ attempt.userPriceEur | currency }}
-                    </td>
-                    <td>
-                      <v-icon
-                        v-if="attempt.valid"
-                        color="green"
-                        size="24"
-                        class="mr-2"
-                      >
-                        mdi-check-circle
-                      </v-icon>
-                      <v-icon v-else color="black" size="24" class="mr-2">
-                        mdi-alert-circle
-                      </v-icon>
-                      <span v-if="attempt.valid">verfügbar</span>
-                      <span v-else
-                        ><span
-                          v-for="(error, idx) in attempt.error"
-                          :key="idx"
-                          >{{ error }}</span
-                        ></span
-                      >
-                    </td>
-                    <td class="text-right">
-                      <v-btn icon @click="removeBookingAttempt(index)">
-                        <v-icon>mdi-delete</v-icon>
-                      </v-btn>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </template>
-          </v-simple-table>
-        </v-card-text>
-      </v-card>
-    </div>
+
   </div>
 </template>
 

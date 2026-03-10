@@ -28,7 +28,7 @@
         </v-stepper>
 
         <v-row>
-          <v-col>
+          <v-col :cols="bookingAttempts.length === 0 ? 12 : 8">
             <component
               :is="steps[currentStep - 1]?.component"
               :progress="progress"
