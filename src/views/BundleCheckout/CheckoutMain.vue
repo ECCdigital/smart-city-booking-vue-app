@@ -295,6 +295,7 @@ export default {
         },
         events: {
           "item-selected": this.addSubsequentItem,
+          "item-removed": this.removeSubsequentItem,
           back: this.previousPage,
           submit: this.nextPage,
         },
@@ -354,6 +355,15 @@ export default {
       });
 
       return stepsToReturn;
+    },
+
+    removeSubsequentItem(bookableId) {
+      const index = this.subsequentItems.findIndex(
+        (item) => item.bookableId === bookableId
+      );
+      if (index !== -1) {
+        this.subsequentItems.splice(index, 1);
+      }
     },
 
     shouldShowPaymentStep() {

@@ -16,6 +16,7 @@
         <v-btn
           :disabled="isNextButtonDisabled"
           color="primary"
+          class="px-10"
           small
           @click="submit"
         >

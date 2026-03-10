@@ -12,6 +12,7 @@
         v-if="showContinue"
         :disabled="isNextButtonDisabled"
         color="primary"
+        class="px-10"
         small
         @click="submit"
       >

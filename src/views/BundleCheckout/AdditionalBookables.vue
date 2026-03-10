@@ -6,9 +6,9 @@
         small
         @click="back"
         :disabled="
-          !this.leadItem.bookable.isScheduleRelated &&
-          !this.leadItem.bookable.isTimePeriodRelated &&
-          !this.leadItem.bookable.isLongRange
+          !leadItem.bookable.isScheduleRelated &&
+          !leadItem.bookable.isTimePeriodRelated &&
+          !leadItem.bookable.isLongRange
         "
       >
         <v-icon left small>mdi-arrow-left</v-icon>
@@ -27,18 +27,51 @@
       hinzufügen?
     </p>
 
-    <p class="font-italic mt-10" v-if="selectableItems.length === 0">
+    <div v-if="subsequentItems.length > 0" class="mb-6">
+      <h3 class="mb-2">Ausgewählte Ergänzungen</h3>
+      <v-card outlined class="mb-2 rounded-sm" v-for="item in subsequentItems" :key="'selected-' + item.bookableId">
+        <v-card-text class="d-flex align-center py-2">
+          <div class="flex-grow-1">
+            <strong>{{ item.bookable?.title || item.bookableId }}</strong>
+            <span v-if="item.mandatory" class="ml-2 grey--text text--darken-1">
+              (Pflicht)
+            </span>
+          </div>
+          <v-btn
+            v-if="!item.mandatory"
+            icon
+            small
+            color="error"
+            @click="removeItem(item)"
+          >
+            <v-icon small>mdi-close</v-icon>
+          </v-btn>
+          <v-chip v-else x-small class="ml-2" color="grey lighten-2">
+            Erforderlich
+          </v-chip>
+        </v-card-text>
+      </v-card>
+    </div>
+
+    <v-divider v-if="subsequentItems.length > 0 && selectableItems.length > 0" class="mb-6"></v-divider>
+
+    <p class="font-italic mt-4" v-if="selectableItems.length === 0 && subsequentItems.length === 0">
       Derzeit gibt es keine weiteren Objekte, die zu Ihrer Buchung passen.
     </p>
 
-    <v-list three-line>
+    <p class="font-italic mt-4" v-else-if="selectableItems.length === 0 && subsequentItems.length > 0">
+      Alle verfügbaren Ergänzungen wurden bereits hinzugefügt.
+    </p>
+
+    <v-list three-line v-if="selectableItems.length > 0">
+      <h3 class="mb-2">Verfügbare Ergänzungen</h3>
       <template v-for="item in selectableItems">
         <v-list-item :key="item.bookable.id">
           <v-list-item-content>
             <v-list-item-title>{{ item.bookable.title }}</v-list-item-title>
             <v-list-item-subtitle
               v-if="item.isAvailable === false"
-              class="font-italic"
+              class="font-italic error--text"
             >
               {{ item.error }}
             </v-list-item-subtitle>
@@ -54,11 +87,12 @@
               @click="notifySelectedItem(item.bookable, 1)"
               :loading="item.isAvailable === null"
               :disabled="item.isAvailable === false"
-              >{{ item.isAvailable ? "Hinzufügen" : "Nicht verfügbar" }}</v-btn
             >
+              {{ item.isAvailable ? "Hinzufügen" : "Nicht verfügbar" }}
+            </v-btn>
           </v-list-item-action>
         </v-list-item>
-        <v-divider></v-divider>
+        <v-divider :key="'div-' + item.bookable.id"></v-divider>
       </template>
     </v-list>
   </div>
@@ -92,13 +126,11 @@ export default {
 
   data() {
     return {
-      // A list of bookable objects that can be added to the booking
       items: [],
     };
   },
 
   methods: {
-    // Add a bookable to the booking
     async fetchBookables() {
       try {
         const response = await ApiBookablesService.getPublicBookables(
@@ -146,7 +178,7 @@ export default {
     async checkBookableAvailability() {
       for (const item of this.items) {
         try {
-          const response = await ApiCheckoutService.validateCheckoutItem(
+          await ApiCheckoutService.validateCheckoutItem(
             item.bookable.tenantId,
             {
               bookableId: item.bookable.id,
@@ -161,7 +193,7 @@ export default {
         } catch (error) {
           console.log(error);
           item.isAvailable = false;
-          item.error = error.response.data;
+          item.error = error.response?.data || "Nicht verfügbar";
         }
       }
     },
@@ -172,6 +204,10 @@ export default {
         amount: amount,
         valid: null,
       });
+    },
+
+    removeItem(item) {
+      this.$emit("item-removed", item.bookableId);
     },
 
     back() {
@@ -189,7 +225,8 @@ export default {
         return (
           item.bookable.id !== this.leadItem.bookable.id &&
           !this.subsequentItems.some(
-            (subsequentItem) => subsequentItem.bookableId === item.bookable.id
+            (subsequentItem) =>
+              subsequentItem.bookableId === item.bookable.id
           )
         );
       });
