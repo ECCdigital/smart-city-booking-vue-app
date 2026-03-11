@@ -606,5 +606,17 @@
         "message": "Die Datei konnte nicht heruntergeladen werden."
       }
     }
+  },
+  "locker": {
+    "open": {
+      "success": {
+        "title": "Erfolgreich geöffnet",
+        "message": "Das Schließfach wurde erfolgreich geöffnet."
+      },
+      "error": {
+        "title": "Fehler beim Öffnen",
+        "message": "Das Schließfach konnte nicht geöffnet werden."
+      }
+    }
   }
 }

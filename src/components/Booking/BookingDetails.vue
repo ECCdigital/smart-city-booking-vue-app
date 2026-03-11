@@ -8,107 +8,6 @@
 
       <v-divider></v-divider>
 
-      <v-card-title v-if="confirmedIfbsLockers.length > 0" class="section-header pa-4">
-        <v-icon class="mr-2">mdi-lock-outline</v-icon>
-        <span class="text-h6 font-weight-bold">Schließfach-Steuerung</span>
-      </v-card-title>
-      <v-divider v-if="confirmedIfbsLockers.length > 0" ></v-divider>
-      <v-card-text v-if="confirmedIfbsLockers.length > 0" class="pa-0">
-        <v-list dense>
-          <template v-for="(locker, index) in confirmedIfbsLockers">
-            <v-list-item :key="locker.processId" class="px-4 py-2">
-              <v-list-item-avatar color="indigo lighten-4">
-                <v-icon color="indigo">mdi-locker</v-icon>
-              </v-list-item-avatar>
-              <v-list-item-content>
-                <v-list-item-title class="font-weight-bold">
-                  Schließfach #{{ locker.ifbsMetadata?.nummer || locker.id }}
-                </v-list-item-title>
-                <v-list-item-subtitle>
-                    <span class="mr-3">
-                      <v-icon x-small>mdi-identifier</v-icon>
-                      Box-ID: {{ locker.ifbsMetadata?.boxId }}
-                    </span>
-                  <span class="mr-3">
-                      <v-icon x-small>mdi-tag-outline</v-icon>
-                      Vorgang: {{ locker.processId }}
-                    </span>
-                  <v-chip
-                    v-if="lockerStatuses[locker.processId]"
-                    x-small
-                    :color="
-                        lockerStatuses[locker.processId] === 'open'
-                          ? 'success'
-                          : lockerStatuses[locker.processId] === 'closed'
-                          ? 'grey'
-                          : 'info'
-                      "
-                    text-color="white"
-                    class="ml-1"
-                  >
-                    <v-icon left x-small>
-                      {{
-                        lockerStatuses[locker.processId] === "open"
-                          ? "mdi-lock-open-variant"
-                          : lockerStatuses[locker.processId] === "closed"
-                            ? "mdi-lock"
-                            : "mdi-help-circle-outline"
-                      }}
-                    </v-icon>
-                    {{
-                      lockerStatuses[locker.processId] === "open"
-                        ? "Offen"
-                        : lockerStatuses[locker.processId] === "closed"
-                          ? "Geschlossen"
-                          : lockerStatuses[locker.processId]
-                    }}
-                  </v-chip>
-                </v-list-item-subtitle>
-              </v-list-item-content>
-              <v-list-item-action
-                class="flex-row align-center"
-                style="gap: 8px"
-              >
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                      icon
-                      color="info"
-                      v-bind="attrs"
-                      v-on="on"
-                      :loading="lockerLoading[locker.processId + '_status']"
-                      @click="fetchLockerStatus(locker)"
-                    >
-                      <v-icon>mdi-refresh</v-icon>
-                    </v-btn>
-                  </template>
-                  <span>Status abfragen</span>
-                </v-tooltip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                      icon
-                      color="success"
-                      v-bind="attrs"
-                      v-on="on"
-                      :loading="lockerLoading[locker.processId + '_open']"
-                      @click="openLocker(locker)"
-                    >
-                      <v-icon>mdi-lock-open-variant</v-icon>
-                    </v-btn>
-                  </template>
-                  <span>Schließfach öffnen</span>
-                </v-tooltip>
-              </v-list-item-action>
-            </v-list-item>
-            <v-divider
-              v-if="index < confirmedIfbsLockers.length - 1"
-              :key="`locker-divider-${index}`"
-            />
-          </template>
-        </v-list>
-      </v-card-text>
-
       <v-card-text class="px-6 py-6 booking-details-content">
         <v-alert
           v-if="groupBooking && groupBooking.id"
@@ -201,6 +100,115 @@
                 </div>
               </v-col>
             </v-row>
+          </v-card-text>
+        </v-card>
+
+        <v-card
+          v-if="confirmedIfbsLockers.length > 0"
+          class="mb-6 section-card"
+          elevation="2"
+          outlined
+        >
+          <v-card-title class="section-header pa-4">
+            <v-icon class="mr-2">mdi-lock-outline</v-icon>
+            <span class="text-h6 font-weight-bold">Schließfach-Steuerung</span>
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text class="pa-1">
+            <v-list dense>
+              <template v-for="(locker, index) in confirmedIfbsLockers">
+                <v-list-item :key="locker.processId" class="px-4 py-2">
+                  <v-list-item-avatar color="indigo lighten-4">
+                    <v-icon color="indigo">mdi-locker</v-icon>
+                  </v-list-item-avatar>
+                  <v-list-item-content>
+                    <v-list-item-title class="font-weight-bold">
+                      Fahrradbox #{{ locker.ifbsMetadata?.nummer || locker.id }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle>
+                      <span class="mr-3">
+                        <v-icon x-small>mdi-identifier</v-icon>
+                        Box-ID: {{ locker.ifbsMetadata?.boxId }}
+                      </span>
+                      <span class="mr-3">
+                        <v-icon x-small>mdi-tag-outline</v-icon>
+                        Vorgang: {{ locker.processId }}
+                      </span>
+                    </v-list-item-subtitle>
+                    <v-list-item-subtitle class="mt-1">
+                      <v-chip
+                        v-if="getLockerDisplayStatus(locker.processId)"
+                        x-small
+                        :color="getLockerDisplayStatus(locker.processId).color"
+                        text-color="white"
+                      >
+                        <v-progress-circular
+                          v-if="
+                            getLockerDisplayStatus(locker.processId).loading
+                          "
+                          indeterminate
+                          size="10"
+                          width="1"
+                          color="white"
+                          class="mr-1"
+                        />
+                        <v-icon v-else left x-small>
+                          {{ getLockerDisplayStatus(locker.processId).icon }}
+                        </v-icon>
+                        {{ getLockerDisplayStatus(locker.processId).text }}
+                      </v-chip>
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                  <v-list-item-action
+                    class="flex-row align-center"
+                    style="gap: 8px"
+                  >
+                    <v-btn
+                      small
+                      outlined
+                      color="info"
+                      :loading="lockerLoading[locker.processId + '_status']"
+                      :disabled="!lockerOpenIds[locker.processId]"
+                      @click="fetchLockerStatus(locker)"
+                    >
+                      <v-icon left small>mdi-refresh</v-icon>
+                      Status prüfen
+                    </v-btn>
+                    <v-btn
+                      small
+                      color="success"
+                      :loading="lockerLoading[locker.processId + '_open']"
+                      :disabled="lockerLoading[locker.processId + '_waitOpen']"
+                      @click="openLocker(locker)"
+                    >
+                      <v-icon left small>mdi-lock-open-variant</v-icon>
+                      Öffnen
+                    </v-btn>
+                  </v-list-item-action>
+                </v-list-item>
+
+                <v-expand-transition :key="'alert-' + locker.processId">
+                  <div v-if="lockerErrors[locker.processId]" class="px-4 pb-2">
+                    <v-alert
+                      type="error"
+                      dense
+                      outlined
+                      border="left"
+                      class="mb-0 mt-1"
+                      dismissible
+                      @input="$set(lockerErrors, locker.processId, null)"
+                    >
+                      {{ lockerErrors[locker.processId] }}
+                    </v-alert>
+                  </div>
+                </v-expand-transition>
+
+                <v-divider
+                  v-if="index < confirmedIfbsLockers.length - 1"
+                  :key="`locker-divider-${index}`"
+                />
+              </template>
+            </v-list>
           </v-card-text>
         </v-card>
 
@@ -509,7 +517,9 @@
                     <v-icon small class="mr-2">mdi-account</v-icon>
                     Name
                   </div>
-                  <div class="info-value">{{ booking.name || "-" }}</div>
+                  <div class="info-value">
+                    {{ booking.name || "-" }}
+                  </div>
                 </div>
               </v-col>
               <v-col cols="12" md="6">
@@ -518,7 +528,9 @@
                     <v-icon small class="mr-2">mdi-office-building</v-icon>
                     Firma
                   </div>
-                  <div class="info-value">{{ booking.company || "-" }}</div>
+                  <div class="info-value">
+                    {{ booking.company || "-" }}
+                  </div>
                 </div>
               </v-col>
               <v-col cols="12" md="6">
@@ -527,7 +539,9 @@
                     <v-icon small class="mr-2">mdi-email-outline</v-icon>
                     E-Mail
                   </div>
-                  <div class="info-value">{{ booking.mail || "-" }}</div>
+                  <div class="info-value">
+                    {{ booking.mail || "-" }}
+                  </div>
                 </div>
               </v-col>
               <v-col cols="12" md="6">
@@ -536,7 +550,9 @@
                     <v-icon small class="mr-2">mdi-phone-outline</v-icon>
                     Telefon
                   </div>
-                  <div class="info-value">{{ booking.phone || "-" }}</div>
+                  <div class="info-value">
+                    {{ booking.phone || "-" }}
+                  </div>
                 </div>
               </v-col>
               <v-col cols="12" md="4">
@@ -545,7 +561,9 @@
                     <v-icon small class="mr-2">mdi-map-marker-outline</v-icon>
                     Straße
                   </div>
-                  <div class="info-value">{{ booking.street || "-" }}</div>
+                  <div class="info-value">
+                    {{ booking.street || "-" }}
+                  </div>
                 </div>
               </v-col>
               <v-col cols="12" md="4">
@@ -554,7 +572,9 @@
                     <v-icon small class="mr-2">mdi-mailbox-outline</v-icon>
                     Postleitzahl
                   </div>
-                  <div class="info-value">{{ booking.zipCode || "-" }}</div>
+                  <div class="info-value">
+                    {{ booking.zipCode || "-" }}
+                  </div>
                 </div>
               </v-col>
               <v-col cols="12" md="4">
@@ -563,7 +583,9 @@
                     <v-icon small class="mr-2">mdi-city</v-icon>
                     Stadt
                   </div>
-                  <div class="info-value">{{ booking.location || "-" }}</div>
+                  <div class="info-value">
+                    {{ booking.location || "-" }}
+                  </div>
                 </div>
               </v-col>
             </v-row>
@@ -756,7 +778,10 @@
                     <v-btn
                       icon
                       @click="
-                        downloadAttachment({ url: item.url, label: item.title })
+                        downloadAttachment({
+                          url: item.url,
+                          label: item.title,
+                        })
                       "
                     >
                       <v-icon>mdi-download</v-icon>
@@ -812,6 +837,7 @@ import {
   getBookingErrorMessage,
   getGroupBookingErrorMessage,
 } from "@/utils/errorMessages";
+import { getIfbsErrorMessage } from "@/utils/ifbsErrors";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
@@ -848,7 +874,8 @@ export default {
       groupPaymentLinkCopiedTimeout: null,
       lockerStatuses: {},
       lockerLoading: {},
-      lockerOpenID: null,
+      lockerOpenIds: {},
+      lockerErrors: {},
     };
   },
   computed: {
@@ -875,9 +902,9 @@ export default {
       if (!this.booking.lockerInfo || !Array.isArray(this.booking.lockerInfo)) {
         return [];
       }
+      console.log("Alle Schließfächer in der Buchung:", this.booking.lockerInfo);
       return this.booking.lockerInfo.filter(
-        (locker) =>
-          locker.lockerSystem === "ifbs" && locker.isConfirmed === true
+        (locker) => locker.lockerSystem === "ifbs" && locker.isConfirmed
       );
     },
   },
@@ -887,6 +914,55 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+
+    getIfbsErrorMessage(errorCode) {
+      return getIfbsErrorMessage(errorCode);
+    },
+    getLockerDisplayStatus(processId) {
+      const isWaiting = this.lockerLoading[processId + "_waitOpen"];
+      const status = this.lockerStatuses[processId];
+
+      if (isWaiting) {
+        return {
+          color: "orange",
+          icon: null,
+          text: "Warte auf Bestätigung…",
+          loading: true,
+        };
+      }
+
+      if (!status) return null;
+
+      if (status.confirmed) {
+        return {
+          color: "success",
+          icon: "mdi-lock-open-variant",
+          text: status.confirmedAt
+            ? `Geöffnet (${new Date(status.confirmedAt).toLocaleTimeString(
+                "de-DE",
+                { hour: "2-digit", minute: "2-digit", second: "2-digit" }
+              )})`
+            : "Geöffnet",
+          loading: false,
+        };
+      }
+
+      if (status.errorCode) {
+        return {
+          color: "error",
+          icon: "mdi-alert-circle",
+          text: `Fehler ${status.errorCode}`,
+          loading: false,
+        };
+      }
+
+      return {
+        color: "orange darken-1",
+        icon: "mdi-timer-sand",
+        text: "Noch nicht bestätigt",
+        loading: false,
+      };
+    },
     translatePaymentProvider(provider) {
       switch (provider) {
         case "giroCockpit":
@@ -1034,7 +1110,9 @@ export default {
         "Stelle Zahlungsbeleg bereit..."
       );
       ApiBookingService.getReceipt(this.booking.id, name).then((response) => {
-        const blob = new Blob([response.data], { type: "application/pdf" });
+        const blob = new Blob([response.data], {
+          type: "application/pdf",
+        });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
@@ -1049,7 +1127,9 @@ export default {
         "Stelle Rechnung bereit..."
       );
       ApiBookingService.getInvoice(this.booking.id, name).then((response) => {
-        const blob = new Blob([response.data], { type: "application/pdf" });
+        const blob = new Blob([response.data], {
+          type: "application/pdf",
+        });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
@@ -1085,7 +1165,6 @@ export default {
       this.errors.receipt = null;
       this.openCreateAggregatedReceipt = false;
     },
-    // Payment Provider
     getPaymentProviderColor(provider) {
       const colors = {
         giroCockpit: "blue darken-2",
@@ -1095,7 +1174,6 @@ export default {
       };
       return colors[provider] || "grey";
     },
-
     getPaymentProviderIcon(provider) {
       const icons = {
         giroCockpit: "mdi-bank",
@@ -1125,7 +1203,6 @@ export default {
       };
       return colors[method] || "grey";
     },
-
     getPaymentMethodIcon(method) {
       const icons = {
         CASH: "mdi-cash",
@@ -1195,48 +1272,136 @@ export default {
         }, 2000);
       }
     },
-
     openPaymentLink(isGroupBooking = false) {
       const link = this.getPaymentLink(isGroupBooking);
       window.open(link, "_blank", "noopener,noreferrer");
     },
 
     async openLocker(locker) {
-      this.$set(this.lockerLoading, locker.processId + "_open", true);
+      const pid = locker.processId;
+      this.$set(this.lockerLoading, pid + "_open", true);
+      this.$set(this.lockerErrors, pid, null);
+      this.$set(this.lockerStatuses, pid, null);
+
       try {
-        const response = await ApiAccessService.open(this.booking.id, locker.processId);
-        if (response.data?.providerResponse) {
-          this.lockerOpenID = response.data.providerResponse.OpenBox_ID;
+        const response = await ApiAccessService.open(
+          this.booking.id,
+          locker.processId
+        );
+
+        const openBoxId = response.data?.providerResponse?.OpenBox_ID;
+        if (openBoxId) {
+          this.$set(this.lockerOpenIds, pid, openBoxId);
         }
-        await this.addToast(
-          ToastService.createToast("locker.open.success", "success")
-        );
-        await this.fetchLockerStatus(locker);
+
+        // Open command sent — now wait for hardware confirmation
+        this.$set(this.lockerLoading, pid + "_open", false);
+        await this.waitForLockerConfirmation(locker);
       } catch (error) {
-        await this.addToast(
-          ToastService.createToast("locker.open.error", "error")
+        this.$set(
+          this.lockerErrors,
+          pid,
+          "Fehler beim Senden des Öffnen-Befehls. Bitte erneut versuchen."
         );
-      } finally {
-        this.$set(this.lockerLoading, locker.processId + "_open", false);
+        this.$set(this.lockerLoading, pid + "_open", false);
       }
     },
-    async fetchLockerStatus(locker) {
-      this.$set(this.lockerLoading, locker.processId + "_status", true);
+
+    async waitForLockerConfirmation(locker) {
+      const pid = locker.processId;
+      const openBoxId = this.lockerOpenIds[pid];
+
+      if (!openBoxId) {
+        this.$set(
+          this.lockerErrors,
+          pid,
+          "Keine OpenBox-ID vorhanden. Öffnen-Befehl konnte nicht verifiziert werden."
+        );
+        return;
+      }
+
+      this.$set(this.lockerLoading, pid + "_waitOpen", true);
+
       try {
         const response = await ApiAccessService.getOpenStatus(
           this.booking.id,
-          locker.processId,
+          pid,
           this.booking.tenantId,
-          this.lockerOpenID
+          openBoxId
         );
+
         const status = response.data?.status || response.data;
-        this.$set(this.lockerStatuses, locker.processId, status);
+        this.$set(this.lockerStatuses, pid, status);
+
+        if (status?.confirmed) {
+          await this.addToast(
+            ToastService.createToast("locker.open.success", "success")
+          );
+        } else if (status?.errorCode) {
+          this.$set(
+            this.lockerErrors,
+            pid,
+            `Schließfach-Fehler ${status.errorCode}: ${getIfbsErrorMessage(
+              status.errorCode
+            )}`
+          );
+        } else {
+          this.$set(
+            this.lockerErrors,
+            pid,
+            "Die Box hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+          );
+        }
       } catch (error) {
-        await this.addToast(
-          ToastService.createToast("locker.status.error", "error")
+        this.$set(
+          this.lockerErrors,
+          pid,
+          "Zeitüberschreitung beim Warten auf Bestätigung. Bitte Status manuell prüfen."
         );
       } finally {
-        this.$set(this.lockerLoading, locker.processId + "_status", false);
+        this.$set(this.lockerLoading, pid + "_waitOpen", false);
+      }
+    },
+
+    async fetchLockerStatus(locker) {
+      const pid = locker.processId;
+      const openBoxId = this.lockerOpenIds[pid];
+
+      if (!openBoxId) {
+        return;
+      }
+
+      this.$set(this.lockerLoading, pid + "_status", true);
+      this.$set(this.lockerErrors, pid, null);
+
+      try {
+        const response = await ApiAccessService.getOpenStatus(
+          this.booking.id,
+          pid,
+          this.booking.tenantId,
+          openBoxId
+        );
+
+        const status = response.data?.status || response.data;
+        this.$set(this.lockerStatuses, pid, status);
+
+        if (status?.confirmed) {
+          await this.addToast(
+            ToastService.createToast("locker.open.success", "success")
+          );
+        } else if (status?.errorCode) {
+          this.$set(
+            this.lockerErrors,
+            pid,
+            `Schließfach-Fehler ${status.errorCode}: ${getIfbsErrorMessage(
+              status.errorCode
+            )}`
+          );
+        }
+      } catch (error) {
+        this.$set(this.lockerErrors, pid, "Fehler beim Abfragen des Status.");
+      } finally {
+        this.$set(this.lockerLoading, pid + "_status", false);
       }
     },
   },
@@ -1343,6 +1508,11 @@ export default {
   font-weight: 400;
   color: rgba(0, 0, 0, 0.87);
   padding-left: 28px;
+
+  .v-chip {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
 }
 
 .theme--dark .info-value {
@@ -1390,19 +1560,8 @@ export default {
 .theme--dark .v-list-item:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
+
 .gap-2 {
   gap: 8px;
-}
-
-.info-value {
-  font-size: 1rem;
-  font-weight: 400;
-  color: rgba(0, 0, 0, 0.87);
-  padding-left: 28px;
-
-  .v-chip {
-    font-weight: 500;
-    letter-spacing: 0.02em;
-  }
 }
 </style>
