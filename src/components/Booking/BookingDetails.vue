@@ -609,7 +609,7 @@
                 {{ booking.internalComments }}
               </div>
             </div>
-            <div v-if="groupBooking.internalComments">
+            <div v-if="groupBooking?.internalComments">
               <div class="info-label mb-2">
                 <v-icon small class="mr-2">mdi-comment-alert-outline</v-icon>
                 Interne Bemerkung der Serie
@@ -737,7 +737,7 @@ export default {
     },
     groupBooking: {
       type: Object,
-      default: null,
+      default: () => {},
     },
   },
   events: "update",
