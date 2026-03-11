@@ -61,6 +61,7 @@
             @pay-booking="onPayBooking"
             @open-delete-dialog="onOpenDeleteDialog"
             @reject-booking="onOpenRejectDialog"
+            @download-ical="onDownloadIcal"
           />
         </v-skeleton-loader>
       </div>
@@ -135,6 +136,7 @@
         :group-booking="selectedGroupBooking"
         @update="updateBooking"
         @close="onCloseBookingDialog"
+        @download-ical="onDownloadIcal"
       ></BookingDetails>
     </v-dialog>
     <v-dialog v-model="openGroupBookingDialog" max-width="1200px">
@@ -887,6 +889,12 @@ export default {
     async fetchWorkflow() {
       this.workflow = await ApiWorkflowService.getWorkflowStates();
     },
+    async onDownloadIcal(bookingId) {
+      console.log("Download iCal for booking", bookingId);
+      const temp = await ApiBookingService.downloadBookingIcal(bookingId);
+      console.log("iCal download response", temp);
+      return temp
+    }
   },
   async mounted() {
     ProcessingService.setComponent(this.$refs.processingIndicator);

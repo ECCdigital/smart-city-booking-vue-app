@@ -195,6 +195,16 @@
                 </v-list-item-icon>
                 <v-list-item-title>Details ansehen</v-list-item-title>
               </v-list-item>
+              <v-list-item
+                link
+                @click="onDownloadIcal(item.id)"
+              >
+                <v-list-item-icon>
+                  <v-icon small>mdi-calendar-export</v-icon>
+                </v-list-item-icon>
+                <v-list-item-title>Termin herunterladen</v-list-item-title>
+              </v-list-item>
+              <!-- file_save -->
 
               <v-divider />
 
@@ -430,6 +440,9 @@ export default {
     },
     onOpenGroupBooking(groupBookingId) {
       this.$emit("open-group-booking", groupBookingId);
+    },
+    onDownloadIcal(bookingId){
+      this.$emit("download-ical", bookingId);
     },
     commitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);

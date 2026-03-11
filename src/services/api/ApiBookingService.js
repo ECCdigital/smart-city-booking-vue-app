@@ -104,6 +104,11 @@ export default {
       }
     );
   },
+  async downloadBookingIcal(id) {
+    return await ApiClient.get(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/ical`,
+    );
+  },
   checkPublicBookingStatus(id, lastname, tenantId) {
     return ApiClient.get(`api/${tenantId}/bookings/${id}/status/public`, {
       params: {
