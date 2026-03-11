@@ -29,7 +29,7 @@
               <v-icon class="mr-2">mdi-information-outline</v-icon>
               <span class="text-h6 font-weight-bold">Buchungsinformationen</span>
             </div>
-            <v-tooltip v-if="booking.timeBegin && booking.timeEnd" bottom>
+            <v-tooltip v-if="hasEventId || (booking.timeBegin && booking.timeEnd)" bottom>
               <template v-slot:activator="{ on, attrs }">
                 <v-btn small icon v-bind="attrs" v-on="on" @click="onDownloadIcal(booking.id)">
                   <v-icon>mdi-calendar-export</v-icon>
@@ -785,6 +785,11 @@ export default {
           attachment.type !== "receipt" && attachment.type !== "invoice"
       );
     },
+    hasEventId() {
+      return Object.values(this.booking.bookableItems || {}).some(
+        (item) => item._bookableUsed?.eventId
+      );
+    }
   },
   methods: {
     ...mapActions({

@@ -196,7 +196,7 @@
                 <v-list-item-title>Details ansehen</v-list-item-title>
               </v-list-item>
               <v-list-item
-                v-if="item.timeBegin && item.timeEnd"
+                v-if="hasEventId(item) || (item.timeBegin && item.timeEnd)"
                 link
                 @click="onDownloadIcal(item.id)"
               >
@@ -205,7 +205,6 @@
                 </v-list-item-icon>
                 <v-list-item-title>Termin herunterladen</v-list-item-title>
               </v-list-item>
-              <!-- file_save -->
 
               <v-divider />
 
@@ -389,6 +388,9 @@ export default {
     getPaymentIcon(item) {
       if (item.priceEur <= 0) return "mdi-gift";
       return item.isPayed ? "mdi-check-circle" : "mdi-clock-outline";
+    },
+    hasEventId(item){
+      return item.bookableItems.some(b => b._bookableUsed.eventId);
     },
     formatCurrency(amount) {
       return Intl.NumberFormat("de-DE", {
