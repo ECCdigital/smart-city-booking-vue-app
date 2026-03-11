@@ -72,7 +72,7 @@
                     <v-icon small class="mr-2">mdi-calendar-range</v-icon>
                     Buchungszeitraum
                   </div>
-                  <div class="info-value">
+                  <div v-if="booking.timeBegin && booking.timeEnd" class="info-value">
                     {{
                       Intl.DateTimeFormat("de-DE", {
                         dateStyle: "short",
@@ -87,6 +87,7 @@
                       }).format(new Date(booking.timeEnd))
                     }}
                   </div>
+                  <div v-else class="info-value">-</div>
                 </div>
               </v-col>
               <v-col cols="12" md="6">
