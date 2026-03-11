@@ -29,7 +29,7 @@
               <v-icon class="mr-2">mdi-information-outline</v-icon>
               <span class="text-h6 font-weight-bold">Buchungsinformationen</span>
             </div>
-            <v-tooltip bottom>
+            <v-tooltip v-if="booking.timeBegin && booking.timeEnd" bottom>
               <template v-slot:activator="{ on, attrs }">
                 <v-btn small icon v-bind="attrs" v-on="on" @click="onDownloadIcal(booking.id)">
                   <v-icon>mdi-calendar-export</v-icon>

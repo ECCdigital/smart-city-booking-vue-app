@@ -196,6 +196,7 @@
                 <v-list-item-title>Details ansehen</v-list-item-title>
               </v-list-item>
               <v-list-item
+                v-if="item.timeBegin && item.timeEnd"
                 link
                 @click="onDownloadIcal(item.id)"
               >
