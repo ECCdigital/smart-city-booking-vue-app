@@ -24,9 +24,19 @@
         </v-alert>
 
         <v-card class="mb-6 section-card" elevation="2" outlined>
-          <v-card-title class="section-header pa-4">
-            <v-icon class="mr-2">mdi-information-outline</v-icon>
-            <span class="text-h6 font-weight-bold">Buchungsinformationen</span>
+          <v-card-title class="section-header pa-4 d-flex justify-space-between align-center">
+            <div class="d-flex align-center">
+              <v-icon class="mr-2">mdi-information-outline</v-icon>
+              <span class="text-h6 font-weight-bold">Buchungsinformationen</span>
+            </div>
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn small icon v-bind="attrs" v-on="on" @click="onDownloadIcal(booking.id)">
+                  <v-icon>mdi-calendar-export</v-icon>
+                </v-btn>
+              </template>
+              Termin für die Buchung herunterladen
+            </v-tooltip>
           </v-card-title>
           <v-divider></v-divider>
           <v-card-text class="pa-4">
@@ -971,6 +981,9 @@ export default {
       } finally {
         ProcessingService.hide(operationId);
       }
+    },
+    onDownloadIcal(bookingId){
+      this.$emit("download-ical", bookingId);
     },
     closeDialog() {
       this.errors.receipt = null;
