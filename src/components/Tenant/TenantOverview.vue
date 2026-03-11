@@ -258,6 +258,7 @@ export default {
           id: "ifbs",
           title: "Parkraumservice",
           serverUrl: "",
+          secretPhrase: "",
           apiKeyID: "",
           apiKey: "",
           active: false,
@@ -519,11 +520,10 @@ export default {
 </script>
 
 <style scoped>
-
 .page-content {
   padding-bottom: calc(
     56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
-    /* extra spacing */
+      /* extra spacing */
   );
 }
 </style>

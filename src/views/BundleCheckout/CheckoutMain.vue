@@ -106,6 +106,7 @@ export default {
 
   data() {
     return {
+      checkoutId: null,
       steps: [],
       loading: true,
       trace: false,
@@ -490,10 +491,14 @@ export default {
               this.timeBegin,
               this.timeEnd,
               this.coupon?.id,
-              this.bookWithPrice
+              this.bookWithPrice,
+              this.checkoutId
             );
 
             if (response.status === 200) {
+              if (response.data.checkoutId) {
+                this.checkoutId = response.data.checkoutId;
+              }
               item.regularPriceEur = response.data.regularPriceEur;
               item.userPriceEur = response.data.userPriceEur;
               item.regularGrossPriceEur = response.data.regularGrossPriceEur;
@@ -505,6 +510,10 @@ export default {
               delete item.error;
             }
           } catch (error) {
+            console.log("Validation error for item", item.bookableId, error);
+
+            this.checkoutId = error.response.data.checkoutId || this.checkoutId || null;
+
             item.regularPriceEur = null;
             item.userPriceEur = null;
             item.regularGrossPriceEur = null;

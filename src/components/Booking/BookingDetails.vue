@@ -8,6 +8,107 @@
 
       <v-divider></v-divider>
 
+      <v-card-title v-if="confirmedIfbsLockers.length > 0" class="section-header pa-4">
+        <v-icon class="mr-2">mdi-lock-outline</v-icon>
+        <span class="text-h6 font-weight-bold">Schließfach-Steuerung</span>
+      </v-card-title>
+      <v-divider v-if="confirmedIfbsLockers.length > 0" ></v-divider>
+      <v-card-text v-if="confirmedIfbsLockers.length > 0" class="pa-0">
+        <v-list dense>
+          <template v-for="(locker, index) in confirmedIfbsLockers">
+            <v-list-item :key="locker.processId" class="px-4 py-2">
+              <v-list-item-avatar color="indigo lighten-4">
+                <v-icon color="indigo">mdi-locker</v-icon>
+              </v-list-item-avatar>
+              <v-list-item-content>
+                <v-list-item-title class="font-weight-bold">
+                  Schließfach #{{ locker.ifbsMetadata?.nummer || locker.id }}
+                </v-list-item-title>
+                <v-list-item-subtitle>
+                    <span class="mr-3">
+                      <v-icon x-small>mdi-identifier</v-icon>
+                      Box-ID: {{ locker.ifbsMetadata?.boxId }}
+                    </span>
+                  <span class="mr-3">
+                      <v-icon x-small>mdi-tag-outline</v-icon>
+                      Vorgang: {{ locker.processId }}
+                    </span>
+                  <v-chip
+                    v-if="lockerStatuses[locker.processId]"
+                    x-small
+                    :color="
+                        lockerStatuses[locker.processId] === 'open'
+                          ? 'success'
+                          : lockerStatuses[locker.processId] === 'closed'
+                          ? 'grey'
+                          : 'info'
+                      "
+                    text-color="white"
+                    class="ml-1"
+                  >
+                    <v-icon left x-small>
+                      {{
+                        lockerStatuses[locker.processId] === "open"
+                          ? "mdi-lock-open-variant"
+                          : lockerStatuses[locker.processId] === "closed"
+                            ? "mdi-lock"
+                            : "mdi-help-circle-outline"
+                      }}
+                    </v-icon>
+                    {{
+                      lockerStatuses[locker.processId] === "open"
+                        ? "Offen"
+                        : lockerStatuses[locker.processId] === "closed"
+                          ? "Geschlossen"
+                          : lockerStatuses[locker.processId]
+                    }}
+                  </v-chip>
+                </v-list-item-subtitle>
+              </v-list-item-content>
+              <v-list-item-action
+                class="flex-row align-center"
+                style="gap: 8px"
+              >
+                <v-tooltip bottom>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn
+                      icon
+                      color="info"
+                      v-bind="attrs"
+                      v-on="on"
+                      :loading="lockerLoading[locker.processId + '_status']"
+                      @click="fetchLockerStatus(locker)"
+                    >
+                      <v-icon>mdi-refresh</v-icon>
+                    </v-btn>
+                  </template>
+                  <span>Status abfragen</span>
+                </v-tooltip>
+                <v-tooltip bottom>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn
+                      icon
+                      color="success"
+                      v-bind="attrs"
+                      v-on="on"
+                      :loading="lockerLoading[locker.processId + '_open']"
+                      @click="openLocker(locker)"
+                    >
+                      <v-icon>mdi-lock-open-variant</v-icon>
+                    </v-btn>
+                  </template>
+                  <span>Schließfach öffnen</span>
+                </v-tooltip>
+              </v-list-item-action>
+            </v-list-item>
+            <v-divider
+              v-if="index < confirmedIfbsLockers.length - 1"
+              :key="`locker-divider-${index}`"
+            />
+          </template>
+        </v-list>
+      </v-card-text>
+
       <v-card-text class="px-6 py-6 booking-details-content">
         <v-alert
           v-if="groupBooking && groupBooking.id"
@@ -702,6 +803,7 @@
 
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
+import ApiAccessService from "@/services/api/ApiAccessService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 import GroupBookingCreateReceipt from "@/components/Booking/GroupBookingCreateReceipt.vue";
@@ -744,6 +846,9 @@ export default {
       paymentLinkCopiedTimeout: null,
       singlePaymentLinkCopiedTimeout: null,
       groupPaymentLinkCopiedTimeout: null,
+      lockerStatuses: {},
+      lockerLoading: {},
+      lockerOpenID: null,
     };
   },
   computed: {
@@ -764,6 +869,15 @@ export default {
       return this.booking.attachments?.filter(
         (attachment) =>
           attachment.type !== "receipt" && attachment.type !== "invoice"
+      );
+    },
+    confirmedIfbsLockers() {
+      if (!this.booking.lockerInfo || !Array.isArray(this.booking.lockerInfo)) {
+        return [];
+      }
+      return this.booking.lockerInfo.filter(
+        (locker) =>
+          locker.lockerSystem === "ifbs" && locker.isConfirmed === true
       );
     },
   },
@@ -1085,6 +1199,45 @@ export default {
     openPaymentLink(isGroupBooking = false) {
       const link = this.getPaymentLink(isGroupBooking);
       window.open(link, "_blank", "noopener,noreferrer");
+    },
+
+    async openLocker(locker) {
+      this.$set(this.lockerLoading, locker.processId + "_open", true);
+      try {
+        const response = await ApiAccessService.open(this.booking.id, locker.processId);
+        if (response.data?.providerResponse) {
+          this.lockerOpenID = response.data.providerResponse.OpenBox_ID;
+        }
+        await this.addToast(
+          ToastService.createToast("locker.open.success", "success")
+        );
+        await this.fetchLockerStatus(locker);
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast("locker.open.error", "error")
+        );
+      } finally {
+        this.$set(this.lockerLoading, locker.processId + "_open", false);
+      }
+    },
+    async fetchLockerStatus(locker) {
+      this.$set(this.lockerLoading, locker.processId + "_status", true);
+      try {
+        const response = await ApiAccessService.getOpenStatus(
+          this.booking.id,
+          locker.processId,
+          this.booking.tenantId,
+          this.lockerOpenID
+        );
+        const status = response.data?.status || response.data;
+        this.$set(this.lockerStatuses, locker.processId, status);
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast("locker.status.error", "error")
+        );
+      } finally {
+        this.$set(this.lockerLoading, locker.processId + "_status", false);
+      }
     },
   },
   mounted() {

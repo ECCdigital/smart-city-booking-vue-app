@@ -16,6 +16,8 @@ export default {
       localTenant: { ...this.tenant },
       localApps: JSON.parse(JSON.stringify(this.apps)),
       showParevaPassword: false,
+      showIfbsSecretPhrase: false,
+      showIfbsApiKey: false,
       testingConnection: {
         pareva: false,
         ifbs: false,
@@ -280,6 +282,19 @@ export default {
                 @input="emitApps()"
               ></v-text-field>
             </v-col>
+            <v-col>
+              <v-text-field
+                background-color="accent"
+                filled
+                dense
+                label="Secret Phrase"
+                v-model="localApps.ifbs.secretPhrase"
+                @input="emitApps()"
+                :append-icon="showIfbsSecretPhrase ? 'mdi-eye' : 'mdi-eye-off'"
+                @click:append="showIfbsSecretPhrase = !showIfbsSecretPhrase"
+                :type="showIfbsSecretPhrase ? 'text' : 'password'"
+              ></v-text-field>
+            </v-col>
           </v-row>
           <v-row>
             <v-col>
@@ -300,9 +315,9 @@ export default {
                 label="API Key"
                 v-model="localApps.ifbs.apiKey"
                 @input="emitApps()"
-                :append-icon="showParevaPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                @click:append="showParevaPassword = !showParevaPassword"
-                :type="showParevaPassword ? 'text' : 'password'"
+                :append-icon="showIfbsApiKey ? 'mdi-eye' : 'mdi-eye-off'"
+                @click:append="showIfbsApiKey = !showIfbsApiKey"
+                :type="showIfbsApiKey ? 'text' : 'password'"
               ></v-text-field>
             </v-col>
           </v-row>

@@ -5,8 +5,19 @@ export default {
     timeBegin,
     timeEnd,
     couponCode,
-    bookWithPrice
+    bookWithPrice,
+    checkoutID
   ) {
+
+    console.log("Validating checkout item with the following details:");
+    console.log("Tenant:", tenant);
+    console.log("Item:", item);
+    console.log("Time Begin:", timeBegin);
+    console.log("Time End:", timeEnd);
+    console.log("Coupon Code:", couponCode);
+    console.log("Book With Price:", bookWithPrice);
+    console.log("Checkout ID:", checkoutID);
+
     return ApiClient.post(`api/${tenant}/checkout/validateItem`, {
       ...item,
       tenant,
@@ -14,6 +25,7 @@ export default {
       timeEnd,
       couponCode,
       bookWithPrice,
+      checkoutId: checkoutID,
     });
   },
   checkout(tenant, payload, simulate = true) {
