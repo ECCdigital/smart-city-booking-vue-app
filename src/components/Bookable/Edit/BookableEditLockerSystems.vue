@@ -236,7 +236,6 @@ export default {
 
     <v-switch
       v-model="lockerDetails.active"
-      :disabled="!model.amount"
       label="Schließsysteme aktivieren"
       hide-details
       color="primary"
@@ -265,19 +264,8 @@ export default {
       </v-card-title>
       <v-divider></v-divider>
       <v-card-text class="pa-4">
-        <template v-if="!model.amount">
-          <v-alert color="warning" dense text class="mb-0">
-            <div class="d-flex align-center">
-              <v-icon class="mr-3" color="warning"> mdi-alert-outline </v-icon>
-              <div>
-                Um Schließsysteme zu konfigurieren, geben Sie bitte die Anzahl
-                der verfügbaren Buchungsobjekte an.
-              </div>
-            </div>
-          </v-alert>
-        </template>
 
-        <template v-else>
+        <template >
           <v-alert
             v-if="lockerSystems.length === 0 && !loading"
             color="info"

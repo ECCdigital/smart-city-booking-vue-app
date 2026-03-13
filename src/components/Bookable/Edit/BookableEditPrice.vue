@@ -1,7 +1,679 @@
+<template>
+  <v-form ref="form" v-model="valid">
+    <BaseSection title="Preise" icon="mdi-cash" />
+
+    <v-expand-transition>
+      <v-alert
+        v-if="isIfbsActive"
+        color="info"
+        text
+        prominent
+        border="left"
+        elevation="2"
+        class="mb-4"
+      >
+        <div class="d-flex align-center">
+          <div>
+            <div class="text-h6 font-weight-bold mb-1">
+              Externe Preissteuerung aktiv
+            </div>
+            <div class="text-body-2">
+              Dieses Buchungsobjekt verwendet ein IFBS-Schließsystem. Die Preise
+              werden vom externen Dienstleister bezogen und können hier nicht
+              bearbeitet werden.
+            </div>
+          </div>
+        </div>
+      </v-alert>
+    </v-expand-transition>
+
+    <v-expand-transition>
+      <v-card-text class="pa-4">
+        <v-progress-linear
+          v-if="isLoadingIfbsPrices"
+          indeterminate
+          color="primary"
+          class="mb-4"
+        />
+
+        <v-alert
+          v-if="ifbsPriceError"
+          type="error"
+          dense
+          text
+          class="mb-4"
+        >
+          {{ ifbsPriceError }}
+          <template #append>
+            <v-btn small text color="error" @click="fetchIfbsPrices">
+              Erneut versuchen
+            </v-btn>
+          </template>
+        </v-alert>
+
+        <div v-if="ifbsPrices && !isLoadingIfbsPrices">
+          <v-row>
+            <v-col
+              v-for="row in ifbsPriceRows"
+              :key="row.key"
+              cols="6"
+              sm="4"
+              md="4"
+              lg="2"
+            >
+              <v-card
+                flat
+                class="pa-3 rounded-lg text-center ifbs-price-tile"
+              >
+                <v-icon color="primary" class="mb-2">
+                  {{ row.icon }}
+                </v-icon>
+                <div class="text-h6 font-weight-bold">
+                  {{ row.value }}
+                </div>
+                <div class="text-caption text--secondary">
+                  {{ row.label }}
+                </div>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <v-divider class="my-4" />
+
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-card
+                flat
+                class="pa-3 rounded-lg ifbs-price-tile"
+              >
+                <div class="d-flex align-center">
+                  <v-icon color="primary" class="mr-3">
+                    mdi-cash-plus
+                  </v-icon>
+                  <div>
+                    <div
+                      class="text-caption text--secondary font-weight-medium"
+                    >
+                      Servicegebühr
+                    </div>
+                    <div class="text-h6 font-weight-bold">
+                      {{ formatPrice(ifbsPrices["Preis_Servicegebühr"]) }} €
+                    </div>
+                  </div>
+                </div>
+              </v-card>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-card
+                flat
+                class="pa-3 rounded-lg ifbs-price-tile"
+              >
+                <div class="d-flex align-center">
+                  <v-icon color="primary" class="mr-3">
+                    mdi-timer-outline
+                  </v-icon>
+                  <div>
+                    <div
+                      class="text-caption text--secondary font-weight-medium"
+                    >
+                      Mindestnutzungsdauer
+                    </div>
+                    <div class="text-h6 font-weight-bold">
+                      {{ formatDuration(ifbsPrices["minimum_usage_time_mins"]) }}
+                    </div>
+                  </div>
+                </div>
+              </v-card>
+            </v-col>
+          </v-row>
+        </div>
+
+        <div
+          v-if="isIfbsActive && !ifbsPrices && !isLoadingIfbsPrices && !ifbsPriceError"
+          class="text-center py-6"
+        >
+          <v-icon large color="grey lighten-1">mdi-cloud-question</v-icon>
+          <div class="text-body-2 grey--text mt-2">
+            Keine Preisdaten verfügbar
+          </div>
+        </div>
+      </v-card-text>
+    </v-expand-transition>
+
+    <!-- Normal Price Editing (hidden when IFBS is active) -->
+    <template v-if="!isIfbsActive">
+      <!-- Basic Settings Card -->
+      <v-card class="mb-4 section-card" elevation="2" outlined>
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-cog-outline</v-icon>
+          <span class="text-h6 font-weight-bold">Grundeinstellungen</span>
+        </v-card-title>
+        <v-divider />
+
+        <v-card-text class="pa-4">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-switch
+                dense
+                label="Gutscheine aktivieren"
+                hide-details
+                v-model="model.enableCoupons"
+                color="primary"
+              >
+                <template v-slot:label>
+                  <div>
+                    <div class="font-weight-medium">Gutscheine aktivieren</div>
+                    <div class="text-caption text--secondary">
+                      Ermöglicht die Verwendung von Gutscheinen
+                    </div>
+                  </div>
+                </template>
+              </v-switch>
+            </v-col>
+          </v-row>
+
+          <v-divider class="my-4" />
+
+          <v-row>
+            <v-col cols="12" md="4">
+              <v-text-field
+                background-color="accent"
+                filled
+                dense
+                label="Verfügbare Anzahl"
+                :hint="!model.amount ? 'Anzahl ist unbegrenzt!' : ''"
+                :persistent-hint="!model.amount"
+                v-model="model.amount"
+                :suffix="
+                  model.priceType === 'per-square-meter' ? 'm²' : 'Stück'
+                "
+              />
+            </v-col>
+
+            <v-col cols="12" md="4">
+              <v-select
+                background-color="accent"
+                filled
+                dense
+                label="Preisart"
+                hide-details
+                v-model="model.priceType"
+                :items="priceTypes"
+                item-text="name"
+                item-value="id"
+              />
+            </v-col>
+
+            <v-col cols="12" md="4">
+              <v-text-field
+                background-color="accent"
+                filled
+                dense
+                label="MwSt."
+                hide-details
+                v-model="model.priceValueAddedTax"
+                suffix="%"
+              />
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+
+      <!-- Simple Price or Graduated Prices -->
+      <v-card class="mb-4 section-card" elevation="2" outlined>
+        <v-card-title
+          class="section-header pa-4 d-flex justify-space-between align-center"
+        >
+          <div>
+            <v-icon class="mr-2">mdi-cash-multiple</v-icon>
+            <span class="text-h6 font-weight-bold">Preisgestaltung</span>
+          </div>
+        </v-card-title>
+        <v-divider />
+
+        <v-card-text class="pa-4">
+          <v-row>
+            <v-col cols="12">
+              <v-switch
+                v-model="useGraduatedPrices"
+                dense
+                hide-details
+                color="primary"
+                class="mt-0"
+              >
+                <template #label>
+                  <div>
+                    <div class="font-weight-medium d-flex align-center">
+                      <v-icon small class="mr-2">
+                        mdi-chart-line-variant
+                      </v-icon>
+                      <span>Staffelpreise aktivieren</span>
+                      <v-chip
+                        v-if="useGraduatedPrices"
+                        x-small
+                        color="primary"
+                        class="ml-2"
+                        label
+                      >
+                        {{ model.priceCategories.length }}
+                        {{
+                          model.priceCategories.length === 1
+                            ? "Kategorie"
+                            : "Kategorien"
+                        }}
+                      </v-chip>
+                    </div>
+                    <div class="text-caption text--secondary">
+                      Definieren Sie unterschiedliche Preise basierend auf
+                      Menge, Wochentag oder Feiertagen
+                    </div>
+                  </div>
+                </template>
+              </v-switch>
+            </v-col>
+          </v-row>
+
+          <v-divider class="my-4" />
+
+          <!-- Simple Price -->
+          <div v-if="!useGraduatedPrices && model.priceCategories[0]">
+            <v-row align="center">
+              <v-col cols="12" md="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  label="Preis (netto)"
+                  hide-details
+                  v-model="model.priceCategories[0].priceEur"
+                  prefix="€"
+                  type="number"
+                  step="0.01"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-switch
+                  v-model="model.priceCategories[0].fixedPrice"
+                  label="Pauschalpreis"
+                  dense
+                  hide-details
+                  color="primary"
+                >
+                  <template v-slot:label>
+                    <div>
+                      <div class="font-weight-medium">Pauschalpreis</div>
+                      <div class="text-caption text--secondary">
+                        Der Grundpreis wird immer berechnet
+                      </div>
+                    </div>
+                  </template>
+                </v-switch>
+              </v-col>
+            </v-row>
+          </div>
+
+          <!-- Graduated Prices -->
+          <v-expand-transition>
+            <div v-if="useGraduatedPrices">
+              <div class="d-flex justify-space-between align-center mb-3">
+                <v-subheader class="pl-0">
+                  <v-icon small class="mr-2"> mdi-format-list-numbered </v-icon>
+                  Preis-Kategorien
+                </v-subheader>
+                <v-btn small color="primary" @click="addPriceCategory">
+                  <v-icon left small>mdi-plus</v-icon>
+                  Kategorie hinzufügen
+                </v-btn>
+              </div>
+
+              <v-alert
+                v-if="hasPriceCategories"
+                color="info"
+                dense
+                text
+                class="mb-4"
+              >
+                <div class="d-flex align-center">
+                  <v-icon class="mr-3" color="info">
+                    mdi-information-outline
+                  </v-icon>
+                  <div>
+                    <strong>Tipp:</strong> Die Kategorien werden in der
+                    angegebenen Reihenfolge geprüft. Die erste passende
+                    Kategorie wird angewendet.
+                  </div>
+                </div>
+              </v-alert>
+
+              <div v-if="hasPriceCategories">
+                <v-list two-line class="py-0">
+                  <template
+                    v-for="(priceCategory, idx) in model.priceCategories"
+                  >
+                    <v-list-item
+                      :key="`price-${idx}`"
+                      class="price-category-item elevation-1 mb-3 rounded"
+                      @click="toggleExpand(idx)"
+                    >
+                      <v-list-item-avatar>
+                        <v-avatar color="green" size="40">
+                          <span class="white--text font-weight-bold">
+                            {{ idx + 1 }}
+                          </span>
+                        </v-avatar>
+                      </v-list-item-avatar>
+
+                      <v-list-item-content>
+                        <v-list-item-title class="d-flex align-center mb-1">
+                          <span class="text-h6 font-weight-bold mr-2">
+                            {{ formatPrice(priceCategory.priceEur) }} €
+                          </span>
+                          <v-chip
+                            v-if="priceCategory.fixedPrice"
+                            x-small
+                            color="orange"
+                            text-color="white"
+                          >
+                            Pauschal
+                          </v-chip>
+                        </v-list-item-title>
+
+                        <v-list-item-subtitle
+                          class="d-flex align-center flex-wrap"
+                        >
+                          <v-chip
+                            x-small
+                            class="mr-2"
+                            color="blue-grey lighten-4"
+                          >
+                            <v-icon left x-small>mdi-ruler</v-icon>
+                            {{ formatPriceRange(priceCategory) }}
+                          </v-chip>
+
+                          <v-chip
+                            v-if="
+                              priceCategory.weekdays &&
+                              priceCategory.weekdays.length > 0
+                            "
+                            x-small
+                            class="mr-2"
+                            color="primary"
+                          >
+                            <v-icon left x-small>mdi-calendar-week</v-icon>
+                            {{ priceCategory.weekdays.length }} Wochentag(e)
+                          </v-chip>
+
+                          <v-chip
+                            v-if="
+                              priceCategory.holidays &&
+                              priceCategory.holidays.length > 0
+                            "
+                            x-small
+                            class="mr-2"
+                            color="red"
+                          >
+                            <v-icon left x-small>mdi-calendar-star</v-icon>
+                            {{ priceCategory.holidays.length }} Feiertag(e)
+                          </v-chip>
+                        </v-list-item-subtitle>
+                      </v-list-item-content>
+
+                      <v-list-item-action>
+                        <div class="d-flex align-center">
+                          <v-btn
+                            icon
+                            small
+                            @click.stop="removePriceCategory(idx)"
+                            color="error"
+                            :disabled="model.priceCategories.length <= 1"
+                          >
+                            <v-icon small>mdi-delete-outline</v-icon>
+                          </v-btn>
+                          <v-btn icon small>
+                            <v-icon>
+                              {{
+                                isExpanded(idx)
+                                  ? "mdi-chevron-up"
+                                  : "mdi-chevron-down"
+                              }}
+                            </v-icon>
+                          </v-btn>
+                        </div>
+                      </v-list-item-action>
+                    </v-list-item>
+
+                    <v-expand-transition :key="`expand-${idx}`">
+                      <v-card
+                        v-show="isExpanded(idx)"
+                        flat
+                        class="mx-3 mb-3 pa-4 price-card"
+                        color="grey lighten-5"
+                      >
+                        <!-- Price and Fixed Price -->
+                        <v-row>
+                          <v-col cols="12" md="4">
+                            <v-text-field
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Preis (netto) *"
+                              hide-details="auto"
+                              v-model="priceCategory.priceEur"
+                              prefix="€"
+                              type="number"
+                              step="0.01"
+                              :rules="[
+                                (v) => v !== '' || 'Preis ist erforderlich',
+                              ]"
+                            />
+                          </v-col>
+
+                          <v-col cols="12" md="8">
+                            <v-switch
+                              v-model="priceCategory.fixedPrice"
+                              label="Pauschalpreis"
+                              dense
+                              hide-details
+                              color="primary"
+                            >
+                              <template v-slot:label>
+                                <div>
+                                  <div class="font-weight-medium">
+                                    Pauschalpreis
+                                  </div>
+                                  <div class="text-caption text--secondary">
+                                    Der Grundpreis wird immer berechnet,
+                                    unabhängig von der Menge
+                                  </div>
+                                </div>
+                              </template>
+                            </v-switch>
+                          </v-col>
+                        </v-row>
+
+                        <v-divider class="my-3" />
+
+                        <!-- Interval -->
+                        <v-subheader class="pl-0">
+                          <v-icon small class="mr-2">mdi-ruler</v-icon>
+                          Gültigkeitsbereich
+                        </v-subheader>
+                        <v-row>
+                          <v-col cols="12" md="6">
+                            <v-text-field
+                              v-model="priceCategory.interval.start"
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Gültig ab"
+                              type="number"
+                              hide-details
+                              :suffix="intervalSuffix"
+                              clearable
+                            />
+                          </v-col>
+                          <v-col cols="12" md="6">
+                            <v-text-field
+                              v-model="priceCategory.interval.end"
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Gültig bis"
+                              type="number"
+                              hide-details
+                              :suffix="intervalSuffix"
+                              clearable
+                            />
+                          </v-col>
+                        </v-row>
+
+                        <v-divider class="my-3" />
+
+                        <!-- Weekdays and Holidays -->
+                        <v-subheader class="pl-0">
+                          <v-icon small class="mr-2">
+                            mdi-calendar-clock
+                          </v-icon>
+                          Zeitliche Einschränkungen
+                        </v-subheader>
+                        <v-row>
+                          <v-col cols="12" md="6">
+                            <v-select
+                              background-color="accent"
+                              filled
+                              dense
+                              label="Wochentage"
+                              hide-details
+                              v-model="priceCategory.weekdays"
+                              multiple
+                              chips
+                              small-chips
+                              :items="weekdays"
+                              item-text="name"
+                              item-value="id"
+                            >
+                              <template v-slot:selection="{ item, index }">
+                                <v-chip
+                                  v-if="index < 3"
+                                  small
+                                  color="primary"
+                                  class="mr-1"
+                                >
+                                  {{ getWeekdayName(item.id) }}
+                                </v-chip>
+                                <span
+                                  v-if="
+                                    index === 3 &&
+                                    priceCategory.weekdays.length > 3
+                                  "
+                                  class="grey--text text-caption"
+                                >
+                                  (+{{ priceCategory.weekdays.length - 3 }}
+                                  weitere)
+                                </span>
+                              </template>
+                            </v-select>
+                          </v-col>
+
+                          <v-col cols="12" md="6">
+                            <v-combobox
+                              background-color="accent"
+                              filled
+                              dense
+                              multiple
+                              chips
+                              small-chips
+                              clearable
+                              label="Feiertage"
+                              hide-details
+                              :items="availableHolidays"
+                              item-text="name"
+                              item-value="date"
+                              v-model="priceCategory.holidays"
+                            >
+                              <template v-slot:prepend-item>
+                                <v-list-item ripple>
+                                  <v-select
+                                    v-model="selectedState"
+                                    :items="states"
+                                    item-text="text"
+                                    item-value="value"
+                                    dense
+                                    hide-details
+                                    outlined
+                                    label="Bundesland"
+                                    prepend-icon="mdi-filter"
+                                    @change="fetchHolidays"
+                                  />
+                                </v-list-item>
+                                <v-divider class="mx-2" />
+                              </template>
+                              <template v-slot:selection="{ item, index }">
+                                <v-chip
+                                  v-if="index < 2"
+                                  small
+                                  color="red"
+                                  text-color="white"
+                                  class="mr-1"
+                                >
+                                  {{ item.name }}
+                                </v-chip>
+                                <span
+                                  v-if="
+                                    index === 2 &&
+                                    priceCategory.holidays.length > 2
+                                  "
+                                  class="grey--text text-caption"
+                                >
+                                  (+{{ priceCategory.holidays.length - 2 }}
+                                  weitere)
+                                </span>
+                              </template>
+                            </v-combobox>
+                          </v-col>
+                        </v-row>
+                      </v-card>
+                    </v-expand-transition>
+
+                    <v-divider
+                      v-if="idx < model.priceCategories.length - 1"
+                      :key="`divider-${idx}`"
+                      class="my-2"
+                    />
+                  </template>
+                </v-list>
+              </div>
+
+              <div v-else class="text-center py-8">
+                <v-icon large color="grey lighten-1" class="mb-2">
+                  mdi-cash-remove
+                </v-icon>
+                <div class="text-h6 grey--text mb-2">
+                  Noch keine Preis-Kategorien definiert
+                </div>
+                <div class="text-body-2 grey--text text--darken-1 mb-4">
+                  Fügen Sie Kategorien hinzu, um unterschiedliche Preise zu
+                  definieren
+                </div>
+                <v-btn small text color="primary" @click="addPriceCategory">
+                  <v-icon left small>mdi-plus</v-icon>
+                  Erste Kategorie hinzufügen
+                </v-btn>
+              </div>
+            </div>
+          </v-expand-transition>
+        </v-card-text>
+      </v-card>
+    </template>
+  </v-form>
+</template>
+
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import debounce from "lodash/debounce";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
+import ApiLockerService from "@/services/api/ApiLockerService";
 
 export default {
   name: "BookableEditPrice",
@@ -12,6 +684,9 @@ export default {
       useGraduatedPrices: false,
       valid: false,
       expandedCategories: [],
+      isLoadingIfbsPrices: false,
+      ifbsPrices: null,
+      ifbsPriceError: null,
       priceTypes: [
         { id: "per-item", name: "pro Stück" },
         { id: "per-hour", name: "pro Stunde" },
@@ -59,6 +734,58 @@ export default {
         this._emitDebounced(val);
       },
     },
+    isIfbsActive() {
+      const details = this.bookable?.lockerDetails;
+      if (!details?.active) return false;
+      return details.units?.some((u) => u.lockerSystem === "ifbs") ?? false;
+    },
+    ifbsUnit() {
+      if (!this.isIfbsActive) return null;
+      return this.bookable.lockerDetails.units.find(
+        (u) => u.lockerSystem === "ifbs"
+      );
+    },
+    ifbsPriceRows() {
+      if (!this.ifbsPrices) return [];
+      return [
+        {
+          key: "1min",
+          label: "pro Minute",
+          value: this.formatPrice(this.ifbsPrices["Preis_1 Minute"]) + " €",
+          icon: "mdi-timer-sand",
+        },
+        {
+          key: "1h",
+          label: "pro Stunde",
+          value: this.formatPrice(this.ifbsPrices["Preis_1h"]) + " €",
+          icon: "mdi-clock-outline",
+        },
+        {
+          key: "1d",
+          label: "pro Tag",
+          value: this.formatPrice(this.ifbsPrices["Preis_1d"]) + " €",
+          icon: "mdi-calendar-today",
+        },
+        {
+          key: "1w",
+          label: "pro Woche",
+          value: this.formatPrice(this.ifbsPrices["Preis_1w"]) + " €",
+          icon: "mdi-calendar-week",
+        },
+        {
+          key: "1m",
+          label: "pro Monat",
+          value: this.formatPrice(this.ifbsPrices["Preis_1m"]) + " €",
+          icon: "mdi-calendar-month",
+        },
+        {
+          key: "1y",
+          label: "pro Jahr",
+          value: this.formatPrice(this.ifbsPrices["Preis_1y"]) + " €",
+          icon: "mdi-calendar-star",
+        },
+      ];
+    },
     intervalSuffix() {
       const map = {
         "per-hour": "Std.",
@@ -83,6 +810,17 @@ export default {
       immediate: true,
       handler() {
         this.fetchHolidays();
+      },
+    },
+    isIfbsActive: {
+      immediate: true,
+      handler(active) {
+        if (active) {
+          this.fetchIfbsPrices();
+        } else {
+          this.ifbsPrices = null;
+          this.ifbsPriceError = null;
+        }
       },
     },
     bookable: {
@@ -115,7 +853,6 @@ export default {
         ]);
         this._emitDebounced({ ...this.model });
       } else {
-        // Expand first category by default
         if (this.hasPriceCategories) {
           this.expandedCategories = [0];
         }
@@ -140,6 +877,23 @@ export default {
         obj[lastKey] = null;
       }
     },
+    formatDuration(minutes) {
+      const mins = parseInt(minutes, 10);
+      if (!mins || mins === 0) return "Keine";
+
+      const weeks = Math.floor(mins / 10080);
+      const days = Math.floor((mins % 10080) / 1440);
+      const hours = Math.floor((mins % 1440) / 60);
+      const remainingMins = mins % 60;
+
+      const parts = [];
+      if (weeks > 0) parts.push(`${weeks} ${weeks === 1 ? "Woche" : "Wochen"}`);
+      if (days > 0) parts.push(`${days} ${days === 1 ? "Tag" : "Tage"}`);
+      if (hours > 0) parts.push(`${hours} ${hours === 1 ? "Stunde" : "Stunden"}`);
+      if (remainingMins > 0) parts.push(`${remainingMins} Min.`);
+
+      return parts.join(", ");
+    },
     removePriceCategory(index) {
       this.model.priceCategories.splice(index, 1);
       const expandIdx = this.expandedCategories.indexOf(index);
@@ -160,6 +914,29 @@ export default {
           stateCode: this.selectedState,
         }));
     },
+    async fetchIfbsPrices() {
+      const unit = this.ifbsUnit;
+      if (!unit?.locationId || !this.bookable?.tenantId) return;
+
+      try {
+        this.isLoadingIfbsPrices = true;
+        this.ifbsPriceError = null;
+        const response = await ApiLockerService.getPrice(
+          this.bookable.tenantId,
+          "ifbs",
+          unit.locationId
+        );
+        console.log("IFBS price response:", response.data);
+        this.ifbsPrices = response.data;
+      } catch (err) {
+        console.error("Error fetching IFBS prices:", err);
+        this.ifbsPriceError =
+          "Preise konnten nicht vom IFBS-Dienst geladen werden.";
+        this.ifbsPrices = null;
+      } finally {
+        this.isLoadingIfbsPrices = false;
+      }
+    },
     addPriceCategory() {
       const last =
         this.model.priceCategories[this.model.priceCategories.length - 1];
@@ -173,7 +950,6 @@ export default {
         holidays: [],
         weekdays: [],
       });
-      // Auto-expand new category
       this.expandedCategories.push(this.model.priceCategories.length - 1);
     },
     toggleExpand(index) {
@@ -211,532 +987,6 @@ export default {
 };
 </script>
 
-<template>
-  <v-form ref="form" v-model="valid">
-    <BaseSection title="Preise" icon="mdi-cash" />
-
-    <!-- Basic Settings Card -->
-    <v-card class="mb-4 section-card" elevation="2" outlined>
-      <v-card-title class="section-header pa-4">
-        <v-icon class="mr-2">mdi-cog-outline</v-icon>
-        <span class="text-h6 font-weight-bold">Grundeinstellungen</span>
-      </v-card-title>
-      <v-divider />
-
-      <v-card-text class="pa-4">
-        <v-row>
-          <v-col cols="12" md="6">
-            <v-switch
-              dense
-              label="Gutscheine aktivieren"
-              hide-details
-              v-model="model.enableCoupons"
-              color="primary"
-            >
-              <template v-slot:label>
-                <div>
-                  <div class="font-weight-medium">Gutscheine aktivieren</div>
-                  <div class="text-caption text--secondary">
-                    Ermöglicht die Verwendung von Gutscheinen
-                  </div>
-                </div>
-              </template>
-            </v-switch>
-          </v-col>
-        </v-row>
-
-        <v-divider class="my-4" />
-
-        <v-row>
-          <v-col cols="12" md="4">
-            <v-text-field
-              background-color="accent"
-              filled
-              dense
-              label="Verfügbare Anzahl"
-              :hint="!model.amount ? 'Anzahl ist unbegrenzt!' : ''"
-              :persistent-hint="!model.amount"
-              v-model="model.amount"
-              :suffix="
-                model.priceType === 'per-square-meter' ? 'm²' : 'Stück'
-              "
-            />
-          </v-col>
-
-          <v-col cols="12" md="4">
-            <v-select
-              background-color="accent"
-              filled
-              dense
-              label="Preisart"
-              hide-details
-              v-model="model.priceType"
-              :items="priceTypes"
-              item-text="name"
-              item-value="id"
-            />
-          </v-col>
-
-          <v-col cols="12" md="4">
-            <v-text-field
-              background-color="accent"
-              filled
-              dense
-              label="MwSt."
-              hide-details
-              v-model="model.priceValueAddedTax"
-              suffix="%"
-            />
-          </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
-
-    <!-- Simple Price or Graduated Prices -->
-    <v-card class="mb-4 section-card" elevation="2" outlined>
-      <v-card-title
-        class="section-header pa-4 d-flex justify-space-between align-center"
-      >
-        <div>
-          <v-icon class="mr-2">mdi-cash-multiple</v-icon>
-          <span class="text-h6 font-weight-bold">Preisgestaltung</span>
-        </div>
-      </v-card-title>
-      <v-divider />
-
-      <v-card-text class="pa-4">
-        <v-row>
-          <v-col cols="12">
-            <v-switch
-              v-model="useGraduatedPrices"
-              dense
-              hide-details
-              color="primary"
-              class="mt-0"
-            >
-              <template #label>
-                <div>
-                  <div class="font-weight-medium d-flex align-center">
-                    <v-icon small class="mr-2">mdi-chart-line-variant</v-icon>
-                    <span>Staffelpreise aktivieren</span>
-                    <v-chip
-                      v-if="useGraduatedPrices"
-                      x-small
-                      color="primary"
-                      class="ml-2"
-                      label
-                    >
-                      {{ model.priceCategories.length }}
-                      {{
-                        model.priceCategories.length === 1
-                          ? "Kategorie"
-                          : "Kategorien"
-                      }}
-                    </v-chip>
-                  </div>
-                  <div class="text-caption text--secondary">
-                    Definieren Sie unterschiedliche Preise basierend auf Menge,
-                    Wochentag oder Feiertagen
-                  </div>
-                </div>
-              </template>
-            </v-switch>
-          </v-col>
-        </v-row>
-
-        <v-divider class="my-4" />
-
-        <!-- Simple Price -->
-        <div v-if="!useGraduatedPrices && model.priceCategories[0]">
-          <v-row align="center">
-            <v-col cols="12" md="6">
-              <v-text-field
-                background-color="accent"
-                filled
-                dense
-                label="Preis (netto)"
-                hide-details
-                v-model="model.priceCategories[0].priceEur"
-                prefix="€"
-                type="number"
-                step="0.01"
-              />
-            </v-col>
-
-            <v-col cols="12" md="6">
-              <v-switch
-                v-model="model.priceCategories[0].fixedPrice"
-                label="Pauschalpreis"
-                dense
-                hide-details
-                color="primary"
-              >
-                <template v-slot:label>
-                  <div>
-                    <div class="font-weight-medium">Pauschalpreis</div>
-                    <div class="text-caption text--secondary">
-                      Der Grundpreis wird immer berechnet
-                    </div>
-                  </div>
-                </template>
-              </v-switch>
-            </v-col>
-          </v-row>
-        </div>
-
-        <!-- Graduated Prices -->
-        <v-expand-transition>
-          <div v-if="useGraduatedPrices">
-            <div class="d-flex justify-space-between align-center mb-3">
-              <v-subheader class="pl-0">
-                <v-icon small class="mr-2">mdi-format-list-numbered</v-icon>
-                Preis-Kategorien
-              </v-subheader>
-              <v-btn small color="primary" @click="addPriceCategory">
-                <v-icon left small>mdi-plus</v-icon>
-                Kategorie hinzufügen
-              </v-btn>
-            </div>
-
-            <v-alert
-              v-if="hasPriceCategories"
-              color="info"
-              dense
-              text
-              class="mb-4"
-            >
-              <div class="d-flex align-center">
-                <v-icon class="mr-3" color="info">
-                  mdi-information-outline
-                </v-icon>
-                <div>
-                  <strong>Tipp:</strong> Die Kategorien werden in der
-                  angegebenen Reihenfolge geprüft. Die erste passende Kategorie
-                  wird angewendet.
-                </div>
-              </div>
-            </v-alert>
-
-            <div v-if="hasPriceCategories">
-              <v-list two-line class="py-0">
-                <template
-                  v-for="(priceCategory, idx) in model.priceCategories"
-                >
-                  <v-list-item
-                    :key="`price-${idx}`"
-                    class="price-category-item elevation-1 mb-3 rounded"
-                    @click="toggleExpand(idx)"
-                  >
-                    <v-list-item-avatar>
-                      <v-avatar color="green" size="40">
-                        <span class="white--text font-weight-bold">
-                          {{ idx + 1 }}
-                        </span>
-                      </v-avatar>
-                    </v-list-item-avatar>
-
-                    <v-list-item-content>
-                      <v-list-item-title class="d-flex align-center mb-1">
-                        <span class="text-h6 font-weight-bold mr-2">
-                          {{ formatPrice(priceCategory.priceEur) }} €
-                        </span>
-                        <v-chip
-                          v-if="priceCategory.fixedPrice"
-                          x-small
-                          color="orange"
-                          text-color="white"
-                        >
-                          Pauschal
-                        </v-chip>
-                      </v-list-item-title>
-
-                      <v-list-item-subtitle
-                        class="d-flex align-center flex-wrap"
-                      >
-                        <v-chip x-small class="mr-2" color="blue-grey lighten-4">
-                          <v-icon left x-small>mdi-ruler</v-icon>
-                          {{ formatPriceRange(priceCategory) }}
-                        </v-chip>
-
-                        <v-chip
-                          v-if="
-                            priceCategory.weekdays &&
-                            priceCategory.weekdays.length > 0
-                          "
-                          x-small
-                          class="mr-2"
-                          color="primary"
-                        >
-                          <v-icon left x-small>mdi-calendar-week</v-icon>
-                          {{ priceCategory.weekdays.length }} Wochentag(e)
-                        </v-chip>
-
-                        <v-chip
-                          v-if="
-                            priceCategory.holidays &&
-                            priceCategory.holidays.length > 0
-                          "
-                          x-small
-                          class="mr-2"
-                          color="red"
-                        >
-                          <v-icon left x-small>mdi-calendar-star</v-icon>
-                          {{ priceCategory.holidays.length }} Feiertag(e)
-                        </v-chip>
-                      </v-list-item-subtitle>
-                    </v-list-item-content>
-
-                    <v-list-item-action>
-                      <div class="d-flex align-center">
-                        <v-btn
-                          icon
-                          small
-                          @click.stop="removePriceCategory(idx)"
-                          color="error"
-                          :disabled="model.priceCategories.length <= 1"
-                        >
-                          <v-icon small>mdi-delete-outline</v-icon>
-                        </v-btn>
-                        <v-btn icon small>
-                          <v-icon>
-                            {{
-                              isExpanded(idx)
-                                ? "mdi-chevron-up"
-                                : "mdi-chevron-down"
-                            }}
-                          </v-icon>
-                        </v-btn>
-                      </div>
-                    </v-list-item-action>
-                  </v-list-item>
-
-                  <v-expand-transition :key="`expand-${idx}`">
-                    <v-card
-                      v-show="isExpanded(idx)"
-                      flat
-                      class="mx-3 mb-3 pa-4 price-card"
-                      color="grey lighten-5"
-                    >
-                      <!-- Price and Fixed Price -->
-                      <v-row>
-                        <v-col cols="12" md="4">
-                          <v-text-field
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Preis (netto) *"
-                            hide-details="auto"
-                            v-model="priceCategory.priceEur"
-                            prefix="€"
-                            type="number"
-                            step="0.01"
-                            :rules="[
-                              (v) => v !== '' || 'Preis ist erforderlich',
-                            ]"
-                          />
-                        </v-col>
-
-                        <v-col cols="12" md="8">
-                          <v-switch
-                            v-model="priceCategory.fixedPrice"
-                            label="Pauschalpreis"
-                            dense
-                            hide-details
-                            color="primary"
-                          >
-                            <template v-slot:label>
-                              <div>
-                                <div class="font-weight-medium">
-                                  Pauschalpreis
-                                </div>
-                                <div class="text-caption text--secondary">
-                                  Der Grundpreis wird immer berechnet,
-                                  unabhängig von der Menge
-                                </div>
-                              </div>
-                            </template>
-                          </v-switch>
-                        </v-col>
-                      </v-row>
-
-                      <v-divider class="my-3" />
-
-                      <!-- Interval -->
-                      <v-subheader class="pl-0">
-                        <v-icon small class="mr-2">mdi-ruler</v-icon>
-                        Gültigkeitsbereich
-                      </v-subheader>
-                      <v-row>
-                        <v-col cols="12" md="6">
-                          <v-text-field
-                            v-model="priceCategory.interval.start"
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Gültig ab"
-                            type="number"
-                            hide-details
-                            :suffix="intervalSuffix"
-                            clearable
-                          />
-                        </v-col>
-                        <v-col cols="12" md="6">
-                          <v-text-field
-                            v-model="priceCategory.interval.end"
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Gültig bis"
-                            type="number"
-                            hide-details
-                            :suffix="intervalSuffix"
-                            clearable
-                          />
-                        </v-col>
-                      </v-row>
-
-                      <v-divider class="my-3" />
-
-                      <!-- Weekdays and Holidays -->
-                      <v-subheader class="pl-0">
-                        <v-icon small class="mr-2">mdi-calendar-clock</v-icon>
-                        Zeitliche Einschränkungen
-                      </v-subheader>
-                      <v-row>
-                        <v-col cols="12" md="6">
-                          <v-select
-                            background-color="accent"
-                            filled
-                            dense
-                            label="Wochentage"
-                            hide-details
-                            v-model="priceCategory.weekdays"
-                            multiple
-                            chips
-                            small-chips
-                            :items="weekdays"
-                            item-text="name"
-                            item-value="id"
-                          >
-                            <template v-slot:selection="{ item, index }">
-                              <v-chip
-                                v-if="index < 3"
-                                small
-                                color="primary"
-                                class="mr-1"
-                              >
-                                {{ getWeekdayName(item.id) }}
-                              </v-chip>
-                              <span
-                                v-if="
-                                  index === 3 &&
-                                  priceCategory.weekdays.length > 3
-                                "
-                                class="grey--text text-caption"
-                              >
-                                (+{{
-                                  priceCategory.weekdays.length - 3
-                                }}
-                                weitere)
-                              </span>
-                            </template>
-                          </v-select>
-                        </v-col>
-
-                        <v-col cols="12" md="6">
-                          <v-combobox
-                            background-color="accent"
-                            filled
-                            dense
-                            multiple
-                            chips
-                            small-chips
-                            clearable
-                            label="Feiertage"
-                            hide-details
-                            :items="availableHolidays"
-                            item-text="name"
-                            item-value="date"
-                            v-model="priceCategory.holidays"
-                          >
-                            <template v-slot:prepend-item>
-                              <v-list-item ripple>
-                                <v-select
-                                  v-model="selectedState"
-                                  :items="states"
-                                  item-text="text"
-                                  item-value="value"
-                                  dense
-                                  hide-details
-                                  outlined
-                                  label="Bundesland"
-                                  prepend-icon="mdi-filter"
-                                  @change="fetchHolidays"
-                                />
-                              </v-list-item>
-                              <v-divider class="mx-2" />
-                            </template>
-                            <template v-slot:selection="{ item, index }">
-                              <v-chip
-                                v-if="index < 2"
-                                small
-                                color="red"
-                                text-color="white"
-                                class="mr-1"
-                              >
-                                {{ item.name }}
-                              </v-chip>
-                              <span
-                                v-if="
-                                  index === 2 &&
-                                  priceCategory.holidays.length > 2
-                                "
-                                class="grey--text text-caption"
-                              >
-                                (+{{
-                                  priceCategory.holidays.length - 2
-                                }}
-                                weitere)
-                              </span>
-                            </template>
-                          </v-combobox>
-                        </v-col>
-                      </v-row>
-                    </v-card>
-                  </v-expand-transition>
-
-                  <v-divider
-                    v-if="idx < model.priceCategories.length - 1"
-                    :key="`divider-${idx}`"
-                    class="my-2"
-                  />
-                </template>
-              </v-list>
-            </div>
-
-            <div v-else class="text-center py-8">
-              <v-icon large color="grey lighten-1" class="mb-2">
-                mdi-cash-remove
-              </v-icon>
-              <div class="text-h6 grey--text mb-2">
-                Noch keine Preis-Kategorien definiert
-              </div>
-              <div class="text-body-2 grey--text text--darken-1 mb-4">
-                Fügen Sie Kategorien hinzu, um unterschiedliche Preise zu
-                definieren
-              </div>
-              <v-btn small text color="primary" @click="addPriceCategory">
-                <v-icon left small>mdi-plus</v-icon>
-                Erste Kategorie hinzufügen
-              </v-btn>
-            </div>
-          </div>
-        </v-expand-transition>
-      </v-card-text>
-    </v-card>
-  </v-form>
-</template>
-
 <style scoped>
 .section-card {
   border-radius: 8px !important;
@@ -764,7 +1014,6 @@ export default {
   transition: all 0.2s ease;
 }
 
-
 .theme--dark .price-category-item {
   background-color: rgba(255, 255, 255, 0.05);
 }
@@ -772,4 +1021,15 @@ export default {
 .price-card {
   border-radius: 8px !important;
 }
+.ifbs-price-tile {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background-color: var(--v-accent-base, #f5f5f5) !important;
+}
+
+.theme--dark .ifbs-price-tile {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
 </style>

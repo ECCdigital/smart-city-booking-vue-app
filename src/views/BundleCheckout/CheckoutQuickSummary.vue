@@ -156,7 +156,7 @@
           </v-col>
           <v-col v-if="!item.valid" class="col-12 red--text">
             <small>
-              {{ item.error }}
+              {{ item.error}}
             </small>
           </v-col>
         </v-row>
@@ -307,6 +307,9 @@ export default {
   name: "CheckoutQuickSummary",
 
   props: {
+    checkoutId: {
+      type: String,
+    },
     trace: {
       type: Boolean,
     },
@@ -495,9 +498,12 @@ export default {
     },
 
     async performCheckout() {
+      let payload = this.compileBooking();
+      payload.checkoutId = this.checkoutId;
+
       const response = await ApiCheckoutService.checkout(
         this.tenant,
-        this.compileBooking(),
+        payload,
         false
       );
       if (response.status !== 200) throw new Error("Checkout service failed");

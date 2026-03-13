@@ -902,7 +902,6 @@ export default {
       if (!this.booking.lockerInfo || !Array.isArray(this.booking.lockerInfo)) {
         return [];
       }
-      console.log("Alle Schließfächer in der Buchung:", this.booking.lockerInfo);
       return this.booking.lockerInfo.filter(
         (locker) => locker.lockerSystem === "ifbs" && locker.isConfirmed
       );

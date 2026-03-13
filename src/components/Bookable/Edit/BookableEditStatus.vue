@@ -25,8 +25,7 @@ export default {
 
 <template>
   <v-sheet
-    class="mb-4 px-4 py-2 d-flex flex-wrap align-center"
-    color="grey lighten-5"
+    class="mb-4 px-4 py-2 d-flex flex-wrap align-center status-indicator"
     rounded
   >
     <v-switch
@@ -77,4 +76,14 @@ export default {
   </v-sheet>
 </template>
 
-<style scoped></style>
+<style scoped>
+
+.status-indicator {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background-color: var(--v-accent-base, #f5f5f5) !important;
+}
+
+.theme--dark .status-indicator {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+</style>

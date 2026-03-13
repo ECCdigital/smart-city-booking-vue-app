@@ -52,6 +52,7 @@
               :coupon="coupon"
               :selected-payment-app="selectedPaymentApp"
               :trace="trace"
+              :checkout-id="checkoutId"
               :final-check="step === steps.length"
               :me="me"
               :free-booking-allowed="
@@ -510,7 +511,6 @@ export default {
               delete item.error;
             }
           } catch (error) {
-            console.log("Validation error for item", item.bookableId, error);
 
             this.checkoutId = error.response.data.checkoutId || this.checkoutId || null;
 
@@ -521,7 +521,7 @@ export default {
             item.freeBookingAllowed = false;
 
             item.valid = false;
-            item.error = error.response.data;
+            item.error = error.response.data.error;
           } finally {
             const previousStepCount = this.steps.length;
 
