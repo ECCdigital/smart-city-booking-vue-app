@@ -157,6 +157,8 @@ export default {
     this.tenant = this.$route.query.tenant;
     this.leadItem.bookableId = this.$route.query.id;
     this.leadItem.amount = parseInt(this.$route.query.amount || 1);
+    this.timeBegin = this.parseStringToTimestamp(this.$route.query.start) ;
+    this.timeEnd = this.parseStringToTimestamp(this.$route.query.end);
     await this.init();
     await this.fetchTenant();
   },
@@ -686,6 +688,14 @@ export default {
       ) {
         this.step = newStepCount;
       }
+    },
+
+    parseStringToTimestamp(dateString) {
+      const timestamp = parseInt(dateString);
+      if(!isNaN(timestamp)) {
+        return timestamp;
+      }
+      return null;
     },
   },
 

@@ -14,6 +14,36 @@
       :label="label"
       @input="$emit('input', $event)"
     >
+      <template v-slot:item="{ item, on, attrs }">
+        <v-list-item v-bind="attrs" v-on="on">
+          <v-list-item-avatar v-if="isImageFile(item)" tile>
+            <v-img
+              :src="item.link"
+              width="40"
+              height="40"
+              contain
+            />
+          </v-list-item-avatar>
+
+          <v-list-item-content>
+            <v-list-item-title>{{ item.basename || item.filename }}</v-list-item-title>
+            <v-list-item-subtitle v-if="item.mime">
+              {{ item.mime }}
+            </v-list-item-subtitle>
+          </v-list-item-content>
+        </v-list-item>
+      </template>
+
+      <template v-slot:selection="{ item }">
+        <div class="d-flex align-center">
+          <v-avatar v-if="isImageFile(item)" tile size="24" class="mr-2">
+            <v-img :src="item.link" contain />
+          </v-avatar>
+          <span>{{ item.basename || item.filename }}</span>
+        </div>
+      </template>
+
+
       <template v-slot:prepend-item>
         <v-list-item ripple @click="dialog = true">
           <v-list-item-action>
@@ -148,6 +178,7 @@
             Hochladen
           </v-btn>
         </v-card-actions>
+
       </v-card>
     </v-dialog>
   </div>
@@ -179,7 +210,7 @@ export default {
   props: {
     tenantId: {
       type: String,
-      required: true,
+      default: null,
     },
     value: {
       type: String,
@@ -226,17 +257,15 @@ export default {
     async fetchFiles() {
       try {
         this.isFetching = true;
-        if (!this.tenantId) return [];
 
-        const response = await ApiFileService.getFiles(
-          this.tenantId,
-          this.allowProtected
-        );
+        const response = await ApiFileService.getFiles({
+          tenantID: this.tenantId,
+          includeProtected: this.allowProtected,
+        });
         this.files = response.data.filter((file) => {
           const extension = file.filename.toLowerCase().split(".").pop();
           return this.extensionFilter.includes(extension);
         });
-
       } finally {
         this.isFetching = false;
       }
@@ -258,7 +287,10 @@ export default {
           formData.append("file", this.uploadFile);
           formData.append("accessLevel", this.accessLevel);
           formData.append("customDirectory", path);
-          await ApiFileService.createFile(this.tenantId, formData);
+          await ApiFileService.createFile({
+            tenantID: this.tenantId,
+            formData,
+          });
           await this.fetchFiles();
           this.$emit(
             "input",
@@ -272,7 +304,6 @@ export default {
         }
       } catch (err) {
         this.isUploadError = true;
-        console.log(err);
       } finally {
         this.isLoading = false;
       }
@@ -295,6 +326,14 @@ export default {
     },
     emitUpdate() {
       this.$emit("update");
+    },
+    isImageFile(file) {
+      if (!file) return false;
+      if (file.mime) return file.mime.startsWith("image/");
+      const name = (file.basename || file.filename || "").toLowerCase();
+      return [ "png", "jpg", "jpeg", "gif", "webp", "svg" ].includes(
+        name.split(".").pop()
+      );
     },
   },
   computed: {

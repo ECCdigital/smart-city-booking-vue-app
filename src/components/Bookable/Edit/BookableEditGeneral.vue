@@ -4,10 +4,11 @@ import Tiptap from "@/components/Tiptap.vue";
 import ChooseFile from "@/components/Files/ChooseFile.vue";
 import debounce from "lodash/debounce";
 import ApiEventService from "@/services/api/ApiEventService";
+import AddressLookup from "@/components/commons/AddressLookup.vue";
 
 export default {
   name: "BookableEditGeneral",
-  components: { ChooseFile, Tiptap, BaseSection },
+  components: { AddressLookup, ChooseFile, Tiptap, BaseSection },
   props: { bookable: { type: Object, required: true } },
   data() {
     {
@@ -42,6 +43,21 @@ export default {
       },
       set(val) {
         this._emitDebounced(val);
+      },
+    },
+    location: {
+      get() {
+        const loc = this.model.location;
+        if (typeof loc === "string") {
+          return {
+            display_address: loc,
+          };
+        }
+
+        return loc || { display_address: null, lat: null, lng: null };
+      },
+      set(value) {
+        this.model.location = value;
       },
     },
   },
@@ -165,17 +181,12 @@ export default {
 
       <v-row class="mt-2">
         <v-col cols="12">
-          <v-text-field
-            background-color="accent"
-            filled
-            dense
-            label="Ort"
-            hide-details
-            v-model="model.location"
-          ></v-text-field>
+          <AddressLookup
+            v-model="location"
+            label="Adresse"
+          ></AddressLookup>
         </v-col>
       </v-row>
-
     </BaseSection>
   </v-form>
 </template>

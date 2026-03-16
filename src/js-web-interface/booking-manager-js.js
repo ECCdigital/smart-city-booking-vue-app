@@ -707,7 +707,7 @@ class BookingManager {
     if (document.getElementById("bm-booking-table")) {
       const tableHeader = document.getElementById("bm-booking-table-header");
       const tableBody = document.getElementById("bm-booking-table-body");
-      const fetchUrl = `${this.url}/api/${this.tenant}/mybookings?populate=true`;
+      const fetchUrl = `${this.url}/api/${this.tenant}/bookings/assigned?populate=true`;
       fetch(fetchUrl, {
         credentials: "include",
       })

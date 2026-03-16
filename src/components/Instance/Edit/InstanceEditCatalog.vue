@@ -145,15 +145,67 @@
         </v-text-field>
       </v-col>
     </v-row>
+
+    <v-row>
+      <v-col cols="12">
+        <h4>Logos</h4>
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <v-col>
+        <ChooseFile
+          v-model="localCatalog.logoUrl"
+          :allow-protected="false"
+          filled
+          images-only
+          label="Logo"
+          background-color="accent"
+          forced-subdirectory="assets"
+        />
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <v-col cols="12">
+        <h4>Kopfbereich</h4>
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <v-col cols="12" md="6">
+        <v-text-field
+          v-model="localCatalog.hero.title"
+          label="Überschrift im Kopfbereich"
+          background-color="accent"
+          placeholder="Marktplatz"
+          filled
+          dense
+          @input="emitCatalog"
+        />
+      </v-col>
+      <v-col ols="12" md="6">
+        <v-text-field
+          v-model="localCatalog.hero.subtitle"
+          label="Unterzeile im Kopfbereich"
+          background-color="accent"
+          placeholder="Entdecken Sie unsere Angebote"
+          filled
+          dense
+          @input="emitCatalog"
+        />
+      </v-col>
+    </v-row>
   </BaseSection>
 </template>
 
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
+import ChooseFile from "@/components/Files/ChooseFile.vue";
 
 export default {
   name: "InstanceEditCatalog",
-  components: { BaseSection },
+  components: { ChooseFile, BaseSection },
   props: {
     instance: { type: Object, required: true },
     catalog: { type: Object, required: true },

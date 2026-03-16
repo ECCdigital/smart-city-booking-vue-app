@@ -145,20 +145,22 @@ export default {
           icon: "mdi-domain",
           comp: "InstanceEditTenants",
         },
-        /** This feature is currently disabled
-         {
-         key: "catalog",
-         label: "Katalog",
-         icon: "mdi-book-open",
-         comp: "InstanceEditCatalog",
-         },
-        */
+        {
+          key: "catalog",
+          label: "Katalog",
+          icon: "mdi-book-open",
+          comp: "InstanceEditCatalog",
+        },
       ],
       catalog: {
         type: "instanze",
         theme: {
           active: false,
           colors: { primary: "", secondary: "" },
+        },
+        hero: {
+          title: "",
+          subtitle: "",
         },
       },
       defaultKeycloak: {
