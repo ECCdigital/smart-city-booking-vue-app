@@ -68,8 +68,28 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <BaseSection title="Berechtigungen" icon="mdi-account-lock-outline">
-    </BaseSection>
+    <BaseSection title="Berechtigungen" icon="mdi-account-lock-outline" />
+
+    <v-card class="mb-6 section-card" elevation="2" outlined>
+      <v-card-title class="section-header pa-4">
+        <v-icon class="mr-2">mdi-login-variant</v-icon>
+        <span class="text-h6 font-weight-bold">Anmeldepflicht</span>
+      </v-card-title>
+      <v-divider></v-divider>
+      <v-card-text class="pa-4">
+        <v-switch
+          dense
+          label="Login erforderlich zum Buchen"
+          hide-details
+          v-model="model.requiresLogin"
+        ></v-switch>
+        <p class="mb-0 mt-3 text-caption" style="max-width: 700px">
+          Wenn aktiviert, müssen Benutzer angemeldet sein, um dieses
+          Buchungsobjekt buchen zu können.
+        </p>
+      </v-card-text>
+    </v-card>
+
     <v-card class="mb-6 section-card" elevation="2" outlined>
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-account-lock-outline</v-icon>

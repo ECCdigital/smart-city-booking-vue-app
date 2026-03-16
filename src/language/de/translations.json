@@ -9,7 +9,7 @@
     "success": {
       "default": {
         "title": "Erfolgreich angemeldet",
-        "message": "Sie haben sich erfolgreich im Admin angemeldet"
+        "message": "Sie haben sich erfolgreich angemeldet"
       }
     },
     "error": {

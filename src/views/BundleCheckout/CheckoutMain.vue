@@ -432,6 +432,7 @@ export default {
         );
         this.preventBooking = false;
       } catch (error) {
+        console.log("Error while checking checkout permissions", error);
         this.preventBooking = true;
         this.loginRequired = error.response.status === 401;
         this.bookingPermission = error.response.status !== 403;
@@ -449,7 +450,8 @@ export default {
           this.leadItem.bookable = response.data;
           if (
             this.leadItem.bookable.permittedRoles?.length > 0 ||
-            this.leadItem.bookable.permittedUsers?.length > 0
+            this.leadItem.bookable.permittedUsers?.length > 0 ||
+            this.leadItem.bookable.requiresLogin
           ) {
             this.loginRequired = true;
           }
@@ -511,8 +513,8 @@ export default {
               delete item.error;
             }
           } catch (error) {
-
-            this.checkoutId = error.response.data.checkoutId || this.checkoutId || null;
+            this.checkoutId =
+              error.response.data.checkoutId || this.checkoutId || null;
 
             item.regularPriceEur = null;
             item.userPriceEur = null;
