@@ -111,7 +111,10 @@
       </v-img>
 
       <div v-else class="placeholder-container">
-        <PlaceholderPattern variant="poly" :theme="isDark ? 'dark' : 'light'" />
+        <PlaceholderPattern
+          variant="poly"
+          :theme="isDark ? 'dark' : 'light'"
+        />
 
         <div
           v-if="!item.isBookable || !item.isPublic"
@@ -180,10 +183,92 @@
         ></p>
       </div>
 
-      <div class="mb-3" v-if="hasPriceCategories">
+      <!-- IFBS External Prices -->
+      <div v-if="isIfbsActive" class="mb-3">
         <div class="d-flex align-center mb-2">
-          <v-icon small color="grey darken-1" class="mr-2"> mdi-cash </v-icon>
-          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
+          <v-icon small color="grey darken-1" class="mr-2">
+            mdi-lock-outline
+          </v-icon>
+          <span
+            class="text-body-2 font-weight-bold grey--text text--darken-2"
+          >
+            IFBS Preise
+          </span>
+          <v-chip x-small class="ml-2" color="primary" outlined label>
+            extern
+          </v-chip>
+        </div>
+
+        <div v-if="isLoadingIfbsPrices" class="ml-7">
+          <v-progress-linear indeterminate color="primary" class="my-2" />
+        </div>
+
+        <div v-else-if="ifbsPrices" class="ml-7">
+          <div
+            v-for="row in ifbsCardPriceRows"
+            :key="row.key"
+            class="d-flex align-center justify-space-between text-body-2 mb-1"
+          >
+            <div class="d-flex align-center">
+              <v-icon x-small color="primary" class="mr-2">
+                {{ row.icon }}
+              </v-icon>
+              <span class="grey--text text--darken-1">{{ row.label }}</span>
+            </div>
+            <span class="font-weight-bold primary--text">
+              {{ row.value }}
+            </span>
+          </div>
+
+          <v-divider class="my-2" />
+
+          <div
+            class="d-flex align-center justify-space-between text-body-2"
+          >
+            <div class="d-flex align-center">
+              <v-icon x-small color="primary" class="mr-2">
+                mdi-cash-plus
+              </v-icon>
+              <span class="grey--text text--darken-1">Servicegebühr</span>
+            </div>
+            <span class="font-weight-bold primary--text">
+              {{ formatCurrency(ifbsPrices["Preis_Servicegebühr"]) }}
+            </span>
+          </div>
+
+          <div
+            v-if="
+              ifbsPrices['minimum_usage_time_mins'] &&
+              ifbsPrices['minimum_usage_time_mins'] !== '0'
+            "
+            class="d-flex align-center justify-space-between text-body-2 mt-1"
+          >
+            <div class="d-flex align-center">
+              <v-icon x-small color="primary" class="mr-2">
+                mdi-timer-outline
+              </v-icon>
+              <span class="grey--text text--darken-1">Mindestdauer</span>
+            </div>
+            <span class="font-weight-bold primary--text">
+              {{ formatDuration(ifbsPrices["minimum_usage_time_mins"]) }}
+            </span>
+          </div>
+        </div>
+
+        <div v-else class="ml-7 text-caption grey--text">
+          Preise nicht verfügbar
+        </div>
+      </div>
+
+      <!-- Normal Prices -->
+      <div v-else-if="hasPriceCategories" class="mb-3">
+        <div class="d-flex align-center mb-2">
+          <v-icon small color="grey darken-1" class="mr-2">
+            mdi-cash
+          </v-icon>
+          <span
+            class="text-body-2 font-weight-bold grey--text text--darken-2"
+          >
             Preise
           </span>
         </div>
@@ -192,7 +277,9 @@
           :key="index"
           class="ml-7 mb-1"
         >
-          <div class="d-flex align-center justify-space-between text-body-2">
+          <div
+            class="d-flex align-center justify-space-between text-body-2"
+          >
             <div class="d-flex align-center">
               <span class="font-weight-bold primary--text mr-2">
                 {{ priceCategory.priceEur | currency("EUR", "de-DE") }}
@@ -207,7 +294,9 @@
               </v-chip>
             </div>
             <span
-              v-if="priceCategory.interval.end || priceCategory.interval.start"
+              v-if="
+                priceCategory.interval.end || priceCategory.interval.start
+              "
               class="grey--text text--darken-1"
             >
               {{
@@ -221,6 +310,8 @@
           </div>
         </div>
       </div>
+
+      <!-- Free -->
       <div v-else class="d-flex align-center mb-3 text-body-2">
         <v-icon small color="success" class="mr-2">mdi-cash-check</v-icon>
         <span class="success--text font-weight-bold">Kostenfrei</span>
@@ -252,6 +343,7 @@
 import { mapGetters } from "vuex";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import ApiLockerService from "@/services/api/ApiLockerService";
 import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
 
 export default {
@@ -268,7 +360,96 @@ export default {
     return {
       defaultImage: require("@/assets/bookable-default.jpg"),
       isDuplicateAllowed: true,
+      isLoadingIfbsPrices: false,
+      ifbsPrices: null,
     };
+  },
+  computed: {
+    ...mapGetters({
+      tenantId: "tenants/currentTenantId",
+    }),
+    isDark() {
+      return this.$vuetify?.theme?.dark || false;
+    },
+    duplicateDisabled() {
+      return (
+        !this.BookablePermissionService.allowCreate() ||
+        !this.isDuplicateAllowed
+      );
+    },
+    BookablePermissionService() {
+      return BookablePermissionService;
+    },
+    isIfbsActive() {
+      const details = this.item?.lockerDetails;
+      if (!details?.active) return false;
+      return details.units?.some((u) => u.lockerSystem === "ifbs") ?? false;
+    },
+    ifbsUnit() {
+      if (!this.isIfbsActive) return null;
+      return this.item.lockerDetails.units.find(
+        (u) => u.lockerSystem === "ifbs"
+      );
+    },
+    ifbsCardPriceRows() {
+      if (!this.ifbsPrices) return [];
+      return [
+        {
+          key: "1h",
+          label: "pro Stunde",
+          value: this.formatCurrency(this.ifbsPrices["Preis_1h"]),
+          icon: "mdi-clock-outline",
+        },
+        {
+          key: "1d",
+          label: "pro Tag",
+          value: this.formatCurrency(this.ifbsPrices["Preis_1d"]),
+          icon: "mdi-calendar-today",
+        },
+        {
+          key: "1w",
+          label: "pro Woche",
+          value: this.formatCurrency(this.ifbsPrices["Preis_1w"]),
+          icon: "mdi-calendar-week",
+        },
+        {
+          key: "1m",
+          label: "pro Monat",
+          value: this.formatCurrency(this.ifbsPrices["Preis_1m"]),
+          icon: "mdi-calendar-month",
+        },
+        {
+          key: "1y",
+          label: "pro Jahr",
+          value: this.formatCurrency(this.ifbsPrices["Preis_1y"]),
+          icon: "mdi-calendar-star",
+        },
+      ];
+    },
+    hasPriceCategories() {
+      return (
+        this.item.priceCategories &&
+        this.item.priceCategories.some((pC) => pC.priceEur > 0)
+      );
+    },
+    titleSizeClass() {
+      const len = this.item.title?.length || 0;
+      if (len <= 25) return "text-h6";
+      if (len <= 50) return "text-subtitle-1";
+      return "text-body-2";
+    },
+  },
+  watch: {
+    isIfbsActive: {
+      immediate: true,
+      handler(active) {
+        if (active) {
+          this.fetchIfbsPrices();
+        } else {
+          this.ifbsPrices = null;
+        }
+      },
+    },
   },
   methods: {
     navigateToEdit() {
@@ -297,16 +478,53 @@ export default {
       return `${interval} ${suffix}`;
     },
     intervalSuffix(type) {
-      if (type === "per-hour") {
-        return "Std.";
-      } else if (type === "per-day") {
-        return "Tage";
-      } else if (type === "per-square-meter") return "m²";
-      else {
-        return "Stück";
+      if (type === "per-hour") return "Std.";
+      if (type === "per-day") return "Tage";
+      if (type === "per-square-meter") return "m²";
+      return "Stück";
+    },
+    formatCurrency(value) {
+      return parseFloat(value || 0).toFixed(2) + " €";
+    },
+    formatDuration(minutes) {
+      const mins = parseInt(minutes, 10);
+      if (!mins || mins === 0) return "Keine";
+
+      const weeks = Math.floor(mins / 10080);
+      const days = Math.floor((mins % 10080) / 1440);
+      const hours = Math.floor((mins % 1440) / 60);
+      const remainingMins = mins % 60;
+
+      const parts = [];
+      if (weeks > 0)
+        parts.push(`${weeks} ${weeks === 1 ? "Woche" : "Wochen"}`);
+      if (days > 0)
+        parts.push(`${days} ${days === 1 ? "Tag" : "Tage"}`);
+      if (hours > 0)
+        parts.push(`${hours} ${hours === 1 ? "Stunde" : "Stunden"}`);
+      if (remainingMins > 0) parts.push(`${remainingMins} Min.`);
+
+      return parts.join(", ");
+    },
+    async fetchIfbsPrices() {
+      const unit = this.ifbsUnit;
+      if (!unit?.locationId || !this.item?.tenantId) return;
+
+      try {
+        this.isLoadingIfbsPrices = true;
+        const response = await ApiLockerService.getPrice(
+          this.item.tenantId,
+          "ifbs",
+          unit.locationId
+        );
+        this.ifbsPrices = response.data;
+      } catch (err) {
+        console.error("Error fetching IFBS prices:", err);
+        this.ifbsPrices = null;
+      } finally {
+        this.isLoadingIfbsPrices = false;
       }
     },
-
     emitDeleteAction() {
       this.$emit("delete");
     },
@@ -329,35 +547,6 @@ export default {
       this.isDuplicateAllowed = bookableCountCheck || !this.item.isPublic;
     },
   },
-  computed: {
-    ...mapGetters({
-      tenantId: "tenants/currentTenantId",
-    }),
-    isDark() {
-      return this.$vuetify?.theme?.dark || false;
-    },
-    duplicateDisabled() {
-      return (
-        !this.BookablePermissionService.allowCreate() ||
-        !this.isDuplicateAllowed
-      );
-    },
-    BookablePermissionService() {
-      return BookablePermissionService;
-    },
-    hasPriceCategories() {
-      return (
-        this.item.priceCategories &&
-        this.item.priceCategories.some((pC) => pC.priceEur > 0)
-      );
-    },
-    titleSizeClass() {
-      const len = this.item.title?.length || 0;
-      if (len <= 25) return "text-h6";
-      if (len <= 50) return "text-subtitle-1";
-      return "text-body-2";
-    },
-  },
   mounted() {
     this.setAllowDuplicate();
   },
@@ -375,6 +564,7 @@ export default {
 }
 
 .bookable-card {
+  max-width: 400px;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
   cursor: pointer;
   position: relative;
@@ -393,9 +583,9 @@ export default {
 
 .bookable-card-header {
   background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.02) 0%,
-    rgba(0, 0, 0, 0.01) 100%
+      135deg,
+      rgba(0, 0, 0, 0.02) 0%,
+      rgba(0, 0, 0, 0.01) 100%
   );
 }
 
@@ -406,24 +596,29 @@ export default {
   align-items: center;
   justify-content: center;
   background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.02) 0%,
-    rgba(0, 0, 0, 0.01) 100%
+      135deg,
+      rgba(0, 0, 0, 0.02) 0%,
+      rgba(0, 0, 0, 0.01) 100%
   );
 }
 
 .theme--dark .bookable-card-header,
 .theme--dark .bookable-card-title {
   background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.02) 100%
+      135deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.02) 100%
   );
 }
 
 .bookable-image {
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
+  transition: transform 0.3s ease;
+}
+
+.bookable-card:hover .bookable-image {
+  transform: scale(1.02);
 }
 
 .status-badges {
@@ -435,39 +630,18 @@ export default {
   justify-content: flex-start;
   align-items: flex-start;
   background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.4) 0%,
-    transparent 100%
+      to bottom,
+      rgba(0, 0, 0, 0.4) 0%,
+      transparent 100%
   );
-}
-
-.v-card {
-  transition: all 0.3s ease;
-}
-
-.bookable-card:hover .bookable-image {
-  transform: scale(1.02);
-}
-
-.bookable-image {
-  transition: transform 0.3s ease;
 }
 
 .position-relative {
   position: relative;
 }
 
-.bookable-card {
-  max-width: 400px;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
-  cursor: pointer;
-  position: relative;
-  border-radius: 12px !important;
-  overflow: hidden;
-}
-
 .flex-grow-1 {
-  max-height: 300px; // Passe dies nach Bedarf an
+  max-height: 300px;
   overflow-y: auto;
 
   &::-webkit-scrollbar {

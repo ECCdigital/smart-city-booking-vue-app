@@ -1,197 +1,272 @@
 <template>
-  <div>
+  <div class="pa-4">
+    <div
+      v-if="loading"
+      class="elevation-2"
+      style="border-radius: 25px; overflow: hidden"
+    >
+      <v-skeleton-loader
+        type="table-thead, table-tbody, table-tfoot"
+        :types="{
+          'table-tbody': 'table-row-divider@6',
+        }"
+      ></v-skeleton-loader>
+    </div>
+
     <v-data-table
+      v-else
+      class="elevation-1 accent"
       :headers="headers"
+      :items="bookings"
       :sort-by="['timeCreated']"
       :sort-desc="[true]"
       :footer-props="{
         'items-per-page-all-text': 'Alle',
         'items-per-page-text': 'Buchungen pro Seite',
       }"
-      :items="bookings"
-      class="accent elevation-1 mb-1"
-      :loading="loading"
-      loading-text="Daten werden geladen..."
-      no-data-text="Keine Daten vorhanden"
       fixed-header
+      dense
     >
       <template v-slot:item.id="{ item }">
-        <span v-if="BookingPermissionService.allowUpdate(item)"
-          ><a @click="onOpenBooking(item.id)">{{ item.id }}</a></span
+        <div
+          class="d-flex align-center cursor-pointer"
+          @click="onOpenBooking(item)"
         >
-        <span v-else>{{ item.id }}</span>
+          <span
+            v-if="BookingPermissionService.allowUpdate(item)"
+            class="font-weight-medium primary--text cursor-pointer"
+          >
+            {{ truncate(item.id, 12) }}
+          </span>
+          <span v-else class="font-weight-medium">
+            {{ truncate(item.id, 12) }}
+          </span>
+        </div>
       </template>
+
+      <template v-slot:item.name="{ item }">
+        <div>
+          <div class="font-weight-bold">{{ item.name }}</div>
+          <div class="text-caption grey--text">
+            {{ truncate(item.company, 20) }}
+          </div>
+        </div>
+      </template>
+
+      <template v-slot:item.timeCreated="{ item }">
+        <div class="d-flex align-center">
+          <div>
+            <div>{{ formatDate(item.timeCreated) }}</div>
+            <div class="text-caption grey--text">
+              {{ formatTime(item.timeCreated) }}
+            </div>
+          </div>
+        </div>
+      </template>
+
       <template v-slot:item.bookableIds="{ item }">
-        <v-chip
-          class="ml-1 mt-1"
-          color="secondary"
-          text-color="black"
-          v-for="(i, key) in item.bookableItems"
-          :key="key"
-          :title="i._bookableUsed?.title"
-        >
-          {{ truncate(i._bookableUsed?.title, 25) }}
-        </v-chip>
+        <div class="">
+          <v-chip
+            v-for="(bookable, key) in item.bookableItems.slice(0, 2)"
+            :key="key"
+            class="ma-1"
+            small
+            color="secondary"
+            text-color="black"
+            :title="bookable._bookableUsed?.title"
+          >
+            <v-icon left x-small>mdi-package-variant</v-icon>
+            {{ truncate(bookable._bookableUsed?.title, 20) }}
+          </v-chip>
+          <v-chip
+            v-if="item.bookableItems.length > 2"
+            class="ma-1"
+            small
+            outlined
+          >
+            +{{ item.bookableItems.length - 2 }}
+          </v-chip>
+        </div>
       </template>
+
       <template v-slot:item.groupBooking="{ item }">
         <v-chip
           v-if="item.groupBooking"
-          class="ml-1 mt-1"
-          color="secondary"
-          text-color="black"
+          small
+          color="primary"
+          text-color="white"
           @click="onOpenGroupBooking(item.groupBooking)"
-          >{{ item.groupBooking }}</v-chip
+          class="cursor-pointer"
         >
+          <v-icon left x-small>mdi-calendar-multiple</v-icon>
+          {{ truncate(item.groupBooking, 10) }}
+        </v-chip>
+        <span v-else class="grey--text">—</span>
       </template>
+
       <template v-slot:item.timeBegin="{ item }">
-        <span v-if="item.timeBegin">{{
-          Intl.DateTimeFormat("de-DE", {
-            dateStyle: "short",
-            timeStyle: "short",
-          }).format(new Date(item.timeBegin))
-        }}</span>
+        <div v-if="item.timeBegin" class="d-flex align-center">
+          <div>
+            <div>{{ formatDate(item.timeBegin) }}</div>
+            <div class="text-caption grey--text">
+              {{ formatTime(item.timeBegin) }}
+            </div>
+          </div>
+        </div>
+        <span v-else class="grey--text">—</span>
       </template>
+
       <template v-slot:item.timeEnd="{ item }">
-        <span v-if="item.timeEnd">{{
-          Intl.DateTimeFormat("de-DE", {
-            dateStyle: "short",
-            timeStyle: "short",
-          }).format(new Date(item.timeEnd))
-        }}</span>
+        <div v-if="item.timeEnd" class="d-flex align-center">
+          <div>
+            <div>{{ formatDate(item.timeEnd) }}</div>
+            <div class="text-caption grey--text">
+              {{ formatTime(item.timeEnd) }}
+            </div>
+          </div>
+        </div>
+        <span v-else class="grey--text">—</span>
       </template>
-      <template v-slot:item.timeCreated="{ item }">
-        <span>{{
-          Intl.DateTimeFormat("de-DE", {
-            dateStyle: "short",
-            timeStyle: "short",
-          }).format(new Date(item.timeCreated))
-        }}</span>
+
+      <template v-slot:item.priceEur="{ item }">
+        <div class="font-weight-bold text-body-2">
+          {{ formatCurrency(item.priceEur) }}
+        </div>
       </template>
+
       <template v-slot:item.isCommitted="{ item }">
         <v-chip
           small
-          :color="item.isRejected ? 'error' : item.isCommitted ? 'success' : ''"
+          :color="getStatusChipColor(item)"
+          text-color="white"
+          class="font-weight-medium"
         >
-          <v-icon left small>
-            {{
-              item.isRejected
-                ? "mdi-cancel"
-                : item.isCommitted == true
-                ? "mdi-check"
-                : "mdi-timer-sand-empty"
-            }}
-          </v-icon>
-          {{
-            item.isRejected && !item.isCommitted
-              ? "abgelehnt"
-              : item.isRejected && item.isCommitted
-              ? "stoniert"
-              : item.isCommitted == true
-              ? "freigegeben"
-              : "ausstehend"
-          }}
+          <v-icon left x-small>{{ getStatusIcon(item) }}</v-icon>
+          {{ getStatusText(item) }}
         </v-chip>
       </template>
+
       <template v-slot:item.isPayed="{ item }">
-        <v-chip small :color="item.isPayed ? 'success' : ''">
-          <v-icon left small>
-            {{ item.isPayed ? "mdi-check" : "mdi-timer-sand-empty" }}
-          </v-icon>
-          {{ item.isPayed ? "bezahlt" : "ausstehend" }}
+        <v-chip
+          small
+          :color="getPaymentColor(item)"
+          :text-color="getPaymentTextColor(item)"
+          class="font-weight-medium"
+        >
+          <v-icon left x-small>{{ getPaymentIcon(item) }}</v-icon>
+          {{ payedStatus(item) }}
         </v-chip>
       </template>
-      <template v-slot:item.priceEur="{ item }">
-        <span>{{
-          Intl.NumberFormat("de-DE", {
-            style: "currency",
-            currency: "EUR",
-          }).format(item.priceEur)
-        }}</span>
-      </template>
+
       <template v-slot:item.paymentMethod="{ item }">
-        <span>{{ translatePayMethod(item.paymentMethod) }}</span>
+        <div v-if="item.paymentMethod" class="d-flex align-center">
+          <v-icon small class="mr-1" color="grey">mdi-credit-card</v-icon>
+          <span class="text-body-2">
+            {{ translatePayMethod(item.paymentMethod) }}
+          </span>
+        </div>
+        <span v-else class="grey--text">—</span>
       </template>
+
       <template v-slot:item.controls="{ item }">
-        <span>
-          <v-menu offset-y>
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn icon v-bind="attrs" v-on="on" small>
-                <v-icon>mdi-dots-horizontal</v-icon>
-              </v-btn>
-            </template>
-            <v-list>
-              <v-list-item
-                link
-                @click="onOpenBooking(item.id)"
-                :disabled="!BookingPermissionService.allowUpdate(item)"
-              >
-                <v-list-item-icon>
-                  <v-icon>mdi-information</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>Buchungsdetails ansehen</v-list-item-title>
-              </v-list-item>
-              <v-divider></v-divider>
-              <v-list-item
-                link
-                @click="onOpenEditBooking(item.id)"
-                :disabled="!BookingPermissionService.allowUpdate(item)"
-              >
-                <v-list-item-icon>
-                  <v-icon>mdi-pencil</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>Buchung bearbeiten</v-list-item-title>
-              </v-list-item>
-              <v-list-item
-                link
-                @click="commitBooking(item.id)"
-                :disabled="!BookingPermissionService.allowUpdate(item)"
-              >
-                <v-list-item-icon>
-                  <v-icon>mdi-checkbox-marked-circle</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>Buchung freigeben</v-list-item-title>
-              </v-list-item>
-              <v-list-item
-                link
-                @click="payBooking(item.id)"
-                :disabled="
-                  !BookingPermissionService.allowUpdate(item) || item.isPayed
-                "
-              >
-                <v-list-item-icon>
-                  <v-icon>mdi-cash-check</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title
-                  >Buchung als bezahlt markieren</v-list-item-title
+        <v-menu offset-y left>
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn icon v-bind="attrs" v-on="on" small color="grey darken-1">
+              <v-icon small>mdi-dots-vertical</v-icon>
+            </v-btn>
+          </template>
+          <v-list dense>
+            <v-list-item
+              link
+              @click="onOpenBooking(item.id)"
+              :disabled="!BookingPermissionService.allowUpdate(item)"
+            >
+              <v-list-item-icon>
+                <v-icon small>mdi-information</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>Details ansehen</v-list-item-title>
+            </v-list-item>
+
+            <v-divider />
+
+            <v-list-item
+              link
+              @click="onOpenEditBooking(item.id)"
+              :disabled="!BookingPermissionService.allowUpdate(item)"
+            >
+              <v-list-item-icon>
+                <v-icon small>mdi-pencil</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>Bearbeiten</v-list-item-title>
+            </v-list-item>
+
+            <v-list-item
+              link
+              @click="commitBooking(item.id)"
+              :disabled="
+                !BookingPermissionService.allowUpdate(item) || item.isCommitted
+              "
+            >
+              <v-list-item-icon>
+                <v-icon small color="success"
+                  >mdi-checkbox-marked-circle</v-icon
                 >
-              </v-list-item>
-              <v-list-item
-                link
-                @click="rejectBooking(item.id)"
-                :disabled="!BookingPermissionService.allowUpdate(item)"
-              >
-                <v-list-item-icon>
-                  <v-icon>mdi-close-circle</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>{{
-                  item.isCommitted ? "Buchung stornieren" : "Buchung ablehnen"
-                }}</v-list-item-title>
-              </v-list-item>
-              <v-divider></v-divider>
-              <v-list-item
-                link
-                @click="onOpenDeleteDialog(item.id)"
-                class="red--text"
-                :disabled="!BookingPermissionService.allowDelete(item)"
-              >
-                <v-list-item-icon>
-                  <v-icon color="red">mdi-delete</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>Buchung löschen</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
-        </span>
+              </v-list-item-icon>
+              <v-list-item-title>Freigeben</v-list-item-title>
+            </v-list-item>
+
+            <v-list-item
+              link
+              @click="payBooking(item.id)"
+              :disabled="
+                !BookingPermissionService.allowUpdate(item) || item.isPayed
+              "
+            >
+              <v-list-item-icon>
+                <v-icon small color="success">mdi-cash-check</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>Als bezahlt markieren</v-list-item-title>
+            </v-list-item>
+
+            <v-list-item
+              link
+              @click="rejectBooking(item.id)"
+              :disabled="!BookingPermissionService.allowUpdate(item)"
+            >
+              <v-list-item-icon>
+                <v-icon small color="orange">mdi-close-circle</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>
+                {{ item.isCommitted ? "Stornieren" : "Ablehnen" }}
+              </v-list-item-title>
+            </v-list-item>
+
+            <v-divider />
+
+            <v-list-item
+              link
+              @click="onOpenDeleteDialog(item.id)"
+              :disabled="!BookingPermissionService.allowDelete(item)"
+            >
+              <v-list-item-icon>
+                <v-icon small color="red">mdi-delete</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>Löschen</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </template>
+
+      <template v-slot:no-data>
+        <div class="text-center py-8">
+          <v-icon size="64" color="grey lighten-1">
+            mdi-calendar-blank-outline
+          </v-icon>
+          <div class="text-h6 grey--text mt-4">Keine Buchungen gefunden</div>
+          <div class="text-body-2 grey--text">
+            Es sind noch keine Buchungen vorhanden
+          </div>
+        </div>
       </template>
     </v-data-table>
   </div>
@@ -220,16 +295,16 @@ export default {
     return {
       defaultHeaders: [
         {
-          text: "Id",
+          text: "Buchung",
           align: "start",
           value: "id",
         },
-        { text: "Buchungsobjekte", value: "bookableIds" },
-        { text: "Serienbuchung", value: "groupBooking" },
+        { text: "Name", value: "name" },
+        { text: "Buchungsdatum", value: "timeCreated" },
+        { text: "Buchungsobjekte", value: "bookableIds", sortable: false },
+        { text: "Serie", value: "groupBooking" },
         { text: "Von", value: "timeBegin" },
         { text: "Bis", value: "timeEnd" },
-        { text: "Erstellt am", value: "timeCreated" },
-        { text: "Name", value: "name" },
         { text: "Preis", value: "priceEur" },
         { text: "Status", value: "isCommitted" },
         { text: "Zahlung", value: "isPayed" },
@@ -251,43 +326,89 @@ export default {
     },
   },
   methods: {
+    getStatusColor(item) {
+      if (item.isRejected) return "red";
+      if (item.isCommitted) return "green";
+      return "orange";
+    },
+    formatDate(date) {
+      return Intl.DateTimeFormat("de-DE", {
+        dateStyle: "short",
+      }).format(new Date(date));
+    },
+    formatTime(date) {
+      return Intl.DateTimeFormat("de-DE", {
+        timeStyle: "short",
+      }).format(new Date(date));
+    },
+    getStatusIcon(item) {
+      if (item.isRejected) return "mdi-cancel";
+      if (item.isCommitted) return "mdi-check-circle";
+      return "mdi-clock-outline";
+    },
+    getStatusChipColor(item) {
+      if (item.isRejected) return "error";
+      if (item.isCommitted) return "success";
+      return "orange";
+    },
+    getStatusText(item) {
+      if (item.isRejected && !item.isCommitted) return "Abgelehnt";
+      if (item.isRejected && item.isCommitted) return "Storniert";
+      if (item.isCommitted) return "Freigegeben";
+      return "Ausstehend";
+    },
+    getPaymentColor(item) {
+      if (item.priceEur <= 0) return "grey lighten-1";
+      return item.isPayed ? "success" : "grey";
+    },
+    getPaymentTextColor(item) {
+      return "white";
+    },
+    getPaymentIcon(item) {
+      if (item.priceEur <= 0) return "mdi-gift";
+      return item.isPayed ? "mdi-check-circle" : "mdi-clock-outline";
+    },
+    formatCurrency(amount) {
+      return Intl.NumberFormat("de-DE", {
+        style: "currency",
+        currency: "EUR",
+      }).format(amount || 0);
+    },
+    payedStatus(item) {
+      if (item.isPayed && item.priceEur > 0) return "Bezahlt";
+      if (!item.isPayed && item.priceEur > 0) return "Offen";
+      if (item.priceEur <= 0) return "Kostenlos";
+      return "N/A";
+    },
     translatePayMethod(paymentMethod) {
-      switch (paymentMethod) {
-        case "CASH":
-          return "Bar";
-        case "TRANSFER":
-          return "Überweisung";
-        case "CREDIT_CARD":
-          return "Kreditkarte";
-        case "DEBIT_CARD":
-          return "EC-Karte";
-        case "PAYPAL":
-          return "PayPal";
-        case "OTHER":
-          return "Sonstiges";
-        case "GIROPAY":
-          return "Giropay";
-        case "APPLE_PAY":
-          return "Apple Pay";
-        case "GOOGLE_PAY":
-          return "Google Pay";
-        case "EPS":
-          return "EPS";
-        case "IDEAL":
-          return "iDEAL";
-        case "MAESTRO":
-          return "Maestro";
-        case "PAYDIRECT":
-          return "paydirekt";
-        case "SOFORT":
-          return "SOFORT-Überweisung";
-        case "BLUECODE":
-          return "Bluecode";
-        default:
-          return "Unbekannt";
-      }
+      const methods = {
+        CASH: "Bar",
+        TRANSFER: "Überweisung",
+        CREDIT_CARD: "Kreditkarte",
+        DEBIT_CARD: "EC-Karte",
+        PAYPAL: "PayPal",
+        OTHER: "Sonstiges",
+        GIROPAY: "Giropay",
+        APPLE_PAY: "Apple Pay",
+        GOOGLE_PAY: "Google Pay",
+        EPS: "EPS",
+        IDEAL: "iDEAL",
+        MAESTRO: "Maestro",
+        PAYDIRECT: "paydirekt",
+        SOFORT: "SOFORT",
+        BLUECODE: "Bluecode",
+      };
+      return methods[paymentMethod] || "Unbekannt";
+    },
+    truncate(text, max = 25) {
+      if (!text) return "";
+      return text.length > max ? text.slice(0, max - 1) + "…" : text;
     },
     onOpenBooking(bookingId) {
+      if (typeof bookingId === "object" && bookingId.id) {
+        bookingId = bookingId.id;
+      }
+
       this.$emit("open-booking", bookingId);
     },
     onOpenEditBooking(bookingId) {
@@ -307,10 +428,6 @@ export default {
     },
     payBooking(bookingId) {
       this.$emit("pay-booking", bookingId);
-    },
-    truncate(text, max = 25) {
-      if (!text) return "";
-      return text.length > max ? text.slice(0, max - 1) + "…" : text;
     },
   },
 };

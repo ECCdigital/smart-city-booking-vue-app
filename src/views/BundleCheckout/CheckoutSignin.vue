@@ -9,33 +9,62 @@
         <v-spacer></v-spacer>
         <v-btn color="primary" small @click="submit" :disabled="!me">
           Weiter
-          <v-icon right small>mdi-arrow-right</v-icon></v-btn
-        >
+          <v-icon right small>mdi-arrow-right</v-icon>
+        </v-btn>
       </div>
 
-      <h2 v-if="me" class="mb-8">Anmeldung</h2>
-
-      <v-toolbar v-if="me" flat color="primary" dark class="mb-8">
-        <div class="text-subtitle-1 d-flex align-center justify-center">
-          <v-icon left>mdi-account</v-icon>
-          <div>
-            Angemeldet als:
-            <strong>{{ me.firstName }} {{ me.lastName }}</strong>
-          </div>
+      <v-card v-if="me" class="signed-in-card rounded-sm" outlined>
+        <div class="signed-in-banner primary">
+          <v-avatar size="64" color="white" class="elevation-3">
+            <v-icon size="36" color="primary">mdi-account</v-icon>
+          </v-avatar>
         </div>
+        <v-card-text class="text-center pt-10 pb-6 px-6">
+          <h2 class="text-h6 font-weight-bold mb-1">
+            {{ me.firstName }} {{ me.lastName }}
+          </h2>
+          <p class="text-caption grey--text mb-4">
+            {{ me.id }}
+          </p>
+          <v-chip small color="success" outlined>
+            <v-icon left x-small>mdi-check-circle</v-icon>
+            Angemeldet
+          </v-chip>
+        </v-card-text>
+        <v-divider></v-divider>
+        <v-card-actions class="pa-4 justify-center">
+          <v-btn text small color="grey" @click="signOut(false)">
+            <v-icon left small>mdi-account-switch</v-icon>
+            Benutzer wechseln
+          </v-btn>
+        </v-card-actions>
+      </v-card>
 
-        <v-spacer></v-spacer>
-        <v-btn text @click="signOut(false)">Benutzer wechseln</v-btn>
-      </v-toolbar>
-      <div v-else class="d-flex align-center justify-center" style="height: 100vh">
-        <v-card outlined class="rounded-sm pa-5">
-          <LoginCard
-            :tenant="tenant"
-            :sso-active="ssoActive"
-            @success="onSuccess"
-            style="width: 520px; max-width: 100vw"
-          >
-          </LoginCard>
+      <div
+        v-else
+        class="d-flex align-center justify-center"
+        style="min-height: 80vh"
+      >
+        <v-card class="login-card rounded-sm" outlined>
+          <div class="login-banner primary">
+            <v-avatar size="56" color="white" class="elevation-3">
+              <v-icon size="30" color="primary">mdi-login-variant</v-icon>
+            </v-avatar>
+            <h2 class="text-h6 font-weight-bold white--text mt-3">
+              Anmeldung erforderlich
+            </h2>
+            <p class="text-caption white--text mt-1" style="opacity: 0.8">
+              Bitte melden Sie sich an, um fortzufahren.
+            </p>
+          </div>
+          <div class="pa-6">
+            <LoginCard
+              :tenant="tenant"
+              :sso-active="ssoActive"
+              @success="onSuccess"
+              style="max-width: 100%"
+            />
+          </div>
         </v-card>
       </div>
     </v-form>
@@ -91,16 +120,16 @@ export default {
       this.$emit("back");
     },
 
-    signOut(submit) {
-      ApiAuthService.logout().then((response) => {
-        if (response.status === 200) {
-          this.$emit("update-me");
-
-          if (submit) {
-            this.submit();
-          }
+    async signOut(submit) {
+      try {
+        await ApiAuthService.logout();
+        this.$emit("update-me");
+        if (submit) {
+          this.submit();
         }
-      });
+      } catch (error) {
+        console.error("Logout error:", error);
+      }
     },
     onSuccess() {
       this.$emit("login");
@@ -121,4 +150,42 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.signed-in-card {
+  max-width: 400px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.signed-in-banner {
+  height: 100px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 0;
+  position: relative;
+}
+
+.signed-in-banner .v-avatar {
+  position: absolute;
+  bottom: -32px;
+}
+
+.signed-in-card .v-card__text {
+  padding-top: 44px !important;
+}
+
+.login-card {
+  width: 520px;
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+.login-banner {
+  padding: 32px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+</style>

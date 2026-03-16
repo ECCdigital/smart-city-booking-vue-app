@@ -251,6 +251,16 @@ export default {
           password: "",
           active: false,
         },
+        ifbs: {
+          type: "locker",
+          id: "ifbs",
+          title: "Parkraumservice",
+          serverUrl: "",
+          secretPhrase: "",
+          apiKeyID: "",
+          apiKey: "",
+          active: false,
+        },
       },
     };
   },
@@ -384,7 +394,6 @@ export default {
     async submitChanges() {
       const ok = await this.validateActiveChild();
       if (!ok) {
-        // optional: nach 4s Validierung der aktiven Unterseite zurücksetzen
         setTimeout(() => {
           const ref = this.$refs.activeChild;
           if (ref && typeof ref.resetValidation === "function") {
@@ -510,6 +519,9 @@ export default {
 
 <style scoped>
 .page-content {
-  padding-bottom: 26px;
+  padding-bottom: calc(
+    56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
+      /* extra spacing */
+  );
 }
 </style>

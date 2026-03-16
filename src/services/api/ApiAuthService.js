@@ -28,7 +28,15 @@ export default {
       throw error;
     }
   },
- async register(tenant, id, firstName, lastName, company, password, nextUrl = null) {
+  async register(
+    tenant,
+    id,
+    firstName,
+    lastName,
+    company,
+    password,
+    nextUrl = null
+  ) {
     const body = {
       id: id,
       firstName: firstName,
@@ -64,8 +72,9 @@ export default {
       } else {
         await ApiClient.get("auth/signout");
       }
+      return true;
     } catch (error) {
-      console.warn("Server logout failed:", error);
+      return false;
     } finally {
       ApiClient.clearTokens();
     }
