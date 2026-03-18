@@ -18,6 +18,10 @@ export default {
       `api/${t}/bookables/public/${id}?populate=${populate}`
     );
   },
+  getBookablePrices(bookableId, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/bookables/${bookableId}/prices`);
+  },
   async createOrUpdateBookable(bookable, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const formData = { ...bookable };
