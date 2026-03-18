@@ -182,6 +182,171 @@
         </v-col>
       </v-row>
     </AppPanel>
+    <AppPanel
+      v-if="modelApps.ePayBL"
+      :title="'ePayBL'"
+      :logo="require('@/assets/epaybl-logo.png')"
+      :active="modelApps.ePayBL.active"
+      class="mb-2"
+    >
+      <v-row dense>
+        <v-col cols="12">
+          <v-switch
+            v-model="modelApps.ePayBL.active"
+            color="primary"
+            hide-details
+            label="ePayBL als Zahlungsanbieter aktivieren"
+          />
+        </v-col>
+      </v-row>
+      <v-row dense>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            label="Base URL"
+            v-model="modelApps.ePayBL.baseUrl"
+            placeholder="https://epaybl.example.de/api"
+          />
+        </v-col>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            label="Mandantennummer"
+            v-model="modelApps.ePayBL.merchantId"
+          />
+        </v-col>
+      </v-row>
+      <v-row dense>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            label="Bewirtschafternummer"
+            v-model="modelApps.ePayBL.managerId"
+          />
+        </v-col>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            label="Haushaltsstelle"
+            v-model="modelApps.ePayBL.budgetAccount"
+          />
+        </v-col>
+      </v-row>
+      <v-row dense>
+        <v-col>
+          <v-text-field
+            background-color="accent"
+            filled
+            label="Objektnummer"
+            v-model="modelApps.ePayBL.objectNumber"
+          />
+        </v-col>
+        <v-col>
+          <v-select
+            background-color="accent"
+            filled
+            label="Zahlungsmethoden"
+            v-model="modelApps.ePayBL.paymentMethods"
+            :items="ePayBLPaymentMethodOptions"
+            multiple
+            chips
+            small-chips
+            deletable-chips
+            persistent-hint
+            hint="Nur Zahlungsmethoden auswählen, die vertraglich freigeschaltet sind. Verfügbare Methoden können über den Verbindungstest ermittelt werden."
+          />
+        </v-col>
+      </v-row>
+      <v-row dense>
+        <v-col cols="6">
+          <v-card
+            :color="
+              modelApps.ePayBL.clientP12
+                ? 'success lighten-5'
+                : 'error lighten-5'
+            "
+            class="rounded"
+          >
+            <v-card-text
+              :class="
+                (modelApps.ePayBL.clientP12 ? 'success' : 'error') +
+                '--text text--darken-1 d-flex justify-space-between align-center'
+              "
+            >
+              <div>
+                <v-icon left>{{
+                  modelApps.ePayBL.clientP12 ? "mdi-check" : "mdi-close"
+                }}</v-icon>
+                {{
+                  modelApps.ePayBL.clientP12
+                    ? "Client-Zertifikat (.p12) ist hinterlegt."
+                    : "Kein Client-Zertifikat hinterlegt."
+                }}
+              </div>
+              <div class="d-flex align-center" style="gap: 8px">
+                <v-btn
+                  v-if="modelApps.ePayBL.clientP12"
+                  small
+                  outlined
+                  color="error"
+                  @click="removeCertificate"
+                >
+                  <v-icon small left>mdi-delete</v-icon>
+                  Entfernen
+                </v-btn>
+                <v-btn small outlined @click="$refs.certFileInput.click()">
+                  <v-icon small left>mdi-upload</v-icon>
+                  {{ modelApps.ePayBL.clientP12 ? "Ersetzen" : "Hochladen" }}
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+          <input
+            ref="certFileInput"
+            type="file"
+            accept=".p12,.pfx"
+            style="display: none"
+            @change="onCertFileInputChange"
+          />
+        </v-col>
+
+        <v-col cols="6">
+          <v-text-field
+            background-color="accent"
+            filled
+            label="Zertifikat-Passwort"
+            :value="modelApps.ePayBL.certPassphrase"
+            @input="update('certPassphrase', $event)"
+            :append-icon="showEPayBLSecret ? 'mdi-eye' : 'mdi-eye-off'"
+            @click:append="showEPayBLSecret = !showEPayBLSecret"
+            :type="showEPayBLSecret ? 'text' : 'password'"
+          />
+        </v-col>
+      </v-row>
+
+
+      <v-row dense class="mt-2">
+        <v-col class="d-flex align-center justify-end">
+          <span v-if="hasUnsavedChanges" class="ml-3 text--secondary caption">
+            <v-icon small color="warning" class="mr-1">mdi-alert</v-icon>
+            Bitte zuerst speichern, bevor Sie die Verbindung testen.
+          </span>
+          <v-btn
+            color="primary"
+            :loading="ePayBLTestLoading"
+            :disabled="hasUnsavedChanges || !modelApps.ePayBL.active"
+            @click="testEPayBLConnection"
+          >
+            <v-icon left>mdi-connection</v-icon>
+            Verbindung testen
+          </v-btn>
+        </v-col>
+      </v-row>
+    </AppPanel>
 
     <AppPanel
       v-if="modelApps.invoice"
@@ -288,14 +453,194 @@
             label="Ergänzung zum Verwendungszweck"
             prefix="[Buchungsnummer] - "
             :rules="[
-            (v) => !v || v.length <= 12 || 'Maximal 12 Zeichen erlaubt.',
-          ]"
+              (v) => !v || v.length <= 12 || 'Maximal 12 Zeichen erlaubt.',
+            ]"
             v-model="modelTenant.paymentPurposeSuffix"
           />
         </v-col>
-
       </v-row>
     </AppPanel>
+
+    <v-dialog v-model="showTestResultDialog" max-width="640" scrollable>
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon left :color="ePayBLTestResult?.success ? 'success' : 'error'">
+            {{
+              ePayBLTestResult?.success
+                ? "mdi-check-circle"
+                : "mdi-alert-circle"
+            }}
+          </v-icon>
+          ePayBL Verbindungstest
+        </v-card-title>
+
+        <v-card-text>
+          <v-alert v-if="ePayBLTestError" type="error" dense class="mb-0">
+            {{ ePayBLTestError }}
+          </v-alert>
+
+          <template v-if="ePayBLTestResult">
+            <v-alert
+              :type="ePayBLTestResult.success ? 'success' : 'error'"
+              dense
+              class="mb-4"
+            >
+              {{
+                ePayBLTestResult.success
+                  ? "Alle Prüfungen erfolgreich bestanden."
+                  : "Mindestens eine Prüfung ist fehlgeschlagen."
+              }}
+            </v-alert>
+
+            <template v-if="ePayBLTestResult.checks">
+              <div
+                v-if="ePayBLTestResult.checks.basicConnection"
+                class="d-flex align-center mb-3"
+              >
+                <v-icon
+                  :color="
+                    testCheckColor(
+                      ePayBLTestResult.checks.basicConnection.status
+                    )
+                  "
+                  class="mr-2"
+                >
+                  {{
+                    testCheckIcon(
+                      ePayBLTestResult.checks.basicConnection.status
+                    )
+                  }}
+                </v-icon>
+                <div>
+                  <div class="font-weight-medium">Basisverbindung</div>
+                  <div class="text--secondary caption">
+                    {{ ePayBLTestResult.checks.basicConnection.message }}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-if="ePayBLTestResult.checks.authentication"
+                class="d-flex align-center mb-3"
+              >
+                <v-icon
+                  :color="
+                    testCheckColor(
+                      ePayBLTestResult.checks.authentication.status
+                    )
+                  "
+                  class="mr-2"
+                >
+                  {{
+                    testCheckIcon(ePayBLTestResult.checks.authentication.status)
+                  }}
+                </v-icon>
+                <div>
+                  <div class="font-weight-medium">Authentifizierung</div>
+                  <div class="text--secondary caption">
+                    Zertifikat:
+                    {{
+                      ePayBLTestResult.checks.authentication.hasCertificate
+                        ? "vorhanden"
+                        : "nicht vorhanden"
+                    }}
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="ePayBLTestResult.checks.paymentMethods">
+                <div class="d-flex align-center mb-2">
+                  <v-icon
+                    :color="
+                      testCheckColor(
+                        ePayBLTestResult.checks.paymentMethods.status
+                      )
+                    "
+                    class="mr-2"
+                  >
+                    {{
+                      testCheckIcon(
+                        ePayBLTestResult.checks.paymentMethods.status
+                      )
+                    }}
+                  </v-icon>
+                  <div class="font-weight-medium">
+                    Zahlungsmethoden
+                    <span
+                      v-if="
+                        ePayBLTestResult.checks.paymentMethods.status === 'ok'
+                      "
+                      class="text--secondary font-weight-regular"
+                    >
+                      ({{ ePayBLTestResult.checks.paymentMethods.count }}
+                      verfügbar)
+                    </span>
+
+                    <span
+                      v-else-if="
+                        ePayBLTestResult.checks.paymentMethods.status ===
+                        'pending'
+                      "
+                      class="text--secondary font-weight-regular"
+                    >
+                      – nicht geprüft (vorheriger Schritt fehlgeschlagen)
+                    </span>
+                  </div>
+                </div>
+
+                <v-list
+                  v-if="
+                    ePayBLTestResult.checks.paymentMethods.methods &&
+                    ePayBLTestResult.checks.paymentMethods.methods.length
+                  "
+                  dense
+                  class="ml-6 pa-0"
+                >
+                  <v-list-item
+                    v-for="m in ePayBLTestResult.checks.paymentMethods.methods"
+                    :key="m.code"
+                    class="px-0"
+                  >
+                    <v-list-item-icon class="mr-2">
+                      <v-icon small color="success"
+                        >mdi-credit-card-outline</v-icon
+                      >
+                    </v-list-item-icon>
+                    <v-list-item-content>
+                      <v-list-item-title>
+                        <v-chip x-small label class="mr-2">{{ m.code }}</v-chip>
+                      </v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ m.min?.toFixed(2) }} € –
+                        {{
+                          m.max?.toLocaleString("de-DE", {
+                            minimumFractionDigits: 2,
+                          })
+                        }}
+                        €
+                        <span v-if="m.viaProvider" class="ml-1"
+                          >• via Provider</span
+                        >
+                      </v-list-item-subtitle>
+                    </v-list-item-content>
+                  </v-list-item>
+                </v-list>
+              </div>
+            </template>
+
+            <div class="text--secondary caption mt-4">
+              Zeitpunkt:
+              {{ new Date(ePayBLTestResult.timestamp).toLocaleString("de-DE") }}
+            </div>
+          </template>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text @click="showTestResultDialog = false">Schließen</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </BaseSection>
 </template>
 
@@ -303,6 +648,7 @@
 import debounce from "lodash/debounce";
 import AppPanel from "@/components/AppPanel.vue";
 import BaseSection from "@/components/commons/BaseSection.vue";
+import ApiPaymentService from "@/services/api/ApiPaymentService";
 
 export default {
   name: "TenantEditPayments",
@@ -310,11 +656,13 @@ export default {
   props: {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
+    hasUnsavedChanges: { type: Boolean, default: false },
   },
   data() {
     return {
       showPaymentSecret: false,
       showPmPaymentSecret: false,
+      showEPayBLSecret: false,
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
         mail: [
@@ -331,6 +679,21 @@ export default {
             "Ungültige URL.",
         ],
       },
+      showEPayBLClientCert: false,
+      showEPayBLClientKey: false,
+      ePayBLTestLoading: false,
+      ePayBLTestResult: null,
+      ePayBLTestError: null,
+      showTestResultDialog: false,
+      ePayBLPaymentMethodOptions: [
+        "KREDITKARTE",
+        "GIROPAY",
+        "PAYDIREKT",
+        "PAYPAL",
+        "LASTSCHRIFT",
+        "UEBERWEISUNG",
+        "LASTSCHRIFTOHNE",
+      ],
     };
   },
   created() {
@@ -360,6 +723,98 @@ export default {
     },
   },
   methods: {
+    update(field, value) {
+      this.$emit("update:apps", {
+        ...this.modelApps,
+        ePayBL: {
+          ...this.modelApps.ePayBL,
+          [field]: value,
+        },
+      });
+    },
+
+    removeCertificate() {
+      this.modelApps.ePayBL.clientP12 = "";
+      this.modelApps.ePayBL.certPassphrase = "";
+    },
+
+    onCertFileInputChange(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      this.fileToBase64(file)
+        .then((base64) => {
+          this.update("clientP12", base64);
+        })
+        .catch((err) => {
+          console.error("Fehler beim Lesen der Zertifikatsdatei:", err);
+        })
+        .finally(() => {
+          this.$refs.certFileInput.value = "";
+        });
+    },
+
+    async testEPayBLConnection() {
+      this.ePayBLTestResult = null;
+      this.ePayBLTestError = null;
+      this.ePayBLTestLoading = true;
+
+      try {
+        const response = await ApiPaymentService.testConnection(
+          "epaybl",
+          this.tenant.id
+        );
+        console.log("Verbindungstest erfolgreich:", response);
+        this.ePayBLTestResult = response.data || response;
+      } catch (err) {
+        const data = err?.response?.data;
+        if (data && data.checks) {
+          this.ePayBLTestResult = data;
+        } else {
+          this.ePayBLTestError =
+            data?.message || err?.message || "Verbindungstest fehlgeschlagen.";
+        }
+      } finally {
+        this.ePayBLTestLoading = false;
+        this.showTestResultDialog = true;
+      }
+    },
+    testCheckIcon(status) {
+      if (status === "ok") return "mdi-check-circle";
+      if (status === "pending") return "mdi-clock-outline";
+      return "mdi-alert-circle";
+    },
+    testCheckColor(status) {
+      if (status === "ok") return "success";
+      if (status === "pending") return "grey";
+      return "error";
+    },
+
+    async onCertFileChange(file) {
+      if (!file) {
+        this.update("clientP12", "");
+        return;
+      }
+
+      try {
+        const base64 = await this.fileToBase64(file);
+        this.update("clientP12", base64);
+      } catch (err) {
+        console.error("Fehler beim Lesen der Zertifikatsdatei:", err);
+      }
+    },
+    fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(",")[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    },
+
     async validate() {
       return true;
     },
