@@ -262,7 +262,7 @@
         </v-col>
       </v-row>
       <v-row dense>
-        <v-col cols="6">
+        <v-col cols="12">
           <v-card
             :color="
               modelApps.ePayBL.clientP12
@@ -313,7 +313,9 @@
             @change="onCertFileInputChange"
           />
         </v-col>
+      </v-row>
 
+      <v-row dense>
         <v-col cols="6">
           <v-text-field
             background-color="accent"
@@ -326,8 +328,23 @@
             :type="showEPayBLSecret ? 'text' : 'password'"
           />
         </v-col>
+        <v-col cols="6">
+          <v-text-field
+            background-color="accent"
+            filled
+            label="Benachrichtigungs-Geheimnis"
+            :value="modelApps.ePayBL.notificationSecret"
+            @input="update('notificationSecret', $event)"
+            :append-icon="
+              showEPayBLNotificationSecret ? 'mdi-eye' : 'mdi-eye-off'
+            "
+            @click:append="
+              showEPayBLNotificationSecret = !showEPayBLNotificationSecret
+            "
+            :type="showEPayBLNotificationSecret ? 'text' : 'password'"
+          />
+        </v-col>
       </v-row>
-
 
       <v-row dense class="mt-2">
         <v-col class="d-flex align-center justify-end">
@@ -398,7 +415,6 @@
         </v-col>
       </v-row>
 
-      <!-- IBAN/BIC usw. -->
       <v-row class="mt-4">
         <v-col>
           <v-text-field
@@ -663,6 +679,7 @@ export default {
       showPaymentSecret: false,
       showPmPaymentSecret: false,
       showEPayBLSecret: false,
+      showEPayBLNotificationSecret: false,
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
         mail: [
