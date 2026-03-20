@@ -156,7 +156,7 @@
           </v-col>
           <v-col v-if="!item.valid" class="col-12 red--text">
             <small>
-              {{ item.error}}
+              {{ item.error }}
             </small>
           </v-col>
         </v-row>
@@ -536,6 +536,13 @@ export default {
           break;
         }
         case "pmPayment": {
+          const paymentUrl = paymentResponse.data?.paymentData[0]?.url;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          }
+          break;
+        }
+        case "ePayBL": {
           const paymentUrl = paymentResponse.data?.paymentData[0]?.url;
           if (paymentUrl) {
             window.location.href = paymentUrl;

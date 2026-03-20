@@ -7,4 +7,8 @@ export default {
       aggregated,
     });
   },
+  testConnection(provider, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/payments/providers/${provider}/test`);
+  },
 };

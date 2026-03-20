@@ -51,6 +51,7 @@
               :workflow="workflow"
               :roles="roles"
               :challenges="verificationChallenges"
+              :has-unsaved-changes="hasUnsavedChanges"
               @update:tenant="onUpdateTenant"
               @update:apps="onUpdateApps"
               @update:workflow="onUpdateWorkflow"
@@ -228,6 +229,20 @@ export default {
           paymentProjectId: "",
           paymentSecret: "",
           paymentMode: "",
+          active: false,
+        },
+        ePayBL: {
+          type: "payment",
+          id: "ePayBL",
+          title: "ePayBL",
+          baseUrl: "",
+          merchantId: "",
+          managerId: "",
+          budgetAccount: "",
+          objectNumber: "",
+          paymentMethods: [],
+          clientP12: "",
+          certPassphrase: "",
           active: false,
         },
         invoice: {
