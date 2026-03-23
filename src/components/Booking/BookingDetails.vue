@@ -1109,7 +1109,7 @@ export default {
         "Stelle Zahlungsbeleg bereit..."
       );
       ApiBookingService.getReceipt(this.booking.id, name).then((response) => {
-        const blob = response.data
+        const blob = response.data;
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
@@ -1286,14 +1286,25 @@ export default {
           locker.processId
         );
 
-        const openBoxId = response.data?.providerResponse?.OpenBox_ID;
-        if (openBoxId) {
-          this.$set(this.lockerOpenIds, pid, openBoxId);
-        }
+        const responseData = response.data || {};
 
-        // Open command sent — now wait for hardware confirmation
-        this.$set(this.lockerLoading, pid + "_open", false);
-        await this.waitForLockerConfirmation(locker);
+        if (responseData.success === false) {
+          this.$set(
+            this.lockerErrors,
+            pid,
+            responseData.errors?.[0]?.message || "Fehler beim Öffnen der Box."
+          );
+          this.$set(this.lockerLoading, pid + "_open", false);
+          return;
+        } else if (responseData.success === true) {
+          const openProcessId = responseData.data?.openProcessId;
+          if (openProcessId) {
+            this.$set(this.lockerOpenIds, pid, openProcessId);
+          }
+
+          this.$set(this.lockerLoading, pid + "_open", false);
+          await this.waitForLockerConfirmation(locker);
+        }
       } catch (error) {
         this.$set(
           this.lockerErrors,
@@ -1306,9 +1317,9 @@ export default {
 
     async waitForLockerConfirmation(locker) {
       const pid = locker.processId;
-      const openBoxId = this.lockerOpenIds[pid];
+      const openProcessId = this.lockerOpenIds[pid];
 
-      if (!openBoxId) {
+      if (!openProcessId) {
         this.$set(
           this.lockerErrors,
           pid,
@@ -1324,30 +1335,44 @@ export default {
           this.booking.id,
           pid,
           this.booking.tenantId,
-          openBoxId
+          openProcessId
         );
 
-        const status = response.data?.status || response.data;
-        this.$set(this.lockerStatuses, pid, status);
+        const responseData = response.data || {};
 
-        if (status?.confirmed) {
-          await this.addToast(
-            ToastService.createToast("locker.open.success", "success")
-          );
-        } else if (status?.errorCode) {
+        console.log("Locker-Status-Antwort:", responseData);
+
+        if (responseData.success === false) {
           this.$set(
             this.lockerErrors,
             pid,
-            `Schließfach-Fehler ${status.errorCode}: ${getIfbsErrorMessage(
-              status.errorCode
-            )}`
+            responseData.errors?.[0]?.message ||
+              "Fehler beim Abrufen des Box-Status."
           );
+          return;
         } else {
-          this.$set(
-            this.lockerErrors,
-            pid,
-            "Die Box hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
-          );
+          const status = responseData.data;
+
+          this.$set(this.lockerStatuses, pid, status);
+          if (status.confirmed) {
+            await this.addToast(
+              ToastService.createToast("locker.open.success", "success")
+            );
+          } else if (status.errorCode) {
+            this.$set(
+              this.lockerErrors,
+              pid,
+              `Schließfach-Fehler ${status.errorCode}: ${getIfbsErrorMessage(
+                status.errorCode
+              )}`
+            );
+          } else {
+            this.$set(
+              this.lockerErrors,
+              pid,
+              "Die Box hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+            );
+          }
         }
       } catch (error) {
         this.$set(
@@ -1362,9 +1387,9 @@ export default {
 
     async fetchLockerStatus(locker) {
       const pid = locker.processId;
-      const openBoxId = this.lockerOpenIds[pid];
+      const openProcessId = this.lockerOpenIds[pid];
 
-      if (!openBoxId) {
+      if (!openProcessId) {
         return;
       }
 
@@ -1376,7 +1401,7 @@ export default {
           this.booking.id,
           pid,
           this.booking.tenantId,
-          openBoxId
+          openProcessId
         );
 
         const status = response.data?.status || response.data;

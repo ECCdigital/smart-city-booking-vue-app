@@ -17,10 +17,10 @@ export default {
     );
   },
 
-  getOpenStatus(bookingId, accessPointId, tenant, openBoxId) {
+  getOpenStatus(bookingId, accessPointId, tenant, openProcessId) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(
-      `api/${t}/bookings/${bookingId}/access/${accessPointId}/open-status?openBoxId=${openBoxId}`
+      `api/${t}/bookings/${bookingId}/access/${accessPointId}/open-status?openProcessId=${openProcessId}`
     );
   },
 };
