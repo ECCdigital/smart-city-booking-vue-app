@@ -29,9 +29,8 @@
         <v-row>
           <v-col
             v-if="step < steps.length"
-            :class="
-              leadItem.bookable && !preventBooking ? 'col-md-8' : 'col-md'
-            "
+            :cols="12"
+            :md="leadItem.bookable && !preventBooking ? 8 : 12"
           >
             <component
               :is="steps[step - 1].component"
