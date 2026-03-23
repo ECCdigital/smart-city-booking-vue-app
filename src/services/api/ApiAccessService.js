@@ -4,7 +4,7 @@ export default {
   open(bookingId, accessPointId, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.post(
-      `api/${t}/bookings/${bookingId}/access/${accessPointId}/open`,
+      `api/${t}/access/${accessPointId}/open?bookingId=${bookingId}`,
       {}
     );
   },
@@ -12,7 +12,7 @@ export default {
   close(bookingId, accessPointId, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.post(
-      `api/${t}/bookings/${bookingId}/access/${accessPointId}/close`,
+      `api/${t}/access/${accessPointId}/close?bookingId=${bookingId}`,
       {}
     );
   },
@@ -20,7 +20,7 @@ export default {
   getOpenStatus(bookingId, accessPointId, tenant, openProcessId) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.get(
-      `api/${t}/bookings/${bookingId}/access/${accessPointId}/open-status?openProcessId=${openProcessId}`
+      `api/${t}/access/${accessPointId}/open-status?openProcessId=${openProcessId}&bookingId=${bookingId}`
     );
   },
 };
