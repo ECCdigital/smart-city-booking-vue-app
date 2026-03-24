@@ -4,184 +4,410 @@
 
     <v-expand-transition>
       <v-alert
-        v-if="isIfbsActive"
-        color="info"
-        text
+        v-if="showIfbsRecommendation"
         prominent
+        colored-border
         border="left"
-        elevation="2"
+        color="warning"
+        elevation="1"
         class="mb-4"
       >
-        <div class="d-flex align-center">
-          <div>
-            <div class="text-h6 font-weight-bold mb-1">
-              Externe Preissteuerung aktiv
-            </div>
-            <div class="text-body-2">
-              Dieses Buchungsobjekt verwendet ein IFBS-Schließsystem. Die Preise und Anzahl der verfügbaren Boxen
-              werden vom externen Dienstleister bezogen und können hier nicht
-              bearbeitet werden.
-            </div>
+        <div class="d-flex flex-column">
+          <div class="text-subtitle-1 font-weight-bold mb-1">
+            <v-icon left color="warning">mdi-alert-circle-outline</v-icon>
+            Empfehlung: Externe Datenquellen aktivieren
+          </div>
+
+          <div class="text-body-2 mb-3">
+            Sie nutzen Fahrradboxen über
+            <strong>ParkraumService</strong>. Buchungen können auch
+            direkt über ParkraumService erfolgen und werden in diesem System
+            nicht automatisch erfasst. Um Inkonsistenzen und Fehler bei
+            Doppelbuchungen zu vermeiden, empfehlen wir dringend, die folgenden
+            externen Datenquellen zu aktivieren:
+          </div>
+
+          <v-row dense class="mb-2">
+            <v-col
+              v-for="rec in ifbsRecommendations"
+              :key="rec.handle"
+              cols="12"
+              sm="4"
+            >
+              <div
+                class="d-flex align-center pa-2 rounded"
+                :class="rec.active ? 'green lighten-5' : 'red lighten-5'"
+              >
+                <v-icon
+                  small
+                  :color="rec.active ? 'success' : 'error'"
+                  class="mr-2"
+                >
+                  {{ rec.active ? "mdi-check-circle" : "mdi-close-circle" }}
+                </v-icon>
+                <div>
+                  <div
+                    class="text-caption font-weight-bold"
+                    :class="rec.active ? 'success--text' : 'error--text'"
+                  >
+                    {{ rec.label }}
+                  </div>
+                  <div class="text-caption text--secondary">
+                    {{ rec.hint }}
+                  </div>
+                </div>
+              </div>
+            </v-col>
+          </v-row>
+
+          <div class="d-flex align-center">
+            <v-btn
+              v-if="!externalProvider.active"
+              small
+              color="warning"
+              class="mr-2"
+              @click="activateRecommendedIfbs"
+            >
+              <v-icon left small>mdi-lightning-bolt</v-icon>
+              Empfohlene Einstellungen übernehmen
+            </v-btn>
+            <v-btn
+              v-else-if="missingRecommendedHandles.length > 0"
+              small
+              color="warning"
+              class="mr-2"
+              @click="activateMissingHandles"
+            >
+              <v-icon left small>mdi-plus-circle-outline</v-icon>
+              Fehlende Quellen aktivieren
+            </v-btn>
+            <v-btn
+              small
+              text
+              color="grey"
+              @click="dismissIfbsRecommendation = true"
+            >
+              Hinweis ausblenden
+            </v-btn>
           </div>
         </div>
       </v-alert>
     </v-expand-transition>
 
     <v-expand-transition>
-      <v-card-text class="pa-4">
-        <v-progress-linear
-          v-if="isLoadingIfbs"
-          indeterminate
-          color="primary"
-          class="mb-4"
-        />
+      <v-card
+        v-if="isIfbsActive"
+        class="mb-4 section-card"
+        elevation="2"
+        outlined
+      >
+        <v-card-title class="section-header pa-4">
+          <v-icon class="mr-2">mdi-cloud-sync-outline</v-icon>
+          <span class="text-h6 font-weight-bold">
+            Externe Datenquelle (ParkraumService)
+          </span>
+        </v-card-title>
+        <v-divider />
 
-        <v-alert v-if="ifbsError" type="error" dense text class="mb-4">
-          {{ ifbsError }}
-          <template #append>
-            <v-btn small text color="error" @click="fetchIfbsData">
-              Erneut versuchen
-            </v-btn>
-          </template>
-        </v-alert>
-
-        <div v-if="hasIfbsData && !isLoadingIfbs">
-          <v-row v-if="ifbsStatus" class="mb-4">
-            <v-col cols="12" md="6">
-              <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
-                <div class="d-flex align-center">
-                  <v-icon color="primary" class="mr-3">
-                    mdi-locker-multiple
-                  </v-icon>
-                  <div>
-                    <div
-                      class="text-caption text--secondary font-weight-medium"
-                    >
-                      Fahrradboxen gesamt
-                    </div>
-                    <div class="text-h6 font-weight-bold">
-                      {{ ifbsStatus.LocationTotal ?? "–" }}
-                    </div>
-                  </div>
+        <v-card-text class="pa-4">
+          <v-switch
+            v-model="externalProvider.active"
+            dense
+            hide-details
+            color="primary"
+            class="mt-0 mb-4"
+            @change="onExternalProviderChanged"
+          >
+            <template #label>
+              <div>
+                <div class="font-weight-medium">
+                  Externe Preissteuerung aktivieren
                 </div>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
-                <div class="d-flex align-center">
-                  <v-icon color="primary" class="mr-3">
-                    mdi-timer-lock-outline
-                  </v-icon>
-                  <div>
-                    <div
-                      class="text-caption text--secondary font-weight-medium"
-                    >
-                      Pufferzeit
-                    </div>
-                    <div class="text-h6 font-weight-bold">
-                      {{ formatDuration(ifbsStatus.LocationBuffer) }}
-                    </div>
-                    <div
-                      v-if="ifbsStatus.LocationBuffer"
-                      class="text-caption text--secondary"
-                    >
-                      Vor und nach jeder Buchung
-                    </div>
-                  </div>
+                <div class="text-caption text--secondary">
+                  Daten von ParkraumService beziehen statt manuell zu pflegen
                 </div>
-              </v-card>
-            </v-col>
-          </v-row>
+              </div>
+            </template>
+          </v-switch>
 
-          <v-divider v-if="ifbsStatus && ifbsPrices" class="my-4" />
+          <v-expand-transition>
+            <div v-if="externalProvider.active">
+              <v-alert color="info" text dense border="left" class="mb-4">
+                <div class="text-body-2">
+                  Wählen Sie aus, welche Informationen extern bezogen werden
+                  sollen. Nicht ausgewählte Bereiche können weiterhin manuell
+                  gepflegt werden.
+                </div>
+              </v-alert>
 
-          <div v-if="ifbsPrices">
-            <v-row>
-              <v-col
-                v-for="row in ifbsPriceRows"
-                :key="row.key"
-                cols="6"
-                sm="4"
-                md="4"
-                lg="2"
-              >
-                <v-card
-                  flat
-                  class="pa-3 rounded-lg text-center ifbs-price-tile"
+              <v-row>
+                <v-col cols="12" md="4">
+                  <v-checkbox
+                    v-model="externalProvider.handles"
+                    value="pricing"
+                    dense
+                    hide-details
+                    color="primary"
+                    class="mt-0"
+                    @change="onExternalProviderChanged"
+                  >
+                    <template #label>
+                      <div>
+                        <div class="font-weight-medium d-flex align-center">
+                          <v-icon small class="mr-1" color="primary">
+                            mdi-cash-multiple
+                          </v-icon>
+                          Preise
+                        </div>
+                        <div class="text-caption text--secondary">
+                          Preise vom Anbieter beziehen
+                        </div>
+                      </div>
+                    </template>
+                  </v-checkbox>
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-checkbox
+                    v-model="externalProvider.handles"
+                    value="availability"
+                    dense
+                    hide-details
+                    color="primary"
+                    class="mt-0"
+                    @change="onExternalProviderChanged"
+                  >
+                    <template #label>
+                      <div>
+                        <div class="font-weight-medium d-flex align-center">
+                          <v-icon small class="mr-1" color="primary">
+                            mdi-calendar-check
+                          </v-icon>
+                          Verfügbarkeit
+                        </div>
+                        <div class="text-caption text--secondary">
+                          Verfügbarkeit extern prüfen
+                        </div>
+                      </div>
+                    </template>
+                  </v-checkbox>
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-checkbox
+                    v-model="externalProvider.handles"
+                    value="maxAmount"
+                    dense
+                    hide-details
+                    color="primary"
+                    class="mt-0"
+                    @change="onExternalProviderChanged"
+                  >
+                    <template #label>
+                      <div>
+                        <div class="font-weight-medium d-flex align-center">
+                          <v-icon small class="mr-1" color="primary">
+                            mdi-counter
+                          </v-icon>
+                          Anzahl
+                        </div>
+                        <div class="text-caption text--secondary">
+                          Max. Anzahl extern beziehen
+                        </div>
+                      </div>
+                    </template>
+                  </v-checkbox>
+                </v-col>
+              </v-row>
+
+              <v-expand-transition>
+                <div
+                  v-if="
+                    externalProvider.handles &&
+                    externalProvider.handles.length > 0
+                  "
                 >
-                  <v-icon color="primary" class="mb-2">
-                    {{ row.icon }}
-                  </v-icon>
-                  <div class="text-h6 font-weight-bold">
-                    {{ row.value }}
-                  </div>
-                  <div class="text-caption text--secondary">
-                    {{ row.label }}
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
+                  <v-divider class="my-4" />
 
-            <v-divider class="my-4" />
+                  <v-progress-linear
+                    v-if="isLoadingIfbs"
+                    indeterminate
+                    color="primary"
+                    class="mb-4"
+                  />
 
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
-                  <div class="d-flex align-center">
-                    <v-icon color="primary" class="mr-3">
-                      mdi-cash-plus
-                    </v-icon>
-                    <div>
-                      <div
-                        class="text-caption text--secondary font-weight-medium"
-                      >
-                        Servicegebühr
-                      </div>
-                      <div class="text-h6 font-weight-bold">
-                        {{ formatPrice(ifbsPrices["Preis_Servicegebühr"]) }} €
-                      </div>
+                  <v-alert
+                    v-if="ifbsError"
+                    type="error"
+                    dense
+                    text
+                    class="mb-4"
+                  >
+                    {{ ifbsError }}
+                    <template #append>
+                      <v-btn small text color="error" @click="fetchIfbsData">
+                        Erneut versuchen
+                      </v-btn>
+                    </template>
+                  </v-alert>
+
+                  <div v-if="hasIfbsData && !isLoadingIfbs">
+                    <v-row v-if="ifbsStatus && handlesMaxAmount" class="mb-4">
+                      <v-col cols="12" md="6">
+                        <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
+                          <div class="d-flex align-center">
+                            <v-icon color="primary" class="mr-3">
+                              mdi-locker-multiple
+                            </v-icon>
+                            <div>
+                              <div
+                                class="text-caption text--secondary font-weight-medium"
+                              >
+                                Fahrradboxen gesamt
+                              </div>
+                              <div class="text-h6 font-weight-bold">
+                                {{ ifbsStatus.LocationTotal ?? "–" }}
+                              </div>
+                            </div>
+                          </div>
+                        </v-card>
+                      </v-col>
+                      <v-col cols="12" md="6">
+                        <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
+                          <div class="d-flex align-center">
+                            <v-icon color="primary" class="mr-3">
+                              mdi-timer-lock-outline
+                            </v-icon>
+                            <div>
+                              <div
+                                class="text-caption text--secondary font-weight-medium"
+                              >
+                                Pufferzeit
+                              </div>
+                              <div class="text-h6 font-weight-bold">
+                                {{ formatDuration(ifbsStatus.LocationBuffer) }}
+                              </div>
+                              <div
+                                v-if="ifbsStatus.LocationBuffer"
+                                class="text-caption text--secondary"
+                              >
+                                Vor und nach jeder Buchung
+                              </div>
+                            </div>
+                          </div>
+                        </v-card>
+                      </v-col>
+                    </v-row>
+
+                    <v-divider
+                      v-if="
+                        ifbsStatus &&
+                        ifbsPrices &&
+                        handlesMaxAmount &&
+                        handlesPricing
+                      "
+                      class="my-4"
+                    />
+
+                    <div v-if="ifbsPrices && handlesPricing">
+                      <v-row>
+                        <v-col
+                          v-for="row in ifbsPriceRows"
+                          :key="row.key"
+                          cols="6"
+                          sm="4"
+                          md="4"
+                          lg="2"
+                        >
+                          <v-card
+                            flat
+                            class="pa-3 rounded-lg text-center ifbs-price-tile"
+                          >
+                            <v-icon color="primary" class="mb-2">
+                              {{ row.icon }}
+                            </v-icon>
+                            <div class="text-h6 font-weight-bold">
+                              {{ row.value }}
+                            </div>
+                            <div class="text-caption text--secondary">
+                              {{ row.label }}
+                            </div>
+                          </v-card>
+                        </v-col>
+                      </v-row>
+
+                      <v-divider class="my-4" />
+
+                      <v-row>
+                        <v-col cols="12" md="6">
+                          <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
+                            <div class="d-flex align-center">
+                              <v-icon color="primary" class="mr-3">
+                                mdi-cash-plus
+                              </v-icon>
+                              <div>
+                                <div
+                                  class="text-caption text--secondary font-weight-medium"
+                                >
+                                  Servicegebühr
+                                </div>
+                                <div class="text-h6 font-weight-bold">
+                                  {{
+                                    formatPrice(
+                                      ifbsPrices["Preis_Servicegebühr"]
+                                    )
+                                  }}
+                                  €
+                                </div>
+                              </div>
+                            </div>
+                          </v-card>
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
+                            <div class="d-flex align-center">
+                              <v-icon color="primary" class="mr-3">
+                                mdi-timer-outline
+                              </v-icon>
+                              <div>
+                                <div
+                                  class="text-caption text--secondary font-weight-medium"
+                                >
+                                  Mindestnutzungsdauer
+                                </div>
+                                <div class="text-h6 font-weight-bold">
+                                  {{
+                                    formatDuration(
+                                      ifbsPrices["minimum_usage_time_mins"]
+                                    )
+                                  }}
+                                </div>
+                              </div>
+                            </div>
+                          </v-card>
+                        </v-col>
+                      </v-row>
                     </div>
                   </div>
-                </v-card>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
-                  <div class="d-flex align-center">
-                    <v-icon color="primary" class="mr-3">
-                      mdi-timer-outline
+
+                  <div
+                    v-if="!hasIfbsData && !isLoadingIfbs && !ifbsError"
+                    class="text-center py-6"
+                  >
+                    <v-icon large color="grey lighten-1">
+                      mdi-cloud-question
                     </v-icon>
-                    <div>
-                      <div
-                        class="text-caption text--secondary font-weight-medium"
-                      >
-                        Mindestnutzungsdauer
-                      </div>
-                      <div class="text-h6 font-weight-bold">
-                        {{
-                          formatDuration(ifbsPrices["minimum_usage_time_mins"])
-                        }}
-                      </div>
+                    <div class="text-body-2 grey--text mt-2">
+                      Keine Daten verfügbar
                     </div>
                   </div>
-                </v-card>
-              </v-col>
-            </v-row>
-          </div>
-        </div>
-
-        <div
-          v-if="isIfbsActive && !hasIfbsData && !isLoadingIfbs && !ifbsError"
-          class="text-center py-6"
-        >
-          <v-icon large color="grey lighten-1">mdi-cloud-question</v-icon>
-          <div class="text-body-2 grey--text mt-2">
-            Keine Daten verfügbar
-          </div>
-        </div>
-      </v-card-text>
+                </div>
+              </v-expand-transition>
+            </div>
+          </v-expand-transition>
+        </v-card-text>
+      </v-card>
     </v-expand-transition>
 
-    <template v-if="!isIfbsActive">
+    <template>
       <v-card class="mb-4 section-card" elevation="2" outlined>
         <v-card-title class="section-header pa-4">
           <v-icon class="mr-2">mdi-cog-outline</v-icon>
@@ -194,7 +420,6 @@
             <v-col cols="12" md="6">
               <v-switch
                 dense
-                label="Gutscheine aktivieren"
                 hide-details
                 v-model="model.enableCoupons"
                 color="primary"
@@ -223,6 +448,7 @@
                 :hint="!model.amount ? 'Anzahl ist unbegrenzt!' : ''"
                 :persistent-hint="!model.amount"
                 v-model="model.amount"
+                :disabled="handlesMaxAmount"
                 :suffix="
                   model.priceType === 'per-square-meter' ? 'm²' : 'Stück'
                 "
@@ -236,6 +462,7 @@
                 dense
                 label="Preisart"
                 hide-details
+                :disabled="handlesPricing"
                 v-model="model.priceType"
                 :items="priceTypes"
                 item-text="name"
@@ -250,6 +477,7 @@
                 dense
                 label="MwSt."
                 hide-details
+                :disabled="handlesPricing"
                 v-model="model.priceValueAddedTax"
                 suffix="%"
               />
@@ -258,7 +486,12 @@
         </v-card-text>
       </v-card>
 
-      <v-card class="mb-4 section-card" elevation="2" outlined>
+      <v-card
+        v-if="!isIfbsActive || !handlesPricing"
+        class="mb-4 section-card"
+        elevation="2"
+        outlined
+      >
         <v-card-title
           class="section-header pa-4 d-flex justify-space-between align-center"
         >
@@ -332,7 +565,6 @@
               <v-col cols="12" md="6">
                 <v-switch
                   v-model="model.priceCategories[0].fixedPrice"
-                  label="Pauschalpreis"
                   dense
                   hide-details
                   color="primary"
@@ -354,9 +586,7 @@
             <div v-if="useGraduatedPrices">
               <div class="d-flex justify-space-between align-center mb-3">
                 <v-subheader class="pl-0">
-                  <v-icon small class="mr-2">
-                    mdi-format-list-numbered
-                  </v-icon>
+                  <v-icon small class="mr-2"> mdi-format-list-numbered </v-icon>
                   Preis-Kategorien
                 </v-subheader>
                 <v-btn small color="primary" @click="addPriceCategory">
@@ -509,7 +739,6 @@
                           <v-col cols="12" md="8">
                             <v-switch
                               v-model="priceCategory.fixedPrice"
-                              label="Pauschalpreis"
                               dense
                               hide-details
                               color="primary"
@@ -710,6 +939,16 @@ import debounce from "lodash/debounce";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
 import ApiLockerService from "@/services/api/ApiLockerService";
 
+const DEFAULT_EXTERNAL_PROVIDER = {
+  active: false,
+  provider: "ifbs",
+  handles: [],
+  config: {
+    locationId: null,
+    amount: 1,
+  },
+};
+
 export default {
   name: "BookableEditPrice",
   components: { BaseSection },
@@ -759,6 +998,7 @@ export default {
         { text: "Sachsen-Anhalt", value: "ST" },
         { text: "Thüringen", value: "TH" },
       ],
+      dismissIfbsRecommendation: false,
     };
   },
   computed: {
@@ -779,6 +1019,27 @@ export default {
       if (!this.isIfbsActive) return null;
       return this.bookable.lockerDetails.units.find(
         (u) => u.lockerSystem === "ifbs"
+      );
+    },
+    externalProvider() {
+      return this.getOrCreateIfbsProvider();
+    },
+    handlesPricing() {
+      return (
+        this.externalProvider.active &&
+        this.externalProvider.handles.includes("pricing")
+      );
+    },
+    handlesAvailability() {
+      return (
+        this.externalProvider.active &&
+        this.externalProvider.handles.includes("availability")
+      );
+    },
+    handlesMaxAmount() {
+      return (
+        this.externalProvider.active &&
+        this.externalProvider.handles.includes("maxAmount")
       );
     },
     hasIfbsData() {
@@ -838,6 +1099,54 @@ export default {
         this.model.priceCategories && this.model.priceCategories.length > 0
       );
     },
+    ifbsRecommendations() {
+      const handles = this.externalProvider.active
+        ? this.externalProvider.handles || []
+        : [];
+
+      return [
+        {
+          handle: "availability",
+          label: "Verfügbarkeit",
+          hint: "Verhindert falsche Anzeigen von verfügbaren Zeiten",
+          active: handles.includes("availability"),
+          critical: true,
+        },
+        {
+          handle: "maxAmount",
+          label: "Max. Anzahl",
+          hint: "Korrekte Kapazität sicherstellen",
+          active: handles.includes("maxAmount"),
+          critical: true,
+        },
+        {
+          handle: "pricing",
+          label: "Preise",
+          hint: "Einheitliche Preisgestaltung",
+          active: handles.includes("pricing"),
+          critical: false,
+        },
+      ];
+    },
+    missingRecommendedHandles() {
+      return this.ifbsRecommendations
+        .filter((r) => !r.active)
+        .map((r) => r.handle);
+    },
+
+    showIfbsRecommendation() {
+      if (!this.isIfbsActive) return false;
+      if (this.dismissIfbsRecommendation) return false;
+
+      if (!this.externalProvider.active) return true;
+
+      const handles = this.externalProvider.handles || [];
+      const criticalMissing = this.ifbsRecommendations.some(
+        (r) => r.critical && !handles.includes(r.handle)
+      );
+
+      return criticalMissing;
+    },
   },
   created() {
     this._emitDebounced = debounce((val) => {
@@ -855,11 +1164,33 @@ export default {
       immediate: true,
       handler(active) {
         if (active) {
-          this.fetchIfbsData();
+          this.ensureExternalProviderExists();
+          this.syncExternalProviderConfig();
+          if (this.externalProvider.active) {
+            this.fetchIfbsData();
+          }
         } else {
           this.ifbsPrices = null;
           this.ifbsStatus = null;
           this.ifbsError = null;
+        }
+      },
+    },
+    "externalProvider.active"(active) {
+      if (active && this.isIfbsActive) {
+        this.fetchIfbsData();
+      }
+    },
+    "externalProvider.handles": {
+      deep: true,
+      handler() {
+        if (
+          this.externalProvider.active &&
+          this.isIfbsActive &&
+          !this.hasIfbsData &&
+          !this.isLoadingIfbs
+        ) {
+          this.fetchIfbsData();
         }
       },
     },
@@ -900,6 +1231,85 @@ export default {
     },
   },
   methods: {
+    ensureExternalProviderExists() {
+      if (!this.model.externalProviders) {
+        this.$set(this.model, "externalProviders", []);
+      }
+
+      const existing = this.model.externalProviders.find(
+        (p) => p.provider === "ifbs"
+      );
+
+      if (!existing) {
+        this.model.externalProviders.push({
+          ...JSON.parse(JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)),
+        });
+        this._emitDebounced({ ...this.model });
+      }
+    },
+    getOrCreateIfbsProvider() {
+      if (!this.model.externalProviders) {
+        this.$set(this.model, "externalProviders", []);
+      }
+
+      let provider = this.model.externalProviders.find(
+        (p) => p.provider === "ifbs"
+      );
+
+      if (!provider) {
+        provider = {
+          ...JSON.parse(JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)),
+        };
+        this.model.externalProviders.push(provider);
+        this._emitDebounced({ ...this.model });
+      }
+
+      return provider;
+    },
+    syncExternalProviderConfig() {
+      const unit = this.ifbsUnit;
+      if (!unit) return;
+
+      const provider = this.externalProvider;
+      const needsUpdate =
+        provider.config.locationId !== unit.locationId ||
+        provider.config.amount !== (unit.amount || 1);
+
+      if (needsUpdate) {
+        this.$set(provider, "config", {
+          locationId: unit.locationId,
+          amount: unit.amount || 1,
+        });
+        this._emitDebounced({ ...this.model });
+      }
+    },
+    onExternalProviderChanged() {
+      this._emitDebounced({ ...this.model });
+    },
+    activateRecommendedIfbs() {
+      this.ensureExternalProviderExists();
+      const provider = this.externalProvider;
+
+      provider.active = true;
+      this.$set(provider, "handles", ["availability", "maxAmount", "pricing"]);
+
+      this._emitDebounced({ ...this.model });
+      this.fetchIfbsData();
+    },
+
+    activateMissingHandles() {
+      const provider = this.externalProvider;
+      const current = provider.handles || [];
+
+      this.missingRecommendedHandles.forEach((handle) => {
+        if (!current.includes(handle)) {
+          current.push(handle);
+        }
+      });
+
+      this.$set(provider, "handles", [...current]);
+      this._emitDebounced({ ...this.model });
+    },
     async validate() {
       return this.$refs.form ? this.$refs.form.validate() : true;
     },
@@ -927,8 +1337,7 @@ export default {
       const remainingMins = mins % 60;
 
       const parts = [];
-      if (weeks > 0)
-        parts.push(`${weeks} ${weeks === 1 ? "Woche" : "Wochen"}`);
+      if (weeks > 0) parts.push(`${weeks} ${weeks === 1 ? "Woche" : "Wochen"}`);
       if (days > 0) parts.push(`${days} ${days === 1 ? "Tag" : "Tage"}`);
       if (hours > 0)
         parts.push(`${hours} ${hours === 1 ? "Stunde" : "Stunden"}`);
@@ -987,8 +1396,7 @@ export default {
         priceResult.status === "rejected" &&
         statusResult.status === "rejected"
       ) {
-        this.ifbsError =
-          "Daten konnten nicht vom IFBS-Dienst geladen werden.";
+        this.ifbsError = "Daten konnten nicht vom IFBS-Dienst geladen werden.";
       } else if (priceResult.status === "rejected") {
         this.ifbsError =
           "Preise konnten nicht geladen werden. Status wurde erfolgreich abgerufen.";
@@ -1083,6 +1491,7 @@ export default {
 .price-card {
   border-radius: 8px !important;
 }
+
 .ifbs-price-tile {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
