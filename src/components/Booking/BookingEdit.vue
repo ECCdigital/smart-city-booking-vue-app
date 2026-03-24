@@ -363,7 +363,6 @@
                           />
                         </v-list-item-subtitle>
                         <v-list-item-subtitle>
-                          <!-- EXTERNE PREISE -->
                           <template
                             v-if="hasExternalPrices(bookableItem._bookableUsed)"
                           >
@@ -377,6 +376,8 @@
                               color="primary"
                               class="my-2"
                             />
+
+
 
                             <template
                               v-else-if="
@@ -1208,7 +1209,9 @@ export default {
       return this.bookableItems.some((item) => {
         if (this.hasExternalPrices(item._bookableUsed)) {
           const extPrices = this.getExternalPrices(item.bookableId);
-          return extPrices?.some((p) => p.priceEur > 0 && p.unit !== "service-fee");
+          return extPrices?.some(
+            (p) => p.priceEur > 0 && p.unit !== "service-fee"
+          );
         }
         const priceEur = this.getPriceCategory(item.bookableId, "priceEur");
         return priceEur && Number(priceEur) > 0;
@@ -1590,7 +1593,9 @@ export default {
     hasExternalPrices(bookable) {
       return (
         bookable?.externalProviders &&
-        bookable.externalProviders?.some((p) => p.handles.includes("pricing"))
+        bookable.externalProviders?.some(
+          (p) => p.active && p.handles.includes("pricing")
+        )
       );
     },
 
@@ -1599,6 +1604,13 @@ export default {
     },
 
     async fetchExternalPricesForItem(bookableId) {
+
+      console.log(
+        `Fetching external prices for bookableId ${bookableId}...`,
+        this.externalPricesMap[bookableId],
+        this.externalPricesLoading[bookableId]
+      );
+
       if (
         this.externalPricesMap[bookableId] ||
         this.externalPricesLoading[bookableId]
