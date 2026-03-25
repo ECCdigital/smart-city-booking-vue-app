@@ -307,7 +307,7 @@ export default {
         .then(() => {
           this.addToast(ToastService.createToast("logout.success", "success"));
           this.resetStores();
-          window.location.href = "/";
+          window.location.href = "/login";
         })
         .finally(() => {
           this.deleteUser();
