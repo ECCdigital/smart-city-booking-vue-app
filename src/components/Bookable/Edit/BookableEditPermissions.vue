@@ -43,8 +43,8 @@ export default {
       );
     },
     removeGroupBookingRole(item) {
-      this.model.permittedGroupBookingRoles.splice(
-        this.model.permittedGroupBookingRoles.indexOf(item),
+      this.model.groupBooking.permittedRoles.splice(
+        this.model.groupBooking.permittedRoles.indexOf(item),
         1
       );
     },
@@ -278,7 +278,7 @@ export default {
               dense
               label="Serienbuchung erlauben"
               hide-details
-              v-model="model.allowGroupBooking"
+              v-model="model.groupBooking.enabled"
             ></v-switch>
           </v-col>
         </v-row>
@@ -288,7 +288,7 @@ export default {
           Meetings oder Kurse mit mehreren Terminen einfacher gebucht und
           verwaltet werden.
         </p>
-        <v-row v-if="model.allowGroupBooking" class="mt-4">
+        <v-row v-if="model.groupBooking.enabled" class="mt-4">
           <v-col cols="12">
             <v-alert color="info" dense text class="mb-4">
               <div class="d-flex align-center">
@@ -307,7 +307,7 @@ export default {
             </v-alert>
 
             <v-combobox
-              v-model="model.permittedGroupBookingRoles"
+              v-model="model.groupBooking.permittedRoles"
               :items="availableRoles"
               label="Rollen, die eine Buchungsserie erstellen dürfen"
               item-text="name"
