@@ -111,10 +111,7 @@
       </v-img>
 
       <div v-else class="placeholder-container">
-        <PlaceholderPattern
-          variant="poly"
-          :theme="isDark ? 'dark' : 'light'"
-        />
+        <PlaceholderPattern variant="poly" :theme="isDark ? 'dark' : 'light'" />
 
         <div
           v-if="!item.isBookable || !item.isPublic"
@@ -189,9 +186,7 @@
           <v-icon small color="grey darken-1" class="mr-2">
             mdi-lock-outline
           </v-icon>
-          <span
-            class="text-body-2 font-weight-bold grey--text text--darken-2"
-          >
+          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
             IFBS Preise
           </span>
           <v-chip x-small class="ml-2" color="primary" outlined label>
@@ -222,9 +217,7 @@
 
           <v-divider class="my-2" />
 
-          <div
-            class="d-flex align-center justify-space-between text-body-2"
-          >
+          <div class="d-flex align-center justify-space-between text-body-2">
             <div class="d-flex align-center">
               <v-icon x-small color="primary" class="mr-2">
                 mdi-cash-plus
@@ -263,12 +256,8 @@
       <!-- Normal Prices -->
       <div v-else-if="hasPriceCategories" class="mb-3">
         <div class="d-flex align-center mb-2">
-          <v-icon small color="grey darken-1" class="mr-2">
-            mdi-cash
-          </v-icon>
-          <span
-            class="text-body-2 font-weight-bold grey--text text--darken-2"
-          >
+          <v-icon small color="grey darken-1" class="mr-2"> mdi-cash </v-icon>
+          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
             Preise
           </span>
         </div>
@@ -277,9 +266,7 @@
           :key="index"
           class="ml-7 mb-1"
         >
-          <div
-            class="d-flex align-center justify-space-between text-body-2"
-          >
+          <div class="d-flex align-center justify-space-between text-body-2">
             <div class="d-flex align-center">
               <span class="font-weight-bold primary--text mr-2">
                 {{ priceCategory.priceEur | currency("EUR", "de-DE") }}
@@ -294,9 +281,7 @@
               </v-chip>
             </div>
             <span
-              v-if="
-                priceCategory.interval.end || priceCategory.interval.start
-              "
+              v-if="priceCategory.interval.end || priceCategory.interval.start"
               class="grey--text text--darken-1"
             >
               {{
@@ -381,15 +366,20 @@ export default {
       return BookablePermissionService;
     },
     isIfbsActive() {
-      const details = this.item?.lockerDetails;
-      if (!details?.active) return false;
-      return details.units?.some((u) => u.lockerSystem === "ifbs") ?? false;
-    },
-    ifbsUnit() {
-      if (!this.isIfbsActive) return null;
-      return this.item.lockerDetails.units.find(
-        (u) => u.lockerSystem === "ifbs"
+      const providers = this.item?.externalProviders;
+      const provider = providers?.find(
+        (p) => p.active && p.provider === "ifbs"
       );
+      if (provider) {
+        return (
+          provider.handles.includes("pricing") && provider.config?.locationId
+        );
+      }
+      return false;
+    },
+    ifbsProvider() {
+      if (!this.isIfbsActive) return null;
+      return this.item.externalProviders.find((p) => p.provider === "ifbs");
     },
     ifbsCardPriceRows() {
       if (!this.ifbsPrices) return [];
@@ -496,10 +486,8 @@ export default {
       const remainingMins = mins % 60;
 
       const parts = [];
-      if (weeks > 0)
-        parts.push(`${weeks} ${weeks === 1 ? "Woche" : "Wochen"}`);
-      if (days > 0)
-        parts.push(`${days} ${days === 1 ? "Tag" : "Tage"}`);
+      if (weeks > 0) parts.push(`${weeks} ${weeks === 1 ? "Woche" : "Wochen"}`);
+      if (days > 0) parts.push(`${days} ${days === 1 ? "Tag" : "Tage"}`);
       if (hours > 0)
         parts.push(`${hours} ${hours === 1 ? "Stunde" : "Stunden"}`);
       if (remainingMins > 0) parts.push(`${remainingMins} Min.`);
@@ -507,15 +495,15 @@ export default {
       return parts.join(", ");
     },
     async fetchIfbsPrices() {
-      const unit = this.ifbsUnit;
-      if (!unit?.locationId || !this.item?.tenantId) return;
+      const provider = this.ifbsProvider;
+      if (!provider?.config?.locationId || !this.item?.tenantId) return;
 
       try {
         this.isLoadingIfbsPrices = true;
         const response = await ApiLockerService.getPrice(
           this.item.tenantId,
           "ifbs",
-          unit.locationId
+          provider.config.locationId
         );
         this.ifbsPrices = response.data;
       } catch (err) {
@@ -583,9 +571,9 @@ export default {
 
 .bookable-card-header {
   background: linear-gradient(
-      135deg,
-      rgba(0, 0, 0, 0.02) 0%,
-      rgba(0, 0, 0, 0.01) 100%
+    135deg,
+    rgba(0, 0, 0, 0.02) 0%,
+    rgba(0, 0, 0, 0.01) 100%
   );
 }
 
@@ -596,18 +584,18 @@ export default {
   align-items: center;
   justify-content: center;
   background: linear-gradient(
-      135deg,
-      rgba(0, 0, 0, 0.02) 0%,
-      rgba(0, 0, 0, 0.01) 100%
+    135deg,
+    rgba(0, 0, 0, 0.02) 0%,
+    rgba(0, 0, 0, 0.01) 100%
   );
 }
 
 .theme--dark .bookable-card-header,
 .theme--dark .bookable-card-title {
   background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.05) 0%,
-      rgba(255, 255, 255, 0.02) 100%
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
   );
 }
 
@@ -630,9 +618,9 @@ export default {
   justify-content: flex-start;
   align-items: flex-start;
   background: linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0.4) 0%,
-      transparent 100%
+    to bottom,
+    rgba(0, 0, 0, 0.4) 0%,
+    transparent 100%
   );
 }
 

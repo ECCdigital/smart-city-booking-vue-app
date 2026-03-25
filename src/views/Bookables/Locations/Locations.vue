@@ -76,7 +76,7 @@
 <script>
 import AdminLayout from "@/layouts/Admin.vue";
 import { mapGetters, mapActions } from "vuex";
-import BookableCard from "@/components/BookableCard.vue";
+import BookableCard from "@/components/Bookable/BookableCard.vue";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiTagsService from "@/services/api/ApiTagsService";
 import ToastService from "@/services/ToastService";
