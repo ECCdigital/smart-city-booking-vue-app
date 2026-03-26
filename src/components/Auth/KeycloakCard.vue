@@ -48,14 +48,9 @@ export default {
     async createKeycloakSession() {
       this.loading = true;
       try {
-        console.log("Initializing Keycloak with config:", this.ssoConfig);
         keycloakService.setConfig(this.ssoConfig);
 
-        console.log("Starting Keycloak login...");
-        console.log(keycloakService)
         await keycloakService.login();
-
-        console.log("Keycloak authentication status:", keycloakService.isAuthenticated);
 
         if (keycloakService.isAuthenticated) {
           this.setState(this.possibleStates.KC_AUTH_SUCCESS);
@@ -65,7 +60,6 @@ export default {
           this.setState(this.possibleStates.KC_AUTH_ERROR);
         }
       } catch (error) {
-        console.error("Keycloak authentication error:", error);
         this.setState(this.possibleStates.KC_AUTH_ERROR);
       } finally {
         this.loading = false;

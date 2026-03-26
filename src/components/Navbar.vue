@@ -147,6 +147,7 @@ import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import NotificationDisplay from "@/components/NotificationDisplay";
+import keycloakService from "@/services/KeycloakService";
 
 export default {
   data: () => ({
@@ -302,26 +303,46 @@ export default {
     resetStores() {
       this.$store.dispatch("reset");
     },
-    logout() {
-      ApiAuthService.logout()
-        .then(() => {
-          this.addToast(ToastService.createToast("logout.success", "success"));
-          this.resetStores();
-          window.location.href = "/login";
-        })
-        .finally(() => {
-          this.deleteUser();
-        });
+    async logout() {
+      const authType = localStorage.getItem("authType");
+
+      if (authType === "keycloak") {
+        this.resetStores();
+        await this.deleteUser();
+
+        const base = process.env.BASE_URL?.trim()
+          ? process.env.BASE_URL.replace(/\/$/, "")
+          : "";
+        const redirectUri = `${window.location.origin}${base}/`;
+
+        await keycloakService.logout(redirectUri);
+      } else {
+        ApiAuthService.logout()
+          .then(() => {
+            this.addToast(
+              ToastService.createToast("logout.success", "success")
+            );
+            this.resetStores();
+
+            const base = process.env.BASE_URL?.trim()
+              ? process.env.BASE_URL.replace(/\/$/, "")
+              : "";
+            window.location.href = `${base}/login`;
+          })
+          .finally(() => {
+            this.deleteUser();
+          });
+      }
     },
     darkMode() {
-      this.$store.dispatch("theme/toggleDarkMode").then(isDarkMode => {
+      this.$store.dispatch("theme/toggleDarkMode").then((isDarkMode) => {
         this.$vuetify.theme.dark = isDarkMode;
       });
     },
     fetchTenants() {
       ApiTenantService.getTenants(true).then((response) => {
         this.tenants = response.data;
-        if(!this.currentTenant && this.tenants.length === 1) {
+        if (!this.currentTenant && this.tenants.length === 1) {
           this.currentTenant = this.tenants[0].id;
         }
       });

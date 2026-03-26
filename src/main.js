@@ -38,6 +38,10 @@ Vue.filter("time", (time, timeStyle, locale) => {
   return FormatService.time(time, timeStyle, locale);
 });
 
+function isSilentSsoEnabled() {
+  return process.env.VUE_APP_SILENT_SSO_ENABLED === "true";
+}
+
 async function bootstrap() {
   try {
     const instanceData = await ApiInstanceService.getPublicInstance();
@@ -51,7 +55,11 @@ async function bootstrap() {
 
   if (authType === "keycloak" && !isLoginRoute) {
     await restoreKeycloakSession();
-  } else if (!isLoginRoute && !ApiAuthService.isAuthenticated()) {
+  } else if (
+    !isLoginRoute &&
+    !ApiAuthService.isAuthenticated() &&
+    isSilentSsoEnabled()
+  ) {
     await trySilentSsoCheck();
   }
 
@@ -61,7 +69,6 @@ async function bootstrap() {
 }
 
 async function restoreKeycloakSession() {
-
   const instance = store.getters["instance/instance"];
   const ssoConfig = instance?.applications?.find(
     (app) => app.id === "keycloak" && app.active

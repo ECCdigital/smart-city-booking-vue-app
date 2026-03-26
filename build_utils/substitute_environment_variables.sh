@@ -100,5 +100,7 @@ replace_env_var "$VUE_APP_DARKGREY_COLOR_DARK" "VUE_APP_DARKGREY_COLOR_DARK_PLAC
 
 replace_env_var "$VUE_APP_USERSNAP_API_KEY" "VUE_APP_USERSNAP_API_KEY_PLACEHOLDER" ""
 
+replace_env_var "$VUE_APP_SILENT_SSO_ENABLED" "VUE_APP_SILENT_SSO_ENABLED_PLACEHOLDER" ""
+
 echo "==> Starting nginx"
 nginx -g 'daemon off;'
