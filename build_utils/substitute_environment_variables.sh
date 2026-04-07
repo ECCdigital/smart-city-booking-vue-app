@@ -87,6 +87,10 @@ http {
     listen 80;
     server_name localhost;
 
+    location = ${LOCATION_PATH} {
+      return 301 ${LOCATION_PATH}/;
+    }
+
     location ${LOCATION_PATH}/ {
       alias /app/;
       index index.html;
