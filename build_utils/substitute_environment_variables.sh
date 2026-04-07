@@ -15,24 +15,14 @@ replace_env_var() {
 }
 
 # ==========================================
-# BASE_URL replacement
-# ==========================================
-BASE_URL="${BASE_URL:-/}"
-case "$BASE_URL" in
-  */) ;;
-  *)  BASE_URL="${BASE_URL}/" ;;
-esac
-
-echo "==> Replacing BASE_URL placeholder with: ${BASE_URL}"
-
-find "$ROOT_DIR" -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) \
-  -exec sed -i "s|__BASE_URL_PLACEHOLDER__/|${BASE_URL}|g" {} +
-find "$ROOT_DIR" -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) \
-  -exec sed -i "s|__BASE_URL_PLACEHOLDER__|${BASE_URL}|g" {} +
-
-# ==========================================
 # Nginx Config
 # ==========================================
+LOCATION_PATH="${BASE_URL%/}"
+LOCATION_PATH="${LOCATION_PATH:-/}"
+STRIP_PREFIX="${STRIP_PREFIX:-true}"
+
+if [ "$LOCATION_PATH" = "/" ] || [ "$STRIP_PREFIX" = "true" ]; then
+
 cat > /etc/nginx/nginx.conf <<'NGINXEOF'
 user  nginx;
 worker_processes  1;
@@ -60,6 +50,43 @@ http {
 }
 NGINXEOF
 echo "==> Generated nginx.conf (location /)"
+
+else
+
+cat > /etc/nginx/nginx.conf <<NGINXEOF
+user  nginx;
+worker_processes  1;
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+events { worker_connections 1024; }
+http {
+  include       /etc/nginx/mime.types;
+  default_type  application/octet-stream;
+  log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                    '\$status \$body_bytes_sent "\$http_referer" '
+                    '"\$http_user_agent" "\$http_x_forwarded_for"';
+  access_log  /var/log/nginx/access.log  main;
+  sendfile on;
+  keepalive_timeout 65;
+  server {
+    listen 80;
+    server_name localhost;
+
+    location = ${LOCATION_PATH} {
+      return 301 ${LOCATION_PATH}/;
+    }
+
+    location ${LOCATION_PATH}/ {
+      alias /app/;
+      index index.html;
+      try_files \$uri \$uri/ ${LOCATION_PATH}/index.html;
+    }
+  }
+}
+NGINXEOF
+echo "==> Generated nginx.conf (location ${LOCATION_PATH}/)"
+
+fi
 
 # ==========================================
 # Replace VUE_APP_* env vars
