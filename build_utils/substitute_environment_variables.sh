@@ -15,6 +15,22 @@ replace_env_var() {
 }
 
 # ==========================================
+# BASE_URL replacement
+# ==========================================
+BASE_URL="${BASE_URL:-/}"
+case "$BASE_URL" in
+  */) ;;
+  *)  BASE_URL="${BASE_URL}/" ;;
+esac
+
+echo "==> Replacing BASE_URL placeholder with: ${BASE_URL}"
+
+find "$ROOT_DIR" -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) \
+  -exec sed -i "s|__BASE_URL_PLACEHOLDER__/|${BASE_URL}|g" {} +
+find "$ROOT_DIR" -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) \
+  -exec sed -i "s|__BASE_URL_PLACEHOLDER__|${BASE_URL}|g" {} +
+
+# ==========================================
 # Nginx Config
 # ==========================================
 LOCATION_PATH="${BASE_URL%/}"
