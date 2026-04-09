@@ -24,14 +24,29 @@
         </v-alert>
 
         <v-card class="mb-6 section-card" elevation="2" outlined>
-          <v-card-title class="section-header pa-4 d-flex justify-space-between align-center">
+          <v-card-title
+            class="section-header pa-4 d-flex justify-space-between align-center"
+          >
             <div class="d-flex align-center">
               <v-icon class="mr-2">mdi-information-outline</v-icon>
-              <span class="text-h6 font-weight-bold">Buchungsinformationen</span>
+              <span class="text-h6 font-weight-bold"
+                >Buchungsinformationen</span
+              >
             </div>
-            <v-tooltip v-if="hasEventId || (booking.timeBegin && booking.timeEnd)" bottom>
+            <v-tooltip
+              v-if="hasEventId || (booking.timeBegin && booking.timeEnd)"
+              bottom
+            >
               <template v-slot:activator="{ on, attrs }">
-                <v-btn small icon v-bind="attrs" v-on="on" @click="onDownloadIcal(booking.id)">
+                <v-btn
+                  small
+                  fab
+                  elevation="0"
+                  color="primary"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="onDownloadIcal(booking.id)"
+                >
                   <v-icon>mdi-calendar-export</v-icon>
                 </v-btn>
               </template>
@@ -72,7 +87,10 @@
                     <v-icon small class="mr-2">mdi-calendar-range</v-icon>
                     Buchungszeitraum
                   </div>
-                  <div v-if="booking.timeBegin && booking.timeEnd" class="info-value">
+                  <div
+                    v-if="booking.timeBegin && booking.timeEnd"
+                    class="info-value"
+                  >
                     {{
                       Intl.DateTimeFormat("de-DE", {
                         dateStyle: "short",
@@ -594,7 +612,11 @@
           class="mb-6 section-card"
           elevation="2"
           outlined
-          v-if="booking.comment || booking.internalComments || groupBooking?.internalComments"
+          v-if="
+            booking.comment ||
+            booking.internalComments ||
+            groupBooking?.internalComments
+          "
         >
           <v-card-title class="section-header pa-4">
             <v-icon class="mr-2">mdi-comment-text-outline</v-icon>
@@ -790,7 +812,7 @@ export default {
       return Object.values(this.booking.bookableItems || {}).some(
         (item) => item._bookableUsed?.eventId
       );
-    }
+    },
   },
   methods: {
     ...mapActions({
@@ -988,7 +1010,7 @@ export default {
         ProcessingService.hide(operationId);
       }
     },
-    onDownloadIcal(bookingId){
+    onDownloadIcal(bookingId) {
       this.$emit("download-ical", bookingId);
     },
     closeDialog() {

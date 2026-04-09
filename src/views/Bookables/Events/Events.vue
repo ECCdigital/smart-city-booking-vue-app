@@ -28,15 +28,6 @@
           ]"
         ></Search>
       </v-col>
-      <!--
-      <v-col cols="auto">
-        <v-checkbox
-          v-model="hidePastEvents"
-          label="Vergangene ausblenden"
-          class="mt-2"
-        ></v-checkbox>
-      </v-col>
-      -->
     </v-row>
     <v-row no-gutters class="mt-3">
       <v-col cols="auto" class="mr-2">
@@ -48,6 +39,44 @@
         <v-chip color="grey lighten-2" small>
           Gesamt: {{ totalEventsCount }}
         </v-chip>
+      </v-col>
+      <v-spacer />
+      <v-col cols="auto">
+        <v-menu offset-y>
+          <template v-slot:activator="{ on, attrs }">
+            <v-chip
+              small
+              outlined
+              v-bind="attrs"
+              v-on="on"
+              :disabled="api.events.length === 0"
+              class="clickable"
+            >
+              <v-icon left x-small>mdi-calendar-export</v-icon>
+              iCal Export
+            </v-chip>
+          </template>
+          <v-list dense>
+            <v-list-item @click="downloadAllEventsIcal">
+              <v-list-item-icon>
+                <v-icon small>mdi-download</v-icon>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title>
+                  Alle Termine als .ics herunterladen
+                </v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+            <v-list-item @click="showFeedUrlDialog">
+              <v-list-item-icon>
+                <v-icon small>mdi-rss</v-icon>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title> iCal-Feed abonnieren </v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list>
+        </v-menu>
       </v-col>
     </v-row>
     <v-row gutters align="stretch" class="mt-1">
@@ -85,8 +114,8 @@
                 class="main-btn"
                 :to="{ name: buttonTarget?.to }"
               >
-                <v-icon>mdi-plus</v-icon>Veranstaltung erstellen</v-btn
-              >
+                <v-icon>mdi-plus</v-icon>Veranstaltung erstellen
+              </v-btn>
               <v-btn
                 v-on="on"
                 rounded
@@ -94,8 +123,9 @@
                 color="primary"
                 dark
                 class="actions-btn"
-                ><v-icon left>mdi-menu-down</v-icon></v-btn
               >
+                <v-icon left>mdi-menu-down</v-icon>
+              </v-btn>
             </div>
           </template>
 
@@ -113,6 +143,37 @@
         </v-menu>
       </div>
     </v-fab-transition>
+
+    <v-dialog v-model="feedUrlDialog" max-width="600">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2">mdi-calendar-sync</v-icon>
+          Kalender-Feed abonnieren
+        </v-card-title>
+        <v-card-text>
+          <p class="text-body-2 grey--text text--darken-1 mb-4">
+            Fügen Sie diese URL in Ihrem Kalender-Client hinzu (z.B. Google
+            Calendar, Apple Kalender, Outlook), um Events automatisch zu
+            synchronisieren.
+          </p>
+          <v-text-field
+            :value="feedUrl"
+            readonly
+            outlined
+            dense
+            append-icon="mdi-content-copy"
+            @click:append="copyFeedUrl"
+            @focus="$event.target.select()"
+            :hint="feedUrlCopied ? '✓ In Zwischenablage kopiert!' : ''"
+            persistent-hint
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text @click="feedUrlDialog = false">Schließen</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </AdminLayout>
 </template>
 
@@ -152,6 +213,10 @@ export default {
       ],
       searchResults: [],
       searchKeys: ["id", "information.name", "eventOrganizer.name"],
+      feedUrlDialog: false,
+      feedUrl: "",
+      feedUrlCopied: false,
+      feedUrlCopiedTimeout: null,
     };
   },
   computed: {
@@ -191,7 +256,6 @@ export default {
     }),
     setButtonTarget(target) {
       this.buttonTarget = target;
-      // Update activeTarget based on the selected item
       this.activeTarget = this.items.findIndex((item) => item.to === target.to);
     },
     remove(item) {
@@ -274,6 +338,47 @@ export default {
         this.activeTarget = 0;
       }
     },
+    async downloadAllEventsIcal() {
+      const ids = this.api.events.map((event) => event.id);
+      if (ids.length === 0) return;
+      try {
+        const response = await ApiEventService.downloadEventsIcal(ids);
+        this.triggerIcalDownload(response.data, "alle-events.ics");
+      } catch (error) {
+        console.error("iCal download failed:", error);
+        await this.addToast(
+          ToastService.createToast("event.ical.error", "error")
+        );
+      }
+    },
+    showFeedUrlDialog() {
+      const ids = this.api.events.map((event) => event.id);
+      if (ids.length === 0) return;
+      this.feedUrl = ApiEventService.getEventsFeedUrl(ids);
+      this.feedUrlCopied = false;
+      this.feedUrlDialog = true;
+    },
+    async copyFeedUrl() {
+      await navigator.clipboard.writeText(this.feedUrl);
+      this.feedUrlCopied = true;
+      if (this.feedUrlCopiedTimeout) clearTimeout(this.feedUrlCopiedTimeout);
+      this.feedUrlCopiedTimeout = setTimeout(() => {
+        this.feedUrlCopied = false;
+      }, 2000);
+    },
+    triggerIcalDownload(data, filename) {
+      const blob = new Blob([data], {
+        type: "text/calendar;charset=utf-8",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    },
   },
   async mounted() {
     await this.getEventCount();
@@ -282,6 +387,9 @@ export default {
   created() {
     this.fetchEvents();
     this.fetchFilterTags();
+  },
+  beforeDestroy() {
+    if (this.feedUrlCopiedTimeout) clearTimeout(this.feedUrlCopiedTimeout);
   },
 };
 </script>
@@ -292,6 +400,7 @@ export default {
   border-bottom-right-radius: 0;
   padding-right: 2px !important;
 }
+
 .actions-btn {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
@@ -299,6 +408,7 @@ export default {
   min-width: 35px !important;
   margin-left: 0.5px;
 }
+
 .split-btn {
   display: inline-block;
 }

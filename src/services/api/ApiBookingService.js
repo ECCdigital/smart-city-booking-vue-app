@@ -106,7 +106,13 @@ export default {
   },
   async downloadBookingIcal(id) {
     return await ApiClient.get(
-      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/ical`,
+      `api/${store.getters["tenants/currentTenantId"]}/ical/bookings/${id}`,
+    );
+  },
+  downloadGroupBookingIcal(ids, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(
+      `api/${t}/ical/bookings?ids=${ids.join(",")}`
     );
   },
   checkPublicBookingStatus(id, lastname, tenantId) {

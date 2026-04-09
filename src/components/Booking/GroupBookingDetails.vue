@@ -15,11 +15,31 @@
 
       <v-card-text class="px-6 py-6 booking-details-content">
         <v-card class="mb-6 section-card" elevation="2" outlined>
-          <v-card-title class="section-header pa-4">
-            <v-icon class="mr-2">mdi-information-outline</v-icon>
-            <span class="text-h6 font-weight-bold">
-              Buchungsinformationen
-            </span>
+          <v-card-title
+            class="section-header pa-4 d-flex justify-space-between align-center"
+          >
+            <div class="d-flex align-center">
+              <v-icon class="mr-2">mdi-information-outline</v-icon>
+              <span class="text-h6 font-weight-bold">
+                Buchungsinformationen
+              </span>
+            </div>
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn
+                  small
+                  fab
+                  elevation="0"
+                  color="primary"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="onDownloadIcal"
+                >
+                  <v-icon>mdi-calendar-export</v-icon>
+                </v-btn>
+              </template>
+              Termine für alle Buchungen herunterladen
+            </v-tooltip>
           </v-card-title>
           <v-divider />
           <v-card-text class="pa-4">
@@ -69,12 +89,7 @@
               <v-icon class="mr-2">mdi-comment-text-outline</v-icon>
               <span class="text-h6 font-weight-bold">Interne Bemerkung</span>
             </div>
-            <v-btn
-              v-if="!editingComment"
-              small
-              icon
-              @click="startEditingComment"
-            >
+            <v-btn v-if="!editingComment" small icon @click="editingComment">
               <v-icon small>mdi-pencil</v-icon>
             </v-btn>
           </v-card-title>
@@ -205,6 +220,11 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    onDownloadIcal() {
+      const ids = this.groupBooking.bookings?.map((b) => b.id) || [];
+      if (ids.length === 0) return;
+      this.$emit("download-ical", ids);
+    },
     closeDialog() {
       this.$emit("close");
     },

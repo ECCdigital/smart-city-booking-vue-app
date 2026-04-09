@@ -144,6 +144,7 @@
         <GroupBookingDetails
           :group-booking="selectedGroupBooking"
           @close="closeDialog('groupBooking')"
+          @download-ical="onDownloadGroupBookingIcal"
         ></GroupBookingDetails>
       </div>
     </v-dialog>
@@ -361,6 +362,40 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+    async onDownloadGroupBookingIcal(bookingIds) {
+      const operationId = ProcessingService.showSnackbar(
+        "Termine werden heruntergeladen..."
+      );
+      try {
+        const response = await ApiBookingService.downloadGroupBookingIcal(
+          bookingIds
+        );
+
+        const blob = new Blob([response.data], {
+          type: "text/calendar;charset=utf-8",
+        });
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute(
+          "download",
+          `serienbuchung-${this.selectedGroupBooking.id}.ics`
+        );
+        document.body.appendChild(link);
+        link.click();
+
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error(error);
+        await this.addToast(
+          ToastService.createToast("booking.ical.error", "error")
+        );
+      } finally {
+        ProcessingService.hide(operationId);
+      }
+    },
 
     handleGroupBookingError(action, errors) {
       const code = errors[0]?.code;
@@ -442,35 +477,35 @@ export default {
     },
     async closeDialog(type) {
       switch (type) {
-      case "edit":
-        this.openEditDialog = false;
-        break;
-      case "delete":
-        this.openDeleteDialog = false;
-        break;
-      case "reject":
-        this.errors.reject = null;
-        break;
-      case "booking":
-        this.openBookingDialog = false;
-        break;
-      case "groupBooking":
-        await this.fetchGroupBookings();
-        this.openGroupBookingDialog = false;
-        break;
-      case "commitGroupBooking":
-        this.errors.commit = null;
-        this.openCommitGroupBookingDialog = false;
-        break;
-      case "deleteGroupBooking":
-        this.openDeleteGroupBookingDialog = false;
-        break;
-      case "rejectGroupBooking":
-        this.errors.reject = null;
-        this.openRejectGroupBookingDialog = false;
-        break;
-      default:
-        break;
+        case "edit":
+          this.openEditDialog = false;
+          break;
+        case "delete":
+          this.openDeleteDialog = false;
+          break;
+        case "reject":
+          this.errors.reject = null;
+          break;
+        case "booking":
+          this.openBookingDialog = false;
+          break;
+        case "groupBooking":
+          await this.fetchGroupBookings();
+          this.openGroupBookingDialog = false;
+          break;
+        case "commitGroupBooking":
+          this.errors.commit = null;
+          this.openCommitGroupBookingDialog = false;
+          break;
+        case "deleteGroupBooking":
+          this.openDeleteGroupBookingDialog = false;
+          break;
+        case "rejectGroupBooking":
+          this.errors.reject = null;
+          this.openRejectGroupBookingDialog = false;
+          break;
+        default:
+          break;
       }
     },
     async deleteBooking(bookingId) {
@@ -890,11 +925,22 @@ export default {
       this.workflow = await ApiWorkflowService.getWorkflowStates();
     },
     async onDownloadIcal(bookingId) {
-      console.log("Download iCal for booking", bookingId);
       const temp = await ApiBookingService.downloadBookingIcal(bookingId);
-      console.log("iCal download response", temp);
-      return temp
-    }
+
+      const blob = new Blob([temp.data], {
+        type: "text/calendar;charset=utf-8",
+      });
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `buchung-${bookingId}.ics`);
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    },
   },
   async mounted() {
     ProcessingService.setComponent(this.$refs.processingIndicator);

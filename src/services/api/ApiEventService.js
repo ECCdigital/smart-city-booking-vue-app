@@ -1,4 +1,5 @@
 import store from "@/store";
+
 export default {
   getEvents(tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
@@ -57,9 +58,26 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return (await ApiClient.get(`api/${t}/events/count/check`)).data;
   },
-
   async getBookedSeatsCount(eventId, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return (await ApiClient.get(`api/${t}/events/${eventId}/count`)).data
-  }
+    return (await ApiClient.get(`api/${t}/events/${eventId}/count`)).data;
+  },
+  downloadEventIcal(eventId, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/ical/events/${eventId}?includePast=true`);
+  },
+  downloadEventsIcal(ids, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`api/${t}/ical/events?ids=${ids.join(",")}`);
+  },
+  getEventFeedUrl(eventId, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    const base = ApiClient.client.defaults.baseURL.replace(/\/+$/, "");
+    return `${base}/api/${t}/ical/feed/events/${eventId}`;
+  },
+  getEventsFeedUrl(ids, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    const base = ApiClient.client.defaults.baseURL.replace(/\/+$/, "");
+    return `${base}/api/${t}/ical/feed/events?ids=${ids.join(",")}`;
+  },
 };
