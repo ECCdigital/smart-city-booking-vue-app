@@ -352,9 +352,7 @@ export default {
       }
     },
     showFeedUrlDialog() {
-      const ids = this.api.events.map((event) => event.id);
-      if (ids.length === 0) return;
-      this.feedUrl = ApiEventService.getEventsFeedUrl(ids);
+      this.feedUrl = ApiEventService.getEventsFeedUrl();
       this.feedUrlCopied = false;
       this.feedUrlDialog = true;
     },

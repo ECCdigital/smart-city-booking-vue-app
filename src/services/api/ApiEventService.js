@@ -78,6 +78,12 @@ export default {
   getEventsFeedUrl(ids, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const base = ApiClient.client.defaults.baseURL.replace(/\/+$/, "");
-    return `${base}/api/${t}/ical/feed/events?ids=${ids.join(",")}`;
+    let query;
+    if (ids && ids.length > 0) {
+      query = `?ids=${ids.join(",")}`;
+    } else {
+      query = "";
+    }
+    return `${base}/api/${t}/ical/feed/events${query}`;
   },
 };
