@@ -104,6 +104,17 @@ export default {
       }
     );
   },
+  async downloadBookingIcal(id) {
+    return await ApiClient.get(
+      `api/${store.getters["tenants/currentTenantId"]}/ical/bookings/${id}`,
+    );
+  },
+  downloadGroupBookingIcal(ids, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(
+      `api/${t}/ical/bookings?ids=${ids.join(",")}`
+    );
+  },
   checkPublicBookingStatus(id, lastname, tenantId) {
     return ApiClient.get(`api/${tenantId}/bookings/${id}/status/public`, {
       params: {

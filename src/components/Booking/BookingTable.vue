@@ -195,6 +195,16 @@
                 </v-list-item-icon>
                 <v-list-item-title>Details ansehen</v-list-item-title>
               </v-list-item>
+              <v-list-item
+                v-if="hasEventId(item) || (item.timeBegin && item.timeEnd)"
+                link
+                @click="onDownloadIcal(item.id)"
+              >
+                <v-list-item-icon>
+                  <v-icon small>mdi-calendar-export</v-icon>
+                </v-list-item-icon>
+                <v-list-item-title>Termin herunterladen</v-list-item-title>
+              </v-list-item>
 
               <v-divider />
 
@@ -379,6 +389,9 @@ export default {
       if (item.priceEur <= 0) return "mdi-gift";
       return item.isPayed ? "mdi-check-circle" : "mdi-clock-outline";
     },
+    hasEventId(item){
+      return item.bookableItems.some(b => b._bookableUsed.eventId);
+    },
     formatCurrency(amount) {
       return Intl.NumberFormat("de-DE", {
         style: "currency",
@@ -430,6 +443,9 @@ export default {
     },
     onOpenGroupBooking(groupBookingId) {
       this.$emit("open-group-booking", groupBookingId);
+    },
+    onDownloadIcal(bookingId){
+      this.$emit("download-ical", bookingId);
     },
     commitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);
