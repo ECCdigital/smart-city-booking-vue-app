@@ -339,10 +339,8 @@ export default {
       }
     },
     async downloadAllEventsIcal() {
-      const ids = this.api.events.map((event) => event.id);
-      if (ids.length === 0) return;
       try {
-        const response = await ApiEventService.downloadEventsIcal(ids);
+        const response = await ApiEventService.downloadEventsIcal();
         this.triggerIcalDownload(response.data, "alle-events.ics");
       } catch (error) {
         console.error("iCal download failed:", error);

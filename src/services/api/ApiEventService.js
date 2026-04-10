@@ -64,11 +64,20 @@ export default {
   },
   downloadEventIcal(eventId, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/ical/events/${eventId}?includePast=true`);
+    return ApiClient.get(
+      `api/${t}/ical/events/${eventId}?includePast=true&includePrivate=true`
+    );
   },
   downloadEventsIcal(ids, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/ical/events?ids=${ids.join(",")}`);
+    let query;
+
+    if (ids && ids.length > 0) {
+      query = `?ids=${ids.join(",")}`;
+    } else {
+      query = "";
+    }
+    return ApiClient.get(`api/${t}/ical/events${query}`);
   },
   getEventFeedUrl(eventId, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];

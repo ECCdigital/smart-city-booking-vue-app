@@ -388,7 +388,6 @@ export default {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
       } catch (error) {
-        console.error(error);
         await this.addToast(
           ToastService.createToast("booking.ical.error", "error")
         );
@@ -925,21 +924,27 @@ export default {
       this.workflow = await ApiWorkflowService.getWorkflowStates();
     },
     async onDownloadIcal(bookingId) {
-      const temp = await ApiBookingService.downloadBookingIcal(bookingId);
+      try {
+        const temp = await ApiBookingService.downloadBookingIcal(bookingId);
 
-      const blob = new Blob([temp.data], {
-        type: "text/calendar;charset=utf-8",
-      });
-      const url = window.URL.createObjectURL(blob);
+        const blob = new Blob([temp.data], {
+          type: "text/calendar;charset=utf-8",
+        });
+        const url = window.URL.createObjectURL(blob);
 
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `buchung-${bookingId}.ics`);
-      document.body.appendChild(link);
-      link.click();
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `buchung-${bookingId}.ics`);
+        document.body.appendChild(link);
+        link.click();
 
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast("booking.ical.error", "error")
+        );
+      }
     },
   },
   async mounted() {

@@ -28,19 +28,7 @@
               <v-list-item-icon>
                 <v-icon>mdi-calendar-export</v-icon>
               </v-list-item-icon>
-              <v-list-item-title>Termin herunterladen</v-list-item-title>
-            </v-list-item>
-            <v-list-item link @click="copyFeedUrl">
-              <v-list-item-icon>
-                <v-icon>
-                  {{ feedCopied ? "mdi-check" : "mdi-calendar-sync" }}
-                </v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>
-                {{
-                  feedCopied ? "Feed-URL kopiert!" : "Kalender-Feed abonnieren"
-                }}
-              </v-list-item-title>
+              <v-list-item-title>iCal export</v-list-item-title>
             </v-list-item>
             <v-divider></v-divider>
             <v-list-item
