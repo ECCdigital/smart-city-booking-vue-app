@@ -24,6 +24,13 @@
             </v-tooltip>
           </template>
           <v-list dense>
+            <v-list-item link @click="downloadIcal">
+              <v-list-item-icon>
+                <v-icon>mdi-calendar-export</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>iCal export</v-list-item-title>
+            </v-list-item>
+            <v-divider></v-divider>
             <v-list-item
               link
               @click="downloadEventBookings(item.id, item.tenantId)"
@@ -32,7 +39,9 @@
               <v-list-item-icon>
                 <v-icon>mdi-account-group</v-icon>
               </v-list-item-icon>
-              <v-list-item-title>Teilnehmerliste herunterladen</v-list-item-title>
+              <v-list-item-title>
+                Teilnehmerliste herunterladen
+              </v-list-item-title>
             </v-list-item>
             <v-divider></v-divider>
             <v-list-item
@@ -75,12 +84,7 @@
         <div v-if="!item.isPublic" class="status-badges pa-3">
           <v-tooltip bottom>
             <template v-slot:activator="{ on }">
-              <v-chip
-                small
-                color="warning"
-                class="elevation-2"
-                v-on="on"
-              >
+              <v-chip small color="warning" class="elevation-2" v-on="on">
                 <v-icon small left>mdi-eye-off</v-icon>
                 Nicht gelistet
               </v-chip>
@@ -96,12 +100,7 @@
         <div v-if="!item.isPublic" class="status-badges pa-3">
           <v-tooltip bottom>
             <template v-slot:activator="{ on }">
-              <v-chip
-                small
-                color="warning"
-                class="elevation-2"
-                v-on="on"
-              >
+              <v-chip small color="warning" class="elevation-2" v-on="on">
                 <v-icon small left>mdi-eye-off</v-icon>
                 Nicht gelistet
               </v-chip>
@@ -136,7 +135,10 @@
         </div>
         <div class="ml-7">
           <div class="d-flex align-start mb-2 text-body-2">
-            <span class="font-weight-bold grey--text text--darken-2 mr-2" style="min-width: 50px;">
+            <span
+              class="font-weight-bold grey--text text--darken-2 mr-2"
+              style="min-width: 50px"
+            >
               Beginn:
             </span>
             <span class="grey--text text--darken-1">
@@ -145,7 +147,10 @@
             </span>
           </div>
           <div class="d-flex align-start mb-2 text-body-2">
-            <span class="font-weight-bold grey--text text--darken-2 mr-2" style="min-width: 50px;">
+            <span
+              class="font-weight-bold grey--text text--darken-2 mr-2"
+              style="min-width: 50px"
+            >
               Ende:
             </span>
             <span class="grey--text text--darken-1">
@@ -153,8 +158,14 @@
               {{ item.information?.endTime | time("short") }} Uhr
             </span>
           </div>
-          <div class="d-flex align-start text-body-2" v-if="item.eventLocation?.name">
-            <span class="font-weight-bold grey--text text--darken-2 mr-2" style="min-width: 50px;">
+          <div
+            class="d-flex align-start text-body-2"
+            v-if="item.eventLocation?.name"
+          >
+            <span
+              class="font-weight-bold grey--text text--darken-2 mr-2"
+              style="min-width: 50px"
+            >
               Ort:
             </span>
             <span class="grey--text text--darken-1">
@@ -182,8 +193,12 @@
         </div>
         <div class="ml-7">
           <div class="text-body-2 mb-2">
-            <span v-if="item.attendees?.maxAttendees" class="grey--text text--darken-1">
-              {{ bookedSeatsCount }} / {{ item.attendees.maxAttendees }} Plätze belegt
+            <span
+              v-if="item.attendees?.maxAttendees"
+              class="grey--text text--darken-1"
+            >
+              {{ bookedSeatsCount }} / {{ item.attendees.maxAttendees }} Plätze
+              belegt
             </span>
             <span v-else class="grey--text text--darken-1">
               {{ bookedSeatsCount }} Plätze gebucht
@@ -215,7 +230,9 @@
         </div>
         <div class="ml-7">
           <span class="font-weight-bold primary--text text-body-2">
-            {{ item.attendees?.priceCategories?.price | currency("EUR", "de-DE") }}
+            {{
+              item.attendees?.priceCategories?.price | currency("EUR", "de-DE")
+            }}
           </span>
         </div>
       </div>
@@ -261,14 +278,16 @@ export default {
     return {
       isDuplicateAllowed: true,
       seatsBooked: null,
+      feedCopied: false,
+      feedCopiedTimeout: null,
     };
   },
   computed: {
     titleSizeClass() {
       const len = this.item.information?.name?.length || 0;
-      if (len <= 25) return 'text-h6';
-      if (len <= 50) return 'text-subtitle-1';
-      return 'text-body-2';
+      if (len <= 25) return "text-h6";
+      if (len <= 50) return "text-subtitle-1";
+      return "text-body-2";
     },
     BookablePermissionService() {
       return BookablePermissionService;
@@ -320,6 +339,39 @@ export default {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     },
+    async downloadIcal() {
+      try {
+        const response = await ApiEventService.downloadEventIcal(this.item.id);
+        this.triggerIcalDownload(
+          response.data,
+          `event-${this.item.information?.name || this.item.id}.ics`
+        );
+      } catch (error) {
+        console.error("iCal download failed:", error);
+      }
+    },
+    async copyFeedUrl() {
+      const url = ApiEventService.getEventFeedUrl(this.item.id);
+      await navigator.clipboard.writeText(url);
+      this.feedCopied = true;
+      if (this.feedCopiedTimeout) clearTimeout(this.feedCopiedTimeout);
+      this.feedCopiedTimeout = setTimeout(() => {
+        this.feedCopied = false;
+      }, 2000);
+    },
+    triggerIcalDownload(data, filename) {
+      const blob = new Blob([data], {
+        type: "text/calendar;charset=utf-8",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    },
     async setAllowDuplicate() {
       const eventCountCheck = await ApiEventService.publicEventCountCheck();
       this.isDuplicateAllowed = eventCountCheck || !this.item.isPublic;
@@ -336,6 +388,9 @@ export default {
   async mounted() {
     await this.fetchBookedSeats();
     await this.setAllowDuplicate();
+  },
+  beforeDestroy() {
+    if (this.feedCopiedTimeout) clearTimeout(this.feedCopiedTimeout);
   },
 };
 </script>
@@ -370,30 +425,30 @@ export default {
 
 .event-card-header {
   background: linear-gradient(
-      135deg,
-      rgba(0, 0, 0, 0.02) 0%,
-      rgba(0, 0, 0, 0.01) 100%
+    135deg,
+    rgba(0, 0, 0, 0.02) 0%,
+    rgba(0, 0, 0, 0.01) 100%
   );
 }
 
 .event-card-title {
-  height: 80px; // Feste Höhe – anpassen nach Bedarf
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(
-      135deg,
-      rgba(0, 0, 0, 0.02) 0%,
-      rgba(0, 0, 0, 0.01) 100%
+    135deg,
+    rgba(0, 0, 0, 0.02) 0%,
+    rgba(0, 0, 0, 0.01) 100%
   );
 }
 
 .theme--dark .event-card-header,
 .theme--dark .event-card-title {
   background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.05) 0%,
-      rgba(255, 255, 255, 0.02) 100%
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
   );
 }
 
@@ -416,9 +471,9 @@ export default {
   justify-content: flex-start;
   align-items: flex-start;
   background: linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0.4) 0%,
-      transparent 100%
+    to bottom,
+    rgba(0, 0, 0, 0.4) 0%,
+    transparent 100%
   );
 }
 
@@ -426,7 +481,6 @@ export default {
   position: relative;
 }
 
-// Scrollable content area
 .event-card-content {
   max-height: 350px;
   overflow-y: auto;
@@ -470,6 +524,7 @@ export default {
   right: 8px;
   z-index: 2;
 }
+
 .title-dynamic {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -478,5 +533,4 @@ export default {
   word-break: break-word;
   transition: font-size 0.2s ease;
 }
-
 </style>

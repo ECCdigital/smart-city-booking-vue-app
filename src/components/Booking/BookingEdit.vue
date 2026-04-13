@@ -936,6 +936,20 @@
                       rows="3"
                     ></v-textarea>
                   </v-col>
+                  <v-col
+                    v-if="groupBooking && Object.keys(groupBooking)"
+                    cols="12"
+                  >
+                    <v-textarea
+                      background-color="accent"
+                      filled
+                      dense
+                      hide-details
+                      label="Interne Bemerkung der Serie"
+                      v-model="selectedGroupBooking.internalComments"
+                      rows="3"
+                    ></v-textarea>
+                  </v-col>
                 </v-row>
               </v-card-text>
             </v-card>
@@ -968,6 +982,7 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
+import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 
 export default {
   name: "BookingEdit",
@@ -986,6 +1001,10 @@ export default {
       required: true,
     },
     workflow: {
+      type: Object,
+      required: false,
+    },
+    groupBooking: {
       type: Object,
       required: false,
     },
@@ -1097,6 +1116,8 @@ export default {
           title: "Bluecode",
         },
       ],
+
+      originalGroupInternalComments: null,
     };
   },
   computed: {
@@ -1112,6 +1133,9 @@ export default {
       get() {
         return this.booking;
       },
+    },
+    selectedGroupBooking() {
+      return this.groupBooking;
     },
     timePaid: {
       get() {
@@ -1152,6 +1176,13 @@ export default {
         dateStyle: "medium",
         timeStyle: this.paymentTime ? "short" : undefined,
       }).format(date);
+    },
+    groupCommentsChanged() {
+      return (
+        this.groupBooking &&
+        this.selectedGroupBooking.internalComments !==
+          this.originalGroupInternalComments
+      );
     },
     dateFrom: {
       get() {
@@ -1257,6 +1288,10 @@ export default {
       } else {
         this.paymentDate = null;
         this.paymentTime = null;
+      }
+      if (this.groupBooking) {
+        this.originalGroupInternalComments =
+          this.groupBooking.internalComments ?? null;
       }
     },
     timePaid: function (newValue) {
@@ -1414,7 +1449,8 @@ export default {
         }
 
         await ApiBookingService.storeBooking(this.selectedBooking)
-          .then(() => {
+          .then(async () => {
+            await this.saveGroupBookingIfNeeded();
             this.inProgress = false;
             this.closeDialog();
           })
@@ -1437,7 +1473,8 @@ export default {
         this.inProgress = true;
         delete this.selectedBooking._id;
         await ApiBookingService.storeBooking(this.selectedBooking)
-          .then(() => {
+          .then(async () => {
+            await this.saveGroupBookingIfNeeded();
             this.inProgress = false;
             this.closeDialog();
           })
@@ -1485,6 +1522,17 @@ export default {
     },
     formatDateTime: function (d) {
       return Date.parse(d);
+    },
+    async saveGroupBookingIfNeeded() {
+      if (this.groupCommentsChanged) {
+        await ApiGroupBookingService.updateGroupBooking(
+          this.groupBooking.tenantId,
+          this.groupBooking.id,
+          {
+            internalComments: this.selectedGroupBooking.internalComments,
+          }
+        );
+      }
     },
     getEvents() {
       ApiBookingService.getPublicBookings(this.tenant)
@@ -1690,6 +1738,10 @@ export default {
     }
     if (this.selectedBooking.timePaid) {
       this.timePaid = this.selectedBooking.timePaid;
+    }
+    if (this.groupBooking) {
+      this.originalGroupInternalComments =
+        this.groupBooking.internalComments ?? null;
     }
     this.loadAllExternalPrices();
   },

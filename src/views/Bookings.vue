@@ -61,6 +61,7 @@
             @pay-booking="onPayBooking"
             @open-delete-dialog="onOpenDeleteDialog"
             @reject-booking="onOpenRejectDialog"
+            @download-ical="onDownloadIcal"
           />
         </v-skeleton-loader>
       </div>
@@ -113,6 +114,7 @@
       :open="openEditDialog"
       :bookables="bookables"
       :workflow="workflow"
+      :group-booking="selectedGroupBooking"
       @close="onCloseEditDialog"
     />
     <BookingDeleteConformationDialog
@@ -134,6 +136,7 @@
         :group-booking="selectedGroupBooking"
         @update="updateBooking"
         @close="onCloseBookingDialog"
+        @download-ical="onDownloadIcal"
       ></BookingDetails>
     </v-dialog>
     <v-dialog v-model="openGroupBookingDialog" max-width="1200px">
@@ -141,6 +144,7 @@
         <GroupBookingDetails
           :group-booking="selectedGroupBooking"
           @close="closeDialog('groupBooking')"
+          @download-ical="onDownloadGroupBookingIcal"
         ></GroupBookingDetails>
       </div>
     </v-dialog>
@@ -358,6 +362,39 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+    async onDownloadGroupBookingIcal(bookingIds) {
+      const operationId = ProcessingService.showSnackbar(
+        "Termine werden heruntergeladen..."
+      );
+      try {
+        const response = await ApiBookingService.downloadGroupBookingIcal(
+          bookingIds
+        );
+
+        const blob = new Blob([response.data], {
+          type: "text/calendar;charset=utf-8",
+        });
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute(
+          "download",
+          `serienbuchung-${this.selectedGroupBooking.id}.ics`
+        );
+        document.body.appendChild(link);
+        link.click();
+
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast("booking.ical.error", "error")
+        );
+      } finally {
+        ProcessingService.hide(operationId);
+      }
+    },
 
     handleGroupBookingError(action, errors) {
       const code = errors[0]?.code;
@@ -437,7 +474,7 @@ export default {
           console.log(error);
         });
     },
-    closeDialog(type) {
+    async closeDialog(type) {
       switch (type) {
         case "edit":
           this.openEditDialog = false;
@@ -452,6 +489,7 @@ export default {
           this.openBookingDialog = false;
           break;
         case "groupBooking":
+          await this.fetchGroupBookings();
           this.openGroupBookingDialog = false;
           break;
         case "commitGroupBooking":
@@ -475,6 +513,7 @@ export default {
         await this.startLoading("delete-booking");
         await ApiBookingService.deleteBooking(bookingId);
         await this.fetchBookings();
+        await this.fetchGroupBookings();
         this.openDeleteDialog = false;
         this.openDeleteGroupBookingDialog = false;
       } finally {
@@ -491,6 +530,7 @@ export default {
         await this.startLoading("delete-booking");
         await ApiGroupBookingService.deleteGroupBooking(null, groupBooking.id);
         await this.fetchBookings();
+        await this.fetchGroupBookings();
         this.openDeleteDialog = false;
         this.openDeleteGroupBookingDialog = false;
       } finally {
@@ -542,6 +582,7 @@ export default {
             );
             this.errors.commit = null;
             await this.fetchBookings();
+            await this.fetchGroupBookings();
             this.openCommitGroupBookingDialog = false;
           }
         } finally {
@@ -593,6 +634,7 @@ export default {
           this.openPayDialog = false;
           this.errors.pay = null;
           await this.fetchBookings();
+          await this.fetchGroupBookings();
         }
       } finally {
         await this.stopLoading("pay-booking");
@@ -621,6 +663,7 @@ export default {
           this.errors.pay = null;
           this.openPayDialog = false;
           await this.fetchBookings();
+          await this.fetchGroupBookings();
         }
       } finally {
         await this.stopLoading("pay-booking");
@@ -645,6 +688,7 @@ export default {
           );
           this.errors.commit = null;
           await this.fetchBookings();
+          await this.fetchGroupBookings();
           this.openCommitGroupBookingDialog = false;
         }
       } finally {
@@ -659,6 +703,7 @@ export default {
         await this.startLoading("reject-booking");
         await ApiBookingService.rejectBooking(id, this.tenantId, rejectReason);
         await this.fetchBookings();
+        await this.fetchGroupBookings();
         this.openRejectDialog = false;
         this.openRejectGroupBookingDialog = false;
       } finally {
@@ -689,6 +734,7 @@ export default {
           );
           this.errors.reject = null;
           await this.fetchBookings();
+          await this.fetchGroupBookings();
           this.openRejectGroupBookingDialog = false;
         }
       } finally {
@@ -738,6 +784,19 @@ export default {
         {},
         this.api.bookings.find((booking) => booking.id === bookingId)
       );
+      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
+        groupBooking.bookingIds.includes(bookingId)
+      );
+      if (hasGroupBooking) {
+        this.selectedGroupBooking = Object.assign(
+          {},
+          this.api.groupBookings.find((groupBooking) =>
+            groupBooking.bookingIds.includes(bookingId)
+          )
+        );
+      } else {
+        this.selectedGroupBooking = null;
+      }
       this.openEditDialog = true;
     },
     onOpenDeleteDialog(bookingId) {
@@ -770,14 +829,17 @@ export default {
     },
     onCloseEditDialog() {
       this.fetchBookings();
+      this.fetchGroupBookings();
       this.openEditDialog = false;
     },
     onCloseDeleteDialog() {
       this.fetchBookings();
+      this.fetchGroupBookings();
       this.openDeleteDialog = false;
     },
     onCloseRejectDialog() {
       this.fetchBookings();
+      this.fetchGroupBookings();
       this.openRejectDialog = false;
     },
     onCloseBookingDialog() {
@@ -815,6 +877,7 @@ export default {
     },
     async updateBooking(bookingId) {
       await this.fetchBookings();
+      await this.fetchGroupBookings();
       this.selectedBooking = Object.assign(
         {},
         this.api.bookings.find((booking) => booking.id === bookingId)
@@ -859,6 +922,29 @@ export default {
     },
     async fetchWorkflow() {
       this.workflow = await ApiWorkflowService.getWorkflowStates();
+    },
+    async onDownloadIcal(bookingId) {
+      try {
+        const temp = await ApiBookingService.downloadBookingIcal(bookingId);
+
+        const blob = new Blob([temp.data], {
+          type: "text/calendar;charset=utf-8",
+        });
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `buchung-${bookingId}.ics`);
+        document.body.appendChild(link);
+        link.click();
+
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast("booking.ical.error", "error")
+        );
+      }
     },
   },
   async mounted() {

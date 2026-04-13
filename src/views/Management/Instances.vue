@@ -88,6 +88,7 @@ import InstanceEditSSO from "@/components/Instance/Edit/InstanceEditSSO.vue";
 import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 import InstanceEditTenants from "@/components/Instance/Edit/InstanceEditTenants.vue";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   name: "Instances",
@@ -178,12 +179,11 @@ export default {
           roles: [],
         },
       },
+      tenants: [],
     };
   },
   computed: {
-    ...mapGetters({
-      tenants: "tenants/tenants",
-    }),
+    ...mapGetters({}),
     currentComponent() {
       return this.tabs[this.activeTab]?.comp || "InstanceEditGeneral";
     },
@@ -225,6 +225,15 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    fetchTenants() {
+      ApiTenantService.getTenants()
+        .then((response) => {
+          this.tenants = response.data;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
     normalizeKeycloakApp(raw = {}) {
       const merged = {
         ...this.defaultKeycloak,
@@ -340,6 +349,7 @@ export default {
     await this.fetchInstance();
     await this.fetchUsers();
     await this.fetchRoles();
+    await this.fetchTenants();
   },
 };
 </script>

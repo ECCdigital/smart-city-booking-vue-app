@@ -149,6 +149,12 @@
           "message": "Leider ist ein Fehler beim Duplizieren aufgetreten. Bitte versuchen Sie es erneut."
         }
       }
+    },
+    "ical": {
+      "error": {
+        "title": "Fehler beim Generieren",
+        "message": "Leider ist ein Fehler beim Generieren des iCal-Dateien aufgetreten. Bitte versuchen Sie es erneut."
+      }
     }
   },
 
@@ -326,27 +332,43 @@
         "title": "Validierungsfehler",
         "message": "Bitte überprüfen Sie Ihre Eingaben."
       }
+    },
+    "ical": {
+      "error": {
+        "title": "Fehler beim Generieren",
+        "message": "Leider ist ein Fehler beim Generieren der iCal-Datei aufgetreten. Bitte versuchen Sie es erneut."
+      }
     }
   },
   "group-booking": {
     "create": {
       "success": {
         "title": "Erfolgreich erstellt",
-        "message": "Die Gruppenbuchung wurde erfolgreich erstellt."
+        "message": "Die Serienbuchung wurde erfolgreich erstellt."
       },
       "error": {
         "title": "Fehler beim Erstellen",
-        "message": "Die Gruppenbuchung konnte nicht erstellt werden."
+        "message": "Die Serienbuchung konnte nicht erstellt werden."
+      }
+    },
+    "update": {
+      "success": {
+        "title": "Erfolgreich aktualisiert",
+        "message": "Die Serienbuchung wurde erfolgreich aktualisiert."
+      },
+      "error": {
+        "title": "Fehler beim Aktualisieren",
+        "message": "Die Serienbuchung konnte nicht aktualisiert werden."
       }
     },
     "edit": {
       "success": {
         "title": "Erfolgreich bearbeitet",
-        "message": "Die Gruppenbuchung wurde erfolgreich bearbeitet."
+        "message": "Die Serienbuchung wurde erfolgreich bearbeitet."
       },
       "error": {
         "title": "Fehler beim Bearbeiten",
-        "message": "Die Gruppenbuchung konnte nicht bearbeitet werden."
+        "message": "Die Serienbuchung konnte nicht bearbeitet werden."
       }
     },
     "commit": {

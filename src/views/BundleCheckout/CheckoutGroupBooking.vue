@@ -1,5 +1,5 @@
 <template>
-  <div style="max-width: 1200px; margin: auto">
+  <div style="max-width: 1400px; margin: auto">
     <v-container>
       <div>
         <v-stepper
@@ -26,8 +26,9 @@
             </template>
           </v-stepper-header>
         </v-stepper>
+
         <v-row>
-          <v-col>
+          <v-col :cols="bookingAttempts.length === 0 ? 12 : 8">
             <component
               :is="steps[currentStep - 1]?.component"
               :progress="progress"
@@ -35,6 +36,17 @@
               v-bind="steps[currentStep - 1]?.props"
               v-on="steps[currentStep - 1]?.events"
             ></component>
+          </v-col>
+          <v-col
+            v-if="bookingAttempts.length > 0 && currentStep !== steps.length"
+            cols="4"
+          >
+            <booking-sidebar
+              :booking-attempts="bookingAttempts"
+              :subsequent-items="subsequentItems"
+              @remove-booking-attempt="removeBookingAttempt"
+              @remove-subsequent-item="removeSubsequentItem"
+            ></booking-sidebar>
           </v-col>
         </v-row>
       </div>
@@ -51,8 +63,11 @@ import CheckoutContactDetails from "@/views/BundleCheckout/CheckoutContactDetail
 import CheckoutPaymentProvider from "@/views/BundleCheckout/CheckoutPaymentProvider.vue";
 import CheckoutSeriesBooking from "@/views/BundleCheckout/CheckoutSeriesBooking.vue";
 import CheckoutGroupBookingSummary from "@/views/BundleCheckout/CheckoutGroupBookingSummary.vue";
-import { mapGetters } from "vuex";
+import AdditionalBookables from "@/views/BundleCheckout/AdditionalBookables.vue";
+import { mapActions, mapGetters } from "vuex";
 import ApiCouponService from "@/services/api/ApiCouponService";
+import BookingSidebar from "@/views/BundleCheckout/BookingSidebar.vue";
+import ToastService from "@/services/ToastService";
 
 export default {
   name: "CheckoutGroupBooking",
@@ -61,6 +76,8 @@ export default {
     CheckoutPaymentProvider,
     CheckoutSeriesBooking,
     CheckoutGroupBookingSummary: CheckoutGroupBookingSummary,
+    AdditionalBookables,
+    BookingSidebar,
   },
   data() {
     return {
@@ -96,6 +113,7 @@ export default {
       },
       activePaymentApps: [],
       selectedPaymentApp: null,
+      subsequentItems: [],
 
       coupon: null,
       couponError: null,
@@ -135,8 +153,17 @@ export default {
     steps() {
       return this.createSteps();
     },
+    selectedSeriesTimeBegin() {
+      return this.bookingAttempts[0]?.timeBegin || null;
+    },
+    selectedSeriesTimeEnd() {
+      return this.bookingAttempts[0]?.timeEnd || null;
+    },
   },
   methods: {
+    ...mapActions({
+      addToast: "toasts/add",
+    }),
     createSteps() {
       const seriesBookingStep = {
         title: "Serie erstellen",
@@ -156,6 +183,23 @@ export default {
           "remove-booking-attempt": this.removeBookingAttempt,
           "validate-and-continue": this.validateAndContinue,
           "change-booking-time": this.changeBookingTime,
+        },
+      };
+
+      const additionalBookablesStep = {
+        title: "Ergänzungen",
+        component: AdditionalBookables,
+        props: {
+          leadItem: this.leadItem,
+          subsequentItems: this.subsequentItems,
+          timeBegin: this.selectedSeriesTimeBegin,
+          timeEnd: this.selectedSeriesTimeEnd,
+        },
+        events: {
+          back: () => this.currentStep--,
+          submit: this.continueFromAdditionalBookables,
+          "item-selected": this.addSubsequentItem,
+          "item-removed": this.removeSubsequentItem,
         },
       };
 
@@ -205,7 +249,13 @@ export default {
         },
       };
 
-      const steps = [seriesBookingStep, contactDetailsStep];
+      const steps = [seriesBookingStep];
+
+      if (this.leadItem.bookable?.checkoutBookableIds?.length > 0) {
+        steps.push(additionalBookablesStep);
+      }
+
+      steps.push(contactDetailsStep);
 
       if (
         this.activePaymentApps.length > 1 &&
@@ -219,6 +269,88 @@ export default {
       return steps;
     },
 
+    createBookableItem(item) {
+      return {
+        bookableId: item.bookableId,
+        amount: item.amount,
+        bookable: item.bookable,
+        valid: item.valid ?? null,
+        regularPriceEur: item.regularPriceEur ?? null,
+        userPriceEur: item.userPriceEur ?? null,
+        regularGrossPriceEur: item.regularGrossPriceEur ?? null,
+        userGrossPriceEur: item.userGrossPriceEur ?? null,
+        mandatory: item.mandatory ?? false,
+      };
+    },
+
+    async removeSubsequentItem(bookableId) {
+      const index = this.subsequentItems.findIndex(
+        (item) => item.bookableId === bookableId
+      );
+      if (index !== -1) {
+        this.subsequentItems.splice(index, 1);
+      }
+
+      for (const bookingAttempt of this.bookingAttempts) {
+        const itemIndex = bookingAttempt.bookableItems.findIndex(
+          (item) => item.bookableId === bookableId
+        );
+        if (itemIndex !== -1) {
+          bookingAttempt.bookableItems.splice(itemIndex, 1);
+        }
+      }
+
+      if (this.bookingAttempts.length > 0) {
+        await this.validateItems(this.bookingAttempts);
+      }
+    },
+
+    buildBookingAttemptBookableItems() {
+      return [
+        this.createBookableItem(this.leadItem),
+        ...this.subsequentItems.map((item) => this.createBookableItem(item)),
+      ];
+    },
+
+    async continueFromAdditionalBookables() {
+      if (this.bookingAttempts.length > 0) {
+        await this.validateItems(this.bookingAttempts);
+      }
+
+      this.currentStep++;
+    },
+
+    async addSubsequentItem(item) {
+      if (this.subsequentItems.some((i) => i.bookableId === item.bookableId)) {
+        return;
+      }
+
+      const { data } = await ApiBookablesService.getPublicBookable(
+        item.bookableId,
+        this.tenantId
+      );
+
+      const bookableItem = {
+        ...item,
+        bookable: data,
+        valid: null,
+        regularPriceEur: null,
+        userPriceEur: null,
+        regularGrossPriceEur: null,
+        userGrossPriceEur: null,
+      };
+
+      this.subsequentItems.push(bookableItem);
+
+      for (const bookingAttempt of this.bookingAttempts) {
+        bookingAttempt.bookableItems.push(
+          this.createBookableItem(bookableItem)
+        );
+      }
+
+      await this.validateItems(this.bookingAttempts);
+    },
+
     async redeemCoupon(code) {
       try {
         const response = await ApiCouponService.getCoupon(this.tenant, code);
@@ -228,11 +360,28 @@ export default {
         } else {
           this.couponError = null;
           this.coupon = response.data;
+          await this.addToast(
+            ToastService.createToast("checkout.redeemCoupon.success", "success")
+          );
         }
       } catch (e) {
         if (e.response.status === 404) {
-          this.coupon = null;
-          this.couponError = "Rabattcode nicht gefunden.";
+          this.couponError = "Der eingegebene Rabattcode ist ungültig.";
+          await this.addToast(
+            ToastService.createToast(
+              "checkout.redeemCoupon.error.invalid-code",
+              "error"
+            )
+          );
+        } else {
+          this.couponError =
+            "Beim Einlösen des Rabattcodes ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.";
+          await this.addToast(
+            ToastService.createToast(
+              "checkout.redeemCoupon.error.unexpected-error",
+              "error"
+            )
+          );
         }
       } finally {
         await this.validateItems(this.bookingAttempts);
@@ -297,7 +446,7 @@ export default {
       const attempts = [];
 
       const firstBookingAttempt = {
-        bookableItems: [{ ...this.leadItem }],
+        bookableItems: this.buildBookingAttemptBookableItems(),
         timeBegin: firstTimeBegin.getTime(),
         timeEnd: firstTimeEnd.getTime(),
         regularPriceEur: null,
@@ -387,7 +536,7 @@ export default {
         timeEnd.setHours(endHours, endMinutes, 0, 0);
 
         const bookingAttempt = {
-          bookableItems: [{ ...this.leadItem }],
+          bookableItems: this.buildBookingAttemptBookableItems(),
           timeBegin: timeBegin.getTime(),
           timeEnd: timeEnd.getTime(),
           regularPriceEur: null,
@@ -486,7 +635,6 @@ export default {
 
     async validateAndContinue() {
       this.loading = true;
-      await this.validateItems(this.bookingAttempts);
 
       const allValid = this.bookingAttempts.every((attempt) =>
         attempt.bookableItems.every((item) => item.valid)
@@ -505,6 +653,11 @@ export default {
 
     async validateItems(bookingAttempts) {
       this.progress.percentage = 0;
+      const totalBookableItems = bookingAttempts.reduce(
+        (sum, bookingAttempt) => sum + bookingAttempt.bookableItems.length,
+        0
+      );
+
       for (const bookingAttempt of bookingAttempts) {
         for (const item of bookingAttempt.bookableItems) {
           if (
@@ -541,9 +694,9 @@ export default {
               item.valid = false;
               item.error = error.response.data;
             } finally {
-              this.progress.percentage +=
-                100 /
-                (bookingAttempts.length * bookingAttempt.bookableItems.length);
+              this.progress.percentage += totalBookableItems
+                ? 100 / totalBookableItems
+                : 0;
             }
           }
         }
@@ -670,6 +823,7 @@ export default {
     this.seriesEndDate = endDate.toISOString().split("T")[0];
 
     this.bookingAttempts = [];
+    this.subsequentItems = [];
   },
 };
 </script>

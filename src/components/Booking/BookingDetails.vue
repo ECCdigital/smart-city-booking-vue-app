@@ -24,9 +24,34 @@
         </v-alert>
 
         <v-card class="mb-6 section-card" elevation="2" outlined>
-          <v-card-title class="section-header pa-4">
-            <v-icon class="mr-2">mdi-information-outline</v-icon>
-            <span class="text-h6 font-weight-bold">Buchungsinformationen</span>
+          <v-card-title
+            class="section-header pa-4 d-flex justify-space-between align-center"
+          >
+            <div class="d-flex align-center">
+              <v-icon class="mr-2">mdi-information-outline</v-icon>
+              <span class="text-h6 font-weight-bold"
+                >Buchungsinformationen</span
+              >
+            </div>
+            <v-tooltip
+              v-if="hasEventId || (booking.timeBegin && booking.timeEnd)"
+              bottom
+            >
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn
+                  small
+                  fab
+                  elevation="0"
+                  color="primary"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="onDownloadIcal(booking.id)"
+                >
+                  <v-icon>mdi-calendar-export</v-icon>
+                </v-btn>
+              </template>
+              Termin für die Buchung herunterladen
+            </v-tooltip>
           </v-card-title>
           <v-divider></v-divider>
           <v-card-text class="pa-4">
@@ -62,7 +87,10 @@
                     <v-icon small class="mr-2">mdi-calendar-range</v-icon>
                     Buchungszeitraum
                   </div>
-                  <div class="info-value">
+                  <div
+                    v-if="booking.timeBegin && booking.timeEnd"
+                    class="info-value"
+                  >
                     {{
                       Intl.DateTimeFormat("de-DE", {
                         dateStyle: "short",
@@ -77,6 +105,7 @@
                       }).format(new Date(booking.timeEnd))
                     }}
                   </div>
+                  <div v-else class="info-value">-</div>
                 </div>
               </v-col>
               <v-col cols="12" md="6">
@@ -706,7 +735,11 @@
           class="mb-6 section-card"
           elevation="2"
           outlined
-          v-if="booking.comment || booking.internalComments"
+          v-if="
+            booking.comment ||
+            booking.internalComments ||
+            groupBooking?.internalComments
+          "
         >
           <v-card-title class="section-header pa-4">
             <v-icon class="mr-2">mdi-comment-text-outline</v-icon>
@@ -730,6 +763,15 @@
               </div>
               <div class="comment-box internal">
                 {{ booking.internalComments }}
+              </div>
+            </div>
+            <div v-if="groupBooking?.internalComments">
+              <div class="info-label mb-2">
+                <v-icon small class="mr-2">mdi-comment-alert-outline</v-icon>
+                Interne Bemerkung der Serie
+              </div>
+              <div class="comment-box internal">
+                {{ groupBooking.internalComments }}
               </div>
             </div>
           </v-card-text>
@@ -856,7 +898,7 @@ export default {
     },
     groupBooking: {
       type: Object,
-      default: null,
+      default: () => {},
     },
   },
   events: "update",
@@ -904,6 +946,11 @@ export default {
       }
       return this.booking.lockerInfo.filter(
         (locker) => locker.lockerSystem === "ifbs" && locker.isConfirmed
+      );
+    },
+    hasEventId() {
+      return Object.values(this.booking.bookableItems || {}).some(
+        (item) => item._bookableUsed?.eventId
       );
     },
   },
@@ -1153,6 +1200,9 @@ export default {
       } finally {
         ProcessingService.hide(operationId);
       }
+    },
+    onDownloadIcal(bookingId) {
+      this.$emit("download-ical", bookingId);
     },
     closeDialog() {
       this.errors.receipt = null;
@@ -1585,5 +1635,17 @@ export default {
 
 .gap-2 {
   gap: 8px;
+}
+
+.info-value {
+  font-size: 1rem;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.87);
+  padding-left: 28px;
+
+  .v-chip {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
 }
 </style>
