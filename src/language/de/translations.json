@@ -9,7 +9,7 @@
     "success": {
       "default": {
         "title": "Erfolgreich angemeldet",
-        "message": "Sie haben sich erfolgreich im Admin angemeldet"
+        "message": "Sie haben sich erfolgreich angemeldet"
       }
     },
     "error": {
@@ -90,6 +90,20 @@
       "success": {
         "title": "Erfolgreich erstellt",
         "message": "Das Element wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Das Element konnte nicht erstellt werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
+      }
+    },
+    "update": {
+      "success": {
+        "title": "Erfolgreich gespeichert",
+        "message": "Die Änderungen wurden erfolgreich gespeichert."
+      },
+      "error": {
+        "title": "Fehler beim Speichern",
+        "message": "Die Änderungen konnten nicht gespeichert werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
       }
     },
     "duplicate": {
@@ -612,6 +626,18 @@
       "error": {
         "title": "Fehler beim Herunterladen",
         "message": "Die Datei konnte nicht heruntergeladen werden."
+      }
+    }
+  },
+  "locker": {
+    "open": {
+      "success": {
+        "title": "Erfolgreich geöffnet",
+        "message": "Das Schließfach wurde erfolgreich geöffnet."
+      },
+      "error": {
+        "title": "Fehler beim Öffnen",
+        "message": "Das Schließfach konnte nicht geöffnet werden."
       }
     }
   }

@@ -51,6 +51,7 @@
               :workflow="workflow"
               :roles="roles"
               :challenges="verificationChallenges"
+              :has-unsaved-changes="hasUnsavedChanges"
               @update:tenant="onUpdateTenant"
               @update:apps="onUpdateApps"
               @update:workflow="onUpdateWorkflow"
@@ -185,14 +186,12 @@ export default {
           icon: "mdi-check-decagram",
           comp: "TenantEditVerificationChallenges",
         },
-        /** This feature is currently disabled
         {
           key: "catalogs",
           label: "Kataloge",
           icon: "mdi-book-open-page-variant",
           comp: "TenantEditCatalog",
         },
-  **/
       ],
       originalSnapshot: null,
       tenant: {},
@@ -232,6 +231,20 @@ export default {
           paymentMode: "",
           active: false,
         },
+        ePayBL: {
+          type: "payment",
+          id: "ePayBL",
+          title: "ePayBL",
+          baseUrl: "",
+          merchantId: "",
+          managerId: "",
+          budgetAccount: "",
+          objectNumber: "",
+          paymentMethods: [],
+          clientP12: "",
+          certPassphrase: "",
+          active: false,
+        },
         invoice: {
           type: "payment",
           id: "invoice",
@@ -251,6 +264,16 @@ export default {
           lockerId: "",
           user: "",
           password: "",
+          active: false,
+        },
+        ifbs: {
+          type: "locker",
+          id: "ifbs",
+          title: "Parkraumservice",
+          serverUrl: "",
+          secretPhrase: "",
+          apiKeyID: "",
+          apiKey: "",
           active: false,
         },
       },
@@ -386,7 +409,6 @@ export default {
     async submitChanges() {
       const ok = await this.validateActiveChild();
       if (!ok) {
-        // optional: nach 4s Validierung der aktiven Unterseite zurücksetzen
         setTimeout(() => {
           const ref = this.$refs.activeChild;
           if (ref && typeof ref.resetValidation === "function") {
@@ -512,6 +534,9 @@ export default {
 
 <style scoped>
 .page-content {
-  padding-bottom: 26px;
+  padding-bottom: calc(
+    56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
+      /* extra spacing */
+  );
 }
 </style>

@@ -29,9 +29,8 @@
         <v-row>
           <v-col
             v-if="step < steps.length"
-            :class="
-              leadItem.bookable && !preventBooking ? 'col-md-8' : 'col-md'
-            "
+            :cols="12"
+            :md="leadItem.bookable && !preventBooking ? 8 : 12"
           >
             <component
               :is="steps[step - 1].component"
@@ -52,6 +51,7 @@
               :coupon="coupon"
               :selected-payment-app="selectedPaymentApp"
               :trace="trace"
+              :checkout-id="checkoutId"
               :final-check="step === steps.length"
               :me="me"
               :free-booking-allowed="
@@ -106,6 +106,7 @@ export default {
 
   data() {
     return {
+      checkoutId: null,
       steps: [],
       loading: true,
       trace: false,
@@ -155,6 +156,8 @@ export default {
     this.tenant = this.$route.query.tenant;
     this.leadItem.bookableId = this.$route.query.id;
     this.leadItem.amount = parseInt(this.$route.query.amount || 1);
+    this.timeBegin = this.parseStringToTimestamp(this.$route.query.start) ;
+    this.timeEnd = this.parseStringToTimestamp(this.$route.query.end);
     await this.init();
     await this.fetchTenant();
   },
@@ -440,6 +443,7 @@ export default {
         );
         this.preventBooking = false;
       } catch (error) {
+        console.log("Error while checking checkout permissions", error);
         this.preventBooking = true;
         this.loginRequired = error.response.status === 401;
         this.bookingPermission = error.response.status !== 403;
@@ -457,7 +461,8 @@ export default {
           this.leadItem.bookable = response.data;
           if (
             this.leadItem.bookable.permittedRoles?.length > 0 ||
-            this.leadItem.bookable.permittedUsers?.length > 0
+            this.leadItem.bookable.permittedUsers?.length > 0 ||
+            this.leadItem.bookable.requiresLogin
           ) {
             this.loginRequired = true;
           }
@@ -500,10 +505,14 @@ export default {
               this.timeBegin,
               this.timeEnd,
               this.coupon?.id,
-              this.bookWithPrice
+              this.bookWithPrice,
+              this.checkoutId
             );
 
             if (response.status === 200) {
+              if (response.data.checkoutId) {
+                this.checkoutId = response.data.checkoutId;
+              }
               item.regularPriceEur = response.data.regularPriceEur;
               item.userPriceEur = response.data.userPriceEur;
               item.regularGrossPriceEur = response.data.regularGrossPriceEur;
@@ -515,6 +524,9 @@ export default {
               delete item.error;
             }
           } catch (error) {
+            this.checkoutId =
+              error.response.data.checkoutId || this.checkoutId || null;
+
             item.regularPriceEur = null;
             item.userPriceEur = null;
             item.regularGrossPriceEur = null;
@@ -522,7 +534,7 @@ export default {
             item.freeBookingAllowed = false;
 
             item.valid = false;
-            item.error = error.response.data;
+            item.error = error.response.data.error;
           } finally {
             const previousStepCount = this.steps.length;
 
@@ -685,6 +697,14 @@ export default {
       ) {
         this.step = newStepCount;
       }
+    },
+
+    parseStringToTimestamp(dateString) {
+      const timestamp = parseInt(dateString);
+      if(!isNaN(timestamp)) {
+        return timestamp;
+      }
+      return null;
     },
   },
 

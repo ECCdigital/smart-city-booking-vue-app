@@ -35,6 +35,7 @@ import { mapActions, mapGetters } from "vuex";
 import ContactInformation from "@/components/ContactInformation.vue";
 import Utils from "@/utils/Utils";
 import LoginCard from "@/components/Auth/LoginCard.vue";
+import ApiAuthService from "@/services/api/ApiAuthService";
 
 export default {
   components: {
@@ -70,6 +71,10 @@ export default {
         ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
         : "/app-logo.png";
     },
+    async hasSession() {
+      const me = await ApiAuthService.me().catch(() => null);
+      return me !== null;
+    },
   },
 
   methods: {
@@ -84,19 +89,22 @@ export default {
         this.$router.push(this.nextUrl);
         this.updateNextUrl(null);
       } else {
-        this.$router.push({name: "dashboard"});
+        this.$router.push({ name: "dashboard" });
       }
     },
     sso() {
       this.$router.push({ name: "sso" });
     },
   },
-  mounted() {
+  async mounted() {
     const next = this.$route.query.next;
     if (next) {
-      this.updateNextUrl(next);
+      await this.updateNextUrl(next);
     } else {
-      this.updateNextUrl(null);
+      await this.updateNextUrl(null);
+    }
+    if (await this.hasSession) {
+      this.signedIn();
     }
   },
 };

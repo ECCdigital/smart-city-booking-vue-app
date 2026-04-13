@@ -20,7 +20,6 @@ import Roles from "@/views/Management/Roles";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
 import Bookings from "@/views/Bookings.vue";
 import Settings from "@/views/Settings";
-import EditBookable from "@/views/Bookables/EditBookable";
 import Coupons from "@/views/Coupons.vue";
 import Instances from "@/views/Management/Instances.vue";
 import InstanceUsers from "@/views/Management/InstanceUsers.vue";
@@ -148,21 +147,10 @@ const routes = [
   {
     path: "/event-locations/edit",
     name: "location-edit",
-    component: EditBookable,
+    component: lazyLoad("Bookables/Locations/LocationEdit"),
     meta: {
       type: "event-location",
-      title: "Raum bearbeiten",
-      requiresAuth: true,
-      interfaceName: "locations",
-    },
-  },
-  {
-    path: "/event-locations/create",
-    name: "location-create",
-    component: EditBookable,
-    meta: {
-      type: "event-location",
-      title: "Raum anlegen",
+      title: "Veranstaltungsort bearbeiten",
       requiresAuth: true,
       interfaceName: "locations",
     },
@@ -180,21 +168,10 @@ const routes = [
   {
     path: "/rooms/edit",
     name: "room-edit",
-    component: EditBookable,
+    component: lazyLoad("Bookables/Rooms/RoomEdit"),
     meta: {
       type: "room",
       title: "Raum Bearbeiten",
-      requiresAuth: true,
-      interfaceName: "rooms",
-    },
-  },
-  {
-    path: "/rooms/create",
-    name: "room-create",
-    component: EditBookable,
-    meta: {
-      type: "room",
-      title: "Raum anlegen",
       requiresAuth: true,
       interfaceName: "rooms",
     },
@@ -213,21 +190,10 @@ const routes = [
   {
     path: "/resources/edit",
     name: "resource-edit",
-    component: EditBookable,
+    component: lazyLoad("Bookables/Resources/ResourceEdit"),
     meta: {
       type: "resource",
       title: "Raum bearbeiten",
-      requiresAuth: true,
-      interfaceName: "resources",
-    },
-  },
-  {
-    path: "/resources/create",
-    name: "resource-create",
-    component: EditBookable,
-    meta: {
-      type: "resource",
-      title: "Raum anlegen",
       requiresAuth: true,
       interfaceName: "resources",
     },
@@ -245,21 +211,10 @@ const routes = [
   {
     path: "/tickets/edit",
     name: "ticket-edit",
-    component: EditBookable,
+    component: lazyLoad("Bookables/Tickets/TicketEdit"),
     meta: {
       type: "ticket",
       title: "Ticket bearbeiten",
-      requiresAuth: true,
-      interfaceName: "tickets",
-    },
-  },
-  {
-    path: "/tickets/create",
-    name: "ticket-create",
-    component: EditBookable,
-    meta: {
-      type: "ticket",
-      title: "Ticket anlegen",
       requiresAuth: true,
       interfaceName: "tickets",
     },
@@ -536,15 +491,12 @@ const routerConfig = {
   routes,
 };
 
-
 if (process.env.BASE_URL) {
   console.log("Setting router base to", process.env.BASE_URL);
   routerConfig.base = process.env.BASE_URL;
 }
 
-
 const router = new VueRouter(routerConfig);
-
 
 router.beforeEach((to, from, next) => {
   const middlewares = [

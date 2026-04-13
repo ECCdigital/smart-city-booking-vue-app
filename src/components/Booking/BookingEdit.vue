@@ -363,7 +363,97 @@
                           />
                         </v-list-item-subtitle>
                         <v-list-item-subtitle>
-                          <v-row dense class="align-center">
+                          <template
+                            v-if="hasExternalPrices(bookableItem._bookableUsed)"
+                          >
+                            <v-progress-circular
+                              v-if="
+                                externalPricesLoading[bookableItem.bookableId]
+                              "
+                              indeterminate
+                              size="20"
+                              width="2"
+                              color="primary"
+                              class="my-2"
+                            />
+
+
+
+                            <template
+                              v-else-if="
+                                getExternalPrices(bookableItem.bookableId)
+                              "
+                            >
+                              <div class="d-flex align-center mb-2">
+                                <v-icon x-small class="mr-1" color="info">
+                                  mdi-information-outline
+                                </v-icon>
+                                <span
+                                  class="caption info--text font-weight-medium"
+                                >
+                                  Externe Preise
+                                </span>
+                              </div>
+
+                              <v-row dense>
+                                <v-col
+                                  v-for="price in getExternalPrices(
+                                    bookableItem.bookableId
+                                  )"
+                                  :key="price.unit"
+                                  cols="12"
+                                  sm="6"
+                                  md="4"
+                                >
+                                  <v-text-field
+                                    :value="price.priceEur"
+                                    @input="
+                                      updateExternalPrice(
+                                        bookableItem.bookableId,
+                                        price.unit,
+                                        $event
+                                      )
+                                    "
+                                    filled
+                                    dense
+                                    disabled
+                                    prefix="€"
+                                    :suffix="getUnitLabel(price.unit)"
+                                    background-color="accent"
+                                    hide-details
+                                    type="number"
+                                    :label="getUnitLabel(price.unit)"
+                                  ></v-text-field>
+                                </v-col>
+                              </v-row>
+
+                              <div class="d-flex align-center justify-end mt-2">
+                                <v-btn
+                                  icon
+                                  x-small
+                                  @click="decreaseAmount(bookableItem)"
+                                >
+                                  <v-icon>mdi-minus</v-icon>
+                                </v-btn>
+                                <div class="px-3 font-weight-bold">
+                                  {{ bookableItem.amount }}
+                                </div>
+                                <v-btn
+                                  icon
+                                  x-small
+                                  @click="increaseAmount(bookableItem)"
+                                >
+                                  <v-icon>mdi-plus</v-icon>
+                                </v-btn>
+                              </div>
+                            </template>
+
+                            <div v-else class="caption grey--text my-2">
+                              Keine externen Preise verfügbar
+                            </div>
+                          </template>
+
+                          <v-row v-else dense class="align-center">
                             <v-col cols="12" sm="5">
                               <v-text-field
                                 :value="
@@ -889,6 +979,7 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import { mapActions } from "vuex";
 import ToastService from "@/services/ToastService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiBookablesService from "@/services/api/ApiBookablesService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
@@ -935,6 +1026,9 @@ export default {
       paymentTimeMenu: false,
       paymentDate: null,
       paymentTime: null,
+
+      externalPricesMap: {},
+      externalPricesLoading: {},
 
       bookableId_temp: null,
 
@@ -1144,6 +1238,12 @@ export default {
     },
     hasPayableItems() {
       return this.bookableItems.some((item) => {
+        if (this.hasExternalPrices(item._bookableUsed)) {
+          const extPrices = this.getExternalPrices(item.bookableId);
+          return extPrices?.some(
+            (p) => p.priceEur > 0 && p.unit !== "service-fee"
+          );
+        }
         const priceEur = this.getPriceCategory(item.bookableId, "priceEur");
         return priceEur && Number(priceEur) > 0;
       });
@@ -1223,6 +1323,17 @@ export default {
         ) {
           this.selectedBooking.paymentProvider = this.activePaymentApps[0].id;
         }
+      },
+      open: {
+        immediate: true,
+        handler(isOpen) {
+          if (isOpen) {
+            this.loadAllExternalPrices();
+          } else {
+            this.externalPricesMap = {};
+            this.externalPricesLoading = {};
+          }
+        },
       },
     },
   },
@@ -1470,7 +1581,7 @@ export default {
           );
       }
     },
-    addBookable() {
+    async addBookable() {
       const existing = this.selectedBooking.bookableItems.find(
         (b) => b.bookableId === this.addBookableValue
       );
@@ -1487,6 +1598,10 @@ export default {
           amount: 1,
           _bookableUsed: bookable,
         });
+
+        if (this.hasExternalPrices(bookable)) {
+          await this.fetchExternalPricesForItem(bookable.id);
+        }
       }
 
       this.addBookableValue = null;
@@ -1523,6 +1638,99 @@ export default {
           return "pro Stück";
       }
     },
+    hasExternalPrices(bookable) {
+      return (
+        bookable?.externalProviders &&
+        bookable.externalProviders?.some(
+          (p) => p.active && p.handles.includes("pricing")
+        )
+      );
+    },
+
+    getExternalPrices(bookableId) {
+      return this.externalPricesMap[bookableId] || null;
+    },
+
+    async fetchExternalPricesForItem(bookableId) {
+
+      console.log(
+        `Fetching external prices for bookableId ${bookableId}...`,
+        this.externalPricesMap[bookableId],
+        this.externalPricesLoading[bookableId]
+      );
+
+      if (
+        this.externalPricesMap[bookableId] ||
+        this.externalPricesLoading[bookableId]
+      ) {
+        return;
+      }
+
+      this.$set(this.externalPricesLoading, bookableId, true);
+      try {
+        const response = await ApiBookablesService.getBookablePrices(
+          bookableId,
+          this.selectedBooking.tenantId
+        );
+        this.$set(this.externalPricesMap, bookableId, response.data);
+      } catch (error) {
+        console.error(
+          `Failed to fetch external prices for ${bookableId}:`,
+          error
+        );
+        this.$set(this.externalPricesMap, bookableId, []);
+      } finally {
+        this.$set(this.externalPricesLoading, bookableId, false);
+      }
+    },
+    async loadAllExternalPrices() {
+      const promises = this.bookableItems
+        .filter((item) => this.hasExternalPrices(item._bookableUsed))
+        .map((item) => this.fetchExternalPricesForItem(item.bookableId));
+      await Promise.all(promises);
+    },
+
+    getUnitLabel(unit) {
+      const labels = {
+        hour: "pro Stunde",
+        day: "pro Tag",
+        week: "pro Woche",
+        month: "pro Monat",
+        year: "pro Jahr",
+        "service-fee": "Servicegebühr",
+      };
+      return labels[unit] || unit;
+    },
+
+    getRelevantExternalPrice(bookableId) {
+      const prices = this.externalPricesMap[bookableId];
+      if (!prices || prices.length === 0) return null;
+
+      const durationMinutes = this.getBookingDuration();
+      const durationHours = durationMinutes / 60;
+      const durationDays = durationHours / 24;
+
+      // Beste Einheit basierend auf Buchungsdauer auswählen
+      if (durationDays >= 365) {
+        return prices.find((p) => p.unit === "year");
+      } else if (durationDays >= 28) {
+        return prices.find((p) => p.unit === "month");
+      } else if (durationDays >= 7) {
+        return prices.find((p) => p.unit === "week");
+      } else if (durationDays >= 1) {
+        return prices.find((p) => p.unit === "day");
+      }
+      return prices.find((p) => p.unit === "hour") || prices[0];
+    },
+
+    updateExternalPrice(bookableId, unit, newPrice) {
+      const prices = this.externalPricesMap[bookableId];
+      if (!prices) return;
+      const price = prices.find((p) => p.unit === unit);
+      if (price) {
+        price.priceEur = Number(newPrice);
+      }
+    },
   },
   mounted() {
     if (this.selectedBooking._id) {
@@ -1535,6 +1743,7 @@ export default {
       this.originalGroupInternalComments =
         this.groupBooking.internalComments ?? null;
     }
+    this.loadAllExternalPrices();
   },
 };
 </script>

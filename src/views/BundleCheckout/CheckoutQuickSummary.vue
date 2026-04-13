@@ -307,6 +307,9 @@ export default {
   name: "CheckoutQuickSummary",
 
   props: {
+    checkoutId: {
+      type: String,
+    },
     trace: {
       type: Boolean,
     },
@@ -495,9 +498,12 @@ export default {
     },
 
     async performCheckout() {
+      let payload = this.compileBooking();
+      payload.checkoutId = this.checkoutId;
+
       const response = await ApiCheckoutService.checkout(
         this.tenant,
-        this.compileBooking(),
+        payload,
         false
       );
       if (response.status !== 200) throw new Error("Checkout service failed");
@@ -530,6 +536,13 @@ export default {
           break;
         }
         case "pmPayment": {
+          const paymentUrl = paymentResponse.data?.paymentData[0]?.url;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          }
+          break;
+        }
+        case "ePayBL": {
           const paymentUrl = paymentResponse.data?.paymentData[0]?.url;
           if (paymentUrl) {
             window.location.href = paymentUrl;
