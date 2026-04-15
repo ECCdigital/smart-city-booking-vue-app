@@ -94,6 +94,10 @@ async function restoreKeycloakSession() {
       ApiClientService.clearTokens();
     }
   } catch (error) {
+    console.warn(
+      "Keycloak session restore failed, continuing without SSO:",
+      error
+    );
     localStorage.removeItem("authType");
     ApiClientService.clearTokens();
   } finally {
@@ -110,7 +114,12 @@ async function trySilentSsoCheck() {
   if (!ssoConfig) return;
 
   try {
-    const result = await ApiAuthService.silentSsoCheck(ssoConfig);
+    const result = await Promise.race([
+      ApiAuthService.silentSsoCheck(ssoConfig),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("SSO check timeout")), 5000)
+      ),
+    ]);
     if (result) {
       await store.dispatch("user/update", {
         user: result.user,
@@ -118,42 +127,49 @@ async function trySilentSsoCheck() {
       });
     }
   } catch (error) {
-    console.debug("Bootstrap: Silent SSO check failed:", error);
+    console.warn(
+      "Bootstrap: Silent SSO check failed, continuing without SSO:",
+      error
+    );
   }
 }
 
-bootstrap().then(() => {
-  new Vue({
-    router,
-    store,
-    i18n,
-    vuetify,
-    render: (h) => h(App),
+bootstrap()
+  .catch((error) => {
+    console.error("Bootstrap failed, mounting app anyway:", error);
+  })
+  .then(() => {
+    new Vue({
+      router,
+      store,
+      i18n,
+      vuetify,
+      render: (h) => h(App),
 
-    created() {
-      this.initializeTheme();
-    },
-    mounted() {
-      this.loadUsersnap();
-    },
-    methods: {
-      ...mapActions({
-        initDarkMode: "theme/initDarkMode",
-      }),
-      loadUsersnap() {
-        window.onUsersnapLoad = function (api) {
-          api.init();
-        };
-        const script = document.createElement("script");
-        script.defer = true;
-        script.src = `https://widget.usersnap.com/load/${process.env.VUE_APP_USERSNAP_API_KEY}?onload=onUsersnapLoad`;
-        document.getElementsByTagName("head")[0].appendChild(script);
+      created() {
+        this.initializeTheme();
       },
-      initializeTheme() {
-        this.initDarkMode().then((isDarkMode) => {
-          this.$vuetify.theme.dark = isDarkMode;
-        });
+      mounted() {
+        this.loadUsersnap();
       },
-    },
-  }).$mount("#app");
-});
+      methods: {
+        ...mapActions({
+          initDarkMode: "theme/initDarkMode",
+        }),
+        loadUsersnap() {
+          window.onUsersnapLoad = function (api) {
+            api.init();
+          };
+          const script = document.createElement("script");
+          script.defer = true;
+          script.src = `https://widget.usersnap.com/load/${process.env.VUE_APP_USERSNAP_API_KEY}?onload=onUsersnapLoad`;
+          document.getElementsByTagName("head")[0].appendChild(script);
+        },
+        initializeTheme() {
+          this.initDarkMode().then((isDarkMode) => {
+            this.$vuetify.theme.dark = isDarkMode;
+          });
+        },
+      },
+    }).$mount("#app");
+  });

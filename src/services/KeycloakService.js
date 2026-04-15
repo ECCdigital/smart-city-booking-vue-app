@@ -87,8 +87,11 @@ class KeycloakService {
 
       return authenticated;
     } catch (error) {
-      console.error("Silent SSO check failed:", error);
-      this._initialized = true;
+      console.warn(
+        "Silent SSO check failed, app continues without SSO:",
+        error
+      );
+      this._initPromise = null;
       return false;
     }
   }
