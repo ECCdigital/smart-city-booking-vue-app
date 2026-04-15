@@ -77,8 +77,6 @@ http {
 NGINXEOF
 echo "==> Generated nginx.conf (location /)"
 
-fi
-
 else
 
 cat > /etc/nginx/nginx.conf <<NGINXEOF
@@ -97,7 +95,6 @@ http {
   sendfile on;
   keepalive_timeout 65;
 
-  # Global: iframes verbieten
   add_header X-Frame-Options "DENY" always;
 
   server {
@@ -108,7 +105,6 @@ http {
       return 301 ${LOCATION_PATH}/;
     }
 
-    # Ausnahme: silent-check-sso.html darf im iframe geladen werden
     location = ${LOCATION_PATH}/silent-check-sso.html {
       alias /app/silent-check-sso.html;
       add_header X-Frame-Options "SAMEORIGIN" always;
