@@ -37,7 +37,7 @@ LOCATION_PATH="${BASE_URL%/}"
 LOCATION_PATH="${LOCATION_PATH:-/}"
 STRIP_PREFIX="${STRIP_PREFIX:-true}"
 
-if [ "$LOCATION_PATH" = "/" ] || [ "$STRIP_PREFIX" = "true" ]; then
+if [ "$LOCATION_PATH" = "/" ]; then
 
 cat > /etc/nginx/nginx.conf <<'NGINXEOF'
 user  nginx;
@@ -54,19 +54,15 @@ http {
   access_log  /var/log/nginx/access.log  main;
   sendfile on;
   keepalive_timeout 65;
-
   add_header X-Frame-Options "DENY" always;
-
   server {
     listen 80;
     server_name localhost;
-
     location = /silent-check-sso.html {
       root /app;
       add_header X-Frame-Options "SAMEORIGIN" always;
       add_header Content-Security-Policy "frame-ancestors 'self'" always;
     }
-
     location / {
       root   /app;
       index  index.html;
@@ -94,23 +90,18 @@ http {
   access_log  /var/log/nginx/access.log  main;
   sendfile on;
   keepalive_timeout 65;
-
   add_header X-Frame-Options "DENY" always;
-
   server {
     listen 80;
     server_name localhost;
-
     location = ${LOCATION_PATH} {
       return 301 ${LOCATION_PATH}/;
     }
-
     location = ${LOCATION_PATH}/silent-check-sso.html {
       alias /app/silent-check-sso.html;
       add_header X-Frame-Options "SAMEORIGIN" always;
       add_header Content-Security-Policy "frame-ancestors 'self'" always;
     }
-
     location ${LOCATION_PATH}/ {
       alias /app/;
       index index.html;
