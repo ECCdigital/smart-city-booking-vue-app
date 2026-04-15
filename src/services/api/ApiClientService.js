@@ -43,21 +43,10 @@ class ApiClientService {
   setupInterceptors() {
     this.client.interceptors.request.use(
       async (config) => {
-        console.log("[Interceptor]", {
-          url: config.url,
-          authType: this.authType,
-          kcAuthenticated: keycloakService.isAuthenticated,
-          kcInitialized: keycloakService._initialized,
-          kcHasToken: !!keycloakService.token,
-        });
-
         if (this.authType === "keycloak") {
           const token = await keycloakService.getValidToken();
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-          } else {
-            console.warn("[Interceptor] No token for:", config.url);
-          }
+
+          config.headers.Authorization = `Bearer ${token}`;
         } else if (this.accessToken) {
           config.headers.Authorization = `Bearer ${this.accessToken}`;
         }
@@ -77,27 +66,19 @@ class ApiClientService {
         }
 
         if (this.authType === "keycloak") {
-          // WICHTIG: Wenn gerade restored wird, NICHT ausloggen!
           if (this._keycloakRestoring) {
-            console.debug(
-              "401 during Keycloak restore – skipping logout"
-            );
             return Promise.reject(error);
           }
 
           originalRequest._retry = true;
 
           try {
-            const newToken =
-              await keycloakService.getValidToken();
+            const newToken = await keycloakService.getValidToken();
             if (newToken) {
-              originalRequest.headers.Authorization =
-                `Bearer ${newToken}`;
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
               return this.client(originalRequest);
             }
-          } catch {
-            // Keycloak-Session abgelaufen
-          }
+          } catch {}
 
           this.clearTokens();
           if (window.location.pathname !== "/login") {
@@ -106,7 +87,6 @@ class ApiClientService {
           return Promise.reject(error);
         }
 
-        // Lokale Auth: Refresh-Token-Logik wie bisher
         if (
           !originalRequest.url?.includes("/auth/refresh") &&
           this.refreshToken
