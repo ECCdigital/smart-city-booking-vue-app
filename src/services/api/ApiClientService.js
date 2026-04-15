@@ -41,24 +41,29 @@ class ApiClientService {
   }
 
   setupInterceptors() {
-    // Request-Interceptor
     this.client.interceptors.request.use(
       async (config) => {
-        // Während Keycloak-Restore: Requests die Auth brauchen warten lassen
-        // ODER ohne Token senden (je nach Bedarf)
+        console.log("[Interceptor]", {
+          url: config.url,
+          authType: this.authType,
+          kcAuthenticated: keycloakService.isAuthenticated,
+          kcInitialized: keycloakService._initialized,
+          kcHasToken: !!keycloakService.token,
+        });
+
         if (this.authType === "keycloak") {
           const token = await keycloakService.getValidToken();
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+          } else {
+            console.warn("[Interceptor] No token for:", config.url);
           }
-          // Kein Token? Request geht trotzdem raus –
-          // aber der 401-Handler muss wissen, dass Restore läuft
         } else if (this.accessToken) {
           config.headers.Authorization = `Bearer ${this.accessToken}`;
         }
         return config;
       },
-      (error) => Promise.reject(error),
+      (error) => Promise.reject(error)
     );
 
     // Response-Interceptor
