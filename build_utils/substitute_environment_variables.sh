@@ -37,7 +37,7 @@ LOCATION_PATH="${BASE_URL%/}"
 LOCATION_PATH="${LOCATION_PATH:-/}"
 STRIP_PREFIX="${STRIP_PREFIX:-true}"
 
-if [ "$LOCATION_PATH" = "/" ]; then
+if [ "$LOCATION_PATH" = "/" ] || [ "$STRIP_PREFIX" = "true" ]; then
 
 cat > /etc/nginx/nginx.conf <<'NGINXEOF'
 user  nginx;
