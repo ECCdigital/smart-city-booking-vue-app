@@ -43,10 +43,12 @@ class ApiClientService {
   setupInterceptors() {
     this.client.interceptors.request.use(
       async (config) => {
+
         if (this.authType === "keycloak") {
           const token = await keycloakService.getValidToken();
-
-          config.headers.Authorization = `Bearer ${token}`;
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
         } else if (this.accessToken) {
           config.headers.Authorization = `Bearer ${this.accessToken}`;
         }
@@ -73,12 +75,15 @@ class ApiClientService {
           originalRequest._retry = true;
 
           try {
-            const newToken = await keycloakService.getValidToken();
+            const newToken =
+              await keycloakService.getValidToken();
             if (newToken) {
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              originalRequest.headers.Authorization =
+                `Bearer ${newToken}`;
               return this.client(originalRequest);
             }
-          } catch {}
+          } catch {
+          }
 
           this.clearTokens();
           if (window.location.pathname !== "/login") {
