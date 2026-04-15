@@ -54,9 +54,19 @@ http {
   access_log  /var/log/nginx/access.log  main;
   sendfile on;
   keepalive_timeout 65;
+
+  add_header X-Frame-Options "DENY" always;
+
   server {
     listen 80;
     server_name localhost;
+
+    location = /silent-check-sso.html {
+      root /app;
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header Content-Security-Policy "frame-ancestors 'self'" always;
+    }
+
     location / {
       root   /app;
       index  index.html;
@@ -66,6 +76,8 @@ http {
 }
 NGINXEOF
 echo "==> Generated nginx.conf (location /)"
+
+fi
 
 else
 
@@ -84,12 +96,23 @@ http {
   access_log  /var/log/nginx/access.log  main;
   sendfile on;
   keepalive_timeout 65;
+
+  # Global: iframes verbieten
+  add_header X-Frame-Options "DENY" always;
+
   server {
     listen 80;
     server_name localhost;
 
     location = ${LOCATION_PATH} {
       return 301 ${LOCATION_PATH}/;
+    }
+
+    # Ausnahme: silent-check-sso.html darf im iframe geladen werden
+    location = ${LOCATION_PATH}/silent-check-sso.html {
+      alias /app/silent-check-sso.html;
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header Content-Security-Policy "frame-ancestors 'self'" always;
     }
 
     location ${LOCATION_PATH}/ {
