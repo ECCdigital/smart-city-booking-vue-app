@@ -20,9 +20,9 @@
 
           <div class="text-body-2 mb-3">
             Sie nutzen Fahrradboxen über
-            <strong>ParkraumService</strong>. Buchungen können auch
-            direkt über ParkraumService erfolgen und werden in diesem System
-            nicht automatisch erfasst. Um Inkonsistenzen und Fehler bei
+            <strong>ParkraumService</strong>. Buchungen können auch direkt über
+            ParkraumService erfolgen und werden in diesem System nicht
+            automatisch erfasst. Um Inkonsistenzen und Fehler bei
             Doppelbuchungen zu vermeiden, empfehlen wir dringend, die folgenden
             externen Datenquellen zu aktivieren:
           </div>
@@ -1453,6 +1453,11 @@ export default {
     formatPrice(price) {
       return parseFloat(price || 0).toFixed(2);
     },
+  },
+  beforeCreate() {
+    this._emitDebounced = debounce((val) => {
+      this.$emit("update:bookable", { ...val });
+    }, 200);
   },
 };
 </script>

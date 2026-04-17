@@ -88,6 +88,7 @@ import BookableEditAttachments from "@/components/Bookable/Edit/BookableEditAtta
 import BookableEditAdditional from "@/components/Bookable/Edit/BookableEditAdditional.vue";
 import BookableEditStatus from "@/components/Bookable/Edit/BookableEditStatus.vue";
 import ToastService from "@/services/ToastService";
+import BookableEditCustomFields from "@/components/Bookable/Edit/BookableEditCustomFields.vue";
 
 export default {
   name: "BookableEdit",
@@ -104,6 +105,7 @@ export default {
     BookableEditRelatedBookables,
     BookableEditAttachments,
     BookableEditAdditional,
+    BookableEditCustomFields,
   },
   props: {
     type: {
@@ -173,6 +175,12 @@ export default {
           comp: "BookableEditAttachments",
         },
         {
+          key: "customFields",
+          label: "Eigene Felder",
+          icon: "mdi-form-textbox",
+          comp: "BookableEditCustomFields",
+        },
+        {
           key: "additional",
           label: "Sonstiges",
           icon: "mdi-dots-horizontal",
@@ -193,9 +201,10 @@ export default {
       return this.$route.query.id;
     },
     hasUnsavedChanges() {
+      const { customFields: _cf, ...bookableClean } = this.bookable;
       return (
         JSON.stringify({
-          bookable: this.bookable,
+          bookable: bookableClean,
         }) !== this.originalSnapshot
       );
     },
@@ -218,8 +227,10 @@ export default {
           });
         }
 
+        const { customFields: _cf, ...bookableClean } = response.data;
+
         this.originalSnapshot = JSON.stringify({
-          bookable: response.data,
+          bookable: bookableClean,
         });
         if (!this.bookableID) {
           await this.addToast(
@@ -248,14 +259,17 @@ export default {
       if (this.bookableID) {
         await this.fetchBookable(this.bookableID);
       } else {
-        this.bookable = new Bookable().toPlain();
-        this.bookable.tenantId = this.currentTenant.id;
+        const response = await ApiBookablesService.getBookableTemplate(
+          this.currentTenant.id,
+        );
+        this.bookable = new Bookable(response.data).toPlain();
         this.bookable.type = this.type;
       }
 
       this.$nextTick(() => {
+        const { customFields: _cf, ...bookableClean } = this.bookable;
         this.originalSnapshot = JSON.stringify({
-          bookable: this.bookable,
+          bookable: bookableClean,
         });
       });
     },

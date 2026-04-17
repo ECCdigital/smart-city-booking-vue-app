@@ -55,6 +55,12 @@ export default class Bookable {
     this.lockerDetails = { active: false, units: [] };
     this.requiredFields = [];
 
+    this.customFieldDefinitions = [];
+    this.customFieldValues = [];
+    this.customFields = [];
+
+    this.externalProviders = [];
+
     Object.assign(this, overrides);
   }
 

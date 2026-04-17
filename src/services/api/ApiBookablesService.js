@@ -85,6 +85,9 @@ export default {
         });
     });
   },
+  getBookableTemplate(tenantId) {
+    return ApiClient.get(`api/${tenantId}/bookables/_template`);
+  },
   getRelatedOpeningHours(bookableId, tenantId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/bookables/${bookableId}/openingHours`);
