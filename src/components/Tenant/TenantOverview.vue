@@ -51,6 +51,7 @@
               :workflow="workflow"
               :roles="roles"
               :challenges="verificationChallenges"
+              :instance-custom-fields="instanceCustomFields"
               :has-unsaved-changes="hasUnsavedChanges"
               @update:tenant="onUpdateTenant"
               @update:apps="onUpdateApps"
@@ -111,6 +112,8 @@ import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import SaveBar from "@/components/commons/SaveBar.vue";
+import ApiInstanceService from "@/services/api/ApiInstanceService";
+import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
 
 export default {
   name: "TenantOverview",
@@ -128,6 +131,7 @@ export default {
     InvoiceTemplateDialog,
     TenantEditVerificationChallenges,
     TenantEditCatalog,
+    TenantEditBookables,
   },
   data() {
     return {
@@ -163,6 +167,12 @@ export default {
           comp: "TenantEditLocks",
         },
         {
+          key: "bookables",
+          label: "Buchungsobjekte",
+          icon: "mdi-calendar-check",
+          comp: "TenantEditBookables",
+        },
+        {
           key: "booking",
           label: "Buchung",
           icon: "mdi-calendar",
@@ -193,6 +203,7 @@ export default {
           comp: "TenantEditCatalog",
         },
       ],
+      instanceCustomFields: [],
       originalSnapshot: null,
       tenant: {},
       apps: {},
@@ -520,6 +531,15 @@ export default {
       this.tenant.invoiceTemplate = template;
       this.showEditInvoiceTemplateDialog = false;
     },
+    async fetchInstanceCustomFields() {
+      try {
+        const bookableCustomFields =
+          await ApiInstanceService.getBookableCustomFields();
+        this.instanceCustomFields = bookableCustomFields || [];
+      } catch (e) {
+        console.error(e);
+      }
+    },
   },
   async mounted() {
     const queryTabKey = this.$route.query.tab;
@@ -528,6 +548,7 @@ export default {
 
     await this.fetchTenant();
     await this.fetchRoles();
+    await this.fetchInstanceCustomFields();
   },
 };
 </script>

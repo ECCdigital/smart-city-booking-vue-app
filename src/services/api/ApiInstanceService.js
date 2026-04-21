@@ -13,6 +13,11 @@ class ApiInstanceService {
     const response = await ApiClient.put("api/instances", instance);
     return response.data;
   }
+
+  static async getBookableCustomFields() {
+    const response = await ApiClient.get("api/instances/bookable-custom-fields");
+    return response.data;
+  }
 }
 
 export default ApiInstanceService;

@@ -79,8 +79,6 @@ import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
 import ApiUsersService from "@/services/api/ApiUsersService";
 import { mapActions, mapGetters } from "vuex";
 import SaveBar from "@/components/commons/SaveBar.vue";
-
-// new child components
 import InstanceEditGeneral from "@/components/Instance/Edit/InstanceEditGeneral.vue";
 import InstanceEditMail from "@/components/Instance/Edit/InstanceEditMail.vue";
 import InstanceEditOwners from "@/components/Instance/Edit/InstanceEditOwners.vue";
@@ -89,6 +87,7 @@ import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 import InstanceEditTenants from "@/components/Instance/Edit/InstanceEditTenants.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import InstanceEditBookables from "@/components/Instance/Edit/InstanceEditBookables.vue";
 
 export default {
   name: "Instances",
@@ -102,6 +101,7 @@ export default {
     InstanceEditSSO,
     InstanceEditCatalog,
     InstanceEditTenants,
+    InstanceEditBookables,
   },
   data() {
     return {
@@ -151,6 +151,12 @@ export default {
           label: "Katalog",
           icon: "mdi-book-open",
           comp: "InstanceEditCatalog",
+        },
+        {
+          key: "bookables",
+          label: "Buchungsobjekte",
+          icon: "mdi-calendar-check",
+          comp: "InstanceEditBookables",
         },
       ],
       catalog: {
