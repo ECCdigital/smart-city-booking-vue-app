@@ -220,7 +220,7 @@ export default {
       ],
       contextOptions: [
         { text: "Nicht verwendet", value: "none" },
-        { text: "Im Checkout (Kunde füllt aus)", value: "checkout" },
+        { text: "Im Buchungsprozess (Kunde füllt aus)", value: "checkout" },
         { text: "Im Katalog (Info / Filter)", value: "catalog" },
       ],
       filterTypes: [
