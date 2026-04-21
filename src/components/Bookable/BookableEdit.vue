@@ -186,6 +186,12 @@ export default {
           icon: "mdi-dots-horizontal",
           comp: "BookableEditAdditional",
         },
+        {
+          key: "settings",
+          label: "Einstellungen",
+          icon: "mdi-cog-outline",
+          comp: () => import("@/components/Bookable/Edit/BookableEditSettings.vue"),
+        }
       ],
       originalSnapshot: {
         bookable: {},

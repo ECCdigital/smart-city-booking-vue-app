@@ -86,15 +86,6 @@
                 >
                   Katalog
                 </v-chip>
-                <v-chip
-                  v-if="field.allowOverride"
-                  x-small
-                  outlined
-                  label
-                  class="mr-1 mb-1"
-                >
-                  Überschreibbar
-                </v-chip>
                 <span
                   v-if="!hasAnyTag(field)"
                   class="text--disabled text-caption"
@@ -188,18 +179,6 @@
                   }})
                 </span>
               </div>
-            </v-col>
-
-            <v-col class="col-12 col-md-4">
-              <v-switch
-                v-model="field.allowOverride"
-                color="primary"
-                label="Überschreibbar"
-                class="mt-0"
-                hide-details
-                :disabled="readonly"
-                @change="emitFields"
-              />
             </v-col>
           </v-row>
 
@@ -336,7 +315,7 @@ export default {
     },
     hasAnyTag(field) {
       const u = field.usageOptions || {};
-      return u.context !== "none" || field.allowOverride;
+      return u.context !== "none";
     },
 
     // ---- CRUD ----

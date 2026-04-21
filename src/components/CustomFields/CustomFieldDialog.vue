@@ -17,20 +17,17 @@
         <v-form ref="form" v-model="valid">
           <!-- Basic info -->
           <v-row dense>
-            <v-col cols="12" md="6">
+            <v-col v-if="isEdit" cols="12" md="6">
               <v-text-field
                 v-model="local.id"
                 label="Feld-ID"
-                hint="Eindeutiger technischer Schlüssel (z. B. 'color')"
-                persistent-hint
-                :disabled="isEdit"
-                :rules="idRules"
+                disabled
                 background-color="accent"
                 filled
                 dense
               />
             </v-col>
-            <v-col cols="12" md="6">
+            <v-col cols="12" :md="isEdit ? 6 : 12">
               <v-text-field
                 v-model="local.caption"
                 label="Bezeichnung"
@@ -171,18 +168,6 @@
               </v-row>
             </template>
           </template>
-
-          <!-- Override toggle -->
-          <template v-if="!hideOverride">
-            <v-divider class="my-4" />
-            <v-switch
-              v-model="local.allowOverride"
-              label="Mandanten dürfen den Wert überschreiben"
-              color="primary"
-              dense
-              hide-details
-            />
-          </template>
         </v-form>
       </v-card-text>
 
@@ -211,7 +196,6 @@ const makeEmptyField = () => ({
     catalogFilterType: null,
     catalogFilterPosition: "sidebar",
   },
-  allowOverride: true,
 });
 
 export default {
@@ -259,18 +243,6 @@ export default {
     isEdit() {
       return this.field !== null;
     },
-    idRules() {
-      return [
-        (v) => !!v || "Pflichtfeld",
-        (v) =>
-          /^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(v) ||
-          "Nur Buchstaben, Zahlen, - und _ erlaubt",
-        (v) =>
-          this.isEdit ||
-          !this.existingIds.includes(v) ||
-          "Diese ID existiert bereits",
-      ];
-    },
   },
   watch: {
     value(open) {
@@ -304,6 +276,16 @@ export default {
     },
   },
   methods: {
+    generateUUID() {
+      if (crypto && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+    },
     addOption() {
       this.local.options.push({ caption: "", value: "" });
     },
@@ -315,7 +297,11 @@ export default {
     },
     save() {
       if (!this.$refs.form.validate()) return;
-      this.$emit("save", JSON.parse(JSON.stringify(this.local)));
+      const payload = JSON.parse(JSON.stringify(this.local));
+      if (!this.isEdit) {
+        payload.id = this.generateUUID();
+      }
+      this.$emit("save", payload);
     },
   },
 };
