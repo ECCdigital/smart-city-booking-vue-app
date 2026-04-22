@@ -362,6 +362,12 @@ const routes = [
     },
   },
   {
+    path: "/login/card/:appId",
+    name: "card-login",
+    component: lazyLoad("Auth/CardLogin"),
+    props: true,
+  },
+  {
     path: "/register",
     name: "register",
     component: lazyLoad("Auth/Register"),

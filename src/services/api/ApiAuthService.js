@@ -124,6 +124,27 @@ export default {
     return ApiClient.post("auth/reset", { email });
   },
 
+  async getCardAuthMethods() {
+    const response = await ApiClient.get("/auth/card-methods");
+    return response.data.methods;
+  },
+
+  async cardLogin(appId, publicId, secret, userId) {
+    const response = await ApiClient.post("/auth/card/signin", {
+      appId,
+      publicId,
+      secret,
+      userId,
+    });
+
+    const { accessToken, refreshToken, user, permissions } = response.data;
+
+    ApiClient.setTokens(accessToken, refreshToken);
+
+
+    return { user, permissions };
+  },
+
   isAuthenticated() {
     return ApiClient.isAuthenticated();
   },
