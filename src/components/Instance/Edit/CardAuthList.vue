@@ -11,7 +11,7 @@
       <v-col class="col-12 col-md-4 d-flex justify-end align-center">
         <v-btn color="primary" @click="addCardApp">
           <v-icon left>mdi-plus</v-icon>
-          Karten-Service hinzufügen
+          Karten Authenticator hinzufügen
         </v-btn>
       </v-col>
     </v-row>

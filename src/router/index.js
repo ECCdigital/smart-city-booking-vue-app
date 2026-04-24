@@ -424,6 +424,18 @@ const routes = [
     },
   },
   {
+    path: "/auth/card/link-success",
+    name: "card-link-success",
+    component: lazyLoad("Auth/CardLinkSuccess"),
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/auth/card/link-failed",
+    name: "card-link-failed",
+    component: lazyLoad("Auth/CardLinkFailed"),
+    meta: { requiresAuth: false },
+  },
+  {
     path: "/password/reset",
     name: "password-reset",
     component: lazyLoad("Auth/PasswordReset"),
