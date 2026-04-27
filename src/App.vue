@@ -8,8 +8,6 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from "vuex";
-import ApiInstanceService from "@/services/api/ApiInstanceService";
 import AppToaster from "@/components/commons/AppToaster.vue";
 
 export default {

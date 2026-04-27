@@ -82,12 +82,12 @@ import SaveBar from "@/components/commons/SaveBar.vue";
 import InstanceEditGeneral from "@/components/Instance/Edit/InstanceEditGeneral.vue";
 import InstanceEditMail from "@/components/Instance/Edit/InstanceEditMail.vue";
 import InstanceEditOwners from "@/components/Instance/Edit/InstanceEditOwners.vue";
-import InstanceEditSSO from "@/components/Instance/Edit/InstanceEditSSO.vue";
 import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 import InstanceEditTenants from "@/components/Instance/Edit/InstanceEditTenants.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import InstanceEditBookables from "@/components/Instance/Edit/InstanceEditBookables.vue";
+import InstanceEditAuth from "@/components/Instance/Edit/InstanceEditAuth.vue";
 
 export default {
   name: "Instances",
@@ -98,7 +98,7 @@ export default {
     InstanceEditGeneral,
     InstanceEditMail,
     InstanceEditOwners,
-    InstanceEditSSO,
+    InstanceEditAuth,
     InstanceEditCatalog,
     InstanceEditTenants,
     InstanceEditBookables,
@@ -135,10 +135,10 @@ export default {
           comp: "InstanceEditOwners",
         },
         {
-          key: "sso",
-          label: "Single-Sign On",
-          icon: "mdi-lock",
-          comp: "InstanceEditSSO",
+          key: "auth",
+          label: "Authentifizierung",
+          icon: "mdi-shield-lock",
+          comp: "InstanceEditAuth",
         },
         {
           key: "tenants",
@@ -262,6 +262,29 @@ export default {
       return merged;
     },
 
+    normalizeCardAuthApp(raw = {}) {
+      return {
+        id: raw.id || "",
+        type: "card-auth",
+        label: raw.label || "Card Authentication",
+        description: raw.description || "",
+        enabled: raw.enabled || false,
+        serviceUrl: raw.serviceUrl || "",
+        apiToken: raw.apiToken || "",
+        cardType: raw.cardType || "",
+        publicIdField: {
+          label: raw.publicIdField?.label || "Card Number",
+          placeholder: raw.publicIdField?.placeholder || "",
+          helpText: raw.publicIdField?.helpText || "",
+        },
+        secretField: {
+          label: raw.secretField?.label || "Secret",
+          placeholder: raw.secretField?.placeholder || "",
+          helpText: raw.secretField?.helpText || "",
+        },
+      };
+    },
+
     onUpdateInstance(next) {
       this.instance = { ...this.instance, ...next };
     },
@@ -288,6 +311,13 @@ export default {
           this.normalizeKeycloakApp(this.instance.applications[idx])
         );
       }
+
+      this.instance.applications = this.instance.applications.map((app) => {
+        if (app.type === "card-auth") {
+          return this.normalizeCardAuthApp(app);
+        }
+        return app;
+      });
 
       // snapshot after fetching
       this.$nextTick(() => {
@@ -360,4 +390,11 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.page-content {
+  padding-bottom: calc(
+    56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
+      /* extra spacing */
+  );
+}
+</style>

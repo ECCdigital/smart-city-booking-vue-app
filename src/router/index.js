@@ -362,6 +362,12 @@ const routes = [
     },
   },
   {
+    path: "/login/card/:appId",
+    name: "card-login",
+    component: lazyLoad("Auth/CardLogin"),
+    props: true,
+  },
+  {
     path: "/register",
     name: "register",
     component: lazyLoad("Auth/Register"),
@@ -416,6 +422,18 @@ const routes = [
       title: "E-Mail bestätigen",
       requiresAuth: false,
     },
+  },
+  {
+    path: "/auth/card/link-success",
+    name: "card-link-success",
+    component: lazyLoad("Auth/CardLinkSuccess"),
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/auth/card/link-failed",
+    name: "card-link-failed",
+    component: lazyLoad("Auth/CardLinkFailed"),
+    meta: { requiresAuth: false },
   },
   {
     path: "/password/reset",
