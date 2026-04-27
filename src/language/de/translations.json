@@ -23,6 +23,16 @@
       }
     }
   },
+  "cardLogin": {
+    "linkRequested": {
+      "title": "Bestätigung erforderlich",
+      "message": "Wir haben Ihnen eine Email zur Verknüpfung gesendet."
+    },
+    "verificationSent": {
+      "title": "Account erstellt",
+      "message": "Bitte bestätigen Sie Ihre Email-Adresse über den gesendeten Link."
+    }
+  },
   "register": {
     "success": {
       "default": {

@@ -252,13 +252,15 @@ export default {
 
         if (result.status === "link_requested") {
           this.state = "awaiting_link_confirmation";
+          await this.addToast(
+            ToastService.createToast("cardLogin.linkRequested", "success")
+          );
         } else {
           this.state = "awaiting_verification";
+          await this.addToast(
+            ToastService.createToast("cardLogin.verificationSent", "success")
+          );
         }
-
-        await this.addToast(
-          ToastService.createToast(result.message, "success")
-        );
       } catch (error) {
         this.handleError(error);
       } finally {
