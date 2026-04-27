@@ -174,212 +174,438 @@
     </v-expansion-panels>
 
     <!-- ═══ Edit Dialog ═══ -->
-    <v-dialog v-model="editDialog.open" max-width="820" persistent>
-      <v-card>
-        <v-card-title class="subtitle-1">
-          <v-icon left color="primary">mdi-card-account-details</v-icon>
-          {{
-            editDialog.index >= 0
-              ? "Karten-Service bearbeiten"
-              : "Neuen Karten-Service anlegen"
-          }}
+    <v-dialog v-model="editDialog.open" max-width="900px" persistent scrollable>
+      <v-card v-if="editDialog.app">
+        <v-card-title class="d-flex align-center py-4 px-6">
+          <v-avatar
+            :color="editDialog.app.enabled ? 'success' : 'blue-grey'"
+            size="48"
+            class="white--text font-weight-bold mr-4"
+          >
+            <v-icon dark>mdi-card-account-details</v-icon>
+          </v-avatar>
+          <div class="flex-grow-1">
+            <div class="text-h5 font-weight-medium">
+              {{
+                editDialog.index >= 0
+                  ? editDialog.app.label || "Karten-Service bearbeiten"
+                  : "Neuen Karten-Service anlegen"
+              }}
+            </div>
+            <div class="text-caption grey--text">
+              <span v-if="editDialog.app.id">ID: {{ editDialog.app.id }}</span>
+              <span v-else>Neue Konfiguration</span>
+              <span v-if="editDialog.app.cardType" class="mx-2">•</span>
+              <span v-if="editDialog.app.cardType">
+                Typ: {{ editDialog.app.cardType }}
+              </span>
+            </div>
+          </div>
+          <v-chip
+            v-if="editDialog.app.enabled"
+            color="green"
+            text-color="white"
+            class="mr-2"
+          >
+            <v-icon left small>mdi-check-circle</v-icon>
+            Aktiv
+          </v-chip>
+          <v-chip v-else color="grey" text-color="white" class="mr-2">
+            <v-icon left small>mdi-pause-circle</v-icon>
+            Inaktiv
+          </v-chip>
+          <v-btn icon @click="cancelEdit">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
         </v-card-title>
 
-        <v-card-text v-if="editDialog.app">
+        <v-divider />
+
+        <v-tabs v-model="editActiveTab" grow>
+          <v-tab>
+            <v-icon left>mdi-information-outline</v-icon>
+            Allgemein
+          </v-tab>
+          <v-tab>
+            <v-icon left>mdi-server-network</v-icon>
+            Service
+          </v-tab>
+          <v-tab>
+            <v-icon left>mdi-form-textbox</v-icon>
+            Felder
+          </v-tab>
+        </v-tabs>
+
+        <v-divider />
+
+        <v-card-text class="pa-6" style="max-height: 500px; overflow-y: auto">
           <v-form ref="editForm">
-            <!-- Aktivierung & Grunddaten -->
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-switch
-                  v-model="editDialog.app.enabled"
-                  color="primary"
-                  hide-details
-                  label="Service aktivieren"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="editDialog.app.id"
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Technische ID"
-                  hint="Eindeutiger Bezeichner (z.B. 'ehrenamtskarte')"
-                  persistent-hint
-                  :rules="[rules.required, rules.slug]"
-                />
-              </v-col>
-            </v-row>
+            <v-tabs-items v-model="editActiveTab">
+              <v-tab-item>
+                <div class="mb-4">
+                  <div class="d-flex align-center mb-2">
+                    <v-icon color="primary" class="mr-2">
+                      mdi-card-account-details-outline
+                    </v-icon>
+                    <span class="text-h6 font-weight-medium">
+                      Grundeinstellungen
+                    </span>
+                  </div>
+                  <p class="text-body-2 grey--text mb-0">
+                    Identifikation und Anzeige des Karten-Services
+                  </p>
+                </div>
 
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="editDialog.app.label"
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Anzeigename"
-                  hint="Wird dem Nutzer im Login-Formular angezeigt"
-                  persistent-hint
-                  :rules="[rules.required]"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="editDialog.app.description"
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Beschreibung"
-                  hint="Optionaler Hilfetext unter dem Login-Button"
-                  persistent-hint
-                />
-              </v-col>
-            </v-row>
+                <v-card outlined class="mb-4">
+                  <v-card-text class="pa-5">
+                    <div class="d-flex flex-column flex-sm-row align-center">
+                      <div class="flex-grow-1 mb-3 mb-sm-0">
+                        <div class="text-body-1 font-weight-medium mb-1">
+                          <v-icon
+                            :color="editDialog.app.enabled ? 'success' : 'grey'"
+                            class="mr-1"
+                          >
+                            {{
+                              editDialog.app.enabled
+                                ? "mdi-toggle-switch"
+                                : "mdi-toggle-switch-off-outline"
+                            }}
+                          </v-icon>
+                          Service-Status
+                        </div>
+                        <div class="text-body-2 grey--text">
+                          {{
+                            editDialog.app.enabled
+                              ? "Der Karten-Service ist aktiv und für Benutzer verfügbar"
+                              : "Der Karten-Service ist deaktiviert"
+                          }}
+                        </div>
+                      </div>
+                      <v-switch
+                        v-model="editDialog.app.enabled"
+                        color="success"
+                        hide-details
+                        label="Aktiviert"
+                        class="mt-0 pt-0"
+                      />
+                    </div>
+                  </v-card-text>
+                </v-card>
 
-            <v-divider class="my-4" />
+                <!-- Identifikation -->
+                <v-card outlined class="mb-4">
+                  <v-card-text class="pa-4">
+                    <v-row>
+                      <v-col cols="12" sm="6">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1">mdi-identifier</v-icon>
+                          Technische ID
+                        </div>
+                        <v-text-field
+                          :value="editDialog.app.id"
+                          background-color="grey lighten-4"
+                          filled
+                          dense
+                          readonly
+                          disabled
+                          hide-details="auto"
+                          persistent-hint
+                          hint="Automatisch generierte UUID"
+                        />
+                      </v-col>
+                      <v-col cols="12" sm="6">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1">mdi-tag</v-icon>
+                          Kartentyp
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.cardType"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details="auto"
+                          placeholder="z.B. ehrenamtskarte"
+                          persistent-hint
+                          hint="Wird als 'cardType' an den Service gesendet (optional)"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
 
-            <div class="text-subtitle-2 font-weight-medium mb-2">
-              <v-icon small left>mdi-server-network</v-icon>
-              Karten Authenticator
-            </div>
+                <!-- Anzeige -->
+                <v-card outlined>
+                  <v-card-text class="pa-4">
+                    <v-row>
+                      <v-col cols="12" sm="6">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1">mdi-format-title</v-icon>
+                          Anzeigename
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.label"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details="auto"
+                          placeholder="z.B. Ehrenamtskarte"
+                          persistent-hint
+                          hint="Wird dem Nutzer im Login-Formular angezeigt"
+                          :rules="[rules.required]"
+                        />
+                      </v-col>
+                      <v-col cols="12" sm="6">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1">mdi-text</v-icon>
+                          Beschreibung
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.description"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details="auto"
+                          placeholder="Optionaler Hilfetext"
+                          persistent-hint
+                          hint="Wird unter dem Login-Button angezeigt"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-tab-item>
 
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="editDialog.app.serviceUrl"
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Service-URL"
-                  hint="Basis-URL des Karten Authenticators"
-                  persistent-hint
-                  placeholder="https://cards-api.example.com"
-                  :rules="[rules.required, rules.url]"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="editDialog.app.apiToken"
-                  background-color="accent"
-                  filled
-                  dense
-                  :type="showApiToken ? 'text' : 'password'"
-                  :append-icon="showApiToken ? 'mdi-eye' : 'mdi-eye-off'"
-                  label="API-Token"
-                  hint="Bearer-Token zur Authentifizierung"
-                  persistent-hint
-                  @click:append="showApiToken = !showApiToken"
-                />
-              </v-col>
-            </v-row>
+              <!-- Tab 2: Service -->
+              <v-tab-item>
+                <div class="mb-4">
+                  <div class="d-flex align-center mb-2">
+                    <v-icon color="primary" class="mr-2">
+                      mdi-server-network
+                    </v-icon>
+                    <span class="text-h6 font-weight-medium">
+                      Karten Authenticator
+                    </span>
+                  </div>
+                  <p class="text-body-2 grey--text mb-0">
+                    Verbindungsdaten zum externen Authentifizierungs-Service
+                  </p>
+                </div>
 
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="editDialog.app.cardType"
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Kartentyp"
-                  hint="Wird als 'cardType' gesendet (optional)"
-                  persistent-hint
-                  placeholder="z.B. ehrenamtskarte"
-                />
-              </v-col>
-            </v-row>
+                <v-card outlined>
+                  <v-card-text class="pa-4">
+                    <v-row>
+                      <v-col cols="12">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1">mdi-link-variant</v-icon>
+                          Service-URL
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.serviceUrl"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details="auto"
+                          placeholder="https://cards-api.example.com"
+                          persistent-hint
+                          hint="Basis-URL des Karten Authenticators"
+                          :rules="[rules.required, rules.url]"
+                        />
+                      </v-col>
+                    </v-row>
 
-            <v-divider class="my-4" />
+                    <v-row class="mt-3">
+                      <v-col cols="12">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1">mdi-key-variant</v-icon>
+                          API-Token
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.apiToken"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details="auto"
+                          :type="showApiToken ? 'text' : 'password'"
+                          :append-icon="
+                            showApiToken ? 'mdi-eye' : 'mdi-eye-off'
+                          "
+                          placeholder="Bearer-Token"
+                          persistent-hint
+                          hint="Token zur Authentifizierung beim Service"
+                          @click:append="showApiToken = !showApiToken"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-tab-item>
 
-            <div class="text-subtitle-2 font-weight-medium mb-2">
-              <v-icon small left>mdi-form-textbox</v-icon>
-              Felddefinitionen für das Login-Formular
-            </div>
+              <!-- Tab 3: Felder -->
+              <v-tab-item>
+                <div class="mb-4">
+                  <div class="d-flex align-center mb-2">
+                    <v-icon color="primary" class="mr-2"
+                      >mdi-form-textbox</v-icon
+                    >
+                    <span class="text-h6 font-weight-medium">
+                      Felddefinitionen
+                    </span>
+                  </div>
+                  <p class="text-body-2 grey--text mb-0">
+                    Konfiguration der Eingabefelder im Login-Formular
+                  </p>
+                </div>
 
-            <v-card flat color="grey lighten-4" class="pa-3 mb-3">
-              <div class="text-caption font-weight-medium mb-2">
-                Feld: Public-ID (Kartennummer / Mitgliedsnummer / …)
-              </div>
-              <v-row dense>
-                <v-col cols="12" md="4">
-                  <v-text-field
-                    v-model="editDialog.app.publicIdField.label"
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Label"
-                    placeholder="z.B. Kartennummer"
-                    :rules="[rules.required]"
-                  />
-                </v-col>
-                <v-col cols="12" md="4">
-                  <v-text-field
-                    v-model="editDialog.app.publicIdField.placeholder"
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Platzhalter"
-                    placeholder="z.B. EA-2024-00001"
-                  />
-                </v-col>
-                <v-col cols="12" md="4">
-                  <v-text-field
-                    v-model="editDialog.app.publicIdField.helpText"
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Hilfetext"
-                    placeholder="z.B. Nummer auf der Kartenvorderseite"
-                  />
-                </v-col>
-              </v-row>
-            </v-card>
+                <!-- Public-ID Field -->
+                <v-card outlined class="mb-4">
+                  <v-card-title class="d-flex align-center py-3 px-4">
+                    <v-avatar color="primary" size="36" class="mr-3">
+                      <v-icon dark small>mdi-card-text-outline</v-icon>
+                    </v-avatar>
+                    <div class="flex-grow-1">
+                      <div class="text-subtitle-1 font-weight-medium">
+                        Public-ID
+                      </div>
+                      <div class="text-caption grey--text">
+                        Kartennummer, Mitgliedsnummer o.&#8239;ä.
+                      </div>
+                    </div>
+                  </v-card-title>
+                  <v-divider />
+                  <v-card-text class="pa-4">
+                    <v-row>
+                      <v-col cols="12" md="4">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1">mdi-label</v-icon>
+                          Label
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.publicIdField.label"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details
+                          placeholder="z.B. Kartennummer"
+                          :rules="[rules.required]"
+                        />
+                      </v-col>
+                      <v-col cols="12" md="4">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1">mdi-form-textbox</v-icon>
+                          Platzhalter
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.publicIdField.placeholder"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details
+                          placeholder="z.B. EA-2024-00001"
+                        />
+                      </v-col>
+                      <v-col cols="12" md="4">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1"
+                            >mdi-help-circle-outline</v-icon
+                          >
+                          Hilfetext
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.publicIdField.helpText"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details
+                          placeholder="z.B. Nummer auf der Vorderseite"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
 
-            <v-card flat color="grey lighten-4" class="pa-3">
-              <div class="text-caption font-weight-medium mb-2">
-                Feld: Secret (Gültigkeitscode / PIN / …)
-              </div>
-              <v-row dense>
-                <v-col cols="12" md="4">
-                  <v-text-field
-                    v-model="editDialog.app.secretField.label"
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Label"
-                    placeholder="z.B. Gültigkeitscode"
-                    :rules="[rules.required]"
-                  />
-                </v-col>
-                <v-col cols="12" md="4">
-                  <v-text-field
-                    v-model="editDialog.app.secretField.placeholder"
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Platzhalter"
-                    placeholder="z.B. 2026-12-31"
-                  />
-                </v-col>
-                <v-col cols="12" md="4">
-                  <v-text-field
-                    v-model="editDialog.app.secretField.helpText"
-                    background-color="accent"
-                    filled
-                    dense
-                    label="Hilfetext"
-                    placeholder="z.B. Datum auf der Kartenrückseite"
-                  />
-                </v-col>
-              </v-row>
-            </v-card>
+                <!-- Secret Field -->
+                <v-card outlined>
+                  <v-card-title class="d-flex align-center py-3 px-4">
+                    <v-avatar color="amber" size="36" class="mr-3">
+                      <v-icon color="black" small>mdi-lock-outline</v-icon>
+                    </v-avatar>
+                    <div class="flex-grow-1">
+                      <div class="text-subtitle-1 font-weight-medium">
+                        Secret
+                      </div>
+                      <div class="text-caption grey--text">
+                        Gültigkeitscode, PIN o.&#8239;ä.
+                      </div>
+                    </div>
+                  </v-card-title>
+                  <v-divider />
+                  <v-card-text class="pa-4">
+                    <v-row>
+                      <v-col cols="12" md="4">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1">mdi-label</v-icon>
+                          Label
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.secretField.label"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details
+                          placeholder="z.B. Gültigkeitscode"
+                          :rules="[rules.required]"
+                        />
+                      </v-col>
+                      <v-col cols="12" md="4">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1">mdi-form-textbox</v-icon>
+                          Platzhalter
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.secretField.placeholder"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details
+                          placeholder="z.B. 2026-12-31"
+                        />
+                      </v-col>
+                      <v-col cols="12" md="4">
+                        <div class="text-subtitle-2 mb-2 grey--text">
+                          <v-icon small class="mr-1"
+                            >mdi-help-circle-outline</v-icon
+                          >
+                          Hilfetext
+                        </div>
+                        <v-text-field
+                          v-model="editDialog.app.secretField.helpText"
+                          background-color="accent"
+                          filled
+                          dense
+                          hide-details
+                          placeholder="z.B. Datum auf der Rückseite"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-tab-item>
+            </v-tabs-items>
           </v-form>
         </v-card-text>
 
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="cancelEdit">Abbrechen</v-btn>
-          <v-btn color="primary" text @click="saveEdit">Übernehmen</v-btn>
+        <v-divider />
+
+        <!-- Actions -->
+        <v-card-actions class="justify-end px-6 py-4">
+          <v-btn outlined @click="cancelEdit">
+            <v-icon left small>mdi-close</v-icon>
+            Abbrechen
+          </v-btn>
+          <v-btn color="primary" @click="saveEdit">
+            <v-icon left small>mdi-content-save</v-icon>
+            Übernehmen
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -415,6 +641,7 @@ export default {
   },
   data() {
     return {
+      editActiveTab: 0,
       showApiToken: false,
       editDialog: {
         open: false,
@@ -446,7 +673,6 @@ export default {
     },
   },
   methods: {
-    // ── Helpers ──
     shortenUrl(url) {
       try {
         return new URL(url).host;
@@ -455,10 +681,20 @@ export default {
       }
     },
 
+    generateUUID() {
+      if (typeof crypto !== "undefined" && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+    },
+
     createEmptyApp() {
-      const id = `card-auth-${Date.now()}-${++cardIdCounter}`;
       return {
-        id,
+        id: this.generateUUID(),
         type: "card-auth",
         label: "",
         description: "",
@@ -481,6 +717,7 @@ export default {
 
     // ── CRUD ──
     addCardApp() {
+      this.editActiveTab = 0;
       this.editDialog = {
         open: true,
         index: -1,
@@ -490,6 +727,7 @@ export default {
     },
 
     openEdit(idx) {
+      this.editActiveTab = 0;
       this.editDialog = {
         open: true,
         index: idx,
