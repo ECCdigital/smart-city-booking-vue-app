@@ -223,12 +223,6 @@ export default {
         { text: "Im Buchungsprozess (Kunde füllt aus)", value: "checkout" },
         { text: "Im Katalog (Info / Filter)", value: "catalog" },
       ],
-      filterTypes: [
-        { text: "Auswahl (Select)", value: "select" },
-        { text: "Schieberegler", value: "slider" },
-        { text: "Bereich", value: "range" },
-        { text: "Checkbox", value: "checkbox" },
-      ],
       filterPositions: [
         { text: "Seitenleiste", value: "sidebar" },
         { text: "Navigation", value: "navigation" },
@@ -242,6 +236,25 @@ export default {
   computed: {
     isEdit() {
       return this.field !== null;
+    },
+    filterTypes() {
+      const all = [
+        { text: "Auswahl (Select)", value: "select" },
+        { text: "Schieberegler", value: "slider" },
+        { text: "Bereich", value: "range" },
+        { text: "Checkbox", value: "checkbox" },
+      ];
+
+      const type = this.local.inputType;
+
+      if (type === "boolean") {
+        return all.filter((f) => f.value === "checkbox");
+      }
+      if (type === "string" || type === "text") {
+        return all.filter((f) => !["slider", "range"].includes(f.value));
+      }
+      if (type === "select") return all.filter((f) => f.value !== "checkbox");
+      return all;
     },
   },
   watch: {
@@ -264,6 +277,13 @@ export default {
     },
     "local.inputType"(v) {
       if (v !== "select") this.local.options = [];
+      const allowed = this.filterTypes.map((f) => f.value);
+      if (
+        this.local.usageOptions.catalogFilterType &&
+        !allowed.includes(this.local.usageOptions.catalogFilterType)
+      ) {
+        this.local.usageOptions.catalogFilterType = null;
+      }
     },
     "local.usageOptions.context"(v) {
       if (v !== "checkout") {
