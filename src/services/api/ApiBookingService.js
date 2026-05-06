@@ -46,7 +46,7 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.post(
       `api/${t}/checkout?simulate=${simulate || false}`,
-      bookingAttempt,
+      bookingAttempt
     );
   },
   async commitBooking(id) {
@@ -104,16 +104,22 @@ export default {
       }
     );
   },
+  getCancellationReceipt(id, cancellationReceiptId) {
+    return ApiClient.get(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/cancellation-receipt/${cancellationReceiptId}`,
+      {
+        responseType: "blob",
+      }
+    );
+  },
   async downloadBookingIcal(id) {
     return await ApiClient.get(
-      `api/${store.getters["tenants/currentTenantId"]}/ical/bookings/${id}`,
+      `api/${store.getters["tenants/currentTenantId"]}/ical/bookings/${id}`
     );
   },
   downloadGroupBookingIcal(ids, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(
-      `api/${t}/ical/bookings?ids=${ids.join(",")}`
-    );
+    return ApiClient.get(`api/${t}/ical/bookings?ids=${ids.join(",")}`);
   },
   checkPublicBookingStatus(id, lastname, tenantId) {
     return ApiClient.get(`api/${tenantId}/bookings/${id}/status/public`, {

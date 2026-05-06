@@ -236,7 +236,11 @@
       </div>
     </v-expand-transition>
 
-    <v-card v-if="!date && !loading && !noAvailabilityFound" elevation="1" class="initial-state-card">
+    <v-card
+      v-if="!date && !loading && !noAvailabilityFound"
+      elevation="1"
+      class="initial-state-card"
+    >
       <v-card-text class="text-center py-8">
         <v-icon size="80" color="info" class="mb-4">
           mdi-calendar-clock
@@ -461,6 +465,8 @@ export default {
           this.leadItem.amount
         );
 
+        console.log(response.data?.availability);
+
         const occupations = (response.data?.availability || []).map((occ) => ({
           ...occ,
           timeBegin: new Date(occ.timeBegin).getTime(),
@@ -587,6 +593,8 @@ export default {
       const firstDay = new Date(year, month - 1, 1);
       const lastDay = new Date(year, month, 0);
 
+      console.log(firstDay.toISOString(), lastDay.toISOString());
+
       try {
         const response = await ApiBookablesService.getBookableAvailability(
           this.leadItem.bookable.id,
@@ -597,6 +605,7 @@ export default {
         );
 
         if (response.data?.availability) {
+          console.log(response.data);
           this.occupations = response.data.availability.map((occ) => ({
             ...occ,
             timeBegin: new Date(occ.timeBegin).getTime(),

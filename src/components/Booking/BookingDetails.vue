@@ -622,6 +622,57 @@
         </v-card>
 
         <v-card
+          v-if="cancellationReceipts?.length > 0"
+          class="mb-6 section-card"
+          elevation="2"
+          outlined
+        >
+          <v-card-title class="section-header pa-4">
+            <v-icon class="mr-2">mdi-book-cancel-outline</v-icon>
+            <span class="text-h6 font-weight-bold">Stornobelege</span>
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text class="pa-0">
+            <v-list dense>
+              <template v-for="(item, index) in cancellationReceipts">
+                <v-list-item :key="index" class="px-4">
+                  <v-list-item-avatar color="success lighten-4">
+                    <v-icon color="success">mdi-file-pdf-box</v-icon>
+                  </v-list-item-avatar>
+                  <v-list-item-content>
+                    <v-list-item-title class="font-weight-bold">
+                      {{ item.title }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle v-if="item.timeCreated">
+                      <v-icon x-small>mdi-calendar</v-icon>
+                      Ausstellungsdatum:
+                      {{
+                        Intl.DateTimeFormat("de-DE", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        }).format(new Date(item.timeCreated))
+                      }}
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                  <v-list-item-action>
+                    <v-btn
+                      icon
+                      @click="downloadCancellationReceipt(item.title)"
+                    >
+                      <v-icon>mdi-download</v-icon>
+                    </v-btn>
+                  </v-list-item-action>
+                </v-list-item>
+                <v-divider
+                  v-if="index < cancellationReceipts.length - 1"
+                  :key="`divider-${index}`"
+                />
+              </template>
+            </v-list>
+          </v-card-text>
+        </v-card>
+
+        <v-card
           v-if="invoices?.length > 0"
           class="mb-6 section-card"
           elevation="2"
@@ -674,7 +725,7 @@
             class="section-header pa-4 d-flex justify-space-between align-center"
           >
             <div class="d-flex align-center">
-              <v-icon class="mr-2">mdi-file-document</v-icon>
+              <v-icon class="mr-2">mdi-file-document-outline</v-icon>
               <span class="text-h6 font-weight-bold">Buchungsbelege</span>
             </div>
             <v-btn small @click="createReceipt(booking.id)">
@@ -933,11 +984,19 @@ export default {
         (attachment) => attachment.type === "invoice"
       );
     },
+    cancellationReceipts() {
+      if (!this.booking.attachments) return [];
+      return this.booking.attachments?.filter(
+        (attachment) => attachment.type === "cancellation"
+      );
+    },
     attachments() {
       if (!this.booking.attachments) return [];
       return this.booking.attachments?.filter(
         (attachment) =>
-          attachment.type !== "receipt" && attachment.type !== "invoice"
+          attachment.type !== "receipt" &&
+          attachment.type !== "invoice" &&
+          attachment.type !== "cancellation"
       );
     },
     confirmedIfbsLockers() {
@@ -1182,6 +1241,25 @@ export default {
         link.click();
         ProcessingService.hide(operationId);
       });
+    },
+    downloadCancellationReceipt(name) {
+      const operationId = ProcessingService.showSnackbar(
+        "Stelle Stornobeleg bereit..."
+      );
+      ApiBookingService.getCancellationReceipt(this.booking.id, name).then(
+        (response) => {
+          const blob = new Blob([response.data], {
+            type: "application/pdf",
+          });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", name);
+          document.body.appendChild(link);
+          link.click();
+          ProcessingService.hide(operationId);
+        }
+      );
     },
     downloadAttachment({ url, label }) {
       const operationId = ProcessingService.showSnackbar(

@@ -1,10 +1,11 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import ApiRolesService from "@/services/api/ApiRolesService";
+import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 
 export default {
   name: "BookableEditPermissions",
-  components: { BaseSection },
+  components: { UserRoleSelector, BaseSection },
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -99,84 +100,19 @@ export default {
       </v-card-title>
       <v-divider></v-divider>
       <v-card-text class="pa-4">
-        <div class="info-label mb-3">
-          <v-icon small class="mr-2">mdi-account-multiple</v-icon>
-          Verfügbar für Benutzer
-        </div>
-        <p class="mb-3 text-caption">
-          Berechtigen Sie <strong>bestimmte Benutzer</strong>, dieses Objekt zu
-          sehen. Werden keine Benutzer explizit zur Ansicht berechtigt, bleibt
-          dieses Buchungsobjekt für öffentlich einsehbar.
-        </p>
-        <v-combobox
-          v-model="model.permittedUsers"
-          :items="availableUsers"
-          label="Verfügbar für Benutzer"
-          hide-selected
-          no-data-text="Keine Benutzer verfügbar"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-          dense
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              small
-              color="secondary"
-              @click="select"
-              @click:close="removePermittedUser(item)"
-            >
-              <strong>{{ item }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
-
-        <div class="info-label mb-3 mt-5">
-          <v-icon small class="mr-2">mdi-account-group</v-icon>
-          Verfügbar für Rollen
-        </div>
-        <p class="mb-3 text-caption">
-          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses
-          Objekt zu sehen. Werden keine Benutzer explizit zur Ansicht
-          berechtigt, bleibt dieses Buchungsobjekt öffentlich einsehbar.
-        </p>
-        <v-combobox
-          v-model="model.permittedRoles"
-          :items="availableRoles"
-          label="Verfügbar für Rollen"
-          item-text="name"
-          item-value="id"
-          hide-selected
-          no-data-text="Keine Rollen verfügbar"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-          dense
-          :return-object="false"
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              small
-              color="secondary"
-              @click="select"
-              @click:close="removePermittedRole(item)"
-            >
-              <strong>{{
-                availableRoles.find((r) => r.id === item)?.name
-              }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
+        <UserRoleSelector
+          :users="model.permittedUsers"
+          :roles="model.permittedRoles"
+          :available-users="availableUsers"
+          :available-roles-prop="availableRoles"
+          :fetch-roles-on-mount="false"
+          @update:users="model.permittedUsers = $event"
+          @update:roles="model.permittedRoles = $event"
+          users-label="Verfügbar für Benutzer"
+          roles-label="Verfügbar für Rollen"
+          users-hint="Berechtigen Sie <strong>bestimmte Benutzer</strong>, dieses Objekt zu sehen."
+          roles-hint="Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses Objekt zu sehen."
+        />
       </v-card-text>
     </v-card>
 

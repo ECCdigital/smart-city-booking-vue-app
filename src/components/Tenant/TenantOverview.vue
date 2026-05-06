@@ -59,6 +59,7 @@
               @update:challenges="onUpdateChallenges"
               @open-receipt-template="openReceiptTemplate"
               @open-invoice-template="openInvoiceTemplate"
+              @open-cancellation-template="openCancellationTemplate"
             />
           </keep-alive>
         </v-col>
@@ -88,6 +89,12 @@
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
     />
+    <CancellationTemplateDialog
+      :open="showEditCancellationTemplateDialog"
+      :cancellation-template="tenant.cancellationTemplate"
+      @close="showEditCancellationTemplateDialog = false"
+      @submit="onSubmitCancellationTemplate"
+    />
   </div>
 </template>
 
@@ -114,10 +121,12 @@ import ApiChallengeService from "@/services/api/ApiChallengeService";
 import SaveBar from "@/components/commons/SaveBar.vue";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
+import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
 
 export default {
   name: "TenantOverview",
   components: {
+    CancellationTemplateDialog,
     SaveBar,
     TenantEditGeneral,
     TenantEditWeb,
@@ -221,6 +230,7 @@ export default {
       verificationChallenges: [],
       showEditTemplateDialog: false,
       showEditInvoiceTemplateDialog: false,
+      showEditCancellationTemplateDialog: false,
       defaultApps: {
         giroCockpit: {
           type: "payment",
@@ -523,6 +533,9 @@ export default {
     openInvoiceTemplate() {
       this.showEditInvoiceTemplateDialog = true;
     },
+    openCancellationTemplate() {
+      this.showEditCancellationTemplateDialog = true;
+    },
     onSubmitReceiptTemplate(template) {
       this.tenant.receiptTemplate = template;
       this.showEditTemplateDialog = false;
@@ -530,6 +543,10 @@ export default {
     onSubmitInvoiceTemplate(template) {
       this.tenant.invoiceTemplate = template;
       this.showEditInvoiceTemplateDialog = false;
+    },
+    onSubmitCancellationTemplate(template) {
+      this.tenant.cancellationTemplate = template;
+      this.showEditCancellationTemplateDialog = false;
     },
     async fetchInstanceCustomFields() {
       try {
