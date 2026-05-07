@@ -296,6 +296,11 @@ export default {
           apiKeyID: "",
           apiKey: "",
           active: false,
+          customerService: {
+            name: "",
+            email: "",
+            phone: "",
+          },
         },
       },
     };

@@ -2,7 +2,7 @@
   <div class="checkout-status-page">
     <v-container class="py-10" style="max-width: 800px">
       <!-- Loading State -->
-      <v-card v-if="isLoading" class="pa-10 text-center" elevation="2" rounded="lg">
+      <v-card v-if="isLoading" class="pa-10 text-center" flat >
         <v-progress-circular
           indeterminate
           color="primary"
@@ -22,8 +22,7 @@
         <v-card
           v-if="status !== 'multiple'"
           class="pa-10 text-center"
-          elevation="2"
-          rounded="lg"
+          flat
         >
           <!-- Success -->
           <div v-if="status === 'success'">
