@@ -1,7 +1,7 @@
 <template>
   <v-card
     class="kanban-card mb-2"
-    :class=" { 'kanban-card--dragging': isDragging }"
+    :class="{ 'kanban-card--dragging': isDragging }"
     @click="onOpenBooking(element.bookingItem.id)"
     hover
     outlined
@@ -76,13 +76,6 @@
           </v-list-item>
 
           <v-divider />
-
-          <v-list-item @click.stop="rejectBooking(element.id)">
-            <v-list-item-icon>
-              <v-icon small color="error">mdi-cancel</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Stornieren</v-list-item-title>
-          </v-list-item>
         </v-list>
       </v-menu>
     </div>
@@ -134,8 +127,10 @@
 </template>
 
 <script>
+import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
 export default {
   name: "BookingKanbanCard",
+  components: { BookingRejectConformationDialog },
   props: {
     element: {
       type: Object,
@@ -149,6 +144,11 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  data() {
+    return {
+      dialogOpen: false,
+    };
   },
   computed: {
     bookableTitle() {
@@ -176,8 +176,13 @@ export default {
     commitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);
     },
-    rejectBooking(bookingId) {
-      this.$emit("reject-booking", bookingId);
+    rejectBooking(bookingId, reason = "", skipCancellation = false) {
+      console.log("rejectBooking", bookingId, reason, skipCancellation);
+      this.dialogOpen = false;
+      this.$emit("reject-booking", bookingId, reason, skipCancellation);
+    },
+    onRejectBooking() {
+      this.dialogOpen = true;
     },
     archiveTask(taskId) {
       this.$emit("archive-task", taskId);

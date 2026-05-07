@@ -640,5 +640,17 @@
         "message": "Das Schließfach konnte nicht geöffnet werden."
       }
     }
+  },
+  "invoice": {
+    "create": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Die Rechnung wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Die Rechnung konnte nicht erstellt werden."
+      }
+    }
   }
 }

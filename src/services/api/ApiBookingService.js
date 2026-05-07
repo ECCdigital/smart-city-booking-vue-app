@@ -27,7 +27,7 @@ export default {
   ) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const irb = includeRelatedBookables || false;
-    const ipb = includeParentBookables || false;
+    const ipb = includeParentBookables || false
     const po = publicOnly || false;
 
     //TODO: check if typo-correction interferes anywhere
@@ -62,9 +62,15 @@ export default {
     );
     return response.data;
   },
-  rejectBooking(id, tenantId, reason) {
+  rejectBooking(id, tenantId, reason, skipCancellation) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`api/${t}/bookings/${id}/reject`, { reason: reason });
+    return ApiClient.post(
+      `api/${t}/bookings/${id}/reject?skipCancellation}`,
+      {
+        reason: reason,
+        skipCancellation: skipCancellation,
+      }
+    );
   },
   requestRejectBooking(id, tenantId, reason) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
@@ -84,6 +90,13 @@ export default {
   async generateReceipt(id) {
     const response = await ApiClient.post(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/receipt`,
+      {}
+    );
+    return response.data;
+  },
+  async generateInvoice(id, sendEmail = false) {
+    const response = await ApiClient.post(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/invoice?sendEmail=${sendEmail}`,
       {}
     );
     return response.data;

@@ -21,6 +21,10 @@
             :rules="[(v) => !!v || 'Begründung ist erforderlich']"
             rows="2"
           ></v-textarea>
+          <v-checkbox
+            v-model="skipCancellation"
+            label="Kein Stornobeleg erstellen"
+          ></v-checkbox>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -63,6 +67,7 @@ export default {
     return {
       rejectReason: null,
       valid: false,
+      skipCancellation: false,
     };
   },
   computed: {
@@ -79,7 +84,12 @@ export default {
     },
     async onReject() {
       if (this.valid) {
-        this.$emit("reject-booking", this.toReject.id, this.rejectReason);
+        this.$emit(
+          "reject-booking",
+          this.toReject.id,
+          this.rejectReason,
+          this.skipCancellation
+        );
       }
     },
   },

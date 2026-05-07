@@ -695,13 +695,18 @@ export default {
         ProcessingService.hide(operationId);
       }
     },
-    async rejectBooking(id, rejectReason) {
+    async rejectBooking(id, rejectReason, skipCancellation) {
       const operationId = ProcessingService.showOverlay(
         "Buchung wird abgelehnt..."
       );
       try {
         await this.startLoading("reject-booking");
-        await ApiBookingService.rejectBooking(id, this.tenantId, rejectReason);
+        await ApiBookingService.rejectBooking(
+          id,
+          this.tenantId,
+          rejectReason,
+          skipCancellation
+        );
         await this.fetchBookings();
         await this.fetchGroupBookings();
         this.openRejectDialog = false;
@@ -711,7 +716,7 @@ export default {
         ProcessingService.hide(operationId);
       }
     },
-    async rejectGroupBooking(id, rejectReason) {
+    async rejectGroupBooking(id, rejectReason, skipCancellation) {
       const groupBooking = this.api.groupBookings.find((groupBooking) =>
         groupBooking.bookingIds.includes(id)
       );
@@ -723,7 +728,8 @@ export default {
         const response = await ApiGroupBookingService.rejectGroupBooking(
           null,
           groupBooking.id,
-          rejectReason
+          rejectReason,
+          skipCancellation
         );
 
         if (!response.success) {

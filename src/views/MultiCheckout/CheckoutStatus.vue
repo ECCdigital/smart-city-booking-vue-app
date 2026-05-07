@@ -30,7 +30,7 @@
               >mdi-timer-sand-empty</v-icon
             >
             <h1>Vielen Dank für Ihre Anfrage</h1>
-            <p class="lead mt-5" style="max-width: 600px; margin: auto;">
+            <p class="lead mt-5" style="max-width: 600px; margin: auto">
               Ihre Buchungsanfrage ist bei uns eingegangen und wird derzeit zur
               Freigabe geprüft. Unsere Koordinator*innen melden sich so schnell
               wie möglich bei Ihnen. Sobald Ihre Anfrage freigegeben wurde,
@@ -43,10 +43,9 @@
               >mdi-timer-sand-empty</v-icon
             >
             <h1>Vielen Dank für Ihre Buchung</h1>
-            <p class="lead mt-5" style="max-width: 600px; margin: auto;">
-              Ihre Buchung wurde von uns entgegengenommen und freigegeben. Bitte
-              überweisen Sie den fälligen Betrag zeitnah, damit die Buchung
-              endgültig abgeschlossen werden kann.
+            <p class="lead mt-5" style="max-width: 600px; margin: auto">
+              Ihre Buchung wurde von uns entgegengenommen und freigegeben.
+              Weitere Informationen erhalten Sie in Kürze per E-Mail.
             </p>
           </div>
 
@@ -57,7 +56,7 @@
             <h1 class="warning--text">
               Die Zahlung konnte nicht abgeschlossen werden
             </h1>
-            <p class="lead mt-5" style="max-width: 600px; margin: auto;">
+            <p class="lead mt-5" style="max-width: 600px; margin: auto">
               Leider konnte die Buchung nicht korrekt abgeschlossen werden.
               Bitte versuchen Sie es zu einem späteren Zeitpunkt erneut oder
               wenden Sie sich an unsere Koordinator*innen.

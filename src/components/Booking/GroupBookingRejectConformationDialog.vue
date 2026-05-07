@@ -25,10 +25,18 @@
           placeholder="Aus welchem Grund wird die Stornierung durchgeführt?"
           rows="2"
         ></v-textarea>
+        <v-checkbox
+          v-model="skipCancellation"
+          label="Kein Stornobeleg erstellen"
+        ></v-checkbox>
       </v-card-text>
       <v-card-text class="d-flex justify-center">
         <v-col cols="auto">
-          <v-btn large color="primary" :loading="inProgress" @click="onRejectGroup"
+          <v-btn
+            large
+            color="primary"
+            :loading="inProgress"
+            @click="onRejectGroup"
             >Serie stornieren</v-btn
           >
         </v-col>
@@ -77,6 +85,7 @@ export default {
   data() {
     return {
       rejectReason: null,
+      skipCancellation: false,
     };
   },
   computed: {
@@ -91,10 +100,20 @@ export default {
       this.$emit("close");
     },
     async onRejectSingle() {
-      this.$emit("reject-single-booking", this.toReject.id, this.rejectReason);
+      this.$emit(
+        "reject-single-booking",
+        this.toReject.id,
+        this.rejectReason,
+        this.skipCancellation
+      );
     },
     async onRejectGroup() {
-      this.$emit("reject-group-booking", this.toReject.id, this.rejectReason);
+      this.$emit(
+        "reject-group-booking",
+        this.toReject.id,
+        this.rejectReason,
+        this.skipCancellation
+      );
     },
   },
 };

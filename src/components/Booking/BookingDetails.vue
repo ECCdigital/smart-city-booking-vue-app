@@ -249,6 +249,65 @@
           <v-divider></v-divider>
           <v-card-text class="pa-4">
             <v-row>
+              <v-col cols="12" v-if="booking.paymentProvider === 'invoice'">
+                <v-alert
+                  :type="invoices.length === 0 ? 'warning' : 'info'"
+                  dense
+                  outlined
+                  border="left"
+                  class="mb-0"
+                >
+                  <div class="d-flex align-center mb-2">
+                    <v-icon class="mr-2">
+                      {{
+                        invoices.length === 0
+                          ? "mdi-alert-outline"
+                          : "mdi-file-document-check-outline"
+                      }}
+                    </v-icon>
+                    <span class="font-weight-medium">
+                      {{
+                        invoices.length === 0
+                          ? "Für diese Buchung wurde noch keine Rechnung erstellt."
+                          : "Rechnung erneut erstellen und versenden."
+                      }}
+                    </span>
+                  </div>
+                  <div class="d-flex gap-2 flex-wrap mt-3">
+                    <v-btn
+                      small
+                      color="primary"
+                      :loading="invoiceLoading"
+                      @click="generateAndSendInvoice"
+                    >
+                      <v-icon left small>mdi-email-fast-outline</v-icon>
+                      {{
+                        invoices.length === 0
+                          ? "Rechnung erstellen & versenden"
+                          : "Rechnung erneut versenden"
+                      }}
+                    </v-btn>
+                    <v-btn
+                      small
+                      outlined
+                      :loading="invoiceGenerateLoading"
+                      @click="generateInvoiceOnly"
+                    >
+                      <v-icon left small>mdi-file-plus-outline</v-icon>
+                      {{
+                        invoices.length === 0
+                          ? "Nur erstellen (ohne Versand)"
+                          : "Nur neu erstellen"
+                      }}
+                    </v-btn>
+                  </div>
+                  <div v-if="errors.invoice" class="mt-2">
+                    <v-alert type="error" dense outlined class="mb-0">
+                      {{ errors.invoice }}
+                    </v-alert>
+                  </div>
+                </v-alert>
+              </v-col>
               <v-col cols="12" md="6">
                 <div class="info-item">
                   <div class="info-label">
@@ -958,7 +1017,10 @@ export default {
       openCreateAggregatedReceipt: false,
       errors: {
         receipt: null,
+        invoice: null,
       },
+      invoiceLoading: false,
+      invoiceGenerateLoading: false,
       paymentLinkCopied: false,
       singlePaymentLinkCopied: false,
       groupPaymentLinkCopied: false,
@@ -1019,6 +1081,67 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+
+    async generateAndSendInvoice() {
+      this.invoiceLoading = true;
+      this.errors.invoice = null;
+      const operationId = ProcessingService.showOverlay(
+        "Erstelle und versende Rechnung..."
+      );
+      try {
+        const response = await ApiBookingService.generateInvoice(
+          this.booking.id,
+          true
+        );
+        if (!response.success) {
+          this.handleBookingError("invoice", response.errors);
+        } else {
+          await this.addToast(
+            ToastService.createToast("invoice.create.success", "success")
+          );
+          this.errors.invoice = null;
+          this.$emit("update", this.booking.id);
+        }
+      } catch (error) {
+        this.errors.invoice =
+          "Fehler beim Erstellen und Versenden der Rechnung.";
+        this.addToast(
+          ToastService.createToast("invoice.create.error", "error")
+        );
+      } finally {
+        ProcessingService.hide(operationId);
+        this.invoiceLoading = false;
+      }
+    },
+
+    async generateInvoiceOnly() {
+      this.invoiceGenerateLoading = true;
+      this.errors.invoice = null;
+      const operationId = ProcessingService.showOverlay("Erstelle Rechnung...");
+      try {
+        const response = await ApiBookingService.generateInvoice(
+          this.booking.id,
+          false
+        );
+        if (!response.success) {
+          this.handleBookingError("invoice", response.errors);
+        } else {
+          await this.addToast(
+            ToastService.createToast("invoice.create.success", "success")
+          );
+          this.errors.invoice = null;
+          this.$emit("update", this.booking.id);
+        }
+      } catch (error) {
+        this.errors.invoice = "Fehler beim Erstellen der Rechnung.";
+        this.addToast(
+          ToastService.createToast("invoice.create.error", "error")
+        );
+      } finally {
+        ProcessingService.hide(operationId);
+        this.invoiceGenerateLoading = false;
+      }
+    },
 
     getIfbsErrorMessage(errorCode) {
       return getIfbsErrorMessage(errorCode);
@@ -1284,6 +1407,7 @@ export default {
     },
     closeDialog() {
       this.errors.receipt = null;
+      this.errors.invoice = null;
       this.$emit("close");
     },
     closeAggregatedReceipt() {
