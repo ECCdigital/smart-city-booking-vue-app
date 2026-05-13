@@ -88,6 +88,7 @@ import ApiCatalogService from "@/services/api/ApiCatalogService";
 import InstanceEditTenants from "@/components/Instance/Edit/InstanceEditTenants.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import InstanceEditBookables from "@/components/Instance/Edit/InstanceEditBookables.vue";
+import InstanceEditCheckout from "@/components/Instance/Edit/InstanceEditCheckout.vue";
 
 export default {
   name: "Instances",
@@ -102,6 +103,7 @@ export default {
     InstanceEditCatalog,
     InstanceEditTenants,
     InstanceEditBookables,
+    InstanceEditCheckout,
   },
   data() {
     return {
@@ -157,6 +159,12 @@ export default {
           label: "Buchungsobjekte",
           icon: "mdi-calendar-check",
           comp: "InstanceEditBookables",
+        },
+        {
+          key: "checkout",
+          label: "Checkout",
+          icon: "mdi-basket",
+          comp: "InstanceEditCheckout",
         },
       ],
       catalog: {
