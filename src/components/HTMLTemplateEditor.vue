@@ -566,6 +566,7 @@ export default {
         receiptAddress: "Musterstraße 1, 12345 Musterstadt",
         receiptNumber: "RE-2024-0001",
         bookingDate: new Date().toLocaleDateString("de-DE"),
+        invoiceDate: new Date().toLocaleDateString("de-DE"),
 
         bookingEntries: `<table class="booking-detail">
       <tr><td>Buchungsnummer</td><td>RCEE-SQJG</td></tr>
@@ -578,7 +579,7 @@ export default {
       <tr><td>Buchungsobjekt</td><td>Backen mit "The Rock", Menge: 1</td></tr>
     </table>`,
         daysUntilPaymentDue: "14",
-        totalAmount: "297,50 EUR",
+        totalAmount: "297,50",
         mainContent: `
 
  <table  class="booked-items" style="width:100%; border-collapse: collapse;">
