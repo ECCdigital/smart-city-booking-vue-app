@@ -95,6 +95,7 @@
               v-model="timeBeginModel"
               full-width
               format="24hr"
+              :allowed-minutes="[0,5,10,15,20,25,30,35,40,45,50,55]"
               @click:minute="$refs.timeBeginMenuRef.save(timeBeginModel)"
             />
           </v-menu>
@@ -169,12 +170,12 @@
             <v-time-picker
               v-if="timeEndMenu"
               v-model="timeEndModel"
-              :allowed-minutes="allowOnlyFullHours"
               :min="minBookingTime"
               :max="maxBookingTime"
               full-width
-              @click:minute="$refs.timeEndMenuRef.save(timeEndModel)"
               format="24hr"
+              :allowed-minutes="[0,5,10,15,20,25,30,35,40,45,50,55]"
+              @click:minute="$refs.timeEndMenuRef.save(timeEndModel)"
             />
           </v-menu>
         </v-col>
@@ -345,12 +346,6 @@ export default {
   },
 
   methods: {
-    allowOnlyFullHours(m) {
-      return true;
-      //This prevents date end dialog from selecting minutes
-      const minutes = new Date(`01/01/1970 ${this.timeBegin}`).getMinutes();
-      return minutes === m;
-    },
     notifyBookingTimeSelected() {
       this.$emit("booking-time-selected", {
         begin: this.timestampBegin,
