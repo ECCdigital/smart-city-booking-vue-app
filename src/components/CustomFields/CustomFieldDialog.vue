@@ -77,7 +77,7 @@
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="local.placeholder"
-                label="Platzhalter"
+                label="Beispielangabe / Platzhalter"
                 background-color="accent"
                 filled
                 dense
