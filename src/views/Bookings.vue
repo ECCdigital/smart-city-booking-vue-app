@@ -36,6 +36,7 @@
           </template>
           <span>Backlog ein-/ausblenden</span>
         </v-tooltip>
+        <BookingExportButton :bookings="filteredBookings" :tenant="tenantId" />
       </div>
       <v-text-field
         v-model="searchTerm"
@@ -217,9 +218,11 @@ import {
 import BookingPayDialog from "@/components/Booking/BookingPayDialog.vue";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
+import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
 
 export default {
   components: {
+    BookingExportButton,
     ProcessingIndicator,
     BookingPayDialog,
     GroupBookingDeleteConformationDialog,
