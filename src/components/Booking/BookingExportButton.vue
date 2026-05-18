@@ -24,7 +24,6 @@ export default {
       // Spalten definieren
       worksheet.columns = [
         { header: "ID der Buchung", key: "ID", width: 15 },
-        //{ header: "Tenant ID", key: "TenantID", width: 15 },
 
         { header: "Zugewiesener Benutzer", key: "AssignedUser", width: 30 },
         { header: "Name", key: "Name", width: 25 },
@@ -80,7 +79,6 @@ export default {
 
         worksheet.addRow({
           ID: booking.id || "",
-          //TenantID: this.getTenantName(booking.tenantId) || "",
 
           AssignedUser: booking.assignedUserId || "",
           Name: booking.name || "",
