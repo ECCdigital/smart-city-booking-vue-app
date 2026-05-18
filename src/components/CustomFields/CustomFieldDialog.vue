@@ -264,10 +264,10 @@ export default {
     },
     filterTypes() {
       const all = [
-        { text: "Auswahl (Select)", value: "select" },
-        { text: "Schieberegler", value: "slider" },
-        { text: "Bereich", value: "range" },
-        { text: "Checkbox", value: "checkbox" },
+        { text: "Auswahlfeld (Einzeln)", value: "checkbox" },
+        { text: "Auswahlfelder (Gruppe)", value: "select" },
+        { text: "Schieberegler (einseitig)", value: "slider" },
+        { text: "Schieberegler (zweiseitig)", value: "range" },
       ];
 
       const type = this.local.inputType;
@@ -276,9 +276,9 @@ export default {
         return all.filter((f) => f.value === "checkbox");
       }
       if (type === "string" || type === "text") {
-        return all.filter((f) => !["slider", "range"].includes(f.value));
+        return all.filter((f) => f.value === "select");
       }
-      if (type === "select") return all.filter((f) => f.value !== "checkbox");
+      if (type === "select" || type === "numeric") return all.filter((f) => f.value !== "checkbox");
       return all;
     },
   },
