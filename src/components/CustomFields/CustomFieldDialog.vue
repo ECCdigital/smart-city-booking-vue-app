@@ -49,7 +49,30 @@
                 background-color="accent"
                 filled
                 dense
-              />
+              >
+                <template v-slot:item="{ item}">
+                  <div class="d-flex align-center my-1">
+
+                   <v-icon left small color="primary">
+                      {{
+                        {
+                          string: "mdi-format-paragraph",
+                          text: "mdi-format-letter-case",
+                          multiselect: "mdi-format-list-bulleted-square",
+                          select: "mdi-format-list-bulleted-type",
+                          numeric: "mdi-numeric",
+                          boolean: "mdi-toggle-switch",
+                        }[item.value]
+                      }}
+                    </v-icon>
+                    <div class="mx-1">
+                      {{item.text}}
+                      <div class="caption">{{ item.description }}</div>
+                    </div>
+
+                  </div>
+                </template>
+              </v-select>
             </v-col>
             <v-col cols="12" md="6">
               <v-text-field
@@ -212,11 +235,12 @@ export default {
       valid: false,
       local: makeEmptyField(),
       inputTypes: [
-        { text: "Text (einzeilig)", value: "string" },
-        { text: "Text (mehrzeilig)", value: "text" },
-        { text: "Auswahl", value: "select" },
-        { text: "Zahl", value: "numeric" },
-        { text: "Ja / Nein", value: "boolean" },
+        { text: "Zahl", value: "numeric", description: "Einfache Zahlenwerte" },
+        { text: "Text (einzeilig)", value: "string", description: "Kurze Schlagworte oder Zahlenbereiche" },
+        { text: "Text (mehrzeilig)", value: "text", description: "Längere Beschreibungen" },
+        //{ text: "Auswahl (mehrfach)", value: "multiselect", description: "Auswahl mehrerer von mehreren vorgegebenen Optionen" },
+        { text: "Auswahl (einfach)", value: "select", description: "Auswahl einer von mehreren vorgegebenen Optionen" },
+        { text: "Ja / Nein", value: "boolean", description: "Einzelne Ja-Nein-Auswahloption"  },
       ],
       contextOptions: [
         { text: "Nicht verwendet", value: "none" },
