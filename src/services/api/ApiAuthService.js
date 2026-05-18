@@ -61,8 +61,6 @@ export default {
       }
     } catch (error) {
       console.debug("Silent SSO: User not found or error", error);
-      // Kein Fehler – User ist in Keycloak eingeloggt aber
-      // nicht im lokalen System registriert
     }
 
     return null;
@@ -122,6 +120,44 @@ export default {
 
   async requestPasswordReset(email) {
     return ApiClient.post("auth/reset", { email });
+  },
+
+  async getCardAuthMethods() {
+    const response = await ApiClient.get("/auth/card-methods");
+    return response.data.methods;
+  },
+
+  async cardLogin(appId, publicId, secret) {
+    const response = await ApiClient.post("/auth/card/signin", {
+      appId,
+      publicId,
+      secret,
+    });
+
+    const data = response.data;
+
+    if (data.requiresRegistration) {
+      return {
+        requiresRegistration: true,
+        prefill: data.prefill,
+        cardInfo: data.cardInfo,
+      };
+    }
+
+    ApiClient.setTokens(data.accessToken, data.refreshToken);
+    return {
+      requiresRegistration: false,
+      user: data.user,
+      permissions: data.permissions,
+    };
+  },
+
+  async cardSignup(payload) {
+    const response = await ApiClient.post("/auth/card/signup", payload);
+    return {
+      status: response.data.status, // 'registered' | 'link_requested'
+      message: response.data.message,
+    };
   },
 
   isAuthenticated() {
