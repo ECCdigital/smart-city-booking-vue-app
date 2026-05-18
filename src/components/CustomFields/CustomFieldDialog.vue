@@ -186,6 +186,7 @@
                     background-color="accent"
                     filled
                     dense
+                    disabled
                   />
                 </v-col>
               </v-row>
