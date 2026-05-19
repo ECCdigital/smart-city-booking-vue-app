@@ -69,7 +69,6 @@
                       {{item.text}}
                       <div class="caption">{{ item.description }}</div>
                     </div>
-
                   </div>
                 </template>
               </v-select>
@@ -176,7 +175,27 @@
                     filled
                     dense
                     clearable
-                  />
+                  >
+                    <template v-slot:item="{ item}">
+                      <div class="d-flex align-center my-1">
+
+                        <v-icon left small color="primary">
+                          {{
+                            {
+                              checkbox: "mdi-checkbox-outline",
+                              select: "mdi-order-bool-ascending-variant",
+                              slider: "mdi-tune-variant",
+                              range: "mdi-tune-variant",
+                            }[item.value]
+                          }}
+                        </v-icon>
+                        <div class="mx-1">
+                          {{item.text}}
+                          <div class="caption">{{ item.description }}</div>
+                        </div>
+                      </div>
+                    </template>
+                  </v-select>
                 </v-col>
                 <v-col cols="12" md="6">
                   <v-select
@@ -264,10 +283,10 @@ export default {
     },
     filterTypes() {
       const all = [
-        { text: "Auswahlfeld (Einzeln)", value: "checkbox" },
-        { text: "Auswahlfelder (Gruppe)", value: "select" },
-        { text: "Schieberegler (einseitig)", value: "slider" },
-        { text: "Schieberegler (zweiseitig)", value: "range" },
+        { text: "Auswahlfeld (Einzeln)", value: "checkbox", description: "Anzeige der Feld-Bezeichnung als einzelne Auswahloption" },
+        { text: "Auswahlfelder (Gruppe)", value: "select", description: "Anzeige aller Optionen / eingegebenen Werte als Auswahloption" },
+        { text: "Schieberegler (einseitig)", value: "slider", description: "Einseitiger Regler, um den maximalen Wert zu begrenzen" },
+        { text: "Schieberegler (zweiseitig)", value: "range", description: "Zweiseitiger Regler, um minimalen und maximaln Wert festzulegen" },
       ];
 
       const type = this.local.inputType;
