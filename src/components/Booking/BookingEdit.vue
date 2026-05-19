@@ -906,6 +906,115 @@
               </v-card-text>
             </v-card>
 
+            <v-card
+              v-if="editableCustomFields.length > 0"
+              class="mb-6 section-card"
+              elevation="2"
+              outlined
+            >
+              <v-card-title class="section-header pa-4">
+                <v-icon class="mr-2">mdi-form-textbox</v-icon>
+                <span class="text-h6 font-weight-bold"
+                  >Benutzerdefinierte Felder</span
+                >
+              </v-card-title>
+              <v-divider></v-divider>
+              <v-card-text class="pa-4">
+                <div
+                  v-for="(field, index) in editableCustomFields"
+                  :key="field.id"
+                  :class="{ 'mt-4': index > 0 }"
+                >
+                  <v-divider v-if="index > 0" class="mb-4" />
+                  <div class="d-flex align-center mb-3">
+                    <v-avatar size="32" color="primary" class="mr-3">
+                      <v-icon x-small dark>
+                        {{ customFieldIcon(field.inputType) }}
+                      </v-icon>
+                    </v-avatar>
+                    <span class="text-subtitle-2 font-weight-medium">
+                      {{ field.caption }}
+                    </span>
+                  </div>
+
+                  <v-text-field
+                    v-if="field.inputType === 'string'"
+                    :value="field.currentValue"
+                    @input="updateCustomFieldValue(field.id, $event)"
+                    :label="field.caption"
+                    :placeholder="field.placeholder || ''"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details="auto"
+                    clearable
+                    @click:clear="clearCustomFieldValue(field.id)"
+                  />
+
+                  <v-textarea
+                    v-else-if="field.inputType === 'text'"
+                    :value="field.currentValue"
+                    @input="updateCustomFieldValue(field.id, $event)"
+                    :label="field.caption"
+                    :placeholder="field.placeholder || ''"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details="auto"
+                    clearable
+                    @click:clear="clearCustomFieldValue(field.id)"
+                  />
+
+                  <v-text-field
+                    v-else-if="field.inputType === 'numeric'"
+                    :value="field.currentValue"
+                    @input="
+                      updateCustomFieldValue(
+                        field.id,
+                        $event !== '' && $event !== null ? Number($event) : null
+                      )
+                    "
+                    :label="field.caption"
+                    :placeholder="field.placeholder || ''"
+                    type="number"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details="auto"
+                    clearable
+                    @click:clear="clearCustomFieldValue(field.id)"
+                  />
+
+                  <v-switch
+                    v-else-if="field.inputType === 'boolean'"
+                    :input-value="field.currentValue"
+                    @change="updateCustomFieldValue(field.id, $event)"
+                    :label="field.currentValue ? 'Ja' : 'Nein'"
+                    dense
+                    hide-details="auto"
+                    class="mt-0"
+                  />
+
+                  <v-select
+                    v-else-if="field.inputType === 'select'"
+                    :value="field.currentValue"
+                    @input="updateCustomFieldValue(field.id, $event)"
+                    :items="field.options || []"
+                    item-text="caption"
+                    item-value="value"
+                    :label="field.caption"
+                    :placeholder="field.placeholder || ''"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details="auto"
+                    clearable
+                    @click:clear="clearCustomFieldValue(field.id)"
+                  />
+                </div>
+              </v-card-text>
+            </v-card>
+
             <v-card class="mb-6 section-card" elevation="2" outlined>
               <v-card-title class="section-header pa-4">
                 <v-icon class="mr-2">mdi-comment-text-outline</v-icon>
@@ -1262,6 +1371,18 @@ export default {
         this.bookableItems = val;
       },
     },
+    editableCustomFields() {
+      const definitions = this.selectedBooking.customFieldDefinitions || [];
+      const values = this.selectedBooking.customFieldValues || [];
+
+      return definitions.map((definition) => {
+        const stored = values.find((v) => v.fieldId === definition.id);
+        return {
+          ...definition,
+          currentValue: stored != null ? stored.value : null,
+        };
+      });
+    },
   },
   watch: {
     dateFrom: function () {
@@ -1344,6 +1465,34 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    customFieldIcon(inputType) {
+      const icons = {
+        string: "mdi-form-textbox",
+        text: "mdi-form-textarea",
+        numeric: "mdi-numeric",
+        boolean: "mdi-toggle-switch-outline",
+        select: "mdi-form-dropdown",
+      };
+      return icons[inputType] || "mdi-form-textbox";
+    },
+    updateCustomFieldValue(fieldId, newValue) {
+      const values = [...(this.selectedBooking.customFieldValues || [])];
+      const idx = values.findIndex((v) => v.fieldId === fieldId);
+
+      if (idx !== -1) {
+        values[idx] = { ...values[idx], value: newValue };
+      } else {
+        values.push({ fieldId, value: newValue });
+      }
+
+      this.$set(this.selectedBooking, "customFieldValues", values);
+    },
+    clearCustomFieldValue(fieldId) {
+      const values = (this.selectedBooking.customFieldValues || []).filter(
+        (v) => v.fieldId !== fieldId
+      );
+      this.$set(this.selectedBooking, "customFieldValues", values);
+    },
     clearPaymentDateTime() {
       this.paymentDate = null;
       this.paymentTime = null;
