@@ -1,6 +1,10 @@
 <script>
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+import { mapActions } from "vuex";
+import ApiBookingService from "@/services/api/ApiBookingService";
+import ProcessingService from "@/services/ProcessingService";
+import ToastService from "@/services/ToastService";
 
 export default {
   name: "BookingExportButton",
@@ -14,14 +18,23 @@ export default {
       required: true,
     },
   },
+  computed: {
+    exportableIcalBookings() {
+      return this.bookings.filter(
+        (booking) =>
+          (booking.timeBegin && booking.timeEnd) ||
+          booking.bookableItems?.some((item) => item._bookableUsed?.eventId)
+      );
+    },
+  },
   methods: {
+    ...mapActions({
+      addToast: "toasts/add",
+    }),
     async exportBookings() {
-      console.log("Exporting bookings:", this.bookings);
-
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Buchungen");
 
-      // Spalten definieren
       worksheet.columns = [
         { header: "ID der Buchung", key: "ID", width: 15 },
 
@@ -58,22 +71,19 @@ export default {
         { header: "Coupon Code", key: "CouponCode", width: 15 },
       ];
 
-      // Währung formatieren
       worksheet.getColumn("Preis").numFmt = "#,##0.00 €";
       worksheet.getColumn("MwSt").numFmt = "#,##0.00 €";
 
-      //Datum formatieren
       worksheet.getColumn("Startzeit").numFmt = "dd.mm.yy hh:mm";
       worksheet.getColumn("Endzeit").numFmt = "dd.mm.yy hh:mm";
       worksheet.getColumn("Erstellt").numFmt = "dd.mm.yy hh:mm";
 
-      // Header stylen
       worksheet.getRow(1).font = { bold: true };
 
-      //Sortieren nach neustem Erstellungsdatum
-      const sortedBookings = [...this.bookings].sort((a, b) => b.timeCreated - a.timeCreated);
+      const sortedBookings = [...this.bookings].sort(
+        (a, b) => b.timeCreated - a.timeCreated
+      );
 
-      // Daten hinzufügen
       sortedBookings.forEach((booking) => {
         const firstBookable = booking.bookableItems?.[0]?._bookableUsed || {};
 
@@ -115,13 +125,11 @@ export default {
         });
       });
 
-      // AutoFilter aktivieren
       worksheet.autoFilter = {
         from: "A1",
         to: "AA1",
       };
 
-      // Datei erzeugen
       const buffer = await workbook.xlsx.writeBuffer();
 
       saveAs(
@@ -131,13 +139,48 @@ export default {
         `buchungen-${this.tenant}-${this.formatDate(Date.now()).split(",")[0]}.xlsx`
       );
     },
+    async exportIcal() {
+      const ids = this.exportableIcalBookings.map((booking) => booking.id);
+      if (!ids.length) return;
+
+      const operationId = ProcessingService.showSnackbar(
+        "Termine werden heruntergeladen..."
+      );
+
+      try {
+        const response = await ApiBookingService.downloadGroupBookingIcal(
+          ids,
+          this.tenant
+        );
+
+        const blob = new Blob([response.data], {
+          type: "text/calendar;charset=utf-8",
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute(
+          "download",
+          `buchungen-${this.tenant}-${this.formatDate(Date.now()).split(",")[0]}.ics`
+        );
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast("booking.ical.error", "error")
+        );
+      } finally {
+        ProcessingService.hide(operationId);
+      }
+    },
     formatDate(timestamp) {
       if (!timestamp) return "";
 
       return new Date(timestamp).toLocaleString("de-DE");
     },
     getBookableType(type) {
-      //toDo - read dynamically from categories
       switch (type) {
       case "room":
         return "Raum";
@@ -197,9 +240,40 @@ export default {
 </script>
 
 <template>
-  <v-btn color="primary" large rounded @click="exportBookings">
-    <v-icon>mdi-download</v-icon>Buchungen exportieren
-  </v-btn>
+  <v-menu offset-y left>
+    <template v-slot:activator="{ on, attrs }">
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on: tooltipOn, attrs: tooltipAttrs }">
+          <v-btn
+            icon
+            small
+            class="ml-2"
+            v-bind="{ ...attrs, ...tooltipAttrs }"
+            v-on="{ ...on, ...tooltipOn }"
+            :disabled="bookings.length === 0"
+          >
+            <v-icon>mdi-dots-vertical</v-icon>
+          </v-btn>
+        </template>
+        <span>Exportieren</span>
+      </v-tooltip>
+    </template>
+    <v-list dense>
+      <v-list-item :disabled="bookings.length === 0" @click="exportBookings">
+        <v-list-item-icon>
+          <v-icon small>mdi-microsoft-excel</v-icon>
+        </v-list-item-icon>
+        <v-list-item-title>Als Excel exportieren</v-list-item-title>
+      </v-list-item>
+      <v-list-item
+        :disabled="exportableIcalBookings.length === 0"
+        @click="exportIcal"
+      >
+        <v-list-item-icon>
+          <v-icon small>mdi-calendar-export</v-icon>
+        </v-list-item-icon>
+        <v-list-item-title>Als iCal exportieren</v-list-item-title>
+      </v-list-item>
+    </v-list>
+  </v-menu>
 </template>
-
-<style scoped></style>

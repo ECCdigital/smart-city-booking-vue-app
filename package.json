@@ -44,6 +44,7 @@
     "buffer-equal-constant-time": "^1.0.1",
     "core-js": "^3.34.0",
     "date-fns": "^3.0.1",
+    "exceljs": "^4.4.0",
     "fuse.js": "^7.0.0",
     "keycloak-js": "^26.1.4",
     "loadash": "^1.0.0",
