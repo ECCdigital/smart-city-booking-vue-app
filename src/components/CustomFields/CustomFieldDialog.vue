@@ -49,12 +49,34 @@
                 background-color="accent"
                 filled
                 dense
-              />
+              >
+                <template v-slot:item="{ item}">
+                  <div class="d-flex align-center my-1">
+
+                   <v-icon left small color="primary">
+                      {{
+                        {
+                          string: "mdi-format-paragraph",
+                          text: "mdi-format-letter-case",
+                          multiselect: "mdi-format-list-bulleted-square",
+                          select: "mdi-format-list-bulleted-type",
+                          numeric: "mdi-numeric",
+                          boolean: "mdi-toggle-switch",
+                        }[item.value]
+                      }}
+                    </v-icon>
+                    <div class="mx-1">
+                      {{item.text}}
+                      <div class="caption">{{ item.description }}</div>
+                    </div>
+                  </div>
+                </template>
+              </v-select>
             </v-col>
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="local.placeholder"
-                label="Platzhalter"
+                label="Beispielangabe / Platzhalter"
                 background-color="accent"
                 filled
                 dense
@@ -153,7 +175,27 @@
                     filled
                     dense
                     clearable
-                  />
+                  >
+                    <template v-slot:item="{ item}">
+                      <div class="d-flex align-center my-1">
+
+                        <v-icon left small color="primary">
+                          {{
+                            {
+                              checkbox: "mdi-checkbox-outline",
+                              select: "mdi-order-bool-ascending-variant",
+                              slider: "mdi-tune-variant",
+                              range: "mdi-tune-variant",
+                            }[item.value]
+                          }}
+                        </v-icon>
+                        <div class="mx-1">
+                          {{item.text}}
+                          <div class="caption">{{ item.description }}</div>
+                        </div>
+                      </div>
+                    </template>
+                  </v-select>
                 </v-col>
                 <v-col cols="12" md="6">
                   <v-select
@@ -163,6 +205,7 @@
                     background-color="accent"
                     filled
                     dense
+                    disabled
                   />
                 </v-col>
               </v-row>
@@ -212,11 +255,12 @@ export default {
       valid: false,
       local: makeEmptyField(),
       inputTypes: [
-        { text: "Text (einzeilig)", value: "string" },
-        { text: "Text (mehrzeilig)", value: "text" },
-        { text: "Auswahl", value: "select" },
-        { text: "Zahl", value: "numeric" },
-        { text: "Ja / Nein", value: "boolean" },
+        { text: "Zahl", value: "numeric", description: "Einfache Zahlenwerte" },
+        { text: "Text (einzeilig)", value: "string", description: "Kurze Schlagworte oder Zahlenbereiche" },
+        { text: "Text (mehrzeilig)", value: "text", description: "Längere Beschreibungen" },
+        //{ text: "Auswahl (mehrfach)", value: "multiselect", description: "Auswahl mehrerer von mehreren vorgegebenen Optionen" },
+        { text: "Auswahl (einfach)", value: "select", description: "Auswahl einer von mehreren vorgegebenen Optionen" },
+        { text: "Ja / Nein", value: "boolean", description: "Einzelne Ja-Nein-Auswahloption"  },
       ],
       contextOptions: [
         { text: "Nicht verwendet", value: "none" },
@@ -239,10 +283,10 @@ export default {
     },
     filterTypes() {
       const all = [
-        { text: "Auswahl (Select)", value: "select" },
-        { text: "Schieberegler", value: "slider" },
-        { text: "Bereich", value: "range" },
-        { text: "Checkbox", value: "checkbox" },
+        { text: "Auswahlfeld (Einzeln)", value: "checkbox", description: "Anzeige der Feld-Bezeichnung als einzelne Auswahloption" },
+        { text: "Auswahlfelder (Gruppe)", value: "select", description: "Anzeige aller Optionen / eingegebenen Werte als Auswahloption" },
+        { text: "Schieberegler (einseitig)", value: "slider", description: "Einseitiger Regler, um den maximalen Wert zu begrenzen" },
+        { text: "Schieberegler (zweiseitig)", value: "range", description: "Zweiseitiger Regler, um minimalen und maximaln Wert festzulegen" },
       ];
 
       const type = this.local.inputType;
@@ -251,9 +295,9 @@ export default {
         return all.filter((f) => f.value === "checkbox");
       }
       if (type === "string" || type === "text") {
-        return all.filter((f) => !["slider", "range"].includes(f.value));
+        return all.filter((f) => f.value === "select");
       }
-      if (type === "select") return all.filter((f) => f.value !== "checkbox");
+      if (type === "select" || type === "numeric") return all.filter((f) => f.value !== "checkbox");
       return all;
     },
   },
