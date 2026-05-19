@@ -22,20 +22,28 @@
           </v-btn>
         </v-btn-toggle>
 
-        <v-tooltip v-if="currentView === 'kanban'" bottom>
-          <template v-slot:activator="{ on }">
-            <v-btn
-              v-on="on"
-              fab
-              small
-              class="ml-2 elevation-0 active-button"
-              @click="showBacklog = !showBacklog"
-            >
-              <v-icon>mdi-tray-full</v-icon>
-            </v-btn>
-          </template>
-          <span>Backlog ein-/ausblenden</span>
-        </v-tooltip>
+        <div>
+          <v-tooltip v-if="currentView === 'kanban'" bottom>
+            <template v-slot:activator="{ on }">
+              <v-btn
+                v-on="on"
+                icon
+                small
+                class="ml-2"
+                :class="{ 'active-button': showBacklog }"
+                @click="showBacklog = !showBacklog"
+              >
+                <v-icon>mdi-tray-full</v-icon>
+              </v-btn>
+            </template>
+            <span>Backlog ein-/ausblenden</span>
+          </v-tooltip>
+          <BookingExportButton
+            class="ml-auto"
+            :bookings="filteredBookings"
+            :tenant="tenantId"
+          />
+        </div>
       </div>
       <v-text-field
         v-model="searchTerm"
@@ -217,9 +225,11 @@ import {
 import BookingPayDialog from "@/components/Booking/BookingPayDialog.vue";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
+import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
 
 export default {
   components: {
+    BookingExportButton,
     ProcessingIndicator,
     BookingPayDialog,
     GroupBookingDeleteConformationDialog,
