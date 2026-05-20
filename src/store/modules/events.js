@@ -45,6 +45,7 @@ const defaultState = {
     maxAttendees: null,
     priceCategories: [],
   },
+  externalBookingUrl: "",
   schedules: [],
   attachments: [],
   images: [],

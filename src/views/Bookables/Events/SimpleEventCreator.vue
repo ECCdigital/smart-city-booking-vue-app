@@ -348,6 +348,20 @@ export default {
         });
       },
     },
+    externalBookingUrl: {
+      get() {
+        return this.$store.state.events.form.externalBookingUrl;
+      },
+      set(value) {
+        this.updateValue({
+          field: "externalBookingUrl",
+          value: value || "",
+        });
+      },
+    },
+    hasExternalBookingUrl() {
+      return !!this.externalBookingUrl && this.externalBookingUrl.trim().length > 0;
+    },
     ...mapGetters({
       form: "events/form",
     }),
@@ -585,6 +599,31 @@ export default {
         </v-col>
       </v-row>
       <v-row class="mt-6">
+        <v-col cols="12">
+          <h4 class="title">Externe Buchung</h4>
+          <v-divider></v-divider>
+          <v-text-field
+            v-model="externalBookingUrl"
+            background-color="accent"
+            filled
+            label="Externe Buchungs-URL"
+            placeholder="https://..."
+            hint="Wenn gesetzt, wird die Buchung über diese externe URL abgewickelt. Die Teilnehmer-Einstellungen sind dann nicht mehr relevant."
+            persistent-hint
+            clearable
+          ></v-text-field>
+          <v-alert
+            v-if="hasExternalBookingUrl"
+            class="mt-4"
+            prominent
+            type="info"
+            text
+          >
+            Diese Veranstaltung wird über eine externe Buchungs-URL gebucht. Die Angaben zu Teilnehmern sind deaktiviert.
+          </v-alert>
+        </v-col>
+      </v-row>
+      <v-row class="mt-6" v-if="!hasExternalBookingUrl">
         <v-col cols="12">
           <h4 class="title">Teilnehmer</h4>
           <v-divider></v-divider>

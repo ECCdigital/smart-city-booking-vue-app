@@ -35,7 +35,6 @@
                     filled
                     dense
                     label="Kontakt Person"
-                    :rules="validationRules.required"
                     v-model="tenant.contactName"
                   ></v-text-field>
                 </v-col>
@@ -45,7 +44,6 @@
                     filled
                     dense
                     label="Adresse"
-                    :rules="validationRules.required"
                     v-model="tenant.location"
                   ></v-text-field>
                 </v-col>
@@ -57,7 +55,6 @@
                     filled
                     dense
                     label="E-Mail Adresse"
-                    :rules="validationRules.mail"
                     type="mail"
                     v-model="tenant.mail"
                   ></v-text-field>
@@ -68,7 +65,6 @@
                     filled
                     dense
                     label="Telefonummer"
-                    :rules="validationRules.required"
                     v-model="tenant.phone"
                   ></v-text-field>
                 </v-col>
@@ -80,7 +76,6 @@
                     filled
                     dense
                     label="Website"
-                    :rules="validationRules.required"
                     type="text"
                     v-model="tenant.website"
                   ></v-text-field>
