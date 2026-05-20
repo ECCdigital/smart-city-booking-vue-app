@@ -166,6 +166,7 @@
 <script>
 import prettier from "prettier/standalone";
 import parserHtml from "prettier/parser-html";
+import { SAMPLE_DATA } from "@/components/Mail/templateVariables.js";
 
 export default {
   name: "HTMLTemplateEditor",
@@ -201,6 +202,16 @@ export default {
           name: "content",
           placeholder: "{{{content}}}",
           description: "Hauptinhalt der Nachricht",
+        },
+        {
+          name: "tenantName",
+          placeholder: "{{tenantName}}",
+          description: "Anzeigename des Mandanten",
+        },
+        {
+          name: "supportEmail",
+          placeholder: "{{supportEmail}}",
+          description: "Support-E-Mail des Mandanten",
         },
         {
           name: "companyName",
@@ -548,82 +559,23 @@ export default {
     },
 
     getExampleData(variableName) {
-      if (this.exampleData[variableName]) {
+      if (this.exampleData[variableName] !== undefined) {
         return this.exampleData[variableName];
       }
-
-      const defaults = {
+      const merged = {
+        ...(SAMPLE_DATA.snippet || {}),
+        ...(SAMPLE_DATA.genericMail || {}),
+        ...(SAMPLE_DATA.receipt || {}),
+        ...(SAMPLE_DATA.invoice || {}),
+        ...(SAMPLE_DATA.cancellation || {}),
         userName: "Max Mustermann",
         userEmail: "max@beispiel.de",
         subject: "Beispiel-Betreff",
-        title: "E-Mail Titel",
-        bookingId: "BK-2024-0001",
-        bookingPeriod: "14.10.2024, 10:00 - 14.10.2024, 20:00",
-        content:
-          "<p>Dies ist der Hauptinhalt der E-Mail.</p><p>Mit mehreren Absätzen.</p>",
-        companyName: "Ihre Firma GmbH",
+        bookingId: "BK-987654",
+        companyName: "Beispiel GmbH",
         currentDate: new Date().toLocaleDateString("de-DE"),
-        receiptAddress: "Musterstraße 1, 12345 Musterstadt",
-        receiptNumber: "RE-2024-0001",
-        bookingDate: new Date().toLocaleDateString("de-DE"),
-        invoiceDate: new Date().toLocaleDateString("de-DE"),
-
-        bookingEntries: `<table class="booking-detail">
-      <tr><td>Buchungsnummer</td><td>RCEE-SQJG</td></tr>
-      <tr><td>Gesamt (netto)</td><td>29,83 €</td></tr>
-      <tr><td>zzgl. MwSt.</td><td>5,67 €</td></tr>
-      <tr><td>Gesamt (brutto)</td><td>35,50 €</td></tr>
-      <tr><td>Zahlungsdatum</td><td>13.11.2025, 16:00</td></tr>
-      <tr><td>Zahlungsmethode</td><td>Überweisung</td></tr>
-      <tr><td>Buchungszeitraum</td><td>14.11.2025, 14:01 – 14.11.2025, 17:00</td></tr>
-      <tr><td>Buchungsobjekt</td><td>Backen mit "The Rock", Menge: 1</td></tr>
-    </table>`,
-        daysUntilPaymentDue: "14",
-        totalAmount: "297,50",
-        mainContent: `
-
- <table  class="booked-items" style="width:100%; border-collapse: collapse;">
-  <tr style="background: #eee; border-bottom: 1px solid #ddd;">
-    <th class='bi-title'>Beschreibung</th>
-            <th class='bi-amount'>Anzahl</th>
-            <th class='bi-price-item'>Einzelpreis</th>
-            <th class='bi-price-total'>Gesamtpreis</th>
-  </tr>
-  <tr style="border-bottom: 1px solid #eee;">
-    <td>Artikel 1</td>
-    <td>1</td>
-    <td>100,00 EUR</td>
-    <td>100,00 EUR</td>
-  </tr>
-  <tr style="border-bottom: 1px solid #eee;">
-    <td>Artikel 2</td>
-    <td>1</td>
-    <td>150,00 EUR</td>
-    <td>150,00 EUR</td>
-  </tr>
-  <tr>
-    <td colspan="3"><strong>Gesamt</strong></td>
-    <td><strong>250,00 EUR</strong></td>
-  </tr>
-  <tr>
-    <td colspan="3"><strong>zzgl. MwSt.</strong></td>
-    <td><strong>47,50 EUR</strong></td>
-  </tr>
-  <tr>
-    <td colspan="3"><strong>Gesamtbetrag</strong></td>
-    <td><strong>297,50 EUR</strong></td>
-  </tr>
-</table>`,
-        invoiceNumber: "INV-2024-0001",
-        invoiceAddress: "Musterstraße 1, 12345 Musterstadt",
-        bank: "Musterbank",
-        iban: "DE89 3704 0044 0532 013000",
-        bic: "COBADEFFXXX",
-        location: "Musterstadt",
-        purposeOfPayment: "Rechnung INV-2024-0001",
       };
-
-      return defaults[variableName] || "";
+      return merged[variableName] !== undefined ? merged[variableName] : "";
     },
   },
 };
