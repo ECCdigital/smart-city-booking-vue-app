@@ -34,6 +34,8 @@ class Tenant {
     enablePublicStatusView,
     ownerUserIds,
     users,
+    mailSnippets,
+    mailSubjects,
   }) {
     this.id = id;
     this.name = name;
@@ -69,6 +71,8 @@ class Tenant {
     this.enablePublicStatusView = enablePublicStatusView;
     this.ownerUserIds = ownerUserIds || [];
     this.users = users || [];
+    this.mailSnippets = mailSnippets || {};
+    this.mailSubjects = mailSubjects || {};
   }
 }
 
