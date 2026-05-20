@@ -87,6 +87,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import Bold from "@tiptap/extension-bold";
 import Italic from "@tiptap/extension-italic";
+import Link from "@tiptap/extension-link";
 import Underline from "@tiptap/extension-underline";
 import BulletList from "@tiptap/extension-bullet-list";
 import OrderedList from "@tiptap/extension-ordered-list";
@@ -112,6 +113,13 @@ export default {
         Text,
         Bold,
         Italic,
+        Link.configure({
+          openOnClick: false,
+          HTMLAttributes: {
+            target: "_blank",
+            rel: "noopener",
+          },
+        }),
         Underline,
         BulletList,
         OrderedList,
