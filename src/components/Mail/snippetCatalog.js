@@ -38,8 +38,7 @@ export const SNIPPET_CATALOG = [
   {
     key: "booking-confirmation",
     title: "Buchungsbestätigung",
-    description:
-      "Bestätigung nach erfolgreicher (kostenpflichtiger) Buchung.",
+    description: "Bestätigung nach erfolgreicher (kostenpflichtiger) Buchung.",
     icon: "mdi-check-circle-outline",
     defaultTemplate: `<div style="font-family: sans-serif;">
   <p>
@@ -54,7 +53,9 @@ export const SNIPPET_CATALOG = [
 </div>`,
     defaultBlocks: [
       row([
-        txt(`<p>Hallo,<br />vielen Dank für Ihre Buchung im <strong>${TENANT}</strong>.</p>`),
+        txt(
+          `<p>Hallo,<br />vielen Dank für Ihre Buchung im <strong>${TENANT}</strong>.</p>`
+        ),
         txt("<p>Im Folgenden senden wir Ihnen die Details Ihrer Buchung.</p>"),
       ]),
     ],
@@ -73,7 +74,9 @@ export const SNIPPET_CATALOG = [
 </div>`,
     defaultBlocks: [
       row([
-        txt(`<p>Hallo,<br />vielen Dank für Ihre kostenfreie Buchung im <strong>${TENANT}</strong>.</p>`),
+        txt(
+          `<p>Hallo,<br />vielen Dank für Ihre kostenfreie Buchung im <strong>${TENANT}</strong>.</p>`
+        ),
       ]),
     ],
   },
@@ -82,7 +85,7 @@ export const SNIPPET_CATALOG = [
     title: "Empfangsbestätigung Buchungsanfrage",
     description:
       "Empfangsbestätigung einer Buchungsanfrage (noch nicht freigegeben).",
-    icon: "mdi-email-receive-outline",
+    icon: "mdi-email-arrow-left-outline",
     defaultTemplate: `<div style="font-family: sans-serif;">
   <p>
     Hallo,<br />
@@ -102,9 +105,15 @@ export const SNIPPET_CATALOG = [
 </div>`,
     defaultBlocks: [
       row([
-        txt(`<p>Hallo,<br />vielen Dank für Ihre Buchungsanfrage im <strong>${TENANT}</strong>.</p>`),
-        txt("<p>Ihre Buchungsanfrage ist bei uns eingegangen und wird derzeit zur Freigabe geprüft.</p>"),
-        txt("<p>Sobald Ihre Anfrage freigegeben wurde, erhalten Sie eine Benachrichtigung von uns.</p>"),
+        txt(
+          `<p>Hallo,<br />vielen Dank für Ihre Buchungsanfrage im <strong>${TENANT}</strong>.</p>`
+        ),
+        txt(
+          "<p>Ihre Buchungsanfrage ist bei uns eingegangen und wird derzeit zur Freigabe geprüft.</p>"
+        ),
+        txt(
+          "<p>Sobald Ihre Anfrage freigegeben wurde, erhalten Sie eine Benachrichtigung von uns.</p>"
+        ),
       ]),
     ],
   },
@@ -125,8 +134,12 @@ export const SNIPPET_CATALOG = [
 </p>`,
     defaultBlocks: [
       row([
-        txt(`<p>Hallo,<br />vielen Dank für Ihre Buchung bei <strong>${TENANT}</strong>.</p>`),
-        txt("<p>Ihre Buchung wurde erfolgreich bestätigt. Eine Rechnung wird Ihnen separat zugestellt.</p>"),
+        txt(
+          `<p>Hallo,<br />vielen Dank für Ihre Buchung bei <strong>${TENANT}</strong>.</p>`
+        ),
+        txt(
+          "<p>Ihre Buchung wurde erfolgreich bestätigt. Eine Rechnung wird Ihnen separat zugestellt.</p>"
+        ),
       ]),
     ],
   },
@@ -167,8 +180,12 @@ export const SNIPPET_CATALOG = [
 </p>`,
     defaultBlocks: [
       row([
-        txt(`<p>Hallo,<br />vielen Dank für Ihre Buchung bei <strong>${TENANT}</strong>.</p>`),
-        txt("<p>Bitte überweisen Sie zur Vervollständigung Ihrer Buchung den im Anhang aufgeführten Betrag auf das angegebene Konto.</p>"),
+        txt(
+          `<p>Hallo,<br />vielen Dank für Ihre Buchung bei <strong>${TENANT}</strong>.</p>`
+        ),
+        txt(
+          "<p>Bitte überweisen Sie zur Vervollständigung Ihrer Buchung den im Anhang aufgeführten Betrag auf das angegebene Konto.</p>"
+        ),
       ]),
     ],
   },
@@ -189,8 +206,12 @@ export const SNIPPET_CATALOG = [
 </p>`,
     defaultBlocks: [
       row([
-        txt(`<p>Vielen Dank für Ihre Buchungsanfrage im <strong>${TENANT}</strong>. Wir haben diese erfolgreich geprüft und freigegeben.</p>`),
-        txt("<p>Bitte überweisen Sie zur Vervollständigung Ihrer Buchung den im Anhang aufgeführten Betrag auf das angegebene Konto.</p>"),
+        txt(
+          `<p>Vielen Dank für Ihre Buchungsanfrage im <strong>${TENANT}</strong>. Wir haben diese erfolgreich geprüft und freigegeben.</p>`
+        ),
+        txt(
+          "<p>Bitte überweisen Sie zur Vervollständigung Ihrer Buchung den im Anhang aufgeführten Betrag auf das angegebene Konto.</p>"
+        ),
       ]),
     ],
   },
@@ -211,8 +232,12 @@ export const SNIPPET_CATALOG = [
 </p>`,
     defaultBlocks: [
       row([
-        txt(`<p>Vielen Dank für Ihre Buchungsanfrage im <strong>${TENANT}</strong>. Wir haben Ihre Anfrage geprüft und freigegeben.</p>`),
-        txt("<p>Um Ihre Buchung verbindlich abzuschließen, klicken Sie bitte auf den nachfolgenden Knopf und folgen Sie den weiteren Schritten.</p>"),
+        txt(
+          `<p>Vielen Dank für Ihre Buchungsanfrage im <strong>${TENANT}</strong>. Wir haben Ihre Anfrage geprüft und freigegeben.</p>`
+        ),
+        txt(
+          "<p>Um Ihre Buchung verbindlich abzuschließen, klicken Sie bitte auf den nachfolgenden Knopf und folgen Sie den weiteren Schritten.</p>"
+        ),
       ]),
     ],
   },
