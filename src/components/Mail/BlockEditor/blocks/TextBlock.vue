@@ -145,7 +145,6 @@ export default {
   methods: {
     insertVariable(v) {
       const placeholder = v.placeholder || "";
-      // Einfache Variable: {{name}} oder {{{name}}} → als Chip einfügen.
       const simpleMatch = placeholder.match(/^\{\{\{?\s*([\w.]+)\s*\}?\}\}$/);
       if (simpleMatch) {
         const triple = placeholder.startsWith("{{{");
@@ -155,10 +154,6 @@ export default {
         });
         return;
       }
-      // Komplexer Handlebars-Ausdruck (z. B. {{#if x}} … {{else}} … {{/if}})
-      // → als reiner Text einfügen, damit der Inhalt innerhalb der Branches
-      // editierbar bleibt. Explizit als text-Node, damit Tiptap nicht
-      // versucht, den String als HTML zu parsen.
       this.editor
         .chain()
         .focus()
@@ -238,8 +233,6 @@ export default {
 .text-block-content >>> .mail-variable-chip::after {
   content: "";
 }
-/* Wenn ein Label vorhanden ist, technischen {{name}}-Text ausblenden
-   und stattdessen das menschenlesbare Label anzeigen. */
 .text-block-content >>> .mail-variable-chip[data-label]:not([data-label=""]) {
   font-size: 0;
   letter-spacing: 0;

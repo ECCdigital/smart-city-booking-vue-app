@@ -1,10 +1,3 @@
-/**
- * Block-Modell → Outlook-safe HTML mit Inline-Styles und Tabellen-Layout.
- *
- * Eingabe: Array<RowBlock> (Top-Level enthält ausschließlich Row-Blöcke).
- * Ausgabe: HTML-String (ohne Metadaten-Kommentar – siehe parseMetadata.js).
- */
-
 import { sanitizeHtml, escapeAttr, escapeText } from "./sanitizeHtml";
 
 const DEFAULTS = {
@@ -207,10 +200,6 @@ function renderColumn(column, opts = {}) {
   const width = Number(column.width) || 12;
   const widthPct = (width / 12) * 100;
   const blocksHtml = (column.blocks || []).map(renderContentBlock).join("\n");
-  // Einspaltige Reihen bekommen kein horizontales Innenabstand-Padding,
-  // damit der Snippet-Body bündig zu serverseitig angehängten Bausteinen
-  // (Buchungsdetails, Footer …) steht. Bei mehrspaltigen Reihen sorgt das
-  // Padding weiterhin für sichtbaren Spaltenabstand.
   const horizontalPadding = opts.singleColumn ? "" : "padding:0 8px;";
   const style = joinStyle([
     "vertical-align:top;",

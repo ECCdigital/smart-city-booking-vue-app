@@ -66,7 +66,7 @@
         <v-divider class="mb-3" />
 
         <v-tabs v-model="activeTab" background-color="transparent" class="mb-3">
-          <v-tab :disabled="mode === 'expert' && expertConfirmed">
+          <v-tab>
             <v-icon left small>mdi-view-grid-outline</v-icon>
             Visuell
           </v-tab>
@@ -379,7 +379,9 @@ export default {
       this.blocks = this.snippetKey
         ? buildSnippetDefaultBlocks(this.snippetKey)
         : [];
+      this.expertHtml = renderBlocksToHtml(this.blocks);
       this.mode = "visual";
+      this.activeTab = 0;
     },
     loadDefaultBlocks() {
       if (!this.hasDefaultBlocks) return;
@@ -394,7 +396,11 @@ export default {
       this.activeTab = 0;
     },
     resetToDefault() {
+      if (this.hasDefaultBlocks) {
+        this.blocks = buildSnippetDefaultBlocks(this.snippetKey);
+      }
       this.expertHtml = this.snippet ? this.snippet.defaultTemplate : "";
+      this.expertConfirmed = true;
       this.mode = "expert";
     },
     resetSubjectToDefault() {

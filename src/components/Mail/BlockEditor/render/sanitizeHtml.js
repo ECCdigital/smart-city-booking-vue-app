@@ -1,12 +1,3 @@
-/**
- * Allowlist-Sanitizer für vom Editor erzeugtes HTML (insbesondere Tiptap-Output).
- *
- * Bewusst eigenständige Mini-Implementierung statt zusätzlicher Dependency:
- * - erlaubt nur die unten gelisteten Tags + Attribute,
- * - entfernt <script>, <style>, on*-Handler, javascript:-URIs.
- * - lässt Handlebars-Ausdrücke ({{…}} und {{{…}}}) als Textknoten intakt.
- */
-
 const ALLOWED_TAGS = new Set([
   "p",
   "br",

@@ -32,7 +32,7 @@
 
       <v-card-text class="pa-3">
         <v-tabs v-model="activeTab" background-color="transparent" class="mb-3">
-          <v-tab :disabled="mode === 'expert' && !expertConfirmed">
+          <v-tab>
             <v-icon left small>mdi-view-grid-outline</v-icon>
             Visuell
           </v-tab>
@@ -400,6 +400,7 @@ export default {
     resetToDefault() {
       this.blocks = this.makeDefaultBlocks();
       this.expertHtml = this.composeFromBlocks(this.blocks);
+      this.expertConfirmed = true;
       this.mode = "expert";
     },
     composeOutput() {

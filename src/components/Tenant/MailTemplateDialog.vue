@@ -24,7 +24,7 @@
       </v-card-subtitle>
       <v-card-text>
         <v-tabs v-model="activeTab" background-color="transparent" class="mb-3">
-          <v-tab :disabled="mode === 'expert' && !wizardConfirmed">
+          <v-tab>
             <v-icon left small>mdi-palette-outline</v-icon>
             Wizard
           </v-tab>
@@ -66,6 +66,7 @@
               :default-template="defaultTemplate"
               :variables="mailVariables"
               @input="onExpertEdit"
+              @default-loaded="onExpertDefaultLoaded"
             />
           </v-tab-item>
         </v-tabs-items>
@@ -163,6 +164,12 @@ export default {
       this.mode = "wizard";
       this.theme = getDefaultTheme("genericMailTemplate");
       this.expertHtml = renderThemeToHtml(this.theme, "genericMailTemplate");
+      this.activeTab = 0;
+    },
+    onExpertDefaultLoaded() {
+      this.theme = getDefaultTheme("genericMailTemplate");
+      this.wizardConfirmed = true;
+      this.mode = "expert";
     },
     composeOutput() {
       if (this.mode === "wizard") {

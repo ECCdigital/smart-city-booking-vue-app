@@ -1,12 +1,3 @@
-/**
- * Liest und schreibt das Block-Modell als HTML-Kommentar zu Beginn eines Snippets.
- *
- * Format: <!--MAILBLOCKS:v=1;b64=<base64(JSON.stringify(blocks))>-->
- *
- * Wenn der Kommentar fehlt, gilt der HTML-Inhalt als "Experten-Modus" und
- * der Block-Editor kann das Modell nicht wiederherstellen.
- */
-
 const MARKER_REGEX = /^<!--MAILBLOCKS:v=(\d+);b64=([A-Za-z0-9+/=]+)-->\s*/;
 
 function base64Encode(str) {
@@ -59,7 +50,7 @@ export function hasBlockMetadata(html) {
   return MARKER_REGEX.test(String(html || ""));
 }
 
-/* Theme-Metadata (für Layout/Receipt/Invoice/Cancellation) */
+/* Theme-Metadata */
 
 const THEME_MARKER_REGEX = /^<!--MAILTHEME:v=(\d+);b64=([A-Za-z0-9+/=]+)-->\s*/;
 

@@ -225,14 +225,6 @@ export const CANCELLATION_VARIABLES = [
     label: "Gesamt-Stornobetrag",
     description: "Aufsummierter Stornobetrag",
   },
-  {
-    name: "bank",
-    placeholder: "{{bank}}",
-    label: "Bank",
-    description: "Bankname",
-  },
-  { name: "iban", placeholder: "{{iban}}", label: "IBAN", description: "IBAN" },
-  { name: "bic", placeholder: "{{bic}}", label: "BIC", description: "BIC" },
 ];
 
 
@@ -378,10 +370,6 @@ export const SAMPLE_DATA = {
     refundMethod: "Kreditkarte",
     refundDate: "22.05.2026",
     refundReference: "REF-998877",
-    showBankDetails: true,
-    bank: "Sparkasse Musterstadt",
-    iban: "DE12 3456 7890 1234 5678 90",
-    bic: "MUSTDEXXXXX",
     location: "Musterstadt",
     totalAmount: "-120,00 €",
     bookingId: "BK-987654",

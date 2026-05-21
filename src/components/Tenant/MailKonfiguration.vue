@@ -254,8 +254,8 @@ export default {
     changeData() {
       this.$emit("update", this.selectedMailConfig);
     },
-    onSubmitTemplate(newTempalte) {
-      this.selectedMailConfig.genericMailTemplate = newTempalte;
+    onSubmitTemplate(newTemplate) {
+      this.selectedMailConfig.genericMailTemplate = newTemplate;
       this.showEditTemplateDialog = false;
       this.changeData();
     },
