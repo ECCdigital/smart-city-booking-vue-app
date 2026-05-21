@@ -705,7 +705,7 @@ export default {
         ProcessingService.hide(operationId);
       }
     },
-    async rejectBooking(id, rejectReason, skipCancellation) {
+    async rejectBooking(id, rejectReason, skipCancellation, bankDetails) {
       const operationId = ProcessingService.showOverlay(
         "Buchung wird abgelehnt..."
       );
@@ -715,7 +715,8 @@ export default {
           id,
           this.tenantId,
           rejectReason,
-          skipCancellation
+          skipCancellation,
+          bankDetails
         );
         await this.fetchBookings();
         await this.fetchGroupBookings();
