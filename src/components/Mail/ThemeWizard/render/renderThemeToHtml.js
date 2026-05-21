@@ -337,24 +337,12 @@ function renderCancellation(theme) {
   opts.showRefundBlock
     ? `{{#if alreadyPaid}}
               <div class="refund-note">
-                Der bereits gezahlte Betrag in Höhe von <strong>{{refundAmount}}</strong> wird Ihnen auf folgendem Weg erstattet:<br/>
-                {{refundMethod}}<br/>
-                {{#if refundReference}}Referenz: {{refundReference}}{{/if}}
+                Der bereits gezahlte Betrag in Höhe von <strong>{{refundAmount}}</strong> wird Ihnen erstattet<br/>
               </div>
             {{/if}}`
     : ""
 }
       {{{mainContent}}}
-      ${
-  opts.showBankDetails
-    ? `<div class="info-box">
-              <strong>Unsere Bankverbindung für Rückfragen:</strong><br/>
-              {{bank}}<br/>
-              IBAN: {{iban}}<br/>
-              BIC: {{bic}}
-            </div>`
-    : ""
-}
     </div>
     ${footerBlock(theme)}
   </div>

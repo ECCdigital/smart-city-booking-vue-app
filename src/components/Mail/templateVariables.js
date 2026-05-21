@@ -177,34 +177,23 @@ export const CANCELLATION_VARIABLES = [
     description: "Adresse des Kunden",
   },
   {
-    name: "refundReference",
-    placeholder: "{{refundReference}}",
-    label: "Erstattungs-Referenz",
-    description: "Referenz für die Erstattung",
-  },
-  {
-    name: "refundMethod",
-    placeholder: "{{refundMethod}}",
-    label: "Erstattungsweg",
-    description: "Erstattungsmethode",
-  },
-  {
     name: "refundAmount",
     placeholder: "{{refundAmount}}",
     label: "Erstattungsbetrag",
     description: "Erstattungsbetrag",
   },
   {
-    name: "refundDate",
-    placeholder: "{{refundDate}}",
-    label: "Erstattungsdatum",
-    description: "Voraussichtliches Erstattungsdatum",
-  },
-  {
     name: "cancellationReason",
     placeholder: "{{cancellationReason}}",
     label: "Stornogrund",
     description: "Grund der Stornierung",
+  },
+  {
+    name: "customerBankDetails",
+    placeholder: "{{{customerBankDetails}}}",
+    label: "Kunden-Bankverbindung",
+    description:
+      "Bankverbindung des Kunden für die Rückerstattung (HTML, leer wenn nicht hinterlegt)",
   },
   {
     name: "alreadyPaid",
@@ -218,6 +207,12 @@ export const CANCELLATION_VARIABLES = [
     placeholder: "{{{mainContent}}}",
     label: "Positionstabelle",
     description: "Stornierte Positionen (HTML)",
+  },
+  {
+    name: "bookingId",
+    placeholder: "{{bookingId}}",
+    label: "Buchungs-ID",
+    description: "ID der stornierten Buchung",
   },
   {
     name: "totalAmount",
@@ -367,14 +362,19 @@ export const SAMPLE_DATA = {
     cancellationReason: "Kunde hat Buchung widerrufen",
     alreadyPaid: true,
     refundAmount: "120,00 €",
-    refundMethod: "Kreditkarte",
-    refundDate: "22.05.2026",
-    refundReference: "REF-998877",
     location: "Musterstadt",
     totalAmount: "-120,00 €",
     bookingId: "BK-987654",
     invoiceAddress: SAMPLE_INVOICE_ADDRESS,
     mainContent: SAMPLE_CANCELLATION_MAIN_CONTENT,
+    customerBankDetails:
+      '<div class="information customer-bank-details">\n' +
+      "        <strong>Bankverbindung für die Rückerstattung:</strong><br />\n" +
+      "        Kontoinhaber: Max Mustermann<br />\n" +
+      "        Sparkasse Musterstadt<br />\n" +
+      "        IBAN: DE12 3456 7890 1234 5678 90<br />\n" +
+      "        BIC: MUSTDEXXXXX\n" +
+      "      </div>",
   },
 };
 

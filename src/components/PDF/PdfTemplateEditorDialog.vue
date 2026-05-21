@@ -48,7 +48,7 @@
 
         <v-tabs-items v-model="activeTab">
           <!-- Tab 1: Visuell -->
-          <v-tab-item :transition="false">
+          <v-tab-item :transition="false" eager>
             <div v-if="mode === 'expert' && !expertConfirmed">
               <v-alert type="warning" text>
                 Dieses Template wurde im Experten-Modus bearbeitet und kann
@@ -111,7 +111,6 @@
                     :key="previewKey"
                     class="preview-iframe"
                     sandbox="allow-same-origin"
-                    @load="updatePreview"
                   ></iframe>
                 </div>
               </v-card-text>
@@ -264,6 +263,7 @@ export default {
       expertConfirmed: false,
       previewKey: 0,
       previewDevice: "desktop",
+      previewRenderToken: 0,
       handlebarsLib: null,
     };
   },
@@ -317,13 +317,13 @@ export default {
     },
     activeTab(newTab) {
       if (newTab === 1) {
-        this.$nextTick(() => this.updatePreview());
+        this.schedulePreviewUpdate();
       }
     },
   },
   methods: {
     loadFromValue() {
-      const incoming = this.value || "";
+      const incoming = this.normalizeLegacyTemplate(this.value || "");
       this.expertConfirmed = false;
       this.previewDevice = "desktop";
       if (!incoming) {
@@ -336,7 +336,9 @@ export default {
       }
       const { blocks, body } = extractBlockMetadata(incoming);
       if (blocks) {
-        this.blocks = this.normalizeBlockIds(blocks);
+        this.blocks = this.normalizeBlockIds(
+          this.normalizeLegacyBlocks(blocks),
+        );
         this.expertHtml = body;
         this.mode = "visual";
         this.activeTab = 0;
@@ -353,10 +355,47 @@ export default {
     makeDefaultBlocks() {
       if (!this.catalog) return [];
       try {
-        return this.normalizeBlockIds(this.catalog.defaultBlocks());
+        return this.normalizeBlockIds(
+          this.normalizeLegacyBlocks(this.catalog.defaultBlocks()),
+        );
       } catch (_) {
         return [];
       }
+    },
+    normalizeLegacyTemplate(html) {
+      if (this.templateType !== "cancellation") return html;
+      const oldRefundBlock =
+        "{{#if alreadyPaid}}" +
+        "<p>Der bereits gezahlte Betrag in Höhe von <strong>{{refundAmount}}</strong> wird Ihnen per {{refundMethod}} erstattet." +
+        "{{#if customerBankDetails}}{{{customerBankDetails}}}{{/if}}" +
+        "{{else}}" +
+        "<p>Sofern noch keine Zahlung erfolgt ist, entfällt die Zahlungsverpflichtung aus der ursprünglichen Rechnung.</p>" +
+        "{{/if}}";
+      const newRefundBlock =
+        "{{#if alreadyPaid}}" +
+        "<p>Der bereits gezahlte Betrag in Höhe von <strong>{{refundAmount}}</strong> wird Ihnen per {{refundMethod}} erstattet." +
+        "{{#if customerBankDetails}}{{{customerBankDetails}}}{{/if}}" +
+        "{{/if}}" +
+        "{{#unless alreadyPaid}}" +
+        "<p>Sofern noch keine Zahlung erfolgt ist, entfällt die Zahlungsverpflichtung aus der ursprünglichen Rechnung.</p>" +
+        "{{/unless}}";
+      return String(html || "").split(oldRefundBlock).join(newRefundBlock);
+    },
+    normalizeLegacyBlocks(blocks) {
+      const normalizeBlock = (block) => {
+        const next = { ...(block || {}) };
+        if (typeof next.html === "string") {
+          next.html = this.normalizeLegacyTemplate(next.html);
+        }
+        if (Array.isArray(next.columns)) {
+          next.columns = next.columns.map((column) => ({
+            ...column,
+            blocks: (column.blocks || []).map(normalizeBlock),
+          }));
+        }
+        return next;
+      };
+      return (blocks || []).map(normalizeBlock);
     },
     normalizeBlockIds(blocks) {
       const seen = new Set();
@@ -463,11 +502,22 @@ export default {
       });
       return out;
     },
-    async updatePreview() {
-      const iframe = this.$refs.previewIframe;
-      if (!iframe || !iframe.contentWindow) return;
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-
+    schedulePreviewUpdate() {
+      const token = ++this.previewRenderToken;
+      this.$nextTick(() => {
+        const run = () => {
+          if (token === this.previewRenderToken) {
+            this.updatePreview(token);
+          }
+        };
+        if (window.requestAnimationFrame) {
+          window.requestAnimationFrame(run);
+        } else {
+          setTimeout(run, 0);
+        }
+      });
+    },
+    async updatePreview(token = this.previewRenderToken) {
       const sourceHtml =
         this.mode === "visual"
           ? this.composeFromBlocks(this.blocks)
@@ -487,6 +537,11 @@ export default {
           `<strong>Vorschau-Fehler:</strong> ${String(e.message || e)}` +
           "</body></html>";
       }
+
+      if (token !== this.previewRenderToken) return;
+      const iframe = this.$refs.previewIframe;
+      if (!iframe || !iframe.contentWindow) return;
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
 
       doc.open();
       doc.write(rendered);
@@ -514,7 +569,7 @@ export default {
       () => [this.blocks, this.expertHtml, this.mode, this.previewDevice],
       () => {
         if (this.activeTab === 1) {
-          this.$nextTick(() => this.updatePreview());
+          this.schedulePreviewUpdate();
         }
       },
       { deep: true },

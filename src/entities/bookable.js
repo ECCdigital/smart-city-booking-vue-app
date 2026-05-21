@@ -18,6 +18,7 @@ export default class Bookable {
     this.autoCommitBooking = false;
     this.bookingNotes = "";
     this.groupBooking = { enabled: false, permittedRoles: [] };
+    this.cancellationPolicy = { userCancellable: true };
 
     this.isScheduleRelated = false;
     this.isTimePeriodRelated = false;

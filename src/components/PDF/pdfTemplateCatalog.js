@@ -203,11 +203,11 @@ function makeCancellationDefaultBlocks() {
               html:
                 "{{#if alreadyPaid}}" +
                 "<p>Der bereits gezahlte Betrag in Höhe von <strong>{{refundAmount}}</strong> wird Ihnen per {{refundMethod}} erstattet." +
-                "{{#if refundDate}}<br />Voraussichtliches Erstattungsdatum: {{refundDate}}{{/if}}" +
-                "{{#if refundReference}}<br />Referenz: {{refundReference}}{{/if}}</p>" +
-                "{{else}}" +
+                "{{#if customerBankDetails}}{{{customerBankDetails}}}{{/if}}" +
+                "{{/if}}" +
+                "{{#unless alreadyPaid}}" +
                 "<p>Sofern noch keine Zahlung erfolgt ist, entfällt die Zahlungsverpflichtung aus der ursprünglichen Rechnung.</p>" +
-                "{{/if}}",
+                "{{/unless}}",
             },
             {
               type: "rawHtml",
