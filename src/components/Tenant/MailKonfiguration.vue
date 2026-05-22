@@ -3,7 +3,7 @@
     <v-row>
       <v-col class="">
         <v-card
-          v-if="!!selectedMailConfig.genericMailTemplate"
+          v-if="!!selectedMailConfig[templateField]"
           color="success lighten-5"
           class="rounded"
         >
@@ -206,7 +206,7 @@
     </AppPanel>
     <MailTemplateDialog
       :open="showEditTemplateDialog"
-      :mail-template="selectedMailConfig.genericMailTemplate"
+      :mail-template="selectedMailConfig[templateField]"
       @submit="onSubmitTemplate"
       @close="showEditTemplateDialog = false"
     ></MailTemplateDialog>
@@ -228,6 +228,11 @@ export default {
     showValidation: {
       type: Boolean,
       default: true,
+    },
+    templateField: {
+      type: String,
+      default: "genericMailTemplate",
+      validator: (v) => ["genericMailTemplate", "mailTemplate"].includes(v),
     },
   },
   data() {
@@ -255,7 +260,7 @@ export default {
       this.$emit("update", this.selectedMailConfig);
     },
     onSubmitTemplate(newTemplate) {
-      this.selectedMailConfig.genericMailTemplate = newTemplate;
+      this.$set(this.selectedMailConfig, this.templateField, newTemplate);
       this.showEditTemplateDialog = false;
       this.changeData();
     },

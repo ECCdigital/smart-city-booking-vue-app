@@ -23,6 +23,7 @@
       class="mt-4"
       v-if="local.mailEnabled"
       :mail-config="mailConfig"
+      template-field="mailTemplate"
       @update="onMailConfigUpdate"
     />
   </BaseSection>
@@ -51,7 +52,7 @@ export default {
   computed: {
     mailConfig() {
       return {
-        genericMailTemplate: this.local.mailTemplate,
+        mailTemplate: this.local.mailTemplate,
         noreplyMail: this.local.noreplyMail,
         noreplyDisplayName: this.local.noreplyDisplayName,
         noreplyHost: this.local.noreplyHost,
@@ -72,6 +73,7 @@ export default {
     },
     onMailConfigUpdate(cfg) {
       Object.assign(this.local, {
+        mailTemplate: cfg.mailTemplate,
         noreplyDisplayName: cfg.noreplyDisplayName,
         noreplyMail: cfg.noreplyMail,
         noreplyHost: cfg.noreplyHost,

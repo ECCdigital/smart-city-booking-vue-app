@@ -75,7 +75,6 @@
 import AdminLayout from "@/layouts/Admin.vue";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import ApiRolesService from "@/services/api/ApiRolesService";
-import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
 import ApiUsersService from "@/services/api/ApiUsersService";
 import { mapActions, mapGetters } from "vuex";
 import SaveBar from "@/components/commons/SaveBar.vue";
@@ -92,7 +91,6 @@ import InstanceEditAuth from "@/components/Instance/Edit/InstanceEditAuth.vue";
 export default {
   name: "Instances",
   components: {
-    MailKonfiguration,
     AdminLayout,
     SaveBar,
     InstanceEditGeneral,
@@ -192,24 +190,6 @@ export default {
     ...mapGetters({}),
     currentComponent() {
       return this.tabs[this.activeTab]?.comp || "InstanceEditGeneral";
-    },
-    instanceMailConfig: {
-      get() {
-        return {
-          genericMailTemplate: this.instance.mailTemplate,
-          noreplyMail: this.instance.noreplyMail,
-          noreplyDisplayName: this.instance.noreplyDisplayName,
-          noreplyHost: this.instance.noreplyHost,
-          noreplyPort: this.instance.noreplyPort,
-          noreplyUser: this.instance.noreplyUser,
-          noreplyPassword: this.instance.noreplyPassword,
-          noreplyUseGraphApi: this.instance.noreplyUseGraphApi,
-          noreplyStarttls: this.instance.noreplyStarttls,
-          noreplyGraphTenantId: this.instance.noreplyGraphTenantId,
-          noreplyGraphClientId: this.instance.noreplyGraphClientId,
-          noreplyGraphClientSecret: this.instance.noreplyGraphClientSecret,
-        };
-      },
     },
     hasUnsavedChanges() {
       return (
