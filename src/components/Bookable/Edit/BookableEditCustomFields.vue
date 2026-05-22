@@ -342,6 +342,10 @@ export default {
             dense
             hide-details="auto"
             clearable
+            :menu-props="{
+              offsetY: true,
+              offsetOverflow: true,
+            }"
             @click:clear="clearFieldValue(field.id)"
           />
         </div>
