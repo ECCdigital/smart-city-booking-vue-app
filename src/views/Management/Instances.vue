@@ -145,9 +145,9 @@ export default {
           comp: "InstanceEditTenants",
         },
         {
-          key: "catalog",
-          label: "Katalog",
-          icon: "mdi-book-open",
+          key: "portal",
+          label: "Portal",
+          icon: "mdi-web",
           comp: "InstanceEditCatalog",
         },
         {
@@ -159,14 +159,17 @@ export default {
       ],
       catalog: {
         type: "instanze",
-        theme: {
-          active: false,
-          colors: { primary: "", secondary: "" },
-        },
         hero: {
           title: "",
           subtitle: "",
         },
+      },
+      defaultBranding: {
+        active: false,
+        theme: {
+          colors: { primary: "", secondary: "" },
+        },
+        logoUrl: "",
       },
       defaultKeycloak: {
         id: "keycloak",
@@ -275,7 +278,20 @@ export default {
       this.instance = await ApiInstanceService.getInstance();
       await this.fetchCatalog();
 
-      // ensure applications array exists and has a keycloak entry
+      this.instance.branding = {
+        ...this.defaultBranding,
+        ...(this.instance.branding || {}),
+        theme: {
+          ...this.defaultBranding.theme,
+          ...((this.instance.branding && this.instance.branding.theme) || {}),
+          colors: {
+            ...this.defaultBranding.theme.colors,
+            ...(((this.instance.branding && this.instance.branding.theme) || {})
+              .colors || {}),
+          },
+        },
+      };
+
       if (!this.instance.applications) this.instance.applications = [];
 
       const idx = this.instance.applications.findIndex(

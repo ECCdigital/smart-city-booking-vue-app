@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-alert
-      v-if="!instance.enableCatalog"
+      v-if="!instance.publicOffersEnabled"
       type="warning"
       border="left"
       colored-border
@@ -11,9 +11,9 @@
     >
       <div>
         <div>
-          In dieser Instanz ist die Funktion zur Konfiguration von Katalogen
-          derzeit nicht verfügbar. Die Möglichkeit, Kataloge anzulegen oder zu
-          bearbeiten, muss auf Instanzebene aktiviert werden.
+          In dieser Instanz sind öffentliche Buchungsangebote derzeit
+          deaktiviert. Besucher sehen beim Aufruf der Portal-URL nur ihren
+          persönlichen Bereich (Profil und Buchungen).
         </div>
         <div class="mt-4">
           Wenn Sie Kataloge für Ihre Anwendung benötigen, wenden Sie sich bitte
@@ -68,7 +68,7 @@
           required
           :rules="isActive ? slugRules : []"
           hint="3-50 Zeichen, Kleinbuchstaben"
-          :prefix="instance.catalogUrl + '/catalog/'"
+          :prefix="(instance.portalUrl || '') + '/catalog/'"
           persistent-hint
           :loading="slugChecking"
           :error="slugAvailable === false"
@@ -109,89 +109,17 @@
       </v-col>
     </v-row>
 
-    <v-row>
-      <v-col cols="12">
-        <h4>Theme</h4>
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col cols="12" md="6">
-        <v-switch
-          v-model="useCustomTheme"
-          color="primary"
-          label="Benutzerdefiniertes Theme"
-          class="mt-2"
-        ></v-switch>
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col cols="12" md="6">
-        <v-text-field
-          v-model="primaryColor"
-          label="Primärfarbe"
-          background-color="accent"
-          filled
-          dense
-        >
-          <template v-slot:append>
-            <v-menu offset-y>
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn
-                  icon
-                  small
-                  v-bind="attrs"
-                  v-on="on"
-                  :color="primaryColor"
-                  :style="{ backgroundColor: primaryColor }"
-                >
-                  <v-icon small>mdi-palette</v-icon>
-                </v-btn>
-              </template>
-              <v-color-picker
-                v-model="primaryColor"
-                mode="hexa"
-                show-swatches
-                swatches-max-height="200px"
-              ></v-color-picker>
-            </v-menu>
-          </template>
-        </v-text-field>
-      </v-col>
-      <v-col cols="12" md="6">
-        <v-text-field
-          v-model="secondaryColor"
-          label="Sekundärfarbe"
-          background-color="accent"
-          filled
-          dense
-        >
-          <template v-slot:append>
-            <v-menu offset-y>
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn
-                  icon
-                  small
-                  v-bind="attrs"
-                  v-on="on"
-                  :color="secondaryColor"
-                  :style="{ backgroundColor: secondaryColor }"
-                >
-                  <v-icon small>mdi-palette</v-icon>
-                </v-btn>
-              </template>
-              <v-color-picker
-                v-model="secondaryColor"
-                mode="hexa"
-                show-swatches
-                swatches-max-height="200px"
-              ></v-color-picker>
-            </v-menu>
-          </template>
-        </v-text-field>
-      </v-col>
-    </v-row>
+    <v-alert
+      type="info"
+      border="left"
+      colored-border
+      elevation="1"
+      dense
+      class="mt-6"
+    >
+      Theme und Logo werden zentral in den Instanz-Einstellungen unter "Portal"
+      konfiguriert und gelten für alle Kataloge dieser Instanz.
+    </v-alert>
   </div>
 </template>
 
@@ -353,44 +281,6 @@ export default {
       },
       set(value) {
         this.$emit("update:catalog", { ...this.catalog, visibility: value });
-      },
-    },
-
-    useCustomTheme: {
-      get() {
-        return this.catalog.theme?.active || false;
-      },
-      set(value) {
-        const updatedCatalog = { ...this.catalog };
-        if (!updatedCatalog.theme) updatedCatalog.theme = {};
-        updatedCatalog.theme.active = value;
-        this.$emit("update:catalog", updatedCatalog);
-      },
-    },
-
-    primaryColor: {
-      get() {
-        return this.catalog.theme?.colors?.primary || "";
-      },
-      set(value) {
-        const updatedCatalog = { ...this.catalog };
-        if (!updatedCatalog.theme) updatedCatalog.theme = {};
-        if (!updatedCatalog.theme.colors) updatedCatalog.theme.colors = {};
-        updatedCatalog.theme.colors.primary = value;
-        this.$emit("update:catalog", updatedCatalog);
-      },
-    },
-
-    secondaryColor: {
-      get() {
-        return this.catalog.theme?.colors?.secondary || "";
-      },
-      set(value) {
-        const updatedCatalog = { ...this.catalog };
-        if (!updatedCatalog.theme) updatedCatalog.theme = {};
-        if (!updatedCatalog.theme.colors) updatedCatalog.theme.colors = {};
-        updatedCatalog.theme.colors.secondary = value;
-        this.$emit("update:catalog", updatedCatalog);
       },
     },
   },
