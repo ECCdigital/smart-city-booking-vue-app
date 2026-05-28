@@ -5,8 +5,24 @@
 
       <div class="d-flex align-center mb-2">
         <div>
-          <div class="text--secondary">
-            ID: {{ bookableID }} • {{ bookable.title || "Unbenannt" }}
+          <div class="text--secondary d-flex align-center">
+            <v-tooltip bottom v-if="bookableID">
+              <template v-slot:activator="{ on, attrs }">
+                <span
+                  class="bookable-id-copy"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="copyBookableId"
+                >
+                  ID: {{ bookableID }}
+                  <v-icon x-small class="ml-1">mdi-content-copy</v-icon>
+                </span>
+              </template>
+              <span>ID kopieren</span>
+            </v-tooltip>
+            <span v-else>ID: -</span>
+            <span class="mx-1">•</span>
+            <span>{{ bookable.title || "Unbenannt" }}</span>
           </div>
         </div>
         <v-spacer />
@@ -293,6 +309,23 @@ export default {
     onUpdateBookable(updatedBookable) {
       this.bookable = { ...this.bookable, ...updatedBookable };
     },
+    async copyBookableId() {
+      if (!this.bookableID) return;
+      try {
+        await navigator.clipboard.writeText(this.bookableID);
+        this.addToast(
+          ToastService.createToast("bookable.copyId.success", "success")
+        );
+      } catch (error) {
+        console.error("Failed to copy bookable id:", error);
+        this.addToast(
+          ToastService.createToast(
+            "bookable.copyId.errors.something-wrong",
+            "error"
+          )
+        );
+      }
+    },
   },
   watch: {
     bookableID: {
@@ -323,5 +356,24 @@ export default {
     56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
       /* extra spacing */
   );
+}
+
+.bookable-id-copy {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.bookable-id-copy:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: var(--v-primary-base);
+}
+
+.theme--dark .bookable-id-copy:hover {
+  background-color: rgba(255, 255, 255, 0.08);
 }
 </style>
