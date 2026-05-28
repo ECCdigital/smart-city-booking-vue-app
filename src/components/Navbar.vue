@@ -137,6 +137,11 @@
           </div>
         </v-list>
       </div>
+      <template v-slot:append>
+        <div class="pa-3 text-center text--secondary caption">
+          Version {{ appVersion }}
+        </div>
+      </template>
     </v-navigation-drawer>
   </nav>
 </template>
@@ -148,11 +153,13 @@ import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import NotificationDisplay from "@/components/NotificationDisplay";
 import keycloakService from "@/services/KeycloakService";
+import { version as appVersion } from "../../package.json";
 
 export default {
   data: () => ({
     drawer: false,
     isProduction: process.env.VUE_APP_IS_PRODUCTION,
+    appVersion,
     profileItems: [
       {
         title: "Einstellungen",
