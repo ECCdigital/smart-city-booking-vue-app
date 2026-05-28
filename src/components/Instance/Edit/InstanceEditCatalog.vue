@@ -157,19 +157,31 @@
 
     <SubSection
       class="mt-4"
-      title="Logo"
+      title="Logo & Favicon"
       icon="mdi-image-area"
-      description="Laden Sie ein benutzerdefiniertes Logo für Ihr Portal hoch, um Ihre Marke zu präsentieren. Das Logo wird im Kopfbereich des Portals angezeigt und sollte idealerweise eine Größe von 200x50 Pixel haben, um optimal dargestellt zu werden."
+      description="Laden Sie ein benutzerdefiniertes Logo für Ihr Portal hoch, um Ihre Marke zu präsentieren. Das Logo wird im Kopfbereich des Portals angezeigt und sollte idealerweise eine Größe von 200x50 Pixel haben. Das Favicon erscheint im Browser-Tab und sollte quadratisch (z. B. 32x32 oder 64x64 Pixel) sein."
       no-margin
     >
       <v-row>
-        <v-col>
+        <v-col cols="12" md="6">
           <ChooseFile
             v-model="local.branding.logoUrl"
             :allow-protected="false"
             filled
             images-only
             label="Logo"
+            background-color="accent"
+            forced-subdirectory="assets"
+            @input="emitUpdate"
+          />
+        </v-col>
+        <v-col cols="12" md="6">
+          <ChooseFile
+            v-model="local.branding.faviconUrl"
+            :allow-protected="false"
+            filled
+            images-only
+            label="Favicon"
             background-color="accent"
             forced-subdirectory="assets"
             @input="emitUpdate"
@@ -280,6 +292,7 @@ export default {
           colors: { primary: "", secondary: "" },
         },
         logoUrl: "",
+        faviconUrl: "",
         ...(instance.branding || {}),
       };
       cloned.branding.theme = {

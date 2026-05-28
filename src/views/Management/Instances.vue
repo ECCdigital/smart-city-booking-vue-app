@@ -170,6 +170,7 @@ export default {
           colors: { primary: "", secondary: "" },
         },
         logoUrl: "",
+        faviconUrl: "",
       },
       defaultKeycloak: {
         id: "keycloak",

@@ -331,7 +331,7 @@ export default {
       if (!file) return false;
       if (file.mime) return file.mime.startsWith("image/");
       const name = (file.basename || file.filename || "").toLowerCase();
-      return [ "png", "jpg", "jpeg", "gif", "webp", "svg" ].includes(
+      return [ "png", "jpg", "jpeg", "gif", "webp", "svg", "ico" ].includes(
         name.split(".").pop()
       );
     },
