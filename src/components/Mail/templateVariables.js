@@ -11,6 +11,25 @@ export const SNIPPET_VARIABLES = [
     label: "Support-E-Mail",
     description: "Support-E-Mail des Mandanten",
   },
+  {
+    name: "customerName",
+    placeholder: "{{customerName}}",
+    label: "Kundenname",
+    description: "Name des buchenden Kunden",
+  },
+  {
+    name: "currentDate",
+    placeholder: "{{currentDate}}",
+    label: "Aktuelles Datum",
+    description: "Aktuelles Datum",
+  },
+  {
+    name: "customerContact",
+    placeholder: "{{{customerContact}}}",
+    label: "Kundenkontakt",
+    description:
+      "Kontaktdaten des Kunden (HTML, mehrzeilig: Name, Firma, E-Mail, Telefon, Adresse)",
+  },
 ];
 
 export const GENERIC_MAIL_VARIABLES = [
@@ -223,6 +242,13 @@ export const CANCELLATION_VARIABLES = [
 ];
 
 
+const SAMPLE_CUSTOMER_CONTACT =
+  "<strong>Name:</strong> Max Mustermann<br />" +
+  "<strong>Firma:</strong> Beispiel GmbH<br />" +
+  "<strong>E-Mail:</strong> max.mustermann@beispiel.de<br />" +
+  "<strong>Telefon:</strong> 0123 4567890<br />" +
+  "<strong>Adresse:</strong> Musterstraße 1, 12345 Musterstadt";
+
 const SAMPLE_RECEIPT_ADDRESS =
   "Beispiel GmbH<br/>\n    Max Mustermann<br/>\n    Musterstraße 1<br/>\n    12345 Musterstadt";
 
@@ -322,12 +348,18 @@ export const SAMPLE_DATA = {
   snippet: {
     tenantName: "Beispiel-Mandant",
     supportEmail: "support@beispiel.de",
+    customerName: "Max Mustermann",
+    currentDate: new Date().toLocaleDateString("de-DE"),
+    customerContact: SAMPLE_CUSTOMER_CONTACT,
   },
   genericMail: {
     content:
       "<p>Dies ist der Inhalt der E-Mail. Er wird im Mail-Layout angezeigt.</p>",
     tenantName: "Beispiel-Mandant",
     supportEmail: "support@beispiel.de",
+    customerName: "Max Mustermann",
+    currentDate: new Date().toLocaleDateString("de-DE"),
+    customerContact: SAMPLE_CUSTOMER_CONTACT,
   },
   receipt: {
     isAggregated: false,

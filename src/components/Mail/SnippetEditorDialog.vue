@@ -236,6 +236,7 @@ export default {
     value: { type: String, default: "" },
     subject: { type: String, default: "" },
     layoutTemplate: { type: String, default: "" },
+    tenantName: { type: String, default: "" },
   },
   data() {
     return {
@@ -267,7 +268,13 @@ export default {
       return SNIPPET_VARIABLES;
     },
     sampleData() {
-      return SAMPLE_DATA.snippet;
+      const base = SAMPLE_DATA.snippet || {};
+      return {
+        ...base,
+        tenantName:
+          (this.tenantName && this.tenantName.trim()) || base.tenantName,
+        currentDate: new Date().toLocaleDateString("de-DE"),
+      };
     },
     currentSize() {
       const html = this.composeOutput();

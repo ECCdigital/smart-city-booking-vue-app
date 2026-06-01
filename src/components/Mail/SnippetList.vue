@@ -61,6 +61,7 @@
       :value="activeValue"
       :subject="activeSubject"
       :layout-template="layoutTemplate"
+      :tenant-name="tenantName"
       @close="dialogOpen = false"
       @submit="onSubmit"
     />
@@ -79,6 +80,7 @@ export default {
     mailSnippets: { type: Object, default: () => ({}) },
     mailSubjects: { type: Object, default: () => ({}) },
     layoutTemplate: { type: String, default: "" },
+    tenantName: { type: String, default: "" },
   },
   data: () => ({
     catalog: SNIPPET_CATALOG,

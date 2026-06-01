@@ -29,6 +29,7 @@
         :mail-snippets="tenant.mailSnippets || {}"
         :mail-subjects="tenant.mailSubjects || {}"
         :layout-template="tenant.genericMailTemplate || ''"
+        :tenant-name="tenant.name || ''"
         @update="updateMailOverrides"
       />
     </BaseSection>
