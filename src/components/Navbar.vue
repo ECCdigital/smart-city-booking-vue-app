@@ -211,7 +211,7 @@ export default {
             context: "tenant",
           },
           {
-            title: "Ressourcen",
+            title: "Geräte & Weiteres",
             link: "resources",
             icon: "mdi-package-variant",
             interfaceName: "resources",

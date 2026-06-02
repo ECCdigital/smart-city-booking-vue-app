@@ -24,7 +24,7 @@ export default {
             key: "room",
           },
           {
-            title: "Resource",
+            title: "Gerät / Weiteres",
             key: "resource",
           },
           {

@@ -14,7 +14,7 @@
         <Search
           :items="api.resources"
           v-model="searchResults"
-          placeholder="Ressource suchen…"
+          placeholder="Objekt suchen…"
           :keys="searchKeys"
           filter-key="tags"
           :filter-options="api.tags"
@@ -66,7 +66,7 @@
         :disabled="createDisabled"
       >
         <v-icon>mdi-plus</v-icon>
-        Ressource erstellen
+        Objekt erstellen
       </v-btn>
     </v-fab-transition>
   </AdminLayout>
