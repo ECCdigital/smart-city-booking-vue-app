@@ -10,7 +10,7 @@ export default {
       return this.$route.query.id;
     },
     pageTitle() {
-      return this.bookableID ? "Ressource bearbeiten" : "Ressource erstellen";
+      return this.bookableID ? "Objekt bearbeiten" : "Objekt erstellen";
     },
   },
 };

@@ -233,7 +233,7 @@ export default {
           value: "rooms",
         },
         {
-          name: "Ressourcen",
+          name: "Geräte & Weiteres",
           value: "resources",
         },
         {

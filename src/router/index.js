@@ -182,7 +182,7 @@ const routes = [
     component: Resources,
     meta: {
       type: "resource",
-      title: "Ressourcen",
+      title: "Geräte & Weiteres",
       requiresAuth: true,
       interfaceName: "resources",
     },

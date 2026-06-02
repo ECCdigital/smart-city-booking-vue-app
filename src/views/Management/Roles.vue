@@ -148,7 +148,7 @@ export default {
         },
         { text: "Admin-Bereiche", value: "adminInterfaces" },
         { text: "Benutzer", value: "manageUsers" },
-        { text: "Ressourcen", value: "manageBookables" },
+        { text: "Geräte & Weiteres", value: "manageBookables" },
         { text: "Buchungen", value: "manageBookings" },
         { text: "Rollen", value: "manageRoles" },
         { text: "Rabatte", value: "manageCoupons" },
