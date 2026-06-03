@@ -131,9 +131,7 @@
               <v-col cols="12" md="6">
                 <div class="info-item">
                   <div class="info-label">
-                    <v-icon small class="mr-2"
-                      >mdi-book-cancel-outline</v-icon
-                    >
+                    <v-icon small class="mr-2">mdi-book-cancel-outline</v-icon>
                     Stornierungsrichtlinie
                   </div>
                   <div class="info-value">
@@ -261,6 +259,198 @@
                 <v-divider
                   v-if="index < confirmedIfbsLockers.length - 1"
                   :key="`locker-divider-${index}`"
+                />
+              </template>
+            </v-list>
+          </v-card-text>
+        </v-card>
+
+        <v-card
+          v-if="bookingAccessPoints.length > 0"
+          class="mb-6 section-card"
+          elevation="2"
+          outlined
+        >
+          <v-card-title
+            class="section-header pa-4 d-flex justify-space-between align-center"
+          >
+            <div>
+              <v-icon class="mr-2">mdi-door-open</v-icon>
+              <span class="text-h6 font-weight-bold">{{
+                $t("accessPoint.booking.title")
+              }}</span>
+            </div>
+            <v-btn
+              small
+              text
+              color="primary"
+              :loading="accessPointsLoading"
+              :disabled="!canControlAccessPoints"
+              @click="fetchBookingAccessPoints"
+            >
+              <v-icon left small>mdi-refresh</v-icon>
+              {{ $t("accessPoint.booking.reload") }}
+            </v-btn>
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text class="pa-1">
+            <v-alert type="info" text dense class="mx-4 mt-4 mb-2">
+              {{ $t("accessPoint.booking.pinInfo") }}
+            </v-alert>
+
+            <v-list dense>
+              <template v-for="(accessPoint, index) in bookingAccessPoints">
+                <v-list-item
+                  :key="getAccessPointKey(accessPoint)"
+                  class="px-4 py-2"
+                >
+                  <v-list-item-avatar color="green lighten-4">
+                    <v-icon color="green">mdi-door</v-icon>
+                  </v-list-item-avatar>
+                  <v-list-item-content>
+                    <v-list-item-title class="font-weight-bold">
+                      {{ accessPoint.label || accessPoint.externalId }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle>
+                      <span class="mr-3">
+                        <v-icon x-small>mdi-identifier</v-icon>
+                        ID:
+                        {{ accessPoint.externalId || accessPoint.id }}
+                      </span>
+                      <span class="mr-3">
+                        <v-icon x-small>mdi-cloud-outline</v-icon>
+                        {{ accessPoint.provider || "nuki" }}
+                      </span>
+                      <span v-if="accessPoint.isProvisioned" class="mr-3">
+                        <v-icon x-small>mdi-check-decagram-outline</v-icon>
+                        {{ $t("accessPoint.booking.provisioned") }}
+                      </span>
+                    </v-list-item-subtitle>
+                    <v-list-item-subtitle
+                      v-if="accessPoint.provisionedAt"
+                      class="mt-1"
+                    >
+                      {{ $t("accessPoint.booking.provisionedAt") }}
+                      {{ formatDateTime(accessPoint.provisionedAt) }}
+                    </v-list-item-subtitle>
+                    <v-list-item-subtitle class="mt-1">
+                      <v-chip
+                        v-if="getAccessPointDisplayStatus(accessPoint)"
+                        x-small
+                        :color="getAccessPointDisplayStatus(accessPoint).color"
+                        text-color="white"
+                      >
+                        <v-progress-circular
+                          v-if="
+                            getAccessPointDisplayStatus(accessPoint).loading
+                          "
+                          indeterminate
+                          size="10"
+                          width="1"
+                          color="white"
+                          class="mr-1"
+                        />
+                        <v-icon v-else left x-small>
+                          {{ getAccessPointDisplayStatus(accessPoint).icon }}
+                        </v-icon>
+                        {{ getAccessPointDisplayStatus(accessPoint).text }}
+                      </v-chip>
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                  <v-list-item-action
+                    class="flex-row align-center"
+                    style="gap: 8px"
+                  >
+                    <v-btn
+                      small
+                      outlined
+                      color="info"
+                      :loading="
+                        accessPointLoading[
+                          getAccessPointKey(accessPoint) + '_status'
+                        ]
+                      "
+                      :disabled="!canControlAccessPoints"
+                      @click="fetchAccessPointStatus(accessPoint)"
+                    >
+                      <v-icon left small>mdi-refresh</v-icon>
+                      {{ $t("accessPoint.booking.checkStatus") }}
+                    </v-btn>
+                    <v-btn
+                      small
+                      outlined
+                      color="warning"
+                      :loading="
+                        accessPointLoading[
+                          getAccessPointKey(accessPoint) + '_close'
+                        ]
+                      "
+                      :disabled="
+                        !canControlAccessPoints ||
+                        accessPointLoading[
+                          getAccessPointKey(accessPoint) + '_waitClose'
+                        ]
+                      "
+                      @click="closeAccessPoint(accessPoint)"
+                    >
+                      <v-icon left small>mdi-lock</v-icon>
+                      {{ $t("accessPoint.booking.close") }}
+                    </v-btn>
+                    <v-btn
+                      small
+                      color="success"
+                      :loading="
+                        accessPointLoading[
+                          getAccessPointKey(accessPoint) + '_open'
+                        ]
+                      "
+                      :disabled="
+                        !canControlAccessPoints ||
+                        accessPointLoading[
+                          getAccessPointKey(accessPoint) + '_waitOpen'
+                        ] ||
+                        accessPointLoading[
+                          getAccessPointKey(accessPoint) + '_waitClose'
+                        ]
+                      "
+                      @click="openAccessPoint(accessPoint)"
+                    >
+                      <v-icon left small>mdi-lock-open-variant</v-icon>
+                      {{ $t("accessPoint.booking.open") }}
+                    </v-btn>
+                  </v-list-item-action>
+                </v-list-item>
+
+                <v-expand-transition
+                  :key="'access-alert-' + getAccessPointKey(accessPoint)"
+                >
+                  <div
+                    v-if="accessPointErrors[getAccessPointKey(accessPoint)]"
+                    class="px-4 pb-2"
+                  >
+                    <v-alert
+                      type="error"
+                      dense
+                      outlined
+                      border="left"
+                      class="mb-0 mt-1"
+                      dismissible
+                      @input="
+                        $set(
+                          accessPointErrors,
+                          getAccessPointKey(accessPoint),
+                          null
+                        )
+                      "
+                    >
+                      {{ accessPointErrors[getAccessPointKey(accessPoint)] }}
+                    </v-alert>
+                  </div>
+                </v-expand-transition>
+
+                <v-divider
+                  v-if="index < bookingAccessPoints.length - 1"
+                  :key="`access-point-divider-${index}`"
                 />
               </template>
             </v-list>
@@ -1019,6 +1209,7 @@ import { getIfbsErrorMessage } from "@/utils/ifbsErrors";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 
 export default {
   name: "BookingDetails",
@@ -1057,6 +1248,12 @@ export default {
       lockerLoading: {},
       lockerOpenIds: {},
       lockerErrors: {},
+      bookingAccessPoints: [],
+      accessPointsLoading: false,
+      accessPointStatuses: {},
+      accessPointLoading: {},
+      accessPointOpenIds: {},
+      accessPointErrors: {},
     };
   },
   computed: {
@@ -1102,6 +1299,17 @@ export default {
     },
     userCancellable() {
       return this.booking?.cancellationPolicy?.userCancellable !== false;
+    },
+    canControlAccessPoints() {
+      return BookingPermissionService.allowUpdate(this.booking);
+    },
+  },
+  watch: {
+    "booking.id": {
+      immediate: true,
+      handler() {
+        this.fetchBookingAccessPoints();
+      },
     },
   },
   methods: {
@@ -1219,6 +1427,349 @@ export default {
         text: "Noch nicht bestätigt",
         loading: false,
       };
+    },
+    getAccessPointKey(accessPoint) {
+      return accessPoint.id || accessPoint.externalId;
+    },
+    formatDateTime(value) {
+      if (!value) return "";
+      return new Intl.DateTimeFormat("de-DE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(value));
+    },
+    getAccessPointDisplayStatus(accessPoint) {
+      const accessPointId = this.getAccessPointKey(accessPoint);
+      const isWaitingOpen =
+        this.accessPointLoading[accessPointId + "_waitOpen"];
+      const isWaitingClose =
+        this.accessPointLoading[accessPointId + "_waitClose"];
+      const status = this.accessPointStatuses[accessPointId];
+
+      if (isWaitingOpen || isWaitingClose) {
+        return {
+          color: "orange",
+          icon: null,
+          text: isWaitingClose
+            ? this.$t("accessPoint.booking.status.waitingClose")
+            : this.$t("accessPoint.booking.status.waitingOpen"),
+          loading: true,
+        };
+      }
+
+      if (status?.confirmed) {
+        const time = status.confirmedAt
+          ? new Date(status.confirmedAt).toLocaleTimeString("de-DE", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })
+          : null;
+        return {
+          color: "success",
+          icon: "mdi-lock-open-variant",
+          text: time
+            ? this.$t("accessPoint.booking.status.openedAt", { time })
+            : this.$t("accessPoint.booking.status.opened"),
+          loading: false,
+        };
+      }
+
+      if (status?.errorCode || status?.error) {
+        return {
+          color: "error",
+          icon: "mdi-alert-circle",
+          text: status.errorCode
+            ? this.$t("accessPoint.booking.status.errorCode", {
+                code: status.errorCode,
+              })
+            : this.$t("accessPoint.booking.status.error"),
+          loading: false,
+        };
+      }
+
+      if (
+        typeof status?.open === "boolean" ||
+        typeof status?.locked === "boolean"
+      ) {
+        if (status.open) {
+          return {
+            color: "success",
+            icon: "mdi-door-open",
+            text: this.$t("accessPoint.booking.status.opened"),
+            loading: false,
+          };
+        }
+        if (status.locked) {
+          return {
+            color: "info",
+            icon: "mdi-lock",
+            text: this.$t("accessPoint.booking.status.locked"),
+            loading: false,
+          };
+        }
+        return {
+          color: "warning",
+          icon: "mdi-lock-open-variant-outline",
+          text: this.$t("accessPoint.booking.status.unlocked"),
+          loading: false,
+        };
+      }
+
+      if (status?.state || status?.status || status?.lockState) {
+        return {
+          color: "info",
+          icon: "mdi-information-outline",
+          text: status.state || status.status || status.lockState,
+          loading: false,
+        };
+      }
+
+      if (accessPoint.lastEvent) {
+        return {
+          color: "info",
+          icon: "mdi-history",
+          text: this.$t("accessPoint.booking.status.lastEvent"),
+          loading: false,
+        };
+      }
+
+      if (accessPoint.isProvisioned) {
+        return {
+          color: "success",
+          icon: "mdi-check-decagram-outline",
+          text: this.$t("accessPoint.booking.status.provisioned"),
+          loading: false,
+        };
+      }
+
+      return {
+        color: "grey",
+        icon: "mdi-timer-sand",
+        text: this.$t("accessPoint.booking.status.notProvisioned"),
+        loading: false,
+      };
+    },
+    getAccessResponseData(response) {
+      const responseData = response.data || {};
+      return responseData.data || responseData.status || responseData;
+    },
+    isAccessPointOpen(status) {
+      if (!status) return false;
+      if (status.confirmed) return true;
+      return status.open === true;
+    },
+    isAccessPointClosed(status) {
+      if (!status) return false;
+      if (
+        typeof status.locked === "boolean" ||
+        typeof status.open === "boolean"
+      ) {
+        return status.locked === true && status.open !== true;
+      }
+      return false;
+    },
+    async queryAccessPointStatus(accessPoint, openProcessId) {
+      const accessPointId = this.getAccessPointKey(accessPoint);
+      const response = openProcessId
+        ? await ApiAccessService.getOpenStatus(
+            this.booking.id,
+            accessPointId,
+            this.booking.tenantId,
+            openProcessId
+          )
+        : await ApiAccessService.getStatus(
+            this.booking.id,
+            accessPointId,
+            this.booking.tenantId
+          );
+      const status = this.getAccessResponseData(response);
+      this.$set(this.accessPointStatuses, accessPointId, status);
+      return status;
+    },
+    async fetchBookingAccessPoints() {
+      if (!this.booking?.id) return;
+
+      this.accessPointsLoading = true;
+      try {
+        const response = await ApiAccessService.getAccessPoints(
+          this.booking.id,
+          this.booking.tenantId
+        );
+        const responseData = response.data || {};
+        this.bookingAccessPoints = Array.isArray(responseData)
+          ? responseData
+          : responseData.data || [];
+      } catch (error) {
+        this.bookingAccessPoints = [];
+      } finally {
+        this.accessPointsLoading = false;
+      }
+    },
+    async openAccessPoint(accessPoint) {
+      if (!this.canControlAccessPoints) return;
+      const accessPointId = this.getAccessPointKey(accessPoint);
+      this.$set(this.accessPointLoading, accessPointId + "_open", true);
+      this.$set(this.accessPointErrors, accessPointId, null);
+      this.$set(this.accessPointStatuses, accessPointId, null);
+
+      try {
+        const response = await ApiAccessService.open(
+          this.booking.id,
+          accessPointId,
+          this.booking.tenantId
+        );
+        const responseData = response.data || {};
+
+        if (responseData.success === false) {
+          this.$set(
+            this.accessPointErrors,
+            accessPointId,
+            responseData.errors?.[0]?.message ||
+              this.$t("accessPoint.open.error.message")
+          );
+          return;
+        }
+
+        const openProcessId =
+          responseData.data?.openProcessId || responseData.openProcessId;
+        if (openProcessId) {
+          this.$set(this.accessPointOpenIds, accessPointId, openProcessId);
+        }
+
+        await this.waitForAccessPointStatusChange(accessPoint, "open");
+      } catch (error) {
+        this.$set(
+          this.accessPointErrors,
+          accessPointId,
+          this.$t("accessPoint.open.sendError.message")
+        );
+      } finally {
+        this.$set(this.accessPointLoading, accessPointId + "_open", false);
+      }
+    },
+    async closeAccessPoint(accessPoint) {
+      if (!this.canControlAccessPoints) return;
+      const accessPointId = this.getAccessPointKey(accessPoint);
+      this.$set(this.accessPointLoading, accessPointId + "_close", true);
+      this.$set(this.accessPointErrors, accessPointId, null);
+      this.$set(this.accessPointStatuses, accessPointId, null);
+
+      try {
+        const response = await ApiAccessService.close(
+          this.booking.id,
+          accessPointId,
+          this.booking.tenantId
+        );
+        const responseData = response.data || {};
+
+        if (responseData.success === false) {
+          this.$set(
+            this.accessPointErrors,
+            accessPointId,
+            responseData.errors?.[0]?.message ||
+              this.$t("accessPoint.close.error.message")
+          );
+          return;
+        }
+
+        await this.waitForAccessPointStatusChange(accessPoint, "close");
+      } catch (error) {
+        this.$set(
+          this.accessPointErrors,
+          accessPointId,
+          this.$t("accessPoint.close.sendError.message")
+        );
+      } finally {
+        this.$set(this.accessPointLoading, accessPointId + "_close", false);
+      }
+    },
+    async waitForAccessPointStatusChange(accessPoint, action) {
+      const accessPointId = this.getAccessPointKey(accessPoint);
+      const isOpenAction = action === "open";
+      const loadingKey = isOpenAction ? "_waitOpen" : "_waitClose";
+      const isDone = (status) =>
+        isOpenAction
+          ? this.isAccessPointOpen(status)
+          : this.isAccessPointClosed(status);
+
+      this.$set(this.accessPointLoading, accessPointId + loadingKey, true);
+
+      try {
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          if (attempt > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+
+          const status = await this.queryAccessPointStatus(accessPoint);
+
+          if (isDone(status)) {
+            await this.addToast(
+              ToastService.createToast(
+                isOpenAction ? "accessPoint.open.success" : "accessPoint.close.success",
+                "success"
+              )
+            );
+            return;
+          }
+
+          if (status?.errorCode || status?.error) {
+            this.$set(
+              this.accessPointErrors,
+              accessPointId,
+              status.errorCode
+                ? this.$t("accessPoint.status.doorError.message", {
+                    code: status.errorCode,
+                  })
+                : this.$t(
+                    isOpenAction
+                      ? "accessPoint.open.error.message"
+                      : "accessPoint.close.error.message"
+                  )
+            );
+            return;
+          }
+        }
+
+        this.$set(
+          this.accessPointErrors,
+          accessPointId,
+          this.$t(
+            isOpenAction
+              ? "accessPoint.open.timeout.message"
+              : "accessPoint.close.timeout.message"
+          )
+        );
+      } catch (error) {
+        this.$set(
+          this.accessPointErrors,
+          accessPointId,
+          this.$t("accessPoint.status.waitTimeout.message")
+        );
+      } finally {
+        this.$set(this.accessPointLoading, accessPointId + loadingKey, false);
+      }
+    },
+    async fetchAccessPointStatus(accessPoint) {
+      if (!this.canControlAccessPoints) return;
+      const accessPointId = this.getAccessPointKey(accessPoint);
+      this.$set(this.accessPointLoading, accessPointId + "_status", true);
+      this.$set(this.accessPointErrors, accessPointId, null);
+
+      try {
+        await this.queryAccessPointStatus(accessPoint);
+      } catch (error) {
+        this.$set(
+          this.accessPointErrors,
+          accessPointId,
+          this.$t("accessPoint.status.error.message")
+        );
+      } finally {
+        this.$set(this.accessPointLoading, accessPointId + "_status", false);
+      }
     },
     translatePaymentProvider(provider) {
       switch (provider) {

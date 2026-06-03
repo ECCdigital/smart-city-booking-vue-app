@@ -33,7 +33,7 @@
             :vertical="$vuetify.breakpoint.mdAndUp"
           >
             <v-tab
-              v-for="t in tabs"
+              v-for="t in visibleTabs"
               :key="t.key"
               class="d-flex justify-start"
               style="text-transform: none"
@@ -46,8 +46,8 @@
         <v-col class="col-12 col-md-9">
           <keep-alive>
             <component
-              v-if="tabs[activeTab].comp && bookable.tenantId"
-              :is="tabs[activeTab].comp"
+              v-if="visibleTabs[activeTab].comp && bookable.tenantId"
+              :is="visibleTabs[activeTab].comp"
               :bookable="bookable"
               :valid-root.sync="validRoot"
               @update:bookable="onUpdateBookable"
@@ -82,6 +82,7 @@ import Bookable from "@/entities/bookable";
 import { mapActions, mapGetters } from "vuex";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
 import BookableEditLockerSystems from "@/components/Bookable/Edit/BookableEditLockerSystems.vue";
+import BookableEditAccessPoints from "@/components/Bookable/Edit/BookableEditAccessPoints.vue";
 import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
 import BookableEditRelatedBookables from "@/components/Bookable/Edit/BookableEditRelatedBookables.vue";
 import BookableEditAttachments from "@/components/Bookable/Edit/BookableEditAttachments.vue";
@@ -89,6 +90,7 @@ import BookableEditAdditional from "@/components/Bookable/Edit/BookableEditAddit
 import BookableEditStatus from "@/components/Bookable/Edit/BookableEditStatus.vue";
 import ToastService from "@/services/ToastService";
 import BookableEditCustomFields from "@/components/Bookable/Edit/BookableEditCustomFields.vue";
+import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 
 export default {
   name: "BookableEdit",
@@ -101,6 +103,7 @@ export default {
     BookableEditBookingType,
     BookableEditOpeningHours,
     BookableEditLockerSystems,
+    BookableEditAccessPoints,
     BookableEditPermissions,
     BookableEditRelatedBookables,
     BookableEditAttachments,
@@ -157,6 +160,13 @@ export default {
           comp: "BookableEditLockerSystems",
         },
         {
+          key: "accessPoints",
+          label: "Türen / Zugang",
+          icon: "mdi-door-open",
+          comp: "BookableEditAccessPoints",
+          permission: "manageBookables",
+        },
+        {
           key: "relatedBookables",
           label: "Abhängigkeiten",
           icon: "mdi-link-variant",
@@ -207,18 +217,32 @@ export default {
       return this.$route.query.id;
     },
     hasUnsavedChanges() {
-      const { customFields: _cf, ...bookableClean } = this.bookable;
+      const bookableClean = { ...this.bookable };
+      delete bookableClean.customFields;
       return (
         JSON.stringify({
           bookable: bookableClean,
         }) !== this.originalSnapshot
       );
     },
+    visibleTabs() {
+      return this.tabs.filter((tab) => this.isTabVisible(tab));
+    },
   },
   methods: {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    isTabVisible(tab) {
+      if (!tab.permission) return true;
+      if (tab.permission === "manageBookables") {
+        if (!this.bookable?.id) {
+          return BookablePermissionService.allowCreate();
+        }
+        return BookablePermissionService.allowUpdate(this.bookable);
+      }
+      return true;
+    },
     async createOrUpdate() {
       try {
         this.inProgress = true;
@@ -233,7 +257,8 @@ export default {
           });
         }
 
-        const { customFields: _cf, ...bookableClean } = response.data;
+        const bookableClean = { ...response.data };
+        delete bookableClean.customFields;
 
         this.originalSnapshot = JSON.stringify({
           bookable: bookableClean,
@@ -273,7 +298,8 @@ export default {
       }
 
       this.$nextTick(() => {
-        const { customFields: _cf, ...bookableClean } = this.bookable;
+        const bookableClean = { ...this.bookable };
+        delete bookableClean.customFields;
         this.originalSnapshot = JSON.stringify({
           bookable: bookableClean,
         });
@@ -302,7 +328,8 @@ export default {
       },
     },
     activeTab(newIndex) {
-      const tabKey = this.tabs[newIndex].key;
+      const tabKey = this.visibleTabs[newIndex]?.key;
+      if (!tabKey) return;
       if (this.$route.query.tab === tabKey) return;
       this.$router.replace({
         query: { ...this.$route.query, tab: tabKey },
@@ -311,7 +338,7 @@ export default {
   },
   mounted() {
     const queryTabKey = this.$route.query.tab;
-    const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
+    const foundIndex = this.visibleTabs.findIndex((t) => t.key === queryTabKey);
     this.activeTab = foundIndex !== -1 ? foundIndex : 0;
   },
 };

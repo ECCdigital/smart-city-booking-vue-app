@@ -54,6 +54,7 @@ export default class Bookable {
 
     this.attachments = [];
     this.lockerDetails = { active: false, units: [] };
+    this.accessPointDetails = { active: false, points: [] };
     this.requiredFields = [];
 
     this.customFieldDefinitions = [];

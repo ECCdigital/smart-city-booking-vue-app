@@ -31,7 +31,7 @@
             :vertical="$vuetify.breakpoint.mdAndUp"
           >
             <v-tab
-              v-for="t in tabs"
+              v-for="t in visibleTabs"
               :key="t.key"
               class="d-flex justify-start"
               style="text-transform: none"
@@ -48,6 +48,7 @@
               ref="activeChild"
               :tenant="tenant"
               :apps="apps"
+              :nuki-token-configured="nukiTokenConfigured"
               :workflow="workflow"
               :roles="roles"
               :challenges="verificationChallenges"
@@ -108,6 +109,7 @@ import TenantEditWeb from "@/components/Tenant/Edit/TenantEditWeb.vue";
 import TenantEditEmail from "@/components/Tenant/Edit/TenantEditEmail.vue";
 import TenantEditPayments from "@/components/Tenant/Edit/TenantEditPayments.vue";
 import TenantEditLocks from "@/components/Tenant/Edit/TenantEditLocks.vue";
+import TenantEditAccess from "@/components/Tenant/Edit/TenantEditAccess.vue";
 import TenantEditBooking from "@/components/Tenant/Edit/TenantEditBooking.vue";
 import TenantEditEvents from "@/components/Tenant/Edit/TenantEditEvents.vue";
 import TenantEditWorkflow from "@/components/Tenant/Edit/TenantEditWorkflow.vue";
@@ -122,6 +124,7 @@ import SaveBar from "@/components/commons/SaveBar.vue";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 
 export default {
   name: "TenantOverview",
@@ -133,6 +136,7 @@ export default {
     TenantEditEmail,
     TenantEditPayments,
     TenantEditLocks,
+    TenantEditAccess,
     TenantEditBooking,
     TenantEditEvents,
     TenantEditWorkflow,
@@ -176,6 +180,13 @@ export default {
           comp: "TenantEditLocks",
         },
         {
+          key: "access",
+          label: "Zugang",
+          icon: "mdi-door",
+          comp: "TenantEditAccess",
+          permission: "manageTenants",
+        },
+        {
           key: "bookables",
           label: "Buchungsobjekte",
           icon: "mdi-calendar-check",
@@ -214,6 +225,7 @@ export default {
       ],
       instanceCustomFields: [],
       originalSnapshot: null,
+      nukiTokenConfigured: false,
       tenant: {},
       apps: {},
       workflow: {
@@ -302,6 +314,14 @@ export default {
             phone: "",
           },
         },
+        nuki: {
+          type: "access",
+          id: "nuki",
+          title: "Nuki",
+          apiToken: "",
+          apiBaseUrl: "https://api.nuki.io",
+          active: false,
+        },
       },
     };
   },
@@ -319,13 +339,17 @@ export default {
         }) !== this.originalSnapshot
       );
     },
+    visibleTabs() {
+      return this.tabs.filter((tab) => this.isTabVisible(tab));
+    },
     currentComponent() {
-      return this.tabs[this.activeTab]?.comp || "TenantEditGeneral";
+      return this.visibleTabs[this.activeTab]?.comp || "TenantEditGeneral";
     },
   },
   watch: {
     activeTab(newIndex) {
-      const tabKey = this.tabs[newIndex].key;
+      const tabKey = this.visibleTabs[newIndex]?.key;
+      if (!tabKey) return;
       if (this.$route.query.tab === tabKey) return;
       this.$router.replace({
         query: { ...this.$route.query, tab: tabKey },
@@ -340,6 +364,13 @@ export default {
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
+    isTabVisible(tab) {
+      if (!tab.permission) return true;
+      if (tab.permission === "manageTenants") {
+        return TenantPermissionService.allowUpdate(this.tenant);
+      }
+      return true;
+    },
     async fetchRoles() {
       try {
         const response = await ApiRolesService.getTenantRoles(true);
@@ -382,26 +413,37 @@ export default {
         const found = existing.find((a) => a.id === k);
         map[k] = found ? { ...found } : { ...this.defaultApps[k] };
       });
+      // Vorhandenen Nuki-Token vorbefüllen; nur merken, ob bereits einer
+      // hinterlegt ist (für Hinweis/Placeholder beim Leeren des Feldes).
+      if (map.nuki) {
+        this.nukiTokenConfigured = !!map.nuki.apiToken;
+      }
       this.apps = map;
     },
     replaceApps() {
-      this.tenant.applications = Object.values(this.apps).map((a) => ({
-        ...a,
-      }));
+      this.tenant.applications = Object.values(this.apps).map((a) => {
+        const app = { ...a };
+        // Bei Nuki den Token nur senden, wenn ein neuer eingegeben wurde.
+        // Leeres Feld => bestehenden (verschlüsselten) Token unverändert lassen.
+        if (app.id === "nuki" && !app.apiToken) {
+          delete app.apiToken;
+        }
+        return app;
+      });
     },
     async fetchWorkflow() {
       const data = await ApiWorkflowService.getWorkflow(this.tenant.id);
       this.workflow = data?.id
         ? data
         : {
-            active: false,
-            states: [],
-            archive: [],
-            description: "",
-            name: "",
-            eventStateMapping: "",
-            tenantId: this.tenant.id,
-          };
+          active: false,
+          states: [],
+          archive: [],
+          description: "",
+          name: "",
+          eventStateMapping: "",
+          tenantId: this.tenant.id,
+        };
     },
     async fetchChallenges() {
       try {
@@ -565,7 +607,7 @@ export default {
   },
   async mounted() {
     const queryTabKey = this.$route.query.tab;
-    const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
+    const foundIndex = this.visibleTabs.findIndex((t) => t.key === queryTabKey);
     this.activeTab = foundIndex !== -1 ? foundIndex : 0;
 
     await this.fetchTenant();

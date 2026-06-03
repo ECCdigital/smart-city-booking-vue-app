@@ -629,6 +629,150 @@
       }
     }
   },
+  "accessPoint": {
+    "tenant": {
+      "title": "Zugang",
+      "activate": "Nuki aktivieren",
+      "apiCredentials": "API-Zugangsdaten",
+      "apiToken": "API-Token",
+      "apiTokenPlaceholder": "Nuki Web API Token",
+      "apiTokenUnchanged": "•••••••• (unverändert)",
+      "apiTokenHint": "Es ist bereits ein Token hinterlegt. Leer lassen, um ihn unverändert zu übernehmen.",
+      "apiBaseUrl": "API Base-URL",
+      "testConnection": "Verbindung testen",
+      "connectionSuccess": "Verbindung erfolgreich!",
+      "webhookTitle": "Webhook (optional)",
+      "webhookInfo": "Damit Tür-Events (geöffnet/geschlossen) im UI ankommen, kann ein Webhook bei Nuki registriert werden.",
+      "callbackUrl": "Callback-URL",
+      "notificationId": "Notification-ID",
+      "notificationIdHint": "Wird zum Deregistrieren benötigt.",
+      "registerWebhook": "Webhook registrieren",
+      "unregisterWebhook": "Webhook deregistrieren"
+    },
+    "bookable": {
+      "title": "Türen / Zugang",
+      "activate": "Türen aktivieren",
+      "activateHint": "Buchende erhalten zeitbasierte Zugangsberechtigungen oder können Türen aus der Buchung heraus öffnen.",
+      "nukiDoors": "Nuki-Türen",
+      "reload": "neu laden",
+      "nukiInactive": "Es ist keine aktive Nuki-Zugangsanwendung konfiguriert. Bitte aktivieren Sie Nuki zuerst in den Mandanten-Einstellungen.",
+      "selectDoor": "Tür auswählen",
+      "add": "hinzufügen",
+      "mode": "Modus",
+      "emptyTitle": "Noch keine Türen zugeordnet",
+      "emptyHint": "Wählen Sie eine Tür aus und klicken Sie auf \"hinzufügen\".",
+      "modeAuthorization": "Zeitbasierte Berechtigung + PIN",
+      "modeRemote": "Nur Fernöffnen/-schließen",
+      "modeBoth": "Berechtigung + Fernöffnen/-schließen"
+    },
+    "booking": {
+      "title": "Tür-Steuerung",
+      "reload": "neu laden",
+      "pinInfo": "PINs werden aus Sicherheitsgründen nicht angezeigt. Falls eine PIN erzeugt wurde, wird sie per E-Mail an den Buchenden gesendet.",
+      "provisioned": "provisioniert",
+      "provisionedAt": "Provisioniert:",
+      "checkStatus": "Status prüfen",
+      "close": "Schließen",
+      "open": "Öffnen",
+      "status": {
+        "waitingClose": "Warte auf Schließen…",
+        "waitingOpen": "Warte auf Bestätigung…",
+        "opened": "Geöffnet",
+        "openedAt": "Geöffnet ({time})",
+        "error": "Fehler",
+        "errorCode": "Fehler {code}",
+        "unlocked": "Entsperrt",
+        "locked": "Verschlossen",
+        "lastEvent": "Letztes Event vorhanden",
+        "provisioned": "Zugang bereitgestellt",
+        "notProvisioned": "Nicht provisioniert"
+      }
+    },
+    "connection": {
+      "error": {
+        "title": "Verbindung fehlgeschlagen",
+        "message": "Die Verbindung zu Nuki konnte nicht hergestellt werden."
+      }
+    },
+    "load": {
+      "error": {
+        "title": "Türen konnten nicht geladen werden",
+        "message": "Die Türliste konnte nicht vom Nuki-System abgerufen werden."
+      }
+    },
+    "webhook": {
+      "register": {
+        "success": {
+          "title": "Webhook registriert",
+          "message": "Der Webhook wurde erfolgreich bei Nuki registriert."
+        },
+        "error": {
+          "title": "Registrierung fehlgeschlagen",
+          "message": "Der Webhook konnte nicht registriert werden."
+        }
+      },
+      "unregister": {
+        "success": {
+          "title": "Webhook deregistriert",
+          "message": "Der Webhook wurde erfolgreich deregistriert."
+        },
+        "error": {
+          "title": "Deregistrierung fehlgeschlagen",
+          "message": "Der Webhook konnte nicht deregistriert werden."
+        }
+      }
+    },
+    "open": {
+      "success": {
+        "title": "Tür geöffnet",
+        "message": "Der Öffnen-Befehl wurde bestätigt."
+      },
+      "error": {
+        "title": "Fehler beim Öffnen",
+        "message": "Die Tür konnte nicht geöffnet werden."
+      },
+      "timeout": {
+        "title": "Bestätigung ausstehend",
+        "message": "Die Tür hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+      },
+      "sendError": {
+        "title": "Befehl fehlgeschlagen",
+        "message": "Fehler beim Senden des Öffnen-Befehls. Bitte erneut versuchen."
+      }
+    },
+    "close": {
+      "success": {
+        "title": "Tür geschlossen",
+        "message": "Der Schließen-Befehl wurde bestätigt."
+      },
+      "error": {
+        "title": "Fehler beim Schließen",
+        "message": "Die Tür konnte nicht geschlossen werden."
+      },
+      "timeout": {
+        "title": "Bestätigung ausstehend",
+        "message": "Die Tür hat den Schließen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+      },
+      "sendError": {
+        "title": "Befehl fehlgeschlagen",
+        "message": "Fehler beim Senden des Schließen-Befehls. Bitte erneut versuchen."
+      }
+    },
+    "status": {
+      "error": {
+        "title": "Statusabfrage fehlgeschlagen",
+        "message": "Der Tür-Status konnte nicht abgerufen werden."
+      },
+      "waitTimeout": {
+        "title": "Zeitüberschreitung",
+        "message": "Zeitüberschreitung beim Warten auf Bestätigung. Bitte Status manuell prüfen."
+      },
+      "doorError": {
+        "title": "Tür-Fehler",
+        "message": "Bei der Tür ist ein Fehler aufgetreten (Code {code})."
+      }
+    }
+  },
   "locker": {
     "open": {
       "success": {
