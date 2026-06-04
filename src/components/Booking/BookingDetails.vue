@@ -356,6 +356,29 @@
                         {{ getAccessPointDisplayStatus(accessPoint).text }}
                       </v-chip>
                     </v-list-item-subtitle>
+                    <v-list-item-subtitle
+                      v-if="accessWindowHint(accessPoint)"
+                      class="mt-1"
+                    >
+                      <v-icon
+                        x-small
+                        :color="
+                          isWithinAccessWindow(accessPoint)
+                            ? 'success'
+                            : 'warning'
+                        "
+                        class="mr-1"
+                      >
+                        {{
+                          isWithinAccessWindow(accessPoint)
+                            ? "mdi-clock-check-outline"
+                            : "mdi-clock-alert-outline"
+                        }}
+                      </v-icon>
+                      <span class="text-caption">
+                        {{ accessWindowHint(accessPoint) }}
+                      </span>
+                    </v-list-item-subtitle>
                   </v-list-item-content>
                   <v-list-item-action
                     class="flex-row align-center"
@@ -387,6 +410,7 @@
                       "
                       :disabled="
                         !canControlAccessPoints ||
+                        !isWithinAccessWindow(accessPoint) ||
                         accessPointLoading[
                           getAccessPointKey(accessPoint) + '_waitClose'
                         ]
@@ -406,6 +430,7 @@
                       "
                       :disabled="
                         !canControlAccessPoints ||
+                        !isWithinAccessWindow(accessPoint) ||
                         accessPointLoading[
                           getAccessPointKey(accessPoint) + '_waitOpen'
                         ] ||
@@ -1254,6 +1279,8 @@ export default {
       accessPointLoading: {},
       accessPointOpenIds: {},
       accessPointErrors: {},
+      now: Date.now(),
+      accessWindowTimer: null,
     };
   },
   computed: {
@@ -1430,6 +1457,56 @@ export default {
     },
     getAccessPointKey(accessPoint) {
       return accessPoint.id || accessPoint.externalId;
+    },
+    resolveAccessError(error, accessPoint, fallbackKey) {
+      if (error?.response?.status === 403) {
+        return this.$t("accessPoint.booking.window.outside", {
+          hint: this.accessWindowHint(accessPoint),
+        });
+      }
+      return this.$t(fallbackKey);
+    },
+    getAccessBuffer(accessPoint) {
+      const buffer = accessPoint?.accessBuffer || {};
+      const toMinutes = (value) => {
+        const num = Number(value);
+        return Number.isFinite(num) && num > 0 ? num : 0;
+      };
+      return {
+        before: toMinutes(buffer.beforeMs),
+        after: toMinutes(buffer.afterMs),
+      };
+    },
+    getAccessWindow(accessPoint) {
+      const { timeBegin, timeEnd } = this.booking || {};
+      if (!timeBegin || !timeEnd) return null;
+      const buffer = this.getAccessBuffer(accessPoint);
+      return {
+        start: timeBegin - buffer.before * 60000,
+        end: timeEnd + buffer.after * 60000,
+      };
+    },
+    isWithinAccessWindow(accessPoint) {
+      const window = this.getAccessWindow(accessPoint);
+      if (!window) return true;
+      return window.start <= this.now && window.end >= this.now;
+    },
+    accessWindowHint(accessPoint) {
+      const window = this.getAccessWindow(accessPoint);
+      if (!window) return "";
+      if (this.now < window.start) {
+        return this.$t("accessPoint.booking.window.before", {
+          time: this.formatDateTime(window.start),
+        });
+      }
+      if (this.now > window.end) {
+        return this.$t("accessPoint.booking.window.after", {
+          time: this.formatDateTime(window.end),
+        });
+      }
+      return this.$t("accessPoint.booking.window.until", {
+        time: this.formatDateTime(window.end),
+      });
     },
     formatDateTime(value) {
       if (!value) return "";
@@ -1645,7 +1722,11 @@ export default {
         this.$set(
           this.accessPointErrors,
           accessPointId,
-          this.$t("accessPoint.open.sendError.message")
+          this.resolveAccessError(
+            error,
+            accessPoint,
+            "accessPoint.open.sendError.message"
+          )
         );
       } finally {
         this.$set(this.accessPointLoading, accessPointId + "_open", false);
@@ -1681,7 +1762,11 @@ export default {
         this.$set(
           this.accessPointErrors,
           accessPointId,
-          this.$t("accessPoint.close.sendError.message")
+          this.resolveAccessError(
+            error,
+            accessPoint,
+            "accessPoint.close.sendError.message"
+          )
         );
       } finally {
         this.$set(this.accessPointLoading, accessPointId + "_close", false);
@@ -1765,7 +1850,11 @@ export default {
         this.$set(
           this.accessPointErrors,
           accessPointId,
-          this.$t("accessPoint.status.error.message")
+          this.resolveAccessError(
+            error,
+            accessPoint,
+            "accessPoint.status.error.message"
+          )
         );
       } finally {
         this.$set(this.accessPointLoading, accessPointId + "_status", false);
@@ -2261,8 +2350,14 @@ export default {
   },
   mounted() {
     ProcessingService.setComponent(this.$refs.processingIndicator);
+    this.accessWindowTimer = setInterval(() => {
+      this.now = Date.now();
+    }, 30000);
   },
   beforeDestroy() {
+    if (this.accessWindowTimer) {
+      clearInterval(this.accessWindowTimer);
+    }
     if (this.paymentLinkCopiedTimeout) {
       clearTimeout(this.paymentLinkCopiedTimeout);
     }

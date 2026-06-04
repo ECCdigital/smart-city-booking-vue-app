@@ -5,6 +5,7 @@ import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { mapGetters } from "vuex";
 
 const ALL_MODES = ["authorization", "remote", "both"];
+const MAX_BUFFER_MINUTES = 1440;
 
 export default {
   name: "BookableEditAccessPoints",
@@ -65,6 +66,27 @@ export default {
         this.$set(this.model, "accessPointDetails", value);
       },
     },
+    accessBuffer() {
+      return (
+        this.accessPointDetails.accessBuffer || { beforeMs: 0, afterMs: 0 }
+      );
+    },
+    bufferRules() {
+      return [
+        (v) => {
+          if (v === "" || v === null || v === undefined) return true;
+          const num = Number(v);
+          return (
+            (Number.isInteger(num) &&
+              num >= 0 &&
+              num <= MAX_BUFFER_MINUTES) ||
+            this.$t("accessPoint.bookable.buffer.invalid", {
+              max: MAX_BUFFER_MINUTES,
+            })
+          );
+        },
+      ];
+    },
     activeNukiApp() {
       return this.accessApps.find((app) => app.id === "nuki" && app.active);
     },
@@ -116,6 +138,12 @@ export default {
     }
     if (!this.accessPointDetails.points) {
       this.$set(this.accessPointDetails, "points", []);
+    }
+    if (!this.accessPointDetails.accessBuffer) {
+      this.$set(this.accessPointDetails, "accessBuffer", {
+        before: 0,
+        after: 0,
+      });
     }
   },
   methods: {
@@ -239,6 +267,45 @@ export default {
         preferred.find((mode) => selectable.includes(mode)) || selectable[0]
       );
     },
+    normalizeBufferValue(value) {
+      if (value === "" || value === null || value === undefined) return 0;
+      const num = Math.floor(Number(value));
+      if (Number.isNaN(num)) return 0;
+      return Math.min(Math.max(num, 0), MAX_BUFFER_MINUTES);
+    },
+    setDefaultBuffer(key, value) {
+      if (!this.accessPointDetails.accessBuffer) {
+        this.$set(this.accessPointDetails, "accessBuffer", {
+          before: 0,
+          after: 0,
+        });
+      }
+      this.$set(
+        this.accessPointDetails.accessBuffer,
+        key,
+        this.normalizeBufferValue(value)
+      );
+    },
+    hasPointBuffer(point) {
+      return !!point.accessBuffer;
+    },
+    togglePointBuffer(point, enabled) {
+      if (enabled) {
+        const fallback = this.accessBuffer;
+        this.$set(point, "accessBuffer", {
+          before: this.normalizeBufferValue(fallback.before),
+          after: this.normalizeBufferValue(fallback.after),
+        });
+      } else {
+        this.$delete(point, "accessBuffer");
+      }
+    },
+    setPointBuffer(point, key, value) {
+      if (!point.accessBuffer) {
+        this.$set(point, "accessBuffer", { before: 0, after: 0 });
+      }
+      this.$set(point.accessBuffer, key, this.normalizeBufferValue(value));
+    },
     // Reset any saved mode that is no longer supported by its lock.
     migratePointModes() {
       (this.accessPointDetails.points || []).forEach((point) => {
@@ -278,6 +345,62 @@ export default {
         </div>
       </template>
     </v-switch>
+
+    <v-card
+      v-if="accessPointDetails.active"
+      class="my-6 section-card"
+      elevation="2"
+      outlined
+    >
+      <v-card-title class="section-header pa-4">
+        <v-icon class="mr-2">mdi-timer-sand</v-icon>
+        <span class="text-h6 font-weight-bold">{{
+          $t("accessPoint.bookable.buffer.title")
+        }}</span>
+      </v-card-title>
+      <v-divider />
+      <v-card-text class="pa-4">
+        <div class="text-caption text--secondary mb-4">
+          {{ $t("accessPoint.bookable.buffer.hint") }}
+        </div>
+        <v-row dense>
+          <v-col cols="12" sm="6">
+            <v-text-field
+              :value="accessBuffer.before"
+              type="number"
+              min="0"
+              :max="1440"
+              step="1"
+              :label="$t('accessPoint.bookable.buffer.before')"
+              :suffix="$t('accessPoint.bookable.buffer.minutes')"
+              :rules="bufferRules"
+              background-color="accent"
+              filled
+              dense
+              prepend-inner-icon="mdi-clock-start"
+              @input="setDefaultBuffer('before', $event)"
+            />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-text-field
+              :value="accessBuffer.after"
+              type="number"
+              min="0"
+              :max="1440"
+              step="1"
+              :label="$t('accessPoint.bookable.buffer.after')"
+              :suffix="$t('accessPoint.bookable.buffer.minutes')"
+              :rules="bufferRules"
+              background-color="accent"
+              filled
+              dense
+              prepend-inner-icon="mdi-clock-end"
+              @input="setDefaultBuffer('after', $event)"
+            />
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
 
     <v-card
       v-if="accessPointDetails.active"
@@ -470,6 +593,70 @@ export default {
                   </v-btn>
                 </v-col>
               </v-row>
+
+              <v-divider class="my-3" />
+
+              <v-switch
+                :input-value="hasPointBuffer(point)"
+                hide-details
+                dense
+                color="primary"
+                class="mt-0 mb-2"
+                @change="togglePointBuffer(point, $event)"
+              >
+                <template v-slot:label>
+                  <span class="text-caption">
+                    {{ $t("accessPoint.bookable.buffer.overrideLabel") }}
+                  </span>
+                </template>
+              </v-switch>
+
+              <v-expand-transition>
+                <v-row v-if="hasPointBuffer(point)" dense>
+                  <v-col cols="12" sm="6">
+                    <v-text-field
+                      :value="point.accessBuffer.before"
+                      type="number"
+                      min="0"
+                      :max="1440"
+                      step="1"
+                      :label="$t('accessPoint.bookable.buffer.before')"
+                      :suffix="$t('accessPoint.bookable.buffer.minutes')"
+                      :rules="bufferRules"
+                      background-color="accent"
+                      filled
+                      dense
+                      prepend-inner-icon="mdi-clock-start"
+                      @input="setPointBuffer(point, 'before', $event)"
+                    />
+                  </v-col>
+                  <v-col cols="12" sm="6">
+                    <v-text-field
+                      :value="point.accessBuffer.after"
+                      type="number"
+                      min="0"
+                      :max="1440"
+                      step="1"
+                      :label="$t('accessPoint.bookable.buffer.after')"
+                      :suffix="$t('accessPoint.bookable.buffer.minutes')"
+                      :rules="bufferRules"
+                      background-color="accent"
+                      filled
+                      dense
+                      prepend-inner-icon="mdi-clock-end"
+                      @input="setPointBuffer(point, 'after', $event)"
+                    />
+                  </v-col>
+                </v-row>
+                <div v-else class="text-caption text--secondary mb-1">
+                  {{
+                    $t("accessPoint.bookable.buffer.inherited", {
+                      before: accessBuffer.before || 0,
+                      after: accessBuffer.after || 0,
+                    })
+                  }}
+                </div>
+              </v-expand-transition>
             </v-card-text>
           </v-card>
         </div>

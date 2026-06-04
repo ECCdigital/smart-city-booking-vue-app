@@ -717,6 +717,16 @@
       "notAssignable": "Nicht zuweisbar – keine unterstützten Modi",
       "modeUnavailable": "Dieses Schloss unterstützt aktuell keine Zugangsmodi und kann nicht zugewiesen werden.",
       "onlyRemoteHint": "Kein Keypad gepairt – PIN-Codes sind für dieses Schloss nicht verfügbar.",
+      "buffer": {
+        "title": "Pufferzeiten",
+        "hint": "Zeitspanne vor und nach dem Buchungszeitraum, in der die Türen zusätzlich bedient werden dürfen. Dieser Wert gilt als Standard für alle Türen.",
+        "before": "Vorlauf",
+        "after": "Nachlauf",
+        "minutes": "Min.",
+        "invalid": "Bitte eine ganze Zahl zwischen 0 und {max} Minuten angeben.",
+        "overrideLabel": "Eigene Pufferzeit für diese Tür festlegen",
+        "inherited": "Erbt Standard-Puffer: {before} Min. Vorlauf / {after} Min. Nachlauf."
+      },
       "saveError": {
         "title": "Speichern fehlgeschlagen"
       }
@@ -742,6 +752,12 @@
         "lastEvent": "Letztes Event vorhanden",
         "provisioned": "Zugang bereitgestellt",
         "notProvisioned": "Nicht provisioniert"
+      },
+      "window": {
+        "before": "Zugang ab {time} möglich.",
+        "after": "Zugangszeitraum bis {time} abgelaufen.",
+        "until": "Zugang bis {time} möglich.",
+        "outside": "Außerhalb des erlaubten Zeitfensters. {hint}"
       }
     },
     "connection": {
