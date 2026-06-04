@@ -1544,23 +1544,25 @@ export default {
     isWithinAccessWindow(accessPoint) {
       const window = this.getAccessWindow(accessPoint);
       if (!window) return true;
-      return window.start <= this.now && window.end >= this.now;
+      return (
+        accessPoint.accessFrom <= this.now && accessPoint.accessTo >= this.now
+      );
     },
     accessWindowHint(accessPoint) {
       const window = this.getAccessWindow(accessPoint);
       if (!window) return "";
-      if (this.now < window.start) {
+      if (this.now < accessPoint.accessFrom) {
         return this.$t("accessPoint.booking.window.before", {
-          time: this.formatDateTime(window.start),
+          time: this.formatDateTime(accessPoint.accessFrom),
         });
       }
-      if (this.now > window.end) {
+      if (this.now > accessPoint.accessTo) {
         return this.$t("accessPoint.booking.window.after", {
-          time: this.formatDateTime(window.end),
+          time: this.formatDateTime(accessPoint.accessTo),
         });
       }
       return this.$t("accessPoint.booking.window.until", {
-        time: this.formatDateTime(window.end),
+        time: this.formatDateTime(accessPoint.accessTo),
       });
     },
     formatDateTime(value) {
@@ -1910,11 +1912,7 @@ export default {
           }
         }
 
-        this.$set(
-          this.accessPointErrors,
-          accessPointId,
-          this.$t(timeoutKey)
-        );
+        this.$set(this.accessPointErrors, accessPointId, this.$t(timeoutKey));
       } catch (error) {
         this.$set(
           this.accessPointErrors,
@@ -2619,10 +2617,8 @@ export default {
   border-left: 4px solid var(--ap-accent, rgba(0, 0, 0, 0.12));
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.015);
-  transition: box-shadow 0.2s ease, transform 0.2s ease,
-    border-color 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
-
 
 .access-point-tile--success {
   --ap-accent: var(--v-success-base, #4caf50);
