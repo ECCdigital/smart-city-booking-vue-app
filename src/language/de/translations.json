@@ -658,6 +658,43 @@
       "registerWebhook": "Webhook registrieren",
       "unregisterWebhook": "Webhook deregistrieren"
     },
+    "audit": {
+      "title": "Zugriffsprotokoll exportieren",
+      "info": "Exportieren Sie das mandantenweite Zugriffsprotokoll (Türöffnungen, Schließungen, Provisionierungen, Webhook-Events) als CSV oder PDF. Optional lässt sich der Export über die Filter eingrenzen.",
+      "from": "Von",
+      "to": "Bis",
+      "provider": "Anbieter",
+      "action": "Aktion",
+      "result": "Ergebnis",
+      "bookingId": "Buchungsnummer",
+      "accessPointId": "Access-Point-ID",
+      "reset": "Filter zurücksetzen",
+      "exportCsv": "Als CSV exportieren",
+      "exportPdf": "Als PDF exportieren",
+      "actions": {
+        "open": "Öffnen",
+        "close": "Schließen",
+        "provision": "Provisionierung",
+        "revoke": "Entzug",
+        "status": "Status",
+        "webhook": "Webhook"
+      },
+      "results": {
+        "success": "Erfolg",
+        "failure": "Fehler",
+        "pending": "Ausstehend"
+      },
+      "error": {
+        "forbidden": {
+          "title": "Keine Berechtigung",
+          "message": "Sie haben keine Berechtigung für den Audit-Export."
+        },
+        "failed": {
+          "title": "Export fehlgeschlagen",
+          "message": "Das Zugriffsprotokoll konnte nicht exportiert werden. Bitte versuchen Sie es erneut."
+        }
+      }
+    },
     "bookable": {
       "title": "Türen / Zugang",
       "activate": "Türen aktivieren",

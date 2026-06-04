@@ -1,13 +1,15 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import AppPanel from "@/components/AppPanel.vue";
+import AccessAuditExport from "@/components/Tenant/Edit/AccessAuditExport.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 
 export default {
   name: "TenantEditAccess",
-  components: { AppPanel, BaseSection },
+  components: { AppPanel, BaseSection, AccessAuditExport },
   props: {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
@@ -35,6 +37,11 @@ export default {
       handler(v) {
         this.localApps = this.cloneApps(v);
       },
+    },
+  },
+  computed: {
+    allowAuditExport() {
+      return BookingPermissionService.allowAuditExport();
     },
   },
   methods: {
@@ -385,6 +392,10 @@ export default {
               </v-col>
             </v-row>
           </AppPanel>
+
+          <v-card v-if="allowAuditExport" outlined class="mb-2 pa-4">
+            <AccessAuditExport :tenant="tenant.id" />
+          </v-card>
         </v-col>
       </v-row>
     </v-form>
