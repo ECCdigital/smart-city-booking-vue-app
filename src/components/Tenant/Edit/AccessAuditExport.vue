@@ -31,7 +31,7 @@ export default {
       ];
     },
     actionOptions() {
-      return ["open", "close", "provision", "revoke", "status", "webhook"].map(
+      return ["open", "close", "unlatch", "provision", "revoke", "status", "webhook"].map(
         (value) => ({
           value,
           text: this.$t(`accessPoint.audit.actions.${value}`),

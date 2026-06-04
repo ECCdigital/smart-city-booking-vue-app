@@ -674,6 +674,7 @@
       "actions": {
         "open": "Öffnen",
         "close": "Schließen",
+        "unlatch": "Entriegeln",
         "provision": "Provisionierung",
         "revoke": "Entzug",
         "status": "Status",
