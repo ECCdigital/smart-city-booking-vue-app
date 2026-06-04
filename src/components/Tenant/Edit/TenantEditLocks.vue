@@ -69,7 +69,6 @@ export default {
   methods: {
     cloneApps(apps) {
       const cloned = JSON.parse(JSON.stringify(apps));
-      // Sicherstellen, dass customerService existiert
       if (cloned.ifbs && !cloned.ifbs.customerService) {
         cloned.ifbs.customerService = { name: "", email: "", phone: "" };
       }

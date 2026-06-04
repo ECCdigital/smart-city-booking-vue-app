@@ -107,7 +107,10 @@ export default {
           this.webhook.notificationId = response.data.notificationId;
         }
         await this.addToast(
-          ToastService.createToast("accessPoint.webhook.register.success", "success")
+          ToastService.createToast(
+            "accessPoint.webhook.register.success",
+            "success"
+          )
         );
         this.webhook.result = {
           success: true,
@@ -137,7 +140,10 @@ export default {
         );
         this.webhook.notificationId = "";
         await this.addToast(
-          ToastService.createToast("accessPoint.webhook.unregister.success", "success")
+          ToastService.createToast(
+            "accessPoint.webhook.unregister.success",
+            "success"
+          )
         );
         this.webhook.result = {
           success: true,
@@ -167,8 +173,7 @@ export default {
           <!-- ============ NUKI ============ -->
           <AppPanel
             v-if="localApps.nuki"
-            :title="localApps.nuki.title || 'Nuki'"
-            icon="mdi-door"
+            :logo="require('@/assets/nuki-logo.png')"
             :active="localApps.nuki.active"
             class="mb-2"
           >
@@ -207,7 +212,9 @@ export default {
                       : $t('accessPoint.tenant.apiTokenPlaceholder')
                   "
                   :hint="
-                    nukiTokenConfigured ? $t('accessPoint.tenant.apiTokenHint') : ''
+                    nukiTokenConfigured
+                      ? $t('accessPoint.tenant.apiTokenHint')
+                      : ''
                   "
                   persistent-hint
                   :append-icon="showNukiToken ? 'mdi-eye' : 'mdi-eye-off'"
@@ -226,6 +233,40 @@ export default {
                   @input="emitApps()"
                   placeholder="https://api.nuki.io"
                 />
+              </v-col>
+            </v-row>
+
+            <!-- Benötigte Token-Berechtigungen -->
+            <v-row dense>
+              <v-col cols="12">
+                <v-alert type="info" text dense class="mb-0">
+                  <div class="font-weight-medium mb-1">
+                    {{ $t("accessPoint.tenant.permissionsTitle") }}
+                  </div>
+                  <div class="text-caption mb-3">
+                    {{ $t("accessPoint.tenant.permissionsIntro") }}
+                  </div>
+
+                  <div class="font-weight-medium text-body-2">
+                    {{ $t("accessPoint.tenant.permissionsMinTitle") }}
+                  </div>
+                  <ul class="permissions-list text-caption mb-2">
+                    <li>{{ $t("accessPoint.tenant.permissionReadOnly") }}</li>
+                    <li>{{ $t("accessPoint.tenant.permissionAction") }}</li>
+                  </ul>
+
+                  <div class="font-weight-medium text-body-2">
+                    {{ $t("accessPoint.tenant.permissionsFullTitle") }}
+                  </div>
+                  <ul class="permissions-list text-caption mb-2">
+                    <li>{{ $t("accessPoint.tenant.permissionAuth") }}</li>
+                    <li>{{ $t("accessPoint.tenant.permissionLog") }}</li>
+                  </ul>
+
+                  <div class="text-caption font-italic">
+                    {{ $t("accessPoint.tenant.permissionsNote") }}
+                  </div>
+                </v-alert>
               </v-col>
             </v-row>
 
@@ -327,9 +368,7 @@ export default {
                   color="error"
                   class="mr-2"
                   :loading="webhook.unregistering"
-                  :disabled="
-                    webhook.unregistering || !webhook.notificationId
-                  "
+                  :disabled="webhook.unregistering || !webhook.notificationId"
                   @click="unregisterWebhook"
                 >
                   {{ $t("accessPoint.tenant.unregisterWebhook") }}
@@ -364,5 +403,12 @@ export default {
 .theme--dark .section-title {
   color: rgba(255, 255, 255, 0.8);
   border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+.permissions-list {
+  margin: 2px 0 0 0;
+  padding-left: 18px;
+}
+.permissions-list li {
+  margin-bottom: 2px;
 }
 </style>

@@ -4,6 +4,8 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { mapGetters } from "vuex";
 
+const ALL_MODES = ["authorization", "remote", "both"];
+
 export default {
   name: "BookableEditAccessPoints",
   components: { BaseSection },
@@ -27,14 +29,20 @@ export default {
         {
           value: "authorization",
           text: this.$t("accessPoint.bookable.modeAuthorization"),
+          description: this.$t("accessPoint.bookable.modeAuthorizationDesc"),
+          icon: "mdi-dialpad",
         },
         {
           value: "remote",
           text: this.$t("accessPoint.bookable.modeRemote"),
+          description: this.$t("accessPoint.bookable.modeRemoteDesc"),
+          icon: "mdi-cellphone-key",
         },
         {
           value: "both",
           text: this.$t("accessPoint.bookable.modeBoth"),
+          description: this.$t("accessPoint.bookable.modeBothDesc"),
+          icon: "mdi-cellphone-key",
         },
       ];
     },
@@ -69,12 +77,19 @@ export default {
       const selectedIds = new Set(
         (this.accessPointDetails.points || []).map((point) => point.externalId)
       );
-      return this.accessPoints.filter(
-        (point) => !selectedIds.has(point.externalId)
-      );
+      return this.accessPoints
+        .filter((point) => !selectedIds.has(point.externalId))
+        .map((point) => ({
+          ...point,
+          disabled: this.isUnassignable(point),
+        }));
     },
     canAddAccessPoint() {
-      return !!this.selectedAccessPoint && !!this.activeNukiApp;
+      return (
+        !!this.selectedAccessPoint &&
+        !!this.activeNukiApp &&
+        !this.isUnassignable(this.selectedAccessPoint)
+      );
     },
   },
   watch: {
@@ -133,6 +148,7 @@ export default {
           this.tenantId
         );
         this.accessPoints = response.data || [];
+        this.migratePointModes();
       } catch (error) {
         this.accessPoints = [];
         this.loadError =
@@ -156,7 +172,7 @@ export default {
         provider: point.provider || "nuki",
         externalId: point.externalId || point.id,
         label: point.label,
-        mode: "authorization",
+        mode: this.getDefaultMode(point),
         locationId: point.locationId || null,
         config: {},
       });
@@ -167,6 +183,71 @@ export default {
     },
     getPointLabel(point) {
       return point.label || point.externalId || point.id;
+    },
+    findProviderAccessPoint(point) {
+      const key = point.externalId || point.id;
+      return this.accessPoints.find(
+        (ap) => (ap.externalId || ap.id) === key
+      );
+    },
+    // Returns the modes supported by the lock, or null when unknown
+    // (access point not loaded or field missing) -> caller should allow all.
+    getSupportedModes(point) {
+      const ap = this.findProviderAccessPoint(point);
+      if (!ap || !Array.isArray(ap.supportedModes)) return null;
+      return ap.supportedModes;
+    },
+    getSelectableModes(point) {
+      const supported = this.getSupportedModes(point);
+      return supported && supported.length ? supported : ALL_MODES;
+    },
+    modeOptionsForPoint(point) {
+      const selectable = this.getSelectableModes(point);
+      return this.modeOptions.filter((option) =>
+        selectable.includes(option.value)
+      );
+    },
+    // A lock with a known but empty supportedModes list cannot be assigned.
+    isUnassignable(point) {
+      const supported = this.getSupportedModes(point);
+      return Array.isArray(supported) && supported.length === 0;
+    },
+    isOnlyRemote(point) {
+      const supported = this.getSupportedModes(point);
+      return (
+        Array.isArray(supported) &&
+        supported.length === 1 &&
+        supported[0] === "remote"
+      );
+    },
+    modeHint(point) {
+      if (this.isUnassignable(point)) {
+        return this.$t("accessPoint.bookable.modeUnavailable");
+      }
+      if (this.isOnlyRemote(point)) {
+        return this.$t("accessPoint.bookable.onlyRemoteHint");
+      }
+      const selected = this.modeOptions.find(
+        (option) => option.value === point.mode
+      );
+      return selected ? selected.description : "";
+    },
+    getDefaultMode(point) {
+      const selectable = this.getSelectableModes(point);
+      const preferred = ["authorization", "both", "remote"];
+      return (
+        preferred.find((mode) => selectable.includes(mode)) || selectable[0]
+      );
+    },
+    // Reset any saved mode that is no longer supported by its lock.
+    migratePointModes() {
+      (this.accessPointDetails.points || []).forEach((point) => {
+        const supported = this.getSupportedModes(point);
+        if (!supported || supported.length === 0) return;
+        if (!supported.includes(point.mode)) {
+          this.$set(point, "mode", this.getDefaultMode(point));
+        }
+      });
     },
   },
 };
@@ -250,6 +331,34 @@ export default {
           {{ loadError }}
         </v-alert>
 
+        <v-alert
+          v-if="activeNukiApp && accessPointDetails.points.length > 0"
+          color="info"
+          dense
+          text
+          class="mb-4"
+        >
+          <div class="font-weight-medium mb-2">
+            {{ $t("accessPoint.bookable.modeHelp") }}
+          </div>
+          <div class="d-flex align-start mb-1">
+            <v-icon small color="info" class="mr-2 mt-1">mdi-dialpad</v-icon>
+            <div class="text-caption">
+              <strong>{{ $t("accessPoint.bookable.modeAuthorization") }}:</strong>
+              {{ $t("accessPoint.bookable.modeAuthorizationDesc") }}
+            </div>
+          </div>
+          <div class="d-flex align-start">
+            <v-icon small color="info" class="mr-2 mt-1">
+              mdi-cellphone-key
+            </v-icon>
+            <div class="text-caption">
+              <strong>{{ $t("accessPoint.bookable.modeRemote") }}:</strong>
+              {{ $t("accessPoint.bookable.modeRemoteDesc") }}
+            </div>
+          </div>
+        </v-alert>
+
         <v-row v-if="activeNukiApp" dense align="center">
           <v-col cols="12" md="9">
             <v-select
@@ -257,6 +366,7 @@ export default {
               :items="availableAccessPoints"
               :item-text="getPointLabel"
               item-value="externalId"
+              item-disabled="disabled"
               :label="$t('accessPoint.bookable.selectDoor')"
               background-color="accent"
               filled
@@ -276,6 +386,12 @@ export default {
                   <div class="text-caption text--secondary">
                     {{ item.provider || "nuki" }} •
                     {{ item.externalId || item.id }}
+                  </div>
+                  <div
+                    v-if="item.disabled"
+                    class="text-caption error--text"
+                  >
+                    {{ $t("accessPoint.bookable.notAssignable") }}
                   </div>
                 </div>
               </template>
@@ -318,13 +434,35 @@ export default {
                 <v-col cols="12" md="6">
                   <v-select
                     v-model="point.mode"
-                    :items="modeOptions"
+                    :items="modeOptionsForPoint(point)"
                     :label="$t('accessPoint.bookable.mode')"
                     background-color="accent"
                     filled
-                    dense
-                    hide-details
-                  />
+                    :disabled="isUnassignable(point)"
+                    :hint="modeHint(point)"
+                    persistent-hint
+                  >
+                    <template v-slot:selection="{ item }">
+                      <v-icon small class="mr-2">{{ item.icon }}</v-icon>
+                      <span>{{ item.text }}</span>
+                    </template>
+                    <template v-slot:item="{ item }">
+                      <v-list-item-icon class="mr-3 align-self-center">
+                        <v-icon>{{ item.icon }}</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        <v-list-item-title class="font-weight-medium">
+                          {{ item.text }}
+                        </v-list-item-title>
+                        <v-list-item-subtitle
+                          class="text-wrap"
+                          style="white-space: normal"
+                        >
+                          {{ item.description }}
+                        </v-list-item-subtitle>
+                      </v-list-item-content>
+                    </template>
+                  </v-select>
                 </v-col>
                 <v-col cols="12" md="1" class="text-right">
                   <v-btn icon small @click="removeAccessPoint(idx)">

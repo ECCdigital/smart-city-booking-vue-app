@@ -639,6 +639,15 @@
       "apiTokenUnchanged": "•••••••• (unverändert)",
       "apiTokenHint": "Es ist bereits ein Token hinterlegt. Leer lassen, um ihn unverändert zu übernehmen.",
       "apiBaseUrl": "API Base-URL",
+      "permissionsTitle": "Benötigte Token-Berechtigungen",
+      "permissionsIntro": "Der Nuki Web API-Token muss beim Anlegen in Nuki Web (MENÜ → API) mit den passenden Berechtigungen versehen werden. Tokens erhalten dauerhaft genau die Rechte, die beim Erstellen angehakt wurden, und werden ungültig, sobald das Passwort des Nuki-Web-Accounts geändert wird.",
+      "permissionsMinTitle": "Minimum (öffnen/schließen + Status)",
+      "permissionReadOnly": "Geräte anzeigen (smartlock.readOnly) – Verbindungstest, Türen auflisten, Status lesen",
+      "permissionAction": "Geräte bedienen (smartlock.action) – Türen öffnen und schließen",
+      "permissionsFullTitle": "Zusätzlich für die volle Funktionalität",
+      "permissionAuth": "Berechtigungen verwalten (smartlock.auth) – zeitlich begrenzte Keypad-PIN-Codes (erfordert ein gepairtes Keypad)",
+      "permissionLog": "Aktivitätsprotokolle anzeigen / Benachrichtigungen (smartlock.log) – Webhooks für Tür-Events",
+      "permissionsNote": "Den umfassenden Scope „Geräte verwalten“ (smartlock) bewusst NICHT vergeben (Least Privilege). Das Backend liest Geräte nur, legt sie aber nicht an und ändert keine Gerätekonfiguration.",
       "testConnection": "Verbindung testen",
       "connectionSuccess": "Verbindung erfolgreich!",
       "webhookTitle": "Webhook (optional)",
@@ -661,9 +670,19 @@
       "mode": "Modus",
       "emptyTitle": "Noch keine Türen zugeordnet",
       "emptyHint": "Wählen Sie eine Tür aus und klicken Sie auf \"hinzufügen\".",
-      "modeAuthorization": "Zeitbasierte Berechtigung + PIN",
-      "modeRemote": "Nur Fernöffnen/-schließen",
-      "modeBoth": "Berechtigung + Fernöffnen/-schließen"
+      "modeAuthorization": "PIN-Code (per E-Mail)",
+      "modeAuthorizationDesc": "Der Buchende erhält einen PIN-Code per E-Mail und öffnet bzw. schließt die Tür damit während des Buchungszeitraums.",
+      "modeRemote": "Mobile Key (App)",
+      "modeRemoteDesc": "Der Buchende öffnet bzw. schließt die Tür während des Buchungszeitraums über den Mobile Key in der App.",
+      "modeBoth": "PIN-Code & Mobile Key",
+      "modeBothDesc": "Beides: PIN-Code per E-Mail und Öffnen/Schließen über den Mobile Key.",
+      "modeHelp": "So öffnet der Buchende die Tür während seiner Buchung.",
+      "notAssignable": "Nicht zuweisbar – keine unterstützten Modi",
+      "modeUnavailable": "Dieses Schloss unterstützt aktuell keine Zugangsmodi und kann nicht zugewiesen werden.",
+      "onlyRemoteHint": "Kein Keypad gepairt – PIN-Codes sind für dieses Schloss nicht verfügbar.",
+      "saveError": {
+        "title": "Speichern fehlgeschlagen"
+      }
     },
     "booking": {
       "title": "Tür-Steuerung",

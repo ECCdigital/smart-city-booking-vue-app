@@ -273,7 +273,19 @@ export default {
           );
         }
       } catch (err) {
-        if (!this.bookableID) {
+        if (err.response?.status === 400) {
+          const data = err.response.data;
+          const message =
+            typeof data === "string" && data
+              ? data
+              : data?.message || this.$t("accessPoint.bookable.modeUnavailable");
+          await this.addToast({
+            title: this.$t("accessPoint.bookable.saveError.title"),
+            message,
+            type: "error",
+            timeout: 8000,
+          });
+        } else if (!this.bookableID) {
           await this.addToast(
             ToastService.createToast("bookable.create.error", "error")
           );
