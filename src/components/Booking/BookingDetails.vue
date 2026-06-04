@@ -293,60 +293,54 @@
             </v-btn>
           </v-card-title>
           <v-divider></v-divider>
-          <v-card-text class="pa-1">
-            <v-alert type="info" text dense class="mx-4 mt-4 mb-2">
+          <v-card-text class="pa-4">
+            <v-alert
+              type="info"
+              text
+              dense
+              border="left"
+              class="mb-4 access-point-pin-hint"
+            >
               {{ $t("accessPoint.booking.pinInfo") }}
             </v-alert>
 
-            <v-list dense>
-              <template v-for="(accessPoint, index) in bookingAccessPoints">
-                <v-list-item
-                  :key="getAccessPointKey(accessPoint)"
-                  class="px-4 py-2"
-                >
-                  <v-list-item-avatar color="green lighten-4">
-                    <v-icon color="green">mdi-door</v-icon>
-                  </v-list-item-avatar>
-                  <v-list-item-content>
-                    <v-list-item-title class="font-weight-bold">
-                      {{ accessPoint.label || accessPoint.externalId }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle>
-                      <span class="mr-3">
-                        <v-icon x-small>mdi-identifier</v-icon>
-                        ID:
-                        {{ accessPoint.externalId || accessPoint.id }}
+            <div class="access-point-grid">
+              <div
+                v-for="accessPoint in bookingAccessPoints"
+                :key="getAccessPointKey(accessPoint)"
+                class="access-point-tile"
+                :class="`access-point-tile--${accessPointTone(accessPoint)}`"
+              >
+                <div class="access-point-tile__body">
+                  <div
+                    class="access-point-tile__icon"
+                    :class="`access-point-tile__icon--${accessPointTone(
+                      accessPoint
+                    )}`"
+                  >
+                    <v-icon>mdi-door</v-icon>
+                  </div>
+
+                  <div class="access-point-tile__info">
+                    <div class="access-point-tile__title-row">
+                      <span class="access-point-tile__title">
+                        {{ accessPoint.label || accessPoint.externalId }}
                       </span>
-                      <span class="mr-3">
-                        <v-icon x-small>mdi-cloud-outline</v-icon>
-                        {{ accessPoint.provider || "nuki" }}
-                      </span>
-                      <span v-if="accessPoint.isProvisioned" class="mr-3">
-                        <v-icon x-small>mdi-check-decagram-outline</v-icon>
-                        {{ $t("accessPoint.booking.provisioned") }}
-                      </span>
-                    </v-list-item-subtitle>
-                    <v-list-item-subtitle
-                      v-if="accessPoint.provisionedAt"
-                      class="mt-1"
-                    >
-                      {{ $t("accessPoint.booking.provisionedAt") }}
-                      {{ formatDateTime(accessPoint.provisionedAt) }}
-                    </v-list-item-subtitle>
-                    <v-list-item-subtitle class="mt-1">
                       <v-chip
                         v-if="getAccessPointDisplayStatus(accessPoint)"
-                        x-small
+                        small
+                        label
                         :color="getAccessPointDisplayStatus(accessPoint).color"
                         text-color="white"
+                        class="access-point-tile__status"
                       >
                         <v-progress-circular
                           v-if="
                             getAccessPointDisplayStatus(accessPoint).loading
                           "
                           indeterminate
-                          size="10"
-                          width="1"
+                          size="12"
+                          width="2"
                           color="white"
                           class="mr-1"
                         />
@@ -355,10 +349,37 @@
                         </v-icon>
                         {{ getAccessPointDisplayStatus(accessPoint).text }}
                       </v-chip>
-                    </v-list-item-subtitle>
-                    <v-list-item-subtitle
+                    </div>
+
+                    <div class="access-point-tile__meta">
+                      <span class="meta-pill">
+                        <v-icon x-small>mdi-identifier</v-icon>
+                        {{ accessPoint.externalId || accessPoint.id }}
+                      </span>
+                      <span class="meta-pill">
+                        <v-icon x-small>mdi-cloud-outline</v-icon>
+                        {{ accessPoint.provider || "nuki" }}
+                      </span>
+                      <span
+                        v-if="accessPoint.isProvisioned"
+                        class="meta-pill meta-pill--ok"
+                      >
+                        <v-icon x-small>mdi-check-decagram-outline</v-icon>
+                        {{ $t("accessPoint.booking.provisioned") }}
+                      </span>
+                    </div>
+
+                    <div
+                      v-if="accessPoint.provisionedAt"
+                      class="access-point-tile__subtle"
+                    >
+                      {{ $t("accessPoint.booking.provisionedAt") }}
+                      {{ formatDateTime(accessPoint.provisionedAt) }}
+                    </div>
+
+                    <div
                       v-if="accessWindowHint(accessPoint)"
-                      class="mt-1"
+                      class="access-point-tile__window"
                     >
                       <v-icon
                         x-small
@@ -375,30 +396,56 @@
                             : "mdi-clock-alert-outline"
                         }}
                       </v-icon>
-                      <span class="text-caption">
-                        {{ accessWindowHint(accessPoint) }}
-                      </span>
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
-                  <v-list-item-action
-                    class="flex-row align-center"
-                    style="gap: 8px"
+                      <span>{{ accessWindowHint(accessPoint) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <v-expand-transition>
+                  <div
+                    v-if="accessPointErrors[getAccessPointKey(accessPoint)]"
+                    class="access-point-tile__error"
                   >
-                    <v-btn
-                      small
-                      outlined
-                      color="info"
-                      :loading="
-                        accessPointLoading[
-                          getAccessPointKey(accessPoint) + '_status'
-                        ]
+                    <v-alert
+                      type="error"
+                      dense
+                      text
+                      border="left"
+                      class="mb-0"
+                      dismissible
+                      @input="
+                        $set(
+                          accessPointErrors,
+                          getAccessPointKey(accessPoint),
+                          null
+                        )
                       "
-                      :disabled="!canControlAccessPoints"
-                      @click="fetchAccessPointStatus(accessPoint)"
                     >
-                      <v-icon left small>mdi-refresh</v-icon>
-                      {{ $t("accessPoint.booking.checkStatus") }}
-                    </v-btn>
+                      {{ accessPointErrors[getAccessPointKey(accessPoint)] }}
+                    </v-alert>
+                  </div>
+                </v-expand-transition>
+
+                <div class="access-point-tile__actions">
+                  <v-btn
+                    small
+                    text
+                    color="info"
+                    :loading="
+                      accessPointLoading[
+                        getAccessPointKey(accessPoint) + '_status'
+                      ]
+                    "
+                    :disabled="!canControlAccessPoints"
+                    @click="fetchAccessPointStatus(accessPoint)"
+                  >
+                    <v-icon left small>mdi-refresh</v-icon>
+                    {{ $t("accessPoint.booking.checkStatus") }}
+                  </v-btn>
+
+                  <v-spacer />
+
+                  <div class="access-point-tile__action-group">
                     <v-btn
                       small
                       outlined
@@ -421,7 +468,33 @@
                       {{ $t("accessPoint.booking.close") }}
                     </v-btn>
                     <v-btn
+                      v-if="canUnlatchAccessPoint(accessPoint)"
                       small
+                      outlined
+                      color="primary"
+                      :loading="
+                        accessPointLoading[
+                          getAccessPointKey(accessPoint) + '_unlatch'
+                        ]
+                      "
+                      :disabled="
+                        !canControlAccessPoints ||
+                        !isWithinAccessWindow(accessPoint) ||
+                        accessPointLoading[
+                          getAccessPointKey(accessPoint) + '_waitOpen'
+                        ] ||
+                        accessPointLoading[
+                          getAccessPointKey(accessPoint) + '_waitClose'
+                        ]
+                      "
+                      @click="unlatchAccessPoint(accessPoint)"
+                    >
+                      <v-icon left small>mdi-door-open</v-icon>
+                      {{ $t("accessPoint.booking.unlatch") }}
+                    </v-btn>
+                    <v-btn
+                      small
+                      depressed
                       color="success"
                       :loading="
                         accessPointLoading[
@@ -443,42 +516,10 @@
                       <v-icon left small>mdi-lock-open-variant</v-icon>
                       {{ $t("accessPoint.booking.open") }}
                     </v-btn>
-                  </v-list-item-action>
-                </v-list-item>
-
-                <v-expand-transition
-                  :key="'access-alert-' + getAccessPointKey(accessPoint)"
-                >
-                  <div
-                    v-if="accessPointErrors[getAccessPointKey(accessPoint)]"
-                    class="px-4 pb-2"
-                  >
-                    <v-alert
-                      type="error"
-                      dense
-                      outlined
-                      border="left"
-                      class="mb-0 mt-1"
-                      dismissible
-                      @input="
-                        $set(
-                          accessPointErrors,
-                          getAccessPointKey(accessPoint),
-                          null
-                        )
-                      "
-                    >
-                      {{ accessPointErrors[getAccessPointKey(accessPoint)] }}
-                    </v-alert>
                   </div>
-                </v-expand-transition>
-
-                <v-divider
-                  v-if="index < bookingAccessPoints.length - 1"
-                  :key="`access-point-divider-${index}`"
-                />
-              </template>
-            </v-list>
+                </div>
+              </div>
+            </div>
           </v-card-text>
         </v-card>
 
@@ -1458,6 +1499,20 @@ export default {
     getAccessPointKey(accessPoint) {
       return accessPoint.id || accessPoint.externalId;
     },
+    canUnlatchAccessPoint(accessPoint) {
+      return (accessPoint?.type || "door") === "door";
+    },
+    accessPointTone(accessPoint) {
+      const status = this.getAccessPointDisplayStatus(accessPoint);
+      const color = (status && status.color) || "grey";
+      if (color.startsWith("success")) return "success";
+      if (color.startsWith("error")) return "error";
+      if (color.startsWith("warning") || color.startsWith("orange")) {
+        return "warning";
+      }
+      if (color.startsWith("info")) return "info";
+      return "grey";
+    },
     resolveAccessError(error, accessPoint, fallbackKey) {
       if (error?.response?.status === 403) {
         return this.$t("accessPoint.booking.window.outside", {
@@ -1732,6 +1787,46 @@ export default {
         this.$set(this.accessPointLoading, accessPointId + "_open", false);
       }
     },
+    async unlatchAccessPoint(accessPoint) {
+      if (!this.canControlAccessPoints) return;
+      const accessPointId = this.getAccessPointKey(accessPoint);
+      this.$set(this.accessPointLoading, accessPointId + "_unlatch", true);
+      this.$set(this.accessPointErrors, accessPointId, null);
+      this.$set(this.accessPointStatuses, accessPointId, null);
+
+      try {
+        const response = await ApiAccessService.unlatch(
+          this.booking.id,
+          accessPointId,
+          this.booking.tenantId
+        );
+        const responseData = response.data || {};
+
+        if (responseData.success === false) {
+          this.$set(
+            this.accessPointErrors,
+            accessPointId,
+            responseData.errors?.[0]?.message ||
+              this.$t("accessPoint.unlatch.error.message")
+          );
+          return;
+        }
+
+        await this.waitForAccessPointStatusChange(accessPoint, "unlatch");
+      } catch (error) {
+        this.$set(
+          this.accessPointErrors,
+          accessPointId,
+          this.resolveAccessError(
+            error,
+            accessPoint,
+            "accessPoint.unlatch.sendError.message"
+          )
+        );
+      } finally {
+        this.$set(this.accessPointLoading, accessPointId + "_unlatch", false);
+      }
+    },
     async closeAccessPoint(accessPoint) {
       if (!this.canControlAccessPoints) return;
       const accessPointId = this.getAccessPointKey(accessPoint);
@@ -1774,12 +1869,15 @@ export default {
     },
     async waitForAccessPointStatusChange(accessPoint, action) {
       const accessPointId = this.getAccessPointKey(accessPoint);
-      const isOpenAction = action === "open";
+      const isOpenAction = action === "open" || action === "unlatch";
       const loadingKey = isOpenAction ? "_waitOpen" : "_waitClose";
       const isDone = (status) =>
         isOpenAction
           ? this.isAccessPointOpen(status)
           : this.isAccessPointClosed(status);
+      const successKey = `accessPoint.${action}.success`;
+      const errorKey = `accessPoint.${action}.error.message`;
+      const timeoutKey = `accessPoint.${action}.timeout.message`;
 
       this.$set(this.accessPointLoading, accessPointId + loadingKey, true);
 
@@ -1793,10 +1891,7 @@ export default {
 
           if (isDone(status)) {
             await this.addToast(
-              ToastService.createToast(
-                isOpenAction ? "accessPoint.open.success" : "accessPoint.close.success",
-                "success"
-              )
+              ToastService.createToast(successKey, "success")
             );
             return;
           }
@@ -1809,11 +1904,7 @@ export default {
                 ? this.$t("accessPoint.status.doorError.message", {
                     code: status.errorCode,
                   })
-                : this.$t(
-                    isOpenAction
-                      ? "accessPoint.open.error.message"
-                      : "accessPoint.close.error.message"
-                  )
+                : this.$t(errorKey)
             );
             return;
           }
@@ -1822,11 +1913,7 @@ export default {
         this.$set(
           this.accessPointErrors,
           accessPointId,
-          this.$t(
-            isOpenAction
-              ? "accessPoint.open.timeout.message"
-              : "accessPoint.close.timeout.message"
-          )
+          this.$t(timeoutKey)
         );
       } catch (error) {
         this.$set(
@@ -2511,6 +2598,198 @@ export default {
 }
 
 .gap-2 {
+  gap: 8px;
+}
+
+/* ---- Access point tiles ---- */
+.access-point-pin-hint {
+  border-radius: 4px;
+}
+
+.access-point-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.access-point-tile {
+  position: relative;
+  padding: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-left: 4px solid var(--ap-accent, rgba(0, 0, 0, 0.12));
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.015);
+  transition: box-shadow 0.2s ease, transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+.access-point-tile--success {
+  --ap-accent: var(--v-success-base, #4caf50);
+}
+.access-point-tile--warning {
+  --ap-accent: var(--v-warning-base, #fb8c00);
+}
+.access-point-tile--error {
+  --ap-accent: var(--v-error-base, #ff5252);
+}
+.access-point-tile--info {
+  --ap-accent: var(--v-info-base, #2196f3);
+}
+.access-point-tile--grey {
+  --ap-accent: rgba(0, 0, 0, 0.18);
+}
+
+.theme--dark .access-point-tile {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.access-point-tile__body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.access-point-tile__icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.access-point-tile__icon .v-icon {
+  color: inherit;
+}
+
+.access-point-tile__icon--success {
+  background: rgba(76, 175, 80, 0.14);
+  color: var(--v-success-base, #4caf50);
+}
+.access-point-tile__icon--warning {
+  background: rgba(251, 140, 0, 0.16);
+  color: var(--v-warning-base, #fb8c00);
+}
+.access-point-tile__icon--error {
+  background: rgba(255, 82, 82, 0.16);
+  color: var(--v-error-base, #ff5252);
+}
+.access-point-tile__icon--info {
+  background: rgba(33, 150, 243, 0.16);
+  color: var(--v-info-base, #2196f3);
+}
+
+.access-point-tile__info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.access-point-tile__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.access-point-tile__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: rgba(0, 0, 0, 0.87);
+  word-break: break-word;
+}
+
+.theme--dark .access-point-tile__title {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.access-point-tile__status {
+  flex: 0 0 auto;
+  font-weight: 600;
+}
+
+.access-point-tile__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.62);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.meta-pill .v-icon {
+  color: inherit;
+}
+
+.meta-pill--ok {
+  color: var(--v-success-base, #43a047);
+  background: rgba(76, 175, 80, 0.12);
+}
+
+.theme--dark .meta-pill {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.access-point-tile__subtle {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.theme--dark .access-point-tile__subtle {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.access-point-tile__window {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.theme--dark .access-point-tile__window {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.access-point-tile__error {
+  margin-top: 12px;
+}
+
+.access-point-tile__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.theme--dark .access-point-tile__actions {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.access-point-tile__action-group {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 

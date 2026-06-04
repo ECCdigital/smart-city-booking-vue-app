@@ -739,7 +739,8 @@
       "provisionedAt": "Provisioniert:",
       "checkStatus": "Status prüfen",
       "close": "Schließen",
-      "open": "Öffnen",
+      "open": "Aufschließen",
+      "unlatch": "Tür öffnen",
       "status": {
         "waitingClose": "Warte auf Schließen…",
         "waitingOpen": "Warte auf Bestätigung…",
@@ -802,6 +803,24 @@
       "error": {
         "title": "Fehler beim Öffnen",
         "message": "Die Tür konnte nicht geöffnet werden."
+      },
+      "timeout": {
+        "title": "Bestätigung ausstehend",
+        "message": "Die Tür hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+      },
+      "sendError": {
+        "title": "Befehl fehlgeschlagen",
+        "message": "Fehler beim Senden des Öffnen-Befehls. Bitte erneut versuchen."
+      }
+    },
+    "unlatch": {
+      "success": {
+        "title": "Tür geöffnet",
+        "message": "Die Tür wurde geöffnet."
+      },
+      "error": {
+        "title": "Fehler beim Öffnen",
+        "message": "Die Tür konnte nicht geöffnet werden. Möglicherweise unterstützt dieses Gerät kein Aufdrücken der Tür. Bitte stattdessen \"Aufschließen\" verwenden."
       },
       "timeout": {
         "title": "Bestätigung ausstehend",

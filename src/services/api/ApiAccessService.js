@@ -21,6 +21,14 @@ export default {
     );
   },
 
+  unlatch(bookingId, accessPointId, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `api/${t}/access/${accessPointId}/unlatch?bookingId=${bookingId}`,
+      {}
+    );
+  },
+
   close(bookingId, accessPointId, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.post(
