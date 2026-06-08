@@ -13,6 +13,8 @@ export default {
       userName: "",
       loading: false,
       ssoConfig: {},
+      acceptedDataProtection: false,
+      acceptedTerms: false,
       state: "",
       possibleStates: {
         SIGNUP_SUCCESS: "signup-success",
@@ -29,6 +31,30 @@ export default {
     ...mapGetters({
       instance: "instance/instance",
     }),
+    dataProtection() {
+      return this.instance?.dataProtection || {};
+    },
+    termsAndConditions() {
+      return this.instance?.termsAndConditions || {};
+    },
+    requiresDataProtection() {
+      return !!this.dataProtection.url;
+    },
+    requiresTerms() {
+      return !!this.termsAndConditions.url;
+    },
+    dataProtectionHref() {
+      return this.legalHref(this.dataProtection.url);
+    },
+    termsHref() {
+      return this.legalHref(this.termsAndConditions.url);
+    },
+    canSignUp() {
+      if (this.requiresDataProtection && !this.acceptedDataProtection)
+        return false;
+      if (this.requiresTerms && !this.acceptedTerms) return false;
+      return true;
+    },
   },
   methods: {
     ...mapActions({
@@ -95,11 +121,42 @@ export default {
         this.loading = false;
       }
     },
+    legalHref(url) {
+      if (!url) return "";
+      return /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
+    },
+    buildLegalAcceptance() {
+      const acceptance = {};
+      const acceptedAt = new Date().toISOString();
+      if (this.requiresDataProtection) {
+        acceptance.dataProtection = {
+          accepted: this.acceptedDataProtection,
+          url: this.dataProtection.url,
+          fileName: this.dataProtection.fileName || "",
+          source: this.dataProtection.source || "url",
+          acceptedAt,
+        };
+      }
+      if (this.requiresTerms) {
+        acceptance.termsAndConditions = {
+          accepted: this.acceptedTerms,
+          url: this.termsAndConditions.url,
+          fileName: this.termsAndConditions.fileName || "",
+          source: this.termsAndConditions.source || "url",
+          acceptedAt,
+        };
+      }
+      return acceptance;
+    },
     async signUp() {
+      if (!this.canSignUp) return;
       try {
         this.loading = true;
         const token = await keycloakService.getValidToken();
-        const response = await ApiAuthService.ssoRegister(token);
+        const response = await ApiAuthService.ssoRegister(
+          token,
+          this.buildLegalAcceptance(),
+        );
 
         if (response.status === 201) {
           await this.addToast(
@@ -200,6 +257,53 @@ export default {
           diesem System registriert. Möchten Sie Ihr Konto jetzt
           automatisch anlegen?
         </div>
+
+        <div
+          v-if="requiresDataProtection || requiresTerms"
+          class="text-left mt-4 align-self-stretch"
+        >
+          <v-checkbox
+            v-if="requiresDataProtection"
+            v-model="acceptedDataProtection"
+            hide-details="auto"
+            class="mt-0"
+            :disabled="loading"
+          >
+            <template v-slot:label>
+              <span class="text-body-2">
+                Ich habe die
+                <a
+                  :href="dataProtectionHref"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click.stop
+                  >Datenschutzerklärung</a
+                >
+                gelesen und akzeptiere sie.
+              </span>
+            </template>
+          </v-checkbox>
+          <v-checkbox
+            v-if="requiresTerms"
+            v-model="acceptedTerms"
+            hide-details="auto"
+            class="mt-0"
+            :disabled="loading"
+          >
+            <template v-slot:label>
+              <span class="text-body-2">
+                Ich akzeptiere die
+                <a
+                  :href="termsHref"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click.stop
+                  >Allgemeinen Geschäftsbedingungen</a
+                >.
+              </span>
+            </template>
+          </v-checkbox>
+        </div>
       </div>
 
       <div
@@ -273,6 +377,7 @@ export default {
         elevation="0"
         @click="signUp"
         :loading="loading"
+        :disabled="!canSignUp"
       >
         Registrieren
       </v-btn>

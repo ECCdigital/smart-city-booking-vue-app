@@ -66,7 +66,16 @@ export default {
     return null;
   },
 
-  async register(tenant, id, firstName, lastName, company, password, nextUrl) {
+  async register(
+    tenant,
+    id,
+    firstName,
+    lastName,
+    company,
+    password,
+    nextUrl,
+    legalAcceptance
+  ) {
     const body = {
       id,
       firstName,
@@ -75,11 +84,22 @@ export default {
       password,
       nextUrl,
     };
+
+    if (legalAcceptance && Object.keys(legalAcceptance).length > 0) {
+      body.legalAcceptance = legalAcceptance;
+    }
+
     return ApiClient.post("auth/signup", body);
   },
 
-  async ssoRegister(token) {
-    return ApiClient.post("auth/sso/signup", { token });
+  async ssoRegister(token, legalAcceptance) {
+    const body = { token };
+
+    if (legalAcceptance && Object.keys(legalAcceptance).length > 0) {
+      body.legalAcceptance = legalAcceptance;
+    }
+
+    return ApiClient.post("auth/sso/signup", body);
   },
 
   /**

@@ -107,6 +107,53 @@
           label="Unternehmen (optional)"
           prepend-inner-icon="mdi-domain"
         />
+
+        <div
+          v-if="requiresDataProtection || requiresTerms"
+          class="text-left mt-2"
+        >
+          <v-checkbox
+            v-if="requiresDataProtection"
+            v-model="acceptedDataProtection"
+            :rules="[rules.acceptedDataProtection]"
+            hide-details="auto"
+            class="mt-0"
+          >
+            <template v-slot:label>
+              <span class="text-body-2">
+                Ich habe die
+                <a
+                  :href="dataProtectionHref"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click.stop
+                  >Datenschutzerklärung</a
+                >
+                gelesen und akzeptiere sie.
+              </span>
+            </template>
+          </v-checkbox>
+          <v-checkbox
+            v-if="requiresTerms"
+            v-model="acceptedTerms"
+            :rules="[rules.acceptedTerms]"
+            hide-details="auto"
+            class="mt-0"
+          >
+            <template v-slot:label>
+              <span class="text-body-2">
+                Ich akzeptiere die
+                <a
+                  :href="termsHref"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click.stop
+                  >Allgemeinen Geschäftsbedingungen</a
+                >.
+              </span>
+            </template>
+          </v-checkbox>
+        </div>
       </v-form>
     </v-card-text>
 
@@ -142,7 +189,7 @@
 <script>
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ToastService from "@/services/ToastService";
-import { mapActions } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 
 export default {
   name: "CardLoginCard",
@@ -163,6 +210,8 @@ export default {
       firstName: "",
       lastName: "",
       company: "",
+      acceptedDataProtection: false,
+      acceptedTerms: false,
       loading: false,
       state: "", // '' | 'error' | 'success' | 'awaiting_verification' | 'awaiting_link_confirmation'
       errorMessage: "",
@@ -172,14 +221,38 @@ export default {
           const pattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
           return pattern.test(v) || "Ungültige Email-Adresse.";
         },
+        acceptedDataProtection: (v) =>
+          v === true || "Bitte stimmen Sie der Datenschutzerklärung zu",
+        acceptedTerms: (v) => v === true || "Bitte stimmen Sie den AGB zu",
       },
     };
   },
 
   computed: {
+    ...mapGetters({
+      instance: "instance/instance",
+    }),
     verifyUrl() {
       const base = window.location.origin;
       return `${base}/email/verify`;
+    },
+    dataProtection() {
+      return this.instance?.dataProtection || {};
+    },
+    termsAndConditions() {
+      return this.instance?.termsAndConditions || {};
+    },
+    requiresDataProtection() {
+      return !!this.dataProtection.url;
+    },
+    requiresTerms() {
+      return !!this.termsAndConditions.url;
+    },
+    dataProtectionHref() {
+      return this.legalHref(this.dataProtection.url);
+    },
+    termsHref() {
+      return this.legalHref(this.termsAndConditions.url);
     },
   },
 
@@ -232,6 +305,35 @@ export default {
       }
     },
 
+    legalHref(url) {
+      if (!url) return "";
+      return /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
+    },
+
+    buildLegalAcceptance() {
+      const acceptance = {};
+      const acceptedAt = new Date().toISOString();
+      if (this.requiresDataProtection) {
+        acceptance.dataProtection = {
+          accepted: this.acceptedDataProtection,
+          url: this.dataProtection.url,
+          fileName: this.dataProtection.fileName || "",
+          source: this.dataProtection.source || "url",
+          acceptedAt,
+        };
+      }
+      if (this.requiresTerms) {
+        acceptance.termsAndConditions = {
+          accepted: this.acceptedTerms,
+          url: this.termsAndConditions.url,
+          fileName: this.termsAndConditions.fileName || "",
+          source: this.termsAndConditions.source || "url",
+          acceptedAt,
+        };
+      }
+      return acceptance;
+    },
+
     async submitRegistration() {
       if (!this.$refs.registerForm.validate()) return;
 
@@ -240,7 +342,7 @@ export default {
       this.errorMessage = "";
 
       try {
-        const result = await ApiAuthService.cardSignup({
+        const payload = {
           appId: this.cardMethod.id,
           publicId: this.publicId,
           secret: this.secret,
@@ -248,7 +350,14 @@ export default {
           firstName: this.firstName,
           lastName: this.lastName,
           company: this.company,
-        });
+        };
+
+        const legalAcceptance = this.buildLegalAcceptance();
+        if (Object.keys(legalAcceptance).length > 0) {
+          payload.legalAcceptance = legalAcceptance;
+        }
+
+        const result = await ApiAuthService.cardSignup(payload);
 
         if (result.status === "link_requested") {
           this.state = "awaiting_link_confirmation";
@@ -257,7 +366,7 @@ export default {
         }
 
         await this.addToast(
-          ToastService.createToast(result.message, "success")
+          ToastService.createToast("register.success.default", "success")
         );
       } catch (error) {
         this.handleError(error);
