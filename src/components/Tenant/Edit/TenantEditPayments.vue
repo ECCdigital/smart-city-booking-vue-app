@@ -53,7 +53,7 @@
             background-color="accent"
             filled
             dense
-            label="Strononummer Präfix"
+            label="Stornonummer Präfix"
             v-model="modelTenant.cancellationNumberPrefix"
         /></v-col>
         <v-col>
