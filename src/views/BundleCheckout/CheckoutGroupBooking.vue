@@ -57,6 +57,7 @@
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
+import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import CheckoutContactDetails from "@/views/BundleCheckout/CheckoutContactDetails.vue";
@@ -735,33 +736,105 @@ export default {
 
     async performGroupCheckout() {
       this.isSubmitting = true;
+
       try {
-        const response = await ApiCheckoutService.groupCheckout(
-          this.tenantId,
-          {
-            contactData: this.contactDetails,
-            bookingAttempts: this.bookingAttempts,
-            paymentProvider: this.selectedPaymentApp,
-          },
-          false
+        const groupBooking = await this.performGroupCheckoutRequest();
+        const bookings = groupBooking.bookings || [];
+
+        const payableBookings = bookings.filter(
+          (booking) => booking.isCommitted === true && booking.isPayed === false
         );
 
-        if (response.status === 200) {
-          await this.$router.push({
-            path: "/checkout/status",
-            query: {
-              ids: response.data.bookingIds.join(","),
-              tenant: this.tenantId,
-            },
-          });
+        if (payableBookings.length > 0) {
+          const paymentResponse = await this.processGroupPayment(
+            payableBookings
+          );
+          await this.handleGroupPaymentOutcome(paymentResponse, groupBooking);
         } else {
-          throw new Error("Checkout service failed");
+          await this.routeToStatus(groupBooking.bookingIds);
         }
       } catch (error) {
-        console.error("Error during checkout:", error);
+        console.error("Group checkout process failed:", error.message);
       } finally {
         this.isSubmitting = false;
       }
+    },
+
+    async performGroupCheckoutRequest() {
+      const response = await ApiCheckoutService.groupCheckout(
+        this.tenantId,
+        {
+          contactData: this.contactDetails,
+          bookingAttempts: this.bookingAttempts,
+          paymentProvider: this.selectedPaymentApp,
+        },
+        false
+      );
+
+      if (response.status !== 200) {
+        throw new Error("Checkout service failed");
+      }
+
+      return response.data;
+    },
+
+    async processGroupPayment(payableBookings) {
+      const bookingIds = payableBookings.map((booking) => booking.id);
+      const response = await ApiPaymentService.payments(
+        bookingIds,
+        this.tenantId,
+        true
+      );
+      if (response.status !== 200) throw new Error("Payment processing failed");
+      return response;
+    },
+
+    async handleGroupPaymentOutcome(paymentResponse, groupBooking) {
+      const bookings = paymentResponse.data?.bookings || [];
+      const paymentData = paymentResponse.data?.paymentData || [];
+      const paymentProvider =
+        bookings[0]?.paymentProvider || this.selectedPaymentApp;
+
+      const totalPrice = bookings.reduce(
+        (sum, booking) => sum + (booking.priceEur || 0),
+        0
+      );
+
+      if (totalPrice <= 0 || bookings.some((booking) => !booking.isCommitted)) {
+        await this.routeToStatus(groupBooking.bookingIds);
+        return;
+      }
+
+      switch (paymentProvider) {
+      case "giroCockpit":
+      case "pmPayment":
+      case "ePayBL": {
+        const paymentUrl = paymentData[0]?.url;
+        if (paymentUrl) {
+          window.location.href = paymentUrl;
+        } else {
+          await this.routeToStatus(groupBooking.bookingIds, paymentProvider);
+        }
+        break;
+      }
+      case "invoice":
+        await this.routeToStatus(groupBooking.bookingIds, paymentProvider);
+        break;
+      default:
+        await this.routeToStatus(groupBooking.bookingIds);
+        break;
+      }
+    },
+
+    async routeToStatus(bookingIds, paymentProvider = null) {
+      await this.$router.push({
+        path: "/checkout/status",
+        query: {
+          ids: (bookingIds || []).join(","),
+          tenant: this.tenantId,
+          paymentProvider: paymentProvider,
+        },
+      });
     },
     async changeBookingTime(data) {
       const { timeBegin, timeEnd } = data;
