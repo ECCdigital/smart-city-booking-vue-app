@@ -74,7 +74,9 @@ export default {
     company,
     password,
     nextUrl,
-    legalAcceptance
+    legalAcceptance,
+    invitationToken,
+    invitationTenantId
   ) {
     const body = {
       id,
@@ -87,6 +89,14 @@ export default {
 
     if (legalAcceptance && Object.keys(legalAcceptance).length > 0) {
       body.legalAcceptance = legalAcceptance;
+    }
+
+    if (invitationToken) {
+      body.invitationToken = invitationToken;
+    }
+
+    if (invitationTenantId) {
+      body.invitationTenantId = invitationTenantId;
     }
 
     return ApiClient.post("auth/signup", body);

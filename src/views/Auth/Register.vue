@@ -218,6 +218,22 @@ export default {
       add("termsAndConditions", "AGB");
       return links;
     },
+    invitationParams() {
+      const url = this.nextUrl;
+      if (!url) return { token: null, tenantId: null };
+
+      const match = url.match(/\/auth\/invitation\/([^/?#]+)/);
+      const tenantId = match ? decodeURIComponent(match[1]) : null;
+
+      let token = null;
+      const queryIndex = url.indexOf("?");
+      if (queryIndex !== -1) {
+        const params = new URLSearchParams(url.slice(queryIndex + 1));
+        token = params.get("token");
+      }
+
+      return { token, tenantId };
+    },
   },
   components: { ContactInformation },
   data() {
@@ -257,12 +273,17 @@ export default {
   },
 
   mounted() {
+    const next = this.$route.query.next;
+    if (next) {
+      this.updateNextUrl(next);
+    }
     this.fetchTenants();
   },
 
   methods: {
     ...mapActions({
       addToast: "toasts/add",
+      updateNextUrl: "authStore/setNextUrl",
     }),
     legalHref(url) {
       if (!url) return "";
@@ -293,6 +314,8 @@ export default {
     },
     register() {
       if (this.$refs.form.validate()) {
+        const { token: invitationToken, tenantId: invitationTenantId } =
+          this.invitationParams;
         ApiAuthService.register(
           this.tenant,
           this.id,
@@ -301,7 +324,9 @@ export default {
           this.company,
           this.password,
           this.nextUrl,
-          this.buildLegalAcceptance()
+          this.buildLegalAcceptance(),
+          invitationToken,
+          invitationTenantId
         )
           .then((response) => {
             if (response.status === 201) {
