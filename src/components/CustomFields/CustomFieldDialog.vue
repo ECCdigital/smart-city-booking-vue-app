@@ -310,12 +310,6 @@ export default {
         { text: "Navigation", value: "navigation" },
         { text: "Suchleiste", value: "searchbar" },
       ],
-      detailDisplayPositions: [
-        { text: "Nicht anzeigen", value: "none", description: "Feld erscheint nicht in der Detailansicht" },
-        { text: "Badge (über Beschreibung)", value: "badge", description: "Als Badge oberhalb des Beschreibungstexts" },
-        { text: "Unterhalb der Beschreibung", value: "belowDescription", description: "Direkt unter dem Beschreibungstext" },
-        { text: "Mehr Informationen (rechts)", value: "moreInfo", description: "Im separaten Info-Bereich rechts" },
-      ],
       rules: {
         required: (v) => !!v || "Pflichtfeld",
       },
@@ -324,6 +318,19 @@ export default {
   computed: {
     isEdit() {
       return this.field !== null;
+    },
+    detailDisplayPositions() {
+      const all = [
+        { text: "Nicht anzeigen", value: "none", description: "Feld erscheint nicht in der Detailansicht" },
+        { text: "Label (über Beschreibung)", value: "badge", description: "Als Label oberhalb des Beschreibungstexts" },
+        { text: "Unterhalb der Beschreibung", value: "belowDescription", description: "Direkt unter dem Beschreibungstext" },
+        { text: "Weitere Informationen", value: "moreInfo", description: "In einem separaten Info-Bereich rechts unterhalb der Preisinformation" },
+      ];
+
+      if (this.local.inputType === "text") {
+        return all.filter((p) => p.value !== "badge");
+      }
+      return all;
     },
     filterTypes() {
       const all = [
@@ -371,6 +378,13 @@ export default {
         !allowed.includes(this.local.usageOptions.catalogFilterType)
       ) {
         this.local.usageOptions.catalogFilterType = null;
+      }
+
+      const allowedPositions = this.detailDisplayPositions.map((p) => p.value);
+      if (
+        !allowedPositions.includes(this.local.usageOptions.detailDisplayPosition)
+      ) {
+        this.local.usageOptions.detailDisplayPosition = "none";
       }
     },
     "local.usageOptions.context"(v) {
