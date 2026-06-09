@@ -75,4 +75,9 @@ export default {
     );
     return response.data;
   },
+  async getDefaultMailTempaltes(tenantId) {
+    return (
+      await ApiClient.get(`api/tenants/${tenantId}/mail/templates/default`)
+    ).data;
+  },
 };

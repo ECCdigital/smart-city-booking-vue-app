@@ -3,7 +3,11 @@
     <BaseSection
       title="E-Mail Konfiguration"
       icon="mdi-email"
-      :hint="model.useInstanceMail ? 'Es wird die Instanz-Konfiguration verwendet.' : ''"
+      :hint="
+        model.useInstanceMail
+          ? 'Es wird die Instanz-Konfiguration verwendet.'
+          : ''
+      "
     >
       <v-switch
         v-model="model.useInstanceMail"
@@ -28,6 +32,7 @@
       <SnippetList
         :mail-snippets="tenant.mailSnippets || {}"
         :mail-subjects="tenant.mailSubjects || {}"
+        :default-mail-snippets="defaultMailSnippets"
         :layout-template="tenant.genericMailTemplate || ''"
         :tenant-name="tenant.name || ''"
         @update="updateMailOverrides"
@@ -41,16 +46,21 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import debounce from "lodash/debounce";
 import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
 import SnippetList from "@/components/Mail/SnippetList.vue";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   name: "TenantEditEmail",
   components: { SnippetList, MailKonfiguration, BaseSection },
   props: { tenant: Object },
-  data: () => ({ valid: false }),
+  data: () => ({
+    valid: false,
+    defaultMailSnippets: {},
+  }),
   created() {
     this._emitDebounced = debounce((val) => {
       this.$emit("update:tenant", { ...val });
     }, 200);
+    this.fetchDefaultMailTemplates();
   },
   computed: {
     model: {
@@ -80,6 +90,16 @@ export default {
     },
   },
   methods: {
+    async fetchDefaultMailTemplates() {
+      const tenantId = this.tenant && this.tenant.id;
+      if (!tenantId) return;
+      try {
+        const data = await ApiTenantService.getDefaultMailTempaltes(tenantId);
+        this.defaultMailSnippets = (data && data.mailSnippets) || {};
+      } catch (e) {
+        console.error("Standard-Mailvorlagen konnten nicht geladen werden", e);
+      }
+    },
     updateMailConfig(cfg) {
       this.model = { ...this.tenant, ...cfg };
     },

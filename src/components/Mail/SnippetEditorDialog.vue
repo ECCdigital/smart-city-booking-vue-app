@@ -1,4 +1,5 @@
 <template>
+  <div>
   <v-dialog v-model="dialogOpen" persistent max-width="1400px" scrollable>
     <v-card v-if="snippet">
       <v-card-title class="d-flex align-center">
@@ -206,6 +207,22 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <v-dialog v-model="confirmLoadDefaultOpen" max-width="420">
+    <v-card>
+      <v-card-title class="subtitle-1">Standardvorlage laden?</v-card-title>
+      <v-card-text>
+        Aktuelle Inhalte im visuellen Editor werden durch die Standardvorlage
+        überschrieben.
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn text @click="confirmLoadDefaultOpen = false">Abbrechen</v-btn>
+        <v-btn color="primary" @click="confirmLoadDefault">Laden</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+  </div>
 </template>
 
 <script>
@@ -217,7 +234,7 @@ import {
 } from "./BlockEditor/render/parseMetadata.js";
 import {
   getSnippetCatalogEntry,
-  buildSnippetDefaultBlocks,
+  resolveDefaultSnippetContent,
   MAX_SNIPPET_SIZE_BYTES,
   MAX_SUBJECT_LENGTH,
 } from "./snippetCatalog.js";
@@ -235,6 +252,7 @@ export default {
     snippetKey: { type: String, default: "" },
     value: { type: String, default: "" },
     subject: { type: String, default: "" },
+    defaultMailSnippets: { type: Object, default: () => ({}) },
     layoutTemplate: { type: String, default: "" },
     tenantName: { type: String, default: "" },
   },
@@ -249,6 +267,7 @@ export default {
       previewKey: 0,
       handlebarsLib: null,
       useLayoutInPreview: true,
+      confirmLoadDefaultOpen: false,
       MAX_SUBJECT_LENGTH,
     };
   },
@@ -325,10 +344,12 @@ export default {
       return this.snippet ? this.snippet.defaultSubject : "";
     },
     hasDefaultBlocks() {
-      return !!(
-        this.snippet &&
-        Array.isArray(this.snippet.defaultBlocks) &&
-        this.snippet.defaultBlocks.length
+      return this.defaultSnippetContent.hasBlocks;
+    },
+    defaultSnippetContent() {
+      return resolveDefaultSnippetContent(
+        this.snippetKey,
+        this.defaultMailSnippets
       );
     },
   },
@@ -352,8 +373,9 @@ export default {
       this.subjectValue = this.subject || "";
       this.expertConfirmed = false;
       if (!incoming) {
-        this.expertHtml = this.snippet ? this.snippet.defaultTemplate : "";
-        this.blocks = [];
+        const defaults = this.defaultSnippetContent;
+        this.expertHtml = defaults.bodyHtml;
+        this.blocks = defaults.hasBlocks ? defaults.blocks : [];
         this.mode = "visual";
         this.activeTab = 0;
         return;
@@ -381,32 +403,46 @@ export default {
     onExpertEdit() {
       this.mode = "expert";
     },
+    applyDefaultSnippetContent({ forExpert = false } = {}) {
+      const defaults = this.defaultSnippetContent;
+      if (defaults.hasBlocks) {
+        this.blocks = defaults.blocks;
+      } else {
+        this.blocks = [];
+      }
+      this.expertHtml =
+        forExpert && defaults.fullHtml
+          ? defaults.fullHtml
+          : defaults.bodyHtml;
+      return defaults;
+    },
     startFromScratch() {
       this.expertConfirmed = true;
-      this.blocks = this.snippetKey
-        ? buildSnippetDefaultBlocks(this.snippetKey)
-        : [];
-      this.expertHtml = renderBlocksToHtml(this.blocks);
+      const defaults = this.applyDefaultSnippetContent();
+      if (defaults.hasBlocks) {
+        this.expertHtml = renderBlocksToHtml(this.blocks);
+      }
       this.mode = "visual";
       this.activeTab = 0;
     },
     loadDefaultBlocks() {
       if (!this.hasDefaultBlocks) return;
       if (this.blocks && this.blocks.length) {
-        const ok = window.confirm(
-          "Aktuelle Inhalte im visuellen Editor mit der Standardvorlage überschreiben?"
-        );
-        if (!ok) return;
+        this.confirmLoadDefaultOpen = true;
+        return;
       }
-      this.blocks = buildSnippetDefaultBlocks(this.snippetKey);
+      this.applyDefaultSnippetContent();
+      this.mode = "visual";
+      this.activeTab = 0;
+    },
+    confirmLoadDefault() {
+      this.confirmLoadDefaultOpen = false;
+      this.applyDefaultSnippetContent();
       this.mode = "visual";
       this.activeTab = 0;
     },
     resetToDefault() {
-      if (this.hasDefaultBlocks) {
-        this.blocks = buildSnippetDefaultBlocks(this.snippetKey);
-      }
-      this.expertHtml = this.snippet ? this.snippet.defaultTemplate : "";
+      this.applyDefaultSnippetContent({ forExpert: true });
       this.expertConfirmed = true;
       this.mode = "expert";
     },

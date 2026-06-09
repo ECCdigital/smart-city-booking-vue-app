@@ -1,4 +1,5 @@
 import { cryptoRandomId } from "./BlockEditor/render/renderBlocksToHtml.js";
+import { extractBlockMetadata } from "./BlockEditor/render/parseMetadata.js";
 
 export const SNIPPET_KEYS = [
   "booking-confirmation",
@@ -252,11 +253,8 @@ export function getSnippetDefault(key) {
   return entry ? entry.defaultTemplate : "";
 }
 
-export function buildSnippetDefaultBlocks(key) {
-  const entry = getSnippetCatalogEntry(key);
-  if (!entry || !Array.isArray(entry.defaultBlocks)) return [];
-
-  return entry.defaultBlocks.map((rowTpl) => ({
+function cloneBlocksWithNewIds(blocks) {
+  return (blocks || []).map((rowTpl) => ({
     id: cryptoRandomId(),
     type: rowTpl.type || "row",
     columns: (rowTpl.columns || []).map((col) => ({
@@ -267,6 +265,43 @@ export function buildSnippetDefaultBlocks(key) {
       })),
     })),
   }));
+}
+
+export function buildSnippetDefaultBlocks(key) {
+  const entry = getSnippetCatalogEntry(key);
+  if (!entry || !Array.isArray(entry.defaultBlocks)) return [];
+
+  return cloneBlocksWithNewIds(entry.defaultBlocks);
+}
+
+export function resolveDefaultSnippetContent(key, remoteSnippets = {}) {
+  const remoteHtml = remoteSnippets[key];
+  if (remoteHtml && String(remoteHtml).trim()) {
+    const { blocks, body } = extractBlockMetadata(remoteHtml);
+    if (blocks && blocks.length) {
+      return {
+        fullHtml: remoteHtml,
+        blocks: cloneBlocksWithNewIds(blocks),
+        bodyHtml: body || remoteHtml,
+        hasBlocks: true,
+      };
+    }
+    return {
+      fullHtml: remoteHtml,
+      blocks: [],
+      bodyHtml: remoteHtml,
+      hasBlocks: false,
+    };
+  }
+
+  const entry = getSnippetCatalogEntry(key);
+  const catalogBlocks = buildSnippetDefaultBlocks(key);
+  return {
+    fullHtml: entry ? entry.defaultTemplate : "",
+    blocks: catalogBlocks,
+    bodyHtml: entry ? entry.defaultTemplate : "",
+    hasBlocks: catalogBlocks.length > 0,
+  };
 }
 
 export const MAX_SNIPPET_SIZE_BYTES = 50 * 1024;

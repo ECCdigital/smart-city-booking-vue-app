@@ -40,17 +40,6 @@
             <v-icon small left>mdi-pencil</v-icon>
             Bearbeiten
           </v-btn>
-          <v-btn
-            small
-            text
-            color="error"
-            class="mb-1"
-            :disabled="!hasAnyOverride(snippet.key)"
-            @click="onReset(snippet.key)"
-          >
-            <v-icon small left>mdi-restore</v-icon>
-            Auf Standard zurücksetzen
-          </v-btn>
         </v-col>
       </v-row>
     </AppPanel>
@@ -60,6 +49,7 @@
       :snippet-key="activeKey"
       :value="activeValue"
       :subject="activeSubject"
+      :default-mail-snippets="defaultMailSnippets"
       :layout-template="layoutTemplate"
       :tenant-name="tenantName"
       @close="dialogOpen = false"
@@ -79,6 +69,7 @@ export default {
   props: {
     mailSnippets: { type: Object, default: () => ({}) },
     mailSubjects: { type: Object, default: () => ({}) },
+    defaultMailSnippets: { type: Object, default: () => ({}) },
     layoutTemplate: { type: String, default: "" },
     tenantName: { type: String, default: "" },
   },
