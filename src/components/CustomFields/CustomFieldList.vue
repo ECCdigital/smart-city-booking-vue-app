@@ -86,6 +86,34 @@
                 >
                   Katalog
                 </v-chip>
+                <v-chip
+                  v-if="
+                    field.usageOptions &&
+                    field.usageOptions.context === 'catalog' &&
+                    field.usageOptions.filterable
+                  "
+                  x-small
+                  color="green darken-2"
+                  dark
+                  label
+                  class="mr-1 mb-1"
+                >
+                  Filter
+                </v-chip>
+                <v-chip
+                  v-if="
+                    field.usageOptions &&
+                    field.usageOptions.detailDisplayPosition &&
+                    field.usageOptions.detailDisplayPosition !== 'none'
+                  "
+                  x-small
+                  color="deep-purple"
+                  dark
+                  label
+                  class="mr-1 mb-1"
+                >
+                  Detailansicht
+                </v-chip>
                 <span
                   v-if="!hasAnyTag(field)"
                   class="text--disabled text-caption"
@@ -166,18 +194,39 @@
                 <span class="text-caption text--secondary">
                   Katalog-Filter:
                 </span>
-                {{
-                  field.usageOptions.catalogFilterType
-                    ? filterTypeLabel(field.usageOptions.catalogFilterType)
-                    : "Keiner"
-                }}
-                <span class="text--secondary">
-                  ({{
-                    filterPositionLabel(
-                      field.usageOptions.catalogFilterPosition
-                    )
-                  }})
+                <template v-if="field.usageOptions.filterable">
+                  {{
+                    field.usageOptions.catalogFilterType
+                      ? filterTypeLabel(field.usageOptions.catalogFilterType)
+                      : "Keiner"
+                  }}
+                  <span class="text--secondary">
+                    ({{
+                      filterPositionLabel(
+                        field.usageOptions.catalogFilterPosition
+                      )
+                    }})
+                  </span>
+                </template>
+                <template v-else> Nicht filterbar (nur Info) </template>
+              </div>
+
+              <div
+                v-if="
+                  field.usageOptions &&
+                  field.usageOptions.detailDisplayPosition &&
+                  field.usageOptions.detailDisplayPosition !== 'none'
+                "
+                class="mb-2"
+              >
+                <span class="text-caption text--secondary">
+                  Detailansicht:
                 </span>
+                {{
+                  detailDisplayPositionLabel(
+                    field.usageOptions.detailDisplayPosition
+                  )
+                }}
               </div>
             </v-col>
           </v-row>
@@ -313,9 +362,21 @@ export default {
       };
       return map[p] || p;
     },
+    detailDisplayPositionLabel(p) {
+      const map = {
+        none: "Nicht anzeigen",
+        badge: "Badge (über Beschreibung)",
+        belowDescription: "Unterhalb der Beschreibung",
+        moreInfo: "Mehr Informationen (rechts)",
+      };
+      return map[p] || p;
+    },
     hasAnyTag(field) {
       const u = field.usageOptions || {};
-      return u.context !== "none";
+      return (
+        u.context !== "none" ||
+        (u.detailDisplayPosition && u.detailDisplayPosition !== "none")
+      );
     },
 
     // ---- CRUD ----

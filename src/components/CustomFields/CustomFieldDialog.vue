@@ -166,11 +166,26 @@
 
             <template v-if="local.usageOptions.context === 'catalog'">
               <v-row dense class="mt-2">
+                <v-col cols="12">
+                  <v-switch
+                    v-model="local.usageOptions.filterable"
+                    label="Filterbar im Katalog"
+                    hint="Wenn deaktiviert, wird das Feld im Katalog nur als Info angezeigt und nicht als Filter."
+                    persistent-hint
+                    color="primary"
+                    class="mt-0 pt-0"
+                    dense
+                  />
+                </v-col>
+              </v-row>
+
+              <v-row v-if="local.usageOptions.filterable" dense class="mt-2">
                 <v-col cols="12" md="6">
                   <v-select
                     v-model="local.usageOptions.catalogFilterType"
                     :items="filterTypes"
                     label="Filtertyp im Katalog"
+                    :rules="[rules.required]"
                     background-color="accent"
                     filled
                     dense
@@ -205,11 +220,32 @@
                     background-color="accent"
                     filled
                     dense
-                    disabled
                   />
                 </v-col>
               </v-row>
             </template>
+
+            <v-row dense class="mt-2">
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="local.usageOptions.detailDisplayPosition"
+                  :items="detailDisplayPositions"
+                  label="Anzeige in Detailansicht"
+                  background-color="accent"
+                  filled
+                  dense
+                >
+                  <template v-slot:item="{ item }">
+                    <div class="d-flex align-center my-1">
+                      <div class="mx-1">
+                        {{ item.text }}
+                        <div class="caption">{{ item.description }}</div>
+                      </div>
+                    </div>
+                  </template>
+                </v-select>
+              </v-col>
+            </v-row>
           </template>
         </v-form>
       </v-card-text>
@@ -236,8 +272,10 @@ const makeEmptyField = () => ({
   usageOptions: {
     context: "none",
     requiredInCheckout: false,
+    filterable: false,
     catalogFilterType: null,
     catalogFilterPosition: "sidebar",
+    detailDisplayPosition: "none",
   },
 });
 
@@ -271,6 +309,12 @@ export default {
         { text: "Seitenleiste", value: "sidebar" },
         { text: "Navigation", value: "navigation" },
         { text: "Suchleiste", value: "searchbar" },
+      ],
+      detailDisplayPositions: [
+        { text: "Nicht anzeigen", value: "none", description: "Feld erscheint nicht in der Detailansicht" },
+        { text: "Badge (über Beschreibung)", value: "badge", description: "Als Badge oberhalb des Beschreibungstexts" },
+        { text: "Unterhalb der Beschreibung", value: "belowDescription", description: "Direkt unter dem Beschreibungstext" },
+        { text: "Mehr Informationen (rechts)", value: "moreInfo", description: "Im separaten Info-Bereich rechts" },
       ],
       rules: {
         required: (v) => !!v || "Pflichtfeld",
@@ -334,8 +378,14 @@ export default {
         this.local.usageOptions.requiredInCheckout = false;
       }
       if (v !== "catalog") {
+        this.local.usageOptions.filterable = false;
         this.local.usageOptions.catalogFilterType = null;
         this.local.usageOptions.catalogFilterPosition = "sidebar";
+      }
+    },
+    "local.usageOptions.filterable"(v) {
+      if (!v) {
+        this.local.usageOptions.catalogFilterType = null;
       }
     },
   },
@@ -359,9 +409,34 @@ export default {
     close() {
       this.$emit("input", false);
     },
+    normalizeUsageOptions(usageOptions) {
+      const u = { ...usageOptions };
+
+      if (u.context !== "catalog") {
+        u.filterable = false;
+      }
+      if (u.filterable && !u.catalogFilterType) {
+        u.filterable = false;
+      }
+      if (!u.filterable) {
+        u.catalogFilterType = null;
+      }
+
+      const validDetailPositions = this.detailDisplayPositions.map(
+        (p) => p.value
+      );
+      if (!validDetailPositions.includes(u.detailDisplayPosition)) {
+        u.detailDisplayPosition = "none";
+      }
+
+      return u;
+    },
     save() {
       if (!this.$refs.form.validate()) return;
       const payload = JSON.parse(JSON.stringify(this.local));
+      payload.usageOptions = this.normalizeUsageOptions(
+        payload.usageOptions || {}
+      );
       if (!this.isEdit) {
         payload.id = this.generateUUID();
       }
