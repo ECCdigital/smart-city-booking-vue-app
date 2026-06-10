@@ -62,10 +62,21 @@ http {
       root /app;
       add_header X-Frame-Options "SAMEORIGIN" always;
       add_header Content-Security-Policy "frame-ancestors 'self'" always;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    }
+    location = /index.html {
+      root /app;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    }
+    location ~* ^/(js|css|img|fonts)/ {
+      root /app;
+      try_files $uri =404;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
     }
     location / {
       root   /app;
       index  index.html;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
       try_files $uri $uri/ /index.html;
     }
   }
@@ -101,10 +112,32 @@ http {
       alias /app/silent-check-sso.html;
       add_header X-Frame-Options "SAMEORIGIN" always;
       add_header Content-Security-Policy "frame-ancestors 'self'" always;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    }
+    location = ${LOCATION_PATH}/index.html {
+      alias /app/index.html;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    }
+    location ^~ ${LOCATION_PATH}/js/ {
+      alias /app/js/;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+    location ^~ ${LOCATION_PATH}/css/ {
+      alias /app/css/;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+    location ^~ ${LOCATION_PATH}/img/ {
+      alias /app/img/;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+    location ^~ ${LOCATION_PATH}/fonts/ {
+      alias /app/fonts/;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
     }
     location ${LOCATION_PATH}/ {
       alias /app/;
       index index.html;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
       try_files \$uri \$uri/ ${LOCATION_PATH}/index.html;
     }
   }
