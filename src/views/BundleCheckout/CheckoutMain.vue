@@ -412,26 +412,41 @@ export default {
       this.coupon = null;
     },
 
+    fillContactDetailsFromUser(user) {
+      this.contactDetails.mail = user?.id || null;
+      this.contactDetails.name =
+        [user?.firstName, user?.lastName].filter(Boolean).join(" ") || null;
+      this.contactDetails.phone = user?.phone || null;
+      this.contactDetails.street = user?.address || null;
+      this.contactDetails.zipCode = user?.zipCode || null;
+      this.contactDetails.location = user?.city || null;
+      this.contactDetails.company = user?.company || null;
+    },
+
+    clearContactDetailsUserFields() {
+      this.contactDetails.mail = null;
+      this.contactDetails.name = null;
+      this.contactDetails.phone = null;
+      this.contactDetails.street = null;
+      this.contactDetails.zipCode = null;
+      this.contactDetails.location = null;
+      this.contactDetails.company = null;
+    },
+
     async fetchMe() {
       try {
         const { data } = await ApiAuthService.me(true);
         this.me = data.user;
-        this.contactDetails.mail = this.me.id;
-        this.contactDetails.name = this.me.firstName + " " + this.me.lastName;
-        this.contactDetails.phone = this.me.phone;
-        this.contactDetails.street = this.me.address;
-        this.contactDetails.zipCode = this.me.zipCode;
-        this.contactDetails.location = this.me.city;
-        this.contactDetails.company = this.me.company;
+        this.fillContactDetailsFromUser(this.me);
       } catch (error) {
+        if (this.user) {
+          this.me = this.user;
+          this.fillContactDetailsFromUser(this.user);
+          return;
+        }
+
         this.me = null;
-        this.contactDetails.mail = null;
-        this.contactDetails.name = null;
-        this.contactDetails.phone = null;
-        this.contactDetails.street = null;
-        this.contactDetails.zipCode = null;
-        this.contactDetails.location = null;
-        this.contactDetails.company = null;
+        this.clearContactDetailsUserFields();
       }
     },
 

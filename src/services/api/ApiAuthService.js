@@ -39,9 +39,12 @@ export default {
   async silentSsoCheck(ssoConfig) {
     if (!ssoConfig) return null;
 
-    keycloakService.setConfig(ssoConfig);
+    let authenticated = await keycloakService.restoreFromStoredTokens(ssoConfig);
 
-    const authenticated = await keycloakService.silentCheck();
+    if (!authenticated) {
+      keycloakService.setConfig(ssoConfig);
+      authenticated = await keycloakService.silentCheck();
+    }
 
     if (!authenticated) {
       return null;
