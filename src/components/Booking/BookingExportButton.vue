@@ -55,8 +55,10 @@ export default {
         { header: "Endzeit", key: "Endzeit", width: 20 },
         { header: "Bestätigt", key: "Bestätigt", width: 12 },
 
-        { header: "Preis (EUR)", key: "Preis", width: 15 },
-        { header: "MwSt (EUR)", key: "MwSt", width: 15 },
+        { header: "Endpreis (brutto in EUR)", key: "Preis", width: 20 },
+        { header: "End-MwSt (EUR)", key: "MwSt", width: 15 },
+        { header: "Grundpreis (brutto in EUR)", key: "regularPreis", width: 15 },
+        { header: "Grund-MwSt (EUR)", key: "regularMwSt", width: 15 },
 
         { header: "Bezahlt", key: "Bezahlt", width: 12 },
         { header: "Payment Provider", key: "PaymentProvider", width: 15 },
@@ -73,6 +75,8 @@ export default {
 
       worksheet.getColumn("Preis").numFmt = "#,##0.00 €";
       worksheet.getColumn("MwSt").numFmt = "#,##0.00 €";
+      worksheet.getColumn("regularPreis").numFmt = "#,##0.00 €";
+      worksheet.getColumn("regularMwSt").numFmt = "#,##0.00 €";
 
       worksheet.getColumn("Startzeit").numFmt = "dd.mm.yy hh:mm";
       worksheet.getColumn("Endzeit").numFmt = "dd.mm.yy hh:mm";
@@ -110,6 +114,8 @@ export default {
 
           Preis: booking.priceEur || 0,
           MwSt: booking.vatIncludedEur || 0,
+          regularPreis: this.getRegularGrossPriceSum(booking) || 0,
+          regularMwSt: this.getRegularVatIncludedSum(booking) || 0,
 
           Bezahlt: booking.isPayed ? "Ja" : "Nein",
           PaymentProvider: booking.PaymentProvider || "",
@@ -199,6 +205,28 @@ export default {
     getDescription(description) {
       if (!description) return "";
       return description.replace(/<[^>]*>/g, "");
+    },
+    getRegularGrossPriceSum(booking){
+      let regularGrossPrice = 0;
+      if (booking.bookableItems && booking.bookableItems.length > 0) {
+        booking.bookableItems.forEach((item) => {
+          if (item.regularGrossPriceEur) {
+            regularGrossPrice += item.regularGrossPriceEur;
+          }
+        });
+      }
+      return regularGrossPrice;
+    },
+    getRegularVatIncludedSum(booking){
+      let regularVatIncluded = 0;
+      if (booking.bookableItems && booking.bookableItems.length > 0) {
+        booking.bookableItems.forEach((item) => {
+          if (item.regularGrossPriceEur && item.regularPriceEur) {
+            regularVatIncluded += (item.regularGrossPriceEur - item.regularPriceEur);
+          }
+        });
+      }
+      return regularVatIncluded;
     },
     getPaymentMethod(method) {
       switch (method) {
