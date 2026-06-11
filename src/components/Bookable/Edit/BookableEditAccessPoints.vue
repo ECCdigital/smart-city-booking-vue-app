@@ -1,5 +1,4 @@
 <script>
-import BaseSection from "@/components/commons/BaseSection.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { mapGetters } from "vuex";
@@ -9,7 +8,6 @@ const MAX_BUFFER_MINUTES = 1440;
 
 export default {
   name: "BookableEditAccessPoints",
-  components: { BaseSection },
   props: {
     bookable: { type: Object, required: true },
   },
@@ -147,6 +145,12 @@ export default {
     }
   },
   methods: {
+    validate() {
+      return this.$refs.form ? this.$refs.form.validate() : true;
+    },
+    resetValidation() {
+      if (this.$refs.form) this.$refs.form.resetValidation();
+    },
     async fetchAccessApps() {
       if (!this.tenantId) return;
 
@@ -322,44 +326,39 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <BaseSection
-      :title="$t('accessPoint.bookable.title')"
-      icon="mdi-door-open"
-    />
+    <v-card outlined class="component-card pa-4">
+      <div class="d-flex align-center">
+        <v-icon class="mr-2" color="primary">mdi-door-open</v-icon>
+        <span class="text-h6">{{ $t("accessPoint.bookable.title") }}</span>
+      </div>
+      <v-divider class="mt-3 mb-4" />
 
-    <v-switch
-      v-model="accessPointDetails.active"
-      :label="$t('accessPoint.bookable.activate')"
-      hide-details
-      color="primary"
-      class="mt-0"
-    >
-      <template v-slot:label>
-        <div>
-          <div class="font-weight-medium">
-            {{ $t("accessPoint.bookable.activate") }}
+      <v-switch
+        v-model="accessPointDetails.active"
+        hide-details
+        color="primary"
+        class="mt-0"
+      >
+        <template v-slot:label>
+          <div>
+            <div class="font-weight-medium">
+              {{ $t("accessPoint.bookable.activate") }}
+            </div>
+            <div class="text-caption text--secondary">
+              {{ $t("accessPoint.bookable.activateHint") }}
+            </div>
           </div>
-          <div class="text-caption text--secondary">
-            {{ $t("accessPoint.bookable.activateHint") }}
-          </div>
+        </template>
+      </v-switch>
+
+      <!-- Pufferzeiten -->
+      <div v-if="accessPointDetails.active" class="mt-6">
+        <div class="section-title mb-3">
+          <v-icon small left>mdi-timer-sand</v-icon>
+          <span class="font-weight-medium">{{
+            $t("accessPoint.bookable.buffer.title")
+          }}</span>
         </div>
-      </template>
-    </v-switch>
-
-    <v-card
-      v-if="accessPointDetails.active"
-      class="my-6 section-card"
-      elevation="2"
-      outlined
-    >
-      <v-card-title class="section-header pa-4">
-        <v-icon class="mr-2">mdi-timer-sand</v-icon>
-        <span class="text-h6 font-weight-bold">{{
-          $t("accessPoint.bookable.buffer.title")
-        }}</span>
-      </v-card-title>
-      <v-divider />
-      <v-card-text class="pa-4">
         <div class="text-caption text--secondary mb-4">
           {{ $t("accessPoint.bookable.buffer.hint") }}
         </div>
@@ -399,39 +398,32 @@ export default {
             />
           </v-col>
         </v-row>
-      </v-card-text>
-    </v-card>
+      </div>
 
-    <v-card
-      v-if="accessPointDetails.active"
-      class="my-6 section-card"
-      elevation="2"
-      outlined
-    >
-      <v-card-title
-        class="section-header pa-4 d-flex justify-space-between align-center"
-      >
-        <div>
-          <v-icon class="mr-2">mdi-door</v-icon>
-          <span class="text-h6 font-weight-bold">{{
-            $t("accessPoint.bookable.nukiDoors")
-          }}</span>
-        </div>
-        <v-btn
-          small
-          text
-          color="primary"
-          :loading="loadingAccessPoints"
-          :disabled="!activeNukiApp || loadingAccessPoints"
-          @click="fetchAccessPoints"
+      <!-- Nuki-Türen -->
+      <div v-if="accessPointDetails.active" class="mt-6">
+        <div
+          class="section-title mb-3 d-flex justify-space-between align-center"
         >
-          <v-icon left small>mdi-refresh</v-icon>
-          {{ $t("accessPoint.bookable.reload") }}
-        </v-btn>
-      </v-card-title>
-      <v-divider />
+          <div>
+            <v-icon small left>mdi-door</v-icon>
+            <span class="font-weight-medium">{{
+              $t("accessPoint.bookable.nukiDoors")
+            }}</span>
+          </div>
+          <v-btn
+            small
+            text
+            color="primary"
+            :loading="loadingAccessPoints"
+            :disabled="!activeNukiApp || loadingAccessPoints"
+            @click="fetchAccessPoints"
+          >
+            <v-icon left small>mdi-refresh</v-icon>
+            {{ $t("accessPoint.bookable.reload") }}
+          </v-btn>
+        </div>
 
-      <v-card-text class="pa-4">
         <v-alert
           v-if="!activeNukiApp && !loadingApps"
           color="info"
@@ -440,9 +432,7 @@ export default {
           class="mb-4"
         >
           <div class="d-flex align-center">
-            <v-icon class="mr-3" color="info">
-              mdi-information-outline
-            </v-icon>
+            <v-icon class="mr-3" color="info"> mdi-information-outline </v-icon>
             <div>
               {{ $t("accessPoint.bookable.nukiInactive") }}
             </div>
@@ -467,7 +457,9 @@ export default {
           <div class="d-flex align-start mb-1">
             <v-icon small color="info" class="mr-2 mt-1">mdi-dialpad</v-icon>
             <div class="text-caption">
-              <strong>{{ $t("accessPoint.bookable.modeAuthorization") }}:</strong>
+              <strong
+                >{{ $t("accessPoint.bookable.modeAuthorization") }}:</strong
+              >
               {{ $t("accessPoint.bookable.modeAuthorizationDesc") }}
             </div>
           </div>
@@ -510,10 +502,7 @@ export default {
                     {{ item.provider || "nuki" }} •
                     {{ item.externalId || item.id }}
                   </div>
-                  <div
-                    v-if="item.disabled"
-                    class="text-caption error--text"
-                  >
+                  <div v-if="item.disabled" class="text-caption error--text">
                     {{ $t("accessPoint.bookable.notAssignable") }}
                   </div>
                 </div>
@@ -532,133 +521,127 @@ export default {
           </v-col>
         </v-row>
 
-        <v-divider
-          v-if="accessPointDetails.points.length > 0"
-          class="my-4"
-        />
+        <v-divider v-if="accessPointDetails.points.length > 0" class="my-4" />
 
         <div v-if="accessPointDetails.points.length > 0">
-          <v-card
+          <div
             v-for="(point, idx) in accessPointDetails.points"
             :key="`access-point-${point.externalId}-${idx}`"
-            class="mb-3 point-card"
-            outlined
+            class="point-row pa-4 mb-3"
           >
-            <v-card-text class="pa-4">
-              <v-row align="center">
-                <v-col cols="12" md="5">
-                  <div class="font-weight-medium">
-                    {{ point.label || point.externalId }}
-                  </div>
-                  <div class="text-caption text--secondary">
-                    {{ point.provider || "nuki" }} • {{ point.externalId }}
-                  </div>
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="point.mode"
-                    :items="modeOptionsForPoint(point)"
-                    :label="$t('accessPoint.bookable.mode')"
+            <v-row align="center">
+              <v-col cols="12" md="5">
+                <div class="font-weight-medium">
+                  {{ point.label || point.externalId }}
+                </div>
+                <div class="text-caption text--secondary">
+                  {{ point.provider || "nuki" }} • {{ point.externalId }}
+                </div>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="point.mode"
+                  :items="modeOptionsForPoint(point)"
+                  :label="$t('accessPoint.bookable.mode')"
+                  background-color="accent"
+                  filled
+                  :disabled="isUnassignable(point)"
+                  :hint="modeHint(point)"
+                  persistent-hint
+                >
+                  <template v-slot:selection="{ item }">
+                    <v-icon small class="mr-2">{{ item.icon }}</v-icon>
+                    <span>{{ item.text }}</span>
+                  </template>
+                  <template v-slot:item="{ item }">
+                    <v-list-item-icon class="mr-3 align-self-center">
+                      <v-icon>{{ item.icon }}</v-icon>
+                    </v-list-item-icon>
+                    <v-list-item-content>
+                      <v-list-item-title class="font-weight-medium">
+                        {{ item.text }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle
+                        class="text-wrap"
+                        style="white-space: normal"
+                      >
+                        {{ item.description }}
+                      </v-list-item-subtitle>
+                    </v-list-item-content>
+                  </template>
+                </v-select>
+              </v-col>
+              <v-col cols="12" md="1" class="text-right">
+                <v-btn icon small @click="removeAccessPoint(idx)">
+                  <v-icon small>mdi-delete-outline</v-icon>
+                </v-btn>
+              </v-col>
+            </v-row>
+
+            <v-divider class="my-3" />
+
+            <v-switch
+              :input-value="hasPointBuffer(point)"
+              hide-details
+              dense
+              color="primary"
+              class="mt-0 mb-2"
+              @change="togglePointBuffer(point, $event)"
+            >
+              <template v-slot:label>
+                <span class="text-caption">
+                  {{ $t("accessPoint.bookable.buffer.overrideLabel") }}
+                </span>
+              </template>
+            </v-switch>
+
+            <v-expand-transition>
+              <v-row v-if="hasPointBuffer(point)" dense>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    :value="point.accessBuffer.before"
+                    type="number"
+                    min="0"
+                    :max="1440"
+                    step="1"
+                    :label="$t('accessPoint.bookable.buffer.before')"
+                    :suffix="$t('accessPoint.bookable.buffer.minutes')"
+                    :rules="bufferRules"
                     background-color="accent"
                     filled
-                    :disabled="isUnassignable(point)"
-                    :hint="modeHint(point)"
-                    persistent-hint
-                  >
-                    <template v-slot:selection="{ item }">
-                      <v-icon small class="mr-2">{{ item.icon }}</v-icon>
-                      <span>{{ item.text }}</span>
-                    </template>
-                    <template v-slot:item="{ item }">
-                      <v-list-item-icon class="mr-3 align-self-center">
-                        <v-icon>{{ item.icon }}</v-icon>
-                      </v-list-item-icon>
-                      <v-list-item-content>
-                        <v-list-item-title class="font-weight-medium">
-                          {{ item.text }}
-                        </v-list-item-title>
-                        <v-list-item-subtitle
-                          class="text-wrap"
-                          style="white-space: normal"
-                        >
-                          {{ item.description }}
-                        </v-list-item-subtitle>
-                      </v-list-item-content>
-                    </template>
-                  </v-select>
+                    dense
+                    prepend-inner-icon="mdi-clock-start"
+                    @input="setPointBuffer(point, 'before', $event)"
+                  />
                 </v-col>
-                <v-col cols="12" md="1" class="text-right">
-                  <v-btn icon small @click="removeAccessPoint(idx)">
-                    <v-icon small>mdi-delete-outline</v-icon>
-                  </v-btn>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    :value="point.accessBuffer.after"
+                    type="number"
+                    min="0"
+                    :max="1440"
+                    step="1"
+                    :label="$t('accessPoint.bookable.buffer.after')"
+                    :suffix="$t('accessPoint.bookable.buffer.minutes')"
+                    :rules="bufferRules"
+                    background-color="accent"
+                    filled
+                    dense
+                    prepend-inner-icon="mdi-clock-end"
+                    @input="setPointBuffer(point, 'after', $event)"
+                  />
                 </v-col>
               </v-row>
-
-              <v-divider class="my-3" />
-
-              <v-switch
-                :input-value="hasPointBuffer(point)"
-                hide-details
-                dense
-                color="primary"
-                class="mt-0 mb-2"
-                @change="togglePointBuffer(point, $event)"
-              >
-                <template v-slot:label>
-                  <span class="text-caption">
-                    {{ $t("accessPoint.bookable.buffer.overrideLabel") }}
-                  </span>
-                </template>
-              </v-switch>
-
-              <v-expand-transition>
-                <v-row v-if="hasPointBuffer(point)" dense>
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      :value="point.accessBuffer.before"
-                      type="number"
-                      min="0"
-                      :max="1440"
-                      step="1"
-                      :label="$t('accessPoint.bookable.buffer.before')"
-                      :suffix="$t('accessPoint.bookable.buffer.minutes')"
-                      :rules="bufferRules"
-                      background-color="accent"
-                      filled
-                      dense
-                      prepend-inner-icon="mdi-clock-start"
-                      @input="setPointBuffer(point, 'before', $event)"
-                    />
-                  </v-col>
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      :value="point.accessBuffer.after"
-                      type="number"
-                      min="0"
-                      :max="1440"
-                      step="1"
-                      :label="$t('accessPoint.bookable.buffer.after')"
-                      :suffix="$t('accessPoint.bookable.buffer.minutes')"
-                      :rules="bufferRules"
-                      background-color="accent"
-                      filled
-                      dense
-                      prepend-inner-icon="mdi-clock-end"
-                      @input="setPointBuffer(point, 'after', $event)"
-                    />
-                  </v-col>
-                </v-row>
-                <div v-else class="text-caption text--secondary mb-1">
-                  {{
-                    $t("accessPoint.bookable.buffer.inherited", {
-                      before: accessBuffer.before || 0,
-                      after: accessBuffer.after || 0,
-                    })
-                  }}
-                </div>
-              </v-expand-transition>
-            </v-card-text>
-          </v-card>
+              <div v-else class="text-caption text--secondary mb-1">
+                {{
+                  $t("accessPoint.bookable.buffer.inherited", {
+                    before: accessBuffer.before || 0,
+                    after: accessBuffer.after || 0,
+                  })
+                }}
+              </div>
+            </v-expand-transition>
+          </div>
         </div>
 
         <div v-else class="text-center py-6">
@@ -672,32 +655,32 @@ export default {
             {{ $t("accessPoint.bookable.emptyHint") }}
           </div>
         </div>
-      </v-card-text>
+      </div>
     </v-card>
   </v-form>
 </template>
 
 <style scoped>
-.section-card {
+.component-card {
   border-radius: 8px !important;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
 }
-.section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.02) 0%,
-    rgba(0, 0, 0, 0.01) 100%
-  );
+.section-title {
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  color: rgba(0, 0, 0, 0.7);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding-bottom: 4px;
 }
-.theme--dark .section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
+.theme--dark .section-title {
+  color: rgba(255, 255, 255, 0.8);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
 }
-
-.point-card {
-  border-radius: 8px !important;
+.point-row {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+}
+.theme--dark .point-row {
+  border-color: rgba(255, 255, 255, 0.12);
 }
 </style>

@@ -173,17 +173,49 @@ export default {
 </script>
 
 <template>
-  <BaseSection :title="$t('accessPoint.tenant.title')" icon="mdi-door">
+  <BaseSection
+    :title="$t('accessPoint.tenant.title')"
+    icon="mdi-door"
+    :hint="$t('accessPoint.tenant.sectionHint')"
+  >
     <v-form ref="form" v-model="valid">
       <v-row>
         <v-col>
           <!-- ============ NUKI ============ -->
           <AppPanel
             v-if="localApps.nuki"
+            title="Nuki"
             :logo="require('@/assets/nuki-logo.png')"
             :active="localApps.nuki.active"
             class="mb-2"
           >
+            <!-- Beschreibung -->
+            <v-alert color="primary" text dense class="provider-description mb-4 mt-2">
+              <div class="d-flex">
+                <v-icon color="primary" class="mr-3 mt-1">mdi-door</v-icon>
+                <div>
+                  <div class="font-weight-bold mb-1">
+                    {{ $t("accessPoint.tenant.providerTitle") }}
+                  </div>
+                  <div class="text-body-2">
+                    {{ $t("accessPoint.tenant.providerDescription") }}
+                  </div>
+                  <v-btn
+                    text
+                    small
+                    color="primary"
+                    class="px-0 mt-1"
+                    href="https://nuki.io"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <v-icon left small>mdi-open-in-new</v-icon>
+                    {{ $t("accessPoint.tenant.providerLink") }}
+                  </v-btn>
+                </div>
+              </div>
+            </v-alert>
+
             <!-- Aktivierung -->
             <v-row dense>
               <v-col cols="12">
@@ -393,9 +425,10 @@ export default {
             </v-row>
           </AppPanel>
 
-          <v-card v-if="allowAuditExport" outlined class="mb-2 pa-4">
+          <div v-if="allowAuditExport" class="mt-8">
+            <v-divider class="mb-6" />
             <AccessAuditExport :tenant="tenant.id" />
-          </v-card>
+          </div>
         </v-col>
       </v-row>
     </v-form>
@@ -421,5 +454,8 @@ export default {
 }
 .permissions-list li {
   margin-bottom: 2px;
+}
+.provider-description {
+  border-left: 3px solid var(--v-primary-base);
 }
 </style>

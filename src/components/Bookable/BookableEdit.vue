@@ -81,8 +81,7 @@ import SaveBar from "@/components/commons/SaveBar.vue";
 import Bookable from "@/entities/bookable";
 import { mapActions, mapGetters } from "vuex";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
-import BookableEditLockerSystems from "@/components/Bookable/Edit/BookableEditLockerSystems.vue";
-import BookableEditAccessPoints from "@/components/Bookable/Edit/BookableEditAccessPoints.vue";
+import BookableEditAccessLocks from "@/components/Bookable/Edit/BookableEditAccessLocks.vue";
 import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
 import BookableEditRelatedBookables from "@/components/Bookable/Edit/BookableEditRelatedBookables.vue";
 import BookableEditAttachments from "@/components/Bookable/Edit/BookableEditAttachments.vue";
@@ -102,8 +101,7 @@ export default {
     BookableEditPrice,
     BookableEditBookingType,
     BookableEditOpeningHours,
-    BookableEditLockerSystems,
-    BookableEditAccessPoints,
+    BookableEditAccessLocks,
     BookableEditPermissions,
     BookableEditRelatedBookables,
     BookableEditAttachments,
@@ -154,17 +152,10 @@ export default {
           comp: "BookableEditOpeningHours",
         },
         {
-          key: "lockerSystems",
+          key: "accessLocks",
           label: "Schließsysteme",
           icon: "mdi-lock-outline",
-          comp: "BookableEditLockerSystems",
-        },
-        {
-          key: "accessPoints",
-          label: "Türen / Zugang",
-          icon: "mdi-door-open",
-          comp: "BookableEditAccessPoints",
-          permission: "manageBookables",
+          comp: "BookableEditAccessLocks",
         },
         {
           key: "relatedBookables",

@@ -108,8 +108,7 @@ import TenantEditGeneral from "@/components/Tenant/Edit/TenantEditGeneral.vue";
 import TenantEditWeb from "@/components/Tenant/Edit/TenantEditWeb.vue";
 import TenantEditEmail from "@/components/Tenant/Edit/TenantEditEmail.vue";
 import TenantEditPayments from "@/components/Tenant/Edit/TenantEditPayments.vue";
-import TenantEditLocks from "@/components/Tenant/Edit/TenantEditLocks.vue";
-import TenantEditAccess from "@/components/Tenant/Edit/TenantEditAccess.vue";
+import TenantEditAccessLocks from "@/components/Tenant/Edit/TenantEditAccessLocks.vue";
 import TenantEditBooking from "@/components/Tenant/Edit/TenantEditBooking.vue";
 import TenantEditEvents from "@/components/Tenant/Edit/TenantEditEvents.vue";
 import TenantEditWorkflow from "@/components/Tenant/Edit/TenantEditWorkflow.vue";
@@ -135,8 +134,7 @@ export default {
     TenantEditWeb,
     TenantEditEmail,
     TenantEditPayments,
-    TenantEditLocks,
-    TenantEditAccess,
+    TenantEditAccessLocks,
     TenantEditBooking,
     TenantEditEvents,
     TenantEditWorkflow,
@@ -177,14 +175,7 @@ export default {
           key: "locks",
           label: "Schließsysteme",
           icon: "mdi-lock",
-          comp: "TenantEditLocks",
-        },
-        {
-          key: "access",
-          label: "Zugang",
-          icon: "mdi-door",
-          comp: "TenantEditAccess",
-          permission: "manageTenants",
+          comp: "TenantEditAccessLocks",
         },
         {
           key: "bookables",
