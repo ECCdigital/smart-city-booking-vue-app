@@ -18,6 +18,7 @@
               <template v-slot:activator="{ on: tooltip }">
                 <v-btn
                   icon
+                  class="menu-button"
                   v-bind="attrs"
                   v-on="{ ...tooltip, ...menu }"
                   @click.stop
@@ -29,6 +30,12 @@
             </v-tooltip>
           </template>
           <v-list dense>
+            <v-list-item link @click.stop="copyBookableId">
+              <v-list-item-icon>
+                <v-icon>mdi-identifier</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>ID kopieren</v-list-item-title>
+            </v-list-item>
             <v-list-item
               link
               @click.stop="emitDuplicateAction"
@@ -321,14 +328,45 @@
         </div>
       </div>
     </v-card-text>
+
+    <v-dialog
+      v-model="showDeleteDialog"
+      persistent
+      max-width="500px"
+      @click:outside.stop
+    >
+      <v-card color="accent">
+        <v-card-title>
+          <v-icon class="mr-2" color="error">mdi-alert</v-icon>
+          <span class="text-h5">Buchungsobjekt löschen</span>
+        </v-card-title>
+        <v-card-text>
+          <span class="text-h6">
+            Sind Sie sicher, dass Sie das Buchungsobjekt
+            <strong>{{ item.title }}</strong> löschen wollen?
+          </span>
+          <p class="text-body-2 grey--text text--darken-1 mt-3 mb-0">
+            Diese Aktion kann nicht rückgängig gemacht werden.
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn outlined @click.stop="showDeleteDialog = false">
+            Abbrechen
+          </v-btn>
+          <v-btn color="error" @click.stop="confirmDelete"> Löschen </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiLockerService from "@/services/api/ApiLockerService";
+import ToastService from "@/services/ToastService";
 import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
 
 export default {
@@ -347,11 +385,13 @@ export default {
       isDuplicateAllowed: true,
       isLoadingIfbsPrices: false,
       ifbsPrices: null,
+      showDeleteDialog: false,
     };
   },
   computed: {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
+      instance: "instance/instance",
     }),
     isDark() {
       return this.$vuetify?.theme?.dark || false;
@@ -442,6 +482,9 @@ export default {
     },
   },
   methods: {
+    ...mapActions({
+      addToast: "toasts/add",
+    }),
     navigateToEdit() {
       if (
         this.editRoute &&
@@ -514,17 +557,48 @@ export default {
       }
     },
     emitDeleteAction() {
+      this.showDeleteDialog = true;
+    },
+    confirmDelete() {
+      this.showDeleteDialog = false;
       this.$emit("delete");
     },
     emitDuplicateAction() {
       this.$emit("duplicate");
     },
     gotoCheckout() {
-      const routeData = this.$router.resolve({
-        name: "checkout",
-        query: { id: this.item.id, tenant: this.tenantId, amount: 1 },
-      });
-      window.open(routeData.href, "_blank");
+      const checkoutConfig = this.instance?.checkout || {};
+
+      if (checkoutConfig.useLegacyCheckout) {
+        const routeData = this.$router.resolve({
+          name: "checkout",
+          query: { id: this.item.id, tenant: this.tenantId, amount: 1 },
+        });
+        window.open(routeData.href, "_blank");
+        return;
+      }
+
+      if (checkoutConfig.checkoutUrl) {
+        const baseUrl = checkoutConfig.checkoutUrl.replace(/\/+$/, "");
+        const url = `${baseUrl}/checkout/${this.item.id}/?tenantId=${this.tenantId}`;
+        window.open(url, "_blank");
+      }
+    },
+    async copyBookableId() {
+      try {
+        await navigator.clipboard.writeText(this.item.id);
+        this.addToast(
+          ToastService.createToast("bookable.copyId.success", "success")
+        );
+      } catch (error) {
+        console.error("Failed to copy bookable id:", error);
+        this.addToast(
+          ToastService.createToast(
+            "bookable.copyId.errors.something-wrong",
+            "error"
+          )
+        );
+      }
     },
     shortenText(text) {
       return text.substring(0, 120) + (text.length > 120 ? " ..." : "");
@@ -670,6 +744,33 @@ export default {
   top: 8px;
   right: 8px;
   z-index: 2;
+}
+
+.menu-button {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 1) !important;
+  }
+
+  .v-icon {
+    color: rgba(0, 0, 0, 0.75);
+  }
+}
+
+.theme--dark .menu-button {
+  background-color: rgba(40, 40, 40, 0.85) !important;
+
+  &:hover {
+    background-color: rgba(60, 60, 60, 1) !important;
+  }
+
+  .v-icon {
+    color: rgba(255, 255, 255, 0.9);
+  }
 }
 
 .title-dynamic {

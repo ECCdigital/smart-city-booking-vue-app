@@ -117,6 +117,18 @@
           "message": "Leider ist ein Fehler beim Duplizieren aufgetreten. Bitte versuchen Sie es erneut."
         }
       }
+    },
+    "copyId": {
+      "success": {
+        "title": "ID kopiert",
+        "message": "Die ID des Buchungsobjekts wurde in die Zwischenablage kopiert."
+      },
+      "errors": {
+        "something-wrong": {
+          "title": "Fehler",
+          "message": "Die ID konnte nicht in die Zwischenablage kopiert werden."
+        }
+      }
     }
   },
   "event": {

@@ -707,6 +707,51 @@
         </v-card>
 
         <v-card
+          v-if="displayCustomFields.length > 0"
+          class="mb-6 section-card"
+          elevation="2"
+          outlined
+        >
+          <v-card-title class="section-header pa-4">
+            <v-icon class="mr-2">mdi-form-textbox</v-icon>
+            <span class="text-h6 font-weight-bold">Benutzerdefinierte Felder</span>
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text class="pa-4">
+            <v-row>
+              <v-col
+                v-for="field in displayCustomFields"
+                :key="field.id"
+                cols="12"
+                md="6"
+              >
+                <div class="info-item">
+                  <div class="info-label">
+                    <v-icon small class="mr-2">
+                      {{ customFieldIcon(field.inputType) }}
+                    </v-icon>
+                    {{ field.caption }}
+                  </div>
+                  <div class="info-value">
+                    <v-chip
+                      v-if="field.inputType === 'boolean'"
+                      small
+                      :color="field.rawValue ? 'success' : 'grey'"
+                      text-color="white"
+                    >
+                      {{ formatCustomFieldValue(field) }}
+                    </v-chip>
+                    <template v-else>
+                      {{ formatCustomFieldValue(field) }}
+                    </template>
+                  </div>
+                </div>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+
+        <v-card
           v-if="cancellationReceipts?.length > 0"
           class="mb-6 section-card"
           elevation="2"
@@ -1100,6 +1145,24 @@ export default {
         (item) => item._bookableUsed?.eventId
       );
     },
+    displayCustomFields() {
+      const definitions = this.booking.customFieldDefinitions || [];
+      const values = this.booking.customFieldValues || [];
+
+      return definitions
+        .map((definition) => {
+          const stored = values.find((v) => v.fieldId === definition.id);
+          return {
+            ...definition,
+            rawValue: stored != null ? stored.value : null,
+          };
+        })
+        .filter((field) => {
+          const { rawValue } = field;
+          if (rawValue === false || rawValue === 0) return true;
+          return rawValue != null && rawValue !== "";
+        });
+    },
     userCancellable() {
       return this.booking?.cancellationPolicy?.userCancellable !== false;
     },
@@ -1172,6 +1235,35 @@ export default {
       }
     },
 
+    customFieldIcon(inputType) {
+      const icons = {
+        string: "mdi-form-textbox",
+        text: "mdi-form-textarea",
+        numeric: "mdi-numeric",
+        boolean: "mdi-toggle-switch-outline",
+        select: "mdi-form-dropdown",
+      };
+      return icons[inputType] || "mdi-form-textbox";
+    },
+    formatCustomFieldValue(field) {
+      const value = field.rawValue;
+      if (value === null || value === undefined || value === "") {
+        return "-";
+      }
+
+      switch (field.inputType) {
+        case "boolean":
+          return value ? "Ja" : "Nein";
+        case "select": {
+          const option = (field.options || []).find((o) => o.value === value);
+          return option?.caption ?? String(value);
+        }
+        case "numeric":
+          return Intl.NumberFormat("de-DE").format(value);
+        default:
+          return String(value);
+      }
+    },
     getIfbsErrorMessage(errorCode) {
       return getIfbsErrorMessage(errorCode);
     },

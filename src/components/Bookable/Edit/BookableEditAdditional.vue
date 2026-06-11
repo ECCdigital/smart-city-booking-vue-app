@@ -11,10 +11,34 @@ export default {
       valid: true,
       availableFields: [
         {
+          id: "phone",
+          name: "Telefonnummer",
+          icon: "mdi-phone",
+          description: "Kontakttelefonnummer",
+        },
+        {
           id: "company",
           name: "Firma",
           icon: "mdi-office-building",
           description: "Firmenname des Kunden",
+        },
+        {
+          id: "address",
+          name: "Straße & Hausnummer",
+          icon: "mdi-map-marker",
+          description: "Adressangaben des Kunden",
+        },
+        {
+          id: "zipCode",
+          name: "Postleitzahl",
+          icon: "mdi-mailbox-outline",
+          description: "Adressangaben des Kunden",
+        },
+        {
+          id: "city",
+          name: "Stadt",
+          icon: "mdi-city",
+          description: "Adressangaben des Kunden",
         },
         {
           id: "comment",
@@ -23,12 +47,6 @@ export default {
           description: "Zusätzliche Anmerkungen zur Buchung",
         },
         /**
-        {
-          id: "phone",
-          name: "Telefonnummer",
-          icon: "mdi-phone",
-          description: "Kontakttelefonnummer",
-        },
         {
           id: "address",
           name: "Adresse",
@@ -142,7 +160,7 @@ export default {
         <div class="text-subtitle-2 mb-3 grey--text">Verfügbare Felder:</div>
         <v-list class="py-0">
           <v-list-item
-            v-for="(field, idx) in availableFields"
+            v-for="(field) in availableFields"
             :key="field.id"
             @click="toggleField(field.id)"
             class="field-item rounded mb-2"
