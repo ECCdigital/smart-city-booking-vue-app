@@ -39,9 +39,12 @@ export default {
   async silentSsoCheck(ssoConfig) {
     if (!ssoConfig) return null;
 
-    keycloakService.setConfig(ssoConfig);
+    let authenticated = await keycloakService.restoreFromStoredTokens(ssoConfig);
 
-    const authenticated = await keycloakService.silentCheck();
+    if (!authenticated) {
+      keycloakService.setConfig(ssoConfig);
+      authenticated = await keycloakService.silentCheck();
+    }
 
     if (!authenticated) {
       return null;
@@ -61,14 +64,23 @@ export default {
       }
     } catch (error) {
       console.debug("Silent SSO: User not found or error", error);
-      // Kein Fehler – User ist in Keycloak eingeloggt aber
-      // nicht im lokalen System registriert
     }
 
     return null;
   },
 
-  async register(tenant, id, firstName, lastName, company, password, nextUrl) {
+  async register(
+    tenant,
+    id,
+    firstName,
+    lastName,
+    company,
+    password,
+    nextUrl,
+    legalAcceptance,
+    invitationToken,
+    invitationTenantId
+  ) {
     const body = {
       id,
       firstName,
@@ -77,11 +89,30 @@ export default {
       password,
       nextUrl,
     };
+
+    if (legalAcceptance && Object.keys(legalAcceptance).length > 0) {
+      body.legalAcceptance = legalAcceptance;
+    }
+
+    if (invitationToken) {
+      body.invitationToken = invitationToken;
+    }
+
+    if (invitationTenantId) {
+      body.invitationTenantId = invitationTenantId;
+    }
+
     return ApiClient.post("auth/signup", body);
   },
 
-  async ssoRegister(token) {
-    return ApiClient.post("auth/sso/signup", { token });
+  async ssoRegister(token, legalAcceptance) {
+    const body = { token };
+
+    if (legalAcceptance && Object.keys(legalAcceptance).length > 0) {
+      body.legalAcceptance = legalAcceptance;
+    }
+
+    return ApiClient.post("auth/sso/signup", body);
   },
 
   /**
@@ -122,6 +153,44 @@ export default {
 
   async requestPasswordReset(email) {
     return ApiClient.post("auth/reset", { email });
+  },
+
+  async getCardAuthMethods() {
+    const response = await ApiClient.get("/auth/card-methods");
+    return response.data.methods;
+  },
+
+  async cardLogin(appId, publicId, secret) {
+    const response = await ApiClient.post("/auth/card/signin", {
+      appId,
+      publicId,
+      secret,
+    });
+
+    const data = response.data;
+
+    if (data.requiresRegistration) {
+      return {
+        requiresRegistration: true,
+        prefill: data.prefill,
+        cardInfo: data.cardInfo,
+      };
+    }
+
+    ApiClient.setTokens(data.accessToken, data.refreshToken);
+    return {
+      requiresRegistration: false,
+      user: data.user,
+      permissions: data.permissions,
+    };
+  },
+
+  async cardSignup(payload) {
+    const response = await ApiClient.post("/auth/card/signup", payload);
+    return {
+      status: response.data.status, // 'registered' | 'link_requested'
+      message: response.data.message,
+    };
   },
 
   isAuthenticated() {

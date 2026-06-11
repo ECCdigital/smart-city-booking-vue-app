@@ -63,6 +63,9 @@ export default {
   },
   mounted() {
     this.fetchRoles();
+    if (!this.model.cancellationPolicy) {
+      this.model.cancellationPolicy = { userCancellable: true };
+    }
   },
 };
 </script>
@@ -276,6 +279,26 @@ export default {
             </v-combobox>
           </v-col>
         </v-row>
+      </v-card-text>
+    </v-card>
+
+    <v-card class="mb-6 section-card" elevation="2" outlined>
+      <v-card-title class="section-header pa-4">
+        <v-icon class="mr-2">mdi-book-cancel-outline</v-icon>
+        <span class="text-h6 font-weight-bold">Stornierungsrichtlinie</span>
+      </v-card-title>
+      <v-divider></v-divider>
+      <v-card-text class="pa-4">
+        <v-switch
+          dense
+          label="Benutzer dürfen ihre Buchungen selbst stornieren"
+          hide-details
+          v-model="model.cancellationPolicy.userCancellable"
+        ></v-switch>
+        <p class="mb-0 mt-3 text-caption" style="max-width: 700px">
+          Wenn aktiviert, können Benutzer ihre eigenen Buchungen stornieren. Andernfalls ist eine Stornierung nur durch
+          Administratoren möglich.
+        </p>
       </v-card-text>
     </v-card>
   </v-form>

@@ -825,7 +825,7 @@ export default {
     tenantMailConfig: {
       get() {
         return {
-          mailTemplate: this.tenant.genericMailTemplate,
+          genericMailTemplate: this.tenant.genericMailTemplate,
           noreplyMail: this.tenant.noreplyMail,
           noreplyDisplayName: this.tenant.noreplyDisplayName,
           noreplyHost: this.tenant.noreplyHost,
@@ -901,6 +901,7 @@ export default {
       this.tenant.noreplyGraphTenantId = newConfig.noreplyGraphTenantId;
       this.tenant.noreplyGraphClientId = newConfig.noreplyGraphClientId;
       this.tenant.noreplyGraphClientSecret = newConfig.noreplyGraphClientSecret;
+      this.tenant.genericMailTemplate = newConfig.genericMailTemplate;
     },
     closeDialog() {
       this.$emit("close");

@@ -68,7 +68,6 @@ export default {
             filled
             dense
             label="Kontakt Person"
-            :rules="[(v) => !!v || 'Pflichtfeld']"
             v-model="model.contactName"
           />
         </v-col>
@@ -78,7 +77,6 @@ export default {
             filled
             dense
             label="Adresse"
-            :rules="[(v) => !!v || 'Pflichtfeld']"
             v-model="model.location"
           />
         </v-col>
@@ -90,9 +88,6 @@ export default {
             filled
             dense
             label="E-Mail Adresse"
-            :rules="[
-              (v) => !!v || 'Pflichtfeld',
-            ]"
             type="email"
             v-model="model.mail"
           />
@@ -103,7 +98,6 @@ export default {
             filled
             dense
             label="Telefonnummer"
-            :rules="[(v) => !!v || 'Pflichtfeld']"
             v-model="model.phone"
           />
         </v-col>
@@ -115,7 +109,6 @@ export default {
             filled
             dense
             label="Website"
-            :rules="[(v) => !!v || 'Pflichtfeld']"
             v-model="model.website"
           />
         </v-col>

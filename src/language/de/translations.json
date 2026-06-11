@@ -49,7 +49,7 @@
     "types": {
       "event-location": "Veranstaltungsort",
       "room": "Raum",
-      "resource": "Ressource",
+      "resource": "Gerät / Weiteres",
       "ticket": "Ticket"
     }
   },
@@ -613,7 +613,7 @@
       "rooms": "Räume",
       "locations": "Veranstaltungsorte",
       "events": "Veranstaltungen",
-      "resources": "Ressourcen",
+      "resources": "Geräte & Weiteres",
       "tickets": "Tickets",
       "bookings": "Buchungen",
       "coupons": "Rabatte",

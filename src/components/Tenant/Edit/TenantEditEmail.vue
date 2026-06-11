@@ -3,7 +3,11 @@
     <BaseSection
       title="E-Mail Konfiguration"
       icon="mdi-email"
-      :hint="model.useInstanceMail ? 'Es wird die Instanz-Konfiguration verwendet.' : ''"
+      :hint="
+        model.useInstanceMail
+          ? 'Es wird die Instanz-Konfiguration verwendet.'
+          : ''
+      "
     >
       <v-switch
         v-model="model.useInstanceMail"
@@ -18,6 +22,22 @@
         @update="updateMailConfig"
       />
     </BaseSection>
+
+    <BaseSection
+      title="E-Mail-Inhalte (Text & Betreff pro E-Mail)"
+      icon="mdi-text-box-edit-outline"
+      hint="Pro Mail-Typ lassen sich der Betreff (Subject) und der Mail-Body individuell anpassen. Strukturelle Bestandteile wie Buchungsdetails, Buttons und Footer werden automatisch ergänzt."
+      class="mt-6"
+    >
+      <SnippetList
+        :mail-snippets="tenant.mailSnippets || {}"
+        :mail-subjects="tenant.mailSubjects || {}"
+        :default-mail-snippets="defaultMailSnippets"
+        :layout-template="tenant.genericMailTemplate || ''"
+        :tenant-name="tenant.name || ''"
+        @update="updateMailOverrides"
+      />
+    </BaseSection>
   </v-form>
 </template>
 
@@ -25,16 +45,22 @@
 import BaseSection from "@/components/commons/BaseSection.vue";
 import debounce from "lodash/debounce";
 import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
+import SnippetList from "@/components/Mail/SnippetList.vue";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   name: "TenantEditEmail",
-  components: { MailKonfiguration, BaseSection },
+  components: { SnippetList, MailKonfiguration, BaseSection },
   props: { tenant: Object },
-  data: () => ({ valid: false }),
+  data: () => ({
+    valid: false,
+    defaultMailSnippets: {},
+  }),
   created() {
     this._emitDebounced = debounce((val) => {
       this.$emit("update:tenant", { ...val });
     }, 200);
+    this.fetchDefaultMailTemplates();
   },
   computed: {
     model: {
@@ -64,8 +90,25 @@ export default {
     },
   },
   methods: {
+    async fetchDefaultMailTemplates() {
+      const tenantId = this.tenant && this.tenant.id;
+      if (!tenantId) return;
+      try {
+        const data = await ApiTenantService.getDefaultMailTempaltes(tenantId);
+        this.defaultMailSnippets = (data && data.mailSnippets) || {};
+      } catch (e) {
+        console.error("Standard-Mailvorlagen konnten nicht geladen werden", e);
+      }
+    },
     updateMailConfig(cfg) {
       this.model = { ...this.tenant, ...cfg };
+    },
+    updateMailOverrides({ mailSnippets, mailSubjects }) {
+      this.model = {
+        ...this.tenant,
+        mailSnippets: mailSnippets || {},
+        mailSubjects: mailSubjects || {},
+      };
     },
     async validate() {
       return this.$refs.form ? this.$refs.form.validate() : true;

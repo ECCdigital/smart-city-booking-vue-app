@@ -128,6 +128,32 @@
                   </div>
                 </div>
               </v-col>
+              <v-col cols="12" md="6">
+                <div class="info-item">
+                  <div class="info-label">
+                    <v-icon small class="mr-2"
+                      >mdi-book-cancel-outline</v-icon
+                    >
+                    Stornierungsrichtlinie
+                  </div>
+                  <div class="info-value">
+                    <v-chip
+                      small
+                      :color="userCancellable ? 'success' : 'grey'"
+                      text-color="white"
+                    >
+                      <v-icon left x-small>
+                        {{ userCancellable ? "mdi-check" : "mdi-cancel" }}
+                      </v-icon>
+                      {{
+                        userCancellable
+                          ? "Selbststornierung erlaubt"
+                          : "Nur durch Administratoren"
+                      }}
+                    </v-chip>
+                  </div>
+                </div>
+              </v-col>
             </v-row>
           </v-card-text>
         </v-card>
@@ -1136,6 +1162,9 @@ export default {
           if (rawValue === false || rawValue === 0) return true;
           return rawValue != null && rawValue !== "";
         });
+    },
+    userCancellable() {
+      return this.booking?.cancellationPolicy?.userCancellable !== false;
     },
   },
   methods: {

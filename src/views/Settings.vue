@@ -605,7 +605,7 @@ export default {
         permissions.push("Buchungen verwalten");
       }
       if (this.hasPermission(RolePermission.MANAGE_RESOURCES)) {
-        permissions.push("Ressourcen verwalten");
+        permissions.push("Geräte und Weiteres verwalten");
       }
       return permissions;
     },

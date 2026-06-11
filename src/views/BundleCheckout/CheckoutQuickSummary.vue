@@ -244,6 +244,28 @@
 
     <v-card
       class="mt-5 rounded-sm"
+      outlined
+      v-if="itemsWithBookingNotes.length > 0"
+    >
+      <v-card-text>
+        <h2 class="mb-7">Buchungshinweise</h2>
+
+        <div
+          v-for="item in itemsWithBookingNotes"
+          :key="item.bookableId"
+          class="mb-4"
+        >
+          <template v-if="itemsWithBookingNotes.length > 1">
+            <h3 class="mb-1">{{ item.bookable.title }}</h3>
+            <v-divider class="mb-3"></v-divider>
+          </template>
+          <div v-html="item.bookable.bookingNotes"></div>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <v-card
+      class="mt-5 rounded-sm"
       :color="$vuetify.theme.dark ? 'red' : 'red lighten-4'"
       outlined
       v-if="allItemsValid === false"
@@ -630,6 +652,12 @@ export default {
       }
 
       return false;
+    },
+
+    itemsWithBookingNotes() {
+      return [this.leadItem, ...this.subsequentItems].filter(
+        (item) => !!item.bookable.bookingNotes
+      );
     },
 
     allItemsValid() {

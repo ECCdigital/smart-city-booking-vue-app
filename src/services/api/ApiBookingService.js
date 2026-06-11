@@ -62,21 +62,27 @@ export default {
     );
     return response.data;
   },
-  rejectBooking(id, tenantId, reason, skipCancellation) {
+  rejectBooking(id, tenantId, reason, skipCancellation, bankDetails) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
+    const payload = {
+      reason: reason,
+      skipCancellation: skipCancellation,
+    };
+    if (bankDetails) {
+      payload.bankDetails = bankDetails;
+    }
     return ApiClient.post(
       `api/${t}/bookings/${id}/reject?skipCancellation}`,
-      {
-        reason: reason,
-        skipCancellation: skipCancellation,
-      }
+      payload
     );
   },
-  requestRejectBooking(id, tenantId, reason) {
+  requestRejectBooking(id, tenantId, reason, bankDetails) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`api/${t}/bookings/${id}/request-reject`, {
-      reason: reason,
-    });
+    const payload = { reason: reason };
+    if (bankDetails) {
+      payload.bankDetails = bankDetails;
+    }
+    return ApiClient.post(`api/${t}/bookings/${id}/request-reject`, payload);
   },
   releaseBookingHook(id, tenantId, hookId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];

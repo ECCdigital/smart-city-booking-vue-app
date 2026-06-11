@@ -92,6 +92,53 @@
 
             <ContactInformation />
 
+            <div
+              v-if="requiresDataProtection || requiresTerms"
+              class="mt-2 text-left"
+            >
+              <v-checkbox
+                v-if="requiresDataProtection"
+                v-model="acceptedDataProtection"
+                :rules="dataProtectionAcceptRules"
+                hide-details="auto"
+                class="mt-0"
+              >
+                <template v-slot:label>
+                  <span>
+                    Ich habe die
+                    <a
+                      :href="dataProtectionHref"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      @click.stop
+                      >Datenschutzerklärung</a
+                    >
+                    gelesen und akzeptiere sie.
+                  </span>
+                </template>
+              </v-checkbox>
+              <v-checkbox
+                v-if="requiresTerms"
+                v-model="acceptedTerms"
+                :rules="termsAcceptRules"
+                hide-details="auto"
+                class="mt-0"
+              >
+                <template v-slot:label>
+                  <span>
+                    Ich akzeptiere die
+                    <a
+                      :href="termsHref"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      @click.stop
+                      >Allgemeinen Geschäftsbedingungen</a
+                    >.
+                  </span>
+                </template>
+              </v-checkbox>
+            </div>
+
             <input type="submit" style="display: none" />
           </v-form>
         </form>
@@ -105,19 +152,21 @@
       </v-card-actions>
     </v-card>
 
-    <v-card elevation="0" max-width="500" class="mx-auto mt-2">
+    <v-card
+      v-if="legalLinks.length"
+      elevation="0"
+      max-width="500"
+      class="mx-auto mt-2"
+    >
       <v-card-text class="text-right pa-0">
-        <a
-          :href="'https://' + Utils.sanitizeUrl(instance?.dataProtectionUrl)"
-          target="_blank"
-          >Datenschutz</a
-        >
-        |
-        <a
-          :href="'https://' + Utils.sanitizeUrl(instance?.legalNoticeUrl)"
-          target="_blank"
-          >Nutzungsbedingungen</a
-        >
+        <template v-for="(doc, i) in legalLinks">
+          <span :key="doc.key">
+            <a :href="doc.url" target="_blank" rel="noopener noreferrer">{{
+              doc.label
+            }}</a>
+            <span v-if="i < legalLinks.length - 1"> | </span>
+          </span>
+        </template>
       </v-card-text>
     </v-card>
   </v-container>
@@ -128,13 +177,9 @@ import ApiAuthService from "@/services/api/ApiAuthService";
 import { mapActions, mapGetters } from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ContactInformation from "@/components/ContactInformation.vue";
-import Utils from "@/utils/Utils";
 
 export default {
   computed: {
-    Utils() {
-      return Utils;
-    },
     ...mapGetters({
       instance: "instance/instance",
       nextUrl: "authStore/nextUrl",
@@ -143,6 +188,51 @@ export default {
       return process.env.BASE_URL && process.env.BASE_URL.trim()
         ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
         : "/app-logo.png";
+    },
+    dataProtection() {
+      return this.instance?.dataProtection || {};
+    },
+    termsAndConditions() {
+      return this.instance?.termsAndConditions || {};
+    },
+    requiresDataProtection() {
+      return !!this.dataProtection.url;
+    },
+    requiresTerms() {
+      return !!this.termsAndConditions.url;
+    },
+    dataProtectionHref() {
+      return this.legalHref(this.dataProtection.url);
+    },
+    termsHref() {
+      return this.legalHref(this.termsAndConditions.url);
+    },
+    legalLinks() {
+      const links = [];
+      const add = (key, label) => {
+        const url = this.legalHref(this.instance?.[key]?.url);
+        if (url) links.push({ key, label, url });
+      };
+      add("dataProtection", "Datenschutz");
+      add("legalNotice", "Impressum");
+      add("termsAndConditions", "AGB");
+      return links;
+    },
+    invitationParams() {
+      const url = this.nextUrl;
+      if (!url) return { token: null, tenantId: null };
+
+      const match = url.match(/\/auth\/invitation\/([^/?#]+)/);
+      const tenantId = match ? decodeURIComponent(match[1]) : null;
+
+      let token = null;
+      const queryIndex = url.indexOf("?");
+      if (queryIndex !== -1) {
+        const params = new URLSearchParams(url.slice(queryIndex + 1));
+        token = params.get("token");
+      }
+
+      return { token, tenantId };
     },
   },
   components: { ContactInformation },
@@ -156,6 +246,14 @@ export default {
       password: "",
       passwordRepeat: "",
       showPassword: false,
+      acceptedDataProtection: false,
+      acceptedTerms: false,
+      dataProtectionAcceptRules: [
+        (v) => v === true || "Bitte stimmen Sie der Datenschutzerklärung zu",
+      ],
+      termsAcceptRules: [
+        (v) => v === true || "Bitte stimmen Sie den AGB zu",
+      ],
       tenants: [],
       tenantRules: [(v) => !!v || "Mandant ist erforderlich"],
       firstNameRules: [(v) => !!v || "Vorname ist erforderlich"],
@@ -175,15 +273,49 @@ export default {
   },
 
   mounted() {
+    const next = this.$route.query.next;
+    if (next) {
+      this.updateNextUrl(next);
+    }
     this.fetchTenants();
   },
 
   methods: {
     ...mapActions({
       addToast: "toasts/add",
+      updateNextUrl: "authStore/setNextUrl",
     }),
+    legalHref(url) {
+      if (!url) return "";
+      return /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
+    },
+    buildLegalAcceptance() {
+      const acceptance = {};
+      const acceptedAt = new Date().toISOString();
+      if (this.requiresDataProtection) {
+        acceptance.dataProtection = {
+          accepted: this.acceptedDataProtection,
+          url: this.dataProtection.url,
+          fileName: this.dataProtection.fileName || "",
+          source: this.dataProtection.source || "url",
+          acceptedAt,
+        };
+      }
+      if (this.requiresTerms) {
+        acceptance.termsAndConditions = {
+          accepted: this.acceptedTerms,
+          url: this.termsAndConditions.url,
+          fileName: this.termsAndConditions.fileName || "",
+          source: this.termsAndConditions.source || "url",
+          acceptedAt,
+        };
+      }
+      return acceptance;
+    },
     register() {
       if (this.$refs.form.validate()) {
+        const { token: invitationToken, tenantId: invitationTenantId } =
+          this.invitationParams;
         ApiAuthService.register(
           this.tenant,
           this.id,
@@ -191,7 +323,10 @@ export default {
           this.lastName,
           this.company,
           this.password,
-          this.nextUrl
+          this.nextUrl,
+          this.buildLegalAcceptance(),
+          invitationToken,
+          invitationTenantId
         )
           .then((response) => {
             if (response.status === 201) {

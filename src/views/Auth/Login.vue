@@ -7,7 +7,11 @@
         <h2 class="mt-8 mb-2">Anmeldung</h2>
         <p class="subtitle-2 mb-10">Mit Ihrem Account anmelden.</p>
 
-        <LoginCard :ssoActive="ssoActive" @success="signedIn" />
+        <LoginCard
+          :sso-active="ssoActive"
+          :card-methods="cardMethods"
+          @success="signedIn"
+        />
 
         <ContactInformation />
       </v-card-text>
@@ -18,18 +22,21 @@
         <a
           :href="'https://' + Utils.sanitizeUrl(instance?.dataProtectionUrl)"
           target="_blank"
-          >Datenschutz</a
         >
+          Datenschutz
+        </a>
         |
         <a
           :href="'https://' + Utils.sanitizeUrl(instance?.legalNoticeUrl)"
           target="_blank"
-          >Nutzungsbedingungen</a
         >
+          Nutzungsbedingungen
+        </a>
       </v-card-text>
     </v-card>
   </v-container>
 </template>
+
 <script>
 import { mapActions, mapGetters } from "vuex";
 import ContactInformation from "@/components/ContactInformation.vue";
@@ -42,14 +49,10 @@ export default {
     LoginCard,
     ContactInformation,
   },
+
   data() {
     return {
-      id: "",
-      tenant: {},
-      password: "",
-      showPassword: false,
-      loginSuccessful: false,
-      tenants: [],
+      cardMethods: [],
     };
   },
 
@@ -71,10 +74,6 @@ export default {
         ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
         : "/app-logo.png";
     },
-    async hasSession() {
-      const me = await ApiAuthService.me().catch(() => null);
-      return me !== null;
-    },
   },
 
   methods: {
@@ -92,20 +91,19 @@ export default {
         this.$router.push({ name: "dashboard" });
       }
     },
-    sso() {
-      this.$router.push({ name: "sso" });
+    async fetchCardMethods() {
+      try {
+        this.cardMethods = await ApiAuthService.getCardAuthMethods();
+      } catch {
+        this.cardMethods = [];
+      }
     },
   },
-  async mounted() {
+
+  mounted() {
     const next = this.$route.query.next;
-    if (next) {
-      await this.updateNextUrl(next);
-    } else {
-      await this.updateNextUrl(null);
-    }
-    if (await this.hasSession) {
-      this.signedIn();
-    }
+    this.updateNextUrl(next || null);
+    this.fetchCardMethods();
   },
 };
 </script>

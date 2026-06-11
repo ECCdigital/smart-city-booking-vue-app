@@ -1251,7 +1251,7 @@ export default {
         coupons: "Rabatte",
         locations: "Veranstaltungsorte",
         rooms: "Räume",
-        resources: "Ressourcen",
+        resources: "Geräte & Weiteres",
         tickets: "Tickets",
         events: "Veranstaltungen",
         dashboard: "Dashboard",

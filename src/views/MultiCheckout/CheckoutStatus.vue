@@ -255,9 +255,10 @@ export default {
 
   computed: {
     bookingsLink() {
-      const catalogUrl = this.publicInstance?.catalogUrl;
-      if (!catalogUrl) return null;
-      const base = this.normalizeUrl(catalogUrl).replace(/\/+$/, "");
+      const portalUrl =
+        this.publicInstance?.portalUrl || this.publicInstance?.catalogUrl;
+      if (!portalUrl) return null;
+      const base = this.normalizeUrl(portalUrl).replace(/\/+$/, "");
       return base + "/account/bookings";
     },
   },

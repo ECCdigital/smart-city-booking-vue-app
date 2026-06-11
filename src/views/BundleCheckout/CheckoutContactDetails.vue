@@ -148,7 +148,7 @@
             :label="commentLabel"
             :placeholder="
               commentRequired
-                ? 'Bitte geben Sie den Zweck oder die geplante Nutzung dieser Ressource an. Dieses Feld ist erforderlich.'
+                ? 'Bitte geben Sie den Zweck oder die geplante Nutzung dieses Objekts an. Dieses Feld ist erforderlich.'
                 : ''
             "
             hide-details

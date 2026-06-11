@@ -1,10 +1,59 @@
 import Keycloak from "keycloak-js";
 
+const TOKEN_STORAGE_KEY = "kcTokens";
+
 class KeycloakService {
   constructor() {
     this._keycloak = null;
     this._initialized = false;
     this._config = null;
+    this._initPromise = null;
+  }
+
+  _persistTokens() {
+    if (!this._keycloak?.token || !this._keycloak?.refreshToken) {
+      return;
+    }
+    try {
+      localStorage.setItem(
+        TOKEN_STORAGE_KEY,
+        JSON.stringify({
+          token: this._keycloak.token,
+          refreshToken: this._keycloak.refreshToken,
+          idToken: this._keycloak.idToken,
+        })
+      );
+    } catch {
+      // localStorage not available
+    }
+  }
+
+  _readPersistedTokens() {
+    try {
+      const raw = localStorage.getItem(TOKEN_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  _clearPersistedTokens() {
+    try {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }
+
+  _recreateKeycloak() {
+    if (!this._config) return;
+    this.cleanup();
+    this._keycloak = new Keycloak({
+      url: this._config.serverUrl,
+      realm: this._config.realm,
+      clientId: this._config.publicClient,
+    });
+    this._initialized = false;
     this._initPromise = null;
   }
 
@@ -81,6 +130,7 @@ class KeycloakService {
 
       if (authenticated) {
         this._setupTokenRefresh();
+        this._persistTokens();
       } else {
         console.debug("Keycloak: No active session found");
       }
@@ -111,6 +161,7 @@ class KeycloakService {
 
       if (authenticated) {
         this._setupTokenRefresh();
+        this._persistTokens();
       }
 
       return authenticated;
@@ -120,10 +171,53 @@ class KeycloakService {
     return this._keycloak.authenticated;
   }
 
+  async restoreFromStoredTokens(config) {
+    const stored = this._readPersistedTokens();
+    if (!stored?.refreshToken) {
+      return false;
+    }
+
+    this.setConfig(config);
+
+    if (this._initialized) {
+      return this._keycloak.authenticated;
+    }
+
+    try {
+      const authenticated = await this._keycloak.init({
+        token: stored.token,
+        refreshToken: stored.refreshToken,
+        idToken: stored.idToken,
+        checkLoginIframe: false,
+        pkceMethod: "S256",
+        enableLogging: process.env.NODE_ENV === "development",
+      });
+
+      this._initialized = true;
+
+      if (!authenticated) {
+        this._clearPersistedTokens();
+        this._recreateKeycloak();
+        return false;
+      }
+
+      await this._keycloak.updateToken(30);
+      this._setupTokenRefresh();
+      this._persistTokens();
+      return true;
+    } catch (error) {
+      console.debug("Keycloak: Restore from stored tokens failed", error);
+      this._clearPersistedTokens();
+      this._recreateKeycloak();
+      return false;
+    }
+  }
+
   async logout(redirectUri = null) {
     if (!this._keycloak) return;
     const options = redirectUri ? { redirectUri } : {};
     this.cleanup();
+    this._clearPersistedTokens();
     this._initialized = false;
     this._initPromise = null;
     await this._keycloak.logout(options);
@@ -139,6 +233,7 @@ class KeycloakService {
         const refreshed = await this._keycloak.updateToken(60);
         if (refreshed) {
           console.debug("Keycloak token refreshed");
+          this._persistTokens();
         }
       } catch (error) {
         console.error("Keycloak token refresh failed:", error);
@@ -149,6 +244,7 @@ class KeycloakService {
     this._keycloak.onTokenExpired = async () => {
       try {
         await this._keycloak.updateToken(30);
+        this._persistTokens();
       } catch {
         console.error("Token expired and refresh failed");
         this.cleanup();
@@ -162,7 +258,10 @@ class KeycloakService {
     }
 
     try {
-      await this._keycloak.updateToken(30);
+      const refreshed = await this._keycloak.updateToken(30);
+      if (refreshed) {
+        this._persistTokens();
+      }
       return this._keycloak.token;
     } catch {
       return null;
@@ -178,6 +277,7 @@ class KeycloakService {
 
   destroy() {
     this.cleanup();
+    this._clearPersistedTokens();
     this._keycloak = null;
     this._initialized = false;
     this._initPromise = null;

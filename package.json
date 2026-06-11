@@ -1,7 +1,7 @@
 {
   "name": "smart-city-booking-vue-app",
   "description": "A VueJS Frontend for the Smart City Booking System",
-  "version": "4.0.0-rc.3",
+  "version": "4.0.0-rc.19",
   "private": true,
   "scripts": {
     "start": "node --max_old_space_size=4096 node_modules/@vue/cli-service/bin/vue-cli-service.js serve --mode production",
@@ -28,6 +28,7 @@
     "@tiptap/extension-bullet-list": "^2.12.0",
     "@tiptap/extension-document": "^2.12.0",
     "@tiptap/extension-italic": "^2.1.13",
+    "@tiptap/extension-link": "^2.12.0",
     "@tiptap/extension-list-item": "^2.12.0",
     "@tiptap/extension-ordered-list": "^2.12.0",
     "@tiptap/extension-paragraph": "^2.1.13",
@@ -44,7 +45,10 @@
     "buffer-equal-constant-time": "^1.0.1",
     "core-js": "^3.34.0",
     "date-fns": "^3.0.1",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
     "fuse.js": "^7.0.0",
+    "handlebars": "^4.7.9",
     "keycloak-js": "^26.1.4",
     "loadash": "^1.0.0",
     "lodash": "^4.17.21",

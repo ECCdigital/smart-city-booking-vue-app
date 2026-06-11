@@ -129,6 +129,29 @@
 
             <v-card class="mb-6 section-card" elevation="2" outlined>
               <v-card-title class="section-header pa-4">
+                <v-icon class="mr-2">mdi-book-cancel-outline</v-icon>
+                <span class="text-h6 font-weight-bold"
+                  >Stornierungsrichtlinie</span
+                >
+              </v-card-title>
+              <v-divider></v-divider>
+              <v-card-text class="pa-4">
+                <v-switch
+                  dense
+                  label="Benutzer darf diese Buchung selbst stornieren"
+                  hide-details
+                  v-model="userCancellable"
+                ></v-switch>
+                <p class="mb-0 mt-3 text-caption" style="max-width: 700px">
+                  Wenn aktiviert, kann der Buchende diese Buchung selbstständig
+                  stornieren. Andernfalls ist eine Stornierung nur durch
+                  Administratoren möglich.
+                </p>
+              </v-card-text>
+            </v-card>
+
+            <v-card class="mb-6 section-card" elevation="2" outlined>
+              <v-card-title class="section-header pa-4">
                 <v-icon class="mr-2">mdi-cash-multiple</v-icon>
                 <span class="text-h6 font-weight-bold"
                   >Zahlungsinformationen</span
@@ -1382,6 +1405,26 @@ export default {
           currentValue: stored != null ? stored.value : null,
         };
       });
+    },
+    userCancellable: {
+      get() {
+        return (
+          this.selectedBooking?.cancellationPolicy?.userCancellable !== false
+        );
+      },
+      set(val) {
+        if (!this.selectedBooking.cancellationPolicy) {
+          this.$set(this.selectedBooking, "cancellationPolicy", {
+            userCancellable: val,
+          });
+        } else {
+          this.$set(
+            this.selectedBooking.cancellationPolicy,
+            "userCancellable",
+            val
+          );
+        }
+      },
     },
   },
   watch: {
