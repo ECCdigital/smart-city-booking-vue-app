@@ -49,6 +49,8 @@
               :tenant="tenant"
               :apps="apps"
               :nuki-token-configured="nukiTokenConfigured"
+              :salto-secret-configured="saltoSecretConfigured"
+              :salto-password-configured="saltoPasswordConfigured"
               :workflow="workflow"
               :roles="roles"
               :challenges="verificationChallenges"
@@ -217,6 +219,8 @@ export default {
       instanceCustomFields: [],
       originalSnapshot: null,
       nukiTokenConfigured: false,
+      saltoSecretConfigured: false,
+      saltoPasswordConfigured: false,
       tenant: {},
       apps: {},
       workflow: {
@@ -311,6 +315,18 @@ export default {
           title: "Nuki",
           apiToken: "",
           apiBaseUrl: "https://api.nuki.io",
+          active: false,
+        },
+        "salto-ks": {
+          type: "access",
+          id: "salto-ks",
+          title: "Salto KS",
+          clientId: "",
+          clientSecret: "",
+          username: "",
+          password: "",
+          siteId: "",
+          apiBaseUrl: "https://clp-accept-user.my-clay.com",
           active: false,
         },
       },
@@ -409,6 +425,10 @@ export default {
       if (map.nuki) {
         this.nukiTokenConfigured = !!map.nuki.apiToken;
       }
+      if (map["salto-ks"]) {
+        this.saltoSecretConfigured = !!map["salto-ks"].clientSecret;
+        this.saltoPasswordConfigured = !!map["salto-ks"].password;
+      }
       this.apps = map;
     },
     replaceApps() {
@@ -418,6 +438,15 @@ export default {
         // Leeres Feld => bestehenden (verschlüsselten) Token unverändert lassen.
         if (app.id === "nuki" && !app.apiToken) {
           delete app.apiToken;
+        }
+        // Bei Salto KS das Secret nur senden, wenn ein neues eingegeben wurde.
+        if (app.id === "salto-ks" && !app.clientSecret) {
+          delete app.clientSecret;
+        }
+        // Bei Salto KS das System-User-Passwort nur senden, wenn ein neues
+        // eingegeben wurde. Leeres Feld => bestehendes Passwort unverändert lassen.
+        if (app.id === "salto-ks" && !app.password) {
+          delete app.password;
         }
         return app;
       });

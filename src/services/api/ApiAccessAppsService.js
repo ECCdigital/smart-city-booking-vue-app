@@ -1,27 +1,31 @@
 import store from "@/store";
 
 export default {
-  testConnection(tenantID, { apiToken, apiBaseUrl }) {
+  testConnection(tenantID, credentials = {}, provider = "nuki") {
     const t = tenantID || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`/api/${t}/access-apps/nuki/test`, {
-      apiToken,
-      apiBaseUrl,
-    });
+    return ApiClient.post(`/api/${t}/access-apps/${provider}/test`, credentials);
   },
-  getAccessPoints(tenantID) {
+  getProviders(tenantID) {
     const t = tenantID || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`/api/${t}/access-apps/nuki/access-points`);
+    return ApiClient.get(`/api/${t}/access-apps/providers`);
   },
-  registerWebhook(tenantID, callbackUrl) {
+  getAccessPoints(tenantID, provider = "nuki") {
     const t = tenantID || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`/api/${t}/access-apps/nuki/webhook/register`, {
+    return ApiClient.get(`/api/${t}/access-apps/${provider}/access-points`);
+  },
+  registerWebhook(tenantID, callbackUrl, provider = "nuki") {
+    const t = tenantID || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(`/api/${t}/access-apps/${provider}/webhook/register`, {
       callbackUrl,
     });
   },
-  unregisterWebhook(tenantID, notificationId) {
+  unregisterWebhook(tenantID, notificationId, provider = "nuki") {
     const t = tenantID || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`/api/${t}/access-apps/nuki/webhook/unregister`, {
-      notificationId,
-    });
+    return ApiClient.post(
+      `/api/${t}/access-apps/${provider}/webhook/unregister`,
+      {
+        notificationId,
+      }
+    );
   },
 };

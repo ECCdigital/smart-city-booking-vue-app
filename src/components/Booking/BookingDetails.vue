@@ -447,6 +447,7 @@
 
                   <div class="access-point-tile__action-group">
                     <v-btn
+                      v-if="canRemoteClose(accessPoint)"
                       small
                       outlined
                       color="warning"
@@ -493,6 +494,7 @@
                       {{ $t("accessPoint.booking.unlatch") }}
                     </v-btn>
                     <v-btn
+                      v-if="canRemoteOpen(accessPoint)"
                       small
                       depressed
                       color="success"
@@ -1499,8 +1501,27 @@ export default {
     getAccessPointKey(accessPoint) {
       return accessPoint.id || accessPoint.externalId;
     },
+    isRemoteCapable(accessPoint) {
+      const mode = accessPoint?.mode || "both";
+      return mode === "remote" || mode === "both";
+    },
+    canRemoteOpen(accessPoint) {
+      return this.isRemoteCapable(accessPoint);
+    },
+    canRemoteClose(accessPoint) {
+      // Salto KS verriegelt selbst und unterstützt kein remote "close".
+      return (
+        this.isRemoteCapable(accessPoint) &&
+        accessPoint?.provider !== "salto-ks"
+      );
+    },
     canUnlatchAccessPoint(accessPoint) {
-      return (accessPoint?.type || "door") === "door";
+      // Entriegeln (Latch) ist Nuki-spezifisch und nur remote-fähig.
+      return (
+        (accessPoint?.type || "door") === "door" &&
+        this.isRemoteCapable(accessPoint) &&
+        accessPoint?.provider !== "salto-ks"
+      );
     },
     accessPointTone(accessPoint) {
       const status = this.getAccessPointDisplayStatus(accessPoint);

@@ -16,6 +16,7 @@ export default {
       valid: true,
       accessApps: [],
       accessPoints: [],
+      selectedProvider: "",
       selectedAccessPointId: "",
       loadingApps: false,
       loadingAccessPoints: false,
@@ -85,8 +86,22 @@ export default {
         },
       ];
     },
-    activeNukiApp() {
-      return this.accessApps.find((app) => app.id === "nuki" && app.active);
+    activeAccessApps() {
+      return this.accessApps.filter((app) => app.active);
+    },
+    providerOptions() {
+      return this.activeAccessApps.map((app) => ({
+        value: app.id,
+        text: app.title || app.id,
+      }));
+    },
+    hasActiveProvider() {
+      return this.activeAccessApps.length > 0;
+    },
+    activeProviderApp() {
+      return this.activeAccessApps.find(
+        (app) => app.id === this.selectedProvider
+      );
     },
     selectedAccessPoint() {
       return this.accessPoints.find(
@@ -107,7 +122,7 @@ export default {
     canAddAccessPoint() {
       return (
         !!this.selectedAccessPoint &&
-        !!this.activeNukiApp &&
+        !!this.activeProviderApp &&
         !this.isUnassignable(this.selectedAccessPoint)
       );
     },
@@ -120,12 +135,14 @@ export default {
       },
     },
     "accessPointDetails.active"(active) {
-      if (active && this.activeNukiApp && this.accessPoints.length === 0) {
+      if (active && this.activeProviderApp && this.accessPoints.length === 0) {
         this.fetchAccessPoints();
       }
     },
-    activeNukiApp(app) {
-      if (app && this.accessPointDetails.active) {
+    selectedProvider(provider) {
+      this.accessPoints = [];
+      this.selectedAccessPointId = "";
+      if (provider && this.accessPointDetails.active) {
         this.fetchAccessPoints();
       }
     },
@@ -161,7 +178,11 @@ export default {
           tenant.data.applications?.filter((app) => app.type === "access") ||
           [];
 
-        if (this.activeNukiApp && this.accessPointDetails.active) {
+        if (!this.selectedProvider && this.activeAccessApps.length > 0) {
+          this.selectedProvider = this.activeAccessApps[0].id;
+        }
+
+        if (this.activeProviderApp && this.accessPointDetails.active) {
           await this.fetchAccessPoints();
         }
       } catch (error) {
@@ -171,13 +192,14 @@ export default {
       }
     },
     async fetchAccessPoints() {
-      if (!this.tenantId || !this.activeNukiApp) return;
+      if (!this.tenantId || !this.activeProviderApp) return;
 
       this.loadingAccessPoints = true;
       this.loadError = "";
       try {
         const response = await ApiAccessAppsService.getAccessPoints(
-          this.tenantId
+          this.tenantId,
+          this.selectedProvider
         );
         this.accessPoints = response.data || [];
         this.migratePointModes();
@@ -201,7 +223,7 @@ export default {
       const point = this.selectedAccessPoint;
       this.accessPointDetails.points.push({
         id: point.externalId || point.id,
-        provider: point.provider || "nuki",
+        provider: point.provider || this.selectedProvider || "nuki",
         externalId: point.externalId || point.id,
         label: point.label,
         mode: this.getDefaultMode(point),
@@ -400,7 +422,7 @@ export default {
         </v-row>
       </div>
 
-      <!-- Nuki-Türen -->
+      <!-- Türen -->
       <div v-if="accessPointDetails.active" class="mt-6">
         <div
           class="section-title mb-3 d-flex justify-space-between align-center"
@@ -408,7 +430,7 @@ export default {
           <div>
             <v-icon small left>mdi-door</v-icon>
             <span class="font-weight-medium">{{
-              $t("accessPoint.bookable.nukiDoors")
+              $t("accessPoint.bookable.doors")
             }}</span>
           </div>
           <v-btn
@@ -416,7 +438,7 @@ export default {
             text
             color="primary"
             :loading="loadingAccessPoints"
-            :disabled="!activeNukiApp || loadingAccessPoints"
+            :disabled="!activeProviderApp || loadingAccessPoints"
             @click="fetchAccessPoints"
           >
             <v-icon left small>mdi-refresh</v-icon>
@@ -425,7 +447,7 @@ export default {
         </div>
 
         <v-alert
-          v-if="!activeNukiApp && !loadingApps"
+          v-if="!hasActiveProvider && !loadingApps"
           color="info"
           dense
           text
@@ -434,10 +456,26 @@ export default {
           <div class="d-flex align-center">
             <v-icon class="mr-3" color="info"> mdi-information-outline </v-icon>
             <div>
-              {{ $t("accessPoint.bookable.nukiInactive") }}
+              {{ $t("accessPoint.bookable.providerInactive") }}
             </div>
           </div>
         </v-alert>
+
+        <v-row v-if="providerOptions.length > 1" dense>
+          <v-col cols="12">
+            <v-select
+              v-model="selectedProvider"
+              :items="providerOptions"
+              :label="$t('accessPoint.bookable.selectProvider')"
+              background-color="accent"
+              filled
+              dense
+              hide-details
+              prepend-inner-icon="mdi-domain"
+              class="mb-4"
+            />
+          </v-col>
+        </v-row>
 
         <v-alert v-if="loadError" color="error" dense text class="mb-4">
           <v-icon left>mdi-alert-circle</v-icon>
@@ -445,7 +483,7 @@ export default {
         </v-alert>
 
         <v-alert
-          v-if="activeNukiApp && accessPointDetails.points.length > 0"
+          v-if="activeProviderApp && accessPointDetails.points.length > 0"
           color="info"
           dense
           text
@@ -474,7 +512,7 @@ export default {
           </div>
         </v-alert>
 
-        <v-row v-if="activeNukiApp" dense align="center">
+        <v-row v-if="activeProviderApp" dense align="center">
           <v-col cols="12" md="9">
             <v-select
               v-model="selectedAccessPointId"

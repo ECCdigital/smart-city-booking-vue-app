@@ -14,20 +14,35 @@ export default {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
     nukiTokenConfigured: { type: Boolean, default: false },
+    saltoSecretConfigured: { type: Boolean, default: false },
+    saltoPasswordConfigured: { type: Boolean, default: false },
   },
   data() {
     return {
       valid: false,
       localApps: this.cloneApps(this.apps),
-      showNukiToken: false,
-      testingConnection: false,
-      testResult: null,
+      showSecret: {
+        nuki: false,
+        "salto-ks": false,
+        "salto-ks-password": false,
+      },
+      testing: { nuki: false, "salto-ks": false },
+      testResult: { nuki: null, "salto-ks": null },
       webhook: {
-        callbackUrl: "",
-        notificationId: "",
-        registering: false,
-        unregistering: false,
-        result: null,
+        nuki: {
+          callbackUrl: "",
+          notificationId: "",
+          registering: false,
+          unregistering: false,
+          result: null,
+        },
+        "salto-ks": {
+          callbackUrl: "",
+          notificationId: "",
+          registering: false,
+          unregistering: false,
+          result: null,
+        },
       },
     };
   },
@@ -60,6 +75,20 @@ export default {
           active: false,
         };
       }
+      if (!cloned["salto-ks"]) {
+        cloned["salto-ks"] = {
+          type: "access",
+          id: "salto-ks",
+          title: "Salto KS",
+          clientId: "",
+          clientSecret: "",
+          username: "",
+          password: "",
+          siteId: "",
+          apiBaseUrl: "https://clp-accept-user.my-clay.com",
+          active: false,
+        };
+      }
       return cloned;
     },
     emitApps() {
@@ -71,47 +100,65 @@ export default {
     resetValidation() {
       if (this.$refs.form) this.$refs.form.resetValidation();
     },
-    async testNukiConnection() {
-      this.testingConnection = true;
-      this.testResult = null;
+    testCredentials(provider) {
+      const app = this.localApps[provider];
+      if (provider === "salto-ks") {
+        return {
+          clientId: app.clientId || undefined,
+          clientSecret: app.clientSecret || undefined,
+          username: app.username || undefined,
+          password: app.password || undefined,
+          siteId: app.siteId || undefined,
+          apiBaseUrl: app.apiBaseUrl,
+        };
+      }
+      return {
+        apiToken: app.apiToken || undefined,
+        apiBaseUrl: app.apiBaseUrl,
+      };
+    },
+    async testConnection(provider) {
+      this.$set(this.testing, provider, true);
+      this.$set(this.testResult, provider, null);
 
       try {
         const response = await ApiAccessAppsService.testConnection(
           this.tenant.id,
-          {
-            apiToken: this.localApps.nuki.apiToken || undefined,
-            apiBaseUrl: this.localApps.nuki.apiBaseUrl,
-          }
+          this.testCredentials(provider),
+          provider
         );
 
-        this.testResult = {
+        this.$set(this.testResult, provider, {
           success: response.data.success === true,
           message: response.data.message,
-        };
+        });
       } catch (error) {
-        this.testResult = {
+        this.$set(this.testResult, provider, {
           success: false,
           message:
             error.response?.data?.message ||
             error.message ||
             this.$t("accessPoint.connection.error.message"),
-        };
+        });
       } finally {
-        this.testingConnection = false;
+        this.$set(this.testing, provider, false);
       }
     },
-    async registerWebhook() {
-      if (!this.webhook.callbackUrl) return;
-      this.webhook.registering = true;
-      this.webhook.result = null;
+    async registerWebhook(provider) {
+      const wh = this.webhook[provider];
+      if (!wh.callbackUrl) return;
+      wh.registering = true;
+      wh.result = null;
 
       try {
         const response = await ApiAccessAppsService.registerWebhook(
           this.tenant.id,
-          this.webhook.callbackUrl
+          wh.callbackUrl,
+          provider
         );
-        if (response.data?.notificationId) {
-          this.webhook.notificationId = response.data.notificationId;
+        const data = response.data?.data || response.data;
+        if (data?.notificationId) {
+          wh.notificationId = data.notificationId;
         }
         await this.addToast(
           ToastService.createToast(
@@ -119,12 +166,12 @@ export default {
             "success"
           )
         );
-        this.webhook.result = {
+        wh.result = {
           success: true,
           message: this.$t("accessPoint.webhook.register.success.message"),
         };
       } catch (error) {
-        this.webhook.result = {
+        wh.result = {
           success: false,
           message:
             error.response?.data?.message ||
@@ -132,32 +179,34 @@ export default {
             this.$t("accessPoint.webhook.register.error.message"),
         };
       } finally {
-        this.webhook.registering = false;
+        wh.registering = false;
       }
     },
-    async unregisterWebhook() {
-      if (!this.webhook.notificationId) return;
-      this.webhook.unregistering = true;
-      this.webhook.result = null;
+    async unregisterWebhook(provider) {
+      const wh = this.webhook[provider];
+      if (!wh.notificationId) return;
+      wh.unregistering = true;
+      wh.result = null;
 
       try {
         await ApiAccessAppsService.unregisterWebhook(
           this.tenant.id,
-          this.webhook.notificationId
+          wh.notificationId,
+          provider
         );
-        this.webhook.notificationId = "";
+        wh.notificationId = "";
         await this.addToast(
           ToastService.createToast(
             "accessPoint.webhook.unregister.success",
             "success"
           )
         );
-        this.webhook.result = {
+        wh.result = {
           success: true,
           message: this.$t("accessPoint.webhook.unregister.success.message"),
         };
       } catch (error) {
-        this.webhook.result = {
+        wh.result = {
           success: false,
           message:
             error.response?.data?.message ||
@@ -165,7 +214,15 @@ export default {
             this.$t("accessPoint.webhook.unregister.error.message"),
         };
       } finally {
-        this.webhook.unregistering = false;
+        wh.unregistering = false;
+      }
+    },
+    formatTimestamp(ts) {
+      if (!ts) return "";
+      try {
+        return new Date(ts).toLocaleString("de-DE");
+      } catch (e) {
+        return "";
       }
     },
   },
@@ -190,7 +247,12 @@ export default {
             class="mb-2"
           >
             <!-- Beschreibung -->
-            <v-alert color="primary" text dense class="provider-description mb-4 mt-2">
+            <v-alert
+              color="primary"
+              text
+              dense
+              class="provider-description mb-4 mt-2"
+            >
               <div class="d-flex">
                 <v-icon color="primary" class="mr-3 mt-1">mdi-door</v-icon>
                 <div>
@@ -256,9 +318,9 @@ export default {
                       : ''
                   "
                   persistent-hint
-                  :append-icon="showNukiToken ? 'mdi-eye' : 'mdi-eye-off'"
-                  @click:append="showNukiToken = !showNukiToken"
-                  :type="showNukiToken ? 'text' : 'password'"
+                  :append-icon="showSecret.nuki ? 'mdi-eye' : 'mdi-eye-off'"
+                  @click:append="showSecret.nuki = !showSecret.nuki"
+                  :type="showSecret.nuki ? 'text' : 'password'"
                   autocomplete="off"
                 />
               </v-col>
@@ -310,23 +372,23 @@ export default {
             </v-row>
 
             <!-- Testergebnis -->
-            <v-row v-if="testResult" dense>
+            <v-row v-if="testResult.nuki" dense>
               <v-col cols="12">
                 <v-alert
-                  :color="testResult.success ? 'success' : 'error'"
+                  :color="testResult.nuki.success ? 'success' : 'error'"
                   dense
                   text
                 >
-                  <div v-if="testResult.success">
+                  <div v-if="testResult.nuki.success">
                     <v-icon left>mdi-check-circle</v-icon>
                     {{
-                      testResult.message ||
+                      testResult.nuki.message ||
                       $t("accessPoint.tenant.connectionSuccess")
                     }}
                   </div>
                   <div v-else>
                     <v-icon left>mdi-alert-circle</v-icon>
-                    {{ testResult.message }}
+                    {{ testResult.nuki.message }}
                   </div>
                 </v-alert>
               </v-col>
@@ -337,9 +399,9 @@ export default {
               <v-col class="text-right">
                 <v-btn
                   color="primary"
-                  :loading="testingConnection"
-                  :disabled="testingConnection"
-                  @click="testNukiConnection"
+                  :loading="testing.nuki"
+                  :disabled="testing.nuki"
+                  @click="testConnection('nuki')"
                 >
                   <v-icon left>mdi-connection</v-icon>
                   {{ $t("accessPoint.tenant.testConnection") }}
@@ -364,7 +426,7 @@ export default {
                   filled
                   dense
                   :label="$t('accessPoint.tenant.callbackUrl')"
-                  v-model="webhook.callbackUrl"
+                  v-model="webhook.nuki.callbackUrl"
                   placeholder="https://<backend>/api/webhooks/access/nuki/<tenant>"
                 />
               </v-col>
@@ -374,28 +436,28 @@ export default {
                   filled
                   dense
                   :label="$t('accessPoint.tenant.notificationId')"
-                  v-model="webhook.notificationId"
+                  v-model="webhook.nuki.notificationId"
                   :hint="$t('accessPoint.tenant.notificationIdHint')"
                   persistent-hint
                 />
               </v-col>
             </v-row>
 
-            <v-row v-if="webhook.result" dense>
+            <v-row v-if="webhook.nuki.result" dense>
               <v-col cols="12">
                 <v-alert
-                  :color="webhook.result.success ? 'success' : 'error'"
+                  :color="webhook.nuki.result.success ? 'success' : 'error'"
                   dense
                   text
                 >
                   <v-icon left>
                     {{
-                      webhook.result.success
+                      webhook.nuki.result.success
                         ? "mdi-check-circle"
                         : "mdi-alert-circle"
                     }}
                   </v-icon>
-                  {{ webhook.result.message }}
+                  {{ webhook.nuki.result.message }}
                 </v-alert>
               </v-col>
             </v-row>
@@ -406,21 +468,297 @@ export default {
                   text
                   color="error"
                   class="mr-2"
-                  :loading="webhook.unregistering"
-                  :disabled="webhook.unregistering || !webhook.notificationId"
-                  @click="unregisterWebhook"
+                  :loading="webhook.nuki.unregistering"
+                  :disabled="
+                    webhook.nuki.unregistering || !webhook.nuki.notificationId
+                  "
+                  @click="unregisterWebhook('nuki')"
                 >
                   {{ $t("accessPoint.tenant.unregisterWebhook") }}
                 </v-btn>
                 <v-btn
                   color="primary"
-                  :loading="webhook.registering"
-                  :disabled="webhook.registering || !webhook.callbackUrl"
-                  @click="registerWebhook"
+                  :loading="webhook.nuki.registering"
+                  :disabled="
+                    webhook.nuki.registering || !webhook.nuki.callbackUrl
+                  "
+                  @click="registerWebhook('nuki')"
                 >
                   <v-icon left>mdi-webhook</v-icon>
                   {{ $t("accessPoint.tenant.registerWebhook") }}
                 </v-btn>
+              </v-col>
+            </v-row>
+          </AppPanel>
+
+          <!-- ============ SALTO KS ============ -->
+          <AppPanel
+            v-if="localApps['salto-ks']"
+            title="Salto KS"
+            :logo="require('@/assets/salto-logo.png')"
+            :active="localApps['salto-ks'].active"
+            class="mb-2"
+          >
+            <!-- Beschreibung -->
+            <v-alert
+              color="primary"
+              text
+              dense
+              class="provider-description mb-4 mt-2"
+            >
+              <div class="d-flex">
+                <v-icon color="primary" class="mr-3 mt-1">mdi-door</v-icon>
+                <div>
+                  <div class="font-weight-bold mb-1">
+                    {{ $t("accessPoint.tenant.salto.providerTitle") }}
+                  </div>
+                  <div class="text-body-2">
+                    {{ $t("accessPoint.tenant.salto.providerDescription") }}
+                  </div>
+                  <v-btn
+                    text
+                    small
+                    color="primary"
+                    class="px-0 mt-1"
+                    href="https://saltoks.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <v-icon left small>mdi-open-in-new</v-icon>
+                    {{ $t("accessPoint.tenant.salto.providerLink") }}
+                  </v-btn>
+                </div>
+              </div>
+            </v-alert>
+
+            <!-- Aktivierung -->
+            <v-row dense>
+              <v-col cols="12">
+                <v-switch
+                  v-model="localApps['salto-ks'].active"
+                  color="primary"
+                  hide-details
+                  :label="$t('accessPoint.tenant.salto.activate')"
+                  @change="emitApps()"
+                />
+              </v-col>
+            </v-row>
+
+            <!-- Hinweis: System-User fehlt (Migration bestehender Integrationen) -->
+            <v-row
+              v-if="
+                localApps['salto-ks'].active &&
+                !localApps['salto-ks'].username &&
+                !saltoPasswordConfigured
+              "
+              dense
+            >
+              <v-col cols="12">
+                <v-alert type="warning" text dense class="mb-0">
+                  <v-icon left>mdi-account-alert</v-icon>
+                  {{ $t("accessPoint.tenant.salto.systemUserMissing") }}
+                </v-alert>
+              </v-col>
+            </v-row>
+
+            <!-- API-Zugangsdaten -->
+            <div class="section-title mt-4 mb-2">
+              <v-icon small left>mdi-key-variant</v-icon>
+              <span class="font-weight-medium">{{
+                $t("accessPoint.tenant.apiCredentials")
+              }}</span>
+            </div>
+            <v-row dense>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  :label="$t('accessPoint.tenant.salto.clientId')"
+                  v-model="localApps['salto-ks'].clientId"
+                  @input="emitApps()"
+                  autocomplete="off"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  :label="$t('accessPoint.tenant.salto.siteId')"
+                  v-model="localApps['salto-ks'].siteId"
+                  @input="emitApps()"
+                  autocomplete="off"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  :label="$t('accessPoint.tenant.salto.clientSecret')"
+                  v-model="localApps['salto-ks'].clientSecret"
+                  @input="emitApps()"
+                  :placeholder="
+                    saltoSecretConfigured
+                      ? $t('accessPoint.tenant.salto.clientSecretUnchanged')
+                      : $t('accessPoint.tenant.salto.clientSecretPlaceholder')
+                  "
+                  :hint="
+                    saltoSecretConfigured
+                      ? $t('accessPoint.tenant.salto.clientSecretHint')
+                      : ''
+                  "
+                  persistent-hint
+                  :append-icon="
+                    showSecret['salto-ks'] ? 'mdi-eye' : 'mdi-eye-off'
+                  "
+                  @click:append="
+                    showSecret['salto-ks'] = !showSecret['salto-ks']
+                  "
+                  :type="showSecret['salto-ks'] ? 'text' : 'password'"
+                  autocomplete="off"
+                />
+              </v-col>
+              <!-- System-User (Password-Grant) -->
+              <v-col cols="12" md="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  type="email"
+                  :label="$t('accessPoint.tenant.salto.username')"
+                  v-model="localApps['salto-ks'].username"
+                  @input="emitApps()"
+                  :placeholder="
+                    $t('accessPoint.tenant.salto.usernamePlaceholder')
+                  "
+                  :hint="$t('accessPoint.tenant.salto.usernameHint')"
+                  persistent-hint
+                  autocomplete="off"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  :label="$t('accessPoint.tenant.salto.password')"
+                  v-model="localApps['salto-ks'].password"
+                  @input="emitApps()"
+                  :placeholder="
+                    saltoPasswordConfigured
+                      ? $t('accessPoint.tenant.salto.passwordUnchanged')
+                      : $t('accessPoint.tenant.salto.passwordPlaceholder')
+                  "
+                  :hint="
+                    saltoPasswordConfigured
+                      ? $t('accessPoint.tenant.salto.passwordHint')
+                      : ''
+                  "
+                  persistent-hint
+                  :append-icon="
+                    showSecret['salto-ks-password'] ? 'mdi-eye' : 'mdi-eye-off'
+                  "
+                  @click:append="
+                    showSecret['salto-ks-password'] =
+                      !showSecret['salto-ks-password']
+                  "
+                  :type="showSecret['salto-ks-password'] ? 'text' : 'password'"
+                  autocomplete="off"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  :label="$t('accessPoint.tenant.apiBaseUrl')"
+                  v-model="localApps['salto-ks'].apiBaseUrl"
+                  @input="emitApps()"
+                  placeholder="https://clp-accept-user.my-clay.com"
+                />
+              </v-col>
+            </v-row>
+
+            <!-- Testergebnis -->
+            <v-row v-if="testResult['salto-ks']" dense>
+              <v-col cols="12">
+                <v-alert
+                  :color="testResult['salto-ks'].success ? 'success' : 'error'"
+                  dense
+                  text
+                >
+                  <div v-if="testResult['salto-ks'].success">
+                    <v-icon left>mdi-check-circle</v-icon>
+                    {{
+                      testResult["salto-ks"].message ||
+                      $t("accessPoint.tenant.connectionSuccess")
+                    }}
+                  </div>
+                  <div v-else>
+                    <v-icon left>mdi-alert-circle</v-icon>
+                    {{ testResult["salto-ks"].message }}
+                  </div>
+                </v-alert>
+              </v-col>
+            </v-row>
+
+            <!-- Aktion -->
+            <v-row dense class="mt-2">
+              <v-col class="text-right">
+                <v-btn
+                  color="primary"
+                  :loading="testing['salto-ks']"
+                  :disabled="testing['salto-ks']"
+                  @click="testConnection('salto-ks')"
+                >
+                  <v-icon left>mdi-connection</v-icon>
+                  {{ $t("accessPoint.tenant.testConnection") }}
+                </v-btn>
+              </v-col>
+            </v-row>
+
+            <!-- Webhook-Status (automatisch registriert) -->
+            <div class="section-title mt-6 mb-2">
+              <v-icon small left>mdi-webhook</v-icon>
+              <span class="font-weight-medium">{{
+                $t("accessPoint.tenant.webhookTitle")
+              }}</span>
+            </div>
+            <v-alert type="info" text dense class="mb-3">
+              {{ $t("accessPoint.tenant.salto.webhookInfo") }}
+            </v-alert>
+            <v-row dense>
+              <v-col cols="12">
+                <v-alert
+                  v-if="localApps['salto-ks'].webhookRegistrationError"
+                  color="error"
+                  text
+                  dense
+                  class="mb-0"
+                >
+                  <v-icon left>mdi-alert-circle</v-icon>
+                  {{ $t("accessPoint.tenant.salto.webhookError") }}
+                  {{ localApps["salto-ks"].webhookRegistrationError }}
+                </v-alert>
+                <v-alert
+                  v-else-if="localApps['salto-ks'].webhookRegisteredAt"
+                  color="success"
+                  text
+                  dense
+                  class="mb-0"
+                >
+                  <v-icon left>mdi-check-circle</v-icon>
+                  {{ $t("accessPoint.tenant.salto.webhookRegistered") }}
+                  {{
+                    formatTimestamp(localApps["salto-ks"].webhookRegisteredAt)
+                  }}
+                </v-alert>
+                <v-alert v-else color="grey" text dense class="mb-0">
+                  <v-icon left>mdi-information-outline</v-icon>
+                  {{ $t("accessPoint.tenant.salto.webhookPending") }}
+                </v-alert>
               </v-col>
             </v-row>
           </AppPanel>
