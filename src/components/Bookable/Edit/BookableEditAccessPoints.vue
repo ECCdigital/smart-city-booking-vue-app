@@ -10,6 +10,9 @@ export default {
   name: "BookableEditAccessPoints",
   props: {
     bookable: { type: Object, required: true },
+    // When true, hides the own card header and activation switch so the
+    // component can be embedded in a parent layout that controls activation.
+    embedded: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -76,9 +79,7 @@ export default {
           if (v === "" || v === null || v === undefined) return true;
           const num = Number(v);
           return (
-            (Number.isInteger(num) &&
-              num >= 0 &&
-              num <= MAX_BUFFER_MINUTES) ||
+            (Number.isInteger(num) && num >= 0 && num <= MAX_BUFFER_MINUTES) ||
             this.$t("accessPoint.bookable.buffer.invalid", {
               max: MAX_BUFFER_MINUTES,
             })
@@ -240,9 +241,7 @@ export default {
     },
     findProviderAccessPoint(point) {
       const key = point.externalId || point.id;
-      return this.accessPoints.find(
-        (ap) => (ap.externalId || ap.id) === key
-      );
+      return this.accessPoints.find((ap) => (ap.externalId || ap.id) === key);
     },
     // Returns the modes supported by the lock, or null when unknown
     // (access point not loaded or field missing) -> caller should allow all.
@@ -348,33 +347,42 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <v-card outlined class="component-card pa-4">
-      <div class="d-flex align-center">
-        <v-icon class="mr-2" color="primary">mdi-door-open</v-icon>
-        <span class="text-h6">{{ $t("accessPoint.bookable.title") }}</span>
-      </div>
-      <v-divider class="mt-3 mb-4" />
+    <v-card
+      :outlined="!embedded"
+      :flat="embedded"
+      :class="embedded ? 'pa-0' : 'component-card pa-4'"
+    >
+      <template v-if="!embedded">
+        <div class="d-flex align-center">
+          <v-icon class="mr-2" color="primary">mdi-door-open</v-icon>
+          <span class="text-h6">{{ $t("accessPoint.bookable.title") }}</span>
+        </div>
+        <v-divider class="mt-3 mb-4" />
 
-      <v-switch
-        v-model="accessPointDetails.active"
-        hide-details
-        color="primary"
-        class="mt-0"
+        <v-switch
+          v-model="accessPointDetails.active"
+          hide-details
+          color="primary"
+          class="mt-0"
+        >
+          <template v-slot:label>
+            <div>
+              <div class="font-weight-medium">
+                {{ $t("accessPoint.bookable.activate") }}
+              </div>
+              <div class="text-caption text--secondary">
+                {{ $t("accessPoint.bookable.activateHint") }}
+              </div>
+            </div>
+          </template>
+        </v-switch>
+      </template>
+
+      <!-- Buffer -->
+      <div
+        v-if="embedded || accessPointDetails.active"
+        :class="embedded ? '' : 'mt-6'"
       >
-        <template v-slot:label>
-          <div>
-            <div class="font-weight-medium">
-              {{ $t("accessPoint.bookable.activate") }}
-            </div>
-            <div class="text-caption text--secondary">
-              {{ $t("accessPoint.bookable.activateHint") }}
-            </div>
-          </div>
-        </template>
-      </v-switch>
-
-      <!-- Pufferzeiten -->
-      <div v-if="accessPointDetails.active" class="mt-6">
         <div class="section-title mb-3">
           <v-icon small left>mdi-timer-sand</v-icon>
           <span class="font-weight-medium">{{
@@ -422,8 +430,8 @@ export default {
         </v-row>
       </div>
 
-      <!-- Türen -->
-      <div v-if="accessPointDetails.active" class="mt-6">
+      <!-- Doors -->
+      <div v-if="embedded || accessPointDetails.active" class="mt-6">
         <div
           class="section-title mb-3 d-flex justify-space-between align-center"
         >

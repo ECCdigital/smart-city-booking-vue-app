@@ -7,6 +7,13 @@ export default {
   name: "BookableEditLockerSystems",
   props: {
     bookable: { type: Object, required: true },
+    // When true, the component renders without its own card header and
+    // activation switch so it can be embedded inside a parent layout
+    // (tabs, accordion, stepper) that controls activation itself.
+    embedded: { type: Boolean, default: false },
+    // Pre-selects and locks the locker system type (pareva|ifbs) so the
+    // internal type chooser and "change type" buttons are hidden.
+    forcedSystemType: { type: String, default: "" },
   },
   data() {
     return {
@@ -185,6 +192,12 @@ export default {
         this.fetchLockerSystems();
       },
     },
+    forcedSystemType: {
+      immediate: true,
+      handler(type) {
+        if (type) this.selectedSystemType = type;
+      },
+    },
     selectedSystemType(newType, oldType) {
       if (oldType && oldType !== newType) {
         this.lockerDetails.units = [];
@@ -201,6 +214,7 @@ export default {
     },
     lockerSystems: {
       handler(newSystems) {
+        if (this.forcedSystemType) return;
         if (
           newSystems.length > 0 &&
           this.lockerDetails.units &&
@@ -239,32 +253,41 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <v-card outlined class="component-card pa-4">
-      <div class="d-flex align-center">
-        <v-icon class="mr-2" color="primary">mdi-locker-multiple</v-icon>
-        <span class="text-h6">Schließfächer &amp; Fahrradboxen</span>
-      </div>
-      <v-divider class="mt-3 mb-4" />
+    <v-card
+      :outlined="!embedded"
+      :flat="embedded"
+      :class="embedded ? 'pa-0' : 'component-card pa-4'"
+    >
+      <template v-if="!embedded">
+        <div class="d-flex align-center">
+          <v-icon class="mr-2" color="primary">mdi-locker-multiple</v-icon>
+          <span class="text-h6">Schließfächer &amp; Fahrradboxen</span>
+        </div>
+        <v-divider class="mt-3 mb-4" />
 
-      <v-switch
-        v-model="lockerDetails.active"
-        hide-details
-        color="primary"
-        class="mt-0"
-      >
-        <template v-slot:label>
-          <div>
-            <div class="font-weight-medium">Schließsysteme aktivieren</div>
-            <div class="text-caption text--secondary">
-              Buchungsobjekte mit Schließsystemen können automatisch geöffnet
-              und geschlossen werden
+        <v-switch
+          v-model="lockerDetails.active"
+          hide-details
+          color="primary"
+          class="mt-0"
+        >
+          <template v-slot:label>
+            <div>
+              <div class="font-weight-medium">Schließsysteme aktivieren</div>
+              <div class="text-caption text--secondary">
+                Buchungsobjekte mit Schließsystemen können automatisch geöffnet
+                und geschlossen werden
+              </div>
             </div>
-          </div>
-        </template>
-      </v-switch>
+          </template>
+        </v-switch>
+      </template>
 
-      <!-- System-Typ wählen -->
-      <div v-if="lockerDetails.active && !selectedSystemType" class="mt-6">
+      <!-- Choose system type -->
+      <div
+        v-if="!embedded && lockerDetails.active && !selectedSystemType"
+        class="mt-6"
+      >
         <div class="section-title mb-3">
           <v-icon small left>mdi-lock-outline</v-icon>
           <span class="font-weight-medium">System-Typ wählen</span>
@@ -314,10 +337,12 @@ export default {
         </v-select>
       </div>
 
-      <!-- Schließfächer (Pareva) -->
+      <!-- Locker (Pareva) -->
       <div
-        v-if="lockerDetails.active && selectedSystemType === 'pareva'"
-        class="mt-6"
+        v-if="
+          (embedded || lockerDetails.active) && selectedSystemType === 'pareva'
+        "
+        :class="embedded ? '' : 'mt-6'"
       >
         <div
           class="section-title mb-3 d-flex justify-space-between align-center"
@@ -327,7 +352,13 @@ export default {
             <span class="font-weight-medium">Schließfächer</span>
           </div>
           <div>
-            <v-btn small text color="primary" @click="selectedSystemType = ''">
+            <v-btn
+              v-if="!embedded"
+              small
+              text
+              color="primary"
+              @click="selectedSystemType = ''"
+            >
               <v-icon left small>mdi-swap-horizontal</v-icon>
               System-Typ ändern
             </v-btn>
@@ -339,7 +370,13 @@ export default {
           </div>
         </div>
 
-        <v-alert v-if="hasCountMismatch" color="warning" dense text class="mb-4">
+        <v-alert
+          v-if="hasCountMismatch"
+          color="warning"
+          dense
+          text
+          class="mb-4"
+        >
           <div class="d-flex align-center">
             <v-icon class="mr-3" color="warning">
               mdi-alert-circle-outline
@@ -418,10 +455,12 @@ export default {
         </div>
       </div>
 
-      <!-- Fahrradboxen (IFBS) -->
+      <!-- (IFBS) -->
       <div
-        v-if="lockerDetails.active && selectedSystemType === 'ifbs'"
-        class="mt-6"
+        v-if="
+          (embedded || lockerDetails.active) && selectedSystemType === 'ifbs'
+        "
+        :class="embedded ? '' : 'mt-6'"
       >
         <div
           class="section-title mb-3 d-flex justify-space-between align-center"
@@ -431,7 +470,13 @@ export default {
             <span class="font-weight-medium">Fahrradboxen</span>
           </div>
           <div>
-            <v-btn small text color="primary" @click="selectedSystemType = ''">
+            <v-btn
+              v-if="!embedded"
+              small
+              text
+              color="primary"
+              @click="selectedSystemType = ''"
+            >
               <v-icon left small>mdi-swap-horizontal</v-icon>
               System-Typ ändern
             </v-btn>

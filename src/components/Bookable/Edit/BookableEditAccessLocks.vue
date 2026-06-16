@@ -16,6 +16,12 @@ export default {
     return {
       tenantApps: [],
       loadingApps: false,
+      panel: null,
+      // Remembers the locker type the user just switched on. The persisted
+      // type is normally derived from the first unit, but right after
+      // activation there are no units yet, so we need this fallback to know
+      // whether "Schließfach" or "Fahrradbox" is the active locker system.
+      lockerTypeOverride: "",
     };
   },
   computed: {
@@ -37,15 +43,14 @@ export default {
       const first = (units[0]?.lockerSystem || "").toLowerCase();
       if (first.includes("pareva")) return "pareva";
       if (first.includes("ifbs")) return "ifbs";
-      return "";
+      return this.lockerTypeOverride;
     },
     availability() {
       const isActive = (predicate) =>
         this.tenantApps.some((app) => app.active && predicate(app));
       return {
-        door: isActive(
-          (app) => app.type === "access" && app.id === "nuki"
-        ),
+        // The door covers every active access provider (Nuki, Salto KS, …).
+        door: isActive((app) => app.type === "access"),
         pareva: isActive(
           (app) =>
             app.type === "locker" &&
@@ -58,43 +63,47 @@ export default {
         ),
       };
     },
-    guideOptions() {
-      const options = [];
+    methods_() {
+      const list = [];
       if (this.showAccess) {
-        options.push({
+        list.push({
           key: "door",
-          provider: "Nuki",
+          kind: "access",
+          provider: "Nuki / Salto KS",
           icon: "mdi-door",
           title: "Smartes Türschloss",
           description:
             "Buchende öffnen und schließen die Tür während ihres Buchungszeitraums – ideal für Räume, Büros oder Gebäude.",
-          active: () => this.accessActive,
         });
       }
-      options.push(
+      list.push(
         {
           key: "pareva",
+          kind: "locker",
           provider: "Pareva",
           icon: "mdi-locker-multiple",
           title: "Schließfach",
           description:
             "Hinterlegen Sie ein Buchungsobjekt – z. B. ein iPad oder Equipment – in einem Fach. Buchende entnehmen es selbstständig zum Zeitpunkt ihrer Buchung.",
-          active: () => this.lockerActive && this.activeLockerType === "pareva",
         },
         {
           key: "ifbs",
+          kind: "locker",
           provider: "Parkraumservice",
           icon: "mdi-bicycle",
           title: "Fahrradbox",
           description:
             "Stellen Sie abschließbare Fahrradboxen bereit, die Buchende zum Zeitpunkt ihrer Buchung öffnen.",
-          active: () => this.lockerActive && this.activeLockerType === "ifbs",
         }
       );
-      return options.map((option) => ({
+      return list.map((option) => ({
         ...option,
         available: !!this.availability[option.key],
+        active: this.isActive(option.key),
       }));
+    },
+    activeCount() {
+      return this.methods_.filter((m) => m.active).length;
     },
   },
   watch: {
@@ -118,53 +127,91 @@ export default {
         this.loadingApps = false;
       }
     },
-    async validate() {
-      const checks = [];
-      if (this.$refs.locker?.validate) checks.push(this.$refs.locker.validate());
-      if (this.showAccess && this.$refs.access?.validate) {
-        checks.push(this.$refs.access.validate());
+    isActive(key) {
+      if (key === "door") return this.accessActive;
+      if (key === "pareva")
+        return this.lockerActive && this.activeLockerType === "pareva";
+      if (key === "ifbs")
+        return this.lockerActive && this.activeLockerType === "ifbs";
+      return false;
+    },
+    setAccessActive(active) {
+      const current = this.bookable.accessPointDetails || { points: [] };
+      this.$emit("update:bookable", {
+        ...this.bookable,
+        accessPointDetails: { points: [], ...current, active },
+      });
+    },
+    // Schließfach (pareva) and Fahrradbox (ifbs) share one lockerDetails
+    // object and are mutually exclusive. Switching the type clears the units
+    // because their definitions are not compatible.
+    setLockerType(type) {
+      const current = this.bookable.lockerDetails || { units: [] };
+      const switching = this.activeLockerType && this.activeLockerType !== type;
+      this.lockerTypeOverride = type;
+      this.$emit("update:bookable", {
+        ...this.bookable,
+        lockerDetails: {
+          ...current,
+          active: true,
+          units: switching ? [] : current.units || [],
+        },
+      });
+    },
+    setLockerActive(active) {
+      const current = this.bookable.lockerDetails || { units: [] };
+      if (!active) this.lockerTypeOverride = "";
+      this.$emit("update:bookable", {
+        ...this.bookable,
+        lockerDetails: { units: [], ...current, active },
+      });
+    },
+    toggleMethod(key, enabled) {
+      if (key === "door") {
+        this.setAccessActive(enabled);
+        return;
       }
+      if (enabled) {
+        this.setLockerType(key);
+      } else {
+        this.setLockerActive(false);
+      }
+    },
+    onToggle(method, enabled, index) {
+      this.toggleMethod(method.key, enabled);
+      if (enabled) {
+        this.$nextTick(() => {
+          this.panel = index;
+        });
+      }
+    },
+    onChildUpdate(updated) {
+      this.$emit("update:bookable", updated);
+    },
+    statusColor(method) {
+      if (method.active) return "success";
+      if (!method.available) return "grey";
+      return "grey darken-1";
+    },
+    statusLabel(method) {
+      if (method.active) return "Aktiv";
+      if (!method.available) return "Nicht verfügbar";
+      return "Inaktiv";
+    },
+    childRefs() {
+      return [this.$refs.locker, this.$refs.access]
+        .flatMap((ref) => (Array.isArray(ref) ? ref : [ref]))
+        .filter(Boolean);
+    },
+    async validate() {
+      const checks = this.childRefs()
+        .filter((child) => typeof child.validate === "function")
+        .map((child) => child.validate());
       const results = await Promise.all(checks);
       return results.every(Boolean);
     },
     resetValidation() {
-      this.$refs.locker?.resetValidation?.();
-      if (this.showAccess) this.$refs.access?.resetValidation?.();
-    },
-    choose(option) {
-      if (!option.available && !option.active()) return;
-      if (option.key === "door") {
-        this.activateAccess();
-        this.scrollTo("accessSection");
-        return;
-      }
-      this.activateLocker();
-      this.$nextTick(() => {
-        this.$refs.locker?.selectSystemType?.(option.key);
-        this.scrollTo("lockerSection");
-      });
-    },
-    activateAccess() {
-      const current = this.bookable.accessPointDetails || { points: [] };
-      this.$emit("update:bookable", {
-        ...this.bookable,
-        accessPointDetails: { points: [], ...current, active: true },
-      });
-    },
-    activateLocker() {
-      const current = this.bookable.lockerDetails || { units: [] };
-      this.$emit("update:bookable", {
-        ...this.bookable,
-        lockerDetails: { units: [], ...current, active: true },
-      });
-    },
-    scrollTo(refName) {
-      this.$nextTick(() => {
-        const el = this.$refs[refName];
-        if (el && el.scrollIntoView) {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      });
+      this.childRefs().forEach((child) => child.resetValidation?.());
     },
   },
 };
@@ -172,150 +219,111 @@ export default {
 
 <template>
   <div>
-    <!-- ============ GEFÜHRTE AUSWAHL ============ -->
-    <v-card flat class="mb-6 guide-card">
-      <v-card-title class="py-3">
-        <v-icon class="mr-2" color="primary">mdi-lightbulb-on-outline</v-icon>
-        <span class="text-h6">Was möchten Sie einrichten?</span>
-      </v-card-title>
-      <v-divider />
-      <v-card-subtitle>
-        <v-icon left small color="info">mdi-information-outline</v-icon>
-        Wählen Sie aus, wie Buchende auf dieses Objekt zugreifen. Die passende
-        Konfiguration öffnet sich darunter.
-      </v-card-subtitle>
-      <v-card-text>
-        <v-row dense>
-          <v-col
-            v-for="option in guideOptions"
-            :key="option.key"
-            cols="12"
-            :md="guideOptions.length === 3 ? 4 : 6"
-          >
-            <v-card
-              outlined
-              :hover="option.available || option.active()"
-              class="guide-option fill-height d-flex flex-column"
-              :class="{
-                'guide-option--active': option.active(),
-                'guide-option--disabled':
-                  !option.available && !option.active(),
-              }"
-              @click="choose(option)"
-            >
-              <v-card-text class="d-flex flex-column" style="height: 100%">
-                <div class="d-flex align-center mb-2">
-                  <v-icon
-                    size="32"
-                    :color="
-                      option.available || option.active() ? 'primary' : 'grey'
-                    "
-                    class="mr-3"
-                  >
-                    {{ option.icon }}
-                  </v-icon>
-                  <div>
-                    <div class="font-weight-bold">{{ option.title }}</div>
-                    <v-chip
-                      x-small
-                      label
-                      outlined
-                      :color="
-                        option.available || option.active()
-                          ? 'primary'
-                          : 'grey'
-                      "
-                    >
-                      {{ option.provider }}
-                    </v-chip>
-                  </div>
-                  <v-spacer />
-                  <v-icon v-if="option.active()" color="success">
-                    mdi-check-circle
-                  </v-icon>
-                </div>
-                <div class="text-body-2 text--secondary mb-3">
-                  {{ option.description }}
-                </div>
-                <v-spacer />
+    <div class="d-flex align-center mb-1">
+      <v-icon color="primary" class="mr-2">mdi-shield-key-outline</v-icon>
+      <span class="text-h6">Zugang &amp; Schließsysteme</span>
+      <v-spacer />
+      <v-chip small label outlined :color="activeCount ? 'success' : 'grey'">
+        {{ activeCount }} aktiv
+      </v-chip>
+    </div>
+    <div class="text-body-2 text--secondary mb-4">
+      Klappen Sie einen Bereich auf, um ihn einzurichten. Alle Bereiche sind
+      standardmäßig zugeklappt – so behalten Sie den Überblick.
+    </div>
 
-                <!-- Nicht im Mandanten konfiguriert -->
-                <v-alert
-                  v-if="!option.available && !loadingApps"
-                  dense
-                  text
-                  :type="option.active() ? 'warning' : 'info'"
-                  class="mb-0 mt-1"
+    <v-expansion-panels v-model="panel" accordion focusable>
+      <v-expansion-panel
+        v-for="(m, index) in methods_"
+        :key="m.key"
+        :disabled="!m.available && !m.active"
+      >
+        <v-expansion-panel-header>
+          <v-row align="center" no-gutters>
+            <v-col cols="auto" class="mr-3">
+              <v-icon :color="m.active ? 'primary' : 'grey'" size="28">
+                {{ m.icon }}
+              </v-icon>
+            </v-col>
+            <v-col>
+              <div class="font-weight-bold">{{ m.title }}</div>
+              <div class="text-caption text--secondary">{{ m.provider }}</div>
+            </v-col>
+            <v-col cols="auto" class="mr-2" @click.stop>
+              <div class="d-flex align-center">
+                <v-chip
+                  x-small
+                  label
+                  outlined
+                  :color="statusColor(m)"
+                  class="mr-3"
                 >
-                  <span class="text-caption">
-                    <template v-if="option.active()">
-                      „{{ option.provider }}" ist im Mandanten derzeit nicht
-                      aktiv. Bitte aktivieren Sie den Anbieter in den
-                      Mandanten-Einstellungen.
-                    </template>
-                    <template v-else>
-                      Nicht verfügbar – „{{ option.provider }}" muss zuerst in
-                      den Mandanten-Einstellungen aktiviert werden.
-                    </template>
-                  </span>
-                </v-alert>
+                  {{ statusLabel(m) }}
+                </v-chip>
+                <v-switch
+                  :input-value="m.active"
+                  :disabled="!m.available && !m.active"
+                  color="primary"
+                  hide-details
+                  dense
+                  class="mt-0 pt-0"
+                  @change="onToggle(m, $event, index)"
+                />
+              </div>
+            </v-col>
+          </v-row>
+        </v-expansion-panel-header>
+        <v-expansion-panel-content>
+          <div class="text-body-2 text--secondary mb-4">
+            {{ m.description }}
+          </div>
 
-                <div v-else-if="option.available" class="text-right">
-                  <v-btn small text color="primary">
-                    <v-icon left small>
-                      {{ option.active() ? "mdi-pencil" : "mdi-plus" }}
-                    </v-icon>
-                    {{ option.active() ? "Konfigurieren" : "Einrichten" }}
-                  </v-btn>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
+          <v-alert
+            v-if="!m.available && !loadingApps"
+            dense
+            text
+            :type="m.active ? 'warning' : 'info'"
+            class="mb-0"
+          >
+            <template v-if="m.active">
+              „{{ m.provider }}" ist im Mandanten derzeit nicht aktiv. Bitte
+              aktivieren Sie den Anbieter in den Mandanten-Einstellungen.
+            </template>
+            <template v-else>
+              Nicht verfügbar – „{{ m.provider }}" muss zuerst in den
+              Mandanten-Einstellungen aktiviert werden.
+            </template>
+          </v-alert>
 
-    <!-- ============ SCHLIESSFÄCHER & FAHRRADBOXEN ============ -->
-    <div ref="lockerSection">
-      <BookableEditLockerSystems
-        ref="locker"
-        :bookable="bookable"
-        @update:bookable="$emit('update:bookable', $event)"
-      />
-    </div>
+          <template v-else>
+            <div v-if="!m.active" class="text-center py-6">
+              <div class="text-body-2 text--secondary">
+                Schalten Sie „{{ m.title }}" oben rechts ein, um es zu
+                konfigurieren.
+              </div>
+            </div>
 
-    <!-- ============ TÜREN / ZUGANG ============ -->
-    <div v-if="showAccess" ref="accessSection" class="mt-6">
-      <BookableEditAccessPoints
-        ref="access"
-        :bookable="bookable"
-        @update:bookable="$emit('update:bookable', $event)"
-      />
-    </div>
+            <BookableEditAccessPoints
+              v-else-if="m.kind === 'access'"
+              ref="access"
+              embedded
+              :bookable="bookable"
+              @update:bookable="onChildUpdate"
+            />
+            <BookableEditLockerSystems
+              v-else
+              ref="locker"
+              :key="`locker-${m.key}`"
+              embedded
+              :forced-system-type="m.key"
+              :bookable="bookable"
+              @update:bookable="onChildUpdate"
+            />
+          </template>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+    </v-expansion-panels>
   </div>
 </template>
 
-<style scoped>
-.guide-card {
-  background-color: unset !important;
-}
-.guide-option {
-  border-radius: 8px !important;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.guide-option:hover {
-  border-color: var(--v-primary-base);
-}
-.guide-option--active {
-  border-color: var(--v-primary-base);
-  border-width: 2px;
-}
-.guide-option--disabled {
-  cursor: default;
-  opacity: 0.75;
-}
-.guide-option--disabled:hover {
-  border-color: rgba(0, 0, 0, 0.12);
-}
-</style>
+<style scoped></style>
