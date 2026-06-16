@@ -146,6 +146,132 @@ services:
 
 ---
 
+## Embedding on Your Own Website (JS Web Interface)
+
+In addition to the standalone Vue application, this project ships a lightweight
+**JavaScript web interface** that lets you embed bookable objects, events,
+calendars, login/logout and user profile components directly into **any
+existing website** (e.g. a city's CMS, WordPress, TYPO3, or a plain static
+page) – no Vue knowledge required.
+
+The source lives in
+[`src/js-web-interface/booking-manager-js.js`](src/js-web-interface/booking-manager-js.js).
+During the build it is minified to `booking-manager.min.js`:
+
+| Command             | Output location                                      | Purpose                       |
+| ------------------- | --------------------------------------------------- | ----------------------------- |
+| `npm run build`     | `./dist/cdn/current/booking-manager.min.js`         | Production build (served as CDN) |
+| `npm run test-build`| `./public/cdn/current/booking-manager.min.js`       | Local testing                 |
+
+When the frontend is deployed, the script is therefore reachable under
+`https://<your-frontend-host>/cdn/current/booking-manager.min.js`.
+
+### 1. Include the script
+
+Add the script to your page (using the minified file in production, or the
+unminified source during development):
+
+```html
+<!-- Production: minified version served from your frontend host -->
+<script src="https://booking.my-city.de/cdn/current/booking-manager.min.js"></script>
+```
+
+### 2. Initialize the Booking Manager
+
+```html
+<script>
+  const bm = new BookingManager();
+
+  // Base URL of the backend API (same value as VUE_APP_SERVER_BASE_URL)
+  bm.url = "https://api.my-city.de";
+
+  // Tenant identifier of the tenant you want to embed the booking manager for
+  bm.tenant = "my-tenant";
+
+  // Initialize once the page has finished loading
+  window.addEventListener("load", () => {
+    bm.init();
+  });
+</script>
+```
+
+`init()` automatically loads the required [FullCalendar](https://fullcalendar.io/)
+libraries from a CDN, fetches the relevant data from the backend and binds it
+to the placeholder elements described below.
+
+### 3. Place the components
+
+Add the desired placeholder elements anywhere in your HTML. The Booking Manager
+fills them with content based on their CSS class / `id` and `data-*`
+attributes. You can use the **class** variants multiple times on the same page;
+the `id` variants are kept for backwards compatibility and should only appear
+once.
+
+| Element (class / id)                | Configuration attributes                                                                 | Description                                                            |
+| ----------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `.bm-bookable-list`                 | `data-type` (filter by type, optional), `data-ids` (comma-separated IDs, optional)       | Renders a list of bookable objects.                                   |
+| `.bm-bookable-item`                 | `data-id` (fixed ID) **or** `data-id-param` (read ID from URL query parameter)           | Renders the detail view of a single bookable object.                  |
+| `.bm-event-list`                    | `data-ids` (comma-separated IDs, optional)                                                | Renders a list of events.                                             |
+| `.bm-event-item`                    | `data-id` (fixed ID) **or** `data-id-param` (read ID from URL query parameter)           | Renders the detail view of a single event.                           |
+| `.bm-calendar`                      | `data-view` (`dayGridMonth` \| `timeGridWeek` \| …, default `dayGridMonth`)               | Calendar showing all events.                                          |
+| `.bm-occupancy-calendar`            | `data-id` (comma-separated bookable IDs), `data-view` (default `dayGridMonth`)            | Calendar showing the occupancy of the given bookable object(s).       |
+| `.bm-availability-calendar`         | `data-id` (comma-separated bookable IDs), `data-view` (default `dayGridMonth`)            | Calendar showing when the given bookable object(s) are **not** available. |
+
+**Example – list and detail page:**
+
+```html
+<!-- List of bookable rooms -->
+<div class="bm-bookable-list" data-type="room"></div>
+
+<!-- Detail view, reads the bookable id from the URL parameter "id"
+     e.g. https://my-city.de/detail?id=123 -->
+<div class="bm-bookable-item" data-id-param="id"></div>
+
+<!-- Event calendar in week view -->
+<div class="bm-calendar" data-view="timeGridWeek"></div>
+```
+
+### 4. Optional customization
+
+The `BookingManager` instance exposes a few properties you can set **before**
+calling `init()`:
+
+```html
+<script>
+  const bm = new BookingManager();
+  bm.url = "https://api.my-city.de";
+  bm.tenant = "my-tenant";
+
+  // Link template for calendar events ({id} is replaced with the event id)
+  bm.calendarHref = "https://my-city.de/event?id={id}";
+
+  // Extra FullCalendar options, merged into the default configuration
+  bm.calendar = {
+    locale: "de",
+    headerToolbar: {
+      left: "prev,next today",
+      center: "title",
+      right: "dayGridMonth,timeGridWeek",
+    },
+  };
+
+  window.addEventListener("load", () => bm.init());
+</script>
+```
+
+The loading indicator of the calendars can be styled via CSS custom properties:
+
+```css
+:root {
+  --bm-calendar-loading-bg: rgba(255, 255, 255, 0.8);
+  --bm-calendar-loading-color: #333;
+  --bm-calendar-loading-opacity: 0.6;
+  --bm-calendar-primary-color: #3498db;
+}
+```
+
+---
+
 ## Local Development
 
 1. **Clone the repository:**

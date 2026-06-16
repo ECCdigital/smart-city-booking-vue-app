@@ -2,6 +2,8 @@
 node_modules
 /dist
 
+/public/cdn
+
 
 # local env files
 .env
