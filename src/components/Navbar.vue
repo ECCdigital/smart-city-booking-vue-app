@@ -272,6 +272,12 @@ export default {
             icon: "mdi-account-group-outline",
             interfaceName: "instance",
           },
+          {
+            title: "Automatisierungsregeln",
+            link: "rules",
+            icon: "mdi-cog-sync-outline",
+            interfaceName: "instance",
+          },
         ],
       },
       {
@@ -314,14 +320,14 @@ export default {
         });
     },
     darkMode() {
-      this.$store.dispatch("theme/toggleDarkMode").then(isDarkMode => {
+      this.$store.dispatch("theme/toggleDarkMode").then((isDarkMode) => {
         this.$vuetify.theme.dark = isDarkMode;
       });
     },
     fetchTenants() {
       ApiTenantService.getTenants(true).then((response) => {
         this.tenants = response.data;
-        if(!this.currentTenant && this.tenants.length === 1) {
+        if (!this.currentTenant && this.tenants.length === 1) {
           this.currentTenant = this.tenants[0].id;
         }
       });
