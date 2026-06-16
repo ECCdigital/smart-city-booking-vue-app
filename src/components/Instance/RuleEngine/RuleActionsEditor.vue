@@ -27,6 +27,16 @@
         </v-col>
       </v-row>
 
+      <div
+        v-if="defFor(row.type) && defFor(row.type).aggregate"
+        class="mt-1 mb-1"
+      >
+        <v-chip x-small color="indigo" text-color="white" label>
+          <v-icon left x-small>mdi-account-multiple</v-icon>
+          Sammel-E-Mail: eine Mail pro Mandant
+        </v-chip>
+      </div>
+
       <template v-if="defFor(row.type) && defFor(row.type).params.length">
         <v-divider class="my-2" />
         <v-row dense>
@@ -43,6 +53,7 @@
               :label="paramLabel(param)"
               :hint="param.note || ''"
               :persistent-hint="!!param.note"
+              :placeholders="param.name === 'to' ? placeholders : []"
               @input="onParamInput(row, param, $event)"
             />
           </v-col>
@@ -97,6 +108,10 @@ export default {
       default: () => [],
     },
     allowedActions: {
+      type: Array,
+      default: () => [],
+    },
+    placeholders: {
       type: Array,
       default: () => [],
     },

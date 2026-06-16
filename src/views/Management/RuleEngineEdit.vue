@@ -98,7 +98,7 @@
             v-model="rule.query"
             :fields="resourceFields"
             :query-operators="meta.queryOperators"
-            :placeholders="meta.placeholders"
+            :placeholders="queryPlaceholders"
           />
         </BaseSection>
 
@@ -121,6 +121,7 @@
             v-model="rule.actions"
             :action-defs="meta.actions"
             :allowed-actions="meta.allowedActions"
+            :placeholders="actionParamPlaceholders"
           />
         </BaseSection>
 
@@ -221,6 +222,16 @@ export default {
         type: f.type || "string",
       }));
       return [...this.resourceFields, ...facts];
+    },
+    queryPlaceholders() {
+      return (this.meta.placeholders || []).filter(
+        (p) => p.context !== "actionParams"
+      );
+    },
+    actionParamPlaceholders() {
+      return (this.meta.placeholders || []).filter(
+        (p) => p.context === "actionParams"
+      );
     },
   },
   methods: {

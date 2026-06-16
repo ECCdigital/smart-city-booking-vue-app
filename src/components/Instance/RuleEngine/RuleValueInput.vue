@@ -93,17 +93,30 @@
       @input="$emit('input', $event)"
     />
 
-    <v-text-field
-      v-else
-      :value="value"
-      :label="label"
-      :hint="hint"
-      :persistent-hint="persistentHint"
-      :dense="dense"
-      :hide-details="hideDetails"
-      outlined
-      @input="$emit('input', $event)"
-    />
+    <div v-else>
+      <v-select
+        v-if="placeholders.length"
+        :value="strMode"
+        :items="strModeItems"
+        :label="label"
+        :dense="dense"
+        hide-details="auto"
+        outlined
+        class="mb-2"
+        @change="onStrMode"
+      />
+      <v-text-field
+        v-if="strMode === 'manual'"
+        :value="value"
+        :label="placeholders.length ? 'Wert' : label"
+        :hint="hint"
+        :persistent-hint="persistentHint"
+        :dense="dense"
+        :hide-details="hideDetails"
+        outlined
+        @input="$emit('input', $event)"
+      />
+    </div>
   </div>
 </template>
 
@@ -162,6 +175,19 @@ export default {
     };
   },
   computed: {
+    strMode() {
+      if (typeof this.value === "string") {
+        const match = this.placeholders.find((p) => p.token === this.value);
+        if (match) return match.token;
+      }
+      return "manual";
+    },
+    strModeItems() {
+      return [
+        { text: "Manuell eingeben", value: "manual" },
+        ...this.placeholders.map((p) => ({ text: p.label, value: p.token })),
+      ];
+    },
     dtModeItems() {
       return [
         { text: "Fester Zeitpunkt", value: "fixed" },
@@ -246,6 +272,9 @@ export default {
         return this.value[this.dtMode];
       }
       return null;
+    },
+    onStrMode(mode) {
+      this.$emit("input", mode === "manual" ? "" : mode);
     },
     onNumber(val) {
       if (val === "" || val === null) {

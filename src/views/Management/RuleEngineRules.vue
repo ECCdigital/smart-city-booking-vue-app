@@ -23,8 +23,7 @@
       >
         Die automatische Ausführung ist auf dem Server deaktiviert
         (<code>RULE_ENGINE_ENABLED=false</code>). Regeln werden derzeit
-        <strong>nicht</strong> nach Zeitplan ausgeführt. Manuelles Ausführen und
-        Testen ist weiterhin möglich.
+        <strong>nicht</strong> nach Zeitplan ausgeführt. Testen ist weiterhin möglich.
       </v-alert>
 
       <v-alert

@@ -63,7 +63,7 @@
               v-else
               v-model="row.value"
               :type="inputType(row)"
-              :placeholders="placeholders"
+              :placeholders="inputType(row) === 'datetime' ? placeholders : []"
               label="Wert"
               @input="emitChange"
             />
