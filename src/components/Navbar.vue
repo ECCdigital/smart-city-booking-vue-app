@@ -280,6 +280,12 @@ export default {
             icon: "mdi-account-group-outline",
             interfaceName: "instance",
           },
+          {
+            title: "Automatisierungsregeln",
+            link: "rules",
+            icon: "mdi-cog-sync-outline",
+            interfaceName: "instance",
+          },
         ],
       },
       {

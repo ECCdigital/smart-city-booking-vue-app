@@ -24,6 +24,9 @@ import Coupons from "@/views/Coupons.vue";
 import Instances from "@/views/Management/Instances.vue";
 import InstanceUsers from "@/views/Management/InstanceUsers.vue";
 import InstanceTenants from "@/views/Management/InstanceTenants.vue";
+import RuleEngineRules from "@/views/Management/RuleEngineRules.vue";
+import RuleEngineEdit from "@/views/Management/RuleEngineEdit.vue";
+import RuleEngineExecutions from "@/views/Management/RuleEngineExecutions.vue";
 import { pipeline } from "./middleware";
 
 import { requiresAuth } from "./middlewares/auth";
@@ -80,6 +83,46 @@ const routes = [
     component: InstanceUsers,
     meta: {
       title: "Benutzer",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/instance/rules",
+    name: "rules",
+    component: RuleEngineRules,
+    meta: {
+      title: "Automatisierungsregeln",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/instance/rules/executions",
+    name: "rule-executions",
+    component: RuleEngineExecutions,
+    meta: {
+      title: "Ausführungs-Historie",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/instance/rules/create",
+    name: "rule-create",
+    component: RuleEngineEdit,
+    meta: {
+      title: "Regel anlegen",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/instance/rules/:id/edit",
+    name: "rule-edit",
+    component: RuleEngineEdit,
+    meta: {
+      title: "Regel bearbeiten",
       requiresAuth: true,
       interfaceName: "instance",
     },
