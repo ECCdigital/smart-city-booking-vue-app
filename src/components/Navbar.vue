@@ -137,6 +137,11 @@
           </div>
         </v-list>
       </div>
+      <template v-slot:append>
+        <div class="pa-3 text-center text--secondary caption">
+          Version {{ appVersion }}
+        </div>
+      </template>
     </v-navigation-drawer>
   </nav>
 </template>
@@ -147,11 +152,14 @@ import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import NotificationDisplay from "@/components/NotificationDisplay";
+import keycloakService from "@/services/KeycloakService";
+import { version as appVersion } from "../../package.json";
 
 export default {
   data: () => ({
     drawer: false,
     isProduction: process.env.VUE_APP_IS_PRODUCTION,
+    appVersion,
     profileItems: [
       {
         title: "Einstellungen",
@@ -203,7 +211,7 @@ export default {
             context: "tenant",
           },
           {
-            title: "Ressourcen",
+            title: "Geräte & Weiteres",
             link: "resources",
             icon: "mdi-package-variant",
             interfaceName: "resources",
@@ -308,16 +316,36 @@ export default {
     resetStores() {
       this.$store.dispatch("reset");
     },
-    logout() {
-      ApiAuthService.logout()
-        .then(() => {
-          this.addToast(ToastService.createToast("logout.success", "success"));
-          this.resetStores();
-          window.location.href = "/";
-        })
-        .finally(() => {
-          this.deleteUser();
-        });
+    async logout() {
+      const authType = localStorage.getItem("authType");
+
+      if (authType === "keycloak") {
+        this.resetStores();
+        await this.deleteUser();
+
+        const base = process.env.BASE_URL?.trim()
+          ? process.env.BASE_URL.replace(/\/$/, "")
+          : "";
+        const redirectUri = `${window.location.origin}${base}/`;
+
+        await keycloakService.logout(redirectUri);
+      } else {
+        ApiAuthService.logout()
+          .then(() => {
+            this.addToast(
+              ToastService.createToast("logout.success", "success")
+            );
+            this.resetStores();
+
+            const base = process.env.BASE_URL?.trim()
+              ? process.env.BASE_URL.replace(/\/$/, "")
+              : "";
+            window.location.href = `${base}/login`;
+          })
+          .finally(() => {
+            this.deleteUser();
+          });
+      }
     },
     darkMode() {
       this.$store.dispatch("theme/toggleDarkMode").then((isDarkMode) => {

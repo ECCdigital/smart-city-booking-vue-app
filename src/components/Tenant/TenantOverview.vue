@@ -51,12 +51,15 @@
               :workflow="workflow"
               :roles="roles"
               :challenges="verificationChallenges"
+              :instance-custom-fields="instanceCustomFields"
+              :has-unsaved-changes="hasUnsavedChanges"
               @update:tenant="onUpdateTenant"
               @update:apps="onUpdateApps"
               @update:workflow="onUpdateWorkflow"
               @update:challenges="onUpdateChallenges"
               @open-receipt-template="openReceiptTemplate"
               @open-invoice-template="openInvoiceTemplate"
+              @open-cancellation-template="openCancellationTemplate"
             />
           </keep-alive>
         </v-col>
@@ -86,6 +89,12 @@
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
     />
+    <CancellationTemplateDialog
+      :open="showEditCancellationTemplateDialog"
+      :cancellation-template="tenant.cancellationTemplate"
+      @close="showEditCancellationTemplateDialog = false"
+      @submit="onSubmitCancellationTemplate"
+    />
   </div>
 </template>
 
@@ -110,10 +119,14 @@ import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import SaveBar from "@/components/commons/SaveBar.vue";
+import ApiInstanceService from "@/services/api/ApiInstanceService";
+import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
+import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
 
 export default {
   name: "TenantOverview",
   components: {
+    CancellationTemplateDialog,
     SaveBar,
     TenantEditGeneral,
     TenantEditWeb,
@@ -127,6 +140,7 @@ export default {
     InvoiceTemplateDialog,
     TenantEditVerificationChallenges,
     TenantEditCatalog,
+    TenantEditBookables,
   },
   data() {
     return {
@@ -162,6 +176,12 @@ export default {
           comp: "TenantEditLocks",
         },
         {
+          key: "bookables",
+          label: "Buchungsobjekte",
+          icon: "mdi-calendar-check",
+          comp: "TenantEditBookables",
+        },
+        {
           key: "booking",
           label: "Buchung",
           icon: "mdi-calendar",
@@ -185,15 +205,14 @@ export default {
           icon: "mdi-check-decagram",
           comp: "TenantEditVerificationChallenges",
         },
-        /** This feature is currently disabled
         {
           key: "catalogs",
           label: "Kataloge",
           icon: "mdi-book-open-page-variant",
           comp: "TenantEditCatalog",
         },
-  **/
       ],
+      instanceCustomFields: [],
       originalSnapshot: null,
       tenant: {},
       apps: {},
@@ -211,6 +230,7 @@ export default {
       verificationChallenges: [],
       showEditTemplateDialog: false,
       showEditInvoiceTemplateDialog: false,
+      showEditCancellationTemplateDialog: false,
       defaultApps: {
         giroCockpit: {
           type: "payment",
@@ -230,6 +250,20 @@ export default {
           paymentProjectId: "",
           paymentSecret: "",
           paymentMode: "",
+          active: false,
+        },
+        ePayBL: {
+          type: "payment",
+          id: "ePayBL",
+          title: "ePayBL",
+          baseUrl: "",
+          merchantId: "",
+          managerId: "",
+          budgetAccount: "",
+          objectNumber: "",
+          paymentMethods: [],
+          clientP12: "",
+          certPassphrase: "",
           active: false,
         },
         invoice: {
@@ -252,6 +286,21 @@ export default {
           user: "",
           password: "",
           active: false,
+        },
+        ifbs: {
+          type: "locker",
+          id: "ifbs",
+          title: "Parkraumservice",
+          serverUrl: "",
+          secretPhrase: "",
+          apiKeyID: "",
+          apiKey: "",
+          active: false,
+          customerService: {
+            name: "",
+            email: "",
+            phone: "",
+          },
         },
       },
     };
@@ -386,7 +435,6 @@ export default {
     async submitChanges() {
       const ok = await this.validateActiveChild();
       if (!ok) {
-        // optional: nach 4s Validierung der aktiven Unterseite zurücksetzen
         setTimeout(() => {
           const ref = this.$refs.activeChild;
           if (ref && typeof ref.resetValidation === "function") {
@@ -490,6 +538,9 @@ export default {
     openInvoiceTemplate() {
       this.showEditInvoiceTemplateDialog = true;
     },
+    openCancellationTemplate() {
+      this.showEditCancellationTemplateDialog = true;
+    },
     onSubmitReceiptTemplate(template) {
       this.tenant.receiptTemplate = template;
       this.showEditTemplateDialog = false;
@@ -497,6 +548,19 @@ export default {
     onSubmitInvoiceTemplate(template) {
       this.tenant.invoiceTemplate = template;
       this.showEditInvoiceTemplateDialog = false;
+    },
+    onSubmitCancellationTemplate(template) {
+      this.tenant.cancellationTemplate = template;
+      this.showEditCancellationTemplateDialog = false;
+    },
+    async fetchInstanceCustomFields() {
+      try {
+        const bookableCustomFields =
+          await ApiInstanceService.getBookableCustomFields();
+        this.instanceCustomFields = bookableCustomFields || [];
+      } catch (e) {
+        console.error(e);
+      }
     },
   },
   async mounted() {
@@ -506,12 +570,16 @@ export default {
 
     await this.fetchTenant();
     await this.fetchRoles();
+    await this.fetchInstanceCustomFields();
   },
 };
 </script>
 
 <style scoped>
 .page-content {
-  padding-bottom: 26px;
+  padding-bottom: calc(
+    56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
+      /* extra spacing */
+  );
 }
 </style>

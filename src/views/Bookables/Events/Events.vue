@@ -42,19 +42,22 @@
       </v-col>
       <v-spacer />
       <v-col cols="auto">
-        <v-menu offset-y>
+        <v-menu offset-y left>
           <template v-slot:activator="{ on, attrs }">
-            <v-chip
-              small
-              outlined
-              v-bind="attrs"
-              v-on="on"
-              :disabled="api.events.length === 0"
-              class="clickable"
-            >
-              <v-icon left x-small>mdi-calendar-export</v-icon>
-              iCal Export
-            </v-chip>
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on: tooltipOn, attrs: tooltipAttrs }">
+                <v-btn
+                  icon
+                  small
+                  v-bind="{ ...attrs, ...tooltipAttrs }"
+                  v-on="{ ...on, ...tooltipOn }"
+                  :disabled="api.events.length === 0"
+                >
+                  <v-icon>mdi-dots-vertical</v-icon>
+                </v-btn>
+              </template>
+              <span>iCal exportieren</span>
+            </v-tooltip>
           </template>
           <v-list dense>
             <v-list-item @click="downloadAllEventsIcal">

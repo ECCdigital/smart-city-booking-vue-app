@@ -1,15 +1,15 @@
 export function getTypeText(type) {
   switch (type) {
-    case "event-location":
-      return "Veranstaltungsort";
-    case "room":
-      return "Raum";
-    case "resource":
-      return "Ressource";
-    case "ticket":
-      return "Ticket";
-    default:
-      return "";
+  case "event-location":
+    return "Veranstaltungsort";
+  case "room":
+    return "Raum";
+  case "resource":
+    return "Gerät / Weiteres";
+  case "ticket":
+    return "Ticket";
+  default:
+    return "";
   }
 }
 

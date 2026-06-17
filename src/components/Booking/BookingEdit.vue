@@ -129,6 +129,29 @@
 
             <v-card class="mb-6 section-card" elevation="2" outlined>
               <v-card-title class="section-header pa-4">
+                <v-icon class="mr-2">mdi-book-cancel-outline</v-icon>
+                <span class="text-h6 font-weight-bold"
+                  >Stornierungsrichtlinie</span
+                >
+              </v-card-title>
+              <v-divider></v-divider>
+              <v-card-text class="pa-4">
+                <v-switch
+                  dense
+                  label="Benutzer darf diese Buchung selbst stornieren"
+                  hide-details
+                  v-model="userCancellable"
+                ></v-switch>
+                <p class="mb-0 mt-3 text-caption" style="max-width: 700px">
+                  Wenn aktiviert, kann der Buchende diese Buchung selbstständig
+                  stornieren. Andernfalls ist eine Stornierung nur durch
+                  Administratoren möglich.
+                </p>
+              </v-card-text>
+            </v-card>
+
+            <v-card class="mb-6 section-card" elevation="2" outlined>
+              <v-card-title class="section-header pa-4">
                 <v-icon class="mr-2">mdi-cash-multiple</v-icon>
                 <span class="text-h6 font-weight-bold"
                   >Zahlungsinformationen</span
@@ -363,7 +386,97 @@
                           />
                         </v-list-item-subtitle>
                         <v-list-item-subtitle>
-                          <v-row dense class="align-center">
+                          <template
+                            v-if="hasExternalPrices(bookableItem._bookableUsed)"
+                          >
+                            <v-progress-circular
+                              v-if="
+                                externalPricesLoading[bookableItem.bookableId]
+                              "
+                              indeterminate
+                              size="20"
+                              width="2"
+                              color="primary"
+                              class="my-2"
+                            />
+
+
+
+                            <template
+                              v-else-if="
+                                getExternalPrices(bookableItem.bookableId)
+                              "
+                            >
+                              <div class="d-flex align-center mb-2">
+                                <v-icon x-small class="mr-1" color="info">
+                                  mdi-information-outline
+                                </v-icon>
+                                <span
+                                  class="caption info--text font-weight-medium"
+                                >
+                                  Externe Preise
+                                </span>
+                              </div>
+
+                              <v-row dense>
+                                <v-col
+                                  v-for="price in getExternalPrices(
+                                    bookableItem.bookableId
+                                  )"
+                                  :key="price.unit"
+                                  cols="12"
+                                  sm="6"
+                                  md="4"
+                                >
+                                  <v-text-field
+                                    :value="price.priceEur"
+                                    @input="
+                                      updateExternalPrice(
+                                        bookableItem.bookableId,
+                                        price.unit,
+                                        $event
+                                      )
+                                    "
+                                    filled
+                                    dense
+                                    disabled
+                                    prefix="€"
+                                    :suffix="getUnitLabel(price.unit)"
+                                    background-color="accent"
+                                    hide-details
+                                    type="number"
+                                    :label="getUnitLabel(price.unit)"
+                                  ></v-text-field>
+                                </v-col>
+                              </v-row>
+
+                              <div class="d-flex align-center justify-end mt-2">
+                                <v-btn
+                                  icon
+                                  x-small
+                                  @click="decreaseAmount(bookableItem)"
+                                >
+                                  <v-icon>mdi-minus</v-icon>
+                                </v-btn>
+                                <div class="px-3 font-weight-bold">
+                                  {{ bookableItem.amount }}
+                                </div>
+                                <v-btn
+                                  icon
+                                  x-small
+                                  @click="increaseAmount(bookableItem)"
+                                >
+                                  <v-icon>mdi-plus</v-icon>
+                                </v-btn>
+                              </div>
+                            </template>
+
+                            <div v-else class="caption grey--text my-2">
+                              Keine externen Preise verfügbar
+                            </div>
+                          </template>
+
+                          <v-row v-else dense class="align-center">
                             <v-col cols="12" sm="5">
                               <v-text-field
                                 :value="
@@ -816,6 +929,115 @@
               </v-card-text>
             </v-card>
 
+            <v-card
+              v-if="editableCustomFields.length > 0"
+              class="mb-6 section-card"
+              elevation="2"
+              outlined
+            >
+              <v-card-title class="section-header pa-4">
+                <v-icon class="mr-2">mdi-form-textbox</v-icon>
+                <span class="text-h6 font-weight-bold"
+                  >Benutzerdefinierte Felder</span
+                >
+              </v-card-title>
+              <v-divider></v-divider>
+              <v-card-text class="pa-4">
+                <div
+                  v-for="(field, index) in editableCustomFields"
+                  :key="field.id"
+                  :class="{ 'mt-4': index > 0 }"
+                >
+                  <v-divider v-if="index > 0" class="mb-4" />
+                  <div class="d-flex align-center mb-3">
+                    <v-avatar size="32" color="primary" class="mr-3">
+                      <v-icon x-small dark>
+                        {{ customFieldIcon(field.inputType) }}
+                      </v-icon>
+                    </v-avatar>
+                    <span class="text-subtitle-2 font-weight-medium">
+                      {{ field.caption }}
+                    </span>
+                  </div>
+
+                  <v-text-field
+                    v-if="field.inputType === 'string'"
+                    :value="field.currentValue"
+                    @input="updateCustomFieldValue(field.id, $event)"
+                    :label="field.caption"
+                    :placeholder="field.placeholder || ''"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details="auto"
+                    clearable
+                    @click:clear="clearCustomFieldValue(field.id)"
+                  />
+
+                  <v-textarea
+                    v-else-if="field.inputType === 'text'"
+                    :value="field.currentValue"
+                    @input="updateCustomFieldValue(field.id, $event)"
+                    :label="field.caption"
+                    :placeholder="field.placeholder || ''"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details="auto"
+                    clearable
+                    @click:clear="clearCustomFieldValue(field.id)"
+                  />
+
+                  <v-text-field
+                    v-else-if="field.inputType === 'numeric'"
+                    :value="field.currentValue"
+                    @input="
+                      updateCustomFieldValue(
+                        field.id,
+                        $event !== '' && $event !== null ? Number($event) : null
+                      )
+                    "
+                    :label="field.caption"
+                    :placeholder="field.placeholder || ''"
+                    type="number"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details="auto"
+                    clearable
+                    @click:clear="clearCustomFieldValue(field.id)"
+                  />
+
+                  <v-switch
+                    v-else-if="field.inputType === 'boolean'"
+                    :input-value="field.currentValue"
+                    @change="updateCustomFieldValue(field.id, $event)"
+                    :label="field.currentValue ? 'Ja' : 'Nein'"
+                    dense
+                    hide-details="auto"
+                    class="mt-0"
+                  />
+
+                  <v-select
+                    v-else-if="field.inputType === 'select'"
+                    :value="field.currentValue"
+                    @input="updateCustomFieldValue(field.id, $event)"
+                    :items="field.options || []"
+                    item-text="caption"
+                    item-value="value"
+                    :label="field.caption"
+                    :placeholder="field.placeholder || ''"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details="auto"
+                    clearable
+                    @click:clear="clearCustomFieldValue(field.id)"
+                  />
+                </div>
+              </v-card-text>
+            </v-card>
+
             <v-card class="mb-6 section-card" elevation="2" outlined>
               <v-card-title class="section-header pa-4">
                 <v-icon class="mr-2">mdi-comment-text-outline</v-icon>
@@ -889,6 +1111,7 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import { mapActions } from "vuex";
 import ToastService from "@/services/ToastService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiBookablesService from "@/services/api/ApiBookablesService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
@@ -935,6 +1158,9 @@ export default {
       paymentTimeMenu: false,
       paymentDate: null,
       paymentTime: null,
+
+      externalPricesMap: {},
+      externalPricesLoading: {},
 
       bookableId_temp: null,
 
@@ -1144,6 +1370,12 @@ export default {
     },
     hasPayableItems() {
       return this.bookableItems.some((item) => {
+        if (this.hasExternalPrices(item._bookableUsed)) {
+          const extPrices = this.getExternalPrices(item.bookableId);
+          return extPrices?.some(
+            (p) => p.priceEur > 0 && p.unit !== "service-fee"
+          );
+        }
         const priceEur = this.getPriceCategory(item.bookableId, "priceEur");
         return priceEur && Number(priceEur) > 0;
       });
@@ -1160,6 +1392,38 @@ export default {
       },
       set(val) {
         this.bookableItems = val;
+      },
+    },
+    editableCustomFields() {
+      const definitions = this.selectedBooking.customFieldDefinitions || [];
+      const values = this.selectedBooking.customFieldValues || [];
+
+      return definitions.map((definition) => {
+        const stored = values.find((v) => v.fieldId === definition.id);
+        return {
+          ...definition,
+          currentValue: stored != null ? stored.value : null,
+        };
+      });
+    },
+    userCancellable: {
+      get() {
+        return (
+          this.selectedBooking?.cancellationPolicy?.userCancellable !== false
+        );
+      },
+      set(val) {
+        if (!this.selectedBooking.cancellationPolicy) {
+          this.$set(this.selectedBooking, "cancellationPolicy", {
+            userCancellable: val,
+          });
+        } else {
+          this.$set(
+            this.selectedBooking.cancellationPolicy,
+            "userCancellable",
+            val
+          );
+        }
       },
     },
   },
@@ -1224,6 +1488,17 @@ export default {
           this.selectedBooking.paymentProvider = this.activePaymentApps[0].id;
         }
       },
+      open: {
+        immediate: true,
+        handler(isOpen) {
+          if (isOpen) {
+            this.loadAllExternalPrices();
+          } else {
+            this.externalPricesMap = {};
+            this.externalPricesLoading = {};
+          }
+        },
+      },
     },
   },
   methods: {
@@ -1233,6 +1508,34 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    customFieldIcon(inputType) {
+      const icons = {
+        string: "mdi-form-textbox",
+        text: "mdi-form-textarea",
+        numeric: "mdi-numeric",
+        boolean: "mdi-toggle-switch-outline",
+        select: "mdi-form-dropdown",
+      };
+      return icons[inputType] || "mdi-form-textbox";
+    },
+    updateCustomFieldValue(fieldId, newValue) {
+      const values = [...(this.selectedBooking.customFieldValues || [])];
+      const idx = values.findIndex((v) => v.fieldId === fieldId);
+
+      if (idx !== -1) {
+        values[idx] = { ...values[idx], value: newValue };
+      } else {
+        values.push({ fieldId, value: newValue });
+      }
+
+      this.$set(this.selectedBooking, "customFieldValues", values);
+    },
+    clearCustomFieldValue(fieldId) {
+      const values = (this.selectedBooking.customFieldValues || []).filter(
+        (v) => v.fieldId !== fieldId
+      );
+      this.$set(this.selectedBooking, "customFieldValues", values);
+    },
     clearPaymentDateTime() {
       this.paymentDate = null;
       this.paymentTime = null;
@@ -1470,7 +1773,7 @@ export default {
           );
       }
     },
-    addBookable() {
+    async addBookable() {
       const existing = this.selectedBooking.bookableItems.find(
         (b) => b.bookableId === this.addBookableValue
       );
@@ -1487,6 +1790,10 @@ export default {
           amount: 1,
           _bookableUsed: bookable,
         });
+
+        if (this.hasExternalPrices(bookable)) {
+          await this.fetchExternalPricesForItem(bookable.id);
+        }
       }
 
       this.addBookableValue = null;
@@ -1523,6 +1830,99 @@ export default {
           return "pro Stück";
       }
     },
+    hasExternalPrices(bookable) {
+      return (
+        bookable?.externalProviders &&
+        bookable.externalProviders?.some(
+          (p) => p.active && p.handles.includes("pricing")
+        )
+      );
+    },
+
+    getExternalPrices(bookableId) {
+      return this.externalPricesMap[bookableId] || null;
+    },
+
+    async fetchExternalPricesForItem(bookableId) {
+
+      console.log(
+        `Fetching external prices for bookableId ${bookableId}...`,
+        this.externalPricesMap[bookableId],
+        this.externalPricesLoading[bookableId]
+      );
+
+      if (
+        this.externalPricesMap[bookableId] ||
+        this.externalPricesLoading[bookableId]
+      ) {
+        return;
+      }
+
+      this.$set(this.externalPricesLoading, bookableId, true);
+      try {
+        const response = await ApiBookablesService.getBookablePrices(
+          bookableId,
+          this.selectedBooking.tenantId
+        );
+        this.$set(this.externalPricesMap, bookableId, response.data);
+      } catch (error) {
+        console.error(
+          `Failed to fetch external prices for ${bookableId}:`,
+          error
+        );
+        this.$set(this.externalPricesMap, bookableId, []);
+      } finally {
+        this.$set(this.externalPricesLoading, bookableId, false);
+      }
+    },
+    async loadAllExternalPrices() {
+      const promises = this.bookableItems
+        .filter((item) => this.hasExternalPrices(item._bookableUsed))
+        .map((item) => this.fetchExternalPricesForItem(item.bookableId));
+      await Promise.all(promises);
+    },
+
+    getUnitLabel(unit) {
+      const labels = {
+        hour: "pro Stunde",
+        day: "pro Tag",
+        week: "pro Woche",
+        month: "pro Monat",
+        year: "pro Jahr",
+        "service-fee": "Servicegebühr",
+      };
+      return labels[unit] || unit;
+    },
+
+    getRelevantExternalPrice(bookableId) {
+      const prices = this.externalPricesMap[bookableId];
+      if (!prices || prices.length === 0) return null;
+
+      const durationMinutes = this.getBookingDuration();
+      const durationHours = durationMinutes / 60;
+      const durationDays = durationHours / 24;
+
+      // Beste Einheit basierend auf Buchungsdauer auswählen
+      if (durationDays >= 365) {
+        return prices.find((p) => p.unit === "year");
+      } else if (durationDays >= 28) {
+        return prices.find((p) => p.unit === "month");
+      } else if (durationDays >= 7) {
+        return prices.find((p) => p.unit === "week");
+      } else if (durationDays >= 1) {
+        return prices.find((p) => p.unit === "day");
+      }
+      return prices.find((p) => p.unit === "hour") || prices[0];
+    },
+
+    updateExternalPrice(bookableId, unit, newPrice) {
+      const prices = this.externalPricesMap[bookableId];
+      if (!prices) return;
+      const price = prices.find((p) => p.unit === unit);
+      if (price) {
+        price.priceEur = Number(newPrice);
+      }
+    },
   },
   mounted() {
     if (this.selectedBooking._id) {
@@ -1535,6 +1935,7 @@ export default {
       this.originalGroupInternalComments =
         this.groupBooking.internalComments ?? null;
     }
+    this.loadAllExternalPrices();
   },
 };
 </script>

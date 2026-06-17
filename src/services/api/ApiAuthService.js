@@ -1,106 +1,198 @@
+import ApiClient from "./ApiClientService";
+import keycloakService from "../KeycloakService";
+
 export default {
+  /**
+   * Lokaler Login – wie bisher mit eigenem JWT
+   */
   async login(userId, password) {
     const body = { id: userId, password: password };
+    const response = await ApiClient.post("auth/signin", body);
+    const { accessToken, refreshToken, user, permissions } = response.data;
 
-    try {
-      const response = await ApiClient.post("auth/signin", body);
+    ApiClient.setTokens(accessToken, refreshToken);
 
-      const { accessToken, refreshToken, user, permissions } = response.data;
-
-      ApiClient.setTokens(accessToken, refreshToken);
-
-      return { user, permissions };
-    } catch (error) {
-      throw error;
-    }
+    return { user, permissions };
   },
-  async ssoLogin(token) {
-    const body = { token: token };
 
-    try {
-      const response = await ApiClient.post("auth/sso/signin", body);
-      const { accessToken, refreshToken, user } = response.data;
+  /**
+   * SSO Login – nutzt Keycloak-Token direkt, kein Token-Tausch
+   */
+  async ssoLogin(keycloakToken) {
+    const response = await ApiClient.post("auth/sso/signin", {
+      token: keycloakToken,
+    });
 
-      ApiClient.setTokens(accessToken, refreshToken);
+    const { user, permissions } = response.data;
 
-      return user;
-    } catch (error) {
-      throw error;
-    }
+    // Keycloak-Auth-Modus aktivieren
+    ApiClient.setKeycloakAuth();
+
+    return { user, permissions };
   },
- async register(tenant, id, firstName, lastName, company, password, nextUrl = null) {
-    const body = {
-      id: id,
-      firstName: firstName,
-      lastName: lastName,
-      company: company,
-      password: password,
-      nextUrl: nextUrl,
-    };
 
-    try {
-      const response = await ApiClient.post("auth/signup", body);
-      return response;
-    } catch (error) {
-      throw error;
+  /**
+   * Silent SSO Check – wird beim App-Start aufgerufen.
+   * Prüft ob eine Keycloak-Session existiert und loggt
+   * automatisch ein.
+   */
+  async silentSsoCheck(ssoConfig) {
+    if (!ssoConfig) return null;
+
+    let authenticated = await keycloakService.restoreFromStoredTokens(ssoConfig);
+
+    if (!authenticated) {
+      keycloakService.setConfig(ssoConfig);
+      authenticated = await keycloakService.silentCheck();
     }
-  },
-  async ssoRegister(token) {
-    const body = { token: token };
 
-    try {
-      const response = await ApiClient.post("auth/sso/signup", body);
-      return response;
-    } catch (error) {
-      throw error;
+    if (!authenticated) {
+      return null;
     }
-  },
-  async logout() {
-    try {
-      const refreshToken = ApiClient.getRefreshToken();
 
-      if (refreshToken) {
-        await ApiClient.post("auth/signout", { refreshToken });
-      } else {
-        await ApiClient.get("auth/signout");
+    // Keycloak-Session existiert → Backend fragen ob User bekannt
+    try {
+      const token = keycloakService.token;
+      const response = await ApiClient.post("auth/sso/verify", { token });
+
+      if (response.data.success) {
+        ApiClient.setKeycloakAuth();
+        return {
+          user: response.data.user,
+          permissions: response.data.permissions,
+        };
       }
     } catch (error) {
-      console.warn("Server logout failed:", error);
+      console.debug("Silent SSO: User not found or error", error);
+    }
+
+    return null;
+  },
+
+  async register(
+    tenant,
+    id,
+    firstName,
+    lastName,
+    company,
+    password,
+    nextUrl,
+    legalAcceptance,
+    invitationToken,
+    invitationTenantId
+  ) {
+    const body = {
+      id,
+      firstName,
+      lastName,
+      company,
+      password,
+      nextUrl,
+    };
+
+    if (legalAcceptance && Object.keys(legalAcceptance).length > 0) {
+      body.legalAcceptance = legalAcceptance;
+    }
+
+    if (invitationToken) {
+      body.invitationToken = invitationToken;
+    }
+
+    if (invitationTenantId) {
+      body.invitationTenantId = invitationTenantId;
+    }
+
+    return ApiClient.post("auth/signup", body);
+  },
+
+  async ssoRegister(token, legalAcceptance) {
+    const body = { token };
+
+    if (legalAcceptance && Object.keys(legalAcceptance).length > 0) {
+      body.legalAcceptance = legalAcceptance;
+    }
+
+    return ApiClient.post("auth/sso/signup", body);
+  },
+
+  /**
+   * Logout – handhabt sowohl lokale als auch Keycloak-Sessions
+   */
+  async logout() {
+    try {
+      const authType = ApiClient.getAuthType();
+
+      if (authType === "keycloak") {
+        keycloakService.cleanup();
+        keycloakService.destroy();
+      } else {
+        const refreshToken = ApiClient.getRefreshToken();
+        if (refreshToken) {
+          await ApiClient.post("auth/signout", { refreshToken });
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Logout error:", error);
+      return false;
     } finally {
+      localStorage.removeItem("authType");
       ApiClient.clearTokens();
     }
   },
-  async me(populatePermissions) {
-    try {
-      const response = await ApiClient.get(
-        `auth/me?populatePermissions=${populatePermissions ? 1 : 0}`
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+
+  async me() {
+    const response = await ApiClient.get("auth/me");
+    return response;
   },
+
   async resetPassword(id, password) {
-    const body = { id: id, password: password };
-
-    try {
-      const response = await ApiClient.post("auth/resetpassword", body);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return ApiClient.post("auth/resetpassword", { id, password });
   },
-  //request password reset
+
   async requestPasswordReset(email) {
-    const body = { email: email };
-
-    try {
-      const response = await ApiClient.post("auth/reset", body);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return ApiClient.post("auth/reset", { email });
   },
+
+  async getCardAuthMethods() {
+    const response = await ApiClient.get("/auth/card-methods");
+    return response.data.methods;
+  },
+
+  async cardLogin(appId, publicId, secret) {
+    const response = await ApiClient.post("/auth/card/signin", {
+      appId,
+      publicId,
+      secret,
+    });
+
+    const data = response.data;
+
+    if (data.requiresRegistration) {
+      return {
+        requiresRegistration: true,
+        prefill: data.prefill,
+        cardInfo: data.cardInfo,
+      };
+    }
+
+    ApiClient.setTokens(data.accessToken, data.refreshToken);
+    return {
+      requiresRegistration: false,
+      user: data.user,
+      permissions: data.permissions,
+    };
+  },
+
+  async cardSignup(payload) {
+    const response = await ApiClient.post("/auth/card/signup", payload);
+    return {
+      status: response.data.status, // 'registered' | 'link_requested'
+      message: response.data.message,
+    };
+  },
+
   isAuthenticated() {
     return ApiClient.isAuthenticated();
   },

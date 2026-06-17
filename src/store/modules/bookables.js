@@ -47,6 +47,7 @@ const state = {
 
     enableCoupons: true,
 
+    requiresLogin: false,
     permittedUsers: [],
     permittedRoles: [],
     freeBookingUsers: [],

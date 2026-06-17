@@ -722,8 +722,15 @@ export default {
 
     combineTokenUrl(token) {
       if (!this.tenantId) return "";
-      const baseUrl = window.location.origin;
-      return `${baseUrl}/auth/invitation/${this.tenantId}?token=${token}`;
+      const originUrl = window.location.origin.replace(/\/+$/, "");
+      const basePath = (process.env.BASE_URL || "/").replace(/^\/+|\/+$/g, "");
+      const safeBasePath = basePath ? `${basePath}/` : "";
+
+      const url = new URL(
+        `${originUrl}/${safeBasePath}auth/invitation/${this.tenantId}`
+      );
+      url.searchParams.set("token", token);
+      return url.toString();
     },
 
     async copyInvitationLink(link) {

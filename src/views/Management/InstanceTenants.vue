@@ -10,12 +10,16 @@
           clearable
           class="search-field"
         ></v-text-field>
-        <div v-if="loading" class="elevation-2" style="border-radius: 25px; overflow: hidden;">
+        <div
+          v-if="loading"
+          class="elevation-2"
+          style="border-radius: 25px; overflow: hidden"
+        >
           <v-skeleton-loader
             type="table-thead, table-tbody, table-tfoot"
             :types="{
-          'table-tbody': 'table-row-divider@6',
-        }"
+              'table-tbody': 'table-row-divider@6',
+            }"
           ></v-skeleton-loader>
         </div>
         <v-data-table
@@ -51,6 +55,14 @@
                       <v-icon>mdi-pencil</v-icon>
                     </v-list-item-icon>
                     <v-list-item-title>Mandanten bearbeiten</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item link @click="onSelectTenant(item.id)">
+                    <v-list-item-icon>
+                      <v-icon>mdi-eye</v-icon>
+                    </v-list-item-icon>
+                    <v-list-item-title
+                      >Zum Mandanten wechseln</v-list-item-title
+                    >
                   </v-list-item>
                   <v-list-item link @click="onOpenDeleteDialog(item.id)">
                     <v-list-item-icon>
@@ -145,6 +157,7 @@ export default {
     ...mapActions({
       startLoading: "loading/start",
       stopLoading: "loading/stop",
+      selectTenant: "tenants/select",
     }),
     async onCloseCreateDialog() {
       this.openCreateDialog = false;
@@ -192,6 +205,9 @@ export default {
     },
     async getTenantCountCheck() {
       this.tenantCountCheck = await ApiTenantService.tenantCountCheck();
+    },
+    onSelectTenant(tenantId) {
+      this.selectTenant(tenantId);
     },
   },
   async mounted() {

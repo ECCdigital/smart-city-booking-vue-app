@@ -108,7 +108,9 @@ export default {
     async fetchFiles() {
       try {
         this.isLoading = true;
-        const response = await ApiFileService.getFiles(this.tenant);
+        const response = await ApiFileService.getFiles({
+          tenantID: this.tenant,
+        });
         this.files = response.data;
       } finally {
         this.isLoading = false;

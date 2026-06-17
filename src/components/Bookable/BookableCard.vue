@@ -18,6 +18,7 @@
               <template v-slot:activator="{ on: tooltip }">
                 <v-btn
                   icon
+                  class="menu-button"
                   v-bind="attrs"
                   v-on="{ ...tooltip, ...menu }"
                   @click.stop
@@ -29,6 +30,12 @@
             </v-tooltip>
           </template>
           <v-list dense>
+            <v-list-item link @click.stop="copyBookableId">
+              <v-list-item-icon>
+                <v-icon>mdi-identifier</v-icon>
+              </v-list-item-icon>
+              <v-list-item-title>ID kopieren</v-list-item-title>
+            </v-list-item>
             <v-list-item
               link
               @click.stop="emitDuplicateAction"
@@ -180,7 +187,81 @@
         ></p>
       </div>
 
-      <div class="mb-3" v-if="hasPriceCategories">
+      <!-- IFBS External Prices -->
+      <div v-if="isIfbsActive" class="mb-3">
+        <div class="d-flex align-center mb-2">
+          <v-icon small color="grey darken-1" class="mr-2">
+            mdi-lock-outline
+          </v-icon>
+          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
+            IFBS Preise
+          </span>
+          <v-chip x-small class="ml-2" color="primary" outlined label>
+            extern
+          </v-chip>
+        </div>
+
+        <div v-if="isLoadingIfbsPrices" class="ml-7">
+          <v-progress-linear indeterminate color="primary" class="my-2" />
+        </div>
+
+        <div v-else-if="ifbsPrices" class="ml-7">
+          <div
+            v-for="row in ifbsCardPriceRows"
+            :key="row.key"
+            class="d-flex align-center justify-space-between text-body-2 mb-1"
+          >
+            <div class="d-flex align-center">
+              <v-icon x-small color="primary" class="mr-2">
+                {{ row.icon }}
+              </v-icon>
+              <span class="grey--text text--darken-1">{{ row.label }}</span>
+            </div>
+            <span class="font-weight-bold primary--text">
+              {{ row.value }}
+            </span>
+          </div>
+
+          <v-divider class="my-2" />
+
+          <div class="d-flex align-center justify-space-between text-body-2">
+            <div class="d-flex align-center">
+              <v-icon x-small color="primary" class="mr-2">
+                mdi-cash-plus
+              </v-icon>
+              <span class="grey--text text--darken-1">Servicegebühr</span>
+            </div>
+            <span class="font-weight-bold primary--text">
+              {{ formatCurrency(ifbsPrices["Preis_Servicegebühr"]) }}
+            </span>
+          </div>
+
+          <div
+            v-if="
+              ifbsPrices['minimum_usage_time_mins'] &&
+              ifbsPrices['minimum_usage_time_mins'] !== '0'
+            "
+            class="d-flex align-center justify-space-between text-body-2 mt-1"
+          >
+            <div class="d-flex align-center">
+              <v-icon x-small color="primary" class="mr-2">
+                mdi-timer-outline
+              </v-icon>
+              <span class="grey--text text--darken-1">Mindestdauer</span>
+            </div>
+            <span class="font-weight-bold primary--text">
+              {{ formatDuration(ifbsPrices["minimum_usage_time_mins"]) }}
+            </span>
+          </div>
+        </div>
+
+        <div v-else class="ml-7 text-caption grey--text">
+          Preise nicht verfügbar
+        </div>
+      </div>
+
+      <!-- Normal Prices -->
+      <div v-else-if="hasPriceCategories" class="mb-3">
         <div class="d-flex align-center mb-2">
           <v-icon small color="grey darken-1" class="mr-2"> mdi-cash </v-icon>
           <span class="text-body-2 font-weight-bold grey--text text--darken-2">
@@ -221,6 +302,8 @@
           </div>
         </div>
       </div>
+
+      <!-- Free -->
       <div v-else class="d-flex align-center mb-3 text-body-2">
         <v-icon small color="success" class="mr-2">mdi-cash-check</v-icon>
         <span class="success--text font-weight-bold">Kostenfrei</span>
@@ -245,13 +328,45 @@
         </div>
       </div>
     </v-card-text>
+
+    <v-dialog
+      v-model="showDeleteDialog"
+      persistent
+      max-width="500px"
+      @click:outside.stop
+    >
+      <v-card color="accent">
+        <v-card-title>
+          <v-icon class="mr-2" color="error">mdi-alert</v-icon>
+          <span class="text-h5">Buchungsobjekt löschen</span>
+        </v-card-title>
+        <v-card-text>
+          <span class="text-h6">
+            Sind Sie sicher, dass Sie das Buchungsobjekt
+            <strong>{{ item.title }}</strong> löschen wollen?
+          </span>
+          <p class="text-body-2 grey--text text--darken-1 mt-3 mb-0">
+            Diese Aktion kann nicht rückgängig gemacht werden.
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn outlined @click.stop="showDeleteDialog = false">
+            Abbrechen
+          </v-btn>
+          <v-btn color="error" @click.stop="confirmDelete"> Löschen </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import ApiLockerService from "@/services/api/ApiLockerService";
+import ToastService from "@/services/ToastService";
 import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
 
 export default {
@@ -268,9 +383,108 @@ export default {
     return {
       defaultImage: require("@/assets/bookable-default.jpg"),
       isDuplicateAllowed: true,
+      isLoadingIfbsPrices: false,
+      ifbsPrices: null,
+      showDeleteDialog: false,
     };
   },
+  computed: {
+    ...mapGetters({
+      tenantId: "tenants/currentTenantId",
+      instance: "instance/instance",
+    }),
+    isDark() {
+      return this.$vuetify?.theme?.dark || false;
+    },
+    duplicateDisabled() {
+      return (
+        !this.BookablePermissionService.allowCreate() ||
+        !this.isDuplicateAllowed
+      );
+    },
+    BookablePermissionService() {
+      return BookablePermissionService;
+    },
+    isIfbsActive() {
+      const providers = this.item?.externalProviders;
+      const provider = providers?.find(
+        (p) => p.active && p.provider === "ifbs"
+      );
+      if (provider) {
+        return (
+          provider.handles.includes("pricing") && provider.config?.locationId
+        );
+      }
+      return false;
+    },
+    ifbsProvider() {
+      if (!this.isIfbsActive) return null;
+      return this.item.externalProviders.find((p) => p.provider === "ifbs");
+    },
+    ifbsCardPriceRows() {
+      if (!this.ifbsPrices) return [];
+      return [
+        {
+          key: "1h",
+          label: "pro Stunde",
+          value: this.formatCurrency(this.ifbsPrices["Preis_1h"]),
+          icon: "mdi-clock-outline",
+        },
+        {
+          key: "1d",
+          label: "pro Tag",
+          value: this.formatCurrency(this.ifbsPrices["Preis_1d"]),
+          icon: "mdi-calendar-today",
+        },
+        {
+          key: "1w",
+          label: "pro Woche",
+          value: this.formatCurrency(this.ifbsPrices["Preis_1w"]),
+          icon: "mdi-calendar-week",
+        },
+        {
+          key: "1m",
+          label: "pro Monat",
+          value: this.formatCurrency(this.ifbsPrices["Preis_1m"]),
+          icon: "mdi-calendar-month",
+        },
+        {
+          key: "1y",
+          label: "pro Jahr",
+          value: this.formatCurrency(this.ifbsPrices["Preis_1y"]),
+          icon: "mdi-calendar-star",
+        },
+      ];
+    },
+    hasPriceCategories() {
+      return (
+        this.item.priceCategories &&
+        this.item.priceCategories.some((pC) => pC.priceEur > 0)
+      );
+    },
+    titleSizeClass() {
+      const len = this.item.title?.length || 0;
+      if (len <= 25) return "text-h6";
+      if (len <= 50) return "text-subtitle-1";
+      return "text-body-2";
+    },
+  },
+  watch: {
+    isIfbsActive: {
+      immediate: true,
+      handler(active) {
+        if (active) {
+          this.fetchIfbsPrices();
+        } else {
+          this.ifbsPrices = null;
+        }
+      },
+    },
+  },
   methods: {
+    ...mapActions({
+      addToast: "toasts/add",
+    }),
     navigateToEdit() {
       if (
         this.editRoute &&
@@ -297,28 +511,94 @@ export default {
       return `${interval} ${suffix}`;
     },
     intervalSuffix(type) {
-      if (type === "per-hour") {
-        return "Std.";
-      } else if (type === "per-day") {
-        return "Tage";
-      } else if (type === "per-square-meter") return "m²";
-      else {
-        return "Stück";
+      if (type === "per-hour") return "Std.";
+      if (type === "per-day") return "Tage";
+      if (type === "per-square-meter") return "m²";
+      return "Stück";
+    },
+    formatCurrency(value) {
+      return parseFloat(value || 0).toFixed(2) + " €";
+    },
+    formatDuration(minutes) {
+      const mins = parseInt(minutes, 10);
+      if (!mins || mins === 0) return "Keine";
+
+      const weeks = Math.floor(mins / 10080);
+      const days = Math.floor((mins % 10080) / 1440);
+      const hours = Math.floor((mins % 1440) / 60);
+      const remainingMins = mins % 60;
+
+      const parts = [];
+      if (weeks > 0) parts.push(`${weeks} ${weeks === 1 ? "Woche" : "Wochen"}`);
+      if (days > 0) parts.push(`${days} ${days === 1 ? "Tag" : "Tage"}`);
+      if (hours > 0)
+        parts.push(`${hours} ${hours === 1 ? "Stunde" : "Stunden"}`);
+      if (remainingMins > 0) parts.push(`${remainingMins} Min.`);
+
+      return parts.join(", ");
+    },
+    async fetchIfbsPrices() {
+      const provider = this.ifbsProvider;
+      if (!provider?.config?.locationId || !this.item?.tenantId) return;
+
+      try {
+        this.isLoadingIfbsPrices = true;
+        const response = await ApiLockerService.getPrice(
+          this.item.tenantId,
+          "ifbs",
+          provider.config.locationId
+        );
+        this.ifbsPrices = response.data;
+      } catch (err) {
+        console.error("Error fetching IFBS prices:", err);
+        this.ifbsPrices = null;
+      } finally {
+        this.isLoadingIfbsPrices = false;
       }
     },
-
     emitDeleteAction() {
+      this.showDeleteDialog = true;
+    },
+    confirmDelete() {
+      this.showDeleteDialog = false;
       this.$emit("delete");
     },
     emitDuplicateAction() {
       this.$emit("duplicate");
     },
     gotoCheckout() {
-      const routeData = this.$router.resolve({
-        name: "checkout",
-        query: { id: this.item.id, tenant: this.tenantId, amount: 1 },
-      });
-      window.open(routeData.href, "_blank");
+      const checkoutConfig = this.instance?.checkout || {};
+
+      if (checkoutConfig.useLegacyCheckout) {
+        const routeData = this.$router.resolve({
+          name: "checkout",
+          query: { id: this.item.id, tenant: this.tenantId, amount: 1 },
+        });
+        window.open(routeData.href, "_blank");
+        return;
+      }
+
+      if (checkoutConfig.checkoutUrl) {
+        const baseUrl = checkoutConfig.checkoutUrl.replace(/\/+$/, "");
+        const url = `${baseUrl}/checkout/${this.item.id}/?tenantId=${this.tenantId}`;
+        window.open(url, "_blank");
+      }
+    },
+    async copyBookableId() {
+      try {
+        await navigator.clipboard.writeText(this.item.id);
+        this.addToast(
+          ToastService.createToast("bookable.copyId.success", "success")
+        );
+      } catch (error) {
+        console.error("Failed to copy bookable id:", error);
+        this.addToast(
+          ToastService.createToast(
+            "bookable.copyId.errors.something-wrong",
+            "error"
+          )
+        );
+      }
     },
     shortenText(text) {
       return text.substring(0, 120) + (text.length > 120 ? " ..." : "");
@@ -327,35 +607,6 @@ export default {
       const bookableCountCheck =
         await ApiBookablesService.publicBookableCountCheck();
       this.isDuplicateAllowed = bookableCountCheck || !this.item.isPublic;
-    },
-  },
-  computed: {
-    ...mapGetters({
-      tenantId: "tenants/currentTenantId",
-    }),
-    isDark() {
-      return this.$vuetify?.theme?.dark || false;
-    },
-    duplicateDisabled() {
-      return (
-        !this.BookablePermissionService.allowCreate() ||
-        !this.isDuplicateAllowed
-      );
-    },
-    BookablePermissionService() {
-      return BookablePermissionService;
-    },
-    hasPriceCategories() {
-      return (
-        this.item.priceCategories &&
-        this.item.priceCategories.some((pC) => pC.priceEur > 0)
-      );
-    },
-    titleSizeClass() {
-      const len = this.item.title?.length || 0;
-      if (len <= 25) return "text-h6";
-      if (len <= 50) return "text-subtitle-1";
-      return "text-body-2";
     },
   },
   mounted() {
@@ -375,6 +626,7 @@ export default {
 }
 
 .bookable-card {
+  max-width: 400px;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
   cursor: pointer;
   position: relative;
@@ -424,6 +676,11 @@ export default {
 .bookable-image {
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
+  transition: transform 0.3s ease;
+}
+
+.bookable-card:hover .bookable-image {
+  transform: scale(1.02);
 }
 
 .status-badges {
@@ -441,33 +698,12 @@ export default {
   );
 }
 
-.v-card {
-  transition: all 0.3s ease;
-}
-
-.bookable-card:hover .bookable-image {
-  transform: scale(1.02);
-}
-
-.bookable-image {
-  transition: transform 0.3s ease;
-}
-
 .position-relative {
   position: relative;
 }
 
-.bookable-card {
-  max-width: 400px;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
-  cursor: pointer;
-  position: relative;
-  border-radius: 12px !important;
-  overflow: hidden;
-}
-
 .flex-grow-1 {
-  max-height: 300px; // Passe dies nach Bedarf an
+  max-height: 300px;
   overflow-y: auto;
 
   &::-webkit-scrollbar {
@@ -508,6 +744,33 @@ export default {
   top: 8px;
   right: 8px;
   z-index: 2;
+}
+
+.menu-button {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 1) !important;
+  }
+
+  .v-icon {
+    color: rgba(0, 0, 0, 0.75);
+  }
+}
+
+.theme--dark .menu-button {
+  background-color: rgba(40, 40, 40, 0.85) !important;
+
+  &:hover {
+    background-color: rgba(60, 60, 60, 1) !important;
+  }
+
+  .v-icon {
+    color: rgba(255, 255, 255, 0.9);
+  }
 }
 
 .title-dynamic {

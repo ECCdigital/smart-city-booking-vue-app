@@ -8,6 +8,34 @@
 
           <v-row class="pa-2">
             <v-col cols="12">
+              <h4 class="title">Externe Buchung</h4>
+              <v-text-field
+                v-model="externalBookingUrl"
+                background-color="accent"
+                filled
+                label="Externe Buchungs-URL"
+                placeholder="https://..."
+                hint="Wenn gesetzt, wird die Buchung über diese externe URL abgewickelt. Die Teilnehmer- und Preiseinstellungen sind dann nicht mehr relevant."
+                persistent-hint
+                clearable
+              ></v-text-field>
+              <v-alert
+                v-if="hasExternalBookingUrl"
+                class="mt-4"
+                prominent
+                type="info"
+                text>
+                <v-row align="center">
+                  <v-col class="grow">
+                    Diese Veranstaltung wird über eine externe Buchungs-URL gebucht. Die Angaben zu Teilnehmern und Preisen sind deaktiviert.
+                  </v-col>
+                </v-row>
+              </v-alert>
+            </v-col>
+          </v-row>
+
+          <v-row class="pa-2" v-if="!hasExternalBookingUrl">
+            <v-col cols="12">
               <h4 class="title">Teilnehmer</h4>
               <validation-provider
                 v-slot="{ errors }"
@@ -55,7 +83,7 @@
             </v-col>
           </v-row>
 
-          <v-row class="pa-2">
+          <v-row class="pa-2" v-if="!hasExternalBookingUrl">
             <v-col cols="12">
               <h4 class="title">Preise</h4>
               <validation-provider
@@ -206,6 +234,17 @@ export default {
       set(value) {
         this.updateValue({ parent: "attendees", field: "priceCategories", value: value });
       }
+    },
+    externalBookingUrl: {
+      get() {
+        return this.$store.state.events.form.externalBookingUrl
+      },
+      set(value) {
+        this.updateValue({ field: "externalBookingUrl", value: value || "" });
+      }
+    },
+    hasExternalBookingUrl() {
+      return !!this.externalBookingUrl && this.externalBookingUrl.trim().length > 0;
     },
     ...mapGetters({
       form: "events/form"

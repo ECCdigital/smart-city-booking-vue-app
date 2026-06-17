@@ -4,10 +4,11 @@ import Tiptap from "@/components/Tiptap.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiEventService from "@/services/api/ApiEventService";
 import ToastService from "@/services/ToastService";
+import AddressLookup from "@/components/commons/AddressLookup.vue";
 
 export default {
   name: "SimpleEventCreator",
-  components: { Tiptap, ChooseFile },
+  components: { Tiptap, ChooseFile, AddressLookup },
   data() {
     return {
       api: {
@@ -252,62 +253,17 @@ export default {
         });
       },
     },
-    street: {
+    location: {
       get() {
-        return this.$store.state.events.form.eventAddress.street;
+        const loc = this.$store.state.events.form.location;
+        if (typeof loc === "string") {
+          return { display_address: loc };
+        }
+        return loc || { display_address: null };
       },
       set(value) {
         this.updateValue({
-          parent: "eventAddress",
-          field: "street",
-          value: value,
-        });
-      },
-    },
-    houseNumber: {
-      get() {
-        return this.$store.state.events.form.eventAddress.houseNumber;
-      },
-      set(value) {
-        this.updateValue({
-          parent: "eventAddress",
-          field: "houseNumber",
-          value: value,
-        });
-      },
-    },
-    additional: {
-      get() {
-        return this.$store.state.events.form.eventAddress.additional;
-      },
-      set(value) {
-        this.updateValue({
-          parent: "eventAddress",
-          field: "additional",
-          value: value,
-        });
-      },
-    },
-    city: {
-      get() {
-        return this.$store.state.events.form.eventAddress.city;
-      },
-      set(value) {
-        this.updateValue({
-          parent: "eventAddress",
-          field: "city",
-          value: value,
-        });
-      },
-    },
-    zip: {
-      get() {
-        return this.$store.state.events.form.eventAddress.zip;
-      },
-      set(value) {
-        this.updateValue({
-          parent: "eventAddress",
-          field: "zip",
+          field: "location",
           value: value,
         });
       },
@@ -347,6 +303,20 @@ export default {
           value: value,
         });
       },
+    },
+    externalBookingUrl: {
+      get() {
+        return this.$store.state.events.form.externalBookingUrl;
+      },
+      set(value) {
+        this.updateValue({
+          field: "externalBookingUrl",
+          value: value || "",
+        });
+      },
+    },
+    hasExternalBookingUrl() {
+      return !!this.externalBookingUrl && this.externalBookingUrl.trim().length > 0;
     },
     ...mapGetters({
       form: "events/form",
@@ -486,55 +456,8 @@ export default {
             :rules="[rules.required]"
           ></v-text-field>
         </v-col>
-        <v-col cols="12" md="8">
-          <v-text-field
-            v-model="street"
-            background-color="accent"
-            filled
-            label="Straße"
-            required
-            type="text"
-          ></v-text-field>
-        </v-col>
-        <v-col cols="12" md="4">
-          <v-text-field
-            v-model="houseNumber"
-            background-color="accent"
-            filled
-            label="Hausnummer"
-            required
-            type="text"
-          ></v-text-field>
-        </v-col>
         <v-col cols="12">
-          <v-text-field
-            v-model="additional"
-            background-color="accent"
-            filled
-            label="Adresszusatz"
-            required
-            type="text"
-          ></v-text-field>
-        </v-col>
-        <v-col cols="12" md="4">
-          <v-text-field
-            v-model="zip"
-            background-color="accent"
-            filled
-            label="Postleitzahl"
-            required
-            type="number"
-          ></v-text-field>
-        </v-col>
-        <v-col cols="12" md="8">
-          <v-text-field
-            v-model="city"
-            background-color="accent"
-            filled
-            label="Stadt"
-            required
-            type="text"
-          ></v-text-field>
+          <AddressLookup v-model="location" label="Adresse" />
         </v-col>
       </v-row>
       <v-row> </v-row>
@@ -585,6 +508,31 @@ export default {
         </v-col>
       </v-row>
       <v-row class="mt-6">
+        <v-col cols="12">
+          <h4 class="title">Externe Buchung</h4>
+          <v-divider></v-divider>
+          <v-text-field
+            v-model="externalBookingUrl"
+            background-color="accent"
+            filled
+            label="Externe Buchungs-URL"
+            placeholder="https://..."
+            hint="Wenn gesetzt, wird die Buchung über diese externe URL abgewickelt. Die Teilnehmer-Einstellungen sind dann nicht mehr relevant."
+            persistent-hint
+            clearable
+          ></v-text-field>
+          <v-alert
+            v-if="hasExternalBookingUrl"
+            class="mt-4"
+            prominent
+            type="info"
+            text
+          >
+            Diese Veranstaltung wird über eine externe Buchungs-URL gebucht. Die Angaben zu Teilnehmern sind deaktiviert.
+          </v-alert>
+        </v-col>
+      </v-row>
+      <v-row class="mt-6" v-if="!hasExternalBookingUrl">
         <v-col cols="12">
           <h4 class="title">Teilnehmer</h4>
           <v-divider></v-divider>

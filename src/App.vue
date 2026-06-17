@@ -8,28 +8,10 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from "vuex";
-import ApiInstanceService from "@/services/api/ApiInstanceService";
 import AppToaster from "@/components/commons/AppToaster.vue";
 
 export default {
   components: { AppToaster },
-  methods: {
-    ...mapActions({
-      updateInstance: "instance/update",
-    }),
-  },
-  computed: {
-    ...mapGetters({
-      user: "user/getUser",
-      instance: "instance/instance",
-    }),
-  },
-  async mounted() {
-    await this.updateInstance(
-      await ApiInstanceService.getPublicInstance()
-    );
-  },
 };
 </script>
 
@@ -162,11 +144,19 @@ export default {
 }
 
 /* Last Row - Bottom Radius (Only when no footer) */
-.v-data-table:not(.v-data-table--has-bottom) table tbody tr:last-child td:first-child {
+.v-data-table:not(.v-data-table--has-bottom)
+  table
+  tbody
+  tr:last-child
+  td:first-child {
   border-bottom-left-radius: 25px !important;
 }
 
-.v-data-table:not(.v-data-table--has-bottom) table tbody tr:last-child td:last-child {
+.v-data-table:not(.v-data-table--has-bottom)
+  table
+  tbody
+  tr:last-child
+  td:last-child {
   border-bottom-right-radius: 25px !important;
 }
 
