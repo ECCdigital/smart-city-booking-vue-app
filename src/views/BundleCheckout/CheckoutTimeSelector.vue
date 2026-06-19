@@ -22,7 +22,13 @@
     </div>
     <v-form v-model="valid" ref="form">
       <h2>Buchungszeitraum</h2>
-      <p>Bitte wählen Sie den Zeitraum für Ihre Buchung.</p>
+      <p>
+        {{
+          selectionType === 'block-period'
+            ? 'Bitte wählen Sie einen verfügbaren Zeitraum aus.'
+            : 'Bitte wählen Sie den Zeitraum für Ihre Buchung.'
+        }}
+      </p>
 
       <v-row v-if="selectionType === 'schedule'">
         <v-col>
@@ -233,8 +239,18 @@
         </v-col>
       </v-row>
 
+      <v-row v-if="selectionType === 'block-period'">
+        <v-col>
+          <checkout-block-period-picker
+            v-model="selectedBlockPeriod"
+            :lead-item="leadItem"
+            :amount="amount"
+          />
+        </v-col>
+      </v-row>
+
       <v-btn
-        v-if="showSeries"
+        v-if="showSeries && selectionType !== 'block-period'"
         outlined
         small
         class="mt-2"
@@ -245,7 +261,11 @@
       </v-btn>
 
       <checkout-calendar
-        v-if="leadItem.bookable && selectionType !== 'time-period'"
+        v-if="
+          leadItem.bookable &&
+          selectionType !== 'time-period' &&
+          selectionType !== 'block-period'
+        "
         :bookableId="leadItem.bookable.id"
         :tenant="leadItem.bookable.tenantId"
         :booking-time-begin="timestampBegin"
@@ -261,11 +281,17 @@
 import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
 import CheckoutTimePeriodPicker from "@/components/Checkout/CheckoutTimePeriodPicker.vue";
+import CheckoutBlockPeriodPicker from "@/components/Checkout/CheckoutBlockPeriodPicker.vue";
 import TimezoneWarning from "@/components/TimezoneWarning.vue";
 
 export default {
   name: "CheckoutTimeSelector",
-  components: { TimezoneWarning, CheckoutTimePeriodPicker, CheckoutCalendar },
+  components: {
+    TimezoneWarning,
+    CheckoutTimePeriodPicker,
+    CheckoutBlockPeriodPicker,
+    CheckoutCalendar,
+  },
 
   props: {
     trace: {
@@ -321,6 +347,7 @@ export default {
       longRangeWeekModel: null,
       longRangeMonthModel: null,
       selectedTimePeriod: null,
+      selectedBlockPeriod: null,
 
       validationRules: {
         dateBegin: [
@@ -354,6 +381,13 @@ export default {
     },
 
     submit() {
+      if (this.selectionType === "block-period") {
+        if (this.selectedBlockPeriod) {
+          this.$emit("submit");
+        }
+        return;
+      }
+
       if (this.$refs.form.validate()) {
         if (
           !this.dateBeginModel ||
@@ -436,6 +470,9 @@ export default {
       },
     },
     isNextButtonDisabled() {
+      if (this.selectionType === "block-period") {
+        return !this.selectedBlockPeriod || !this.leadItem.valid;
+      }
       return !this.leadItem.valid;
     },
     timestampBegin() {
@@ -505,6 +542,9 @@ export default {
       return new Date().toISOString().split("T")[0];
     },
     selectionType() {
+      if (this.leadItem.bookable?.isBlockPeriodRelated === true) {
+        return "block-period";
+      }
       if (this.leadItem.bookable?.isScheduleRelated === true) {
         return "schedule";
       }
@@ -649,6 +689,17 @@ export default {
       this.notifyBookingTimeSelected();
     },
 
+    selectedBlockPeriod() {
+      if (!this.selectedBlockPeriod) {
+        this.$emit("booking-time-selected", { begin: null, end: null });
+        return;
+      }
+      this.$emit("booking-time-selected", {
+        begin: this.selectedBlockPeriod.timeBegin,
+        end: this.selectedBlockPeriod.timeEnd,
+      });
+    },
+
     longRangeWeekModel: function () {
       this.dateBeginModel = this.longRangeWeekModel?.startDate;
       this.timeBeginModel = "08:00";
@@ -664,6 +715,18 @@ export default {
   },
 
   mounted() {
+    if (
+      this.leadItem.bookable?.isBlockPeriodRelated &&
+      this.timeBegin != null &&
+      this.timeEnd != null
+    ) {
+      this.selectedBlockPeriod = {
+        timeBegin: this.timeBegin,
+        timeEnd: this.timeEnd,
+      };
+      return;
+    }
+
     if (this.timeBegin != null) {
       this.dateBeginModel = new Date(this.timeBegin)
         .toISOString()

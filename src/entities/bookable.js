@@ -29,6 +29,8 @@ export default class Bookable {
     this.specialOpeningHours = [];
     this.isLongRange = false;
     this.longRangeOptions = null;
+    this.isBlockPeriodRelated = false;
+    this.blockPeriods = [];
 
     this.priceCategories = [
       {

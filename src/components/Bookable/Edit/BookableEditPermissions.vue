@@ -24,6 +24,13 @@ export default {
       },
     },
   },
+  watch: {
+    "model.isBlockPeriodRelated"(enabled) {
+      if (enabled && this.model.groupBooking?.enabled) {
+        this.model.groupBooking.enabled = false;
+      }
+    },
+  },
   methods: {
     removePermittedUser(item) {
       this.model.permittedUsers.splice(
@@ -218,10 +225,20 @@ export default {
               label="Serienbuchung erlauben"
               hide-details
               v-model="model.groupBooking.enabled"
+              :disabled="model.isBlockPeriodRelated"
             ></v-switch>
           </v-col>
         </v-row>
-        <p class="mb-3 mt-5 text-caption" style="max-width: 700px">
+        <v-alert
+          v-if="model.isBlockPeriodRelated"
+          color="info"
+          dense
+          text
+          class="mt-3 mb-0"
+        >
+          Serienbuchungen sind bei Zeiträumen nicht verfügbar.
+        </v-alert>
+        <p v-else class="mb-3 mt-5 text-caption" style="max-width: 700px">
           Serienbuchungen ermöglichen es Benutzern, mehrere Termine in einer
           Buchungsserie zusammenzufassen. Dadurch können z.B. wöchentliche
           Meetings oder Kurse mit mehreren Terminen einfacher gebucht und

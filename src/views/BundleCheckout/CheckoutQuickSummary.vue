@@ -50,13 +50,7 @@
       <v-card-text>
         <h2 class="mb-7">Ihre Buchung</h2>
 
-        <div
-          v-if="
-            leadItem.bookable.isScheduleRelated ||
-            leadItem.bookable.isTimePeriodRelated ||
-            leadItem.bookable.isLongRange
-          "
-        >
+        <div v-if="isTimeDependentBookable(leadItem.bookable)">
           <h3 class="mb-1 mt-5">Zeitraum</h3>
           <v-divider class="mb-3"></v-divider>
           <v-row no-gutters>
@@ -324,6 +318,10 @@
 import CheckoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
+import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
+import { getCheckoutErrorToastKey } from "@/utils/checkoutErrors";
+import ToastService from "@/services/ToastService";
+import { mapActions } from "vuex";
 
 export default {
   name: "CheckoutQuickSummary",
@@ -387,6 +385,10 @@ export default {
   },
 
   methods: {
+    ...mapActions({
+      addToast: "toasts/add",
+    }),
+    isTimeDependentBookable,
     setBookWithPrice(value) {
       this.bookWithPrice = value;
       this.$emit("update:initialBookWithPrice", value);
@@ -513,6 +515,8 @@ export default {
           await this.routeToStatus(checkoutResponse.data);
         }
       } catch (error) {
+        const toastKey = getCheckoutErrorToastKey(error.response?.data);
+        this.addToast(ToastService.createToast(toastKey, "error"));
         console.error("Checkout process failed:", error.message);
       } finally {
         this.isSubmitting = false;

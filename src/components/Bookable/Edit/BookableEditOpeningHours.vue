@@ -41,6 +41,7 @@ export default {
     bookingType() {
       if (this.model.isScheduleRelated) return "schedule";
       if (this.model.isTimePeriodRelated) return "timePeriod";
+      if (this.model.isBlockPeriodRelated) return "blockPeriod";
       if (this.model.isLongRange) return this.model.longRangeOptions.type;
       return "independent";
     },

@@ -89,6 +89,8 @@ import CheckoutAmountSelector from "@/views/BundleCheckout/CheckoutAmountSelecto
 import { mapActions, mapGetters } from "vuex";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ToastService from "@/services/ToastService";
+import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
+import { formatCheckoutValidationError } from "@/utils/checkoutErrors";
 
 export default {
   name: "CheckoutMain",
@@ -331,11 +333,7 @@ export default {
         timeSelectorStep.props["show-back"] = false;
       }
 
-      if (
-        this.leadItem.bookable?.isScheduleRelated ||
-        this.leadItem.bookable?.isTimePeriodRelated ||
-        this.leadItem.bookable?.isLongRange
-      ) {
+      if (isTimeDependentBookable(this.leadItem.bookable)) {
         stepsToReturn.push(timeSelectorStep);
       }
 
@@ -505,9 +503,7 @@ export default {
     async validateItems() {
       for (let item of [this.leadItem, ...this.subsequentItems]) {
         if (
-          (item.bookable?.isScheduleRelated ||
-            item.bookable?.isTimePeriodRelated ||
-            item.bookable?.isLongRange) &&
+          isTimeDependentBookable(item.bookable) &&
           (this.timeBegin == null || this.timeEnd == null)
         ) {
           item.valid = null;
@@ -549,7 +545,7 @@ export default {
             item.freeBookingAllowed = false;
 
             item.valid = false;
-            item.error = error.response.data.error;
+            item.error = formatCheckoutValidationError(error.response?.data);
           } finally {
             const previousStepCount = this.steps.length;
 
@@ -672,7 +668,11 @@ export default {
       this.allowSeriesFlag = false;
 
       const item = this.leadItem;
-      if (!item?.bookable || !item.bookable.groupBooking?.enabled) {
+      if (
+        !item?.bookable ||
+        item.bookable.isBlockPeriodRelated ||
+        !item.bookable.groupBooking?.enabled
+      ) {
         return;
       }
 

@@ -8,7 +8,8 @@
         :disabled="
           !leadItem.bookable.isScheduleRelated &&
           !leadItem.bookable.isTimePeriodRelated &&
-          !leadItem.bookable.isLongRange
+          !leadItem.bookable.isLongRange &&
+          !leadItem.bookable.isBlockPeriodRelated
         "
       >
         <v-icon left small>mdi-arrow-left</v-icon>
@@ -101,6 +102,7 @@
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
+import { formatCheckoutValidationError } from "@/utils/checkoutErrors";
 
 export default {
   name: "AdditionalBookables",
@@ -193,7 +195,7 @@ export default {
         } catch (error) {
           console.log(error);
           item.isAvailable = false;
-          item.error = error.response?.data || "Nicht verfügbar";
+          item.error = formatCheckoutValidationError(error.response?.data);
         }
       }
     },

@@ -435,6 +435,24 @@
         "message": "Leider ist bei der Prüfung ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
       }
     },
+    "block_period_mismatch": {
+      "title": "Ungültiger Zeitraum",
+      "message": "Für dieses Objekt muss ein vollständiger Zeitraum gebucht werden."
+    },
+    "block_period": {
+      "unavailable": {
+        "availability": "Bereits ausgebucht",
+        "permission": "Anmeldung erforderlich",
+        "block-period-mismatch": "Ungültiges Zeitfenster",
+        "max-booking-date": "Zu weit in der Zukunft",
+        "parent-availability": "Übergeordnetes Objekt belegt",
+        "child-bookings": "Abhängiges Objekt belegt",
+        "event-date": "Nicht verfügbar",
+        "event-seats": "Nicht verfügbar",
+        "past": "Vergangen",
+        "default": "Nicht verfügbar"
+      }
+    },
     "warning": {
       "min-booking-duration": {
         "title": "Minimale Buchungsdauer beachten",

@@ -7,7 +7,7 @@ export async function checkGroupBooking({ to, next }) {
   const { id, tenant } = to.query;
   const { data: bookable } = await ApiBookablesService.getBookable(id, tenant);
 
-  if (!bookable?.groupBooking?.enabled) {
+  if (!bookable?.groupBooking?.enabled || bookable.isBlockPeriodRelated) {
     return next({ name: "home" });
   }
   const { permittedRoles } = bookable.groupBooking;
