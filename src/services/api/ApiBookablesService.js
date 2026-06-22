@@ -97,6 +97,12 @@ export default {
       `api/${tenantId}/bookables/${bookableId}/availability?startDate=${startDate}&endDate=${endDate}&amount=${amount}`
     );
   },
+  getBlockPeriods(bookableId, tenantId, startDate, endDate, amount = 1) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(
+      `api/${t}/bookables/${bookableId}/block-periods?startDate=${startDate}&endDate=${endDate}&amount=${amount}`
+    );
+  },
   async publicBookableCountCheck(tenantId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     return (await ApiClient.get(`api/${t}/bookables/count/check`)).data;

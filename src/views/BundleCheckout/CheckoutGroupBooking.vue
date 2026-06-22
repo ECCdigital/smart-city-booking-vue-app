@@ -69,6 +69,8 @@ import { mapActions, mapGetters } from "vuex";
 import ApiCouponService from "@/services/api/ApiCouponService";
 import BookingSidebar from "@/views/BundleCheckout/BookingSidebar.vue";
 import ToastService from "@/services/ToastService";
+import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
+import { formatCheckoutValidationError } from "@/utils/checkoutErrors";
 
 export default {
   name: "CheckoutGroupBooking",
@@ -662,9 +664,7 @@ export default {
       for (const bookingAttempt of bookingAttempts) {
         for (const item of bookingAttempt.bookableItems) {
           if (
-            (item.bookable?.isScheduleRelated ||
-              item.bookable?.isTimePeriodRelated ||
-              item.bookable?.isLongRange) &&
+            isTimeDependentBookable(item.bookable) &&
             (bookingAttempt.timeBegin == null || bookingAttempt.timeEnd == null)
           ) {
             item.valid = null;
@@ -693,7 +693,7 @@ export default {
               item.userGrossPriceEur = null;
 
               item.valid = false;
-              item.error = error.response.data;
+              item.error = formatCheckoutValidationError(error.response?.data);
             } finally {
               this.progress.percentage += totalBookableItems
                 ? 100 / totalBookableItems

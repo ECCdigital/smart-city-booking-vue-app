@@ -34,6 +34,8 @@ const state = {
     specialOpeningHours: [],
     isLongRange: false,
     longRangeOptions: null,
+    isBlockPeriodRelated: false,
+    blockPeriods: [],
 
     priceCategories: [
       {
@@ -127,6 +129,8 @@ const mutations = {
       specialOpeningHours: [],
       isLongRange: false,
       longRangeOptions: null,
+      isBlockPeriodRelated: false,
+      blockPeriods: [],
 
       priceCategories: [
         {
