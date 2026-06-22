@@ -33,7 +33,26 @@
       />
     </v-card>
 
-    <v-card v-if="loading && blockPeriodInstances.length === 0" elevation="1" class="loading-card">
+    <v-card
+      v-if="fetchError && !loading"
+      elevation="1"
+      class="error-card"
+    >
+      <v-card-text class="text-center py-6">
+        <v-icon size="48" color="error" class="mb-3">
+          mdi-alert-circle-outline
+        </v-icon>
+        <div class="text-subtitle-1 mb-1">Zeiträume konnten nicht geladen werden</div>
+        <div class="text-body-2 grey--text text--darken-1 mb-4">
+          Bitte versuchen Sie es erneut.
+        </div>
+        <v-btn small :color="primaryColor" outlined @click="fetchBlockPeriods">
+          Erneut laden
+        </v-btn>
+      </v-card-text>
+    </v-card>
+
+    <v-card v-else-if="loading && blockPeriodInstances.length === 0" elevation="1" class="loading-card">
       <v-card-text class="text-center py-6">
         <v-progress-circular
           indeterminate
@@ -46,7 +65,7 @@
     </v-card>
 
     <v-card
-      v-else-if="!loading && blockPeriodInstances.length === 0"
+      v-else-if="!loading && !fetchError && blockPeriodInstances.length === 0"
       elevation="1"
       class="no-availability-card"
     >
@@ -177,6 +196,7 @@ export default {
         month: today.getMonth(),
       },
       loading: false,
+      fetchError: false,
       blockPeriodInstances: [],
     };
   },
@@ -275,6 +295,7 @@ export default {
 
       this.loading = true;
       try {
+        this.fetchError = false;
         const { startDate, endDate } = this.queryRange;
         const response = await ApiBookablesService.getBlockPeriods(
           bookable.id,
@@ -287,8 +308,7 @@ export default {
         this.clearSelectionIfMissing();
       } catch (error) {
         console.warn("Could not fetch block periods", error);
-        this.blockPeriodInstances = [];
-        this.$emit("input", null);
+        this.fetchError = true;
       } finally {
         this.loading = false;
       }

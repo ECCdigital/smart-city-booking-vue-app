@@ -217,8 +217,11 @@ export default {
       this.model.blockPeriods.splice(index, 1);
       this.blockTimeStartMenu.splice(index, 1);
       this.blockTimeEndMenu.splice(index, 1);
-      const idx = this.expandedBlockItems.indexOf(index);
-      if (idx > -1) this.expandedBlockItems.splice(idx, 1);
+      this.expandedBlockItems = this.expandedBlockItems
+        .filter((expandedIndex) => expandedIndex !== index)
+        .map((expandedIndex) =>
+          expandedIndex > index ? expandedIndex - 1 : expandedIndex
+        );
     },
     toggleBlockExpand(index) {
       const idx = this.expandedBlockItems.indexOf(index);

@@ -25,10 +25,13 @@ export default {
     },
   },
   watch: {
-    "model.isBlockPeriodRelated"(enabled) {
-      if (enabled && this.model.groupBooking?.enabled) {
-        this.model.groupBooking.enabled = false;
-      }
+    "model.isBlockPeriodRelated": {
+      immediate: true,
+      handler(enabled) {
+        if (enabled && this.model.groupBooking?.enabled) {
+          this.model.groupBooking.enabled = false;
+        }
+      },
     },
   },
   methods: {

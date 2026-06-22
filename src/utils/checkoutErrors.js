@@ -15,13 +15,15 @@ function resolveCheckoutMessageKey(reason) {
     return null;
   }
 
-  if (i18n.te(`${reason}.message`)) {
-    return reason;
-  }
-
-  const nestedKey = `checkout.error.${reason}`;
-  if (i18n.te(`${nestedKey}.message`)) {
-    return nestedKey;
+  const candidates = [
+    reason,
+    `checkout.${reason}`,
+    `checkout.error.${reason}`,
+  ];
+  for (const key of candidates) {
+    if (i18n.te(`${key}.message`)) {
+      return key;
+    }
   }
 
   return null;
