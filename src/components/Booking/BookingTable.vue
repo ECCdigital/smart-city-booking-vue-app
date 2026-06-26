@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4">
+  <div>
     <div
       v-if="loading && bookings.length === 0"
       class="elevation-2"

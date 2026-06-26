@@ -219,8 +219,8 @@ export default {
     payBooking(id) {
       this.$emit("pay-booking", id);
     },
-    rejectBooking(bookingId) {
-      this.$emit("reject-booking", bookingId);
+    rejectBooking(bookingId, reason = null, skipCancellation = false) {
+      this.$emit("reject-booking", bookingId, reason, skipCancellation);
     },
 
     onMove(evt) {

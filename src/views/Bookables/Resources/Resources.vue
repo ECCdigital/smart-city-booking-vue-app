@@ -14,7 +14,7 @@
         <Search
           :items="api.resources"
           v-model="searchResults"
-          placeholder="Ressource suchen…"
+          placeholder="Objekt suchen…"
           :keys="searchKeys"
           filter-key="tags"
           :filter-options="api.tags"
@@ -66,7 +66,7 @@
         :disabled="createDisabled"
       >
         <v-icon>mdi-plus</v-icon>
-        Ressource erstellen
+        Objekt erstellen
       </v-btn>
     </v-fab-transition>
   </AdminLayout>
@@ -74,7 +74,7 @@
 
 <script>
 import AdminLayout from "@/layouts/Admin.vue";
-import BookableCard from "@/components/BookableCard.vue";
+import BookableCard from "@/components/Bookable/BookableCard.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiTagsService from "@/services/api/ApiTagsService";

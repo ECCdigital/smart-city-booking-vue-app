@@ -27,7 +27,7 @@ export default {
   ) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const irb = includeRelatedBookables || false;
-    const ipb = includeParentBookables || false;
+    const ipb = includeParentBookables || false
     const po = publicOnly || false;
 
     //TODO: check if typo-correction interferes anywhere
@@ -46,7 +46,7 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     return ApiClient.post(
       `api/${t}/checkout?simulate=${simulate || false}`,
-      bookingAttempt,
+      bookingAttempt
     );
   },
   async commitBooking(id) {
@@ -62,15 +62,27 @@ export default {
     );
     return response.data;
   },
-  rejectBooking(id, tenantId, reason) {
+  rejectBooking(id, tenantId, reason, skipCancellation, bankDetails) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`api/${t}/bookings/${id}/reject`, { reason: reason });
-  },
-  requestRejectBooking(id, tenantId, reason) {
-    const t = tenantId || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`api/${t}/bookings/${id}/request-reject`, {
+    const payload = {
       reason: reason,
-    });
+      skipCancellation: skipCancellation,
+    };
+    if (bankDetails) {
+      payload.bankDetails = bankDetails;
+    }
+    return ApiClient.post(
+      `api/${t}/bookings/${id}/reject?skipCancellation}`,
+      payload
+    );
+  },
+  requestRejectBooking(id, tenantId, reason, bankDetails) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const payload = { reason: reason };
+    if (bankDetails) {
+      payload.bankDetails = bankDetails;
+    }
+    return ApiClient.post(`api/${t}/bookings/${id}/request-reject`, payload);
   },
   releaseBookingHook(id, tenantId, hookId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
@@ -84,6 +96,13 @@ export default {
   async generateReceipt(id) {
     const response = await ApiClient.post(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/receipt`,
+      {}
+    );
+    return response.data;
+  },
+  async generateInvoice(id, sendEmail = false) {
+    const response = await ApiClient.post(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/invoice?sendEmail=${sendEmail}`,
       {}
     );
     return response.data;
@@ -104,16 +123,22 @@ export default {
       }
     );
   },
+  getCancellationReceipt(id, cancellationReceiptId) {
+    return ApiClient.get(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/cancellation-receipt/${cancellationReceiptId}`,
+      {
+        responseType: "blob",
+      }
+    );
+  },
   async downloadBookingIcal(id) {
     return await ApiClient.get(
-      `api/${store.getters["tenants/currentTenantId"]}/ical/bookings/${id}`,
+      `api/${store.getters["tenants/currentTenantId"]}/ical/bookings/${id}`
     );
   },
   downloadGroupBookingIcal(ids, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(
-      `api/${t}/ical/bookings?ids=${ids.join(",")}`
-    );
+    return ApiClient.get(`api/${t}/ical/bookings?ids=${ids.join(",")}`);
   },
   checkPublicBookingStatus(id, lastname, tenantId) {
     return ApiClient.get(`api/${tenantId}/bookings/${id}/status/public`, {

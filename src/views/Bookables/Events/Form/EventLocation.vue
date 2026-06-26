@@ -123,57 +123,10 @@
           </v-row>
           <v-row class="pa-2">
             <v-col cols="12">
-              <h4 data-v-eca9f636="" class="title">Adresse</h4>
-            </v-col>
-            <v-col cols="12" md="8">
-              <v-text-field
-                v-model="street"
-                background-color="accent"
-                filled
-                label="Straße"
-                required
-                type="text"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12" md="4">
-              <v-text-field
-                v-model="houseNumber"
-                background-color="accent"
-                filled
-                label="Hausnummer"
-                required
-                type="text"
-              ></v-text-field>
+              <h4 class="title">Adresse</h4>
             </v-col>
             <v-col cols="12">
-              <v-text-field
-                v-model="additional"
-                background-color="accent"
-                filled
-                label="Adresszusatz"
-                required
-                type="text"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12" md="4">
-              <v-text-field
-                v-model="zip"
-                background-color="accent"
-                filled
-                label="Postleitzahl"
-                required
-                type="number"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12" md="8">
-              <v-text-field
-                v-model="city"
-                background-color="accent"
-                filled
-                label="Stadt"
-                required
-                type="text"
-              ></v-text-field>
+              <AddressLookup v-model="location" label="Adresse" />
             </v-col>
             <v-col class="col-12 text-subtitle-2">*Pflichtfelder</v-col>
           </v-row>
@@ -196,6 +149,7 @@ import {
 import Pager from "@/components/Events/Form/Pager";
 import uniqueId from "lodash/uniqueId";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import AddressLookup from "@/components/commons/AddressLookup.vue";
 
 setInteractionMode("eager");
 
@@ -220,6 +174,7 @@ export default {
     ValidationProvider,
     ValidationObserver,
     Pager,
+    AddressLookup,
   },
   data() {
     return {
@@ -350,62 +305,17 @@ export default {
         });
       },
     },
-    street: {
+    location: {
       get() {
-        return this.$store.state.events.form.eventAddress.street;
+        const loc = this.$store.state.events.form.location;
+        if (typeof loc === "string") {
+          return { display_address: loc };
+        }
+        return loc || { display_address: null };
       },
       set(value) {
         this.updateValue({
-          parent: "eventAddress",
-          field: "street",
-          value: value,
-        });
-      },
-    },
-    houseNumber: {
-      get() {
-        return this.$store.state.events.form.eventAddress.houseNumber;
-      },
-      set(value) {
-        this.updateValue({
-          parent: "eventAddress",
-          field: "houseNumber",
-          value: value,
-        });
-      },
-    },
-    additional: {
-      get() {
-        return this.$store.state.events.form.eventAddress.additional;
-      },
-      set(value) {
-        this.updateValue({
-          parent: "eventAddress",
-          field: "additional",
-          value: value,
-        });
-      },
-    },
-    city: {
-      get() {
-        return this.$store.state.events.form.eventAddress.city;
-      },
-      set(value) {
-        this.updateValue({
-          parent: "eventAddress",
-          field: "city",
-          value: value,
-        });
-      },
-    },
-    zip: {
-      get() {
-        return this.$store.state.events.form.eventAddress.zip;
-      },
-      set(value) {
-        this.updateValue({
-          parent: "eventAddress",
-          field: "zip",
+          field: "location",
           value: value,
         });
       },

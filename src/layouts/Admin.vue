@@ -2,7 +2,7 @@
   <div class="content">
     <Navbar />
     <v-container fluid>
-      <h1 class="text-h5 mb-2">{{ this.$route.meta.title }}</h1>
+      <h1 class="text-h5 mb-2">{{ pageTitle }}</h1>
       <slot />
     </v-container>
   </div>
@@ -16,9 +16,15 @@ import { mapActions } from "vuex";
 export default {
   props: {
     data: Object,
+    title: String,
   },
   components: {
     Navbar,
+  },
+  computed: {
+    pageTitle() {
+      return this.title || this.$route.meta.title;
+    },
   },
 
   methods: {

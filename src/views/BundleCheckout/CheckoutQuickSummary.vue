@@ -50,13 +50,7 @@
       <v-card-text>
         <h2 class="mb-7">Ihre Buchung</h2>
 
-        <div
-          v-if="
-            leadItem.bookable.isScheduleRelated ||
-            leadItem.bookable.isTimePeriodRelated ||
-            leadItem.bookable.isLongRange
-          "
-        >
+        <div v-if="isTimeDependentBookable(leadItem.bookable)">
           <h3 class="mb-1 mt-5">Zeitraum</h3>
           <v-divider class="mb-3"></v-divider>
           <v-row no-gutters>
@@ -244,6 +238,28 @@
 
     <v-card
       class="mt-5 rounded-sm"
+      outlined
+      v-if="itemsWithBookingNotes.length > 0"
+    >
+      <v-card-text>
+        <h2 class="mb-7">Buchungshinweise</h2>
+
+        <div
+          v-for="item in itemsWithBookingNotes"
+          :key="item.bookableId"
+          class="mb-4"
+        >
+          <template v-if="itemsWithBookingNotes.length > 1">
+            <h3 class="mb-1">{{ item.bookable.title }}</h3>
+            <v-divider class="mb-3"></v-divider>
+          </template>
+          <div v-html="item.bookable.bookingNotes"></div>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <v-card
+      class="mt-5 rounded-sm"
       :color="$vuetify.theme.dark ? 'red' : 'red lighten-4'"
       outlined
       v-if="allItemsValid === false"
@@ -302,11 +318,18 @@
 import CheckoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
+import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
+import { getCheckoutErrorToastKey } from "@/utils/checkoutErrors";
+import ToastService from "@/services/ToastService";
+import { mapActions } from "vuex";
 
 export default {
   name: "CheckoutQuickSummary",
 
   props: {
+    checkoutId: {
+      type: String,
+    },
     trace: {
       type: Boolean,
     },
@@ -362,6 +385,10 @@ export default {
   },
 
   methods: {
+    ...mapActions({
+      addToast: "toasts/add",
+    }),
+    isTimeDependentBookable,
     setBookWithPrice(value) {
       this.bookWithPrice = value;
       this.$emit("update:initialBookWithPrice", value);
@@ -488,6 +515,8 @@ export default {
           await this.routeToStatus(checkoutResponse.data);
         }
       } catch (error) {
+        const toastKey = getCheckoutErrorToastKey(error.response?.data);
+        this.addToast(ToastService.createToast(toastKey, "error"));
         console.error("Checkout process failed:", error.message);
       } finally {
         this.isSubmitting = false;
@@ -495,9 +524,12 @@ export default {
     },
 
     async performCheckout() {
+      let payload = this.compileBooking();
+      payload.checkoutId = this.checkoutId;
+
       const response = await ApiCheckoutService.checkout(
         this.tenant,
-        this.compileBooking(),
+        payload,
         false
       );
       if (response.status !== 200) throw new Error("Checkout service failed");
@@ -530,6 +562,13 @@ export default {
           break;
         }
         case "pmPayment": {
+          const paymentUrl = paymentResponse.data?.paymentData[0]?.url;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          }
+          break;
+        }
+        case "ePayBL": {
           const paymentUrl = paymentResponse.data?.paymentData[0]?.url;
           if (paymentUrl) {
             window.location.href = paymentUrl;
@@ -617,6 +656,12 @@ export default {
       }
 
       return false;
+    },
+
+    itemsWithBookingNotes() {
+      return [this.leadItem, ...this.subsequentItems].filter(
+        (item) => !!item.bookable.bookingNotes
+      );
     },
 
     allItemsValid() {

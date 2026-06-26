@@ -18,10 +18,13 @@ export default {
       `api/${t}/bookables/public/${id}?populate=${populate}`
     );
   },
-  createOrUpdateBookable(tenant) {
-    const bookablesForm = store.getters["bookables/form"];
+  getBookablePrices(bookableId, tenant) {
     const t = tenant || store.getters["tenants/currentTenantId"];
-    const formData = { ...bookablesForm };
+    return ApiClient.get(`api/${t}/bookables/${bookableId}/prices`);
+  },
+  async createOrUpdateBookable(bookable, tenant) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    const formData = { ...bookable };
     formData.tenantId = t;
 
     if (formData.priceEur && typeof formData.priceEur === "string") {
@@ -82,6 +85,9 @@ export default {
         });
     });
   },
+  getBookableTemplate(tenantId) {
+    return ApiClient.get(`api/${tenantId}/bookables/_template`);
+  },
   getRelatedOpeningHours(bookableId, tenantId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/bookables/${bookableId}/openingHours`);
@@ -89,6 +95,12 @@ export default {
   getBookableAvailability(bookableId, tenantId, startDate, endDate, amount) {
     return ApiClient.get(
       `api/${tenantId}/bookables/${bookableId}/availability?startDate=${startDate}&endDate=${endDate}&amount=${amount}`
+    );
+  },
+  getBlockPeriods(bookableId, tenantId, startDate, endDate, amount = 1) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(
+      `api/${t}/bookables/${bookableId}/block-periods?startDate=${startDate}&endDate=${endDate}&amount=${amount}`
     );
   },
   async publicBookableCountCheck(tenantId) {
