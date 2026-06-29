@@ -111,20 +111,11 @@
       bottom
       right
       rounded
-      @click="onOpenCreateBookings"
+      :to="{ name: 'booking-create' }"
       :disabled="!BookingPermissionService.allowCreate()"
     >
       <v-icon>mdi-plus</v-icon>Buchung erstellen
     </v-btn>
-    <BookingEdit
-      v-if="selectedBooking.id !== undefined"
-      :booking="selectedBooking"
-      :open="openEditDialog"
-      :bookables="bookables"
-      :workflow="workflow"
-      :group-booking="selectedGroupBooking"
-      @close="onCloseEditDialog"
-    />
     <BookingDeleteConformationDialog
       :to-delete="selectedBooking"
       :open="openDeleteDialog"
@@ -203,10 +194,8 @@ import AdminLayout from "@/layouts/Admin.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
-import BookingEdit from "@/components/Booking/BookingEdit.vue";
 import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteConformationDialog.vue";
 import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
-import ApiBookablesService from "@/services/api/ApiBookablesService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import BookingDetails from "@/components/Booking/BookingDetails.vue";
 import BookingOverviewCalendar from "@/components/Booking/BookingOverviewCalendar.vue";
@@ -242,7 +231,6 @@ export default {
     BookingDeleteConformationDialog,
     BookingRejectConformationDialog,
     AdminLayout,
-    BookingEdit,
     BookingKanban,
   },
   data() {
@@ -273,7 +261,6 @@ export default {
         { text: "Zahlungsart", value: "payMethod" },
         { text: "", value: "controls", sortable: false },
       ],
-      openEditDialog: false,
       openDeleteDialog: false,
       openRejectDialog: false,
       openGroupBookingDialog: false,
@@ -283,7 +270,6 @@ export default {
       openPayDialog: false,
       selectedBooking: {},
       selectedGroupBooking: {},
-      bookables: [],
       openBookingDialog: false,
       currentView: "list",
       workflow: {},
@@ -355,7 +341,6 @@ export default {
   watch: {
     tenantId() {
       this.fetchBookings();
-      this.fetchBookables();
       this.fetchGroupBookings();
     },
     currentView(newView) {
@@ -427,15 +412,6 @@ export default {
       this.errors[action] = getBookingErrorMessage(code);
     },
 
-    fetchBookables() {
-      ApiBookablesService.getBookables()
-        .then((response) => {
-          this.bookables = response.data;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
     async fetchBookings() {
       await this.startLoading("fetch-bookings");
 
@@ -486,9 +462,6 @@ export default {
     },
     async closeDialog(type) {
       switch (type) {
-        case "edit":
-          this.openEditDialog = false;
-          break;
         case "delete":
           this.openDeleteDialog = false;
           break;
@@ -797,24 +770,10 @@ export default {
       this.openGroupBookingDialog = true;
     },
     onOpenEditBooking(bookingId) {
-      this.selectedBooking = Object.assign(
-        {},
-        this.api.bookings.find((booking) => booking.id === bookingId)
-      );
-      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(bookingId)
-      );
-      if (hasGroupBooking) {
-        this.selectedGroupBooking = Object.assign(
-          {},
-          this.api.groupBookings.find((groupBooking) =>
-            groupBooking.bookingIds.includes(bookingId)
-          )
-        );
-      } else {
-        this.selectedGroupBooking = null;
-      }
-      this.openEditDialog = true;
+      this.$router.push({
+        name: "booking-edit",
+        params: { bookingId },
+      });
     },
     onOpenDeleteDialog(bookingId) {
       const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
@@ -844,11 +803,6 @@ export default {
         this.openRejectDialog = true;
       }
     },
-    onCloseEditDialog() {
-      this.fetchBookings();
-      this.fetchGroupBookings();
-      this.openEditDialog = false;
-    },
     onCloseDeleteDialog() {
       this.fetchBookings();
       this.fetchGroupBookings();
@@ -861,36 +815,6 @@ export default {
     },
     onCloseBookingDialog() {
       this.openBookingDialog = false;
-    },
-    onOpenCreateBookings() {
-      this.selectedBooking = {
-        id: null,
-        tenant: this.tenantId,
-        assignedUserId: null,
-        attachments: [],
-        bookableItems: [],
-        comment: null,
-        company: null,
-        couponCode: null,
-        isCommitted: false,
-        isPayed: false,
-        location: null,
-        lockerInfo: null,
-        mail: null,
-        name: null,
-        paymentProvider: null,
-        paymentMethod: null,
-        phone: null,
-        priceEur: 0,
-        street: null,
-        timeBegin: Date.now(),
-        timeCreated: Date.now(),
-        timeEnd: Date.now(),
-        vatIncludedEur: null,
-        zipCode: null,
-      };
-      this.selectedBooking.tenantId = this.tenantId;
-      this.openEditDialog = true;
     },
     async updateBooking(bookingId) {
       await this.fetchBookings();
@@ -969,7 +893,6 @@ export default {
 
     try {
       await this.fetchBookings();
-      await this.fetchBookables();
       await this.fetchWorkflow();
       await this.fetchGroupBookings();
     } catch (error) {
