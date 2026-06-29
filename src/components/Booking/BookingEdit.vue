@@ -612,21 +612,6 @@
                         </v-col>
                       </v-row>
 
-                      <v-row dense>
-                        <v-col cols="12">
-                          <v-textarea
-                            v-model="selectedBooking.rejectionReason"
-                            label="Ablehnungsgrund"
-                            filled
-                            dense
-                            background-color="accent"
-                            rows="2"
-                            :disabled="!selectedBooking.isRejected"
-                            hide-details
-                          />
-                        </v-col>
-                      </v-row>
-
                       <v-switch
                         v-model="userCancellable"
                         label="Benutzer darf selbst stornieren"
@@ -671,11 +656,10 @@
 
                       <v-row dense class="mt-2">
                         <v-col cols="12" sm="6">
-                          <v-menu
-                            v-model="paymentDateMenu"
+                          <v-dialog
+                            v-model="paymentDateModal"
                             :disabled="!selectedBooking.isPayed"
-                            :close-on-content-click="false"
-                            offset-y
+                            width="290px"
                           >
                             <template v-slot:activator="{ on, attrs }">
                               <v-text-field
@@ -692,14 +676,19 @@
                                 hide-details
                               />
                             </template>
-                            <v-date-picker v-model="paymentDate" locale="de-DE" :first-day-of-week="1" @input="paymentDateMenu = false" />
-                          </v-menu>
+                            <v-date-picker
+                              v-model="paymentDate"
+                              locale="de-DE"
+                              :first-day-of-week="1"
+                              @input="paymentDateModal = false"
+                            />
+                          </v-dialog>
                         </v-col>
                         <v-col cols="12" sm="6">
-                          <v-menu
-                            v-model="paymentTimeMenu"
+                          <v-dialog
+                            v-model="paymentTimeModal"
                             :disabled="!selectedBooking.isPayed"
-                            offset-y
+                            width="290px"
                           >
                             <template v-slot:activator="{ on, attrs }">
                               <v-text-field
@@ -716,8 +705,68 @@
                                 hide-details
                               />
                             </template>
-                            <v-time-picker v-if="paymentTimeMenu" v-model="paymentTime" format="24hr" full-width @click:minute="paymentTimeMenu = false" />
-                          </v-menu>
+                            <v-time-picker
+                              v-if="paymentTimeModal"
+                              v-model="paymentTime"
+                              format="24hr"
+                              full-width
+                              @click:minute="paymentTimeModal = false"
+                            />
+                          </v-dialog>
+                        </v-col>
+                      </v-row>
+
+                      <v-row
+                        v-if="selectedBooking.isPayed"
+                        dense
+                        class="mt-1"
+                      >
+                        <v-col cols="12">
+                          <div
+                            v-if="paymentDate || paymentTime"
+                            class="d-flex align-center flex-wrap"
+                          >
+                            <v-chip
+                              v-if="formattedPaymentDateTime"
+                              small
+                              color="primary"
+                              outlined
+                              class="mr-2 mb-1"
+                            >
+                              <v-icon small left>mdi-calendar-clock</v-icon>
+                              {{ formattedPaymentDateTime }}
+                            </v-chip>
+                            <v-btn
+                              x-small
+                              text
+                              color="primary"
+                              class="mb-1"
+                              @click="setPaymentNow"
+                            >
+                              <v-icon small left>mdi-clock-fast</v-icon>
+                              Jetzt
+                            </v-btn>
+                            <v-btn
+                              x-small
+                              text
+                              color="error"
+                              class="mb-1"
+                              @click="clearPaymentDateTime"
+                            >
+                              <v-icon small left>mdi-close</v-icon>
+                              Löschen
+                            </v-btn>
+                          </div>
+                          <v-btn
+                            v-else
+                            x-small
+                            text
+                            color="primary"
+                            @click="setPaymentNow"
+                          >
+                            <v-icon small left>mdi-clock-fast</v-icon>
+                            Aktuelles Datum/Uhrzeit verwenden
+                          </v-btn>
                         </v-col>
                       </v-row>
 
@@ -861,8 +910,8 @@ export default {
       timeFromModal: false,
       timeToModal: false,
 
-      paymentDateMenu: false,
-      paymentTimeMenu: false,
+      paymentDateModal: false,
+      paymentTimeModal: false,
       paymentDate: null,
       paymentTime: null,
 
@@ -1247,8 +1296,8 @@ export default {
     },
     "selectedBooking.isPayed": function (isPayed) {
       if (!isPayed) {
-        this.paymentDateMenu = false;
-        this.paymentTimeMenu = false;
+        this.paymentDateModal = false;
+        this.paymentTimeModal = false;
       }
     },
     activePaymentApps: {
@@ -1560,6 +1609,16 @@ export default {
         this.selectedBooking.customFieldValues || []
       );
       if (missingFields.length) {
+        await this.addToast(
+          ToastService.createToast("booking.validation.required", "error")
+        );
+        return;
+      }
+
+      if (
+        this.selectedBooking.isRejected &&
+        !this.selectedBooking.rejectionReason?.trim()
+      ) {
         await this.addToast(
           ToastService.createToast("booking.validation.required", "error")
         );
