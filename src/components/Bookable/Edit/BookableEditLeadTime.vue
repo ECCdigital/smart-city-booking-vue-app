@@ -1,5 +1,8 @@
 <script>
-import { formatPreparationDuration } from "@/utils/bookingLeadTime";
+import {
+  formatPreparationDuration,
+  isLeadTimeSectionEnabled,
+} from "@/utils/bookingLeadTime";
 
 const WEEKDAYS = [
   { id: 1, name: "Montag", short: "Mo" },
@@ -26,6 +29,7 @@ export default {
   data() {
     return {
       valid: true,
+      leadTimeEnabled: false,
       weekdays: WEEKDAYS,
       presets: PRESET_MINUTES,
       timeStartMenu: [],
@@ -40,27 +44,6 @@ export default {
       },
       set(val) {
         this.$emit("update:bookable", { ...val });
-      },
-    },
-    leadTimeEnabled: {
-      get() {
-        return Number(this.model.preparationLeadTimeMinutes) > 0;
-      },
-      set(enabled) {
-        if (enabled) {
-          if (!Number(this.model.preparationLeadTimeMinutes)) {
-            this.model.preparationLeadTimeMinutes = 120;
-          }
-          if (!Array.isArray(this.model.serviceHours)) {
-            this.$set(this.model, "serviceHours", []);
-          }
-          if (this.model.serviceHours.length === 0) {
-            this.addServiceHours();
-          }
-        } else {
-          this.model.preparationLeadTimeMinutes = 0;
-        }
-        this.emitUpdate();
       },
     },
     preparationDurationLabel() {
@@ -81,8 +64,44 @@ export default {
     }
     this.timeStartMenu = this.model.serviceHours.map(() => false);
     this.timeEndMenu = this.model.serviceHours.map(() => false);
+    this.leadTimeEnabled = isLeadTimeSectionEnabled(this.model);
+  },
+  watch: {
+    bookable(newBookable, oldBookable) {
+      if (newBookable !== oldBookable) {
+        this.leadTimeEnabled = isLeadTimeSectionEnabled(newBookable);
+        this.syncTimeMenus();
+      }
+    },
   },
   methods: {
+    syncTimeMenus() {
+      const length = this.model.serviceHours?.length || 0;
+      if (
+        this.timeStartMenu.length !== length ||
+        this.timeEndMenu.length !== length
+      ) {
+        this.timeStartMenu = Array.from({ length }, () => false);
+        this.timeEndMenu = Array.from({ length }, () => false);
+      }
+    },
+    setLeadTimeEnabled(enabled) {
+      this.leadTimeEnabled = enabled;
+      if (enabled) {
+        if (this.model.preparationLeadTimeMinutes == null) {
+          this.model.preparationLeadTimeMinutes = 120;
+        }
+        if (!Array.isArray(this.model.serviceHours)) {
+          this.$set(this.model, "serviceHours", []);
+        }
+        if (this.model.serviceHours.length === 0) {
+          this.addServiceHours();
+        }
+      } else {
+        this.model.preparationLeadTimeMinutes = 0;
+      }
+      this.emitUpdate();
+    },
     emitUpdate() {
       this.$emit("update:bookable", { ...this.model });
     },
@@ -161,13 +180,17 @@ export default {
         return false;
       }
       return (
-        Number(this.model.preparationLeadTimeMinutes) > 0 &&
+        this.isPreparationMinutesValid() &&
         this.model.serviceHours.length > 0 &&
         this.model.serviceHours.every(
           (entry) =>
             entry.weekdays?.length > 0 && entry.startTime && entry.endTime
         )
       );
+    },
+    isPreparationMinutesValid() {
+      const minutes = Number(this.model.preparationLeadTimeMinutes);
+      return !Number.isNaN(minutes) && minutes >= 0;
     },
     resetValidation() {
       this.$refs.form?.resetValidation();
@@ -187,10 +210,11 @@ export default {
 
       <v-card-text class="pa-4">
         <v-switch
-          v-model="leadTimeEnabled"
+          :input-value="leadTimeEnabled"
           color="primary"
           hide-details
           class="mt-0"
+          @change="setLeadTimeEnabled"
         >
           <template v-slot:label>
             <div>
@@ -224,7 +248,7 @@ export default {
                 dense
                 label="Dauer"
                 type="number"
-                min="1"
+                min="0"
                 suffix="Minuten"
                 v-model.number="model.preparationLeadTimeMinutes"
                 :hint="
@@ -235,7 +259,12 @@ export default {
                 persistent-hint
                 hide-details="auto"
                 :rules="[
-                  (v) => Number(v) > 0 || 'Mindestens 1 Minute erforderlich',
+                  (v) =>
+                    (v !== '' &&
+                      v != null &&
+                      !Number.isNaN(Number(v)) &&
+                      Number(v) >= 0) ||
+                    'Gültige Dauer erforderlich',
                 ]"
                 @input="emitUpdate"
               />
