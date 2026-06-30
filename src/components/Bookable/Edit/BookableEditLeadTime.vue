@@ -1,6 +1,7 @@
 <script>
 import {
   formatPreparationDuration,
+  hasBufferConfig,
   normalizeLeadTimeFields,
 } from "@/utils/bookingLeadTime";
 
@@ -21,6 +22,12 @@ const PRESET_MINUTES = [
   { label: "4 Std.", value: 240 },
 ];
 
+const BUFFER_PRESET_MINUTES = [
+  { label: "Keiner", value: 0 },
+  { label: "15 Min.", value: 15 },
+  { label: "30 Min.", value: 30 },
+];
+
 export default {
   name: "BookableEditLeadTime",
   props: {
@@ -31,6 +38,7 @@ export default {
       valid: true,
       weekdays: WEEKDAYS,
       presets: PRESET_MINUTES,
+      bufferPresets: BUFFER_PRESET_MINUTES,
       timeStartMenu: [],
       timeEndMenu: [],
       expandedItems: [],
@@ -56,6 +64,9 @@ export default {
     leadTimeEnabled() {
       return !!this.model.isLeadTimeRelated;
     },
+    bufferSwitchEnabled() {
+      return !!this.model.isBufferRelated;
+    },
   },
   created() {
     this.applyLeadTimeStateFromModel();
@@ -74,6 +85,7 @@ export default {
     applyLeadTimeStateFromModel() {
       normalizeLeadTimeFields(this.model);
       this.$set(this.model, "isLeadTimeRelated", this.model.isLeadTimeRelated);
+      this.$set(this.model, "isBufferRelated", this.model.isBufferRelated);
     },
     syncTimeMenus() {
       const length = this.model.serviceHours?.length || 0;
@@ -104,12 +116,53 @@ export default {
       }
       this.emitUpdate();
     },
+    setBufferEnabled(enabled) {
+      const wasEnabled = this.bufferSwitchEnabled;
+      this.$set(this.model, "isBufferRelated", enabled);
+      if (enabled) {
+        if (!wasEnabled && !hasBufferConfig(this.model)) {
+          this.model.bufferTimeAfterMinutes = 30;
+        }
+      } else {
+        this.model.bufferTimeBeforeMinutes = null;
+        this.model.bufferTimeAfterMinutes = null;
+      }
+      this.emitUpdate();
+    },
     emitUpdate() {
       this.$emit("update:bookable", { ...this.model });
     },
     applyPreset(minutes) {
       this.model.preparationLeadTimeMinutes = minutes;
       this.emitUpdate();
+    },
+    displayBufferMinutes(value) {
+      return value == null || value === "" ? "" : value;
+    },
+    setBufferMinutes(field, value) {
+      if (value === "" || value == null) {
+        this.model[field] = null;
+      } else {
+        const minutes = Number(value);
+        this.model[field] =
+          Number.isFinite(minutes) && minutes > 0 ? Math.floor(minutes) : null;
+      }
+      this.emitUpdate();
+    },
+    applyBufferPreset(field, minutes) {
+      this.model[field] = minutes > 0 ? minutes : null;
+      this.emitUpdate();
+    },
+    isBufferMinutesValid(value) {
+      if (value == null || value === "") {
+        return true;
+      }
+      const minutes = Number(value);
+      return Number.isFinite(minutes) && minutes >= 0 && Number.isInteger(minutes);
+    },
+    bufferPresetActive(field, minutes) {
+      const current = Number(this.model[field]) || 0;
+      return current === minutes;
     },
     addServiceHours() {
       const index = this.model.serviceHours.length;
@@ -174,21 +227,27 @@ export default {
       return this.expandedItems.includes(index);
     },
     async validate() {
-      if (!this.model.isLeadTimeRelated) {
-        return true;
-      }
       const formValid = this.$refs.form ? this.$refs.form.validate() : true;
       if (!formValid) {
         return false;
       }
-      return (
-        this.isPreparationMinutesValid() &&
-        this.model.serviceHours.length > 0 &&
-        this.model.serviceHours.every(
-          (entry) =>
-            entry.weekdays?.length > 0 && entry.startTime && entry.endTime
-        )
-      );
+
+      const leadTimeValid =
+        !this.model.isLeadTimeRelated ||
+        (this.isPreparationMinutesValid() &&
+          this.model.serviceHours.length > 0 &&
+          this.model.serviceHours.every(
+            (entry) =>
+              entry.weekdays?.length > 0 && entry.startTime && entry.endTime
+          ));
+
+      const bufferValid =
+        !this.model.isBufferRelated ||
+        (this.isBufferMinutesValid(this.model.bufferTimeBeforeMinutes) &&
+          this.isBufferMinutesValid(this.model.bufferTimeAfterMinutes) &&
+          hasBufferConfig(this.model));
+
+      return leadTimeValid && bufferValid;
     },
     isPreparationMinutesValid() {
       const minutes = Number(this.model.preparationLeadTimeMinutes);
@@ -203,7 +262,7 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <v-card class="mt-4 section-card" outlined>
+    <v-card class="mt-4 section-card" elevation="2" outlined>
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-timer-sand</v-icon>
         <span class="text-h6 font-weight-bold">Vorlaufzeit</span>
@@ -498,6 +557,130 @@ export default {
               Servicezeiten hinzufügen
             </v-btn>
           </div>
+        </template>
+      </v-card-text>
+    </v-card>
+
+    <v-card class="mt-4 section-card" elevation="2" outlined>
+      <v-card-title class="section-header pa-4">
+        <v-icon class="mr-2">mdi-calendar-clock</v-icon>
+        <span class="text-h6 font-weight-bold">Puffer zwischen Buchungen</span>
+      </v-card-title>
+      <v-divider />
+
+      <v-card-text class="pa-4">
+        <v-switch
+          :input-value="bufferSwitchEnabled"
+          color="primary"
+          hide-details
+          class="mt-0"
+          @change="setBufferEnabled"
+        >
+          <template v-slot:label>
+            <div>
+              <div class="font-weight-medium">
+                Puffer zwischen Buchungen aktivieren
+              </div>
+              <div class="text-caption text--secondary">
+                Mindestabstand vor und nach bestehenden Buchungen (z. B.
+                Reinigung, Umräumen)
+              </div>
+            </div>
+          </template>
+        </v-switch>
+
+        <template v-if="bufferSwitchEnabled">
+          <v-divider class="my-4" />
+
+          <v-row dense>
+            <v-col cols="12" md="6">
+              <div class="text-subtitle-2 mb-1">Vor der Buchung</div>
+              <div class="text-caption text--secondary mb-2">
+                Zeit, die vor dem Terminbeginn blockiert wird
+              </div>
+              <v-text-field
+                background-color="accent"
+                filled
+                dense
+                label="Dauer"
+                type="number"
+                min="0"
+                suffix="Minuten"
+                :value="displayBufferMinutes(model.bufferTimeBeforeMinutes)"
+                hide-details="auto"
+                :rules="[
+                  (v) =>
+                    isBufferMinutesValid(v) ||
+                    'Gültige Dauer erforderlich (0 oder positive Ganzzahl)',
+                ]"
+                @input="setBufferMinutes('bufferTimeBeforeMinutes', $event)"
+              />
+              <div class="d-flex flex-wrap mt-2">
+                <span class="text-caption text--secondary mr-2">Schnellauswahl:</span>
+                <v-chip
+                  v-for="preset in bufferPresets"
+                  :key="`before-${preset.value}`"
+                  x-small
+                  class="mr-1 mb-1"
+                  :color="
+                    bufferPresetActive('bufferTimeBeforeMinutes', preset.value)
+                      ? 'primary'
+                      : undefined
+                  "
+                  :outlined="
+                    !bufferPresetActive('bufferTimeBeforeMinutes', preset.value)
+                  "
+                  @click="applyBufferPreset('bufferTimeBeforeMinutes', preset.value)"
+                >
+                  {{ preset.label }}
+                </v-chip>
+              </div>
+            </v-col>
+
+            <v-col cols="12" md="6">
+              <div class="text-subtitle-2 mb-1">Nach der Buchung</div>
+              <div class="text-caption text--secondary mb-2">
+                Zeit, die nach dem Terminende blockiert wird
+              </div>
+              <v-text-field
+                background-color="accent"
+                filled
+                dense
+                label="Dauer"
+                type="number"
+                min="0"
+                suffix="Minuten"
+                :value="displayBufferMinutes(model.bufferTimeAfterMinutes)"
+                hide-details="auto"
+                :rules="[
+                  (v) =>
+                    isBufferMinutesValid(v) ||
+                    'Gültige Dauer erforderlich (0 oder positive Ganzzahl)',
+                ]"
+                @input="setBufferMinutes('bufferTimeAfterMinutes', $event)"
+              />
+              <div class="d-flex flex-wrap mt-2">
+                <span class="text-caption text--secondary mr-2">Schnellauswahl:</span>
+                <v-chip
+                  v-for="preset in bufferPresets"
+                  :key="`after-${preset.value}`"
+                  x-small
+                  class="mr-1 mb-1"
+                  :color="
+                    bufferPresetActive('bufferTimeAfterMinutes', preset.value)
+                      ? 'primary'
+                      : undefined
+                  "
+                  :outlined="
+                    !bufferPresetActive('bufferTimeAfterMinutes', preset.value)
+                  "
+                  @click="applyBufferPreset('bufferTimeAfterMinutes', preset.value)"
+                >
+                  {{ preset.label }}
+                </v-chip>
+              </div>
+            </v-col>
+          </v-row>
         </template>
       </v-card-text>
     </v-card>
