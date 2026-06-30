@@ -9,7 +9,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
-- Admin UI for booking lead time (DEV-630, phase 1): service hours, preparation lead time, and weekday-based configuration on the bookable editor
+- Admin UI for booking lead time: service hours, preparation lead time, and weekday-based configuration on the bookable editor
 - Capacity buffer fields in the lead-time editor (before/after booking), with enable switch and preset durations
 - Shared lead-time utilities (`bookingLeadTime.js`) for field normalization and buffer configuration
 
