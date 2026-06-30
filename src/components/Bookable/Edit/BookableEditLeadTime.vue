@@ -261,7 +261,7 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <v-card class="mt-4 section-card" outlined>
+    <v-card class="mt-4 section-card" elevation="2" outlined>
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-timer-sand</v-icon>
         <span class="text-h6 font-weight-bold">Vorlaufzeit</span>
@@ -560,7 +560,7 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mt-4 section-card" outlined>
+    <v-card class="mt-4 section-card" elevation="2" outlined>
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-calendar-clock</v-icon>
         <span class="text-h6 font-weight-bold">Puffer zwischen Buchungen</span>
@@ -590,11 +590,6 @@ export default {
 
         <template v-if="bufferSwitchEnabled">
           <v-divider class="my-4" />
-
-          <v-alert color="grey" dense text class="mb-4 caption">
-            Verhindert direkt aufeinanderfolgende Buchungen. Gilt nicht bei
-            manueller Buchung mit Berechtigung.
-          </v-alert>
 
           <v-row dense>
             <v-col cols="12" md="6">
