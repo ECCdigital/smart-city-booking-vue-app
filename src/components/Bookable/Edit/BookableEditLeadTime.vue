@@ -1,7 +1,7 @@
 <script>
 import {
   formatPreparationDuration,
-  hasLeadTimeConfig,
+  normalizeLeadTimeFields,
 } from "@/utils/bookingLeadTime";
 
 const WEEKDAYS = [
@@ -58,20 +58,23 @@ export default {
     },
   },
   created() {
-    if (!Array.isArray(this.model.serviceHours)) {
-      this.$set(this.model, "serviceHours", []);
-    }
-    if (this.model.preparationLeadTimeMinutes == null) {
-      this.$set(this.model, "preparationLeadTimeMinutes", 0);
-    }
-    const hasExistingLeadTimeConfig = hasLeadTimeConfig(this.model);
-    if (this.model.isLeadTimeRelated == null || hasExistingLeadTimeConfig) {
-      this.$set(this.model, "isLeadTimeRelated", hasExistingLeadTimeConfig);
-    }
+    this.applyLeadTimeStateFromModel();
     this.timeStartMenu = this.model.serviceHours.map(() => false);
     this.timeEndMenu = this.model.serviceHours.map(() => false);
   },
+  watch: {
+    bookable(newBookable, oldBookable) {
+      if (newBookable !== oldBookable) {
+        this.applyLeadTimeStateFromModel();
+        this.syncTimeMenus();
+      }
+    },
+  },
   methods: {
+    applyLeadTimeStateFromModel() {
+      normalizeLeadTimeFields(this.model);
+      this.$set(this.model, "isLeadTimeRelated", this.model.isLeadTimeRelated);
+    },
     syncTimeMenus() {
       const length = this.model.serviceHours?.length || 0;
       if (

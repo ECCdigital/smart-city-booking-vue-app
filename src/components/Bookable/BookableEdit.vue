@@ -95,6 +95,7 @@ import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue"
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
 import Bookable from "@/entities/bookable";
+import { normalizeLeadTimeFields } from "@/utils/bookingLeadTime";
 import { mapActions, mapGetters } from "vuex";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
 import BookableEditLockerSystems from "@/components/Bookable/Edit/BookableEditLockerSystems.vue";
@@ -241,7 +242,7 @@ export default {
         const response = await ApiBookablesService.createOrUpdateBookable(
           this.bookable
         );
-        this.bookable = _.cloneDeep(response.data);
+        this.bookable = normalizeLeadTimeFields(_.cloneDeep(response.data));
 
         if (!this.bookableID) {
           this.$router.replace({
@@ -284,7 +285,9 @@ export default {
         const response = await ApiBookablesService.getBookableTemplate(
           this.currentTenant.id,
         );
-        this.bookable = new Bookable(response.data).toPlain();
+        this.bookable = normalizeLeadTimeFields(
+          new Bookable(response.data).toPlain()
+        );
         this.bookable.type = this.type;
       }
 
@@ -299,7 +302,7 @@ export default {
       try {
         this.isLoading = true;
         const response = await ApiBookablesService.getBookable(bookableId);
-        this.bookable = _.cloneDeep(response.data);
+        this.bookable = normalizeLeadTimeFields(_.cloneDeep(response.data));
       } catch (err) {
         console.error("Error fetching bookable:", err);
       } finally {

@@ -18,6 +18,35 @@ export function hasLeadTimeConfig(bookable) {
   );
 }
 
+export function normalizeLeadTimeFields(bookable) {
+  if (!bookable) {
+    return bookable;
+  }
+
+  if (!Array.isArray(bookable.serviceHours)) {
+    bookable.serviceHours = [];
+  }
+  if (bookable.preparationLeadTimeMinutes == null) {
+    bookable.preparationLeadTimeMinutes = 0;
+  }
+
+  if (!bookable.isScheduleRelated) {
+    bookable.isLeadTimeRelated = false;
+    return bookable;
+  }
+
+  const hasExistingLeadTimeConfig = hasLeadTimeConfig(bookable);
+  const hasServiceHours = bookable.serviceHours.length > 0;
+
+  if (hasExistingLeadTimeConfig || hasServiceHours) {
+    bookable.isLeadTimeRelated = true;
+  } else if (bookable.isLeadTimeRelated == null) {
+    bookable.isLeadTimeRelated = false;
+  }
+
+  return bookable;
+}
+
 export function formatPreparationDuration(minutes) {
   const value = Number(minutes);
   if (!value || value <= 0) {
