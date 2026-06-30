@@ -18,15 +18,6 @@ export function hasLeadTimeConfig(bookable) {
   );
 }
 
-export function isLeadTimeSectionEnabled(bookable) {
-  if (!bookable?.isScheduleRelated) {
-    return false;
-  }
-  const hasServiceHours =
-    Array.isArray(bookable.serviceHours) && bookable.serviceHours.length > 0;
-  return hasServiceHours || Number(bookable.preparationLeadTimeMinutes) > 0;
-}
-
 export function formatPreparationDuration(minutes) {
   const value = Number(minutes);
   if (!value || value <= 0) {

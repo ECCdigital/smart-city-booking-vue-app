@@ -37,6 +37,7 @@ const state = {
     isBlockPeriodRelated: false,
     blockPeriods: [],
 
+    isLeadTimeRelated: false,
     preparationLeadTimeMinutes: 0,
     serviceHours: [],
 
@@ -135,6 +136,7 @@ const mutations = {
       isBlockPeriodRelated: false,
       blockPeriods: [],
 
+      isLeadTimeRelated: false,
       preparationLeadTimeMinutes: 0,
       serviceHours: [],
 

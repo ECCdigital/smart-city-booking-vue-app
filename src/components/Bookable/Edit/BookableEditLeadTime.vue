@@ -1,7 +1,7 @@
 <script>
 import {
   formatPreparationDuration,
-  isLeadTimeSectionEnabled,
+  hasLeadTimeConfig,
 } from "@/utils/bookingLeadTime";
 
 const WEEKDAYS = [
@@ -29,7 +29,6 @@ export default {
   data() {
     return {
       valid: true,
-      leadTimeEnabled: false,
       weekdays: WEEKDAYS,
       presets: PRESET_MINUTES,
       timeStartMenu: [],
@@ -54,6 +53,9 @@ export default {
         Array.isArray(this.model.serviceHours) && this.model.serviceHours.length > 0
       );
     },
+    leadTimeEnabled() {
+      return !!this.model.isLeadTimeRelated;
+    },
   },
   created() {
     if (!Array.isArray(this.model.serviceHours)) {
@@ -62,17 +64,11 @@ export default {
     if (this.model.preparationLeadTimeMinutes == null) {
       this.$set(this.model, "preparationLeadTimeMinutes", 0);
     }
+    if (this.model.isLeadTimeRelated == null) {
+      this.$set(this.model, "isLeadTimeRelated", hasLeadTimeConfig(this.model));
+    }
     this.timeStartMenu = this.model.serviceHours.map(() => false);
     this.timeEndMenu = this.model.serviceHours.map(() => false);
-    this.leadTimeEnabled = isLeadTimeSectionEnabled(this.model);
-  },
-  watch: {
-    bookable(newBookable, oldBookable) {
-      if (newBookable !== oldBookable) {
-        this.leadTimeEnabled = isLeadTimeSectionEnabled(newBookable);
-        this.syncTimeMenus();
-      }
-    },
   },
   methods: {
     syncTimeMenus() {
@@ -86,7 +82,7 @@ export default {
       }
     },
     setLeadTimeEnabled(enabled) {
-      this.leadTimeEnabled = enabled;
+      this.$set(this.model, "isLeadTimeRelated", enabled);
       if (enabled) {
         if (this.model.preparationLeadTimeMinutes == null) {
           this.model.preparationLeadTimeMinutes = 120;
@@ -172,7 +168,7 @@ export default {
       return this.expandedItems.includes(index);
     },
     async validate() {
-      if (!this.leadTimeEnabled) {
+      if (!this.model.isLeadTimeRelated) {
         return true;
       }
       const formValid = this.$refs.form ? this.$refs.form.validate() : true;
