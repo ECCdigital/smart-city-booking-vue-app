@@ -1096,14 +1096,14 @@ export default {
       const hasBuffer = this.hasBufferBookables;
       if (hasLeadTime && hasBuffer) {
         return (
-          "Mindestens ein Buchungsobjekt hat Vorlaufzeit und/oder Kapazitäts-Puffer " +
+          "Mindestens ein Buchungsobjekt hat Vorlaufzeit und/oder Puffer zwischen Buchungen " +
           "konfiguriert. Bei manuellen Buchungen werden diese Regeln nicht geprüft – " +
           "sie gelten nur im öffentlichen Checkout."
         );
       }
       if (hasBuffer) {
         return (
-          "Mindestens ein Buchungsobjekt hat einen Kapazitäts-Puffer konfiguriert. " +
+          "Mindestens ein Buchungsobjekt hat einen Puffer zwischen Buchungen konfiguriert. " +
           "Bei manuellen Buchungen wird diese Regel nicht geprüft – sie gilt nur im " +
           "öffentlichen Checkout."
         );

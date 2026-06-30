@@ -55,6 +55,7 @@ export function normalizeLeadTimeFields(bookable) {
 
   if (!bookable.isScheduleRelated) {
     bookable.isLeadTimeRelated = false;
+    bookable.isBufferRelated = false;
     bookable.bufferTimeBeforeMinutes = null;
     bookable.bufferTimeAfterMinutes = null;
     return bookable;
@@ -74,6 +75,12 @@ export function normalizeLeadTimeFields(bookable) {
     bookable.isLeadTimeRelated = true;
   } else if (bookable.isLeadTimeRelated == null) {
     bookable.isLeadTimeRelated = false;
+  }
+
+  if (hasBufferConfig(bookable)) {
+    bookable.isBufferRelated = true;
+  } else if (bookable.isBufferRelated == null) {
+    bookable.isBufferRelated = false;
   }
 
   return bookable;

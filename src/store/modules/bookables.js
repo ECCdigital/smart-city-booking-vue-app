@@ -40,6 +40,7 @@ const state = {
     isLeadTimeRelated: false,
     preparationLeadTimeMinutes: 0,
     serviceHours: [],
+    isBufferRelated: false,
     bufferTimeBeforeMinutes: null,
     bufferTimeAfterMinutes: null,
 
@@ -141,6 +142,7 @@ const mutations = {
       isLeadTimeRelated: false,
       preparationLeadTimeMinutes: 0,
       serviceHours: [],
+      isBufferRelated: false,
       bufferTimeBeforeMinutes: null,
       bufferTimeAfterMinutes: null,
 
