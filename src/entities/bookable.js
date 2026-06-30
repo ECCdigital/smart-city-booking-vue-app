@@ -32,6 +32,9 @@ export default class Bookable {
     this.isBlockPeriodRelated = false;
     this.blockPeriods = [];
 
+    this.preparationLeadTimeMinutes = 0;
+    this.serviceHours = [];
+
     this.priceCategories = [
       {
         priceEur: 0,

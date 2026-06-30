@@ -1,10 +1,11 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
+import BookableEditLeadTime from "@/components/Bookable/Edit/BookableEditLeadTime.vue";
 import { v4 as uuidv4 } from "uuid";
 
 export default {
   name: "BookableEditBookingType",
-  components: { BaseSection },
+  components: { BaseSection, BookableEditLeadTime },
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -108,6 +109,12 @@ export default {
       const formValid = this.$refs.form ? this.$refs.form.validate() : true;
       if (!formValid) {
         return false;
+      }
+      if (this.bookingType === "schedule" && this.$refs.leadTime) {
+        const leadTimeValid = await this.$refs.leadTime.validate();
+        if (!leadTimeValid) {
+          return false;
+        }
       }
       if (this.bookingType !== "blockPeriod") {
         return true;
@@ -431,6 +438,13 @@ export default {
           </v-row>
         </v-card-text>
       </v-card>
+
+      <BookableEditLeadTime
+        v-if="bookingType === 'schedule'"
+        ref="leadTime"
+        :bookable="model"
+        @update:bookable="model = $event"
+      />
 
       <v-card class="mt-4 section-card" v-if="bookingType === 'timePeriod'">
         <v-card-title

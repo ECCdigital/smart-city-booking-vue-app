@@ -451,6 +451,10 @@
       "title": "Ungültiger Zeitraum",
       "message": "Für dieses Objekt muss ein vollständiger Zeitraum gebucht werden."
     },
+    "insufficient-lead-time": {
+      "title": "Vorlaufzeit nicht eingehalten",
+      "message": "Die Buchung liegt zu kurzfristig. Zwischen Buchung und Beginn muss ausreichend Vorbereitungszeit in den Servicezeiten liegen."
+    },
     "block_period": {
       "unavailable": {
         "availability": "Bereits ausgebucht",
