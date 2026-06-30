@@ -37,6 +37,10 @@ const state = {
     isBlockPeriodRelated: false,
     blockPeriods: [],
 
+    isLeadTimeRelated: false,
+    preparationLeadTimeMinutes: 0,
+    serviceHours: [],
+
     priceCategories: [
       {
         priceEur: 0,
@@ -131,6 +135,10 @@ const mutations = {
       longRangeOptions: null,
       isBlockPeriodRelated: false,
       blockPeriods: [],
+
+      isLeadTimeRelated: false,
+      preparationLeadTimeMinutes: 0,
+      serviceHours: [],
 
       priceCategories: [
         {

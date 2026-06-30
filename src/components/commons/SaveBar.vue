@@ -178,7 +178,7 @@ export default {
 .save-bar-wrapper {
   position: fixed;
   bottom: 12px;
-  z-index: 10;
+  z-index: 4;
   pointer-events: none;
   padding-bottom: calc(var(--save-bar-gap) + env(safe-area-inset-bottom));
 }

@@ -278,6 +278,18 @@
               belegt. Als Admin können Sie trotzdem fortfahren.
             </v-alert>
 
+            <v-alert
+              v-if="hasLeadTimeBookables"
+              type="info"
+              dense
+              text
+              class="mt-3 mb-0 caption"
+            >
+              Mindestens ein Buchungsobjekt hat eine Vorlaufzeit konfiguriert.
+              Bei manuellen Buchungen wird diese Regel nicht geprüft – sie gilt
+              nur im öffentlichen Checkout.
+            </v-alert>
+
             <div class="d-flex align-center justify-space-between mt-4 mb-1">
               <span class="text-subtitle-2">Buchungszeitraum</span>
               <v-btn x-small text @click="removeBookingTimes">
@@ -860,6 +872,7 @@ import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
 import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import { formatCheckoutValidationError } from "@/utils/checkoutErrors";
+import { hasLeadTimeConfig } from "@/utils/bookingLeadTime";
 import {
   resolveBookingCheckoutCustomFields,
   setCustomFieldValue,
@@ -1066,6 +1079,11 @@ export default {
     },
     showOccupancyCalendar() {
       return !!this.calendarBookableItem;
+    },
+    hasLeadTimeBookables() {
+      return this.bookableItems.some((item) =>
+        hasLeadTimeConfig(item._bookableUsed)
+      );
     },
     hasUnsavedChanges() {
       if (!this.originalSnapshot || !this.editableBooking) return false;
