@@ -64,8 +64,9 @@ export default {
     if (this.model.preparationLeadTimeMinutes == null) {
       this.$set(this.model, "preparationLeadTimeMinutes", 0);
     }
-    if (this.model.isLeadTimeRelated == null) {
-      this.$set(this.model, "isLeadTimeRelated", hasLeadTimeConfig(this.model));
+    const hasExistingLeadTimeConfig = hasLeadTimeConfig(this.model);
+    if (this.model.isLeadTimeRelated == null || hasExistingLeadTimeConfig) {
+      this.$set(this.model, "isLeadTimeRelated", hasExistingLeadTimeConfig);
     }
     this.timeStartMenu = this.model.serviceHours.map(() => false);
     this.timeEndMenu = this.model.serviceHours.map(() => false);
@@ -82,9 +83,11 @@ export default {
       }
     },
     setLeadTimeEnabled(enabled) {
+      const wasEnabled = this.leadTimeEnabled;
       this.$set(this.model, "isLeadTimeRelated", enabled);
       if (enabled) {
-        if (this.model.preparationLeadTimeMinutes == null) {
+        const minutes = Number(this.model.preparationLeadTimeMinutes);
+        if (!wasEnabled && (!Number.isFinite(minutes) || minutes <= 0)) {
           this.model.preparationLeadTimeMinutes = 120;
         }
         if (!Array.isArray(this.model.serviceHours)) {
