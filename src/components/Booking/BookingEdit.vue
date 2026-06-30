@@ -279,15 +279,13 @@
             </v-alert>
 
             <v-alert
-              v-if="hasLeadTimeBookables"
+              v-if="hasCheckoutAvailabilityRestrictions"
               type="info"
               dense
               text
               class="mt-3 mb-0 caption"
             >
-              Mindestens ein Buchungsobjekt hat eine Vorlaufzeit konfiguriert.
-              Bei manuellen Buchungen wird diese Regel nicht geprüft – sie gilt
-              nur im öffentlichen Checkout.
+              {{ checkoutAvailabilityRestrictionHint }}
             </v-alert>
 
             <div class="d-flex align-center justify-space-between mt-4 mb-1">
@@ -872,7 +870,7 @@ import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
 import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import { formatCheckoutValidationError } from "@/utils/checkoutErrors";
-import { hasLeadTimeConfig } from "@/utils/bookingLeadTime";
+import { hasBufferConfig, hasLeadTimeConfig } from "@/utils/bookingLeadTime";
 import {
   resolveBookingCheckoutCustomFields,
   setCustomFieldValue,
@@ -1083,6 +1081,37 @@ export default {
     hasLeadTimeBookables() {
       return this.bookableItems.some((item) =>
         hasLeadTimeConfig(item._bookableUsed)
+      );
+    },
+    hasBufferBookables() {
+      return this.bookableItems.some((item) =>
+        hasBufferConfig(item._bookableUsed)
+      );
+    },
+    hasCheckoutAvailabilityRestrictions() {
+      return this.hasLeadTimeBookables || this.hasBufferBookables;
+    },
+    checkoutAvailabilityRestrictionHint() {
+      const hasLeadTime = this.hasLeadTimeBookables;
+      const hasBuffer = this.hasBufferBookables;
+      if (hasLeadTime && hasBuffer) {
+        return (
+          "Mindestens ein Buchungsobjekt hat Vorlaufzeit und/oder Kapazitäts-Puffer " +
+          "konfiguriert. Bei manuellen Buchungen werden diese Regeln nicht geprüft – " +
+          "sie gelten nur im öffentlichen Checkout."
+        );
+      }
+      if (hasBuffer) {
+        return (
+          "Mindestens ein Buchungsobjekt hat einen Kapazitäts-Puffer konfiguriert. " +
+          "Bei manuellen Buchungen wird diese Regel nicht geprüft – sie gilt nur im " +
+          "öffentlichen Checkout."
+        );
+      }
+      return (
+        "Mindestens ein Buchungsobjekt hat eine Vorlaufzeit konfiguriert. " +
+        "Bei manuellen Buchungen wird diese Regel nicht geprüft – sie gilt nur im " +
+        "öffentlichen Checkout."
       );
     },
     hasUnsavedChanges() {

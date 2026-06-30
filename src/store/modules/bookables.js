@@ -40,6 +40,8 @@ const state = {
     isLeadTimeRelated: false,
     preparationLeadTimeMinutes: 0,
     serviceHours: [],
+    bufferTimeBeforeMinutes: null,
+    bufferTimeAfterMinutes: null,
 
     priceCategories: [
       {
@@ -139,6 +141,8 @@ const mutations = {
       isLeadTimeRelated: false,
       preparationLeadTimeMinutes: 0,
       serviceHours: [],
+      bufferTimeBeforeMinutes: null,
+      bufferTimeAfterMinutes: null,
 
       priceCategories: [
         {

@@ -18,6 +18,29 @@ export function hasLeadTimeConfig(bookable) {
   );
 }
 
+export function hasBufferConfig(bookable) {
+  if (!bookable?.isScheduleRelated) {
+    return false;
+  }
+  const before = Number(bookable.bufferTimeBeforeMinutes);
+  const after = Number(bookable.bufferTimeAfterMinutes);
+  return (
+    (Number.isFinite(before) && before > 0) ||
+    (Number.isFinite(after) && after > 0)
+  );
+}
+
+function normalizeBufferMinutes(value) {
+  if (value == null || value === "") {
+    return null;
+  }
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    return null;
+  }
+  return Math.floor(minutes);
+}
+
 export function normalizeLeadTimeFields(bookable) {
   if (!bookable) {
     return bookable;
@@ -32,8 +55,17 @@ export function normalizeLeadTimeFields(bookable) {
 
   if (!bookable.isScheduleRelated) {
     bookable.isLeadTimeRelated = false;
+    bookable.bufferTimeBeforeMinutes = null;
+    bookable.bufferTimeAfterMinutes = null;
     return bookable;
   }
+
+  bookable.bufferTimeBeforeMinutes = normalizeBufferMinutes(
+    bookable.bufferTimeBeforeMinutes
+  );
+  bookable.bufferTimeAfterMinutes = normalizeBufferMinutes(
+    bookable.bufferTimeAfterMinutes
+  );
 
   const hasExistingLeadTimeConfig = hasLeadTimeConfig(bookable);
   const hasServiceHours = bookable.serviceHours.length > 0;

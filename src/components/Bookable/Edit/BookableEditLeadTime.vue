@@ -1,6 +1,7 @@
 <script>
 import {
   formatPreparationDuration,
+  hasBufferConfig,
   normalizeLeadTimeFields,
 } from "@/utils/bookingLeadTime";
 
@@ -21,6 +22,12 @@ const PRESET_MINUTES = [
   { label: "4 Std.", value: 240 },
 ];
 
+const BUFFER_PRESET_MINUTES = [
+  { label: "Aus", value: 0 },
+  { label: "15 Min.", value: 15 },
+  { label: "30 Min.", value: 30 },
+];
+
 export default {
   name: "BookableEditLeadTime",
   props: {
@@ -31,9 +38,11 @@ export default {
       valid: true,
       weekdays: WEEKDAYS,
       presets: PRESET_MINUTES,
+      bufferPresets: BUFFER_PRESET_MINUTES,
       timeStartMenu: [],
       timeEndMenu: [],
       expandedItems: [],
+      bufferExpanded: false,
     };
   },
   computed: {
@@ -56,9 +65,28 @@ export default {
     leadTimeEnabled() {
       return !!this.model.isLeadTimeRelated;
     },
+    bufferEnabled() {
+      return hasBufferConfig(this.model);
+    },
+    bufferSummary() {
+      const before = Number(this.model.bufferTimeBeforeMinutes) || 0;
+      const after = Number(this.model.bufferTimeAfterMinutes) || 0;
+      if (before <= 0 && after <= 0) {
+        return "Kein Puffer aktiv";
+      }
+      const parts = [];
+      if (before > 0) {
+        parts.push(`${formatPreparationDuration(before)} vorher`);
+      }
+      if (after > 0) {
+        parts.push(`${formatPreparationDuration(after)} nachher`);
+      }
+      return parts.join(" · ");
+    },
   },
   created() {
     this.applyLeadTimeStateFromModel();
+    this.bufferExpanded = hasBufferConfig(this.model);
     this.timeStartMenu = this.model.serviceHours.map(() => false);
     this.timeEndMenu = this.model.serviceHours.map(() => false);
   },
@@ -67,6 +95,9 @@ export default {
       if (newBookable !== oldBookable) {
         this.applyLeadTimeStateFromModel();
         this.syncTimeMenus();
+        if (hasBufferConfig(newBookable)) {
+          this.bufferExpanded = true;
+        }
       }
     },
   },
@@ -110,6 +141,34 @@ export default {
     applyPreset(minutes) {
       this.model.preparationLeadTimeMinutes = minutes;
       this.emitUpdate();
+    },
+    displayBufferMinutes(value) {
+      return value == null || value === "" ? "" : value;
+    },
+    setBufferMinutes(field, value) {
+      if (value === "" || value == null) {
+        this.model[field] = null;
+      } else {
+        const minutes = Number(value);
+        this.model[field] =
+          Number.isFinite(minutes) && minutes > 0 ? Math.floor(minutes) : null;
+      }
+      this.emitUpdate();
+    },
+    applyBufferPreset(field, minutes) {
+      this.model[field] = minutes > 0 ? minutes : null;
+      this.emitUpdate();
+    },
+    isBufferMinutesValid(value) {
+      if (value == null || value === "") {
+        return true;
+      }
+      const minutes = Number(value);
+      return Number.isFinite(minutes) && minutes >= 0 && Number.isInteger(minutes);
+    },
+    bufferPresetActive(field, minutes) {
+      const current = Number(this.model[field]) || 0;
+      return current === minutes;
     },
     addServiceHours() {
       const index = this.model.serviceHours.length;
@@ -174,15 +233,20 @@ export default {
       return this.expandedItems.includes(index);
     },
     async validate() {
-      if (!this.model.isLeadTimeRelated) {
-        return true;
-      }
       const formValid = this.$refs.form ? this.$refs.form.validate() : true;
       if (!formValid) {
         return false;
       }
+      if (!this.model.isLeadTimeRelated) {
+        return (
+          this.isBufferMinutesValid(this.model.bufferTimeBeforeMinutes) &&
+          this.isBufferMinutesValid(this.model.bufferTimeAfterMinutes)
+        );
+      }
       return (
         this.isPreparationMinutesValid() &&
+        this.isBufferMinutesValid(this.model.bufferTimeBeforeMinutes) &&
+        this.isBufferMinutesValid(this.model.bufferTimeAfterMinutes) &&
         this.model.serviceHours.length > 0 &&
         this.model.serviceHours.every(
           (entry) =>
@@ -499,6 +563,138 @@ export default {
             </v-btn>
           </div>
         </template>
+
+        <v-divider class="my-4" />
+
+        <div
+          class="buffer-section-header d-flex align-center"
+          role="button"
+          tabindex="0"
+          @click="bufferExpanded = !bufferExpanded"
+          @keydown.enter.prevent="bufferExpanded = !bufferExpanded"
+          @keydown.space.prevent="bufferExpanded = !bufferExpanded"
+        >
+          <v-icon class="mr-2" small>mdi-calendar-remove-outline</v-icon>
+          <div class="flex-grow-1">
+            <div class="text-subtitle-2">Kapazitäts-Puffer</div>
+            <div class="text-caption text--secondary">
+              {{ bufferSummary }}
+            </div>
+          </div>
+          <v-chip
+            v-if="bufferEnabled"
+            x-small
+            color="primary"
+            text-color="white"
+            class="mr-2"
+          >
+            Aktiv
+          </v-chip>
+          <v-icon small>
+            {{ bufferExpanded ? "mdi-chevron-up" : "mdi-chevron-down" }}
+          </v-icon>
+        </div>
+
+        <v-expand-transition>
+          <div v-show="bufferExpanded" class="mt-3">
+            <v-alert color="grey" dense text class="mb-4 caption">
+              Verhindert direkt aufeinanderfolgende Buchungen. Gilt nicht bei
+              manueller Buchung mit Berechtigung.
+            </v-alert>
+
+            <v-row dense>
+              <v-col cols="12" md="6">
+                <div class="text-caption font-weight-medium mb-1">
+                  Puffer vor Buchung
+                </div>
+                <div class="text-caption text--secondary mb-2">
+                  z. B. Reinigung oder Vorbereitung vor dem Termin
+                </div>
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  label="Dauer"
+                  type="number"
+                  min="0"
+                  suffix="Minuten"
+                  :value="displayBufferMinutes(model.bufferTimeBeforeMinutes)"
+                  hide-details="auto"
+                  :rules="[
+                    (v) =>
+                      isBufferMinutesValid(v) ||
+                      'Gültige Dauer erforderlich (0 oder positive Ganzzahl)',
+                  ]"
+                  @input="setBufferMinutes('bufferTimeBeforeMinutes', $event)"
+                />
+                <div class="d-flex flex-wrap mt-2">
+                  <v-chip
+                    v-for="preset in bufferPresets"
+                    :key="`before-${preset.value}`"
+                    x-small
+                    class="mr-1 mb-1"
+                    :color="
+                      bufferPresetActive('bufferTimeBeforeMinutes', preset.value)
+                        ? 'primary'
+                        : undefined
+                    "
+                    :outlined="
+                      !bufferPresetActive('bufferTimeBeforeMinutes', preset.value)
+                    "
+                    @click="applyBufferPreset('bufferTimeBeforeMinutes', preset.value)"
+                  >
+                    {{ preset.label }}
+                  </v-chip>
+                </div>
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <div class="text-caption font-weight-medium mb-1">
+                  Puffer nach Buchung
+                </div>
+                <div class="text-caption text--secondary mb-2">
+                  z. B. Nachbereitung oder Umräumen
+                </div>
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  label="Dauer"
+                  type="number"
+                  min="0"
+                  suffix="Minuten"
+                  :value="displayBufferMinutes(model.bufferTimeAfterMinutes)"
+                  hide-details="auto"
+                  :rules="[
+                    (v) =>
+                      isBufferMinutesValid(v) ||
+                      'Gültige Dauer erforderlich (0 oder positive Ganzzahl)',
+                  ]"
+                  @input="setBufferMinutes('bufferTimeAfterMinutes', $event)"
+                />
+                <div class="d-flex flex-wrap mt-2">
+                  <v-chip
+                    v-for="preset in bufferPresets"
+                    :key="`after-${preset.value}`"
+                    x-small
+                    class="mr-1 mb-1"
+                    :color="
+                      bufferPresetActive('bufferTimeAfterMinutes', preset.value)
+                        ? 'primary'
+                        : undefined
+                    "
+                    :outlined="
+                      !bufferPresetActive('bufferTimeAfterMinutes', preset.value)
+                    "
+                    @click="applyBufferPreset('bufferTimeAfterMinutes', preset.value)"
+                  >
+                    {{ preset.label }}
+                  </v-chip>
+                </div>
+              </v-col>
+            </v-row>
+          </div>
+        </v-expand-transition>
       </v-card-text>
     </v-card>
   </v-form>
@@ -523,6 +719,24 @@ export default {
     rgba(255, 255, 255, 0.05) 0%,
     rgba(255, 255, 255, 0.02) 100%
   );
+}
+
+.buffer-section-header {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 8px 4px;
+  transition: background-color 0.2s ease;
+}
+
+.buffer-section-header:hover,
+.buffer-section-header:focus {
+  background-color: rgba(0, 0, 0, 0.04);
+  outline: none;
+}
+
+.theme--dark .buffer-section-header:hover,
+.theme--dark .buffer-section-header:focus {
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
 .service-hours-item {

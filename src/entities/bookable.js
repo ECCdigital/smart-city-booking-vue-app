@@ -35,6 +35,8 @@ export default class Bookable {
     this.isLeadTimeRelated = false;
     this.preparationLeadTimeMinutes = 0;
     this.serviceHours = [];
+    this.bufferTimeBeforeMinutes = null;
+    this.bufferTimeAfterMinutes = null;
 
     this.priceCategories = [
       {
