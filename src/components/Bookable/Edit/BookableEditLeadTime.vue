@@ -79,6 +79,8 @@ export default {
     if (this.model.preparationLeadTimeMinutes == null) {
       this.$set(this.model, "preparationLeadTimeMinutes", 0);
     }
+    this.timeStartMenu = this.model.serviceHours.map(() => false);
+    this.timeEndMenu = this.model.serviceHours.map(() => false);
   },
   methods: {
     emitUpdate() {
