@@ -244,7 +244,8 @@ export default {
       const bufferValid =
         !this.model.isBufferRelated ||
         (this.isBufferMinutesValid(this.model.bufferTimeBeforeMinutes) &&
-          this.isBufferMinutesValid(this.model.bufferTimeAfterMinutes));
+          this.isBufferMinutesValid(this.model.bufferTimeAfterMinutes) &&
+          hasBufferConfig(this.model));
 
       return leadTimeValid && bufferValid;
     },

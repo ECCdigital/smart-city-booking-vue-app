@@ -79,7 +79,7 @@ export function normalizeLeadTimeFields(bookable) {
 
   if (hasBufferConfig(bookable)) {
     bookable.isBufferRelated = true;
-  } else if (bookable.isBufferRelated == null) {
+  } else {
     bookable.isBufferRelated = false;
   }
 
