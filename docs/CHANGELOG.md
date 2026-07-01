@@ -5,6 +5,14 @@ Notable changes for the Smart City Booking Admin UI.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Releases are tagged `v4.x.x` from branch `version/4.x`.
 
+## [4.1.1] — 2026-07-01
+
+### Fixed
+
+- Free bookings labeled as „Kostenfrei“ instead of „Bezahlt“ across admin UI, checkout status, exports, and the booking-manager JS widget (DEV-776)
+- Payment status chip contrast for free bookings in booking details and public booking status view
+- `isFreeBooking` detection tightened to `priceEur` only; checkout pending filter and completion helpers aligned with shared payment status rules
+
 ## [4.1.0] — 2026-06-30
 
 ### Added
@@ -44,6 +52,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.1.1]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.0...v4.1.1
 [4.1.0]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.0.1...v4.1.0
 [4.0.1]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/ECCdigital/smart-city-booking-vue-app/releases/tag/v4.0.0
