@@ -200,8 +200,8 @@
 
           <v-chip
             class="ma-2"
-            color="grey lighten-1"
-            text-color="white"
+            :color="getPaymentStatusColor(bookingInfo)"
+            :text-color="getPaymentStatusTextColor(bookingInfo)"
             v-if="isFreeBooking(bookingInfo)"
           >
             <v-icon left>mdi-gift</v-icon>
@@ -277,7 +277,7 @@
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
 import FormatService from "@/services/FormatService";
-import { isFreeBooking } from "@/utils/bookingPaymentStatus";
+import { isFreeBooking, getPaymentStatusColor, getPaymentStatusTextColor } from "@/utils/bookingPaymentStatus";
 
 export default {
   name: "BookingStatus",
@@ -327,6 +327,8 @@ export default {
   },
   methods: {
     isFreeBooking,
+    getPaymentStatusColor,
+    getPaymentStatusTextColor,
     submitForm() {
       if (this.$refs.form.validate()) {
         this.fetchBookingStatus();

@@ -380,7 +380,7 @@
                     <v-chip
                       small
                       :color="getPaymentStatusColor(booking)"
-                      text-color="white"
+                      :text-color="getPaymentStatusTextColor(booking)"
                     >
                       <v-icon left x-small>
                         {{ getPaymentStatusIcon(booking) }}
@@ -1067,6 +1067,7 @@ import {
   getPaymentStatusColor,
   getPaymentStatusIcon,
   getPaymentStatusLabel,
+  getPaymentStatusTextColor,
   PAYMENT_STATUS,
 } from "@/utils/bookingPaymentStatus";
 
@@ -1182,6 +1183,7 @@ export default {
     getPaymentStatusLabel,
     getPaymentStatusColor,
     getPaymentStatusIcon,
+    getPaymentStatusTextColor,
     isPaymentPending(booking) {
       return getPaymentStatus(booking) === PAYMENT_STATUS.UNPAID;
     },
