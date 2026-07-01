@@ -94,13 +94,15 @@
     <div class="d-flex align-center justify-space-between px-2 pb-2">
       <div class="d-flex align-center flex-wrap" style="gap: 4px">
         <v-chip
-          v-if="element.bookingItem?.isPayed"
+          v-if="showPaymentStatusChip"
           x-small
-          color="success"
+          :color="getPaymentStatusColor(element.bookingItem)"
           text-color="white"
         >
-          <v-icon x-small left>mdi-check</v-icon>
-          Bezahlt
+          <v-icon x-small left>{{
+            getPaymentStatusIcon(element.bookingItem)
+          }}</v-icon>
+          {{ getPaymentStatusLabel(element.bookingItem) }}
         </v-chip>
 
         <v-chip
@@ -128,6 +130,14 @@
 
 <script>
 import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
+import {
+  getPaymentStatus,
+  getPaymentStatusColor,
+  getPaymentStatusIcon,
+  getPaymentStatusLabel,
+  PAYMENT_STATUS,
+} from "@/utils/bookingPaymentStatus";
+
 export default {
   name: "BookingKanbanCard",
   components: { BookingRejectConformationDialog },
@@ -165,8 +175,16 @@ export default {
       if (days >= 2) return "duration--warning";
       return "duration--ok";
     },
+    showPaymentStatusChip() {
+      const booking = this.element.bookingItem;
+      if (!booking) return false;
+      return getPaymentStatus(booking) !== PAYMENT_STATUS.UNPAID;
+    },
   },
   methods: {
+    getPaymentStatusLabel,
+    getPaymentStatusColor,
+    getPaymentStatusIcon,
     onOpenBooking(bookingId) {
       this.$emit("open-booking", bookingId);
     },

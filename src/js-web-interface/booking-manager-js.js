@@ -725,18 +725,20 @@ class BookingManager {
               ),
               isCommitted: booking.isCommitted,
               isPayed: booking.isPayed,
+              priceEur: booking.priceEur,
             };
           });
           bookings.forEach((booking) => {
-            if (booking.isPayed && booking.isCommitted) {
-              booking.status = "Freigegeben / Bezahlt";
-            } else if (booking.isPayed && !booking.isCommitted) {
-              booking.status = "Nicht freigegeben / Bezahlt";
-            } else if (!booking.isPayed && booking.isCommitted) {
-              booking.status = "Freigegeben / Nicht bezahlt";
-            } else {
-              booking.status = "Nicht freigegeben / Nicht bezahlt";
-            }
+            const commitLabel = booking.isCommitted
+              ? "Freigegeben"
+              : "Nicht freigegeben";
+            const paymentLabel =
+              (booking.priceEur ?? 0) <= 0
+                ? "Kostenfrei"
+                : booking.isPayed
+                  ? "Bezahlt"
+                  : "Nicht bezahlt";
+            booking.status = `${commitLabel} / ${paymentLabel}`;
             booking.title = booking.bookable.map((bookable) => {
               return bookable._bookableUsed.title;
             });

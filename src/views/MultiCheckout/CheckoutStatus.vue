@@ -227,6 +227,10 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
+import {
+  isCheckoutStatusComplete,
+  isFreeBooking,
+} from "@/utils/bookingPaymentStatus";
 
 export default {
   name: "CheckoutSuccess",
@@ -335,7 +339,10 @@ export default {
         this.bookingStatuses = Array.isArray(res.data) ? res.data : [res.data];
 
         const pending = this.bookingStatuses
-          .filter((b) => (b.isCommitted && !b.isPayed) || b.isRejected)
+          .filter(
+            (b) =>
+              (b.isCommitted && !b.isPayed && !isFreeBooking(b)) || b.isRejected
+          )
           .map((b) => b.bookingId);
 
         if (pending.length === 0) {
@@ -371,7 +378,7 @@ export default {
         this.status = "cancelled";
         return;
       }
-      if (isCommitted && isPayed) {
+      if (isCheckoutStatusComplete(obj)) {
         this.status = "success";
       } else if (!isCommitted) {
         this.status = "await-approval";
@@ -388,6 +395,9 @@ export default {
       if (booking.isRejected && booking.isCommitted) {
         return "Storniert";
       }
+      if (booking.isCommitted && isFreeBooking(booking)) {
+        return "Abgeschlossen (kostenfrei)";
+      }
       if (booking.isCommitted && booking.isPayed) {
         return "Abgeschlossen";
       }
@@ -400,11 +410,16 @@ export default {
       return "Unbekannt";
     },
 
+    isCompletedStatusText(text) {
+      return text === "Abgeschlossen" || text === "Abgeschlossen (kostenfrei)";
+    },
+
     iconName(booking) {
       const txt = this.statusText(booking);
       if (txt === "Storniert") return "mdi-cancel";
       if (txt === "Abgelehnt") return "mdi-alert";
-      if (txt === "Abgeschlossen") return "mdi-check";
+      if (txt === "Abgeschlossen (kostenfrei)") return "mdi-gift";
+      if (this.isCompletedStatusText(txt)) return "mdi-check";
       if (txt === "In Prüfung") return "mdi-timer-sand-empty";
       if (txt === "Zahlung ausstehend") return "mdi-clock-outline";
       if (txt === "Zahlung fehlgeschlagen") return "mdi-alert";
@@ -419,7 +434,7 @@ export default {
         txt === "Storniert"
       )
         return "warning";
-      if (txt === "Abgeschlossen") return "success";
+      if (this.isCompletedStatusText(txt)) return "success";
       if (txt === "In Prüfung" || txt === "Zahlung ausstehend") return "info";
       return "";
     },
@@ -432,7 +447,7 @@ export default {
         txt === "Storniert"
       )
         return "orange lighten-4";
-      if (txt === "Abgeschlossen") return "green lighten-4";
+      if (this.isCompletedStatusText(txt)) return "green lighten-4";
       if (txt === "In Prüfung" || txt === "Zahlung ausstehend")
         return "blue lighten-4";
       return "grey lighten-3";
@@ -446,7 +461,7 @@ export default {
         txt === "Storniert"
       )
         return "orange darken-4";
-      if (txt === "Abgeschlossen") return "green darken-4";
+      if (this.isCompletedStatusText(txt)) return "green darken-4";
       if (txt === "In Prüfung" || txt === "Zahlung ausstehend")
         return "blue darken-4";
       return "grey darken-3";
@@ -463,7 +478,7 @@ export default {
 
     async doPoll() {
       const pending = this.bookingStatuses
-        .filter((b) => !((b.isCommitted && b.isPayed) || b.isRejected))
+        .filter((b) => !isCheckoutStatusComplete(b) && !b.isRejected)
         .map((b) => b.bookingId);
 
       if (pending.length === 0 || this.paymentProvider === "invoice") {

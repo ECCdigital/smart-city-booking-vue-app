@@ -295,6 +295,12 @@
 
 <script>
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
+import {
+  getPaymentStatusColor,
+  getPaymentStatusIcon,
+  getPaymentStatusLabel,
+  isFreeBooking,
+} from "@/utils/bookingPaymentStatus";
 
 export default {
   name: "BookingTable",
@@ -378,19 +384,18 @@ export default {
       if (item.isCommitted) return "Freigegeben";
       return "Ausstehend";
     },
+    isFreeBooking,
     getPaymentColor(item) {
-      if (item.priceEur <= 0) return "grey lighten-1";
-      return item.isPayed ? "success" : "grey";
+      return getPaymentStatusColor(item);
     },
-    getPaymentTextColor(item) {
+    getPaymentTextColor() {
       return "white";
     },
     getPaymentIcon(item) {
-      if (item.priceEur <= 0) return "mdi-gift";
-      return item.isPayed ? "mdi-check-circle" : "mdi-clock-outline";
+      return getPaymentStatusIcon(item);
     },
-    hasEventId(item){
-      return item.bookableItems.some(b => b._bookableUsed.eventId);
+    hasEventId(item) {
+      return item.bookableItems.some((b) => b._bookableUsed.eventId);
     },
     formatCurrency(amount) {
       return Intl.NumberFormat("de-DE", {
@@ -399,10 +404,7 @@ export default {
       }).format(amount || 0);
     },
     payedStatus(item) {
-      if (item.isPayed && item.priceEur > 0) return "Bezahlt";
-      if (!item.isPayed && item.priceEur > 0) return "Offen";
-      if (item.priceEur <= 0) return "Kostenlos";
-      return "N/A";
+      return getPaymentStatusLabel(item);
     },
     translatePayMethod(paymentMethod) {
       const methods = {
@@ -444,7 +446,7 @@ export default {
     onOpenGroupBooking(groupBookingId) {
       this.$emit("open-group-booking", groupBookingId);
     },
-    onDownloadIcal(bookingId){
+    onDownloadIcal(bookingId) {
       this.$emit("download-ical", bookingId);
     },
     commitBooking(bookingId) {
@@ -461,7 +463,6 @@ export default {
 </script>
 
 <style scoped>
-
 .booking-table-wrapper {
   position: relative;
   border-radius: 25px;
