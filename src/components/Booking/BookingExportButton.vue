@@ -5,6 +5,7 @@ import { mapActions } from "vuex";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ProcessingService from "@/services/ProcessingService";
 import ToastService from "@/services/ToastService";
+import { getPaymentStatusExportValue } from "@/utils/bookingPaymentStatus";
 
 export default {
   name: "BookingExportButton",
@@ -60,7 +61,7 @@ export default {
         { header: "Grundpreis (brutto in EUR)", key: "regularPreis", width: 15 },
         { header: "Grund-MwSt (EUR)", key: "regularMwSt", width: 15 },
 
-        { header: "Bezahlt", key: "Bezahlt", width: 12 },
+        { header: "Zahlungsstatus", key: "Bezahlt", width: 14 },
         { header: "Payment Provider", key: "PaymentProvider", width: 15 },
         { header: "Payment Method", key: "PaymentMethod", width: 15 },
 
@@ -117,7 +118,7 @@ export default {
           regularPreis: this.getRegularGrossPriceSum(booking) || 0,
           regularMwSt: this.getRegularVatIncludedSum(booking) || 0,
 
-          Bezahlt: booking.isPayed ? "Ja" : "Nein",
+          Bezahlt: getPaymentStatusExportValue(booking),
           PaymentProvider: booking.PaymentProvider || "",
           PaymentMethod: this.getPaymentMethod(booking.paymentMethod) || "",
 

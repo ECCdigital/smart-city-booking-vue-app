@@ -272,6 +272,18 @@
         "message": "Die Buchung konnte nicht bearbeitet werden, da es zu einem Zeitkonflikt kommt."
       }
     },
+    "copyId": {
+      "success": {
+        "title": "ID kopiert",
+        "message": "Die Buchungs-ID wurde in die Zwischenablage kopiert."
+      },
+      "errors": {
+        "something-wrong": {
+          "title": "Fehler",
+          "message": "Die ID konnte nicht in die Zwischenablage kopiert werden."
+        }
+      }
+    },
     "receipt": {
       "success": {
         "title": "Erfolgreich erstellt",
@@ -438,6 +450,10 @@
     "block_period_mismatch": {
       "title": "Ungültiger Zeitraum",
       "message": "Für dieses Objekt muss ein vollständiger Zeitraum gebucht werden."
+    },
+    "insufficient-lead-time": {
+      "title": "Vorlaufzeit nicht eingehalten",
+      "message": "Die Buchung liegt zu kurzfristig. Zwischen Buchung und Beginn muss ausreichend Vorbereitungszeit in den Servicezeiten liegen."
     },
     "block_period": {
       "unavailable": {

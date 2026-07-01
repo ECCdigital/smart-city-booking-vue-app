@@ -37,6 +37,13 @@ const state = {
     isBlockPeriodRelated: false,
     blockPeriods: [],
 
+    isLeadTimeRelated: false,
+    preparationLeadTimeMinutes: 0,
+    serviceHours: [],
+    isBufferRelated: false,
+    bufferTimeBeforeMinutes: null,
+    bufferTimeAfterMinutes: null,
+
     priceCategories: [
       {
         priceEur: 0,
@@ -131,6 +138,13 @@ const mutations = {
       longRangeOptions: null,
       isBlockPeriodRelated: false,
       blockPeriods: [],
+
+      isLeadTimeRelated: false,
+      preparationLeadTimeMinutes: 0,
+      serviceHours: [],
+      isBufferRelated: false,
+      bufferTimeBeforeMinutes: null,
+      bufferTimeAfterMinutes: null,
 
       priceCategories: [
         {

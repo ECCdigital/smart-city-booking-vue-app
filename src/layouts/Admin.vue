@@ -1,9 +1,24 @@
 <template>
   <div class="content">
     <Navbar />
-    <v-container fluid>
-      <h1 class="text-h5 mb-2">{{ pageTitle }}</h1>
-      <slot />
+    <v-container
+      fluid
+      class="admin-page"
+      :class="{ 'admin-page--scroll-body': scrollBody }"
+    >
+      <div v-if="scrollBody" class="admin-page__header">
+        <h1 v-if="!hidePageTitle" class="text-h5 mb-0">{{ pageTitle }}</h1>
+        <slot name="page-header" />
+      </div>
+      <template v-else-if="!hidePageTitle">
+        <h1 class="text-h5 mb-2">{{ pageTitle }}</h1>
+      </template>
+      <div
+        class="admin-page__body"
+        :class="{ 'admin-page__body--scroll': scrollBody }"
+      >
+        <slot />
+      </div>
     </v-container>
   </div>
 </template>
@@ -17,6 +32,8 @@ export default {
   props: {
     data: Object,
     title: String,
+    hidePageTitle: { type: Boolean, default: false },
+    scrollBody: { type: Boolean, default: false },
   },
   components: {
     Navbar,
@@ -47,4 +64,27 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.admin-page--scroll-body {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px);
+  padding-top: 12px;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.admin-page__header {
+  flex-shrink: 0;
+  padding-bottom: 12px;
+}
+
+.admin-page__body--scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-right: 12px;
+}
+</style>

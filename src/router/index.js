@@ -19,6 +19,7 @@ import Users from "@/views/Management/TenantUsers.vue";
 import Roles from "@/views/Management/Roles";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
 import Bookings from "@/views/Bookings.vue";
+import BookingEditPage from "@/views/BookingEditPage.vue";
 import Settings from "@/views/Settings";
 import Coupons from "@/views/Coupons.vue";
 import Instances from "@/views/Management/Instances.vue";
@@ -173,6 +174,26 @@ const routes = [
     component: Bookings,
     meta: {
       title: "Buchungen",
+      requiresAuth: true,
+      interfaceName: "bookings",
+    },
+  },
+  {
+    path: "/bookings/new",
+    name: "booking-create",
+    component: BookingEditPage,
+    meta: {
+      title: "Neue Buchung anlegen",
+      requiresAuth: true,
+      interfaceName: "bookings",
+    },
+  },
+  {
+    path: "/bookings/:bookingId/edit",
+    name: "booking-edit",
+    component: BookingEditPage,
+    meta: {
+      title: "Buchung bearbeiten",
       requiresAuth: true,
       interfaceName: "bookings",
     },
