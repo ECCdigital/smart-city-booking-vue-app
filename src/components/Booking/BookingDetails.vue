@@ -379,15 +379,13 @@
                   <div class="info-value">
                     <v-chip
                       small
-                      :color="booking.isPayed ? 'success' : 'warning'"
-                      text-color="white"
+                      :color="getPaymentStatusColor(booking)"
+                      :text-color="getPaymentStatusTextColor(booking)"
                     >
                       <v-icon left x-small>
-                        {{
-                          booking.isPayed ? "mdi-check" : "mdi-clock-outline"
-                        }}
+                        {{ getPaymentStatusIcon(booking) }}
                       </v-icon>
-                      {{ booking.isPayed ? "Bezahlt" : "Ausstehend" }}
+                      {{ getPaymentStatusLabel(booking) }}
                     </v-chip>
                   </div>
                 </div>
@@ -419,7 +417,7 @@
               <v-col
                 cols="12"
                 v-if="
-                  !booking.isPayed &&
+                  isPaymentPending(booking) &&
                   booking.isCommitted &&
                   booking.paymentProvider &&
                   booking.paymentProvider !== 'invoice'
@@ -536,7 +534,7 @@
               <v-col
                 cols="12"
                 md="6"
-                v-if="booking.isPayed && booking.timePaid"
+                v-if="hasPaidDate(booking)"
               >
                 <div class="info-item">
                   <div class="info-label">
@@ -1064,6 +1062,14 @@ import { getIfbsErrorMessage } from "@/utils/ifbsErrors";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
+import {
+  getPaymentStatus,
+  getPaymentStatusColor,
+  getPaymentStatusIcon,
+  getPaymentStatusLabel,
+  getPaymentStatusTextColor,
+  PAYMENT_STATUS,
+} from "@/utils/bookingPaymentStatus";
 
 export default {
   name: "BookingDetails",
@@ -1173,6 +1179,19 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+    getPaymentStatus,
+    getPaymentStatusLabel,
+    getPaymentStatusColor,
+    getPaymentStatusIcon,
+    getPaymentStatusTextColor,
+    isPaymentPending(booking) {
+      return getPaymentStatus(booking) === PAYMENT_STATUS.UNPAID;
+    },
+    hasPaidDate(booking) {
+      return (
+        getPaymentStatus(booking) === PAYMENT_STATUS.PAID && booking.timePaid
+      );
+    },
 
     async generateAndSendInvoice() {
       this.invoiceLoading = true;
