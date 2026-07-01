@@ -5,8 +5,10 @@ export const PAYMENT_STATUS = {
 };
 
 export function isFreeBooking(booking) {
-  const price = Number(booking?.priceEur ?? booking?.totalPrice ?? 0);
-  return price <= 0;
+  if (booking?.priceEur == null) {
+    return false;
+  }
+  return Number(booking.priceEur) <= 0;
 }
 
 export function getPaymentStatus(booking) {
@@ -21,39 +23,45 @@ export function getPaymentStatus(booking) {
 
 export function getPaymentStatusLabel(booking) {
   switch (getPaymentStatus(booking)) {
-    case PAYMENT_STATUS.FREE:
-      return "Kostenfrei";
-    case PAYMENT_STATUS.PAID:
-      return "Bezahlt";
-    default:
-      return "Offen";
+  case PAYMENT_STATUS.FREE:
+    return "Kostenfrei";
+  case PAYMENT_STATUS.PAID:
+    return "Bezahlt";
+  default:
+    return "Offen";
   }
 }
 
 export function getPaymentStatusColor(booking) {
   switch (getPaymentStatus(booking)) {
-    case PAYMENT_STATUS.FREE:
-      return "grey lighten-1";
-    case PAYMENT_STATUS.PAID:
-      return "success";
-    default:
-      return "grey";
+  case PAYMENT_STATUS.FREE:
+    return "grey lighten-1";
+  case PAYMENT_STATUS.PAID:
+    return "success";
+  default:
+    return "grey";
   }
+}
+
+export function getPaymentStatusTextColor(booking) {
+  return getPaymentStatus(booking) === PAYMENT_STATUS.FREE
+    ? "grey darken-3"
+    : "white";
 }
 
 export function getPaymentStatusIcon(booking) {
   switch (getPaymentStatus(booking)) {
-    case PAYMENT_STATUS.FREE:
-      return "mdi-gift";
-    case PAYMENT_STATUS.PAID:
-      return "mdi-check-circle";
-    default:
-      return "mdi-clock-outline";
+  case PAYMENT_STATUS.FREE:
+    return "mdi-gift";
+  case PAYMENT_STATUS.PAID:
+    return "mdi-check-circle";
+  default:
+    return "mdi-clock-outline";
   }
 }
 
 export function getPublicPaymentStatusLabel(status, priceEur) {
-  if (Number(priceEur ?? 0) <= 0) {
+  if (isFreeBooking({ priceEur })) {
     return "Kostenfrei";
   }
   if (status?.paymentStatus === "paid") {
@@ -69,14 +77,18 @@ export function isBookingFullyComplete(booking) {
   return getPaymentStatus(booking) !== PAYMENT_STATUS.UNPAID;
 }
 
+export function isCheckoutStatusComplete(booking) {
+  return isBookingFullyComplete(booking);
+}
+
 export function getPaymentStatusExportValue(booking) {
   switch (getPaymentStatus(booking)) {
-    case PAYMENT_STATUS.FREE:
-      return "Kostenfrei";
-    case PAYMENT_STATUS.PAID:
-      return "Ja";
-    default:
-      return "Nein";
+  case PAYMENT_STATUS.FREE:
+    return "Kostenfrei";
+  case PAYMENT_STATUS.PAID:
+    return "Ja";
+  default:
+    return "Nein";
   }
 }
 
@@ -86,11 +98,4 @@ export function getCombinedStatusText(booking) {
     : "Nicht freigegeben";
   const paymentLabel = getPaymentStatusLabel(booking);
   return `${commitLabel} / ${paymentLabel}`;
-}
-
-export function isCheckoutStatusComplete(booking) {
-  if (!booking?.isCommitted) {
-    return false;
-  }
-  return isFreeBooking(booking) || booking.isPayed;
 }

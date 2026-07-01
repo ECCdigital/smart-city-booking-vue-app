@@ -97,7 +97,7 @@
           v-if="showPaymentStatusChip"
           x-small
           :color="getPaymentStatusColor(element.bookingItem)"
-          text-color="white"
+          :text-color="getPaymentStatusTextColor(element.bookingItem)"
         >
           <v-icon x-small left>{{
             getPaymentStatusIcon(element.bookingItem)
@@ -135,6 +135,7 @@ import {
   getPaymentStatusColor,
   getPaymentStatusIcon,
   getPaymentStatusLabel,
+  getPaymentStatusTextColor,
   PAYMENT_STATUS,
 } from "@/utils/bookingPaymentStatus";
 
@@ -185,6 +186,7 @@ export default {
     getPaymentStatusLabel,
     getPaymentStatusColor,
     getPaymentStatusIcon,
+    getPaymentStatusTextColor,
     onOpenBooking(bookingId) {
       this.$emit("open-booking", bookingId);
     },

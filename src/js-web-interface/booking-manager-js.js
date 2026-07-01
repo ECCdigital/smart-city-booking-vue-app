@@ -24,6 +24,24 @@
  *   });
  * </script>
  */
+// Mirrors src/utils/bookingPaymentStatus.js for the standalone CDN bundle.
+function bmIsFreeBooking(booking) {
+  if (booking?.priceEur == null) {
+    return false;
+  }
+  return Number(booking.priceEur) <= 0;
+}
+
+function bmGetPaymentStatusLabel(booking) {
+  if (bmIsFreeBooking(booking)) {
+    return "Kostenfrei";
+  }
+  if (booking.isPayed) {
+    return "Bezahlt";
+  }
+  return "Offen";
+}
+
 // eslint-disable-next-line no-unused-vars
 class BookingManager {
   /**
@@ -732,13 +750,7 @@ class BookingManager {
             const commitLabel = booking.isCommitted
               ? "Freigegeben"
               : "Nicht freigegeben";
-            const paymentLabel =
-              (booking.priceEur ?? 0) <= 0
-                ? "Kostenfrei"
-                : booking.isPayed
-                  ? "Bezahlt"
-                  : "Nicht bezahlt";
-            booking.status = `${commitLabel} / ${paymentLabel}`;
+            booking.status = `${commitLabel} / ${bmGetPaymentStatusLabel(booking)}`;
             booking.title = booking.bookable.map((bookable) => {
               return bookable._bookableUsed.title;
             });
@@ -969,9 +981,9 @@ class BookingManager {
         const formatTime = (date) => {
           return date
             ? date.toLocaleTimeString("de-DE", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
+              hour: "2-digit",
+              minute: "2-digit",
+            })
             : "";
         };
 

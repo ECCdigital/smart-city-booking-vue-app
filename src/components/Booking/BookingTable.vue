@@ -299,6 +299,7 @@ import {
   getPaymentStatusColor,
   getPaymentStatusIcon,
   getPaymentStatusLabel,
+  getPaymentStatusTextColor,
   isFreeBooking,
 } from "@/utils/bookingPaymentStatus";
 
@@ -348,8 +349,8 @@ export default {
       return this.showGroupBooking
         ? this.defaultHeaders
         : this.defaultHeaders.filter(
-            (header) => header.value !== "groupBooking"
-          );
+          (header) => header.value !== "groupBooking"
+        );
     },
   },
   methods: {
@@ -388,8 +389,8 @@ export default {
     getPaymentColor(item) {
       return getPaymentStatusColor(item);
     },
-    getPaymentTextColor() {
-      return "white";
+    getPaymentTextColor(item) {
+      return getPaymentStatusTextColor(item);
     },
     getPaymentIcon(item) {
       return getPaymentStatusIcon(item);

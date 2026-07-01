@@ -341,7 +341,7 @@ export default {
         const pending = this.bookingStatuses
           .filter(
             (b) =>
-              (b.isCommitted && !b.isPayed && !isFreeBooking(b)) || b.isRejected
+              b.isCommitted && !b.isRejected && !isCheckoutStatusComplete(b)
           )
           .map((b) => b.bookingId);
 
