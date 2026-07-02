@@ -1,5 +1,13 @@
+export function supportsLeadTime(bookable) {
+  return (
+    bookable?.isScheduleRelated === true ||
+    bookable?.isTimePeriodRelated === true ||
+    bookable?.isBlockPeriodRelated === true
+  );
+}
+
 export function hasLeadTimeConfig(bookable) {
-  if (!bookable?.isScheduleRelated) {
+  if (!supportsLeadTime(bookable)) {
     return false;
   }
   const minutes = Number(bookable.preparationLeadTimeMinutes);
@@ -45,6 +53,8 @@ export function normalizeLeadTimeFields(bookable) {
   if (!bookable) {
     return bookable;
   }
+  const leadTimeSupported = supportsLeadTime(bookable);
+  const bufferSupported = bookable?.isScheduleRelated === true;
 
   if (!Array.isArray(bookable.serviceHours)) {
     bookable.serviceHours = [];
@@ -53,20 +63,28 @@ export function normalizeLeadTimeFields(bookable) {
     bookable.preparationLeadTimeMinutes = 0;
   }
 
-  if (!bookable.isScheduleRelated) {
+  if (!leadTimeSupported) {
     bookable.isLeadTimeRelated = false;
+  }
+
+  if (!bufferSupported) {
     bookable.isBufferRelated = false;
     bookable.bufferTimeBeforeMinutes = null;
     bookable.bufferTimeAfterMinutes = null;
+  }
+
+  if (!leadTimeSupported) {
     return bookable;
   }
 
-  bookable.bufferTimeBeforeMinutes = normalizeBufferMinutes(
-    bookable.bufferTimeBeforeMinutes
-  );
-  bookable.bufferTimeAfterMinutes = normalizeBufferMinutes(
-    bookable.bufferTimeAfterMinutes
-  );
+  if (bufferSupported) {
+    bookable.bufferTimeBeforeMinutes = normalizeBufferMinutes(
+      bookable.bufferTimeBeforeMinutes
+    );
+    bookable.bufferTimeAfterMinutes = normalizeBufferMinutes(
+      bookable.bufferTimeAfterMinutes
+    );
+  }
 
   const hasExistingLeadTimeConfig = hasLeadTimeConfig(bookable);
   const hasServiceHours = bookable.serviceHours.length > 0;
@@ -77,10 +95,12 @@ export function normalizeLeadTimeFields(bookable) {
     bookable.isLeadTimeRelated = false;
   }
 
-  if (hasBufferConfig(bookable)) {
-    bookable.isBufferRelated = true;
-  } else {
-    bookable.isBufferRelated = false;
+  if (bufferSupported) {
+    if (hasBufferConfig(bookable)) {
+      bookable.isBufferRelated = true;
+    } else {
+      bookable.isBufferRelated = false;
+    }
   }
 
   return bookable;

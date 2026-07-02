@@ -60,6 +60,11 @@ export default {
         this.model.longRangeOptions.type === "month"
       );
     },
+    bookingTypeSupportsLeadTime() {
+      return ["schedule", "timePeriod", "blockPeriod"].includes(
+        this.bookingType
+      );
+    },
     bookingType: {
       get() {
         if (this.model.isScheduleRelated) return "schedule";
@@ -77,29 +82,29 @@ export default {
         this.model.isLongRange = false;
 
         switch (value) {
-        case "schedule":
-          this.model.isScheduleRelated = true;
-          break;
-        case "timePeriod":
-          this.model.isTimePeriodRelated = true;
-          break;
-        case "blockPeriod":
-          this.model.isBlockPeriodRelated = true;
-          if (!Array.isArray(this.model.blockPeriods)) {
-            this.model.blockPeriods = [];
-          }
-          if (this.model.groupBooking?.enabled) {
-            this.model.groupBooking.enabled = false;
-          }
-          break;
-        case "week":
-          this.model.longRangeOptions = { type: "week" };
-          this.model.isLongRange = true;
-          break;
-        case "month":
-          this.model.longRangeOptions = { type: "month" };
-          this.model.isLongRange = true;
-          break;
+          case "schedule":
+            this.model.isScheduleRelated = true;
+            break;
+          case "timePeriod":
+            this.model.isTimePeriodRelated = true;
+            break;
+          case "blockPeriod":
+            this.model.isBlockPeriodRelated = true;
+            if (!Array.isArray(this.model.blockPeriods)) {
+              this.model.blockPeriods = [];
+            }
+            if (this.model.groupBooking?.enabled) {
+              this.model.groupBooking.enabled = false;
+            }
+            break;
+          case "week":
+            this.model.longRangeOptions = { type: "week" };
+            this.model.isLongRange = true;
+            break;
+          case "month":
+            this.model.longRangeOptions = { type: "month" };
+            this.model.isLongRange = true;
+            break;
         }
       },
     },
@@ -110,7 +115,7 @@ export default {
       if (!formValid) {
         return false;
       }
-      if (this.bookingType === "schedule" && this.$refs.leadTime) {
+      if (this.bookingTypeSupportsLeadTime && this.$refs.leadTime) {
         const leadTimeValid = await this.$refs.leadTime.validate();
         if (!leadTimeValid) {
           return false;
@@ -167,10 +172,7 @@ export default {
     isBlockPeriodComplete(blockPeriod) {
       const { startWeekday, endWeekday, startTime, endTime } = blockPeriod;
       return (
-        startWeekday != null &&
-        endWeekday != null &&
-        !!startTime &&
-        !!endTime
+        startWeekday != null && endWeekday != null && !!startTime && !!endTime
       );
     },
     getBlockPeriodDurationMinutes(blockPeriod) {
@@ -333,8 +335,7 @@ export default {
                 Feste Zeitfenster
               </div>
               <div class="text-caption text--secondary mt-1">
-                Vordefinierte, buchbare Zeitfenster (z.B. Montags 09:00 -
-                12:00)
+                Vordefinierte, buchbare Zeitfenster (z.B. Montags 09:00 - 12:00)
               </div>
             </div>
           </template>
@@ -443,10 +444,16 @@ export default {
         v-if="bookingType === 'schedule'"
         ref="leadTime"
         :bookable="model"
+        :show-buffer="true"
         @update:bookable="model = $event"
       />
 
-      <v-card class="mt-4 section-card" v-if="bookingType === 'timePeriod'">
+      <v-card
+        class="mt-4 section-card"
+        v-if="bookingType === 'timePeriod'"
+        elevation="2"
+        outlined
+      >
         <v-card-title
           class="section-header pa-4 d-flex justify-space-between align-center"
         >
@@ -490,9 +497,7 @@ export default {
                         }}
                       </span>
                     </v-list-item-title>
-                    <v-list-item-subtitle
-                      class="d-flex align-center flex-wrap"
-                    >
+                    <v-list-item-subtitle class="d-flex align-center flex-wrap">
                       <v-icon small class="mr-1">mdi-clock-outline</v-icon>
                       <span v-if="timePeriod.startTime && timePeriod.endTime">
                         {{ timePeriod.startTime }} - {{ timePeriod.endTime }}
@@ -504,11 +509,7 @@ export default {
 
                   <v-list-item-action>
                     <div class="d-flex align-center">
-                      <v-btn
-                        icon
-                        small
-                        @click.stop="removeTimePeriod(index)"
-                      >
+                      <v-btn icon small @click.stop="removeTimePeriod(index)">
                         <v-icon small>mdi-delete-outline</v-icon>
                       </v-btn>
                       <v-btn icon small>
@@ -642,7 +643,9 @@ export default {
                             v-if="timeEndMenu[index]"
                             v-model="timePeriod.endTime"
                             full-width
-                            @click:minute="setEndTime(index, timePeriod.endTime)"
+                            @click:minute="
+                              setEndTime(index, timePeriod.endTime)
+                            "
                             format="24hr"
                           ></v-time-picker>
                         </v-menu>
@@ -668,8 +671,7 @@ export default {
               Noch keine Zeitfenster definiert
             </div>
             <div class="text-body-2 grey--text text--darken-1 mb-4">
-              Fügen Sie Zeitfenster hinzu, um feste Buchungszeiten zu
-              definieren
+              Fügen Sie Zeitfenster hinzu, um feste Buchungszeiten zu definieren
             </div>
             <v-btn small text color="primary" @click="addNewTimePeriod">
               <v-icon left small>mdi-plus</v-icon>
@@ -679,7 +681,20 @@ export default {
         </v-card-text>
       </v-card>
 
-      <v-card class="mt-4 section-card" v-if="bookingType === 'blockPeriod'">
+      <BookableEditLeadTime
+        v-if="bookingType === 'timePeriod'"
+        ref="leadTime"
+        :bookable="model"
+        :show-buffer="false"
+        @update:bookable="model = $event"
+      />
+
+      <v-card
+        class="mt-4 section-card"
+        v-if="bookingType === 'blockPeriod'"
+        elevation="2"
+        outlined
+      >
         <v-card-title
           class="section-header pa-4 d-flex justify-space-between align-center"
         >
@@ -735,9 +750,7 @@ export default {
                         {{ blockPeriod.label || "Ohne Bezeichnung" }}
                       </span>
                     </v-list-item-title>
-                    <v-list-item-subtitle
-                      class="d-flex align-center flex-wrap"
-                    >
+                    <v-list-item-subtitle class="d-flex align-center flex-wrap">
                       <v-icon small class="mr-1">mdi-clock-outline</v-icon>
                       <span
                         v-if="
@@ -757,11 +770,7 @@ export default {
 
                   <v-list-item-action>
                     <div class="d-flex align-center">
-                      <v-btn
-                        icon
-                        small
-                        @click.stop="removeBlockPeriod(index)"
-                      >
+                      <v-btn icon small @click.stop="removeBlockPeriod(index)">
                         <v-icon small>mdi-delete-outline</v-icon>
                       </v-btn>
                       <v-btn icon small>
@@ -794,7 +803,8 @@ export default {
                           v-model="blockPeriod.label"
                           hide-details="auto"
                           :rules="[
-                            (v) => !!v?.trim() || 'Bezeichnung ist erforderlich',
+                            (v) =>
+                              !!v?.trim() || 'Bezeichnung ist erforderlich',
                           ]"
                         />
                       </v-col>
@@ -954,8 +964,8 @@ export default {
               Noch keine Zeiträume definiert
             </div>
             <div class="text-body-2 grey--text text--darken-1 mb-4">
-              Fügen Sie Zeiträume hinzu, um wiederkehrende Buchungsfenster
-              zu definieren
+              Fügen Sie Zeiträume hinzu, um wiederkehrende Buchungsfenster zu
+              definieren
             </div>
             <v-btn small text color="primary" @click="addNewBlockPeriod">
               <v-icon left small>mdi-plus</v-icon>
@@ -964,6 +974,14 @@ export default {
           </div>
         </v-card-text>
       </v-card>
+
+      <BookableEditLeadTime
+        v-if="bookingType === 'blockPeriod'"
+        ref="leadTime"
+        :bookable="model"
+        :show-buffer="false"
+        @update:bookable="model = $event"
+      />
     </BaseSection>
   </v-form>
 </template>

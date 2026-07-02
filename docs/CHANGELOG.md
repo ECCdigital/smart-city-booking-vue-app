@@ -5,6 +5,17 @@ Notable changes for the Smart City Booking Admin UI.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Releases are tagged `v4.x.x` from branch `version/4.x`.
 
+## [Unreleased]
+
+### Added
+
+- Lead-time configuration (preparation lead time and service hours) for fixed time-window and block-period bookables in the bookable editor
+
+### Changed
+
+- Lead-time editor placement: time-window and block-period configuration appears before lead-time settings for those booking types
+- Booking buffer settings remain available only for free time-selection (`schedule`) bookables
+
 ## [4.1.1] — 2026-07-01
 
 ### Fixed
