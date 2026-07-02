@@ -5,6 +5,19 @@ Notable changes for the Smart City Booking Admin UI.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Releases are tagged `v4.x.x` from branch `version/4.x`.
 
+## [Unreleased]
+
+## [4.1.2] — 2026-07-02
+
+### Added
+
+- Lead-time configuration (preparation lead time and service hours) for fixed time-window and block-period bookables in the bookable editor
+
+### Changed
+
+- Lead-time editor placement: time-window and block-period configuration appears before lead-time settings for those booking types
+- Booking buffer settings remain available only for free time-selection (`schedule`) bookables
+
 ## [4.1.1] — 2026-07-01
 
 ### Fixed
@@ -53,6 +66,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
 [4.1.1]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.0...v4.1.1
+[4.1.2]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.1...v4.1.2
 [4.1.0]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.0.1...v4.1.0
 [4.0.1]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/ECCdigital/smart-city-booking-vue-app/releases/tag/v4.0.0
