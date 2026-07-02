@@ -75,6 +75,17 @@ export default {
     );
     return response.data;
   },
+  async updateUserBookingNotificationRecipients(
+    tenantId,
+    userId,
+    bookingNotificationRecipients,
+  ) {
+    const response = await ApiClient.post(
+      `/api/tenants/${tenantId}/update-user-booking-notification-recipients`,
+      { userId, bookingNotificationRecipients },
+    );
+    return response.data;
+  },
   async getDefaultMailTempaltes(tenantId) {
     return (
       await ApiClient.get(`api/tenants/${tenantId}/mail/templates/default`)

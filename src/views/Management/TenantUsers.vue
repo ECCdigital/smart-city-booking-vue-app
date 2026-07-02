@@ -373,9 +373,11 @@
       :user="selectedUser"
       :roles="api.roles"
       :challenges="api.challenges"
+      :members="members"
       @close="closeUserDetail"
       @save-roles="updateUserRoles"
       @update-status="updateUserStatus"
+      @update-notification-recipients="updateUserNotificationRecipients"
       @resend-invite="resendInvite(selectedUser?.userId)"
       @approve-challenge="approveChallenge"
       @reject-challenge="rejectChallenge"
@@ -598,6 +600,37 @@ export default {
         await this.addToast({
           type: "error",
           message: "Fehler beim Aktualisieren des Status",
+        });
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async updateUserNotificationRecipients(recipients) {
+      try {
+        this.isLoading = true;
+        const response =
+          await ApiTenantService.updateUserBookingNotificationRecipients(
+            this.tenantId,
+            this.selectedUser.userId,
+            recipients
+          );
+        this.api.users = response.users;
+        this.api.userDetails = response.userDetails;
+
+        this.selectedUser = this.members.find(
+          (u) => u.userId === this.selectedUser.userId
+        );
+
+        await this.addToast({
+          type: "success",
+          message: "Benachrichtigungsempfänger wurden erfolgreich gespeichert",
+        });
+      } catch (e) {
+        console.error(e);
+        await this.addToast({
+          type: "error",
+          message: "Fehler beim Speichern der Benachrichtigungsempfänger",
         });
       } finally {
         this.isLoading = false;

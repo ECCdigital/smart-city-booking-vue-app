@@ -78,6 +78,15 @@ export default {
       @change="emitTenant()"
     ></v-switch>
     <v-switch
+      v-model="localTenant.notifySupervisorsOnBooking"
+      color="primary"
+      hint="Sofern aktiviert, werden bei Buchungen die an den Mitgliedern hinterlegten Benachrichtigungsempfänger (z. B. Vorgesetzte) automatisch per E-Mail informiert."
+      persistent-hint
+      label="Vorgesetzte bei Buchung informieren"
+      class="mt-2"
+      @change="emitTenant()"
+    ></v-switch>
+    <v-switch
       v-model="localTenant.enablePublicStatusView"
       color="primary"
       hint="Sofern aktiviert, kann der Status einer Buchung öffentlich abgefragt werden."
