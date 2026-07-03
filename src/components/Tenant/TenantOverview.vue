@@ -552,15 +552,15 @@ export default {
       this.showEditCancellationTemplateDialog = true;
     },
     onSubmitReceiptTemplate(template) {
-      this.tenant.receiptTemplate = template;
+      this.onUpdateTenant({ receiptTemplate: template });
       this.showEditTemplateDialog = false;
     },
     onSubmitInvoiceTemplate(template) {
-      this.tenant.invoiceTemplate = template;
+      this.onUpdateTenant({ invoiceTemplate: template });
       this.showEditInvoiceTemplateDialog = false;
     },
     onSubmitCancellationTemplate(template) {
-      this.tenant.cancellationTemplate = template;
+      this.onUpdateTenant({ cancellationTemplate: template });
       this.showEditCancellationTemplateDialog = false;
     },
     async fetchInstanceCustomFields() {

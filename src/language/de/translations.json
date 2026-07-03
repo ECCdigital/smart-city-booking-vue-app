@@ -434,6 +434,16 @@
         "title": "Fehler beim Erstellen",
         "message": "Der Buchungsbeleg konnte nicht erstellt werden."
       }
+    },
+    "invoice": {
+      "success": {
+        "title": "Erfolgreich erstellt",
+        "message": "Die Sammelrechnung wurde erfolgreich erstellt."
+      },
+      "error": {
+        "title": "Fehler beim Erstellen",
+        "message": "Die Sammelrechnung konnte nicht erstellt werden."
+      }
     }
   },
   "checkout": {

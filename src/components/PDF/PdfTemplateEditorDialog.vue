@@ -98,15 +98,14 @@
                 </v-alert>
                 <v-alert
                   v-if="mode === 'expert'"
-                  type="warning"
+                  type="info"
                   text
                   dense
                   class="text-caption mb-3"
                 >
-                  Experten-Modus: Diese Felder werden nur übernommen, wenn das
-                  Experten-HTML keine eigenen
+                  Experten-Modus: Beim Speichern ersetzen diese Felder vorhandene
                   <code>&lt;template data-pdf-header/footer&gt;</code>-Elemente
-                  enthält.
+                  im Experten-HTML.
                 </v-alert>
                 <v-textarea
                   v-model="pageHeaderHtml"
@@ -411,6 +410,7 @@ import {
   findMissingRequiredVariables,
   getRequiredVariableLabels,
   extractPdfPageTemplates,
+  applyPdfPageTemplates,
   decodeHandlebarsEntities,
   stripVariableChips,
 } from "@/components/PDF/pdfTemplateCatalog.js";
@@ -582,6 +582,12 @@ export default {
         }
       }
     },
+    pageHeaderHtml() {
+      this.onPageTemplatesChange();
+    },
+    pageFooterHtml() {
+      this.onPageTemplatesChange();
+    },
   },
   methods: {
     loadFromValue() {
@@ -746,38 +752,18 @@ export default {
         const html = this.composeFromBlocks(this.blocks);
         return embedBlockMetadata(this.blocks || [], html);
       }
-      return this.injectPageTemplatesIntoExpertHtml(this.expertHtml || "");
+      return applyPdfPageTemplates(
+        this.expertHtml || "",
+        this.currentPageTemplates(),
+      );
     },
-    /**
-     * Experten-HTML hat Vorrang: Enthält es bereits eigene
-     * `<template data-pdf-header/footer>`-Elemente, bleibt es unangetastet.
-     * Andernfalls werden gefüllte Kopf-/Fußzeilen-Felder an den Anfang des
-     * `<body>` injiziert.
-     */
-    injectPageTemplatesIntoExpertHtml(html) {
-      const text = String(html || "");
-      if (!text) return text;
-      if (/data-pdf-header|data-pdf-footer/i.test(text)) return text;
-      const { headerHtml, footerHtml } = this.currentPageTemplates();
-      if (!String(headerHtml || "").trim() && !String(footerHtml || "").trim())
-        return text;
-      const wrapperStyle =
-        "width: 100%; font-size: 8px; color: #666; padding: 0 10mm;";
-      const makeTemplate = (kind, inner) => {
-        const content = String(inner || "").trim();
-        if (!content) return "";
-        return (
-          `<template data-pdf-${kind}>` +
-          `<div data-pdf-wrapper style="${wrapperStyle}">${content}</div>` +
-          "</template>"
-        );
-      };
-      const injection =
-        makeTemplate("header", headerHtml) + makeTemplate("footer", footerHtml);
-      const bodyMatch = text.match(/<body[^>]*>/i);
-      if (!bodyMatch) return text;
-      const insertAt = bodyMatch.index + bodyMatch[0].length;
-      return text.slice(0, insertAt) + "\n" + injection + text.slice(insertAt);
+    onPageTemplatesChange() {
+      if (this.mode === "visual" && this.activeTab === 2) {
+        this.expertHtml = this.composeFromBlocks(this.blocks);
+      }
+      if (this.open && this.activeTab === 1 && this.previewMode === "browser") {
+        this.schedulePreviewUpdate();
+      }
     },
     onSave() {
       this.$emit("submit", this.composeOutput());

@@ -27,7 +27,11 @@ const mutations = {
   },
   SELECT(state, tenant) {
     state.currentTenantId = tenant;
-    PersistenceService.writeToLocalStorage("currentTenantId", tenant);
+    if (tenant) {
+      PersistenceService.writeToLocalStorage("currentTenantId", tenant);
+    } else {
+      PersistenceService.removeFromLocalStorage("currentTenantId");
+    }
   },
   REPLACE(state, tenant) {
     const index = state.tenants.findIndex((t) => t.id === tenant.id);

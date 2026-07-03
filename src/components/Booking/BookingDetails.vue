@@ -299,6 +299,14 @@
                       }}
                     </span>
                   </div>
+                  <div
+                    v-if="groupBooking?.id"
+                    class="text-caption mt-1 grey--text text--darken-1"
+                  >
+                    <v-icon x-small class="mr-1">mdi-information</v-icon>
+                    Bei Serienbuchungen können Sie eine Sammel- oder
+                    Einzelrechnung erstellen.
+                  </div>
                   <div class="d-flex gap-2 flex-wrap mt-3">
                     <v-btn
                       small
@@ -1043,6 +1051,16 @@
         @create-single-booking-receipt="createSingleReceipt(booking.id)"
         @create-group-booking-receipt="createGroupReceipt(booking.id)"
       />
+      <GroupBookingCreateInvoice
+        :open="openCreateAggregatedInvoice"
+        :booking-id="booking.id"
+        :send-email="pendingInvoiceSendEmail"
+        :error="errors.invoice"
+        :in-progress="invoiceLoading || invoiceGenerateLoading"
+        @close="closeAggregatedInvoice"
+        @create-single-invoice="createSingleInvoiceFromGroup"
+        @create-group-invoice="createGroupInvoice(pendingInvoiceSendEmail)"
+      />
     </v-card>
   </div>
 </template>
@@ -1053,6 +1071,7 @@ import ApiAccessService from "@/services/api/ApiAccessService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 import GroupBookingCreateReceipt from "@/components/Booking/GroupBookingCreateReceipt.vue";
+import GroupBookingCreateInvoice from "@/components/Booking/GroupBookingCreateInvoice.vue";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import {
   getBookingErrorMessage,
@@ -1077,6 +1096,7 @@ export default {
     BookableTypeChip,
     ProcessingIndicator,
     GroupBookingCreateReceipt,
+    GroupBookingCreateInvoice,
   },
   props: {
     booking: {
@@ -1092,6 +1112,8 @@ export default {
   data() {
     return {
       openCreateAggregatedReceipt: false,
+      openCreateAggregatedInvoice: false,
+      pendingInvoiceSendEmail: false,
       errors: {
         receipt: null,
         invoice: null,
@@ -1193,16 +1215,38 @@ export default {
       );
     },
 
-    async generateAndSendInvoice() {
-      this.invoiceLoading = true;
+    generateAndSendInvoice() {
+      this.createInvoice(true);
+    },
+
+    generateInvoiceOnly() {
+      this.createInvoice(false);
+    },
+
+    createInvoice(sendEmail) {
+      if (this.groupBooking?.id) {
+        this.pendingInvoiceSendEmail = sendEmail;
+        this.openCreateAggregatedInvoice = true;
+        return;
+      }
+      this.generateSingleInvoice(sendEmail);
+    },
+
+    async generateSingleInvoice(sendEmail) {
+      const isSend = sendEmail === true;
+      if (isSend) {
+        this.invoiceLoading = true;
+      } else {
+        this.invoiceGenerateLoading = true;
+      }
       this.errors.invoice = null;
       const operationId = ProcessingService.showOverlay(
-        "Erstelle und versende Rechnung..."
+        isSend ? "Erstelle und versende Rechnung..." : "Erstelle Rechnung..."
       );
       try {
         const response = await ApiBookingService.generateInvoice(
           this.booking.id,
-          true
+          isSend
         );
         if (!response.success) {
           this.handleBookingError("invoice", response.errors);
@@ -1214,43 +1258,70 @@ export default {
           this.$emit("update", this.booking.id);
         }
       } catch (error) {
-        this.errors.invoice =
-          "Fehler beim Erstellen und Versenden der Rechnung.";
+        this.errors.invoice = isSend
+          ? "Fehler beim Erstellen und Versenden der Rechnung."
+          : "Fehler beim Erstellen der Rechnung.";
         this.addToast(
           ToastService.createToast("invoice.create.error", "error")
         );
       } finally {
         ProcessingService.hide(operationId);
-        this.invoiceLoading = false;
+        if (isSend) {
+          this.invoiceLoading = false;
+        } else {
+          this.invoiceGenerateLoading = false;
+        }
       }
     },
 
-    async generateInvoiceOnly() {
-      this.invoiceGenerateLoading = true;
+    async createSingleInvoiceFromGroup() {
+      this.openCreateAggregatedInvoice = false;
+      await this.generateSingleInvoice(this.pendingInvoiceSendEmail);
+    },
+
+    async createGroupInvoice(sendEmail) {
+      const isSend = sendEmail === true;
+      if (isSend) {
+        this.invoiceLoading = true;
+      } else {
+        this.invoiceGenerateLoading = true;
+      }
       this.errors.invoice = null;
-      const operationId = ProcessingService.showOverlay("Erstelle Rechnung...");
+      const operationId = ProcessingService.showOverlay(
+        isSend
+          ? "Erstelle und versende Sammelrechnung..."
+          : "Erstelle Sammelrechnung..."
+      );
       try {
-        const response = await ApiBookingService.generateInvoice(
-          this.booking.id,
-          false
+        this.openCreateAggregatedInvoice = false;
+        const response = await ApiGroupBookingService.generateGroupInvoice(
+          undefined,
+          this.groupBooking.id,
+          isSend
         );
         if (!response.success) {
-          this.handleBookingError("invoice", response.errors);
+          this.handleGroupBookingError("invoice", response.errors);
         } else {
           await this.addToast(
-            ToastService.createToast("invoice.create.success", "success")
+            ToastService.createToast("group-booking.invoice.success", "success")
           );
           this.errors.invoice = null;
           this.$emit("update", this.booking.id);
         }
       } catch (error) {
-        this.errors.invoice = "Fehler beim Erstellen der Rechnung.";
+        this.errors.invoice = isSend
+          ? "Fehler beim Erstellen und Versenden der Sammelrechnung."
+          : "Fehler beim Erstellen der Sammelrechnung.";
         this.addToast(
-          ToastService.createToast("invoice.create.error", "error")
+          ToastService.createToast("group-booking.invoice.error", "error")
         );
       } finally {
         ProcessingService.hide(operationId);
-        this.invoiceGenerateLoading = false;
+        if (isSend) {
+          this.invoiceLoading = false;
+        } else {
+          this.invoiceGenerateLoading = false;
+        }
       }
     },
 
@@ -1553,6 +1624,10 @@ export default {
     closeAggregatedReceipt() {
       this.errors.receipt = null;
       this.openCreateAggregatedReceipt = false;
+    },
+    closeAggregatedInvoice() {
+      this.errors.invoice = null;
+      this.openCreateAggregatedInvoice = false;
     },
     getPaymentProviderColor(provider) {
       const colors = {

@@ -99,6 +99,35 @@ export function extractPdfPageTemplates(html) {
   return result;
 }
 
+/**
+ * Ersetzt vorhandene `<template data-pdf-header/footer>`-Elemente durch die
+ * übergebenen Feldwerte (oder entfernt sie, wenn leer).
+ */
+export function applyPdfPageTemplates(html, pageTemplates = {}) {
+  const text = String(html || "");
+  if (!text) return text;
+
+  const headerHtml = String(pageTemplates.headerHtml || "").trim();
+  const footerHtml = String(pageTemplates.footerHtml || "").trim();
+
+  const stripped = text
+    .replace(/<template\s+data-pdf-header\b[^>]*>[\s\S]*?<\/template>\s*/gi, "")
+    .replace(/<template\s+data-pdf-footer\b[^>]*>[\s\S]*?<\/template>\s*/gi, "");
+
+  if (!headerHtml && !footerHtml) {
+    return stripped;
+  }
+
+  const injection =
+    buildPageTemplate("header", headerHtml) +
+    buildPageTemplate("footer", footerHtml);
+
+  const bodyMatch = stripped.match(/<body[^>]*>/i);
+  if (!bodyMatch) return stripped;
+  const insertAt = bodyMatch.index + bodyMatch[0].length;
+  return stripped.slice(0, insertAt) + "\n" + injection + stripped.slice(insertAt);
+}
+
 function chip(name, label, triple = false) {
   const wrapper = triple ? `{{{${name}}}}` : `{{${name}}}`;
   const safeLabel = String(label || name).replace(/"/g, "&quot;");

@@ -1321,11 +1321,11 @@ export default {
       );
     },
     onSubmitReceiptTemplate(template) {
-      this.tenant.receiptTemplate = template;
+      this.tenant = { ...this.tenant, receiptTemplate: template };
       this.showEditTemplateDialog = false;
     },
     onSubmitInvoiceTemplate(template) {
-      this.tenant.invoiceTemplate = template;
+      this.tenant = { ...this.tenant, invoiceTemplate: template };
       this.showEditInvoiceTemplateDialog = false;
     },
   },
