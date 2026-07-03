@@ -7,6 +7,11 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Added
+
+- Series bookings in booking details can now have collective invoices created, with a choice between collective and single invoice — consistent with the existing collective receipt flow
+- Collective invoices for series bookings can also be created and downloaded from the series booking overview
+
 ## [4.1.2] — 2026-07-02
 
 ### Added

@@ -144,6 +144,117 @@
           </v-card-text>
         </v-card>
 
+        <v-card
+          v-if="usesInvoicePayment"
+          class="mb-6 section-card"
+          elevation="2"
+          outlined
+        >
+          <v-card-title
+            class="section-header pa-4 d-flex justify-space-between align-center"
+          >
+            <div class="d-flex align-center">
+              <v-icon class="mr-2">mdi-invoice-outline</v-icon>
+              <span class="text-h6 font-weight-bold">Rechnungen</span>
+            </div>
+          </v-card-title>
+          <v-divider />
+          <v-card-text class="pa-4">
+            <v-alert
+              :type="invoices.length === 0 ? 'warning' : 'info'"
+              dense
+              outlined
+              border="left"
+              class="mb-0"
+            >
+              <div class="d-flex align-center mb-2">
+                <v-icon class="mr-2">
+                  {{
+                    invoices.length === 0
+                      ? "mdi-alert-outline"
+                      : "mdi-file-document-check-outline"
+                  }}
+                </v-icon>
+                <span class="font-weight-medium">
+                  {{
+                    invoices.length === 0
+                      ? "Für diese Serienbuchung wurde noch keine Sammelrechnung erstellt."
+                      : "Sammelrechnung erneut erstellen und versenden."
+                  }}
+                </span>
+              </div>
+              <div class="d-flex gap-2 flex-wrap mt-3">
+                <v-btn
+                  small
+                  color="primary"
+                  :loading="invoiceLoading"
+                  @click="createGroupInvoice(true)"
+                >
+                  <v-icon left small>mdi-email-fast-outline</v-icon>
+                  {{
+                    invoices.length === 0
+                      ? "Sammelrechnung erstellen & versenden"
+                      : "Sammelrechnung erneut versenden"
+                  }}
+                </v-btn>
+                <v-btn
+                  small
+                  outlined
+                  :loading="invoiceGenerateLoading"
+                  @click="createGroupInvoice(false)"
+                >
+                  <v-icon left small>mdi-file-plus-outline</v-icon>
+                  {{
+                    invoices.length === 0
+                      ? "Nur erstellen (ohne Versand)"
+                      : "Nur neu erstellen"
+                  }}
+                </v-btn>
+              </div>
+              <div v-if="invoiceError" class="mt-2">
+                <v-alert type="error" dense outlined class="mb-0">
+                  {{ invoiceError }}
+                </v-alert>
+              </div>
+            </v-alert>
+          </v-card-text>
+          <v-card-text class="pa-0" v-if="invoices.length > 0">
+            <v-list dense>
+              <template v-for="(item, index) in invoices">
+                <v-list-item :key="item.name" class="px-4">
+                  <v-list-item-avatar color="success lighten-4">
+                    <v-icon color="success">mdi-file-pdf-box</v-icon>
+                  </v-list-item-avatar>
+                  <v-list-item-content>
+                    <v-list-item-title class="font-weight-bold">
+                      {{ item.name }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle v-if="item.timeCreated">
+                      <v-icon x-small>mdi-calendar</v-icon>
+                      Ausstellungsdatum:
+                      {{
+                        Intl.DateTimeFormat("de-DE", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        }).format(new Date(item.timeCreated))
+                      }}
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                  <v-list-item-action>
+                    <v-btn icon @click="downloadInvoice(item)">
+                      <v-icon>mdi-download</v-icon>
+                    </v-btn>
+                  </v-list-item-action>
+                </v-list-item>
+                <v-divider
+                  v-if="index < invoices.length - 1"
+                  :key="`divider-${index}`"
+                />
+              </template>
+            </v-list>
+          </v-card-text>
+        </v-card>
+
         <!-- Einzelbuchungen -->
         <v-card class="mb-6 section-card" elevation="2" outlined>
           <v-card-title class="section-header pa-4">
@@ -176,7 +287,14 @@
 <script>
 import BookingTable from "@/components/Booking/BookingTable.vue";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
+import ApiBookingService from "@/services/api/ApiBookingService";
 import ToastService from "@/services/ToastService";
+import ProcessingService from "@/services/ProcessingService";
+import { getGroupBookingErrorMessage } from "@/utils/errorMessages";
+import {
+  collectGroupInvoices,
+  groupUsesInvoicePayment,
+} from "@/utils/groupBookingInvoices";
 import { mapActions } from "vuex";
 
 export default {
@@ -193,9 +311,18 @@ export default {
       editingComment: false,
       editedComment: "",
       savingComment: false,
+      invoiceLoading: false,
+      invoiceGenerateLoading: false,
+      invoiceError: null,
     };
   },
   computed: {
+    usesInvoicePayment() {
+      return groupUsesInvoicePayment(this.groupBooking.bookings);
+    },
+    invoices() {
+      return collectGroupInvoices(this.groupBooking.bookings);
+    },
     totalPriceEur() {
       if (!this.groupBooking.bookings) return 0;
       return this.groupBooking.bookings.reduce(
@@ -226,7 +353,74 @@ export default {
       this.$emit("download-ical", ids);
     },
     closeDialog() {
+      this.invoiceError = null;
       this.$emit("close");
+    },
+    async createGroupInvoice(sendEmail) {
+      const isSend = sendEmail === true;
+      if (isSend) {
+        this.invoiceLoading = true;
+      } else {
+        this.invoiceGenerateLoading = true;
+      }
+      this.invoiceError = null;
+      const operationId = ProcessingService.showOverlay(
+        isSend
+          ? "Erstelle und versende Sammelrechnung..."
+          : "Erstelle Sammelrechnung..."
+      );
+      try {
+        const response = await ApiGroupBookingService.generateGroupInvoice(
+          undefined,
+          this.groupBooking.id,
+          isSend
+        );
+        if (!response.success) {
+          const code = response.errors?.[0]?.code;
+          this.invoiceError = getGroupBookingErrorMessage(code);
+          await this.addToast(
+            ToastService.createToast("group-booking.invoice.error", "error")
+          );
+        } else {
+          await this.addToast(
+            ToastService.createToast("group-booking.invoice.success", "success")
+          );
+          this.$emit("update");
+        }
+      } catch (error) {
+        this.invoiceError = isSend
+          ? "Fehler beim Erstellen und Versenden der Sammelrechnung."
+          : "Fehler beim Erstellen der Sammelrechnung.";
+        await this.addToast(
+          ToastService.createToast("group-booking.invoice.error", "error")
+        );
+      } finally {
+        ProcessingService.hide(operationId);
+        if (isSend) {
+          this.invoiceLoading = false;
+        } else {
+          this.invoiceGenerateLoading = false;
+        }
+      }
+    },
+    downloadInvoice(item) {
+      const operationId = ProcessingService.showSnackbar(
+        "Stelle Rechnung bereit..."
+      );
+      ApiBookingService.getInvoice(item.bookingId, item.name).then(
+        (response) => {
+          const blob = new Blob([response.data], {
+            type: "application/pdf",
+          });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", item.name);
+          document.body.appendChild(link);
+          link.click();
+          ProcessingService.hide(operationId);
+        }
+      );
     },
     startEditingComment() {
       this.editedComment = this.groupBooking.internalComments || "";
