@@ -143,6 +143,7 @@
         <GroupBookingDetails
           :group-booking="selectedGroupBooking"
           @close="closeDialog('groupBooking')"
+          @update="updateGroupBookingView"
           @download-ical="onDownloadGroupBookingIcal"
         ></GroupBookingDetails>
       </div>
@@ -760,11 +761,11 @@ export default {
         {},
         {
           ...groupBooking,
-          bookings: groupBooking.bookingIds.map((bookingId) => {
-            return this.api.bookings.find(
-              (booking) => booking.id === bookingId
-            );
-          }),
+          bookings: groupBooking.bookingIds
+            .map((bookingId) =>
+              this.api.bookings.find((booking) => booking.id === bookingId)
+            )
+            .filter(Boolean),
         }
       );
       this.openGroupBookingDialog = true;
@@ -822,6 +823,30 @@ export default {
       this.selectedBooking = Object.assign(
         {},
         this.api.bookings.find((booking) => booking.id === bookingId)
+      );
+    },
+    async updateGroupBookingView() {
+      const groupBookingId = this.selectedGroupBooking?.id;
+      if (!groupBookingId) return;
+
+      await this.fetchBookings();
+      await this.fetchGroupBookings();
+
+      const groupBooking = this.api.groupBookings.find(
+        (gb) => gb.id === groupBookingId
+      );
+      if (!groupBooking) return;
+
+      this.selectedGroupBooking = Object.assign(
+        {},
+        {
+          ...groupBooking,
+          bookings: groupBooking.bookingIds
+            .map((bookingId) =>
+              this.api.bookings.find((booking) => booking.id === bookingId)
+            )
+            .filter(Boolean),
+        }
       );
     },
     initializeFuse() {

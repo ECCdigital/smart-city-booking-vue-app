@@ -4,12 +4,12 @@
     :booking-id="bookingId"
     :error="error"
     :in-progress="inProgress"
-    title="Buchungsbeleg erstellen"
-    question="Möchten Sie für die gesamte Serie einen Buchungsbeleg erstellen?"
-    primary-label="Sammelbeleg"
-    secondary-label="Einzelbeleg"
-    @choose-primary="$emit('create-group-booking-receipt')"
-    @choose-secondary="$emit('create-single-booking-receipt')"
+    title="Rechnung erstellen"
+    question="Möchten Sie eine Sammel- oder Einzelrechnung erstellen?"
+    :primary-label="primaryLabel"
+    secondary-label="Einzelrechnung"
+    @choose-primary="$emit('create-group-invoice')"
+    @choose-secondary="$emit('create-single-invoice')"
     @close="$emit('close')"
   />
 </template>
@@ -18,7 +18,7 @@
 import GroupBookingAggregatedChoiceDialog from "@/components/Booking/GroupBookingAggregatedChoiceDialog.vue";
 
 export default {
-  name: "GroupBookingCreateReceipt",
+  name: "GroupBookingCreateInvoice",
   components: {
     GroupBookingAggregatedChoiceDialog,
   },
@@ -31,6 +31,10 @@ export default {
       type: Boolean,
       required: true,
     },
+    sendEmail: {
+      type: Boolean,
+      default: false,
+    },
     inProgress: {
       type: Boolean,
       default: false,
@@ -38,6 +42,13 @@ export default {
     error: {
       type: String,
       default: null,
+    },
+  },
+  computed: {
+    primaryLabel() {
+      return this.sendEmail
+        ? "Sammelrechnung erstellen & versenden"
+        : "Sammelrechnung";
     },
   },
 };

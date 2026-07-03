@@ -148,20 +148,33 @@ export default {
       const simpleMatch = placeholder.match(/^\{\{\{?\s*([\w.]+)\s*\}?\}\}$/);
       if (simpleMatch) {
         const triple = placeholder.startsWith("{{{");
-        this.editor.commands.insertMailVariable(v.name, {
+        // Pfad aus dem Placeholder verwenden (z. B. "booking.id"), nicht den
+        // Variablen-Namen – sonst rendert {{booking}} als [object Object].
+        this.editor.commands.insertMailVariable(simpleMatch[1], {
           triple,
           label: v.label || v.name,
         });
         return;
       }
-      this.editor
-        .chain()
-        .focus()
-        .insertContent([
-          { type: "text", text: placeholder },
-          { type: "text", text: " " },
-        ])
-        .run();
+      // Block-Ausdrücke ({{#if}}/{{#each}} …) als editierbaren Text einfügen,
+      // damit die Inhalte der Zweige angepasst werden können.
+      if (/^\{\{[#^]/.test(placeholder.trim())) {
+        this.editor
+          .chain()
+          .focus()
+          .insertContent([
+            { type: "text", text: placeholder },
+            { type: "text", text: " " },
+          ])
+          .run();
+        return;
+      }
+      // Atomare komplexe Platzhalter (Helper, Partials) als Chip mit
+      // vollständigem Ausdruck einfügen.
+      this.editor.commands.insertMailVariable(v.name, {
+        label: v.label || v.name,
+        expr: placeholder,
+      });
     },
     onPromptLink() {
       const url = window.prompt("Link-URL eingeben (https://...)", "https://");

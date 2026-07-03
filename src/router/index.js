@@ -33,6 +33,7 @@ import { pipeline } from "./middleware";
 import { requiresAuth } from "./middlewares/auth";
 import { checkGroupBooking } from "./middlewares/groupBooking";
 import { checkInterface } from "./middlewares/interface";
+import { requireTenant } from "./middlewares/requireTenant";
 import { finalAuthRedirect } from "./middlewares/finalAuth";
 
 Vue.use(VueRouter);
@@ -585,6 +586,7 @@ router.beforeEach((to, from, next) => {
     requiresAuth,
     checkGroupBooking,
     checkInterface,
+    requireTenant,
     finalAuthRedirect,
   ];
   const context = { to, from, next, router };
