@@ -81,7 +81,7 @@
       :open="showEditTemplateDialog"
       :receipt-template="tenant.receiptTemplate"
       :tenant-id="tenant.id"
-      :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
       :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditTemplateDialog = false"
       @submit="onSubmitReceiptTemplate"
@@ -90,7 +90,7 @@
       :open="showEditInvoiceTemplateDialog"
       :invoice-template="tenant.invoiceTemplate"
       :tenant-id="tenant.id"
-      :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
       :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
@@ -99,7 +99,7 @@
       :open="showEditCancellationTemplateDialog"
       :cancellation-template="tenant.cancellationTemplate"
       :tenant-id="tenant.id"
-      :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
       :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditCancellationTemplateDialog = false"
       @submit="onSubmitCancellationTemplate"
@@ -132,6 +132,7 @@ import SaveBar from "@/components/commons/SaveBar.vue";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
+import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
 
 export default {
   name: "TenantOverview",
@@ -157,6 +158,7 @@ export default {
       isLoading: false,
       inProgress: false,
       validRoot: true,
+      defaultPdfBookingLayout: DEFAULT_PDF_BOOKING_LAYOUT,
       activeTab: 0,
       roles: [],
       tabs: [

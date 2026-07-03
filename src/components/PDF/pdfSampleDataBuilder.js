@@ -3,12 +3,15 @@ import {
   resolveBookingTableMeta,
   buildCompactMetaHtml,
 } from "@/components/PDF/pdfBookingTableMeta.js";
-
-const VALID_LAYOUTS = ["summary", "compact", "detailed"];
-const DEFAULT_LAYOUT = "detailed";
+import {
+  PDF_BOOKING_LAYOUTS,
+  DEFAULT_PDF_BOOKING_LAYOUT,
+} from "@/components/PDF/pdfBookingLayoutConstants.js";
 
 function resolveLayout(layout) {
-  return VALID_LAYOUTS.includes(layout) ? layout : DEFAULT_LAYOUT;
+  return PDF_BOOKING_LAYOUTS.includes(layout)
+    ? layout
+    : DEFAULT_PDF_BOOKING_LAYOUT;
 }
 
 function renderPartial(Handlebars, data) {
@@ -97,4 +100,4 @@ export function buildPdfPreviewSampleData(
   return result;
 }
 
-export { DEFAULT_LAYOUT as DEFAULT_PDF_BOOKING_LAYOUT };
+export { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";

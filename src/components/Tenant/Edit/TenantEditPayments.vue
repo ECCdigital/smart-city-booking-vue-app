@@ -784,6 +784,7 @@ import SubSection from "@/components/commons/SubSection.vue";
 import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 
 import PdfBookingLayoutPicker from "@/components/PDF/PdfBookingLayoutPicker.vue";
+import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
 import { normalizePdfBookingTableMeta } from "@/components/PDF/pdfBookingTableMeta.js";
 
 export default {
@@ -866,7 +867,7 @@ export default {
     },
     pdfBookingLayoutModel: {
       get() {
-        return this.modelTenant.pdfBookingLayout || "detailed";
+        return this.modelTenant.pdfBookingLayout || DEFAULT_PDF_BOOKING_LAYOUT;
       },
       set(value) {
         this.$emit("update:tenant", {

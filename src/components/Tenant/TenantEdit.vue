@@ -920,7 +920,7 @@
       :open="showEditTemplateDialog"
       :receipt-template="tenant.receiptTemplate"
       :tenant-id="tenant.id"
-      :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
       :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditTemplateDialog = false"
       @submit="onSubmitReceiptTemplate"
@@ -929,7 +929,7 @@
       :open="showEditInvoiceTemplateDialog"
       :invoice-template="tenant.invoiceTemplate"
       :tenant-id="tenant.id"
-      :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
       :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
@@ -955,6 +955,7 @@ import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue
 import TenantEditWorkflowStatusDialog from "@/components/Tenant/TenantEditWorkflowStatusDialog.vue";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 import CatalogSettings from "@/components/Catalog/CatalogSettings.vue";
+import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
 
 export default {
   name: "TenantEdit",
@@ -981,6 +982,7 @@ export default {
       valid: false,
       originTenantId: null,
       inProgress: false,
+      defaultPdfBookingLayout: DEFAULT_PDF_BOOKING_LAYOUT,
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
         mail: [

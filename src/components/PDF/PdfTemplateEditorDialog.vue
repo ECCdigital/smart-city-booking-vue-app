@@ -417,10 +417,8 @@ import {
 } from "@/components/PDF/pdfTemplateCatalog.js";
 import ApiTenantService from "@/services/api/ApiTenantService.js";
 import { registerPdfRuntime } from "@/components/PDF/pdfHandlebarsRuntime.js";
-import {
-  buildPdfPreviewSampleData,
-  DEFAULT_PDF_BOOKING_LAYOUT,
-} from "@/components/PDF/pdfSampleDataBuilder.js";
+import { buildPdfPreviewSampleData } from "@/components/PDF/pdfSampleDataBuilder.js";
+import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
 import { normalizePdfBookingTableMeta } from "@/components/PDF/pdfBookingTableMeta.js";
 
 export default {

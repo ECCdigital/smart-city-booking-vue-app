@@ -93,6 +93,7 @@ export default {
     }
     return ApiClient.post(`api/tenants/${tenantId}/pdf-preview`, body, {
       responseType: "blob",
+      timeout: 90000,
     });
   },
   async getDefaultMailTempaltes(tenantId) {

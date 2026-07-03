@@ -110,6 +110,10 @@
 
 <script>
 import { normalizePdfBookingTableMeta } from "@/components/PDF/pdfBookingTableMeta.js";
+import {
+  PDF_BOOKING_LAYOUTS,
+  DEFAULT_PDF_BOOKING_LAYOUT,
+} from "@/components/PDF/pdfBookingLayoutConstants.js";
 import LayoutSkeleton from "@/components/PDF/PdfBookingLayoutSkeleton.vue";
 
 export default {
@@ -118,7 +122,8 @@ export default {
   props: {
     value: {
       type: String,
-      default: "detailed",
+      default: DEFAULT_PDF_BOOKING_LAYOUT,
+      validator: (v) => PDF_BOOKING_LAYOUTS.includes(v),
     },
     tableMeta: {
       type: Object,
