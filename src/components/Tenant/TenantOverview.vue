@@ -80,18 +80,24 @@
     <ReceiptTemplateDialog
       :open="showEditTemplateDialog"
       :receipt-template="tenant.receiptTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
       @close="showEditTemplateDialog = false"
       @submit="onSubmitReceiptTemplate"
     />
     <InvoiceTemplateDialog
       :open="showEditInvoiceTemplateDialog"
       :invoice-template="tenant.invoiceTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
     />
     <CancellationTemplateDialog
       :open="showEditCancellationTemplateDialog"
       :cancellation-template="tenant.cancellationTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
       @close="showEditCancellationTemplateDialog = false"
       @submit="onSubmitCancellationTemplate"
     />
@@ -100,6 +106,7 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import { mapActions, mapGetters } from "vuex";
 
@@ -525,7 +532,10 @@ export default {
         });
       } catch (e) {
         await this.addToast({
-          message: "Fehler beim Speichern der Änderungen.",
+          message: getApiErrorMessage(
+            e,
+            "Fehler beim Speichern der Änderungen.",
+          ),
           type: "error",
         });
       } finally {

@@ -4,6 +4,9 @@
       title="Zahlungs- und Stornobelege"
       icon="fa-file-invoice-dollar"
     >
+      <div class="pdf-booking-layout-section mb-6">
+        <PdfBookingLayoutPicker v-model="pdfBookingLayoutModel" />
+      </div>
       <v-row>
         <v-col class="col-12 col-md-3">
           <v-text-field
@@ -777,9 +780,17 @@ import ApiPaymentService from "@/services/api/ApiPaymentService";
 import SubSection from "@/components/commons/SubSection.vue";
 import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 
+import PdfBookingLayoutPicker from "@/components/PDF/PdfBookingLayoutPicker.vue";
+
 export default {
   name: "TenantEditPayments",
-  components: { UserRoleSelector, SubSection, BaseSection, AppPanel },
+  components: {
+    UserRoleSelector,
+    SubSection,
+    BaseSection,
+    AppPanel,
+    PdfBookingLayoutPicker,
+  },
   props: {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
@@ -847,6 +858,17 @@ export default {
       },
       set(v) {
         this._emitAppsDebounced(v);
+      },
+    },
+    pdfBookingLayoutModel: {
+      get() {
+        return this.modelTenant.pdfBookingLayout || "detailed";
+      },
+      set(value) {
+        this.$emit("update:tenant", {
+          ...this.modelTenant,
+          pdfBookingLayout: value,
+        });
       },
     },
   },

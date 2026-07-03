@@ -919,12 +919,16 @@
     <ReceiptTemplateDialog
       :open="showEditTemplateDialog"
       :receipt-template="tenant.receiptTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
       @close="showEditTemplateDialog = false"
       @submit="onSubmitReceiptTemplate"
     />
     <InvoiceTemplateDialog
       :open="showEditInvoiceTemplateDialog"
       :invoice-template="tenant.invoiceTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
     />
@@ -939,6 +943,7 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
@@ -1222,7 +1227,10 @@ export default {
           });
         } catch (e) {
           await this.addToast({
-            message: "Fehler beim Speichern der Änderungen.",
+            message: getApiErrorMessage(
+              e,
+              "Fehler beim Speichern der Änderungen.",
+            ),
             type: "error",
           });
           this.inProgress = false;

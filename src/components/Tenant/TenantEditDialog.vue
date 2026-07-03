@@ -739,6 +739,7 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
 import { mapActions } from "vuex";
 
@@ -921,7 +922,10 @@ export default {
           this.$emit("close");
         } catch (e) {
           await this.addToast({
-            message: "Fehler beim Speichern der Änderungen.",
+            message: getApiErrorMessage(
+              e,
+              "Fehler beim Speichern der Änderungen.",
+            ),
             type: "error",
           });
           this.inProgress = false;

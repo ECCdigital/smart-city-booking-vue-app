@@ -3,6 +3,8 @@
     :open="open"
     template-type="invoice"
     :value="invoiceTemplate"
+    :tenant-id="tenantId"
+    :pdf-booking-layout="pdfBookingLayout"
     @close="$emit('close')"
     @submit="onSubmit"
   />
@@ -17,6 +19,8 @@ export default {
   props: {
     open: { type: Boolean, required: true },
     invoiceTemplate: { type: String, default: "" },
+    tenantId: { type: String, default: "" },
+    pdfBookingLayout: { type: String, default: "detailed" },
   },
   methods: {
     onSubmit(value) {

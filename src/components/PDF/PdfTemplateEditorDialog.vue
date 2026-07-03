@@ -25,8 +25,10 @@
         <v-alert type="info" text dense class="text-caption mb-0">
           Das Dokument wird automatisch in ein gültiges
           <code>&lt;!doctype html&gt;</code>-Gerüst eingebettet. Pflicht-
-          Platzhalter wie <code>{{ catalog.requiredVariables.join(", ") }}</code>
-          müssen vorhanden bleiben, sonst rendert das PDF unvollständig.
+          Platzhalter wie <code>{{ requiredVariableLabels.join(", ") }}</code>
+          (oder ein entsprechendes Partial wie
+          <code>{{ partialExampleSnippet }}</code>) müssen vorhanden
+          bleiben, sonst rendert das PDF unvollständig.
         </v-alert>
       </v-card-subtitle>
 
@@ -80,6 +82,91 @@
               Roh-HTML-Baustein oder über den Variablen-Picker im Text-Baustein
               ein.
             </v-alert>
+
+            <v-card outlined class="mt-4">
+              <v-card-title class="text-subtitle-2 py-2">
+                <v-icon small left>mdi-page-layout-header-footer</v-icon>
+                Seitenkopf / Seitenfuß (auf jeder Seite wiederholt)
+              </v-card-title>
+              <v-card-text>
+                <v-alert type="info" text dense class="text-caption mb-3">
+                  Kopf- und Fußzeile erscheinen nur im PDF – auf jeder Seite
+                  wiederholt. In der Browser-Vorschau werden sie ausgeblendet;
+                  prüfe sie über die PDF-Vorschau. Inhalte benötigen
+                  Inline-Styles (Grundformatierung wie Schriftgröße und Ränder
+                  wird automatisch ergänzt).
+                </v-alert>
+                <v-alert
+                  v-if="mode === 'expert'"
+                  type="warning"
+                  text
+                  dense
+                  class="text-caption mb-3"
+                >
+                  Experten-Modus: Diese Felder werden nur übernommen, wenn das
+                  Experten-HTML keine eigenen
+                  <code>&lt;template data-pdf-header/footer&gt;</code>-Elemente
+                  enthält.
+                </v-alert>
+                <v-textarea
+                  v-model="pageHeaderHtml"
+                  filled
+                  dense
+                  rows="2"
+                  auto-grow
+                  hide-details
+                  label="Seitenkopf (HTML, optional)"
+                  class="code-editor mb-1"
+                />
+                <div class="d-flex mb-3">
+                  <v-btn
+                    x-small
+                    text
+                    @click="appendPageSnippet('pageHeaderHtml', pageNumberSpan)"
+                  >
+                    + Seitenzahl
+                  </v-btn>
+                  <v-btn
+                    x-small
+                    text
+                    @click="appendPageSnippet('pageHeaderHtml', totalPagesSpan)"
+                  >
+                    + Gesamtseiten
+                  </v-btn>
+                </div>
+                <v-textarea
+                  v-model="pageFooterHtml"
+                  filled
+                  dense
+                  rows="2"
+                  auto-grow
+                  hide-details
+                  label="Seitenfuß (HTML, optional)"
+                  class="code-editor mb-1"
+                />
+                <div class="d-flex">
+                  <v-btn
+                    x-small
+                    text
+                    @click="appendPageSnippet('pageFooterHtml', pageNumberSpan)"
+                  >
+                    + Seitenzahl
+                  </v-btn>
+                  <v-btn
+                    x-small
+                    text
+                    @click="appendPageSnippet('pageFooterHtml', totalPagesSpan)"
+                  >
+                    + Gesamtseiten
+                  </v-btn>
+                  <v-spacer />
+                  <v-btn x-small text @click="resetPageTemplatesToDefault">
+                    <v-icon x-small left>mdi-restore</v-icon>
+                    Standard-Fußzeile
+                  </v-btn>
+                </div>
+              </v-card-text>
+            </v-card>
           </v-tab-item>
 
           <!-- Tab 2: Vorschau -->
@@ -87,10 +174,31 @@
             <v-card outlined class="preview-card">
               <v-toolbar dense flat color="grey lighten-4">
                 <v-toolbar-title class="text-caption">
-                  Live-Vorschau (mit Demodaten)
+                  {{
+                    previewMode === "pdf"
+                      ? "PDF-Vorschau (mit mehrseitigen Demodaten)"
+                      : "Live-Vorschau (mit Demodaten)"
+                  }}
+                  · Buchungsdarstellung: {{ pdfBookingLayoutLabel }}
                 </v-toolbar-title>
                 <v-spacer />
                 <v-btn-toggle
+                  v-model="previewMode"
+                  mandatory
+                  dense
+                  class="mr-2"
+                >
+                  <v-btn x-small value="browser">
+                    <v-icon small left>mdi-web</v-icon>
+                    Browser
+                  </v-btn>
+                  <v-btn x-small value="pdf" :disabled="!tenantId">
+                    <v-icon small left>mdi-file-pdf-box</v-icon>
+                    PDF
+                  </v-btn>
+                </v-btn-toggle>
+                <v-btn-toggle
+                  v-if="previewMode === 'browser'"
                   v-model="previewDevice"
                   mandatory
                   dense
@@ -103,9 +211,23 @@
                     <v-icon small>mdi-file-document-outline</v-icon>
                   </v-btn>
                 </v-btn-toggle>
+                <v-btn
+                  v-if="previewMode === 'pdf'"
+                  x-small
+                  outlined
+                  :loading="pdfLoading"
+                  @click="refreshPdfPreview"
+                >
+                  <v-icon x-small left>mdi-refresh</v-icon>
+                  Aktualisieren
+                </v-btn>
               </v-toolbar>
               <v-card-text class="pa-0">
-                <div class="preview-container" :class="previewDeviceClass">
+                <div
+                  v-if="previewMode === 'browser'"
+                  class="preview-container"
+                  :class="previewDeviceClass"
+                >
                   <iframe
                     ref="previewIframe"
                     :key="previewKey"
@@ -113,11 +235,49 @@
                     sandbox="allow-same-origin"
                   ></iframe>
                 </div>
+                <div v-else class="pdf-preview-container">
+                  <v-alert
+                    v-if="pdfError"
+                    type="error"
+                    text
+                    dense
+                    class="ma-3"
+                  >
+                    <div class="pdf-error-text">{{ pdfError }}</div>
+                  </v-alert>
+                  <div v-if="pdfLoading" class="pdf-preview-loading">
+                    <v-progress-circular indeterminate color="primary" />
+                    <div class="text-caption grey--text mt-3">
+                      PDF wird auf dem Server gerendert …
+                    </div>
+                  </div>
+                  <embed
+                    v-else-if="pdfUrl && !pdfError"
+                    :src="pdfUrl"
+                    type="application/pdf"
+                    class="pdf-preview-embed"
+                  />
+                  <div
+                    v-else-if="!pdfError"
+                    class="pdf-preview-loading text-caption grey--text"
+                  >
+                    Noch keine PDF-Vorschau erzeugt. Klicke auf "Aktualisieren".
+                  </div>
+                </div>
               </v-card-text>
             </v-card>
             <div class="text-caption grey--text mt-2">
-              Vorgerendert mit Demodaten
-              ({{ Object.keys(catalog.sampleData).join(", ") }}).
+              <template v-if="previewMode === 'pdf'">
+                Serverseitig gerendert mit mehrseitigen Beispieldaten –
+                Seitenumbrüche, Kopf-/Fußzeilen und Seitenzahlen entsprechen dem
+                echten PDF.
+              </template>
+              <template v-else>
+                Vorgerendert mit Demodaten
+                ({{ Object.keys(catalog.sampleData).join(", ") }}).
+                Seitenumbrüche und Kopf-/Fußzeilen sind nur in der PDF-Vorschau
+                sichtbar.
+              </template>
             </div>
           </v-tab-item>
 
@@ -189,23 +349,32 @@
                     class="variable-menu"
                     style="max-height: 320px; overflow-y: auto; background: #fff;"
                   >
-                    <v-list-item
-                      v-for="v in catalog.variables"
-                      :key="v.name"
-                      @click="insertVariable(v)"
-                    >
-                      <v-list-item-content>
-                        <v-list-item-title>
-                          {{ v.label || v.name }}
-                        </v-list-item-title>
-                        <v-list-item-subtitle>
-                          <code>{{ v.placeholder }}</code>
-                          <span v-if="v.description" class="ml-1 grey--text">
-                            - {{ v.description }}
-                          </span>
-                        </v-list-item-subtitle>
-                      </v-list-item-content>
-                    </v-list-item>
+                    <template v-for="group in groupedVariables">
+                      <v-subheader
+                        v-if="group.items.length"
+                        :key="`header-${group.key}`"
+                        class="text-uppercase"
+                      >
+                        {{ group.label }}
+                      </v-subheader>
+                      <v-list-item
+                        v-for="v in group.items"
+                        :key="`${group.key}-${v.name}`"
+                        @click="insertVariable(v)"
+                      >
+                        <v-list-item-content>
+                          <v-list-item-title>
+                            {{ v.label || v.name }}
+                          </v-list-item-title>
+                          <v-list-item-subtitle>
+                            <code>{{ v.placeholder }}</code>
+                            <span v-if="v.description" class="ml-1 grey--text">
+                              - {{ v.description }}
+                            </span>
+                          </v-list-item-subtitle>
+                        </v-list-item-content>
+                      </v-list-item>
+                    </template>
                   </v-list>
                 </v-menu>
               </div>
@@ -240,7 +409,17 @@ import {
   getPdfTemplateCatalogEntry,
   isValidPdfTemplate,
   findMissingRequiredVariables,
+  getRequiredVariableLabels,
+  extractPdfPageTemplates,
+  decodeHandlebarsEntities,
+  stripVariableChips,
 } from "@/components/PDF/pdfTemplateCatalog.js";
+import ApiTenantService from "@/services/api/ApiTenantService.js";
+import { registerPdfRuntime } from "@/components/PDF/pdfHandlebarsRuntime.js";
+import {
+  buildPdfPreviewSampleData,
+  DEFAULT_PDF_BOOKING_LAYOUT,
+} from "@/components/PDF/pdfSampleDataBuilder.js";
 
 export default {
   name: "PdfTemplateEditorDialog",
@@ -253,6 +432,11 @@ export default {
       validator: (v) => ["receipt", "invoice", "cancellation"].includes(v),
     },
     value: { type: String, default: "" },
+    tenantId: { type: String, default: "" },
+    pdfBookingLayout: {
+      type: String,
+      default: DEFAULT_PDF_BOOKING_LAYOUT,
+    },
   },
   data() {
     return {
@@ -263,8 +447,18 @@ export default {
       expertConfirmed: false,
       previewKey: 0,
       previewDevice: "desktop",
+      previewMode: "browser",
       previewRenderToken: 0,
+      previewSampleDataCache: null,
       handlebarsLib: null,
+      pdfLoading: false,
+      pdfError: null,
+      pdfUrl: null,
+      pdfRequestToken: 0,
+      pageHeaderHtml: "",
+      pageFooterHtml: "",
+      pageNumberSpan: "<span class=\"pageNumber\"></span>",
+      totalPagesSpan: "<span class=\"totalPages\"></span>",
     };
   },
   computed: {
@@ -279,6 +473,13 @@ export default {
     catalog() {
       return getPdfTemplateCatalogEntry(this.templateType);
     },
+    requiredVariableLabels() {
+      if (!this.catalog) return [];
+      return getRequiredVariableLabels(this.catalog.requiredVariables);
+    },
+    partialExampleSnippet() {
+      return "{{> pdfBookingItemsTable …}}";
+    },
     composedOutput() {
       return this.composeOutput();
     },
@@ -290,7 +491,9 @@ export default {
     },
     missingInBlocks() {
       if (!this.catalog) return [];
-      const html = renderBlocksToHtml(this.blocks || []);
+      const html = this.normalizeBlockHtml(
+        renderBlocksToHtml(this.blocks || []),
+      );
       return findMissingRequiredVariables(html, this.catalog.requiredVariables);
     },
     missingInExpert() {
@@ -304,12 +507,44 @@ export default {
     previewDeviceClass() {
       return `preview-${this.previewDevice}`;
     },
+    pdfBookingLayoutLabel() {
+      const labels = {
+        summary: "Zusammenfassung",
+        compact: "Kompakt",
+        detailed: "Ausführlich",
+      };
+      return labels[this.pdfBookingLayout] || labels.detailed;
+    },
+    groupedVariables() {
+      const variables = (this.catalog && this.catalog.variables) || [];
+      return [
+        {
+          key: "variables",
+          label: "Variablen",
+          items: variables.filter((v) => !v.category),
+        },
+        {
+          key: "helpers",
+          label: "Helper",
+          items: variables.filter((v) => v.category === "helper"),
+        },
+        {
+          key: "partials",
+          label: "Partials (Tabellen-Bausteine)",
+          items: variables.filter((v) => v.category === "partial"),
+        },
+      ];
+    },
   },
   watch: {
     open: {
       immediate: true,
       handler(v) {
-        if (v) this.loadFromValue();
+        if (v) {
+          this.loadFromValue();
+        } else {
+          this.resetPdfPreview();
+        }
       },
     },
     templateType() {
@@ -317,7 +552,34 @@ export default {
     },
     activeTab(newTab) {
       if (newTab === 1) {
+        if (this.previewMode === "pdf") {
+          this.refreshPdfPreview();
+        } else {
+          this.schedulePreviewUpdate();
+        }
+      }
+      // Experten-Tab zeigt immer die aktuelle Komposition des visuellen
+      // Modells (nicht den zuletzt gespeicherten Stand).
+      if (newTab === 2 && this.mode === "visual") {
+        this.expertHtml = this.composeFromBlocks(this.blocks);
+      }
+    },
+    previewMode(newMode) {
+      if (newMode === "pdf") {
+        this.refreshPdfPreview();
+      } else {
         this.schedulePreviewUpdate();
+      }
+    },
+    pdfBookingLayout() {
+      if (!this.open) return;
+      this.previewSampleDataCache = null;
+      if (this.activeTab === 1) {
+        if (this.previewMode === "pdf") {
+          this.refreshPdfPreview();
+        } else {
+          this.schedulePreviewUpdate();
+        }
       }
     },
   },
@@ -326,7 +588,11 @@ export default {
       const incoming = this.normalizeLegacyTemplate(this.value || "");
       this.expertConfirmed = false;
       this.previewDevice = "desktop";
+      this.previewMode = "browser";
+      this.previewSampleDataCache = null;
+      this.resetPdfPreview();
       if (!incoming) {
+        this.applyDefaultPageTemplates();
         this.blocks = this.makeDefaultBlocks();
         this.expertHtml = this.composeFromBlocks(this.blocks);
         this.mode = "visual";
@@ -334,6 +600,9 @@ export default {
         this.previewKey++;
         return;
       }
+      const pageTemplates = extractPdfPageTemplates(incoming);
+      this.pageHeaderHtml = pageTemplates.headerHtml;
+      this.pageFooterHtml = pageTemplates.footerHtml;
       const { blocks, body } = extractBlockMetadata(incoming);
       if (blocks) {
         this.blocks = this.normalizeBlockIds(
@@ -415,15 +684,43 @@ export default {
       };
       return JSON.parse(JSON.stringify(blocks || [])).map(ensureId);
     },
+    currentPageTemplates() {
+      return {
+        headerHtml: this.pageHeaderHtml,
+        footerHtml: this.pageFooterHtml,
+      };
+    },
+    applyDefaultPageTemplates() {
+      const defaults =
+        this.catalog && this.catalog.defaultPageTemplates
+          ? this.catalog.defaultPageTemplates()
+          : { headerHtml: "", footerHtml: "" };
+      this.pageHeaderHtml = defaults.headerHtml;
+      this.pageFooterHtml = defaults.footerHtml;
+    },
+    resetPageTemplatesToDefault() {
+      this.applyDefaultPageTemplates();
+    },
+    appendPageSnippet(field, snippet) {
+      this[field] = `${this[field] || ""}${snippet}`;
+    },
+    // Reihenfolge wichtig: erst Chips entfernen (solange Attributwerte noch
+    // HTML-escaped sind), dann Entities in Mustache-Ausdrücken dekodieren.
+    normalizeBlockHtml(html) {
+      return decodeHandlebarsEntities(stripVariableChips(html));
+    },
     composeFromBlocks(blocks) {
       if (!this.catalog) return "";
-      const bodyHtml = renderBlocksToHtml(blocks || []);
-      return this.catalog.buildDocument(bodyHtml);
+      const bodyHtml = this.normalizeBlockHtml(
+        renderBlocksToHtml(blocks || []),
+      );
+      return this.catalog.buildDocument(bodyHtml, this.currentPageTemplates());
     },
     onBlocksChange({ html }) {
+      const normalized = this.normalizeBlockHtml(html);
       this.expertHtml = this.catalog
-        ? this.catalog.buildDocument(html)
-        : html;
+        ? this.catalog.buildDocument(normalized, this.currentPageTemplates())
+        : normalized;
       this.mode = "visual";
     },
     onExpertEdit() {
@@ -431,12 +728,14 @@ export default {
     },
     startFromScratch() {
       this.expertConfirmed = true;
+      this.applyDefaultPageTemplates();
       this.blocks = this.makeDefaultBlocks();
       this.expertHtml = this.composeFromBlocks(this.blocks);
       this.mode = "visual";
       this.activeTab = 0;
     },
     resetToDefault() {
+      this.applyDefaultPageTemplates();
       this.blocks = this.makeDefaultBlocks();
       this.expertHtml = this.composeFromBlocks(this.blocks);
       this.expertConfirmed = true;
@@ -447,7 +746,38 @@ export default {
         const html = this.composeFromBlocks(this.blocks);
         return embedBlockMetadata(this.blocks || [], html);
       }
-      return this.expertHtml || "";
+      return this.injectPageTemplatesIntoExpertHtml(this.expertHtml || "");
+    },
+    /**
+     * Experten-HTML hat Vorrang: Enthält es bereits eigene
+     * `<template data-pdf-header/footer>`-Elemente, bleibt es unangetastet.
+     * Andernfalls werden gefüllte Kopf-/Fußzeilen-Felder an den Anfang des
+     * `<body>` injiziert.
+     */
+    injectPageTemplatesIntoExpertHtml(html) {
+      const text = String(html || "");
+      if (!text) return text;
+      if (/data-pdf-header|data-pdf-footer/i.test(text)) return text;
+      const { headerHtml, footerHtml } = this.currentPageTemplates();
+      if (!String(headerHtml || "").trim() && !String(footerHtml || "").trim())
+        return text;
+      const wrapperStyle =
+        "width: 100%; font-size: 8px; color: #666; padding: 0 10mm;";
+      const makeTemplate = (kind, inner) => {
+        const content = String(inner || "").trim();
+        if (!content) return "";
+        return (
+          `<template data-pdf-${kind}>` +
+          `<div data-pdf-wrapper style="${wrapperStyle}">${content}</div>` +
+          "</template>"
+        );
+      };
+      const injection =
+        makeTemplate("header", headerHtml) + makeTemplate("footer", footerHtml);
+      const bodyMatch = text.match(/<body[^>]*>/i);
+      if (!bodyMatch) return text;
+      const insertAt = bodyMatch.index + bodyMatch[0].length;
+      return text.slice(0, insertAt) + "\n" + injection + text.slice(insertAt);
     },
     onSave() {
       this.$emit("submit", this.composeOutput());
@@ -486,6 +816,7 @@ export default {
           /* webpackChunkName: "handlebars" */ "handlebars"
         );
         this.handlebarsLib = mod.default || mod;
+        registerPdfRuntime(this.handlebarsLib);
       } catch (e) {
         this.handlebarsLib = null;
       }
@@ -494,13 +825,27 @@ export default {
     simpleVarReplace(html) {
       if (!this.catalog) return html;
       let out = html || "";
-      Object.entries(this.catalog.sampleData || {}).forEach(([k, v]) => {
+      const sampleData =
+        this.previewSampleDataCache || this.catalog.sampleData || {};
+      Object.entries(sampleData).forEach(([k, v]) => {
+        if (v == null || typeof v === "object") return;
         const triple = new RegExp(`\\{\\{\\{\\s*${k}\\s*\\}\\}\\}`, "g");
         const double = new RegExp(`\\{\\{\\s*${k}\\s*\\}\\}`, "g");
         out = out.replace(triple, v);
         out = out.replace(double, v);
       });
       return out;
+    },
+    async getPreviewSampleData() {
+      const hb = await this.ensureHandlebars();
+      if (!hb || !this.catalog) {
+        return this.catalog?.sampleData || {};
+      }
+      return buildPdfPreviewSampleData(
+        this.templateType,
+        this.pdfBookingLayout,
+        hb,
+      );
     },
     schedulePreviewUpdate() {
       const token = ++this.previewRenderToken;
@@ -527,7 +872,11 @@ export default {
       try {
         const hb = await this.ensureHandlebars();
         if (hb) {
-          rendered = hb.compile(sourceHtml)(this.catalog.sampleData);
+          const sampleData = await this.getPreviewSampleData();
+          if (token === this.previewRenderToken) {
+            this.previewSampleDataCache = sampleData;
+          }
+          rendered = hb.compile(sourceHtml)(sampleData);
         } else {
           rendered = this.simpleVarReplace(sourceHtml);
         }
@@ -563,12 +912,73 @@ export default {
         }
       });
     },
+    resetPdfPreview() {
+      this.pdfRequestToken++;
+      this.pdfLoading = false;
+      this.pdfError = null;
+      if (this.pdfUrl) {
+        URL.revokeObjectURL(this.pdfUrl);
+        this.pdfUrl = null;
+      }
+    },
+    async refreshPdfPreview() {
+      if (!this.tenantId) {
+        this.pdfError =
+          "Keine Mandanten-ID vorhanden – PDF-Vorschau nicht möglich.";
+        return;
+      }
+      const token = ++this.pdfRequestToken;
+      this.pdfLoading = true;
+      this.pdfError = null;
+      try {
+        const response = await ApiTenantService.getPdfPreview(
+          this.tenantId,
+          this.templateType,
+          this.composeOutput(),
+          this.pdfBookingLayout,
+        );
+        if (token !== this.pdfRequestToken) return;
+        if (this.pdfUrl) {
+          URL.revokeObjectURL(this.pdfUrl);
+        }
+        this.pdfUrl = URL.createObjectURL(
+          new Blob([response.data], { type: "application/pdf" }),
+        );
+      } catch (error) {
+        if (token !== this.pdfRequestToken) return;
+        this.pdfError = await this.extractPdfPreviewError(error);
+      } finally {
+        if (token === this.pdfRequestToken) {
+          this.pdfLoading = false;
+        }
+      }
+    },
+    async extractPdfPreviewError(error) {
+      const data = error?.response?.data;
+      if (data instanceof Blob) {
+        try {
+          const text = await data.text();
+          if (text) return text;
+        } catch (_) {
+          // fall through to generic message
+        }
+      } else if (typeof data === "string" && data) {
+        return data;
+      }
+      if (error?.response?.status === 403) {
+        return "Keine Berechtigung für die PDF-Vorschau (403).";
+      }
+      return "PDF-Vorschau konnte nicht erzeugt werden.";
+    },
+  },
+  beforeDestroy() {
+    this.resetPdfPreview();
   },
   mounted() {
     this.$watch(
       () => [this.blocks, this.expertHtml, this.mode, this.previewDevice],
       () => {
-        if (this.activeTab === 1) {
+        if (this.activeTab === 1 && this.previewMode === "browser") {
           this.schedulePreviewUpdate();
         }
       },
@@ -602,6 +1012,28 @@ export default {
 }
 .preview-a4 .preview-iframe {
   max-width: 794px; /* ~A4 @ 96dpi */
+}
+.pdf-preview-container {
+  background: #f5f5f5;
+  min-height: 500px;
+}
+.pdf-preview-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+.pdf-preview-embed {
+  width: 100%;
+  height: 640px;
+  border: 0;
+  background: white;
+}
+.pdf-error-text {
+  white-space: pre-wrap;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
 }
 .code-editor >>> textarea {
   font-family: "Courier New", monospace;

@@ -1,3 +1,5 @@
+import ApiClient from "./ApiClientService";
+
 export default {
   getTenants(publicTenants = false) {
     return ApiClient.get(`api/tenants?publicTenants=${publicTenants}`);
@@ -74,6 +76,15 @@ export default {
       { userId, status },
     );
     return response.data;
+  },
+  getPdfPreview(tenantId, templateType, template, pdfBookingLayout) {
+    const body = { templateType, template };
+    if (pdfBookingLayout) {
+      body.pdfBookingLayout = pdfBookingLayout;
+    }
+    return ApiClient.post(`api/tenants/${tenantId}/pdf-preview`, body, {
+      responseType: "blob",
+    });
   },
   async getDefaultMailTempaltes(tenantId) {
     return (

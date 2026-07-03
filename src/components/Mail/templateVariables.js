@@ -1,3 +1,8 @@
+import {
+  formatCurrency as pdfFormatCurrency,
+  formatNegativeCurrency as pdfFormatNegativeCurrency,
+} from "@/components/PDF/pdfHandlebarsRuntime.js";
+
 export const SNIPPET_VARIABLES = [
   {
     name: "tenantName",
@@ -47,6 +52,126 @@ export const GENERIC_MAIL_VARIABLES = [
   },
 ];
 
+// --- Strukturierte PDF-Variablen, Handlebars-Helper und Partials (DEV-790) ---
+// Konsistent zum Backend (src/commons/pdf-service): Partials und Helper stehen
+// serverseitig in allen PDF-Templates zur Verfügung; für die Browser-Vorschau
+// werden sie über pdfHandlebarsRuntime.js registriert.
+
+const PDF_STRUCTURED_VARIABLES = [
+  {
+    name: "items",
+    placeholder: "{{#each items}}{{title}}: {{totalPrice}} {{/each}}",
+    label: "Positionen (strukturiert)",
+    description:
+      "Array der Positionen: title, amount, unitPrice, totalPrice (formatiert) sowie unitPriceEur, totalPriceEur (Zahlen)",
+  },
+  {
+    name: "totals",
+    placeholder: "{{totals.brutto}}",
+    label: "Summen (strukturiert)",
+    description:
+      "Summenblock: netto, vat, brutto (formatiert) sowie nettoEur, vatEur, bruttoEur (Zahlen)",
+  },
+  {
+    name: "coupon",
+    placeholder:
+      "{{#if coupon}}{{coupon.description}}: {{coupon.discountLabel}}{{/if}}",
+    label: "Gutschein (strukturiert)",
+    description:
+      "Gutschein mit description und discountLabel – null, wenn kein Gutschein eingelöst wurde",
+  },
+];
+
+const PDF_BOOKING_VARIABLE = {
+  name: "booking",
+  placeholder: "{{booking.id}}",
+  label: "Buchung (strukturiert)",
+  description:
+    "Nur Einzeldokumente: Buchung mit id, period, paymentDate, paymentMethod",
+};
+
+const PDF_BOOKINGS_VARIABLE = {
+  name: "bookings",
+  placeholder: "{{#each bookings}}{{id}}: {{netto}} {{/each}}",
+  label: "Buchungen (strukturiert)",
+  description:
+    "Nur Sammel-Dokumente: Array der Buchungen mit id, period, paymentDate, paymentMethod, netto, items",
+};
+
+const PDF_HELPER_VARIABLES = [
+  {
+    name: "formatCurrency",
+    placeholder: "{{formatCurrency totals.bruttoEur}}",
+    label: "Helper: Währung formatieren",
+    description: "Formatiert eine Zahl als Euro-Betrag (z. B. 1.234,56 €)",
+    category: "helper",
+  },
+  {
+    name: "formatNegativeCurrency",
+    placeholder: "{{formatNegativeCurrency totals.bruttoEur}}",
+    label: "Helper: Negative Währung",
+    description: "Formatiert eine Zahl als negativen Euro-Betrag",
+    category: "helper",
+  },
+  {
+    name: "formatAmount",
+    placeholder: "{{formatAmount totals.bruttoEur}}",
+    label: "Helper: Betrag ohne Währungszeichen",
+    description: "Formatiert eine Zahl mit zwei Nachkommastellen",
+    category: "helper",
+  },
+  {
+    name: "formatDate",
+    placeholder: "{{formatDate \"2026-08-01\"}}",
+    label: "Helper: Datum formatieren",
+    description:
+      "Formatiert ein Datum (ISO-Format oder Zeitstempel) als TT.MM.JJJJ",
+    category: "helper",
+  },
+  {
+    name: "formatDateTime",
+    placeholder: "{{formatDateTime \"2026-08-01T09:30:00\"}}",
+    label: "Helper: Datum + Uhrzeit formatieren",
+    description:
+      "Formatiert ein Datum (ISO-Format oder Zeitstempel) als TT.MM.JJJJ, HH:MM",
+    category: "helper",
+  },
+  {
+    name: "payMethod",
+    placeholder: "{{payMethod \"TRANSFER\"}}",
+    label: "Helper: Zahlart übersetzen",
+    description: "Übersetzt Zahlart-Codes (z. B. TRANSFER → Überweisung)",
+    category: "helper",
+  },
+];
+
+const PDF_BOOKING_ITEMS_TABLE_PARTIAL = (tableClass) => ({
+  name: "pdfBookingItemsTable",
+  placeholder: `{{> pdfBookingItemsTable tableClass="${tableClass}" items=items coupon=coupon totals=totals}}`,
+  label: "Partial: Positionstabelle",
+  description:
+    "Zentrale Positionstabelle inkl. Gutschein-Zeile und Summenblock (Alternative zur Legacy-Tabelle)",
+  category: "partial",
+});
+
+const PDF_AGGREGATED_RECEIPT_TABLE_PARTIAL = {
+  name: "pdfAggregatedReceiptTable",
+  placeholder: "{{> pdfAggregatedReceiptTable bookings=bookings totals=totals}}",
+  label: "Partial: Sammelbeleg-Tabelle",
+  description: "Tabelle der Buchungen für Sammelbelege inkl. Summenblock",
+  category: "partial",
+};
+
+const PDF_AGGREGATED_BOOKINGS_TABLE_PARTIAL = {
+  name: "pdfAggregatedBookingsTable",
+  placeholder:
+    "{{> pdfAggregatedBookingsTable bookings=bookings totals=totals}}",
+  label: "Partial: Sammelrechnungs-Tabelle",
+  description:
+    "Tabelle der Buchungen für Sammelrechnungen/-storni inkl. Summenblock",
+  category: "partial",
+};
+
 export const RECEIPT_VARIABLES = [
   {
     name: "receiptNumber",
@@ -68,10 +193,11 @@ export const RECEIPT_VARIABLES = [
   },
   {
     name: "isAggregated",
-    placeholder: "{{#if isAggregated}} … {{else}} … {{/if}}",
+    placeholder:
+      "{{#if isAggregated}}Text für Sammelbeleg{{else}}Text für Einzelbeleg{{/if}}",
     label: "Sammelbeleg-Bedingung",
     description:
-      "Bedingte Anweisung, die angibt, ob es sich um eine Sammelbuchung handelt",
+      "Bedingte Anweisung, die angibt, ob es sich um eine Sammelbuchung handelt – Texte in den Zweigen anpassen",
   },
   {
     name: "bookingEntries",
@@ -79,6 +205,19 @@ export const RECEIPT_VARIABLES = [
     label: "Buchungstabelle",
     description: "HTML-Tabelle mit Details der gebuchten Objekte",
   },
+  {
+    name: "bookingId",
+    placeholder: "{{booking.id}}",
+    label: "Buchungsnummer",
+    description:
+      "Nummer der Buchung (nur Einzelbeleg; bei Sammelbelegen stehen die Nummern in der Buchungsliste)",
+  },
+  ...PDF_STRUCTURED_VARIABLES,
+  PDF_BOOKING_VARIABLE,
+  PDF_BOOKINGS_VARIABLE,
+  ...PDF_HELPER_VARIABLES,
+  PDF_BOOKING_ITEMS_TABLE_PARTIAL("booking-detail"),
+  PDF_AGGREGATED_RECEIPT_TABLE_PARTIAL,
 ];
 
 export const INVOICE_VARIABLES = [
@@ -156,6 +295,12 @@ export const INVOICE_VARIABLES = [
     label: "Verwendungszweck",
     description: "Verwendungszweck",
   },
+  ...PDF_STRUCTURED_VARIABLES,
+  PDF_BOOKING_VARIABLE,
+  PDF_BOOKINGS_VARIABLE,
+  ...PDF_HELPER_VARIABLES,
+  PDF_BOOKING_ITEMS_TABLE_PARTIAL("booked-items"),
+  PDF_AGGREGATED_BOOKINGS_TABLE_PARTIAL,
 ];
 
 export const CANCELLATION_VARIABLES = [
@@ -216,10 +361,11 @@ export const CANCELLATION_VARIABLES = [
   },
   {
     name: "alreadyPaid",
-    placeholder: "{{#if alreadyPaid}} … {{else}} … {{/if}}",
+    placeholder:
+      "{{#if alreadyPaid}}Text bei erfolgter Zahlung{{else}}Text ohne Zahlung{{/if}}",
     label: "Bereits bezahlt (Bedingung)",
     description:
-      "Steuert, ob Erstattungs- oder Storno-ohne-Zahlung-Hinweis angezeigt wird",
+      "Steuert, ob Erstattungs- oder Storno-ohne-Zahlung-Hinweis angezeigt wird – Texte in den Zweigen anpassen",
   },
   {
     name: "mainContent",
@@ -239,6 +385,12 @@ export const CANCELLATION_VARIABLES = [
     label: "Gesamt-Stornobetrag",
     description: "Aufsummierter Stornobetrag",
   },
+  ...PDF_STRUCTURED_VARIABLES,
+  PDF_BOOKING_VARIABLE,
+  PDF_BOOKINGS_VARIABLE,
+  ...PDF_HELPER_VARIABLES,
+  PDF_BOOKING_ITEMS_TABLE_PARTIAL("booked-items"),
+  PDF_AGGREGATED_BOOKINGS_TABLE_PARTIAL,
 ];
 
 
@@ -344,6 +496,95 @@ const SAMPLE_CANCELLATION_MAIN_CONTENT =
   "  </tbody>\n" +
   "</table>";
 
+// Strukturierte Beispieldaten für die Browser-Vorschau, konsistent zum
+// Backend-Sample (src/commons/pdf-service/pdf-sample-data.js).
+function buildPdfSampleItems({ negative = false } = {}) {
+  const format = negative ? pdfFormatNegativeCurrency : pdfFormatCurrency;
+  const titles = [
+    "Sitzungsraum Rathaus",
+    "Beamer inkl. Leinwand",
+    "Bestuhlung (Reihe)",
+    "Sporthalle Feld 1",
+    "Werkraum Volkshochschule",
+    "Marktstand Wochenmarkt",
+  ];
+  return titles.map((title, i) => {
+    const unitPriceEur = 12.5 + (i % 5) * 7.25;
+    const amount = (i % 3) + 1;
+    const totalPriceEur = unitPriceEur * amount;
+    return {
+      title: `${title} – Position ${i + 1}`,
+      amount,
+      unitPriceEur,
+      totalPriceEur,
+      unitPrice: format(unitPriceEur),
+      totalPrice: format(totalPriceEur),
+    };
+  });
+}
+
+function buildPdfSampleTotals(items, { negative = false } = {}) {
+  const format = negative ? pdfFormatNegativeCurrency : pdfFormatCurrency;
+  const bruttoEur = items.reduce((sum, item) => sum + item.totalPriceEur, 0);
+  const vatEur = bruttoEur * 0.19;
+  const nettoEur = bruttoEur - vatEur;
+  return {
+    nettoEur,
+    vatEur,
+    bruttoEur,
+    netto: format(nettoEur),
+    vat: format(vatEur),
+    brutto: format(bruttoEur),
+  };
+}
+
+const PDF_SAMPLE_ITEMS = buildPdfSampleItems();
+const PDF_SAMPLE_TOTALS = buildPdfSampleTotals(PDF_SAMPLE_ITEMS);
+const PDF_SAMPLE_ITEMS_NEGATIVE = buildPdfSampleItems({ negative: true });
+const PDF_SAMPLE_TOTALS_NEGATIVE = buildPdfSampleTotals(
+  PDF_SAMPLE_ITEMS_NEGATIVE,
+  { negative: true },
+);
+
+const PDF_SAMPLE_BOOKING = {
+  id: "BK-2026-0042",
+  period: "01.08.2026, 09:00 – 01.08.2026, 17:00",
+  paymentDate: "15.07.2026, 10:24",
+  paymentMethod: "Überweisung",
+  hasPayment: true,
+  summaryItems: PDF_SAMPLE_ITEMS.map((item) => ({
+    label: item.title,
+    amount: item.amount,
+  })),
+};
+
+const PDF_SAMPLE_BOOKINGS = [
+  {
+    id: "BK-2026-0042",
+    period: "01.08.2026, 09:00 – 01.08.2026, 17:00",
+    paymentDate: "15.07.2026, 10:24",
+    paymentMethod: "Überweisung",
+    netto: PDF_SAMPLE_TOTALS.netto,
+    items: PDF_SAMPLE_ITEMS.slice(0, 2),
+    summaryItems: PDF_SAMPLE_ITEMS.slice(0, 2).map((item) => ({
+      label: item.title,
+      amount: item.amount,
+    })),
+  },
+  {
+    id: "BK-2026-0043",
+    period: "05.08.2026, 14:00 – 05.08.2026, 18:00",
+    paymentDate: "16.07.2026, 09:12",
+    paymentMethod: "Kreditkarte",
+    netto: PDF_SAMPLE_TOTALS.netto,
+    items: PDF_SAMPLE_ITEMS.slice(2, 4),
+    summaryItems: PDF_SAMPLE_ITEMS.slice(2, 4).map((item) => ({
+      label: item.title,
+      amount: item.amount,
+    })),
+  },
+];
+
 export const SAMPLE_DATA = {
   snippet: {
     tenantName: "Beispiel-Mandant",
@@ -367,6 +608,11 @@ export const SAMPLE_DATA = {
     bookingDate: "20.05.2026",
     receiptAddress: SAMPLE_RECEIPT_ADDRESS,
     bookingEntries: SAMPLE_BOOKING_ENTRIES,
+    booking: PDF_SAMPLE_BOOKING,
+    bookings: PDF_SAMPLE_BOOKINGS,
+    items: PDF_SAMPLE_ITEMS,
+    coupon: null,
+    totals: PDF_SAMPLE_TOTALS,
   },
   invoice: {
     title: "Ihre Rechnung",
@@ -384,6 +630,11 @@ export const SAMPLE_DATA = {
     totalAmount: "120,00",
     invoiceAddress: SAMPLE_INVOICE_ADDRESS,
     mainContent: SAMPLE_INVOICE_MAIN_CONTENT,
+    booking: PDF_SAMPLE_BOOKING,
+    bookings: PDF_SAMPLE_BOOKINGS,
+    items: PDF_SAMPLE_ITEMS,
+    coupon: null,
+    totals: PDF_SAMPLE_TOTALS,
   },
   cancellation: {
     title: "Stornorechnung",
@@ -407,6 +658,11 @@ export const SAMPLE_DATA = {
       "        IBAN: DE12 3456 7890 1234 5678 90<br />\n" +
       "        BIC: MUSTDEXXXXX\n" +
       "      </div>",
+    booking: PDF_SAMPLE_BOOKING,
+    bookings: PDF_SAMPLE_BOOKINGS,
+    items: PDF_SAMPLE_ITEMS_NEGATIVE,
+    coupon: null,
+    totals: PDF_SAMPLE_TOTALS_NEGATIVE,
   },
 };
 
