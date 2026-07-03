@@ -1,98 +1,5 @@
 <template>
   <BaseSection title="Zahlungs-Konfiguration" icon="mdi-credit-card">
-    <SubSection
-      title="Zahlungs- und Stornobelege"
-      icon="fa-file-invoice-dollar"
-    >
-      <div class="pdf-booking-layout-section mb-6">
-        <PdfBookingLayoutPicker v-model="pdfBookingLayoutModel" />
-      </div>
-      <v-row>
-        <v-col class="col-12 col-md-3">
-          <v-text-field
-            background-color="accent"
-            filled
-            dense
-            label="Belegnummer Präfix"
-            v-model="modelTenant.receiptNumberPrefix"
-          />
-        </v-col>
-        <v-col>
-          <v-card
-            :color="
-              modelTenant?.receiptTemplate
-                ? 'success lighten-5'
-                : 'error lighten-5'
-            "
-            class="rounded"
-          >
-            <v-card-text
-              :class="
-                (modelTenant?.receiptTemplate ? 'success' : 'error') +
-                '--text text--darken-1 d-flex justify-space-between align-center'
-              "
-            >
-              <div>
-                <v-icon left>{{
-                  modelTenant?.receiptTemplate ? "mdi-check" : "mdi-close"
-                }}</v-icon>
-                {{
-                  modelTenant?.receiptTemplate
-                    ? "Es ist eine Zahlungsbelegvorlage hinterlegt."
-                    : "Es ist keine Zahlungsbelegvorlage hinterlegt."
-                }}
-              </div>
-              <v-btn small outlined @click="$emit('open-receipt-template')"
-                >bearbeiten</v-btn
-              >
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <v-row>
-        <v-col class="col-12 col-md-3"
-          ><v-text-field
-            background-color="accent"
-            filled
-            dense
-            label="Stornonummer Präfix"
-            v-model="modelTenant.cancellationNumberPrefix"
-        /></v-col>
-        <v-col>
-          <v-card
-            :color="
-              modelTenant?.cancellationTemplate
-                ? 'success lighten-5'
-                : 'error lighten-5'
-            "
-            class="rounded"
-          >
-            <v-card-text
-              :class="
-                (modelTenant?.cancellationTemplate ? 'success' : 'error') +
-                '--text text--darken-1 d-flex justify-space-between align-center'
-              "
-            >
-              <div>
-                <v-icon left>{{
-                  modelTenant?.cancellationTemplate ? "mdi-check" : "mdi-close"
-                }}</v-icon>
-                {{
-                  modelTenant?.cancellationTemplate
-                    ? "Es ist eine Stornobelegvorlage hinterlegt."
-                    : "Es ist keine Stornobelegvorlage hinterlegt."
-                }}
-              </div>
-              <v-btn small outlined @click="$emit('open-cancellation-template')"
-                >bearbeiten</v-btn
-              >
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-    </SubSection>
-
     <SubSection title="Zahlungsanbieter" icon="fa-credit-card">
       <div class="text--secondary caption mb-2">
         Hier können Sie die Zugangsdaten für die Zahlungsanbieter konfigurieren,
@@ -587,6 +494,99 @@
           roles-hint="Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, per Rechnung zu bezahlen."
         />
       </AppPanel>
+    </SubSection>
+
+    <SubSection
+      title="Zahlungs- und Stornobelege"
+      icon="fa-file-invoice-dollar"
+    >
+      <div class="pdf-booking-layout-section mb-6">
+        <PdfBookingLayoutPicker v-model="pdfBookingLayoutModel" />
+      </div>
+      <v-row>
+        <v-col class="col-12 col-md-3">
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Belegnummer Präfix"
+            v-model="modelTenant.receiptNumberPrefix"
+          />
+        </v-col>
+        <v-col>
+          <v-card
+            :color="
+              modelTenant?.receiptTemplate
+                ? 'success lighten-5'
+                : 'error lighten-5'
+            "
+            class="rounded"
+          >
+            <v-card-text
+              :class="
+                (modelTenant?.receiptTemplate ? 'success' : 'error') +
+                '--text text--darken-1 d-flex justify-space-between align-center'
+              "
+            >
+              <div>
+                <v-icon left>{{
+                  modelTenant?.receiptTemplate ? "mdi-check" : "mdi-close"
+                }}</v-icon>
+                {{
+                  modelTenant?.receiptTemplate
+                    ? "Es ist eine Zahlungsbelegvorlage hinterlegt."
+                    : "Es ist keine Zahlungsbelegvorlage hinterlegt."
+                }}
+              </div>
+              <v-btn small outlined @click="$emit('open-receipt-template')"
+                >bearbeiten</v-btn
+              >
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col class="col-12 col-md-3"
+          ><v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Stornonummer Präfix"
+            v-model="modelTenant.cancellationNumberPrefix"
+        /></v-col>
+        <v-col>
+          <v-card
+            :color="
+              modelTenant?.cancellationTemplate
+                ? 'success lighten-5'
+                : 'error lighten-5'
+            "
+            class="rounded"
+          >
+            <v-card-text
+              :class="
+                (modelTenant?.cancellationTemplate ? 'success' : 'error') +
+                '--text text--darken-1 d-flex justify-space-between align-center'
+              "
+            >
+              <div>
+                <v-icon left>{{
+                  modelTenant?.cancellationTemplate ? "mdi-check" : "mdi-close"
+                }}</v-icon>
+                {{
+                  modelTenant?.cancellationTemplate
+                    ? "Es ist eine Stornobelegvorlage hinterlegt."
+                    : "Es ist keine Stornobelegvorlage hinterlegt."
+                }}
+              </div>
+              <v-btn small outlined @click="$emit('open-cancellation-template')"
+                >bearbeiten</v-btn
+              >
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
     </SubSection>
 
     <v-dialog v-model="showTestResultDialog" max-width="640" scrollable>
