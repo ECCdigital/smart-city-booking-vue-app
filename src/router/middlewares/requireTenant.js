@@ -26,7 +26,7 @@ export function requireTenant({ to, next }) {
 
   const currentTenantId = store.getters["tenants/currentTenantId"];
   if (!currentTenantId) {
-    return next({ name: "dashboard" });
+    return next({ name: "dashboard", query: { redirect: to.fullPath } });
   }
 
   return next();

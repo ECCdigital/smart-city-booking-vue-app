@@ -1,5 +1,9 @@
 export function groupUsesInvoicePayment(bookings = []) {
-  return bookings.length > 0 && bookings.every((b) => b.paymentProvider === "invoice");
+  const validBookings = bookings.filter(Boolean);
+  return (
+    validBookings.length > 0 &&
+    validBookings.every((b) => b.paymentProvider === "invoice")
+  );
 }
 
 export function collectGroupInvoices(bookings = []) {
@@ -7,6 +11,8 @@ export function collectGroupInvoices(bookings = []) {
   const invoices = [];
 
   for (const booking of bookings) {
+    if (!booking) continue;
+
     for (const attachment of booking.attachments || []) {
       if (attachment.type !== "invoice") continue;
 

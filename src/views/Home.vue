@@ -252,6 +252,11 @@ export default {
     },
     async selectTenant(tenantId) {
       await this.select(tenantId);
+      const redirect = this.$route.query.redirect;
+      if (typeof redirect === "string" && redirect.startsWith("/")) {
+        await this.$router.push(redirect);
+        return;
+      }
       await this.$router.push({ name: "bookings" });
     },
     onOpenCreateTenant() {

@@ -7,8 +7,8 @@ function resolveLayout(layout) {
   return VALID_LAYOUTS.includes(layout) ? layout : DEFAULT_LAYOUT;
 }
 
-function renderPartial(Handlebars, name, data) {
-  return Handlebars.compile(`{{> ${name} }}`)(data);
+function renderPartial(Handlebars, data) {
+  return Handlebars.compile("{{> pdfBookingItemsTable }}")(data);
 }
 
 function buildSummaryItems(items = []) {
@@ -66,12 +66,12 @@ export function buildPdfPreviewSampleData(templateType, layout, Handlebars) {
   };
 
   if (templateType === "receipt") {
-    result.bookingEntries = renderPartial(Handlebars, "pdfBookingItemsTable", {
+    result.bookingEntries = renderPartial(Handlebars, {
       ...tablePayload,
       tableClass: "booking-detail",
     });
   } else {
-    result.mainContent = renderPartial(Handlebars, "pdfBookingItemsTable", {
+    result.mainContent = renderPartial(Handlebars, {
       ...tablePayload,
       tableClass: "booked-items",
       booking: enrichBooking(base.booking, base.items, {

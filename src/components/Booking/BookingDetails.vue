@@ -312,6 +312,7 @@
                       small
                       color="primary"
                       :loading="invoiceLoading"
+                      :disabled="invoiceGenerateLoading"
                       @click="generateAndSendInvoice"
                     >
                       <v-icon left small>mdi-email-fast-outline</v-icon>
@@ -325,6 +326,7 @@
                       small
                       outlined
                       :loading="invoiceGenerateLoading"
+                      :disabled="invoiceLoading"
                       @click="generateInvoiceOnly"
                     >
                       <v-icon left small>mdi-file-plus-outline</v-icon>
@@ -1563,18 +1565,28 @@ export default {
       const operationId = ProcessingService.showSnackbar(
         "Stelle Rechnung bereit..."
       );
-      ApiBookingService.getInvoice(this.booking.id, name).then((response) => {
-        const blob = new Blob([response.data], {
-          type: "application/pdf",
+      ApiBookingService.getInvoice(this.booking.id, name)
+        .then((response) => {
+          const blob = new Blob([response.data], {
+            type: "application/pdf",
+          });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", name);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(() => {
+          this.addToast(
+            ToastService.createToast("invoice.download.error", "error")
+          );
+        })
+        .finally(() => {
+          ProcessingService.hide(operationId);
         });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", name);
-        document.body.appendChild(link);
-        link.click();
-        ProcessingService.hide(operationId);
-      });
     },
     downloadCancellationReceipt(name) {
       const operationId = ProcessingService.showSnackbar(

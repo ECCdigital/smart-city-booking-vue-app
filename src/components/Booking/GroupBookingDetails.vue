@@ -188,6 +188,7 @@
                   small
                   color="primary"
                   :loading="invoiceLoading"
+                  :disabled="invoiceGenerateLoading"
                   @click="createGroupInvoice(true)"
                 >
                   <v-icon left small>mdi-email-fast-outline</v-icon>
@@ -201,6 +202,7 @@
                   small
                   outlined
                   :loading="invoiceGenerateLoading"
+                  :disabled="invoiceLoading"
                   @click="createGroupInvoice(false)"
                 >
                   <v-icon left small>mdi-file-plus-outline</v-icon>
@@ -221,7 +223,10 @@
           <v-card-text class="pa-0" v-if="invoices.length > 0">
             <v-list dense>
               <template v-for="(item, index) in invoices">
-                <v-list-item :key="item.name" class="px-4">
+                <v-list-item
+                  :key="item.name || `${item.invoiceId}-${item.revision ?? 0}`"
+                  class="px-4"
+                >
                   <v-list-item-avatar color="success lighten-4">
                     <v-icon color="success">mdi-file-pdf-box</v-icon>
                   </v-list-item-avatar>
@@ -325,10 +330,9 @@ export default {
     },
     totalPriceEur() {
       if (!this.groupBooking.bookings) return 0;
-      return this.groupBooking.bookings.reduce(
-        (acc, booking) => acc + (booking.priceEur || 0),
-        0
-      );
+      return this.groupBooking.bookings
+        .filter(Boolean)
+        .reduce((acc, booking) => acc + (booking.priceEur || 0), 0);
     },
     formattedDate() {
       return Intl.DateTimeFormat("de-DE", {
@@ -407,8 +411,8 @@ export default {
       const operationId = ProcessingService.showSnackbar(
         "Stelle Rechnung bereit..."
       );
-      ApiBookingService.getInvoice(item.bookingId, item.name).then(
-        (response) => {
+      ApiBookingService.getInvoice(item.bookingId, item.name)
+        .then((response) => {
           const blob = new Blob([response.data], {
             type: "application/pdf",
           });
@@ -418,9 +422,17 @@ export default {
           link.setAttribute("download", item.name);
           document.body.appendChild(link);
           link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(() => {
+          this.addToast(
+            ToastService.createToast("invoice.download.error", "error")
+          );
+        })
+        .finally(() => {
           ProcessingService.hide(operationId);
-        }
-      );
+        });
     },
     startEditingComment() {
       this.editedComment = this.groupBooking.internalComments || "";

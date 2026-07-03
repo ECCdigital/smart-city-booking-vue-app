@@ -761,11 +761,11 @@ export default {
         {},
         {
           ...groupBooking,
-          bookings: groupBooking.bookingIds.map((bookingId) => {
-            return this.api.bookings.find(
-              (booking) => booking.id === bookingId
-            );
-          }),
+          bookings: groupBooking.bookingIds
+            .map((bookingId) =>
+              this.api.bookings.find((booking) => booking.id === bookingId)
+            )
+            .filter(Boolean),
         }
       );
       this.openGroupBookingDialog = true;
@@ -841,9 +841,11 @@ export default {
         {},
         {
           ...groupBooking,
-          bookings: groupBooking.bookingIds.map((bookingId) =>
-            this.api.bookings.find((booking) => booking.id === bookingId)
-          ),
+          bookings: groupBooking.bookingIds
+            .map((bookingId) =>
+              this.api.bookings.find((booking) => booking.id === bookingId)
+            )
+            .filter(Boolean),
         }
       );
     },

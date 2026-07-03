@@ -707,6 +707,12 @@
         "title": "Fehler beim Erstellen",
         "message": "Die Rechnung konnte nicht erstellt werden."
       }
+    },
+    "download": {
+      "error": {
+        "title": "Fehler beim Herunterladen",
+        "message": "Die Rechnung konnte nicht heruntergeladen werden."
+      }
     }
   }
 }

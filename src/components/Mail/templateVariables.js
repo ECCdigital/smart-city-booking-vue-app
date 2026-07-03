@@ -500,6 +500,7 @@ const SAMPLE_CANCELLATION_MAIN_CONTENT =
 // Backend-Sample (src/commons/pdf-service/pdf-sample-data.js).
 function buildPdfSampleItems({ negative = false } = {}) {
   const format = negative ? pdfFormatNegativeCurrency : pdfFormatCurrency;
+  const sign = negative ? -1 : 1;
   const titles = [
     "Sitzungsraum Rathaus",
     "Beamer inkl. Leinwand",
@@ -509,7 +510,7 @@ function buildPdfSampleItems({ negative = false } = {}) {
     "Marktstand Wochenmarkt",
   ];
   return titles.map((title, i) => {
-    const unitPriceEur = 12.5 + (i % 5) * 7.25;
+    const unitPriceEur = sign * (12.5 + (i % 5) * 7.25);
     const amount = (i % 3) + 1;
     const totalPriceEur = unitPriceEur * amount;
     return {
@@ -526,8 +527,8 @@ function buildPdfSampleItems({ negative = false } = {}) {
 function buildPdfSampleTotals(items, { negative = false } = {}) {
   const format = negative ? pdfFormatNegativeCurrency : pdfFormatCurrency;
   const bruttoEur = items.reduce((sum, item) => sum + item.totalPriceEur, 0);
-  const vatEur = bruttoEur * 0.19;
-  const nettoEur = bruttoEur - vatEur;
+  const nettoEur = bruttoEur / 1.19;
+  const vatEur = bruttoEur - nettoEur;
   return {
     nettoEur,
     vatEur,
@@ -579,6 +580,41 @@ const PDF_SAMPLE_BOOKINGS = [
     netto: PDF_SAMPLE_TOTALS.netto,
     items: PDF_SAMPLE_ITEMS.slice(2, 4),
     summaryItems: PDF_SAMPLE_ITEMS.slice(2, 4).map((item) => ({
+      label: item.title,
+      amount: item.amount,
+    })),
+  },
+];
+
+const PDF_SAMPLE_BOOKING_NEGATIVE = {
+  ...PDF_SAMPLE_BOOKING,
+  summaryItems: PDF_SAMPLE_ITEMS_NEGATIVE.map((item) => ({
+    label: item.title,
+    amount: item.amount,
+  })),
+};
+
+const PDF_SAMPLE_BOOKINGS_NEGATIVE = [
+  {
+    id: "BK-2026-0042",
+    period: "01.08.2026, 09:00 – 01.08.2026, 17:00",
+    paymentDate: "15.07.2026, 10:24",
+    paymentMethod: "Überweisung",
+    netto: PDF_SAMPLE_TOTALS_NEGATIVE.netto,
+    items: PDF_SAMPLE_ITEMS_NEGATIVE.slice(0, 2),
+    summaryItems: PDF_SAMPLE_ITEMS_NEGATIVE.slice(0, 2).map((item) => ({
+      label: item.title,
+      amount: item.amount,
+    })),
+  },
+  {
+    id: "BK-2026-0043",
+    period: "05.08.2026, 14:00 – 05.08.2026, 18:00",
+    paymentDate: "16.07.2026, 09:12",
+    paymentMethod: "Kreditkarte",
+    netto: PDF_SAMPLE_TOTALS_NEGATIVE.netto,
+    items: PDF_SAMPLE_ITEMS_NEGATIVE.slice(2, 4),
+    summaryItems: PDF_SAMPLE_ITEMS_NEGATIVE.slice(2, 4).map((item) => ({
       label: item.title,
       amount: item.amount,
     })),
@@ -658,8 +694,8 @@ export const SAMPLE_DATA = {
       "        IBAN: DE12 3456 7890 1234 5678 90<br />\n" +
       "        BIC: MUSTDEXXXXX\n" +
       "      </div>",
-    booking: PDF_SAMPLE_BOOKING,
-    bookings: PDF_SAMPLE_BOOKINGS,
+    booking: PDF_SAMPLE_BOOKING_NEGATIVE,
+    bookings: PDF_SAMPLE_BOOKINGS_NEGATIVE,
     items: PDF_SAMPLE_ITEMS_NEGATIVE,
     coupon: null,
     totals: PDF_SAMPLE_TOTALS_NEGATIVE,
