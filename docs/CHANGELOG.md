@@ -11,6 +11,13 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 - Series bookings in booking details can now have collective invoices created, with a choice between collective and single invoice — consistent with the existing collective receipt flow
 - Collective invoices for series bookings can also be created and downloaded from the series booking overview
+- PDF templates for receipts, invoices, and cancellations: choose how booking details are displayed (compact overview, single line, or detailed table)
+- Per tenant, control which booking information (number, period, payment date, payment method) appears in the PDF table — hidden fields remain available for placement elsewhere in the template
+- PDF template editor: preview with page breaks, optional header/footer on every page, and improved variable selection
+
+### Changed
+
+- PDF template settings for layout and booking fields are combined in one place under payment and receipt settings
 
 ## [4.1.2] — 2026-07-02
 
