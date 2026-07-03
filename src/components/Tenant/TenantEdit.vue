@@ -921,6 +921,7 @@
       :receipt-template="tenant.receiptTemplate"
       :tenant-id="tenant.id"
       :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
+      :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditTemplateDialog = false"
       @submit="onSubmitReceiptTemplate"
     />
@@ -929,6 +930,7 @@
       :invoice-template="tenant.invoiceTemplate"
       :tenant-id="tenant.id"
       :pdf-booking-layout="tenant.pdfBookingLayout || 'detailed'"
+      :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
     />

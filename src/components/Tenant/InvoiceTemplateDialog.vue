@@ -5,6 +5,7 @@
     :value="invoiceTemplate"
     :tenant-id="tenantId"
     :pdf-booking-layout="pdfBookingLayout"
+    :pdf-booking-table-meta="pdfBookingTableMeta"
     @close="$emit('close')"
     @submit="onSubmit"
   />
@@ -21,6 +22,7 @@ export default {
     invoiceTemplate: { type: String, default: "" },
     tenantId: { type: String, default: "" },
     pdfBookingLayout: { type: String, default: "detailed" },
+    pdfBookingTableMeta: { type: Object, default: null },
   },
   methods: {
     onSubmit(value) {

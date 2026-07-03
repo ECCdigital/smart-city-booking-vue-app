@@ -501,7 +501,10 @@
       icon="fa-file-invoice-dollar"
     >
       <div class="pdf-booking-layout-section mb-6">
-        <PdfBookingLayoutPicker v-model="pdfBookingLayoutModel" />
+        <PdfBookingLayoutPicker
+          v-model="pdfBookingLayoutModel"
+          :table-meta.sync="pdfBookingTableMetaModel"
+        />
       </div>
       <v-row>
         <v-col class="col-12 col-md-3">
@@ -781,6 +784,7 @@ import SubSection from "@/components/commons/SubSection.vue";
 import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 
 import PdfBookingLayoutPicker from "@/components/PDF/PdfBookingLayoutPicker.vue";
+import { normalizePdfBookingTableMeta } from "@/components/PDF/pdfBookingTableMeta.js";
 
 export default {
   name: "TenantEditPayments",
@@ -868,6 +872,17 @@ export default {
         this.$emit("update:tenant", {
           ...this.modelTenant,
           pdfBookingLayout: value,
+        });
+      },
+    },
+    pdfBookingTableMetaModel: {
+      get() {
+        return normalizePdfBookingTableMeta(this.modelTenant.pdfBookingTableMeta);
+      },
+      set(value) {
+        this.$emit("update:tenant", {
+          ...this.modelTenant,
+          pdfBookingTableMeta: normalizePdfBookingTableMeta(value),
         });
       },
     },

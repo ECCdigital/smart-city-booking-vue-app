@@ -1,4 +1,8 @@
 import { SAMPLE_DATA } from "@/components/Mail/templateVariables.js";
+import {
+  resolveBookingTableMeta,
+  buildCompactMetaHtml,
+} from "@/components/PDF/pdfBookingTableMeta.js";
 
 const VALID_LAYOUTS = ["summary", "compact", "detailed"];
 const DEFAULT_LAYOUT = "detailed";
@@ -38,7 +42,12 @@ function enrichBookings(bookings = []) {
  * Builds preview sample data for the PDF template editor, rendering
  * bookingEntries / mainContent with the same partials as the backend.
  */
-export function buildPdfPreviewSampleData(templateType, layout, Handlebars) {
+export function buildPdfPreviewSampleData(
+  templateType,
+  layout,
+  Handlebars,
+  pdfBookingTableMeta = null,
+) {
   const base = SAMPLE_DATA[templateType];
   if (!base || !Handlebars) {
     return base || {};
@@ -50,6 +59,9 @@ export function buildPdfPreviewSampleData(templateType, layout, Handlebars) {
     includePayment,
   });
   const bookings = enrichBookings(base.bookings);
+  const tableMeta = resolveBookingTableMeta(
+    pdfBookingTableMeta ? { pdfBookingTableMeta } : null,
+  );
 
   const tablePayload = {
     layout: resolvedLayout,
@@ -57,6 +69,8 @@ export function buildPdfPreviewSampleData(templateType, layout, Handlebars) {
     coupon: base.coupon,
     totals: base.totals,
     booking,
+    tableMeta,
+    compactMetaHtml: buildCompactMetaHtml(booking, tableMeta),
   };
 
   const result = {

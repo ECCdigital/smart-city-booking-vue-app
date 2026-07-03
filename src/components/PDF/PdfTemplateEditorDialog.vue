@@ -179,6 +179,7 @@
                       : "Live-Vorschau (mit Demodaten)"
                   }}
                   · Buchungsdarstellung: {{ pdfBookingLayoutLabel }}
+                  · {{ pdfBookingTableMetaLabel }}
                 </v-toolbar-title>
                 <v-spacer />
                 <v-btn-toggle
@@ -420,6 +421,7 @@ import {
   buildPdfPreviewSampleData,
   DEFAULT_PDF_BOOKING_LAYOUT,
 } from "@/components/PDF/pdfSampleDataBuilder.js";
+import { normalizePdfBookingTableMeta } from "@/components/PDF/pdfBookingTableMeta.js";
 
 export default {
   name: "PdfTemplateEditorDialog",
@@ -436,6 +438,10 @@ export default {
     pdfBookingLayout: {
       type: String,
       default: DEFAULT_PDF_BOOKING_LAYOUT,
+    },
+    pdfBookingTableMeta: {
+      type: Object,
+      default: null,
     },
   },
   data() {
@@ -515,6 +521,24 @@ export default {
       };
       return labels[this.pdfBookingLayout] || labels.detailed;
     },
+    resolvedPdfBookingTableMeta() {
+      return normalizePdfBookingTableMeta(this.pdfBookingTableMeta);
+    },
+    pdfBookingTableMetaLabel() {
+      const labels = {
+        showBookingId: "Nummer",
+        showBookingPeriod: "Zeitraum",
+        showPaymentDate: "Zahlungsdatum",
+        showPaymentMethod: "Zahlungsmethode",
+      };
+      const hidden = Object.entries(this.resolvedPdfBookingTableMeta)
+        .filter(([, value]) => value === false)
+        .map(([key]) => labels[key]);
+      if (!hidden.length) {
+        return "alle Buchungsfelder in Tabelle";
+      }
+      return `ausgeblendet in Tabelle: ${hidden.join(", ")}`;
+    },
     groupedVariables() {
       const variables = (this.catalog && this.catalog.variables) || [];
       return [
@@ -581,6 +605,20 @@ export default {
           this.schedulePreviewUpdate();
         }
       }
+    },
+    pdfBookingTableMeta: {
+      deep: true,
+      handler() {
+        if (!this.open) return;
+        this.previewSampleDataCache = null;
+        if (this.activeTab === 1) {
+          if (this.previewMode === "pdf") {
+            this.refreshPdfPreview();
+          } else {
+            this.schedulePreviewUpdate();
+          }
+        }
+      },
     },
     pageHeaderHtml() {
       this.onPageTemplatesChange();
@@ -831,6 +869,7 @@ export default {
         this.templateType,
         this.pdfBookingLayout,
         hb,
+        this.resolvedPdfBookingTableMeta,
       );
     },
     schedulePreviewUpdate() {
@@ -922,6 +961,7 @@ export default {
           this.templateType,
           this.composeOutput(),
           this.pdfBookingLayout,
+          this.resolvedPdfBookingTableMeta,
         );
         if (token !== this.pdfRequestToken) return;
         if (this.pdfUrl) {

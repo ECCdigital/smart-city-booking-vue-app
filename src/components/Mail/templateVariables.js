@@ -82,6 +82,37 @@ const PDF_STRUCTURED_VARIABLES = [
   },
 ];
 
+const PDF_BOOKING_FIELD_VARIABLES = [
+  {
+    name: "booking.id",
+    placeholder: "{{booking.id}}",
+    label: "Buchungsnummer (Variable)",
+    description:
+      "Nummer der Buchung — unabhängig von der Tabellen-Einstellung platzierbar",
+  },
+  {
+    name: "booking.period",
+    placeholder: "{{booking.period}}",
+    label: "Buchungszeitraum (Variable)",
+    description:
+      "Zeitraum der Buchung — unabhängig von der Tabellen-Einstellung platzierbar",
+  },
+  {
+    name: "booking.paymentDate",
+    placeholder: "{{booking.paymentDate}}",
+    label: "Zahlungsdatum (Variable)",
+    description:
+      "Datum des Zahlungseingangs — unabhängig von der Tabellen-Einstellung platzierbar",
+  },
+  {
+    name: "booking.paymentMethod",
+    placeholder: "{{booking.paymentMethod}}",
+    label: "Zahlungsmethode (Variable)",
+    description:
+      "Art der Zahlung — unabhängig von der Tabellen-Einstellung platzierbar",
+  },
+];
+
 const PDF_BOOKING_VARIABLE = {
   name: "booking",
   placeholder: "{{booking.id}}",
@@ -147,28 +178,30 @@ const PDF_HELPER_VARIABLES = [
 
 const PDF_BOOKING_ITEMS_TABLE_PARTIAL = (tableClass) => ({
   name: "pdfBookingItemsTable",
-  placeholder: `{{> pdfBookingItemsTable tableClass="${tableClass}" items=items coupon=coupon totals=totals}}`,
+  placeholder: `{{> pdfBookingItemsTable tableClass="${tableClass}" items=items coupon=coupon totals=totals tableMeta=tableMeta}}`,
   label: "Partial: Positionstabelle",
   description:
-    "Zentrale Positionstabelle inkl. Gutschein-Zeile und Summenblock (Alternative zur Legacy-Tabelle)",
+    "Zentrale Positionstabelle inkl. Gutschein-Zeile und Summenblock (Alternative zur Legacy-Tabelle). tableMeta steuert sichtbare Buchungsfelder.",
   category: "partial",
 });
 
 const PDF_AGGREGATED_RECEIPT_TABLE_PARTIAL = {
   name: "pdfAggregatedReceiptTable",
-  placeholder: "{{> pdfAggregatedReceiptTable bookings=bookings totals=totals}}",
+  placeholder:
+    "{{> pdfAggregatedReceiptTable bookings=bookings totals=totals tableMeta=tableMeta}}",
   label: "Partial: Sammelbeleg-Tabelle",
-  description: "Tabelle der Buchungen für Sammelbelege inkl. Summenblock",
+  description:
+    "Tabelle der Buchungen für Sammelbelege inkl. Summenblock. tableMeta steuert sichtbare Buchungsfelder.",
   category: "partial",
 };
 
 const PDF_AGGREGATED_BOOKINGS_TABLE_PARTIAL = {
   name: "pdfAggregatedBookingsTable",
   placeholder:
-    "{{> pdfAggregatedBookingsTable bookings=bookings totals=totals}}",
+    "{{> pdfAggregatedBookingsTable bookings=bookings totals=totals tableMeta=tableMeta}}",
   label: "Partial: Sammelrechnungs-Tabelle",
   description:
-    "Tabelle der Buchungen für Sammelrechnungen/-storni inkl. Summenblock",
+    "Tabelle der Buchungen für Sammelrechnungen/-storni inkl. Summenblock. tableMeta steuert sichtbare Buchungsfelder.",
   category: "partial",
 };
 
@@ -213,6 +246,7 @@ export const RECEIPT_VARIABLES = [
       "Nummer der Buchung (nur Einzelbeleg; bei Sammelbelegen stehen die Nummern in der Buchungsliste)",
   },
   ...PDF_STRUCTURED_VARIABLES,
+  ...PDF_BOOKING_FIELD_VARIABLES,
   PDF_BOOKING_VARIABLE,
   PDF_BOOKINGS_VARIABLE,
   ...PDF_HELPER_VARIABLES,
@@ -296,6 +330,7 @@ export const INVOICE_VARIABLES = [
     description: "Verwendungszweck",
   },
   ...PDF_STRUCTURED_VARIABLES,
+  ...PDF_BOOKING_FIELD_VARIABLES,
   PDF_BOOKING_VARIABLE,
   PDF_BOOKINGS_VARIABLE,
   ...PDF_HELPER_VARIABLES,
@@ -386,13 +421,13 @@ export const CANCELLATION_VARIABLES = [
     description: "Aufsummierter Stornobetrag",
   },
   ...PDF_STRUCTURED_VARIABLES,
+  ...PDF_BOOKING_FIELD_VARIABLES,
   PDF_BOOKING_VARIABLE,
   PDF_BOOKINGS_VARIABLE,
   ...PDF_HELPER_VARIABLES,
   PDF_BOOKING_ITEMS_TABLE_PARTIAL("booked-items"),
   PDF_AGGREGATED_BOOKINGS_TABLE_PARTIAL,
 ];
-
 
 const SAMPLE_CUSTOMER_CONTACT =
   "<strong>Name:</strong> Max Mustermann<br />" +

@@ -77,10 +77,19 @@ export default {
     );
     return response.data;
   },
-  getPdfPreview(tenantId, templateType, template, pdfBookingLayout) {
+  getPdfPreview(
+    tenantId,
+    templateType,
+    template,
+    pdfBookingLayout,
+    pdfBookingTableMeta,
+  ) {
     const body = { templateType, template };
     if (pdfBookingLayout) {
       body.pdfBookingLayout = pdfBookingLayout;
+    }
+    if (pdfBookingTableMeta) {
+      body.pdfBookingTableMeta = pdfBookingTableMeta;
     }
     return ApiClient.post(`api/tenants/${tenantId}/pdf-preview`, body, {
       responseType: "blob",

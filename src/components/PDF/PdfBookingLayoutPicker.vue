@@ -2,8 +2,8 @@
   <div class="pdf-layout-picker">
     <div class="pdf-layout-picker__intro text--secondary body-2 mb-4">
       Darstellung der Buchungsinformationen in Belegen, Rechnungen und
-      Stornorechnungen. Die Vorschau zeigt den typischen Aufbau — die echten
-      Inhalte kommen aus Ihrer Vorlage.
+      Stornorechnungen. Die Miniaturvorschau zeigt den typischen Aufbau —
+      abhängig von Layout und den markierten Feldern darunter.
     </div>
 
     <v-radio-group
@@ -46,94 +46,91 @@
                 </div>
               </div>
 
-              <div
-                class="layout-skeleton mt-4"
-                :class="`layout-skeleton--${option.value}`"
-                aria-hidden="true"
-              >
-                <template v-if="option.value === 'summary'">
-                  <div class="layout-skeleton__kv-table">
-                    <div
-                      v-for="row in 5"
-                      :key="`summary-${row}`"
-                      class="layout-skeleton__kv-row"
-                    >
-                      <span class="layout-skeleton__bar layout-skeleton__bar--label" />
-                      <span class="layout-skeleton__bar layout-skeleton__bar--value" />
-                    </div>
-                  </div>
-                </template>
-
-                <template v-else-if="option.value === 'compact'">
-                  <div class="layout-skeleton__meta layout-skeleton__meta--single">
-                    <span class="layout-skeleton__bar layout-skeleton__bar--meta-line" />
-                  </div>
-                  <div class="layout-skeleton__table layout-skeleton__table--3col">
-                    <div class="layout-skeleton__table-head">
-                      <span /><span /><span />
-                    </div>
-                    <div
-                      v-for="row in 3"
-                      :key="`compact-${row}`"
-                      class="layout-skeleton__table-row"
-                    >
-                      <span class="layout-skeleton__bar layout-skeleton__bar--wide" />
-                      <span class="layout-skeleton__bar layout-skeleton__bar--short" />
-                      <span class="layout-skeleton__bar layout-skeleton__bar--short" />
-                    </div>
-                  </div>
-                </template>
-
-                <template v-else>
-                  <div class="layout-skeleton__meta layout-skeleton__meta--multi">
-                    <div
-                      v-for="row in 4"
-                      :key="`detailed-meta-${row}`"
-                      class="layout-skeleton__meta-line"
-                    >
-                      <span class="layout-skeleton__bar layout-skeleton__bar--meta-label" />
-                      <span class="layout-skeleton__bar layout-skeleton__bar--meta-value" />
-                    </div>
-                  </div>
-                  <div class="layout-skeleton__table layout-skeleton__table--4col">
-                    <div class="layout-skeleton__table-head">
-                      <span /><span /><span /><span />
-                    </div>
-                    <div
-                      v-for="row in 2"
-                      :key="`detailed-${row}`"
-                      class="layout-skeleton__table-row"
-                    >
-                      <span class="layout-skeleton__bar layout-skeleton__bar--wide" />
-                      <span class="layout-skeleton__bar layout-skeleton__bar--tiny" />
-                      <span class="layout-skeleton__bar layout-skeleton__bar--short" />
-                      <span class="layout-skeleton__bar layout-skeleton__bar--short" />
-                    </div>
-                    <div class="layout-skeleton__table-total">
-                      <span class="layout-skeleton__bar layout-skeleton__bar--total" />
-                    </div>
-                  </div>
-                </template>
-              </div>
+              <LayoutSkeleton
+                class="mt-4"
+                :layout="option.value"
+                :table-meta="normalizedTableMeta"
+              />
             </v-card-text>
           </v-card>
         </v-col>
       </v-row>
     </v-radio-group>
+
+    <div class="pdf-layout-picker__meta-panel mt-4">
+      <div class="pdf-layout-picker__meta-title body-2 font-weight-medium mb-1">
+        Buchungs-Metadaten in der Positionstabelle
+      </div>
+      <p class="pdf-layout-picker__meta-text caption text--secondary mb-0">
+        In Belegen, Rechnungen und Stornorechnungen werden neben den
+        Positionen automatisch <strong>Buchungs-Metadaten</strong> angezeigt
+        — z.&nbsp;B. Nummer, Zeitraum oder Zahlungsart. Mit den Schaltern
+        legen Sie fest, welche dieser Infos <em>in der eingebauten Tabelle</em>
+        erscheinen. Deaktivieren Sie Felder, wenn Sie sie stattdessen im
+        Fließtext der Vorlage platzieren möchten, damit nichts doppelt
+        steht.
+      </p>
+      <p class="pdf-layout-picker__meta-vars caption text--secondary mt-2 mb-0">
+        Ausgeblendete Felder bleiben als Template-Variablen verfügbar.
+      </p>
+      <div class="pdf-layout-picker__meta-chips mt-3">
+        <v-tooltip
+          v-for="option in metaOptions"
+          :key="option.key"
+          bottom
+          max-width="300"
+        >
+          <template #activator="{ on, attrs }">
+            <v-chip
+              v-bind="attrs"
+              v-on="on"
+              small
+              label
+              class="pdf-layout-picker__meta-chip"
+              :color="normalizedTableMeta[option.key] ? 'primary' : undefined"
+              :outlined="!normalizedTableMeta[option.key]"
+              @click="toggleMeta(option.key)"
+            >
+              <v-icon
+                v-if="normalizedTableMeta[option.key]"
+                left
+                small
+              >
+                mdi-check
+              </v-icon>
+              {{ option.shortLabel }}
+            </v-chip>
+          </template>
+          <span>{{ option.tooltip }}</span>
+        </v-tooltip>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import { normalizePdfBookingTableMeta } from "@/components/PDF/pdfBookingTableMeta.js";
+import LayoutSkeleton from "@/components/PDF/PdfBookingLayoutSkeleton.vue";
+
 export default {
   name: "PdfBookingLayoutPicker",
+  components: { LayoutSkeleton },
   props: {
     value: {
       type: String,
       default: "detailed",
     },
+    tableMeta: {
+      type: Object,
+      default: null,
+    },
   },
   data() {
     return {
+      bookingIdExample: "{{booking.id}}",
+      bookingPeriodExample: "{{booking.period}}",
+      bookingPaymentDateExample: "{{booking.paymentDate}}",
+      bookingPaymentMethodExample: "{{booking.paymentMethod}}",
       options: [
         {
           value: "summary",
@@ -154,7 +151,46 @@ export default {
             "Alle Buchungsfelder einzeln plus klassische 4-Spalten-Tabelle.",
         },
       ],
+      metaOptions: [
+        {
+          key: "showBookingId",
+          shortLabel: "Buchungsnummer",
+          tooltip:
+            "Zeigt die Buchungsnummer in der Tabelle an (z. B. als Kopfzeile oder eigene Zeile). Variable: {{booking.id}}",
+        },
+        {
+          key: "showBookingPeriod",
+          shortLabel: "Zeitraum",
+          tooltip:
+            "Zeigt den Buchungszeitraum in der Tabelle an. Variable: {{booking.period}}",
+        },
+        {
+          key: "showPaymentDate",
+          shortLabel: "Zahlungsdatum",
+          tooltip:
+            "Zeigt das Datum des Zahlungseingangs in der Tabelle an (vor allem bei Belegen). Variable: {{booking.paymentDate}}",
+        },
+        {
+          key: "showPaymentMethod",
+          shortLabel: "Zahlungsmethode",
+          tooltip:
+            "Zeigt die Zahlungsart in der Tabelle an (z. B. Überweisung). Variable: {{booking.paymentMethod}}",
+        },
+      ],
     };
+  },
+  computed: {
+    normalizedTableMeta() {
+      return normalizePdfBookingTableMeta(this.tableMeta);
+    },
+  },
+  methods: {
+    toggleMeta(key) {
+      this.$emit("update:tableMeta", {
+        ...this.normalizedTableMeta,
+        [key]: !this.normalizedTableMeta[key],
+      });
+    },
   },
 };
 </script>
@@ -162,7 +198,7 @@ export default {
 <style scoped>
 .pdf-layout-picker__intro {
   line-height: 1.5;
-  max-width: 720px;
+  max-width: 820px;
 }
 
 .pdf-layout-picker__card {
@@ -182,156 +218,38 @@ export default {
   flex: 0 0 auto;
 }
 
-.layout-skeleton {
+.pdf-layout-picker__meta-panel {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   background: #fafafa;
-  border: 1px solid #ececec;
-  border-radius: 6px;
-  padding: 12px;
-  min-height: 148px;
+  padding: 12px 16px;
 }
 
-.layout-skeleton__bar {
-  display: block;
-  height: 6px;
+.pdf-layout-picker__meta-text {
+  line-height: 1.55;
+  max-width: 820px;
+}
+
+.pdf-layout-picker__meta-vars {
+  line-height: 1.55;
+}
+
+.pdf-layout-picker__meta-vars code {
+  background: rgba(0, 0, 0, 0.06);
   border-radius: 3px;
-  background: linear-gradient(90deg, #e4e4e4 0%, #ededed 50%, #e4e4e4 100%);
+  font-size: 0.75rem;
+  padding: 1px 4px;
+  white-space: nowrap;
 }
 
-.layout-skeleton__kv-table {
+.pdf-layout-picker__meta-chips {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.layout-skeleton__kv-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e8e8e8;
-}
-
-.layout-skeleton__kv-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.layout-skeleton__bar--label {
-  width: 42%;
-  max-width: 96px;
-}
-
-.layout-skeleton__bar--value {
-  width: 28%;
-  max-width: 64px;
-  margin-left: auto;
-}
-
-.layout-skeleton__meta {
-  margin-bottom: 10px;
-}
-
-.layout-skeleton__meta--single .layout-skeleton__bar--meta-line {
-  width: 92%;
-  height: 7px;
-}
-
-.layout-skeleton__meta--multi {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.layout-skeleton__meta-line {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.layout-skeleton__bar--meta-label {
-  width: 34%;
-  max-width: 72px;
-  height: 5px;
-  opacity: 0.85;
-}
-
-.layout-skeleton__bar--meta-value {
-  width: 52%;
-  height: 5px;
-}
-
-.layout-skeleton__table {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.layout-skeleton__table-head {
-  display: grid;
-  gap: 6px;
-  padding: 6px 8px;
-  background: #eeeeee;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.layout-skeleton__table--3col .layout-skeleton__table-head {
-  grid-template-columns: 1.4fr 1fr 1fr;
-}
-
-.layout-skeleton__table--4col .layout-skeleton__table-head {
-  grid-template-columns: 1.5fr 0.6fr 0.8fr 0.8fr;
-}
-
-.layout-skeleton__table-head span {
-  display: block;
-  height: 5px;
-  border-radius: 2px;
-  background: #d5d5d5;
-}
-
-.layout-skeleton__table-row {
-  display: grid;
-  gap: 6px;
-  padding: 7px 8px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.layout-skeleton__table--3col .layout-skeleton__table-row {
-  grid-template-columns: 1.4fr 1fr 1fr;
-}
-
-.layout-skeleton__table--4col .layout-skeleton__table-row {
-  grid-template-columns: 1.5fr 0.6fr 0.8fr 0.8fr;
-}
-
-.layout-skeleton__table-row:nth-child(even) {
-  background: #f7f7f7;
-}
-
-.layout-skeleton__bar--wide {
-  width: 88%;
-}
-
-.layout-skeleton__bar--short {
-  width: 72%;
-  margin-left: auto;
-}
-
-.layout-skeleton__bar--tiny {
-  width: 55%;
-  margin-left: auto;
-}
-
-.layout-skeleton__table-total {
-  padding: 8px;
-  border-top: 2px solid #333;
-}
-
-.layout-skeleton__bar--total {
-  width: 36%;
-  height: 7px;
-  margin-left: auto;
+.pdf-layout-picker__meta-chip {
+  cursor: pointer;
+  user-select: none;
 }
 </style>
