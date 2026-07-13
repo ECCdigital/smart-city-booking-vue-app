@@ -15,6 +15,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 - Tenant feature flag `notifySupervisorsOnBooking` toggle in booking settings
 - Overridable mail snippet `supervisor-booking-notification` in tenant mail configuration
 
+### Fixed
+
+- Member and instance user search now uses case-insensitive substring matching on name and email instead of fuzzy matching, preventing unrelated results (DEV-784)
+
 
 ## [4.1.3] — 2026-07-03
 
