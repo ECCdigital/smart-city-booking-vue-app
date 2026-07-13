@@ -9,6 +9,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
+- Series bookings in the Kanban board are now visually marked with a chip and accent border; the series can be opened directly from the card (DEV-626)
+- Booking overview filter for booking type: all, single bookings only, or series bookings only — accessible via filter button in the search field (DEV-626)
 - Admin UI for supervisor booking notifications (DEV-779): manage `bookingNotificationRecipients` per tenant member (user, role, email; max. 10) in the member detail dialog
 - Tenant feature flag `notifySupervisorsOnBooking` toggle in booking settings
 - Overridable mail snippet `supervisor-booking-notification` in tenant mail configuration

@@ -1,7 +1,10 @@
 <template>
   <v-card
     class="kanban-card mb-2"
-    :class="{ 'kanban-card--dragging': isDragging }"
+    :class="{
+      'kanban-card--dragging': isDragging,
+      'kanban-card--series': !!element.bookingItem?.groupBooking,
+    }"
     @click="onOpenBooking(element.bookingItem.id)"
     hover
     outlined
@@ -35,6 +38,16 @@
               <v-icon small>mdi-pencil</v-icon>
             </v-list-item-icon>
             <v-list-item-title>Bearbeiten</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item
+            v-if="element.bookingItem?.groupBooking"
+            @click.stop="onOpenGroupBooking(element.bookingItem.groupBooking)"
+          >
+            <v-list-item-icon>
+              <v-icon small>mdi-calendar-multiple</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>Serienbuchung öffnen</v-list-item-title>
           </v-list-item>
 
           <v-divider />
@@ -89,6 +102,17 @@
         <v-icon x-small class="mr-1">mdi-package-variant</v-icon>
         {{ bookableTitle }}
       </div>
+      <v-chip
+        v-if="element.bookingItem?.groupBooking"
+        x-small
+        color="primary"
+        text-color="white"
+        class="mt-1 series-chip"
+        @click.stop="onOpenGroupBooking(element.bookingItem.groupBooking)"
+      >
+        <v-icon x-small left>mdi-calendar-multiple</v-icon>
+        Serie {{ truncate(element.bookingItem.groupBooking, 10) }}
+      </v-chip>
     </div>
 
     <div class="d-flex align-center justify-space-between px-2 pb-2">
@@ -193,6 +217,13 @@ export default {
     onOpenEditBooking(bookingId) {
       this.$emit("open-edit-booking", bookingId);
     },
+    onOpenGroupBooking(groupBookingId) {
+      this.$emit("open-group-booking", groupBookingId);
+    },
+    truncate(text, max = 25) {
+      if (!text) return "";
+      return text.length > max ? text.slice(0, max - 1) + "…" : text;
+    },
     commitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);
     },
@@ -218,12 +249,21 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.series-chip {
+  cursor: pointer;
+  max-width: 100%;
+}
+
 .kanban-card {
   border-radius: 8px !important;
   transition: all 0.2s cubic-bezier(0.25, 0.8, 0.5, 1);
   cursor: grab;
   min-width: 200px;
   max-width: 220px;
+
+  &--series {
+    border-left: 3px solid var(--v-primary-base) !important;
+  }
 
   &:hover {
     transform: translateY(-2px);
