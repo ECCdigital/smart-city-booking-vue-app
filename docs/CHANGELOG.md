@@ -7,6 +7,13 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Added
+
+- Admin UI for supervisor booking notifications (DEV-779): manage `bookingNotificationRecipients` per tenant member (user, role, email; max. 10) in the member detail dialog
+- Tenant feature flag `notifySupervisorsOnBooking` toggle in booking settings
+- Overridable mail snippet `supervisor-booking-notification` in tenant mail configuration
+
+
 ## [4.1.3] — 2026-07-03
 
 ### Added

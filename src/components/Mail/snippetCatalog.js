@@ -11,6 +11,7 @@ export const SNIPPET_KEYS = [
   "invoice",
   "invoice-after-approval",
   "payment-link-after-approval",
+  "supervisor-booking-notification",
 ];
 
 
@@ -239,6 +240,32 @@ export const SNIPPET_CATALOG = [
         txt(
           "<p>Um Ihre Buchung verbindlich abzuschließen, klicken Sie bitte auf den nachfolgenden Knopf und folgen Sie den weiteren Schritten.</p>"
         ),
+      ]),
+    ],
+  },
+  {
+    key: "supervisor-booking-notification",
+    title: "Vorgesetzten-Benachrichtigung",
+    description:
+      "Information an hinterlegte Empfänger (z. B. Vorgesetzte), wenn ein Mitglied eine Buchung vornimmt.",
+    icon: "mdi-bell-ring-outline",
+    defaultTemplate: `<div style="font-family: sans-serif;">
+  <p>
+    Hallo,<br />
+    ein Mitglied im
+    <strong>{{tenantName}}</strong>
+    hat eine neue Buchung vorgenommen.
+  </p>
+  <p>
+    Im Folgenden senden wir Ihnen die Details der Buchung.
+  </p>
+</div>`,
+    defaultBlocks: [
+      row([
+        txt(
+          `<p>Hallo,<br />ein Mitglied im <strong>${TENANT}</strong> hat eine neue Buchung vorgenommen.</p>`
+        ),
+        txt("<p>Im Folgenden senden wir Ihnen die Details der Buchung.</p>"),
       ]),
     ],
   },
