@@ -27,6 +27,7 @@
 import Navbar from "@/components/Navbar";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import { mapActions } from "vuex";
+import { routeRequiresTenant } from "@/router/middlewares/requireTenant";
 
 export default {
   props: {
@@ -51,7 +52,19 @@ export default {
     async fetchTenants() {
       try {
         const response = await ApiTenantService.getTenants(true);
-        await this.setTenants(response.data);
+        const tenants = response.data;
+        await this.setTenants(tenants);
+
+        const currentTenantId = this.$store.getters["tenants/currentTenantId"];
+        if (
+          currentTenantId &&
+          !tenants.some((tenant) => tenant.id === currentTenantId)
+        ) {
+          await this.$store.dispatch("tenants/select", null);
+          if (routeRequiresTenant(this.$route)) {
+            await this.$router.replace({ name: "dashboard" });
+          }
+        }
       } catch (error) {
         console.error(error);
       }

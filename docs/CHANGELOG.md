@@ -13,6 +13,25 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 - Tenant feature flag `notifySupervisorsOnBooking` toggle in booking settings
 - Overridable mail snippet `supervisor-booking-notification` in tenant mail configuration
 
+
+## [4.1.3] — 2026-07-03
+
+### Added
+
+- Series bookings in booking details can now have collective invoices created, with a choice between collective and single invoice — consistent with the existing collective receipt flow
+- Collective invoices for series bookings can also be created and downloaded from the series booking overview
+- PDF templates for receipts, invoices, and cancellations: choose how booking details are displayed (compact overview, single line, or detailed table)
+- Per tenant, control which booking information (number, period, payment date, payment method) appears in the PDF table — hidden fields remain available for placement elsewhere in the template
+- PDF template editor: preview with page breaks, optional header/footer on every page, and improved variable selection
+
+### Changed
+
+- PDF template settings for layout and booking fields are combined in one place under payment and receipt settings
+
+### Fixed
+
+- Tenant-selection redirect hardened against open-redirect vectors (protocol-relative and backslash paths)
+
 ## [4.1.2] — 2026-07-02
 
 ### Added
@@ -71,6 +90,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.1.3]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.2...v4.1.3
 [4.1.1]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.0...v4.1.1
 [4.1.2]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.1...v4.1.2
 [4.1.0]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.0.1...v4.1.0

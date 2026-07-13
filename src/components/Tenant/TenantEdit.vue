@@ -919,12 +919,18 @@
     <ReceiptTemplateDialog
       :open="showEditTemplateDialog"
       :receipt-template="tenant.receiptTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
+      :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditTemplateDialog = false"
       @submit="onSubmitReceiptTemplate"
     />
     <InvoiceTemplateDialog
       :open="showEditInvoiceTemplateDialog"
       :invoice-template="tenant.invoiceTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
+      :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
     />
@@ -939,6 +945,7 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
@@ -948,6 +955,7 @@ import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue
 import TenantEditWorkflowStatusDialog from "@/components/Tenant/TenantEditWorkflowStatusDialog.vue";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 import CatalogSettings from "@/components/Catalog/CatalogSettings.vue";
+import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
 
 export default {
   name: "TenantEdit",
@@ -974,6 +982,7 @@ export default {
       valid: false,
       originTenantId: null,
       inProgress: false,
+      defaultPdfBookingLayout: DEFAULT_PDF_BOOKING_LAYOUT,
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
         mail: [
@@ -1222,7 +1231,10 @@ export default {
           });
         } catch (e) {
           await this.addToast({
-            message: "Fehler beim Speichern der Änderungen.",
+            message: getApiErrorMessage(
+              e,
+              "Fehler beim Speichern der Änderungen.",
+            ),
             type: "error",
           });
           this.inProgress = false;
@@ -1313,11 +1325,11 @@ export default {
       );
     },
     onSubmitReceiptTemplate(template) {
-      this.tenant.receiptTemplate = template;
+      this.$set(this.tenant, "receiptTemplate", template);
       this.showEditTemplateDialog = false;
     },
     onSubmitInvoiceTemplate(template) {
-      this.tenant.invoiceTemplate = template;
+      this.$set(this.tenant, "invoiceTemplate", template);
       this.showEditInvoiceTemplateDialog = false;
     },
   },
