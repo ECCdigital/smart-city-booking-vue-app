@@ -411,7 +411,6 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiInvitationService from "@/services/api/ApiInvitationService";
 import ToastService from "@/services/ToastService";
-import Fuse from "fuse.js";
 import TenantInviteUserDialog from "@/components/Tenant/TenantInviteUserDialog.vue";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.vue";
@@ -476,12 +475,14 @@ export default {
       let filtered = this.members;
 
       if (this.search) {
-        const fuse = new Fuse(filtered, {
-          keys: ["userId", "firstName", "lastName", "fullName"],
-          threshold: 0.4,
-          ignoreLocation: true,
-        });
-        filtered = fuse.search(this.search).map((result) => result.item);
+        const searchLower = this.search.toLowerCase().trim();
+        if (searchLower) {
+          filtered = filtered.filter((user) =>
+            [user.userId, user.firstName, user.lastName, user.fullName].some(
+              (field) => field?.toLowerCase().includes(searchLower)
+            )
+          );
+        }
       }
 
       if (this.statusFilter.length > 0) {
