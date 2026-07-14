@@ -1,3 +1,5 @@
+import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
+
 export default class Bookable {
   constructor(overrides = {}) {
     this.id = "";
@@ -54,8 +56,10 @@ export default class Bookable {
 
     this.permittedUsers = [];
     this.permittedRoles = [];
-    this.freeBookingUsers = [];
-    this.freeBookingRoles = [];
+    this.bookingDiscounts = {
+      users: [],
+      roles: [],
+    };
 
     this.relatedBookableIds = [];
     this.checkoutBookableIds = [];
@@ -72,6 +76,7 @@ export default class Bookable {
     this.externalProviders = [];
 
     Object.assign(this, overrides);
+    normalizeBookingDiscounts(this);
   }
 
   toPlain() {
