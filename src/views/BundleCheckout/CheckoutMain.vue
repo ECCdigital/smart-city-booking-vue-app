@@ -373,12 +373,8 @@ export default {
         return false;
       }
 
-      const allItems = [this.leadItem, ...this.subsequentItems];
-
-      return allItems.some(
-        (item) =>
-          (item.userPriceEur ?? 0) > 0 ||
-          item.bookable?.priceCategories?.some((pC) => pC.priceEur > 0)
+      return [this.leadItem, ...this.subsequentItems].some(
+        (item) => (item.userPriceEur ?? 0) > 0
       );
     },
 

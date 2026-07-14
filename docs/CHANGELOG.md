@@ -18,6 +18,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 ### Fixed
 
 - Bundle checkout: payment step is shown when additional bookables require payment, even if the lead bookable is free via role discount (DEV-781)
+- Bundle checkout: payment step no longer appears when the discounted checkout total is zero (DEV-781)
 - Tenant feature flag `notifySupervisorsOnBooking` toggle in booking settings
 - Overridable mail snippet `supervisor-booking-notification` in tenant mail configuration
 
