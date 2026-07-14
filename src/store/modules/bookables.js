@@ -59,8 +59,10 @@ const state = {
     requiresLogin: false,
     permittedUsers: [],
     permittedRoles: [],
-    freeBookingUsers: [],
-    freeBookingRoles: [],
+    bookingDiscounts: {
+      users: [],
+      roles: [],
+    },
     relatedBookableIds: [],
     checkoutBookableIds: [],
 
@@ -160,8 +162,10 @@ const mutations = {
 
       permittedUsers: [],
       permittedRoles: [],
-      freeBookingUsers: [],
-      freeBookingRoles: [],
+      bookingDiscounts: {
+        users: [],
+        roles: [],
+      },
       relatedBookableIds: [],
       checkoutBookableIds: [],
 

@@ -271,16 +271,15 @@
       </v-card-text>
     </v-card>
 
-    <v-card class="mt-5 rounded-sm" outlined v-if="freeBookingAllowed">
+    <v-card class="mt-5 rounded-sm" outlined v-if="showDiscountOption">
       <v-card-text>
-        <strong>Kostenfreie Buchung</strong> Sie sind berechtigt, diese Buchung
-        kostenfrei abzuschließen. Wenn Sie dennoch eine kostenpflichtige Buchung
-        wünschen, können Sie dies tun, indem Sie den Schalter unten aktivieren.
+        <strong>{{ discountCardTitle }}</strong>
+        {{ discountCardText }}
 
         <v-switch
-          v-model="bookWithPrice"
-          @change="setBookWithPrice($event)"
-          label="Kostenpflichtig buchen"
+          v-model="bookWithoutDiscount"
+          @change="setBookWithoutDiscount($event)"
+          label="Zum vollen Preis buchen"
           class="mt-4"
         >
         </v-switch>
@@ -365,11 +364,11 @@ export default {
     selectedPaymentApp: {
       type: String,
     },
-    freeBookingAllowed: {
-      type: Boolean,
-      default: false,
+    bookingDiscountPercent: {
+      type: Number,
+      default: 0,
     },
-    initialBookWithPrice: {
+    initialBookWithoutDiscount: {
       type: Boolean,
       default: false,
     },
@@ -380,8 +379,14 @@ export default {
       validating: false,
       isSubmitting: false,
       couponCode: null,
-      bookWithPrice: this.initialBookWithPrice,
+      bookWithoutDiscount: this.initialBookWithoutDiscount,
     };
+  },
+
+  watch: {
+    initialBookWithoutDiscount(value) {
+      this.bookWithoutDiscount = value;
+    },
   },
 
   methods: {
@@ -389,10 +394,10 @@ export default {
       addToast: "toasts/add",
     }),
     isTimeDependentBookable,
-    setBookWithPrice(value) {
-      this.bookWithPrice = value;
-      this.$emit("update:initialBookWithPrice", value);
-      this.$emit("set-book-with-price", value);
+    setBookWithoutDiscount(value) {
+      this.bookWithoutDiscount = value;
+      this.$emit("update:initialBookWithoutDiscount", value);
+      this.$emit("set-book-without-discount", value);
     },
 
     dateToLocaleString: function (value) {
@@ -494,7 +499,7 @@ export default {
               };
             })
         ),
-        bookWithPrice: this.bookWithPrice,
+        bookWithoutDiscount: this.bookWithoutDiscount,
       };
     },
 
@@ -606,6 +611,23 @@ export default {
   },
 
   computed: {
+    showDiscountOption() {
+      return this.bookingDiscountPercent > 0;
+    },
+    discountCardTitle() {
+      if (this.bookingDiscountPercent >= 100) {
+        return "Kostenfreie Buchung:";
+      }
+
+      return "Preisnachlass:";
+    },
+    discountCardText() {
+      if (this.bookingDiscountPercent >= 100) {
+        return " Sie sind berechtigt, diese Buchung kostenfrei abzuschließen. Wenn Sie dennoch eine kostenpflichtige Buchung wünschen, können Sie den Schalter unten aktivieren.";
+      }
+
+      return ` Sie erhalten einen Preisnachlass von ${this.bookingDiscountPercent} % auf diese Buchung. Wenn Sie dennoch zum vollen Preis buchen möchten, aktivieren Sie den Schalter unten.`;
+    },
     totalPrice() {
       let price = 0;
       for (const item of [this.leadItem, ...this.subsequentItems]) {
