@@ -29,3 +29,11 @@ pnpm-debug.log*
 .idea/*
 
 temp/
+
+# Cursor: commit shared rules, ignore local IDE state
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+
+# Local agent instruction overrides (Codex)
+AGENTS.override.md

@@ -1,0 +1,15 @@
+---
+description: Vue component and view conventions
+globs: src/components/**/*.vue,src/views/**/*.vue
+alwaysApply: false
+---
+
+# Vue Components & Views
+
+See `docs/agents/components.md` for full conventions.
+
+- Options API (`export default { name, props, data, methods, … }`)
+- User-visible text via `$t()` — keys in `src/language/de/translations.json`
+- API calls through `Api*Service`, not raw axios
+- Gate actions with `*PermissionService`
+- Use Vuetify 2 components and existing layouts (`src/layouts/`)

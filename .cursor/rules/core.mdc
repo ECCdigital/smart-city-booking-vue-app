@@ -1,0 +1,19 @@
+---
+description: Core project context for Smart City Booking Admin UI
+alwaysApply: true
+---
+
+# Smart City Booking Admin UI
+
+Follow `AGENTS.md` at the repo root. Key points:
+
+- Vue 2.7 + Vuetify 2 SPA, multi-tenant booking administration (Admin UI only)
+- Backend API → github.com/ECCdigital/smart-city-booking-backend, Storefront → github.com/ECCdigital/smart-city-booking-store-front
+- API calls via `src/services/api/`, permissions via `src/services/permissions/`, state in `src/store/`
+- English for code, comments, commits, PRs, and changelog entries; German UI strings in `src/language/de/translations.json`
+- DRY: reuse existing code; extract shared logic only on real duplication
+- Run `npm run lint:check` before finishing
+- Minimal diffs, no drive-by refactors, no commits unless asked
+- Never commit secrets (`.env`)
+
+Detailed guides: `docs/agents/`
