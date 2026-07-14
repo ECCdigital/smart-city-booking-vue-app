@@ -369,18 +369,16 @@ export default {
     },
 
     shouldShowPaymentStep() {
-      if (
-        this.leadItem.bookingDiscountPercent >= 100 &&
-        !this.bookWithoutDiscount
-      ) {
+      if (this.activePaymentApps.length <= 1 || !this.leadItem.bookable) {
         return false;
       }
 
-      return (
-        this.activePaymentApps.length > 1 &&
-        this.leadItem.bookable &&
-        (this.leadItem.bookable.priceCategories.some((pC) => pC.priceEur > 0) ||
-          this.leadItem.userPriceEur > 0)
+      const allItems = [this.leadItem, ...this.subsequentItems];
+
+      return allItems.some(
+        (item) =>
+          (item.userPriceEur ?? 0) > 0 ||
+          item.bookable?.priceCategories?.some((pC) => pC.priceEur > 0)
       );
     },
 
