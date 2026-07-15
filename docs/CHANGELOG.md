@@ -17,12 +17,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
-- Custom field editor: simplified select options (single input with auto-generated values), validation for duplicate options, technical IDs hidden by default, and clearer German labels
-- Custom field editor: progressive usage settings, smart catalog defaults, live preview, and read-only inherited fields on tenant/bookable level
-- Custom field list: cleaner badge layout for inherited and editable fields (no truncation, consistent context chips)
-- Custom field dialog: reduced inner card border radius and flat filled select/input backgrounds (overrides global card styling)
-- Bookable edit: merged custom field values and definitions into a single „Eigene Felder“ tab with sub-tabs and compact value rows grouped by origin
-- Custom field list: hint that inherited fields are read-only in the definitions view
+- Custom fields: simplified editor and list layout with live preview, clearer labels, and read-only inherited fields
+- Bookable edit: custom field values and definitions merged into a single „Eigene Felder“ tab
 
 ### Fixed
 

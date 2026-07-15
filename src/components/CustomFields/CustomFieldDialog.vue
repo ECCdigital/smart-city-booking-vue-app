@@ -106,6 +106,7 @@
                   filled
                   dense
                   hide-details="auto"
+                  @input="onOptionValueInput(i)"
                 />
               </v-col>
               <v-col cols="2" class="d-flex justify-center">
@@ -503,8 +504,15 @@ export default {
           ...makeEmptyField().usageOptions,
           ...(this.local.usageOptions || {}),
         };
-        this.local.options = this.local.options || [];
-        this.showTechnicalValues = this.hasCustomOptionValues(this.local.options);
+        this.local.options = (this.local.options || []).map((opt) => ({
+          ...opt,
+          valueOverridden:
+            !!opt.value &&
+            opt.value !== slugifyOptionValue(opt.caption),
+        }));
+        this.showTechnicalValues = this.local.options.some(
+          (opt) => opt.valueOverridden
+        );
 
         this.$nextTick(() => {
           this.isInitializing = false;
@@ -530,7 +538,7 @@ export default {
         if (this.isInitializing) {
           this.local.usageOptions.catalogFilterType = null;
         } else {
-          this.applyCatalogSmartDefaults(true);
+          this.applyCatalogSmartDefaults({ forceFilterType: true });
         }
       }
 
@@ -557,7 +565,10 @@ export default {
         this.local.usageOptions.catalogFilterPosition = "sidebar";
         this.local.usageOptions.detailDisplayPosition = "none";
       } else if (oldValue !== "catalog") {
-        this.applyCatalogSmartDefaults(true);
+        this.applyCatalogSmartDefaults({
+          forceFilterType: true,
+          forceDetailPosition: true,
+        });
       }
     },
     "local.usageOptions.filterable"(v) {
@@ -566,7 +577,7 @@ export default {
       if (!v) {
         this.local.usageOptions.catalogFilterType = null;
       } else {
-        this.applyCatalogSmartDefaults(true);
+        this.applyCatalogSmartDefaults({ forceFilterType: true });
       }
     },
     showTechnicalValues(enabled) {
@@ -577,14 +588,11 @@ export default {
   },
   methods: {
     hasCustomOptionValues(options = []) {
-      return options.some((opt) => {
-        const autoValue = slugifyOptionValue(opt.caption);
-        return opt.value && opt.value !== autoValue;
-      });
+      return options.some((opt) => opt.valueOverridden);
     },
     syncOptionValue(index) {
       const option = this.local.options[index];
-      if (!option || this.showTechnicalValues) return;
+      if (!option || option.valueOverridden) return;
 
       const baseValue = slugifyOptionValue(option.caption) || `option-${index + 1}`;
       option.value = makeUniqueOptionValue(
@@ -600,6 +608,9 @@ export default {
     },
     onOptionCaptionInput(index) {
       this.syncOptionValue(index);
+    },
+    onOptionValueInput(index) {
+      this.$set(this.local.options[index], "valueOverridden", true);
     },
     getDefaultCatalogFilterType(inputType) {
       const defaults = {
@@ -617,7 +628,10 @@ export default {
       if (inputType === "numeric") return "belowDescription";
       return "belowDescription";
     },
-    applyCatalogSmartDefaults(force = false) {
+    applyCatalogSmartDefaults({
+      forceFilterType = false,
+      forceDetailPosition = false,
+    } = {}) {
       const usage = this.local.usageOptions;
       if (usage.context !== "catalog") return;
 
@@ -628,7 +642,7 @@ export default {
         const allowedFilters = this.filterTypes.map((item) => item.value);
 
         if (
-          force ||
+          forceFilterType ||
           !usage.catalogFilterType ||
           !allowedFilters.includes(usage.catalogFilterType)
         ) {
@@ -638,7 +652,7 @@ export default {
         }
       }
 
-      if (force || usage.detailDisplayPosition === "none") {
+      if (forceDetailPosition || usage.detailDisplayPosition === "none") {
         const defaultPosition = this.getDefaultDetailDisplayPosition(
           this.local.inputType
         );
@@ -662,7 +676,9 @@ export default {
     },
     addOption() {
       const nextIndex = this.local.options.length;
-      this.local.options.push({ caption: "", value: `option-${nextIndex + 1}` });
+      const baseValue = `option-${nextIndex + 1}`;
+      const value = makeUniqueOptionValue(baseValue, this.local.options);
+      this.local.options.push({ caption: "", value });
     },
     removeOption(i) {
       this.local.options.splice(i, 1);
@@ -704,6 +720,11 @@ export default {
 
       if (!this.$refs.form.validate()) return;
       const payload = JSON.parse(JSON.stringify(this.local));
+      if (payload.options) {
+        payload.options.forEach((opt) => {
+          delete opt.valueOverridden;
+        });
+      }
       payload.usageOptions = this.normalizeUsageOptions(
         payload.usageOptions || {}
       );
