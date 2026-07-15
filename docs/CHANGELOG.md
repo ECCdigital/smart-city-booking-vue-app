@@ -15,6 +15,11 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 - Bookable permissions: per-user and per-role booking discounts with percentage field (0–100) replace the previous free-booking lists (DEV-781)
 - Bundle checkout: role/user booking discounts shown via `bookingDiscountPercent`; opt-out uses `bookWithoutDiscount` instead of `bookWithPrice` (DEV-781)
 
+### Changed
+
+- Custom fields: simplified editor and list layout with live preview, clearer labels, and read-only inherited fields
+- Bookable edit: custom field values and definitions merged into a single „Eigene Felder“ tab
+
 ### Fixed
 
 - Bundle checkout: payment step is shown when additional bookables require payment, even if the lead bookable is free via role discount (DEV-781)
