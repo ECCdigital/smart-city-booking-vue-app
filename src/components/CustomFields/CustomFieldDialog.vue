@@ -6,7 +6,7 @@
     persistent
     scrollable
   >
-    <v-card>
+    <v-card class="custom-field-dialog">
       <v-card-title class="subtitle-1">
         <v-icon left color="primary" small>mdi-form-textbox</v-icon>
         {{ isEdit ? "Feld bearbeiten" : "Neues Feld anlegen" }}
@@ -14,20 +14,10 @@
       <v-divider />
 
       <v-card-text class="pt-4">
-        <v-form ref="form" v-model="valid">
+        <v-form ref="form" v-model="valid" class="custom-field-dialog-form">
           <!-- Basic info -->
           <v-row dense>
-            <v-col v-if="isEdit" cols="12" md="6">
-              <v-text-field
-                v-model="local.id"
-                label="Feld-ID"
-                disabled
-                background-color="accent"
-                filled
-                dense
-              />
-            </v-col>
-            <v-col cols="12" :md="isEdit ? 6 : 12">
+            <v-col cols="12">
               <v-text-field
                 v-model="local.caption"
                 label="Bezeichnung"
@@ -95,22 +85,23 @@
               dense
               align="center"
             >
-              <v-col cols="5">
+              <v-col :cols="showTechnicalValues ? 5 : 10">
                 <v-text-field
                   v-model="opt.caption"
-                  label="Anzeigename"
-                  :rules="[rules.required]"
+                  label="Option"
+                  :rules="[rules.required, rules.uniqueOptionCaption(i)]"
                   background-color="accent"
                   filled
                   dense
                   hide-details="auto"
+                  @input="onOptionCaptionInput(i)"
                 />
               </v-col>
-              <v-col cols="5">
+              <v-col v-if="showTechnicalValues" cols="5">
                 <v-text-field
                   v-model="opt.value"
-                  label="Wert"
-                  :rules="[rules.required]"
+                  label="Technischer Wert"
+                  :rules="[rules.required, rules.uniqueOptionValue(i)]"
                   background-color="accent"
                   filled
                   dense
@@ -124,10 +115,31 @@
               </v-col>
             </v-row>
 
+            <v-alert
+              v-if="local.options.length === 0"
+              type="warning"
+              dense
+              text
+              class="mb-2"
+            >
+              Mindestens eine Option erforderlich.
+            </v-alert>
+
             <v-btn text small color="primary" class="mt-1" @click="addOption">
               <v-icon left small>mdi-plus</v-icon>
               Option hinzufügen
             </v-btn>
+
+            <v-switch
+              v-model="showTechnicalValues"
+              label="Technische Werte anpassen"
+              hint="Standardmäßig werden Werte automatisch aus der Option erzeugt."
+              persistent-hint
+              color="primary"
+              class="mt-2"
+              dense
+              hide-details="auto"
+            />
           </template>
 
           <!-- Usage options -->
@@ -135,102 +147,106 @@
             <v-divider class="my-4" />
             <div class="text-subtitle-2 mb-2">Verwendung</div>
 
-            <v-row dense>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="local.usageOptions.context"
-                  :items="contextOptions"
-                  label="Verwendungskontext"
-                  background-color="accent"
-                  hide-details
-                  filled
-                  dense
-                />
-              </v-col>
-              <v-col
-                v-if="local.usageOptions.context === 'checkout'"
-                cols="12"
-                md="6"
-                class="d-flex align-center justify-center"
+            <v-radio-group
+              v-model="local.usageOptions.context"
+              hide-details
+              class="mt-0 pt-0"
+            >
+              <v-radio
+                v-for="opt in contextOptions"
+                :key="opt.value"
+                :value="opt.value"
+                color="primary"
+                class="mb-1"
               >
+                <template v-slot:label>
+                  <div>
+                    <div>{{ opt.text }}</div>
+                    <div class="caption text--secondary">{{ opt.hint }}</div>
+                  </div>
+                </template>
+              </v-radio>
+            </v-radio-group>
+
+            <v-card
+              v-if="local.usageOptions.context === 'checkout'"
+              outlined
+              class="mt-3 pa-3 usage-card"
+            >
+              <v-switch
+                v-model="local.usageOptions.requiredInCheckout"
+                label="Pflichtfeld im Buchungsprozess"
+                hint="Der Kunde muss dieses Feld ausfüllen, bevor die Buchung abgeschlossen werden kann."
+                persistent-hint
+                color="primary"
+                class="mt-0 pt-0"
+                dense
+              />
+            </v-card>
+
+            <template v-if="local.usageOptions.context === 'catalog'">
+              <v-card outlined class="mt-3 pa-3 usage-card">
                 <v-switch
-                  v-model="local.usageOptions.requiredInCheckout"
-                  label="Pflichtfeld im Checkout"
+                  v-model="local.usageOptions.filterable"
+                  label="Als Filter im Katalog anzeigen"
+                  hint="Besucher können danach filtern. Ohne Filter wird das Feld nur als Information angezeigt."
+                  persistent-hint
                   color="primary"
                   class="mt-0 pt-0"
                   dense
-                  hide-details
                 />
-              </v-col>
-            </v-row>
 
-            <template v-if="local.usageOptions.context === 'catalog'">
-              <v-row dense class="mt-2">
-                <v-col cols="12">
-                  <v-switch
-                    v-model="local.usageOptions.filterable"
-                    label="Filterbar im Katalog"
-                    hint="Wenn deaktiviert, wird das Feld im Katalog nur als Info angezeigt und nicht als Filter."
-                    persistent-hint
-                    color="primary"
-                    class="mt-0 pt-0"
-                    dense
-                  />
-                </v-col>
-              </v-row>
+                <template v-if="local.usageOptions.filterable">
+                  <v-divider class="my-3" />
+                  <v-row dense>
+                    <v-col cols="12" md="6">
+                      <v-select
+                        v-model="local.usageOptions.catalogFilterType"
+                        :items="filterTypes"
+                        label="Filter-Darstellung"
+                        :rules="[rules.required]"
+                        background-color="accent"
+                        filled
+                        dense
+                      >
+                        <template v-slot:item="{ item }">
+                          <div class="d-flex align-center my-1">
+                            <v-icon left small color="primary">
+                              {{
+                                {
+                                  checkbox: "mdi-checkbox-outline",
+                                  select: "mdi-order-bool-ascending-variant",
+                                  slider: "mdi-tune-variant",
+                                  range: "mdi-tune-variant",
+                                }[item.value]
+                              }}
+                            </v-icon>
+                            <div class="mx-1">
+                              {{ item.text }}
+                              <div class="caption">{{ item.description }}</div>
+                            </div>
+                          </div>
+                        </template>
+                      </v-select>
+                    </v-col>
+                    <v-col cols="12" md="6">
+                      <v-select
+                        v-model="local.usageOptions.catalogFilterPosition"
+                        :items="filterPositions"
+                        label="Filter-Position"
+                        background-color="accent"
+                        filled
+                        dense
+                      />
+                    </v-col>
+                  </v-row>
+                </template>
 
-              <v-row v-if="local.usageOptions.filterable" dense class="mt-2">
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="local.usageOptions.catalogFilterType"
-                    :items="filterTypes"
-                    label="Filtertyp im Katalog"
-                    :rules="[rules.required]"
-                    background-color="accent"
-                    filled
-                    dense
-                    clearable
-                  >
-                    <template v-slot:item="{ item}">
-                      <div class="d-flex align-center my-1">
-
-                        <v-icon left small color="primary">
-                          {{
-                            {
-                              checkbox: "mdi-checkbox-outline",
-                              select: "mdi-order-bool-ascending-variant",
-                              slider: "mdi-tune-variant",
-                              range: "mdi-tune-variant",
-                            }[item.value]
-                          }}
-                        </v-icon>
-                        <div class="mx-1">
-                          {{item.text}}
-                          <div class="caption">{{ item.description }}</div>
-                        </div>
-                      </div>
-                    </template>
-                  </v-select>
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="local.usageOptions.catalogFilterPosition"
-                    :items="filterPositions"
-                    label="Filterposition"
-                    background-color="accent"
-                    filled
-                    dense
-                  />
-                </v-col>
-              </v-row>
-            </template>
-
-            <v-row dense class="mt-2">
-              <v-col cols="12" md="6">
+                <v-divider class="my-3" />
                 <v-select
                   v-model="local.usageOptions.detailDisplayPosition"
                   :items="detailDisplayPositions"
-                  label="Anzeige in Detailansicht"
+                  label="Anzeige auf der Detailseite"
                   background-color="accent"
                   filled
                   dense
@@ -244,9 +260,35 @@
                     </div>
                   </template>
                 </v-select>
-              </v-col>
-            </v-row>
+              </v-card>
+            </template>
+
+            <CustomFieldPreview
+              v-if="showPreview"
+              :field="local"
+              class="mt-4"
+            />
           </template>
+
+          <v-expansion-panels v-if="isEdit" flat class="mt-4">
+            <v-expansion-panel>
+              <v-expansion-panel-header class="px-0 subtitle-2">
+                Erweitert
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <v-text-field
+                  v-model="local.id"
+                  label="Feld-ID"
+                  disabled
+                  background-color="accent"
+                  filled
+                  dense
+                  hint="Interne Kennung — nicht änderbar."
+                  persistent-hint
+                />
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
         </v-form>
       </v-card-text>
 
@@ -254,7 +296,7 @@
       <v-card-actions>
         <v-spacer />
         <v-btn text @click="close">Abbrechen</v-btn>
-        <v-btn color="primary" text :disabled="!valid" @click="save">
+        <v-btn color="primary" text :disabled="!canSave" @click="save">
           {{ isEdit ? "Speichern" : "Anlegen" }}
         </v-btn>
       </v-card-actions>
@@ -263,6 +305,8 @@
 </template>
 
 <script>
+import CustomFieldPreview from "@/components/CustomFields/CustomFieldPreview.vue";
+
 const makeEmptyField = () => ({
   id: "",
   caption: "",
@@ -279,8 +323,42 @@ const makeEmptyField = () => ({
   },
 });
 
+const slugifyOptionValue = (caption) => {
+  if (!caption) return "";
+
+  return caption
+    .trim()
+    .toLowerCase()
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+};
+
+const makeUniqueOptionValue = (baseValue, options, excludeIndex = -1) => {
+  const normalizedBase = baseValue || "option";
+  let candidate = normalizedBase;
+  let suffix = 2;
+
+  while (
+    options.some(
+      (opt, index) => index !== excludeIndex && opt.value === candidate
+    )
+  ) {
+    candidate = `${normalizedBase}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+};
+
 export default {
   name: "CustomFieldDialog",
+  components: { CustomFieldPreview },
   props: {
     value: { type: Boolean, default: false },
     field: { type: Object, default: null },
@@ -292,6 +370,8 @@ export default {
     return {
       valid: false,
       local: makeEmptyField(),
+      showTechnicalValues: false,
+      isInitializing: false,
       inputTypes: [
         { text: "Zahl", value: "numeric", description: "Einfache Zahlenwerte" },
         { text: "Text (einzeilig)", value: "string", description: "Kurze Schlagworte oder Zahlenbereiche" },
@@ -301,9 +381,21 @@ export default {
         { text: "Ja / Nein", value: "boolean", description: "Einzelne Ja-Nein-Auswahloption"  },
       ],
       contextOptions: [
-        { text: "Nicht verwendet", value: "none" },
-        { text: "Im Buchungsprozess (Kunde füllt aus)", value: "checkout" },
-        { text: "Im Katalog (Info / Filter)", value: "catalog" },
+        {
+          text: "Nur intern",
+          value: "none",
+          hint: "Nur im Admin-Bereich sichtbar, nicht im Katalog oder Buchungsprozess.",
+        },
+        {
+          text: "Im Buchungsprozess",
+          value: "checkout",
+          hint: "Der Kunde füllt dieses Feld während der Buchung aus.",
+        },
+        {
+          text: "Im Katalog",
+          value: "catalog",
+          hint: "Anzeige und optionaler Filter auf der öffentlichen Katalogseite.",
+        },
       ],
       filterPositions: [
         { text: "Seitenleiste", value: "sidebar" },
@@ -312,12 +404,43 @@ export default {
       ],
       rules: {
         required: (v) => !!v || "Pflichtfeld",
+        uniqueOptionCaption: (index) => (v) => {
+          if (!v) return true;
+          const duplicates = this.local.options.filter(
+            (opt, i) => i !== index && opt.caption.trim() === v.trim()
+          );
+          return (
+            duplicates.length === 0 || "Diese Option existiert bereits"
+          );
+        },
+        uniqueOptionValue: (index) => (v) => {
+          if (!v) return true;
+          const duplicates = this.local.options.filter(
+            (opt, i) => i !== index && opt.value === v
+          );
+          return (
+            duplicates.length === 0 || "Jeder technische Wert darf nur einmal vorkommen"
+          );
+        },
       },
     };
   },
   computed: {
     isEdit() {
       return this.field !== null;
+    },
+    canSave() {
+      if (!this.valid) return false;
+      if (this.local.inputType !== "select") return true;
+
+      return (
+        this.local.options.length > 0 &&
+        this.local.options.every((opt) => opt.caption && opt.value)
+      );
+    },
+    showPreview() {
+      const context = this.local.usageOptions?.context;
+      return context === "checkout" || context === "catalog";
     },
     detailDisplayPositions() {
       const all = [
@@ -334,10 +457,26 @@ export default {
     },
     filterTypes() {
       const all = [
-        { text: "Auswahlfeld (Einzeln)", value: "checkbox", description: "Anzeige der Feld-Bezeichnung als einzelne Auswahloption" },
-        { text: "Auswahlfelder (Gruppe)", value: "select", description: "Anzeige aller Optionen / eingegebenen Werte als Auswahloption" },
-        { text: "Schieberegler (einseitig)", value: "slider", description: "Einseitiger Regler, um den maximalen Wert zu begrenzen" },
-        { text: "Schieberegler (zweiseitig)", value: "range", description: "Zweiseitiger Regler, um minimalen und maximaln Wert festzulegen" },
+        {
+          text: "Einzelne Checkbox",
+          value: "checkbox",
+          description: "Eine Checkbox mit der Feldbezeichnung",
+        },
+        {
+          text: "Dropdown-Filter",
+          value: "select",
+          description: "Alle Optionen als Auswahlliste",
+        },
+        {
+          text: "Maximalwert-Regler",
+          value: "slider",
+          description: "Schieberegler bis zu einem Maximalwert",
+        },
+        {
+          text: "Von–Bis-Regler",
+          value: "range",
+          description: "Schieberegler für einen Minimal- und Maximalwert",
+        },
       ];
 
       const type = this.local.inputType;
@@ -355,6 +494,7 @@ export default {
   watch: {
     value(open) {
       if (open) {
+        this.isInitializing = true;
         this.local = this.field
           ? JSON.parse(JSON.stringify(this.field))
           : makeEmptyField();
@@ -364,20 +504,34 @@ export default {
           ...(this.local.usageOptions || {}),
         };
         this.local.options = this.local.options || [];
+        this.showTechnicalValues = this.hasCustomOptionValues(this.local.options);
 
         this.$nextTick(() => {
+          this.isInitializing = false;
           if (this.$refs.form) this.$refs.form.resetValidation();
         });
+      } else {
+        this.showTechnicalValues = false;
+        this.isInitializing = false;
       }
     },
     "local.inputType"(v) {
-      if (v !== "select") this.local.options = [];
+      if (v !== "select") {
+        this.local.options = [];
+        this.showTechnicalValues = false;
+      } else if (!this.local.options.length) {
+        this.addOption();
+      }
       const allowed = this.filterTypes.map((f) => f.value);
       if (
         this.local.usageOptions.catalogFilterType &&
         !allowed.includes(this.local.usageOptions.catalogFilterType)
       ) {
-        this.local.usageOptions.catalogFilterType = null;
+        if (this.isInitializing) {
+          this.local.usageOptions.catalogFilterType = null;
+        } else {
+          this.applyCatalogSmartDefaults(true);
+        }
       }
 
       const allowedPositions = this.detailDisplayPositions.map((p) => p.value);
@@ -386,8 +540,14 @@ export default {
       ) {
         this.local.usageOptions.detailDisplayPosition = "none";
       }
+
+      if (!this.isInitializing) {
+        this.applyCatalogSmartDefaults();
+      }
     },
-    "local.usageOptions.context"(v) {
+    "local.usageOptions.context"(v, oldValue) {
+      if (this.isInitializing) return;
+
       if (v !== "checkout") {
         this.local.usageOptions.requiredInCheckout = false;
       }
@@ -395,15 +555,101 @@ export default {
         this.local.usageOptions.filterable = false;
         this.local.usageOptions.catalogFilterType = null;
         this.local.usageOptions.catalogFilterPosition = "sidebar";
+        this.local.usageOptions.detailDisplayPosition = "none";
+      } else if (oldValue !== "catalog") {
+        this.applyCatalogSmartDefaults(true);
       }
     },
     "local.usageOptions.filterable"(v) {
+      if (this.isInitializing) return;
+
       if (!v) {
         this.local.usageOptions.catalogFilterType = null;
+      } else {
+        this.applyCatalogSmartDefaults(true);
+      }
+    },
+    showTechnicalValues(enabled) {
+      if (!enabled) {
+        this.syncAllOptionValues();
       }
     },
   },
   methods: {
+    hasCustomOptionValues(options = []) {
+      return options.some((opt) => {
+        const autoValue = slugifyOptionValue(opt.caption);
+        return opt.value && opt.value !== autoValue;
+      });
+    },
+    syncOptionValue(index) {
+      const option = this.local.options[index];
+      if (!option || this.showTechnicalValues) return;
+
+      const baseValue = slugifyOptionValue(option.caption) || `option-${index + 1}`;
+      option.value = makeUniqueOptionValue(
+        baseValue,
+        this.local.options,
+        index
+      );
+    },
+    syncAllOptionValues() {
+      this.local.options.forEach((_, index) => {
+        this.syncOptionValue(index);
+      });
+    },
+    onOptionCaptionInput(index) {
+      this.syncOptionValue(index);
+    },
+    getDefaultCatalogFilterType(inputType) {
+      const defaults = {
+        boolean: "checkbox",
+        string: "select",
+        text: "select",
+        select: "select",
+        numeric: "range",
+      };
+      return defaults[inputType] || "select";
+    },
+    getDefaultDetailDisplayPosition(inputType) {
+      if (inputType === "text") return "belowDescription";
+      if (inputType === "boolean" || inputType === "select") return "badge";
+      if (inputType === "numeric") return "belowDescription";
+      return "belowDescription";
+    },
+    applyCatalogSmartDefaults(force = false) {
+      const usage = this.local.usageOptions;
+      if (usage.context !== "catalog") return;
+
+      if (usage.filterable) {
+        const defaultFilter = this.getDefaultCatalogFilterType(
+          this.local.inputType
+        );
+        const allowedFilters = this.filterTypes.map((item) => item.value);
+
+        if (
+          force ||
+          !usage.catalogFilterType ||
+          !allowedFilters.includes(usage.catalogFilterType)
+        ) {
+          usage.catalogFilterType = allowedFilters.includes(defaultFilter)
+            ? defaultFilter
+            : allowedFilters[0] || null;
+        }
+      }
+
+      if (force || usage.detailDisplayPosition === "none") {
+        const defaultPosition = this.getDefaultDetailDisplayPosition(
+          this.local.inputType
+        );
+        const allowedPositions = this.detailDisplayPositions.map(
+          (item) => item.value
+        );
+        if (allowedPositions.includes(defaultPosition)) {
+          usage.detailDisplayPosition = defaultPosition;
+        }
+      }
+    },
     generateUUID() {
       if (crypto && crypto.randomUUID) {
         return crypto.randomUUID();
@@ -415,7 +661,8 @@ export default {
       });
     },
     addOption() {
-      this.local.options.push({ caption: "", value: "" });
+      const nextIndex = this.local.options.length;
+      this.local.options.push({ caption: "", value: `option-${nextIndex + 1}` });
     },
     removeOption(i) {
       this.local.options.splice(i, 1);
@@ -446,6 +693,15 @@ export default {
       return u;
     },
     save() {
+      if (this.local.inputType === "select") {
+        if (!this.showTechnicalValues) {
+          this.syncAllOptionValues();
+        }
+        if (!this.local.options.length) {
+          return;
+        }
+      }
+
       if (!this.$refs.form.validate()) return;
       const payload = JSON.parse(JSON.stringify(this.local));
       payload.usageOptions = this.normalizeUsageOptions(
@@ -459,3 +715,31 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* Override global $card-border-radius (25px) for inner dialog sections */
+.custom-field-dialog >>> .usage-card.v-card,
+.custom-field-dialog >>> .custom-field-preview.v-card {
+  border-radius: 4px !important;
+}
+
+.usage-card {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.theme--dark .usage-card {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.custom-field-dialog >>> .custom-field-dialog-form .v-input__control > .v-input__slot,
+.custom-field-dialog >>> .custom-field-preview .v-input__control > .v-input__slot {
+  border-radius: 4px !important;
+}
+
+.custom-field-dialog >>> .custom-field-dialog-form .v-input__control > .v-input__slot::before,
+.custom-field-dialog >>> .custom-field-dialog-form .v-input__control > .v-input__slot::after,
+.custom-field-dialog >>> .custom-field-preview .v-input__control > .v-input__slot::before,
+.custom-field-dialog >>> .custom-field-preview .v-input__control > .v-input__slot::after {
+  border-radius: 4px !important;
+}
+</style>

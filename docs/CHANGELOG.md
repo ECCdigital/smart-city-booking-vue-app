@@ -15,6 +15,15 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 - Bookable permissions: per-user and per-role booking discounts with percentage field (0–100) replace the previous free-booking lists (DEV-781)
 - Bundle checkout: role/user booking discounts shown via `bookingDiscountPercent`; opt-out uses `bookWithoutDiscount` instead of `bookWithPrice` (DEV-781)
 
+### Changed
+
+- Custom field editor: simplified select options (single input with auto-generated values), validation for duplicate options, technical IDs hidden by default, and clearer German labels
+- Custom field editor: progressive usage settings, smart catalog defaults, live preview, and read-only inherited fields on tenant/bookable level
+- Custom field list: cleaner badge layout for inherited and editable fields (no truncation, consistent context chips)
+- Custom field dialog: reduced inner card border radius and flat filled select/input backgrounds (overrides global card styling)
+- Bookable edit: merged custom field values and definitions into a single „Eigene Felder“ tab with sub-tabs and compact value rows grouped by origin
+- Custom field list: hint that inherited fields are read-only in the definitions view
+
 ### Fixed
 
 - Bundle checkout: payment step is shown when additional bookables require payment, even if the lead bookable is free via role discount (DEV-781)
