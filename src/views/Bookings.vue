@@ -228,6 +228,7 @@
     <BookingRejectConformationDialog
       :to-reject="selectedBooking"
       :open="openRejectDialog"
+      :loading="loading"
       @close="onCloseRejectDialog"
       @reject-booking="rejectBooking"
     />
@@ -272,6 +273,7 @@
     />
     <GroupBookingRejectConformationDialog
       :to-reject="selectedBooking"
+      :group-booking-id="selectedGroupBooking?.id"
       :open="openRejectGroupBookingDialog"
       :in-progress="loading"
       :error="errors.reject"
@@ -283,6 +285,8 @@
       v-if="selectedBooking.id"
       :booking-id="selectedBooking.id"
       :open="openDeleteGroupBookingDialog"
+      :single-delete-disabled="isSelectedBookingHardDeleteBlocked"
+      :group-delete-disabled="isSelectedGroupHardDeleteBlocked"
       @close="closeDialog('deleteGroupBooking')"
       @delete-single-booking="deleteBooking"
       @delete-group-booking="deleteGroupBooking"
@@ -414,6 +418,18 @@ export default {
     },
     hasActiveBookingTypeFilter() {
       return this.bookingTypeFilter !== "all";
+    },
+    isSelectedBookingHardDeleteBlocked() {
+      return !!(
+        this.selectedBooking?.isCommitted || this.selectedBooking?.isPayed
+      );
+    },
+    isSelectedGroupHardDeleteBlocked() {
+      if (!this.selectedGroupBooking?.bookingIds) return false;
+      return this.selectedGroupBooking.bookingIds.some((bookingId) => {
+        const booking = this.api.bookings.find((item) => item.id === bookingId);
+        return booking?.isCommitted || booking?.isPayed;
+      });
     },
     mappedBookings() {
       return this.api.bookings.map((booking) => {
@@ -630,6 +646,13 @@ export default {
       }
     },
     async deleteBooking(bookingId) {
+      const booking = this.api.bookings.find((item) => item.id === bookingId);
+      if (booking?.isCommitted || booking?.isPayed) {
+        await this.addToast(
+          ToastService.createToast("booking.delete.requires-rejection", "error")
+        );
+        return;
+      }
       const optionId = ProcessingService.showOverlay("Lösche Buchung...");
       try {
         await this.startLoading("delete-booking");
@@ -647,6 +670,16 @@ export default {
       const groupBooking = this.api.groupBookings.find((groupBooking) =>
         groupBooking.bookingIds.includes(bookingId)
       );
+      const hasProtectedBooking = groupBooking.bookingIds.some((id) => {
+        const booking = this.api.bookings.find((item) => item.id === id);
+        return booking?.isCommitted || booking?.isPayed;
+      });
+      if (hasProtectedBooking) {
+        await this.addToast(
+          ToastService.createToast("booking.delete.requires-rejection", "error")
+        );
+        return;
+      }
       const optionId = ProcessingService.showOverlay("Lösche Serienbuchung...");
       try {
         await this.startLoading("delete-booking");
@@ -817,7 +850,13 @@ export default {
         ProcessingService.hide(operationId);
       }
     },
-    async rejectBooking(id, rejectReason, skipCancellation, bankDetails) {
+    async rejectBooking(
+      id,
+      rejectReason,
+      skipCancellation,
+      bankDetails,
+      refundPercentage
+    ) {
       const operationId = ProcessingService.showOverlay(
         "Buchung wird abgelehnt..."
       );
@@ -828,18 +867,31 @@ export default {
           this.tenantId,
           rejectReason,
           skipCancellation,
-          bankDetails
+          bankDetails,
+          refundPercentage
+        );
+        await this.addToast(
+          ToastService.createToast("booking.reject.success", "success")
         );
         await this.fetchBookings();
         await this.fetchGroupBookings();
         this.openRejectDialog = false;
         this.openRejectGroupBookingDialog = false;
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast("booking.reject.error", "error")
+        );
       } finally {
         await this.stopLoading("reject-booking");
         ProcessingService.hide(operationId);
       }
     },
-    async rejectGroupBooking(id, rejectReason, skipCancellation) {
+    async rejectGroupBooking(
+      id,
+      rejectReason,
+      skipCancellation,
+      refundPercentage
+    ) {
       const groupBooking = this.api.groupBookings.find((groupBooking) =>
         groupBooking.bookingIds.includes(id)
       );
@@ -852,7 +904,8 @@ export default {
           null,
           groupBooking.id,
           rejectReason,
-          skipCancellation
+          skipCancellation,
+          refundPercentage
         );
 
         if (!response.success) {
@@ -866,6 +919,14 @@ export default {
           await this.fetchGroupBookings();
           this.openRejectGroupBookingDialog = false;
         }
+      } catch (error) {
+        this.errors.reject =
+          error?.response?.data === "invalid_refund_percentage"
+            ? this.$t("booking.cancellationRefund.percentageRange")
+            : this.$t("group-booking.reject.error.message");
+        await this.addToast(
+          ToastService.createToast("group-booking.reject.error", "error")
+        );
       } finally {
         await this.stopLoading("reject-booking");
         ProcessingService.hide(operationId);
@@ -923,8 +984,10 @@ export default {
         this.api.bookings.find((booking) => booking.id === bookingId)
       );
       if (hasGroupBooking) {
+        this.selectedGroupBooking = Object.assign({}, hasGroupBooking);
         this.openDeleteGroupBookingDialog = true;
       } else {
+        this.selectedGroupBooking = null;
         this.openDeleteDialog = true;
       }
     },
@@ -937,8 +1000,10 @@ export default {
         this.api.bookings.find((booking) => booking.id === bookingId)
       );
       if (hasGroupBooking) {
+        this.selectedGroupBooking = Object.assign({}, hasGroupBooking);
         this.openRejectGroupBookingDialog = true;
       } else {
+        this.selectedGroupBooking = null;
         this.openRejectDialog = true;
       }
     },

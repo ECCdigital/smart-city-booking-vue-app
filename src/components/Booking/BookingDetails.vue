@@ -575,6 +575,11 @@
                 </v-alert>
               </v-col>
             </v-row>
+            <v-row v-if="cancellationRefundAudit">
+              <v-col cols="12">
+                <CancellationRefundAudit :audit="cancellationRefundAudit" />
+              </v-col>
+            </v-row>
           </v-card-text>
         </v-card>
 
@@ -1083,6 +1088,8 @@ import { getIfbsErrorMessage } from "@/utils/ifbsErrors";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
+import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
+import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
 import {
   getPaymentStatus,
   getPaymentStatusColor,
@@ -1096,6 +1103,7 @@ export default {
   name: "BookingDetails",
   components: {
     BookableTypeChip,
+    CancellationRefundAudit,
     ProcessingIndicator,
     GroupBookingCreateReceipt,
     GroupBookingCreateInvoice,
@@ -1152,6 +1160,9 @@ export default {
       return this.booking.attachments?.filter(
         (attachment) => attachment.type === "cancellation"
       );
+    },
+    cancellationRefundAudit() {
+      return getCancellationRefundAudit(this.booking);
     },
     attachments() {
       if (!this.booking.attachments) return [];

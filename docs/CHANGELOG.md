@@ -14,11 +14,18 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 - Admin UI for supervisor booking notifications (DEV-779): manage `bookingNotificationRecipients` per tenant member (user, role, email; max. 10) in the member detail dialog
 - Bookable permissions: per-user and per-role booking discounts with percentage field (0–100) replace the previous free-booking lists (DEV-781)
 - Bundle checkout: role/user booking discounts shown via `bookingDiscountPercent`; opt-out uses `bookWithoutDiscount` instead of `bookWithPrice` (DEV-781)
+- Tenant cancellation refund tiers with policy previews, admin overrides, and per-booking series breakdowns (DEV-786)
+- Persisted cancellation refund audit on bookings with read-only display in booking details and edit views (DEV-786)
 
 ### Changed
 
 - Custom fields: simplified editor and list layout with live preview, clearer labels, and read-only inherited fields
 - Bookable edit: custom field values and definitions merged into a single „Eigene Felder“ tab
+- Cancelled bookings can be reactivated via the status switch in booking edit (DEV-786)
+
+### Fixed
+
+- Reactivating a cancelled booking no longer resets the booking price to 0 € (DEV-786)
 
 ### Fixed
 

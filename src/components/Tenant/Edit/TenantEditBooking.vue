@@ -1,16 +1,20 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
+import TenantCancellationRefundTiersEditor from "@/components/Tenant/Edit/TenantCancellationRefundTiersEditor.vue";
 
 export default {
   name: "TenantEditBooking",
-  components: { BaseSection },
+  components: { TenantCancellationRefundTiersEditor, BaseSection },
   props: {
     tenant: { type: Object, required: true },
   },
   data() {
     return {
       valid: false,
-      localTenant: { ...this.tenant },
+      localTenant: {
+        ...this.tenant,
+        cancellationRefundTiers: this.tenant.cancellationRefundTiers || [],
+      },
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
         mail: [
@@ -33,13 +37,20 @@ export default {
     tenant: {
       deep: true,
       handler(v) {
-        this.localTenant = { ...v };
+        this.localTenant = {
+          ...v,
+          cancellationRefundTiers: v.cancellationRefundTiers || [],
+        };
       },
     },
   },
   methods: {
     emitTenant() {
       this.$emit("update:tenant", this.localTenant);
+    },
+    updateRefundTiers(tiers) {
+      this.$set(this.localTenant, "cancellationRefundTiers", tiers);
+      this.emitTenant();
     },
     async validate() {
       return this.$refs.form ? this.$refs.form.validate() : true;
@@ -52,51 +63,58 @@ export default {
 </script>
 
 <template>
-  <BaseSection title="Buchungskonfiguration" icon="mdi-calendar">
-    <v-row>
-      <v-col class="col-12 col-md-6">
-        <v-text-field
-          background-color="accent"
-          filled
-          dense
-          label="Vorausbuchungen möglich bis"
-          type="number"
-          suffix="Monate"
-          v-model="localTenant.maxBookingAdvanceInMonths"
-          @input="emitTenant()"
-        >
-        </v-text-field>
-      </v-col>
-    </v-row>
-    <v-switch
-      v-model="localTenant.notifyOnNewBooking"
-      color="primary"
-      hint="Sofern aktiviert, erhält der Mandant eine E-Mail bei jeder neuen Buchung."
-      persistent-hint
-      label="Benachrichtigung bei neuer Buchung"
-      class="mt-2"
-      @change="emitTenant()"
-    ></v-switch>
-    <v-switch
-      v-model="localTenant.notifySupervisorsOnBooking"
-      color="primary"
-      hint="Sofern aktiviert, werden bei Buchungen die an den Mitgliedern hinterlegten Benachrichtigungsempfänger (z. B. Vorgesetzte) automatisch per E-Mail informiert."
-      persistent-hint
-      label="Vorgesetzte bei Buchung informieren"
-      class="mt-2"
-      @change="emitTenant()"
-    ></v-switch>
-    <v-switch
-      v-model="localTenant.enablePublicStatusView"
-      color="primary"
-      hint="Sofern aktiviert, kann der Status einer Buchung öffentlich abgefragt werden."
-      persistent-hint
-      label="Öffentlicher Buchungsstatus"
-      class="mt-2"
-      @change="emitTenant()"
-    >
-    </v-switch>
-  </BaseSection>
+  <v-form ref="form" v-model="valid">
+    <BaseSection title="Buchungskonfiguration" icon="mdi-calendar">
+      <v-row>
+        <v-col class="col-12 col-md-6">
+          <v-text-field
+            background-color="accent"
+            filled
+            dense
+            label="Vorausbuchungen möglich bis"
+            type="number"
+            suffix="Monate"
+            v-model="localTenant.maxBookingAdvanceInMonths"
+            @input="emitTenant()"
+          >
+          </v-text-field>
+        </v-col>
+      </v-row>
+      <v-switch
+        v-model="localTenant.notifyOnNewBooking"
+        color="primary"
+        hint="Sofern aktiviert, erhält der Mandant eine E-Mail bei jeder neuen Buchung."
+        persistent-hint
+        label="Benachrichtigung bei neuer Buchung"
+        class="mt-2"
+        @change="emitTenant()"
+      ></v-switch>
+      <v-switch
+        v-model="localTenant.notifySupervisorsOnBooking"
+        color="primary"
+        hint="Sofern aktiviert, werden bei Buchungen die an den Mitgliedern hinterlegten Benachrichtigungsempfänger (z. B. Vorgesetzte) automatisch per E-Mail informiert."
+        persistent-hint
+        label="Vorgesetzte bei Buchung informieren"
+        class="mt-2"
+        @change="emitTenant()"
+      ></v-switch>
+      <v-switch
+        v-model="localTenant.enablePublicStatusView"
+        color="primary"
+        hint="Sofern aktiviert, kann der Status einer Buchung öffentlich abgefragt werden."
+        persistent-hint
+        label="Öffentlicher Buchungsstatus"
+        class="mt-2"
+        @change="emitTenant()"
+      >
+      </v-switch>
+    </BaseSection>
+
+    <TenantCancellationRefundTiersEditor
+      :tiers="localTenant.cancellationRefundTiers"
+      @update:tiers="updateRefundTiers"
+    />
+  </v-form>
 </template>
 
 <style scoped></style>

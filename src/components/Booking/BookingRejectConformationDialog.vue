@@ -26,6 +26,15 @@
             label="Kein Stornobeleg erstellen"
           ></v-checkbox>
 
+          <CancellationRefundPreview
+            v-if="!skipCancellation"
+            :preview="refundPreview"
+            :loading="previewLoading"
+            :error="previewError"
+            @update:refund-percentage="refundPercentage = $event"
+            @update:valid="refundValid = $event"
+          />
+
           <div v-if="canProvideBankDetails">
             <v-divider class="mb-4"></v-divider>
             <p class="text-subtitle-2 font-weight-bold mb-1">
@@ -73,8 +82,8 @@
           <v-col class="shrink">
             <v-btn
               color="primary"
-              :loading="loading"
-              :disabled="!valid"
+              :loading="loading || previewLoading"
+              :disabled="!canSubmit"
               type="submit"
               >Ja</v-btn
             >
@@ -89,6 +98,10 @@
 </template>
 
 <script>
+import ApiBookingService from "@/services/api/ApiBookingService";
+import CancellationRefundPreview from "@/components/Booking/CancellationRefundPreview.vue";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+
 const IBAN_REGEX = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/;
 const BIC_REGEX = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
 
@@ -121,7 +134,8 @@ function isValidIban(value) {
 }
 
 export default {
-  name: "BookingDeleteConformationDialog",
+  name: "BookingRejectConformationDialog",
+  components: { CancellationRefundPreview },
   props: {
     open: {
       type: Boolean,
@@ -141,6 +155,11 @@ export default {
       rejectReason: null,
       valid: false,
       skipCancellation: false,
+      refundPreview: null,
+      previewLoading: false,
+      previewError: null,
+      refundPercentage: undefined,
+      refundValid: true,
       bankDetails: {
         bankName: "",
         accountHolder: "",
@@ -162,6 +181,14 @@ export default {
         typeof this.toReject.priceEur === "number" &&
         this.toReject.priceEur > 0 &&
         this.skipCancellation === false
+      );
+    },
+    canSubmit() {
+      return (
+        this.valid &&
+        !this.previewLoading &&
+        (this.skipCancellation ||
+          (!!this.refundPreview && !this.previewError && this.refundValid))
       );
     },
     formattedPrice() {
@@ -192,11 +219,43 @@ export default {
       };
     },
   },
+  watch: {
+    open(value) {
+      if (value) {
+        this.loadRefundPreview();
+      } else {
+        this.resetDialog();
+      }
+    },
+    skipCancellation(value) {
+      if (!value && this.open && !this.refundPreview) {
+        this.loadRefundPreview();
+      }
+      if (value) {
+        this.refundPercentage = undefined;
+      }
+    },
+    "toReject.id"(value, oldValue) {
+      if (this.open && value && value !== oldValue) {
+        this.loadRefundPreview();
+      }
+    },
+  },
   methods: {
     closeDialog() {
-      this.rejectReason = null;
-      this.resetBankDetails();
+      this.resetDialog();
       this.$emit("close");
+    },
+    resetDialog() {
+      this.rejectReason = null;
+      this.skipCancellation = false;
+      this.refundPreview = null;
+      this.previewError = null;
+      this.previewLoading = false;
+      this.refundPercentage = undefined;
+      this.refundValid = true;
+      this.resetBankDetails();
+      this.$nextTick(() => this.$refs.form?.resetValidation());
     },
     resetBankDetails() {
       this.bankDetails = {
@@ -229,14 +288,34 @@ export default {
       if (bic) payload.bic = bic;
       return payload;
     },
+    async loadRefundPreview() {
+      if (!this.toReject?.id || this.skipCancellation) return;
+      this.previewLoading = true;
+      this.previewError = null;
+      this.refundPreview = null;
+      try {
+        this.refundPreview =
+          await ApiBookingService.getCancellationRefundPreview(
+            this.toReject.id
+          );
+      } catch (error) {
+        this.previewError = getApiErrorMessage(
+          error,
+          this.$t("booking.cancellationRefund.previewError")
+        );
+      } finally {
+        this.previewLoading = false;
+      }
+    },
     async onReject() {
-      if (this.valid) {
+      if (this.canSubmit) {
         this.$emit(
           "reject-booking",
           this.toReject.id,
           this.rejectReason,
           this.skipCancellation,
-          this.buildBankDetailsPayload()
+          this.buildBankDetailsPayload(),
+          this.skipCancellation ? undefined : this.refundPercentage
         );
       }
     },
