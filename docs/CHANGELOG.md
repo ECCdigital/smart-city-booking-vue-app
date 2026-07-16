@@ -16,6 +16,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 - Bundle checkout: role/user booking discounts shown via `bookingDiscountPercent`; opt-out uses `bookWithoutDiscount` instead of `bookWithPrice` (DEV-781)
 - Tenant cancellation refund tiers with policy previews, admin overrides, and per-booking series breakdowns (DEV-786)
 - Persisted cancellation refund audit on bookings with read-only display in booking details and edit views (DEV-786)
+- Cancellation PDF template editor: refund-tier Handlebars variables, backend-aligned default blocks, and „Standardvorlage laden“ in the visual editor (DEV-786)
 
 ### Changed
 
