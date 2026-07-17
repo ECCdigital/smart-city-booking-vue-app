@@ -12,6 +12,8 @@ const COMMON_STYLES = `
       table { border-collapse: collapse; }
       .meta { text-align: right; font-size: 12px; color: #666; margin-bottom: 16px; }
       .info-box { padding: 12px; background: #f9f9f9; border-radius: 4px; margin: 12px 0; }
+      .cancellation-note { margin-top: 10px; padding: 10px; border-left: 4px solid #c0392b; background: #fdecea; font-size: 12px; line-height: 18px; }
+      .refund-note { margin-top: 10px; padding: 10px; border-left: 4px solid #2e7d32; background: #eaf5ea; font-size: 12px; line-height: 18px; }
       .booking-detail, .booked-items { width: 100%; }
       .booking-detail td, .booking-detail th,
       .booked-items td, .booked-items th { padding: 8px; border-bottom: 1px solid #ddd; }
@@ -256,6 +258,8 @@ function makeInvoiceDefaultBlocks() {
 }
 
 function makeCancellationDefaultBlocks() {
+  // Content mirrors the backend default template
+  // (default-cancellation-receipt.temp.html), adapted for the block editor.
   return [
     {
       type: "row",
@@ -283,43 +287,65 @@ function makeCancellationDefaultBlocks() {
             {
               type: "text",
               html:
-                `<p>Hiermit stornieren wir die Rechnung <strong>${chip("originalInvoiceNumber", "Original-Rechnungsnummer")}</strong> ` +
-                `vom ${chip("originalInvoiceDate", "Original-Rechnungsdatum")}.</p>`,
+                "<p>Sehr geehrte Damen und Herren,<br /><br />" +
+                `hiermit stornieren wir die Rechnung mit der Nummer <strong>${chip("originalInvoiceNumber", "Original-Rechnungsnummer")}</strong> vom ` +
+                `${chip("originalInvoiceDate", "Original-Rechnungsdatum")}. Die nachfolgend aufgeführten Positionen werden Ihnen ` +
+                "{{#if isFullRefund}}in voller Höhe{{else}}anteilig gemäß der nachfolgenden Berechnung{{/if}} gutgeschrieben.</p>",
               align: "left",
             },
             {
               type: "rawHtml",
               html:
-                "{{#if cancellationReason}}<p><strong>Grund:</strong> {{cancellationReason}}</p>{{/if}}",
+                "{{#if cancellationReason}}" +
+                "<div class=\"cancellation-note\">" +
+                "<strong>Grund der Stornierung:</strong> {{cancellationReason}}" +
+                "</div>" +
+                "{{/if}}",
+            },
+            {
+              type: "rawHtml",
+              html:
+                "<div class=\"cancellation-note\">" +
+                "<strong>Berechnung der Erstattung:</strong><br />" +
+                "Stornierungszeitpunkt: {{cancellationDate}}<br />" +
+                "{{#if refundCalculations}}" +
+                "{{#each refundCalculations}}" +
+                "Buchung {{bookingId}}: {{daysBeforeStartLabel}} Kalendertage vor Beginn, " +
+                "{{refundPercentage}} % Erstattung ({{refundAmount}})." +
+                "{{#unless @last}}<br />{{/unless}}" +
+                "{{/each}}" +
+                "{{else}}" +
+                "{{daysBeforeStartLabel}} Kalendertage vor Buchungsbeginn, " +
+                "{{refundPercentage}} % Erstattung." +
+                "{{/if}}" +
+                "</div>",
             },
             {
               type: "rawHtml",
               html:
                 "{{#if alreadyPaid}}" +
-                "<p>Der bereits gezahlte Betrag in Höhe von <strong>{{refundAmount}}</strong> wird Ihnen per {{refundMethod}} erstattet." +
+                "<div class=\"refund-note\">" +
+                "Der bereits gezahlte Betrag in Höhe von <strong>{{refundAmount}}</strong> wird Ihnen erstattet." +
+                "{{#if hasCancellationFee}} Der einbehaltene Betrag beläuft sich auf <strong>{{cancellationFee}}</strong>.{{/if}}" +
+                "</div>" +
                 "{{#if customerBankDetails}}{{{customerBankDetails}}}{{/if}}" +
-                "{{/if}}" +
-                "{{#unless alreadyPaid}}" +
-                "<p>Sofern noch keine Zahlung erfolgt ist, entfällt die Zahlungsverpflichtung aus der ursprünglichen Rechnung.</p>" +
-                "{{/unless}}",
+                "{{else}}" +
+                "<p>Sofern noch keine Zahlung erfolgt ist, reduziert sich die Zahlungsverpflichtung um " +
+                "<strong>{{refundAmount}}</strong>. " +
+                "{{#if isFullRefund}}Die ursprüngliche Rechnung <strong>{{originalInvoiceNumber}}</strong> wird damit vollständig aufgehoben." +
+                "{{else}}Der verbleibende Betrag in Höhe von <strong>{{cancellationFee}}</strong> bleibt bestehen.{{/if}}" +
+                "</p>" +
+                "{{/if}}",
             },
             {
               type: "rawHtml",
               html: "{{{mainContent}}}",
             },
             {
-              type: "rawHtml",
-              html:
-                "{{#if showBankDetails}}" +
-                "<div class=\"info-box\"><strong>Unsere Bankverbindung für Rückfragen:</strong><br />" +
-                "{{bank}}<br />IBAN: {{iban}}<br />BIC: {{bic}}</div>" +
-                "{{/if}}",
-            },
-            {
               type: "text",
               html:
-                `<p><strong>Gesamt-Stornobetrag: ${chip("totalAmount", "Gesamt-Stornobetrag")}</strong></p>`,
-              align: "right",
+                `<p>Bei Rückfragen zu dieser Stornorechnung wenden Sie sich bitte unter Angabe der Stornobelegnummer <strong>${chip("cancellationNumber", "Stornobelegnummer")}</strong> an uns.</p>`,
+              align: "left",
             },
             {
               type: "text",
@@ -399,7 +425,7 @@ export const PDF_TEMPLATE_CATALOG = {
     key: "cancellation",
     title: "Stornorechnungs-Vorlage",
     description:
-      "Vorlage für Einzel- und Sammel-Stornorechnungen. Pflichtvariablen: {{cancellationNumber}}, {{{invoiceAddress}}} sowie {{{mainContent}}} oder ein Tabellen-Partial ({{> pdfBookingItemsTable}} / {{> pdfAggregatedBookingsTable}}).",
+      "Vorlage für Einzel- und Sammel-Stornorechnungen. Pflichtvariablen: {{cancellationNumber}}, {{{invoiceAddress}}} sowie {{{mainContent}}} oder ein Tabellen-Partial ({{> pdfBookingItemsTable}} / {{> pdfAggregatedBookingsTable}}). Erstattungsstaffel: {{daysBeforeStartLabel}}, {{refundPercentage}}, {{cancellationFee}}, {{calculationMode}}, {{#if isFullRefund}} …",
     icon: "mdi-receipt-text-remove-outline",
     variables: CANCELLATION_VARIABLES,
     sampleData: SAMPLE_DATA.cancellation,
@@ -423,7 +449,7 @@ export const PDF_TEMPLATE_CATALOG = {
       return {
         headerHtml: "",
         footerHtml: makeDefaultPageFooter(
-          "Stornorechnung {{cancellationNumber}}",
+          "{{title}} {{cancellationNumber}}",
         ),
       };
     },

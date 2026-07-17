@@ -37,6 +37,52 @@ export const SNIPPET_VARIABLES = [
   },
 ];
 
+export const BOOKING_CANCEL_SNIPPET_VARIABLES = [
+  {
+    name: "hasRefundPreview",
+    placeholder: "{{#if hasRefundPreview}}...{{/if}}",
+    label: "Erstattung vorhanden",
+    description:
+      "Wahr, wenn die Buchung einen Erstattungsbetrag größer 0 € hat",
+  },
+  {
+    name: "refundAmountEur",
+    placeholder: "{{priceFormatted refundAmountEur}}",
+    label: "Erstattungsbetrag",
+    description: "Erstattungsbetrag als Zahl (mit Helper priceFormatted)",
+  },
+  {
+    name: "cancellationFeeEur",
+    placeholder: "{{priceFormatted cancellationFeeEur}}",
+    label: "Einbehalt",
+    description: "Einbehaltener Betrag (Stornogebühr) als Zahl",
+  },
+  {
+    name: "originalAmountEur",
+    placeholder: "{{priceFormatted originalAmountEur}}",
+    label: "Ursprungsbetrag",
+    description: "Ursprungsbetrag der Buchung als Zahl",
+  },
+  {
+    name: "refundPercentage",
+    placeholder: "{{refundPercentage}}",
+    label: "Erstattungsprozent",
+    description: "Angewandter Erstattungsprozentsatz (0–100)",
+  },
+  {
+    name: "hasCancellationFee",
+    placeholder: "{{#if hasCancellationFee}}...{{/if}}",
+    label: "Einbehalt vorhanden",
+    description: "Wahr, wenn ein Einbehalt größer 0 € anfällt",
+  },
+  {
+    name: "daysBeforeStart",
+    placeholder: "{{daysBeforeStart}}",
+    label: "Tage bis Beginn",
+    description: "Kalendertage bis zum Buchungsbeginn zum Berechnungszeitpunkt",
+  },
+];
+
 export const GENERIC_MAIL_VARIABLES = [
   {
     name: "title",
@@ -340,6 +386,13 @@ export const INVOICE_VARIABLES = [
 
 export const CANCELLATION_VARIABLES = [
   {
+    name: "title",
+    placeholder: "{{title}}",
+    label: "Dokumenttitel",
+    description:
+      "Titel des Belegs (z. B. „Stornorechnung“ oder „Sammel-Stornorechnung“)",
+  },
+  {
     name: "cancellationNumber",
     placeholder: "{{cancellationNumber}}",
     label: "Stornobelegnummer",
@@ -367,7 +420,7 @@ export const CANCELLATION_VARIABLES = [
     name: "cancellationDate",
     placeholder: "{{cancellationDate}}",
     label: "Stornodatum",
-    description: "Datum der Stornierung",
+    description: "Datum und Uhrzeit der Stornierung",
   },
   {
     name: "invoiceAddress",
@@ -379,13 +432,85 @@ export const CANCELLATION_VARIABLES = [
     name: "refundAmount",
     placeholder: "{{refundAmount}}",
     label: "Erstattungsbetrag",
-    description: "Erstattungsbetrag",
+    description: "Erstattungsbetrag (formatiert)",
+  },
+  {
+    name: "cancellationFee",
+    placeholder: "{{cancellationFee}}",
+    label: "Einbehaltener Betrag",
+    description: "Einbehaltener Betrag / Stornogebühr (formatiert)",
   },
   {
     name: "cancellationReason",
     placeholder: "{{cancellationReason}}",
     label: "Stornogrund",
     description: "Grund der Stornierung",
+  },
+  {
+    name: "daysBeforeStartLabel",
+    placeholder: "{{daysBeforeStartLabel}}",
+    label: "Tage vor Buchungsbeginn",
+    description:
+      "Kalendertage vor Buchungsbeginn als Text (oder „nicht verfügbar“)",
+  },
+  {
+    name: "refundPercentage",
+    placeholder: "{{refundPercentage}}",
+    label: "Erstattungsprozentsatz",
+    description: "Tatsächlich angewandter Erstattungsprozentsatz (0–100)",
+  },
+  {
+    name: "suggestedRefundPercentage",
+    placeholder: "{{suggestedRefundPercentage}}",
+    label: "Vorgeschlagener Prozentsatz",
+    description:
+      "Aus der Mandantenstaffel vorgeschlagener Erstattungsprozentsatz",
+  },
+  {
+    name: "calculationMode",
+    placeholder: "{{calculationMode}}",
+    label: "Berechnungsart",
+    description:
+      "Art der Erstattungsberechnung (z. B. Mandantenregel, manuell, System)",
+  },
+  {
+    name: "appliedTierDays",
+    placeholder: "{{appliedTierDays}}",
+    label: "Angewandte Staffelstufe",
+    description:
+      "Schwellenwert (Tage) der angewandten Erstattungsstufe, oder leer",
+  },
+  {
+    name: "isFullRefund",
+    placeholder:
+      "{{#if isFullRefund}}in voller Höhe{{else}}anteilig gemäß der nachfolgenden Berechnung{{/if}}",
+    label: "Volle Erstattung (Bedingung)",
+    description:
+      "Wahr, wenn 100 % erstattet werden – Formulierung in den Zweigen anpassen",
+  },
+  {
+    name: "hasCancellationFee",
+    placeholder:
+      "{{#if hasCancellationFee}}Einbehalt: {{cancellationFee}}{{/if}}",
+    label: "Einbehalt vorhanden (Bedingung)",
+    description:
+      "Wahr, wenn ein Betrag einbehalten wird – Hinweis in den Zweigen anpassen",
+  },
+  {
+    name: "adminOverride",
+    placeholder:
+      "{{#if adminOverride}}manuell durch Administration{{else}}nach Regelwerk{{/if}}",
+    label: "Admin-Override (Bedingung)",
+    description:
+      "Wahr, wenn ein Admin den vorgeschlagenen Prozentsatz überschrieben hat",
+  },
+  {
+    name: "refundCalculations",
+    placeholder:
+      "{{#each refundCalculations}}Buchung {{bookingId}}: {{daysBeforeStartLabel}} Kalendertage vor Beginn, {{refundPercentage}} % Erstattung ({{refundAmount}}), {{calculationMode}}{{#unless @last}}<br />{{/unless}}{{/each}}",
+    label: "Erstattungsberechnungen (Sammel)",
+    description:
+      "Array der Einzelberechnungen bei Sammelstornos (bookingId, Tage, %, Betrag, Berechnungsart)",
   },
   {
     name: "customerBankDetails",
@@ -412,7 +537,7 @@ export const CANCELLATION_VARIABLES = [
     name: "bookingId",
     placeholder: "{{bookingId}}",
     label: "Buchungs-ID",
-    description: "ID der stornierten Buchung",
+    description: "ID der stornierten Buchung bzw. Gruppenbuchung",
   },
   {
     name: "totalAmount",
@@ -663,6 +788,13 @@ export const SAMPLE_DATA = {
     customerName: "Max Mustermann",
     currentDate: new Date().toLocaleDateString("de-DE"),
     customerContact: SAMPLE_CUSTOMER_CONTACT,
+    hasRefundPreview: true,
+    originalAmountEur: 120,
+    refundAmountEur: 60,
+    cancellationFeeEur: 60,
+    refundPercentage: 50,
+    daysBeforeStart: 10,
+    hasCancellationFee: true,
   },
   genericMail: {
     content:
@@ -712,10 +844,20 @@ export const SAMPLE_DATA = {
     cancellationNumber: "S-2026-000007",
     originalInvoiceNumber: "R-2026-000123",
     originalInvoiceDate: "18.05.2026",
-    cancellationDate: "20.05.2026",
+    cancellationDate: "20.05.2026, 14:32",
     cancellationReason: "Kunde hat Buchung widerrufen",
     alreadyPaid: true,
+    daysBeforeStart: 20,
+    daysBeforeStartLabel: "20",
+    suggestedRefundPercentage: 100,
+    refundPercentage: 100,
+    appliedTierDays: 20,
+    calculationMode: "Automatisch nach Mandantenregel",
+    adminOverride: false,
+    isFullRefund: true,
+    hasCancellationFee: false,
     refundAmount: "120,00 €",
+    cancellationFee: "0,00 €",
     location: "Musterstadt",
     totalAmount: "-120,00 €",
     bookingId: "BK-987654",

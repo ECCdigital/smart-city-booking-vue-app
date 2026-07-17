@@ -70,6 +70,19 @@
               :variables="catalog.variables"
               @change="onBlocksChange"
             />
+            <div
+              v-if="!(mode === 'expert' && !expertConfirmed)"
+              class="d-flex flex-wrap align-center mt-3"
+            >
+              <v-btn small outlined @click="resetToVisualDefault">
+                <v-icon small left>mdi-restore</v-icon>
+                Standardvorlage laden
+              </v-btn>
+              <span class="text-caption grey--text ml-3">
+                Ersetzt den aktuellen Inhalt durch die Standardvorlage
+                (entspricht dem Backend-Default).
+              </span>
+            </div>
             <v-alert
               v-if="mode === 'visual' && missingInBlocks.length"
               type="warning"
@@ -769,12 +782,17 @@ export default {
       this.mode = "expert";
     },
     startFromScratch() {
-      this.expertConfirmed = true;
+      this.resetToVisualDefault();
+      this.activeTab = 0;
+    },
+    resetToVisualDefault() {
       this.applyDefaultPageTemplates();
       this.blocks = this.makeDefaultBlocks();
       this.expertHtml = this.composeFromBlocks(this.blocks);
+      this.expertConfirmed = true;
       this.mode = "visual";
-      this.activeTab = 0;
+      this.previewSampleDataCache = null;
+      this.previewKey++;
     },
     resetToDefault() {
       this.applyDefaultPageTemplates();
@@ -782,6 +800,8 @@ export default {
       this.expertHtml = this.composeFromBlocks(this.blocks);
       this.expertConfirmed = true;
       this.mode = "expert";
+      this.previewSampleDataCache = null;
+      this.previewKey++;
     },
     composeOutput() {
       if (this.mode === "visual") {

@@ -150,9 +150,37 @@ export const SNIPPET_CATALOG = [
     title: "Stornierungsmitteilung",
     description: "Stornierungsmitteilung an den Buchenden.",
     icon: "mdi-cancel",
-    defaultTemplate: "<p>Die nachfolgende Buchung wurde storniert:</p>",
+    defaultTemplate: `<p>Die nachfolgende Buchung wurde storniert:</p>
+
+{{#if hasRefundPreview}}
+  <p>
+    <strong>Erstattung</strong>:
+    {{priceFormatted refundAmountEur}}
+    ({{refundPercentage}}&nbsp;%)
+    {{#if hasCancellationFee}}
+      <br />
+      Einbehalt (Stornogebühr): {{priceFormatted cancellationFeeEur}}
+    {{/if}}
+  </p>
+{{/if}}
+`,
     defaultBlocks: [
-      row([txt("<p>Die nachfolgende Buchung wurde storniert:</p>")]),
+      row([
+        txt(`<p>Die nachfolgende Buchung wurde storniert:</p>
+
+{{#if hasRefundPreview}}
+  <p>
+    <strong>Erstattung</strong>:
+    {{priceFormatted refundAmountEur}}
+    ({{refundPercentage}}&nbsp;%)
+    {{#if hasCancellationFee}}
+      <br />
+      Einbehalt (Stornogebühr): {{priceFormatted cancellationFeeEur}}
+    {{/if}}
+  </p>
+{{/if}}
+`),
+      ]),
     ],
   },
   {

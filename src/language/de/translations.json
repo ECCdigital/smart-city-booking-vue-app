@@ -79,6 +79,10 @@
       "message": "Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
     }
   },
+  "validation": {
+    "required": "Pflichtfeld",
+    "integerRequired": "Ganzzahl erforderlich"
+  },
   "bookable": {
     "delete": {
       "success": {
@@ -210,6 +214,32 @@
         "title": "Fehler beim Aktualisieren",
         "message": "Der Mandantenstatus konnte nicht aktualisiert werden."
       }
+    },
+    "cancellationRefundTiers": {
+      "title": "Erstattungsstaffel bei Stornierungen",
+      "description": "Legen Sie fest, welcher Anteil des Buchungspreises abhängig von den verbleibenden Kalendertagen bis zum Buchungsbeginn erstattet wird. Die Regelung gilt für alle Buchungsobjekte dieses Mandanten.",
+      "empty": "Noch keine Erstattungsstufen definiert. Ohne Staffel werden 100 % erstattet.",
+      "orderHint": "Die Stufen werden automatisch nach dem Vorlauf sortiert. Unterhalb der niedrigsten Stufe gilt deren Erstattung weiter.",
+      "daysBeforeStart": "Ab Tagen vor Buchungsbeginn",
+      "refundPercentage": "Erstattung",
+      "add": "Stufe hinzufügen",
+      "edit": "Bearbeiten",
+      "remove": "Stufe entfernen",
+      "tierTitle": "Ab {days} Tagen",
+      "tierDescription": "Ab {days} Kalendertagen vor Buchungsbeginn werden {percentage} % des Buchungspreises erstattet.",
+      "lowestTierHint": "Diese Erstattung gilt auch bei einem geringeren Vorlauf bis unmittelbar vor dem Buchungsbeginn.",
+      "createTitle": "Neue Erstattungsstufe anlegen",
+      "editTitle": "Erstattungsstufe bearbeiten",
+      "preview": "Vorschau",
+      "cancel": "Abbrechen",
+      "create": "Anlegen",
+      "save": "Speichern",
+      "deleteTitle": "Erstattungsstufe löschen?",
+      "deleteDescription": "Die Erstattungsstufe ab {days} Tagen wird entfernt.",
+      "nonNegativeDays": "Der Wert darf nicht negativ sein",
+      "uniqueDays": "Für diese Tagesgrenze existiert bereits eine Stufe",
+      "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
+      "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden."
     }
   },
 
@@ -242,7 +272,64 @@
       "error": {
         "title": "Fehler beim Löschen",
         "message": "Die Buchung konnte nicht gelöscht werden."
+      },
+      "requires-rejection": {
+        "title": "Stornierung erforderlich",
+        "message": "Bestätigte oder bezahlte Buchungen können nicht gelöscht werden. Bitte stornieren Sie die Buchung."
       }
+    },
+    "reject": {
+      "success": {
+        "title": "Erfolgreich storniert",
+        "message": "Die Buchung wurde erfolgreich storniert."
+      },
+      "error": {
+        "title": "Fehler beim Stornieren",
+        "message": "Die Buchung konnte nicht storniert werden."
+      }
+    },
+    "unreject": {
+      "success": {
+        "title": "Stornierung aufgehoben",
+        "message": "Die Buchung ist wieder aktiv."
+      },
+      "error": {
+        "title": "Fehler beim Aufheben",
+        "message": "Die Stornierung konnte nicht rückgängig gemacht werden."
+      }
+    },
+    "cancellationRefund": {
+      "title": "Erstattungsvorschau",
+      "expectedTitle": "Erwartete Erstattung",
+      "auditTitle": "Erstattung bei Stornierung",
+      "originalAmount": "Ursprungsbetrag",
+      "refundAmount": "Erstattung",
+      "cancellationFee": "Einbehalt",
+      "refundShare": "{percentage} % Erstattung",
+      "cancelledAt": "Storniert am",
+      "auditOverride": "Bei {days} Kalendertagen bis zum Beginn schlug die Mandantenregel {suggested} % vor. Angewendet wurden {applied} % (Admin-Überschreibung).",
+      "booking": "Buchung",
+      "days": "Tage",
+      "policyPercentage": "Vorschlag",
+      "override": "Erstattung manuell überschreiben",
+      "overridePercentage": "Einheitliche Erstattung",
+      "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
+      "singlePolicy": "Bei {days} Kalendertagen bis zum Beginn schlägt die Mandantenregel {percentage} % Erstattung vor.",
+      "userPolicySummary": "Bei {days} Kalendertagen bis zum Beginn beträgt die Erstattung {percentage} %.",
+      "groupPolicySingle": "Die Mandantenregel schlägt für alle Buchungen der Serie {percentage} % Erstattung vor.",
+      "groupPolicyMixed": "Die Mandantenregel ergibt je nach Buchungsbeginn unterschiedliche Erstattungswerte. Ohne Überschreibung werden die Einzelwerte angewendet.",
+      "previewError": "Die Erstattungsvorschau konnte nicht geladen werden.",
+      "finalAmountHint": "Der endgültige Erstattungsbetrag wird zum Zeitpunkt Ihrer Bestätigung berechnet.",
+      "cancelGroup": "Gesamte Serie stornieren",
+      "cancelSingle": "Nur diese Buchung stornieren",
+      "bankDetailsTitle": "Bankverbindung des Kunden (optional)",
+      "bankDetailsHintSingle": "Diese Buchung wurde bereits bezahlt{amount}. Sie können optional die Bankverbindung des Kunden angeben.",
+      "bankDetailsHintGroup": "Mindestens eine Buchung der Serie wurde bereits bezahlt{amount}. Sie können optional die Bankverbindung des Kunden für die Sammel-Stornorechnung angeben.",
+      "accountHolder": "Kontoinhaber (optional)",
+      "iban": "IBAN (optional)",
+      "ibanHint": "z. B. DE89 3704 0044 0532 0130 00",
+      "bic": "BIC (optional)",
+      "bankName": "Name der Bank (optional)"
     },
     "create": {
       "success": {

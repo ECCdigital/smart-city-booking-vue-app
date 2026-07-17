@@ -14,19 +14,21 @@
       <v-card-actions>
         <v-spacer />
         <v-col class="shrink">
-          <v-tooltip :disabled="!isPayedAndHasPrice" top>
+          <v-tooltip :disabled="!isProtectedBooking" top>
             <template v-slot:activator="{ on }">
               <div v-on="on">
                 <v-btn
                   color="primary"
-                  :disabled="isPayedAndHasPrice"
+                  :disabled="isProtectedBooking"
                   :loading="inProgress"
                   @click="onDelete"
                   >Ja</v-btn
                 >
               </div>
             </template>
-            <span>Die Buchung wurde bereits bezahlt.</span>
+            <span>
+              Bestätigte oder bezahlte Buchungen müssen storniert werden.
+            </span>
           </v-tooltip>
         </v-col>
         <v-col class="shrink">
@@ -60,10 +62,8 @@ export default {
         return this.open;
       },
     },
-    isPayedAndHasPrice() {
-      return !!(
-        this.toDelete.isPayed && this.toDelete?._populated?.bookable?.priceEur
-      );
+    isProtectedBooking() {
+      return !!(this.toDelete.isCommitted || this.toDelete.isPayed);
     },
   },
   methods: {

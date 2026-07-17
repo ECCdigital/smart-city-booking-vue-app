@@ -22,11 +22,35 @@ export default {
     });
     return response.data;
   },
-  async rejectGroupBooking(tenantId, groupBookingId, reason, skipCancellation) {
+  async getCancellationRefundPreview(tenantId, groupBookingId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
+    const response = await ApiClient.get(
+      `api/${t}/group-bookings/${groupBookingId}/cancellation-refund-preview`
+    );
+    return response.data;
+  },
+  async rejectGroupBooking(
+    tenantId,
+    groupBookingId,
+    reason,
+    skipCancellation,
+    bankDetails,
+    refundPercentage
+  ) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const payload = {
+      reason: reason,
+      skipCancellation: skipCancellation,
+    };
+    if (bankDetails) {
+      payload.bankDetails = bankDetails;
+    }
+    if (refundPercentage !== undefined) {
+      payload.refundPercentage = refundPercentage;
+    }
     const response = await ApiClient.post(
       `api/${t}/group-bookings/${groupBookingId}/reject`,
-      { reason: reason, skipCancellation: skipCancellation }
+      payload
     );
     return response.data;
   },
