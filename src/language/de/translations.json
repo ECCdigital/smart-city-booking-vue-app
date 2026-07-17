@@ -321,7 +321,15 @@
       "previewError": "Die Erstattungsvorschau konnte nicht geladen werden.",
       "finalAmountHint": "Der endgültige Erstattungsbetrag wird zum Zeitpunkt Ihrer Bestätigung berechnet.",
       "cancelGroup": "Gesamte Serie stornieren",
-      "cancelSingle": "Nur diese Buchung stornieren"
+      "cancelSingle": "Nur diese Buchung stornieren",
+      "bankDetailsTitle": "Bankverbindung des Kunden (optional)",
+      "bankDetailsHintSingle": "Diese Buchung wurde bereits bezahlt{amount}. Sie können optional die Bankverbindung des Kunden angeben.",
+      "bankDetailsHintGroup": "Mindestens eine Buchung der Serie wurde bereits bezahlt{amount}. Sie können optional die Bankverbindung des Kunden für die Sammel-Stornorechnung angeben.",
+      "accountHolder": "Kontoinhaber (optional)",
+      "iban": "IBAN (optional)",
+      "ibanHint": "z. B. DE89 3704 0044 0532 0130 00",
+      "bic": "BIC (optional)",
+      "bankName": "Name der Bank (optional)"
     },
     "create": {
       "success": {

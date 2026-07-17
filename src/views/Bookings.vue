@@ -890,6 +890,7 @@ export default {
       id,
       rejectReason,
       skipCancellation,
+      bankDetails,
       refundPercentage
     ) {
       const groupBooking = this.api.groupBookings.find((groupBooking) =>
@@ -905,6 +906,7 @@ export default {
           groupBooking.id,
           rejectReason,
           skipCancellation,
+          bankDetails,
           refundPercentage
         );
 

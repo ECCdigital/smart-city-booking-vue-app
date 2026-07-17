@@ -9,6 +9,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
+- Series cancellation dialog accepts optional customer bank details for the aggregated cancellation PDF (and when cancelling only one booking from a series) (DEV-786)
 - Customer self-cancellation flow shows the expected refund (amount, percentage, fee) on the request and verify pages; cancellation mails and the `booking-cancel` snippet expose matching refund variables (DEV-786)
 - Series bookings in the Kanban board are now visually marked with a chip and accent border; the series can be opened directly from the card (DEV-626)
 - Booking overview filter for booking type: all, single bookings only, or series bookings only — accessible via filter button in the search field (DEV-626)

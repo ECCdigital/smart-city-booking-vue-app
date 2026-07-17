@@ -50,6 +50,58 @@
             @update:refund-percentage="refundPercentage = $event"
             @update:valid="refundValid = $event"
           />
+
+          <div v-if="canProvideBankDetails">
+            <v-divider class="mb-4"></v-divider>
+            <p class="text-subtitle-2 font-weight-bold mb-1">
+              {{ $t("booking.cancellationRefund.bankDetailsTitle") }}
+            </p>
+            <p class="text-caption mb-3">
+              {{
+                cancellationScope === "group"
+                  ? $t("booking.cancellationRefund.bankDetailsHintGroup", {
+                      amount: formattedPrice
+                        ? ` (Betrag: ${formattedPrice})`
+                        : "",
+                    })
+                  : $t("booking.cancellationRefund.bankDetailsHintSingle", {
+                      amount: formattedPrice
+                        ? ` (Betrag: ${formattedPrice})`
+                        : "",
+                    })
+              }}
+            </p>
+
+            <v-text-field
+              outlined
+              dense
+              v-model="bankDetails.accountHolder"
+              :label="$t('booking.cancellationRefund.accountHolder')"
+              :rules="bankRules.accountHolder"
+            ></v-text-field>
+            <v-text-field
+              outlined
+              dense
+              v-model="bankDetails.iban"
+              :label="$t('booking.cancellationRefund.iban')"
+              :hint="$t('booking.cancellationRefund.ibanHint')"
+              :rules="bankRules.iban"
+              @input="onIbanInput"
+            ></v-text-field>
+            <v-text-field
+              outlined
+              dense
+              v-model="bankDetails.bic"
+              :label="$t('booking.cancellationRefund.bic')"
+              :rules="bankRules.bic"
+            ></v-text-field>
+            <v-text-field
+              outlined
+              dense
+              v-model="bankDetails.bankName"
+              :label="$t('booking.cancellationRefund.bankName')"
+            ></v-text-field>
+          </div>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -77,6 +129,37 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import CancellationRefundPreview from "@/components/Booking/CancellationRefundPreview.vue";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+
+const IBAN_REGEX = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/;
+const BIC_REGEX = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
+
+function normalizeIban(value) {
+  return (value || "").replace(/\s+/g, "").toUpperCase();
+}
+
+function normalizeBic(value) {
+  return (value || "").replace(/\s+/g, "").toUpperCase();
+}
+
+function isValidIban(value) {
+  const iban = normalizeIban(value);
+  if (!IBAN_REGEX.test(iban)) return false;
+  const rearranged = iban.slice(4) + iban.slice(0, 4);
+  const numeric = rearranged
+    .split("")
+    .map((ch) => {
+      const code = ch.charCodeAt(0);
+      if (code >= 65 && code <= 90) return (code - 55).toString();
+      return ch;
+    })
+    .join("");
+  let remainder = 0;
+  for (let i = 0; i < numeric.length; i += 7) {
+    const block = remainder.toString() + numeric.substr(i, 7);
+    remainder = parseInt(block, 10) % 97;
+  }
+  return remainder === 1;
+}
 
 export default {
   name: "GroupBookingRejectConformationDialog",
@@ -115,6 +198,12 @@ export default {
       previewError: null,
       refundPercentage: undefined,
       refundValid: true,
+      bankDetails: {
+        bankName: "",
+        accountHolder: "",
+        iban: "",
+        bic: "",
+      },
     };
   },
   computed: {
@@ -123,6 +212,15 @@ export default {
         return this.open;
       },
     },
+    canProvideBankDetails() {
+      return !!(
+        this.toReject &&
+        this.toReject.isPayed === true &&
+        typeof this.toReject.priceEur === "number" &&
+        this.toReject.priceEur > 0 &&
+        this.skipCancellation === false
+      );
+    },
     canSubmit() {
       return (
         this.valid &&
@@ -130,6 +228,37 @@ export default {
         (this.skipCancellation ||
           (!!this.refundPreview && !this.previewError && this.refundValid))
       );
+    },
+    formattedPrice() {
+      const amount =
+        this.cancellationScope === "group" &&
+        typeof this.refundPreview?.originalAmountEur === "number"
+          ? this.refundPreview.originalAmountEur
+          : this.toReject?.priceEur;
+      if (typeof amount !== "number") return "";
+      try {
+        return new Intl.NumberFormat("de-DE", {
+          style: "currency",
+          currency: "EUR",
+        }).format(amount);
+      } catch (e) {
+        return `${amount.toFixed(2)} €`;
+      }
+    },
+    bankRules() {
+      return {
+        accountHolder: [],
+        iban: [
+          (v) =>
+            !v || isValidIban(v) || "Bitte geben Sie eine gültige IBAN an.",
+        ],
+        bic: [
+          (v) =>
+            !v ||
+            BIC_REGEX.test(normalizeBic(v)) ||
+            "Bitte geben Sie eine gültige BIC an.",
+        ],
+      };
     },
   },
   watch: {
@@ -178,7 +307,39 @@ export default {
       this.previewError = null;
       this.refundPercentage = undefined;
       this.refundValid = true;
+      this.resetBankDetails();
       this.$nextTick(() => this.$refs.form?.resetValidation());
+    },
+    resetBankDetails() {
+      this.bankDetails = {
+        bankName: "",
+        accountHolder: "",
+        iban: "",
+        bic: "",
+      };
+    },
+    onIbanInput(value) {
+      const normalized = normalizeIban(value);
+      const formatted = normalized.replace(/(.{4})/g, "$1 ").trim();
+      if (formatted !== value) {
+        this.bankDetails.iban = formatted;
+      }
+    },
+    buildBankDetailsPayload() {
+      if (!this.canProvideBankDetails) return undefined;
+      const accountHolder = (this.bankDetails.accountHolder || "").trim();
+      const iban = normalizeIban(this.bankDetails.iban);
+      const bic = normalizeBic(this.bankDetails.bic);
+      const bank = (this.bankDetails.bankName || "").trim();
+
+      if (!accountHolder && !iban && !bic && !bank) return undefined;
+
+      const payload = {};
+      if (bank) payload.bankName = bank;
+      if (accountHolder) payload.accountHolder = accountHolder;
+      if (iban) payload.iban = iban;
+      if (bic) payload.bic = bic;
+      return payload;
     },
     async loadRefundPreview() {
       if (this.skipCancellation || !this.toReject?.id) return;
@@ -213,12 +374,14 @@ export default {
       const refundPercentage = this.skipCancellation
         ? undefined
         : this.refundPercentage;
+      const bankDetails = this.buildBankDetailsPayload();
       if (this.cancellationScope === "group") {
         this.$emit(
           "reject-group-booking",
           this.toReject.id,
           this.rejectReason,
           this.skipCancellation,
+          bankDetails,
           refundPercentage
         );
         return;
@@ -228,7 +391,7 @@ export default {
         this.toReject.id,
         this.rejectReason,
         this.skipCancellation,
-        undefined,
+        bankDetails,
         refundPercentage
       );
     },

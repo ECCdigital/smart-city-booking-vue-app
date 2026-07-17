@@ -34,6 +34,7 @@ export default {
     groupBookingId,
     reason,
     skipCancellation,
+    bankDetails,
     refundPercentage
   ) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
@@ -41,6 +42,9 @@ export default {
       reason: reason,
       skipCancellation: skipCancellation,
     };
+    if (bankDetails) {
+      payload.bankDetails = bankDetails;
+    }
     if (refundPercentage !== undefined) {
       payload.refundPercentage = refundPercentage;
     }

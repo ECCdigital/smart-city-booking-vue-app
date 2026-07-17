@@ -1720,6 +1720,7 @@ export default {
       id,
       reason,
       skipCancellation,
+      bankDetails,
       refundPercentage
     ) {
       this.inProgress = true;
@@ -1730,6 +1731,7 @@ export default {
           this.groupBooking.id,
           reason,
           skipCancellation,
+          bankDetails,
           refundPercentage
         );
         if (!response.success) {
