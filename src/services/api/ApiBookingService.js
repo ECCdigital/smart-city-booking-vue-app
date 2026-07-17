@@ -69,6 +69,23 @@ export default {
     );
     return response.data;
   },
+  async getPublicCancellationRefundPreview(id, tenantId, name) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const response = await ApiClient.get(
+      `api/${t}/bookings/${id}/cancellation-refund-preview/public`,
+      {
+        params: { name },
+      }
+    );
+    return response.data;
+  },
+  async getHookCancellationRefundPreview(id, tenantId, hookId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const response = await ApiClient.get(
+      `api/${t}/bookings/${id}/hooks/${hookId}/cancellation-refund-preview`
+    );
+    return response.data;
+  },
   rejectBooking(
     id,
     tenantId,

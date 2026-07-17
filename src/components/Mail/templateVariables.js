@@ -37,6 +37,52 @@ export const SNIPPET_VARIABLES = [
   },
 ];
 
+export const BOOKING_CANCEL_SNIPPET_VARIABLES = [
+  {
+    name: "hasRefundPreview",
+    placeholder: "{{#if hasRefundPreview}}...{{/if}}",
+    label: "Erstattung vorhanden",
+    description:
+      "Wahr, wenn die Buchung einen Erstattungsbetrag größer 0 € hat",
+  },
+  {
+    name: "refundAmountEur",
+    placeholder: "{{priceFormatted refundAmountEur}}",
+    label: "Erstattungsbetrag",
+    description: "Erstattungsbetrag als Zahl (mit Helper priceFormatted)",
+  },
+  {
+    name: "cancellationFeeEur",
+    placeholder: "{{priceFormatted cancellationFeeEur}}",
+    label: "Einbehalt",
+    description: "Einbehaltener Betrag (Stornogebühr) als Zahl",
+  },
+  {
+    name: "originalAmountEur",
+    placeholder: "{{priceFormatted originalAmountEur}}",
+    label: "Ursprungsbetrag",
+    description: "Ursprungsbetrag der Buchung als Zahl",
+  },
+  {
+    name: "refundPercentage",
+    placeholder: "{{refundPercentage}}",
+    label: "Erstattungsprozent",
+    description: "Angewandter Erstattungsprozentsatz (0–100)",
+  },
+  {
+    name: "hasCancellationFee",
+    placeholder: "{{#if hasCancellationFee}}...{{/if}}",
+    label: "Einbehalt vorhanden",
+    description: "Wahr, wenn ein Einbehalt größer 0 € anfällt",
+  },
+  {
+    name: "daysBeforeStart",
+    placeholder: "{{daysBeforeStart}}",
+    label: "Tage bis Beginn",
+    description: "Kalendertage bis zum Buchungsbeginn zum Berechnungszeitpunkt",
+  },
+];
+
 export const GENERIC_MAIL_VARIABLES = [
   {
     name: "title",
@@ -742,6 +788,13 @@ export const SAMPLE_DATA = {
     customerName: "Max Mustermann",
     currentDate: new Date().toLocaleDateString("de-DE"),
     customerContact: SAMPLE_CUSTOMER_CONTACT,
+    hasRefundPreview: true,
+    originalAmountEur: 120,
+    refundAmountEur: 60,
+    cancellationFeeEur: 60,
+    refundPercentage: 50,
+    daysBeforeStart: 10,
+    hasCancellationFee: true,
   },
   genericMail: {
     content:

@@ -300,6 +300,7 @@
     },
     "cancellationRefund": {
       "title": "Erstattungsvorschau",
+      "expectedTitle": "Erwartete Erstattung",
       "auditTitle": "Erstattung bei Stornierung",
       "originalAmount": "Ursprungsbetrag",
       "refundAmount": "Erstattung",
@@ -314,9 +315,11 @@
       "overridePercentage": "Einheitliche Erstattung",
       "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
       "singlePolicy": "Bei {days} Kalendertagen bis zum Beginn schlägt die Mandantenregel {percentage} % Erstattung vor.",
+      "userPolicySummary": "Bei {days} Kalendertagen bis zum Beginn beträgt die Erstattung {percentage} %.",
       "groupPolicySingle": "Die Mandantenregel schlägt für alle Buchungen der Serie {percentage} % Erstattung vor.",
       "groupPolicyMixed": "Die Mandantenregel ergibt je nach Buchungsbeginn unterschiedliche Erstattungswerte. Ohne Überschreibung werden die Einzelwerte angewendet.",
       "previewError": "Die Erstattungsvorschau konnte nicht geladen werden.",
+      "finalAmountHint": "Der endgültige Erstattungsbetrag wird zum Zeitpunkt Ihrer Bestätigung berechnet.",
       "cancelGroup": "Gesamte Serie stornieren",
       "cancelSingle": "Nur diese Buchung stornieren"
     },

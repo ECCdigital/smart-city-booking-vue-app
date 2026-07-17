@@ -240,6 +240,7 @@ import {
 } from "./snippetCatalog.js";
 import {
   SNIPPET_VARIABLES,
+  BOOKING_CANCEL_SNIPPET_VARIABLES,
   SAMPLE_DATA,
 } from "./templateVariables.js";
 import { buildSnippetPreviewExtrasHtml } from "./snippetPreviewExtras.js";
@@ -284,6 +285,9 @@ export default {
       return getSnippetCatalogEntry(this.snippetKey);
     },
     variables() {
+      if (this.snippetKey === "booking-cancel") {
+        return [...SNIPPET_VARIABLES, ...BOOKING_CANCEL_SNIPPET_VARIABLES];
+      }
       return SNIPPET_VARIABLES;
     },
     sampleData() {
@@ -470,7 +474,18 @@ export default {
       if (this.handlebarsLib) return this.handlebarsLib;
       try {
         const mod = await import(/* webpackChunkName: "handlebars" */ "handlebars");
-        this.handlebarsLib = mod.default || mod;
+        const hb = mod.default || mod;
+        if (!hb.helpers.priceFormatted) {
+          const currencyFormatter = new Intl.NumberFormat("de-DE", {
+            style: "currency",
+            currency: "EUR",
+          });
+          hb.registerHelper("priceFormatted", (value) => {
+            if (typeof value !== "number") return "–";
+            return currencyFormatter.format(value);
+          });
+        }
+        this.handlebarsLib = hb;
       } catch (e) {
         this.handlebarsLib = null;
       }
