@@ -7,41 +7,29 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+## [4.2.0] — 2026-07-17
+
 ### Added
 
-- Series cancellation dialog accepts optional customer bank details for the aggregated cancellation PDF (and when cancelling only one booking from a series) (DEV-786)
-- Customer self-cancellation flow shows the expected refund (amount, percentage, fee) on the request and verify pages; cancellation mails and the `booking-cancel` snippet expose matching refund variables (DEV-786)
-- Series bookings in the Kanban board are now visually marked with a chip and accent border; the series can be opened directly from the card (DEV-626)
-- Booking overview filter for booking type: all, single bookings only, or series bookings only — accessible via filter button in the search field (DEV-626)
-- Admin UI for supervisor booking notifications (DEV-779): manage `bookingNotificationRecipients` per tenant member (user, role, email; max. 10) in the member detail dialog
-- Bookable permissions: per-user and per-role booking discounts with percentage field (0–100) replace the previous free-booking lists (DEV-781)
-- Bundle checkout: role/user booking discounts shown via `bookingDiscountPercent`; opt-out uses `bookWithoutDiscount` instead of `bookWithPrice` (DEV-781)
-- Tenant cancellation refund tiers with policy previews, admin overrides, and per-booking series breakdowns (DEV-786)
-- Persisted cancellation refund audit on bookings with read-only display in booking details and edit views (DEV-786)
-- Cancellation PDF template editor: refund-tier Handlebars variables, backend-aligned default blocks, and „Standardvorlage laden“ in the visual editor (DEV-786)
+- Cancellation refund tiers: define refund rules per tenant, preview what customers get back, and show the expected refund during self-cancellation (including mails and cancellation documents)
+- When cancelling a series (or a single booking from a series), optional customer bank details can be collected for the cancellation PDF
+- Series bookings are easier to spot in the Kanban board and can be opened directly from the card; the booking overview can be filtered by single or series bookings
+- Supervisor booking notifications: configure who is notified about new bookings (users, roles, or email addresses) per tenant member
+- Percentage booking discounts for users and roles replace the previous free-booking lists; discounts also apply in bundle checkout
+- Cancellation PDF templates support refund information, with an option to load the standard template in the visual editor
 
 ### Changed
 
-- Custom fields: simplified editor and list layout with live preview, clearer labels, and read-only inherited fields
-- Bookable edit: custom field values and definitions merged into a single „Eigene Felder“ tab
-- Cancelled bookings can be reactivated via the status switch in booking edit (DEV-786)
+- Custom fields: clearer editor and list with live preview; on bookables, field values and definitions are combined in one „Eigene Felder“ tab
+- Cancelled bookings can be reactivated via the status switch in booking edit
 
 ### Fixed
 
-- Reactivating a cancelled booking no longer resets the booking price to 0 € (DEV-786)
-
-### Fixed
-
-- Bundle checkout: payment step is shown when additional bookables require payment, even if the lead bookable is free via role discount (DEV-781)
-- Bundle checkout: payment step no longer appears when the discounted checkout total is zero (DEV-781)
-- Tenant feature flag `notifySupervisorsOnBooking` toggle in booking settings
-- Overridable mail snippet `supervisor-booking-notification` in tenant mail configuration
-
-### Fixed
-
-- Member and instance user search now uses case-insensitive substring matching on name and email instead of fuzzy matching, preventing unrelated results (DEV-784)
-- User create/update and profile update (`submitUser`, `updateMe`) now send `syncSelfBookingNames: false` so booking contact names are not overwritten
-
+- Reactivating a cancelled booking keeps the original price instead of resetting it to 0 €
+- Bundle checkout shows the payment step only when there is something left to pay after discounts (including paid add-ons)
+- Supervisor booking notifications can be turned on or off in booking settings; the related mail snippet is customizable
+- Member and user search matches name and email more reliably (case-insensitive substring search)
+- Saving a user or profile no longer overwrites booking contact names
 
 ## [4.1.3] — 2026-07-03
 
@@ -119,6 +107,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.2.0]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.3...v4.2.0
 [4.1.3]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.2...v4.1.3
 [4.1.1]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.0...v4.1.1
 [4.1.2]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.1...v4.1.2
