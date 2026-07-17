@@ -40,6 +40,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 ### Fixed
 
 - Member and instance user search now uses case-insensitive substring matching on name and email instead of fuzzy matching, preventing unrelated results (DEV-784)
+- User create/update and profile update (`submitUser`, `updateMe`) now send `syncSelfBookingNames: false` so booking contact names are not overwritten
 
 
 ## [4.1.3] — 2026-07-03
