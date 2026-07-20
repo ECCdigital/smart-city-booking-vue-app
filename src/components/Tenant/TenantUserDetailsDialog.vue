@@ -503,6 +503,20 @@
 
           <!-- Notifications Tab -->
           <v-tab-item>
+            <v-alert
+              v-if="!notifySupervisorsOnBooking"
+              type="info"
+              border="left"
+              elevation="1"
+              colored-border
+              class="mb-4 mt-1 mr-1"
+            >
+              Vorgesetzten-Benachrichtigungen sind für diesen Mandanten
+              deaktiviert. Aktivieren Sie die Option „Vorgesetzte bei Buchung
+              informieren“ unter Mandant → Buchung, damit die hier
+              konfigurierten Empfänger bei Buchungen informiert werden.
+            </v-alert>
+
             <div class="mb-4">
               <div class="d-flex align-center mb-2">
                 <v-icon color="primary" class="mr-2">mdi-bell-ring</v-icon>
@@ -849,6 +863,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    notifySupervisorsOnBooking: {
+      type: Boolean,
+      default: true,
+    },
   },
   data() {
     return {
@@ -920,8 +938,7 @@ export default {
     recipientsChanged() {
       const original = this.user?.bookingNotificationRecipients || [];
       return (
-        JSON.stringify(this.notificationRecipients) !==
-        JSON.stringify(original)
+        JSON.stringify(this.notificationRecipients) !== JSON.stringify(original)
       );
     },
     userName() {

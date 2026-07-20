@@ -374,6 +374,7 @@
       :roles="api.roles"
       :challenges="api.challenges"
       :members="members"
+      :notify-supervisors-on-booking="notifySupervisorsOnBooking"
       @close="closeUserDetail"
       @save-roles="updateUserRoles"
       @update-status="updateUserStatus"
@@ -435,6 +436,7 @@ export default {
       currentPage: 1,
       itemsPerPage: 8,
       showInviteDialog: false,
+      notifySupervisorsOnBooking: true,
       api: {
         users: [],
         roles: [],
@@ -527,6 +529,7 @@ export default {
     async tenantId() {
       await this.fetchRoles();
       await this.fetchTenantUsers();
+      await this.fetchTenantSettings();
     },
   },
   methods: {
@@ -804,6 +807,17 @@ export default {
         this.api.userDetails = response.userDetails;
       } finally {
         await this.stopLoading("fetch-users");
+      }
+    },
+
+    async fetchTenantSettings() {
+      if (!this.tenantId) return;
+      try {
+        const response = await ApiTenantService.getTenant(this.tenantId);
+        this.notifySupervisorsOnBooking =
+          !!response.data?.notifySupervisorsOnBooking;
+      } catch (e) {
+        console.error(e);
       }
     },
 
@@ -1154,6 +1168,7 @@ export default {
     await this.fetchTenantUsers();
     await this.fetchInvitations();
     await this.fetchChallenges();
+    await this.fetchTenantSettings();
   },
 };
 </script>
