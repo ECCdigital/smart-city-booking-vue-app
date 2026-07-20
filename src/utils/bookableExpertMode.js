@@ -4,7 +4,6 @@ const SESSION_STORAGE_KEY = "bookableEditExpertMode";
 export const BOOKABLE_EXPERT_ONLY_TAB_KEYS = [
   "lockerSystems",
   "relatedBookables",
-  "customFields",
 ];
 
 /** Booking types only selectable in expert mode */

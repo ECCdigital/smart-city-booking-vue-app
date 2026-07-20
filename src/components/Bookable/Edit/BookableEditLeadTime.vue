@@ -269,7 +269,12 @@ export default {
 
 <template>
   <v-form v-if="expertMode" ref="form" v-model="valid">
-    <v-card class="mt-4 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-bookingType-lead-time"
+      class="mt-4 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-timer-sand</v-icon>
         <span class="text-h6 font-weight-bold">Vorlaufzeit</span>
@@ -568,7 +573,13 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card v-if="showBuffer" class="mt-4 section-card" elevation="2" outlined>
+    <v-card
+      v-if="showBuffer"
+      id="be-section-bookingType-buffer"
+      class="mt-4 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-calendar-clock</v-icon>
         <span class="text-h6 font-weight-bold">Puffer zwischen Buchungen</span>

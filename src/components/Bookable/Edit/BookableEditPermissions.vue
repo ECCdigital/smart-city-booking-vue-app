@@ -145,7 +145,12 @@ export default {
   <v-form ref="form" v-model="valid">
     <BaseSection title="Berechtigungen" icon="mdi-account-lock-outline" />
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-permissions-login"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-login-variant</v-icon>
         <span class="text-h6 font-weight-bold">Anmeldepflicht</span>
@@ -165,7 +170,12 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-permissions-access"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-account-lock-outline</v-icon>
         <span class="text-h6 font-weight-bold"
@@ -190,7 +200,7 @@ export default {
       </v-card-text>
     </v-card>
 
-    <template v-if="expertMode">
+    <div v-if="expertMode" id="be-section-permissions-discounts">
       <BaseSection title="Preisrabatte" icon="mdi-ticket-percent-outline" />
 
       <p class="mb-4 text-caption" style="max-width: 700px">
@@ -215,9 +225,14 @@ export default {
         label="Rabatt für Rollen"
         hint="Gewähren Sie <strong>allen Benutzern einer Rolle</strong> einen Preisnachlass auf dieses Buchungsobjekt."
       />
-    </template>
+    </div>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-permissions-group-booking"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-calendar-multiple</v-icon>
         <span class="text-h6 font-weight-bold">Serienbuchungen</span>
@@ -307,6 +322,7 @@ export default {
 
     <v-card
       v-if="expertMode"
+      id="be-section-permissions-cancellation"
       class="mb-6 section-card"
       elevation="2"
       outlined

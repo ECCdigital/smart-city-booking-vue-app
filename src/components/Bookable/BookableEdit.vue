@@ -62,24 +62,90 @@
 
       <div class="page-content__main">
         <div class="page-content__nav">
-          <v-tabs
+          <nav
+            v-if="$vuetify.breakpoint.mdAndUp"
             :key="tabsRenderKey"
-            :value="activeTabIndex"
-            color="primary"
-            show-arrows
-            :vertical="$vuetify.breakpoint.mdAndUp"
-            @change="onTabChange"
+            class="bookable-edit-nav"
+            aria-label="Buchungsobjekt-Bereiche"
           >
-            <v-tab
+            <div
               v-for="t in visibleTabs"
               :key="t.key"
-              class="d-flex justify-start"
-              style="text-transform: none"
+              class="bookable-edit-nav__group"
+              :class="{ 'bookable-edit-nav__group--active': activeTabKey === t.key }"
             >
-              <v-icon left small>{{ t.icon }}</v-icon>
-              {{ t.label }}
-            </v-tab>
-          </v-tabs>
+              <button
+                type="button"
+                class="bookable-edit-nav__tab"
+                :class="{ 'bookable-edit-nav__tab--active': activeTabKey === t.key }"
+                @click="goToTab(t.key)"
+              >
+                <v-icon small class="bookable-edit-nav__tab-icon">
+                  {{ t.icon }}
+                </v-icon>
+                <span class="bookable-edit-nav__tab-label">{{ t.label }}</span>
+              </button>
+
+              <div
+                v-if="activeTabKey === t.key && showSectionNav"
+                class="bookable-edit-nav__sections"
+              >
+                <button
+                  v-for="section in activeTabSections"
+                  :key="section.id"
+                  type="button"
+                  class="bookable-edit-nav__section"
+                  :class="{
+                    'bookable-edit-nav__section--active':
+                      activeSectionId === section.id,
+                  }"
+                  @click="goToTab(t.key, section.id)"
+                >
+                  {{ $t(section.labelKey) }}
+                </button>
+              </div>
+            </div>
+          </nav>
+
+          <template v-else>
+            <v-tabs
+              :key="tabsRenderKey"
+              :value="activeTabIndex"
+              color="primary"
+              show-arrows
+              @change="onTabChange"
+            >
+              <v-tab
+                v-for="t in visibleTabs"
+                :key="t.key"
+                class="d-flex justify-start"
+                style="text-transform: none"
+              >
+                <v-icon left small>{{ t.icon }}</v-icon>
+                {{ t.label }}
+              </v-tab>
+            </v-tabs>
+            <div
+              v-if="showSectionNav"
+              class="bookable-edit-nav__subnav"
+              role="navigation"
+              aria-label="Unterbereiche"
+            >
+              <button
+                v-for="section in activeTabSections"
+                :key="section.id"
+                type="button"
+                class="bookable-edit-nav__sublink"
+                :class="{
+                  'bookable-edit-nav__sublink--active':
+                    activeSectionId === section.id,
+                }"
+                @click="goToTab(activeTabKey, section.id)"
+              >
+                {{ $t(section.labelKey) }}
+              </button>
+            </div>
+          </template>
         </div>
 
         <div class="page-content__editor" ref="editorScroll">
@@ -90,7 +156,9 @@
               :key="activeTabKey"
               :bookable="bookable"
               :valid-root.sync="validRoot"
+              v-bind="activeTabExtraProps"
               @update:bookable="onUpdateBookable"
+              @navigate-tab="goToTab"
             />
           </keep-alive>
         </div>
@@ -148,6 +216,12 @@ import {
   isBookableExpertOnlyTab,
   setBookableExpertModeSession,
 } from "@/utils/bookableExpertMode";
+import {
+  bookableEditSectionElementId,
+  getBookableEditSectionById,
+  getVisibleBookableEditSections,
+  shouldShowBookableEditSectionNav,
+} from "@/utils/bookableEditSections";
 
 export default {
   name: "BookableEdit",
@@ -183,6 +257,8 @@ export default {
       inProgress: false,
       validRoot: true,
       activeTabKey: "general",
+      activeSectionId: null,
+      sectionTarget: null,
       expertModeContext: {
         enabled: getInitialBookableExpertMode(),
       },
@@ -288,8 +364,32 @@ export default {
       );
       return current?.comp || this.visibleTabs[0]?.comp;
     },
+    sectionContext() {
+      return {
+        bookable: this.bookable,
+        expertMode: this.expertMode,
+      };
+    },
+    activeTabSections() {
+      return getVisibleBookableEditSections(
+        this.activeTabKey,
+        this.sectionContext
+      );
+    },
+    showSectionNav() {
+      return shouldShowBookableEditSectionNav(
+        this.activeTabKey,
+        this.sectionContext
+      );
+    },
+    activeTabExtraProps() {
+      if (this.activeTabKey === "customFields") {
+        return { sectionTarget: this.sectionTarget };
+      }
+      return {};
+    },
     hasUnsavedChanges() {
-      const { customFields: _cf, ...bookableClean } = this.bookable;
+      const bookableClean = _.omit(this.bookable, ["customFields"]);
       return (
         JSON.stringify({
           bookable: bookableClean,
@@ -317,7 +417,7 @@ export default {
           });
         }
 
-        const { customFields: _cf, ...bookableClean } = response.data;
+        const bookableClean = _.omit(response.data, ["customFields"]);
 
         this.originalSnapshot = JSON.stringify({
           bookable: bookableClean,
@@ -366,7 +466,7 @@ export default {
       }
 
       this.$nextTick(() => {
-        const { customFields: _cf, ...bookableClean } = this.bookable;
+        const bookableClean = _.omit(this.bookable, ["customFields"]);
         this.originalSnapshot = JSON.stringify({
           bookable: bookableClean,
         });
@@ -388,25 +488,91 @@ export default {
     onUpdateBookable(updatedBookable) {
       this.bookable = { ...this.bookable, ...updatedBookable };
     },
-    goToTab(key) {
+    goToTab(key, sectionId) {
       if (!this.expertMode && isBookableExpertOnlyTab(key)) {
         return;
       }
-      if (this.visibleTabs.some((tab) => tab.key === key)) {
-        this.activeTabKey = key;
+      if (!this.visibleTabs.some((tab) => tab.key === key)) {
+        return;
+      }
+
+      const nextSectionId = sectionId || null;
+      if (nextSectionId) {
+        const section = getBookableEditSectionById(nextSectionId);
+        if (!section || section.tabKey !== key) {
+          return;
+        }
+        const visible = getVisibleBookableEditSections(
+          key,
+          this.sectionContext
+        );
+        if (!visible.some((item) => item.id === nextSectionId)) {
+          return;
+        }
+      }
+
+      this.activeTabKey = key;
+      this.activeSectionId = nextSectionId;
+      if (!nextSectionId) {
+        this.sectionTarget = null;
+      }
+      this.syncRouteQuery();
+
+      if (nextSectionId) {
+        this.$nextTick(() => {
+          this.applySectionNavigation(nextSectionId);
+        });
       }
     },
     onTabChange(index) {
       const tab = this.visibleTabs[index];
       if (tab) {
-        this.activeTabKey = tab.key;
+        this.goToTab(tab.key);
       }
+    },
+    applySectionNavigation(sectionId) {
+      const section = getBookableEditSectionById(sectionId);
+      if (!section) {
+        return;
+      }
+
+      if (section.type === "subTab") {
+        this.sectionTarget = sectionId;
+        return;
+      }
+
+      this.sectionTarget = null;
+      const elementId = bookableEditSectionElementId(sectionId);
+      const root = this.$refs.editorScroll;
+      const el =
+        (root && root.querySelector && root.querySelector(`#${elementId}`)) ||
+        document.getElementById(elementId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    },
+    syncRouteQuery() {
+      const query = { ...this.$route.query, tab: this.activeTabKey };
+      if (this.activeSectionId) {
+        query.section = this.activeSectionId;
+      } else {
+        delete query.section;
+      }
+
+      const sameTab = this.$route.query.tab === query.tab;
+      const sameSection =
+        (this.$route.query.section || null) === (query.section || null);
+      if (sameTab && sameSection) {
+        return;
+      }
+
+      this.$router.replace({ query });
     },
     ensureActiveTabVisible() {
       if (this.visibleTabs.some((tab) => tab.key === this.activeTabKey)) {
         return;
       }
-      this.activeTabKey = this.visibleTabs[0]?.key || "general";
+      this.goToTab(this.visibleTabs[0]?.key || "general");
     },
     setExpertMode(enabled) {
       if (!this.expertModeToggleVisible) {
@@ -415,6 +581,16 @@ export default {
       this.expertModeContext.enabled = !!enabled;
       setBookableExpertModeSession(this.expertModeContext.enabled);
       this.ensureActiveTabVisible();
+      if (
+        this.activeSectionId &&
+        !this.activeTabSections.some(
+          (section) => section.id === this.activeSectionId
+        )
+      ) {
+        this.activeSectionId = null;
+        this.sectionTarget = null;
+        this.syncRouteQuery();
+      }
     },
     resolveTabFromQuery() {
       let queryTabKey = this.$route.query.tab;
@@ -422,19 +598,37 @@ export default {
       if (queryTabKey === "tags") {
         queryTabKey = "general";
       }
+
+      let nextTabKey = this.visibleTabs[0]?.key || "general";
       if (this.visibleTabs.some((tab) => tab.key === queryTabKey)) {
-        this.activeTabKey = queryTabKey;
-        return;
+        nextTabKey = queryTabKey;
       }
-      this.activeTabKey = this.visibleTabs[0]?.key || "general";
-      if (
-        this.activeTabKey &&
-        queryTabKey &&
-        this.$route.query.tab !== this.activeTabKey
-      ) {
-        this.$router.replace({
-          query: { ...this.$route.query, tab: this.activeTabKey },
+
+      const querySection = this.$route.query.section || null;
+      const section = querySection
+        ? getBookableEditSectionById(querySection)
+        : null;
+      let nextSectionId = null;
+      if (section && section.tabKey === nextTabKey) {
+        const visible = getVisibleBookableEditSections(
+          nextTabKey,
+          this.sectionContext
+        );
+        if (visible.some((item) => item.id === querySection)) {
+          nextSectionId = querySection;
+        }
+      }
+
+      this.activeTabKey = nextTabKey;
+      this.activeSectionId = nextSectionId;
+      this.syncRouteQuery();
+
+      if (nextSectionId) {
+        this.$nextTick(() => {
+          this.applySectionNavigation(nextSectionId);
         });
+      } else {
+        this.sectionTarget = null;
       }
     },
     async copyBookableId() {
@@ -462,10 +656,12 @@ export default {
         this.init();
       },
     },
-    activeTabKey(tabKey) {
-      if (!tabKey || this.$route.query.tab === tabKey) return;
-      this.$router.replace({
-        query: { ...this.$route.query, tab: tabKey },
+    "bookable.tenantId"(tenantId) {
+      if (!tenantId || !this.activeSectionId) {
+        return;
+      }
+      this.$nextTick(() => {
+        this.applySectionNavigation(this.activeSectionId);
       });
     },
   },
@@ -548,6 +744,183 @@ export default {
   overflow-y: auto;
 }
 
+.bookable-edit-nav {
+  min-width: 196px;
+  max-width: 228px;
+  padding: 2px 0;
+}
+
+.bookable-edit-nav__group {
+  margin-bottom: 2px;
+}
+
+.bookable-edit-nav__group--active {
+  margin-bottom: 8px;
+}
+
+.bookable-edit-nav__tab {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+  padding: 8px 12px 8px 10px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 0 4px 4px 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.bookable-edit-nav__tab:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.theme--dark .bookable-edit-nav__tab:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.bookable-edit-nav__tab--active {
+  color: var(--v-primary-base);
+  border-left-color: var(--v-primary-base);
+  background-color: rgba(var(--v-primary-base), 0.08);
+  font-weight: 500;
+}
+
+.bookable-edit-nav__tab--active .bookable-edit-nav__tab-icon {
+  color: var(--v-primary-base);
+}
+
+.bookable-edit-nav__tab-icon {
+  flex: 0 0 auto;
+  margin-right: 10px;
+  opacity: 0.85;
+}
+
+.bookable-edit-nav__tab-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bookable-edit-nav__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 2px 0 0 22px;
+  padding: 2px 0 2px 12px;
+  border-left: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.theme--dark .bookable-edit-nav__sections {
+  border-left-color: rgba(255, 255, 255, 0.16);
+}
+
+.bookable-edit-nav__section {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.6);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.theme--dark .bookable-edit-nav__section {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.bookable-edit-nav__section:hover {
+  color: rgba(0, 0, 0, 0.87);
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.theme--dark .bookable-edit-nav__section:hover {
+  color: rgba(255, 255, 255, 0.92);
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.bookable-edit-nav__section--active {
+  color: var(--v-primary-base);
+  font-weight: 500;
+  background-color: rgba(var(--v-primary-base), 0.08);
+}
+
+.theme--dark .bookable-edit-nav__section--active {
+  color: var(--v-primary-base);
+}
+
+.bookable-edit-nav__subnav {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin: 0;
+  padding: 6px 4px 8px;
+  overflow-x: auto;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  scrollbar-width: thin;
+}
+
+.theme--dark .bookable-edit-nav__subnav {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.bookable-edit-nav__sublink {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.6);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.theme--dark .bookable-edit-nav__sublink {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.bookable-edit-nav__sublink:hover {
+  color: rgba(0, 0, 0, 0.87);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.theme--dark .bookable-edit-nav__sublink:hover {
+  color: rgba(255, 255, 255, 0.92);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.bookable-edit-nav__sublink--active {
+  color: var(--v-primary-base);
+  font-weight: 500;
+  background-color: rgba(var(--v-primary-base), 0.12);
+}
+
+.theme--dark .bookable-edit-nav__sublink--active {
+  color: var(--v-primary-base);
+}
+
 .page-content__editor {
   flex: 1 1 auto;
   min-width: 0;
@@ -560,6 +933,10 @@ export default {
     56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
       /* extra spacing */
   );
+}
+
+.page-content__editor >>> [id^="be-section-"] {
+  scroll-margin-top: 16px;
 }
 
 .page-content__overview {

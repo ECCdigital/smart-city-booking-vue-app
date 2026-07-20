@@ -97,6 +97,7 @@
     <v-expand-transition>
       <v-card
         v-if="expertMode && isIfbsActive"
+        id="be-section-pricing-external"
         class="mb-4 section-card"
         elevation="2"
         outlined
@@ -408,7 +409,12 @@
     </v-expand-transition>
 
     <template>
-      <v-card class="mb-4 section-card" elevation="2" outlined>
+      <v-card
+        id="be-section-pricing-base"
+        class="mb-4 section-card"
+        elevation="2"
+        outlined
+      >
         <v-card-title class="section-header pa-4">
           <v-icon class="mr-2">mdi-cog-outline</v-icon>
           <span class="text-h6 font-weight-bold">Grundeinstellungen</span>
@@ -490,6 +496,7 @@
 
       <v-card
         v-if="!isIfbsActive || !handlesPricing"
+        id="be-section-pricing-tiers"
         class="mb-4 section-card"
         elevation="2"
         outlined

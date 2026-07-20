@@ -329,109 +329,116 @@ export default {
         {{ $t("bookable.edit.expertMode.bookingTypeExpertOnly") }}
       </v-alert>
 
-      <v-radio-group v-model="bookingType">
-        <v-radio value="schedule" class="mb-3">
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-calendar-range</v-icon>
-                Freie Zeitwahl
+      <div id="be-section-bookingType-select">
+        <v-radio-group v-model="bookingType">
+          <v-radio value="schedule" class="mb-3">
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-calendar-range</v-icon>
+                  Freie Zeitwahl
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Kunden können Start- und Endzeitpunkt frei wählen
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Kunden können Start- und Endzeitpunkt frei wählen
-              </div>
-            </div>
-          </template>
-        </v-radio>
+            </template>
+          </v-radio>
 
-        <v-radio value="timePeriod" class="mb-3">
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-clock-outline</v-icon>
-                Feste Zeitfenster
+          <v-radio value="timePeriod" class="mb-3">
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-clock-outline</v-icon>
+                  Feste Zeitfenster
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Vordefinierte, buchbare Zeitfenster (z.B. Montags 09:00 -
+                  12:00)
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Vordefinierte, buchbare Zeitfenster (z.B. Montags 09:00 - 12:00)
-              </div>
-            </div>
-          </template>
-        </v-radio>
+            </template>
+          </v-radio>
 
-        <v-radio
-          v-if="expertMode || bookingType === 'week'"
-          value="week"
-          class="mb-3"
-          :disabled="!expertMode"
-        >
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-calendar-week</v-icon>
-                Wochenbuchung
+          <v-radio
+            v-if="expertMode || bookingType === 'week'"
+            value="week"
+            class="mb-3"
+            :disabled="!expertMode"
+          >
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-calendar-week</v-icon>
+                  Wochenbuchung
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Buchung für komplette Wochen
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Buchung für komplette Wochen
-              </div>
-            </div>
-          </template>
-        </v-radio>
+            </template>
+          </v-radio>
 
-        <v-radio
-          v-if="expertMode || bookingType === 'month'"
-          value="month"
-          class="mb-3"
-          :disabled="!expertMode"
-        >
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-calendar-month</v-icon>
-                Monatsbuchung
+          <v-radio
+            v-if="expertMode || bookingType === 'month'"
+            value="month"
+            class="mb-3"
+            :disabled="!expertMode"
+          >
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-calendar-month</v-icon>
+                  Monatsbuchung
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Buchung für komplette Kalendermonate
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Buchung für komplette Kalendermonate
-              </div>
-            </div>
-          </template>
-        </v-radio>
+            </template>
+          </v-radio>
 
-        <v-radio
-          v-if="expertMode || bookingType === 'blockPeriod'"
-          value="blockPeriod"
-          class="mb-3"
-          :disabled="!expertMode"
-        >
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-calendar-sync</v-icon>
-                Zeiträume
+          <v-radio
+            v-if="expertMode || bookingType === 'blockPeriod'"
+            value="blockPeriod"
+            class="mb-3"
+            :disabled="!expertMode"
+          >
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-calendar-sync</v-icon>
+                  Zeiträume
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Wiederkehrende, tagesübergreifende Buchungsfenster (z. B.
+                  Wochenende, Arbeitswoche)
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Wiederkehrende, tagesübergreifende Buchungsfenster (z. B.
-                Wochenende, Arbeitswoche)
-              </div>
-            </div>
-          </template>
-        </v-radio>
+            </template>
+          </v-radio>
 
-        <v-radio value="independent">
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-clock-remove-outline</v-icon>
-                Zeitunabhängig
+          <v-radio value="independent">
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-clock-remove-outline</v-icon>
+                  Zeitunabhängig
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Keine zeitlichen Einschränkungen
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Keine zeitlichen Einschränkungen
-              </div>
-            </div>
-          </template>
-        </v-radio>
-      </v-radio-group>
+            </template>
+          </v-radio>
+        </v-radio-group>
+      </div>
 
-      <v-card class="mt-4 section-card" v-if="bookingType === 'schedule'">
+      <v-card
+        id="be-section-bookingType-duration"
+        class="mt-4 section-card"
+        v-if="bookingType === 'schedule'"
+      >
         <v-card-title
           class="section-header pa-4 d-flex justify-space-between align-center"
         >
@@ -481,6 +488,7 @@ export default {
       />
 
       <v-card
+        id="be-section-bookingType-time-periods"
         class="mt-4 section-card"
         v-if="bookingType === 'timePeriod'"
         elevation="2"
@@ -722,6 +730,7 @@ export default {
       />
 
       <v-card
+        id="be-section-bookingType-block-periods"
         class="mt-4 section-card"
         v-if="bookingType === 'blockPeriod'"
         elevation="2"

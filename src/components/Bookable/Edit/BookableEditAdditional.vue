@@ -107,6 +107,7 @@ export default {
 
     <v-card
       v-if="expertMode"
+      id="be-section-additional-required-fields"
       class="mb-6 section-card"
       elevation="2"
       outlined
@@ -217,7 +218,12 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-additional-notes"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-information-variant</v-icon>
         <span class="text-h6 font-weight-bold">Buchungshinweise</span>

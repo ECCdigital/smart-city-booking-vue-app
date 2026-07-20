@@ -91,7 +91,12 @@ export default {
   <v-form ref="form" v-model="valid">
     <BaseSection title="Allgemein" icon="mdi-information-outline" />
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-general-info"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-information-outline</v-icon>
         <span class="text-h6 font-weight-bold">Allgemeine Informationen</span>
@@ -163,7 +168,12 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-general-booker-info"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-account-eye-outline</v-icon>
         <span class="text-h6 font-weight-bold">Informationen für Buchende</span>
@@ -207,6 +217,7 @@ export default {
 
     <v-card
       v-if="expertMode"
+      id="be-section-general-tags"
       class="mb-6 section-card"
       elevation="2"
       outlined
