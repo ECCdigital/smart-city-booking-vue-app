@@ -7,6 +7,13 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Added
+
+- Bookable edit shows a live overview of what the bookable is and how it can be booked (sticky sidebar on large screens, compact band on smaller viewports); empty traits are hidden, opening hours are summarized, and clicking a trait jumps to the matching tab
+- Bookable edit keeps the page header, tab navigation, and overview fixed while only the form content scrolls
+- Bookable tags and flags live under Allgemein, with clearer labels: public info for bookers vs. internal tags for filtering/grouping
+- New bookables default to free time selection (Freie Zeitwahl) as booking type
+
 ### Changed
 
 - Member details show a warning when supervisor booking notifications are disabled for the tenant

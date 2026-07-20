@@ -17,7 +17,7 @@ export default {
 </script>
 
 <template>
-  <AdminLayout :title="pageTitle">
+  <AdminLayout :title="pageTitle" scroll-body>
     <BookableEdit type="ticket"> </BookableEdit>
   </AdminLayout>
 </template>

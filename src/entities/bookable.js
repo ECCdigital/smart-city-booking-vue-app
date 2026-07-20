@@ -22,7 +22,7 @@ export default class Bookable {
     this.groupBooking = { enabled: false, permittedRoles: [] };
     this.cancellationPolicy = { userCancellable: true };
 
-    this.isScheduleRelated = false;
+    this.isScheduleRelated = true;
     this.isTimePeriodRelated = false;
     this.timePeriods = [];
     this.isOpeningHoursRelated = false;

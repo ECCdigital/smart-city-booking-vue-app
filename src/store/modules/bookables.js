@@ -25,7 +25,7 @@ const state = {
       permittedRoles: [],
     },
 
-    isScheduleRelated: false,
+    isScheduleRelated: true,
     isTimePeriodRelated: false,
     timePeriods: [],
     isOpeningHoursRelated: false,
@@ -129,7 +129,7 @@ const mutations = {
         permittedRoles: [],
       },
 
-      isScheduleRelated: false,
+      isScheduleRelated: true,
       isTimePeriodRelated: false,
       timePeriods: [],
       isOpeningHoursRelated: false,
