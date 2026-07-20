@@ -71,10 +71,16 @@
         $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
       "
       @submit="submitChanges"
-      @cancel="fetchTenant"
+      @cancel="onRestoreChanges"
       show-restore
       :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
       :in-progress="inProgress"
+    />
+
+    <UnsavedChangesDialog
+      v-model="leaveDialogOpen"
+      @stay="resolveLeaveConfirm(false)"
+      @discard="resolveLeaveConfirm(true)"
     />
 
     <ReceiptTemplateDialog
@@ -129,6 +135,8 @@ import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import SaveBar from "@/components/commons/SaveBar.vue";
+import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
+import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
@@ -139,6 +147,7 @@ export default {
   components: {
     CancellationTemplateDialog,
     SaveBar,
+    UnsavedChangesDialog,
     TenantEditGeneral,
     TenantEditWeb,
     TenantEditEmail,
@@ -153,6 +162,7 @@ export default {
     TenantEditCatalog,
     TenantEditBookables,
   },
+  mixins: [unsavedChangesGuard],
   data() {
     return {
       isLoading: false,
@@ -322,6 +332,13 @@ export default {
       tenantId: "tenants/currentTenantId",
     }),
     hasUnsavedChanges() {
+      if (
+        this.isLoading ||
+        !this.originalSnapshot ||
+        typeof this.originalSnapshot !== "string"
+      ) {
+        return false;
+      }
       return (
         JSON.stringify({
           tenant: this.tenant,
@@ -352,6 +369,12 @@ export default {
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
+    async onRestoreChanges() {
+      const discard = await this.confirmDiscardChanges();
+      if (discard) {
+        await this.fetchTenant();
+      }
+    },
     async fetchRoles() {
       try {
         const response = await ApiRolesService.getTenantRoles(true);
@@ -406,14 +429,14 @@ export default {
       this.workflow = data?.id
         ? data
         : {
-            active: false,
-            states: [],
-            archive: [],
-            description: "",
-            name: "",
-            eventStateMapping: "",
-            tenantId: this.tenant.id,
-          };
+          active: false,
+          states: [],
+          archive: [],
+          description: "",
+          name: "",
+          eventStateMapping: "",
+          tenantId: this.tenant.id,
+        };
     },
     async fetchChallenges() {
       try {

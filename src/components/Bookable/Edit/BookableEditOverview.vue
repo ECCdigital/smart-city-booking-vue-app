@@ -123,6 +123,7 @@
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiEventService from "@/services/api/ApiEventService";
+import store from "@/store";
 import { getBookableOverviewTraits } from "@/utils/bookableOverview";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
 
@@ -130,6 +131,7 @@ let bookableTitlesCache = null;
 let bookableTitlesPromise = null;
 let eventTitlesCache = null;
 let eventTitlesPromise = null;
+let eventTitlesTenantId = null;
 
 function loadBookableTitlesById() {
   if (bookableTitlesCache) {
@@ -157,12 +159,21 @@ function loadBookableTitlesById() {
 }
 
 function loadEventTitlesById() {
-  if (eventTitlesCache) {
+  const currentTenantId = store.getters["tenants/currentTenantId"];
+  if (eventTitlesCache && eventTitlesTenantId === currentTenantId) {
     return Promise.resolve(eventTitlesCache);
+  }
+  if (eventTitlesTenantId !== currentTenantId) {
+    eventTitlesCache = null;
+    eventTitlesPromise = null;
+    eventTitlesTenantId = currentTenantId;
   }
   if (!eventTitlesPromise) {
     eventTitlesPromise = ApiEventService.getEvents()
       .then((result) => {
+        if (store.getters["tenants/currentTenantId"] !== currentTenantId) {
+          return {};
+        }
         const map = {};
         (result?.data || []).forEach((item) => {
           if (item?.id) {
@@ -170,6 +181,7 @@ function loadEventTitlesById() {
           }
         });
         eventTitlesCache = map;
+        eventTitlesTenantId = currentTenantId;
         return map;
       })
       .catch((error) => {
@@ -405,6 +417,10 @@ export default {
 
 .overview-band-chips .overview-chip--static {
   cursor: default;
+}
+
+.overview-band-chips .overview-chip--expert {
+  opacity: 0.85;
 }
 
 .overview-band-detail {

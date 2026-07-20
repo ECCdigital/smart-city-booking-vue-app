@@ -567,11 +567,7 @@
             {{ $t("bookable.edit.expertMode.graduatedPricesActive") }}
           </v-alert>
 
-          <div
-            v-if="
-              (!useGraduatedPrices || !expertMode) && model.priceCategories[0]
-            "
-          >
+          <div v-if="!useGraduatedPrices && model.priceCategories[0]">
             <v-row align="center">
               <v-col cols="12" md="6">
                 <v-text-field

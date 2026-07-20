@@ -1,4 +1,10 @@
 {
+  "unsavedChangesLeave": {
+    "title": "Ungespeicherte Änderungen",
+    "message": "Es gibt ungespeicherte Änderungen. Wenn Sie fortfahren, gehen diese verloren. Möchten Sie die Änderungen verwerfen?",
+    "stay": "Weiter bearbeiten",
+    "discard": "Änderungen verwerfen"
+  },
   "logout": {
     "success": {
       "title": "Erfolgreich abgemeldet",
@@ -135,6 +141,11 @@
       }
     },
     "edit": {
+      "copyId": {
+        "tooltip": "ID kopieren"
+      },
+      "untitled": "Unbenannt",
+      "unsavedChanges": "Ungespeicherte Änderungen",
       "expertMode": {
         "label": "Experten-Modus",
         "simpleLabel": "Einfach-Modus",

@@ -20,12 +20,12 @@
                   </v-icon>
                 </span>
               </template>
-              <span>ID kopieren</span>
+              <span>{{ $t("bookable.edit.copyId.tooltip") }}</span>
             </v-tooltip>
             <span v-else class="bookable-id-text">ID: -</span>
             <span class="page-content__meta-sep mx-1">•</span>
             <span class="page-content__meta-title">
-              {{ bookable.title || "Unbenannt" }}
+              {{ bookable.title || $t("bookable.edit.untitled") }}
             </span>
           </div>
           <div class="page-content__meta-actions">
@@ -45,7 +45,7 @@
               small
               label
             >
-              Ungespeicherte Änderungen
+              {{ $t("bookable.edit.unsavedChanges") }}
             </v-chip>
           </div>
         </div>
@@ -181,10 +181,16 @@
         $refs.editorScroll && ($refs.editorScroll.$el || $refs.editorScroll)
       "
       @submit="createOrUpdate"
-      @cancel="init"
+      @cancel="onRestoreChanges"
       show-restore
       :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
       :in-progress="inProgress"
+    />
+
+    <UnsavedChangesDialog
+      v-model="leaveDialogOpen"
+      @stay="resolveLeaveConfirm(false)"
+      @discard="resolveLeaveConfirm(true)"
     />
   </div>
 </template>
@@ -196,6 +202,8 @@ import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
+import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
+import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import Bookable from "@/entities/bookable";
 import { normalizeLeadTimeFields } from "@/utils/bookingLeadTime";
 import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
@@ -229,6 +237,7 @@ export default {
     BookableEditStatus,
     BookableEditOverview,
     SaveBar,
+    UnsavedChangesDialog,
     BookableEditGeneral,
     BookableEditPrice,
     BookableEditBookingType,
@@ -240,6 +249,7 @@ export default {
     BookableEditAdditional,
     BookableEditCustomFields,
   },
+  mixins: [unsavedChangesGuard],
   props: {
     type: {
       type: String,
@@ -389,6 +399,13 @@ export default {
       return {};
     },
     hasUnsavedChanges() {
+      if (
+        this.isLoading ||
+        !this.originalSnapshot ||
+        typeof this.originalSnapshot !== "string"
+      ) {
+        return false;
+      }
       const bookableClean = _.omit(this.bookable, ["customFields"]);
       return (
         JSON.stringify({
@@ -401,6 +418,12 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    async onRestoreChanges() {
+      const discard = await this.confirmDiscardChanges();
+      if (discard) {
+        await this.init();
+      }
+    },
     async createOrUpdate() {
       try {
         this.inProgress = true;

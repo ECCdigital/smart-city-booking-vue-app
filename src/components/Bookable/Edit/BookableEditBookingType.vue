@@ -100,6 +100,7 @@ export default {
           if (!Array.isArray(this.model.blockPeriods)) {
             this.model.blockPeriods = [];
           }
+          // Permissions tab may be unmounted (keep-alive); disable here on type change.
           if (this.model.groupBooking?.enabled) {
             this.model.groupBooking.enabled = false;
           }

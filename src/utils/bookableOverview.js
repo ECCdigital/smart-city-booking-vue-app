@@ -133,15 +133,19 @@ function hasIfbsPricing(bookable) {
   );
 }
 
+function getPricedCategories(bookable) {
+  const categories = bookable?.priceCategories || [];
+  return categories.filter(
+    (cat) => cat && cat.priceEur != null && Number(cat.priceEur) > 0
+  );
+}
+
 function getPriceLabel(bookable) {
   if (hasIfbsPricing(bookable)) {
     return "Externe Preise";
   }
 
-  const categories = bookable?.priceCategories || [];
-  const priced = categories.filter(
-    (cat) => cat && cat.priceEur != null && Number(cat.priceEur) > 0
-  );
+  const priced = getPricedCategories(bookable);
 
   if (!priced.length) {
     return "Kostenfrei";
@@ -321,9 +325,7 @@ function formatBookableRefList(refs, titlesById = {}, maxItems = 2) {
 
 function hasGraduatedPrices(bookable) {
   const categories = bookable?.priceCategories || [];
-  const priced = categories.filter(
-    (cat) => cat && cat.priceEur != null && Number(cat.priceEur) > 0
-  );
+  const priced = getPricedCategories(bookable);
   if (priced.length > 1) return true;
   return categories.some(
     (cat) =>

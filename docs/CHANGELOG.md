@@ -11,6 +11,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 - Bookable edit expert mode toggle: advanced tabs (Schließsysteme, Abhängigkeiten) and advanced sections (tags, graduated prices, lead times, special hours, discounts, required fields, field definitions, …) can be hidden when `VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT` is set to `true`/`false` (unset = always expert, no toggle); session override in `sessionStorage`; overview shows expert traits as non-clickable hints in simple mode
 - Bookable edit tab navigation shows nested subsections for the active tab (desktop list / mobile chips); clicking jumps to the card or Custom Fields sub-tab; optional deep-link via `?tab=…&section=…`
+- Bookable, tenant, and instance edit ask for confirmation before discarding unsaved changes when leaving the page, closing/reloading the tab, or resetting the form
 - Bookable edit „Eigene Felder“: simple mode shows only value editing; expert mode keeps both sub-tabs (Werte pflegen / Felder definieren)
 - Bookable edit shows a live overview of what the bookable is and how it can be booked (sticky sidebar on large screens, compact band on smaller viewports); empty traits are hidden, opening hours are summarized, and clicking a trait jumps to the matching tab; tickets show the linked event name with an open-in-new-tab action
 - Bookable edit keeps the page header, tab navigation, and overview fixed while only the form content scrolls
