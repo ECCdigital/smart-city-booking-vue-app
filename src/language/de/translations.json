@@ -133,6 +133,30 @@
           "message": "Die ID konnte nicht in die Zwischenablage kopiert werden."
         }
       }
+    },
+    "edit": {
+      "expertMode": {
+        "label": "Experten-Modus",
+        "simpleLabel": "Einfach-Modus",
+        "graduatedPricesActive": "Staffelpreise sind konfiguriert. Zum Bearbeiten den Experten-Modus aktivieren.",
+        "bookingTypeExpertOnly": "Dieser Buchungstyp ist nur im Experten-Modus auswählbar bzw. änderbar.",
+        "traitBadge": "Experten"
+      },
+      "openEvent": "Veranstaltung in neuem Tab öffnen",
+      "status": {
+        "bookable": {
+          "label": "Buchbar",
+          "tooltip": "Kunde/Nutzer kann das Objekt über den Checkout buchen."
+        },
+        "public": {
+          "label": "Öffentlich",
+          "tooltip": "Buchungsobjekt wird durch Webschnittstellen im Katalog oder auf eigenen Webseiten ausgeliefert."
+        },
+        "manualApproval": {
+          "label": "Manuelle Freigabe",
+          "tooltip": "Eine Buchung muss vom Administrator freigegeben werden."
+        }
+      }
     }
   },
   "event": {

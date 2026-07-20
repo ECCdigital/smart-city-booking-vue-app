@@ -9,10 +9,11 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
-- Bookable edit shows a live overview of what the bookable is and how it can be booked (sticky sidebar on large screens, compact band on smaller viewports); empty traits are hidden, opening hours are summarized, and clicking a trait jumps to the matching tab
+- Bookable edit expert mode toggle: advanced tabs (Schließsysteme, Abhängigkeiten, Eigene Felder) and advanced sections (tags, graduated prices, lead times, special hours, discounts, required fields, …) can be hidden when `VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT` is set to `true`/`false` (unset = always expert, no toggle); session override in `sessionStorage`; overview shows expert traits as non-clickable hints in simple mode
+- Bookable edit shows a live overview of what the bookable is and how it can be booked (sticky sidebar on large screens, compact band on smaller viewports); empty traits are hidden, opening hours are summarized, and clicking a trait jumps to the matching tab; tickets show the linked event name with an open-in-new-tab action
 - Bookable edit keeps the page header, tab navigation, and overview fixed while only the form content scrolls
 - Bookable tags and flags live under Allgemein, with clearer labels: public info for bookers vs. internal tags for filtering/grouping
-- New bookables default to free time selection (Freie Zeitwahl) as booking type
+- New bookables default to free time selection (Freie Zeitwahl) as booking type; new tickets default to time-independent (Zeitunabhängig)
 
 ### Changed
 

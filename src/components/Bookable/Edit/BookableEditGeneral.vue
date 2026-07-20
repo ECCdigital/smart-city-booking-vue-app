@@ -5,10 +5,12 @@ import ChooseFile from "@/components/Files/ChooseFile.vue";
 import debounce from "lodash/debounce";
 import ApiEventService from "@/services/api/ApiEventService";
 import AddressLookup from "@/components/commons/AddressLookup.vue";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditGeneral",
   components: { AddressLookup, ChooseFile, Tiptap, BaseSection },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -102,6 +104,7 @@ export default {
               background-color="accent"
               filled
               dense
+              clearable
               label="Veranstaltung"
               hide-details
               v-model="model.eventId"
@@ -202,7 +205,12 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      v-if="expertMode"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-tag-multiple-outline</v-icon>
         <span class="text-h6 font-weight-bold">Interne Tags</span>

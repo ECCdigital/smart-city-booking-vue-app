@@ -2,10 +2,13 @@
 import BaseSection from "@/components/commons/BaseSection.vue";
 import BookableEditLeadTime from "@/components/Bookable/Edit/BookableEditLeadTime.vue";
 import { v4 as uuidv4 } from "uuid";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
+import { isBookableExpertOnlyBookingType } from "@/utils/bookableExpertMode";
 
 export default {
   name: "BookableEditBookingType",
   components: { BaseSection, BookableEditLeadTime },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -61,9 +64,13 @@ export default {
       );
     },
     bookingTypeSupportsLeadTime() {
-      return ["schedule", "timePeriod", "blockPeriod"].includes(
-        this.bookingType
+      return (
+        this.expertMode &&
+        ["schedule", "timePeriod", "blockPeriod"].includes(this.bookingType)
       );
+    },
+    isExpertBookingTypeActive() {
+      return isBookableExpertOnlyBookingType(this.bookingType);
     },
     bookingType: {
       get() {
@@ -82,29 +89,29 @@ export default {
         this.model.isLongRange = false;
 
         switch (value) {
-          case "schedule":
-            this.model.isScheduleRelated = true;
-            break;
-          case "timePeriod":
-            this.model.isTimePeriodRelated = true;
-            break;
-          case "blockPeriod":
-            this.model.isBlockPeriodRelated = true;
-            if (!Array.isArray(this.model.blockPeriods)) {
-              this.model.blockPeriods = [];
-            }
-            if (this.model.groupBooking?.enabled) {
-              this.model.groupBooking.enabled = false;
-            }
-            break;
-          case "week":
-            this.model.longRangeOptions = { type: "week" };
-            this.model.isLongRange = true;
-            break;
-          case "month":
-            this.model.longRangeOptions = { type: "month" };
-            this.model.isLongRange = true;
-            break;
+        case "schedule":
+          this.model.isScheduleRelated = true;
+          break;
+        case "timePeriod":
+          this.model.isTimePeriodRelated = true;
+          break;
+        case "blockPeriod":
+          this.model.isBlockPeriodRelated = true;
+          if (!Array.isArray(this.model.blockPeriods)) {
+            this.model.blockPeriods = [];
+          }
+          if (this.model.groupBooking?.enabled) {
+            this.model.groupBooking.enabled = false;
+          }
+          break;
+        case "week":
+          this.model.longRangeOptions = { type: "week" };
+          this.model.isLongRange = true;
+          break;
+        case "month":
+          this.model.longRangeOptions = { type: "month" };
+          this.model.isLongRange = true;
+          break;
         }
       },
     },
@@ -312,6 +319,16 @@ export default {
         Wählen Sie aus, wie Kunden dieses Objekt buchen können.
       </v-alert>
 
+      <v-alert
+        v-if="!expertMode && isExpertBookingTypeActive"
+        color="info"
+        dense
+        text
+        class="mb-4"
+      >
+        {{ $t("bookable.edit.expertMode.bookingTypeExpertOnly") }}
+      </v-alert>
+
       <v-radio-group v-model="bookingType">
         <v-radio value="schedule" class="mb-3">
           <template v-slot:label>
@@ -341,7 +358,12 @@ export default {
           </template>
         </v-radio>
 
-        <v-radio value="week" class="mb-3">
+        <v-radio
+          v-if="expertMode || bookingType === 'week'"
+          value="week"
+          class="mb-3"
+          :disabled="!expertMode"
+        >
           <template v-slot:label>
             <div>
               <div class="font-weight-bold">
@@ -355,7 +377,12 @@ export default {
           </template>
         </v-radio>
 
-        <v-radio value="month" class="mb-3">
+        <v-radio
+          v-if="expertMode || bookingType === 'month'"
+          value="month"
+          class="mb-3"
+          :disabled="!expertMode"
+        >
           <template v-slot:label>
             <div>
               <div class="font-weight-bold">
@@ -369,7 +396,12 @@ export default {
           </template>
         </v-radio>
 
-        <v-radio value="blockPeriod" class="mb-3">
+        <v-radio
+          v-if="expertMode || bookingType === 'blockPeriod'"
+          value="blockPeriod"
+          class="mb-3"
+          :disabled="!expertMode"
+        >
           <template v-slot:label>
             <div>
               <div class="font-weight-bold">
@@ -441,7 +473,7 @@ export default {
       </v-card>
 
       <BookableEditLeadTime
-        v-if="bookingType === 'schedule'"
+        v-if="expertMode && bookingType === 'schedule'"
         ref="leadTime"
         :bookable="model"
         :show-buffer="true"
@@ -682,7 +714,7 @@ export default {
       </v-card>
 
       <BookableEditLeadTime
-        v-if="bookingType === 'timePeriod'"
+        v-if="expertMode && bookingType === 'timePeriod'"
         ref="leadTime"
         :bookable="model"
         :show-buffer="false"
@@ -976,7 +1008,7 @@ export default {
       </v-card>
 
       <BookableEditLeadTime
-        v-if="bookingType === 'blockPeriod'"
+        v-if="expertMode && bookingType === 'blockPeriod'"
         ref="leadTime"
         :bookable="model"
         :show-buffer="false"

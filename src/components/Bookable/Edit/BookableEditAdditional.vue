@@ -1,10 +1,12 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import Tiptap from "@/components/Tiptap.vue";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditAdditional",
   components: { Tiptap, BaseSection },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -103,7 +105,12 @@ export default {
   <v-form ref="form" v-model="valid">
     <BaseSection title="Sonstiges" icon="mdi-dots-horizontal" />
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      v-if="expertMode"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title
         class="section-header pa-4 d-flex justify-space-between align-center"
       >

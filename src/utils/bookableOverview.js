@@ -1,3 +1,8 @@
+import {
+  isBookableExpertOnlyBookingType,
+  isBookableExpertOverviewTraitKey,
+} from "@/utils/bookableExpertMode";
+
 const BOOKING_MODE_LABELS = {
   schedule: "Freie Zeitwahl",
   timePeriod: "Feste Zeitfenster",
@@ -314,9 +319,34 @@ function formatBookableRefList(refs, titlesById = {}, maxItems = 2) {
   return joinList(labels, maxItems);
 }
 
-function trait(key, label, value, tabKey, icon) {
+function hasGraduatedPrices(bookable) {
+  const categories = bookable?.priceCategories || [];
+  const priced = categories.filter(
+    (cat) => cat && cat.priceEur != null && Number(cat.priceEur) > 0
+  );
+  if (priced.length > 1) return true;
+  return categories.some(
+    (cat) =>
+      cat?.interval?.start != null ||
+      cat?.interval?.end != null ||
+      (Array.isArray(cat?.weekdays) && cat.weekdays.length > 0) ||
+      (Array.isArray(cat?.holidays) && cat.holidays.length > 0)
+  );
+}
+
+/**
+ * @returns {{ key: string, label: string, value: string, tabKey: string, icon: string, expert: boolean }|null}
+ */
+function trait(key, label, value, tabKey, icon, expert = false) {
   if (value == null || value === "") return null;
-  return { key, label, value, tabKey, icon };
+  return {
+    key,
+    label,
+    value,
+    tabKey,
+    icon,
+    expert: expert || isBookableExpertOverviewTraitKey(key),
+  };
 }
 
 function countLabel(count, singular, plural) {
@@ -396,18 +426,40 @@ function getLockerSystemsLabel(bookable) {
  * Build overview traits focused on identity and how booking works.
  * Absent / empty traits are omitted.
  * @param {object} bookable
- * @param {{ bookableTitlesById?: Record<string, string> }} [options]
- * @returns {Array<{ key: string, label: string, value: string, tabKey: string, icon: string }>}
+ * @param {{
+ *   bookableTitlesById?: Record<string, string>,
+ *   eventTitlesById?: Record<string, string>,
+ * }} [options]
+ * @returns {Array<{ key: string, label: string, value: string, tabKey: string, icon: string, expert: boolean, openRoute?: object }>}
  */
 export function getBookableOverviewTraits(bookable, options = {}) {
   const titlesById = options.bookableTitlesById || {};
+  const eventTitlesById = options.eventTitlesById || {};
   const traits = [];
+  const bookingMode = getBookingMode(bookable);
 
   const title = truncate(bookable?.title, 64);
   if (title) {
     traits.push(
       trait("title", "Bezeichnung", title, "general", "mdi-format-title")
     );
+  }
+
+  if (bookable?.eventId) {
+    const eventName =
+      truncate(eventTitlesById[bookable.eventId], 64) ||
+      truncate(String(bookable.eventId), 32);
+    const eventTrait = trait(
+      "event",
+      "Veranstaltung",
+      eventName,
+      "general",
+      "mdi-calendar-star"
+    );
+    if (eventTrait) {
+      eventTrait.navigable = false;
+      traits.push(eventTrait);
+    }
   }
 
   const location = getLocationLabel(bookable);
@@ -449,12 +501,20 @@ export function getBookableOverviewTraits(bookable, options = {}) {
       "Buchung",
       getBookingModeLabel(bookable),
       "bookingType",
-      "mdi-calendar-clock"
+      "mdi-calendar-clock",
+      isBookableExpertOnlyBookingType(bookingMode)
     )
   );
 
   traits.push(
-    trait("price", "Preis", getPriceLabel(bookable), "pricing", "mdi-cash")
+    trait(
+      "price",
+      "Preis",
+      getPriceLabel(bookable),
+      "pricing",
+      "mdi-cash",
+      hasIfbsPricing(bookable) || hasGraduatedPrices(bookable)
+    )
   );
 
   if (bookable?.amount != null && bookable.amount !== "") {

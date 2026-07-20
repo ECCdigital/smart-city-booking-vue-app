@@ -4,7 +4,7 @@
 
     <v-expand-transition>
       <v-alert
-        v-if="showIfbsRecommendation"
+        v-if="expertMode && showIfbsRecommendation"
         prominent
         colored-border
         border="left"
@@ -96,7 +96,7 @@
 
     <v-expand-transition>
       <v-card
-        v-if="isIfbsActive"
+        v-if="expertMode && isIfbsActive"
         class="mb-4 section-card"
         elevation="2"
         outlined
@@ -416,27 +416,29 @@
         <v-divider />
 
         <v-card-text class="pa-4">
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-switch
-                dense
-                hide-details
-                v-model="model.enableCoupons"
-                color="primary"
-              >
-                <template v-slot:label>
-                  <div>
-                    <div class="font-weight-medium">Gutscheine aktivieren</div>
-                    <div class="text-caption text--secondary">
-                      Ermöglicht die Verwendung von Gutscheinen
+          <template v-if="expertMode">
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-switch
+                  dense
+                  hide-details
+                  v-model="model.enableCoupons"
+                  color="primary"
+                >
+                  <template v-slot:label>
+                    <div>
+                      <div class="font-weight-medium">Gutscheine aktivieren</div>
+                      <div class="text-caption text--secondary">
+                        Ermöglicht die Verwendung von Gutscheinen
+                      </div>
                     </div>
-                  </div>
-                </template>
-              </v-switch>
-            </v-col>
-          </v-row>
+                  </template>
+                </v-switch>
+              </v-col>
+            </v-row>
 
-          <v-divider class="my-4" />
+            <v-divider class="my-4" />
+          </template>
 
           <v-row>
             <v-col cols="12" md="4">
@@ -503,50 +505,66 @@
         <v-divider />
 
         <v-card-text class="pa-4">
-          <v-row>
-            <v-col cols="12">
-              <v-switch
-                v-model="useGraduatedPrices"
-                dense
-                hide-details
-                color="primary"
-                class="mt-0"
-              >
-                <template #label>
-                  <div>
-                    <div class="font-weight-medium d-flex align-center">
-                      <v-icon small class="mr-2">
-                        mdi-chart-line-variant
-                      </v-icon>
-                      <span>Staffelpreise aktivieren</span>
-                      <v-chip
-                        v-if="useGraduatedPrices"
-                        x-small
-                        color="primary"
-                        class="ml-2"
-                        label
-                      >
-                        {{ model.priceCategories.length }}
-                        {{
-                          model.priceCategories.length === 1
-                            ? "Kategorie"
-                            : "Kategorien"
-                        }}
-                      </v-chip>
+          <template v-if="expertMode">
+            <v-row>
+              <v-col cols="12">
+                <v-switch
+                  v-model="useGraduatedPrices"
+                  dense
+                  hide-details
+                  color="primary"
+                  class="mt-0"
+                >
+                  <template #label>
+                    <div>
+                      <div class="font-weight-medium d-flex align-center">
+                        <v-icon small class="mr-2">
+                          mdi-chart-line-variant
+                        </v-icon>
+                        <span>Staffelpreise aktivieren</span>
+                        <v-chip
+                          v-if="useGraduatedPrices"
+                          x-small
+                          color="primary"
+                          class="ml-2"
+                          label
+                        >
+                          {{ model.priceCategories.length }}
+                          {{
+                            model.priceCategories.length === 1
+                              ? "Kategorie"
+                              : "Kategorien"
+                          }}
+                        </v-chip>
+                      </div>
+                      <div class="text-caption text--secondary">
+                        Definieren Sie unterschiedliche Preise basierend auf
+                        Menge, Wochentag oder Feiertagen
+                      </div>
                     </div>
-                    <div class="text-caption text--secondary">
-                      Definieren Sie unterschiedliche Preise basierend auf
-                      Menge, Wochentag oder Feiertagen
-                    </div>
-                  </div>
-                </template>
-              </v-switch>
-            </v-col>
-          </v-row>
+                  </template>
+                </v-switch>
+              </v-col>
+            </v-row>
 
-          <v-divider class="my-4" />
+            <v-divider class="my-4" />
+          </template>
 
-          <div v-if="!useGraduatedPrices && model.priceCategories[0]">
+          <v-alert
+            v-if="!expertMode && useGraduatedPrices"
+            color="info"
+            dense
+            text
+            class="mb-4"
+          >
+            {{ $t("bookable.edit.expertMode.graduatedPricesActive") }}
+          </v-alert>
+
+          <div
+            v-if="
+              (!useGraduatedPrices || !expertMode) && model.priceCategories[0]
+            "
+          >
             <v-row align="center">
               <v-col cols="12" md="6">
                 <v-text-field
@@ -583,7 +601,7 @@
           </div>
 
           <v-expand-transition>
-            <div v-if="useGraduatedPrices">
+            <div v-if="expertMode && useGraduatedPrices">
               <div class="d-flex justify-space-between align-center mb-3">
                 <v-subheader class="pl-0">
                   <v-icon small class="mr-2"> mdi-format-list-numbered </v-icon>
@@ -938,6 +956,7 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import debounce from "lodash/debounce";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
 import ApiLockerService from "@/services/api/ApiLockerService";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 const DEFAULT_EXTERNAL_PROVIDER = {
   active: false,
@@ -952,6 +971,7 @@ const DEFAULT_EXTERNAL_PROVIDER = {
 export default {
   name: "BookableEditPrice",
   components: { BaseSection },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {

@@ -4,39 +4,50 @@
       <div class="page-content__top">
         <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
-        <div class="d-flex align-center mb-2">
-          <div>
-            <div class="text--secondary d-flex align-center">
-              <v-tooltip bottom v-if="bookableID">
-                <template v-slot:activator="{ on, attrs }">
-                  <span
-                    class="bookable-id-copy"
-                    v-bind="attrs"
-                    v-on="on"
-                    @click="copyBookableId"
-                  >
-                    ID: {{ bookableID }}
-                    <v-icon x-small class="ml-1">mdi-content-copy</v-icon>
-                  </span>
-                </template>
-                <span>ID kopieren</span>
-              </v-tooltip>
-              <span v-else>ID: -</span>
-              <span class="mx-1">•</span>
-              <span>{{ bookable.title || "Unbenannt" }}</span>
-            </div>
+        <div class="page-content__meta mb-2">
+          <div class="page-content__meta-info text--secondary">
+            <v-tooltip bottom v-if="bookableID">
+              <template v-slot:activator="{ on, attrs }">
+                <span
+                  class="bookable-id-copy"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="copyBookableId"
+                >
+                  <span class="bookable-id-text">ID: {{ bookableID }}</span>
+                  <v-icon x-small class="ml-1 flex-shrink-0">
+                    mdi-content-copy
+                  </v-icon>
+                </span>
+              </template>
+              <span>ID kopieren</span>
+            </v-tooltip>
+            <span v-else class="bookable-id-text">ID: -</span>
+            <span class="page-content__meta-sep mx-1">•</span>
+            <span class="page-content__meta-title">
+              {{ bookable.title || "Unbenannt" }}
+            </span>
           </div>
-          <v-spacer />
-          <v-chip
-            v-if="hasUnsavedChanges"
-            color="warning"
-            text-color="black"
-            small
-            class="mr-2"
-            label
-          >
-            Ungespeicherte Änderungen
-          </v-chip>
+          <div class="page-content__meta-actions">
+            <v-switch
+              v-if="expertModeToggleVisible"
+              :input-value="expertMode"
+              dense
+              hide-details
+              class="mt-0 pt-0 expert-mode-switch"
+              :label="$t('bookable.edit.expertMode.label')"
+              @change="setExpertMode"
+            />
+            <v-chip
+              v-if="hasUnsavedChanges"
+              color="warning"
+              text-color="black"
+              small
+              label
+            >
+              Ungespeicherte Änderungen
+            </v-chip>
+          </div>
         </div>
 
         <BookableEditStatus :bookable="bookable" />
@@ -52,13 +63,15 @@
       <div class="page-content__main">
         <div class="page-content__nav">
           <v-tabs
-            v-model="activeTab"
+            :key="tabsRenderKey"
+            :value="activeTabIndex"
             color="primary"
             show-arrows
             :vertical="$vuetify.breakpoint.mdAndUp"
+            @change="onTabChange"
           >
             <v-tab
-              v-for="t in tabs"
+              v-for="t in visibleTabs"
               :key="t.key"
               class="d-flex justify-start"
               style="text-transform: none"
@@ -72,8 +85,9 @@
         <div class="page-content__editor" ref="editorScroll">
           <keep-alive>
             <component
-              v-if="tabs[activeTab].comp && bookable.tenantId"
-              :is="tabs[activeTab].comp"
+              v-if="activeTabComp && bookable.tenantId"
+              :is="activeTabComp"
+              :key="activeTabKey"
               :bookable="bookable"
               :valid-root.sync="validRoot"
               @update:bookable="onUpdateBookable"
@@ -128,6 +142,12 @@ import BookableEditStatus from "@/components/Bookable/Edit/BookableEditStatus.vu
 import BookableEditOverview from "@/components/Bookable/Edit/BookableEditOverview.vue";
 import ToastService from "@/services/ToastService";
 import BookableEditCustomFields from "@/components/Bookable/Edit/BookableEditCustomFields.vue";
+import {
+  getInitialBookableExpertMode,
+  isBookableExpertModeConfigured,
+  isBookableExpertOnlyTab,
+  setBookableExpertModeSession,
+} from "@/utils/bookableExpertMode";
 
 export default {
   name: "BookableEdit",
@@ -152,12 +172,20 @@ export default {
       required: true,
     },
   },
+  provide() {
+    return {
+      bookableExpertMode: this.expertModeContext,
+    };
+  },
   data() {
     return {
       isLoading: false,
       inProgress: false,
       validRoot: true,
-      activeTab: 0,
+      activeTabKey: "general",
+      expertModeContext: {
+        enabled: getInitialBookableExpertMode(),
+      },
       tabs: [
         {
           key: "general",
@@ -233,6 +261,33 @@ export default {
     bookableID() {
       return this.$route.query.id;
     },
+    expertMode() {
+      return this.expertModeContext.enabled;
+    },
+    expertModeToggleVisible() {
+      return isBookableExpertModeConfigured();
+    },
+    visibleTabs() {
+      if (this.expertMode) {
+        return this.tabs;
+      }
+      return this.tabs.filter((tab) => !isBookableExpertOnlyTab(tab.key));
+    },
+    tabsRenderKey() {
+      return this.expertMode ? "expert" : "simple";
+    },
+    activeTabIndex() {
+      const index = this.visibleTabs.findIndex(
+        (tab) => tab.key === this.activeTabKey
+      );
+      return index >= 0 ? index : 0;
+    },
+    activeTabComp() {
+      const current = this.visibleTabs.find(
+        (tab) => tab.key === this.activeTabKey
+      );
+      return current?.comp || this.visibleTabs[0]?.comp;
+    },
     hasUnsavedChanges() {
       const { customFields: _cf, ...bookableClean } = this.bookable;
       return (
@@ -302,12 +357,12 @@ export default {
         );
         normalizeBookingDiscounts(this.bookable);
         this.bookable.type = this.type;
-        // Default booking type for new bookables: free time selection
-        this.bookable.isScheduleRelated = true;
         this.bookable.isTimePeriodRelated = false;
         this.bookable.isBlockPeriodRelated = false;
         this.bookable.isLongRange = false;
         this.bookable.longRangeOptions = {};
+        // Tickets default to time-independent; other bookables to free time selection
+        this.bookable.isScheduleRelated = this.type !== "ticket";
       }
 
       this.$nextTick(() => {
@@ -334,9 +389,52 @@ export default {
       this.bookable = { ...this.bookable, ...updatedBookable };
     },
     goToTab(key) {
-      const index = this.tabs.findIndex((t) => t.key === key);
-      if (index >= 0) {
-        this.activeTab = index;
+      if (!this.expertMode && isBookableExpertOnlyTab(key)) {
+        return;
+      }
+      if (this.visibleTabs.some((tab) => tab.key === key)) {
+        this.activeTabKey = key;
+      }
+    },
+    onTabChange(index) {
+      const tab = this.visibleTabs[index];
+      if (tab) {
+        this.activeTabKey = tab.key;
+      }
+    },
+    ensureActiveTabVisible() {
+      if (this.visibleTabs.some((tab) => tab.key === this.activeTabKey)) {
+        return;
+      }
+      this.activeTabKey = this.visibleTabs[0]?.key || "general";
+    },
+    setExpertMode(enabled) {
+      if (!this.expertModeToggleVisible) {
+        return;
+      }
+      this.expertModeContext.enabled = !!enabled;
+      setBookableExpertModeSession(this.expertModeContext.enabled);
+      this.ensureActiveTabVisible();
+    },
+    resolveTabFromQuery() {
+      let queryTabKey = this.$route.query.tab;
+      // Legacy deep-link: tags tab was merged into general
+      if (queryTabKey === "tags") {
+        queryTabKey = "general";
+      }
+      if (this.visibleTabs.some((tab) => tab.key === queryTabKey)) {
+        this.activeTabKey = queryTabKey;
+        return;
+      }
+      this.activeTabKey = this.visibleTabs[0]?.key || "general";
+      if (
+        this.activeTabKey &&
+        queryTabKey &&
+        this.$route.query.tab !== this.activeTabKey
+      ) {
+        this.$router.replace({
+          query: { ...this.$route.query, tab: this.activeTabKey },
+        });
       }
     },
     async copyBookableId() {
@@ -364,22 +462,15 @@ export default {
         this.init();
       },
     },
-    activeTab(newIndex) {
-      const tabKey = this.tabs[newIndex].key;
-      if (this.$route.query.tab === tabKey) return;
+    activeTabKey(tabKey) {
+      if (!tabKey || this.$route.query.tab === tabKey) return;
       this.$router.replace({
         query: { ...this.$route.query, tab: tabKey },
       });
     },
   },
   mounted() {
-    let queryTabKey = this.$route.query.tab;
-    // Legacy deep-link: tags tab was merged into general
-    if (queryTabKey === "tags") {
-      queryTabKey = "general";
-    }
-    const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
-    this.activeTab = foundIndex !== -1 ? foundIndex : 0;
+    this.resolveTabFromQuery();
   },
 };
 </script>
@@ -404,6 +495,42 @@ export default {
 
 .page-content__top {
   flex: 0 0 auto;
+}
+
+.page-content__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-width: 0;
+}
+
+.page-content__meta-info {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.page-content__meta-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page-content__meta-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.bookable-id-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .page-content__main {
@@ -456,11 +583,51 @@ export default {
   .page-content__editor {
     flex: 1 1 auto;
   }
+
+  .page-content__meta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-content__meta-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 599px) {
+  .page-content__meta-info {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .page-content__meta-sep {
+    display: none;
+  }
+
+  .page-content__meta-title {
+    flex: 1 1 100%;
+    font-weight: 500;
+  }
+
+  .bookable-id-copy {
+    max-width: 100%;
+  }
+
+  .page-content__meta-actions {
+    justify-content: flex-end;
+    width: 100%;
+  }
+}
+
+.expert-mode-switch {
+  flex: 0 0 auto;
 }
 
 .bookable-id-copy {
   display: inline-flex;
   align-items: center;
+  max-width: min(100%, 280px);
+  min-width: 0;
   cursor: pointer;
   border-radius: 4px;
   padding: 2px 6px;

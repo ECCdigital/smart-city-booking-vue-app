@@ -6,10 +6,12 @@ import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 import BookingDiscountEditor from "@/components/Bookable/Edit/BookingDiscountEditor.vue";
 import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
 import { mapGetters } from "vuex";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditPermissions",
   components: { BookingDiscountEditor, UserRoleSelector, BaseSection },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -188,30 +190,32 @@ export default {
       </v-card-text>
     </v-card>
 
-    <BaseSection title="Preisrabatte" icon="mdi-ticket-percent-outline" />
+    <template v-if="expertMode">
+      <BaseSection title="Preisrabatte" icon="mdi-ticket-percent-outline" />
 
-    <p class="mb-4 text-caption" style="max-width: 700px">
-      Legen Sie einen prozentualen Preisnachlass (0–100&nbsp;%) pro Benutzer
-      oder Rolle fest. 100&nbsp;% entspricht einer kostenfreien Buchung.
-    </p>
+      <p class="mb-4 text-caption" style="max-width: 700px">
+        Legen Sie einen prozentualen Preisnachlass (0–100&nbsp;%) pro Benutzer
+        oder Rolle fest. 100&nbsp;% entspricht einer kostenfreien Buchung.
+      </p>
 
-    <BookingDiscountEditor
-      v-if="model.bookingDiscounts"
-      :items="model.bookingDiscounts.users"
-      type="user"
-      :available-users="availableUsers"
-      label="Rabatt für Benutzer"
-      hint="Gewähren Sie <strong>bestimmten Benutzern</strong> einen Preisnachlass auf dieses Buchungsobjekt."
-    />
+      <BookingDiscountEditor
+        v-if="model.bookingDiscounts"
+        :items="model.bookingDiscounts.users"
+        type="user"
+        :available-users="availableUsers"
+        label="Rabatt für Benutzer"
+        hint="Gewähren Sie <strong>bestimmten Benutzern</strong> einen Preisnachlass auf dieses Buchungsobjekt."
+      />
 
-    <BookingDiscountEditor
-      v-if="model.bookingDiscounts"
-      :items="model.bookingDiscounts.roles"
-      type="role"
-      :available-roles="availableRoles"
-      label="Rabatt für Rollen"
-      hint="Gewähren Sie <strong>allen Benutzern einer Rolle</strong> einen Preisnachlass auf dieses Buchungsobjekt."
-    />
+      <BookingDiscountEditor
+        v-if="model.bookingDiscounts"
+        :items="model.bookingDiscounts.roles"
+        type="role"
+        :available-roles="availableRoles"
+        label="Rabatt für Rollen"
+        hint="Gewähren Sie <strong>allen Benutzern einer Rolle</strong> einen Preisnachlass auf dieses Buchungsobjekt."
+      />
+    </template>
 
     <v-card class="mb-6 section-card" elevation="2" outlined>
       <v-card-title class="section-header pa-4">
@@ -301,7 +305,12 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      v-if="expertMode"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-book-cancel-outline</v-icon>
         <span class="text-h6 font-weight-bold">Stornierungsrichtlinie</span>
