@@ -19,6 +19,14 @@ export default {
         this.$emit("update:bookable", { ...val });
       },
     },
+    manualApproval: {
+      get() {
+        return !this.model.autoCommitBooking;
+      },
+      set(value) {
+        this.model.autoCommitBooking = !value;
+      },
+    },
   },
 };
 </script>
@@ -59,18 +67,18 @@ export default {
     </v-switch>
 
     <v-switch
-      v-model="model.autoCommitBooking"
-      label="Auto-Bestätigung"
+      v-model="manualApproval"
+      label="Manuelle Freigabe"
       hide-details
       dense
       class="mt-0"
       color="primary"
     >
       <template v-slot:prepend>
-        <v-icon color="primary" v-if="model.autoCommitBooking">
-          mdi-check-circle
+        <v-icon color="primary" v-if="manualApproval">
+          mdi-account-check
         </v-icon>
-        <v-icon color="grey" v-else>mdi-circle-outline</v-icon>
+        <v-icon color="grey" v-else>mdi-check-circle-outline</v-icon>
       </template>
     </v-switch>
   </v-sheet>

@@ -1,47 +1,56 @@
 <template>
   <div class="page-content" ref="contentCol">
-    <v-form ref="rootForm" v-model="validRoot">
-      <v-progress-linear :active="isLoading" indeterminate color="primary" />
+    <v-form ref="rootForm" v-model="validRoot" class="page-content__form">
+      <div class="page-content__top">
+        <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
-      <div class="d-flex align-center mb-2">
-        <div>
-          <div class="text--secondary d-flex align-center">
-            <v-tooltip bottom v-if="bookableID">
-              <template v-slot:activator="{ on, attrs }">
-                <span
-                  class="bookable-id-copy"
-                  v-bind="attrs"
-                  v-on="on"
-                  @click="copyBookableId"
-                >
-                  ID: {{ bookableID }}
-                  <v-icon x-small class="ml-1">mdi-content-copy</v-icon>
-                </span>
-              </template>
-              <span>ID kopieren</span>
-            </v-tooltip>
-            <span v-else>ID: -</span>
-            <span class="mx-1">•</span>
-            <span>{{ bookable.title || "Unbenannt" }}</span>
+        <div class="d-flex align-center mb-2">
+          <div>
+            <div class="text--secondary d-flex align-center">
+              <v-tooltip bottom v-if="bookableID">
+                <template v-slot:activator="{ on, attrs }">
+                  <span
+                    class="bookable-id-copy"
+                    v-bind="attrs"
+                    v-on="on"
+                    @click="copyBookableId"
+                  >
+                    ID: {{ bookableID }}
+                    <v-icon x-small class="ml-1">mdi-content-copy</v-icon>
+                  </span>
+                </template>
+                <span>ID kopieren</span>
+              </v-tooltip>
+              <span v-else>ID: -</span>
+              <span class="mx-1">•</span>
+              <span>{{ bookable.title || "Unbenannt" }}</span>
+            </div>
           </div>
+          <v-spacer />
+          <v-chip
+            v-if="hasUnsavedChanges"
+            color="warning"
+            text-color="black"
+            small
+            class="mr-2"
+            label
+          >
+            Ungespeicherte Änderungen
+          </v-chip>
         </div>
-        <v-spacer />
-        <v-chip
-          v-if="hasUnsavedChanges"
-          color="warning"
-          text-color="black"
-          small
-          class="mr-2"
-          label
-        >
-          Ungespeicherte Änderungen
-        </v-chip>
+
+        <BookableEditStatus :bookable="bookable" />
+
+        <BookableEditOverview
+          v-if="!$vuetify.breakpoint.lgAndUp"
+          variant="band"
+          :bookable="bookable"
+          @navigate-tab="goToTab"
+        />
       </div>
 
-      <BookableEditStatus :bookable="bookable" />
-
-      <v-row>
-        <v-col class="col-12 col-md-auto">
+      <div class="page-content__main">
+        <div class="page-content__nav">
           <v-tabs
             v-model="activeTab"
             color="primary"
@@ -57,9 +66,10 @@
               <v-icon left small>{{ t.icon }}</v-icon>
               {{ t.label }}
             </v-tab>
-          </v-tabs></v-col
-        >
-        <v-col class="col-12 col-md-9">
+          </v-tabs>
+        </div>
+
+        <div class="page-content__editor" ref="editorScroll">
           <keep-alive>
             <component
               v-if="tabs[activeTab].comp && bookable.tenantId"
@@ -69,13 +79,24 @@
               @update:bookable="onUpdateBookable"
             />
           </keep-alive>
-        </v-col>
-      </v-row>
+        </div>
+
+        <div v-if="$vuetify.breakpoint.lgAndUp" class="page-content__overview">
+          <BookableEditOverview
+            variant="sidebar"
+            :bookable="bookable"
+            @navigate-tab="goToTab"
+          />
+        </div>
+      </div>
     </v-form>
 
     <SaveBar
       :anchor-el="
         $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
+      "
+      :scroll-root="
+        $refs.editorScroll && ($refs.editorScroll.$el || $refs.editorScroll)
       "
       @submit="createOrUpdate"
       @cancel="init"
@@ -90,7 +111,6 @@
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import _ from "lodash";
 import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.vue";
-import BookableEditTags from "@/components/Bookable/Edit/BookableEditTags.vue";
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
@@ -105,6 +125,7 @@ import BookableEditRelatedBookables from "@/components/Bookable/Edit/BookableEdi
 import BookableEditAttachments from "@/components/Bookable/Edit/BookableEditAttachments.vue";
 import BookableEditAdditional from "@/components/Bookable/Edit/BookableEditAdditional.vue";
 import BookableEditStatus from "@/components/Bookable/Edit/BookableEditStatus.vue";
+import BookableEditOverview from "@/components/Bookable/Edit/BookableEditOverview.vue";
 import ToastService from "@/services/ToastService";
 import BookableEditCustomFields from "@/components/Bookable/Edit/BookableEditCustomFields.vue";
 
@@ -112,9 +133,9 @@ export default {
   name: "BookableEdit",
   components: {
     BookableEditStatus,
+    BookableEditOverview,
     SaveBar,
     BookableEditGeneral,
-    BookableEditTags,
     BookableEditPrice,
     BookableEditBookingType,
     BookableEditOpeningHours,
@@ -143,12 +164,6 @@ export default {
           label: "Allgemein",
           icon: "mdi-information-outline",
           comp: "BookableEditGeneral",
-        },
-        {
-          key: "tags",
-          label: "Tags & Flags",
-          icon: "mdi-tag-multiple-outline",
-          comp: "BookableEditTags",
         },
         {
           key: "pricing",
@@ -280,13 +295,19 @@ export default {
         await this.fetchBookable(this.bookableID);
       } else {
         const response = await ApiBookablesService.getBookableTemplate(
-          this.currentTenant.id,
+          this.currentTenant.id
         );
         this.bookable = normalizeLeadTimeFields(
           new Bookable(response.data).toPlain()
         );
         normalizeBookingDiscounts(this.bookable);
         this.bookable.type = this.type;
+        // Default booking type for new bookables: free time selection
+        this.bookable.isScheduleRelated = true;
+        this.bookable.isTimePeriodRelated = false;
+        this.bookable.isBlockPeriodRelated = false;
+        this.bookable.isLongRange = false;
+        this.bookable.longRangeOptions = {};
       }
 
       this.$nextTick(() => {
@@ -311,6 +332,12 @@ export default {
     },
     onUpdateBookable(updatedBookable) {
       this.bookable = { ...this.bookable, ...updatedBookable };
+    },
+    goToTab(key) {
+      const index = this.tabs.findIndex((t) => t.key === key);
+      if (index >= 0) {
+        this.activeTab = index;
+      }
     },
     async copyBookableId() {
       if (!this.bookableID) return;
@@ -346,7 +373,11 @@ export default {
     },
   },
   mounted() {
-    const queryTabKey = this.$route.query.tab;
+    let queryTabKey = this.$route.query.tab;
+    // Legacy deep-link: tags tab was merged into general
+    if (queryTabKey === "tags") {
+      queryTabKey = "general";
+    }
     const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
     this.activeTab = foundIndex !== -1 ? foundIndex : 0;
   },
@@ -355,10 +386,76 @@ export default {
 
 <style scoped>
 .page-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.page-content__form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.page-content__top {
+  flex: 0 0 auto;
+}
+
+.page-content__main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.page-content__nav {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.page-content__editor {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding-right: 4px;
   padding-bottom: calc(
     56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
       /* extra spacing */
   );
+}
+
+.page-content__overview {
+  flex: 0 0 280px;
+  max-width: 320px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+@media (max-width: 959px) {
+  .page-content__main {
+    flex-direction: column;
+  }
+
+  .page-content__nav {
+    flex: 0 0 auto;
+    overflow-y: hidden;
+  }
+
+  .page-content__editor {
+    flex: 1 1 auto;
+  }
 }
 
 .bookable-id-copy {
