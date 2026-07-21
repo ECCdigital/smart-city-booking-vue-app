@@ -20,6 +20,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
+- Bookable edit tab „Preise“ renamed to „Preise & Kapazität“ to reflect capacity settings
 - Member details show a warning when supervisor booking notifications are disabled for the tenant
 
 ## [4.2.0] — 2026-07-17

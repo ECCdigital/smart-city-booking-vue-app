@@ -281,7 +281,7 @@ export default {
         },
         {
           key: "pricing",
-          label: "Preise",
+          label: "Preise & Kapazität",
           icon: "mdi-cash",
           comp: "BookableEditPrice",
         },

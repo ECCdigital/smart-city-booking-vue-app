@@ -1,6 +1,6 @@
 <template>
   <v-form ref="form" v-model="valid">
-    <BaseSection title="Preise" icon="mdi-cash" />
+    <BaseSection title="Preise & Kapazität" icon="mdi-cash" />
 
     <v-expand-transition>
       <v-alert
