@@ -23,6 +23,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 - Bookable edit tab „Preise“ renamed to „Preise & Kapazität“ to reflect capacity settings
 - Member details show a warning when supervisor booking notifications are disabled for the tenant
 
+### Fixed
+
+- Bookable edit no longer marks unsaved changes when opening „Preise & Kapazität“; the IFBS external provider is only created when the user enables or configures it
+
 ## [4.2.0] — 2026-07-17
 
 ### Added

@@ -1022,6 +1022,10 @@ export default {
         { text: "Thüringen", value: "TH" },
       ],
       dismissIfbsRecommendation: false,
+      // Detached fallback for read/v-model before the provider is persisted.
+      _ifbsProviderFallback: JSON.parse(
+        JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)
+      ),
     };
   },
   computed: {
@@ -1045,24 +1049,28 @@ export default {
       );
     },
     externalProvider() {
-      return this.getOrCreateIfbsProvider();
+      return this.findIfbsProvider() || this._ifbsProviderFallback;
     },
     handlesPricing() {
-      return (
-        this.externalProvider.active &&
-        this.externalProvider.handles.includes("pricing")
+      const provider = this.externalProvider;
+      return !!(
+        provider.active && provider.handles && provider.handles.includes("pricing")
       );
     },
     handlesAvailability() {
-      return (
-        this.externalProvider.active &&
-        this.externalProvider.handles.includes("availability")
+      const provider = this.externalProvider;
+      return !!(
+        provider.active &&
+        provider.handles &&
+        provider.handles.includes("availability")
       );
     },
     handlesMaxAmount() {
-      return (
-        this.externalProvider.active &&
-        this.externalProvider.handles.includes("maxAmount")
+      const provider = this.externalProvider;
+      return !!(
+        provider.active &&
+        provider.handles &&
+        provider.handles.includes("maxAmount")
       );
     },
     hasIfbsData() {
@@ -1180,6 +1188,9 @@ export default {
     "bookable.id": {
       immediate: true,
       handler() {
+        this._ifbsProviderFallback = JSON.parse(
+          JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)
+        );
         this.fetchHolidays();
       },
     },
@@ -1187,9 +1198,8 @@ export default {
       immediate: true,
       handler(active) {
         if (active) {
-          this.ensureExternalProviderExists();
-          this.syncExternalProviderConfig();
-          if (this.externalProvider.active) {
+          const provider = this.findIfbsProvider();
+          if (provider?.active) {
             this.fetchIfbsData();
           }
         } else {
@@ -1200,7 +1210,7 @@ export default {
       },
     },
     "externalProvider.active"(active) {
-      if (active && this.isIfbsActive) {
+      if (active && this.isIfbsActive && this.findIfbsProvider()) {
         this.fetchIfbsData();
       }
     },
@@ -1208,7 +1218,7 @@ export default {
       deep: true,
       handler() {
         if (
-          this.externalProvider.active &&
+          this.findIfbsProvider()?.active &&
           this.isIfbsActive &&
           !this.hasIfbsData &&
           !this.isLoadingIfbs
@@ -1254,46 +1264,33 @@ export default {
     },
   },
   methods: {
-    ensureExternalProviderExists() {
-      if (!this.model.externalProviders) {
-        this.$set(this.model, "externalProviders", []);
-      }
-
-      const existing = this.model.externalProviders.find(
-        (p) => p.provider === "ifbs"
+    findIfbsProvider() {
+      return (
+        this.model.externalProviders?.find((p) => p.provider === "ifbs") || null
       );
-
-      if (!existing) {
-        this.model.externalProviders.push({
-          ...JSON.parse(JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)),
-        });
-        this._emitDebounced({ ...this.model });
-      }
     },
-    getOrCreateIfbsProvider() {
+    ensureExternalProviderExists() {
+      const existing = this.findIfbsProvider();
+      if (existing) {
+        return existing;
+      }
+
       if (!this.model.externalProviders) {
         this.$set(this.model, "externalProviders", []);
       }
 
-      let provider = this.model.externalProviders.find(
-        (p) => p.provider === "ifbs"
-      );
-
-      if (!provider) {
-        provider = {
-          ...JSON.parse(JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)),
-        };
-        this.model.externalProviders.push(provider);
-        this._emitDebounced({ ...this.model });
-      }
-
+      // Persist current fallback state (may already include UI edits via v-model).
+      const provider = JSON.parse(JSON.stringify(this._ifbsProviderFallback));
+      this.model.externalProviders.push(provider);
+      this.syncExternalProviderConfig();
+      this._emitDebounced({ ...this.model });
       return provider;
     },
     syncExternalProviderConfig() {
       const unit = this.ifbsUnit;
-      if (!unit) return;
+      const provider = this.findIfbsProvider();
+      if (!unit || !provider) return;
 
-      const provider = this.externalProvider;
       const needsUpdate =
         provider.config.locationId !== unit.locationId ||
         provider.config.amount !== (unit.amount || 1);
@@ -1307,21 +1304,23 @@ export default {
       }
     },
     onExternalProviderChanged() {
+      this.ensureExternalProviderExists();
+      this.syncExternalProviderConfig();
       this._emitDebounced({ ...this.model });
     },
     activateRecommendedIfbs() {
-      this.ensureExternalProviderExists();
-      const provider = this.externalProvider;
+      const provider = this.ensureExternalProviderExists();
 
       provider.active = true;
       this.$set(provider, "handles", ["availability", "maxAmount", "pricing"]);
+      this.syncExternalProviderConfig();
 
       this._emitDebounced({ ...this.model });
       this.fetchIfbsData();
     },
 
     activateMissingHandles() {
-      const provider = this.externalProvider;
+      const provider = this.ensureExternalProviderExists();
       const current = provider.handles || [];
 
       this.missingRecommendedHandles.forEach((handle) => {
