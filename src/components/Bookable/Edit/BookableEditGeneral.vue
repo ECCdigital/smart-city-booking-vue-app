@@ -5,10 +5,12 @@ import ChooseFile from "@/components/Files/ChooseFile.vue";
 import debounce from "lodash/debounce";
 import ApiEventService from "@/services/api/ApiEventService";
 import AddressLookup from "@/components/commons/AddressLookup.vue";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditGeneral",
   components: { AddressLookup, ChooseFile, Tiptap, BaseSection },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -89,7 +91,12 @@ export default {
   <v-form ref="form" v-model="valid">
     <BaseSection title="Allgemein" icon="mdi-information-outline" />
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-general-info"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-information-outline</v-icon>
         <span class="text-h6 font-weight-bold">Allgemeine Informationen</span>
@@ -102,6 +109,7 @@ export default {
               background-color="accent"
               filled
               dense
+              clearable
               label="Veranstaltung"
               hide-details
               v-model="model.eventId"
@@ -160,7 +168,12 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-general-booker-info"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-account-eye-outline</v-icon>
         <span class="text-h6 font-weight-bold">Informationen für Buchende</span>
@@ -202,7 +215,13 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      v-if="expertMode"
+      id="be-section-general-tags"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-tag-multiple-outline</v-icon>
         <span class="text-h6 font-weight-bold">Interne Tags</span>

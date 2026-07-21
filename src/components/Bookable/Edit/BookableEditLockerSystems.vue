@@ -254,6 +254,7 @@ export default {
 
     <v-card
       v-if="lockerDetails.active && !selectedSystemType"
+      id="be-section-lockers-select"
       class="my-6 section-card"
       elevation="2"
       outlined
@@ -317,6 +318,7 @@ export default {
 
     <v-card
       v-if="lockerDetails.active && selectedSystemType === 'pareva'"
+      id="be-section-lockers-pareva"
       class="my-6 section-card"
       elevation="2"
       outlined
@@ -441,6 +443,7 @@ export default {
 
     <v-card
       v-if="lockerDetails.active && selectedSystemType === 'ifbs'"
+      id="be-section-lockers-ifbs"
       class="my-6 section-card"
       elevation="2"
       outlined

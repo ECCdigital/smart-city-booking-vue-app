@@ -4,6 +4,7 @@ import {
   hasBufferConfig,
   normalizeLeadTimeFields,
 } from "@/utils/bookingLeadTime";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 const WEEKDAYS = [
   { id: 1, name: "Montag", short: "Mo" },
@@ -30,6 +31,7 @@ const BUFFER_PRESET_MINUTES = [
 
 export default {
   name: "BookableEditLeadTime",
+  mixins: [bookableExpertMode],
   props: {
     bookable: { type: Object, required: true },
     showBuffer: { type: Boolean, default: true },
@@ -228,6 +230,9 @@ export default {
       return this.expandedItems.includes(index);
     },
     async validate() {
+      if (!this.expertMode) {
+        return true;
+      }
       const formValid = this.$refs.form ? this.$refs.form.validate() : true;
       if (!formValid) {
         return false;
@@ -263,8 +268,13 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
-    <v-card class="mt-4 section-card" elevation="2" outlined>
+  <v-form v-if="expertMode" ref="form" v-model="valid">
+    <v-card
+      id="be-section-bookingType-lead-time"
+      class="mt-4 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-timer-sand</v-icon>
         <span class="text-h6 font-weight-bold">Vorlaufzeit</span>
@@ -563,7 +573,13 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card v-if="showBuffer" class="mt-4 section-card" elevation="2" outlined>
+    <v-card
+      v-if="showBuffer"
+      id="be-section-bookingType-buffer"
+      class="mt-4 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-calendar-clock</v-icon>
         <span class="text-h6 font-weight-bold">Puffer zwischen Buchungen</span>

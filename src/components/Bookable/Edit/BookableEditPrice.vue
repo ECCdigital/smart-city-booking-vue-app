@@ -1,10 +1,10 @@
 <template>
   <v-form ref="form" v-model="valid">
-    <BaseSection title="Preise" icon="mdi-cash" />
+    <BaseSection title="Preise & Kapazität" icon="mdi-cash" />
 
     <v-expand-transition>
       <v-alert
-        v-if="showIfbsRecommendation"
+        v-if="expertMode && showIfbsRecommendation"
         prominent
         colored-border
         border="left"
@@ -96,7 +96,8 @@
 
     <v-expand-transition>
       <v-card
-        v-if="isIfbsActive"
+        v-if="expertMode && isIfbsActive"
+        id="be-section-pricing-external"
         class="mb-4 section-card"
         elevation="2"
         outlined
@@ -408,7 +409,12 @@
     </v-expand-transition>
 
     <template>
-      <v-card class="mb-4 section-card" elevation="2" outlined>
+      <v-card
+        id="be-section-pricing-base"
+        class="mb-4 section-card"
+        elevation="2"
+        outlined
+      >
         <v-card-title class="section-header pa-4">
           <v-icon class="mr-2">mdi-cog-outline</v-icon>
           <span class="text-h6 font-weight-bold">Grundeinstellungen</span>
@@ -416,27 +422,29 @@
         <v-divider />
 
         <v-card-text class="pa-4">
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-switch
-                dense
-                hide-details
-                v-model="model.enableCoupons"
-                color="primary"
-              >
-                <template v-slot:label>
-                  <div>
-                    <div class="font-weight-medium">Gutscheine aktivieren</div>
-                    <div class="text-caption text--secondary">
-                      Ermöglicht die Verwendung von Gutscheinen
+          <template v-if="expertMode">
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-switch
+                  dense
+                  hide-details
+                  v-model="model.enableCoupons"
+                  color="primary"
+                >
+                  <template v-slot:label>
+                    <div>
+                      <div class="font-weight-medium">Gutscheine aktivieren</div>
+                      <div class="text-caption text--secondary">
+                        Ermöglicht die Verwendung von Gutscheinen
+                      </div>
                     </div>
-                  </div>
-                </template>
-              </v-switch>
-            </v-col>
-          </v-row>
+                  </template>
+                </v-switch>
+              </v-col>
+            </v-row>
 
-          <v-divider class="my-4" />
+            <v-divider class="my-4" />
+          </template>
 
           <v-row>
             <v-col cols="12" md="4">
@@ -488,6 +496,7 @@
 
       <v-card
         v-if="!isIfbsActive || !handlesPricing"
+        id="be-section-pricing-tiers"
         class="mb-4 section-card"
         elevation="2"
         outlined
@@ -503,48 +512,60 @@
         <v-divider />
 
         <v-card-text class="pa-4">
-          <v-row>
-            <v-col cols="12">
-              <v-switch
-                v-model="useGraduatedPrices"
-                dense
-                hide-details
-                color="primary"
-                class="mt-0"
-              >
-                <template #label>
-                  <div>
-                    <div class="font-weight-medium d-flex align-center">
-                      <v-icon small class="mr-2">
-                        mdi-chart-line-variant
-                      </v-icon>
-                      <span>Staffelpreise aktivieren</span>
-                      <v-chip
-                        v-if="useGraduatedPrices"
-                        x-small
-                        color="primary"
-                        class="ml-2"
-                        label
-                      >
-                        {{ model.priceCategories.length }}
-                        {{
-                          model.priceCategories.length === 1
-                            ? "Kategorie"
-                            : "Kategorien"
-                        }}
-                      </v-chip>
+          <template v-if="expertMode">
+            <v-row>
+              <v-col cols="12">
+                <v-switch
+                  v-model="useGraduatedPrices"
+                  dense
+                  hide-details
+                  color="primary"
+                  class="mt-0"
+                >
+                  <template #label>
+                    <div>
+                      <div class="font-weight-medium d-flex align-center">
+                        <v-icon small class="mr-2">
+                          mdi-chart-line-variant
+                        </v-icon>
+                        <span>Staffelpreise aktivieren</span>
+                        <v-chip
+                          v-if="useGraduatedPrices"
+                          x-small
+                          color="primary"
+                          class="ml-2"
+                          label
+                        >
+                          {{ model.priceCategories.length }}
+                          {{
+                            model.priceCategories.length === 1
+                              ? "Kategorie"
+                              : "Kategorien"
+                          }}
+                        </v-chip>
+                      </div>
+                      <div class="text-caption text--secondary">
+                        Definieren Sie unterschiedliche Preise basierend auf
+                        Menge, Wochentag oder Feiertagen
+                      </div>
                     </div>
-                    <div class="text-caption text--secondary">
-                      Definieren Sie unterschiedliche Preise basierend auf
-                      Menge, Wochentag oder Feiertagen
-                    </div>
-                  </div>
-                </template>
-              </v-switch>
-            </v-col>
-          </v-row>
+                  </template>
+                </v-switch>
+              </v-col>
+            </v-row>
 
-          <v-divider class="my-4" />
+            <v-divider class="my-4" />
+          </template>
+
+          <v-alert
+            v-if="!expertMode && useGraduatedPrices"
+            color="info"
+            dense
+            text
+            class="mb-4"
+          >
+            {{ $t("bookable.edit.expertMode.graduatedPricesActive") }}
+          </v-alert>
 
           <div v-if="!useGraduatedPrices && model.priceCategories[0]">
             <v-row align="center">
@@ -583,7 +604,7 @@
           </div>
 
           <v-expand-transition>
-            <div v-if="useGraduatedPrices">
+            <div v-if="expertMode && useGraduatedPrices">
               <div class="d-flex justify-space-between align-center mb-3">
                 <v-subheader class="pl-0">
                   <v-icon small class="mr-2"> mdi-format-list-numbered </v-icon>
@@ -938,6 +959,7 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import debounce from "lodash/debounce";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
 import ApiLockerService from "@/services/api/ApiLockerService";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 const DEFAULT_EXTERNAL_PROVIDER = {
   active: false,
@@ -952,6 +974,7 @@ const DEFAULT_EXTERNAL_PROVIDER = {
 export default {
   name: "BookableEditPrice",
   components: { BaseSection },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -999,6 +1022,10 @@ export default {
         { text: "Thüringen", value: "TH" },
       ],
       dismissIfbsRecommendation: false,
+      // Detached fallback for read/v-model before the provider is persisted.
+      _ifbsProviderFallback: JSON.parse(
+        JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)
+      ),
     };
   },
   computed: {
@@ -1022,24 +1049,28 @@ export default {
       );
     },
     externalProvider() {
-      return this.getOrCreateIfbsProvider();
+      return this.findIfbsProvider() || this._ifbsProviderFallback;
     },
     handlesPricing() {
-      return (
-        this.externalProvider.active &&
-        this.externalProvider.handles.includes("pricing")
+      const provider = this.externalProvider;
+      return !!(
+        provider.active && provider.handles && provider.handles.includes("pricing")
       );
     },
     handlesAvailability() {
-      return (
-        this.externalProvider.active &&
-        this.externalProvider.handles.includes("availability")
+      const provider = this.externalProvider;
+      return !!(
+        provider.active &&
+        provider.handles &&
+        provider.handles.includes("availability")
       );
     },
     handlesMaxAmount() {
-      return (
-        this.externalProvider.active &&
-        this.externalProvider.handles.includes("maxAmount")
+      const provider = this.externalProvider;
+      return !!(
+        provider.active &&
+        provider.handles &&
+        provider.handles.includes("maxAmount")
       );
     },
     hasIfbsData() {
@@ -1157,6 +1188,9 @@ export default {
     "bookable.id": {
       immediate: true,
       handler() {
+        this._ifbsProviderFallback = JSON.parse(
+          JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)
+        );
         this.fetchHolidays();
       },
     },
@@ -1164,9 +1198,8 @@ export default {
       immediate: true,
       handler(active) {
         if (active) {
-          this.ensureExternalProviderExists();
-          this.syncExternalProviderConfig();
-          if (this.externalProvider.active) {
+          const provider = this.findIfbsProvider();
+          if (provider?.active) {
             this.fetchIfbsData();
           }
         } else {
@@ -1177,7 +1210,7 @@ export default {
       },
     },
     "externalProvider.active"(active) {
-      if (active && this.isIfbsActive) {
+      if (active && this.isIfbsActive && this.findIfbsProvider()) {
         this.fetchIfbsData();
       }
     },
@@ -1185,7 +1218,7 @@ export default {
       deep: true,
       handler() {
         if (
-          this.externalProvider.active &&
+          this.findIfbsProvider()?.active &&
           this.isIfbsActive &&
           !this.hasIfbsData &&
           !this.isLoadingIfbs
@@ -1231,46 +1264,33 @@ export default {
     },
   },
   methods: {
-    ensureExternalProviderExists() {
-      if (!this.model.externalProviders) {
-        this.$set(this.model, "externalProviders", []);
-      }
-
-      const existing = this.model.externalProviders.find(
-        (p) => p.provider === "ifbs"
+    findIfbsProvider() {
+      return (
+        this.model.externalProviders?.find((p) => p.provider === "ifbs") || null
       );
-
-      if (!existing) {
-        this.model.externalProviders.push({
-          ...JSON.parse(JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)),
-        });
-        this._emitDebounced({ ...this.model });
-      }
     },
-    getOrCreateIfbsProvider() {
+    ensureExternalProviderExists() {
+      const existing = this.findIfbsProvider();
+      if (existing) {
+        return existing;
+      }
+
       if (!this.model.externalProviders) {
         this.$set(this.model, "externalProviders", []);
       }
 
-      let provider = this.model.externalProviders.find(
-        (p) => p.provider === "ifbs"
-      );
-
-      if (!provider) {
-        provider = {
-          ...JSON.parse(JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)),
-        };
-        this.model.externalProviders.push(provider);
-        this._emitDebounced({ ...this.model });
-      }
-
+      // Persist current fallback state (may already include UI edits via v-model).
+      const provider = JSON.parse(JSON.stringify(this._ifbsProviderFallback));
+      this.model.externalProviders.push(provider);
+      this.syncExternalProviderConfig();
+      this._emitDebounced({ ...this.model });
       return provider;
     },
     syncExternalProviderConfig() {
       const unit = this.ifbsUnit;
-      if (!unit) return;
+      const provider = this.findIfbsProvider();
+      if (!unit || !provider) return;
 
-      const provider = this.externalProvider;
       const needsUpdate =
         provider.config.locationId !== unit.locationId ||
         provider.config.amount !== (unit.amount || 1);
@@ -1284,21 +1304,23 @@ export default {
       }
     },
     onExternalProviderChanged() {
+      this.ensureExternalProviderExists();
+      this.syncExternalProviderConfig();
       this._emitDebounced({ ...this.model });
     },
     activateRecommendedIfbs() {
-      this.ensureExternalProviderExists();
-      const provider = this.externalProvider;
+      const provider = this.ensureExternalProviderExists();
 
       provider.active = true;
       this.$set(provider, "handles", ["availability", "maxAmount", "pricing"]);
+      this.syncExternalProviderConfig();
 
       this._emitDebounced({ ...this.model });
       this.fetchIfbsData();
     },
 
     activateMissingHandles() {
-      const provider = this.externalProvider;
+      const provider = this.ensureExternalProviderExists();
       const current = provider.handles || [];
 
       this.missingRecommendedHandles.forEach((handle) => {

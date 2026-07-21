@@ -6,10 +6,12 @@ import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 import BookingDiscountEditor from "@/components/Bookable/Edit/BookingDiscountEditor.vue";
 import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
 import { mapGetters } from "vuex";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditPermissions",
   components: { BookingDiscountEditor, UserRoleSelector, BaseSection },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -143,7 +145,12 @@ export default {
   <v-form ref="form" v-model="valid">
     <BaseSection title="Berechtigungen" icon="mdi-account-lock-outline" />
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-permissions-login"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-login-variant</v-icon>
         <span class="text-h6 font-weight-bold">Anmeldepflicht</span>
@@ -163,7 +170,12 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-permissions-access"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-account-lock-outline</v-icon>
         <span class="text-h6 font-weight-bold"
@@ -188,32 +200,39 @@ export default {
       </v-card-text>
     </v-card>
 
-    <BaseSection title="Preisrabatte" icon="mdi-ticket-percent-outline" />
+    <div v-if="expertMode" id="be-section-permissions-discounts">
+      <BaseSection title="Preisrabatte" icon="mdi-ticket-percent-outline" />
 
-    <p class="mb-4 text-caption" style="max-width: 700px">
-      Legen Sie einen prozentualen Preisnachlass (0–100&nbsp;%) pro Benutzer
-      oder Rolle fest. 100&nbsp;% entspricht einer kostenfreien Buchung.
-    </p>
+      <p class="mb-4 text-caption" style="max-width: 700px">
+        Legen Sie einen prozentualen Preisnachlass (0–100&nbsp;%) pro Benutzer
+        oder Rolle fest. 100&nbsp;% entspricht einer kostenfreien Buchung.
+      </p>
 
-    <BookingDiscountEditor
-      v-if="model.bookingDiscounts"
-      :items="model.bookingDiscounts.users"
-      type="user"
-      :available-users="availableUsers"
-      label="Rabatt für Benutzer"
-      hint="Gewähren Sie <strong>bestimmten Benutzern</strong> einen Preisnachlass auf dieses Buchungsobjekt."
-    />
+      <BookingDiscountEditor
+        v-if="model.bookingDiscounts"
+        :items="model.bookingDiscounts.users"
+        type="user"
+        :available-users="availableUsers"
+        label="Rabatt für Benutzer"
+        hint="Gewähren Sie <strong>bestimmten Benutzern</strong> einen Preisnachlass auf dieses Buchungsobjekt."
+      />
 
-    <BookingDiscountEditor
-      v-if="model.bookingDiscounts"
-      :items="model.bookingDiscounts.roles"
-      type="role"
-      :available-roles="availableRoles"
-      label="Rabatt für Rollen"
-      hint="Gewähren Sie <strong>allen Benutzern einer Rolle</strong> einen Preisnachlass auf dieses Buchungsobjekt."
-    />
+      <BookingDiscountEditor
+        v-if="model.bookingDiscounts"
+        :items="model.bookingDiscounts.roles"
+        type="role"
+        :available-roles="availableRoles"
+        label="Rabatt für Rollen"
+        hint="Gewähren Sie <strong>allen Benutzern einer Rolle</strong> einen Preisnachlass auf dieses Buchungsobjekt."
+      />
+    </div>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-permissions-group-booking"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-calendar-multiple</v-icon>
         <span class="text-h6 font-weight-bold">Serienbuchungen</span>
@@ -301,7 +320,13 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      v-if="expertMode"
+      id="be-section-permissions-cancellation"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-book-cancel-outline</v-icon>
         <span class="text-h6 font-weight-bold">Stornierungsrichtlinie</span>

@@ -1,4 +1,10 @@
 {
+  "unsavedChangesLeave": {
+    "title": "Ungespeicherte Änderungen",
+    "message": "Es gibt ungespeicherte Änderungen. Wenn Sie fortfahren, gehen diese verloren. Möchten Sie die Änderungen verwerfen?",
+    "stay": "Weiter bearbeiten",
+    "discard": "Änderungen verwerfen"
+  },
   "logout": {
     "success": {
       "title": "Erfolgreich abgemeldet",
@@ -131,6 +137,65 @@
         "something-wrong": {
           "title": "Fehler",
           "message": "Die ID konnte nicht in die Zwischenablage kopiert werden."
+        }
+      }
+    },
+    "edit": {
+      "copyId": {
+        "tooltip": "ID kopieren"
+      },
+      "untitled": "Unbenannt",
+      "unsavedChanges": "Ungespeicherte Änderungen",
+      "expertMode": {
+        "label": "Experten-Modus",
+        "simpleLabel": "Einfach-Modus",
+        "graduatedPricesActive": "Staffelpreise sind konfiguriert. Zum Bearbeiten den Experten-Modus aktivieren.",
+        "bookingTypeExpertOnly": "Dieser Buchungstyp ist nur im Experten-Modus auswählbar bzw. änderbar.",
+        "traitBadge": "Experten"
+      },
+      "openEvent": "Veranstaltung in neuem Tab öffnen",
+      "sections": {
+        "generalInfo": "Allgemeine Infos",
+        "generalBookerInfo": "Infos für Buchende",
+        "generalTags": "Interne Tags",
+        "pricingExternal": "Externe Datenquelle",
+        "pricingBase": "Grundeinstellungen",
+        "pricingTiers": "Preisgestaltung",
+        "bookingTypeSelect": "Auswahl",
+        "bookingTypeDuration": "Dauer",
+        "bookingTypeTimePeriods": "Zeitfenster",
+        "bookingTypeBlockPeriods": "Zeiträume",
+        "bookingTypeLeadTime": "Vorlaufzeit",
+        "bookingTypeBuffer": "Puffer",
+        "openingHoursRegular": "Regulär",
+        "openingHoursSpecial": "Sonder",
+        "permissionsLogin": "Anmeldepflicht",
+        "permissionsAccess": "Individuelle Rechte",
+        "permissionsDiscounts": "Rabatte",
+        "permissionsGroupBooking": "Serienbuchung",
+        "permissionsCancellation": "Storno",
+        "customFieldsValues": "Werte pflegen",
+        "customFieldsDefinitions": "Felder definieren",
+        "relatedCheckout": "Zusatzoptionen",
+        "relatedHierarchy": "Hierarchie",
+        "lockersSelect": "System wählen",
+        "lockersPareva": "Pareva",
+        "lockersIfbs": "IFBS",
+        "additionalRequiredFields": "Pflichtfelder",
+        "additionalNotes": "Buchungshinweise"
+      },
+      "status": {
+        "bookable": {
+          "label": "Buchbar",
+          "tooltip": "Kunde/Nutzer kann das Objekt über den Checkout buchen."
+        },
+        "public": {
+          "label": "Öffentlich",
+          "tooltip": "Buchungsobjekt wird durch Webschnittstellen im Katalog oder auf eigenen Webseiten ausgeliefert."
+        },
+        "manualApproval": {
+          "label": "Manuelle Freigabe",
+          "tooltip": "Eine Buchung muss vom Administrator freigegeben werden."
         }
       }
     }
