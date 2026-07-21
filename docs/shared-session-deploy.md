@@ -65,6 +65,9 @@ Use the **same Admin UI image** as Direct deploys. With `VUE_APP_AUTH_MODE=bff`,
 
 ```bash
 BASE_URL=/admin
+# Prefer false when the edge keeps the /admin prefix on the upstream request.
+# true is OK if the edge strips /admin (container then sees /api/*); the image
+# proxies both /admin/api/ and /api/ to the embedded BFF.
 STRIP_PREFIX=false
 VUE_APP_AUTH_MODE=bff
 VUE_APP_BFF_BASE_URL=/admin/api
@@ -78,6 +81,8 @@ PUBLIC_ORIGIN=https://example.com
 # ADMIN_BFF_UPSTREAM=http://other-bff:3001   # only if BFF runs outside this container
 # ADMIN_BFF_ENABLED=false                    # disable embedded BFF
 ```
+
+**Symptom of a broken BFF proxy:** `POST /api/auth/login` → `405`, or `GET /api/auth/me` returns HTML (`index.html`, ~1KB) with status 200. Then nginx is not forwarding to the BFF — check `STRIP_PREFIX` / edge strip vs. `VUE_APP_BFF_BASE_URL=/admin/api`.
 
 ### Keycloak (BFF SSO)
 

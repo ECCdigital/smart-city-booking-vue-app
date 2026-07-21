@@ -302,9 +302,18 @@ class BffAuthTransport {
 
   async me() {
     const response = await this.client.get("auth/me");
-    const backendPayload = response.data?.data ?? response.data;
+    // Reject SPA/HTML fallbacks (misconfigured nginx proxy → index.html 200)
+    if (
+      typeof response.data === "string" ||
+      response.data?.success !== true ||
+      !response.data?.data
+    ) {
+      const error = new Error("Not authenticated");
+      error.response = response;
+      throw error;
+    }
     this.markSession();
-    return { ...response, data: backendPayload };
+    return { ...response, data: response.data.data };
   }
 
   isAuthenticated() {

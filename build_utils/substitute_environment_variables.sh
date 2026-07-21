@@ -37,7 +37,10 @@ LOCATION_PATH="${BASE_URL%/}"
 LOCATION_PATH="${LOCATION_PATH:-/}"
 STRIP_PREFIX="${STRIP_PREFIX:-true}"
 
-# Optional Admin BFF upstream (e.g. http://admin-bff:3001). When set, /admin/api → BFF.
+# Optional Admin BFF upstream (e.g. http://127.0.0.1:3001).
+# Register BOTH /admin/api/ and /api/ so it works with:
+# - STRIP_PREFIX=false → browser/edge keep /admin/api/*
+# - STRIP_PREFIX=true  → edge strips /admin → container sees /api/*
 ADMIN_BFF_UPSTREAM="${ADMIN_BFF_UPSTREAM:-}"
 ADMIN_BFF_LOCATION=""
 if [ -n "$ADMIN_BFF_UPSTREAM" ]; then
@@ -52,12 +55,28 @@ if [ -n "$ADMIN_BFF_UPSTREAM" ]; then
       proxy_set_header X-Real-IP \$remote_addr;
       proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
       proxy_set_header X-Forwarded-Proto \$scheme;
+      proxy_set_header X-Forwarded-Host \$host;
+      proxy_set_header Cookie \$http_cookie;
+      proxy_pass_header Set-Cookie;
+    }
+    location = /api {
+      return 301 /api/;
+    }
+    location ^~ /api/ {
+      proxy_pass ${ADMIN_BFF_UPSTREAM}/;
+      proxy_http_version 1.1;
+      proxy_set_header Host \$host;
+      proxy_set_header X-Real-IP \$remote_addr;
+      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto \$scheme;
+      proxy_set_header X-Forwarded-Host \$host;
       proxy_set_header Cookie \$http_cookie;
       proxy_pass_header Set-Cookie;
     }
 BFLEOF
 )
   echo "==> Admin BFF proxy enabled → ${ADMIN_BFF_UPSTREAM}"
+  echo "    nginx locations: /admin/api/ and /api/ (STRIP_PREFIX=${STRIP_PREFIX})"
 fi
 
 if [ "$LOCATION_PATH" = "/" ] || [ "$STRIP_PREFIX" = "true" ]; then
