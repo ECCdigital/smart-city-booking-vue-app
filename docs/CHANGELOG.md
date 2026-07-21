@@ -9,6 +9,14 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
+- Single Admin UI Docker image embeds optional BFF: `VUE_APP_AUTH_MODE=bff` starts in-process BFF + `/admin/api` nginx proxy; Direct mode unchanged (`build_utils/docker-entrypoint.sh`)
+- BFF hardening / release notes (Phase 5): CSRF notes + Origin check when `PUBLIC_ORIGIN` is set, legacy token scrub in BFF mode, smoke-test checklists (`docs/bff-smoke-tests.md`), upgrade guidance in README
+- Shared-session invalidation: when BFF cookies are gone / refresh fails, Admin clears client state (incl. persisted Vuex user) and redirects to login; 401 on `/auth/me`, focus/poll re-check, BroadcastChannel + localStorage sync with Storefront
+- Shared Admin↔Storefront session (Phase 4): cookie contract module, login page resumes existing cookie session, Keycloak logout returns IdP browser logout URL, deploy guide in `docs/shared-session-deploy.md`
+- BFF Keycloak/SSO (Phase 3): Admin BFF OIDC+PKCE login/callback/logout/silent-check; Vue BFF mode uses server-side SSO (no `keycloak-js`); Direct mode keeps existing Keycloak client flow
+- Opt-in BFF auth transport (Phase 2): `DirectAuthTransport` / `BffAuthTransport` behind `ApiClientService`; set `VUE_APP_AUTH_MODE=bff` to use Admin BFF cookies (no auth tokens in `localStorage`); default Direct path unchanged
+- Optional Admin BFF MVP (Phase 1): Express service under `bff/` with login/logout/me/refresh/card cookies, generic Bearer proxy, Dockerfile, `docker-compose.bff.example.yml`, nginx `/admin/api` via `ADMIN_BFF_UPSTREAM`, and vue-cli proxy `/admin/api` → local BFF
+- Auth modes contract (Phase 0): optional Admin BFF / shared session with Storefront documented in `docs/adr/0001-optional-admin-bff-shared-session.md`; env placeholders `VUE_APP_AUTH_MODE` / `VUE_APP_BFF_BASE_URL` in `.env-example` (default remains Direct / legacy)
 - Bookable edit expert mode toggle: advanced tabs (Schließsysteme, Abhängigkeiten) and advanced sections (tags, graduated prices, lead times, special hours, discounts, required fields, field definitions, …) can be hidden when `VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT` is set to `true`/`false` (unset = always expert, no toggle); session override in `sessionStorage`; overview shows expert traits as non-clickable hints in simple mode
 - Bookable edit tab navigation shows nested subsections for the active tab (desktop list / mobile chips); clicking jumps to the card or Custom Fields sub-tab; optional deep-link via `?tab=…&section=…`
 - Bookable, tenant, and instance edit ask for confirmation before discarding unsaved changes when leaving the page, closing/reloading the tab, or resetting the form

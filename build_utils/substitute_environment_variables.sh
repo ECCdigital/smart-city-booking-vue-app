@@ -37,9 +37,32 @@ LOCATION_PATH="${BASE_URL%/}"
 LOCATION_PATH="${LOCATION_PATH:-/}"
 STRIP_PREFIX="${STRIP_PREFIX:-true}"
 
+# Optional Admin BFF upstream (e.g. http://admin-bff:3001). When set, /admin/api → BFF.
+ADMIN_BFF_UPSTREAM="${ADMIN_BFF_UPSTREAM:-}"
+ADMIN_BFF_LOCATION=""
+if [ -n "$ADMIN_BFF_UPSTREAM" ]; then
+  ADMIN_BFF_LOCATION=$(cat <<BFLEOF
+    location = /admin/api {
+      return 301 /admin/api/;
+    }
+    location ^~ /admin/api/ {
+      proxy_pass ${ADMIN_BFF_UPSTREAM}/;
+      proxy_http_version 1.1;
+      proxy_set_header Host \$host;
+      proxy_set_header X-Real-IP \$remote_addr;
+      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto \$scheme;
+      proxy_set_header Cookie \$http_cookie;
+      proxy_pass_header Set-Cookie;
+    }
+BFLEOF
+)
+  echo "==> Admin BFF proxy enabled → ${ADMIN_BFF_UPSTREAM}"
+fi
+
 if [ "$LOCATION_PATH" = "/" ] || [ "$STRIP_PREFIX" = "true" ]; then
 
-cat > /etc/nginx/nginx.conf <<'NGINXEOF'
+cat > /etc/nginx/nginx.conf <<NGINXEOF
 user  nginx;
 worker_processes  1;
 error_log  /var/log/nginx/error.log warn;
@@ -48,9 +71,9 @@ events { worker_connections 1024; }
 http {
   include       /etc/nginx/mime.types;
   default_type  application/octet-stream;
-  log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-                    '$status $body_bytes_sent "$http_referer" '
-                    '"$http_user_agent" "$http_x_forwarded_for"';
+  log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                    '\$status \$body_bytes_sent "\$http_referer" '
+                    '"\$http_user_agent" "\$http_x_forwarded_for"';
   access_log  /var/log/nginx/access.log  main;
   sendfile on;
   keepalive_timeout 65;
@@ -58,6 +81,7 @@ http {
   server {
     listen 80;
     server_name localhost;
+${ADMIN_BFF_LOCATION}
     location = /silent-check-sso.html {
       root /app;
       add_header X-Frame-Options "SAMEORIGIN" always;
@@ -70,14 +94,14 @@ http {
     }
     location ~* ^/(js|css|img|fonts)/ {
       root /app;
-      try_files $uri =404;
+      try_files \$uri =404;
       add_header Cache-Control "public, max-age=31536000, immutable" always;
     }
     location / {
       root   /app;
       index  index.html;
       add_header Cache-Control "no-cache, no-store, must-revalidate" always;
-      try_files $uri $uri/ /index.html;
+      try_files \$uri \$uri/ /index.html;
     }
   }
 }
@@ -105,6 +129,7 @@ http {
   server {
     listen 80;
     server_name localhost;
+${ADMIN_BFF_LOCATION}
     location = ${LOCATION_PATH} {
       return 301 ${LOCATION_PATH}/;
     }
@@ -182,6 +207,9 @@ replace_env_var "$VUE_APP_USERSNAP_API_KEY" "VUE_APP_USERSNAP_API_KEY_PLACEHOLDE
 replace_env_var "$VUE_APP_SILENT_SSO_ENABLED" "VUE_APP_SILENT_SSO_ENABLED_PLACEHOLDER" ""
 
 replace_env_var "$VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT" "VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT_PLACEHOLDER" ""
+
+replace_env_var "$VUE_APP_AUTH_MODE" "VUE_APP_AUTH_MODE_PLACEHOLDER" "direct"
+replace_env_var "$VUE_APP_BFF_BASE_URL" "VUE_APP_BFF_BASE_URL_PLACEHOLDER" "/admin/api"
 
 echo "==> Starting nginx"
 nginx -g 'daemon off;'

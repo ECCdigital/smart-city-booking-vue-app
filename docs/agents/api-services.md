@@ -9,21 +9,24 @@ Component/View
     ↓
 Api*Service (domain-specific)
     ↓
-ApiClientService (axios instance, auth, interceptors)
+ApiClientService (axios instance)
     ↓
-Backend REST API
+AuthTransport (Direct | BFF)
+    ↓
+Backend REST API  or  Admin BFF → Backend
 ```
 
 ## ApiClientService
 
 `src/services/api/ApiClientService.js` is the HTTP foundation:
 
-- Base URL from `process.env.VUE_APP_SERVER_BASE_URL`
-- Attaches Bearer token (JWT or Keycloak) on every request
-- Handles 401 token refresh (local JWT and Keycloak)
+- Selects `DirectAuthTransport` or `BffAuthTransport` from `VUE_APP_AUTH_MODE` (default `direct`)
+- Direct: base URL `VUE_APP_SERVER_BASE_URL`, Bearer from `localStorage` / Keycloak
+- BFF: base URL `VUE_APP_BFF_BASE_URL` (default `/admin/api`), `withCredentials`, HttpOnly cookies
+- Handles 401 refresh via the active transport
 - Exposes `get`, `post`, `put`, `patch`, `delete` wrappers
 
-Do not create additional axios instances.
+Do not create additional axios instances. Auth transport code lives in `src/services/auth/`.
 
 ## Service classes
 
@@ -69,14 +72,16 @@ export default ApiBookingService;
 - Let errors propagate to the caller — the component/view decides how to display them (toast, inline, dialog)
 - Don't catch and ignore errors in service methods
 
-## Auth headers
-
-`ApiClientService` handles auth automatically based on `localStorage.authType`:
-
-- `local` — JWT access/refresh tokens from `ApiAuthService`
-- `keycloak` — token from `KeycloakService.getValidToken()`
+## Auth headers / transport
 
 Don't manually set `Authorization` headers in service methods.
+
+| Mode | Env | Behaviour |
+|------|-----|-----------|
+| **Direct** (default) | unset or `VUE_APP_AUTH_MODE=direct` | Bearer from `localStorage` (`local`) or `KeycloakService` (`keycloak`) |
+| **BFF** (opt-in) | `VUE_APP_AUTH_MODE=bff` | Cookies via Admin BFF; no auth tokens in `localStorage`; login/logout/me/refresh/card use BFF routes |
+
+Use `ApiAuthService` for login/logout/me/card. BFF mode: server SSO + shared cookies with Storefront. Contract: [docs/adr/0001-optional-admin-bff-shared-session.md](../adr/0001-optional-admin-bff-shared-session.md). Deploy: [docs/shared-session-deploy.md](../shared-session-deploy.md).
 
 ## Tenant scoping
 

@@ -9,6 +9,12 @@ import vuetify from "@/plugins/vuetify";
 import ApiClientService from "./services/api/ApiClientService";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import ApiAuthService from "@/services/api/ApiAuthService";
+import { isBffAuthMode } from "@/services/auth/authMode";
+import {
+  endAdminSession,
+  isAdminLoginPath,
+  subscribeSessionEnded,
+} from "@/services/auth/sessionSync";
 import "vuetify/dist/vuetify.min.css";
 import { mapActions } from "vuex";
 import VueTheMask from "vue-the-mask";
@@ -50,22 +56,102 @@ async function bootstrap() {
     console.error("Failed to load instance:", error);
   }
 
-  const authType = localStorage.getItem("authType");
-  const isLoginRoute = window.location.pathname.startsWith("/login");
+  const isLoginRoute = isAdminLoginPath();
 
-  if (authType === "keycloak" && !isLoginRoute) {
-    await restoreKeycloakSession();
-  } else if (
-    !isLoginRoute &&
-    !ApiAuthService.isAuthenticated() &&
-    isSilentSsoEnabled()
-  ) {
-    await trySilentSsoCheck();
+  if (isBffAuthMode()) {
+    if (!isLoginRoute) {
+      const restoreResult = await restoreBffSession();
+      // Silent SSO only for cold visits — not after an expired/invalid cookie session
+      if (
+        restoreResult === "none" &&
+        isSilentSsoEnabled() &&
+        isKeycloakActive()
+      ) {
+        maybeStartBffSilentSso();
+      }
+    }
+  } else {
+    const authType = localStorage.getItem("authType");
+
+    if (authType === "keycloak" && !isLoginRoute) {
+      await restoreKeycloakSession();
+    } else if (
+      !isLoginRoute &&
+      !ApiAuthService.isAuthenticated() &&
+      isSilentSsoEnabled()
+    ) {
+      await trySilentSsoCheck();
+    }
+
+    if (isLoginRoute) {
+      localStorage.removeItem("authType");
+    }
+  }
+}
+
+/**
+ * @returns {Promise<"ok"|"ended"|"none">}
+ * - ok: cookie session valid
+ * - ended: redirected to login
+ * - none: no session (public cold visit)
+ */
+async function restoreBffSession() {
+  try {
+    const response = await ApiAuthService.me();
+    if (response?.data) {
+      await store.dispatch("user/update", response.data);
+      return "ok";
+    }
+  } catch {
+    // invalid / missing cookies — interceptor may already have redirected
   }
 
-  if (isLoginRoute) {
-    localStorage.removeItem("authType");
+  ApiClientService.clearTokens();
+  try {
+    await store.dispatch("user/delete");
+  } catch {
+    // ignore
   }
+
+  // Protected entry (e.g. /dashboard) without a valid cookie → login
+  if (!isAdminLoginPath() && pathLikelyRequiresAuth(window.location.pathname)) {
+    await endAdminSession({ redirect: true });
+    return "ended";
+  }
+
+  return "none";
+}
+
+/** Paths that must not force a login redirect when cookies are absent. */
+function pathLikelyRequiresAuth(pathname = "") {
+  const path = pathname || "";
+  const publicPatterns = [
+    /^\/login(?:\/|$)/,
+    /^\/booking\/verify/,
+    /^\/auth\/card/,
+    /^\/password/,
+    /^\/register/,
+    /^\/sso\//,
+  ];
+  if (publicPatterns.some((re) => re.test(path))) {
+    return false;
+  }
+  // "/" home and all admin app routes expect auth when opened directly
+  return true;
+}
+
+function isKeycloakActive() {
+  const instance = store.getters["instance/instance"];
+  return (instance?.applications || []).some(
+    (app) => app.id === "keycloak" && app.active
+  );
+}
+
+function maybeStartBffSilentSso() {
+  if (sessionStorage.getItem("bffSilentSsoChecked") === "1") return;
+  sessionStorage.setItem("bffSilentSsoChecked", "1");
+  const redirect = window.location.pathname + window.location.search;
+  ApiAuthService.startSilentSso(redirect);
 }
 
 async function restoreKeycloakSession() {
@@ -134,11 +220,54 @@ async function trySilentSsoCheck() {
   }
 }
 
+function setupBffSessionWatch() {
+  if (!isBffAuthMode()) return;
+
+  let checking = false;
+
+  const forceEnd = () => {
+    endAdminSession({ redirect: true });
+  };
+
+  const hasClientSession = () =>
+    ApiAuthService.isAuthenticated() || !!store.getters["user/getUser"];
+
+  const revalidate = async () => {
+    if (checking) return;
+    if (isAdminLoginPath()) return;
+    if (!hasClientSession()) return;
+
+    checking = true;
+    try {
+      await ApiAuthService.me();
+    } catch {
+      forceEnd();
+    } finally {
+      checking = false;
+    }
+  };
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      revalidate();
+    }
+  });
+  window.addEventListener("focus", revalidate);
+
+  // Catch cookie deletion / expiry while the tab stays open
+  const pollMs = 15000;
+  setInterval(revalidate, pollMs);
+
+  subscribeSessionEnded(forceEnd);
+}
+
 bootstrap()
   .catch((error) => {
     console.error("Bootstrap failed, mounting app anyway:", error);
   })
   .then(() => {
+    setupBffSessionWatch();
+
     new Vue({
       router,
       store,

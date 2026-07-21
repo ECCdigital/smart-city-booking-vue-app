@@ -150,9 +150,11 @@
 import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
+import ApiClientService from "@/services/api/ApiClientService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import NotificationDisplay from "@/components/NotificationDisplay";
 import keycloakService from "@/services/KeycloakService";
+import { isBffAuthMode } from "@/services/auth/authMode";
 import { version as appVersion } from "../../package.json";
 
 export default {
@@ -317,9 +319,11 @@ export default {
       this.$store.dispatch("reset");
     },
     async logout() {
-      const authType = localStorage.getItem("authType");
+      const authType =
+        ApiClientService.getAuthType() || localStorage.getItem("authType");
 
-      if (authType === "keycloak") {
+      // Direct + keycloak-js: IdP logout redirect. BFF: cookie logout via ApiAuthService.
+      if (authType === "keycloak" && !isBffAuthMode()) {
         this.resetStores();
         await this.deleteUser();
 
@@ -331,11 +335,16 @@ export default {
         await keycloakService.logout(redirectUri);
       } else {
         ApiAuthService.logout()
-          .then(() => {
+          .then((result) => {
             this.addToast(
               ToastService.createToast("logout.success", "success")
             );
             this.resetStores();
+
+            if (result?.idpLogoutUrl) {
+              window.location.href = result.idpLogoutUrl;
+              return;
+            }
 
             const base = process.env.BASE_URL?.trim()
               ? process.env.BASE_URL.replace(/\/$/, "")
