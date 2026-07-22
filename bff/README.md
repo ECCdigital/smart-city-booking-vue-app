@@ -38,9 +38,9 @@ npm install
 npm run dev
 ```
 
-`API_BASE_URL` defaults to `http://localhost:8081` in development. Optional: `cp .env-example .env` to override (`API_BASE_URL`, `PORT`, `CORS_ORIGINS`, …).
+Prefer the **root Admin UI `.env`** — `bff/src/config.js` loads `../.env` then `bff/.env` and accepts UI names as aliases (`VUE_APP_SERVER_BASE_URL`, `VUE_APP_BFF_BASE_URL`, `BASE_URL`, …). Backend URL defaults to `http://localhost:8081` in development if unset. Optional: `bff/.env` only for BFF-only overrides (`PORT`, `CORS_ORIGINS`).
 
-With the Vue app (`npm run serve`), requests to `/admin/api` are proxied to `http://localhost:3001` (see root `vue.config.js`).
+With the Vue app (`npm run serve`), requests to `/admin/api` and `/api` are proxied to `http://localhost:3001` (see root `vue.config.js`).
 
 ## Docker
 
@@ -60,16 +60,16 @@ Then point the UI container at it with `ADMIN_BFF_ENABLED=false` and `ADMIN_BFF_
 
 ## Environment
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `API_BASE_URL` | yes | Backend API origin |
-| `PORT` | no | Default `3001` |
-| `NODE_ENV` | no | `production` → `Secure` cookies |
-| `COOKIE_SECURE` | no | Override Secure flag |
-| `CORS_ORIGINS` | no | Comma-separated origins for credentialed CORS (dev) |
-| `PUBLIC_ORIGIN` | recommended in prod | Browser origin; enables CSRF Origin/Referer check + correct OIDC `redirect_uri` |
-| `BFF_PUBLIC_PATH` | for SSO | Browser-facing BFF prefix (e.g. `/admin/api`) |
-| `ADMIN_SPA_BASE_PATH` | for SSO | SPA base for post-login redirects (`/admin` or empty) |
+| Variable | UI alias | Required | Description |
+|----------|----------|----------|-------------|
+| `API_BASE_URL` | `VUE_APP_SERVER_BASE_URL` | yes (prod) | Backend API origin |
+| `BFF_PUBLIC_PATH` | `VUE_APP_BFF_BASE_URL` | for SSO | Browser-facing BFF prefix (e.g. `/admin/api` or `/api`) |
+| `ADMIN_SPA_BASE_PATH` | `BASE_URL` | for SSO | SPA base for post-login redirects (`/admin` or empty) |
+| `COOKIE_SECURE` | `VUE_APP_IS_PRODUCTION` | no | Cookie `Secure` flag (else `NODE_ENV=production`) |
+| `PUBLIC_ORIGIN` | same | recommended in prod | Browser origin; CSRF Origin check + OIDC `redirect_uri` |
+| `PORT` | — | no | Default `3001` |
+| `NODE_ENV` | — | no | `production` → secure cookies when no override |
+| `CORS_ORIGINS` | — | no | Comma-separated origins for credentialed CORS (dev) |
 
 ## Security (cookie mode)
 
@@ -83,10 +83,12 @@ Set in the Admin UI `.env`:
 
 ```bash
 VUE_APP_AUTH_MODE=bff
-VUE_APP_BFF_BASE_URL=/admin/api
+VUE_APP_SERVER_BASE_URL=http://localhost:8081
+VUE_APP_BFF_BASE_URL=/api
+PUBLIC_ORIGIN=http://localhost:8080
 ```
 
-Then run the BFF (`npm run bff:dev` from repo root) and `npm run serve`.
+Then run the BFF (`npm run bff:dev` from repo root) and `npm run serve` — no separate `bff/.env` needed.
 
 ## Shared session with Storefront
 
@@ -99,9 +101,9 @@ Register the BFF callback URL on the Keycloak public client, e.g.:
 - Local: `http://localhost:8080/api/auth/sso/callback` (when `BFF_PUBLIC_PATH=/api`)
 - Shared origin: `https://example.com/admin/api/auth/sso/callback` (`BFF_PUBLIC_PATH=/admin/api`)
 
-Set:
+Set in the root `.env` (or BFF aliases):
 
-- `BFF_PUBLIC_PATH` — browser-facing BFF prefix (must match `VUE_APP_BFF_BASE_URL`)
+- `VUE_APP_BFF_BASE_URL` / `BFF_PUBLIC_PATH` — browser-facing BFF prefix
 - `PUBLIC_ORIGIN` — browser origin, e.g. `http://localhost:8080` (needed behind the vue-cli proxy so `redirect_uri` is not built with the BFF port)
 
 PKCE state is kept in an in-memory store (plus cookies as fallback) so the Keycloak round-trip still works if the dev proxy drops `Set-Cookie` on 302 responses.

@@ -4,8 +4,6 @@ Opt-in setup so **Admin** (`/admin`) and **Storefront** (`/`) share one login se
 
 Default Admin installs stay on **Direct** mode (no BFF). Use this guide only when you want shared session.
 
-Contract: [adr/0001-optional-admin-bff-shared-session.md](./adr/0001-optional-admin-bff-shared-session.md).
-
 ## Requirements
 
 | Piece | Role |
@@ -71,13 +69,14 @@ BASE_URL=/admin
 STRIP_PREFIX=false
 VUE_APP_AUTH_MODE=bff
 VUE_APP_BFF_BASE_URL=/admin/api
-VUE_APP_SERVER_BASE_URL=https://api.example.com   # also used as BFF API_BASE_URL if unset
+VUE_APP_SERVER_BASE_URL=https://api.example.com
 PUBLIC_ORIGIN=https://example.com
-# Optional:
+# BFF reads the same UI env names (no duplicate API_BASE_URL / BFF_PUBLIC_PATH needed).
+# Optional overrides only:
 # API_BASE_URL=https://api.example.com
-# COOKIE_SECURE=true
 # BFF_PUBLIC_PATH=/admin/api
 # ADMIN_SPA_BASE_PATH=/admin
+# COOKIE_SECURE=true
 # ADMIN_BFF_UPSTREAM=http://other-bff:3001   # only if BFF runs outside this container
 # ADMIN_BFF_ENABLED=false                    # disable embedded BFF
 ```

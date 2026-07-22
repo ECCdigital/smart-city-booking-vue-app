@@ -28,11 +28,9 @@ services:
       # --- BFF / shared-session mode (same image) ---
       VUE_APP_AUTH_MODE: bff
       VUE_APP_BFF_BASE_URL: /admin/api
-      # API_BASE_URL defaults from VUE_APP_SERVER_BASE_URL when unset
       # PUBLIC_ORIGIN: https://example.com
-      # BFF_PUBLIC_PATH: /admin/api
-      # ADMIN_SPA_BASE_PATH: /admin
-      # COOKIE_SECURE: "true"
+      # Optional BFF-only overrides (UI names above are enough):
+      # API_BASE_URL / BFF_PUBLIC_PATH / ADMIN_SPA_BASE_PATH / COOKIE_SECURE
       # ADMIN_BFF_PORT: "3001"
       # Optional: use an external BFF instead of the embedded one
       # ADMIN_BFF_ENABLED: "false"
