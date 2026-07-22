@@ -1,11 +1,36 @@
 const { apiBaseUrl } = require("./config");
 
+const DEFAULT_FETCH_TIMEOUT_MS = 10_000;
+
 class BackendUnreachableError extends Error {
   constructor(cause) {
     super(`Backend API unreachable at ${apiBaseUrl}`);
     this.name = "BackendUnreachableError";
     this.cause = cause;
     this.status = 502;
+  }
+}
+
+/**
+ * fetch with AbortController timeout. Aborts become BackendUnreachableError.
+ */
+async function fetchWithTimeout(url, options = {}, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new BackendUnreachableError(
+        new Error(`Request timed out after ${timeoutMs}ms`)
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -24,12 +49,16 @@ async function backendFetch(path, options = {}) {
 
   let response;
   try {
-    response = await fetch(url, {
+    response = await fetchWithTimeout(url, {
       method: options.method || "GET",
       headers,
       body,
     });
   } catch (error) {
+    if (error instanceof BackendUnreachableError) {
+      console.error(`BFF → API failed (${url}):`, error.cause?.message || error.message);
+      throw error;
+    }
     console.error(`BFF → API failed (${url}):`, error.message);
     throw new BackendUnreachableError(error);
   }
@@ -47,4 +76,9 @@ async function backendFetch(path, options = {}) {
   return { response, data, status: response.status, ok: response.ok };
 }
 
-module.exports = { backendFetch, BackendUnreachableError };
+module.exports = {
+  backendFetch,
+  BackendUnreachableError,
+  fetchWithTimeout,
+  DEFAULT_FETCH_TIMEOUT_MS,
+};

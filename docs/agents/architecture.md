@@ -95,7 +95,7 @@ Views and components should stay thin — delegate HTTP to API services and auth
 4. Router middleware pipeline checks `requiresAuth`, tenant context, and interface permissions
 5. Token refresh handled in `ApiClientService` interceptors
 
-**Optional BFF mode** (`VUE_APP_AUTH_MODE=bff`): SPA uses `BffAuthTransport` → Admin BFF with HttpOnly cookies (`access-token`, `refresh-token`, `auth-type`). Keycloak uses BFF OIDC+PKCE (`/auth/sso/*`); Direct mode keeps `keycloak-js`. Implementation: `src/services/auth/*` + `bff/`. Contract: [docs/adr/0001-optional-admin-bff-shared-session.md](../adr/0001-optional-admin-bff-shared-session.md). Shared-origin deploy with Storefront: [docs/shared-session-deploy.md](../shared-session-deploy.md).
+**Optional BFF mode** (`VUE_APP_AUTH_MODE=bff`): SPA uses `BffAuthTransport` → Admin BFF with cookies (`access-token` / `refresh-token` HttpOnly; `auth-type` readable marker, optional for local/card). Keycloak uses BFF OIDC+PKCE (`/auth/sso/*`); Direct mode keeps `keycloak-js`. Implementation: `src/services/auth/*` + `bff/`. Contract: [docs/adr/0001-optional-admin-bff-shared-session.md](../adr/0001-optional-admin-bff-shared-session.md). Shared-origin deploy with Storefront: [docs/shared-session-deploy.md](../shared-session-deploy.md).
 
 ## Version lines
 

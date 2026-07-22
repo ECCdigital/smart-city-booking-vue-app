@@ -19,7 +19,7 @@ const KC_PENDING_TOKEN = "kc-pending-token";
 const KC_PENDING_REFRESH = "kc-pending-refresh";
 const KC_PENDING_REDIRECT = "kc-pending-redirect";
 
-const SHORT_MAX_AGE = 300;
+const SHORT_MAX_AGE = 5 * 60 * 1000;
 
 function clearOptions(httpOnly) {
   const opts = {

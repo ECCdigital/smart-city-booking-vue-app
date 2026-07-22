@@ -54,7 +54,10 @@ docker run --rm -p 3001:3001 \
   admin-bff
 ```
 
-Then point the UI container at it with `ADMIN_BFF_ENABLED=false` and `ADMIN_BFF_UPSTREAM=http://admin-bff:3001`.
+Then point the UI container at it with:
+
+- `ADMIN_BFF_ENABLED=false` and `ADMIN_BFF_UPSTREAM=http://admin-bff:3001` (proxy/process layout only)
+- `VUE_APP_AUTH_MODE=bff` and `VUE_APP_BFF_BASE_URL=/admin/api` (required so the SPA uses cookie auth via the BFF path)
 
 ## Environment
 
@@ -71,7 +74,8 @@ Then point the UI container at it with `ADMIN_BFF_ENABLED=false` and `ADMIN_BFF_
 
 ## Security (cookie mode)
 
-- Auth cookies: `HttpOnly` + `SameSite=lax` (+ `Secure` in production) — see `src/cookieContract.js`
+- Session cookies: `access-token` and `refresh-token` are `HttpOnly` + `SameSite=lax` (+ `Secure` in production)
+- `auth-type` is readable (not HttpOnly) and may be omitted for local/card sessions — see `src/cookieContract.js`
 - When `PUBLIC_ORIGIN` is set, mutating requests with an `Origin`/`Referer` must match that origin (`src/csrf.js`)
 - Details: [docs/bff-hardening.md](../docs/bff-hardening.md)
 

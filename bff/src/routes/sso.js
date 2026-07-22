@@ -34,6 +34,12 @@ const { getSsoCallbackUri, spaPath, getBffPublicBase } = require("../publicUrl")
 
 const router = express.Router();
 
+/** Same-origin relative path only (blocks open redirects / protocol-relative URLs). */
+function safeRedirect(value, fallback = spaPath("/")) {
+  const v = String(value || "");
+  return /^\/(?!\/)/.test(v) ? v : fallback;
+}
+
 function decodeJwtPayload(token) {
   try {
     const payload = token.split(".")[1];
@@ -105,7 +111,7 @@ router.get("/login", async (req, res) => {
   try {
     const config = await getKeycloakConfig();
     const endpoints = getKeycloakEndpoints(config.serverUrl, config.realm);
-    const redirect = String(req.query.redirect || spaPath("/"));
+    const redirect = safeRedirect(req.query.redirect, spaPath("/"));
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const state = generateState();
@@ -133,7 +139,7 @@ router.get("/login", async (req, res) => {
 });
 
 router.get("/silent-check", async (req, res) => {
-  const redirect = String(req.query.redirect || spaPath("/"));
+  const redirect = safeRedirect(req.query.redirect, spaPath("/"));
   try {
     const config = await getKeycloakConfig();
     const endpoints = getKeycloakEndpoints(config.serverUrl, config.realm);
@@ -168,7 +174,7 @@ router.get("/callback", async (req, res) => {
 
   const isSilentCheck =
     !!pkce?.silent || String(state || "").startsWith("silent_");
-  const redirectPath = pkce?.redirect || spaPath("/");
+  const redirectPath = safeRedirect(pkce?.redirect, spaPath("/"));
 
   if (error) {
     if (
@@ -405,19 +411,27 @@ router.get("/change-user", async (req, res) => {
   try {
     const config = await getKeycloakConfig();
     const endpoints = getKeycloakEndpoints(config.serverUrl, config.realm);
-    const redirect = String(req.query.redirect || spaPath("/"));
+    const redirect = safeRedirect(req.query.redirect, spaPath("/"));
     const pending = consumePending(req);
 
     clearPendingSsoCookies(res);
+
+    if (pending?.refreshToken) {
+      try {
+        await revokeKeycloakSession({
+          endpoints,
+          clientId: config.publicClient,
+          refreshToken: pending.refreshToken,
+        });
+      } catch (err) {
+        console.error("Keycloak change-user revoke error:", err);
+      }
+    }
 
     const ssoLoginUrl = `${getBffPublicBase(req)}/auth/sso/login?redirect=${encodeURIComponent(redirect)}`;
     const logoutUrl = new URL(endpoints.logout);
     logoutUrl.searchParams.set("client_id", config.publicClient);
     logoutUrl.searchParams.set("post_logout_redirect_uri", ssoLoginUrl);
-
-    if (pending?.refreshToken) {
-      logoutUrl.searchParams.set("refresh_token", pending.refreshToken);
-    }
 
     return res.redirect(logoutUrl.toString());
   } catch (error) {

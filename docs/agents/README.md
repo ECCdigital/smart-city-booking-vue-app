@@ -16,6 +16,7 @@ docs/agents/
   web-integration.md      ← JS web interface (BookingManager)
 docs/adr/
   0001-optional-admin-bff-shared-session.md  ← optional BFF / shared-session contract
+docs/
   shared-session-deploy.md                   ← shared-origin Admin + Storefront deploy
   bff-hardening.md                           ← CSRF / no tokens in JS (BFF mode)
   bff-smoke-tests.md                         ← Direct / BFF / shared smoke checklists

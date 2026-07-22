@@ -12,6 +12,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 - Single Admin UI Docker image embeds optional BFF: `VUE_APP_AUTH_MODE=bff` starts in-process BFF + nginx proxy on `/admin/api` and `/api` (works with `STRIP_PREFIX=true` edge strip); Direct mode unchanged
 - BFF `auth/me` rejects non-JSON / SPA HTML fallbacks so a mis-proxied login cannot fake a session
 - BFF env cleanup: loads root `.env` and accepts UI aliases (`VUE_APP_SERVER_BASE_URL`, `VUE_APP_BFF_BASE_URL`, `BASE_URL`, …); `createAuthTransport` uses `isBffAuthMode()`
+- BFF hardening follow-up: Express cookie `maxAge` in ms, SSO open-redirect guard, no `refresh_token` in browser logout URLs, fetch timeouts, session revalidate only on 401, `/admin` base-path aware public routes
 - BFF hardening / release notes (Phase 5): CSRF notes + Origin check when `PUBLIC_ORIGIN` is set, legacy token scrub in BFF mode, smoke-test checklists (`docs/bff-smoke-tests.md`), upgrade guidance in README
 - Shared-session invalidation: when BFF cookies are gone / refresh fails, Admin clears client state (incl. persisted Vuex user) and redirects to login; 401 on `/auth/me`, focus/poll re-check, BroadcastChannel + localStorage sync with Storefront
 - Shared Admin↔Storefront session (Phase 4): cookie contract module, login page resumes existing cookie session, Keycloak logout returns IdP browser logout URL, deploy guide in `docs/shared-session-deploy.md`

@@ -203,7 +203,6 @@ router.post("/logout", async (req, res) => {
       const postLogoutRedirectUri = `${getRequestOrigin(req)}${spaPath("/login")}`;
       idpLogoutUrl = await buildBrowserLogoutUrl({
         postLogoutRedirectUri,
-        refreshToken,
       });
     } catch (err) {
       console.error("Keycloak browser logout URL error:", err);

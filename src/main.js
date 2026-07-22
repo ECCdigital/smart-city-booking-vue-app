@@ -122,9 +122,21 @@ async function restoreBffSession() {
   return "none";
 }
 
+/** Strip router publicPath / BASE_URL so public-route checks match app paths. */
+function stripBasePath(pathname = "") {
+  const path = pathname || "";
+  const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
+  if (base && base !== "/" && path.startsWith(base)) {
+    const stripped = path.slice(base.length);
+    if (!stripped) return "/";
+    return stripped.startsWith("/") ? stripped : `/${stripped}`;
+  }
+  return path;
+}
+
 /** Paths that must not force a login redirect when cookies are absent. */
 function pathLikelyRequiresAuth(pathname = "") {
-  const path = pathname || "";
+  const path = stripBasePath(pathname);
   const publicPatterns = [
     /^\/login(?:\/|$)/,
     /^\/booking\/verify/,
@@ -240,8 +252,10 @@ function setupBffSessionWatch() {
     checking = true;
     try {
       await ApiAuthService.me();
-    } catch {
-      forceEnd();
+    } catch (error) {
+      if (error?.response?.status === 401) {
+        forceEnd();
+      }
     } finally {
       checking = false;
     }

@@ -1,5 +1,9 @@
 const { apiBaseUrl } = require("./config");
-const { backendFetch } = require("./backend");
+const {
+  backendFetch,
+  fetchWithTimeout,
+  BackendUnreachableError,
+} = require("./backend");
 
 let cachedConfig = null;
 let cacheTimestamp = 0;
@@ -48,6 +52,23 @@ function invalidateKeycloakCache() {
   cacheTimestamp = 0;
 }
 
+async function keycloakFormPost(url, params) {
+  try {
+    return await fetchWithTimeout(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(params).toString(),
+    });
+  } catch (error) {
+    if (error instanceof BackendUnreachableError) {
+      const timedOut = new Error(error.cause?.message || "Keycloak request timed out");
+      timedOut.status = 504;
+      throw timedOut;
+    }
+    throw error;
+  }
+}
+
 async function exchangeCodeForTokens({
   endpoints,
   clientId,
@@ -55,16 +76,12 @@ async function exchangeCodeForTokens({
   redirectUri,
   codeVerifier,
 }) {
-  const response = await fetch(endpoints.token, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      client_id: clientId,
-      code,
-      redirect_uri: redirectUri,
-      code_verifier: codeVerifier,
-    }).toString(),
+  const response = await keycloakFormPost(endpoints.token, {
+    grant_type: "authorization_code",
+    client_id: clientId,
+    code,
+    redirect_uri: redirectUri,
+    code_verifier: codeVerifier,
   });
 
   const data = await response.json().catch(() => ({}));
@@ -82,14 +99,10 @@ async function refreshKeycloakTokens({
   clientId,
   refreshToken,
 }) {
-  const response = await fetch(endpoints.token, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: clientId,
-      refresh_token: refreshToken,
-    }).toString(),
+  const response = await keycloakFormPost(endpoints.token, {
+    grant_type: "refresh_token",
+    client_id: clientId,
+    refresh_token: refreshToken,
   });
 
   const data = await response.json().catch(() => ({}));
@@ -107,13 +120,9 @@ async function revokeKeycloakSession({
   clientId,
   refreshToken,
 }) {
-  await fetch(endpoints.logout, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      refresh_token: refreshToken,
-    }).toString(),
+  await keycloakFormPost(endpoints.logout, {
+    client_id: clientId,
+    refresh_token: refreshToken,
   });
 }
 
@@ -131,12 +140,9 @@ async function checkUserExists(kcAccessToken) {
 
 /**
  * Browser IdP logout URL (clears Keycloak SSO session for shared Admin↔Storefront).
- * Aligns with Storefront change-user logout redirect shape.
+ * Do not put refresh_token in the query string — revoke server-side instead.
  */
-async function buildBrowserLogoutUrl({
-  postLogoutRedirectUri,
-  refreshToken,
-}) {
+async function buildBrowserLogoutUrl({ postLogoutRedirectUri }) {
   const config = await getKeycloakConfig();
   const endpoints = getKeycloakEndpoints(config.serverUrl, config.realm);
   const logoutUrl = new URL(endpoints.logout);
@@ -145,9 +151,6 @@ async function buildBrowserLogoutUrl({
     "post_logout_redirect_uri",
     postLogoutRedirectUri
   );
-  if (refreshToken) {
-    logoutUrl.searchParams.set("refresh_token", refreshToken);
-  }
   return logoutUrl.toString();
 }
 
