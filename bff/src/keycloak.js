@@ -120,10 +120,15 @@ async function revokeKeycloakSession({
   clientId,
   refreshToken,
 }) {
-  await keycloakFormPost(endpoints.logout, {
+  const response = await keycloakFormPost(endpoints.logout, {
     client_id: clientId,
     refresh_token: refreshToken,
   });
+  if (!response.ok) {
+    const error = new Error("Keycloak session revocation failed");
+    error.status = response.status;
+    throw error;
+  }
 }
 
 async function checkUserExists(kcAccessToken) {
