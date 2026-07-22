@@ -4,8 +4,6 @@ Optional Node process that fronts the Admin UI with HttpOnly cookies, aligned to
 
 **Default Admin UI installs do not need this.** Use Direct mode (`VUE_APP_AUTH_MODE=direct` or unset).
 
-Contract: [docs/adr/0001-optional-admin-bff-shared-session.md](../docs/adr/0001-optional-admin-bff-shared-session.md).
-
 ## Endpoints
 
 BFF listens at the process root. Reverse proxy should expose it as `/admin/api` (strip prefix → BFF `/`).
@@ -108,8 +106,3 @@ Set in the root `.env` (or BFF aliases):
 
 PKCE state is kept in an in-memory store (plus cookies as fallback) so the Keycloak round-trip still works if the dev proxy drops `Set-Cookie` on 302 responses.
 
-## Related docs
-
-- Shared-session deploy: [docs/shared-session-deploy.md](../docs/shared-session-deploy.md)
-- Smoke tests: [docs/bff-smoke-tests.md](../docs/bff-smoke-tests.md)
-- Hardening: [docs/bff-hardening.md](../docs/bff-hardening.md)
