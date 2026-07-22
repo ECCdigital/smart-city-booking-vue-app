@@ -7,6 +7,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+## [4.2.1] — 2026-07-22
+
 ### Added
 
 - Single Admin UI Docker image embeds optional BFF: `VUE_APP_AUTH_MODE=bff` starts in-process BFF + nginx proxy on `/admin/api` and `/api` (works with `STRIP_PREFIX=true` edge strip); Direct mode unchanged
