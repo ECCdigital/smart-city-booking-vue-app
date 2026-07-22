@@ -186,6 +186,7 @@
 
 <script>
 import ApiFileService from "@/services/api/ApiFileService";
+import { getApiHttpBaseUrl } from "@/services/auth/authMode";
 
 const defaultExtensions = process.env.VUE_APP_ALLOWED_EXT_DEFAULT;
 const imageExtensions = process.env.VUE_APP_ALLOWED_EXT_IMAGES;
@@ -272,7 +273,7 @@ export default {
     },
     link(accessLevel, filename) {
       if (!filename) return undefined;
-      return `${process.env.VUE_APP_SERVER_BASE_URL}/api/${this.tenantId}/files/get?name=/${accessLevel}/${filename}`;
+      return `${getApiHttpBaseUrl()}/api/${this.tenantId}/files/get?name=/${accessLevel}/${filename}`;
     },
     async runUpload() {
       this.isLoading = true;
@@ -341,8 +342,10 @@ export default {
       return this.validate() === true;
     },
     isExternalUrl() {
+      const apiBase = getApiHttpBaseUrl();
       return (
         this.value &&
+        !this.value.startsWith(apiBase) &&
         !this.value.startsWith(process.env.VUE_APP_SERVER_BASE_URL)
       );
     },

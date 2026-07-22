@@ -1,0 +1,37 @@
+# Example: single Admin UI image — BFF on/off via env (no second service required).
+#
+# Direct (default): omit VUE_APP_AUTH_MODE or set direct — only nginx/SPA.
+# Shared session:   VUE_APP_AUTH_MODE=bff — entrypoint starts embedded BFF and
+#                   nginx proxies /admin/api → 127.0.0.1:3001.
+#
+# Typical shared-origin edge layout:
+#   /           → Storefront
+#   /admin/     → this service (BASE_URL=/admin)
+#
+# Guide: docs/shared-session-deploy.md
+
+services:
+  admin-ui:
+    image: ghcr.io/eccdigital/smart-city-booking-vue-app:latest
+    # Or: build: .
+    ports:
+      - "8080:80"
+    environment:
+      BASE_URL: /admin
+      STRIP_PREFIX: "false"
+      VUE_APP_SERVER_BASE_URL: http://backend:8081
+      VUE_APP_NAME: "Booking Admin"
+
+      # --- Direct mode (default): leave AUTH_MODE unset or "direct" ---
+      # VUE_APP_AUTH_MODE: direct
+
+      # --- BFF / shared-session mode (same image) ---
+      VUE_APP_AUTH_MODE: bff
+      VUE_APP_BFF_BASE_URL: /admin/api
+      # PUBLIC_ORIGIN: https://example.com
+      # Optional BFF-only overrides (UI names above are enough):
+      # API_BASE_URL / BFF_PUBLIC_PATH / ADMIN_SPA_BASE_PATH / COOKIE_SECURE
+      # ADMIN_BFF_PORT: "3001"
+      # Optional: use an external BFF instead of the embedded one
+      # ADMIN_BFF_ENABLED: "false"
+      # ADMIN_BFF_UPSTREAM: http://admin-bff:3001

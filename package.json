@@ -19,6 +19,9 @@
     "format:write": "prettier --write .",
     "lint:check": "eslint .",
     "lint:fix": "eslint --fix .",
+    "bff:install": "npm install --prefix bff",
+    "bff:dev": "npm run dev --prefix bff",
+    "bff:start": "npm start --prefix bff",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

@@ -7,6 +7,7 @@ module.exports = {
     _: true,
     ApiClient: true,
   },
+  ignorePatterns: ["bff/node_modules/", "dist/", "public/cdn/"],
   extends: ["plugin:vue/essential", "eslint:recommended"],
   parserOptions: {
     parser: "@babel/eslint-parser",
