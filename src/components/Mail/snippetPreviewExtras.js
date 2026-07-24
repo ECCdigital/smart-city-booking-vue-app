@@ -38,6 +38,7 @@ const EXTRAS_CONFIG = {
   invoice: { showStorno: true },
   "invoice-after-approval": { showStorno: true },
   "payment-link-after-approval": { showStorno: true, showPayment: true },
+  "supervisor-booking-notification": {},
 };
 
 function reasonBlock(type) {

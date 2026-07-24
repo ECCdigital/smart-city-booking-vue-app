@@ -14,7 +14,9 @@
       >
         <template v-slot:prepend>
           <v-icon :color="booking.isCommitted ? 'primary' : 'grey'">
-            {{ booking.isCommitted ? "mdi-check-circle" : "mdi-circle-outline" }}
+            {{
+              booking.isCommitted ? "mdi-check-circle" : "mdi-circle-outline"
+            }}
           </v-icon>
         </template>
       </v-switch>
@@ -35,7 +37,8 @@
       </v-switch>
 
       <v-switch
-        :input-value="booking.isRejected"
+        :key="rejectedSwitchKey"
+        :input-value="!!booking.isRejected"
         label="Storniert"
         hide-details
         dense
@@ -45,9 +48,7 @@
       >
         <template v-slot:prepend>
           <v-icon :color="booking.isRejected ? 'error' : 'grey'">
-            {{
-              booking.isRejected ? "mdi-cancel" : "mdi-close-circle-outline"
-            }}
+            {{ booking.isRejected ? "mdi-cancel" : "mdi-close-circle-outline" }}
           </v-icon>
         </template>
       </v-switch>
@@ -68,6 +69,11 @@
           rows="2"
           hide-details="auto"
           :rules="rejectionReasonRules"
+        />
+        <CancellationRefundAudit
+          v-if="cancellationRefundAudit"
+          :audit="cancellationRefundAudit"
+          class="mt-3"
         />
       </v-sheet>
     </v-expand-transition>
@@ -108,21 +114,50 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog v-model="unrejectDialog" persistent max-width="520px">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2" color="warning">mdi-undo</v-icon>
+          <span class="text-h6">{{ unrejectDialogTitle }}</span>
+        </v-card-title>
+        <v-card-text>
+          <p class="mb-0 text-body-2">{{ unrejectDialogHint }}</p>
+        </v-card-text>
+        <v-card-actions class="px-4 pb-4">
+          <v-spacer />
+          <v-btn text @click="cancelUnreject">Abbrechen</v-btn>
+          <v-btn color="primary" @click="confirmUnreject">
+            {{ unrejectConfirmLabel }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script>
+import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
+import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
+
 export default {
   name: "BookingEditStatus",
+  components: { CancellationRefundAudit },
   props: {
     booking: {
       type: Object,
       required: true,
     },
+    rejectDialogOpen: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
+      rejectedSwitchKey: 0,
       rejectDialog: false,
+      unrejectDialog: false,
       rejectReasonDraft: "",
     };
   },
@@ -135,6 +170,21 @@ export default {
     },
     rejectDialogTitle() {
       return this.isCancellation ? "Buchung stornieren" : "Buchung ablehnen";
+    },
+    unrejectDialogTitle() {
+      return this.isCancellation
+        ? "Stornierung rückgängig machen"
+        : "Ablehnung rückgängig machen";
+    },
+    unrejectDialogHint() {
+      return this.isCancellation
+        ? "Die Buchung wird wieder als aktiv geführt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+        : "Die Buchung wird wieder als aktiv geführt.";
+    },
+    unrejectConfirmLabel() {
+      return this.isCancellation
+        ? "Stornierung aufheben"
+        : "Ablehnung aufheben";
     },
     rejectDialogHint() {
       return this.isCancellation
@@ -149,12 +199,41 @@ export default {
     rejectionReasonRules() {
       return [(v) => !!v?.trim() || "Begründung ist erforderlich"];
     },
+    cancellationRefundAudit() {
+      return getCancellationRefundAudit(this.booking);
+    },
+  },
+  watch: {
+    rejectDialogOpen(open, wasOpen) {
+      if (wasOpen && !open) {
+        this.resetRejectedSwitch();
+      }
+    },
+    rejectDialog(open, wasOpen) {
+      if (wasOpen && !open) {
+        this.resetRejectedSwitch();
+      }
+    },
   },
   methods: {
+    resetRejectedSwitch() {
+      this.rejectedSwitchKey += 1;
+    },
     onRejectedChange(value) {
+      if (this.booking.id) {
+        if (value && !this.booking.isRejected) {
+          this.$emit("request-reject");
+        } else if (!value && this.booking.isRejected) {
+          this.unrejectDialog = true;
+        }
+        this.$nextTick(() => this.resetRejectedSwitch());
+        return;
+      }
+
       if (value) {
         this.rejectReasonDraft = this.booking.rejectionReason || "";
         this.rejectDialog = true;
+        this.$nextTick(() => this.resetRejectedSwitch());
         return;
       }
 
@@ -162,13 +241,10 @@ export default {
       this.$set(this.booking, "rejectionReason", null);
     },
     cancelReject() {
-      this.$set(this.booking, "isRejected", true);
-      const draft = (this.rejectReasonDraft || "").trim();
-      if (draft) {
-        this.$set(this.booking, "rejectionReason", draft);
-      }
+      this.$set(this.booking, "isRejected", false);
       this.rejectDialog = false;
       this.rejectReasonDraft = "";
+      this.resetRejectedSwitch();
     },
     confirmReject() {
       const reason = (this.rejectReasonDraft || "").trim();
@@ -178,6 +254,14 @@ export default {
       this.$set(this.booking, "rejectionReason", reason);
       this.rejectDialog = false;
       this.rejectReasonDraft = "";
+    },
+    cancelUnreject() {
+      this.unrejectDialog = false;
+      this.resetRejectedSwitch();
+    },
+    confirmUnreject() {
+      this.unrejectDialog = false;
+      this.$emit("confirm-unreject");
     },
   },
 };

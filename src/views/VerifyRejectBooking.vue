@@ -27,6 +27,15 @@
           Ihre Stornierung wurde erfolgreich bestätigt. Sie erhalten in Kürze
           eine Bestätigung per E-Mail.
         </p>
+        <CancellationRefundPanel
+          v-if="showRefundPanel"
+          class="text-left mt-4"
+          :title="$t('booking.cancellationRefund.expectedTitle')"
+          :original-amount-eur="refundPreview.originalAmountEur"
+          :refund-amount-eur="refundPreview.refundAmountEur"
+          :cancellation-fee-eur="refundPreview.cancellationFeeEur"
+          :policy-summary="refundPolicySummary"
+        />
       </v-card-text>
 
       <v-card-text class="text-center" v-else-if="rejectError">
@@ -55,7 +64,35 @@
           <strong>{{ bookingNumber }}</strong> wirklich stornieren?
         </p>
 
-        <div class="mt-4" style="display: flex; justify-content: center; gap: 8px">
+        <v-skeleton-loader
+          v-if="loadingRefundPreview"
+          type="list-item-three-line"
+          class="mt-4 mb-2"
+        />
+        <CancellationRefundPanel
+          v-else-if="showRefundPanel"
+          class="text-left mt-4"
+          :title="$t('booking.cancellationRefund.expectedTitle')"
+          :original-amount-eur="refundPreview.originalAmountEur"
+          :refund-amount-eur="refundPreview.refundAmountEur"
+          :cancellation-fee-eur="refundPreview.cancellationFeeEur"
+          :policy-summary="refundPolicySummary"
+          :footer="$t('booking.cancellationRefund.finalAmountHint')"
+        />
+        <v-alert
+          v-else-if="refundPreviewError"
+          type="warning"
+          text
+          dense
+          class="mt-4 mb-0 text-left"
+        >
+          {{ $t("booking.cancellationRefund.previewError") }}
+        </v-alert>
+
+        <div
+          class="mt-4"
+          style="display: flex; justify-content: center; gap: 8px"
+        >
           <v-btn
             color="primary"
             @click="releaseRejectHook"
@@ -71,9 +108,11 @@
 
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
+import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
 
 export default {
-  name: "RequestRejectBooking",
+  name: "VerifyRejectBooking",
+  components: { CancellationRefundPanel },
   props: {
     tenantId: {
       type: String,
@@ -86,9 +125,53 @@ export default {
       rejectSuccess: false,
       rejectError: false,
       fetching: false,
+      refundPreview: null,
+      loadingRefundPreview: false,
+      refundPreviewError: false,
     };
   },
+  computed: {
+    showRefundPanel() {
+      return (
+        this.refundPreview && Number(this.refundPreview.originalAmountEur) > 0
+      );
+    },
+    refundPolicySummary() {
+      if (!this.refundPreview) return "";
+      const days =
+        this.refundPreview.daysBeforeStart === null ||
+        this.refundPreview.daysBeforeStart === undefined
+          ? "–"
+          : this.refundPreview.daysBeforeStart;
+      return this.$t("booking.cancellationRefund.userPolicySummary", {
+        days,
+        percentage: this.refundPreview.suggestedRefundPercentage,
+      });
+    },
+  },
   methods: {
+    async loadRefundPreview() {
+      if (!this.bookingNumber || !this.tenantId || !this.hookId) {
+        return;
+      }
+
+      this.loadingRefundPreview = true;
+      this.refundPreviewError = false;
+      try {
+        this.refundPreview =
+          await ApiBookingService.getHookCancellationRefundPreview(
+            this.bookingNumber,
+            this.tenantId,
+            this.hookId
+          );
+      } catch (error) {
+        console.error(error);
+        this.refundPreview = null;
+        this.refundPreviewError = true;
+      } finally {
+        this.loadingRefundPreview = false;
+      }
+    },
     async releaseRejectHook() {
       this.fetching = true;
       this.rejectError = false;
@@ -113,7 +196,8 @@ export default {
       }
     },
   },
-  mounted() {
+  async mounted() {
+    await this.loadRefundPreview();
   },
 };
 </script>

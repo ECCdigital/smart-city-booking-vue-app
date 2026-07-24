@@ -2,10 +2,13 @@
 import BaseSection from "@/components/commons/BaseSection.vue";
 import BookableEditLeadTime from "@/components/Bookable/Edit/BookableEditLeadTime.vue";
 import { v4 as uuidv4 } from "uuid";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
+import { isBookableExpertOnlyBookingType } from "@/utils/bookableExpertMode";
 
 export default {
   name: "BookableEditBookingType",
   components: { BaseSection, BookableEditLeadTime },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -61,9 +64,13 @@ export default {
       );
     },
     bookingTypeSupportsLeadTime() {
-      return ["schedule", "timePeriod", "blockPeriod"].includes(
-        this.bookingType
+      return (
+        this.expertMode &&
+        ["schedule", "timePeriod", "blockPeriod"].includes(this.bookingType)
       );
+    },
+    isExpertBookingTypeActive() {
+      return isBookableExpertOnlyBookingType(this.bookingType);
     },
     bookingType: {
       get() {
@@ -82,29 +89,30 @@ export default {
         this.model.isLongRange = false;
 
         switch (value) {
-          case "schedule":
-            this.model.isScheduleRelated = true;
-            break;
-          case "timePeriod":
-            this.model.isTimePeriodRelated = true;
-            break;
-          case "blockPeriod":
-            this.model.isBlockPeriodRelated = true;
-            if (!Array.isArray(this.model.blockPeriods)) {
-              this.model.blockPeriods = [];
-            }
-            if (this.model.groupBooking?.enabled) {
-              this.model.groupBooking.enabled = false;
-            }
-            break;
-          case "week":
-            this.model.longRangeOptions = { type: "week" };
-            this.model.isLongRange = true;
-            break;
-          case "month":
-            this.model.longRangeOptions = { type: "month" };
-            this.model.isLongRange = true;
-            break;
+        case "schedule":
+          this.model.isScheduleRelated = true;
+          break;
+        case "timePeriod":
+          this.model.isTimePeriodRelated = true;
+          break;
+        case "blockPeriod":
+          this.model.isBlockPeriodRelated = true;
+          if (!Array.isArray(this.model.blockPeriods)) {
+            this.model.blockPeriods = [];
+          }
+          // Permissions tab may be unmounted (keep-alive); disable here on type change.
+          if (this.model.groupBooking?.enabled) {
+            this.model.groupBooking.enabled = false;
+          }
+          break;
+        case "week":
+          this.model.longRangeOptions = { type: "week" };
+          this.model.isLongRange = true;
+          break;
+        case "month":
+          this.model.longRangeOptions = { type: "month" };
+          this.model.isLongRange = true;
+          break;
         }
       },
     },
@@ -312,94 +320,126 @@ export default {
         Wählen Sie aus, wie Kunden dieses Objekt buchen können.
       </v-alert>
 
-      <v-radio-group v-model="bookingType">
-        <v-radio value="schedule" class="mb-3">
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-calendar-range</v-icon>
-                Freie Zeitwahl
-              </div>
-              <div class="text-caption text--secondary mt-1">
-                Kunden können Start- und Endzeitpunkt frei wählen
-              </div>
-            </div>
-          </template>
-        </v-radio>
+      <v-alert
+        v-if="!expertMode && isExpertBookingTypeActive"
+        color="info"
+        dense
+        text
+        class="mb-4"
+      >
+        {{ $t("bookable.edit.expertMode.bookingTypeExpertOnly") }}
+      </v-alert>
 
-        <v-radio value="timePeriod" class="mb-3">
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-clock-outline</v-icon>
-                Feste Zeitfenster
+      <div id="be-section-bookingType-select">
+        <v-radio-group v-model="bookingType">
+          <v-radio value="schedule" class="mb-3">
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-calendar-range</v-icon>
+                  Freie Zeitwahl
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Kunden können Start- und Endzeitpunkt frei wählen
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Vordefinierte, buchbare Zeitfenster (z.B. Montags 09:00 - 12:00)
-              </div>
-            </div>
-          </template>
-        </v-radio>
+            </template>
+          </v-radio>
 
-        <v-radio value="week" class="mb-3">
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-calendar-week</v-icon>
-                Wochenbuchung
+          <v-radio value="timePeriod" class="mb-3">
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-clock-outline</v-icon>
+                  Feste Zeitfenster
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Vordefinierte, buchbare Zeitfenster (z.B. Montags 09:00 -
+                  12:00)
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Buchung für komplette Wochen
-              </div>
-            </div>
-          </template>
-        </v-radio>
+            </template>
+          </v-radio>
 
-        <v-radio value="month" class="mb-3">
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-calendar-month</v-icon>
-                Monatsbuchung
+          <v-radio
+            v-if="expertMode || bookingType === 'week'"
+            value="week"
+            class="mb-3"
+            :disabled="!expertMode"
+          >
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-calendar-week</v-icon>
+                  Wochenbuchung
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Buchung für komplette Wochen
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Buchung für komplette Kalendermonate
-              </div>
-            </div>
-          </template>
-        </v-radio>
+            </template>
+          </v-radio>
 
-        <v-radio value="blockPeriod" class="mb-3">
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-calendar-sync</v-icon>
-                Zeiträume
+          <v-radio
+            v-if="expertMode || bookingType === 'month'"
+            value="month"
+            class="mb-3"
+            :disabled="!expertMode"
+          >
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-calendar-month</v-icon>
+                  Monatsbuchung
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Buchung für komplette Kalendermonate
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Wiederkehrende, tagesübergreifende Buchungsfenster (z. B.
-                Wochenende, Arbeitswoche)
-              </div>
-            </div>
-          </template>
-        </v-radio>
+            </template>
+          </v-radio>
 
-        <v-radio value="independent">
-          <template v-slot:label>
-            <div>
-              <div class="font-weight-bold">
-                <v-icon small class="mr-2">mdi-clock-remove-outline</v-icon>
-                Zeitunabhängig
+          <v-radio
+            v-if="expertMode || bookingType === 'blockPeriod'"
+            value="blockPeriod"
+            class="mb-3"
+            :disabled="!expertMode"
+          >
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-calendar-sync</v-icon>
+                  Zeiträume
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Wiederkehrende, tagesübergreifende Buchungsfenster (z. B.
+                  Wochenende, Arbeitswoche)
+                </div>
               </div>
-              <div class="text-caption text--secondary mt-1">
-                Keine zeitlichen Einschränkungen
-              </div>
-            </div>
-          </template>
-        </v-radio>
-      </v-radio-group>
+            </template>
+          </v-radio>
 
-      <v-card class="mt-4 section-card" v-if="bookingType === 'schedule'">
+          <v-radio value="independent">
+            <template v-slot:label>
+              <div>
+                <div class="font-weight-bold">
+                  <v-icon small class="mr-2">mdi-clock-remove-outline</v-icon>
+                  Zeitunabhängig
+                </div>
+                <div class="text-caption text--secondary mt-1">
+                  Keine zeitlichen Einschränkungen
+                </div>
+              </div>
+            </template>
+          </v-radio>
+        </v-radio-group>
+      </div>
+
+      <v-card
+        id="be-section-bookingType-duration"
+        class="mt-4 section-card"
+        v-if="bookingType === 'schedule'"
+      >
         <v-card-title
           class="section-header pa-4 d-flex justify-space-between align-center"
         >
@@ -441,7 +481,7 @@ export default {
       </v-card>
 
       <BookableEditLeadTime
-        v-if="bookingType === 'schedule'"
+        v-if="expertMode && bookingType === 'schedule'"
         ref="leadTime"
         :bookable="model"
         :show-buffer="true"
@@ -449,6 +489,7 @@ export default {
       />
 
       <v-card
+        id="be-section-bookingType-time-periods"
         class="mt-4 section-card"
         v-if="bookingType === 'timePeriod'"
         elevation="2"
@@ -682,7 +723,7 @@ export default {
       </v-card>
 
       <BookableEditLeadTime
-        v-if="bookingType === 'timePeriod'"
+        v-if="expertMode && bookingType === 'timePeriod'"
         ref="leadTime"
         :bookable="model"
         :show-buffer="false"
@@ -690,6 +731,7 @@ export default {
       />
 
       <v-card
+        id="be-section-bookingType-block-periods"
         class="mt-4 section-card"
         v-if="bookingType === 'blockPeriod'"
         elevation="2"
@@ -976,7 +1018,7 @@ export default {
       </v-card>
 
       <BookableEditLeadTime
-        v-if="bookingType === 'blockPeriod'"
+        v-if="expertMode && bookingType === 'blockPeriod'"
         ref="leadTime"
         :bookable="model"
         :show-buffer="false"

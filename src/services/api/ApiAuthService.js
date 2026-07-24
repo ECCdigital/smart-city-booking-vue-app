@@ -3,40 +3,59 @@ import keycloakService from "../KeycloakService";
 
 export default {
   /**
-   * Lokaler Login – wie bisher mit eigenem JWT
+   * Lokaler Login – Direct: Bearer tokens; BFF: HttpOnly cookies via /auth/login
    */
   async login(userId, password) {
-    const body = { id: userId, password: password };
-    const response = await ApiClient.post("auth/signin", body);
-    const { accessToken, refreshToken, user, permissions } = response.data;
-
-    ApiClient.setTokens(accessToken, refreshToken);
-
-    return { user, permissions };
+    return ApiClient.transport.login(userId, password);
   },
 
   /**
-   * SSO Login – nutzt Keycloak-Token direkt, kein Token-Tausch
+   * SSO Login – Direct: keycloak-js token → API. BFF: confirm pending cookie session.
    */
-  async ssoLogin(keycloakToken) {
+  async ssoLogin(keycloakToken, ticket) {
+    if (!ApiClient.supportsClientSideKeycloak()) {
+      return ApiClient.transport.confirmSso(ticket);
+    }
+
     const response = await ApiClient.post("auth/sso/signin", {
       token: keycloakToken,
     });
 
     const { user, permissions } = response.data;
-
-    // Keycloak-Auth-Modus aktivieren
     ApiClient.setKeycloakAuth();
-
     return { user, permissions };
   },
 
+  startSsoLogin(redirectPath) {
+    if (!ApiClient.supportsClientSideKeycloak()) {
+      return ApiClient.transport.startSsoLogin(redirectPath);
+    }
+    throw new Error("startSsoLogin is only available in BFF auth mode");
+  },
+
+  startSilentSso(redirectPath) {
+    if (!ApiClient.supportsClientSideKeycloak()) {
+      return ApiClient.transport.startSilentSso(redirectPath);
+    }
+    throw new Error("startSilentSso is only available in BFF auth mode");
+  },
+
+  getPendingSsoUser(ticket) {
+    return ApiClient.transport.getPendingSsoUser(ticket);
+  },
+
+  changeSsoUser(redirectPath, ticket) {
+    return ApiClient.transport.changeSsoUser(redirectPath, ticket);
+  },
+
   /**
-   * Silent SSO Check – wird beim App-Start aufgerufen.
-   * Prüft ob eine Keycloak-Session existiert und loggt
-   * automatisch ein.
+   * Silent SSO Check – Direct mode (keycloak-js). BFF uses redirect silent-check.
    */
   async silentSsoCheck(ssoConfig) {
+    if (!ApiClient.supportsClientSideKeycloak()) {
+      return null;
+    }
+
     if (!ssoConfig) return null;
 
     let authenticated = await keycloakService.restoreFromStoredTokens(ssoConfig);
@@ -50,7 +69,6 @@ export default {
       return null;
     }
 
-    // Keycloak-Session existiert → Backend fragen ob User bekannt
     try {
       const token = keycloakService.token;
       const response = await ApiClient.post("auth/sso/verify", { token });
@@ -105,7 +123,15 @@ export default {
     return ApiClient.post("auth/signup", body);
   },
 
-  async ssoRegister(token, legalAcceptance) {
+  async ssoRegister(token, legalAcceptance, ticket) {
+    if (!ApiClient.supportsClientSideKeycloak()) {
+      const result = await ApiClient.transport.registerSso(
+        legalAcceptance,
+        ticket
+      );
+      return { status: result.status || 201, data: result };
+    }
+
     const body = { token };
 
     if (legalAcceptance && Object.keys(legalAcceptance).length > 0) {
@@ -116,35 +142,14 @@ export default {
   },
 
   /**
-   * Logout – handhabt sowohl lokale als auch Keycloak-Sessions
+   * Logout – Direct (local/Keycloak) or BFF cookie clear
    */
   async logout() {
-    try {
-      const authType = ApiClient.getAuthType();
-
-      if (authType === "keycloak") {
-        keycloakService.cleanup();
-        keycloakService.destroy();
-      } else {
-        const refreshToken = ApiClient.getRefreshToken();
-        if (refreshToken) {
-          await ApiClient.post("auth/signout", { refreshToken });
-        }
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Logout error:", error);
-      return false;
-    } finally {
-      localStorage.removeItem("authType");
-      ApiClient.clearTokens();
-    }
+    return ApiClient.transport.logout();
   },
 
   async me() {
-    const response = await ApiClient.get("auth/me");
-    return response;
+    return ApiClient.transport.me();
   },
 
   async resetPassword(id, password) {
@@ -161,28 +166,7 @@ export default {
   },
 
   async cardLogin(appId, publicId, secret) {
-    const response = await ApiClient.post("/auth/card/signin", {
-      appId,
-      publicId,
-      secret,
-    });
-
-    const data = response.data;
-
-    if (data.requiresRegistration) {
-      return {
-        requiresRegistration: true,
-        prefill: data.prefill,
-        cardInfo: data.cardInfo,
-      };
-    }
-
-    ApiClient.setTokens(data.accessToken, data.refreshToken);
-    return {
-      requiresRegistration: false,
-      user: data.user,
-      permissions: data.permissions,
-    };
+    return ApiClient.transport.cardLogin(appId, publicId, secret);
   },
 
   async cardSignup(payload) {

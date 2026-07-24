@@ -1,0 +1,14 @@
+---
+description: JS web interface embed script conventions
+globs: src/js-web-interface/**/*.js
+alwaysApply: false
+---
+
+# JS Web Interface
+
+See `docs/agents/web-integration.md` for full conventions.
+
+- Vanilla JS only — no Vue imports or shared app code
+- Self-contained `BookingManager` class for external website embedding
+- Built with uglifyjs to `dist/cdn/current/booking-manager.min.js`
+- Breaking API or placeholder changes need changelog entry and README update

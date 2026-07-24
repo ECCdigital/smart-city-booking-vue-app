@@ -1,6 +1,7 @@
 <script>
 import keycloakService from "@/services/KeycloakService";
 import ApiAuthService from "@/services/api/ApiAuthService";
+import { isBffAuthMode } from "@/services/auth/authMode";
 import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 
@@ -31,6 +32,9 @@ export default {
     ...mapGetters({
       instance: "instance/instance",
     }),
+    isBffMode() {
+      return isBffAuthMode();
+    },
     dataProtection() {
       return this.instance?.dataProtection || {};
     },
@@ -91,23 +95,76 @@ export default {
         this.loading = false;
       }
     },
+    ssoTicket() {
+      return this.$route.query.ticket || null;
+    },
+    async startBffSsoFlow() {
+      const flow = this.$route.query.flow;
+      if (flow === "confirm" || flow === "register") {
+        this.loading = true;
+        try {
+          const pending = await ApiAuthService.getPendingSsoUser(
+            this.ssoTicket()
+          );
+          this.userEmail = pending?.email || "";
+          this.userName = pending?.name || "";
+          this.setState(
+            flow === "confirm"
+              ? this.possibleStates.KC_AUTH_SUCCESS
+              : this.possibleStates.NO_USER_FOUND
+          );
+        } catch {
+          this.setState(this.possibleStates.KC_AUTH_ERROR);
+        } finally {
+          this.loading = false;
+        }
+        return;
+      }
+
+      this.loading = true;
+      const redirect =
+        this.nextUrl ||
+        (() => {
+          const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
+          return base ? `${base}/` : "/";
+        })();
+      ApiAuthService.startSsoLogin(redirect);
+    },
+    async afterSignIn(user, permissions, redirectHint) {
+      await this.updateUser({ user, permissions });
+      await this.addToast(
+        ToastService.createToast("login.success.default", "success"),
+      );
+
+      if (redirectHint && redirectHint !== "/" && !redirectHint.includes("/login")) {
+        window.location.href = redirectHint;
+        return;
+      }
+
+      if (this.nextUrl) {
+        this.$router.push(this.nextUrl);
+        this.updateNextUrl(null);
+      } else {
+        this.$router.push({ name: "dashboard" });
+      }
+    },
     async signIn() {
       try {
         this.loading = true;
+
+        if (this.isBffMode) {
+          const data = await ApiAuthService.ssoLogin(null, this.ssoTicket());
+          await this.afterSignIn(
+            data.user,
+            data.permissions,
+            data.redirect
+          );
+          return;
+        }
+
         const token = await keycloakService.getValidToken();
         const { user, permissions } = await ApiAuthService.ssoLogin(token);
-
-        await this.updateUser({ user, permissions });
-        await this.addToast(
-          ToastService.createToast("login.success.default", "success"),
-        );
-
-        if (this.nextUrl) {
-          this.$router.push(this.nextUrl);
-          this.updateNextUrl(null);
-        } else {
-          this.$router.push({ name: "dashboard" });
-        }
+        await this.afterSignIn(user, permissions);
       } catch (error) {
         if (error.response?.status === 404) {
           this.setState(this.possibleStates.NO_USER_FOUND);
@@ -152,6 +209,31 @@ export default {
       if (!this.canSignUp) return;
       try {
         this.loading = true;
+
+        if (this.isBffMode) {
+          const response = await ApiAuthService.ssoRegister(
+            null,
+            this.buildLegalAcceptance(),
+            this.ssoTicket()
+          );
+          if (response.status === 201 || response.data) {
+            await this.addToast(
+              ToastService.createToast("register.success.default", "success"),
+            );
+            this.setState(this.possibleStates.SIGNUP_SUCCESS);
+            const user = response.data?.user || response.user;
+            const permissions =
+              response.data?.permissions || response.permissions;
+            if (user) {
+              setTimeout(
+                () => this.afterSignIn(user, permissions),
+                1500
+              );
+            }
+          }
+          return;
+        }
+
         const token = await keycloakService.getValidToken();
         const response = await ApiAuthService.ssoRegister(
           token,
@@ -175,6 +257,10 @@ export default {
       }
     },
     async changeUser() {
+      if (this.isBffMode) {
+        ApiAuthService.changeSsoUser(window.location.href, this.ssoTicket());
+        return;
+      }
       await keycloakService.logout(window.location.href);
     },
     back() {
@@ -187,9 +273,13 @@ export default {
     },
   },
   async mounted() {
-    await this.fetchSsoConfig();
-    await this.createKeycloakSession();
     this.nextUrl = await this.getNextUrl();
+    await this.fetchSsoConfig();
+    if (this.isBffMode) {
+      await this.startBffSsoFlow();
+    } else {
+      await this.createKeycloakSession();
+    }
   },
 };
 </script>

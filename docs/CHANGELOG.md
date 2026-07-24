@@ -7,6 +7,82 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+## [4.2.1] — 2026-07-22
+
+### Added
+
+- Single Admin UI Docker image embeds optional BFF: `VUE_APP_AUTH_MODE=bff` starts in-process BFF + nginx proxy on `/admin/api` and `/api` (works with `STRIP_PREFIX=true` edge strip); Direct mode unchanged
+- BFF `auth/me` rejects non-JSON / SPA HTML fallbacks so a mis-proxied login cannot fake a session
+- BFF env cleanup: loads root `.env` and accepts UI aliases (`VUE_APP_SERVER_BASE_URL`, `VUE_APP_BFF_BASE_URL`, `BASE_URL`, …); `createAuthTransport` uses `isBffAuthMode()`
+- BFF hardening follow-up: Express cookie `maxAge` in ms, SSO open-redirect guard, no `refresh_token` in browser logout URLs, fetch timeouts, session revalidate only on 401, `/admin` base-path aware public routes
+- Reject non-OK Keycloak session revocation responses (still best-effort for local logout)
+- BFF hardening / release notes (Phase 5): CSRF notes + Origin check when `PUBLIC_ORIGIN` is set, legacy token scrub in BFF mode, smoke-test checklists (`docs/bff-smoke-tests.md`), upgrade guidance in README
+- Shared-session invalidation: when BFF cookies are gone / refresh fails, Admin clears client state (incl. persisted Vuex user) and redirects to login; 401 on `/auth/me`, focus/poll re-check, BroadcastChannel + localStorage sync with Storefront
+- Shared Admin↔Storefront session (Phase 4): cookie contract module, login page resumes existing cookie session, Keycloak logout returns IdP browser logout URL, deploy guide in `docs/shared-session-deploy.md`
+- BFF Keycloak/SSO (Phase 3): Admin BFF OIDC+PKCE login/callback/logout/silent-check; Vue BFF mode uses server-side SSO (no `keycloak-js`); Direct mode keeps existing Keycloak client flow
+- Opt-in BFF auth transport (Phase 2): `DirectAuthTransport` / `BffAuthTransport` behind `ApiClientService`; set `VUE_APP_AUTH_MODE=bff` to use Admin BFF cookies (no auth tokens in `localStorage`); default Direct path unchanged
+- Optional Admin BFF MVP (Phase 1): Express service under `bff/` with login/logout/me/refresh/card cookies, generic Bearer proxy, Dockerfile, `docker-compose.bff.example.yml`, nginx `/admin/api` via `ADMIN_BFF_UPSTREAM`, and vue-cli proxy `/admin/api` → local BFF
+- Auth modes contract (Phase 0): optional Admin BFF / shared session with Storefront documented in `docs/adr/0001-optional-admin-bff-shared-session.md`; env placeholders `VUE_APP_AUTH_MODE` / `VUE_APP_BFF_BASE_URL` in `.env-example` (default remains Direct / legacy)
+- Bookable edit expert mode toggle: advanced tabs (Schließsysteme, Abhängigkeiten) and advanced sections (tags, graduated prices, lead times, special hours, discounts, required fields, field definitions, …) can be hidden when `VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT` is set to `true`/`false` (unset = always expert, no toggle); session override in `sessionStorage`; overview shows expert traits as non-clickable hints in simple mode
+- Bookable edit tab navigation shows nested subsections for the active tab (desktop list / mobile chips); clicking jumps to the card or Custom Fields sub-tab; optional deep-link via `?tab=…&section=…`
+- Bookable, tenant, and instance edit ask for confirmation before discarding unsaved changes when leaving the page, closing/reloading the tab, or resetting the form
+- Bookable edit „Eigene Felder“: simple mode shows only value editing; expert mode keeps both sub-tabs (Werte pflegen / Felder definieren)
+- Bookable edit shows a live overview of what the bookable is and how it can be booked (sticky sidebar on large screens, compact band on smaller viewports); empty traits are hidden, opening hours are summarized, and clicking a trait jumps to the matching tab; tickets show the linked event name with an open-in-new-tab action
+- Bookable edit keeps the page header, tab navigation, and overview fixed while only the form content scrolls
+- Bookable tags and flags live under Allgemein, with clearer labels: public info for bookers vs. internal tags for filtering/grouping
+- New bookables default to free time selection (Freie Zeitwahl) as booking type; new tickets default to time-independent (Zeitunabhängig)
+
+### Changed
+
+- Bookable edit tab „Preise“ renamed to „Preise & Kapazität“ to reflect capacity settings
+- Member details show a warning when supervisor booking notifications are disabled for the tenant
+
+### Fixed
+
+- Bookable edit no longer marks unsaved changes when opening „Preise & Kapazität“; the IFBS external provider is only created when the user enables or configures it
+
+## [4.2.0] — 2026-07-17
+
+### Added
+
+- Cancellation refund tiers: define refund rules per tenant, preview what customers get back, and show the expected refund during self-cancellation (including mails and cancellation documents)
+- When cancelling a series (or a single booking from a series), optional customer bank details can be collected for the cancellation PDF
+- Series bookings are easier to spot in the Kanban board and can be opened directly from the card; the booking overview can be filtered by single or series bookings
+- Supervisor booking notifications: configure who is notified about new bookings (users, roles, or email addresses) per tenant member
+- Percentage booking discounts for users and roles replace the previous free-booking lists; discounts also apply in bundle checkout
+- Cancellation PDF templates support refund information, with an option to load the standard template in the visual editor
+
+### Changed
+
+- Custom fields: clearer editor and list with live preview; on bookables, field values and definitions are combined in one „Eigene Felder“ tab
+- Cancelled bookings can be reactivated via the status switch in booking edit
+
+### Fixed
+
+- Reactivating a cancelled booking keeps the original price instead of resetting it to 0 €
+- Bundle checkout shows the payment step only when there is something left to pay after discounts (including paid add-ons)
+- Supervisor booking notifications can be turned on or off in booking settings; the related mail snippet is customizable
+- Member and user search matches name and email more reliably (case-insensitive substring search)
+- Saving a user or profile no longer overwrites booking contact names
+
+## [4.1.3] — 2026-07-03
+
+### Added
+
+- Series bookings in booking details can now have collective invoices created, with a choice between collective and single invoice — consistent with the existing collective receipt flow
+- Collective invoices for series bookings can also be created and downloaded from the series booking overview
+- PDF templates for receipts, invoices, and cancellations: choose how booking details are displayed (compact overview, single line, or detailed table)
+- Per tenant, control which booking information (number, period, payment date, payment method) appears in the PDF table — hidden fields remain available for placement elsewhere in the template
+- PDF template editor: preview with page breaks, optional header/footer on every page, and improved variable selection
+
+### Changed
+
+- PDF template settings for layout and booking fields are combined in one place under payment and receipt settings
+
+### Fixed
+
+- Tenant-selection redirect hardened against open-redirect vectors (protocol-relative and backslash paths)
+
 ## [4.1.2] — 2026-07-02
 
 ### Added
@@ -65,6 +141,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.2.0]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.3...v4.2.0
+[4.1.3]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.2...v4.1.3
 [4.1.1]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.0...v4.1.1
 [4.1.2]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.1...v4.1.2
 [4.1.0]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.0.1...v4.1.0

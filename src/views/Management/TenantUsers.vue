@@ -373,9 +373,12 @@
       :user="selectedUser"
       :roles="api.roles"
       :challenges="api.challenges"
+      :members="members"
+      :notify-supervisors-on-booking="notifySupervisorsOnBooking"
       @close="closeUserDetail"
       @save-roles="updateUserRoles"
       @update-status="updateUserStatus"
+      @update-notification-recipients="updateUserNotificationRecipients"
       @resend-invite="resendInvite(selectedUser?.userId)"
       @approve-challenge="approveChallenge"
       @reject-challenge="rejectChallenge"
@@ -409,7 +412,6 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiInvitationService from "@/services/api/ApiInvitationService";
 import ToastService from "@/services/ToastService";
-import Fuse from "fuse.js";
 import TenantInviteUserDialog from "@/components/Tenant/TenantInviteUserDialog.vue";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.vue";
@@ -434,6 +436,7 @@ export default {
       currentPage: 1,
       itemsPerPage: 8,
       showInviteDialog: false,
+      notifySupervisorsOnBooking: true,
       api: {
         users: [],
         roles: [],
@@ -474,12 +477,14 @@ export default {
       let filtered = this.members;
 
       if (this.search) {
-        const fuse = new Fuse(filtered, {
-          keys: ["userId", "firstName", "lastName", "fullName"],
-          threshold: 0.4,
-          ignoreLocation: true,
-        });
-        filtered = fuse.search(this.search).map((result) => result.item);
+        const searchLower = this.search.toLowerCase().trim();
+        if (searchLower) {
+          filtered = filtered.filter((user) =>
+            [user.userId, user.firstName, user.lastName, user.fullName].some(
+              (field) => field?.toLowerCase().includes(searchLower)
+            )
+          );
+        }
       }
 
       if (this.statusFilter.length > 0) {
@@ -524,6 +529,7 @@ export default {
     async tenantId() {
       await this.fetchRoles();
       await this.fetchTenantUsers();
+      await this.fetchTenantSettings();
     },
   },
   methods: {
@@ -598,6 +604,37 @@ export default {
         await this.addToast({
           type: "error",
           message: "Fehler beim Aktualisieren des Status",
+        });
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async updateUserNotificationRecipients(recipients) {
+      try {
+        this.isLoading = true;
+        const response =
+          await ApiTenantService.updateUserBookingNotificationRecipients(
+            this.tenantId,
+            this.selectedUser.userId,
+            recipients
+          );
+        this.api.users = response.users;
+        this.api.userDetails = response.userDetails;
+
+        this.selectedUser = this.members.find(
+          (u) => u.userId === this.selectedUser.userId
+        );
+
+        await this.addToast({
+          type: "success",
+          message: "Benachrichtigungsempfänger wurden erfolgreich gespeichert",
+        });
+      } catch (e) {
+        console.error(e);
+        await this.addToast({
+          type: "error",
+          message: "Fehler beim Speichern der Benachrichtigungsempfänger",
         });
       } finally {
         this.isLoading = false;
@@ -770,6 +807,17 @@ export default {
         this.api.userDetails = response.userDetails;
       } finally {
         await this.stopLoading("fetch-users");
+      }
+    },
+
+    async fetchTenantSettings() {
+      if (!this.tenantId) return;
+      try {
+        const response = await ApiTenantService.getTenant(this.tenantId);
+        this.notifySupervisorsOnBooking =
+          !!response.data?.notifySupervisorsOnBooking;
+      } catch (e) {
+        console.error(e);
       }
     },
 
@@ -1120,6 +1168,7 @@ export default {
     await this.fetchTenantUsers();
     await this.fetchInvitations();
     await this.fetchChallenges();
+    await this.fetchTenantSettings();
   },
 };
 </script>

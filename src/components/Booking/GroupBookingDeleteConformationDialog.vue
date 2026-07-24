@@ -14,22 +14,42 @@
       </v-card-text>
       <v-card-text class="d-flex justify-center">
         <v-col cols="auto">
-          <v-btn
-            large
-            color="primary"
-            :loading="inProgress"
-            @click="onDeleteGroup"
-            >Serie löschen</v-btn
-          >
+          <v-tooltip :disabled="!groupDeleteDisabled" top>
+            <template v-slot:activator="{ on }">
+              <div v-on="on">
+                <v-btn
+                  large
+                  color="primary"
+                  :loading="inProgress"
+                  :disabled="groupDeleteDisabled"
+                  @click="onDeleteGroup"
+                  >Serie löschen</v-btn
+                >
+              </div>
+            </template>
+            <span>
+              Bestätigte oder bezahlte Buchungen müssen storniert werden.
+            </span>
+          </v-tooltip>
         </v-col>
         <v-col cols="auto">
-          <v-btn
-            large
-            color="primary"
-            @click="onDeleteSingle"
-            :loading="inProgress"
-            >Nur diese Buchung löschen</v-btn
-          >
+          <v-tooltip :disabled="!singleDeleteDisabled" top>
+            <template v-slot:activator="{ on }">
+              <div v-on="on">
+                <v-btn
+                  large
+                  color="primary"
+                  :disabled="singleDeleteDisabled"
+                  @click="onDeleteSingle"
+                  :loading="inProgress"
+                  >Nur diese Buchung löschen</v-btn
+                >
+              </div>
+            </template>
+            <span>
+              Bestätigte oder bezahlte Buchungen müssen storniert werden.
+            </span>
+          </v-tooltip>
         </v-col>
       </v-card-text>
       <v-card-actions>
@@ -55,6 +75,14 @@ export default {
       required: true,
     },
     inProgress: {
+      type: Boolean,
+      default: false,
+    },
+    singleDeleteDisabled: {
+      type: Boolean,
+      default: false,
+    },
+    groupDeleteDisabled: {
       type: Boolean,
       default: false,
     },

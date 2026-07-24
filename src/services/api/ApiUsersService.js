@@ -15,12 +15,18 @@ export default {
     return ApiClient.get(`api/users/${userId}`);
   },
   submitUser(user) {
-    return ApiClient.put("api/users", user);
+    return ApiClient.put("api/users", {
+      ...user,
+      syncSelfBookingNames: false,
+    });
   },
   deleteUser(user) {
     return ApiClient.delete(`api/users/${user.id}`);
   },
   updateMe(user) {
-    return ApiClient.put("api/user", user);
+    return ApiClient.put("api/user", {
+      ...user,
+      syncSelfBookingNames: false,
+    });
   },
 };

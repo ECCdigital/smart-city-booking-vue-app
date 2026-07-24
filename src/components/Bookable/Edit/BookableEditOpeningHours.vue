@@ -1,9 +1,11 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditOpeningHours",
   components: { BaseSection },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
 
   data() {
@@ -168,7 +170,12 @@ export default {
 
     <div v-if="bookingType === 'schedule' || bookingType === 'timePeriod'">
       <!-- Regular Opening Hours -->
-      <v-card class="mb-6 section-card" elevation="2" outlined>
+      <v-card
+        id="be-section-openingHours-regular"
+        class="mb-6 section-card"
+        elevation="2"
+        outlined
+      >
         <v-card-title
           class="section-header pa-4 d-flex justify-space-between align-center"
         >
@@ -462,7 +469,13 @@ export default {
       </v-card>
 
       <!-- Special Opening Hours -->
-      <v-card class="mb-6 section-card" elevation="2" outlined>
+      <v-card
+        v-if="expertMode"
+        id="be-section-openingHours-special"
+        class="mb-6 section-card"
+        elevation="2"
+        outlined
+      >
         <v-card-title
           class="section-header pa-4 d-flex justify-space-between align-center"
         >

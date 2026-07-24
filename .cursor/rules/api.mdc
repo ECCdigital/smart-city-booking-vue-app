@@ -1,0 +1,15 @@
+---
+description: API client service conventions
+globs: src/services/api/**/*.js
+alwaysApply: false
+---
+
+# API Services
+
+See `docs/agents/api-services.md` for full conventions.
+
+- All HTTP via `ApiClientService` — no new axios instances
+- One `Api*Service` per backend resource area
+- Include `tenantId` in paths where the backend expects it
+- Use `apiErrorMessage.js` for user-facing error mapping
+- Check backend API docs for endpoint shapes before adding calls

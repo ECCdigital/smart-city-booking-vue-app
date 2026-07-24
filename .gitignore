@@ -1,5 +1,7 @@
 .DS_Store
 node_modules
+bff/node_modules
+bff/.env
 /dist
 
 /public/cdn
@@ -29,3 +31,11 @@ pnpm-debug.log*
 .idea/*
 
 temp/
+
+# Cursor: commit shared rules, ignore local IDE state
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+
+# Local agent instruction overrides (Codex)
+AGENTS.override.md

@@ -1,0 +1,20 @@
+{
+  "name": "smart-city-booking-admin-bff",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Optional Admin BFF for HttpOnly cookie auth (shared session with Storefront)",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "http-proxy-middleware": "^3.0.3"
+  }
+}

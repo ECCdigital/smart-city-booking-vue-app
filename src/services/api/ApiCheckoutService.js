@@ -5,7 +5,7 @@ export default {
     timeBegin,
     timeEnd,
     couponCode,
-    bookWithPrice,
+    bookWithoutDiscount,
     checkoutID
   ) {
 
@@ -15,7 +15,7 @@ export default {
       timeBegin,
       timeEnd,
       couponCode,
-      bookWithPrice,
+      bookWithoutDiscount,
       checkoutId: checkoutID,
     });
   },

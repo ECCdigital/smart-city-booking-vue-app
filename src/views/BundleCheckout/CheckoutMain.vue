@@ -54,15 +54,15 @@
               :checkout-id="checkoutId"
               :final-check="step === steps.length"
               :me="me"
-              :free-booking-allowed="
-                step === steps.length ? false : leadItem.freeBookingAllowed
+              :booking-discount-percent="
+                step === steps.length ? 0 : leadItem.bookingDiscountPercent
               "
-              :initial-book-with-price="bookWithPrice"
+              :initial-book-without-discount="bookWithoutDiscount"
               @back="previousPage()"
               @validate-items="validateItems()"
               @redeem-coupon="redeemCoupon"
               @remove-coupon="removeCoupon"
-              @set-book-with-price="setBookWithPrice"
+              @set-book-without-discount="setBookWithoutDiscount"
             ></checkout-quick-summary>
           </v-col>
         </v-row>
@@ -128,6 +128,7 @@ export default {
         regularGrossPriceEur: null,
         userGrossPriceEur: null,
         freeBookingAllowed: false,
+        bookingDiscountPercent: 0,
       },
       subsequentItems: [],
       timeBegin: null,
@@ -148,7 +149,7 @@ export default {
       activePaymentApps: [],
       selectedPaymentApp: null,
       allowSeriesFlag: false,
-      bookWithPrice: false,
+      bookWithoutDiscount: false,
     };
   },
 
@@ -368,15 +369,12 @@ export default {
     },
 
     shouldShowPaymentStep() {
-      if (this.leadItem.freeBookingAllowed && !this.bookWithPrice) {
+      if (this.activePaymentApps.length <= 1 || !this.leadItem.bookable) {
         return false;
       }
 
-      return (
-        this.activePaymentApps.length > 1 &&
-        this.leadItem.bookable &&
-        (this.leadItem.bookable.priceCategories.some((pC) => pC.priceEur > 0) ||
-          this.leadItem.userPriceEur > 0)
+      return [this.leadItem, ...this.subsequentItems].some(
+        (item) => (item.userPriceEur ?? 0) > 0
       );
     },
 
@@ -392,6 +390,7 @@ export default {
         regularGrossPriceEur: null,
         userGrossPriceEur: null,
         freeBookingAllowed: false,
+        bookingDiscountPercent: 0,
       };
       this.subsequentItems = [];
       this.timeBegin = null;
@@ -516,7 +515,7 @@ export default {
               this.timeBegin,
               this.timeEnd,
               this.coupon?.id,
-              this.bookWithPrice,
+              this.bookWithoutDiscount,
               this.checkoutId
             );
 
@@ -531,6 +530,8 @@ export default {
               item.valid = true;
               item.freeBookingAllowed =
                 response.data.freeBookingAllowed || false;
+              item.bookingDiscountPercent =
+                response.data.bookingDiscountPercent || 0;
 
               delete item.error;
             }
@@ -543,6 +544,7 @@ export default {
             item.regularGrossPriceEur = null;
             item.userGrossPriceEur = null;
             item.freeBookingAllowed = false;
+            item.bookingDiscountPercent = 0;
 
             item.valid = false;
             item.error = formatCheckoutValidationError(error.response?.data);
@@ -694,8 +696,8 @@ export default {
         console.log("Error while fetching user roles", error);
       }
     },
-    async setBookWithPrice(value) {
-      this.bookWithPrice = value;
+    async setBookWithoutDiscount(value) {
+      this.bookWithoutDiscount = value;
       await this.validateItems();
     },
 

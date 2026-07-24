@@ -47,6 +47,7 @@
             :backlog="statusId === 'backlog'"
             @open-booking="onOpenBooking"
             @open-edit-booking="onOpenEditBooking"
+            @open-group-booking="onOpenGroupBooking"
             @commit-booking="onCommitBooking"
             @pay-booking="onPayBooking"
             @reject-booking="onRejectBooking"
@@ -119,6 +120,9 @@ export default {
     },
     onOpenEditBooking(bookingId) {
       this.$emit("open-edit-booking", bookingId);
+    },
+    onOpenGroupBooking(groupBookingId) {
+      this.$emit("open-group-booking", groupBookingId);
     },
     onCommitBooking(bookingId) {
       this.$emit("commit-booking", bookingId);

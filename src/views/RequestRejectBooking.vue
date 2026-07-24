@@ -91,6 +91,8 @@
             hint="Bitte geben Sie Ihren Namen ein, so wie er auch in der Buchung hinterlegt wurde."
             :rules="[(v) => !!v || 'Bitte geben Sie Ihren Namen ein.']"
             persistent-hint
+            @blur="loadRefundPreview"
+            @input="onVerificationNameInput"
           ></v-text-field>
 
           <v-textarea
@@ -105,6 +107,33 @@
             class="mt-3"
           ></v-textarea>
 
+          <div v-if="showRefundPanel" class="text-left mt-2">
+            <v-skeleton-loader
+              v-if="loadingRefundPreview"
+              type="list-item-three-line"
+              class="mb-2"
+            />
+            <CancellationRefundPanel
+              v-else-if="refundPreview"
+              show-divider
+              :title="$t('booking.cancellationRefund.expectedTitle')"
+              :original-amount-eur="refundPreview.originalAmountEur"
+              :refund-amount-eur="refundPreview.refundAmountEur"
+              :cancellation-fee-eur="refundPreview.cancellationFeeEur"
+              :policy-summary="refundPolicySummary"
+              :footer="$t('booking.cancellationRefund.finalAmountHint')"
+            />
+            <v-alert
+              v-else-if="refundPreviewError"
+              type="warning"
+              text
+              dense
+              class="mt-3 mb-0"
+            >
+              {{ $t("booking.cancellationRefund.previewError") }}
+            </v-alert>
+          </div>
+
           <div v-if="requiresBankDetails" class="text-left mt-4">
             <v-divider class="mb-4"></v-divider>
             <p class="text-subtitle-2 font-weight-bold mb-1">
@@ -112,7 +141,11 @@
             </p>
             <p class="text-caption mb-3">
               Diese Buchung wurde bereits bezahlt
-              <span v-if="bookingStatus && bookingStatus.priceEur != null">
+              <span v-if="formattedExpectedRefund">
+                (erwartete Erstattung: {{ formattedExpectedRefund }})</span
+              ><span
+                v-else-if="bookingStatus && bookingStatus.priceEur != null"
+              >
                 (Betrag: {{ formattedPrice }})</span
               >. Sie können optional Ihre Bankverbindung angeben, um die
               Rückerstattung zu vereinfachen.
@@ -187,6 +220,8 @@
 
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
+import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
+import FormatService from "@/services/FormatService";
 
 const IBAN_REGEX = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/;
 const BIC_REGEX = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
@@ -221,6 +256,7 @@ function isValidIban(value) {
 
 export default {
   name: "RequestRejectBooking",
+  components: { CancellationRefundPanel },
   props: {
     tenantId: {
       type: String,
@@ -239,6 +275,9 @@ export default {
       loadingStatus: true,
       statusError: false,
       bookingStatus: null,
+      refundPreview: null,
+      loadingRefundPreview: false,
+      refundPreviewError: false,
       bankDetails: {
         accountHolder: "",
         iban: "",
@@ -259,6 +298,26 @@ export default {
         this.bookingStatus.isRejected !== true
       );
     },
+    showRefundPanel() {
+      return (
+        this.loadingRefundPreview ||
+        this.refundPreviewError ||
+        (this.refundPreview &&
+          Number(this.refundPreview.originalAmountEur) > 0)
+      );
+    },
+    refundPolicySummary() {
+      if (!this.refundPreview) return "";
+      const days =
+        this.refundPreview.daysBeforeStart === null ||
+        this.refundPreview.daysBeforeStart === undefined
+          ? "–"
+          : this.refundPreview.daysBeforeStart;
+      return this.$t("booking.cancellationRefund.userPolicySummary", {
+        days,
+        percentage: this.refundPreview.suggestedRefundPercentage,
+      });
+    },
     requiresBankDetails() {
       return !!(
         this.bookingStatus &&
@@ -270,23 +329,23 @@ export default {
     formattedPrice() {
       const price = this.bookingStatus && this.bookingStatus.priceEur;
       if (typeof price !== "number") return "";
-      try {
-        return new Intl.NumberFormat("de-DE", {
-          style: "currency",
-          currency: "EUR",
-        }).format(price);
-      } catch (e) {
-        return `${price.toFixed(2)} €`;
+      return FormatService.currency(price);
+    },
+    formattedExpectedRefund() {
+      if (
+        !this.refundPreview ||
+        typeof this.refundPreview.refundAmountEur !== "number"
+      ) {
+        return "";
       }
+      return FormatService.currency(this.refundPreview.refundAmountEur);
     },
     bankRules() {
       return {
         accountHolder: [],
         iban: [
           (v) =>
-            !v ||
-            isValidIban(v) ||
-            "Bitte geben Sie eine gültige IBAN an.",
+            !v || isValidIban(v) || "Bitte geben Sie eine gültige IBAN an.",
         ],
         bic: [
           (v) =>
@@ -298,6 +357,11 @@ export default {
     },
   },
   methods: {
+    onVerificationNameInput() {
+      this.refundPreview = null;
+      this.refundPreviewError = false;
+      this.showVerificationError = false;
+    },
     onIbanInput(value) {
       const normalized = normalizeIban(value);
       const formatted = normalized.replace(/(.{4})/g, "$1 ").trim();
@@ -321,6 +385,46 @@ export default {
       if (bankName) payload.bankName = bankName;
       return payload;
     },
+    async loadRefundPreview() {
+      const name = (this.verificationName || "").trim();
+      if (!name || !this.bookingNumber || !this.tenantId) {
+        return;
+      }
+
+      this.loadingRefundPreview = true;
+      this.refundPreviewError = false;
+      this.showVerificationError = false;
+
+      try {
+        const ownership = await ApiBookingService.verifyBookingOwnership(
+          this.tenantId,
+          this.bookingNumber,
+          name
+        );
+        if (ownership.status !== 200) {
+          this.refundPreview = null;
+          this.showVerificationError = true;
+          return;
+        }
+
+        this.refundPreview =
+          await ApiBookingService.getPublicCancellationRefundPreview(
+            this.bookingNumber,
+            this.tenantId,
+            name
+          );
+      } catch (error) {
+        const status = error && error.response && error.response.status;
+        this.refundPreview = null;
+        if (status === 401 || status === 403 || status === 404) {
+          this.showVerificationError = true;
+        } else {
+          this.refundPreviewError = true;
+        }
+      } finally {
+        this.loadingRefundPreview = false;
+      }
+    },
     async sendRejectRequest() {
       this.submitError = null;
       if (this.$refs.form && !this.$refs.form.validate()) {
@@ -339,6 +443,20 @@ export default {
           return;
         }
         this.showVerificationError = false;
+
+        if (!this.refundPreview) {
+          try {
+            this.refundPreview =
+              await ApiBookingService.getPublicCancellationRefundPreview(
+                this.bookingNumber,
+                this.tenantId,
+                this.verificationName
+              );
+          } catch (previewError) {
+            // Preview is informational; do not block cancellation request.
+            console.error(previewError);
+          }
+        }
 
         const bankDetailsPayload = this.buildBankDetailsPayload();
         const rejectResponse = await ApiBookingService.requestRejectBooking(
@@ -376,8 +494,9 @@ export default {
         );
         const data = bookingStatusResponse && bookingStatusResponse.data;
         const status = Array.isArray(data)
-          ? data.find((entry) => entry && entry.bookingId === this.bookingNumber) ||
-            data[0]
+          ? data.find(
+            (entry) => entry && entry.bookingId === this.bookingNumber
+          ) || data[0]
           : data;
         if (!status) {
           this.statusError = true;

@@ -25,7 +25,7 @@ const state = {
       permittedRoles: [],
     },
 
-    isScheduleRelated: false,
+    isScheduleRelated: true,
     isTimePeriodRelated: false,
     timePeriods: [],
     isOpeningHoursRelated: false,
@@ -59,8 +59,10 @@ const state = {
     requiresLogin: false,
     permittedUsers: [],
     permittedRoles: [],
-    freeBookingUsers: [],
-    freeBookingRoles: [],
+    bookingDiscounts: {
+      users: [],
+      roles: [],
+    },
     relatedBookableIds: [],
     checkoutBookableIds: [],
 
@@ -127,7 +129,7 @@ const mutations = {
         permittedRoles: [],
       },
 
-      isScheduleRelated: false,
+      isScheduleRelated: true,
       isTimePeriodRelated: false,
       timePeriods: [],
       isOpeningHoursRelated: false,
@@ -160,8 +162,10 @@ const mutations = {
 
       permittedUsers: [],
       permittedRoles: [],
-      freeBookingUsers: [],
-      freeBookingRoles: [],
+      bookingDiscounts: {
+        users: [],
+        roles: [],
+      },
       relatedBookableIds: [],
       checkoutBookableIds: [],
 

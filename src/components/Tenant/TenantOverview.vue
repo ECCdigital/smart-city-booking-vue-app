@@ -71,27 +71,42 @@
         $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
       "
       @submit="submitChanges"
-      @cancel="fetchTenant"
+      @cancel="onRestoreChanges"
       show-restore
       :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
       :in-progress="inProgress"
     />
 
+    <UnsavedChangesDialog
+      v-model="leaveDialogOpen"
+      @stay="resolveLeaveConfirm(false)"
+      @discard="resolveLeaveConfirm(true)"
+    />
+
     <ReceiptTemplateDialog
       :open="showEditTemplateDialog"
       :receipt-template="tenant.receiptTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
+      :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditTemplateDialog = false"
       @submit="onSubmitReceiptTemplate"
     />
     <InvoiceTemplateDialog
       :open="showEditInvoiceTemplateDialog"
       :invoice-template="tenant.invoiceTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
+      :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditInvoiceTemplateDialog = false"
       @submit="onSubmitInvoiceTemplate"
     />
     <CancellationTemplateDialog
       :open="showEditCancellationTemplateDialog"
       :cancellation-template="tenant.cancellationTemplate"
+      :tenant-id="tenant.id"
+      :pdf-booking-layout="tenant.pdfBookingLayout || defaultPdfBookingLayout"
+      :pdf-booking-table-meta="tenant.pdfBookingTableMeta"
       @close="showEditCancellationTemplateDialog = false"
       @submit="onSubmitCancellationTemplate"
     />
@@ -100,6 +115,7 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import { mapActions, mapGetters } from "vuex";
 
@@ -119,15 +135,19 @@ import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import SaveBar from "@/components/commons/SaveBar.vue";
+import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
+import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
+import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
 
 export default {
   name: "TenantOverview",
   components: {
     CancellationTemplateDialog,
     SaveBar,
+    UnsavedChangesDialog,
     TenantEditGeneral,
     TenantEditWeb,
     TenantEditEmail,
@@ -142,11 +162,13 @@ export default {
     TenantEditCatalog,
     TenantEditBookables,
   },
+  mixins: [unsavedChangesGuard],
   data() {
     return {
       isLoading: false,
       inProgress: false,
       validRoot: true,
+      defaultPdfBookingLayout: DEFAULT_PDF_BOOKING_LAYOUT,
       activeTab: 0,
       roles: [],
       tabs: [
@@ -310,6 +332,13 @@ export default {
       tenantId: "tenants/currentTenantId",
     }),
     hasUnsavedChanges() {
+      if (
+        this.isLoading ||
+        !this.originalSnapshot ||
+        typeof this.originalSnapshot !== "string"
+      ) {
+        return false;
+      }
       return (
         JSON.stringify({
           tenant: this.tenant,
@@ -340,6 +369,12 @@ export default {
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
+    async onRestoreChanges() {
+      const discard = await this.confirmDiscardChanges();
+      if (discard) {
+        await this.fetchTenant();
+      }
+    },
     async fetchRoles() {
       try {
         const response = await ApiRolesService.getTenantRoles(true);
@@ -394,14 +429,14 @@ export default {
       this.workflow = data?.id
         ? data
         : {
-            active: false,
-            states: [],
-            archive: [],
-            description: "",
-            name: "",
-            eventStateMapping: "",
-            tenantId: this.tenant.id,
-          };
+          active: false,
+          states: [],
+          archive: [],
+          description: "",
+          name: "",
+          eventStateMapping: "",
+          tenantId: this.tenant.id,
+        };
     },
     async fetchChallenges() {
       try {
@@ -525,7 +560,10 @@ export default {
         });
       } catch (e) {
         await this.addToast({
-          message: "Fehler beim Speichern der Änderungen.",
+          message: getApiErrorMessage(
+            e,
+            "Fehler beim Speichern der Änderungen.",
+          ),
           type: "error",
         });
       } finally {
@@ -542,15 +580,15 @@ export default {
       this.showEditCancellationTemplateDialog = true;
     },
     onSubmitReceiptTemplate(template) {
-      this.tenant.receiptTemplate = template;
+      this.onUpdateTenant({ receiptTemplate: template });
       this.showEditTemplateDialog = false;
     },
     onSubmitInvoiceTemplate(template) {
-      this.tenant.invoiceTemplate = template;
+      this.onUpdateTenant({ invoiceTemplate: template });
       this.showEditInvoiceTemplateDialog = false;
     },
     onSubmitCancellationTemplate(template) {
-      this.tenant.cancellationTemplate = template;
+      this.onUpdateTenant({ cancellationTemplate: template });
       this.showEditCancellationTemplateDialog = false;
     },
     async fetchInstanceCustomFields() {

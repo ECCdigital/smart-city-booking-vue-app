@@ -45,6 +45,7 @@
     <editor-content
       :editor="editor"
       class="tiptap accent px-3 pb-1"
+      :style="editorStyle"
       ref="editor"
     />
   </v-card>
@@ -77,12 +78,27 @@ export default {
       type: String,
       default: "",
     },
+    minHeight: {
+      type: [String, Number],
+      default: null,
+    },
   },
 
   data() {
     return {
       editor: null,
     };
+  },
+
+  computed: {
+    editorStyle() {
+      if (this.minHeight == null || this.minHeight === "") return undefined;
+      const value =
+        typeof this.minHeight === "number"
+          ? `${this.minHeight}px`
+          : this.minHeight;
+      return { minHeight: value };
+    },
   },
 
   watch: {
@@ -137,6 +153,10 @@ export default {
 <style>
 .ProseMirror:focus {
   outline: none;
+}
+
+.tiptap .ProseMirror {
+  min-height: inherit;
 }
 
 .label {

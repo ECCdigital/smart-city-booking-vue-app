@@ -11,6 +11,7 @@ export const SNIPPET_KEYS = [
   "invoice",
   "invoice-after-approval",
   "payment-link-after-approval",
+  "supervisor-booking-notification",
 ];
 
 
@@ -149,9 +150,37 @@ export const SNIPPET_CATALOG = [
     title: "Stornierungsmitteilung",
     description: "Stornierungsmitteilung an den Buchenden.",
     icon: "mdi-cancel",
-    defaultTemplate: "<p>Die nachfolgende Buchung wurde storniert:</p>",
+    defaultTemplate: `<p>Die nachfolgende Buchung wurde storniert:</p>
+
+{{#if hasRefundPreview}}
+  <p>
+    <strong>Erstattung</strong>:
+    {{priceFormatted refundAmountEur}}
+    ({{refundPercentage}}&nbsp;%)
+    {{#if hasCancellationFee}}
+      <br />
+      Einbehalt (Stornogebühr): {{priceFormatted cancellationFeeEur}}
+    {{/if}}
+  </p>
+{{/if}}
+`,
     defaultBlocks: [
-      row([txt("<p>Die nachfolgende Buchung wurde storniert:</p>")]),
+      row([
+        txt(`<p>Die nachfolgende Buchung wurde storniert:</p>
+
+{{#if hasRefundPreview}}
+  <p>
+    <strong>Erstattung</strong>:
+    {{priceFormatted refundAmountEur}}
+    ({{refundPercentage}}&nbsp;%)
+    {{#if hasCancellationFee}}
+      <br />
+      Einbehalt (Stornogebühr): {{priceFormatted cancellationFeeEur}}
+    {{/if}}
+  </p>
+{{/if}}
+`),
+      ]),
     ],
   },
   {
@@ -239,6 +268,32 @@ export const SNIPPET_CATALOG = [
         txt(
           "<p>Um Ihre Buchung verbindlich abzuschließen, klicken Sie bitte auf den nachfolgenden Knopf und folgen Sie den weiteren Schritten.</p>"
         ),
+      ]),
+    ],
+  },
+  {
+    key: "supervisor-booking-notification",
+    title: "Vorgesetzten-Benachrichtigung",
+    description:
+      "Information an hinterlegte Empfänger (z. B. Vorgesetzte), wenn ein Mitglied eine Buchung vornimmt.",
+    icon: "mdi-bell-ring-outline",
+    defaultTemplate: `<div style="font-family: sans-serif;">
+  <p>
+    Hallo,<br />
+    ein Mitglied im
+    <strong>{{tenantName}}</strong>
+    hat eine neue Buchung vorgenommen.
+  </p>
+  <p>
+    Im Folgenden senden wir Ihnen die Details der Buchung.
+  </p>
+</div>`,
+    defaultBlocks: [
+      row([
+        txt(
+          `<p>Hallo,<br />ein Mitglied im <strong>${TENANT}</strong> hat eine neue Buchung vorgenommen.</p>`
+        ),
+        txt("<p>Im Folgenden senden wir Ihnen die Details der Buchung.</p>"),
       ]),
     ],
   },
