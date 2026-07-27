@@ -36,21 +36,52 @@ function isAllowedOrigin(origin) {
 }
 
 /**
+ * Map a derived request origin onto the PUBLIC_ORIGIN allowlist.
+ * Exact match preferred; if only the scheme differs (common behind TLS
+ * termination where the app sees http), match hostname+port and return the
+ * allowlisted origin (correct public scheme).
+ */
+function resolveAllowlistedOrigin(derived) {
+  if (!publicOrigins.length) {
+    return derived;
+  }
+
+  let derivedUrl;
+  try {
+    derivedUrl = new URL(derived);
+  } catch {
+    return null;
+  }
+
+  const exact = derivedUrl.origin;
+  if (publicOrigins.includes(exact)) {
+    return exact;
+  }
+
+  for (const allowed of publicOrigins) {
+    try {
+      const allowedUrl = new URL(allowed);
+      if (
+        allowedUrl.hostname === derivedUrl.hostname &&
+        allowedUrl.port === derivedUrl.port
+      ) {
+        return allowedUrl.origin;
+      }
+    } catch {
+      // skip invalid allowlist entries (already filtered at startup)
+    }
+  }
+
+  return null;
+}
+
+/**
  * Request origin for redirects / CSRF. Returns null when an allowlist is
  * configured and the derived host is not on it (never falls back to the
  * first allowlist entry).
  */
 function getRequestOrigin(req) {
-  const derived = deriveOrigin(req);
-  if (!publicOrigins.length) {
-    return derived;
-  }
-  try {
-    const canonical = new URL(derived).origin;
-    return publicOrigins.includes(canonical) ? canonical : null;
-  } catch {
-    return null;
-  }
+  return resolveAllowlistedOrigin(deriveOrigin(req));
 }
 
 /**
@@ -94,6 +125,7 @@ function spaPath(pathname = "/") {
 module.exports = {
   deriveOrigin,
   isAllowedOrigin,
+  resolveAllowlistedOrigin,
   getRequestOrigin,
   requireRequestOrigin,
   getBffPublicBase,

@@ -90,6 +90,7 @@ PUBLIC_ORIGIN=https://example.com
 - Comma-separated origins; `PUBLIC_ORIGIN` and `PUBLIC_ORIGINS` are **merged** (not overridden).
 - Request host (via `X-Forwarded-Host` / `Host` + `X-Forwarded-Proto`) must be on the allowlist; SSO `redirect_uri` follows that host and is stored in the PKCE session for the callback.
 - Edge must set `Host` / `X-Forwarded-Host` and `X-Forwarded-Proto` (see nginx sketch above). Expose the BFF **only** through the edge.
+- Behind TLS termination (Coolify/Traefik → container `:80`), the embedded nginx keeps edge `X-Forwarded-Proto`/`Host`. The BFF also maps an allowlisted hostname even if the derived scheme is still `http`.
 - IDN: use Unicode **or** Punycode consistently in env values.
 - Sessions are **per hostname** (host-only cookies). No shared login across unrelated domains.
 - **Storefront:** if the Storefront BFF still has a single fixed `PUBLIC_ORIGIN`, shared session on additional hostnames needs a follow-up in that repo.
