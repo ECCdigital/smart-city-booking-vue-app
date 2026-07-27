@@ -15,7 +15,7 @@ const {
   revokeKeycloakSession,
   buildBrowserLogoutUrl,
 } = require("../keycloak");
-const { getRequestOrigin, spaPath } = require("../publicUrl");
+const { requireRequestOrigin, spaPath } = require("../publicUrl");
 
 const router = express.Router();
 
@@ -200,7 +200,7 @@ router.post("/logout", async (req, res) => {
   if (wasKeycloak && browserLogout) {
     try {
       // Prefer registered URI without query (Keycloak post_logout_redirect_uri)
-      const postLogoutRedirectUri = `${getRequestOrigin(req)}${spaPath("/login")}`;
+      const postLogoutRedirectUri = `${requireRequestOrigin(req)}${spaPath("/login")}`;
       idpLogoutUrl = await buildBrowserLogoutUrl({
         postLogoutRedirectUri,
       });

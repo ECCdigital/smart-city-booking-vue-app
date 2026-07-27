@@ -88,6 +88,7 @@ function resolvePkceSession(req, state) {
     return {
       codeVerifier: fromStore.codeVerifier,
       redirect: fromStore.redirect,
+      redirectUri: fromStore.redirectUri || null,
       state: String(state),
       silent: fromStore.silent,
     };
@@ -99,6 +100,7 @@ function resolvePkceSession(req, state) {
     return {
       codeVerifier: fromCookies.codeVerifier,
       redirect: fromCookies.redirect,
+      redirectUri: fromCookies.redirectUri || null,
       state: fromCookies.state,
       silent: String(fromCookies.state).startsWith("silent_"),
     };
@@ -115,11 +117,16 @@ router.get("/login", async (req, res) => {
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const state = generateState();
-
-    savePkceSession(state, { codeVerifier, redirect, silent: false });
-    setPkceCookies(res, { codeVerifier, state, redirect });
-
     const redirectUri = getSsoCallbackUri(req);
+
+    savePkceSession(state, {
+      codeVerifier,
+      redirect,
+      silent: false,
+      redirectUri,
+    });
+    setPkceCookies(res, { codeVerifier, state, redirect, redirectUri });
+
     console.log("SSO login start:", { redirectUri, state: state.slice(0, 8) });
 
     const authUrl = new URL(endpoints.authorization);
@@ -133,6 +140,10 @@ router.get("/login", async (req, res) => {
 
     return res.redirect(authUrl.toString());
   } catch (error) {
+    if (error.statusCode === 400) {
+      console.warn("SSO login rejected:", error.message);
+      return res.status(400).json({ success: false, message: error.message });
+    }
     console.error("SSO login error:", error);
     return res.redirect(spaPath("/login?error=sso_unavailable"));
   }
@@ -146,11 +157,16 @@ router.get("/silent-check", async (req, res) => {
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const state = generateState("silent_");
-
-    savePkceSession(state, { codeVerifier, redirect, silent: true });
-    setPkceCookies(res, { codeVerifier, state, redirect });
-
     const redirectUri = getSsoCallbackUri(req);
+
+    savePkceSession(state, {
+      codeVerifier,
+      redirect,
+      silent: true,
+      redirectUri,
+    });
+    setPkceCookies(res, { codeVerifier, state, redirect, redirectUri });
+
     const authUrl = new URL(endpoints.authorization);
     authUrl.searchParams.set("client_id", config.publicClient);
     authUrl.searchParams.set("response_type", "code");
@@ -162,7 +178,11 @@ router.get("/silent-check", async (req, res) => {
     authUrl.searchParams.set("prompt", "none");
 
     return res.redirect(authUrl.toString());
-  } catch {
+  } catch (error) {
+    if (error.statusCode === 400) {
+      console.warn("SSO silent-check rejected:", error.message);
+      return res.status(400).json({ success: false, message: error.message });
+    }
     return res.redirect(redirect);
   }
 });
@@ -197,7 +217,7 @@ router.get("/callback", async (req, res) => {
     return res.redirect(spaPath("/login?error=invalid_state"));
   }
 
-  if (!code || !pkce.codeVerifier) {
+  if (!code || !pkce.codeVerifier || !pkce.redirectUri) {
     if (isSilentCheck) return res.redirect(redirectPath);
     return res.redirect(spaPath("/login?error=missing_params"));
   }
@@ -205,7 +225,8 @@ router.get("/callback", async (req, res) => {
   try {
     const config = await getKeycloakConfig();
     const endpoints = getKeycloakEndpoints(config.serverUrl, config.realm);
-    const redirectUri = getSsoCallbackUri(req);
+    // Must be bit-identical to authorize-time redirect_uri (from PKCE state)
+    const redirectUri = pkce.redirectUri;
 
     const tokenResponse = await exchangeCodeForTokens({
       endpoints,

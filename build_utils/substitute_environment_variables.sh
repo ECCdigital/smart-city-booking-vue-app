@@ -44,6 +44,8 @@ STRIP_PREFIX="${STRIP_PREFIX:-true}"
 ADMIN_BFF_UPSTREAM="${ADMIN_BFF_UPSTREAM:-}"
 ADMIN_BFF_LOCATION=""
 if [ -n "$ADMIN_BFF_UPSTREAM" ]; then
+  # Prefer edge X-Forwarded-* (Coolify/Traefik TLS termination) over nginx $scheme/$host
+  # which are http/internal when the container listens on :80 behind HTTPS.
   ADMIN_BFF_LOCATION=$(cat <<BFLEOF
     location = /admin/api {
       return 301 /admin/api/;
@@ -54,8 +56,8 @@ if [ -n "$ADMIN_BFF_UPSTREAM" ]; then
       proxy_set_header Host \$host;
       proxy_set_header X-Real-IP \$remote_addr;
       proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Proto \$scheme;
-      proxy_set_header X-Forwarded-Host \$host;
+      proxy_set_header X-Forwarded-Proto \$bff_forwarded_proto;
+      proxy_set_header X-Forwarded-Host \$bff_forwarded_host;
       proxy_set_header Cookie \$http_cookie;
       proxy_pass_header Set-Cookie;
     }
@@ -68,8 +70,8 @@ if [ -n "$ADMIN_BFF_UPSTREAM" ]; then
       proxy_set_header Host \$host;
       proxy_set_header X-Real-IP \$remote_addr;
       proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Proto \$scheme;
-      proxy_set_header X-Forwarded-Host \$host;
+      proxy_set_header X-Forwarded-Proto \$bff_forwarded_proto;
+      proxy_set_header X-Forwarded-Host \$bff_forwarded_host;
       proxy_set_header Cookie \$http_cookie;
       proxy_pass_header Set-Cookie;
     }
@@ -78,6 +80,19 @@ BFLEOF
   echo "==> Admin BFF proxy enabled → ${ADMIN_BFF_UPSTREAM}"
   echo "    nginx locations: /admin/api/ and /api/ (STRIP_PREFIX=${STRIP_PREFIX})"
 fi
+
+NGINX_FORWARDED_MAPS=$(cat <<'MAPSEOF'
+  # Preserve edge TLS / host when proxying to the embedded BFF (container is :80).
+  map $http_x_forwarded_proto $bff_forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+  }
+  map $http_x_forwarded_host $bff_forwarded_host {
+    default $http_x_forwarded_host;
+    ""      $host;
+  }
+MAPSEOF
+)
 
 if [ "$LOCATION_PATH" = "/" ] || [ "$STRIP_PREFIX" = "true" ]; then
 
@@ -97,6 +112,7 @@ http {
   sendfile on;
   keepalive_timeout 65;
   add_header X-Frame-Options "DENY" always;
+${NGINX_FORWARDED_MAPS}
   server {
     listen 80;
     server_name localhost;
@@ -145,6 +161,7 @@ http {
   sendfile on;
   keepalive_timeout 65;
   add_header X-Frame-Options "DENY" always;
+${NGINX_FORWARDED_MAPS}
   server {
     listen 80;
     server_name localhost;

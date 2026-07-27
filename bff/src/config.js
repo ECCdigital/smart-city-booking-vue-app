@@ -94,8 +94,54 @@ const spaBasePath = stripTrailingSlash(
   firstEnv("ADMIN_SPA_BASE_PATH", "BASE_URL")
 );
 
-// Browser-facing origin for OIDC redirect_uri + CSRF checks
-const publicOrigin = stripTrailingSlash(firstEnv("PUBLIC_ORIGIN"));
+/**
+ * Parse PUBLIC_ORIGIN / PUBLIC_ORIGINS into a canonical allowlist.
+ * Both env vars are merged (no override). Empty / unset → no allowlist (dev).
+ * Set but zero valid entries → fail-closed startup error.
+ */
+function parsePublicOrigins() {
+  const rawParts = [];
+  for (const key of ["PUBLIC_ORIGIN", "PUBLIC_ORIGINS"]) {
+    const value = process.env[key];
+    if (value === undefined || value === null || String(value).trim() === "") {
+      continue;
+    }
+    for (const part of String(value).split(",")) {
+      const trimmed = part.trim();
+      if (trimmed) rawParts.push(trimmed);
+    }
+  }
+
+  if (rawParts.length === 0) {
+    return [];
+  }
+
+  const seen = new Set();
+  const origins = [];
+  for (const entry of rawParts) {
+    try {
+      const origin = new URL(entry).origin;
+      if (!seen.has(origin)) {
+        seen.add(origin);
+        origins.push(origin);
+      }
+    } catch {
+      console.warn(`PUBLIC_ORIGIN: skipping invalid entry (${entry})`);
+    }
+  }
+
+  if (origins.length === 0) {
+    console.error(
+      "PUBLIC_ORIGIN / PUBLIC_ORIGINS is set but no valid origins could be parsed"
+    );
+    process.exit(1);
+  }
+
+  return origins;
+}
+
+// Browser-facing origins for OIDC redirect_uri + CSRF (comma-separated allowlist)
+const publicOrigins = parsePublicOrigins();
 
 module.exports = {
   apiBaseUrl,
@@ -104,5 +150,5 @@ module.exports = {
   corsOrigins,
   bffPublicPath,
   spaBasePath,
-  publicOrigin,
+  publicOrigins,
 };

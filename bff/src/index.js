@@ -26,7 +26,7 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "admin-bff" });
 });
 
-// Cookie CSRF: SameSite=lax + optional Origin/Referer vs PUBLIC_ORIGIN
+// Cookie CSRF: SameSite=lax + optional Origin/Referer vs PUBLIC_ORIGIN allowlist
 app.use(createCsrfGuard());
 
 // JSON body only for BFF-owned auth routes (proxy streams its own body)

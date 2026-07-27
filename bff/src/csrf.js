@@ -1,34 +1,35 @@
-const { publicOrigin } = require("./config");
+const { publicOrigins } = require("./config");
+const { getRequestOrigin } = require("./publicUrl");
 
 /**
  * Light CSRF guard for cookie-authenticated mutating requests.
  *
  * Primary protection remains SameSite=lax on auth cookies (browser will not
- * send them on cross-site POSTs). When PUBLIC_ORIGIN is set, also require
- * Origin/Referer to match that origin for non-GET requests that carry cookies.
+ * send them on cross-site POSTs). When PUBLIC_ORIGIN allowlist is set, also
+ * require Origin/Referer to match the *current* request origin (derived host
+ * must be allowlisted and equal the browser Origin).
  *
  * Requests without Origin/Referer (curl, health checks) are allowed so ops
  * tooling keeps working — classic browser CSRF always sends Origin on POST.
  */
 function createCsrfGuard() {
-  let allowedOrigin = null;
-  if (publicOrigin) {
-    try {
-      allowedOrigin = new URL(publicOrigin).origin;
-    } catch {
-      console.warn(
-        `CSRF: PUBLIC_ORIGIN is not a valid URL (${publicOrigin}) — Origin check disabled`
-      );
-    }
-  }
+  const allowlistActive = publicOrigins.length > 0;
 
   return function csrfGuard(req, res, next) {
     if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
       return next();
     }
 
-    if (!allowedOrigin) {
+    if (!allowlistActive) {
       return next();
+    }
+
+    const target = getRequestOrigin(req);
+    if (!target) {
+      return res.status(403).json({
+        success: false,
+        message: "CSRF check failed",
+      });
     }
 
     const originHeader = req.get("origin");
@@ -53,7 +54,7 @@ function createCsrfGuard() {
       });
     }
 
-    if (requestOrigin !== allowedOrigin) {
+    if (requestOrigin !== target) {
       return res.status(403).json({
         success: false,
         message: "CSRF check failed",
