@@ -17,12 +17,14 @@ function prune() {
   }
 }
 
-function savePkceSession(state, { codeVerifier, redirect, silent }) {
+function savePkceSession(state, { codeVerifier, redirect, silent, redirectUri }) {
   prune();
   store.set(String(state), {
     codeVerifier,
     redirect: redirect || "/",
     silent: !!silent,
+    // Must match authorize-time redirect_uri on token exchange (bit-identical)
+    redirectUri: redirectUri || null,
     expiresAt: Date.now() + TTL_MS,
   });
 }

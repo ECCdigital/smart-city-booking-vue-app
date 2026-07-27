@@ -53,6 +53,9 @@ start_embedded_bff() {
   echo "    BFF_PUBLIC_PATH=${BFF_PUBLIC_PATH}"
   echo "    ADMIN_BFF_UPSTREAM=${ADMIN_BFF_UPSTREAM}"
   echo "    PUBLIC_ORIGIN=${PUBLIC_ORIGIN:-"(unset)"}"
+  if [ -n "${PUBLIC_ORIGINS:-}" ]; then
+    echo "    PUBLIC_ORIGINS=${PUBLIC_ORIGINS}"
+  fi
 
   node /opt/admin-bff/src/index.js &
   BFF_PID=$!

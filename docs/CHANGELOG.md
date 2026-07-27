@@ -7,6 +7,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Changed
+
+- BFF `PUBLIC_ORIGIN` accepts a comma-separated allowlist (optional `PUBLIC_ORIGINS` merged in): CSRF and OIDC redirects follow the request host when allowlisted; SSO callback reuses `redirect_uri` from the PKCE session. Set-but-invalid config fails closed at startup. **Note:** Storefront BFF may still need a matching multi-origin change for shared session on additional hostnames.
+
 ## [4.2.1] — 2026-07-22
 
 ### Added

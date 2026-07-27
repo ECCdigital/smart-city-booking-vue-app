@@ -29,6 +29,7 @@ services:
       VUE_APP_AUTH_MODE: bff
       VUE_APP_BFF_BASE_URL: /admin/api
       # PUBLIC_ORIGIN: https://example.com
+      # or: https://booking.kunde.de,https://booking.system.example.com
       # Optional BFF-only overrides (UI names above are enough):
       # API_BASE_URL / BFF_PUBLIC_PATH / ADMIN_SPA_BASE_PATH / COOKIE_SECURE
       # ADMIN_BFF_PORT: "3001"

@@ -1,10 +1,10 @@
-const { bffPublicPath, spaBasePath, publicOrigin } = require("./config");
+const { bffPublicPath, spaBasePath, publicOrigins } = require("./config");
 
-function getRequestOrigin(req) {
-  if (publicOrigin) {
-    return publicOrigin;
-  }
-
+/**
+ * Derive browser origin from forwarded headers / Host.
+ * Always takes the first value of comma-separated X-Forwarded-* lists.
+ */
+function deriveOrigin(req) {
   const proto = (
     req.headers["x-forwarded-proto"] ||
     req.protocol ||
@@ -25,9 +25,55 @@ function getRequestOrigin(req) {
   return `${proto}://${host}`;
 }
 
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (!publicOrigins.length) return true;
+  try {
+    return publicOrigins.includes(new URL(origin).origin);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Request origin for redirects / CSRF. Returns null when an allowlist is
+ * configured and the derived host is not on it (never falls back to the
+ * first allowlist entry).
+ */
+function getRequestOrigin(req) {
+  const derived = deriveOrigin(req);
+  if (!publicOrigins.length) {
+    return derived;
+  }
+  try {
+    const canonical = new URL(derived).origin;
+    return publicOrigins.includes(canonical) ? canonical : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Same as getRequestOrigin, but throws statusCode 400 when the host is not
+ * allowlisted (SSO start, logout redirect, absolute BFF URLs).
+ */
+function requireRequestOrigin(req) {
+  const origin = getRequestOrigin(req);
+  if (origin) {
+    return origin;
+  }
+  const derived = deriveOrigin(req);
+  const err = new Error(
+    `Request origin ${derived} is not in the PUBLIC_ORIGIN allowlist. ` +
+      "Check proxy headers (X-Forwarded-Host / X-Forwarded-Proto) and config."
+  );
+  err.statusCode = 400;
+  throw err;
+}
+
 /** External BFF base, e.g. http://localhost:8080/api */
 function getBffPublicBase(req) {
-  const origin = getRequestOrigin(req);
+  const origin = requireRequestOrigin(req);
   const prefix = bffPublicPath.replace(/\/$/, "");
   return `${origin}${prefix}`;
 }
@@ -46,7 +92,10 @@ function spaPath(pathname = "/") {
 }
 
 module.exports = {
+  deriveOrigin,
+  isAllowedOrigin,
   getRequestOrigin,
+  requireRequestOrigin,
   getBffPublicBase,
   getSsoCallbackUri,
   spaPath,

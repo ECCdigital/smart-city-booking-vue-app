@@ -15,6 +15,7 @@ const {
 const KC_CODE_VERIFIER = "kc-code-verifier";
 const KC_STATE = "kc-state";
 const KC_REDIRECT = "kc-redirect";
+const KC_REDIRECT_URI = "kc-redirect-uri";
 const KC_PENDING_TOKEN = "kc-pending-token";
 const KC_PENDING_REFRESH = "kc-pending-refresh";
 const KC_PENDING_REDIRECT = "kc-pending-redirect";
@@ -71,17 +72,21 @@ function clearAuthCookies(res) {
   res.clearCookie(AUTH_TYPE, clearOptions(false));
 }
 
-function setPkceCookies(res, { codeVerifier, state, redirect }) {
+function setPkceCookies(res, { codeVerifier, state, redirect, redirectUri }) {
   const opts = baseOptions(SHORT_MAX_AGE);
   res.cookie(KC_CODE_VERIFIER, codeVerifier, opts);
   res.cookie(KC_STATE, state, opts);
   res.cookie(KC_REDIRECT, redirect || "/", opts);
+  if (redirectUri) {
+    res.cookie(KC_REDIRECT_URI, redirectUri, opts);
+  }
 }
 
 function clearPkceCookies(res) {
   res.clearCookie(KC_CODE_VERIFIER, clearOptions(true));
   res.clearCookie(KC_STATE, clearOptions(true));
   res.clearCookie(KC_REDIRECT, clearOptions(true));
+  res.clearCookie(KC_REDIRECT_URI, clearOptions(true));
 }
 
 function setPendingSsoCookies(res, { accessToken, refreshToken, redirect }) {
@@ -120,6 +125,7 @@ function getPkceCookies(req) {
     codeVerifier: req.cookies?.[KC_CODE_VERIFIER] || null,
     state: req.cookies?.[KC_STATE] || null,
     redirect: req.cookies?.[KC_REDIRECT] || "/",
+    redirectUri: req.cookies?.[KC_REDIRECT_URI] || null,
   };
 }
 

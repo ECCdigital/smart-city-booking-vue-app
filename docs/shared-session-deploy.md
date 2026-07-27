@@ -71,6 +71,8 @@ VUE_APP_AUTH_MODE=bff
 VUE_APP_BFF_BASE_URL=/admin/api
 VUE_APP_SERVER_BASE_URL=https://api.example.com
 PUBLIC_ORIGIN=https://example.com
+# Multiple hostnames (custom + system default), comma-separated; PUBLIC_ORIGINS is merged in:
+# PUBLIC_ORIGIN=https://booking.kunde.de,https://booking.system.example.com
 # BFF reads the same UI env names (no duplicate API_BASE_URL / BFF_PUBLIC_PATH needed).
 # Optional overrides only:
 # API_BASE_URL=https://api.example.com
@@ -83,14 +85,23 @@ PUBLIC_ORIGIN=https://example.com
 
 **Symptom of a broken BFF proxy:** `POST /api/auth/login` → `405`, or `GET /api/auth/me` returns HTML (`index.html`, ~1KB) with status 200. Then nginx is not forwarding to the BFF — check `STRIP_PREFIX` / edge strip vs. `VUE_APP_BFF_BASE_URL=/admin/api`.
 
+### Multi-URL / `PUBLIC_ORIGIN` allowlist
+
+- Comma-separated origins; `PUBLIC_ORIGIN` and `PUBLIC_ORIGINS` are **merged** (not overridden).
+- Request host (via `X-Forwarded-Host` / `Host` + `X-Forwarded-Proto`) must be on the allowlist; SSO `redirect_uri` follows that host and is stored in the PKCE session for the callback.
+- Edge must set `Host` / `X-Forwarded-Host` and `X-Forwarded-Proto` (see nginx sketch above). Expose the BFF **only** through the edge.
+- IDN: use Unicode **or** Punycode consistently in env values.
+- Sessions are **per hostname** (host-only cookies). No shared login across unrelated domains.
+- **Storefront:** if the Storefront BFF still has a single fixed `PUBLIC_ORIGIN`, shared session on additional hostnames needs a follow-up in that repo.
+
 ### Keycloak (BFF SSO)
 
-Valid redirect URIs must include:
+For **each** allowlisted origin, Valid redirect URIs must include:
 
-- `https://example.com/admin/api/auth/sso/callback`
-- Storefront callback (existing), e.g. `https://example.com/api/auth/sso/callback`
+- `{origin}/admin/api/auth/sso/callback` (Admin)
+- Storefront callback (existing), e.g. `{origin}/api/auth/sso/callback`
 
-Web origins: `https://example.com`.
+Also register matching Web origins and post-logout redirect URIs (`{origin}/admin/login`, …).
 
 ## Expected behaviour
 

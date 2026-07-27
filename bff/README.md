@@ -67,7 +67,7 @@ Then point the UI container at it with:
 | `BFF_PUBLIC_PATH` | `VUE_APP_BFF_BASE_URL` | for SSO | Browser-facing BFF prefix (e.g. `/admin/api` or `/api`) |
 | `ADMIN_SPA_BASE_PATH` | `BASE_URL` | for SSO | SPA base for post-login redirects (`/admin` or empty) |
 | `COOKIE_SECURE` | `VUE_APP_IS_PRODUCTION` | no | Cookie `Secure` flag (else `NODE_ENV=production`) |
-| `PUBLIC_ORIGIN` | same | recommended in prod | Browser origin; CSRF Origin check + OIDC `redirect_uri` |
+| `PUBLIC_ORIGIN` / `PUBLIC_ORIGINS` | same | recommended in prod | Comma-separated browser origin allowlist; CSRF + OIDC. Both vars are **merged** (no override). Set-but-invalid → BFF refuses to start. |
 | `PORT` | — | no | Default `3001` |
 | `NODE_ENV` | — | no | `production` → secure cookies when no override |
 | `CORS_ORIGINS` | — | no | Comma-separated origins for credentialed CORS (dev) |
@@ -76,7 +76,8 @@ Then point the UI container at it with:
 
 - Session cookies: `access-token` and `refresh-token` are `HttpOnly` + `SameSite=lax` (+ `Secure` in production)
 - `auth-type` is readable (not HttpOnly) and may be omitted for local/card sessions — see `src/cookieContract.js`
-- When `PUBLIC_ORIGIN` is set, mutating requests with an `Origin`/`Referer` must match that origin (`src/csrf.js`)
+- When `PUBLIC_ORIGIN` / `PUBLIC_ORIGINS` is set, mutating requests with an `Origin`/`Referer` must match the **current** request origin (derived host must be allowlisted) (`src/csrf.js`)
+- OIDC `redirect_uri` is taken from the request host when allowlisted, stored in the PKCE session, and reused on callback (not re-derived from headers)
 - Details: [docs/bff-hardening.md](../docs/bff-hardening.md)
 
 ## Vue opt-in
@@ -90,6 +91,12 @@ VUE_APP_BFF_BASE_URL=/api
 PUBLIC_ORIGIN=http://localhost:8080
 ```
 
+Multiple public hostnames (custom domain + system default):
+
+```bash
+PUBLIC_ORIGIN=https://booking.kunde.de,https://booking.system.example.com
+```
+
 Then run the BFF (`npm run bff:dev` from repo root) and `npm run serve` — no separate `bff/.env` needed.
 
 ## Shared session with Storefront
@@ -98,15 +105,20 @@ When Admin (`/admin`) and Storefront (`/`) share one origin, both BFFs set the s
 
 ## Keycloak setup
 
-Register the BFF callback URL on the Keycloak public client, e.g.:
+Register the BFF callback URL on the Keycloak public client **for each** browser origin, e.g.:
 
 - Local: `http://localhost:8080/api/auth/sso/callback` (when `BFF_PUBLIC_PATH=/api`)
 - Shared origin: `https://example.com/admin/api/auth/sso/callback` (`BFF_PUBLIC_PATH=/admin/api`)
+- Multi-URL: one callback (+ web origin + post-logout redirect) per entry in `PUBLIC_ORIGIN`
 
 Set in the root `.env` (or BFF aliases):
 
 - `VUE_APP_BFF_BASE_URL` / `BFF_PUBLIC_PATH` — browser-facing BFF prefix
-- `PUBLIC_ORIGIN` — browser origin, e.g. `http://localhost:8080` (needed behind the vue-cli proxy so `redirect_uri` is not built with the BFF port)
+- `PUBLIC_ORIGIN` — comma-separated browser origins (needed behind the vue-cli proxy so `redirect_uri` is not built with the BFF port). Edge must forward `Host` / `X-Forwarded-Host` and `X-Forwarded-Proto`. Keep the BFF reachable only via the edge (not directly from the public internet).
+
+IDN custom domains: put env values consistently in Unicode **or** Punycode — mixing fails the allowlist match (`URL.origin` normalizes to Punycode).
+
+**Storefront note:** Admin multi-origin support does not automatically fix the Storefront BFF if it still uses a single `PUBLIC_ORIGIN`. Shared session on a second hostname needs a matching Storefront change (separate repo).
 
 PKCE state is kept in an in-memory store (plus cookies as fallback) so the Keycloak round-trip still works if the dev proxy drops `Set-Cookie` on 302 responses.
 

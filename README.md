@@ -381,7 +381,7 @@ docker run -d \
 
 | Extra BFF env | Purpose |
 |---------------|---------|
-| `PUBLIC_ORIGIN` | Browser origin (OIDC redirect + CSRF Origin check) |
+| `PUBLIC_ORIGIN` / `PUBLIC_ORIGINS` | Comma-separated browser origin allowlist (OIDC redirect + CSRF); both merged |
 | `API_BASE_URL` | Backend for BFF (defaults to `VUE_APP_SERVER_BASE_URL`) |
 | `ADMIN_BFF_ENABLED=false` | Force Direct process layout even if you only want SPA flags differently |
 | `ADMIN_BFF_UPSTREAM` | Point nginx at an **external** BFF instead of the embedded one |
