@@ -7,6 +7,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+## [4.2.2] — 2026-07-27
+
 ### Fixed
 
 - BFF CSRF behind TLS-terminating proxies (e.g. Coolify): map derived `http` host to allowlisted `https` origin by hostname; container nginx preserves edge `X-Forwarded-Proto` / `X-Forwarded-Host` when proxying to the embedded BFF
