@@ -7,6 +7,14 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Added
+
+- Mail Theme Wizard: rich-text editor for header and footer (links, horizontal rule, image by HTTPS URL with width and alt text for blocked images, font size, line height)
+
+### Changed
+
+- Generic mail template footer styling is left-aligned with darker text for longer signatures
+
 ## [4.2.2] — 2026-07-27
 
 ### Fixed
