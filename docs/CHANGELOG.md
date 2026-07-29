@@ -9,6 +9,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+- BFF mode: opening `/register` (and other public auth pages) no longer hard-redirects to login after a cold `/auth/me` 401
 - Mail snippet editor: visual edits in intro or closing section no longer overwrite the other section's expert HTML
 - Mailto link dialog: bare `mailto:` (empty recipient) is rejected instead of being applied
 - Mail theme image insert: only HTTPS URLs are accepted

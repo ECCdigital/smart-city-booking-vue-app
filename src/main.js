@@ -13,6 +13,8 @@ import { isBffAuthMode } from "@/services/auth/authMode";
 import {
   endAdminSession,
   isAdminLoginPath,
+  isPublicAuthPath,
+  pathLikelyRequiresAuth,
   subscribeSessionEnded,
 } from "@/services/auth/sessionSync";
 import "vuetify/dist/vuetify.min.css";
@@ -57,9 +59,12 @@ async function bootstrap() {
   }
 
   const isLoginRoute = isAdminLoginPath();
+  const isPublicRoute = isPublicAuthPath();
 
   if (isBffAuthMode()) {
-    if (!isLoginRoute) {
+    // Skip cookie restore on public auth pages — a cold /auth/me 401 must not
+    // bounce /register (and similar) to login via the response interceptor.
+    if (!isPublicRoute) {
       const restoreResult = await restoreBffSession();
       // Silent SSO only for cold visits — not after an expired/invalid cookie session
       if (
@@ -114,42 +119,12 @@ async function restoreBffSession() {
   }
 
   // Protected entry (e.g. /dashboard) without a valid cookie → login
-  if (!isAdminLoginPath() && pathLikelyRequiresAuth(window.location.pathname)) {
+  if (pathLikelyRequiresAuth(window.location.pathname)) {
     await endAdminSession({ redirect: true });
     return "ended";
   }
 
   return "none";
-}
-
-/** Strip router publicPath / BASE_URL so public-route checks match app paths. */
-function stripBasePath(pathname = "") {
-  const path = pathname || "";
-  const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
-  if (base && base !== "/" && path.startsWith(base)) {
-    const stripped = path.slice(base.length);
-    if (!stripped) return "/";
-    return stripped.startsWith("/") ? stripped : `/${stripped}`;
-  }
-  return path;
-}
-
-/** Paths that must not force a login redirect when cookies are absent. */
-function pathLikelyRequiresAuth(pathname = "") {
-  const path = stripBasePath(pathname);
-  const publicPatterns = [
-    /^\/login(?:\/|$)/,
-    /^\/booking\/verify/,
-    /^\/auth\/card/,
-    /^\/password/,
-    /^\/register/,
-    /^\/sso\//,
-  ];
-  if (publicPatterns.some((re) => re.test(path))) {
-    return false;
-  }
-  // "/" home and all admin app routes expect auth when opened directly
-  return true;
 }
 
 function isKeycloakActive() {
@@ -246,7 +221,7 @@ function setupBffSessionWatch() {
 
   const revalidate = async () => {
     if (checking) return;
-    if (isAdminLoginPath()) return;
+    if (isPublicAuthPath()) return;
     if (!hasClientSession()) return;
 
     checking = true;

@@ -24,8 +24,52 @@ function getChannel() {
   return channel;
 }
 
+/** Strip router publicPath / BASE_URL so public-route checks match app paths. */
+export function stripBasePath(pathname = "") {
+  const path = pathname || "";
+  const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
+  if (base && base !== "/" && path.startsWith(base)) {
+    const stripped = path.slice(base.length);
+    if (!stripped) return "/";
+    return stripped.startsWith("/") ? stripped : `/${stripped}`;
+  }
+  return path;
+}
+
+/**
+ * Unauthenticated entry paths — must not force a login redirect when cookies
+ * are absent (cold /auth/me 401 during bootstrap).
+ */
+const PUBLIC_AUTH_PATH_PATTERNS = [
+  /^\/login(?:\/|$)/,
+  /^\/register(?:\/|$)/,
+  /^\/welcome(?:\/|$)/,
+  /^\/checkout(?:\/|$)/,
+  /^\/password(?:\/|$)/,
+  /^\/email\/verify(?:\/|$)/,
+  /^\/auth\/invitation(?:\/|$)/,
+  /^\/auth\/card(?:\/|$)/,
+  /^\/booking\//,
+  /^\/payment\/redirection(?:\/|$)/,
+  /^\/sso\//,
+];
+
+export function isPublicAuthPath(pathname = window.location.pathname) {
+  const path = stripBasePath(pathname);
+  return PUBLIC_AUTH_PATH_PATTERNS.some((re) => re.test(path));
+}
+
 export function isAdminLoginPath(pathname = window.location.pathname) {
-  return /\/login(?:\/|$)/.test(pathname || "");
+  return /\/login(?:\/|$)/.test(stripBasePath(pathname) || "");
+}
+
+/** True when a cold open of this path should try cookie session restore. */
+export function pathLikelyRequiresAuth(pathname = "") {
+  if (isPublicAuthPath(pathname)) {
+    return false;
+  }
+  // "/" home and all admin app routes expect auth when opened directly
+  return true;
 }
 
 export function broadcastSessionEnded() {
@@ -60,7 +104,7 @@ export async function endAdminSession({ redirect = true } = {}) {
     }
 
     // Redirect first — do not wait on dynamic imports / store cleanup
-    if (redirect && typeof window !== "undefined" && !isAdminLoginPath()) {
+    if (redirect && typeof window !== "undefined" && !isPublicAuthPath()) {
       const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
       window.location.replace(`${base}/login`);
     }
