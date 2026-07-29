@@ -7,6 +7,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Fixed
+
+- BFF mode: local/card registration and password reset no longer hang (BFF owns `/auth/signup`, `/auth/card/signup`, `/auth/reset`, `/auth/resetpassword` instead of proxying after the body was consumed)
+
 ## [4.2.3] — 2026-07-29
 
 ### Fixed
