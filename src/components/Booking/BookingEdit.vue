@@ -1095,6 +1095,33 @@ export default {
         (v) => v?.status === "warning"
       );
     },
+    hasScheduleChanges() {
+      if (this.isCreateMode) return true;
+      if (!this.originalSnapshot || !this.editableBooking) return false;
+
+      const original = JSON.parse(this.originalSnapshot).booking;
+      if (
+        original.timeBegin !== this.selectedBooking.timeBegin ||
+        original.timeEnd !== this.selectedBooking.timeEnd
+      ) {
+        return true;
+      }
+
+      const normalizeItems = (items) =>
+        (items || [])
+          .map((item) => ({
+            bookableId: item.bookableId,
+            amount: item.amount,
+          }))
+          .sort((a, b) =>
+            String(a.bookableId).localeCompare(String(b.bookableId))
+          );
+
+      return !_.isEqual(
+        normalizeItems(original.bookableItems),
+        normalizeItems(this.bookableItems)
+      );
+    },
     calendarBookableItem() {
       return this.bookableItems.find((item) => {
         const bookable = item._bookableUsed;
@@ -1457,7 +1484,15 @@ export default {
         this.validateAllBookableItems();
       }, 500);
     },
+    clearItemValidations() {
+      this.itemValidations = {};
+    },
     async validateAllBookableItems() {
+      if (!this.isCreateMode && !this.hasScheduleChanges) {
+        this.clearItemValidations();
+        return;
+      }
+
       for (const item of this.bookableItems) {
         await this.validateBookableItem(item);
       }
@@ -1488,6 +1523,11 @@ export default {
         bookable: bookableItem._bookableUsed,
       };
 
+      const excludeBookingIds =
+        !this.isCreateMode && this.selectedBooking.id
+          ? [this.selectedBooking.id]
+          : undefined;
+
       try {
         const response = await ApiCheckoutService.validateCheckoutItem(
           this.selectedBooking.tenantId,
@@ -1496,7 +1536,8 @@ export default {
           this.selectedBooking.timeEnd,
           null,
           false,
-          this.checkoutId
+          this.checkoutId,
+          excludeBookingIds
         );
 
         if (response.data?.checkoutId) {
@@ -2099,8 +2140,8 @@ export default {
         this.groupBooking.internalComments ?? null;
     }
     await this.loadAllExternalPrices();
-    this.scheduleItemValidation();
     this.updateSnapshot();
+    this.scheduleItemValidation();
   },
   beforeDestroy() {
     if (this.validateTimer) {
