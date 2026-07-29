@@ -14,6 +14,12 @@ export const SNIPPET_KEYS = [
   "supervisor-booking-notification",
 ];
 
+export const AFTER_SNIPPET_SUFFIX = "__after";
+
+export function afterSnippetKey(key) {
+  return `${key}${AFTER_SNIPPET_SUFFIX}`;
+}
+
 
 function v(name, label) {
   return (

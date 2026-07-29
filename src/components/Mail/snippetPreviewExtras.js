@@ -110,9 +110,20 @@ function buttonsBlock({ showPayment, showStorno }) {
   );
 }
 
-export function buildSnippetPreviewExtrasHtml(key) {
+function systemFooterBlock() {
+  return (
+    "<p style=\"margin-top:18px; color:#555555; font-size:14px;\">" +
+    "Fragen? Kontaktieren Sie uns unter " +
+    `<a href="mailto:support@beispiel.de" style="${STYLES.link}">support@beispiel.de</a>.` +
+    "</p>"
+  );
+}
+
+export function buildSnippetPreviewExtrasHtml(key, options = {}) {
   const cfg = EXTRAS_CONFIG[key];
   if (!cfg) return "";
+
+  const showSupportFooter = options.showSupportFooter !== false;
 
   const sections = [
     reasonBlock(cfg.reason),
@@ -123,6 +134,7 @@ export function buildSnippetPreviewExtrasHtml(key) {
       showPayment: !!cfg.showPayment,
       showStorno: !!cfg.showStorno,
     }),
+    showSupportFooter ? systemFooterBlock() : "",
   ].filter(Boolean);
 
   if (!sections.length) return "";

@@ -9,6 +9,9 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
+- Mail snippets: optional closing content (`{snippetKey}__after`) after booking details, buttons, QR, and system footer; combined visual editor shows intro, mocked system block, and closing section in one canvas
+- Tenant setting to show/hide the automatic support-contact system footer in booking mails
+- Mail text editor: E-Mail-Link dialog for arbitrary mailto targets with embedded Handlebars variables (plus button property shortcut)
 - Mail Theme Wizard: rich-text editor for header and footer (links, horizontal rule, image by HTTPS URL with width and alt text for blocked images, font size, line height)
 
 ### Changed

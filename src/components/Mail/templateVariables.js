@@ -37,6 +37,22 @@ export const SNIPPET_VARIABLES = [
   },
 ];
 
+/** Mailto href using the supportEmail Handlebars variable (for editor links). */
+export const SUPPORT_EMAIL_MAILTO = "mailto:{{supportEmail}}";
+
+export function toMailtoHref(addressOrMailto) {
+  const raw = String(addressOrMailto || "").trim();
+  if (!raw) return "";
+  if (/^mailto:/i.test(raw)) return raw;
+  return `mailto:${raw}`;
+}
+
+export function mailtoAddressFromHref(href) {
+  const raw = String(href || "").trim();
+  if (/^mailto:/i.test(raw)) return raw.replace(/^mailto:/i, "");
+  return raw;
+}
+
 export const BOOKING_CANCEL_SNIPPET_VARIABLES = [
   {
     name: "hasRefundPreview",
@@ -570,88 +586,88 @@ const SAMPLE_INVOICE_ADDRESS =
 const SAMPLE_BOOKING_ENTRIES =
   "<p>Buchungsnummer: BK-987654 <br/>Buchungszeitraum: 21.05.2026, 10:00 – 21.05.2026, 12:00</p>\n" +
   "<p>Zahlungsdatum: 20.05.2026, 14:32<br/>Zahlungsmethode: Kreditkarte</p>\n" +
-  '<table class="booking-detail" style="width:100%; border-collapse: collapse;">\n' +
+  "<table class=\"booking-detail\" style=\"width:100%; border-collapse: collapse;\">\n" +
   "  <thead>\n" +
-  '    <tr style="background:#eee; border-bottom:1px solid #ddd;">\n' +
-  '      <th class="bi-title">Beschreibung</th>\n' +
-  '      <th class="bi-amount">Anzahl</th>\n' +
-  '      <th class="bi-price-item">Einzelpreis</th>\n' +
-  '      <th class="bi-price-total">Gesamtpreis</th>\n' +
+  "    <tr style=\"background:#eee; border-bottom:1px solid #ddd;\">\n" +
+  "      <th class=\"bi-title\">Beschreibung</th>\n" +
+  "      <th class=\"bi-amount\">Anzahl</th>\n" +
+  "      <th class=\"bi-price-item\">Einzelpreis</th>\n" +
+  "      <th class=\"bi-price-total\">Gesamtpreis</th>\n" +
   "    </tr>\n" +
   "  </thead>\n" +
   "  <tbody>\n" +
-  '    <tr style="border-bottom:1px solid #eee;">\n' +
-  '      <td class="bi-title">Tagungsraum Klein</td>\n' +
-  '      <td class="bi-amount">1</td>\n' +
-  '      <td class="bi-price-item">120,00 €</td>\n' +
-  '      <td class="bi-price-total">120,00 €</td>\n' +
+  "    <tr style=\"border-bottom:1px solid #eee;\">\n" +
+  "      <td class=\"bi-title\">Tagungsraum Klein</td>\n" +
+  "      <td class=\"bi-amount\">1</td>\n" +
+  "      <td class=\"bi-price-item\">120,00 €</td>\n" +
+  "      <td class=\"bi-price-total\">120,00 €</td>\n" +
   "    </tr>\n" +
-  '    <tr class="netto" style="border-bottom:1px solid #eee;">\n' +
-  '      <td colspan="3">Gesamt (netto)</td><td>100,84 €</td>\n' +
+  "    <tr class=\"netto\" style=\"border-bottom:1px solid #eee;\">\n" +
+  "      <td colspan=\"3\">Gesamt (netto)</td><td>100,84 €</td>\n" +
   "    </tr>\n" +
-  '    <tr class="mwst" style="border-bottom:1px solid #eee;">\n' +
-  '      <td colspan="3">zzgl. MwSt.</td><td>19,16 €</td>\n' +
+  "    <tr class=\"mwst\" style=\"border-bottom:1px solid #eee;\">\n" +
+  "      <td colspan=\"3\">zzgl. MwSt.</td><td>19,16 €</td>\n" +
   "    </tr>\n" +
-  '    <tr class="brutto" style="font-weight:bold;">\n' +
-  '      <td colspan="3">Gesamt (brutto)</td><td>120,00 €</td>\n' +
+  "    <tr class=\"brutto\" style=\"font-weight:bold;\">\n" +
+  "      <td colspan=\"3\">Gesamt (brutto)</td><td>120,00 €</td>\n" +
   "    </tr>\n" +
   "  </tbody>\n" +
   "</table>";
 
 const SAMPLE_INVOICE_MAIN_CONTENT =
-  '<table class="booked-items" style="width:100%; border-collapse: collapse;">\n' +
+  "<table class=\"booked-items\" style=\"width:100%; border-collapse: collapse;\">\n" +
   "  <thead>\n" +
-  '    <tr style="background:#eee; border-bottom:1px solid #ddd;">\n' +
-  '      <th class="bi-title">Beschreibung</th>\n' +
-  '      <th class="bi-amount">Anzahl</th>\n' +
-  '      <th class="bi-price-item">Einzelpreis</th>\n' +
-  '      <th class="bi-price-total">Gesamtpreis</th>\n' +
+  "    <tr style=\"background:#eee; border-bottom:1px solid #ddd;\">\n" +
+  "      <th class=\"bi-title\">Beschreibung</th>\n" +
+  "      <th class=\"bi-amount\">Anzahl</th>\n" +
+  "      <th class=\"bi-price-item\">Einzelpreis</th>\n" +
+  "      <th class=\"bi-price-total\">Gesamtpreis</th>\n" +
   "    </tr>\n" +
   "  </thead>\n" +
   "  <tbody>\n" +
-  '    <tr style="border-bottom:1px solid #eee;">\n' +
-  '      <td class="bi-title">Tagungsraum Klein</td>\n' +
-  '      <td class="bi-amount">1</td>\n' +
-  '      <td class="bi-price-item">120,00 €</td>\n' +
-  '      <td class="bi-price-total">120,00 €</td>\n' +
+  "    <tr style=\"border-bottom:1px solid #eee;\">\n" +
+  "      <td class=\"bi-title\">Tagungsraum Klein</td>\n" +
+  "      <td class=\"bi-amount\">1</td>\n" +
+  "      <td class=\"bi-price-item\">120,00 €</td>\n" +
+  "      <td class=\"bi-price-total\">120,00 €</td>\n" +
   "    </tr>\n" +
-  '    <tr class="netto" style="border-bottom:1px solid #eee;">\n' +
-  '      <td colspan="3">Gesamt (netto)</td><td>100,84 €</td>\n' +
+  "    <tr class=\"netto\" style=\"border-bottom:1px solid #eee;\">\n" +
+  "      <td colspan=\"3\">Gesamt (netto)</td><td>100,84 €</td>\n" +
   "    </tr>\n" +
-  '    <tr class="mwst" style="border-bottom:1px solid #eee;">\n' +
-  '      <td colspan="3">zzgl. MwSt.</td><td>19,16 €</td>\n' +
+  "    <tr class=\"mwst\" style=\"border-bottom:1px solid #eee;\">\n" +
+  "      <td colspan=\"3\">zzgl. MwSt.</td><td>19,16 €</td>\n" +
   "    </tr>\n" +
-  '    <tr class="brutto" style="font-weight:bold;">\n' +
-  '      <td colspan="3">Gesamt (brutto)</td><td>120,00 €</td>\n' +
+  "    <tr class=\"brutto\" style=\"font-weight:bold;\">\n" +
+  "      <td colspan=\"3\">Gesamt (brutto)</td><td>120,00 €</td>\n" +
   "    </tr>\n" +
   "  </tbody>\n" +
   "</table>";
 
 const SAMPLE_CANCELLATION_MAIN_CONTENT =
-  '<table class="booked-items" style="width:100%; border-collapse: collapse;">\n' +
+  "<table class=\"booked-items\" style=\"width:100%; border-collapse: collapse;\">\n" +
   "  <thead>\n" +
-  '    <tr style="background:#eee; border-bottom:1px solid #ddd;">\n' +
-  '      <th class="bi-title">Beschreibung</th>\n' +
-  '      <th class="bi-amount">Anzahl</th>\n' +
-  '      <th class="bi-price-item">Einzelpreis</th>\n' +
-  '      <th class="bi-price-total">Gesamtpreis</th>\n' +
+  "    <tr style=\"background:#eee; border-bottom:1px solid #ddd;\">\n" +
+  "      <th class=\"bi-title\">Beschreibung</th>\n" +
+  "      <th class=\"bi-amount\">Anzahl</th>\n" +
+  "      <th class=\"bi-price-item\">Einzelpreis</th>\n" +
+  "      <th class=\"bi-price-total\">Gesamtpreis</th>\n" +
   "    </tr>\n" +
   "  </thead>\n" +
   "  <tbody>\n" +
-  '    <tr style="border-bottom:1px solid #eee;">\n' +
-  '      <td class="bi-title">Tagungsraum Klein</td>\n' +
-  '      <td class="bi-amount">1</td>\n' +
-  '      <td class="bi-price-item">-120,00 €</td>\n' +
-  '      <td class="bi-price-total">-120,00 €</td>\n' +
+  "    <tr style=\"border-bottom:1px solid #eee;\">\n" +
+  "      <td class=\"bi-title\">Tagungsraum Klein</td>\n" +
+  "      <td class=\"bi-amount\">1</td>\n" +
+  "      <td class=\"bi-price-item\">-120,00 €</td>\n" +
+  "      <td class=\"bi-price-total\">-120,00 €</td>\n" +
   "    </tr>\n" +
-  '    <tr class="netto" style="border-bottom:1px solid #eee;">\n' +
-  '      <td colspan="3">Gesamt (netto)</td><td>-100,84 €</td>\n' +
+  "    <tr class=\"netto\" style=\"border-bottom:1px solid #eee;\">\n" +
+  "      <td colspan=\"3\">Gesamt (netto)</td><td>-100,84 €</td>\n" +
   "    </tr>\n" +
-  '    <tr class="mwst" style="border-bottom:1px solid #eee;">\n' +
-  '      <td colspan="3">zzgl. MwSt.</td><td>-19,16 €</td>\n' +
+  "    <tr class=\"mwst\" style=\"border-bottom:1px solid #eee;\">\n" +
+  "      <td colspan=\"3\">zzgl. MwSt.</td><td>-19,16 €</td>\n" +
   "    </tr>\n" +
-  '    <tr class="brutto" style="font-weight:bold;">\n' +
-  '      <td colspan="3">Gesamt (brutto)</td><td>-120,00 €</td>\n' +
+  "    <tr class=\"brutto\" style=\"font-weight:bold;\">\n" +
+  "      <td colspan=\"3\">Gesamt (brutto)</td><td>-120,00 €</td>\n" +
   "    </tr>\n" +
   "  </tbody>\n" +
   "</table>";
@@ -864,7 +880,7 @@ export const SAMPLE_DATA = {
     invoiceAddress: SAMPLE_INVOICE_ADDRESS,
     mainContent: SAMPLE_CANCELLATION_MAIN_CONTENT,
     customerBankDetails:
-      '<div class="information customer-bank-details">\n' +
+      "<div class=\"information customer-bank-details\">\n" +
       "        <strong>Bankverbindung für die Rückerstattung:</strong><br />\n" +
       "        Kontoinhaber: Max Mustermann<br />\n" +
       "        Sparkasse Musterstadt<br />\n" +
@@ -881,18 +897,18 @@ export const SAMPLE_DATA = {
 
 export function getVariablesForContext(context) {
   switch (context) {
-    case "snippet":
-      return SNIPPET_VARIABLES;
-    case "genericMail":
-      return GENERIC_MAIL_VARIABLES;
-    case "receipt":
-      return RECEIPT_VARIABLES;
-    case "invoice":
-      return INVOICE_VARIABLES;
-    case "cancellation":
-      return CANCELLATION_VARIABLES;
-    default:
-      return [];
+  case "snippet":
+    return SNIPPET_VARIABLES;
+  case "genericMail":
+    return GENERIC_MAIL_VARIABLES;
+  case "receipt":
+    return RECEIPT_VARIABLES;
+  case "invoice":
+    return INVOICE_VARIABLES;
+  case "cancellation":
+    return CANCELLATION_VARIABLES;
+  default:
+    return [];
   }
 }
 
