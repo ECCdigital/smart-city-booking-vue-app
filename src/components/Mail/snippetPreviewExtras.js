@@ -14,7 +14,7 @@ const SAMPLE = {
 };
 
 const STYLES = {
-  section: "margin-top:16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color:#222222; font-size:16px; line-height:1.5;",
+  section: "margin-top:16px; font-family:inherit; color:#222222; font-size:16px; line-height:1.5;",
   hint: "background:#fff4e5; border-left:4px solid #ed6c02; color:#7a3c00; padding:10px 14px; border-radius:2px; margin-bottom:16px;",
   details: "margin:12px 0;",
   contact: "margin:12px 0;",
@@ -110,9 +110,20 @@ function buttonsBlock({ showPayment, showStorno }) {
   );
 }
 
-export function buildSnippetPreviewExtrasHtml(key) {
+function systemFooterBlock() {
+  return (
+    "<p style=\"margin-top:18px; color:#555555; font-size:14px;\">" +
+    "Fragen? Kontaktieren Sie uns unter " +
+    `<a href="mailto:support@beispiel.de" style="${STYLES.link}">support@beispiel.de</a>.` +
+    "</p>"
+  );
+}
+
+export function buildSnippetPreviewExtrasHtml(key, options = {}) {
   const cfg = EXTRAS_CONFIG[key];
   if (!cfg) return "";
+
+  const showSupportFooter = options.showSupportFooter !== false;
 
   const sections = [
     reasonBlock(cfg.reason),
@@ -123,6 +134,7 @@ export function buildSnippetPreviewExtrasHtml(key) {
       showPayment: !!cfg.showPayment,
       showStorno: !!cfg.showStorno,
     }),
+    showSupportFooter ? systemFooterBlock() : "",
   ].filter(Boolean);
 
   if (!sections.length) return "";

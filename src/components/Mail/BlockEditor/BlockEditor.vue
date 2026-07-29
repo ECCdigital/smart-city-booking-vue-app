@@ -44,6 +44,7 @@
       <v-col cols="12" md="3" class="pl-md-2">
         <BlockPropertiesPanel
           :selected-block="selectedBlock"
+          :variables="variables"
           @update="onUpdateSelected"
         />
       </v-col>

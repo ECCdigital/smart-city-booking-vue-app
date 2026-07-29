@@ -26,15 +26,25 @@
     <BaseSection
       title="E-Mail-Inhalte (Text & Betreff pro E-Mail)"
       icon="mdi-text-box-edit-outline"
-      hint="Pro Mail-Typ lassen sich der Betreff (Subject) und der Mail-Body individuell anpassen. Strukturelle Bestandteile wie Buchungsdetails, Buttons und Footer werden automatisch ergänzt."
+      hint="Pro Mail-Typ lassen sich Betreff, Einleitung (vor den Buchungsdetails) und optional ein Abschluss (nach Buttons, QR und System-Footer) anpassen. Strukturelle Bestandteile wie Buchungsdetails, Buttons und Footer werden automatisch ergänzt."
       class="mt-6"
     >
+      <v-switch
+        :input-value="mailShowSupportFooter"
+        color="primary"
+        class="mt-0 mb-4"
+        label="System-Footer mit Support-Kontakt anzeigen"
+        hint="Blendet den automatischen Hinweis „Falls Sie Fragen haben … kontaktieren“ ein oder aus. In eigenen Texten kannst du supportEmail weiterhin als Variable nutzen."
+        persistent-hint
+        @change="onSupportFooterChange"
+      />
       <SnippetList
         :mail-snippets="tenant.mailSnippets || {}"
         :mail-subjects="tenant.mailSubjects || {}"
         :default-mail-snippets="defaultMailSnippets"
         :layout-template="tenant.genericMailTemplate || ''"
         :tenant-name="tenant.name || ''"
+        :show-support-footer="mailShowSupportFooter"
         @update="updateMailOverrides"
       />
     </BaseSection>
@@ -88,6 +98,9 @@ export default {
         noreplyGraphClientSecret: t.noreplyGraphClientSecret,
       };
     },
+    mailShowSupportFooter() {
+      return this.tenant.mailShowSupportFooter !== false;
+    },
   },
   methods: {
     async fetchDefaultMailTemplates() {
@@ -102,6 +115,12 @@ export default {
     },
     updateMailConfig(cfg) {
       this.model = { ...this.tenant, ...cfg };
+    },
+    onSupportFooterChange(value) {
+      this.model = {
+        ...this.tenant,
+        mailShowSupportFooter: !!value,
+      };
     },
     updateMailOverrides({ mailSnippets, mailSubjects }) {
       this.model = {

@@ -37,6 +37,7 @@ class Tenant {
     users,
     mailSnippets,
     mailSubjects,
+    mailShowSupportFooter,
   }) {
     this.id = id;
     this.name = name;
@@ -75,6 +76,8 @@ class Tenant {
     this.users = users || [];
     this.mailSnippets = mailSnippets || {};
     this.mailSubjects = mailSubjects || {};
+    this.mailShowSupportFooter =
+      mailShowSupportFooter === undefined ? true : !!mailShowSupportFooter;
   }
 }
 

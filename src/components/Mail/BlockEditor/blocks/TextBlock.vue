@@ -38,9 +38,51 @@
           <v-icon x-small>mdi-format-list-numbered</v-icon>
         </v-btn>
       </v-btn-toggle>
-      <v-btn x-small @click.stop="onPromptLink">
-        <v-icon x-small>mdi-link</v-icon>
-      </v-btn>
+      <v-menu offset-y>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            x-small
+            v-bind="attrs"
+            v-on="on"
+            :class="{ 'primary white--text': editor.isActive('link') }"
+            title="Link einfügen"
+          >
+            <v-icon x-small>mdi-link</v-icon>
+            <v-icon x-small class="ml-n1">mdi-menu-down</v-icon>
+          </v-btn>
+        </template>
+        <v-list dense>
+          <v-list-item @click="onPromptLink">
+            <v-list-item-icon class="mr-2">
+              <v-icon small>mdi-link-variant</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content>
+              <v-list-item-title>URL-Link…</v-list-item-title>
+              <v-list-item-subtitle>https://…</v-list-item-subtitle>
+            </v-list-item-content>
+          </v-list-item>
+          <v-list-item @click="openMailtoDialog">
+            <v-list-item-icon class="mr-2">
+              <v-icon small>mdi-email-outline</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content>
+              <v-list-item-title>E-Mail-Link…</v-list-item-title>
+              <v-list-item-subtitle>
+                mailto mit Variablen
+              </v-list-item-subtitle>
+            </v-list-item-content>
+          </v-list-item>
+          <v-divider v-if="editor.isActive('link')" />
+          <v-list-item v-if="editor.isActive('link')" @click="onUnsetLink">
+            <v-list-item-icon class="mr-2">
+              <v-icon small>mdi-link-off</v-icon>
+            </v-list-item-icon>
+            <v-list-item-content>
+              <v-list-item-title>Link entfernen</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+        </v-list>
+      </v-menu>
       <v-menu
         offset-y
         v-if="variables.length"
@@ -77,6 +119,16 @@
       </v-menu>
     </div>
     <editor-content :editor="editor" class="text-block-content" />
+
+    <MailtoLinkDialog
+      :open="mailtoDialogOpen"
+      :variables="variables"
+      :initial-href="mailtoInitialHref"
+      :initial-link-text="mailtoInitialLinkText"
+      :show-link-text="mailtoNeedsLinkText"
+      @close="mailtoDialogOpen = false"
+      @apply="onApplyMailto"
+    />
   </div>
 </template>
 
@@ -94,16 +146,24 @@ import OrderedList from "@tiptap/extension-ordered-list";
 import ListItem from "@tiptap/extension-list-item";
 import Placeholder from "@tiptap/extension-placeholder";
 import VariableMark from "@/components/Mail/BlockEditor/extensions/VariableMark.js";
+import MailtoLinkDialog from "@/components/Mail/BlockEditor/MailtoLinkDialog.vue";
+import { SUPPORT_EMAIL_MAILTO } from "@/components/Mail/templateVariables.js";
 
 export default {
   name: "TextBlock",
-  components: { EditorContent },
+  components: { EditorContent, MailtoLinkDialog },
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },
     selected: { type: Boolean, default: false },
   },
-  data: () => ({ editor: null }),
+  data: () => ({
+    editor: null,
+    mailtoDialogOpen: false,
+    mailtoInitialHref: SUPPORT_EMAIL_MAILTO,
+    mailtoInitialLinkText: "kontaktieren",
+    mailtoNeedsLinkText: true,
+  }),
   mounted() {
     this.editor = new Editor({
       content: this.block.html || "<p></p>",
@@ -116,7 +176,6 @@ export default {
         Link.configure({
           openOnClick: false,
           HTMLAttributes: {
-            target: "_blank",
             rel: "noopener",
           },
         }),
@@ -148,16 +207,12 @@ export default {
       const simpleMatch = placeholder.match(/^\{\{\{?\s*([\w.]+)\s*\}?\}\}$/);
       if (simpleMatch) {
         const triple = placeholder.startsWith("{{{");
-        // Pfad aus dem Placeholder verwenden (z. B. "booking.id"), nicht den
-        // Variablen-Namen – sonst rendert {{booking}} als [object Object].
         this.editor.commands.insertMailVariable(simpleMatch[1], {
           triple,
           label: v.label || v.name,
         });
         return;
       }
-      // Block-Ausdrücke ({{#if}}/{{#each}} …) als editierbaren Text einfügen,
-      // damit die Inhalte der Zweige angepasst werden können.
       if (/^\{\{[#^]/.test(placeholder.trim())) {
         this.editor
           .chain()
@@ -169,22 +224,71 @@ export default {
           .run();
         return;
       }
-      // Atomare komplexe Platzhalter (Helper, Partials) als Chip mit
-      // vollständigem Ausdruck einfügen.
       this.editor.commands.insertMailVariable(v.name, {
         label: v.label || v.name,
         expr: placeholder,
       });
     },
     onPromptLink() {
-      const url = window.prompt("Link-URL eingeben (https://...)", "https://");
-      if (!url) return;
+      const previous = this.editor.getAttributes("link").href || "https://";
+      const url = window.prompt("Link-URL eingeben (https://…)", previous);
+      if (url === null) return;
+      if (url === "") {
+        this.onUnsetLink();
+        return;
+      }
+      const isMailOrTel = /^(mailto|tel):/i.test(url.trim());
       this.editor
         .chain()
         .focus()
         .extendMarkRange("link")
-        .setMark("link", { href: url })
+        .setLink({
+          href: url,
+          target: isMailOrTel ? null : "_blank",
+        })
         .run();
+    },
+    openMailtoDialog() {
+      const currentHref = this.editor.getAttributes("link").href || "";
+      const { empty, from, to } = this.editor.state.selection;
+      const selectedText = empty
+        ? ""
+        : this.editor.state.doc.textBetween(from, to, " ");
+      this.mailtoNeedsLinkText = empty;
+      this.mailtoInitialHref = /^mailto:/i.test(currentHref)
+        ? currentHref
+        : SUPPORT_EMAIL_MAILTO;
+      this.mailtoInitialLinkText = selectedText || "kontaktieren";
+      this.mailtoDialogOpen = true;
+    },
+    onApplyMailto({ href, linkText }) {
+      const { empty } = this.editor.state.selection;
+      if (empty) {
+        this.editor
+          .chain()
+          .focus()
+          .insertContent({
+            type: "text",
+            text: linkText || "kontaktieren",
+            marks: [
+              {
+                type: "link",
+                attrs: { href, target: null, rel: "noopener" },
+              },
+            ],
+          })
+          .run();
+        return;
+      }
+      this.editor
+        .chain()
+        .focus()
+        .extendMarkRange("link")
+        .setLink({ href, target: null, rel: "noopener" })
+        .run();
+    },
+    onUnsetLink() {
+      this.editor.chain().focus().extendMarkRange("link").unsetLink().run();
     },
   },
 };
