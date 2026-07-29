@@ -42,7 +42,7 @@ export const SNIPPET_CATALOG = [
     title: "Buchungsbestätigung",
     description: "Bestätigung nach erfolgreicher (kostenpflichtiger) Buchung.",
     icon: "mdi-check-circle-outline",
-    defaultTemplate: `<div style="font-family: sans-serif;">
+    defaultTemplate: `<div style="font-family: inherit;">
   <p>
     Hallo,<br />
     vielen Dank für Ihre Buchung im
@@ -67,7 +67,7 @@ export const SNIPPET_CATALOG = [
     title: "Bestätigung kostenfreier Buchung",
     description: "Bestätigung nach kostenfreier Buchung.",
     icon: "mdi-check-circle-outline",
-    defaultTemplate: `<div style="font-family: sans-serif;">
+    defaultTemplate: `<div style="font-family: inherit;">
   <p>
     Hallo,<br />
     vielen Dank für Ihre kostenfreie Buchung im
@@ -88,7 +88,7 @@ export const SNIPPET_CATALOG = [
     description:
       "Empfangsbestätigung einer Buchungsanfrage (noch nicht freigegeben).",
     icon: "mdi-email-arrow-left-outline",
-    defaultTemplate: `<div style="font-family: sans-serif;">
+    defaultTemplate: `<div style="font-family: inherit;">
   <p>
     Hallo,<br />
     vielen Dank für Ihre Buchungsanfrage im
@@ -277,7 +277,7 @@ export const SNIPPET_CATALOG = [
     description:
       "Information an hinterlegte Empfänger (z. B. Vorgesetzte), wenn ein Mitglied eine Buchung vornimmt.",
     icon: "mdi-bell-ring-outline",
-    defaultTemplate: `<div style="font-family: sans-serif;">
+    defaultTemplate: `<div style="font-family: inherit;">
   <p>
     Hallo,<br />
     ein Mitglied im

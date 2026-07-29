@@ -188,11 +188,13 @@ function commonStyles(theme, options = {}) {
   const primary = theme.primaryColor || "#1976d2";
   const footerAlign = options.footerAlign || "center";
   const footerColor = options.footerColor || "#888";
+  const gutter = getContentGutter(theme);
   return `
     body{margin:0;padding:0;background:${theme.backgroundColor || "#f5f5f5"};font-family:${family};color:${theme.textColor || "#222"};font-size:14px;line-height:1.5;}
     .wrapper{max-width:600px;margin:0 auto;padding:${t.wrapperPaddingY} 0;}
-    .logo{width:${logoMaxWidth}px;max-width:100%;height:auto;display:block;margin-bottom:12px;border:0;outline:none;text-decoration:none;}
-    .footer{text-align:${footerAlign};font-size:12px;color:${footerColor};margin-top:16px;padding:12px 16px 0;${t.footerBorder}}
+    .logo{width:${logoMaxWidth}px;max-width:100%;height:auto;display:block;margin:0 ${gutter} 12px;border:0;outline:none;text-decoration:none;}
+    .header{margin-left:${gutter};margin-right:${gutter};}
+    .footer{text-align:${footerAlign};font-size:12px;color:${footerColor};margin-top:16px;padding:12px ${gutter} 0;${t.footerBorder}}
     .footer img{max-width:100%;height:auto;display:block;margin:8px 0;border:0;outline:none;text-decoration:none;}
     .footer p,.header p{margin:0 0 8px;min-height:1.2em;}
     .footer a{color:${primary};}
@@ -202,6 +204,54 @@ function commonStyles(theme, options = {}) {
     h2{color:${t.h2Color};font-size:${t.h2FontSize};font-weight:${t.h2Weight};${t.h2Extra}}
     h3{color:${t.h3Color};font-size:${t.h3FontSize};font-weight:${t.h3Weight};${t.h3Extra}}
   `;
+}
+
+function getCardPaddingParts(theme) {
+  const raw = String(getPresetTokens(theme).cardPadding || "0").trim();
+  const parts = raw
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length === 0) {
+    return { top: "0", right: "0", bottom: "0", left: "0" };
+  }
+  if (parts.length === 1) {
+    return {
+      top: parts[0],
+      right: parts[0],
+      bottom: parts[0],
+      left: parts[0],
+    };
+  }
+  if (parts.length === 2) {
+    return {
+      top: parts[0],
+      right: parts[1],
+      bottom: parts[0],
+      left: parts[1],
+    };
+  }
+  if (parts.length === 3) {
+    return {
+      top: parts[0],
+      right: parts[1],
+      bottom: parts[2],
+      left: parts[1],
+    };
+  }
+  return {
+    top: parts[0],
+    right: parts[1],
+    bottom: parts[2],
+    left: parts[3],
+  };
+}
+
+/** Horizontal inset shared by card content, header, footer, and logo. */
+function getContentGutter(theme) {
+  const { left, right } = getCardPaddingParts(theme);
+  // Prefer left; fall back to right if asymmetric.
+  return left || right || "0";
 }
 
 function getLogoMaxWidth(theme) {
@@ -241,20 +291,23 @@ function headingStyle(theme) {
 }
 
 function headerBlockStyle(theme) {
-  return getPresetTokens(theme).headerBlock;
+  const gutter = getContentGutter(theme);
+  return `${getPresetTokens(theme).headerBlock}margin-left:${gutter};margin-right:${gutter};`;
 }
 
 function footerStyle(theme, options = {}) {
   const t = getPresetTokens(theme);
   const align = options.align || "center";
   const color = options.color || "#888";
-  return `text-align:${align};font-size:12px;color:${color};margin-top:16px;padding:12px 16px 0;${t.footerBorder}`;
+  const gutter = getContentGutter(theme);
+  return `text-align:${align};font-size:12px;color:${color};margin-top:16px;padding:12px ${gutter} 0;${t.footerBorder}`;
 }
 
 function logoBlock(theme) {
   if (!theme.logoUrl) return "";
   const logoMaxWidth = getLogoMaxWidth(theme);
-  return `<img class="logo" src="${theme.logoUrl}" alt="Logo" width="${logoMaxWidth}" style="width:${logoMaxWidth}px;max-width:100%;height:auto;display:block;margin-bottom:12px;border:0;outline:none;text-decoration:none;">`;
+  const gutter = getContentGutter(theme);
+  return `<img class="logo" src="${theme.logoUrl}" alt="Logo" width="${logoMaxWidth}" style="width:${logoMaxWidth}px;max-width:100%;height:auto;display:block;margin:0 ${gutter} 12px;border:0;outline:none;text-decoration:none;">`;
 }
 
 function headerBlock(theme) {

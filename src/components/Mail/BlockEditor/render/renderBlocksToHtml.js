@@ -6,8 +6,8 @@ const DEFAULTS = {
   buttonBg: "#1976d2",
   buttonColor: "#ffffff",
   dividerColor: "#dddddd",
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+  // Inherit from the tenant mail theme shell so layout and body share one font.
+  fontFamily: "inherit",
 };
 
 function joinStyle(parts) {

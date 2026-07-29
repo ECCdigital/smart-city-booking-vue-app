@@ -14,6 +14,9 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 ### Changed
 
 - Generic mail template footer styling is left-aligned with darker text for longer signatures
+- Align mail theme header/footer/logo horizontal inset with card content padding
+- Mail block/snippet HTML inherits the tenant theme font instead of a hardcoded system stack
+- Mail theme font stacks use single quotes so inline `style` attributes stay valid in HTML emails
 
 ## [4.2.2] — 2026-07-27
 

@@ -14,7 +14,7 @@ const SAMPLE = {
 };
 
 const STYLES = {
-  section: "margin-top:16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color:#222222; font-size:16px; line-height:1.5;",
+  section: "margin-top:16px; font-family:inherit; color:#222222; font-size:16px; line-height:1.5;",
   hint: "background:#fff4e5; border-left:4px solid #ed6c02; color:#7a3c00; padding:10px 14px; border-radius:2px; margin-bottom:16px;",
   details: "margin:12px 0;",
   contact: "margin:12px 0;",
