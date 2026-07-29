@@ -41,10 +41,9 @@ export const SNIPPET_VARIABLES = [
 export const SUPPORT_EMAIL_MAILTO = "mailto:{{supportEmail}}";
 
 export function toMailtoHref(addressOrMailto) {
-  const raw = String(addressOrMailto || "").trim();
-  if (!raw) return "";
-  if (/^mailto:/i.test(raw)) return raw;
-  return `mailto:${raw}`;
+  const address = mailtoAddressFromHref(addressOrMailto);
+  if (!address) return "";
+  return `mailto:${address}`;
 }
 
 export function mailtoAddressFromHref(href) {

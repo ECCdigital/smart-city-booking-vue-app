@@ -464,6 +464,10 @@ export default {
     onPromptImage() {
       const url = window.prompt("Bild-URL eingeben (https://…)", "https://");
       if (!url) return;
+      if (!/^https:\/\//i.test(url.trim())) {
+        window.alert("Bitte eine https://-URL angeben.");
+        return;
+      }
       const altRaw = window.prompt(
         "Alternativtext (sichtbar wenn Bilder blockiert sind)",
         "",

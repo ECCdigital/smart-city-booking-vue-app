@@ -7,6 +7,12 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Mail snippet editor: visual edits in intro or closing section no longer overwrite the other section's expert HTML
+- Mailto link dialog: bare `mailto:` (empty recipient) is rejected instead of being applied
+- Mail theme image insert: only HTTPS URLs are accepted
+
 ### Added
 
 - Mail snippets: optional closing content (`{snippetKey}__after`) after booking details, buttons, QR, and system footer; combined visual editor shows intro, mocked system block, and closing section in one canvas

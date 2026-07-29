@@ -519,11 +519,14 @@ export default {
       this.afterMode = loaded.mode;
       this.afterExpertConfirmed = loaded.expertConfirmed;
     },
-    onCombinedChange({ introHtml, afterHtml }) {
+    onCombinedChange({ zone, introHtml, afterHtml }) {
+      if (zone === "after") {
+        this.afterExpertHtml = afterHtml || "";
+        this.afterMode = "visual";
+        return;
+      }
       this.expertHtml = introHtml || "";
-      this.afterExpertHtml = afterHtml || "";
       this.mode = "visual";
-      this.afterMode = "visual";
     },
     onExpertEdit() {
       this.mode = "expert";
