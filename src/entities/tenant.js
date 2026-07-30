@@ -38,6 +38,7 @@ class Tenant {
     mailSnippets,
     mailSubjects,
     mailShowSupportFooter,
+    mailBookingPeriodFormat,
   }) {
     this.id = id;
     this.name = name;
@@ -78,6 +79,7 @@ class Tenant {
     this.mailSubjects = mailSubjects || {};
     this.mailShowSupportFooter =
       mailShowSupportFooter === undefined ? true : !!mailShowSupportFooter;
+    this.mailBookingPeriodFormat = mailBookingPeriodFormat || "default";
   }
 }
 

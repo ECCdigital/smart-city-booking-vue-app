@@ -184,6 +184,7 @@ export default {
     variables: { type: Array, default: () => [] },
     snippetKey: { type: String, default: "" },
     showSupportFooter: { type: Boolean, default: true },
+    bookingPeriodFormat: { type: String, default: "default" },
   },
   data() {
     return {
@@ -200,6 +201,7 @@ export default {
       return (
         buildSnippetPreviewExtrasHtml(this.snippetKey, {
           showSupportFooter: this.showSupportFooter,
+          bookingPeriodFormat: this.bookingPeriodFormat,
         }) ||
         "<p style=\"margin:0;color:#666;\">Buchungsdetails und weitere System-Inhalte</p>"
       );

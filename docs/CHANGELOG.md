@@ -7,6 +7,17 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Added
+
+- Tenant email settings: choose booking-period date format in mails (`mailBookingPeriodFormat`) under Erweitert
+- Mail theme wizard: Arial as a selectable font family for email layouts
+
+### Changed
+
+- Support-footer toggle moved into the Erweitert panel together with the booking-period format option
+- Tenant email tab restructured into Versand, E-Mail-Layout, and E-Mail-Inhalte sections
+- Mail layout status: edit/create action separated from the status alert as a primary button
+
 ## [4.2.4] — 2026-07-29
 
 ### Fixed

@@ -65,6 +65,7 @@
       :layout-template="layoutTemplate"
       :tenant-name="tenantName"
       :show-support-footer="showSupportFooter"
+      :booking-period-format="bookingPeriodFormat"
       @close="dialogOpen = false"
       @submit="onSubmit"
     />
@@ -89,6 +90,7 @@ export default {
     layoutTemplate: { type: String, default: "" },
     tenantName: { type: String, default: "" },
     showSupportFooter: { type: Boolean, default: true },
+    bookingPeriodFormat: { type: String, default: "default" },
   },
   data: () => ({
     catalog: SNIPPET_CATALOG,

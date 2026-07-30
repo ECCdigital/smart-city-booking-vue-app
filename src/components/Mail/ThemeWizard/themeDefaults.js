@@ -1,6 +1,7 @@
 export const FONT_FAMILY_MAP = {
   system:
     "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+  arial: "Arial, Helvetica, sans-serif",
   serif: "'Times New Roman', Georgia, serif",
   sans: "'Work Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",
   mono: "'Courier New', Courier, monospace",
@@ -14,6 +15,7 @@ export const PRESETS = [
 
 export const FONT_OPTIONS = [
   { value: "system", text: "System (Standard)" },
+  { value: "arial", text: "Arial" },
   { value: "sans", text: "Sans Serif" },
   { value: "serif", text: "Serif" },
   { value: "mono", text: "Monospace" },
