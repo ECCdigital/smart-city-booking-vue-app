@@ -122,6 +122,39 @@ router.post("/login", async (req, res) => {
   }
 });
 
+/**
+ * Local registration. Must be BFF-owned (not generic proxy): express.json already
+ * consumed the body on /auth/*, so proxying would hang / drop the payload.
+ */
+router.post("/signup", async (req, res) => {
+  try {
+    const { status, data, ok } = await backendFetch("/auth/signup", {
+      method: "POST",
+      body: req.body || {},
+    });
+
+    if (status === 201) {
+      return res.sendStatus(201);
+    }
+
+    if (status === 409) {
+      return res.sendStatus(409);
+    }
+
+    if (typeof data === "string" && data) {
+      return res.status(status || 500).send(data);
+    }
+
+    if (!ok) {
+      return sendBackendError(res, status, data, "Signup failed");
+    }
+
+    return res.sendStatus(status || 201);
+  } catch (error) {
+    return sendCaughtError(res, error, "Signup failed");
+  }
+});
+
 router.post("/card/signin", async (req, res) => {
   try {
     const { appId, publicId, secret } = req.body || {};
@@ -172,6 +205,64 @@ router.post("/card/signin", async (req, res) => {
     });
   } catch (error) {
     return sendCaughtError(res, error, "Card authentication failed");
+  }
+});
+
+/** Same body-consumed reason as /signup — must not fall through to the proxy. */
+router.post("/card/signup", async (req, res) => {
+  try {
+    const { ok, data, status } = await backendFetch("/auth/card/signup", {
+      method: "POST",
+      body: req.body || {},
+    });
+
+    if (!ok) {
+      return sendBackendError(res, status, data, "Card registration failed");
+    }
+
+    return res.status(status || 201).json(data);
+  } catch (error) {
+    return sendCaughtError(res, error, "Card registration failed");
+  }
+});
+
+router.post("/reset", async (req, res) => {
+  try {
+    const { ok, data, status } = await backendFetch("/auth/reset", {
+      method: "POST",
+      body: req.body || {},
+    });
+
+    if (!ok) {
+      return sendBackendError(res, status, data, "Password reset request failed");
+    }
+
+    if (data !== null && data !== undefined) {
+      return res.status(status || 200).json(data);
+    }
+    return res.sendStatus(status || 200);
+  } catch (error) {
+    return sendCaughtError(res, error, "Password reset request failed");
+  }
+});
+
+router.post("/resetpassword", async (req, res) => {
+  try {
+    const { ok, data, status } = await backendFetch("/auth/resetpassword", {
+      method: "POST",
+      body: req.body || {},
+    });
+
+    if (!ok) {
+      return sendBackendError(res, status, data, "Password reset failed");
+    }
+
+    if (data !== null && data !== undefined) {
+      return res.status(status || 200).json(data);
+    }
+    return res.sendStatus(status || 200);
+  } catch (error) {
+    return sendCaughtError(res, error, "Password reset failed");
   }
 });
 

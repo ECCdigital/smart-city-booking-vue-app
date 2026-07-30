@@ -7,10 +7,19 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+## [4.2.4] — 2026-07-29
+
+### Fixed
+
+- BFF mode: local/card registration and password reset no longer hang (BFF owns `/auth/signup`, `/auth/card/signup`, `/auth/reset`, `/auth/resetpassword` instead of proxying after the body was consumed)
+
+## [4.2.3] — 2026-07-29
+
 ### Fixed
 
 - Booking edit: availability conflict warnings no longer appear for an unchanged existing booking (self-conflict); validation runs on create or when period/bookables change, excluding the booking being edited
 - **DEV-845:** Series cancellation refund preview lists bookings chronologically by start date, shows each appointment date, and clarifies the mixed-policy hint
+- BFF mode: opening `/register` (and other public auth pages) no longer hard-redirects to login after a cold `/auth/me` 401
 - Mail snippet editor: visual edits in intro or closing section no longer overwrite the other section's expert HTML
 - Mailto link dialog: bare `mailto:` (empty recipient) is rejected instead of being applied
 - Mail theme image insert: only HTTPS URLs are accepted
@@ -173,6 +182,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.2.4]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.3...v4.2.4
+[4.2.3]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.2...v4.2.3
+[4.2.2]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.1...v4.2.2
+[4.2.1]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.0...v4.2.1
 [4.2.0]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.3...v4.2.0
 [4.1.3]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.2...v4.1.3
 [4.1.1]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.1.0...v4.1.1

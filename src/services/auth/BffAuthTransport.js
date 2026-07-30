@@ -2,7 +2,7 @@ import { getApiHttpBaseUrl } from "./authMode";
 import {
   broadcastSessionEnded,
   endAdminSession,
-  isAdminLoginPath,
+  isPublicAuthPath,
 } from "./sessionSync";
 
 const SESSION_MARKER_KEY = "bffAuthSession";
@@ -98,7 +98,7 @@ class BffAuthTransport {
 
     // Axios often uses relative urls without a leading slash ("auth/me")
     const url = String(originalRequest.url || "");
-    const onLogin = isAdminLoginPath();
+    const onPublicPath = isPublicAuthPath();
 
     const isAuthRoute = (name) =>
       url.includes(`auth/${name}`) || url.endsWith(`/${name}`);
@@ -115,8 +115,9 @@ class BffAuthTransport {
 
     // /auth/me refreshes server-side; /auth/refresh failing means session is dead.
     // Never try to refresh again here — that deadlocks while isRefreshing=true.
+    // Cold visits (no session marker) must not hard-redirect — e.g. /register.
     if (isAuthRoute("me") || isAuthRoute("refresh")) {
-      if (!onLogin) {
+      if (!onPublicPath && this._sessionActive) {
         await endAdminSession({ redirect: true });
       } else {
         this.clearSession();
@@ -145,7 +146,7 @@ class BffAuthTransport {
       return this.client(originalRequest);
     } catch (refreshError) {
       this.onTokenRefreshed(false);
-      if (!onLogin) {
+      if (!onPublicPath && this._sessionActive) {
         await endAdminSession({ redirect: true });
       } else {
         this.clearSession();

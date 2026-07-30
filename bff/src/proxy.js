@@ -5,6 +5,8 @@ const { getAccessToken } = require("./cookies");
 /**
  * Generic proxy: browser → Admin BFF → Backend API with Bearer from cookie.
  * Auth routes under /auth/* are mounted first and are not proxied.
+ * POSTs that need a JSON body (signup, login, …) must be BFF-owned —
+ * express.json consumes the stream before this middleware runs.
  */
 function createApiProxy() {
   return createProxyMiddleware({

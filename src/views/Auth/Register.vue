@@ -341,11 +341,12 @@ export default {
             }
           })
           .catch((error) => {
-            if (error.response.status === 401) {
+            const status = error.response?.status;
+            if (status === 401) {
               this.addToast(
                 ToastService.createToast("register.error.wrong-email", "error")
               );
-            } else if (error.response.status === 400) {
+            } else if (status === 400) {
               this.addToast(
                 ToastService.createToast(
                   "register.error.information-missing",
