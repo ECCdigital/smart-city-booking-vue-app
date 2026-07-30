@@ -6,12 +6,24 @@ const SAMPLE = {
   address: "Musterstraße 1, 12345 Musterstadt",
   phone: "0123 4567890",
   email: "max.mustermann@beispiel.de",
-  bookingPeriod: "21.05.2026, 10:00 – 21.05.2026, 12:00",
+  bookingPeriod: "09.07.2026, 05:15 - 09.07.2026, 08:00",
   itemTitle: "Tagungsraum Klein",
   itemAmount: "1",
   cancelReason: "Kunde hat Buchung widerrufen",
   rejectionReason: "Termin ist bereits vergeben",
 };
+
+const BOOKING_PERIOD_BY_FORMAT = {
+  default: "09.07.2026, 05:15 - 09.07.2026, 08:00",
+  fromTo: "von 05:15 Uhr am 09.07.2026 bis 08:00 Uhr am 09.07.2026",
+  timeFirst: "05:15 Uhr, 09.07.2026 - 08:00 Uhr, 09.07.2026",
+  long: "Donnerstag, 9. Juli 2026, 05:15 Uhr - Donnerstag, 9. Juli 2026, 08:00 Uhr",
+  compact: "09.07.26, 05:15 - 09.07.26, 08:00",
+};
+
+export function sampleBookingPeriod(format) {
+  return BOOKING_PERIOD_BY_FORMAT[format] || BOOKING_PERIOD_BY_FORMAT.default;
+}
 
 const STYLES = {
   section: "margin-top:16px; font-family:inherit; color:#222222; font-size:16px; line-height:1.5;",
@@ -68,7 +80,7 @@ function detailsBlock() {
   );
 }
 
-function contactBlock() {
+function contactBlock(bookingPeriod) {
   return (
     `<p style="${STYLES.contact}">` +
     `<strong>Firma:</strong> ${SAMPLE.company}<br />` +
@@ -76,7 +88,7 @@ function contactBlock() {
     `<strong>Adresse:</strong> ${SAMPLE.address}<br />` +
     `<strong>Telefon:</strong> ${SAMPLE.phone}<br />` +
     `<strong>E-Mail:</strong> <a href="mailto:${SAMPLE.email}" style="${STYLES.link}">${SAMPLE.email}</a><br />` +
-    `<strong>Buchungszeitraum:</strong> ${SAMPLE.bookingPeriod}` +
+    `<strong>Buchungszeitraum:</strong> ${bookingPeriod}` +
     "</p>"
   );
 }
@@ -124,11 +136,12 @@ export function buildSnippetPreviewExtrasHtml(key, options = {}) {
   if (!cfg) return "";
 
   const showSupportFooter = options.showSupportFooter !== false;
+  const bookingPeriod = sampleBookingPeriod(options.bookingPeriodFormat);
 
   const sections = [
     reasonBlock(cfg.reason),
     detailsBlock(),
-    contactBlock(),
+    contactBlock(bookingPeriod),
     orderOverview(),
     buttonsBlock({
       showPayment: !!cfg.showPayment,

@@ -138,6 +138,7 @@
                   :variables="variables"
                   :snippet-key="snippetKey"
                   :show-support-footer="showSupportFooter"
+                  :booking-period-format="bookingPeriodFormat"
                   @change="onCombinedChange"
                   @clear-after="clearAfter"
                 />
@@ -311,7 +312,7 @@ import {
   BOOKING_CANCEL_SNIPPET_VARIABLES,
   SAMPLE_DATA,
 } from "./templateVariables.js";
-import { buildSnippetPreviewExtrasHtml } from "./snippetPreviewExtras.js";
+import { buildSnippetPreviewExtrasHtml, sampleBookingPeriod } from "./snippetPreviewExtras.js";
 
 export default {
   name: "SnippetEditorDialog",
@@ -326,6 +327,7 @@ export default {
     layoutTemplate: { type: String, default: "" },
     tenantName: { type: String, default: "" },
     showSupportFooter: { type: Boolean, default: true },
+    bookingPeriodFormat: { type: String, default: "default" },
   },
   data() {
     return {
@@ -371,6 +373,7 @@ export default {
         tenantName:
           (this.tenantName && this.tenantName.trim()) || base.tenantName,
         currentDate: new Date().toLocaleDateString("de-DE"),
+        bookingPeriod: sampleBookingPeriod(this.bookingPeriodFormat),
       };
     },
     currentIntroSize() {
@@ -690,6 +693,7 @@ export default {
 
       const extrasHtml = buildSnippetPreviewExtrasHtml(this.snippetKey, {
         showSupportFooter: this.showSupportFooter,
+        bookingPeriodFormat: this.bookingPeriodFormat,
       });
       const renderedSnippetWithExtras =
         renderedIntro + (extrasHtml || "") + (renderedAfter || "");
@@ -769,6 +773,7 @@ export default {
         this.useLayoutInPreview,
         this.layoutTemplate,
         this.showSupportFooter,
+        this.bookingPeriodFormat,
       ],
       () => {
         if (this.activeTab === 1) {
