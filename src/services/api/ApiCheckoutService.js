@@ -6,9 +6,9 @@ export default {
     timeEnd,
     couponCode,
     bookWithoutDiscount,
-    checkoutID
+    checkoutID,
+    excludeBookingIds
   ) {
-
     return ApiClient.post(`api/${tenant}/checkout/validateItem`, {
       ...item,
       tenant,
@@ -17,6 +17,9 @@ export default {
       couponCode,
       bookWithoutDiscount,
       checkoutId: checkoutID,
+      ...(excludeBookingIds?.length
+        ? { excludeBookingIds }
+        : {}),
     });
   },
   checkout(tenant, payload, simulate = true) {

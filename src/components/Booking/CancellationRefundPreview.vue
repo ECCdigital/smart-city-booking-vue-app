@@ -20,6 +20,7 @@
       <v-simple-table v-if="isGroup" dense class="mt-3 mb-1 refund-group-table">
         <thead>
           <tr>
+            <th>{{ $t("booking.cancellationRefund.date") }}</th>
             <th>{{ $t("booking.cancellationRefund.booking") }}</th>
             <th class="text-right">
               {{ $t("booking.cancellationRefund.days") }}
@@ -40,6 +41,7 @@
         </thead>
         <tbody>
           <tr v-for="booking in displayedBookings" :key="booking.bookingId">
+            <td>{{ formatBookingDate(booking) }}</td>
             <td>{{ booking.bookingId }}</td>
             <td class="text-right">
               {{ formatDays(booking.daysBeforeStart) }}
@@ -138,21 +140,30 @@ export default {
     },
     displayedBookings() {
       if (!this.isGroup) return [];
-      return this.preview.bookings.map((booking) => {
-        if (!this.useOverride || !this.isOverrideValid) return booking;
-        const refundAmountEur = this.calculateRefund(
-          booking.originalAmountEur,
-          this.localPercentage
-        );
-        return {
-          ...booking,
-          refundAmountEur,
-          cancellationFeeEur:
-            Math.round(
-              (Number(booking.originalAmountEur) - refundAmountEur) * 100
-            ) / 100,
-        };
-      });
+      return this.preview.bookings
+        .map((booking) => {
+          if (!this.useOverride || !this.isOverrideValid) return booking;
+          const refundAmountEur = this.calculateRefund(
+            booking.originalAmountEur,
+            this.localPercentage
+          );
+          return {
+            ...booking,
+            refundAmountEur,
+            cancellationFeeEur:
+              Math.round(
+                (Number(booking.originalAmountEur) - refundAmountEur) * 100
+              ) / 100,
+          };
+        })
+        .sort((a, b) => {
+          const aTime = this.toSortableTimeBegin(a.timeBegin);
+          const bTime = this.toSortableTimeBegin(b.timeBegin);
+          if (aTime === null && bTime === null) return 0;
+          if (aTime === null) return 1;
+          if (bTime === null) return -1;
+          return aTime - bTime;
+        });
     },
     originalAmountEur() {
       return this.isGroup
@@ -250,6 +261,22 @@ export default {
     },
     formatDays(value) {
       return value === null || value === undefined ? "–" : value;
+    },
+    formatBookingDate(booking) {
+      if (!booking?.timeBegin) return "–";
+      const date = FormatService.date(booking.timeBegin);
+      const time = FormatService.time(booking.timeBegin);
+      return time ? `${date} ${time}` : date;
+    },
+    toSortableTimeBegin(value) {
+      if (value == null || value === "") return null;
+      if (typeof value === "number") {
+        return Number.isFinite(value) ? value : null;
+      }
+      const parsed = Date.parse(value);
+      if (Number.isFinite(parsed)) return parsed;
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : null;
     },
   },
 };

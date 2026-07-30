@@ -1048,6 +1048,7 @@ export default {
 
       itemValidations: {},
       validateTimer: null,
+      validationGeneration: 0,
       checkoutId: null,
 
       editableBooking: null,
@@ -1093,6 +1094,33 @@ export default {
     hasAvailabilityWarnings() {
       return Object.values(this.itemValidations).some(
         (v) => v?.status === "warning"
+      );
+    },
+    hasScheduleChanges() {
+      if (this.isCreateMode) return true;
+      if (!this.originalSnapshot || !this.editableBooking) return false;
+
+      const original = JSON.parse(this.originalSnapshot).booking;
+      if (
+        original.timeBegin !== this.selectedBooking.timeBegin ||
+        original.timeEnd !== this.selectedBooking.timeEnd
+      ) {
+        return true;
+      }
+
+      const normalizeItems = (items) =>
+        (items || [])
+          .map((item) => ({
+            bookableId: item.bookableId,
+            amount: item.amount,
+          }))
+          .sort((a, b) =>
+            String(a.bookableId).localeCompare(String(b.bookableId))
+          );
+
+      return !_.isEqual(
+        normalizeItems(original.bookableItems),
+        normalizeItems(this.bookableItems)
       );
     },
     calendarBookableItem() {
@@ -1457,19 +1485,34 @@ export default {
         this.validateAllBookableItems();
       }, 500);
     },
+    clearItemValidations() {
+      this.validationGeneration += 1;
+      this.itemValidations = {};
+    },
     async validateAllBookableItems() {
+      if (!this.isCreateMode && !this.hasScheduleChanges) {
+        this.clearItemValidations();
+        return;
+      }
+
+      this.validationGeneration += 1;
+      const generation = this.validationGeneration;
+
       for (const item of this.bookableItems) {
-        await this.validateBookableItem(item);
+        if (generation !== this.validationGeneration) return;
+        await this.validateBookableItem(item, generation);
       }
     },
-    async validateBookableItem(bookableItem) {
+    async validateBookableItem(bookableItem, generation) {
       const bookableId = bookableItem.bookableId;
       const bookable = bookableItem._bookableUsed;
+      const isCurrent = () => generation === this.validationGeneration;
 
       if (
         isTimeDependentBookable(bookable) &&
         (!this.selectedBooking.timeBegin || !this.selectedBooking.timeEnd)
       ) {
+        if (!isCurrent()) return;
         this.$set(this.itemValidations, bookableId, {
           status: "idle",
           message: "Zeitraum fehlt",
@@ -1477,6 +1520,7 @@ export default {
         return;
       }
 
+      if (!isCurrent()) return;
       this.$set(this.itemValidations, bookableId, {
         status: "loading",
         message: "Prüfe Verfügbarkeit…",
@@ -1488,6 +1532,11 @@ export default {
         bookable: bookableItem._bookableUsed,
       };
 
+      const excludeBookingIds =
+        !this.isCreateMode && this.selectedBooking.id
+          ? [this.selectedBooking.id]
+          : undefined;
+
       try {
         const response = await ApiCheckoutService.validateCheckoutItem(
           this.selectedBooking.tenantId,
@@ -1496,8 +1545,11 @@ export default {
           this.selectedBooking.timeEnd,
           null,
           false,
-          this.checkoutId
+          this.checkoutId,
+          excludeBookingIds
         );
+
+        if (!isCurrent()) return;
 
         if (response.data?.checkoutId) {
           this.checkoutId = response.data.checkoutId;
@@ -1509,6 +1561,8 @@ export default {
           regularPriceEur: response.data?.regularPriceEur,
         });
       } catch (err) {
+        if (!isCurrent()) return;
+
         if (err.response?.data?.checkoutId) {
           this.checkoutId = err.response.data.checkoutId;
         }
@@ -2098,9 +2152,29 @@ export default {
       this.originalGroupInternalComments =
         this.groupBooking.internalComments ?? null;
     }
+
+    // Capture booking baseline before async work so interactive edits during
+    // external-price loading are not baked into originalSnapshot.
+    const bookingBaseline = this.editableBooking
+      ? _.cloneDeep(this.editableBooking)
+      : null;
+    const timePaidBaseline = this.timePaid;
+    const groupCommentsBaseline = this.groupBooking?.internalComments ?? null;
+
     await this.loadAllExternalPrices();
+
+    if (bookingBaseline) {
+      const booking = _.cloneDeep(bookingBaseline);
+      delete booking._id;
+      this.originalSnapshot = JSON.stringify({
+        booking,
+        timePaid: timePaidBaseline,
+        groupInternalComments: groupCommentsBaseline,
+        externalPrices: _.cloneDeep(this.externalPricesMap),
+      });
+    }
+
     this.scheduleItemValidation();
-    this.updateSnapshot();
   },
   beforeDestroy() {
     if (this.validateTimer) {

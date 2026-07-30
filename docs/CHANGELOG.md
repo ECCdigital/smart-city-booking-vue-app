@@ -17,6 +17,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+- Booking edit: availability conflict warnings no longer appear for an unchanged existing booking (self-conflict); validation runs on create or when period/bookables change, excluding the booking being edited
+- **DEV-845:** Series cancellation refund preview lists bookings chronologically by start date, shows each appointment date, and clarifies the mixed-policy hint
 - BFF mode: opening `/register` (and other public auth pages) no longer hard-redirects to login after a cold `/auth/me` 401
 - Mail snippet editor: visual edits in intro or closing section no longer overwrite the other section's expert HTML
 - Mailto link dialog: bare `mailto:` (empty recipient) is rejected instead of being applied
