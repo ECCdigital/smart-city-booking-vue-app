@@ -156,7 +156,14 @@ export default {
               ) / 100,
           };
         })
-        .sort((a, b) => Number(a.timeBegin) - Number(b.timeBegin));
+        .sort((a, b) => {
+          const aTime = this.toSortableTimeBegin(a.timeBegin);
+          const bTime = this.toSortableTimeBegin(b.timeBegin);
+          if (aTime === null && bTime === null) return 0;
+          if (aTime === null) return 1;
+          if (bTime === null) return -1;
+          return aTime - bTime;
+        });
     },
     originalAmountEur() {
       return this.isGroup
@@ -260,6 +267,16 @@ export default {
       const date = FormatService.date(booking.timeBegin);
       const time = FormatService.time(booking.timeBegin);
       return time ? `${date} ${time}` : date;
+    },
+    toSortableTimeBegin(value) {
+      if (value == null || value === "") return null;
+      if (typeof value === "number") {
+        return Number.isFinite(value) ? value : null;
+      }
+      const parsed = Date.parse(value);
+      if (Number.isFinite(parsed)) return parsed;
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : null;
     },
   },
 };

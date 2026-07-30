@@ -1048,6 +1048,7 @@ export default {
 
       itemValidations: {},
       validateTimer: null,
+      validationGeneration: 0,
       checkoutId: null,
 
       editableBooking: null,
@@ -1485,6 +1486,7 @@ export default {
       }, 500);
     },
     clearItemValidations() {
+      this.validationGeneration += 1;
       this.itemValidations = {};
     },
     async validateAllBookableItems() {
@@ -1493,18 +1495,24 @@ export default {
         return;
       }
 
+      this.validationGeneration += 1;
+      const generation = this.validationGeneration;
+
       for (const item of this.bookableItems) {
-        await this.validateBookableItem(item);
+        if (generation !== this.validationGeneration) return;
+        await this.validateBookableItem(item, generation);
       }
     },
-    async validateBookableItem(bookableItem) {
+    async validateBookableItem(bookableItem, generation) {
       const bookableId = bookableItem.bookableId;
       const bookable = bookableItem._bookableUsed;
+      const isCurrent = () => generation === this.validationGeneration;
 
       if (
         isTimeDependentBookable(bookable) &&
         (!this.selectedBooking.timeBegin || !this.selectedBooking.timeEnd)
       ) {
+        if (!isCurrent()) return;
         this.$set(this.itemValidations, bookableId, {
           status: "idle",
           message: "Zeitraum fehlt",
@@ -1512,6 +1520,7 @@ export default {
         return;
       }
 
+      if (!isCurrent()) return;
       this.$set(this.itemValidations, bookableId, {
         status: "loading",
         message: "Prüfe Verfügbarkeit…",
@@ -1540,6 +1549,8 @@ export default {
           excludeBookingIds
         );
 
+        if (!isCurrent()) return;
+
         if (response.data?.checkoutId) {
           this.checkoutId = response.data.checkoutId;
         }
@@ -1550,6 +1561,8 @@ export default {
           regularPriceEur: response.data?.regularPriceEur,
         });
       } catch (err) {
+        if (!isCurrent()) return;
+
         if (err.response?.data?.checkoutId) {
           this.checkoutId = err.response.data.checkoutId;
         }
@@ -2139,8 +2152,28 @@ export default {
       this.originalGroupInternalComments =
         this.groupBooking.internalComments ?? null;
     }
+
+    // Capture booking baseline before async work so interactive edits during
+    // external-price loading are not baked into originalSnapshot.
+    const bookingBaseline = this.editableBooking
+      ? _.cloneDeep(this.editableBooking)
+      : null;
+    const timePaidBaseline = this.timePaid;
+    const groupCommentsBaseline = this.groupBooking?.internalComments ?? null;
+
     await this.loadAllExternalPrices();
-    this.updateSnapshot();
+
+    if (bookingBaseline) {
+      const booking = _.cloneDeep(bookingBaseline);
+      delete booking._id;
+      this.originalSnapshot = JSON.stringify({
+        booking,
+        timePaid: timePaidBaseline,
+        groupInternalComments: groupCommentsBaseline,
+        externalPrices: _.cloneDeep(this.externalPricesMap),
+      });
+    }
+
     this.scheduleItemValidation();
   },
   beforeDestroy() {
