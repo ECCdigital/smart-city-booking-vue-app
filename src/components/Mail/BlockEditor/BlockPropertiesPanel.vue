@@ -52,7 +52,7 @@
         <v-select
           :items="fontSizeOptions"
           label="Schriftgröße"
-          :value="selectedBlock.fontSize || 'M'"
+          :value="resolvedFontSize"
           dense
           outlined
           hide-details
@@ -414,6 +414,10 @@
 import { BLOCK_PALETTE } from "./blockFactory.js";
 import MailtoLinkDialog from "./MailtoLinkDialog.vue";
 import { SUPPORT_EMAIL_MAILTO } from "@/components/Mail/templateVariables.js";
+import {
+  FONT_SIZE_OPTIONS,
+  resolveFontSizePx,
+} from "./render/fontSize.js";
 
 export default {
   name: "BlockPropertiesPanel",
@@ -429,11 +433,7 @@ export default {
       { text: "Zentriert", value: "center" },
       { text: "Rechts", value: "right" },
     ],
-    fontSizeOptions: [
-      { text: "Klein", value: "S" },
-      { text: "Mittel", value: "M" },
-      { text: "Groß", value: "L" },
-    ],
+    fontSizeOptions: FONT_SIZE_OPTIONS,
   }),
   computed: {
     blockIcon() {
@@ -451,6 +451,10 @@ export default {
         (b) => b.type === this.selectedBlock.type
       );
       return entry ? entry.label : this.selectedBlock.type;
+    },
+    resolvedFontSize() {
+      if (!this.selectedBlock) return 16;
+      return resolveFontSizePx(this.selectedBlock.fontSize);
     },
     mailtoDialogHref() {
       const href = (this.selectedBlock && this.selectedBlock.href) || "";

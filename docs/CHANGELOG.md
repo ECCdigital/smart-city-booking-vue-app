@@ -7,6 +7,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Changed
+
+- Block editor text blocks: font size select uses pixel values (7–24 px) instead of small/medium/large; existing S/M/L templates still render correctly
+
 ## [4.2.5] — 2026-07-31
 
 ### Added

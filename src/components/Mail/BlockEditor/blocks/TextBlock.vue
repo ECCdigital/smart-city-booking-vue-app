@@ -118,7 +118,11 @@
         </v-list>
       </v-menu>
     </div>
-    <editor-content :editor="editor" class="text-block-content" />
+    <editor-content
+      :editor="editor"
+      class="text-block-content"
+      :style="contentStyle"
+    />
 
     <MailtoLinkDialog
       :open="mailtoDialogOpen"
@@ -148,6 +152,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import VariableMark from "@/components/Mail/BlockEditor/extensions/VariableMark.js";
 import MailtoLinkDialog from "@/components/Mail/BlockEditor/MailtoLinkDialog.vue";
 import { SUPPORT_EMAIL_MAILTO } from "@/components/Mail/templateVariables.js";
+import { resolveFontSizePx } from "@/components/Mail/BlockEditor/render/fontSize.js";
 
 export default {
   name: "TextBlock",
@@ -164,6 +169,13 @@ export default {
     mailtoInitialLinkText: "kontaktieren",
     mailtoNeedsLinkText: true,
   }),
+  computed: {
+    contentStyle() {
+      return {
+        fontSize: `${resolveFontSizePx(this.block.fontSize)}px`,
+      };
+    },
+  },
   mounted() {
     this.editor = new Editor({
       content: this.block.html || "<p></p>",
@@ -322,7 +334,6 @@ export default {
 }
 .text-block-content {
   min-height: 24px;
-  font-size: 14px;
   line-height: 1.5;
   word-break: break-word;
   overflow-wrap: anywhere;

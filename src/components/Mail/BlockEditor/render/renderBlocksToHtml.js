@@ -1,4 +1,5 @@
 import { sanitizeHtml, escapeAttr, escapeText } from "./sanitizeHtml";
+import { resolveFontSizePx } from "./fontSize";
 
 const DEFAULTS = {
   textColor: "#222222",
@@ -19,8 +20,7 @@ function renderText(block) {
   const color = block.color || DEFAULTS.textColor;
   const bg = block.background ? `background:${escapeAttr(block.background)};` : "";
   const padding = block.background ? "padding:12px 16px;" : "";
-  const fontSizePx =
-    block.fontSize === "S" ? 14 : block.fontSize === "L" ? 18 : 16;
+  const fontSizePx = resolveFontSizePx(block.fontSize);
   const style = joinStyle([
     `text-align:${escapeAttr(align)};`,
     `color:${escapeAttr(color)};`,
