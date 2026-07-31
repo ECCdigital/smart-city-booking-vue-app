@@ -7,6 +7,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+## [4.2.5] — 2026-07-31
+
 ### Added
 
 - Tenant email settings: choose booking-period date format in mails (`mailBookingPeriodFormat`) under Erweitert
@@ -193,6 +195,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.2.5]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.4...v4.2.5
 [4.2.4]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.3...v4.2.4
 [4.2.3]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.2...v4.2.3
 [4.2.2]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.1...v4.2.2
