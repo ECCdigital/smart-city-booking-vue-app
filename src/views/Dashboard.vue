@@ -15,17 +15,23 @@
 
     <div class="mb-6">
       <p class="text-subtitle-1 grey--text">
-        Zentrale Kennzahlen rund um Buchungsobjekte, Buchungen und die Nutzung
-        der Buchungsplattform.
+        Überblick über Angebote, Aktivitäten und Finanzen – gesamt und je
+        Mandant.
       </p>
     </div>
 
+    <!-- toDo - Auswahl für Zeitraum einfügen (3 Mon, 6 Mon, 12 Mon, jemals) -->
+
+    <dashboard-data :dashboard-data="dashboardData" />
+
+    <!--
     <pre class="light-green pa-1 text-caption">
       {{ dashboardData }}
     </pre>
     <pre class="light-blue pa-1 text-caption">
       {{ tendantData }}
     </pre>
+    -->
   </AdminLayout>
 </template>
 <script>
@@ -34,10 +40,12 @@ import { mapActions, mapGetters } from "vuex";
 import PendingTenantInvitations from "@/components/Tenant/PendingTenantInvitations.vue";
 import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import DashboardData from "@/components/dashboard/DashboardData.vue";
 
 export default {
   name: "Dashboard",
   components: {
+    DashboardData,
     PendingApprovals,
     PendingTenantInvitations,
     AdminLayout,
