@@ -24,10 +24,11 @@
       v-model="selectedPeriod"
       :from="periodFrom"
       :to="periodTo"
+      :tenants="tenantOptions"
+      :tenant-id.sync="selectedTenantId"
       @input="loadDashboard"
+      @tenant-change="loadDashboard"
     />
-
-    <!-- toDo - Auswahl für Zeitraum einfügen (3 Mon, 6 Mon, 12 Mon, jemals) -->
 
     <dashboard-data :dashboard-data="dashboardData" />
 
@@ -63,6 +64,7 @@ export default {
     return {
       loading: false,
       selectedPeriod: "all", // '3' | '12' | 'all'
+      selectedTenantId: null, // aus $route.query.tenantId
       dashboardData: null,
       tendantData: null,
     };
@@ -81,6 +83,9 @@ export default {
       return this.dashboardData && this.dashboardData.data
         ? this.dashboardData.data.to
         : null;
+    },
+    tenantOptions() {
+      return (this.dashboardData && this.dashboardData.data.byTenant) || [];
     },
 
     //toDo
@@ -117,9 +122,7 @@ export default {
     async fetchDashboardData() {
       try {
         this.loading = true;
-        const response = await ApiTenantService.getDashboardData();
-        console.log("*A* - got data in dashboard.vue", response);
-        this.dashboardData = response;
+        this.dashboardData = await ApiTenantService.getDashboardData();
       } catch (error) {
         console.error(error);
       } finally {
