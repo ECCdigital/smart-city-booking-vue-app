@@ -1,16 +1,15 @@
 <template>
   <v-container fluid class="dashboard-data-combo">
-    <!-- Nutzung -->
+    <!-- Angebote -->
     <section class="mb-8">
       <h2 class="text-h6 mb-3">
-        <v-icon left color="indigo">mdi-account-group</v-icon>
-        Nutzung
+        <v-icon left color="primary">mdi-office-building</v-icon>
+        Angebote
       </h2>
       <v-row>
-        <!-- dense -->
-        <v-col cols="12" md="4">
-          <v-card outlined class="theme-card theme-card--usage fill-height">
-            <v-card-title class="subtitle-1">Nutzung gesamt</v-card-title>
+        <v-col cols="12" sm="5" md="3">
+          <v-card outlined class="theme-card theme-card--offer fill-height">
+            <v-card-title class="subtitle-1">Gesamt</v-card-title>
             <v-card-text>
               <div class="metric-row">
                 <span>Mandanten</span>
@@ -20,34 +19,8 @@
                 <span>Benutzer:innen</span>
                 <strong>{{ formatNumber(totals.users) }}</strong>
               </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" md="8">
-          <v-card outlined class="fill-height">
-            <v-card-title class="subtitle-1">
-              Anteil der Benutzer:innen
-            </v-card-title>
-            <v-card-text>
-              <dashboard-chart :option="usersByTenantOption" height="200px" />
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-    </section>
 
-    <!-- Angebote -->
-    <section class="mb-8">
-      <h2 class="text-h6 mb-3">
-        <v-icon left color="primary">mdi-office-building</v-icon>
-        Angebote
-      </h2>
-      <v-row>
-        <v-col cols="12" md="4">
-          <v-card outlined class="theme-card theme-card--offer fill-height">
-            <v-card-title class="subtitle-1">Gesamt</v-card-title>
-            <v-card-text>
-              <div class="metric-row">
+              <div class="metric-row mt-5">
                 <span>Buchungsobjekte</span>
                 <strong>{{ formatNumber(totals.bookables) }}</strong>
               </div>
@@ -67,7 +40,17 @@
             </v-card-text>
           </v-card>
         </v-col>
-        <v-col cols="12" md="8">
+        <v-col cols="12" sm="7" md="4">
+          <v-card outlined class="fill-height">
+            <v-card-title class="subtitle-1">
+              Anteil der Benutzer:innen
+            </v-card-title>
+            <v-card-text>
+              <dashboard-chart :option="usersByTenantOption" height="300px" />
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="5">
           <v-card outlined class="fill-height">
             <v-card-title class="subtitle-1">
               Buchungsobjekte &amp; Events je Mandant
@@ -87,9 +70,9 @@
         Aktivitäten
       </h2>
       <v-row>
-        <v-col cols="12" md="4">
+        <v-col cols="12" md="4" lg="3">
           <v-card outlined class="theme-card theme-card--activity fill-height">
-            <v-card-title class="subtitle-1">Aktivität gesamt</v-card-title>
+            <v-card-title class="subtitle-1">Gesamt</v-card-title>
             <v-card-text>
               <div class="metric-row">
                 <span>Buchungen</span>
@@ -107,10 +90,10 @@
             </v-card-text>
           </v-card>
         </v-col>
-        <v-col cols="12" md="8">
+        <v-col cols="12" md="8" lg="9">
           <v-card outlined class="fill-height">
             <v-card-title class="subtitle-1">
-              Ranking: Buchungen je Mandant
+              Buchungen pro Mandant
             </v-card-title>
             <v-card-text>
               <dashboard-chart :option="bookingsRankingOption" height="300px" />
@@ -127,9 +110,9 @@
         Finanzen
       </h2>
       <v-row>
-        <v-col cols="12" md="4">
+        <v-col cols="12" md="4" lg="3">
           <v-card outlined class="theme-card theme-card--finance fill-height">
-            <v-card-title class="subtitle-1">Finanzen gesamt</v-card-title>
+            <v-card-title class="subtitle-1">Gesamt</v-card-title>
             <v-card-text>
               <div
                 class="text-h4 font-weight-medium green--text text--darken-2 mb-2"
@@ -148,11 +131,9 @@
             </v-card-text>
           </v-card>
         </v-col>
-        <v-col cols="12" md="8">
+        <v-col cols="12" md="8" lg="9">
           <v-card outlined class="fill-height">
-            <v-card-title class="subtitle-1">
-              Ranking: Umsatz je Mandant
-            </v-card-title>
+            <v-card-title class="subtitle-1"> Umsatz pro Mandant </v-card-title>
             <v-card-text>
               <dashboard-chart :option="revenueRankingOption" height="300px" />
             </v-card-text>
@@ -229,17 +210,17 @@ export default {
           formatter: "{b}: {c} ({d}%)",
         },
         legend: {
-          type: "scroll",
-          orient: "vertical",
-          right: 0,
-          top: "middle",
-          textStyle: { fontSize: 11 },
+          orient: "horizontal",
+          left: "center",
+          bottom: 0,
+          itemGap: 10,
+          textStyle: { fontSize: 11, align: "center" },
         },
         series: [
           {
             type: "pie",
             radius: ["45%", "70%"],
-            center: ["35%", "50%"],
+            center: ["50%", "42%"],
             avoidLabelOverlap: true,
             label: { show: false },
             data: this.byTenant.map((t) => ({
@@ -258,14 +239,22 @@ export default {
         xAxis: {
           type: "category",
           data: this.byTenant.map((t) => t.tenantName),
-          axisLabel: { interval: 0, rotate: 25 },
+          axisLabel: {
+            interval: 0,
+            //rotate: 25,
+            padding: 5,
+            formatter: (value) =>
+              String(value || "")
+                .replace(/( )/g, "$1\n")
+                .trim(),
+          },
         },
         yAxis: { type: "value" },
         series: [
           {
             name: "Buchungsobjekte",
             type: "bar",
-            data: this.byTenant.map((t) => t.bookableObjects),
+            data: this.byTenant.map((t) => t.bookables),
             itemStyle: { color: "#039BE5" },
           },
           {
