@@ -35,6 +35,7 @@ import { checkGroupBooking } from "./middlewares/groupBooking";
 import { checkInterface } from "./middlewares/interface";
 import { requireTenant } from "./middlewares/requireTenant";
 import { finalAuthRedirect } from "./middlewares/finalAuth";
+import Dashboard from "@/views/Dashboard.vue";
 
 Vue.use(VueRouter);
 
@@ -57,6 +58,16 @@ const routes = [
       requiresAuth: true,
       interfaceName: "dashboard",
       public: true,
+    },
+  },{
+    path: "/dataDashboard",
+    name: "dataDashboard",
+    component: Dashboard,
+    meta: {
+      title: "Daten-Dashboard",
+      requiresAuth: true,
+      interfaceName: "dataDashboard",
+      //public: true,
     },
   },
   {

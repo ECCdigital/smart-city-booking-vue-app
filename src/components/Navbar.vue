@@ -179,6 +179,12 @@ export default {
             icon: "mdi-domain-switch",
             showAlways: true,
           },
+          {
+            title: "Dashboard",
+            link: "dataDashboard",
+            icon: "mdi-view-dashboard",
+            showAlways: true,
+          },
         ],
       },
       {
