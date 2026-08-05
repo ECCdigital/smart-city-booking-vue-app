@@ -20,6 +20,13 @@
       </p>
     </div>
 
+    <dashboard-period-filter
+      v-model="selectedPeriod"
+      :from="periodFrom"
+      :to="periodTo"
+      @input="loadDashboard"
+    />
+
     <!-- toDo - Auswahl für Zeitraum einfügen (3 Mon, 6 Mon, 12 Mon, jemals) -->
 
     <dashboard-data :dashboard-data="dashboardData" />
@@ -40,12 +47,14 @@ import { mapActions, mapGetters } from "vuex";
 import PendingTenantInvitations from "@/components/Tenant/PendingTenantInvitations.vue";
 import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import DashboardPeriodFilter from "@/components/dashboard/DashboardPeriodFilter.vue";
 import DashboardData from "@/components/dashboard/DashboardData.vue";
 
 export default {
   name: "Dashboard",
   components: {
     DashboardData,
+    DashboardPeriodFilter,
     PendingApprovals,
     PendingTenantInvitations,
     AdminLayout,
@@ -53,6 +62,7 @@ export default {
   data() {
     return {
       loading: false,
+      selectedPeriod: "all", // '3' | '12' | 'all'
       dashboardData: null,
       tendantData: null,
     };
@@ -62,8 +72,21 @@ export default {
       tenants: "tenants/tenants",
       currentTenant: "tenants/currentTenantId",
     }),
+    periodFrom() {
+      return this.dashboardData && this.dashboardData.data
+        ? this.dashboardData.data.from
+        : null;
+    },
+    periodTo() {
+      return this.dashboardData && this.dashboardData.data
+        ? this.dashboardData.data.to
+        : null;
+    },
 
     //toDo
+  },
+  created() {
+    this.loadDashboard();
   },
   mounted() {
     this.fetchDashboardData();
@@ -74,6 +97,12 @@ export default {
       select: "tenants/select",
       setTenants: "tenants/setTenants",
     }),
+    async loadDashboard() {
+      // bestehenden API-Aufruf um Perioden-Parameter ergänzen, z. B.:
+      // selectedPeriod === 'all' → ohne from/to
+      // '3' / '12' → letzte 3 bzw. 12 Monate
+      // …
+    },
     async fetchTenants() {
       try {
         this.loading = true;
