@@ -20,7 +20,7 @@
       </p>
     </div>
 
-    <dashboard-period-filter
+    <dashboard-filter
       v-model="selectedPeriod"
       :from="periodFrom"
       :to="periodTo"
@@ -47,14 +47,14 @@ import { mapActions, mapGetters } from "vuex";
 import PendingTenantInvitations from "@/components/Tenant/PendingTenantInvitations.vue";
 import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
-import DashboardPeriodFilter from "@/components/dashboard/DashboardPeriodFilter.vue";
+import DashboardFilter from "@/components/dashboard/DashboardFilter.vue";
 import DashboardData from "@/components/dashboard/DashboardData.vue";
 
 export default {
   name: "Dashboard",
   components: {
     DashboardData,
-    DashboardPeriodFilter,
+    DashboardFilter,
     PendingApprovals,
     PendingTenantInvitations,
     AdminLayout,
