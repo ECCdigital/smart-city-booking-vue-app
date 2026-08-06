@@ -35,11 +35,10 @@
     <!--
     <pre class="light-green pa-1 text-caption">
       {{ dashboardData }}
-    </pre>
+    </pre>-->
     <pre class="light-blue pa-1 text-caption">
       {{ tendantData }}
     </pre>
-    -->
   </AdminLayout>
 </template>
 <script>
@@ -130,6 +129,9 @@ export default {
       }
     },
     async fetchDashboardDataByTenantId(tenantId) {
+      if (!tenantId) {
+        return;
+      }
       try {
         this.loading = true;
         const response = await ApiTenantService.getDashboardDataByTenant(

@@ -222,7 +222,7 @@ export default {
             radius: ["45%", "70%"],
             center: ["50%", "42%"],
             avoidLabelOverlap: true,
-            label: { show: false },
+            label: { show: true, formatter: "{c}" },
             data: this.byTenant.map((t) => ({
               name: t.tenantName,
               value: t.users,
