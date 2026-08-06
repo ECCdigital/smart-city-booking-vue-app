@@ -1,6 +1,6 @@
 <template>
   <div
-    class="dashboard-period-filter d-flex flex-wrap align-center justify-space-between mb-6"
+    class="dashboard-filter d-flex flex-wrap align-center justify-space-between mb-6"
   >
     <div class="d-flex flex-wrap align-center period-group">
       <v-btn-toggle
@@ -27,26 +27,111 @@
       </div>
     </div>
 
-    <v-select
-      :value="tenantId"
-      :items="tenantOptions"
-      item-text="tenantName"
-      item-value="tenantId"
-      label="Mandant"
-      placeholder="Alle Mandanten"
-      clearable
-      dense
-      outlined
-      hide-details
-      class="tenant-select"
-      @change="onTenantChange"
-    />
+    <div class="d-flex flex-wrap align-center right-filters">
+      <v-select
+        :value="tenantId"
+        :items="tenantOptions"
+        item-text="tenantName"
+        item-value="tenantId"
+        label="Mandant"
+        placeholder="Alle Mandanten"
+        clearable
+        dense
+        outlined
+        offset-y
+        hide-details
+        class="filter-select"
+        @change="onTenantChange"
+      />
+
+      <v-menu
+        v-model="moreFiltersOpen"
+        offset-y
+        :close-on-content-click="false"
+        class="filter-select"
+      >
+        <template #activator="{ on, attrs }">
+          <v-btn
+            v-bind="attrs"
+            outlined
+            dense
+            height="40"
+            width="180"
+            class="more-filters-btn d-flex justify-space-between items-center"
+            v-on="on"
+          >
+            <div class="d-flex items-center">
+              <span class="more-filters-label">Weitere Filter</span>
+              <v-chip
+                v-if="activeMoreFiltersCount > 0"
+                x-small
+                color="primary"
+                class="ml-2"
+                label
+              >
+                {{ activeMoreFiltersCount }}
+              </v-chip>
+            </div>
+            <v-icon right small>
+              {{ moreFiltersOpen ? "mdi-menu-up" : "mdi-menu-down" }}
+            </v-icon>
+          </v-btn>
+        </template>
+
+        <div class="more-filters-panel pa-4" :style="moreFiltersPanelStyle">
+          <div class="subtitle-2 mb-2">Objekte</div>
+          <v-checkbox
+            v-model="onlyBookablesToggleValue"
+            label="Nur buchbare Objekte"
+            @change="onOnlyBookablesChange"
+          />
+
+          <div class="subtitle-2 mb-2">Status</div>
+          <div class="status-checkbox-list">
+            <v-checkbox
+              v-for="option in statusOptions"
+              :key="option.value"
+              :input-value="status === option.value"
+              :label="option.text"
+              dense
+              hide-details
+              class="mt-0"
+              @change="onStatusCheckboxChange(option.value, $event)"
+            />
+          </div>
+        </div>
+      </v-menu>
+    </div>
   </div>
 </template>
 
 <script>
+export const BOOKING_STATUS_I18N = {
+  AWAITING_APPROVAL: "status.awaiting_approval",
+  PAYMENT_EXPECTED: "status.payment_expected",
+  PAID_COMPLETED: "status.paid_completed",
+  CONFIRMED_WITHOUT_PAYMENT: "status.confirmed_without_payment",
+  REJECTED: "status.rejected",
+};
+
+export const ALL_STATUS_KEYS = [
+  BOOKING_STATUS_I18N.AWAITING_APPROVAL,
+  BOOKING_STATUS_I18N.PAYMENT_EXPECTED,
+  BOOKING_STATUS_I18N.PAID_COMPLETED,
+  BOOKING_STATUS_I18N.CONFIRMED_WITHOUT_PAYMENT,
+  BOOKING_STATUS_I18N.REJECTED,
+];
+
+const STATUS_LABELS = {
+  [BOOKING_STATUS_I18N.AWAITING_APPROVAL]: "Freigabe ausstehend",
+  [BOOKING_STATUS_I18N.PAYMENT_EXPECTED]: "Zahlung ausstehend",
+  [BOOKING_STATUS_I18N.PAID_COMPLETED]: "Bezahlt / abgeschlossen",
+  [BOOKING_STATUS_I18N.CONFIRMED_WITHOUT_PAYMENT]: "Bestätigt ohne Zahlung",
+  [BOOKING_STATUS_I18N.REJECTED]: "Abgelehnt",
+};
+
 export default {
-  name: "DashboardPeriodFilter",
+  name: "DashboardFilter",
   props: {
     value: {
       type: String,
@@ -68,16 +153,49 @@ export default {
       type: String,
       default: null,
     },
+    onlyBookables: {
+      validator: (value) => value === null || value === true || value === false,
+      default: null,
+    },
+    status: {
+      type: String,
+      default: null,
+    },
+  },
+  data() {
+    return {
+      moreFiltersOpen: false,
+      onlyBookablesToggleValue: this.onlyBookables,
+    };
   },
   computed: {
     isEntirePeriod() {
       return !this.from && !this.to;
+    },
+    moreFiltersPanelStyle() {
+      const isDarkTheme =
+        this.$vuetify && this.$vuetify.theme && this.$vuetify.theme.dark;
+      return {
+        backgroundColor: isDarkTheme ? "#424242" : "#ffffff",
+      };
     },
     tenantOptions() {
       return (this.tenants || []).map((tenant) => ({
         tenantId: tenant.tenantId,
         tenantName: tenant.tenantName || tenant.tenantId,
       }));
+    },
+    statusOptions() {
+      return ALL_STATUS_KEYS.map((key) => ({
+        value: key,
+        text: STATUS_LABELS[key] || key,
+      }));
+    },
+    activeMoreFiltersCount() {
+      let count = 0;
+      if (this.onlyBookables) count += 1;
+      if (this.status) count += 1;
+      return count;
     },
   },
   watch: {
@@ -114,6 +232,26 @@ export default {
       this.$emit("tenant-change", nextId);
       this.syncTenantToRoute(nextId);
     },
+    onOnlyBookablesChange(value) {
+      const next = value === true || value === false ? value : null;
+      this.$emit("update:onlyBookables", next);
+      this.$emit("only-bookables-change", next);
+    },
+    onStatusChange(value) {
+      const next = value || null;
+      this.$emit("update:status", next);
+      this.$emit("status-change", next);
+    },
+    onStatusCheckboxChange(statusKey, isChecked) {
+      if (isChecked) {
+        this.onStatusChange(statusKey);
+        return;
+      }
+
+      if (this.status === statusKey) {
+        this.onStatusChange(null);
+      }
+    },
     syncTenantToRoute(tenantId) {
       if (!this.$router || !this.$route) return;
 
@@ -135,17 +273,32 @@ export default {
 </script>
 
 <style scoped>
-.period-group {
-  gap: 8px;
+.period-group,
+.right-filters {
+  gap: 12px;
+}
+.right-filters {
+  flex-wrap: nowrap;
 }
 .period-label {
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
 }
-.tenant-select {
-  width: 100%;
+.filter-select {
+  width: 220px;
   max-width: 280px;
   flex: 0 0 auto;
+}
+.more-filters-btn {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+}
+.more-filters-label {
+  opacity: 0.7;
+}
+.more-filters-panel {
+  min-width: 280px;
 }
 </style>

@@ -26,8 +26,12 @@
       :to="periodTo"
       :tenants="tenantOptions"
       :tenant-id.sync="selectedTenantId"
-      @input="loadDashboard"
+      :only-bookables.sync="onlyBookables"
+      :status.sync="selectedStatus"
       @tenant-change="loadDashboard"
+      @only-bookables-change="loadDashboard"
+      @status-change="loadDashboard"
+      @input="loadDashboard"
     />
 
     <dashboard-data :dashboard-data="dashboardData" />
@@ -64,6 +68,8 @@ export default {
       loading: false,
       selectedPeriod: "all", // '3' | '12' | 'all'
       selectedTenantId: null, // aus $route.query.tenantId
+      onlyBookables: null, // true | false | null
+      selectedStatus: null, // z. B. 'status.payment_expected'
       dashboardData: null,
       tendantData: null,
     };
@@ -120,16 +126,12 @@ export default {
       setTenants: "tenants/setTenants",
     }),
     async loadDashboard() {
-      // bestehenden API-Aufruf um Perioden-Parameter ergänzen, z. B.:
-      // selectedPeriod === 'all' → ohne from/to
-      // '3' / '12' → letzte 3 bzw. 12 Monate
-      // …
       const filterParams = {
         from: this.dateFrom,
         to: this.dateTo,
-        status: null,
-        bookableId: null, //"237b130d-9c1b-4ced-8a68-aa1eb69d41f1",
-        //isBookable: false,
+        status: this.selectedStatus,
+        //bookableId: null,
+        isBookable: this.onlyBookables,
       };
       this.dashboardData = await ApiTenantService.getDashboardData(
         filterParams
