@@ -2,12 +2,12 @@
   <div
     class="dashboard-filter d-flex flex-wrap align-center justify-space-between mb-6"
   >
-    <div class="d-flex flex-wrap align-center period-group">
+    <div class="d-flex flex-wrap align-center">
       <v-btn-toggle
         :value="value"
         mandatory
         dense
-        class="mr-4"
+        class="mr-2"
         color="primary"
         @change="$emit('input', $event)"
       >
@@ -16,10 +16,12 @@
         <v-btn value="all" small>Gesamter Zeitraum</v-btn>
       </v-btn-toggle>
 
-      <div class="period-label subtitle-2 grey--text text--darken-1">
+      <div
+        v-if="!isEntirePeriod"
+        class="period-label subtitle-2 grey--text text--darken-1"
+      >
         <v-icon small left>mdi-calendar-range</v-icon>
-        <template v-if="isEntirePeriod"> Gesamter Zeitraum </template>
-        <template v-else>
+        <template>
           {{ formatDate(from) }}
           <span class="mx-1">–</span>
           {{ formatDate(to) }}
@@ -59,7 +61,7 @@
             outlined
             hide-details
             :append-icon="moreFiltersOpen ? 'mdi-menu-up' : 'mdi-menu-down'"
-            class="filter-select more-filters-field"
+            class="filter-select more-filters-field ml-2"
             v-bind="attrs"
             v-on="on"
           />
@@ -270,10 +272,6 @@ export default {
 </script>
 
 <style scoped>
-.period-group,
-.right-filters {
-  gap: 12px;
-}
 .right-filters {
   flex-wrap: nowrap;
 }
