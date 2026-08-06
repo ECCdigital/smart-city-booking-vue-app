@@ -38,8 +38,8 @@
         clearable
         dense
         outlined
-        offset-y
         hide-details
+        :menu-props="tenantMenuProps"
         class="filter-select"
         @change="onTenantChange"
       />
@@ -48,34 +48,21 @@
         v-model="moreFiltersOpen"
         offset-y
         :close-on-content-click="false"
-        class="filter-select"
+        content-class="more-filters-menu"
       >
         <template #activator="{ on, attrs }">
-          <v-btn
-            v-bind="attrs"
-            outlined
+          <v-text-field
+            :value="moreFiltersDisplay"
+            label="Weitere Filter"
+            readonly
             dense
-            height="40"
-            width="180"
-            class="more-filters-btn d-flex justify-space-between items-center"
+            outlined
+            hide-details
+            :append-icon="moreFiltersOpen ? 'mdi-menu-up' : 'mdi-menu-down'"
+            class="filter-select more-filters-field"
+            v-bind="attrs"
             v-on="on"
-          >
-            <div class="d-flex items-center">
-              <span class="more-filters-label">Weitere Filter</span>
-              <v-chip
-                v-if="activeMoreFiltersCount > 0"
-                x-small
-                color="primary"
-                class="ml-2"
-                label
-              >
-                {{ activeMoreFiltersCount }}
-              </v-chip>
-            </div>
-            <v-icon right small>
-              {{ moreFiltersOpen ? "mdi-menu-up" : "mdi-menu-down" }}
-            </v-icon>
-          </v-btn>
+          />
         </template>
 
         <div class="more-filters-panel pa-4" :style="moreFiltersPanelStyle">
@@ -166,6 +153,11 @@ export default {
     return {
       moreFiltersOpen: false,
       onlyBookablesToggleValue: this.onlyBookables,
+      tenantMenuProps: {
+        offsetY: true,
+        bottom: true,
+        nudgeBottom: 2,
+      },
     };
   },
   computed: {
@@ -196,6 +188,11 @@ export default {
       if (this.onlyBookables) count += 1;
       if (this.status) count += 1;
       return count;
+    },
+    moreFiltersDisplay() {
+      if (this.activeMoreFiltersCount === 0) return "";
+      if (this.activeMoreFiltersCount === 1) return "1 Filter aktiv";
+      return `${this.activeMoreFiltersCount} Filter aktiv`;
     },
   },
   watch: {
@@ -290,13 +287,12 @@ export default {
   max-width: 280px;
   flex: 0 0 auto;
 }
-.more-filters-btn {
-  text-transform: none;
-  letter-spacing: normal;
-  font-weight: 400;
+.more-filters-field {
+  cursor: pointer;
 }
-.more-filters-label {
-  opacity: 0.7;
+.more-filters-field >>> .v-input__slot,
+.more-filters-field >>> input {
+  cursor: pointer;
 }
 .more-filters-panel {
   min-width: 280px;
