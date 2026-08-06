@@ -73,6 +73,24 @@ export default {
       tenants: "tenants/tenants",
       currentTenant: "tenants/currentTenantId",
     }),
+    dateFrom() {
+      let d = new Date();
+      if (this.selectedPeriod === "3") {
+        const threeMonthAgo = d.setMonth(d.getMonth() - 3);
+        return new Date(threeMonthAgo);
+      }
+      if (this.selectedPeriod === "12") {
+        const twelveMonthAgo = d.setMonth(d.getMonth() - 12);
+        return new Date(twelveMonthAgo);
+      }
+      return null;
+    },
+    dateTo() {
+      if (this.selectedPeriod === "all") {
+        return null;
+      }
+      return new Date();
+    },
     periodFrom() {
       return this.dashboardData && this.dashboardData.data
         ? this.dashboardData.data.from
@@ -94,7 +112,7 @@ export default {
   },
   mounted() {
     this.fetchDashboardData();
-    this.fetchDashboardDataByTenantId("diz"); //toDo - TESTWEISE
+    //this.fetchDashboardDataByTenantId("diz"); //toDo - TESTWEISE
   },
   methods: {
     ...mapActions({
@@ -106,6 +124,16 @@ export default {
       // selectedPeriod === 'all' → ohne from/to
       // '3' / '12' → letzte 3 bzw. 12 Monate
       // …
+      const filterParams = {
+        from: this.dateFrom,
+        to: this.dateTo,
+        status: null,
+        bookableId: null, //"237b130d-9c1b-4ced-8a68-aa1eb69d41f1",
+        //isBookable: false,
+      };
+      this.dashboardData = await ApiTenantService.getDashboardData(
+        filterParams
+      );
     },
     async fetchTenants() {
       try {
@@ -121,6 +149,7 @@ export default {
     async fetchDashboardData() {
       try {
         this.loading = true;
+
         this.dashboardData = await ApiTenantService.getDashboardData();
       } catch (error) {
         console.error(error);

@@ -21,8 +21,11 @@ export default {
       withCredentials: withCredentials,
     });
   },
-  async getDashboardData() {
-    const response = await ApiClient.get("api/v2/dashboard/summary");
+  async getDashboardData(query = {}) {
+    console.log("query", query);
+    const response = await ApiClient.get("api/v2/dashboard/summary", {
+      params: query,
+    });
     return response.data;
   },
   async getDashboardDataByTenant(tenantId) {
