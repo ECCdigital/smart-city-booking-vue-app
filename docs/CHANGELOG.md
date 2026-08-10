@@ -7,6 +7,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+## [4.2.6] — 2026-08-10
+
 ### Changed
 
 - Block editor text blocks: font size select uses pixel values (7–24 px) instead of small/medium/large; existing S/M/L templates still render correctly
@@ -199,6 +201,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.2.6]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.5...v4.2.6
 [4.2.5]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.4...v4.2.5
 [4.2.4]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.3...v4.2.4
 [4.2.3]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.2...v4.2.3
