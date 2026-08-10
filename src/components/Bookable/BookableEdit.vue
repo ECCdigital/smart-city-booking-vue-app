@@ -440,7 +440,8 @@ export default {
           });
         }
 
-        const bookableClean = _.omit(response.data, ["customFields"]);
+        // Match init(): snapshot the normalized bookable, not raw response.data
+        const bookableClean = _.omit(this.bookable, ["customFields"]);
 
         this.originalSnapshot = JSON.stringify({
           bookable: bookableClean,
