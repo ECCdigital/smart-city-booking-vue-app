@@ -7,6 +7,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Bookable edit: unsaved-changes chip clears after a successful save (snapshot now matches the normalized bookable)
+
 ## [4.2.6] — 2026-08-10
 
 ### Changed
