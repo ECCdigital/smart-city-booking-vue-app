@@ -7,6 +7,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+## [4.2.7] — 2026-08-10
+
 ### Fixed
 
 - Bookable edit: unsaved-changes chip clears after a successful save (snapshot now matches the normalized bookable)
@@ -205,6 +207,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.2.7]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.6...v4.2.7
 [4.2.6]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.5...v4.2.6
 [4.2.5]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.4...v4.2.5
 [4.2.4]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.3...v4.2.4
