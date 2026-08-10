@@ -69,7 +69,7 @@ export default {
       selectedPeriod: "all", // '3' | '12' | 'all'
       selectedTenantId: null, // aus $route.query.tenantId
       onlyBookables: null, // true | false | null
-      selectedStatus: null, // z. B. 'status.payment_expected'
+      selectedStatus: [], // e.g. ['status.payment_expected', 'status.awaiting_approval']
       dashboardData: null,
       tendantData: null,
     };
@@ -113,12 +113,16 @@ export default {
 
     //toDo
   },
+  watch: {
+    selectedTenantId(newTenantId) {
+      this.fetchDashboardDataByTenantId(newTenantId);
+    },
+  },
   created() {
     this.loadDashboard();
   },
   mounted() {
     this.fetchDashboardData();
-    //this.fetchDashboardDataByTenantId("diz"); //toDo - TESTWEISE
   },
   methods: {
     ...mapActions({
@@ -129,13 +133,14 @@ export default {
       const filterParams = {
         from: this.dateFrom,
         to: this.dateTo,
-        status: this.selectedStatus,
+        status: this.selectedStatus.length ? this.selectedStatus : undefined,
         //bookableId: null,
         isBookable: this.onlyBookables,
       };
       this.dashboardData = await ApiTenantService.getDashboardData(
         filterParams
       );
+      console.log("*A.1* - got data in dashboard.vue", this.dashboardData);
     },
     async fetchTenants() {
       try {

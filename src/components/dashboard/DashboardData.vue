@@ -34,8 +34,7 @@
               </div>
               <div class="metric-row">
                 <span>Aktive Events</span>
-                <!--<strong>{{ formatNumber(totals.events) }}</strong>-->
-                <strong>?</strong>
+                <strong>{{ formatNumber(totals.activeEvents) }}</strong>
               </div>
             </v-card-text>
           </v-card>

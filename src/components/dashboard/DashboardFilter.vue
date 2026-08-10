@@ -80,7 +80,7 @@
             <v-checkbox
               v-for="option in statusOptions"
               :key="option.value"
-              :input-value="status === option.value"
+              :input-value="isStatusSelected(option.value)"
               :label="option.text"
               dense
               hide-details
@@ -147,8 +147,8 @@ export default {
       default: null,
     },
     status: {
-      type: String,
-      default: null,
+      type: Array,
+      default: () => [],
     },
   },
   data() {
@@ -188,7 +188,7 @@ export default {
     activeMoreFiltersCount() {
       let count = 0;
       if (this.onlyBookables) count += 1;
-      if (this.status) count += 1;
+      count += (this.status || []).length;
       return count;
     },
     moreFiltersDisplay() {
@@ -236,20 +236,27 @@ export default {
       this.$emit("update:onlyBookables", next);
       this.$emit("only-bookables-change", next);
     },
+    isStatusSelected(statusKey) {
+      return (this.status || []).includes(statusKey);
+    },
     onStatusChange(value) {
-      const next = value || null;
+      const next = Array.isArray(value) ? value : [];
       this.$emit("update:status", next);
       this.$emit("status-change", next);
     },
     onStatusCheckboxChange(statusKey, isChecked) {
+      const current = Array.isArray(this.status) ? [...this.status] : [];
       if (isChecked) {
-        this.onStatusChange(statusKey);
-        return;
+        if (!current.includes(statusKey)) {
+          current.push(statusKey);
+        }
+      } else {
+        const index = current.indexOf(statusKey);
+        if (index !== -1) {
+          current.splice(index, 1);
+        }
       }
-
-      if (this.status === statusKey) {
-        this.onStatusChange(null);
-      }
+      this.onStatusChange(current);
     },
     syncTenantToRoute(tenantId) {
       if (!this.$router || !this.$route) return;

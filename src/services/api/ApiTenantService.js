@@ -23,14 +23,16 @@ export default {
   },
   async getDashboardData(query = {}) {
     console.log("query", query);
+    const _query = { granularity: "week", ...query };
     const response = await ApiClient.get("api/v2/dashboard/summary", {
-      params: query,
+      params: _query,
     });
     return response.data;
   },
   async getDashboardDataByTenant(tenantId) {
+    const query = { granularity: "week" };
     const response = await ApiClient.get(
-      `api/v2/${tenantId}/dashboard/summary`
+      `api/v2/${tenantId}/dashboard/summary`, {params: query}
     );
     console.log(response);
     return response.data;
