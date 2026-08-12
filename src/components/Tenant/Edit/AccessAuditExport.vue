@@ -2,6 +2,7 @@
 import { mapActions } from "vuex";
 import ApiAccessService from "@/services/api/ApiAccessService";
 import ToastService from "@/services/ToastService";
+import { MENU_PROPS_ABOVE_SAVE_BAR } from "@/utilities/overlay-layers";
 
 export default {
   name: "AccessAuditExport",
@@ -23,6 +24,14 @@ export default {
     };
   },
   computed: {
+    /**
+     * Die Filter liegen auf einer Seite mit fixierter SaveBar. Ohne expliziten
+     * z-index öffnet Vuetify die Optionsliste hinter der Bar, sodass die
+     * unteren Einträge nicht anwählbar sind.
+     */
+    menuProps() {
+      return MENU_PROPS_ABOVE_SAVE_BAR;
+    },
     providerOptions() {
       return [
         { value: "nuki", text: "Nuki" },
@@ -193,6 +202,7 @@ export default {
           dense
           clearable
           :items="providerOptions"
+          :menu-props="menuProps"
           :label="$t('accessPoint.audit.provider')"
           v-model="filters.provider"
           hide-details
@@ -205,6 +215,7 @@ export default {
           dense
           clearable
           :items="actionOptions"
+          :menu-props="menuProps"
           :label="$t('accessPoint.audit.action')"
           v-model="filters.action"
           hide-details
@@ -217,6 +228,7 @@ export default {
           dense
           clearable
           :items="resultOptions"
+          :menu-props="menuProps"
           :label="$t('accessPoint.audit.result')"
           v-model="filters.result"
           hide-details
