@@ -122,6 +122,10 @@ import ApiInstanceService from "@/services/api/ApiInstanceService";
 import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
+import {
+  createLockAndAccessAppDefaults,
+  withoutUnchangedSecrets,
+} from "@/utilities/access-apps";
 
 export default {
   name: "TenantOverview",
@@ -270,51 +274,7 @@ export default {
           daysUntilPaymentDue: null,
           active: false,
         },
-        pareva: {
-          type: "locker",
-          id: "pareva",
-          title: "Pareva",
-          serverUrl: "",
-          lockerId: "",
-          user: "",
-          password: "",
-          active: false,
-        },
-        ifbs: {
-          type: "locker",
-          id: "ifbs",
-          title: "Parkraumservice",
-          serverUrl: "",
-          secretPhrase: "",
-          apiKeyID: "",
-          apiKey: "",
-          active: false,
-          customerService: {
-            name: "",
-            email: "",
-            phone: "",
-          },
-        },
-        nuki: {
-          type: "access",
-          id: "nuki",
-          title: "Nuki",
-          apiToken: "",
-          apiBaseUrl: "https://api.nuki.io",
-          active: false,
-        },
-        "salto-ks": {
-          type: "access",
-          id: "salto-ks",
-          title: "Salto KS",
-          clientId: "",
-          clientSecret: "",
-          username: "",
-          password: "",
-          siteId: "",
-          apiBaseUrl: "https://clp-accept-user.my-clay.com",
-          active: false,
-        },
+        ...createLockAndAccessAppDefaults(),
       },
     };
   },
@@ -412,24 +372,9 @@ export default {
       this.apps = map;
     },
     replaceApps() {
-      this.tenant.applications = Object.values(this.apps).map((a) => {
-        const app = { ...a };
-        // Bei Nuki den Token nur senden, wenn ein neuer eingegeben wurde.
-        // Leeres Feld => bestehenden (verschlüsselten) Token unverändert lassen.
-        if (app.id === "nuki" && !app.apiToken) {
-          delete app.apiToken;
-        }
-        // Bei Salto KS das Secret nur senden, wenn ein neues eingegeben wurde.
-        if (app.id === "salto-ks" && !app.clientSecret) {
-          delete app.clientSecret;
-        }
-        // Bei Salto KS das System-User-Passwort nur senden, wenn ein neues
-        // eingegeben wurde. Leeres Feld => bestehendes Passwort unverändert lassen.
-        if (app.id === "salto-ks" && !app.password) {
-          delete app.password;
-        }
-        return app;
-      });
+      this.tenant.applications = Object.values(this.apps).map(
+        withoutUnchangedSecrets
+      );
     },
     async fetchWorkflow() {
       const data = await ApiWorkflowService.getWorkflow(this.tenant.id);

@@ -4,9 +4,13 @@ import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import AddressLookup from "@/components/commons/AddressLookup.vue";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
+import {
+  accessPointLabel,
+  requiresQrScan,
+  QR_SCAN_RULE,
+} from "@/utilities/access-points";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
-const QR_SCAN_RULE = "qrScan";
 
 function emptyForm() {
   return {
@@ -170,10 +174,7 @@ export default {
       this.validationRulesTouched = false;
       // A new access point starts with the rule the server would default to,
       // so what the switch shows is what an untouched create produces.
-      const rules = source?.validationRules || [];
-      this.qrScanRequired = source
-        ? rules.some((rule) => rule.type === QR_SCAN_RULE)
-        : true;
+      this.qrScanRequired = source ? requiresQrScan(source) : true;
       this.pickerProvider = source ? "" : this.providerOptions[0]?.value || "";
       this.$nextTick(() => this.$refs.form?.resetValidation());
     },
@@ -188,17 +189,15 @@ export default {
         this.providerLocks = response.data || [];
       } catch (error) {
         this.providerLocks = [];
-        this.lockLoadError = formatAccessPointErrorMessage(
-          error,
-          this.$t.bind(this),
-          { fallbackKey: "accessPoint.load.error.message" }
-        );
+        this.lockLoadError = formatAccessPointErrorMessage(error, {
+          fallbackKey: "accessPoint.load.error.message",
+        });
       } finally {
         this.loadingLocks = false;
       }
     },
     lockText(lock) {
-      return lock.label || lock.externalId || lock.id;
+      return accessPointLabel(lock);
     },
     // Prefill from the picked lock; every field stays editable afterwards, so
     // the same form covers manual creation and swapping a lock.
@@ -212,12 +211,6 @@ export default {
       this.form.externalId = lock.externalId;
       this.form.label = lock.label || this.form.label;
       this.form.providerLocationId = lock.locationId || "";
-      if (lock.type) this.form.type = lock.type;
-      if (Array.isArray(lock.supportedModes) && lock.supportedModes.length) {
-        this.form.mode = lock.supportedModes.includes(this.form.mode)
-          ? this.form.mode
-          : lock.supportedModes[0];
-      }
     },
     async prefillLocation() {
       this.prefilling = true;
@@ -241,10 +234,7 @@ export default {
           "accessPoint.management.location.prefillApplied"
         );
       } catch (error) {
-        this.prefillHint = formatAccessPointErrorMessage(
-          error,
-          this.$t.bind(this)
-        );
+        this.prefillHint = formatAccessPointErrorMessage(error);
       } finally {
         this.prefilling = false;
       }
@@ -295,18 +285,24 @@ export default {
 
       if (this.isEdit) {
         payload.id = this.form.id;
-        payload.validationRules = this.qrScanRequired
-          ? [{ type: QR_SCAN_RULE }]
-          : [];
+        payload.validationRules = this.buildValidationRules();
       } else if (this.validationRulesTouched) {
         // Explicitly empty means "no scan needed"; leaving the field out on
         // create is what makes the server apply its qrScan default.
-        payload.validationRules = this.qrScanRequired
-          ? [{ type: QR_SCAN_RULE }]
-          : [];
+        payload.validationRules = this.buildValidationRules();
       }
 
       return payload;
+    },
+    /**
+     * The switch owns the `qrScan` rule and nothing else - rules of other
+     * types stay as they are instead of being dropped on every save.
+     */
+    buildValidationRules() {
+      const others = (this.accessPoint?.validationRules || []).filter(
+        (rule) => rule.type !== QR_SCAN_RULE
+      );
+      return this.qrScanRequired ? [...others, { type: QR_SCAN_RULE }] : others;
     },
     async submit() {
       if (!this.$refs.form.validate()) return;
@@ -325,11 +321,9 @@ export default {
         );
         this.$emit("saved", response.data);
       } catch (error) {
-        this.saveError = formatAccessPointErrorMessage(
-          error,
-          this.$t.bind(this),
-          { fallbackKey: "accessPoint.management.errors.saveFailed" }
-        );
+        this.saveError = formatAccessPointErrorMessage(error, {
+          fallbackKey: "accessPoint.management.errors.saveFailed",
+        });
       } finally {
         this.saving = false;
       }
@@ -581,6 +575,9 @@ export default {
           <div v-if="coordinates" class="text-caption text--secondary mb-2">
             {{ $t("accessPoint.management.location.coordinates") }}:
             {{ coordinates }}
+          </div>
+          <div v-if="!isEdit" class="text-caption text--secondary mb-2">
+            {{ $t("accessPoint.management.location.prefillAfterSave") }}
           </div>
           <div v-if="canPrefillLocation" class="mb-2">
             <v-btn

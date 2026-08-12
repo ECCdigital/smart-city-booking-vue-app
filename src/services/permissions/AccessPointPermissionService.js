@@ -2,12 +2,12 @@ import user from "@/store/modules/user";
 import store from "@/store";
 
 /**
- * Who may see and change access points.
+ * Who may change access points.
  *
  * Writing doors - creating, editing, deleting, QR codes, scan-code rotation
  * and the location prefill - is reserved for tenant owners. Reading the list
- * is additionally open to everyone who may read bookables, because the
- * selector in the bookable editor needs it.
+ * is open to everyone who may read bookables, but that is only needed by the
+ * selector in the bookable editor and therefore not decided here.
  */
 class AccessPointPermissionService {
   static _tenantPermissions() {
@@ -29,14 +29,6 @@ class AccessPointPermissionService {
     return (
       AccessPointPermissionService.isInstanceOwner() ||
       AccessPointPermissionService.isTenantOwner()
-    );
-  }
-
-  static allowRead() {
-    if (AccessPointPermissionService.allowWrite()) return true;
-    return (
-      AccessPointPermissionService._tenantPermissions()?.manageBookables
-        ?.readAny === true
     );
   }
 }

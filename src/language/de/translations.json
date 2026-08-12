@@ -686,6 +686,9 @@
         "hint": "Die übernommenen Angaben lassen sich anschließend frei ändern. Ohne Auswahl legen Sie den Zugangspunkt manuell an.",
         "noProvider": "Es ist kein Anbieter für Türschlösser aktiv. Sie können den Zugangspunkt manuell anlegen oder zuerst unter „Schließsysteme“ einen Anbieter aktivieren."
       },
+      "ruleTypes": {
+        "qrScan": "QR-Scan erforderlich"
+      },
       "rules": {
         "title": "Validierungsregeln",
         "qrScan": "QR-Scan erforderlich",
@@ -700,6 +703,7 @@
         "address": "Adresse",
         "coordinates": "Koordinaten",
         "prefill": "Standort vom Anbieter übernehmen",
+        "prefillAfterSave": "Den Standort kann der Anbieter erst vorschlagen, wenn der Zugangspunkt angelegt ist.",
         "prefillApplied": "Die Koordinaten des Anbieters wurden übernommen. Speichern Sie, um sie zu sichern.",
         "prefillEmpty": "Der Anbieter kennt für dieses Schloss keinen Standort."
       },
@@ -768,6 +772,14 @@
         "qrFailed": {
           "title": "QR-Code fehlgeschlagen",
           "message": "Der QR-Code konnte nicht erzeugt werden."
+        },
+        "tenantSaved": {
+          "title": "Gespeichert",
+          "message": "Änderungen wurden erfolgreich gespeichert."
+        },
+        "tenantSaveFailed": {
+          "title": "Speichern fehlgeschlagen",
+          "message": "Fehler beim Speichern der Änderungen."
         }
       }
     },

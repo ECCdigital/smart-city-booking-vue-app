@@ -1,17 +1,17 @@
+import i18n from "@/language/index";
+
 const FIELD_LABEL_PREFIX = "accessPoint.management.fields";
 const RULE_LABEL_PREFIX = "accessPoint.management.ruleTypes";
 const CODE_LABEL_PREFIX = "accessPoint.management.errors.codes";
 
-function translateField(field, translate) {
-  const key = `${FIELD_LABEL_PREFIX}.${field}`;
-  const label = translate(key);
-  return label === key ? field : label;
-}
-
-function translateRuleType(ruleType, translate) {
-  const key = `${RULE_LABEL_PREFIX}.${ruleType}`;
-  const label = translate(key);
-  return label === key ? ruleType : label;
+/**
+ * Translate a value the API named - a field, a rule type, a validation code.
+ * Unknown values fall back to the raw value: a name the admin can quote is
+ * better than an empty spot.
+ */
+function translateOrRaw(prefix, value) {
+  const key = `${prefix}.${value}`;
+  return i18n.te(key) ? i18n.t(key) : value;
 }
 
 /**
@@ -19,30 +19,27 @@ function translateRuleType(ruleType, translate) {
  * rule needs - the one error of the management API that is meaningless as a
  * raw payload, because the fix is always "fill in the listed fields first".
  */
-function formatPrecondition(detail, translate) {
+function formatPrecondition(detail) {
   const requires = Array.isArray(detail.params?.requires)
     ? detail.params.requires
     : [];
 
-  return translate("accessPoint.management.errors.preconditionFailed", {
-    rule: translateRuleType(detail.params?.ruleType, translate),
+  return i18n.t("accessPoint.management.errors.preconditionFailed", {
+    rule: translateOrRaw(RULE_LABEL_PREFIX, detail.params?.ruleType),
     requires: requires
-      .map((field) => translateField(field, translate))
+      .map((field) => translateOrRaw(FIELD_LABEL_PREFIX, field))
       .join(", "),
   });
 }
 
-function formatDetail(detail, translate) {
+function formatDetail(detail) {
   if (detail.code === "precondition_failed") {
-    return formatPrecondition(detail, translate);
+    return formatPrecondition(detail);
   }
 
-  const codeKey = `${CODE_LABEL_PREFIX}.${detail.code}`;
-  const reason = translate(codeKey);
-
-  return translate("accessPoint.management.errors.fieldInvalid", {
-    field: translateField(detail.field, translate),
-    reason: reason === codeKey ? detail.code : reason,
+  return i18n.t("accessPoint.management.errors.fieldInvalid", {
+    field: translateOrRaw(FIELD_LABEL_PREFIX, detail.field),
+    reason: translateOrRaw(CODE_LABEL_PREFIX, detail.code),
   });
 }
 
@@ -51,28 +48,26 @@ function formatDetail(detail, translate) {
  * can act on.
  *
  * @param {Object} error The rejected axios error
- * @param {Function} translate `$t` of the calling component
  * @param {Object} [options] `fallbackKey` for errors without a known shape
  * @returns {string} A message ready to be shown
  */
 export function formatAccessPointErrorMessage(
   error,
-  translate,
   { fallbackKey = "accessPoint.management.errors.generic" } = {}
 ) {
   const response = error?.response;
   const details = response?.data?.details;
 
   if (Array.isArray(details) && details.length > 0) {
-    return details.map((detail) => formatDetail(detail, translate)).join(" ");
+    return details.map((detail) => formatDetail(detail)).join(" ");
   }
 
   if (response?.status === 403) {
-    return translate("accessPoint.management.errors.forbidden");
+    return i18n.t("accessPoint.management.errors.forbidden");
   }
 
   if (response?.status === 404) {
-    return translate("accessPoint.management.errors.notFound");
+    return i18n.t("accessPoint.management.errors.notFound");
   }
 
   // A blob response body (QR download) carries no readable message.
@@ -85,5 +80,5 @@ export function formatAccessPointErrorMessage(
     return message;
   }
 
-  return translate(fallbackKey);
+  return i18n.t(fallbackKey);
 }

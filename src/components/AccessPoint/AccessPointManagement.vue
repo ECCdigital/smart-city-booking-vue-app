@@ -10,8 +10,7 @@ import AccessPointDeleteDialog from "@/components/AccessPoint/AccessPointDeleteD
 import AccessPointRotateDialog from "@/components/AccessPoint/AccessPointRotateDialog.vue";
 import { downloadQrCode, QR_FORMATS } from "@/utilities/access-point-qr";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
-
-const QR_SCAN_RULE = "qrScan";
+import { accessPointLabel, requiresQrScan } from "@/utilities/access-points";
 
 export default {
   name: "AccessPointManagement",
@@ -85,8 +84,7 @@ export default {
         const assigned = this.bookablesByAccessPointId[accessPoint.id] || [];
         return {
           ...accessPoint,
-          displayLabel:
-            accessPoint.label || accessPoint.externalId || accessPoint.id,
+          displayLabel: accessPointLabel(accessPoint),
           typeLabel: this.$t(
             `accessPoint.management.types.${accessPoint.type}`
           ),
@@ -94,9 +92,7 @@ export default {
           assignmentLabel: assigned.length
             ? assigned.map((bookable) => bookable.title).join(", ")
             : this.$t("accessPoint.management.table.unassigned"),
-          qrScanRequired: (accessPoint.validationRules || []).some(
-            (rule) => rule.type === QR_SCAN_RULE
-          ),
+          qrScanRequired: requiresQrScan(accessPoint),
         };
       });
     },
@@ -128,11 +124,9 @@ export default {
         this.accessPoints = response.data || [];
       } catch (error) {
         this.accessPoints = [];
-        this.loadError = formatAccessPointErrorMessage(
-          error,
-          this.$t.bind(this),
-          { fallbackKey: "accessPoint.management.errors.loadFailed" }
-        );
+        this.loadError = formatAccessPointErrorMessage(error, {
+          fallbackKey: "accessPoint.management.errors.loadFailed",
+        });
       } finally {
         this.loading = false;
       }
@@ -207,11 +201,9 @@ export default {
         );
         await this.fetchAll();
       } catch (error) {
-        this.deleteError = formatAccessPointErrorMessage(
-          error,
-          this.$t.bind(this),
-          { fallbackKey: "accessPoint.management.errors.deleteFailed" }
-        );
+        this.deleteError = formatAccessPointErrorMessage(error, {
+          fallbackKey: "accessPoint.management.errors.deleteFailed",
+        });
       } finally {
         this.deleting = false;
       }

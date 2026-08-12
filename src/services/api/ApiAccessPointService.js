@@ -13,11 +13,6 @@ export default {
     return ApiClient.get(`api/${t}/accesspoints`);
   },
 
-  getAccessPoint(id, tenant) {
-    const t = tenant || store.getters["tenants/currentTenantId"];
-    return ApiClient.get(`api/${t}/accesspoints/${id}`);
-  },
-
   /**
    * Upsert an access point. A payload with `id` updates, one without creates
    * with a server-side id.

@@ -3,6 +3,7 @@ import { mapGetters } from "vuex";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import { downloadQrCode } from "@/utilities/access-point-qr";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
+import { accessPointLabel } from "@/utilities/access-points";
 
 export default {
   name: "AccessPointRotateDialog",
@@ -23,12 +24,7 @@ export default {
       tenantId: "tenants/currentTenantId",
     }),
     label() {
-      return (
-        this.accessPoint?.label ||
-        this.accessPoint?.externalId ||
-        this.accessPoint?.id ||
-        ""
-      );
+      return accessPointLabel(this.accessPoint);
     },
   },
   watch: {
@@ -54,7 +50,7 @@ export default {
         this.rotated = true;
         this.$emit("rotated", this.accessPoint);
       } catch (error) {
-        this.error = formatAccessPointErrorMessage(error, this.$t.bind(this), {
+        this.error = formatAccessPointErrorMessage(error, {
           fallbackKey: "accessPoint.management.rotate.error",
         });
       } finally {
@@ -68,7 +64,7 @@ export default {
       try {
         await downloadQrCode(this.accessPoint, format, this.tenantId);
       } catch (error) {
-        this.error = formatAccessPointErrorMessage(error, this.$t.bind(this), {
+        this.error = formatAccessPointErrorMessage(error, {
           fallbackKey: "accessPoint.management.qr.error",
         });
       } finally {

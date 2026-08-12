@@ -6,10 +6,12 @@ import SaveBar from "@/components/commons/SaveBar.vue";
 import AccessPointManagement from "@/components/AccessPoint/AccessPointManagement.vue";
 import TenantEditAccessLocks from "@/components/Tenant/Edit/TenantEditAccessLocks.vue";
 import AccessPointPermissionService from "@/services/permissions/AccessPointPermissionService";
-
-// The apps this page owns. Everything else on the tenant - above all the
-// payment apps - is left untouched when saving.
-const MANAGED_APP_IDS = ["pareva", "ifbs", "nuki", "salto-ks"];
+import ToastService from "@/services/ToastService";
+import {
+  createLockAndAccessAppDefaults,
+  withoutUnchangedSecrets,
+  LOCK_AND_ACCESS_APP_IDS,
+} from "@/utilities/access-apps";
 
 export default {
   name: "AccessPoints",
@@ -30,53 +32,7 @@ export default {
       nukiTokenConfigured: false,
       saltoSecretConfigured: false,
       saltoPasswordConfigured: false,
-      defaultApps: {
-        pareva: {
-          type: "locker",
-          id: "pareva",
-          title: "Pareva",
-          serverUrl: "",
-          lockerId: "",
-          user: "",
-          password: "",
-          active: false,
-        },
-        ifbs: {
-          type: "locker",
-          id: "ifbs",
-          title: "Parkraumservice",
-          serverUrl: "",
-          secretPhrase: "",
-          apiKeyID: "",
-          apiKey: "",
-          active: false,
-          customerService: {
-            name: "",
-            email: "",
-            phone: "",
-          },
-        },
-        nuki: {
-          type: "access",
-          id: "nuki",
-          title: "Nuki",
-          apiToken: "",
-          apiBaseUrl: "https://api.nuki.io",
-          active: false,
-        },
-        "salto-ks": {
-          type: "access",
-          id: "salto-ks",
-          title: "Salto KS",
-          clientId: "",
-          clientSecret: "",
-          username: "",
-          password: "",
-          siteId: "",
-          apiBaseUrl: "https://clp-accept-user.my-clay.com",
-          active: false,
-        },
-      },
+      defaultApps: createLockAndAccessAppDefaults(),
     };
   },
   computed: {
@@ -150,7 +106,7 @@ export default {
     initializeApps() {
       const existing = this.tenant.applications || [];
       const map = {};
-      MANAGED_APP_IDS.forEach((id) => {
+      LOCK_AND_ACCESS_APP_IDS.forEach((id) => {
         const found = existing.find((app) => app.id === id);
         map[id] = found ? { ...found } : { ...this.defaultApps[id] };
       });
@@ -170,24 +126,10 @@ export default {
      */
     replaceApps() {
       const untouched = (this.tenant.applications || []).filter(
-        (app) => !MANAGED_APP_IDS.includes(app.id)
+        (app) => !LOCK_AND_ACCESS_APP_IDS.includes(app.id)
       );
 
-      const managed = Object.values(this.apps).map((a) => {
-        const app = { ...a };
-        // An empty secret field means "unchanged" - dropping the key keeps
-        // the stored (encrypted) value on the server.
-        if (app.id === "nuki" && !app.apiToken) {
-          delete app.apiToken;
-        }
-        if (app.id === "salto-ks" && !app.clientSecret) {
-          delete app.clientSecret;
-        }
-        if (app.id === "salto-ks" && !app.password) {
-          delete app.password;
-        }
-        return app;
-      });
+      const managed = Object.values(this.apps).map(withoutUnchangedSecrets);
 
       this.tenant.applications = [...untouched, ...managed];
     },
@@ -222,15 +164,19 @@ export default {
           tenant: this.tenant,
           apps: this.apps,
         });
-        await this.addToast({
-          message: "Änderungen wurden erfolgreich gespeichert.",
-          type: "success",
-        });
+        await this.addToast(
+          ToastService.createToast(
+            "accessPoint.management.toasts.tenantSaved",
+            "success"
+          )
+        );
       } catch (e) {
-        await this.addToast({
-          message: "Fehler beim Speichern der Änderungen.",
-          type: "error",
-        });
+        await this.addToast(
+          ToastService.createToast(
+            "accessPoint.management.toasts.tenantSaveFailed",
+            "error"
+          )
+        );
       } finally {
         this.inProgress = false;
       }

@@ -1,4 +1,6 @@
 <script>
+import { accessPointLabel } from "@/utilities/access-points";
+
 export default {
   name: "AccessPointDeleteDialog",
   props: {
@@ -12,12 +14,7 @@ export default {
   },
   computed: {
     label() {
-      return (
-        this.accessPoint?.label ||
-        this.accessPoint?.externalId ||
-        this.accessPoint?.id ||
-        ""
-      );
+      return accessPointLabel(this.accessPoint);
     },
   },
 };
