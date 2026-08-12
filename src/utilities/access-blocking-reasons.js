@@ -7,6 +7,9 @@ const ACCESS_BLOCKING_REASON_KEYS = Object.freeze([
   "not_provisioned",
   "locker_not_ready",
   "no_remote_access",
+  "evidence_missing",
+  "evidence_invalid",
+  "evidence_rule_unavailable",
 ]);
 
 export function formatBlockingReasonMessage(

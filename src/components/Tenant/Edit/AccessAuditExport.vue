@@ -31,17 +31,39 @@ export default {
       ];
     },
     actionOptions() {
-      return ["open", "close", "unlatch", "provision", "revoke", "status", "webhook"].map(
-        (value) => ({
-          value,
-          text: this.$t(`accessPoint.audit.actions.${value}`),
-        })
-      );
+      return [
+        "open",
+        "close",
+        "unlatch",
+        "scan",
+        "provision",
+        "revoke",
+        "status",
+        "webhook",
+      ].map((value) => ({
+        value,
+        text: this.$t(`accessPoint.audit.actions.${value}`),
+      }));
     },
     resultOptions() {
-      return ["success", "failure", "pending"].map((value) => ({
+      return ["success", "denied", "failure", "pending"].map((value) => ({
         value,
         text: this.$t(`accessPoint.audit.results.${value}`),
+      }));
+    },
+    /**
+     * The columns a refused attempt is read from. Spelled out here because the
+     * export is a file download: without opening one, an operator cannot tell
+     * that a denial now carries its reasons, its channel and the bypass flag.
+     *
+     * Deliberately only these three, not a mirror of every export column — a
+     * copy of the server's column list would drift the moment it changes.
+     */
+    deniedColumns() {
+      return ["blockingReasons", "channel", "evidenceBypassed"].map((key) => ({
+        key,
+        label: this.$t(`accessPoint.audit.deniedColumns.${key}.label`),
+        hint: this.$t(`accessPoint.audit.deniedColumns.${key}.hint`),
       }));
     },
   },
@@ -83,10 +105,7 @@ export default {
         );
 
         const blob = new Blob([response.data], {
-          type:
-            format === "pdf"
-              ? "application/pdf"
-              : "text/csv;charset=utf-8",
+          type: format === "pdf" ? "application/pdf" : "text/csv;charset=utf-8",
         });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -123,6 +142,24 @@ export default {
     <v-alert type="info" text dense class="mb-4">
       {{ $t("accessPoint.audit.info") }}
     </v-alert>
+
+    <v-expansion-panels flat class="mb-4">
+      <v-expansion-panel>
+        <v-expansion-panel-header color="accent">
+          {{ $t("accessPoint.audit.deniedColumnsTitle") }}
+        </v-expansion-panel-header>
+        <v-expansion-panel-content class="mt-3">
+          <div
+            v-for="column in deniedColumns"
+            :key="column.key"
+            class="denied-column"
+          >
+            <div class="font-weight-medium">{{ column.label }}</div>
+            <div class="text-caption text--secondary">{{ column.hint }}</div>
+          </div>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+    </v-expansion-panels>
 
     <v-row dense>
       <v-col cols="12" sm="6" md="3">
@@ -211,12 +248,7 @@ export default {
 
     <v-row dense class="mt-2">
       <v-col class="d-flex align-center flex-wrap" style="gap: 8px">
-        <v-btn
-          text
-          small
-          :disabled="!!exporting"
-          @click="resetFilters"
-        >
+        <v-btn text small :disabled="!!exporting" @click="resetFilters">
           <v-icon left small>mdi-filter-remove-outline</v-icon>
           {{ $t("accessPoint.audit.reset") }}
         </v-btn>
@@ -253,6 +285,9 @@ export default {
   color: rgba(0, 0, 0, 0.7);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   padding-bottom: 4px;
+}
+.denied-column + .denied-column {
+  margin-top: 10px;
 }
 .theme--dark .section-title {
   color: rgba(255, 255, 255, 0.8);

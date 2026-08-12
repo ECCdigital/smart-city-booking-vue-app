@@ -842,7 +842,7 @@
     },
     "audit": {
       "title": "Zugriffsprotokoll exportieren",
-      "info": "Exportieren Sie das mandantenweite Zugriffsprotokoll (Türöffnungen, Schließungen, Provisionierungen, Webhook-Events) als CSV oder PDF. Optional lässt sich der Export über die Filter eingrenzen.",
+      "info": "Exportieren Sie das mandantenweite Zugriffsprotokoll (Türöffnungen, Schließungen, QR-Scans, abgelehnte Versuche, Provisionierungen, Webhook-Events) als CSV oder PDF. Optional lässt sich der Export über die Filter eingrenzen.",
       "from": "Von",
       "to": "Bis",
       "provider": "Anbieter",
@@ -853,10 +853,26 @@
       "reset": "Filter zurücksetzen",
       "exportCsv": "Als CSV exportieren",
       "exportPdf": "Als PDF exportieren",
+      "deniedColumnsTitle": "Spalten zu abgelehnten Versuchen",
+      "deniedColumns": {
+        "blockingReasons": {
+          "label": "Blockierungsgründe",
+          "hint": "Warum der Versuch abgelehnt wurde, wichtigster Grund zuerst."
+        },
+        "channel": {
+          "label": "Kanal",
+          "hint": "Ob der Versuch per QR-Scan an der Tür oder aus der Ferne kam."
+        },
+        "evidenceBypassed": {
+          "label": "Evidence-Bypass",
+          "hint": "Ob eine berechtigte Person die Nachweisregeln übersprungen hat. Bleibt leer, wenn der Eintrag älter als dieses Feld ist."
+        }
+      },
       "actions": {
         "open": "Öffnen",
         "close": "Schließen",
         "unlatch": "Entriegeln",
+        "scan": "QR-Scan",
         "provision": "Provisionierung",
         "revoke": "Entzug",
         "status": "Status",
@@ -864,6 +880,7 @@
       },
       "results": {
         "success": "Erfolg",
+        "denied": "Abgelehnt",
         "failure": "Fehler",
         "pending": "Ausstehend"
       },
@@ -980,6 +997,9 @@
       "not_provisioned": "Der Zugang ist noch nicht freigegeben.",
       "locker_not_ready": "Das Schließfach ist noch nicht bereit.",
       "no_remote_access": "Für diesen Zugangspunkt ist keine Fernsteuerung verfügbar.",
+      "evidence_missing": "Der Zugang muss vor Ort per QR-Code bestätigt werden.",
+      "evidence_invalid": "Der QR-Code ist nicht mehr gültig. Bitte scannen Sie den Code an der Tür erneut.",
+      "evidence_rule_unavailable": "Der Zugang ist derzeit nicht prüfbar. Bitte wenden Sie sich an den Betreiber.",
       "unknown": "Die Tür konnte nicht geöffnet werden."
     },
     "open": {
