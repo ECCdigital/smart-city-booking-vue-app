@@ -32,9 +32,24 @@ function formatPrecondition(detail) {
   });
 }
 
+/**
+ * A bookable references an access point the tenant does not have - a door
+ * that was deleted while the editor was open. The raw payload only carries the
+ * id, so the message has to say what the id means and how to get rid of it.
+ */
+function formatUnknownAccessPoint(detail) {
+  return i18n.t("accessPoint.management.errors.unknownAccessPoint", {
+    id: detail.params?.accessPointId,
+  });
+}
+
 function formatDetail(detail) {
   if (detail.code === "precondition_failed") {
     return formatPrecondition(detail);
+  }
+
+  if (detail.code === "unknown_access_point") {
+    return formatUnknownAccessPoint(detail);
   }
 
   return i18n.t("accessPoint.management.errors.fieldInvalid", {
@@ -53,7 +68,10 @@ function formatDetail(detail) {
  */
 export function formatAccessPointErrorMessage(
   error,
-  { fallbackKey = "accessPoint.management.errors.generic" } = {}
+  {
+    fallbackKey = "accessPoint.management.errors.generic",
+    forbiddenKey = "accessPoint.management.errors.forbidden",
+  } = {}
 ) {
   const response = error?.response;
   const details = response?.data?.details;
@@ -63,11 +81,17 @@ export function formatAccessPointErrorMessage(
   }
 
   if (response?.status === 403) {
-    return i18n.t("accessPoint.management.errors.forbidden");
+    return i18n.t(forbiddenKey);
   }
 
   if (response?.status === 404) {
     return i18n.t("accessPoint.management.errors.notFound");
+  }
+
+  // Endpoints outside the access point API answer a bad request with a bare
+  // string instead of a detail list; that string is already the message.
+  if (typeof response?.data === "string" && response.data) {
+    return response.data;
   }
 
   // A blob response body (QR download) carries no readable message.

@@ -3,6 +3,7 @@ import BookableEditLockerSystems from "@/components/Bookable/Edit/BookableEditLo
 import BookableEditAccessPoints from "@/components/Bookable/Edit/BookableEditAccessPoints.vue";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { defaultAccessPointDetails } from "@/utilities/access-points";
 import { mapGetters } from "vuex";
 
 export default {
@@ -15,6 +16,9 @@ export default {
   data() {
     return {
       tenantApps: [],
+      // Whether the tenant's app list could be read at all. Only tenant owners
+      // may, so for everyone else availability is unknown rather than false.
+      tenantAppsReadable: true,
       loadingApps: false,
       panel: null,
       // Remembers the locker type the user just switched on. The persisted
@@ -50,7 +54,12 @@ export default {
         this.tenantApps.some((app) => app.active && predicate(app));
       return {
         // The door covers every active access provider (Nuki, Salto KS, …).
-        door: isActive((app) => app.type === "access"),
+        // Editors who may maintain bookables but not the tenant cannot read
+        // the app list; locking the section on that unknown would keep them
+        // from assigning access points they are allowed to assign. The access
+        // point list itself is the honest gate - it is readable for them.
+        door:
+          !this.tenantAppsReadable || isActive((app) => app.type === "access"),
         pareva: isActive(
           (app) =>
             app.type === "locker" &&
@@ -121,8 +130,10 @@ export default {
       try {
         const tenant = await ApiTenantService.getTenant(this.tenantId);
         this.tenantApps = tenant.data.applications || [];
+        this.tenantAppsReadable = true;
       } catch (error) {
         this.tenantApps = [];
+        this.tenantAppsReadable = error.response?.status !== 403;
       } finally {
         this.loadingApps = false;
       }
@@ -136,10 +147,14 @@ export default {
       return false;
     },
     setAccessActive(active) {
-      const current = this.bookable.accessPointDetails || { points: [] };
+      const current = this.bookable.accessPointDetails || {};
       this.$emit("update:bookable", {
         ...this.bookable,
-        accessPointDetails: { points: [], ...current, active },
+        accessPointDetails: {
+          ...defaultAccessPointDetails(),
+          ...current,
+          active,
+        },
       });
     },
     // Schließfach (pareva) and Fahrradbox (ifbs) share one lockerDetails

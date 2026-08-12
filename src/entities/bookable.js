@@ -1,3 +1,5 @@
+import { defaultAccessPointDetails } from "@/utilities/access-points";
+
 export default class Bookable {
   constructor(overrides = {}) {
     this.id = "";
@@ -54,7 +56,7 @@ export default class Bookable {
 
     this.attachments = [];
     this.lockerDetails = { active: false, units: [] };
-    this.accessPointDetails = { active: false, points: [] };
+    this.accessPointDetails = defaultAccessPointDetails();
     this.requiredFields = [];
 
     this.customFieldDefinitions = [];

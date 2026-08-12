@@ -90,6 +90,7 @@ import BookableEditStatus from "@/components/Bookable/Edit/BookableEditStatus.vu
 import ToastService from "@/services/ToastService";
 import BookableEditCustomFields from "@/components/Bookable/Edit/BookableEditCustomFields.vue";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
+import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 
 export default {
   name: "BookableEdit",
@@ -265,11 +266,12 @@ export default {
         }
       } catch (err) {
         if (err.response?.status === 400) {
-          const data = err.response.data;
-          const message =
-            typeof data === "string" && data
-              ? data
-              : data?.message || this.$t("accessPoint.bookable.modeUnavailable");
+          // A rejected save is a ValidationError whose details name the
+          // offending field - among them an access point id the tenant does
+          // not know.
+          const message = formatAccessPointErrorMessage(err, {
+            fallbackKey: "bookable.update.error.message",
+          });
           await this.addToast({
             title: this.$t("accessPoint.bookable.saveError.title"),
             message,

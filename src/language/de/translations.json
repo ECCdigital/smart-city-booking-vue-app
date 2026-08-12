@@ -758,7 +758,8 @@
           "validate": "Unzulässiger Wert",
           "type_array": "Es wird eine Liste erwartet",
           "type_string": "Es wird ein Text erwartet"
-        }
+        },
+        "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },
       "toasts": {
         "saved": {
@@ -881,36 +882,26 @@
       "title": "Türen / Zugang",
       "activate": "Türen aktivieren",
       "activateHint": "Buchende erhalten zeitbasierte Zugangsberechtigungen oder können Türen aus der Buchung heraus öffnen.",
-      "nukiDoors": "Nuki-Türen",
-      "doors": "Türen",
-      "reload": "neu laden",
-      "nukiInactive": "Es ist keine aktive Nuki-Zugangsanwendung konfiguriert. Bitte aktivieren Sie Nuki zuerst in den Mandanten-Einstellungen.",
-      "providerInactive": "Es ist keine aktive Zugangsanwendung konfiguriert. Bitte aktivieren Sie zuerst einen Anbieter (Nuki oder Salto KS) in den Mandanten-Einstellungen.",
-      "selectProvider": "Anbieter auswählen",
-      "selectDoor": "Tür auswählen",
-      "add": "hinzufügen",
-      "mode": "Modus",
-      "emptyTitle": "Noch keine Türen zugeordnet",
-      "emptyHint": "Wählen Sie eine Tür aus und klicken Sie auf \"hinzufügen\".",
-      "modeAuthorization": "PIN-Code",
-      "modeAuthorizationDesc": "Der Buchende gibt einen PIN-Code direkt am Türschloss ein. Den PIN erhält er per E-Mail oder im Mobile Key (App).",
-      "modeRemote": "Öffnen per App",
-      "modeRemoteDesc": "Der Buchende öffnet die Tür per Knopfdruck in der App (Mobile Key) – ohne PIN-Eingabe an der Tür.",
-      "modeBoth": "PIN-Code & App",
-      "modeBothDesc": "Beides möglich: PIN-Code am Türschloss eingeben (per E-Mail oder Mobile Key) oder die Tür per Knopfdruck im Mobile Key öffnen.",
-      "modeHelp": "So öffnet der Buchende die Tür während seiner Buchung.",
-      "notAssignable": "Nicht zuweisbar – keine unterstützten Modi",
-      "modeUnavailable": "Dieses Schloss unterstützt aktuell keine Zugangsmodi und kann nicht zugewiesen werden.",
-      "onlyRemoteHint": "Kein Keypad gepairt – PIN-Codes sind für dieses Schloss nicht verfügbar.",
+      "reload": "Neu laden",
+      "selectTitle": "Zugangspunkte auswählen",
+      "select": "Zugangspunkte",
+      "selectHint": "Mehrfachauswahl möglich. Derselbe Zugangspunkt darf in mehreren Buchungsobjekten verwendet werden.",
+      "selectedCount": "{count} ausgewählt",
+      "noneAvailable": "Für diesen Mandanten ist noch kein Zugangspunkt angelegt.",
+      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier wählen Sie nur aus, welche davon dieses Buchungsobjekt öffnet.",
+      "manageLink": "Zugangspunkte verwalten",
+      "readForbidden": "Ihnen fehlt die Berechtigung, die Zugangspunkte dieses Mandanten zu lesen. Bitte wenden Sie sich an eine Person mit Mandanten-Rechten.",
+      "unknownTitle": "Unbekannte Zugangspunkte in der Auswahl",
+      "unknownHint": "Zu diesen IDs gibt es keinen Zugangspunkt dieses Mandanten – vermutlich wurden sie gelöscht. Entfernen Sie sie, sonst lässt sich das Buchungsobjekt nicht speichern.",
+      "emptyTitle": "Noch keine Zugangspunkte zugeordnet",
+      "emptyHint": "Wählen Sie oben einen oder mehrere Zugangspunkte aus.",
       "buffer": {
         "title": "Pufferzeiten",
-        "hint": "Zeitspanne vor und nach dem Buchungszeitraum, in der die Türen zusätzlich bedient werden dürfen. Dieser Wert gilt als Standard für alle Türen.",
+        "hint": "Zeitspanne vor und nach dem Buchungszeitraum, in der die Zugangspunkte zusätzlich bedient werden dürfen. Der Wert gilt für alle ausgewählten Zugangspunkte.",
         "before": "Vorlauf",
         "after": "Nachlauf",
         "minutes": "Min.",
-        "invalid": "Bitte eine ganze Zahl zwischen 0 und {max} Minuten angeben.",
-        "overrideLabel": "Eigene Pufferzeit für diese Tür festlegen",
-        "inherited": "Erbt Standard-Puffer: {before} Min. Vorlauf / {after} Min. Nachlauf."
+        "invalid": "Bitte eine ganze Zahl zwischen 0 und {max} Minuten angeben."
       },
       "saveError": {
         "title": "Speichern fehlgeschlagen"
