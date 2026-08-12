@@ -10,6 +10,8 @@ export default {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
     nukiTokenConfigured: { type: Boolean, default: false },
+    saltoSecretConfigured: { type: Boolean, default: false },
+    saltoPasswordConfigured: { type: Boolean, default: false },
   },
   computed: {
     showAccess() {
@@ -49,6 +51,8 @@ export default {
       :tenant="tenant"
       :apps="apps"
       :nuki-token-configured="nukiTokenConfigured"
+      :salto-secret-configured="saltoSecretConfigured"
+      :salto-password-configured="saltoPasswordConfigured"
       @update:apps="$emit('update:apps', $event)"
     />
   </div>

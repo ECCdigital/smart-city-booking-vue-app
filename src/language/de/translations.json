@@ -630,6 +630,147 @@
     }
   },
   "accessPoint": {
+    "management": {
+      "tab": "Zugangspunkte",
+      "providersTab": "Schließsysteme",
+      "title": "Zugangspunkte",
+      "hint": "Türen und Schließfächer dieses Mandanten. Ein Zugangspunkt wird hier einmal angelegt und kann anschließend in beliebig vielen Buchungsobjekten verwendet werden.",
+      "create": "Zugangspunkt anlegen",
+      "edit": "Bearbeiten",
+      "reload": "Neu laden",
+      "search": "Zugangspunkt suchen...",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "close": "Schließen",
+      "required": "Pflichtfeld",
+      "modeUnsupported": "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt.",
+      "table": {
+        "assignment": "Zuordnung",
+        "unassigned": "Keinem Buchungsobjekt zugeordnet",
+        "loading": "Daten werden geladen...",
+        "empty": "Es ist noch kein Zugangspunkt angelegt.",
+        "perPage": "Zugangspunkte pro Seite"
+      },
+      "types": {
+        "door": "Tür",
+        "locker": "Schließfach"
+      },
+      "modes": {
+        "authorization": "PIN-Code",
+        "remote": "Öffnen per App",
+        "both": "PIN-Code & App"
+      },
+      "modeHints": {
+        "authorization": "Der Buchende gibt einen PIN-Code direkt am Schloss ein.",
+        "remote": "Der Buchende öffnet per Knopfdruck in der App – ohne PIN-Eingabe.",
+        "both": "Beides möglich: PIN-Code am Schloss oder Öffnen per App."
+      },
+      "fields": {
+        "label": "Bezeichnung",
+        "type": "Typ",
+        "provider": "Anbieter",
+        "externalId": "Schloss-ID beim Anbieter",
+        "externalIdHint": "Ändern Sie diese ID, um das Schloss auszutauschen, ohne den QR-Code neu zu drucken.",
+        "providerLocationId": "Standort-ID beim Anbieter",
+        "mode": "Modus",
+        "config": "Konfiguration",
+        "location": "Standort",
+        "validationRules": "Validierungsregeln"
+      },
+      "picker": {
+        "title": "Schloss vom Anbieter übernehmen",
+        "provider": "Anbieter",
+        "lock": "Schloss",
+        "apply": "Übernehmen",
+        "alreadyCreated": "bereits angelegt",
+        "hint": "Die übernommenen Angaben lassen sich anschließend frei ändern. Ohne Auswahl legen Sie den Zugangspunkt manuell an.",
+        "noProvider": "Es ist kein Anbieter für Türschlösser aktiv. Sie können den Zugangspunkt manuell anlegen oder zuerst unter „Schließsysteme“ einen Anbieter aktivieren."
+      },
+      "rules": {
+        "title": "Validierungsregeln",
+        "qrScan": "QR-Scan erforderlich",
+        "qrScanShort": "QR-Scan",
+        "qrScanHint": "Der Zugangspunkt lässt sich nur öffnen, wenn der QR-Code vor Ort gescannt wurde.",
+        "defaultHint": "Unverändert übernommen: Beim Anlegen setzt der Server die Regel „QR-Scan erforderlich“ selbst. Schalten Sie den Schalter aus, um den Zugangspunkt bewusst ohne Scan-Pflicht anzulegen.",
+        "required": "erforderlich",
+        "notRequired": "nicht nötig"
+      },
+      "location": {
+        "title": "Standort",
+        "address": "Adresse",
+        "coordinates": "Koordinaten",
+        "prefill": "Standort vom Anbieter übernehmen",
+        "prefillApplied": "Die Koordinaten des Anbieters wurden übernommen. Speichern Sie, um sie zu sichern.",
+        "prefillEmpty": "Der Anbieter kennt für dieses Schloss keinen Standort."
+      },
+      "config": {
+        "title": "Erweiterte Konfiguration",
+        "label": "Anbieter-Konfiguration (JSON)",
+        "hint": "Anbieterspezifische Zusatzangaben. Leer lassen, wenn nicht benötigt.",
+        "invalid": "Kein gültiges JSON.",
+        "notObject": "Die Konfiguration muss ein JSON-Objekt sein."
+      },
+      "qr": {
+        "pdf": "QR-Code drucken (PDF, A4)",
+        "svg": "QR-Code als SVG",
+        "png": "QR-Code als PNG",
+        "error": "Der QR-Code konnte nicht erzeugt werden."
+      },
+      "rotate": {
+        "action": "Scan-Code rotieren",
+        "title": "Scan-Code rotieren",
+        "question": "Soll der Scan-Code von „{label}“ ersetzt werden?",
+        "warning": "Alle bereits gedruckten und angebrachten QR-Codes dieses Zugangspunkts werden damit sofort ungültig. Drucken Sie den neuen QR-Code aus und bringen Sie ihn an.",
+        "confirm": "Rotieren",
+        "done": "Der Scan-Code wurde ersetzt. Die alten QR-Codes sind ab sofort ungültig.",
+        "reprint": "Neuen QR-Code drucken:",
+        "error": "Der Scan-Code konnte nicht rotiert werden."
+      },
+      "delete": {
+        "action": "Löschen",
+        "title": "Zugangspunkt löschen",
+        "question": "Soll der Zugangspunkt „{label}“ gelöscht werden?",
+        "confirm": "Löschen",
+        "affectedTitle": "Diese Buchungsobjekte verlieren damit ihren Zugangspunkt:",
+        "affectedHint": "Die Zuordnung wird automatisch aus den Buchungsobjekten entfernt.",
+        "noneAffected": "Der Zugangspunkt ist keinem Buchungsobjekt zugeordnet."
+      },
+      "dialog": {
+        "createTitle": "Zugangspunkt anlegen",
+        "editTitle": "Zugangspunkt bearbeiten"
+      },
+      "errors": {
+        "generic": "Die Aktion konnte nicht ausgeführt werden.",
+        "forbidden": "Dafür fehlt Ihnen die Berechtigung. Zugangspunkte dürfen nur Mandanten-Eigentümer ändern.",
+        "notFound": "Der Zugangspunkt existiert nicht mehr. Bitte laden Sie die Liste neu.",
+        "loadFailed": "Die Zugangspunkte konnten nicht geladen werden.",
+        "saveFailed": "Der Zugangspunkt konnte nicht gespeichert werden.",
+        "deleteFailed": "Der Zugangspunkt konnte nicht gelöscht werden.",
+        "preconditionFailed": "Die Regel „{rule}“ lässt sich nicht aktivieren, solange folgende Angaben fehlen: {requires}.",
+        "fieldInvalid": "{field}: {reason}",
+        "codes": {
+          "required": "Pflichtangabe",
+          "enum": "Unzulässiger Wert",
+          "validate": "Unzulässiger Wert",
+          "type_array": "Es wird eine Liste erwartet",
+          "type_string": "Es wird ein Text erwartet"
+        }
+      },
+      "toasts": {
+        "saved": {
+          "title": "Gespeichert",
+          "message": "Der Zugangspunkt wurde gespeichert."
+        },
+        "deleted": {
+          "title": "Gelöscht",
+          "message": "Der Zugangspunkt wurde gelöscht."
+        },
+        "qrFailed": {
+          "title": "QR-Code fehlgeschlagen",
+          "message": "Der QR-Code konnte nicht erzeugt werden."
+        }
+      }
+    },
     "tenant": {
       "title": "Türsteuerung & Zugang",
       "sectionHint": "Verbinden Sie smarte Türschlösser, damit Buchende Türen während ihres Buchungszeitraums öffnen und schließen können.",

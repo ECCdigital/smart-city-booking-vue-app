@@ -48,9 +48,6 @@
               ref="activeChild"
               :tenant="tenant"
               :apps="apps"
-              :nuki-token-configured="nukiTokenConfigured"
-              :salto-secret-configured="saltoSecretConfigured"
-              :salto-password-configured="saltoPasswordConfigured"
               :workflow="workflow"
               :roles="roles"
               :challenges="verificationChallenges"
@@ -110,7 +107,6 @@ import TenantEditGeneral from "@/components/Tenant/Edit/TenantEditGeneral.vue";
 import TenantEditWeb from "@/components/Tenant/Edit/TenantEditWeb.vue";
 import TenantEditEmail from "@/components/Tenant/Edit/TenantEditEmail.vue";
 import TenantEditPayments from "@/components/Tenant/Edit/TenantEditPayments.vue";
-import TenantEditAccessLocks from "@/components/Tenant/Edit/TenantEditAccessLocks.vue";
 import TenantEditBooking from "@/components/Tenant/Edit/TenantEditBooking.vue";
 import TenantEditEvents from "@/components/Tenant/Edit/TenantEditEvents.vue";
 import TenantEditWorkflow from "@/components/Tenant/Edit/TenantEditWorkflow.vue";
@@ -136,7 +132,6 @@ export default {
     TenantEditWeb,
     TenantEditEmail,
     TenantEditPayments,
-    TenantEditAccessLocks,
     TenantEditBooking,
     TenantEditEvents,
     TenantEditWorkflow,
@@ -172,12 +167,6 @@ export default {
           label: "Zahlungen",
           icon: "mdi-credit-card",
           comp: "TenantEditPayments",
-        },
-        {
-          key: "locks",
-          label: "Schließsysteme",
-          icon: "mdi-lock",
-          comp: "TenantEditAccessLocks",
         },
         {
           key: "bookables",
@@ -218,9 +207,6 @@ export default {
       ],
       instanceCustomFields: [],
       originalSnapshot: null,
-      nukiTokenConfigured: false,
-      saltoSecretConfigured: false,
-      saltoPasswordConfigured: false,
       tenant: {},
       apps: {},
       workflow: {
@@ -420,15 +406,9 @@ export default {
         const found = existing.find((a) => a.id === k);
         map[k] = found ? { ...found } : { ...this.defaultApps[k] };
       });
-      // Vorhandenen Nuki-Token vorbefüllen; nur merken, ob bereits einer
-      // hinterlegt ist (für Hinweis/Placeholder beim Leeren des Feldes).
-      if (map.nuki) {
-        this.nukiTokenConfigured = !!map.nuki.apiToken;
-      }
-      if (map["salto-ks"]) {
-        this.saltoSecretConfigured = !!map["salto-ks"].clientSecret;
-        this.saltoPasswordConfigured = !!map["salto-ks"].password;
-      }
+      // Die Zugangs- und Schließsystem-Apps werden unter "Zutritt &
+      // Schließsysteme" gepflegt; hier werden sie nur unverändert
+      // mitgespeichert.
       this.apps = map;
     },
     replaceApps() {

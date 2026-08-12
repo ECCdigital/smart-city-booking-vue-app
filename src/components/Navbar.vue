@@ -257,6 +257,13 @@ export default {
             interfaceName: "roles",
             context: "tenant",
           },
+          {
+            title: "Zutritt & Schließsysteme",
+            link: "access-points",
+            icon: "mdi-door-closed-lock",
+            interfaceName: "tenants",
+            context: "tenant",
+          },
         ],
       },
       {
