@@ -827,6 +827,17 @@
         }
       }
     },
+    "blockingReasons": {
+      "rejected": "Der Zugang wurde abgelehnt.",
+      "not_committed": "Die Buchung ist noch nicht bestätigt.",
+      "payment_required": "Die Buchung ist noch nicht bezahlt.",
+      "authorization_revoked": "Die Zugangsberechtigung wurde widerrufen.",
+      "outside_access_window": "Außerhalb des erlaubten Zeitfensters.",
+      "not_provisioned": "Der Zugang ist noch nicht freigegeben.",
+      "locker_not_ready": "Das Schließfach ist noch nicht bereit.",
+      "no_remote_access": "Für diesen Zugangspunkt ist keine Fernsteuerung verfügbar.",
+      "unknown": "Die Tür konnte nicht geöffnet werden."
+    },
     "open": {
       "success": {
         "title": "Tür geöffnet",

@@ -1278,6 +1278,7 @@ import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
+import { formatBlockingReasonMessage } from "@/utilities/access-blocking-reasons";
 
 export default {
   name: "BookingDetails",
@@ -1534,13 +1535,17 @@ export default {
       if (color.startsWith("info")) return "info";
       return "grey";
     },
-    resolveAccessError(error, accessPoint, fallbackKey) {
-      if (error?.response?.status === 403) {
+    resolveAccessError(error, accessPoint, fallbackKey, options = {}) {
+      const { treat403AsWindow = true } = options;
+      if (error?.response?.status === 403 && treat403AsWindow) {
         return this.$t("accessPoint.booking.window.outside", {
           hint: this.accessWindowHint(accessPoint),
         });
       }
       return this.$t(fallbackKey);
+    },
+    formatOpenBlockingReasons(blockingReasons) {
+      return formatBlockingReasonMessage(blockingReasons, (key) => this.$t(key));
     },
     getAccessBuffer(accessPoint) {
       const buffer = accessPoint?.accessBuffer || {};
@@ -1783,8 +1788,9 @@ export default {
           this.$set(
             this.accessPointErrors,
             accessPointId,
-            responseData.errors?.[0]?.message ||
-              this.$t("accessPoint.open.error.message")
+            this.formatOpenBlockingReasons(
+              responseData.data?.blockingReasons
+            )
           );
           return;
         }
@@ -1803,7 +1809,8 @@ export default {
           this.resolveAccessError(
             error,
             accessPoint,
-            "accessPoint.open.sendError.message"
+            "accessPoint.open.sendError.message",
+            { treat403AsWindow: false }
           )
         );
       } finally {
@@ -2319,7 +2326,9 @@ export default {
           this.$set(
             this.lockerErrors,
             pid,
-            responseData.errors?.[0]?.message || "Fehler beim Öffnen der Box."
+            this.formatOpenBlockingReasons(
+              responseData.data?.blockingReasons
+            )
           );
           this.$set(this.lockerLoading, pid + "_open", false);
           return;
