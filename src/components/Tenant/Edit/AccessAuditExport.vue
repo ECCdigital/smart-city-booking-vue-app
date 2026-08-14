@@ -63,13 +63,19 @@ export default {
     /**
      * The columns a refused attempt is read from. Spelled out here because the
      * export is a file download: without opening one, an operator cannot tell
-     * that a denial now carries its reasons, its channel and the bypass flag.
+     * that a denial now carries its reasons, its channel, the bypass flag and
+     * the role it was decided in.
      *
-     * Deliberately only these three, not a mirror of every export column — a
+     * Deliberately only these four, not a mirror of every export column — a
      * copy of the server's column list would drift the moment it changes.
      */
     deniedColumns() {
-      return ["blockingReasons", "channel", "evidenceBypassed"].map((key) => ({
+      return [
+        "blockingReasons",
+        "channel",
+        "evidenceBypassed",
+        "accessRole",
+      ].map((key) => ({
         key,
         label: this.$t(`accessPoint.audit.deniedColumns.${key}.label`),
         hint: this.$t(`accessPoint.audit.deniedColumns.${key}.hint`),

@@ -866,6 +866,10 @@
         "evidenceBypassed": {
           "label": "Evidence-Bypass",
           "hint": "Ob eine berechtigte Person die Nachweisregeln übersprungen hat. Bleibt leer, wenn der Eintrag älter als dieses Feld ist."
+        },
+        "accessRole": {
+          "label": "Zugriffsrolle",
+          "hint": "In welcher Eigenschaft die Tür bedient wurde – als Buchender der eigenen Buchung oder aus der Verwaltung heraus. Erfasst wird sie nur beim Öffnen und Entriegeln; eine leere Zelle heißt „nicht erfasst“."
         }
       },
       "actions": {
