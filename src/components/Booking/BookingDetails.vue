@@ -398,6 +398,16 @@
                       </v-icon>
                       <span>{{ accessWindowHint(accessPoint) }}</span>
                     </div>
+
+                    <div
+                      v-if="showOnSiteEvidenceHint(accessPoint)"
+                      class="access-point-tile__evidence"
+                    >
+                      <v-icon x-small color="warning" class="mr-1">
+                        mdi-qrcode-scan
+                      </v-icon>
+                      <span>{{ onSiteEvidenceHint }}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -486,7 +496,8 @@
                         ] ||
                         accessPointLoading[
                           getAccessPointKey(accessPoint) + '_waitClose'
-                        ]
+                        ] ||
+                        requiresOnSiteEvidence(accessPoint)
                       "
                       @click="unlatchAccessPoint(accessPoint)"
                     >
@@ -511,7 +522,8 @@
                         ] ||
                         accessPointLoading[
                           getAccessPointKey(accessPoint) + '_waitClose'
-                        ]
+                        ] ||
+                        requiresOnSiteEvidence(accessPoint)
                       "
                       @click="openAccessPoint(accessPoint)"
                     >
@@ -1278,7 +1290,10 @@ import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
-import { formatBlockingReasonMessage } from "@/utilities/access-blocking-reasons";
+import {
+  EVIDENCE_MISSING_BLOCKING_REASON,
+  formatBlockingReasonMessage,
+} from "@/utilities/access-blocking-reasons";
 
 export default {
   name: "BookingDetails",
@@ -1373,6 +1388,11 @@ export default {
     },
     canControlAccessPoints() {
       return BookingPermissionService.allowUpdate(this.booking);
+    },
+    onSiteEvidenceHint() {
+      // Derselbe Wortlaut, den eine Abweisung des Servers trüge, aus demselben
+      // Formatierer - Hinweis und Fehlermeldung laufen so nicht auseinander.
+      return this.formatOpenBlockingReasons([EVIDENCE_MISSING_BLOCKING_REASON]);
     },
   },
   watch: {
@@ -1522,6 +1542,23 @@ export default {
         (accessPoint?.type || "door") === "door" &&
         this.isRemoteCapable(accessPoint) &&
         accessPoint?.provider !== "salto-ks"
+      );
+    },
+    requiresOnSiteEvidence(accessPoint) {
+      // Öffnen und Entriegeln rufen wir ohne Body auf - von hier aus ist kein
+      // Nachweis zu erbringen, der Klick liefe also zwangsläufig in eine
+      // Abweisung. Geprüft wird darum nicht die Serverregel ("ist das meine
+      // Buchung?"), sondern diese eigene Unfähigkeit: Der Server lässt
+      // `validationRuleTypes` bereits leer, wo die Regeln nicht greifen.
+      return (accessPoint?.validationRuleTypes || []).length > 0;
+    },
+    showOnSiteEvidenceHint(accessPoint) {
+      // Der Hinweis erklärt die deaktivierten Schalter - wo keiner steht,
+      // erklärt er nichts.
+      return (
+        this.requiresOnSiteEvidence(accessPoint) &&
+        (this.canRemoteOpen(accessPoint) ||
+          this.canUnlatchAccessPoint(accessPoint))
       );
     },
     accessPointTone(accessPoint) {
@@ -2783,7 +2820,8 @@ export default {
   color: rgba(255, 255, 255, 0.55);
 }
 
-.access-point-tile__window {
+.access-point-tile__window,
+.access-point-tile__evidence {
   display: flex;
   align-items: center;
   margin-top: 8px;
@@ -2791,7 +2829,8 @@ export default {
   color: rgba(0, 0, 0, 0.6);
 }
 
-.theme--dark .access-point-tile__window {
+.theme--dark .access-point-tile__window,
+.theme--dark .access-point-tile__evidence {
   color: rgba(255, 255, 255, 0.65);
 }
 

@@ -1,3 +1,10 @@
+/**
+ * Der Grund, den ein Client selbst benennen muss: Er weiß vor jedem Aufruf,
+ * dass er keinen Nachweis mitschicken kann. Als Konstante, damit ein Vertipper
+ * nicht stillschweigend in "unknown" fällt.
+ */
+export const EVIDENCE_MISSING_BLOCKING_REASON = "evidence_missing";
+
 const ACCESS_BLOCKING_REASON_KEYS = Object.freeze([
   "rejected",
   "not_committed",
@@ -7,7 +14,7 @@ const ACCESS_BLOCKING_REASON_KEYS = Object.freeze([
   "not_provisioned",
   "locker_not_ready",
   "no_remote_access",
-  "evidence_missing",
+  EVIDENCE_MISSING_BLOCKING_REASON,
   "evidence_invalid",
   "evidence_rule_unavailable",
 ]);
