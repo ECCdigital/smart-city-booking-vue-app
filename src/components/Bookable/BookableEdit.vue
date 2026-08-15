@@ -209,7 +209,7 @@ import { normalizeLeadTimeFields } from "@/utils/bookingLeadTime";
 import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
 import { mapActions, mapGetters } from "vuex";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
-import BookableEditLockerSystems from "@/components/Bookable/Edit/BookableEditLockerSystems.vue";
+import BookableEditAccessLocks from "@/components/Bookable/Edit/BookableEditAccessLocks.vue";
 import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
 import BookableEditRelatedBookables from "@/components/Bookable/Edit/BookableEditRelatedBookables.vue";
 import BookableEditAttachments from "@/components/Bookable/Edit/BookableEditAttachments.vue";
@@ -230,6 +230,8 @@ import {
   getVisibleBookableEditSections,
   shouldShowBookableEditSectionNav,
 } from "@/utils/bookableEditSections";
+import BookablePermissionService from "@/services/permissions/BookablePermissionService";
+import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 
 export default {
   name: "BookableEdit",
@@ -242,7 +244,7 @@ export default {
     BookableEditPrice,
     BookableEditBookingType,
     BookableEditOpeningHours,
-    BookableEditLockerSystems,
+    BookableEditAccessLocks,
     BookableEditPermissions,
     BookableEditRelatedBookables,
     BookableEditAttachments,
@@ -298,10 +300,10 @@ export default {
           comp: "BookableEditOpeningHours",
         },
         {
-          key: "lockerSystems",
+          key: "accessLocks",
           label: "Schließsysteme",
           icon: "mdi-lock-outline",
-          comp: "BookableEditLockerSystems",
+          comp: "BookableEditAccessLocks",
         },
         {
           key: "relatedBookables",
@@ -354,10 +356,11 @@ export default {
       return isBookableExpertModeConfigured();
     },
     visibleTabs() {
+      const tabs = this.tabs.filter((tab) => this.isTabVisible(tab));
       if (this.expertMode) {
-        return this.tabs;
+        return tabs;
       }
-      return this.tabs.filter((tab) => !isBookableExpertOnlyTab(tab.key));
+      return tabs.filter((tab) => !isBookableExpertOnlyTab(tab.key));
     },
     tabsRenderKey() {
       return this.expertMode ? "expert" : "simple";
@@ -424,6 +427,16 @@ export default {
         await this.init();
       }
     },
+    isTabVisible(tab) {
+      if (!tab.permission) return true;
+      if (tab.permission === "manageBookables") {
+        if (!this.bookable?.id) {
+          return BookablePermissionService.allowCreate();
+        }
+        return BookablePermissionService.allowUpdate(this.bookable);
+      }
+      return true;
+    },
     async createOrUpdate() {
       try {
         this.inProgress = true;
@@ -456,7 +469,20 @@ export default {
           );
         }
       } catch (err) {
-        if (!this.bookableID) {
+        if (err.response?.status === 400) {
+          // A rejected save is a ValidationError whose details name the
+          // offending field - among them an access point id the tenant does
+          // not know.
+          const message = formatAccessPointErrorMessage(err, {
+            fallbackKey: "bookable.update.error.message",
+          });
+          await this.addToast({
+            title: this.$t("accessPoint.bookable.saveError.title"),
+            message,
+            type: "error",
+            timeout: 8000,
+          });
+        } else if (!this.bookableID) {
           await this.addToast(
             ToastService.createToast("bookable.create.error", "error")
           );

@@ -69,7 +69,6 @@ export default {
   methods: {
     cloneApps(apps) {
       const cloned = JSON.parse(JSON.stringify(apps));
-      // Sicherstellen, dass customerService existiert
       if (cloned.ifbs && !cloned.ifbs.customerService) {
         cloned.ifbs.customerService = { name: "", email: "", phone: "" };
       }
@@ -167,7 +166,11 @@ export default {
 </script>
 
 <template>
-  <BaseSection title="Schließsysteme" icon="mdi-lock">
+  <BaseSection
+    title="Schließfächer & Fahrradboxen"
+    icon="mdi-locker-multiple"
+    hint="Hinterlegen Sie Buchungsobjekte in Schließfächern oder bieten Sie abschließbare Fahrradboxen an. Buchende entnehmen bzw. öffnen sie selbstständig zum Zeitpunkt ihrer Buchung."
+  >
     <v-form ref="form" v-model="valid">
       <v-row>
         <v-col>
@@ -179,6 +182,39 @@ export default {
             :active="localApps.pareva.active"
             class="mb-2"
           >
+            <!-- Beschreibung -->
+            <v-alert color="primary" text dense class="provider-description mb-4 mt-2">
+              <div class="d-flex">
+                <v-icon color="primary" class="mr-3 mt-1"
+                  >mdi-locker-multiple</v-icon
+                >
+                <div>
+                  <div class="font-weight-bold mb-1">
+                    Schließfach-System (Smart Locker)
+                  </div>
+                  <div class="text-body-2">
+                    Mit Pareva hinterlegen Sie ein Buchungsobjekt – zum Beispiel
+                    ein iPad, Werkzeug oder anderes Equipment – in einem
+                    abschließbaren Fach. Buchende entnehmen den Gegenstand
+                    selbstständig zum Zeitpunkt ihrer Buchung und legen ihn nach
+                    Ablauf wieder zurück.
+                  </div>
+                  <v-btn
+                    text
+                    small
+                    color="primary"
+                    class="px-0 mt-1"
+                    href="https://www.pareva.de"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <v-icon left small>mdi-open-in-new</v-icon>
+                    Mehr über Pareva
+                  </v-btn>
+                </div>
+              </div>
+            </v-alert>
+
             <!-- Aktivierung -->
             <v-row dense>
               <v-col cols="12">
@@ -295,6 +331,36 @@ export default {
             :logo="require('@/assets/prsn-logo.png')"
             :active="localApps.ifbs.active"
           >
+            <!-- Beschreibung -->
+            <v-alert color="primary" text dense class="provider-description mb-4 mt-2">
+              <div class="d-flex">
+                <v-icon color="primary" class="mr-3 mt-1">mdi-bike</v-icon>
+                <div>
+                  <div class="font-weight-bold mb-1">
+                    Abschließbare Fahrradboxen
+                  </div>
+                  <div class="text-body-2">
+                    Die Fahrradboxen der PRS Parkraum Service GmbH
+                    (Parkraumservice) bieten sichere Stellplätze für Fahrräder
+                    und E-Bikes. Buchende reservieren eine Box und öffnen sie zum
+                    Zeitpunkt ihrer Buchung.
+                  </div>
+                  <v-btn
+                    text
+                    small
+                    color="primary"
+                    class="px-0 mt-1"
+                    href="https://parkraumservice.de"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <v-icon left small>mdi-open-in-new</v-icon>
+                    Mehr über Parkraumservice
+                  </v-btn>
+                </div>
+              </div>
+            </v-alert>
+
             <!-- Aktivierung -->
             <v-row dense>
               <v-col cols="12">
@@ -480,5 +546,8 @@ export default {
 .theme--dark .section-title {
   color: rgba(255, 255, 255, 0.8);
   border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+.provider-description {
+  border-left: 3px solid var(--v-primary-base);
 }
 </style>

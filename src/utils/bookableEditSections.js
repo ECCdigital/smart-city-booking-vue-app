@@ -197,19 +197,19 @@ const ALL_SECTIONS = [
     type: "scroll",
   },
   {
-    tabKey: "lockerSystems",
+    tabKey: "accessLocks",
     id: "lockers-select",
     labelKey: "bookable.edit.sections.lockersSelect",
     type: "scroll",
   },
   {
-    tabKey: "lockerSystems",
+    tabKey: "accessLocks",
     id: "lockers-pareva",
     labelKey: "bookable.edit.sections.lockersPareva",
     type: "scroll",
   },
   {
-    tabKey: "lockerSystems",
+    tabKey: "accessLocks",
     id: "lockers-ifbs",
     labelKey: "bookable.edit.sections.lockersIfbs",
     type: "scroll",

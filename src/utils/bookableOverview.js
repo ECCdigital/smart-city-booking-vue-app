@@ -570,7 +570,7 @@ export function getBookableOverviewTraits(bookable, options = {}) {
         "lockerSystems",
         "Schließsystem",
         lockerSystems,
-        "lockerSystems",
+        "accessLocks",
         "mdi-lock-outline"
       )
     );

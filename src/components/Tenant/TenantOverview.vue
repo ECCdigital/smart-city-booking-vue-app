@@ -31,7 +31,7 @@
             :vertical="$vuetify.breakpoint.mdAndUp"
           >
             <v-tab
-              v-for="t in tabs"
+              v-for="t in visibleTabs"
               :key="t.key"
               class="d-flex justify-start"
               style="text-transform: none"
@@ -123,7 +123,6 @@ import TenantEditGeneral from "@/components/Tenant/Edit/TenantEditGeneral.vue";
 import TenantEditWeb from "@/components/Tenant/Edit/TenantEditWeb.vue";
 import TenantEditEmail from "@/components/Tenant/Edit/TenantEditEmail.vue";
 import TenantEditPayments from "@/components/Tenant/Edit/TenantEditPayments.vue";
-import TenantEditLocks from "@/components/Tenant/Edit/TenantEditLocks.vue";
 import TenantEditBooking from "@/components/Tenant/Edit/TenantEditBooking.vue";
 import TenantEditEvents from "@/components/Tenant/Edit/TenantEditEvents.vue";
 import TenantEditWorkflow from "@/components/Tenant/Edit/TenantEditWorkflow.vue";
@@ -141,6 +140,11 @@ import ApiInstanceService from "@/services/api/ApiInstanceService";
 import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
 import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
+import {
+  createLockAndAccessAppDefaults,
+  withoutUnchangedSecrets,
+} from "@/utilities/access-apps";
 
 export default {
   name: "TenantOverview",
@@ -152,7 +156,6 @@ export default {
     TenantEditWeb,
     TenantEditEmail,
     TenantEditPayments,
-    TenantEditLocks,
     TenantEditBooking,
     TenantEditEvents,
     TenantEditWorkflow,
@@ -190,12 +193,6 @@ export default {
           label: "Zahlungen",
           icon: "mdi-credit-card",
           comp: "TenantEditPayments",
-        },
-        {
-          key: "locks",
-          label: "Schließsysteme",
-          icon: "mdi-lock",
-          comp: "TenantEditLocks",
         },
         {
           key: "bookables",
@@ -299,31 +296,7 @@ export default {
           daysUntilPaymentDue: null,
           active: false,
         },
-        pareva: {
-          type: "locker",
-          id: "pareva",
-          title: "Pareva",
-          serverUrl: "",
-          lockerId: "",
-          user: "",
-          password: "",
-          active: false,
-        },
-        ifbs: {
-          type: "locker",
-          id: "ifbs",
-          title: "Parkraumservice",
-          serverUrl: "",
-          secretPhrase: "",
-          apiKeyID: "",
-          apiKey: "",
-          active: false,
-          customerService: {
-            name: "",
-            email: "",
-            phone: "",
-          },
-        },
+        ...createLockAndAccessAppDefaults(),
       },
     };
   },
@@ -348,13 +321,17 @@ export default {
         }) !== this.originalSnapshot
       );
     },
+    visibleTabs() {
+      return this.tabs.filter((tab) => this.isTabVisible(tab));
+    },
     currentComponent() {
-      return this.tabs[this.activeTab]?.comp || "TenantEditGeneral";
+      return this.visibleTabs[this.activeTab]?.comp || "TenantEditGeneral";
     },
   },
   watch: {
     activeTab(newIndex) {
-      const tabKey = this.tabs[newIndex].key;
+      const tabKey = this.visibleTabs[newIndex]?.key;
+      if (!tabKey) return;
       if (this.$route.query.tab === tabKey) return;
       this.$router.replace({
         query: { ...this.$route.query, tab: tabKey },
@@ -374,6 +351,13 @@ export default {
       if (discard) {
         await this.fetchTenant();
       }
+    },
+    isTabVisible(tab) {
+      if (!tab.permission) return true;
+      if (tab.permission === "manageTenants") {
+        return TenantPermissionService.allowUpdate(this.tenant);
+      }
+      return true;
     },
     async fetchRoles() {
       try {
@@ -417,12 +401,15 @@ export default {
         const found = existing.find((a) => a.id === k);
         map[k] = found ? { ...found } : { ...this.defaultApps[k] };
       });
+      // Die Zugangs- und Schließsystem-Apps werden unter "Zutritt &
+      // Schließsysteme" gepflegt; hier werden sie nur unverändert
+      // mitgespeichert.
       this.apps = map;
     },
     replaceApps() {
-      this.tenant.applications = Object.values(this.apps).map((a) => ({
-        ...a,
-      }));
+      this.tenant.applications = Object.values(this.apps).map(
+        withoutUnchangedSecrets
+      );
     },
     async fetchWorkflow() {
       const data = await ApiWorkflowService.getWorkflow(this.tenant.id);
@@ -603,7 +590,7 @@ export default {
   },
   async mounted() {
     const queryTabKey = this.$route.query.tab;
-    const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
+    const foundIndex = this.visibleTabs.findIndex((t) => t.key === queryTabKey);
     this.activeTab = foundIndex !== -1 ? foundIndex : 0;
 
     await this.fetchTenant();
