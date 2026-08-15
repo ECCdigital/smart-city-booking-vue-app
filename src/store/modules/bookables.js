@@ -25,7 +25,7 @@ const state = {
       permittedRoles: [],
     },
 
-    isScheduleRelated: false,
+    isScheduleRelated: true,
     isTimePeriodRelated: false,
     timePeriods: [],
     isOpeningHoursRelated: false,
@@ -34,6 +34,15 @@ const state = {
     specialOpeningHours: [],
     isLongRange: false,
     longRangeOptions: null,
+    isBlockPeriodRelated: false,
+    blockPeriods: [],
+
+    isLeadTimeRelated: false,
+    preparationLeadTimeMinutes: 0,
+    serviceHours: [],
+    isBufferRelated: false,
+    bufferTimeBeforeMinutes: null,
+    bufferTimeAfterMinutes: null,
 
     priceCategories: [
       {
@@ -50,8 +59,10 @@ const state = {
     requiresLogin: false,
     permittedUsers: [],
     permittedRoles: [],
-    freeBookingUsers: [],
-    freeBookingRoles: [],
+    bookingDiscounts: {
+      users: [],
+      roles: [],
+    },
     relatedBookableIds: [],
     checkoutBookableIds: [],
 
@@ -118,7 +129,7 @@ const mutations = {
         permittedRoles: [],
       },
 
-      isScheduleRelated: false,
+      isScheduleRelated: true,
       isTimePeriodRelated: false,
       timePeriods: [],
       isOpeningHoursRelated: false,
@@ -127,6 +138,15 @@ const mutations = {
       specialOpeningHours: [],
       isLongRange: false,
       longRangeOptions: null,
+      isBlockPeriodRelated: false,
+      blockPeriods: [],
+
+      isLeadTimeRelated: false,
+      preparationLeadTimeMinutes: 0,
+      serviceHours: [],
+      isBufferRelated: false,
+      bufferTimeBeforeMinutes: null,
+      bufferTimeAfterMinutes: null,
 
       priceCategories: [
         {
@@ -142,8 +162,10 @@ const mutations = {
 
       permittedUsers: [],
       permittedRoles: [],
-      freeBookingUsers: [],
-      freeBookingRoles: [],
+      bookingDiscounts: {
+        users: [],
+        roles: [],
+      },
       relatedBookableIds: [],
       checkoutBookableIds: [],
 

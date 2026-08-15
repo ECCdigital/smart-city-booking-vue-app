@@ -1,39 +1,11 @@
 <template>
   <div>
-    <v-row>
-      <v-col class="">
-        <v-card
-          v-if="!!selectedMailConfig[templateField]"
-          color="success lighten-5"
-          class="rounded"
-        >
-          <v-card-text
-            class="success--text text--darken-1 d-flex justify-space-between align-center"
-          >
-            <div>
-              <v-icon left> mdi-check </v-icon>
-              Es ist eine E-Mail-Vorlage hinterlegt.
-            </div>
-
-            <v-btn small outlined @click="showEditTemplateDialog = true"
-              >bearbeiten</v-btn
-            >
-          </v-card-text>
-        </v-card>
-        <v-card v-else color="error lighten-5" class="rounded">
-          <v-card-text
-            class="error--text text--darken-1 d-flex justify-space-between align-center"
-          >
-            <div>
-              <v-icon left> mdi-check </v-icon>
-              Es ist keine E-Mail-Vorlage hinterlegt.
-            </div>
-
-            <v-btn small outlined @click="showEditTemplateDialog = true"
-              >bearbeiten</v-btn
-            >
-          </v-card-text>
-        </v-card>
+    <v-row v-if="showTemplate">
+      <v-col>
+        <MailTemplateStatus
+          :mail-template="selectedMailConfig[templateField]"
+          @submit="onSubmitTemplate"
+        />
       </v-col>
     </v-row>
 
@@ -45,6 +17,7 @@
           dense
           label="E-Mail-Adresse"
           :rules="showValidation ? validationRules.mail : []"
+          :disabled="disabled"
           v-model="selectedMailConfig.noreplyMail"
           @input="changeData"
         ></v-text-field>
@@ -55,6 +28,7 @@
           filled
           dense
           label="Anzeigename"
+          :disabled="disabled"
           v-model="selectedMailConfig.noreplyDisplayName"
           @input="changeData"
         ></v-text-field>
@@ -81,6 +55,7 @@
             hide-details
             :true-value="false"
             :false-value="true"
+            :disabled="disabled"
             label="SMTP als E-Mail-Versandmethode aktivieren"
             class="mt-2"
             @change="changeData"
@@ -94,6 +69,7 @@
             filled
             dense
             label="SMTP-Server"
+            :disabled="disabled"
             v-model="selectedMailConfig.noreplyHost"
             @input="changeData"
           ></v-text-field>
@@ -104,6 +80,7 @@
             filled
             dense
             label="Port"
+            :disabled="disabled"
             v-model="selectedMailConfig.noreplyPort"
             @input="changeData"
           ></v-text-field>
@@ -117,6 +94,7 @@
             dense
             hide-details
             label="Benutzername"
+            :disabled="disabled"
             v-model="selectedMailConfig.noreplyUser"
             @input="changeData"
           ></v-text-field>
@@ -128,6 +106,7 @@
             dense
             hide-details
             label="Passwort"
+            :disabled="disabled"
             v-model="selectedMailConfig.noreplyPassword"
             @input="changeData"
             :append-icon="showNoreplyPassword ? 'mdi-eye' : 'mdi-eye-off'"
@@ -144,6 +123,7 @@
             color="primary"
             label="StartTLS aktivieren"
             hide-details
+            :disabled="disabled"
           ></v-switch>
         </v-col>
       </v-row>
@@ -160,6 +140,7 @@
             v-model="selectedMailConfig.noreplyUseGraphApi"
             color="primary"
             hide-details
+            :disabled="disabled"
             label="Graph Api als E-Mail-Versandmethode aktivieren"
             class="mt-2"
             @change="changeData"
@@ -173,6 +154,7 @@
             filled
             dense
             label="Tenant ID"
+            :disabled="disabled"
             v-model="selectedMailConfig.noreplyGraphTenantId"
             @input="changeData"
           ></v-text-field>
@@ -183,6 +165,7 @@
             filled
             dense
             label="Client ID"
+            :disabled="disabled"
             v-model="selectedMailConfig.noreplyGraphClientId"
             @input="changeData"
           ></v-text-field>
@@ -195,6 +178,7 @@
             filled
             dense
             label="Client Secret"
+            :disabled="disabled"
             v-model="selectedMailConfig.noreplyGraphClientSecret"
             @input="changeData"
             :append-icon="showClientSecret ? 'mdi-eye' : 'mdi-eye-off'"
@@ -204,22 +188,16 @@
         </v-col>
       </v-row>
     </AppPanel>
-    <MailTemplateDialog
-      :open="showEditTemplateDialog"
-      :mail-template="selectedMailConfig[templateField]"
-      @submit="onSubmitTemplate"
-      @close="showEditTemplateDialog = false"
-    ></MailTemplateDialog>
   </div>
 </template>
 
 <script>
-import MailTemplateDialog from "@/components/Tenant/MailTemplateDialog.vue";
+import MailTemplateStatus from "@/components/Tenant/MailTemplateStatus.vue";
 import AppPanel from "@/components/AppPanel.vue";
 
 export default {
   name: "MailKonfiguration",
-  components: { MailTemplateDialog, AppPanel },
+  components: { MailTemplateStatus, AppPanel },
   props: {
     mailConfig: {
       type: Object,
@@ -228,6 +206,14 @@ export default {
     showValidation: {
       type: Boolean,
       default: true,
+    },
+    showTemplate: {
+      type: Boolean,
+      default: true,
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
     },
     templateField: {
       type: String,
@@ -239,7 +225,6 @@ export default {
     return {
       showNoreplyPassword: false,
       showClientSecret: false,
-      showEditTemplateDialog: false,
       validationRules: {
         mail: [
           (v) => !!v || "Pflichtfeld",
@@ -261,7 +246,6 @@ export default {
     },
     onSubmitTemplate(newTemplate) {
       this.$set(this.selectedMailConfig, this.templateField, newTemplate);
-      this.showEditTemplateDialog = false;
       this.changeData();
     },
   },

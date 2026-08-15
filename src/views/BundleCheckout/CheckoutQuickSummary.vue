@@ -50,13 +50,7 @@
       <v-card-text>
         <h2 class="mb-7">Ihre Buchung</h2>
 
-        <div
-          v-if="
-            leadItem.bookable.isScheduleRelated ||
-            leadItem.bookable.isTimePeriodRelated ||
-            leadItem.bookable.isLongRange
-          "
-        >
+        <div v-if="isTimeDependentBookable(leadItem.bookable)">
           <h3 class="mb-1 mt-5">Zeitraum</h3>
           <v-divider class="mb-3"></v-divider>
           <v-row no-gutters>
@@ -244,6 +238,28 @@
 
     <v-card
       class="mt-5 rounded-sm"
+      outlined
+      v-if="itemsWithBookingNotes.length > 0"
+    >
+      <v-card-text>
+        <h2 class="mb-7">Buchungshinweise</h2>
+
+        <div
+          v-for="item in itemsWithBookingNotes"
+          :key="item.bookableId"
+          class="mb-4"
+        >
+          <template v-if="itemsWithBookingNotes.length > 1">
+            <h3 class="mb-1">{{ item.bookable.title }}</h3>
+            <v-divider class="mb-3"></v-divider>
+          </template>
+          <div v-html="item.bookable.bookingNotes"></div>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <v-card
+      class="mt-5 rounded-sm"
       :color="$vuetify.theme.dark ? 'red' : 'red lighten-4'"
       outlined
       v-if="allItemsValid === false"
@@ -255,16 +271,15 @@
       </v-card-text>
     </v-card>
 
-    <v-card class="mt-5 rounded-sm" outlined v-if="freeBookingAllowed">
+    <v-card class="mt-5 rounded-sm" outlined v-if="showDiscountOption">
       <v-card-text>
-        <strong>Kostenfreie Buchung</strong> Sie sind berechtigt, diese Buchung
-        kostenfrei abzuschließen. Wenn Sie dennoch eine kostenpflichtige Buchung
-        wünschen, können Sie dies tun, indem Sie den Schalter unten aktivieren.
+        <strong>{{ discountCardTitle }}</strong>
+        {{ discountCardText }}
 
         <v-switch
-          v-model="bookWithPrice"
-          @change="setBookWithPrice($event)"
-          label="Kostenpflichtig buchen"
+          v-model="bookWithoutDiscount"
+          @change="setBookWithoutDiscount($event)"
+          label="Zum vollen Preis buchen"
           class="mt-4"
         >
         </v-switch>
@@ -302,6 +317,10 @@
 import CheckoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
+import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
+import { getCheckoutErrorToastKey } from "@/utils/checkoutErrors";
+import ToastService from "@/services/ToastService";
+import { mapActions } from "vuex";
 
 export default {
   name: "CheckoutQuickSummary",
@@ -345,11 +364,11 @@ export default {
     selectedPaymentApp: {
       type: String,
     },
-    freeBookingAllowed: {
-      type: Boolean,
-      default: false,
+    bookingDiscountPercent: {
+      type: Number,
+      default: 0,
     },
-    initialBookWithPrice: {
+    initialBookWithoutDiscount: {
       type: Boolean,
       default: false,
     },
@@ -360,15 +379,25 @@ export default {
       validating: false,
       isSubmitting: false,
       couponCode: null,
-      bookWithPrice: this.initialBookWithPrice,
+      bookWithoutDiscount: this.initialBookWithoutDiscount,
     };
   },
 
+  watch: {
+    initialBookWithoutDiscount(value) {
+      this.bookWithoutDiscount = value;
+    },
+  },
+
   methods: {
-    setBookWithPrice(value) {
-      this.bookWithPrice = value;
-      this.$emit("update:initialBookWithPrice", value);
-      this.$emit("set-book-with-price", value);
+    ...mapActions({
+      addToast: "toasts/add",
+    }),
+    isTimeDependentBookable,
+    setBookWithoutDiscount(value) {
+      this.bookWithoutDiscount = value;
+      this.$emit("update:initialBookWithoutDiscount", value);
+      this.$emit("set-book-without-discount", value);
     },
 
     dateToLocaleString: function (value) {
@@ -470,7 +499,7 @@ export default {
               };
             })
         ),
-        bookWithPrice: this.bookWithPrice,
+        bookWithoutDiscount: this.bookWithoutDiscount,
       };
     },
 
@@ -491,6 +520,8 @@ export default {
           await this.routeToStatus(checkoutResponse.data);
         }
       } catch (error) {
+        const toastKey = getCheckoutErrorToastKey(error.response?.data);
+        this.addToast(ToastService.createToast(toastKey, "error"));
         console.error("Checkout process failed:", error.message);
       } finally {
         this.isSubmitting = false;
@@ -580,6 +611,23 @@ export default {
   },
 
   computed: {
+    showDiscountOption() {
+      return this.bookingDiscountPercent > 0;
+    },
+    discountCardTitle() {
+      if (this.bookingDiscountPercent >= 100) {
+        return "Kostenfreie Buchung:";
+      }
+
+      return "Preisnachlass:";
+    },
+    discountCardText() {
+      if (this.bookingDiscountPercent >= 100) {
+        return " Sie sind berechtigt, diese Buchung kostenfrei abzuschließen. Wenn Sie dennoch eine kostenpflichtige Buchung wünschen, können Sie den Schalter unten aktivieren.";
+      }
+
+      return ` Sie erhalten einen Preisnachlass von ${this.bookingDiscountPercent} % auf diese Buchung. Wenn Sie dennoch zum vollen Preis buchen möchten, aktivieren Sie den Schalter unten.`;
+    },
     totalPrice() {
       let price = 0;
       for (const item of [this.leadItem, ...this.subsequentItems]) {
@@ -630,6 +678,12 @@ export default {
       }
 
       return false;
+    },
+
+    itemsWithBookingNotes() {
+      return [this.leadItem, ...this.subsequentItems].filter(
+        (item) => !!item.bookable.bookingNotes
+      );
     },
 
     allItemsValid() {

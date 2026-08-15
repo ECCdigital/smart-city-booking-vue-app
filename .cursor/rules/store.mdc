@@ -1,0 +1,15 @@
+---
+description: Vuex store module conventions
+globs: src/store/**/*.js
+alwaysApply: false
+---
+
+# Vuex Store
+
+See `docs/agents/architecture.md` for module overview.
+
+- One module per domain in `src/store/modules/`
+- Modules expose `reset` action — register in root `store/index.js` reset dispatch
+- Use namespaced modules (`user/`, `tenants/`, `bookables/`, …)
+- Keep API calls in services, not in store actions (actions call `Api*Service`)
+- Current tenant: `store.getters["tenants/currentTenantId"]`

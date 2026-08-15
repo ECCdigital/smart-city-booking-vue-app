@@ -99,6 +99,8 @@ Then adjust at least the following values:
 | Variable | Description | Example |
 | -------- | ----------- | ------- |
 | `VUE_APP_SERVER_BASE_URL` | Base URL of the backend API | `https://api.my-city.de` |
+| `VUE_APP_AUTH_MODE` | Auth transport: `direct` (default) or opt-in `bff` | `direct` |
+| `VUE_APP_BFF_BASE_URL` | Admin BFF base when `AUTH_MODE=bff` *(optional)* | `/admin/api` |
 | `VUE_APP_NAME` | Application title shown in the browser | `My City – Booking Platform` |
 | `VUE_APP_IS_PRODUCTION` | Enable production mode | `true` |
 | `VUE_APP_CONTACT_ADDRESS` | Contact address (footer / imprint) | `City Office, Main St. 1, 12345 Sample City` |
@@ -109,6 +111,30 @@ Then adjust at least the following values:
 | `VUE_APP_USERSNAP_API_KEY` | API key for the Usersnap feedback tool *(optional)* | |
 
 > **Note:** All `VUE_APP_*` variables are embedded into the static files at **build time**. Any change requires a new build — unless you use the Docker image, which substitutes environment variables at container startup.
+
+### Auth modes
+
+| Setup | Config | When to use |
+| ----- | ------ | ----------- |
+| **Direct (default)** | unset or `VUE_APP_AUTH_MODE=direct` | Simple / Open-Source installs — SPA calls the API with Bearer tokens (current behaviour) |
+| **BFF (opt-in)** | `VUE_APP_AUTH_MODE=bff` + Admin BFF process | Shared login session with Storefront on the same origin (`/` + `/admin`) via HttpOnly cookies |
+
+One deploy uses one mode. The backend API stays Bearer-only either way. Contract (cookies, env, acceptance criteria): [docs/adr/0001-optional-admin-bff-shared-session.md](docs/adr/0001-optional-admin-bff-shared-session.md).
+
+The optional Admin BFF lives in [`bff/`](bff/). Run locally with `npm run bff:dev` (set `API_BASE_URL`, `BFF_PUBLIC_PATH`). The Vue dev server proxies `/admin/api` and `/api` → the BFF. Set `VUE_APP_AUTH_MODE=bff` so the SPA uses cookie auth via `BffAuthTransport` (including Keycloak OIDC+PKCE). Direct mode keeps `keycloak-js`. For Docker, see [`docker-compose.bff.example.yml`](docker-compose.bff.example.yml) and set `ADMIN_BFF_UPSTREAM`.
+
+**Shared session with Storefront** (same origin `/` + `/admin`): see [docs/shared-session-deploy.md](docs/shared-session-deploy.md).
+
+#### Upgrading to shared session (optional)
+
+Enabling the Admin BFF is **not required** for Open-Source or simple installs. Stay on Direct mode unless Admin and Storefront share one browser origin and you want one login for both.
+
+| If you… | Do this |
+| ------- | ------- |
+| Run Admin alone (or Admin + Storefront on different hosts) | Keep Direct (default) — no BFF |
+| Deploy Storefront at `/` and Admin at `/admin` on the same site | Opt in: `VUE_APP_AUTH_MODE=bff`, run Admin BFF, follow [shared-session-deploy.md](docs/shared-session-deploy.md) |
+
+Hardening notes (CSRF, no tokens in JS): [docs/bff-hardening.md](docs/bff-hardening.md). Smoke checklists: [docs/bff-smoke-tests.md](docs/bff-smoke-tests.md).
 
 A complete overview of all variables (including light and dark theme colors and SSO settings) can be found in [`.env-example`](.env-example).
 
@@ -306,18 +332,26 @@ For backend deployment (Docker, secrets, process management), see [smart-city-bo
 
 ### Option 2 – Docker
 
-The included `Dockerfile` uses a **multi-stage build**:
+The included `Dockerfile` builds **one image** for all instances:
 
-1. **Stage 1 (builder)** – Node 18: installs dependencies and creates the production build.
-2. **Stage 2** – nginx-alpine: serves the static files. At container startup, the bundled `substitute_environment_variables.sh` script injects environment variables into the built files.
+1. **UI builder** – Node 18: production Vue build  
+2. **BFF deps** – Node 20: Admin BFF `node_modules` (bundled into the image, not started by default)  
+3. **Runtime** – nginx-alpine + Node: serves the SPA; optionally starts the embedded BFF
 
-**Build the image:**
+At container start, `docker-entrypoint.sh` + `substitute_environment_variables.sh` inject env vars. Auth mode is chosen **per deploy** via env — same image tag everywhere.
+
+| Mode | Env | What runs in the container |
+|------|-----|----------------------------|
+| **Direct (default)** | unset / `VUE_APP_AUTH_MODE=direct` | nginx + SPA only (as before) |
+| **BFF** | `VUE_APP_AUTH_MODE=bff` | nginx + SPA + embedded BFF on `:3001`; nginx proxies `/admin/api` → BFF |
+
+**Build the image** (unchanged; `docker-publish` workflow uses the same `Dockerfile`):
 
 ```bash
 docker build -t smart-city-booking-frontend .
 ```
 
-**Run the container:**
+**Run — Direct (classic):**
 
 ```bash
 docker run -d \
@@ -325,30 +359,36 @@ docker run -d \
   -e VUE_APP_SERVER_BASE_URL=https://api.my-city.de \
   -e VUE_APP_NAME="My City – Booking Platform" \
   -e VUE_APP_IS_PRODUCTION=true \
-  -e VUE_APP_CONTACT_ADDRESS="City Office, Main St. 1, 12345 Sample City" \
-  -e VUE_APP_CONTACT_URL=https://www.my-city.de/contact \
   --name booking-frontend \
   smart-city-booking-frontend
 ```
 
-> **Advantage:** Thanks to the substitution script you can build **a single image** and use it across different environments (staging, production, …) by simply changing the environment variables.
+**Run — BFF / shared session with Storefront:**
 
-**Docker Compose (example snippet):**
-
-```yaml
-services:
-  frontend:
-    build: .
-    ports:
-      - "8080:80"
-    environment:
-      VUE_APP_SERVER_BASE_URL: https://api.my-city.de
-      VUE_APP_NAME: "My City – Booking Platform"
-      VUE_APP_IS_PRODUCTION: "true"
-      VUE_APP_CONTACT_ADDRESS: "City Office, Main St. 1, 12345 Sample City"
-      VUE_APP_CONTACT_URL: https://www.my-city.de/contact
+```bash
+docker run -d \
+  -p 8080:80 \
+  -e BASE_URL=/admin \
+  -e STRIP_PREFIX=false \
+  -e VUE_APP_AUTH_MODE=bff \
+  -e VUE_APP_BFF_BASE_URL=/admin/api \
+  -e VUE_APP_SERVER_BASE_URL=https://api.my-city.de \
+  -e PUBLIC_ORIGIN=https://example.com \
+  -e VUE_APP_NAME="My City – Booking Platform" \
+  --name booking-frontend \
+  smart-city-booking-frontend
 ```
 
+| Extra BFF env | Purpose |
+|---------------|---------|
+| `PUBLIC_ORIGIN` / `PUBLIC_ORIGINS` | Comma-separated browser origin allowlist (OIDC redirect + CSRF); both merged |
+| `API_BASE_URL` | Backend for BFF (defaults to `VUE_APP_SERVER_BASE_URL`) |
+| `ADMIN_BFF_ENABLED=false` | Force Direct process layout even if you only want SPA flags differently |
+| `ADMIN_BFF_UPSTREAM` | Point nginx at an **external** BFF instead of the embedded one |
+
+> **Advantage:** One published image (`docker-publish`); per instance only env differs. No second image required for BFF mode.
+
+**Docker Compose:** see [`docker-compose.bff.example.yml`](docker-compose.bff.example.yml).
 ---
 
 ## Documentation

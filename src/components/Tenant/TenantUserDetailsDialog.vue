@@ -79,6 +79,17 @@
           />
         </v-tab>
         <v-tab>
+          <v-icon left>mdi-bell-ring</v-icon>
+          Benachrichtigungen
+          <v-badge
+            v-if="notificationRecipients.length > 0"
+            :content="notificationRecipients.length"
+            color="primary"
+            inline
+            class="ml-2"
+          />
+        </v-tab>
+        <v-tab>
           <v-icon left>mdi-cog</v-icon>
           Aktionen
         </v-tab>
@@ -490,6 +501,153 @@
             </v-card>
           </v-tab-item>
 
+          <!-- Notifications Tab -->
+          <v-tab-item>
+            <v-alert
+              v-if="!notifySupervisorsOnBooking"
+              type="info"
+              border="left"
+              elevation="1"
+              colored-border
+              class="mb-4 mt-1 mr-1"
+            >
+              Vorgesetzten-Benachrichtigungen sind für diesen Mandanten
+              deaktiviert. Aktivieren Sie die Option „Vorgesetzte bei Buchung
+              informieren“ unter Mandant → Buchung, damit die hier
+              konfigurierten Empfänger bei Buchungen informiert werden.
+            </v-alert>
+
+            <div class="mb-4">
+              <div class="d-flex align-center mb-2">
+                <v-icon color="primary" class="mr-2">mdi-bell-ring</v-icon>
+                <span class="text-h6 font-weight-medium">
+                  Buchungsbenachrichtigungen
+                </span>
+              </div>
+              <p class="text-body-2 grey--text mb-0">
+                Legen Sie fest, wer bei Buchungen dieses Mitglieds automatisch
+                informiert wird (z. B. Vorgesetzte).
+              </p>
+            </div>
+
+            <!-- Configured recipients -->
+            <v-card outlined class="mb-6">
+              <v-card-subtitle>
+                Konfigurierte Empfänger ({{ notificationRecipients.length }} /
+                {{ maxRecipients }})
+              </v-card-subtitle>
+              <v-card-text v-if="notificationRecipients.length > 0">
+                <v-chip
+                  v-for="(recipient, index) in notificationRecipients"
+                  :key="`${recipient.type}-${recipient.value}`"
+                  class="mr-2 mb-2"
+                  close
+                  @click:close="removeRecipient(index)"
+                >
+                  <v-icon left small>
+                    {{ getRecipientTypeIcon(recipient.type) }}
+                  </v-icon>
+                  {{ getRecipientDisplayText(recipient) }}
+                </v-chip>
+              </v-card-text>
+              <v-card-text v-else class="grey--text">
+                Keine Empfänger konfiguriert.
+              </v-card-text>
+            </v-card>
+
+            <!-- Add recipient -->
+            <v-card outlined>
+              <v-card-subtitle>Empfänger hinzufügen</v-card-subtitle>
+              <v-card-text>
+                <v-alert
+                  v-if="recipientLimitReached"
+                  type="info"
+                  dense
+                  outlined
+                >
+                  Es können maximal {{ maxRecipients }} Empfänger konfiguriert
+                  werden.
+                </v-alert>
+                <v-row v-else dense>
+                  <v-col cols="12" sm="4">
+                    <v-select
+                      v-model="newRecipientType"
+                      :items="recipientTypeOptions"
+                      label="Typ"
+                      background-color="accent"
+                      filled
+                      dense
+                      hide-details
+                      @change="resetNewRecipientValue"
+                    />
+                  </v-col>
+                  <v-col cols="12" sm="6">
+                    <v-autocomplete
+                      v-if="newRecipientType === 'user'"
+                      v-model="newRecipientValue"
+                      :items="memberOptions"
+                      label="Mitglied auswählen"
+                      background-color="accent"
+                      filled
+                      dense
+                      hide-details
+                    />
+                    <v-select
+                      v-else-if="newRecipientType === 'role'"
+                      v-model="newRecipientValue"
+                      :items="roleOptions"
+                      label="Rolle auswählen"
+                      background-color="accent"
+                      filled
+                      dense
+                      hide-details
+                    />
+                    <v-text-field
+                      v-else
+                      v-model="newRecipientValue"
+                      label="E-Mail-Adresse"
+                      background-color="accent"
+                      filled
+                      dense
+                      :rules="[emailRule]"
+                      hide-details="auto"
+                    />
+                  </v-col>
+                  <v-col cols="12" sm="2" class="d-flex align-center">
+                    <v-btn
+                      color="primary"
+                      block
+                      :disabled="!canAddRecipient"
+                      @click="addRecipient"
+                    >
+                      <v-icon left>mdi-plus</v-icon>
+                      Hinzufügen
+                    </v-btn>
+                  </v-col>
+                </v-row>
+                <div
+                  v-if="isDuplicateRecipient"
+                  class="text-caption warning--text mt-2"
+                >
+                  Dieser Empfänger ist bereits konfiguriert.
+                </div>
+              </v-card-text>
+            </v-card>
+
+            <!-- Save -->
+            <div class="d-flex align-center mt-4">
+              <v-spacer />
+              <v-btn
+                color="primary"
+                :disabled="!recipientsChanged"
+                @click="saveRecipients"
+              >
+                <v-icon left>mdi-content-save</v-icon>
+                Empfänger speichern
+              </v-btn>
+            </div>
+          </v-tab-item>
+
           <!-- Actions Tab -->
           <v-tab-item>
             <div class="mb-4">
@@ -701,6 +859,14 @@ export default {
       type: Array,
       default: () => [],
     },
+    members: {
+      type: Array,
+      default: () => [],
+    },
+    notifySupervisorsOnBooking: {
+      type: Boolean,
+      default: true,
+    },
   },
   data() {
     return {
@@ -708,6 +874,15 @@ export default {
       confirmDelete: false,
       userStatus: null,
       userRoles: null,
+      notificationRecipients: [],
+      newRecipientType: "user",
+      newRecipientValue: null,
+      maxRecipients: 10,
+      recipientTypeOptions: [
+        { text: "Nutzer", value: "user" },
+        { text: "Rolle", value: "role" },
+        { text: "E-Mail", value: "email" },
+      ],
       messages: {
         REJECTED_BY_ADMIN: "Abgelehnt durch Administrator",
         APPROVED_BY_ADMIN: "Freigegeben durch Administrator",
@@ -721,6 +896,50 @@ export default {
   computed: {
     selectedRolesCount() {
       return this.userRoles ? this.userRoles.length : 0;
+    },
+    memberOptions() {
+      return this.members.map((member) => ({
+        text:
+          member.fullName && member.fullName.length > 0
+            ? `${member.fullName} (${member.userId})`
+            : member.userId,
+        value: member.userId,
+      }));
+    },
+    roleOptions() {
+      return this.roles.map((role) => ({
+        text: role.name,
+        value: role.id,
+      }));
+    },
+    recipientLimitReached() {
+      return this.notificationRecipients.length >= this.maxRecipients;
+    },
+    isDuplicateRecipient() {
+      if (!this.newRecipientValue) return false;
+      const value =
+        this.newRecipientType === "email"
+          ? this.newRecipientValue.trim().toLowerCase()
+          : this.newRecipientValue;
+      return this.notificationRecipients.some(
+        (r) => r.type === this.newRecipientType && r.value === value
+      );
+    },
+    canAddRecipient() {
+      if (this.recipientLimitReached || this.isDuplicateRecipient) {
+        return false;
+      }
+      if (!this.newRecipientValue) return false;
+      if (this.newRecipientType === "email") {
+        return this.emailRule(this.newRecipientValue) === true;
+      }
+      return true;
+    },
+    recipientsChanged() {
+      const original = this.user?.bookingNotificationRecipients || [];
+      return (
+        JSON.stringify(this.notificationRecipients) !== JSON.stringify(original)
+      );
     },
     userName() {
       if (this.user?.firstName && this.user?.lastName) {
@@ -769,6 +988,9 @@ export default {
         if (newUser) {
           this.userStatus = newUser.status;
           this.userRoles = newUser.roles || [];
+          this.notificationRecipients = (
+            newUser.bookingNotificationRecipients || []
+          ).map((r) => ({ ...r }));
         }
       },
       immediate: true,
@@ -783,6 +1005,59 @@ export default {
     changeUserStatus(newStatus) {
       this.userStatus = newStatus;
       this.$emit("update-status", newStatus);
+    },
+
+    emailRule(value) {
+      const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return !value || pattern.test(value) || "Ungültige E-Mail-Adresse";
+    },
+    resetNewRecipientValue() {
+      this.newRecipientValue = null;
+    },
+    getRecipientTypeIcon(type) {
+      const icons = {
+        user: "mdi-account",
+        role: "mdi-shield-account",
+        email: "mdi-email",
+      };
+      return icons[type] || "mdi-bell";
+    },
+    getRecipientDisplayText(recipient) {
+      if (recipient.type === "user") {
+        const member = this.members.find((m) => m.userId === recipient.value);
+        if (member?.fullName) {
+          return `${member.fullName} (${recipient.value})`;
+        }
+        return recipient.label || recipient.value;
+      }
+      if (recipient.type === "role") {
+        const role = this.roles.find((r) => r.id === recipient.value);
+        return role?.name || recipient.label || recipient.value;
+      }
+      return recipient.label || recipient.value;
+    },
+    addRecipient() {
+      if (!this.canAddRecipient) return;
+      const value =
+        this.newRecipientType === "email"
+          ? this.newRecipientValue.trim().toLowerCase()
+          : this.newRecipientValue;
+      this.notificationRecipients = [
+        ...this.notificationRecipients,
+        { type: this.newRecipientType, value },
+      ];
+      this.newRecipientValue = null;
+    },
+    removeRecipient(index) {
+      this.notificationRecipients = this.notificationRecipients.filter(
+        (_, i) => i !== index
+      );
+    },
+    saveRecipients() {
+      this.$emit(
+        "update-notification-recipients",
+        this.notificationRecipients.map((r) => ({ ...r }))
+      );
     },
 
     getUserInitials() {
@@ -953,6 +1228,9 @@ export default {
       this.confirmDelete = false;
       this.userStatus = null;
       this.userRoles = null;
+      this.notificationRecipients = [];
+      this.newRecipientType = "user";
+      this.newRecipientValue = null;
       this.$emit("close");
     },
   },

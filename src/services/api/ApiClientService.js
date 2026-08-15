@@ -1,207 +1,71 @@
 import axios from "axios";
-import keycloakService from "../KeycloakService";
+import { createAuthTransport } from "../auth/createAuthTransport";
+import { getAuthMode } from "../auth/authMode";
 
 class ApiClientService {
   constructor() {
-    this.client = axios.create({
-      baseURL: `${process.env.VUE_APP_SERVER_BASE_URL}/`,
-      withCredentials: false,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
-
-    // Lokale Tokens (für lokale Authentifizierung)
-    this.accessToken = localStorage.getItem("accessToken");
-    this.refreshToken = localStorage.getItem("refreshToken");
-
-    // Auth-Typ: "local" oder "keycloak"
-    this.authType = localStorage.getItem("authType") || null;
-
-    this.isRefreshing = false;
-    this.refreshSubscribers = [];
-
-    this._keycloakRestoring = false;
-
+    this.transport = createAuthTransport();
+    this.client = this.transport.createClient(axios);
+    this.transport.bindClient(this.client);
     this.setupInterceptors();
   }
 
+  get authMode() {
+    return getAuthMode();
+  }
+
   setKeycloakRestoring(value) {
-    this._keycloakRestoring = value;
-  }
-
-  onTokenRefreshed(newToken) {
-    this.refreshSubscribers.forEach((callback) => callback(newToken));
-    this.refreshSubscribers = [];
-  }
-
-  addRefreshSubscriber(callback) {
-    this.refreshSubscribers.push(callback);
+    this.transport.setKeycloakRestoring?.(value);
   }
 
   setupInterceptors() {
     this.client.interceptors.request.use(
-      async (config) => {
-
-        if (this.authType === "keycloak") {
-          const token = await keycloakService.getValidToken();
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-          }
-        } else if (this.accessToken) {
-          config.headers.Authorization = `Bearer ${this.accessToken}`;
-        }
-        return config;
-      },
+      (config) => this.transport.onRequest(config),
       (error) => Promise.reject(error)
     );
 
-    // Response-Interceptor
     this.client.interceptors.response.use(
       (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-
-        if (error.response?.status !== 401 || originalRequest._retry) {
-          return Promise.reject(error);
-        }
-
-        if (this.authType === "keycloak") {
-          if (this._keycloakRestoring) {
-            return Promise.reject(error);
-          }
-
-          originalRequest._retry = true;
-
-          try {
-            const newToken =
-              await keycloakService.getValidToken();
-            if (newToken) {
-              originalRequest.headers.Authorization =
-                `Bearer ${newToken}`;
-              return this.client(originalRequest);
-            }
-          } catch {
-          }
-
-          this.clearTokens();
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
-          }
-          return Promise.reject(error);
-        }
-
-        if (
-          !originalRequest.url?.includes("/auth/refresh") &&
-          this.refreshToken
-        ) {
-          if (this.isRefreshing) {
-            return new Promise((resolve) => {
-              this.addRefreshSubscriber((newToken) => {
-                originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                resolve(this.client(originalRequest));
-              });
-            });
-          }
-
-          originalRequest._retry = true;
-          this.isRefreshing = true;
-
-          try {
-            await this.refreshAccessToken();
-            this.onTokenRefreshed(this.accessToken);
-            originalRequest.headers.Authorization = `Bearer ${this.accessToken}`;
-            return this.client(originalRequest);
-          } catch (refreshError) {
-            this.clearTokens();
-            if (window.location.pathname !== "/login") {
-              window.location.href = "/login";
-            }
-            return Promise.reject(refreshError);
-          } finally {
-            this.isRefreshing = false;
-          }
-        }
-
-        return Promise.reject(error);
-      }
+      (error) => this.transport.onResponseError(error)
     );
   }
 
   /**
-   * Lokale Tokens setzen
+   * Lokale Tokens setzen (Direct mode). In BFF mode only marks session.
    */
   setTokens(accessToken, refreshToken) {
-    this.accessToken = accessToken;
-    this.refreshToken = refreshToken;
-    this.authType = "local";
-
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
-    localStorage.setItem("authType", "local");
+    return this.transport.setTokens(accessToken, refreshToken);
   }
 
   /**
-   * Keycloak-Auth aktivieren (kein Token-Speichern nötig)
+   * Keycloak-Auth aktivieren (Direct mode only).
    */
   setKeycloakAuth() {
-    this.accessToken = null;
-    this.refreshToken = null;
-    this.authType = "keycloak";
-
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.setItem("authType", "keycloak");
+    return this.transport.setKeycloakAuth();
   }
 
   clearTokens() {
-    this.accessToken = null;
-    this.refreshToken = null;
-    this.authType = null;
-
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("authType");
+    return this.transport.clearSession();
   }
 
   async refreshAccessToken() {
-    if (!this.refreshToken) {
-      throw new Error("No refresh token available");
-    }
-
-    const response = await axios.post(
-      `${process.env.VUE_APP_SERVER_BASE_URL}/auth/refresh`,
-      { refreshToken: this.refreshToken },
-      {
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const { accessToken, refreshToken } = response.data;
-    this.setTokens(accessToken, refreshToken);
-    return accessToken;
+    return this.transport.refresh();
   }
 
   isAuthenticated() {
-    if (this.authType === "keycloak") {
-      if (!keycloakService.keycloak) {
-        return true;
-      }
-      return keycloakService.isAuthenticated;
-    }
-    return !!this.accessToken;
+    return this.transport.isAuthenticated();
   }
 
   getAuthType() {
-    return this.authType;
+    return this.transport.getAuthType();
   }
 
   getRefreshToken() {
-    return this.refreshToken;
+    return this.transport.getRefreshToken();
+  }
+
+  supportsClientSideKeycloak() {
+    return this.transport.supportsClientSideKeycloak();
   }
 
   get(url, config = {}) {

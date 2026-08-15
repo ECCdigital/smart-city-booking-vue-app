@@ -1,11 +1,17 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import ApiRolesService from "@/services/api/ApiRolesService";
+import ApiTenantService from "@/services/api/ApiTenantService";
 import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
+import BookingDiscountEditor from "@/components/Bookable/Edit/BookingDiscountEditor.vue";
+import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
+import { mapGetters } from "vuex";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditPermissions",
-  components: { UserRoleSelector, BaseSection },
+  components: { BookingDiscountEditor, UserRoleSelector, BaseSection },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -15,6 +21,12 @@ export default {
     };
   },
   computed: {
+    ...mapGetters({
+      currentTenantId: "tenants/currentTenantId",
+    }),
+    tenantId() {
+      return this.model.tenantId || this.currentTenantId;
+    },
     model: {
       get() {
         return this.bookable;
@@ -23,8 +35,38 @@ export default {
         this.$emit("update:bookable", { ...val });
       },
     },
+    availableUserIds() {
+      return this.availableUsers.map((user) => user.userId);
+    },
+  },
+  watch: {
+    bookable: {
+      immediate: true,
+      handler() {
+        this.ensureBookingDiscounts();
+      },
+    },
+    "model.isBlockPeriodRelated": {
+      immediate: true,
+      handler(enabled) {
+        if (enabled && this.model.groupBooking?.enabled) {
+          this.model.groupBooking.enabled = false;
+        }
+      },
+    },
+    tenantId() {
+      this.fetchUsers();
+    },
   },
   methods: {
+    ensureBookingDiscounts() {
+      const hadDiscounts = !!this.model.bookingDiscounts;
+      normalizeBookingDiscounts(this.model);
+
+      if (!hadDiscounts && this.model.bookingDiscounts) {
+        this.$set(this.model, "bookingDiscounts", this.model.bookingDiscounts);
+      }
+    },
     removePermittedUser(item) {
       this.model.permittedUsers.splice(
         this.model.permittedUsers.indexOf(item),
@@ -37,21 +79,9 @@ export default {
         1
       );
     },
-    removeFreeBookingUser(item) {
-      this.model.freeBookingUsers.splice(
-        this.model.freeBookingUsers.indexOf(item),
-        1
-      );
-    },
     removeGroupBookingRole(item) {
       this.model.groupBooking.permittedRoles.splice(
         this.model.groupBooking.permittedRoles.indexOf(item),
-        1
-      );
-    },
-    removeFreeBookingRole(item) {
-      this.model.freeBookingRoles.splice(
-        this.model.freeBookingRoles.indexOf(item),
         1
       );
     },
@@ -60,9 +90,50 @@ export default {
         this.availableRoles = result?.data;
       });
     },
+    async fetchUsers() {
+      if (!this.tenantId) {
+        this.availableUsers = [];
+        return;
+      }
+
+      try {
+        const response = await ApiTenantService.getTenantUsers(this.tenantId);
+        const userDetails = response.userDetails || [];
+
+        this.availableUsers = (response.users || [])
+          .map((user) => {
+            const details = userDetails.find((detail) => detail.id === user.userId);
+            const firstName = details?.firstName || user.firstName || "";
+            const lastName = details?.lastName || user.lastName || "";
+            const fullName = `${firstName} ${lastName}`.trim();
+
+            return {
+              userId: user.userId,
+              firstName,
+              lastName,
+              fullName: fullName || user.userId,
+              hasName: !!fullName,
+            };
+          })
+          .filter((user) => !!user.userId);
+      } catch (error) {
+        console.error("Error fetching tenant users:", error);
+        this.availableUsers = [];
+      }
+    },
+    async validate() {
+      return this.$refs.form ? this.$refs.form.validate() : true;
+    },
+    resetValidation() {
+      this.$refs.form?.resetValidation();
+    },
+  },
+  created() {
+    this.ensureBookingDiscounts();
   },
   mounted() {
     this.fetchRoles();
+    this.fetchUsers();
     if (!this.model.cancellationPolicy) {
       this.model.cancellationPolicy = { userCancellable: true };
     }
@@ -74,7 +145,12 @@ export default {
   <v-form ref="form" v-model="valid">
     <BaseSection title="Berechtigungen" icon="mdi-account-lock-outline" />
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-permissions-login"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-login-variant</v-icon>
         <span class="text-h6 font-weight-bold">Anmeldepflicht</span>
@@ -94,7 +170,12 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-permissions-access"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-account-lock-outline</v-icon>
         <span class="text-h6 font-weight-bold"
@@ -106,7 +187,7 @@ export default {
         <UserRoleSelector
           :users="model.permittedUsers"
           :roles="model.permittedRoles"
-          :available-users="availableUsers"
+          :available-users="availableUserIds"
           :available-roles-prop="availableRoles"
           :fetch-roles-on-mount="false"
           @update:users="model.permittedUsers = $event"
@@ -119,92 +200,39 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
-      <v-card-title class="section-header pa-4">
-        <v-icon class="mr-2">mdi-ticket-percent-outline</v-icon>
-        <span class="text-h6 font-weight-bold">Kostenfreie Buchungen</span>
-      </v-card-title>
-      <v-divider></v-divider>
-      <v-card-text class="pa-4">
-        <div class="info-label mb-3">
-          <v-icon small class="mr-2">mdi-account-multiple</v-icon>
-          Kostenfrei für Benutzer
-        </div>
-        <p class="mb-3 text-caption">
-          Berechtigen Sie Nutzer dieses Objekt kostenfrei zu buchen.
-        </p>
-        <v-combobox
-          v-model="model.freeBookingUsers"
-          :items="availableUsers"
-          label="Kostenfrei für Benutzer"
-          hide-selected
-          no-data-text="Keine Benutzer verfügbar"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-          dense
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              small
-              color="secondary"
-              @click="select"
-              @click:close="removeFreeBookingUser(item)"
-            >
-              <strong>{{ item }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
+    <div v-if="expertMode" id="be-section-permissions-discounts">
+      <BaseSection title="Preisrabatte" icon="mdi-ticket-percent-outline" />
 
-        <div class="info-label mb-3 mt-5">
-          <v-icon small class="mr-2">mdi-account-group</v-icon>
-          Kostenfrei für Rollen
-        </div>
-        <p class="mb-3 text-caption">
-          Berechtigen Sie <strong>alle Benutzer einer Rolle</strong>, dieses
-          Objekt kostenfrei zu buchen.
-        </p>
-        <v-combobox
-          v-model="model.freeBookingRoles"
-          :items="availableRoles"
-          label="Kostenfrei für Rollen"
-          item-text="name"
-          item-value="id"
-          hide-selected
-          no-data-text="Keine Rollen verfügbar"
-          multiple
-          background-color="accent"
-          clearable
-          chips
-          filled
-          dense
-          :return-object="false"
-        >
-          <template v-slot:selection="{ attrs, item, select, selected }">
-            <v-chip
-              v-bind="attrs"
-              :input-value="selected"
-              close
-              small
-              color="secondary"
-              @click="select"
-              @click:close="removeFreeBookingRole(item)"
-            >
-              <strong>{{
-                availableRoles.find((r) => r.id === item)?.name
-              }}</strong>
-            </v-chip>
-          </template>
-        </v-combobox>
-      </v-card-text>
-    </v-card>
+      <p class="mb-4 text-caption" style="max-width: 700px">
+        Legen Sie einen prozentualen Preisnachlass (0–100&nbsp;%) pro Benutzer
+        oder Rolle fest. 100&nbsp;% entspricht einer kostenfreien Buchung.
+      </p>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+      <BookingDiscountEditor
+        v-if="model.bookingDiscounts"
+        :items="model.bookingDiscounts.users"
+        type="user"
+        :available-users="availableUsers"
+        label="Rabatt für Benutzer"
+        hint="Gewähren Sie <strong>bestimmten Benutzern</strong> einen Preisnachlass auf dieses Buchungsobjekt."
+      />
+
+      <BookingDiscountEditor
+        v-if="model.bookingDiscounts"
+        :items="model.bookingDiscounts.roles"
+        type="role"
+        :available-roles="availableRoles"
+        label="Rabatt für Rollen"
+        hint="Gewähren Sie <strong>allen Benutzern einer Rolle</strong> einen Preisnachlass auf dieses Buchungsobjekt."
+      />
+    </div>
+
+    <v-card
+      id="be-section-permissions-group-booking"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-calendar-multiple</v-icon>
         <span class="text-h6 font-weight-bold">Serienbuchungen</span>
@@ -218,10 +246,20 @@ export default {
               label="Serienbuchung erlauben"
               hide-details
               v-model="model.groupBooking.enabled"
+              :disabled="model.isBlockPeriodRelated"
             ></v-switch>
           </v-col>
         </v-row>
-        <p class="mb-3 mt-5 text-caption" style="max-width: 700px">
+        <v-alert
+          v-if="model.isBlockPeriodRelated"
+          color="info"
+          dense
+          text
+          class="mt-3 mb-0"
+        >
+          Serienbuchungen sind bei Zeiträumen nicht verfügbar.
+        </v-alert>
+        <p v-else class="mb-3 mt-5 text-caption" style="max-width: 700px">
           Serienbuchungen ermöglichen es Benutzern, mehrere Termine in einer
           Buchungsserie zusammenzufassen. Dadurch können z.B. wöchentliche
           Meetings oder Kurse mit mehreren Terminen einfacher gebucht und
@@ -282,7 +320,13 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      v-if="expertMode"
+      id="be-section-permissions-cancellation"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-book-cancel-outline</v-icon>
         <span class="text-h6 font-weight-bold">Stornierungsrichtlinie</span>
@@ -296,8 +340,8 @@ export default {
           v-model="model.cancellationPolicy.userCancellable"
         ></v-switch>
         <p class="mb-0 mt-3 text-caption" style="max-width: 700px">
-          Wenn aktiviert, können Benutzer ihre eigenen Buchungen stornieren. Andernfalls ist eine Stornierung nur durch
-          Administratoren möglich.
+          Wenn aktiviert, können Benutzer ihre eigenen Buchungen stornieren.
+          Andernfalls ist eine Stornierung nur durch Administratoren möglich.
         </p>
       </v-card-text>
     </v-card>

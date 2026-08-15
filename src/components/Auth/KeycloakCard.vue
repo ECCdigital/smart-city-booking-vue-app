@@ -1,6 +1,7 @@
 <script>
 import keycloakService from "@/services/KeycloakService";
 import ApiAuthService from "@/services/api/ApiAuthService";
+import { isBffAuthMode } from "@/services/auth/authMode";
 import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 
@@ -13,6 +14,8 @@ export default {
       userName: "",
       loading: false,
       ssoConfig: {},
+      acceptedDataProtection: false,
+      acceptedTerms: false,
       state: "",
       possibleStates: {
         SIGNUP_SUCCESS: "signup-success",
@@ -29,6 +32,33 @@ export default {
     ...mapGetters({
       instance: "instance/instance",
     }),
+    isBffMode() {
+      return isBffAuthMode();
+    },
+    dataProtection() {
+      return this.instance?.dataProtection || {};
+    },
+    termsAndConditions() {
+      return this.instance?.termsAndConditions || {};
+    },
+    requiresDataProtection() {
+      return !!this.dataProtection.url;
+    },
+    requiresTerms() {
+      return !!this.termsAndConditions.url;
+    },
+    dataProtectionHref() {
+      return this.legalHref(this.dataProtection.url);
+    },
+    termsHref() {
+      return this.legalHref(this.termsAndConditions.url);
+    },
+    canSignUp() {
+      if (this.requiresDataProtection && !this.acceptedDataProtection)
+        return false;
+      if (this.requiresTerms && !this.acceptedTerms) return false;
+      return true;
+    },
   },
   methods: {
     ...mapActions({
@@ -65,23 +95,76 @@ export default {
         this.loading = false;
       }
     },
+    ssoTicket() {
+      return this.$route.query.ticket || null;
+    },
+    async startBffSsoFlow() {
+      const flow = this.$route.query.flow;
+      if (flow === "confirm" || flow === "register") {
+        this.loading = true;
+        try {
+          const pending = await ApiAuthService.getPendingSsoUser(
+            this.ssoTicket()
+          );
+          this.userEmail = pending?.email || "";
+          this.userName = pending?.name || "";
+          this.setState(
+            flow === "confirm"
+              ? this.possibleStates.KC_AUTH_SUCCESS
+              : this.possibleStates.NO_USER_FOUND
+          );
+        } catch {
+          this.setState(this.possibleStates.KC_AUTH_ERROR);
+        } finally {
+          this.loading = false;
+        }
+        return;
+      }
+
+      this.loading = true;
+      const redirect =
+        this.nextUrl ||
+        (() => {
+          const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
+          return base ? `${base}/` : "/";
+        })();
+      ApiAuthService.startSsoLogin(redirect);
+    },
+    async afterSignIn(user, permissions, redirectHint) {
+      await this.updateUser({ user, permissions });
+      await this.addToast(
+        ToastService.createToast("login.success.default", "success"),
+      );
+
+      if (redirectHint && redirectHint !== "/" && !redirectHint.includes("/login")) {
+        window.location.href = redirectHint;
+        return;
+      }
+
+      if (this.nextUrl) {
+        this.$router.push(this.nextUrl);
+        this.updateNextUrl(null);
+      } else {
+        this.$router.push({ name: "dashboard" });
+      }
+    },
     async signIn() {
       try {
         this.loading = true;
+
+        if (this.isBffMode) {
+          const data = await ApiAuthService.ssoLogin(null, this.ssoTicket());
+          await this.afterSignIn(
+            data.user,
+            data.permissions,
+            data.redirect
+          );
+          return;
+        }
+
         const token = await keycloakService.getValidToken();
         const { user, permissions } = await ApiAuthService.ssoLogin(token);
-
-        await this.updateUser({ user, permissions });
-        await this.addToast(
-          ToastService.createToast("login.success.default", "success"),
-        );
-
-        if (this.nextUrl) {
-          this.$router.push(this.nextUrl);
-          this.updateNextUrl(null);
-        } else {
-          this.$router.push({ name: "dashboard" });
-        }
+        await this.afterSignIn(user, permissions);
       } catch (error) {
         if (error.response?.status === 404) {
           this.setState(this.possibleStates.NO_USER_FOUND);
@@ -95,11 +178,67 @@ export default {
         this.loading = false;
       }
     },
+    legalHref(url) {
+      if (!url) return "";
+      return /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
+    },
+    buildLegalAcceptance() {
+      const acceptance = {};
+      const acceptedAt = new Date().toISOString();
+      if (this.requiresDataProtection) {
+        acceptance.dataProtection = {
+          accepted: this.acceptedDataProtection,
+          url: this.dataProtection.url,
+          fileName: this.dataProtection.fileName || "",
+          source: this.dataProtection.source || "url",
+          acceptedAt,
+        };
+      }
+      if (this.requiresTerms) {
+        acceptance.termsAndConditions = {
+          accepted: this.acceptedTerms,
+          url: this.termsAndConditions.url,
+          fileName: this.termsAndConditions.fileName || "",
+          source: this.termsAndConditions.source || "url",
+          acceptedAt,
+        };
+      }
+      return acceptance;
+    },
     async signUp() {
+      if (!this.canSignUp) return;
       try {
         this.loading = true;
+
+        if (this.isBffMode) {
+          const response = await ApiAuthService.ssoRegister(
+            null,
+            this.buildLegalAcceptance(),
+            this.ssoTicket()
+          );
+          if (response.status === 201 || response.data) {
+            await this.addToast(
+              ToastService.createToast("register.success.default", "success"),
+            );
+            this.setState(this.possibleStates.SIGNUP_SUCCESS);
+            const user = response.data?.user || response.user;
+            const permissions =
+              response.data?.permissions || response.permissions;
+            if (user) {
+              setTimeout(
+                () => this.afterSignIn(user, permissions),
+                1500
+              );
+            }
+          }
+          return;
+        }
+
         const token = await keycloakService.getValidToken();
-        const response = await ApiAuthService.ssoRegister(token);
+        const response = await ApiAuthService.ssoRegister(
+          token,
+          this.buildLegalAcceptance(),
+        );
 
         if (response.status === 201) {
           await this.addToast(
@@ -118,6 +257,10 @@ export default {
       }
     },
     async changeUser() {
+      if (this.isBffMode) {
+        ApiAuthService.changeSsoUser(window.location.href, this.ssoTicket());
+        return;
+      }
       await keycloakService.logout(window.location.href);
     },
     back() {
@@ -130,9 +273,13 @@ export default {
     },
   },
   async mounted() {
-    await this.fetchSsoConfig();
-    await this.createKeycloakSession();
     this.nextUrl = await this.getNextUrl();
+    await this.fetchSsoConfig();
+    if (this.isBffMode) {
+      await this.startBffSsoFlow();
+    } else {
+      await this.createKeycloakSession();
+    }
   },
 };
 </script>
@@ -199,6 +346,53 @@ export default {
           Sie wurden erfolgreich authentifiziert, sind aber noch nicht in
           diesem System registriert. Möchten Sie Ihr Konto jetzt
           automatisch anlegen?
+        </div>
+
+        <div
+          v-if="requiresDataProtection || requiresTerms"
+          class="text-left mt-4 align-self-stretch"
+        >
+          <v-checkbox
+            v-if="requiresDataProtection"
+            v-model="acceptedDataProtection"
+            hide-details="auto"
+            class="mt-0"
+            :disabled="loading"
+          >
+            <template v-slot:label>
+              <span class="text-body-2">
+                Ich habe die
+                <a
+                  :href="dataProtectionHref"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click.stop
+                  >Datenschutzerklärung</a
+                >
+                gelesen und akzeptiere sie.
+              </span>
+            </template>
+          </v-checkbox>
+          <v-checkbox
+            v-if="requiresTerms"
+            v-model="acceptedTerms"
+            hide-details="auto"
+            class="mt-0"
+            :disabled="loading"
+          >
+            <template v-slot:label>
+              <span class="text-body-2">
+                Ich akzeptiere die
+                <a
+                  :href="termsHref"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click.stop
+                  >Allgemeinen Geschäftsbedingungen</a
+                >.
+              </span>
+            </template>
+          </v-checkbox>
         </div>
       </div>
 
@@ -273,6 +467,7 @@ export default {
         elevation="0"
         @click="signUp"
         :loading="loading"
+        :disabled="!canSignUp"
       >
         Registrieren
       </v-btn>

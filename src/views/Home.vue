@@ -197,6 +197,21 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import PendingTenantInvitations from "@/components/Tenant/PendingTenantInvitations.vue";
 import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
 
+function isSafeInternalRedirect(redirect, router) {
+  if (typeof redirect !== "string" || redirect.length < 2) {
+    return false;
+  }
+  if (!redirect.startsWith("/") || redirect.startsWith("//")) {
+    return false;
+  }
+  if (redirect.includes("\\")) {
+    return false;
+  }
+
+  const resolved = router.resolve(redirect);
+  return resolved.route.matched.length > 0;
+}
+
 export default {
   name: "HomeView",
   components: {
@@ -252,6 +267,11 @@ export default {
     },
     async selectTenant(tenantId) {
       await this.select(tenantId);
+      const redirect = this.$route.query.redirect;
+      if (isSafeInternalRedirect(redirect, this.$router)) {
+        await this.$router.push(redirect);
+        return;
+      }
       await this.$router.push({ name: "bookings" });
     },
     onOpenCreateTenant() {

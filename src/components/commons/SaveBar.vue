@@ -12,6 +12,10 @@ export default {
       type: [Object, HTMLElement],
       default: null,
     },
+    scrollRoot: {
+      type: [Object, HTMLElement],
+      default: null,
+    },
   },
   data() {
     return {
@@ -56,6 +60,12 @@ export default {
         passive: true,
       });
       window.addEventListener("orientationchange", this._onResizeOrScroll);
+      const scrollEl = this.getScrollElement();
+      if (scrollEl && scrollEl !== window) {
+        scrollEl.addEventListener("scroll", this._onResizeOrScroll, {
+          passive: true,
+        });
+      }
       if (this.anchorEl instanceof Element && "ResizeObserver" in window) {
         this.ro = new ResizeObserver(() => this.updateAnchorBox());
         this.ro.observe(this.anchorEl);
@@ -65,10 +75,20 @@ export default {
       window.removeEventListener("resize", this._onResizeOrScroll);
       window.removeEventListener("scroll", this._onResizeOrScroll);
       window.removeEventListener("orientationchange", this._onResizeOrScroll);
+      const scrollEl = this.getScrollElement();
+      if (scrollEl && scrollEl !== window) {
+        scrollEl.removeEventListener("scroll", this._onResizeOrScroll);
+      }
       if (this.ro) {
         this.ro.disconnect();
         this.ro = null;
       }
+    },
+    getScrollElement() {
+      if (this.scrollRoot instanceof Element) {
+        return this.scrollRoot;
+      }
+      return window;
     },
   },
   mounted() {
@@ -82,6 +102,16 @@ export default {
   },
   watch: {
     anchorEl: {
+      handler() {
+        this.$nextTick(() => {
+          this.removeListeners();
+          this.updateAnchorBox();
+          this.addListeners();
+        });
+      },
+      immediate: false,
+    },
+    scrollRoot: {
       handler() {
         this.$nextTick(() => {
           this.removeListeners();
@@ -117,20 +147,26 @@ export default {
         <v-icon color="primary" class="mr-2">mdi-content-save</v-icon>
         <span class="mr-4">Änderungen speichern</span>
         <v-spacer />
-        <v-btn v-if="showCancel" text @click="cancelChanges" class="mr-2">
-          abbrechen
+        <v-btn
+          v-if="showCancel"
+          text
+          class="save-bar-btn"
+          @click="cancelChanges"
+        >
+          Abbrechen
         </v-btn>
         <v-btn
           v-if="showRestore"
           :disabled="inProgress || !disabled"
           text
+          class="save-bar-btn"
           @click="cancelChanges"
-          class="mr-2"
         >
           Änderungen zurücksetzen
         </v-btn>
         <v-btn
           color="primary"
+          class="save-bar-btn save-bar-btn--primary"
           :loading="inProgress"
           :disabled="inProgress || !disabled"
           @click="submitChanges"
@@ -156,14 +192,23 @@ export default {
 }
 
 .save-bar {
-  margin-left: 12px;
-  margin-right: 12px;
-
   pointer-events: auto;
-  height: var(--save-bar-height);
+  min-height: var(--save-bar-height);
   border-radius: 12px;
-  padding: 12px 16px;
-
+  padding: 8px 12px;
   backdrop-filter: blur(10px);
+}
+
+.save-bar-btn {
+  margin: 0 0 0 8px !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  padding: 0 16px !important;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.save-bar-btn--primary {
+  padding: 0 20px !important;
 }
 </style>

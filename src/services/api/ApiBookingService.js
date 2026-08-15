@@ -27,7 +27,7 @@ export default {
   ) {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const irb = includeRelatedBookables || false;
-    const ipb = includeParentBookables || false
+    const ipb = includeParentBookables || false;
     const po = publicOnly || false;
 
     //TODO: check if typo-correction interferes anywhere
@@ -62,7 +62,38 @@ export default {
     );
     return response.data;
   },
-  rejectBooking(id, tenantId, reason, skipCancellation, bankDetails) {
+  async getCancellationRefundPreview(id, tenantId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const response = await ApiClient.get(
+      `api/${t}/bookings/${id}/cancellation-refund-preview`
+    );
+    return response.data;
+  },
+  async getPublicCancellationRefundPreview(id, tenantId, name) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const response = await ApiClient.get(
+      `api/${t}/bookings/${id}/cancellation-refund-preview/public`,
+      {
+        params: { name },
+      }
+    );
+    return response.data;
+  },
+  async getHookCancellationRefundPreview(id, tenantId, hookId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const response = await ApiClient.get(
+      `api/${t}/bookings/${id}/hooks/${hookId}/cancellation-refund-preview`
+    );
+    return response.data;
+  },
+  rejectBooking(
+    id,
+    tenantId,
+    reason,
+    skipCancellation,
+    bankDetails,
+    refundPercentage
+  ) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     const payload = {
       reason: reason,
@@ -71,10 +102,10 @@ export default {
     if (bankDetails) {
       payload.bankDetails = bankDetails;
     }
-    return ApiClient.post(
-      `api/${t}/bookings/${id}/reject?skipCancellation}`,
-      payload
-    );
+    if (refundPercentage !== undefined) {
+      payload.refundPercentage = refundPercentage;
+    }
+    return ApiClient.post(`api/${t}/bookings/${id}/reject`, payload);
   },
   requestRejectBooking(id, tenantId, reason, bankDetails) {
     const t = tenantId || store.getters["tenants/currentTenantId"];

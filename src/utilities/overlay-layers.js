@@ -7,6 +7,6 @@
  * Bewusst deutlich unter Vuetifys Dialog-Ebene (200+): ein Dropdown in einem
  * v-dialog braucht weiterhin den vom Dialog berechneten Wert, nicht diesen.
  */
-export const SAVE_BAR_Z_INDEX = 10;
+export const SAVE_BAR_Z_INDEX = 4;
 
 export const MENU_PROPS_ABOVE_SAVE_BAR = { zIndex: SAVE_BAR_Z_INDEX + 2 };

@@ -1,4 +1,5 @@
 import { sanitizeHtml, escapeAttr, escapeText } from "./sanitizeHtml";
+import { resolveFontSizePx } from "./fontSize";
 
 const DEFAULTS = {
   textColor: "#222222",
@@ -6,8 +7,8 @@ const DEFAULTS = {
   buttonBg: "#1976d2",
   buttonColor: "#ffffff",
   dividerColor: "#dddddd",
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+  // Inherit from the tenant mail theme shell so layout and body share one font.
+  fontFamily: "inherit",
 };
 
 function joinStyle(parts) {
@@ -19,8 +20,7 @@ function renderText(block) {
   const color = block.color || DEFAULTS.textColor;
   const bg = block.background ? `background:${escapeAttr(block.background)};` : "";
   const padding = block.background ? "padding:12px 16px;" : "";
-  const fontSizePx =
-    block.fontSize === "S" ? 14 : block.fontSize === "L" ? 18 : 16;
+  const fontSizePx = resolveFontSizePx(block.fontSize);
   const style = joinStyle([
     `text-align:${escapeAttr(align)};`,
     `color:${escapeAttr(color)};`,
@@ -71,6 +71,7 @@ function renderImage(block) {
 function renderButton(block) {
   const label = escapeText(block.label || "Button");
   const href = escapeAttr(block.href || "#");
+  const isMailOrTel = /^(mailto|tel):/i.test(block.href || "");
   const bg = block.bg || DEFAULTS.buttonBg;
   const color = block.color || DEFAULTS.buttonColor;
   const align = block.align || "left";
@@ -93,12 +94,15 @@ function renderButton(block) {
     `border-radius:${radius}px;`,
   ]);
   const tableStyle = fullWidth ? "width:100%;" : "";
+  const targetAttrs = isMailOrTel
+    ? ""
+    : " target=\"_blank\" rel=\"noopener\"";
   return (
     `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="${escapeAttr(
       align
     )}" style="${tableStyle}">` +
     `<tr><td style="${tdStyle}">` +
-    `<a href="${href}" target="_blank" rel="noopener" style="${aStyle}">${label}</a>` +
+    `<a href="${href}"${targetAttrs} style="${aStyle}">${label}</a>` +
     "</td></tr></table>"
   );
 }

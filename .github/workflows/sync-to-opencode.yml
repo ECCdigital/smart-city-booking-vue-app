@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - develop
-      - stage
-      - main
+      - version/3.x
+      - version/4.x
 
 jobs:
   mirror:

@@ -30,12 +30,15 @@ class Tenant {
     paymentPurposeSuffix,
     applications,
     maxBookingAdvanceInMonths,
+    cancellationRefundTiers,
     defaultEventCreationMode,
     enablePublicStatusView,
     ownerUserIds,
     users,
     mailSnippets,
     mailSubjects,
+    mailShowSupportFooter,
+    mailBookingPeriodFormat,
   }) {
     this.id = id;
     this.name = name;
@@ -67,12 +70,16 @@ class Tenant {
     this.paymentPurposeSuffix = paymentPurposeSuffix;
     this.applications = applications || [];
     this.maxBookingAdvanceInMonths = maxBookingAdvanceInMonths;
+    this.cancellationRefundTiers = cancellationRefundTiers || [];
     this.defaultEventCreationMode = defaultEventCreationMode || "";
     this.enablePublicStatusView = enablePublicStatusView;
     this.ownerUserIds = ownerUserIds || [];
     this.users = users || [];
     this.mailSnippets = mailSnippets || {};
     this.mailSubjects = mailSubjects || {};
+    this.mailShowSupportFooter =
+      mailShowSupportFooter === undefined ? true : !!mailShowSupportFooter;
+    this.mailBookingPeriodFormat = mailBookingPeriodFormat || "default";
   }
 }
 

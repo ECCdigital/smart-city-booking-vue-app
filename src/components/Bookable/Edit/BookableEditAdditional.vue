@@ -1,20 +1,46 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import Tiptap from "@/components/Tiptap.vue";
+import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditAdditional",
   components: { Tiptap, BaseSection },
+  mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
       valid: true,
       availableFields: [
         {
+          id: "phone",
+          name: "Telefonnummer",
+          icon: "mdi-phone",
+          description: "Kontakttelefonnummer",
+        },
+        {
           id: "company",
           name: "Firma",
           icon: "mdi-office-building",
           description: "Firmenname des Kunden",
+        },
+        {
+          id: "address",
+          name: "Straße & Hausnummer",
+          icon: "mdi-map-marker",
+          description: "Adressangaben des Kunden",
+        },
+        {
+          id: "zipCode",
+          name: "Postleitzahl",
+          icon: "mdi-mailbox-outline",
+          description: "Adressangaben des Kunden",
+        },
+        {
+          id: "city",
+          name: "Stadt",
+          icon: "mdi-city",
+          description: "Adressangaben des Kunden",
         },
         {
           id: "comment",
@@ -23,12 +49,6 @@ export default {
           description: "Zusätzliche Anmerkungen zur Buchung",
         },
         /**
-        {
-          id: "phone",
-          name: "Telefonnummer",
-          icon: "mdi-phone",
-          description: "Kontakttelefonnummer",
-        },
         {
           id: "address",
           name: "Adresse",
@@ -85,7 +105,13 @@ export default {
   <v-form ref="form" v-model="valid">
     <BaseSection title="Sonstiges" icon="mdi-dots-horizontal" />
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      v-if="expertMode"
+      id="be-section-additional-required-fields"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title
         class="section-header pa-4 d-flex justify-space-between align-center"
       >
@@ -142,7 +168,7 @@ export default {
         <div class="text-subtitle-2 mb-3 grey--text">Verfügbare Felder:</div>
         <v-list class="py-0">
           <v-list-item
-            v-for="(field, idx) in availableFields"
+            v-for="(field) in availableFields"
             :key="field.id"
             @click="toggleField(field.id)"
             class="field-item rounded mb-2"
@@ -192,7 +218,12 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card class="mb-6 section-card" elevation="2" outlined>
+    <v-card
+      id="be-section-additional-notes"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-information-variant</v-icon>
         <span class="text-h6 font-weight-bold">Buchungshinweise</span>

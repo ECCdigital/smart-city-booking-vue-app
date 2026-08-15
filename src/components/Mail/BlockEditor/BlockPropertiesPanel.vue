@@ -52,7 +52,7 @@
         <v-select
           :items="fontSizeOptions"
           label="Schriftgröße"
-          :value="selectedBlock.fontSize || 'M'"
+          :value="resolvedFontSize"
           dense
           outlined
           hide-details
@@ -187,13 +187,23 @@
         <v-text-field
           label="Link-Ziel"
           :value="selectedBlock.href || ''"
-          placeholder="https://..."
+          placeholder="https://… oder mailto:…"
           dense
           outlined
           hide-details
           class="mb-2"
           @input="(v) => onUpdate('href', v)"
         />
+        <v-btn
+          small
+          text
+          color="primary"
+          class="mb-2 px-0"
+          @click="mailtoDialogOpen = true"
+        >
+          <v-icon small left>mdi-email-outline</v-icon>
+          E-Mail-Link…
+        </v-btn>
         <v-text-field
           label="Hintergrundfarbe"
           :value="selectedBlock.bg || ''"
@@ -388,28 +398,42 @@
         />
       </div>
     </template>
+
+    <MailtoLinkDialog
+      :open="mailtoDialogOpen"
+      :variables="variables"
+      :initial-href="mailtoDialogHref"
+      :show-link-text="false"
+      @close="mailtoDialogOpen = false"
+      @apply="onApplyMailto"
+    />
   </div>
 </template>
 
 <script>
 import { BLOCK_PALETTE } from "./blockFactory.js";
+import MailtoLinkDialog from "./MailtoLinkDialog.vue";
+import { SUPPORT_EMAIL_MAILTO } from "@/components/Mail/templateVariables.js";
+import {
+  FONT_SIZE_OPTIONS,
+  resolveFontSizePx,
+} from "./render/fontSize.js";
 
 export default {
   name: "BlockPropertiesPanel",
+  components: { MailtoLinkDialog },
   props: {
     selectedBlock: { type: Object, default: null },
+    variables: { type: Array, default: () => [] },
   },
   data: () => ({
+    mailtoDialogOpen: false,
     alignOptions: [
       { text: "Links", value: "left" },
       { text: "Zentriert", value: "center" },
       { text: "Rechts", value: "right" },
     ],
-    fontSizeOptions: [
-      { text: "Klein", value: "S" },
-      { text: "Mittel", value: "M" },
-      { text: "Groß", value: "L" },
-    ],
+    fontSizeOptions: FONT_SIZE_OPTIONS,
   }),
   computed: {
     blockIcon() {
@@ -428,10 +452,22 @@ export default {
       );
       return entry ? entry.label : this.selectedBlock.type;
     },
+    resolvedFontSize() {
+      if (!this.selectedBlock) return 16;
+      return resolveFontSizePx(this.selectedBlock.fontSize);
+    },
+    mailtoDialogHref() {
+      const href = (this.selectedBlock && this.selectedBlock.href) || "";
+      if (/^mailto:/i.test(href)) return href;
+      return SUPPORT_EMAIL_MAILTO;
+    },
   },
   methods: {
     onUpdate(key, value) {
       this.$emit("update", { ...this.selectedBlock, [key]: value });
+    },
+    onApplyMailto({ href }) {
+      this.onUpdate("href", href);
     },
   },
 };

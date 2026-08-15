@@ -569,11 +569,20 @@
                       }}
                     </span>
                   </div>
+                  <div
+                    v-if="groupBooking?.id"
+                    class="text-caption mt-1 grey--text text--darken-1"
+                  >
+                    <v-icon x-small class="mr-1">mdi-information</v-icon>
+                    Bei Serienbuchungen können Sie eine Sammel- oder
+                    Einzelrechnung erstellen.
+                  </div>
                   <div class="d-flex gap-2 flex-wrap mt-3">
                     <v-btn
                       small
                       color="primary"
                       :loading="invoiceLoading"
+                      :disabled="invoiceGenerateLoading"
                       @click="generateAndSendInvoice"
                     >
                       <v-icon left small>mdi-email-fast-outline</v-icon>
@@ -587,6 +596,7 @@
                       small
                       outlined
                       :loading="invoiceGenerateLoading"
+                      :disabled="invoiceLoading"
                       @click="generateInvoiceOnly"
                     >
                       <v-icon left small>mdi-file-plus-outline</v-icon>
@@ -649,15 +659,13 @@
                   <div class="info-value">
                     <v-chip
                       small
-                      :color="booking.isPayed ? 'success' : 'warning'"
-                      text-color="white"
+                      :color="getPaymentStatusColor(booking)"
+                      :text-color="getPaymentStatusTextColor(booking)"
                     >
                       <v-icon left x-small>
-                        {{
-                          booking.isPayed ? "mdi-check" : "mdi-clock-outline"
-                        }}
+                        {{ getPaymentStatusIcon(booking) }}
                       </v-icon>
-                      {{ booking.isPayed ? "Bezahlt" : "Ausstehend" }}
+                      {{ getPaymentStatusLabel(booking) }}
                     </v-chip>
                   </div>
                 </div>
@@ -689,7 +697,7 @@
               <v-col
                 cols="12"
                 v-if="
-                  !booking.isPayed &&
+                  isPaymentPending(booking) &&
                   booking.isCommitted &&
                   booking.paymentProvider &&
                   booking.paymentProvider !== 'invoice'
@@ -806,7 +814,7 @@
               <v-col
                 cols="12"
                 md="6"
-                v-if="booking.isPayed && booking.timePaid"
+                v-if="hasPaidDate(booking)"
               >
                 <div class="info-item">
                   <div class="info-label">
@@ -835,6 +843,11 @@
                     </div>
                   </div>
                 </v-alert>
+              </v-col>
+            </v-row>
+            <v-row v-if="cancellationRefundAudit">
+              <v-col cols="12">
+                <CancellationRefundAudit :audit="cancellationRefundAudit" />
               </v-col>
             </v-row>
           </v-card-text>
@@ -969,6 +982,51 @@
                   </div>
                   <div class="info-value">
                     {{ booking.location || "-" }}
+                  </div>
+                </div>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+
+        <v-card
+          v-if="displayCustomFields.length > 0"
+          class="mb-6 section-card"
+          elevation="2"
+          outlined
+        >
+          <v-card-title class="section-header pa-4">
+            <v-icon class="mr-2">mdi-form-textbox</v-icon>
+            <span class="text-h6 font-weight-bold">Benutzerdefinierte Felder</span>
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text class="pa-4">
+            <v-row>
+              <v-col
+                v-for="field in displayCustomFields"
+                :key="field.id"
+                cols="12"
+                md="6"
+              >
+                <div class="info-item">
+                  <div class="info-label">
+                    <v-icon small class="mr-2">
+                      {{ customFieldIcon(field.inputType) }}
+                    </v-icon>
+                    {{ field.caption }}
+                  </div>
+                  <div class="info-value">
+                    <v-chip
+                      v-if="field.inputType === 'boolean'"
+                      small
+                      :color="field.rawValue ? 'success' : 'grey'"
+                      text-color="white"
+                    >
+                      {{ formatCustomFieldValue(field) }}
+                    </v-chip>
+                    <template v-else>
+                      {{ formatCustomFieldValue(field) }}
+                    </template>
                   </div>
                 </div>
               </v-col>
@@ -1270,6 +1328,16 @@
         @create-single-booking-receipt="createSingleReceipt(booking.id)"
         @create-group-booking-receipt="createGroupReceipt(booking.id)"
       />
+      <GroupBookingCreateInvoice
+        :open="openCreateAggregatedInvoice"
+        :booking-id="booking.id"
+        :send-email="pendingInvoiceSendEmail"
+        :error="errors.invoice"
+        :in-progress="invoiceLoading || invoiceGenerateLoading"
+        @close="closeAggregatedInvoice"
+        @create-single-invoice="createSingleInvoiceFromGroup"
+        @create-group-invoice="createGroupInvoice(pendingInvoiceSendEmail)"
+      />
     </v-card>
   </div>
 </template>
@@ -1280,6 +1348,7 @@ import ApiAccessService from "@/services/api/ApiAccessService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 import GroupBookingCreateReceipt from "@/components/Booking/GroupBookingCreateReceipt.vue";
+import GroupBookingCreateInvoice from "@/components/Booking/GroupBookingCreateInvoice.vue";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import {
   getBookingErrorMessage,
@@ -1289,6 +1358,16 @@ import { getIfbsErrorMessage } from "@/utils/ifbsErrors";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
+import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
+import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
+import {
+  getPaymentStatus,
+  getPaymentStatusColor,
+  getPaymentStatusIcon,
+  getPaymentStatusLabel,
+  getPaymentStatusTextColor,
+  PAYMENT_STATUS,
+} from "@/utils/bookingPaymentStatus";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
   EVIDENCE_MISSING_BLOCKING_REASON,
@@ -1299,8 +1378,10 @@ export default {
   name: "BookingDetails",
   components: {
     BookableTypeChip,
+    CancellationRefundAudit,
     ProcessingIndicator,
     GroupBookingCreateReceipt,
+    GroupBookingCreateInvoice,
   },
   props: {
     booking: {
@@ -1316,6 +1397,8 @@ export default {
   data() {
     return {
       openCreateAggregatedReceipt: false,
+      openCreateAggregatedInvoice: false,
+      pendingInvoiceSendEmail: false,
       errors: {
         receipt: null,
         invoice: null,
@@ -1361,6 +1444,9 @@ export default {
         (attachment) => attachment.type === "cancellation"
       );
     },
+    cancellationRefundAudit() {
+      return getCancellationRefundAudit(this.booking);
+    },
     attachments() {
       if (!this.booking.attachments) return [];
       return this.booking.attachments?.filter(
@@ -1382,6 +1468,24 @@ export default {
       return Object.values(this.booking.bookableItems || {}).some(
         (item) => item._bookableUsed?.eventId
       );
+    },
+    displayCustomFields() {
+      const definitions = this.booking.customFieldDefinitions || [];
+      const values = this.booking.customFieldValues || [];
+
+      return definitions
+        .map((definition) => {
+          const stored = values.find((v) => v.fieldId === definition.id);
+          return {
+            ...definition,
+            rawValue: stored != null ? stored.value : null,
+          };
+        })
+        .filter((field) => {
+          const { rawValue } = field;
+          if (rawValue === false || rawValue === 0) return true;
+          return rawValue != null && rawValue !== "";
+        });
     },
     userCancellable() {
       return this.booking?.cancellationPolicy?.userCancellable !== false;
@@ -1409,17 +1513,52 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+    getPaymentStatus,
+    getPaymentStatusLabel,
+    getPaymentStatusColor,
+    getPaymentStatusIcon,
+    getPaymentStatusTextColor,
+    isPaymentPending(booking) {
+      return getPaymentStatus(booking) === PAYMENT_STATUS.UNPAID;
+    },
+    hasPaidDate(booking) {
+      return (
+        getPaymentStatus(booking) === PAYMENT_STATUS.PAID && booking.timePaid
+      );
+    },
 
-    async generateAndSendInvoice() {
-      this.invoiceLoading = true;
+    generateAndSendInvoice() {
+      this.createInvoice(true);
+    },
+
+    generateInvoiceOnly() {
+      this.createInvoice(false);
+    },
+
+    createInvoice(sendEmail) {
+      if (this.groupBooking?.id) {
+        this.pendingInvoiceSendEmail = sendEmail;
+        this.openCreateAggregatedInvoice = true;
+        return;
+      }
+      this.generateSingleInvoice(sendEmail);
+    },
+
+    async generateSingleInvoice(sendEmail) {
+      const isSend = sendEmail === true;
+      if (isSend) {
+        this.invoiceLoading = true;
+      } else {
+        this.invoiceGenerateLoading = true;
+      }
       this.errors.invoice = null;
       const operationId = ProcessingService.showOverlay(
-        "Erstelle und versende Rechnung..."
+        isSend ? "Erstelle und versende Rechnung..." : "Erstelle Rechnung..."
       );
       try {
         const response = await ApiBookingService.generateInvoice(
           this.booking.id,
-          true
+          isSend
         );
         if (!response.success) {
           this.handleBookingError("invoice", response.errors);
@@ -1431,46 +1570,102 @@ export default {
           this.$emit("update", this.booking.id);
         }
       } catch (error) {
-        this.errors.invoice =
-          "Fehler beim Erstellen und Versenden der Rechnung.";
+        this.errors.invoice = isSend
+          ? "Fehler beim Erstellen und Versenden der Rechnung."
+          : "Fehler beim Erstellen der Rechnung.";
         this.addToast(
           ToastService.createToast("invoice.create.error", "error")
         );
       } finally {
         ProcessingService.hide(operationId);
-        this.invoiceLoading = false;
+        if (isSend) {
+          this.invoiceLoading = false;
+        } else {
+          this.invoiceGenerateLoading = false;
+        }
       }
     },
 
-    async generateInvoiceOnly() {
-      this.invoiceGenerateLoading = true;
+    async createSingleInvoiceFromGroup() {
+      this.openCreateAggregatedInvoice = false;
+      await this.generateSingleInvoice(this.pendingInvoiceSendEmail);
+    },
+
+    async createGroupInvoice(sendEmail) {
+      const isSend = sendEmail === true;
+      if (isSend) {
+        this.invoiceLoading = true;
+      } else {
+        this.invoiceGenerateLoading = true;
+      }
       this.errors.invoice = null;
-      const operationId = ProcessingService.showOverlay("Erstelle Rechnung...");
+      const operationId = ProcessingService.showOverlay(
+        isSend
+          ? "Erstelle und versende Sammelrechnung..."
+          : "Erstelle Sammelrechnung..."
+      );
       try {
-        const response = await ApiBookingService.generateInvoice(
-          this.booking.id,
-          false
+        this.openCreateAggregatedInvoice = false;
+        const response = await ApiGroupBookingService.generateGroupInvoice(
+          undefined,
+          this.groupBooking.id,
+          isSend
         );
         if (!response.success) {
-          this.handleBookingError("invoice", response.errors);
+          this.handleGroupBookingError("invoice", response.errors);
         } else {
           await this.addToast(
-            ToastService.createToast("invoice.create.success", "success")
+            ToastService.createToast("group-booking.invoice.success", "success")
           );
           this.errors.invoice = null;
           this.$emit("update", this.booking.id);
         }
       } catch (error) {
-        this.errors.invoice = "Fehler beim Erstellen der Rechnung.";
+        this.errors.invoice = isSend
+          ? "Fehler beim Erstellen und Versenden der Sammelrechnung."
+          : "Fehler beim Erstellen der Sammelrechnung.";
         this.addToast(
-          ToastService.createToast("invoice.create.error", "error")
+          ToastService.createToast("group-booking.invoice.error", "error")
         );
       } finally {
         ProcessingService.hide(operationId);
-        this.invoiceGenerateLoading = false;
+        if (isSend) {
+          this.invoiceLoading = false;
+        } else {
+          this.invoiceGenerateLoading = false;
+        }
       }
     },
 
+    customFieldIcon(inputType) {
+      const icons = {
+        string: "mdi-form-textbox",
+        text: "mdi-form-textarea",
+        numeric: "mdi-numeric",
+        boolean: "mdi-toggle-switch-outline",
+        select: "mdi-form-dropdown",
+      };
+      return icons[inputType] || "mdi-form-textbox";
+    },
+    formatCustomFieldValue(field) {
+      const value = field.rawValue;
+      if (value === null || value === undefined || value === "") {
+        return "-";
+      }
+
+      switch (field.inputType) {
+        case "boolean":
+          return value ? "Ja" : "Nein";
+        case "select": {
+          const option = (field.options || []).find((o) => o.value === value);
+          return option?.caption ?? String(value);
+        }
+        case "numeric":
+          return Intl.NumberFormat("de-DE").format(value);
+        default:
+          return String(value);
+      }
+    },
     getIfbsErrorMessage(errorCode) {
       return getIfbsErrorMessage(errorCode);
     },
@@ -2171,18 +2366,28 @@ export default {
       const operationId = ProcessingService.showSnackbar(
         "Stelle Rechnung bereit..."
       );
-      ApiBookingService.getInvoice(this.booking.id, name).then((response) => {
-        const blob = new Blob([response.data], {
-          type: "application/pdf",
+      ApiBookingService.getInvoice(this.booking.id, name)
+        .then((response) => {
+          const blob = new Blob([response.data], {
+            type: "application/pdf",
+          });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", name);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(() => {
+          this.addToast(
+            ToastService.createToast("invoice.download.error", "error")
+          );
+        })
+        .finally(() => {
+          ProcessingService.hide(operationId);
         });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", name);
-        document.body.appendChild(link);
-        link.click();
-        ProcessingService.hide(operationId);
-      });
     },
     downloadCancellationReceipt(name) {
       const operationId = ProcessingService.showSnackbar(
@@ -2232,6 +2437,10 @@ export default {
     closeAggregatedReceipt() {
       this.errors.receipt = null;
       this.openCreateAggregatedReceipt = false;
+    },
+    closeAggregatedInvoice() {
+      this.errors.invoice = null;
+      this.openCreateAggregatedInvoice = false;
     },
     getPaymentProviderColor(provider) {
       const colors = {

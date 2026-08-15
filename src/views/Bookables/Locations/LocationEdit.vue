@@ -14,12 +14,12 @@ export default {
         ? "Veranstaltungsort bearbeiten"
         : "Veranstaltungsort erstellen";
     },
-  }
+  },
 };
 </script>
 
 <template>
-  <AdminLayout :title="pageTitle">
+  <AdminLayout :title="pageTitle" scroll-body>
     <BookableEdit type="event-location"> </BookableEdit>
   </AdminLayout>
 </template>

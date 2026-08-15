@@ -286,6 +286,7 @@ export default {
       <!-- Choose system type -->
       <div
         v-if="!embedded && lockerDetails.active && !selectedSystemType"
+        id="be-section-lockers-select"
         class="mt-6"
       >
         <div class="section-title mb-3">
@@ -342,6 +343,7 @@ export default {
         v-if="
           (embedded || lockerDetails.active) && selectedSystemType === 'pareva'
         "
+        id="be-section-lockers-pareva"
         :class="embedded ? '' : 'mt-6'"
       >
         <div
@@ -460,6 +462,7 @@ export default {
         v-if="
           (embedded || lockerDetails.active) && selectedSystemType === 'ifbs'
         "
+        id="be-section-lockers-ifbs"
         :class="embedded ? '' : 'mt-6'"
       >
         <div

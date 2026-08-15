@@ -20,16 +20,21 @@ import Roles from "@/views/Management/Roles";
 import AccessPoints from "@/views/Management/AccessPoints.vue";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
 import Bookings from "@/views/Bookings.vue";
+import BookingEditPage from "@/views/BookingEditPage.vue";
 import Settings from "@/views/Settings";
 import Coupons from "@/views/Coupons.vue";
 import Instances from "@/views/Management/Instances.vue";
 import InstanceUsers from "@/views/Management/InstanceUsers.vue";
 import InstanceTenants from "@/views/Management/InstanceTenants.vue";
+import RuleEngineRules from "@/views/Management/RuleEngineRules.vue";
+import RuleEngineEdit from "@/views/Management/RuleEngineEdit.vue";
+import RuleEngineExecutions from "@/views/Management/RuleEngineExecutions.vue";
 import { pipeline } from "./middleware";
 
 import { requiresAuth } from "./middlewares/auth";
 import { checkGroupBooking } from "./middlewares/groupBooking";
 import { checkInterface } from "./middlewares/interface";
+import { requireTenant } from "./middlewares/requireTenant";
 import { finalAuthRedirect } from "./middlewares/finalAuth";
 
 Vue.use(VueRouter);
@@ -81,6 +86,46 @@ const routes = [
     component: InstanceUsers,
     meta: {
       title: "Benutzer",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/instance/rules",
+    name: "rules",
+    component: RuleEngineRules,
+    meta: {
+      title: "Automatisierungsregeln",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/instance/rules/executions",
+    name: "rule-executions",
+    component: RuleEngineExecutions,
+    meta: {
+      title: "Ausführungs-Historie",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/instance/rules/create",
+    name: "rule-create",
+    component: RuleEngineEdit,
+    meta: {
+      title: "Regel anlegen",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/instance/rules/:id/edit",
+    name: "rule-edit",
+    component: RuleEngineEdit,
+    meta: {
+      title: "Regel bearbeiten",
       requiresAuth: true,
       interfaceName: "instance",
     },
@@ -141,6 +186,26 @@ const routes = [
     component: Bookings,
     meta: {
       title: "Buchungen",
+      requiresAuth: true,
+      interfaceName: "bookings",
+    },
+  },
+  {
+    path: "/bookings/new",
+    name: "booking-create",
+    component: BookingEditPage,
+    meta: {
+      title: "Neue Buchung anlegen",
+      requiresAuth: true,
+      interfaceName: "bookings",
+    },
+  },
+  {
+    path: "/bookings/:bookingId/edit",
+    name: "booking-edit",
+    component: BookingEditPage,
+    meta: {
+      title: "Buchung bearbeiten",
       requiresAuth: true,
       interfaceName: "bookings",
     },
@@ -532,6 +597,7 @@ router.beforeEach((to, from, next) => {
     requiresAuth,
     checkGroupBooking,
     checkInterface,
+    requireTenant,
     finalAuthRedirect,
   ];
   const context = { to, from, next, router };

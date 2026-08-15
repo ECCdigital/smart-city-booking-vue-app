@@ -1,7 +1,7 @@
 {
   "name": "smart-city-booking-vue-app",
   "description": "A VueJS Frontend for the Smart City Booking System",
-  "version": "4.0.0-rc.14",
+  "version": "4.2.7",
   "private": true,
   "scripts": {
     "start": "node --max_old_space_size=4096 node_modules/@vue/cli-service/bin/vue-cli-service.js serve --mode production",
@@ -19,6 +19,9 @@
     "format:write": "prettier --write .",
     "lint:check": "eslint .",
     "lint:fix": "eslint --fix .",
+    "bff:install": "npm install --prefix bff",
+    "bff:dev": "npm run dev --prefix bff",
+    "bff:start": "npm start --prefix bff",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -27,6 +30,8 @@
     "@tiptap/extension-bold": "^2.1.13",
     "@tiptap/extension-bullet-list": "^2.12.0",
     "@tiptap/extension-document": "^2.12.0",
+    "@tiptap/extension-horizontal-rule": "^2.12.0",
+    "@tiptap/extension-image": "^2.12.0",
     "@tiptap/extension-italic": "^2.1.13",
     "@tiptap/extension-link": "^2.12.0",
     "@tiptap/extension-list-item": "^2.12.0",
@@ -34,6 +39,7 @@
     "@tiptap/extension-paragraph": "^2.1.13",
     "@tiptap/extension-placeholder": "^2.12.0",
     "@tiptap/extension-text": "^2.12.0",
+    "@tiptap/extension-text-style": "^2.12.0",
     "@tiptap/extension-underline": "^2.1.13",
     "@tiptap/starter-kit": "^2.1.13",
     "@tiptap/vue-2": "^2.1.13",

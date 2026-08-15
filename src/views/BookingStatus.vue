@@ -200,15 +200,30 @@
 
           <v-chip
             class="ma-2"
+            :color="getPaymentStatusColor(bookingInfo)"
+            :text-color="getPaymentStatusTextColor(bookingInfo)"
+            v-if="isFreeBooking(bookingInfo)"
+          >
+            <v-icon left>mdi-gift</v-icon>
+            Kostenfrei
+          </v-chip>
+
+          <v-chip
+            class="ma-2"
             color="green"
             text-color="white"
-            v-if="bookingInfo.status.paymentStatus === 'paid'"
+            v-else-if="bookingInfo.status.paymentStatus === 'paid'"
           >
             <v-icon left>mdi-cash-check</v-icon>
             Bezahlt
           </v-chip>
 
-          <v-chip class="ma-2" color="orange" text-color="white" v-else>
+          <v-chip
+            class="ma-2"
+            color="orange"
+            text-color="white"
+            v-else
+          >
             <v-icon left>mdi-cash</v-icon>
             Zahlung ausstehend
           </v-chip>
@@ -262,6 +277,7 @@
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
 import FormatService from "@/services/FormatService";
+import { isFreeBooking, getPaymentStatusColor, getPaymentStatusTextColor } from "@/utils/bookingPaymentStatus";
 
 export default {
   name: "BookingStatus",
@@ -278,7 +294,8 @@ export default {
       return (
         this.bookingInfo &&
         this.bookingInfo.status.bookingStatus === "confirmed" &&
-        this.bookingInfo.status.paymentStatus === "paid"
+        (this.bookingInfo.status.paymentStatus === "paid" ||
+          isFreeBooking(this.bookingInfo))
       );
     },
     activeStatus() {
@@ -309,6 +326,9 @@ export default {
     };
   },
   methods: {
+    isFreeBooking,
+    getPaymentStatusColor,
+    getPaymentStatusTextColor,
     submitForm() {
       if (this.$refs.form.validate()) {
         this.fetchBookingStatus();

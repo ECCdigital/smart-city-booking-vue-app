@@ -76,26 +76,16 @@
             </v-col>
           </v-row>
 
-          <v-textarea
-            label="Kopfzeile (optional, HTML erlaubt)"
+          <MailThemeHtmlEditor
+            label="Kopfzeile (optional)"
             :value="theme.headerHtml"
-            outlined
-            dense
-            rows="2"
-            auto-grow
-            hide-details
-            class="mt-2"
+            :min-height="64"
             @input="(v) => onUpdate('headerHtml', v)"
           />
-          <v-textarea
+          <MailThemeHtmlEditor
             label="Fußzeile"
             :value="theme.footerHtml"
-            outlined
-            dense
-            rows="2"
-            auto-grow
-            hide-details
-            class="mt-2"
+            :min-height="120"
             @input="(v) => onUpdate('footerHtml', v)"
           />
 
@@ -247,6 +237,7 @@
 import { PRESETS, FONT_OPTIONS } from "./themeDefaults.js";
 import { renderThemeToHtml } from "./render/renderThemeToHtml.js";
 import { getSampleDataForContext } from "@/components/Mail/templateVariables.js";
+import MailThemeHtmlEditor from "./MailThemeHtmlEditor.vue";
 
 const SAMPLE_CONTEXT_MAP = {
   genericMailTemplate: "genericMail",
@@ -257,6 +248,7 @@ const SAMPLE_CONTEXT_MAP = {
 
 export default {
   name: "ThemeWizardForm",
+  components: { MailThemeHtmlEditor },
   props: {
     theme: { type: Object, required: true },
     templateType: { type: String, required: true },

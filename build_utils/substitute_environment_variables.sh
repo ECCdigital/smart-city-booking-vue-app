@@ -37,9 +37,74 @@ LOCATION_PATH="${BASE_URL%/}"
 LOCATION_PATH="${LOCATION_PATH:-/}"
 STRIP_PREFIX="${STRIP_PREFIX:-true}"
 
+# Optional Admin BFF upstream (e.g. http://127.0.0.1:3001).
+# Register BOTH /admin/api/ and /api/ so it works with:
+# - STRIP_PREFIX=false → browser/edge keep /admin/api/*
+# - STRIP_PREFIX=true  → edge strips /admin → container sees /api/*
+ADMIN_BFF_UPSTREAM="${ADMIN_BFF_UPSTREAM:-}"
+ADMIN_BFF_LOCATION=""
+if [ -n "$ADMIN_BFF_UPSTREAM" ]; then
+  # Prefer edge X-Forwarded-* (Coolify/Traefik TLS termination) over nginx $scheme/$host
+  # which are http/internal when the container listens on :80 behind HTTPS.
+  ADMIN_BFF_LOCATION=$(cat <<BFLEOF
+    location = /admin/api {
+      return 301 /admin/api/;
+    }
+    location ^~ /admin/api/ {
+      proxy_pass ${ADMIN_BFF_UPSTREAM}/;
+      proxy_http_version 1.1;
+      proxy_set_header Host \$host;
+      proxy_set_header X-Real-IP \$remote_addr;
+      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto \$bff_forwarded_proto;
+      proxy_set_header X-Forwarded-Host \$bff_forwarded_host;
+      proxy_set_header Cookie \$http_cookie;
+      proxy_pass_header Set-Cookie;
+      # Keycloak SSO responses carry two full JWTs as Set-Cookie — far past
+      # nginx's 4k default response-header buffer (→ 502 on /auth/sso/callback).
+      proxy_buffer_size 32k;
+      proxy_buffers 8 32k;
+      proxy_busy_buffers_size 64k;
+    }
+    location = /api {
+      return 301 /api/;
+    }
+    location ^~ /api/ {
+      proxy_pass ${ADMIN_BFF_UPSTREAM}/;
+      proxy_http_version 1.1;
+      proxy_set_header Host \$host;
+      proxy_set_header X-Real-IP \$remote_addr;
+      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto \$bff_forwarded_proto;
+      proxy_set_header X-Forwarded-Host \$bff_forwarded_host;
+      proxy_set_header Cookie \$http_cookie;
+      proxy_pass_header Set-Cookie;
+      proxy_buffer_size 32k;
+      proxy_buffers 8 32k;
+      proxy_busy_buffers_size 64k;
+    }
+BFLEOF
+)
+  echo "==> Admin BFF proxy enabled → ${ADMIN_BFF_UPSTREAM}"
+  echo "    nginx locations: /admin/api/ and /api/ (STRIP_PREFIX=${STRIP_PREFIX})"
+fi
+
+NGINX_FORWARDED_MAPS=$(cat <<'MAPSEOF'
+  # Preserve edge TLS / host when proxying to the embedded BFF (container is :80).
+  map $http_x_forwarded_proto $bff_forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+  }
+  map $http_x_forwarded_host $bff_forwarded_host {
+    default $http_x_forwarded_host;
+    ""      $host;
+  }
+MAPSEOF
+)
+
 if [ "$LOCATION_PATH" = "/" ] || [ "$STRIP_PREFIX" = "true" ]; then
 
-cat > /etc/nginx/nginx.conf <<'NGINXEOF'
+cat > /etc/nginx/nginx.conf <<NGINXEOF
 user  nginx;
 worker_processes  1;
 error_log  /var/log/nginx/error.log warn;
@@ -48,25 +113,40 @@ events { worker_connections 1024; }
 http {
   include       /etc/nginx/mime.types;
   default_type  application/octet-stream;
-  log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-                    '$status $body_bytes_sent "$http_referer" '
-                    '"$http_user_agent" "$http_x_forwarded_for"';
+  log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                    '\$status \$body_bytes_sent "\$http_referer" '
+                    '"\$http_user_agent" "\$http_x_forwarded_for"';
   access_log  /var/log/nginx/access.log  main;
   sendfile on;
   keepalive_timeout 65;
+  # Requests carry the BFF session cookies (Keycloak access + refresh JWT).
+  large_client_header_buffers 8 32k;
   add_header X-Frame-Options "DENY" always;
+${NGINX_FORWARDED_MAPS}
   server {
     listen 80;
     server_name localhost;
+${ADMIN_BFF_LOCATION}
     location = /silent-check-sso.html {
       root /app;
       add_header X-Frame-Options "SAMEORIGIN" always;
       add_header Content-Security-Policy "frame-ancestors 'self'" always;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    }
+    location = /index.html {
+      root /app;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    }
+    location ~* ^/(js|css|img|fonts)/ {
+      root /app;
+      try_files \$uri =404;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
     }
     location / {
       root   /app;
       index  index.html;
-      try_files $uri $uri/ /index.html;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+      try_files \$uri \$uri/ /index.html;
     }
   }
 }
@@ -90,10 +170,14 @@ http {
   access_log  /var/log/nginx/access.log  main;
   sendfile on;
   keepalive_timeout 65;
+  # Requests carry the BFF session cookies (Keycloak access + refresh JWT).
+  large_client_header_buffers 8 32k;
   add_header X-Frame-Options "DENY" always;
+${NGINX_FORWARDED_MAPS}
   server {
     listen 80;
     server_name localhost;
+${ADMIN_BFF_LOCATION}
     location = ${LOCATION_PATH} {
       return 301 ${LOCATION_PATH}/;
     }
@@ -101,10 +185,32 @@ http {
       alias /app/silent-check-sso.html;
       add_header X-Frame-Options "SAMEORIGIN" always;
       add_header Content-Security-Policy "frame-ancestors 'self'" always;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    }
+    location = ${LOCATION_PATH}/index.html {
+      alias /app/index.html;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    }
+    location ^~ ${LOCATION_PATH}/js/ {
+      alias /app/js/;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+    location ^~ ${LOCATION_PATH}/css/ {
+      alias /app/css/;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+    location ^~ ${LOCATION_PATH}/img/ {
+      alias /app/img/;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+    location ^~ ${LOCATION_PATH}/fonts/ {
+      alias /app/fonts/;
+      add_header Cache-Control "public, max-age=31536000, immutable" always;
     }
     location ${LOCATION_PATH}/ {
       alias /app/;
       index index.html;
+      add_header Cache-Control "no-cache, no-store, must-revalidate" always;
       try_files \$uri \$uri/ ${LOCATION_PATH}/index.html;
     }
   }
@@ -147,6 +253,11 @@ replace_env_var "$VUE_APP_DARKGREY_COLOR_DARK" "VUE_APP_DARKGREY_COLOR_DARK_PLAC
 replace_env_var "$VUE_APP_USERSNAP_API_KEY" "VUE_APP_USERSNAP_API_KEY_PLACEHOLDER" ""
 
 replace_env_var "$VUE_APP_SILENT_SSO_ENABLED" "VUE_APP_SILENT_SSO_ENABLED_PLACEHOLDER" ""
+
+replace_env_var "$VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT" "VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT_PLACEHOLDER" ""
+
+replace_env_var "$VUE_APP_AUTH_MODE" "VUE_APP_AUTH_MODE_PLACEHOLDER" "direct"
+replace_env_var "$VUE_APP_BFF_BASE_URL" "VUE_APP_BFF_BASE_URL_PLACEHOLDER" "/admin/api"
 
 echo "==> Starting nginx"
 nginx -g 'daemon off;'

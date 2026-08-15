@@ -19,6 +19,79 @@
       </v-col>
     </v-row>
 
+    <v-alert
+      v-if="inheritedFieldGroups.length"
+      type="info"
+      dense
+      text
+      icon="mdi-lock-outline"
+      class="mb-4"
+    >
+      Geerbte Felder sind hier nur zur Information sichtbar. Sie können auf
+      dieser Ebene nicht bearbeitet oder gelöscht werden — Änderungen erfolgen
+      auf Instanz- oder Mandanten-Ebene.
+    </v-alert>
+
+    <div
+      v-for="group in inheritedFieldGroups"
+      :key="'inherited-' + group.originLabel"
+      class="mb-4"
+    >
+      <div class="d-flex align-center mb-2 flex-wrap">
+        <v-icon small color="grey" class="mr-2">{{ group.originIcon }}</v-icon>
+        <span class="text-subtitle-2">
+          Geerbt von {{ group.originLabel }}
+        </span>
+        <v-chip x-small outlined label class="ml-2">
+          {{ group.fields.length }}
+        </v-chip>
+        <v-chip x-small outlined label color="grey" class="ml-2">
+          <v-icon x-small left>mdi-lock-outline</v-icon>
+          Schreibgeschützt
+        </v-chip>
+      </div>
+
+      <div class="inherited-field-list mb-2">
+        <div
+          v-for="(field, idx) in group.fields"
+          :key="group.originLabel + '-' + (field.id || idx)"
+          class="inherited-field-row"
+        >
+          <div class="field-row-type">
+            <v-icon small :color="inputTypeColor(field.inputType)" class="mr-1">
+              {{ inputTypeIcon(field.inputType) }}
+            </v-icon>
+            <span class="field-row-type-label">
+              {{ inputTypeLabel(field.inputType) }}
+            </span>
+          </div>
+
+          <div class="field-row-caption text-truncate">
+            {{ field.caption }}
+          </div>
+
+          <div class="field-row-tags">
+            <v-chip
+              v-for="tag in usageContextChips(field)"
+              :key="tag.text"
+              x-small
+              :color="tag.color"
+              :outlined="tag.outlined"
+              :dark="tag.dark"
+              label
+              class="ml-1"
+            >
+              {{ tag.text }}
+            </v-chip>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="ownFieldsLabel" class="text-subtitle-2 mb-2">
+      {{ ownFieldsLabel }}
+    </div>
+
     <v-expansion-panels multiple>
       <v-expansion-panel
         v-for="(field, idx) in localFields"
@@ -27,22 +100,40 @@
         <v-expansion-panel-header color="accent" expand-icon="mdi-menu-down">
           <template v-slot:default>
             <v-row no-gutters align="center" class="w-100">
-              <v-col class="col-5 d-flex align-center">
-                <v-chip
-                  x-small
-                  :color="inputTypeColor(field.inputType)"
-                  text-color="white"
-                  label
-                  class="mr-2"
-                >
-                  {{ inputTypeLabel(field.inputType) }}
-                </v-chip>
-                <strong class="mr-2 text-truncate">
+              <v-col class="col-5 d-flex align-center min-width-0">
+                <v-tooltip bottom>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-chip
+                      x-small
+                      :color="inputTypeColor(field.inputType)"
+                      text-color="white"
+                      label
+                      class="mr-2 flex-shrink-0 type-chip"
+                      v-bind="attrs"
+                      v-on="on"
+                    >
+                      <v-icon x-small>{{ inputTypeIcon(field.inputType) }}</v-icon>
+                    </v-chip>
+                  </template>
+                  <span>Feldtyp: {{ inputTypeLabel(field.inputType) }}</span>
+                </v-tooltip>
+                <strong class="mr-2 text-truncate min-width-0">
                   {{ field.caption }}
                 </strong>
-                <span class="text--secondary text-caption">
-                  ({{ field.id }})
-                </span>
+                <v-tooltip v-if="field.id" bottom>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-icon
+                      small
+                      color="grey"
+                      class="ml-1"
+                      v-bind="attrs"
+                      v-on="on"
+                    >
+                      mdi-information-outline
+                    </v-icon>
+                  </template>
+                  <span>Feld-ID: {{ field.id }}</span>
+                </v-tooltip>
               </v-col>
 
               <v-col class="col-4 d-flex align-center flex-wrap">
@@ -57,7 +148,7 @@
                   label
                   class="mr-1 mb-1"
                 >
-                  Checkout
+                  Buchungsprozess
                 </v-chip>
                 <v-chip
                   v-if="
@@ -85,6 +176,34 @@
                   class="mr-1 mb-1"
                 >
                   Katalog
+                </v-chip>
+                <v-chip
+                  v-if="
+                    field.usageOptions &&
+                    field.usageOptions.context === 'catalog' &&
+                    field.usageOptions.filterable
+                  "
+                  x-small
+                  color="green darken-2"
+                  dark
+                  label
+                  class="mr-1 mb-1"
+                >
+                  Filter
+                </v-chip>
+                <v-chip
+                  v-if="
+                    field.usageOptions &&
+                    field.usageOptions.detailDisplayPosition &&
+                    field.usageOptions.detailDisplayPosition !== 'none'
+                  "
+                  x-small
+                  color="deep-purple"
+                  dark
+                  label
+                  class="mr-1 mb-1"
+                >
+                  Detailansicht
                 </v-chip>
                 <span
                   v-if="!hasAnyTag(field)"
@@ -145,15 +264,14 @@
               >
                 <span class="text-caption text--secondary">Optionen:</span>
                 <v-chip
-                  v-for="opt in field.options"
-                  :key="opt.value"
+                  v-for="(opt, optIndex) in field.options"
+                  :key="field.id + '-opt-' + optIndex"
                   x-small
                   outlined
                   label
                   class="mr-1 mt-1"
                 >
                   {{ opt.caption }}
-                  <span class="text--disabled ml-1"> ({{ opt.value }}) </span>
                 </v-chip>
               </div>
 
@@ -166,18 +284,39 @@
                 <span class="text-caption text--secondary">
                   Katalog-Filter:
                 </span>
-                {{
-                  field.usageOptions.catalogFilterType
-                    ? filterTypeLabel(field.usageOptions.catalogFilterType)
-                    : "Keiner"
-                }}
-                <span class="text--secondary">
-                  ({{
-                    filterPositionLabel(
-                      field.usageOptions.catalogFilterPosition
-                    )
-                  }})
+                <template v-if="field.usageOptions.filterable">
+                  {{
+                    field.usageOptions.catalogFilterType
+                      ? filterTypeLabel(field.usageOptions.catalogFilterType)
+                      : "Keiner"
+                  }}
+                  <span class="text--secondary">
+                    ({{
+                      filterPositionLabel(
+                        field.usageOptions.catalogFilterPosition
+                      )
+                    }})
+                  </span>
+                </template>
+                <template v-else> Nicht filterbar (nur Info) </template>
+              </div>
+
+              <div
+                v-if="
+                  field.usageOptions &&
+                  field.usageOptions.detailDisplayPosition &&
+                  field.usageOptions.detailDisplayPosition !== 'none'
+                "
+                class="mb-2"
+              >
+                <span class="text-caption text--secondary">
+                  Detailansicht:
                 </span>
+                {{
+                  detailDisplayPositionLabel(
+                    field.usageOptions.detailDisplayPosition
+                  )
+                }}
               </div>
             </v-col>
           </v-row>
@@ -241,6 +380,10 @@ export default {
     hideUsageOptions: { type: Boolean, default: false },
     /** Hide the override toggle (irrelevant on tenant level) */
     hideOverride: { type: Boolean, default: false },
+    /** Read-only groups of inherited field definitions */
+    inheritedFieldGroups: { type: Array, default: () => [] },
+    /** Optional heading above editable fields when inherited fields exist */
+    ownFieldsLabel: { type: String, default: "" },
   },
   data() {
     return {
@@ -279,12 +422,24 @@ export default {
     inputTypeLabel(type) {
       const map = {
         string: "Text",
-        text: "Mehrzeilig",
+        text: "Langtext",
         select: "Auswahl",
+        multiselect: "Mehrfach",
         numeric: "Zahl",
-        boolean: "Ja / Nein",
+        boolean: "Ja/Nein",
       };
       return map[type] || type;
+    },
+    inputTypeIcon(type) {
+      const map = {
+        string: "mdi-format-paragraph",
+        text: "mdi-format-letter-case",
+        select: "mdi-format-list-bulleted-type",
+        multiselect: "mdi-format-list-bulleted-square",
+        numeric: "mdi-numeric",
+        boolean: "mdi-toggle-switch",
+      };
+      return map[type] || "mdi-form-textbox";
     },
     inputTypeColor(type) {
       const map = {
@@ -298,10 +453,10 @@ export default {
     },
     filterTypeLabel(t) {
       const map = {
-        select: "Auswahl",
-        slider: "Schieberegler",
-        range: "Bereich",
-        checkbox: "Checkbox",
+        select: "Dropdown-Filter",
+        slider: "Maximalwert-Regler",
+        range: "Von–Bis-Regler",
+        checkbox: "Einzelne Checkbox",
       };
       return map[t] || t;
     },
@@ -313,9 +468,52 @@ export default {
       };
       return map[p] || p;
     },
+    detailDisplayPositionLabel(p) {
+      const map = {
+        none: "Nicht anzeigen",
+        badge: "Label (über Beschreibung)",
+        belowDescription: "Unterhalb der Beschreibung",
+        moreInfo: "Mehr Informationen (rechts)",
+      };
+      return map[p] || p;
+    },
     hasAnyTag(field) {
       const u = field.usageOptions || {};
-      return u.context !== "none";
+      return (
+        u.context !== "none" ||
+        (u.detailDisplayPosition && u.detailDisplayPosition !== "none")
+      );
+    },
+    usageContextChips(field) {
+      const u = field.usageOptions || {};
+      const chips = [];
+
+      if (u.context === "checkout") {
+        chips.push({ text: "Buchungsprozess", color: "blue", dark: true });
+        if (u.requiredInCheckout) {
+          chips.push({ text: "Pflicht", color: "blue darken-2", dark: true });
+        }
+      } else if (u.context === "catalog") {
+        chips.push({ text: "Katalog", color: "green", dark: true });
+        if (u.filterable) {
+          chips.push({ text: "Filter", color: "green darken-2", dark: true });
+        }
+      } else {
+        chips.push({ text: "Intern", color: "blue-grey", outlined: true });
+      }
+
+      if (
+        u.detailDisplayPosition &&
+        u.detailDisplayPosition !== "none"
+      ) {
+        chips.push({
+          text: "Detailansicht",
+          color: "deep-purple",
+          dark: true,
+        });
+      }
+
+      return chips;
     },
 
     // ---- CRUD ----
@@ -357,3 +555,69 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.inherited-field-list {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.theme--dark .inherited-field-list {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.inherited-field-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.theme--dark .inherited-field-row {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.inherited-field-row:last-child {
+  border-bottom: none;
+}
+
+.field-row-type {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.field-row-type-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.field-row-caption {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.field-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.type-chip {
+  max-width: none;
+}
+
+.min-width-0 {
+  min-width: 0;
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+</style>

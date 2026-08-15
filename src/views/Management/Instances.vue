@@ -62,10 +62,16 @@
           $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
         "
         @submit="submitChanges"
-        @cancel="fetchInstance"
+        @cancel="onRestoreChanges"
         show-restore
         :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
         :in-progress="inProgress"
+      />
+
+      <UnsavedChangesDialog
+        v-model="leaveDialogOpen"
+        @stay="resolveLeaveConfirm(false)"
+        @discard="resolveLeaveConfirm(true)"
       />
     </div>
   </AdminLayout>
@@ -78,6 +84,8 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiUsersService from "@/services/api/ApiUsersService";
 import { mapActions, mapGetters } from "vuex";
 import SaveBar from "@/components/commons/SaveBar.vue";
+import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
+import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import InstanceEditGeneral from "@/components/Instance/Edit/InstanceEditGeneral.vue";
 import InstanceEditMail from "@/components/Instance/Edit/InstanceEditMail.vue";
 import InstanceEditOwners from "@/components/Instance/Edit/InstanceEditOwners.vue";
@@ -87,12 +95,14 @@ import InstanceEditTenants from "@/components/Instance/Edit/InstanceEditTenants.
 import ApiTenantService from "@/services/api/ApiTenantService";
 import InstanceEditBookables from "@/components/Instance/Edit/InstanceEditBookables.vue";
 import InstanceEditAuth from "@/components/Instance/Edit/InstanceEditAuth.vue";
+import InstanceEditCheckout from "@/components/Instance/Edit/InstanceEditCheckout.vue";
 
 export default {
   name: "Instances",
   components: {
     AdminLayout,
     SaveBar,
+    UnsavedChangesDialog,
     InstanceEditGeneral,
     InstanceEditMail,
     InstanceEditOwners,
@@ -100,7 +110,9 @@ export default {
     InstanceEditCatalog,
     InstanceEditTenants,
     InstanceEditBookables,
+    InstanceEditCheckout,
   },
+  mixins: [unsavedChangesGuard],
   data() {
     return {
       instance: null,
@@ -156,6 +168,12 @@ export default {
           icon: "mdi-calendar-check",
           comp: "InstanceEditBookables",
         },
+        {
+          key: "checkout",
+          label: "Checkout",
+          icon: "mdi-basket",
+          comp: "InstanceEditCheckout",
+        },
       ],
       catalog: {
         type: "instanze",
@@ -196,6 +214,13 @@ export default {
       return this.tabs[this.activeTab]?.comp || "InstanceEditGeneral";
     },
     hasUnsavedChanges() {
+      if (
+        this.isLoading ||
+        !this.originalSnapshot ||
+        typeof this.originalSnapshot !== "string"
+      ) {
+        return false;
+      }
       return (
         JSON.stringify({ instance: this.instance, catalog: this.catalog }) !==
         this.originalSnapshot
@@ -215,6 +240,12 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    async onRestoreChanges() {
+      const discard = await this.confirmDiscardChanges();
+      if (discard) {
+        await this.fetchInstance();
+      }
+    },
     fetchTenants() {
       ApiTenantService.getTenants()
         .then((response) => {
@@ -237,10 +268,10 @@ export default {
 
       merged.roleMapping.roles = Array.isArray(merged.roleMapping.roles)
         ? merged.roleMapping.roles.map((r) => ({
-            tenantId: r.tenantId ?? null,
-            keycloakRole: r.keycloakRole ?? "",
-            tenantRoleId: r.tenantRoleId ?? null,
-          }))
+          tenantId: r.tenantId ?? null,
+          keycloakRole: r.keycloakRole ?? "",
+          tenantRoleId: r.tenantRoleId ?? null,
+        }))
         : [];
 
       return merged;

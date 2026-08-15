@@ -1,4 +1,5 @@
 import { cryptoRandomId } from "./BlockEditor/render/renderBlocksToHtml.js";
+import { extractBlockMetadata } from "./BlockEditor/render/parseMetadata.js";
 
 export const SNIPPET_KEYS = [
   "booking-confirmation",
@@ -10,7 +11,14 @@ export const SNIPPET_KEYS = [
   "invoice",
   "invoice-after-approval",
   "payment-link-after-approval",
+  "supervisor-booking-notification",
 ];
+
+export const AFTER_SNIPPET_SUFFIX = "__after";
+
+export function afterSnippetKey(key) {
+  return `${key}${AFTER_SNIPPET_SUFFIX}`;
+}
 
 
 function v(name, label) {
@@ -40,7 +48,7 @@ export const SNIPPET_CATALOG = [
     title: "Buchungsbestätigung",
     description: "Bestätigung nach erfolgreicher (kostenpflichtiger) Buchung.",
     icon: "mdi-check-circle-outline",
-    defaultTemplate: `<div style="font-family: sans-serif;">
+    defaultTemplate: `<div style="font-family: inherit;">
   <p>
     Hallo,<br />
     vielen Dank für Ihre Buchung im
@@ -65,7 +73,7 @@ export const SNIPPET_CATALOG = [
     title: "Bestätigung kostenfreier Buchung",
     description: "Bestätigung nach kostenfreier Buchung.",
     icon: "mdi-check-circle-outline",
-    defaultTemplate: `<div style="font-family: sans-serif;">
+    defaultTemplate: `<div style="font-family: inherit;">
   <p>
     Hallo,<br />
     vielen Dank für Ihre kostenfreie Buchung im
@@ -86,7 +94,7 @@ export const SNIPPET_CATALOG = [
     description:
       "Empfangsbestätigung einer Buchungsanfrage (noch nicht freigegeben).",
     icon: "mdi-email-arrow-left-outline",
-    defaultTemplate: `<div style="font-family: sans-serif;">
+    defaultTemplate: `<div style="font-family: inherit;">
   <p>
     Hallo,<br />
     vielen Dank für Ihre Buchungsanfrage im
@@ -148,9 +156,37 @@ export const SNIPPET_CATALOG = [
     title: "Stornierungsmitteilung",
     description: "Stornierungsmitteilung an den Buchenden.",
     icon: "mdi-cancel",
-    defaultTemplate: "<p>Die nachfolgende Buchung wurde storniert:</p>",
+    defaultTemplate: `<p>Die nachfolgende Buchung wurde storniert:</p>
+
+{{#if hasRefundPreview}}
+  <p>
+    <strong>Erstattung</strong>:
+    {{priceFormatted refundAmountEur}}
+    ({{refundPercentage}}&nbsp;%)
+    {{#if hasCancellationFee}}
+      <br />
+      Einbehalt (Stornogebühr): {{priceFormatted cancellationFeeEur}}
+    {{/if}}
+  </p>
+{{/if}}
+`,
     defaultBlocks: [
-      row([txt("<p>Die nachfolgende Buchung wurde storniert:</p>")]),
+      row([
+        txt(`<p>Die nachfolgende Buchung wurde storniert:</p>
+
+{{#if hasRefundPreview}}
+  <p>
+    <strong>Erstattung</strong>:
+    {{priceFormatted refundAmountEur}}
+    ({{refundPercentage}}&nbsp;%)
+    {{#if hasCancellationFee}}
+      <br />
+      Einbehalt (Stornogebühr): {{priceFormatted cancellationFeeEur}}
+    {{/if}}
+  </p>
+{{/if}}
+`),
+      ]),
     ],
   },
   {
@@ -241,6 +277,32 @@ export const SNIPPET_CATALOG = [
       ]),
     ],
   },
+  {
+    key: "supervisor-booking-notification",
+    title: "Vorgesetzten-Benachrichtigung",
+    description:
+      "Information an hinterlegte Empfänger (z. B. Vorgesetzte), wenn ein Mitglied eine Buchung vornimmt.",
+    icon: "mdi-bell-ring-outline",
+    defaultTemplate: `<div style="font-family: inherit;">
+  <p>
+    Hallo,<br />
+    ein Mitglied im
+    <strong>{{tenantName}}</strong>
+    hat eine neue Buchung vorgenommen.
+  </p>
+  <p>
+    Im Folgenden senden wir Ihnen die Details der Buchung.
+  </p>
+</div>`,
+    defaultBlocks: [
+      row([
+        txt(
+          `<p>Hallo,<br />ein Mitglied im <strong>${TENANT}</strong> hat eine neue Buchung vorgenommen.</p>`
+        ),
+        txt("<p>Im Folgenden senden wir Ihnen die Details der Buchung.</p>"),
+      ]),
+    ],
+  },
 ];
 
 export function getSnippetCatalogEntry(key) {
@@ -252,11 +314,8 @@ export function getSnippetDefault(key) {
   return entry ? entry.defaultTemplate : "";
 }
 
-export function buildSnippetDefaultBlocks(key) {
-  const entry = getSnippetCatalogEntry(key);
-  if (!entry || !Array.isArray(entry.defaultBlocks)) return [];
-
-  return entry.defaultBlocks.map((rowTpl) => ({
+function cloneBlocksWithNewIds(blocks) {
+  return (blocks || []).map((rowTpl) => ({
     id: cryptoRandomId(),
     type: rowTpl.type || "row",
     columns: (rowTpl.columns || []).map((col) => ({
@@ -267,6 +326,43 @@ export function buildSnippetDefaultBlocks(key) {
       })),
     })),
   }));
+}
+
+export function buildSnippetDefaultBlocks(key) {
+  const entry = getSnippetCatalogEntry(key);
+  if (!entry || !Array.isArray(entry.defaultBlocks)) return [];
+
+  return cloneBlocksWithNewIds(entry.defaultBlocks);
+}
+
+export function resolveDefaultSnippetContent(key, remoteSnippets = {}) {
+  const remoteHtml = remoteSnippets[key];
+  if (remoteHtml && String(remoteHtml).trim()) {
+    const { blocks, body } = extractBlockMetadata(remoteHtml);
+    if (blocks && blocks.length) {
+      return {
+        fullHtml: remoteHtml,
+        blocks: cloneBlocksWithNewIds(blocks),
+        bodyHtml: body || remoteHtml,
+        hasBlocks: true,
+      };
+    }
+    return {
+      fullHtml: remoteHtml,
+      blocks: [],
+      bodyHtml: remoteHtml,
+      hasBlocks: false,
+    };
+  }
+
+  const entry = getSnippetCatalogEntry(key);
+  const catalogBlocks = buildSnippetDefaultBlocks(key);
+  return {
+    fullHtml: entry ? entry.defaultTemplate : "",
+    blocks: catalogBlocks,
+    bodyHtml: entry ? entry.defaultTemplate : "",
+    hasBlocks: catalogBlocks.length > 0,
+  };
 }
 
 export const MAX_SNIPPET_SIZE_BYTES = 50 * 1024;

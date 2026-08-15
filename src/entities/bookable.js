@@ -1,3 +1,4 @@
+import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
 import { defaultAccessPointDetails } from "@/utilities/access-points";
 
 export default class Bookable {
@@ -22,7 +23,7 @@ export default class Bookable {
     this.groupBooking = { enabled: false, permittedRoles: [] };
     this.cancellationPolicy = { userCancellable: true };
 
-    this.isScheduleRelated = false;
+    this.isScheduleRelated = true;
     this.isTimePeriodRelated = false;
     this.timePeriods = [];
     this.isOpeningHoursRelated = false;
@@ -31,6 +32,15 @@ export default class Bookable {
     this.specialOpeningHours = [];
     this.isLongRange = false;
     this.longRangeOptions = null;
+    this.isBlockPeriodRelated = false;
+    this.blockPeriods = [];
+
+    this.isLeadTimeRelated = false;
+    this.preparationLeadTimeMinutes = 0;
+    this.serviceHours = [];
+    this.isBufferRelated = false;
+    this.bufferTimeBeforeMinutes = null;
+    this.bufferTimeAfterMinutes = null;
 
     this.priceCategories = [
       {
@@ -47,8 +57,10 @@ export default class Bookable {
 
     this.permittedUsers = [];
     this.permittedRoles = [];
-    this.freeBookingUsers = [];
-    this.freeBookingRoles = [];
+    this.bookingDiscounts = {
+      users: [],
+      roles: [],
+    };
 
     this.relatedBookableIds = [];
     this.checkoutBookableIds = [];
@@ -66,6 +78,7 @@ export default class Bookable {
     this.externalProviders = [];
 
     Object.assign(this, overrides);
+    normalizeBookingDiscounts(this);
   }
 
   toPlain() {

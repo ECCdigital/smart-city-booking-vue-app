@@ -314,7 +314,6 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import UserEdit from "@/components/User/UserEdit";
 import UserDeleteConformationDialog from "@/components/User/userDeleteConformationDialog";
 import UserPermissionService from "@/services/permissions/UserPermissionService";
-import Fuse from "fuse.js";
 import ApiMembershipService from "@/services/api/ApiMembershipService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 
@@ -364,12 +363,15 @@ export default {
       let filtered = this.api.users;
 
       if (this.search) {
-        const fuse = new Fuse(filtered, {
-          keys: ["id", "firstName", "lastName"],
-          threshold: 0.4,
-          ignoreLocation: true,
-        });
-        filtered = fuse.search(this.search).map((result) => result.item);
+        const searchLower = this.search.toLowerCase().trim();
+        if (searchLower) {
+          filtered = filtered.filter((user) => {
+            const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+            return [user.id, user.firstName, user.lastName, fullName].some(
+              (field) => field?.toLowerCase().includes(searchLower)
+            );
+          });
+        }
       }
 
       if (this.verifiedFilter) {
