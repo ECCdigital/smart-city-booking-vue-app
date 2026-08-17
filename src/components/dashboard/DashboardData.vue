@@ -1,5 +1,96 @@
 <template>
   <v-container fluid class="dashboard-data-combo">
+    <!-- Aktivitäten -->
+    <section class="mb-8">
+      <h2 class="text-h6 mb-3">
+        <v-icon left color="teal">mdi-calendar-check</v-icon>
+        Aktivitäten
+      </h2>
+      <v-row>
+        <v-col cols="12" md="4" lg="3">
+          <v-card outlined class="theme-card theme-card--activity fill-height">
+            <v-card-title class="subtitle-1">Gesamt</v-card-title>
+            <v-card-text>
+              <div class="metric-row">
+                <span>Buchungen</span>
+                <strong>{{ formatNumber(totals.bookings) }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>Stornierungen</span>
+                <strong>{{ formatNumber(totals.cancellations) }}</strong>
+              </div>
+              <v-divider class="my-3" />
+              <div class="caption grey--text">
+                Stornoquote:
+                <strong class="primary--text">{{ cancellationRate }}</strong>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="8" lg="9">
+          <v-card outlined class="fill-height">
+            <v-card-title class="subtitle-1">
+              Buchungen im Zeitverlauf
+            </v-card-title>
+            <v-card-text>
+              <dashboard-chart
+                :option="bookingsOverTimeOption"
+                height="300px"
+              />
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </section>
+
+    <!-- Finanzen -->
+    <section class="mb-8">
+      <h2 class="text-h6 mb-3">
+        <v-icon left color="green">mdi-currency-eur</v-icon>
+        Finanzen
+      </h2>
+      <v-row>
+        <v-col cols="12" md="4" lg="3">
+          <v-card outlined class="theme-card theme-card--finance fill-height">
+            <v-card-title class="subtitle-1">Gesamt</v-card-title>
+            <v-card-text>
+              <div
+                class="text-h4 font-weight-medium green--text text--darken-2 mb-2"
+              >
+                {{ formatCurrency(totals.revenueEur) }}
+              </div>
+              <div class="caption grey--text mb-4">Gesamtumsatz</div>
+              <div class="metric-row">
+                <span>Ø Umsatz / Buchung</span>
+                <strong>{{ formatCurrency(avgRevenuePerBooking) }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>Top-Mandant</span>
+                <strong>{{ topRevenueTenant }}</strong>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="8" lg="9">
+          <v-card outlined class="fill-height">
+            <v-card-title class="subtitle-1">
+              Umsatz im Zeitverlauf
+            </v-card-title>
+            <v-card-text>
+              <dashboard-chart :option="revenueOverTimeOption" height="300px" />
+            </v-card-text>
+          </v-card>
+          <!--<v-card outlined class="fill-height">
+            <v-card-title class="subtitle-1"> Umsatz pro Mandant </v-card-title>
+            <v-card-text>
+              <dashboard-chart :option="revenueRankingOption" height="300px" />
+            </v-card-text>
+          </v-card>
+          -->
+        </v-col>
+      </v-row>
+    </section>
+
     <!-- Angebote -->
     <section class="mb-8">
       <h2 class="text-h6 mb-3">
@@ -61,85 +152,6 @@
         </v-col>
       </v-row>
     </section>
-
-    <!-- Aktivitäten -->
-    <section class="mb-8">
-      <h2 class="text-h6 mb-3">
-        <v-icon left color="teal">mdi-calendar-check</v-icon>
-        Aktivitäten
-      </h2>
-      <v-row>
-        <v-col cols="12" md="4" lg="3">
-          <v-card outlined class="theme-card theme-card--activity fill-height">
-            <v-card-title class="subtitle-1">Gesamt</v-card-title>
-            <v-card-text>
-              <div class="metric-row">
-                <span>Buchungen</span>
-                <strong>{{ formatNumber(totals.bookings) }}</strong>
-              </div>
-              <div class="metric-row">
-                <span>Stornierungen</span>
-                <strong>{{ formatNumber(totals.cancellations) }}</strong>
-              </div>
-              <v-divider class="my-3" />
-              <div class="caption grey--text">
-                Stornoquote:
-                <strong class="primary--text">{{ cancellationRate }}</strong>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" md="8" lg="9">
-          <v-card outlined class="fill-height">
-            <v-card-title class="subtitle-1">
-              Buchungen pro Mandant
-            </v-card-title>
-            <v-card-text>
-              <dashboard-chart :option="bookingsRankingOption" height="300px" />
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-    </section>
-
-    <!-- Finanzen -->
-    <section class="mb-4">
-      <h2 class="text-h6 mb-3">
-        <v-icon left color="green">mdi-currency-eur</v-icon>
-        Finanzen
-      </h2>
-      <v-row>
-        <v-col cols="12" md="4" lg="3">
-          <v-card outlined class="theme-card theme-card--finance fill-height">
-            <v-card-title class="subtitle-1">Gesamt</v-card-title>
-            <v-card-text>
-              <div
-                class="text-h4 font-weight-medium green--text text--darken-2 mb-2"
-              >
-                {{ formatCurrency(totals.revenueEur) }}
-              </div>
-              <div class="caption grey--text mb-4">Gesamtumsatz</div>
-              <div class="metric-row">
-                <span>Ø Umsatz / Buchung</span>
-                <strong>{{ formatCurrency(avgRevenuePerBooking) }}</strong>
-              </div>
-              <div class="metric-row">
-                <span>Top-Mandant</span>
-                <strong>{{ topRevenueTenant }}</strong>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" md="8" lg="9">
-          <v-card outlined class="fill-height">
-            <v-card-title class="subtitle-1"> Umsatz pro Mandant </v-card-title>
-            <v-card-text>
-              <dashboard-chart :option="revenueRankingOption" height="300px" />
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-    </section>
   </v-container>
 </template>
 
@@ -179,6 +191,12 @@ export default {
         maximumFractionDigits: 1,
       })} %`;
     },
+    byPeriod() {
+      return this.payload.byPeriod || [];
+    },
+    periodLabels() {
+      return this.byPeriod?.map((entry) => this.formatPeriod(entry.period));
+    },
     avgRevenuePerBooking() {
       const bookings = Number(this.totals.bookings || 0);
       const revenue = Number(this.totals.revenueEur || 0);
@@ -202,6 +220,9 @@ export default {
         (a, b) => Number(a.revenueEur || 0) - Number(b.revenueEur || 0)
       );
     },
+    hasAnyTenantEvents() {
+      return this.byTenant.some((t) => Number(t.events || 0) > 0);
+    },
     usersByTenantOption() {
       return {
         tooltip: {
@@ -222,7 +243,7 @@ export default {
             center: ["50%", "42%"],
             avoidLabelOverlap: true,
             label: { show: true, formatter: "{c}" },
-            data: this.byTenant.map((t) => ({
+            data: this.byTenant?.map((t) => ({
               name: t.tenantName,
               value: t.users,
             })),
@@ -237,7 +258,7 @@ export default {
         grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
         xAxis: {
           type: "category",
-          data: this.byTenant.map((t) => t.tenantName),
+          data: this.byTenant?.map((t) => t.tenantName),
           axisLabel: {
             interval: 0,
             //rotate: 25,
@@ -251,58 +272,77 @@ export default {
         yAxis: { type: "value" },
         series: [
           {
-            name: "Buchungsobjekte",
+            name: "Buchbare Angebote",
             type: "bar",
-            data: this.byTenant.map((t) => t.bookables),
+            data: this.byTenant?.map((t) => t.bookableObjects),
             itemStyle: { color: "#039BE5" },
           },
-          {
-            name: "Events",
+          this.hasAnyTenantEvents && {
+            name: "Aktive Events",
             type: "bar",
-            data: this.byTenant.map((t) => t.events),
+            data: this.byTenant?.map((t) => t.activeEvents),
             itemStyle: { color: "#8E24AA" },
           },
-        ],
+        ].filter(Boolean),
       };
     },
-    bookingsRankingOption() {
+    bookingsOverTimeOption() {
       return {
-        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-        grid: { left: 8, right: 24, top: 16, bottom: 8, containLabel: true },
-        xAxis: { type: "value" },
-        yAxis: {
+        tooltip: { trigger: "axis" },
+        legend: { top: 0 },
+        grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
+        xAxis: {
           type: "category",
-          data: this.tenantsByBookings.map((t) => t.tenantName),
+          boundaryGap: false,
+          data: this.periodLabels,
         },
+        yAxis: { type: "value" },
         series: [
           {
-            type: "bar",
             name: "Buchungen",
-            data: this.tenantsByBookings.map((t) => t.bookings),
+            type: "line",
+            showSymbol: false,
+            //symbolSize: 4, //kleinere Symbole
+            smooth: true,
+            data: this.byPeriod?.map((entry) => entry.bookings),
             itemStyle: { color: "#00897B" },
+            areaStyle: { color: "rgba(0, 137, 123, 0.12)" },
+          },
+          {
+            name: "Stornierungen",
+            type: "line",
+            smooth: true,
+            showSymbol: false,
+            data: this.byPeriod?.map((entry) => entry.cancellations),
+            itemStyle: { color: "#F1BB65FF" },
           },
         ],
       };
     },
-    revenueRankingOption() {
+    revenueOverTimeOption() {
       return {
         tooltip: {
           trigger: "axis",
-          axisPointer: { type: "shadow" },
           valueFormatter: (value) => this.formatCurrency(value),
         },
-        grid: { left: 8, right: 24, top: 16, bottom: 8, containLabel: true },
-        xAxis: { type: "value" },
-        yAxis: {
+        legend: { show: false },
+        grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
+        xAxis: {
           type: "category",
-          data: this.tenantsByRevenue.map((t) => t.tenantName),
+          boundaryGap: false,
+          data: this.periodLabels,
         },
+        yAxis: { type: "value" },
         series: [
           {
-            type: "bar",
             name: "Umsatz",
-            data: this.tenantsByRevenue.map((t) => t.revenueEur),
-            itemStyle: { color: "#43A047" },
+            type: "line",
+            showSymbol: false,
+            //symbolSize: 4, //kleinere Symbole
+            smooth: true,
+            data: this.byPeriod?.map((entry) => entry.revenueEur),
+            itemStyle: { color: "#43a047" },
+            areaStyle: { color: "rgba(0, 137, 123, 0.12)" },
           },
         ],
       };
@@ -317,6 +357,14 @@ export default {
         style: "currency",
         currency: "EUR",
       });
+    },
+    formatPeriod(value) {
+      if (!value) return "–";
+      const weekMatch = String(value).match(/^(\d{4})-W(\d{2})$/);
+      if (weekMatch) {
+        return `${weekMatch[1]}\n KW ${weekMatch[2]}`;
+      }
+      return String(value);
     },
   },
 };
