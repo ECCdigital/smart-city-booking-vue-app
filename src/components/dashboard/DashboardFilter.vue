@@ -5,15 +5,17 @@
     <div class="d-flex flex-wrap align-center">
       <v-btn-toggle
         :value="value"
-        mandatory
         dense
-        class="mr-2"
+        hide-details
         color="primary"
+        class="mr-2"
         @change="$emit('input', $event)"
       >
-        <v-btn value="3" small>3 Monate</v-btn>
-        <v-btn value="12" small>12 Monate</v-btn>
-        <v-btn value="all" small>Gesamter Zeitraum</v-btn>
+        <v-btn value="3" outlined :style="{ height: '40px' }">3 Monate</v-btn>
+        <v-btn value="12" outlined :style="{ height: '40px' }">12 Monate</v-btn>
+        <v-btn value="all" outlined :style="{ height: '40px' }"
+          >Gesamter Zeitraum</v-btn
+        >
       </v-btn-toggle>
 
       <div
@@ -287,6 +289,7 @@ export default {
   align-items: center;
   white-space: nowrap;
 }
+
 .filter-select {
   width: 220px;
   max-width: 280px;
