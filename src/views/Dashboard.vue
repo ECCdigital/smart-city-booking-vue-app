@@ -41,7 +41,7 @@
       {{ dashboardData }}
     </pre>-->
     <pre class="light-blue pa-1 text-caption">
-      {{ tendantData }}
+      {{ tenantData }}
     </pre>
   </AdminLayout>
 </template>
@@ -71,7 +71,7 @@ export default {
       onlyBookables: null, // true | false | null
       selectedStatus: [], // e.g. ['status.payment_expected', 'status.awaiting_approval']
       dashboardData: null,
-      tendantData: null,
+      tenantData: null,
     };
   },
   computed: {
@@ -174,7 +174,7 @@ export default {
           tenantId
         );
         console.log("*A.2* - got data in dashboard.vue", response);
-        this.tendantData = response;
+        this.tenantData = response;
       } catch (error) {
         console.error(error);
       } finally {
