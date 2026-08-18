@@ -29,10 +29,20 @@
                 <span>Stornierungen</span>
                 <strong>{{ formatNumber(totals.cancellations) }}</strong>
               </div>
-              <v-divider class="my-3" />
               <div class="caption grey--text">
                 Stornoquote:
                 <strong class="primary--text">{{ cancellationRate }}</strong>
+              </div>
+              <v-divider v-if="hasTenantPayload" class="my-3" />
+              <div v-if="hasTenantPayload">
+                <div
+                  v-for="option in statusOptions"
+                  :key="option.value"
+                  class="metric-row caption grey--text"
+                >
+                  <span>{{ option.label }}:</span>
+                  <strong>{{ getStatusCount(option.value) }}</strong>
+                </div>
               </div>
             </v-card-text>
           </v-card>
@@ -88,7 +98,6 @@
         </v-col>
 
         <v-col cols="12" md="8" lg="9">
-          <!-- toDo - Diagramm für Buchungen pro Buchungsobjekt  -->
           <!-- VERSION A
           <v-card-text>
             <dashboard-chart :option="bookablesRankingOption" height="420px" />
@@ -346,6 +355,14 @@ export default {
       showOfferSection: false,
       bookablesTablePage: 1,
       bookablesItemsPerPage: 10,
+      statusOptions: [
+        { label: "Zahlung ausstehend", value: "status.payment_expected" },
+        { label: "Bezahlt / Abgeschlossen", value: "status.paid_completed" },
+        {
+          label: "Bestätigt ohne Zahlung",
+          value: "status.confirmed_without_payment",
+        },
+      ],
     };
   },
   props: {
@@ -431,6 +448,7 @@ export default {
     periodLabels() {
       return this.byPeriod?.map((entry) => this.formatPeriod(entry.period));
     },
+
     //Revenue
     avgRevenuePerBooking() {
       const bookings = Number(this.totals.bookings || 0);
@@ -657,6 +675,9 @@ export default {
     truncateTitle(title, max = 42) {
       const text = title || "Ohne Titel";
       return text.length > max ? `${text.slice(0, max)}…` : text;
+    },
+    getStatusCount(status) {
+      return this.tenantPayload.byStatus.find((t) => t.status === status).count;
     },
   },
 };
