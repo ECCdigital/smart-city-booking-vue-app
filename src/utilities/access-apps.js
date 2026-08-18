@@ -52,7 +52,7 @@ export function createLockAndAccessAppDefaults() {
       username: "",
       password: "",
       siteId: "",
-      apiBaseUrl: "https://clp-accept-user.my-clay.com",
+      environment: "accept",
       active: false,
     },
   };

@@ -58,6 +58,18 @@ export default {
     allowAuditExport() {
       return BookingPermissionService.allowAuditExport();
     },
+    saltoEnvironments() {
+      return [
+        {
+          value: "accept",
+          text: this.$t("accessPoint.tenant.salto.environmentAccept"),
+        },
+        {
+          value: "production",
+          text: this.$t("accessPoint.tenant.salto.environmentProduction"),
+        },
+      ];
+    },
   },
   methods: {
     ...mapActions({
@@ -85,9 +97,17 @@ export default {
           username: "",
           password: "",
           siteId: "",
-          apiBaseUrl: "https://clp-accept-user.my-clay.com",
+          environment: "accept",
           active: false,
         };
+      }
+      if (!cloned["salto-ks"].environment) {
+        // Configurations from before the environment switch only carried a
+        // free-text API URL; an accept host meant accept, anything else
+        // production.
+        const legacyUrl = String(cloned["salto-ks"].apiBaseUrl || "");
+        cloned["salto-ks"].environment =
+          legacyUrl && !legacyUrl.includes("accept") ? "production" : "accept";
       }
       return cloned;
     },
@@ -109,7 +129,7 @@ export default {
           username: app.username || undefined,
           password: app.password || undefined,
           siteId: app.siteId || undefined,
-          apiBaseUrl: app.apiBaseUrl,
+          environment: app.environment,
         };
       }
       return {
@@ -668,15 +688,17 @@ export default {
                   autocomplete="off"
                 />
               </v-col>
-              <v-col cols="12">
-                <v-text-field
+              <v-col cols="12" md="6">
+                <v-select
                   background-color="accent"
                   filled
                   dense
-                  :label="$t('accessPoint.tenant.apiBaseUrl')"
-                  v-model="localApps['salto-ks'].apiBaseUrl"
-                  @input="emitApps()"
-                  placeholder="https://clp-accept-user.my-clay.com"
+                  :label="$t('accessPoint.tenant.salto.environment')"
+                  v-model="localApps['salto-ks'].environment"
+                  :items="saltoEnvironments"
+                  :hint="$t('accessPoint.tenant.salto.environmentHint')"
+                  persistent-hint
+                  @change="emitApps()"
                 />
               </v-col>
             </v-row>

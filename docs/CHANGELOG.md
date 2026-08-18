@@ -7,6 +7,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Changed
+
+- Tenant access apps: Salto KS picks an environment (`Accept (Sandbox)` / `Production`) instead of a free-text API base URL; the connection test sends `environment` and shows the server's own error (e.g. `invalid_client`) — requires the matching backend
+
 ### Fixed
 
 - BFF mode: Keycloak SSO login no longer fails with a gateway error — nginx proxy buffers raised so the callback's token cookies fit (`upstream sent too big header` → 502 on `/api/auth/sso/callback`)
