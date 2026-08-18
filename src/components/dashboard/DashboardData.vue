@@ -5,6 +5,12 @@
       <h2 class="text-h6 mb-3">
         <v-icon left color="teal">mdi-calendar-check</v-icon>
         Aktivitäten
+        <span
+          v-if="!!tenantData"
+          class="subtitle-2 grey--text font-weight-regular"
+        >
+          ({{ tenantData.data?.tenantName }})
+        </span>
       </h2>
       <v-row>
         <v-col cols="12" md="4" lg="3">
@@ -48,6 +54,12 @@
       <h2 class="text-h6 mb-3">
         <v-icon left color="green">mdi-currency-eur</v-icon>
         Finanzen
+        <span
+          v-if="!!tenantData"
+          class="subtitle-2 grey--text font-weight-regular"
+        >
+          ({{ tenantData.data?.tenantName }})
+        </span>
       </h2>
       <v-row>
         <v-col cols="12" md="4" lg="3">
@@ -64,7 +76,7 @@
                 <span>Ø Umsatz / Buchung</span>
                 <strong>{{ formatCurrency(avgRevenuePerBooking) }}</strong>
               </div>
-              <div class="metric-row">
+              <div v-if="!tenantData" class="metric-row">
                 <span>Top-Mandant</span>
                 <strong>{{ topRevenueTenant }}</strong>
               </div>
@@ -80,13 +92,6 @@
               <dashboard-chart :option="revenueOverTimeOption" height="300px" />
             </v-card-text>
           </v-card>
-          <!--<v-card outlined class="fill-height">
-            <v-card-title class="subtitle-1"> Umsatz pro Mandant </v-card-title>
-            <v-card-text>
-              <dashboard-chart :option="revenueRankingOption" height="300px" />
-            </v-card-text>
-          </v-card>
-          -->
         </v-col>
       </v-row>
     </section>
@@ -96,6 +101,12 @@
       <h2 class="text-h6 mb-3">
         <v-icon left color="primary">mdi-office-building</v-icon>
         Angebote
+        <span
+          v-if="!!tenantData"
+          class="subtitle-2 grey--text font-weight-regular"
+        >
+          (Alle Mandanten)
+        </span>
       </h2>
       <v-row>
         <v-col cols="12" sm="5" md="3">
@@ -104,28 +115,30 @@
             <v-card-text>
               <div class="metric-row">
                 <span>Mandanten</span>
-                <strong>{{ formatNumber(totals.tenants) }}</strong>
+                <strong>{{ formatNumber(payload.totals.tenants) }}</strong>
               </div>
               <div class="metric-row">
                 <span>Benutzer:innen</span>
-                <strong>{{ formatNumber(totals.users) }}</strong>
+                <strong>{{ formatNumber(payload.totals.users) }}</strong>
               </div>
 
               <div class="metric-row mt-5">
                 <span>Buchungsobjekte</span>
-                <strong>{{ formatNumber(totals.bookables) }}</strong>
+                <strong>{{ formatNumber(payload.totals.bookables) }}</strong>
               </div>
               <div class="metric-row">
                 <span>Buchbare Angebote</span>
-                <strong>{{ formatNumber(totals.bookableObjects) }}</strong>
+                <strong>{{
+                  formatNumber(payload.totals.bookableObjects)
+                }}</strong>
               </div>
               <div class="metric-row mt-5">
                 <span>Events</span>
-                <strong>{{ formatNumber(totals.events) }}</strong>
+                <strong>{{ formatNumber(payload.totals.events) }}</strong>
               </div>
               <div class="metric-row">
                 <span>Aktive Events</span>
-                <strong>{{ formatNumber(totals.activeEvents) }}</strong>
+                <strong>{{ formatNumber(payload.totals.activeEvents) }}</strong>
               </div>
             </v-card-text>
           </v-card>
@@ -152,6 +165,9 @@
         </v-col>
       </v-row>
     </section>
+    <pre class="yellow pa-1 text-caption">
+      {{ tenantData }}
+    </pre>
   </v-container>
 </template>
 
@@ -166,22 +182,27 @@ export default {
       type: Object,
       default: null,
     },
+    tenantData: {
+      type: Object,
+      default: null,
+    },
   },
   computed: {
     payload() {
       return (this.dashboardData && this.dashboardData.data) || {};
     },
+    tenantPayload() {
+      if (!this.tenantData) return {};
+      return this.tenantData.data || this.tenantData;
+    },
     totals() {
+      if (this.tenantData && this.tenantData.data) {
+        return this.tenantPayload.totals;
+      }
       return this.payload.totals || {};
     },
     byTenant() {
       return this.payload.byTenant || [];
-    },
-    periodLabel() {
-      const { from, to } = this.payload;
-      if (!from && !to) return "Gesamter Zeitraum";
-      if (from && to) return `${from} – ${to}`;
-      return from || to || null;
     },
     cancellationRate() {
       const bookings = Number(this.totals.bookings || 0);
@@ -192,6 +213,9 @@ export default {
       })} %`;
     },
     byPeriod() {
+      if (this.dashboardData) {
+        return this.tenantPayload.byPeriod || [];
+      }
       return this.payload.byPeriod || [];
     },
     periodLabels() {

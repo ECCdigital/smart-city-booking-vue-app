@@ -34,7 +34,7 @@
       @input="loadDashboard"
     />
 
-    <dashboard-data :dashboard-data="dashboardData" />
+    <dashboard-data :dashboard-data="dashboardData" :tenant-data="tenantData" />
 
     <!--
     <pre class="light-green pa-1 text-caption">
