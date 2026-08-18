@@ -98,17 +98,27 @@
 
     <!-- Angebote -->
     <section class="mb-8">
-      <h2 class="text-h6 mb-3">
-        <v-icon left color="primary">mdi-office-building</v-icon>
-        Angebote
-        <span
-          v-if="!!tenantData"
-          class="subtitle-2 grey--text font-weight-regular"
+      <div class="d-flex align-center justify-space-between mb-3">
+        <h2 class="text-h6 mb-0">
+          <v-icon left color="primary">mdi-office-building</v-icon>
+          Angebote
+          <span
+            v-if="!!tenantData"
+            class="subtitle-2 grey--text font-weight-regular"
+          >
+            (Alle Mandanten)
+          </span>
+        </h2>
+        <v-btn
+          small
+          outlined
+          color="primary"
+          @click="showOfferSection = !showOfferSection"
         >
-          (Alle Mandanten)
-        </span>
-      </h2>
-      <v-row>
+          {{ showOfferSection ? "Angebote ausblenden" : "Angebote einblenden" }}
+        </v-btn>
+      </div>
+      <v-row v-if="showOfferSection">
         <v-col cols="12" sm="5" md="3">
           <v-card outlined class="theme-card theme-card--offer fill-height">
             <v-card-title class="subtitle-1">Gesamt</v-card-title>
@@ -165,9 +175,6 @@
         </v-col>
       </v-row>
     </section>
-    <pre class="yellow pa-1 text-caption">
-      {{ tenantData }}
-    </pre>
   </v-container>
 </template>
 
@@ -177,6 +184,11 @@ import DashboardChart from "@/components/dashboard/DashboardChart.vue";
 export default {
   name: "DashboardDataCombo",
   components: { DashboardChart },
+  data() {
+    return {
+      showOfferSection: false,
+    };
+  },
   props: {
     dashboardData: {
       type: Object,
@@ -233,16 +245,6 @@ export default {
         (a, b) => Number(b.revenueEur || 0) - Number(a.revenueEur || 0)
       )[0];
       return top.tenantName;
-    },
-    tenantsByBookings() {
-      return [...this.byTenant].sort(
-        (a, b) => Number(a.bookings || 0) - Number(b.bookings || 0)
-      );
-    },
-    tenantsByRevenue() {
-      return [...this.byTenant].sort(
-        (a, b) => Number(a.revenueEur || 0) - Number(b.revenueEur || 0)
-      );
     },
     hasAnyTenantEvents() {
       return this.byTenant.some((t) => Number(t.events || 0) > 0);
