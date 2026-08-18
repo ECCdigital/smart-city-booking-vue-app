@@ -70,14 +70,16 @@
         </template>
 
         <div class="more-filters-panel pa-4" :style="moreFiltersPanelStyle">
+          <!--
           <div class="subtitle-2 mb-2">Objekte</div>
           <v-checkbox
             v-model="onlyBookablesToggleValue"
             label="Nur buchbare Objekte"
             @change="onOnlyBookablesChange"
           />
+          -->
 
-          <div class="subtitle-2 mb-2">Status</div>
+          <div class="subtitle-2 mb-2">Buchungen pro Status</div>
           <div class="status-checkbox-list">
             <v-checkbox
               v-for="option in statusOptions"

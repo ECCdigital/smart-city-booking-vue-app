@@ -22,7 +22,6 @@ export default {
     });
   },
   async getDashboardData(query = {}) {
-    console.log("query", query);
     const _query = { granularity: "week", ...query };
     const response = await ApiClient.get("api/v2/dashboard/summary", {
       params: _query,
@@ -32,7 +31,8 @@ export default {
   async getDashboardDataByTenant(tenantId) {
     const query = { granularity: "week" };
     const response = await ApiClient.get(
-      `api/v2/${tenantId}/dashboard/summary`, {params: query}
+      `api/v2/${tenantId}/dashboard/summary`,
+      { params: query }
     );
     console.log(response);
     return response.data;

@@ -6,10 +6,10 @@
         <v-icon left color="teal">mdi-calendar-check</v-icon>
         Aktivitäten
         <span
-          v-if="!!tenantData"
+          v-if="tenantAndStatusLabel"
           class="subtitle-2 grey--text font-weight-regular"
         >
-          ({{ tenantData.data?.tenantName }})
+          ({{ tenantAndStatusLabel }})
         </span>
       </h2>
       <v-row>
@@ -55,7 +55,7 @@
         <v-icon left color="green">mdi-currency-eur</v-icon>
         Finanzen
         <span
-          v-if="!!tenantData"
+          v-if="hasTenantPayload"
           class="subtitle-2 grey--text font-weight-regular"
         >
           ({{ tenantData.data?.tenantName }})
@@ -198,6 +198,10 @@ export default {
       type: Object,
       default: null,
     },
+    selectedStatus: {
+      type: Array,
+      default: null,
+    },
   },
   computed: {
     payload() {
@@ -206,6 +210,9 @@ export default {
     tenantPayload() {
       if (!this.tenantData) return {};
       return this.tenantData.data || this.tenantData;
+    },
+    hasTenantPayload() {
+      return this.tenantPayload && Object.keys(this.tenantPayload).length > 0;
     },
     totals() {
       if (this.tenantData && this.tenantData.data) {
@@ -225,10 +232,35 @@ export default {
       })} %`;
     },
     byPeriod() {
-      if (this.dashboardData) {
+      if (this.hasTenantPayload) {
         return this.tenantPayload.byPeriod || [];
       }
       return this.payload.byPeriod || [];
+    },
+    tenantAndStatusLabel() {
+      const values = [];
+
+      if (this.tenantData?.data?.tenantName) {
+        values.push(this.tenantData.data.tenantName);
+      }
+
+      if (this.selectedStatus.length > 0) {
+        const statusLabels = [];
+        this.selectedStatus.forEach((status) => {
+          let STATUS_LABELS = {
+            "status.payment_expected": " Zahlung erwartet",
+            "status.awaiting_approval": " Genehmigung ausstehend",
+            "status.approved": " Genehmigt",
+            "status.rejected": " Abgelehnt",
+            "status.cancelled": " Storniert",
+          };
+          const label = STATUS_LABELS[status] || status;
+          statusLabels.push(label);
+        });
+        values.push("Status:" + statusLabels);
+      }
+
+      return values.join(" · ");
     },
     periodLabels() {
       return this.byPeriod?.map((entry) => this.formatPeriod(entry.period));
