@@ -34,7 +34,11 @@
       @input="loadDashboard"
     />
 
-    <dashboard-data :dashboard-data="dashboardData" :tenant-data="tenantData" />
+    <dashboard-data
+      :dashboard-data="dashboardData"
+      :tenant-data="tenantData"
+      :selected-status="selectedStatus"
+    />
 
     <!--
     <pre class="light-green pa-1 text-caption">
@@ -140,7 +144,6 @@ export default {
       this.dashboardData = await ApiTenantService.getDashboardData(
         filterParams
       );
-      console.log("*A.1* - got data in dashboard.vue", this.dashboardData);
     },
     async fetchTenants() {
       try {
@@ -166,22 +169,21 @@ export default {
     },
     async fetchDashboardDataByTenantId(tenantId) {
       if (!tenantId) {
+        this.tenantData = {};
         return;
       }
       try {
         this.loading = true;
-        const response = await ApiTenantService.getDashboardDataByTenant(
+
+        this.tenantData = await ApiTenantService.getDashboardDataByTenant(
           tenantId
         );
-        console.log("*A.2* - got data in dashboard.vue", response);
-        this.tenantData = response;
       } catch (error) {
         console.error(error);
       } finally {
         this.loading = false;
       }
     },
-    //toDo
   },
 };
 </script>

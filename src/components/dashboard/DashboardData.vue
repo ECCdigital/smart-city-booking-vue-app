@@ -3,7 +3,7 @@
     <!-- Aktivitäten -->
     <section class="mb-8">
       <h2 class="text-h6 mb-3">
-        <v-icon left color="teal">mdi-calendar-check</v-icon>
+        <v-icon left color="teal">mdi-shopping</v-icon>
         Aktivitäten
         <span
           v-if="tenantAndStatusLabel"
@@ -17,6 +17,10 @@
           <v-card outlined class="theme-card theme-card--activity fill-height">
             <v-card-title class="subtitle-1">Gesamt</v-card-title>
             <v-card-text>
+              <div class="metric-row mb-5">
+                <span>Benutzer:innen</span>
+                <strong>{{ formatNumber(totals.users) }}</strong>
+              </div>
               <div class="metric-row">
                 <span>Buchungen</span>
                 <strong>{{ formatNumber(totals.bookings) }}</strong>
@@ -45,6 +49,46 @@
               />
             </v-card-text>
           </v-card>
+        </v-col>
+      </v-row>
+    </section>
+
+    <!-- Buchungsobjekte -->
+    <section v-if="hasTenantPayload" class="mb-8">
+      <h2 class="text-h6 mb-3">
+        <v-icon left color="indigo">mdi-cart</v-icon>
+        Buchungsobjekte
+        <span class="subtitle-2 grey--text font-weight-regular">
+          ({{ tenantData.data?.tenantName }})
+        </span>
+      </h2>
+      <v-row>
+        <v-col cols="12" md="4" lg="3">
+          <v-card outlined class="theme-card theme-card--bookables fill-height">
+            <v-card-title class="subtitle-1">Gesamt</v-card-title>
+            <v-card-text>
+              <div class="metric-row">
+                <span>Buchungsobjekte</span>
+                <strong>{{ formatNumber(totals.bookables) }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>Buchbare Angebote</span>
+                <strong>{{ formatNumber(totals.bookableObjects) }}</strong>
+              </div>
+              <div class="metric-row mt-5">
+                <span>Events</span>
+                <strong>{{ formatNumber(totals.events) }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>Aktive Events</span>
+                <strong>{{ formatNumber(totals.activeEvents) }}</strong>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" md="8" lg="9">
+          <!-- toDo - Diagramm für Buchungen pro Buchungsobjekt  -->
         </v-col>
       </v-row>
     </section>
@@ -97,7 +141,7 @@
     </section>
 
     <!-- Angebote -->
-    <section class="mb-8">
+    <section v-if="!hasTenantPayload" class="mb-8">
       <div class="d-flex align-center justify-space-between mb-3">
         <h2 class="text-h6 mb-0">
           <v-icon left color="primary">mdi-office-building</v-icon>
@@ -432,8 +476,8 @@ export default {
 .theme-card {
   border-top: 3px solid transparent;
 }
-.theme-card--usage {
-  border-top-color: #3949ab;
+.theme-card--bookables {
+  border-top-color: #3f51b5;
 }
 .theme-card--offer {
   border-top-color: #039be5;
