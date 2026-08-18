@@ -89,6 +89,119 @@
 
         <v-col cols="12" md="8" lg="9">
           <!-- toDo - Diagramm für Buchungen pro Buchungsobjekt  -->
+          <!-- VERSION A
+          <v-card-text>
+            <dashboard-chart :option="bookablesRankingOption" height="420px" />
+            <div class="text-center mt-2">
+              <v-btn
+                v-if="hasMoreBookables"
+                text
+                small
+                color="primary"
+                @click="showMoreBookables"
+              >
+                Weitere {{ Math.min(15, remainingBookablesCount) }} anzeigen
+              </v-btn>
+            </div>
+          </v-card-text>
+          -->
+          <!-- VERSION B -->
+          <v-card outlined>
+            <v-data-table
+              dense
+              :headers="bookablesTableHeaders"
+              :items="rankedBookables"
+              :items-per-page="bookablesItemsPerPage"
+              :page.sync="bookablesTablePage"
+              :hide-default-footer="!showBookablesPagination"
+              class="elevation-0"
+            >
+              <template #item.rank="{ index }">
+                {{
+                  (bookablesTablePage - 1) * bookablesItemsPerPage + index + 1
+                }}
+              </template>
+              <template #item.bookableTitle="{ item }">
+                <div class="font-weight-medium">
+                  {{ truncateTitle(item.bookableTitle, 56) }}
+                </div>
+              </template>
+              <template #item.bookings="{ item }">
+                <div class="text-right">{{ formatNumber(item.bookings) }}</div>
+              </template>
+              <template #item.cancellations="{ item }">
+                <div class="text-right">
+                  {{ formatNumber(item.cancellations) }}
+                </div>
+              </template>
+              <template #item.share="{ item }">
+                <v-progress-linear
+                  :value="
+                    maxBookableBookings
+                      ? (item.bookings / maxBookableBookings) * 100
+                      : 0
+                  "
+                  height="8"
+                  color="cyan darken-2"
+                  rounded
+                />
+              </template>
+              <template #no-data>Keine Buchungsobjekte vorhanden.</template>
+            </v-data-table>
+          </v-card>
+
+          <!-- VERSION C
+          <v-card outlined>
+            <v-card-title class="subtitle-1">Top Buchungsobjekte</v-card-title>
+            <v-list dense>
+              <v-list-item
+                v-for="(item, index) in visibleBookables"
+                :key="item.bookableId"
+              >
+                <v-list-item-avatar size="28" color="cyan darken-2">
+                  <span class="white--text caption">{{ index + 1 }}</span>
+                </v-list-item-avatar>
+                <v-list-item-content>
+                  <v-list-item-title>
+                    {{ truncateTitle(item.bookableTitle, 48) }}
+                  </v-list-item-title>
+                  <v-progress-linear
+                    class="mt-1"
+                    :value="
+                      maxBookableBookings
+                        ? (item.bookings / maxBookableBookings) * 100
+                        : 0
+                    "
+                    height="6"
+                    color="cyan darken-2"
+                    rounded
+                  />
+                </v-list-item-content>
+                <v-list-item-action>
+                  <div class="text-right">
+                    <div class="font-weight-medium">
+                      {{ formatNumber(item.bookings) }}
+                    </div>
+                    <div class="caption grey--text">
+                      {{ formatNumber(item.cancellations) }} Stornos
+                    </div>
+                  </div>
+                </v-list-item-action>
+              </v-list-item>
+            </v-list>
+            <div class="text-center pa-3">
+              <v-btn
+                v-if="hasMoreBookables"
+                text
+                small
+                color="primary"
+                @click="showMoreBookables"
+              >
+                Weitere {{ Math.min(15, remainingBookablesCount) }} anzeigen
+              </v-btn>
+            </div>
+          </v-card>
+          -->
         </v-col>
       </v-row>
     </section>
@@ -231,6 +344,8 @@ export default {
   data() {
     return {
       showOfferSection: false,
+      bookablesTablePage: 1,
+      bookablesItemsPerPage: 10,
     };
   },
   props: {
@@ -264,9 +379,6 @@ export default {
       }
       return this.payload.totals || {};
     },
-    byTenant() {
-      return this.payload.byTenant || [];
-    },
     cancellationRate() {
       const bookings = Number(this.totals.bookings || 0);
       const cancellations = Number(this.totals.cancellations || 0);
@@ -275,12 +387,22 @@ export default {
         maximumFractionDigits: 1,
       })} %`;
     },
+    byTenant() {
+      return this.payload.byTenant || [];
+    },
     byPeriod() {
       if (this.hasTenantPayload) {
         return this.tenantPayload.byPeriod || [];
       }
       return this.payload.byPeriod || [];
     },
+    byBookable() {
+      if (this.hasTenantPayload) {
+        return this.tenantPayload.byBookable || [];
+      }
+      return [];
+    },
+    //Labels
     tenantAndStatusLabel() {
       const values = [];
 
@@ -309,6 +431,7 @@ export default {
     periodLabels() {
       return this.byPeriod?.map((entry) => this.formatPeriod(entry.period));
     },
+    //Revenue
     avgRevenuePerBooking() {
       const bookings = Number(this.totals.bookings || 0);
       const revenue = Number(this.totals.revenueEur || 0);
@@ -325,6 +448,43 @@ export default {
     hasAnyTenantEvents() {
       return this.byTenant.some((t) => Number(t.events || 0) > 0);
     },
+    //Bookables
+    bookablesTableHeaders() {
+      return [
+        { text: "#", value: "rank", sortable: false, width: "56px" },
+        { text: "Objekt", value: "bookableTitle", sortable: false },
+        {
+          text: "Buchungen",
+          value: "bookings",
+          align: "end",
+          sortable: true,
+        },
+        {
+          text: "Stornos",
+          value: "cancellations",
+          align: "end",
+          sortable: true,
+        },
+        { text: "Anteil", value: "share", sortable: false, width: "28%" },
+      ];
+    },
+    rankedBookables() {
+      const temp = [...this.byBookable].sort(
+        (a, b) => Number(b.bookings || 0) - Number(a.bookings || 0)
+      );
+      return temp;
+    },
+    visibleBookables() {
+      return this.rankedBookables;
+    },
+    showBookablesPagination() {
+      return this.rankedBookables.length >= this.bookablesItemsPerPage;
+    },
+    maxBookableBookings() {
+      const first = this.rankedBookables[0];
+      return first ? Number(first.bookings || 0) : 0;
+    },
+    //Graph Options
     usersByTenantOption() {
       return {
         tooltip: {
@@ -449,8 +609,34 @@ export default {
         ],
       };
     },
+    bookablesRankingOption() {
+      const items = [...this.visibleBookables].reverse();
+      return {
+        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+        grid: { left: 8, right: 24, top: 8, bottom: 8, containLabel: true },
+        xAxis: { type: "value", minInterval: 1 },
+        yAxis: {
+          type: "category",
+          data: items.map((item) => this.truncateTitle(item.bookableTitle)),
+        },
+        series: [
+          {
+            name: "Buchungen",
+            type: "bar",
+            data: items.map((item) => item.bookings),
+            itemStyle: { color: "#00838F" },
+          },
+        ],
+      };
+    },
+  },
+  watch: {
+    rankedBookables() {
+      this.bookablesTablePage = 1;
+    },
   },
   methods: {
+    //Formating
     formatNumber(value) {
       return Number(value || 0).toLocaleString("de-DE");
     },
@@ -467,6 +653,10 @@ export default {
         return `${weekMatch[1]}\n KW ${weekMatch[2]}`;
       }
       return String(value);
+    },
+    truncateTitle(title, max = 42) {
+      const text = title || "Ohne Titel";
+      return text.length > max ? `${text.slice(0, max)}…` : text;
     },
   },
 };
