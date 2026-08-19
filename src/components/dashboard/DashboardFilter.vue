@@ -1,37 +1,37 @@
 <template>
-  <div
-    class="dashboard-filter d-flex flex-wrap align-center justify-space-between mb-6"
-  >
-    <div class="d-flex flex-wrap align-center">
+  <div class="dashboard-filter mb-6">
+    <div class="dashboard-filter__period">
       <v-btn-toggle
         :value="value"
         dense
         hide-details
         color="primary"
-        class="mr-2"
+        class="dashboard-filter__toggle mr-sm-2"
         @change="$emit('input', $event)"
       >
-        <v-btn value="3" outlined :style="{ height: '40px' }">3 Monate</v-btn>
-        <v-btn value="12" outlined :style="{ height: '40px' }">12 Monate</v-btn>
-        <v-btn value="all" outlined :style="{ height: '40px' }"
-          >Gesamter Zeitraum</v-btn
-        >
+        <v-btn value="3" outlined class="dashboard-filter__toggle-btn">
+          3 Monate
+        </v-btn>
+        <v-btn value="12" outlined class="dashboard-filter__toggle-btn">
+          12 Monate
+        </v-btn>
+        <v-btn value="all" outlined class="dashboard-filter__toggle-btn">
+          Gesamter Zeitraum
+        </v-btn>
       </v-btn-toggle>
 
       <div
         v-if="!isEntirePeriod"
-        class="period-label subtitle-2 grey--text text--darken-1"
+        class="period-label subtitle-2 grey--text text--darken-1 mt-2 mt-sm-0"
       >
         <v-icon small left>mdi-calendar-range</v-icon>
-        <template>
-          {{ formatDate(from) }}
-          <span class="mx-1">–</span>
-          {{ formatDate(to) }}
-        </template>
+        {{ formatDate(from) }}
+        <span class="mx-1">–</span>
+        {{ formatDate(to) }}
       </div>
     </div>
 
-    <div class="d-flex flex-wrap align-center right-filters">
+    <div class="dashboard-filter__controls">
       <v-select
         :value="tenantId"
         :items="tenantOptions"
@@ -53,6 +53,7 @@
         offset-y
         :close-on-content-click="false"
         content-class="more-filters-menu"
+        :max-width="menuMaxWidth"
       >
         <template #activator="{ on, attrs }">
           <v-text-field
@@ -63,22 +64,13 @@
             outlined
             hide-details
             :append-icon="moreFiltersOpen ? 'mdi-menu-up' : 'mdi-menu-down'"
-            class="filter-select more-filters-field ml-2"
+            class="filter-select more-filters-field"
             v-bind="attrs"
             v-on="on"
           />
         </template>
 
         <div class="more-filters-panel pa-4" :style="moreFiltersPanelStyle">
-          <!--
-          <div class="subtitle-2 mb-2">Objekte</div>
-          <v-checkbox
-            v-model="onlyBookablesToggleValue"
-            label="Nur buchbare Objekte"
-            @change="onOnlyBookablesChange"
-          />
-          -->
-
           <div class="subtitle-2 mb-2">Buchungen pro Status</div>
           <div class="status-checkbox-list">
             <v-checkbox
@@ -163,12 +155,16 @@ export default {
         offsetY: true,
         bottom: true,
         nudgeBottom: 2,
+        maxWidth: "100%",
       },
     };
   },
   computed: {
     isEntirePeriod() {
       return !this.from && !this.to;
+    },
+    menuMaxWidth() {
+      return this.$vuetify && this.$vuetify.breakpoint.xsOnly ? "100%" : 320;
     },
     moreFiltersPanelStyle() {
       const isDarkTheme =
@@ -281,30 +277,144 @@ export default {
   },
 };
 </script>
-
 <style scoped>
-.right-filters {
-  flex-wrap: nowrap;
+.dashboard-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
+
+.dashboard-filter__period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.dashboard-filter__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 320px;
+  justify-content: flex-end;
+}
+
+.dashboard-filter__toggle {
+  max-width: 100%;
+}
+
+.dashboard-filter__toggle-btn {
+  height: 40px !important;
+  min-height: 40px !important;
+  white-space: normal;
+  line-height: 1.2;
+}
+
 .period-label {
   display: inline-flex;
   align-items: center;
-  white-space: nowrap;
+  flex-wrap: wrap;
+  white-space: normal;
+  min-width: 0;
 }
 
 .filter-select {
   width: 220px;
   max-width: 280px;
-  flex: 0 0 auto;
+  flex: 0 1 220px;
+  min-width: 0;
 }
+
 .more-filters-field {
   cursor: pointer;
 }
+
 .more-filters-field >>> .v-input__slot,
 .more-filters-field >>> input {
   cursor: pointer;
 }
+
 .more-filters-panel {
   min-width: 280px;
+  max-width: 100vw;
+}
+
+.status-checkbox-list {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+/* Tablet und kleiner: Zeitraum oben, Filter darunter */
+@media (max-width: 959px) {
+  .dashboard-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-filter__period,
+  .dashboard-filter__controls {
+    flex: 1 1 auto;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Tablet: Mandant + Weitere Filter nebeneinander */
+@media (min-width: 600px) and (max-width: 959px) {
+  .dashboard-filter__controls {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+
+  .filter-select {
+    flex: 1 1 0;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+  }
+}
+
+/* Smartphone: alles untereinander */
+@media (max-width: 599px) {
+  .dashboard-filter__toggle {
+    display: flex;
+    width: 100%;
+  }
+
+  .dashboard-filter__toggle >>> .v-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-left: 6px;
+    padding-right: 6px;
+    font-size: 0.75rem;
+  }
+
+  .period-label {
+    width: 100%;
+    font-size: 0.875rem;
+  }
+
+  .dashboard-filter__controls {
+    flex-direction: column;
+  }
+
+  .filter-select {
+    width: 100%;
+    max-width: none;
+    flex: 1 1 100%;
+  }
+
+  .more-filters-panel {
+    min-width: unset;
+    width: calc(100vw - 32px);
+    max-width: 360px;
+  }
 }
 </style>
