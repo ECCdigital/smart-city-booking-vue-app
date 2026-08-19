@@ -28,11 +28,12 @@ export default {
     });
     return response.data;
   },
-  async getDashboardDataByTenant(tenantId) {
-    const query = { granularity: "week" };
+  async getDashboardDataByTenant(tenantId, query = {}) {
+    const _query = { granularity: "week", ...query };
+    console.log("query", _query);
     const response = await ApiClient.get(
       `api/v2/${tenantId}/dashboard/summary`,
-      { params: query }
+      { params: _query }
     );
     console.log(response);
     return response.data;

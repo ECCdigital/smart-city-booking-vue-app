@@ -64,41 +64,46 @@
     </section>
 
     <!-- Buchungsobjekte -->
-    <section v-if="hasTenantPayload" class="mb-8">
-      <h2 class="text-h6 mb-3">
-        <v-icon left color="indigo">mdi-cart</v-icon>
-        Buchungsobjekte
-        <span class="subtitle-2 grey--text font-weight-regular">
-          ({{ tenantData.data?.tenantName }})
-        </span>
-      </h2>
-      <v-row>
-        <v-col cols="12" md="4" lg="3">
-          <v-card outlined class="theme-card theme-card--bookables fill-height">
-            <v-card-title class="subtitle-1">Gesamt</v-card-title>
-            <v-card-text>
-              <div class="metric-row">
-                <span>Buchungsobjekte</span>
-                <strong>{{ formatNumber(totals.bookables) }}</strong>
-              </div>
-              <div class="metric-row">
-                <span>Buchbare Angebote</span>
-                <strong>{{ formatNumber(totals.bookableObjects) }}</strong>
-              </div>
-              <div class="metric-row mt-5">
-                <span>Events</span>
-                <strong>{{ formatNumber(totals.events) }}</strong>
-              </div>
-              <div class="metric-row">
-                <span>Aktive Events</span>
-                <strong>{{ formatNumber(totals.activeEvents) }}</strong>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
+    <v-fade-transition>
+      <v-expand-transition>
+        <section v-if="hasTenantPayload" class="mb-8">
+          <h2 class="text-h6 mb-3">
+            <v-icon left color="indigo">mdi-cart</v-icon>
+            Buchungsobjekte
+            <span class="subtitle-2 grey--text font-weight-regular">
+              ({{ tenantData.data?.tenantName }})
+            </span>
+          </h2>
+          <v-row>
+            <v-col cols="12" md="4" lg="3">
+              <v-card
+                outlined
+                class="theme-card theme-card--bookables fill-height"
+              >
+                <v-card-title class="subtitle-1">Gesamt</v-card-title>
+                <v-card-text>
+                  <div class="metric-row">
+                    <span>Buchungsobjekte</span>
+                    <strong>{{ formatNumber(totals.bookables) }}</strong>
+                  </div>
+                  <div class="metric-row">
+                    <span>Buchbare Angebote</span>
+                    <strong>{{ formatNumber(totals.bookableObjects) }}</strong>
+                  </div>
+                  <div class="metric-row mt-5">
+                    <span>Events</span>
+                    <strong>{{ formatNumber(totals.events) }}</strong>
+                  </div>
+                  <div class="metric-row">
+                    <span>Aktive Events</span>
+                    <strong>{{ formatNumber(totals.activeEvents) }}</strong>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-col>
 
-        <v-col cols="12" md="8" lg="9">
-          <!-- VERSION A
+            <v-col cols="12" md="8" lg="9">
+              <!-- VERSION A
           <v-card-text>
             <dashboard-chart :option="bookablesRankingOption" height="420px" />
             <div class="text-center mt-2">
@@ -114,52 +119,56 @@
             </div>
           </v-card-text>
           -->
-          <!-- VERSION B -->
-          <v-card outlined>
-            <v-data-table
-              dense
-              :headers="bookablesTableHeaders"
-              :items="rankedBookables"
-              :items-per-page="bookablesItemsPerPage"
-              :page.sync="bookablesTablePage"
-              :hide-default-footer="!showBookablesPagination"
-              class="elevation-0"
-            >
-              <template #item.rank="{ index }">
-                {{
-                  (bookablesTablePage - 1) * bookablesItemsPerPage + index + 1
-                }}
-              </template>
-              <template #item.bookableTitle="{ item }">
-                <div class="font-weight-medium">
-                  {{ truncateTitle(item.bookableTitle, 56) }}
-                </div>
-              </template>
-              <template #item.bookings="{ item }">
-                <div class="text-right">{{ formatNumber(item.bookings) }}</div>
-              </template>
-              <template #item.cancellations="{ item }">
-                <div class="text-right">
-                  {{ formatNumber(item.cancellations) }}
-                </div>
-              </template>
-              <template #item.share="{ item }">
-                <v-progress-linear
-                  :value="
-                    maxBookableBookings
-                      ? (item.bookings / maxBookableBookings) * 100
-                      : 0
-                  "
-                  height="8"
-                  color="cyan darken-2"
-                  rounded
-                />
-              </template>
-              <template #no-data>Keine Buchungsobjekte vorhanden.</template>
-            </v-data-table>
-          </v-card>
+              <!-- VERSION B -->
+              <v-card outlined>
+                <v-data-table
+                  dense
+                  :headers="bookablesTableHeaders"
+                  :items="rankedBookables"
+                  :items-per-page="bookablesItemsPerPage"
+                  :page.sync="bookablesTablePage"
+                  :hide-default-footer="!showBookablesPagination"
+                  class="elevation-0"
+                >
+                  <template #item.rank="{ index }">
+                    {{
+                      (bookablesTablePage - 1) * bookablesItemsPerPage +
+                      index +
+                      1
+                    }}
+                  </template>
+                  <template #item.bookableTitle="{ item }">
+                    <div class="font-weight-medium">
+                      {{ truncateTitle(item.bookableTitle, 56) }}
+                    </div>
+                  </template>
+                  <template #item.bookings="{ item }">
+                    <div class="text-right">
+                      {{ formatNumber(item.bookings) }}
+                    </div>
+                  </template>
+                  <template #item.cancellations="{ item }">
+                    <div class="text-right">
+                      {{ formatNumber(item.cancellations) }}
+                    </div>
+                  </template>
+                  <template #item.share="{ item }">
+                    <v-progress-linear
+                      :value="
+                        maxBookableBookings
+                          ? (item.bookings / maxBookableBookings) * 100
+                          : 0
+                      "
+                      height="8"
+                      color="cyan darken-2"
+                      rounded
+                    />
+                  </template>
+                  <template #no-data>Keine Buchungsobjekte vorhanden.</template>
+                </v-data-table>
+              </v-card>
 
-          <!-- VERSION C
+              <!-- VERSION C
           <v-card outlined>
             <v-card-title class="subtitle-1">Top Buchungsobjekte</v-card-title>
             <v-list dense>
@@ -211,9 +220,11 @@
             </div>
           </v-card>
           -->
-        </v-col>
-      </v-row>
-    </section>
+            </v-col>
+          </v-row>
+        </section>
+      </v-expand-transition>
+    </v-fade-transition>
 
     <!-- Finanzen -->
     <section class="mb-8">
