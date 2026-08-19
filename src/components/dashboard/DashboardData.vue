@@ -541,6 +541,92 @@ export default {
       return first ? Number(first.bookings || 0) : 0;
     },
     usersByTenantOption() {
+      const manyTenants = (this.byTenant || []).length > 8;
+      return {
+        tooltip: {
+          trigger: "item",
+          formatter: "{b}: {c} ({d}%)",
+        },
+        legend: {
+          type: "scroll",
+          orient: "horizontal",
+          left: "center",
+          bottom: 0,
+          height: 52,
+          itemGap: 8,
+          pageIconSize: 8,
+          textStyle: {
+            fontSize: 10,
+            width: manyTenants ? 60 : 100,
+            overflow: "truncate",
+          },
+        },
+        series: [
+          {
+            type: "pie",
+            radius: ["45%", "70%"],
+            center: ["50%", manyTenants ? "40%" : "42%"],
+            avoidLabelOverlap: true,
+            label: {
+              show: !manyTenants,
+              formatter: "{c}",
+            },
+            labelLine: { show: !manyTenants },
+            data: this.byTenant?.map((t) => ({
+              name: t.tenantName,
+              value: t.users,
+            })),
+          },
+        ],
+      };
+    },
+    offerByTenantOption() {
+      const tenantNames = this.byTenant?.map((t) => t.tenantName) || [];
+      const manyTenants = tenantNames.length > 8;
+      return {
+        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+        legend: { top: 0 },
+        grid: {
+          left: 8,
+          right: 16,
+          top: 40,
+          bottom: manyTenants ? 48 : 8,
+          containLabel: true,
+        },
+        xAxis: {
+          type: "category",
+          data: tenantNames,
+          axisLabel: {
+            interval: 0,
+            hideOverlap: true,
+            rotate: manyTenants ? 35 : 0,
+            formatter: (value) => {
+              const text = String(value || "");
+              if (manyTenants && text.length > 14) {
+                return `${text.slice(0, 14)}…`;
+              }
+              return text.replace(/( )/g, "$1\n").trim();
+            },
+          },
+        },
+        yAxis: { type: "value" },
+        series: [
+          {
+            name: "Buchbare Angebote",
+            type: "bar",
+            data: this.byTenant?.map((t) => t.bookableObjects),
+            itemStyle: { color: "#039BE5" },
+          },
+          this.hasAnyTenantEvents && {
+            name: "Aktive Events",
+            type: "bar",
+            data: this.byTenant?.map((t) => t.activeEvents),
+            itemStyle: { color: "#8E24AA" },
+          },
+        ].filter(Boolean),
+      };
+    },
+    /*usersByTenantOption() {
       return {
         tooltip: {
           trigger: "item",
@@ -567,8 +653,8 @@ export default {
           },
         ],
       };
-    },
-    offerByTenantOption() {
+    },*/
+    /*offerByTenantOption() {
       return {
         tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
         legend: { top: 0 },
@@ -601,7 +687,7 @@ export default {
           },
         ].filter(Boolean),
       };
-    },
+    },*/
     bookingsOverTimeOption() {
       return {
         tooltip: { trigger: "axis" },
