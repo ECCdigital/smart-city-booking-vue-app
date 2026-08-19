@@ -144,7 +144,7 @@
                   :items="rankedBookables"
                   :items-per-page="bookablesItemsPerPage"
                   :page.sync="bookablesTablePage"
-                  :hide-default-footer="!showBookablesPagination"
+                  :hide-default-footer="!rankedBookables.length"
                   class="elevation-0 dashboard-bookables-table"
                 >
                   <template #item.rank="{ index }">
@@ -174,11 +174,27 @@
                     />
                   </template>
                   <template #footer.prepend>
-                    <div v-if="tenantPayload.byBookableHasMore" class="mr-4">
+                    <div
+                      class="d-flex align-center bookables-table-actions mr-4"
+                    >
                       <v-btn
                         small
                         outlined
                         color="primary"
+                        @click="exportBookablesExcel"
+                        aria-label="Als Excel-Tabelle herunterladen"
+                      >
+                        <v-icon left small color="primary"
+                          >mdi-microsoft-excel</v-icon
+                        >
+                        Download
+                      </v-btn>
+                      <v-btn
+                        v-if="tenantPayload.byBookableHasMore"
+                        small
+                        outlined
+                        color="primary"
+                        class="ml-2"
                         @click="loadMoreBookables"
                       >
                         Weitere laden
@@ -190,7 +206,9 @@
 
                 <!-- Mobile / Tablet schmal: Kartenliste + dezente Sortierung -->
                 <div v-else class="pa-1">
-                  <div class="bookables-mobile-sort pa-3 pb-0">
+                  <div
+                    class="bookables-mobile-sort justify-space-between pa-3 pb-0"
+                  >
                     <v-btn-toggle
                       v-model="bookablesSortMode"
                       dense
@@ -199,19 +217,31 @@
                       class="bookables-sort-toggle"
                       aria-label="Buchungsobjekte sortieren"
                     >
-                      <v-btn value="bookings" small>
-                        <v-icon small left color="grey darken-1"
-                          >mdi-sort</v-icon
-                        >
+                      <v-btn value="bookings" small outlined color="primary">
+                        <v-icon small left color="primary">mdi-sort</v-icon>
                         Buchungen
                       </v-btn>
-                      <v-btn value="cancellations" small>
-                        <v-icon small left color="grey darken-1"
-                          >mdi-sort</v-icon
-                        >
+                      <v-btn
+                        value="cancellations"
+                        small
+                        outlined
+                        color="primary"
+                      >
+                        <v-icon small left color="primary">mdi-sort</v-icon>
                         Stornos
                       </v-btn>
                     </v-btn-toggle>
+                    <v-btn
+                      small
+                      outlined
+                      color="primary"
+                      class="bookables-mobile-excel"
+                      @click="exportBookablesExcel"
+                      aria-label="Als Excel-Tabelle herunterladen"
+                    >
+                      <v-icon left small>mdi-microsoft-excel</v-icon>
+                      Download
+                    </v-btn>
                   </div>
 
                   <div class="bookables-mobile-list pa-3 pt-2">
@@ -293,7 +323,7 @@
       </v-expand-transition>
     </v-fade-transition>
 
-    <!-- Finanzen -->
+    <!-- Finances -->
     <section class="mb-8">
       <h2 class="text-h6 mb-3">
         <v-icon left color="green">mdi-currency-eur</v-icon>
@@ -370,7 +400,7 @@
       </v-row>
     </section>
 
-    <!-- Angebote -->
+    <!-- Usage -->
     <section class="mb-8">
       <div
         class="d-flex flex-column flex-sm-row align-sm-center justify-space-between mb-3"
@@ -742,13 +772,6 @@ export default {
       return Math.max(
         1,
         Math.ceil(this.rankedBookables.length / this.bookablesItemsPerPage)
-      );
-    },
-
-    showBookablesPagination() {
-      return (
-        this.rankedBookables.length >= this.bookablesItemsPerPage ||
-        !!this.tenantPayload.byBookableHasMore
       );
     },
 
@@ -1254,6 +1277,25 @@ export default {
       });
     },
 
+    async exportBookablesExcel() {
+      const rows = (this.rankedBookables || []).map((item) => ({
+        bookableTitle: item.bookableTitle || "Ohne Titel",
+        bookings: Number(item.bookings || 0),
+        cancellations: Number(item.cancellations || 0),
+      }));
+
+      await this.downloadExcel({
+        title: "Buchungsobjekte",
+        sheetName: "Buchungsobjekte",
+        columns: [
+          { header: "Buchungsobjekt", key: "bookableTitle", width: 48 },
+          { header: "Buchungen", key: "bookings", width: 14 },
+          { header: "Stornierungen", key: "cancellations", width: 16 },
+        ],
+        rows,
+      });
+    },
+
     async exportOfferByTenantExcel() {
       const rows = (this.byTenant || []).map((tenant) => ({
         tenantName: tenant.tenantName || "–",
@@ -1423,7 +1465,14 @@ export default {
 
 /* Bookables mobile */
 .bookables-mobile-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   opacity: 0.95;
+}
+
+.bookables-mobile-excel {
+  flex: 0 0 auto;
 }
 
 .bookables-sort-toggle::v-deep .v-btn {
