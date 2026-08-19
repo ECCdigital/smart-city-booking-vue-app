@@ -7,7 +7,7 @@
         Aktivitäten
         <span
           v-if="tenantAndStatusLabel"
-          class="subtitle-2 grey--text font-weight-regular"
+          class="subtitle-2 grey--text font-weight-regular d-block d-sm-inline mt-1 mt-sm-0"
         >
           ({{ tenantAndStatusLabel }})
         </span>
@@ -55,7 +55,7 @@
             <v-card-text>
               <dashboard-chart
                 :option="bookingsOverTimeOption"
-                height="300px"
+                :height="chartHeight"
               />
             </v-card-text>
           </v-card>
@@ -70,7 +70,9 @@
           <h2 class="text-h6 mb-3">
             <v-icon left color="indigo">mdi-cart</v-icon>
             Buchungsobjekte
-            <span class="subtitle-2 grey--text font-weight-regular">
+            <span
+              class="subtitle-2 grey--text font-weight-regular d-block d-sm-inline mt-1 mt-sm-0"
+            >
               ({{ tenantData.data?.tenantName }})
             </span>
           </h2>
@@ -104,7 +106,9 @@
 
             <v-col cols="12" md="8" lg="9">
               <v-card outlined>
+                <!-- Desktop: Tabelle -->
                 <v-data-table
+                  v-if="isDesktop"
                   dense
                   :headers="bookablesTableHeaders"
                   :items="rankedBookables"
@@ -114,11 +118,7 @@
                   class="elevation-0 dashboard-bookables-table"
                 >
                   <template #item.rank="{ index }">
-                    {{
-                      (bookablesTablePage - 1) * bookablesItemsPerPage +
-                      index +
-                      1
-                    }}
+                    {{ bookableRank(index) }}
                   </template>
                   <template #item.bookableTitle="{ item }">
                     <div class="font-weight-medium">
@@ -137,11 +137,7 @@
                   </template>
                   <template #item.share="{ item }">
                     <v-progress-linear
-                      :value="
-                        maxBookableBookings
-                          ? (item.bookings / maxBookableBookings) * 100
-                          : 0
-                      "
+                      :value="bookableShare(item)"
                       height="8"
                       color="cyan darken-2"
                       rounded
@@ -159,9 +155,81 @@
                       </v-btn>
                     </div>
                   </template>
-
                   <template #no-data>Keine Buchungsobjekte vorhanden.</template>
                 </v-data-table>
+
+                <!-- Mobile / Tablet schmal: Kartenliste -->
+                <div v-else class="bookables-mobile-list pa-3">
+                  <div
+                    v-if="!paginatedBookables.length"
+                    class="caption grey--text text-center py-6"
+                  >
+                    Keine Buchungsobjekte vorhanden.
+                  </div>
+
+                  <v-card
+                    v-for="(item, index) in paginatedBookables"
+                    :key="item.bookableId"
+                    outlined
+                    class="bookable-mobile-card mb-3"
+                  >
+                    <v-card-text class="py-3">
+                      <div
+                        class="d-flex justify-space-between align-start mb-2"
+                      >
+                        <v-chip x-small label color="indigo lighten-5">
+                          #{{ bookableRank(index) }}
+                        </v-chip>
+                        <div class="text-right">
+                          <div class="font-weight-medium">
+                            {{ formatNumber(item.bookings) }} Buchungen
+                          </div>
+                          <div class="caption grey--text">
+                            {{ formatNumber(item.cancellations) }} Stornos
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="bookable-mobile-title mb-2">
+                        {{ item.bookableTitle || "Ohne Titel" }}
+                      </div>
+
+                      <v-progress-linear
+                        :value="bookableShare(item)"
+                        height="8"
+                        color="cyan darken-2"
+                        rounded
+                      />
+                    </v-card-text>
+                  </v-card>
+
+                  <div
+                    class="bookables-mobile-footer d-flex flex-wrap align-center justify-space-between"
+                  >
+                    <v-btn
+                      v-if="tenantPayload.byBookableHasMore"
+                      small
+                      outlined
+                      color="primary"
+                      class="mb-2"
+                      @click="loadMoreBookables"
+                    >
+                      Weitere laden
+                    </v-btn>
+
+                    <div
+                      v-if="bookablesPageCount > 1"
+                      class="bookables-mobile-pagination mb-2"
+                    >
+                      <v-pagination
+                        v-model="bookablesTablePage"
+                        :length="bookablesPageCount"
+                        :total-visible="5"
+                        circle
+                      />
+                    </div>
+                  </div>
+                </div>
               </v-card>
             </v-col>
           </v-row>
@@ -176,7 +244,7 @@
         Finanzen
         <span
           v-if="hasTenantPayload"
-          class="subtitle-2 grey--text font-weight-regular"
+          class="subtitle-2 grey--text font-weight-regular d-block d-sm-inline mt-1 mt-sm-0"
         >
           ({{ tenantData.data?.tenantName }})
         </span>
@@ -209,7 +277,10 @@
               Umsatz im Zeitverlauf
             </v-card-title>
             <v-card-text>
-              <dashboard-chart :option="revenueOverTimeOption" height="300px" />
+              <dashboard-chart
+                :option="revenueOverTimeOption"
+                :height="chartHeight"
+              />
             </v-card-text>
           </v-card>
         </v-col>
@@ -218,16 +289,12 @@
 
     <!-- Angebote -->
     <section v-if="!hasTenantPayload" class="mb-8">
-      <div class="d-flex align-center justify-space-between mb-3">
-        <h2 class="text-h6 mb-0">
+      <div
+        class="d-flex flex-column flex-sm-row align-sm-center justify-space-between mb-3"
+      >
+        <h2 class="text-h6 mb-2 mb-sm-0">
           <v-icon left color="primary">mdi-office-building</v-icon>
           Angebote
-          <span
-            v-if="!!tenantData"
-            class="subtitle-2 grey--text font-weight-regular"
-          >
-            (Alle Mandanten)
-          </span>
         </h2>
         <v-btn
           small
@@ -251,7 +318,6 @@
                 <span>Benutzer:innen</span>
                 <strong>{{ formatNumber(payload.totals.users) }}</strong>
               </div>
-
               <div class="metric-row mt-5">
                 <span>Buchungsobjekte</span>
                 <strong>{{ formatNumber(payload.totals.bookables) }}</strong>
@@ -279,7 +345,10 @@
               Anteil der Benutzer:innen
             </v-card-title>
             <v-card-text>
-              <dashboard-chart :option="usersByTenantOption" height="300px" />
+              <dashboard-chart
+                :option="usersByTenantOption"
+                :height="chartHeight"
+              />
             </v-card-text>
           </v-card>
         </v-col>
@@ -289,7 +358,10 @@
               Buchungsobjekte &amp; Events je Mandant
             </v-card-title>
             <v-card-text>
-              <dashboard-chart :option="offerByTenantOption" height="300px" />
+              <dashboard-chart
+                :option="offerByTenantOption"
+                :height="chartHeight"
+              />
             </v-card-text>
           </v-card>
         </v-col>
@@ -330,10 +402,16 @@ export default {
     },
     selectedStatus: {
       type: Array,
-      default: null,
+      default: () => [],
     },
   },
   computed: {
+    isDesktop() {
+      return this.$vuetify.breakpoint.mdAndUp;
+    },
+    chartHeight() {
+      return this.$vuetify.breakpoint.smAndDown ? "240px" : "300px";
+    },
     payload() {
       return (this.dashboardData && this.dashboardData.data) || {};
     },
@@ -373,8 +451,6 @@ export default {
       }
       return [];
     },
-
-    //Labels
     tenantAndStatusLabel() {
       const values = [];
 
@@ -382,20 +458,18 @@ export default {
         values.push(this.tenantData.data.tenantName);
       }
 
-      if (this.selectedStatus.length > 0) {
-        const statusLabels = [];
-        this.selectedStatus.forEach((status) => {
-          let STATUS_LABELS = {
-            "status.payment_expected": " Zahlung erwartet",
-            "status.awaiting_approval": " Genehmigung ausstehend",
-            "status.approved": " Genehmigt",
-            "status.rejected": " Abgelehnt",
-            "status.cancelled": " Storniert",
-          };
-          const label = STATUS_LABELS[status] || status;
-          statusLabels.push(label);
-        });
-        values.push("Status:" + statusLabels);
+      if ((this.selectedStatus || []).length > 0) {
+        const STATUS_LABELS = {
+          "status.payment_expected": "Zahlung erwartet",
+          "status.awaiting_approval": "Genehmigung ausstehend",
+          "status.approved": "Genehmigt",
+          "status.rejected": "Abgelehnt",
+          "status.cancelled": "Storniert",
+        };
+        const statusLabels = this.selectedStatus.map(
+          (status) => STATUS_LABELS[status] || status
+        );
+        values.push(`Status: ${statusLabels.join(", ")}`);
       }
 
       return values.join(" · ");
@@ -403,8 +477,6 @@ export default {
     periodLabels() {
       return this.byPeriod?.map((entry) => this.formatPeriod(entry.period));
     },
-
-    //Revenue
     avgRevenuePerBooking() {
       const bookings = Number(this.totals.bookings || 0);
       const revenue = Number(this.totals.revenueEur || 0);
@@ -421,7 +493,6 @@ export default {
     hasAnyTenantEvents() {
       return this.byTenant.some((t) => Number(t.events || 0) > 0);
     },
-    //Bookables
     bookablesTableHeaders() {
       return [
         { text: "#", value: "rank", sortable: false, width: "56px" },
@@ -446,6 +517,19 @@ export default {
         (a, b) => Number(b.bookings || 0) - Number(a.bookings || 0)
       );
     },
+    paginatedBookables() {
+      const start = (this.bookablesTablePage - 1) * this.bookablesItemsPerPage;
+      return this.rankedBookables.slice(
+        start,
+        start + this.bookablesItemsPerPage
+      );
+    },
+    bookablesPageCount() {
+      return Math.max(
+        1,
+        Math.ceil(this.rankedBookables.length / this.bookablesItemsPerPage)
+      );
+    },
     showBookablesPagination() {
       return (
         this.rankedBookables.length >= this.bookablesItemsPerPage ||
@@ -456,8 +540,6 @@ export default {
       const first = this.rankedBookables[0];
       return first ? Number(first.bookings || 0) : 0;
     },
-
-    //Graph Options
     usersByTenantOption() {
       return {
         tooltip: {
@@ -496,7 +578,6 @@ export default {
           data: this.byTenant?.map((t) => t.tenantName),
           axisLabel: {
             interval: 0,
-            //rotate: 25,
             padding: 5,
             formatter: (value) =>
               String(value || "")
@@ -537,7 +618,6 @@ export default {
             name: "Buchungen",
             type: "line",
             showSymbol: false,
-            //symbolSize: 4, //kleinere Symbole
             smooth: true,
             data: this.byPeriod?.map((entry) => entry.bookings),
             itemStyle: { color: "#00897B" },
@@ -573,7 +653,6 @@ export default {
             name: "Umsatz",
             type: "line",
             showSymbol: false,
-            //symbolSize: 4, //kleinere Symbole
             smooth: true,
             data: this.byPeriod?.map((entry) => entry.revenueEur),
             itemStyle: { color: "#43a047" },
@@ -593,7 +672,16 @@ export default {
       const currentLimit = Number(this.tenantPayload.byBookableLimit || 0);
       this.$emit("more-bookables", currentLimit + 50);
     },
-    //Formating
+    bookableRank(index) {
+      return (
+        (this.bookablesTablePage - 1) * this.bookablesItemsPerPage + index + 1
+      );
+    },
+    bookableShare(item) {
+      return this.maxBookableBookings
+        ? (Number(item.bookings || 0) / this.maxBookableBookings) * 100
+        : 0;
+    },
     formatNumber(value) {
       return Number(value || 0).toLocaleString("de-DE");
     },
@@ -607,7 +695,9 @@ export default {
       if (!value) return "–";
       const weekMatch = String(value).match(/^(\d{4})-W(\d{2})$/);
       if (weekMatch) {
-        return `${weekMatch[1]}\n KW ${weekMatch[2]}`;
+        return this.$vuetify.breakpoint.smAndDown
+          ? `KW ${weekMatch[2]}`
+          : `${weekMatch[1]}\n KW ${weekMatch[2]}`;
       }
       return String(value);
     },
@@ -616,7 +706,10 @@ export default {
       return text.length > max ? `${text.slice(0, max)}…` : text;
     },
     getStatusCount(status) {
-      return this.tenantPayload.byStatus.find((t) => t.status === status).count;
+      const entry = (this.tenantPayload.byStatus || []).find(
+        (t) => t.status === status
+      );
+      return entry ? entry.count : 0;
     },
   },
 };
@@ -650,5 +743,32 @@ export default {
 .dashboard-bookables-table::v-deep td {
   padding-top: 4px !important;
   padding-bottom: 4px !important;
+}
+
+.bookable-mobile-title {
+  font-size: 0.95rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.bookables-mobile-footer {
+  gap: 12px;
+}
+
+.bookables-mobile-pagination {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 599px) {
+  .bookables-mobile-list {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .bookables-mobile-pagination::v-deep .v-pagination {
+    justify-content: center;
+  }
 }
 </style>
