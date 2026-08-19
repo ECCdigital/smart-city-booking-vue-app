@@ -28,6 +28,7 @@
       :tenant-id.sync="selectedTenantId"
       :only-bookables.sync="onlyBookables"
       :status.sync="selectedStatus"
+      @period-change="onPeriodChange"
       @tenant-change="loadDashboard"
       @only-bookables-change="loadDashboard"
       @status-change="loadDashboard"
@@ -64,6 +65,7 @@ export default {
     return {
       loading: false,
       selectedPeriod: "all", // '3' | '12' | 'all'
+      customPeriod: null,
       selectedTenantId: null, // aus $route.query.tenantId
       onlyBookables: null, // true | false | null
       selectedStatus: [], // e.g. ['status.payment_expected', 'status.awaiting_approval']
@@ -129,13 +131,21 @@ export default {
       this.bookableLimit = nextLimit;
       this.loadDashboard();
     },
-    async loadDashboard() {
+    onPeriodChange(period) {
+      this.customPeriod = period;
+      this.loadDashboard();
+    },
+    async loadDashboard(e) {
       if (this.selectedTenantId) {
         this.fetchDashboardDataByTenantId(this.selectedTenantId);
       }
       const filterParams = {
-        from: this.dateFrom,
-        to: this.dateTo,
+        from:
+          this.selectedPeriod === "custom"
+            ? this.customPeriod.from
+            : this.dateFrom,
+        to:
+          this.selectedPeriod === "custom" ? this.customPeriod.to : this.dateTo,
         status: this.selectedStatus.length ? this.selectedStatus : undefined,
         byBookableLimit: this.bookableLimit,
         isBookable: this.onlyBookables,
@@ -175,8 +185,8 @@ export default {
         this.loading = true;
 
         const filterParams = {
-          from: this.dateFrom,
-          to: this.dateTo,
+          from: this.customPeriod ? this.customPeriod.from : this.dateFrom,
+          to: this.customPeriod ? this.customPeriod.to : this.dateTo,
           status: this.selectedStatus.length ? this.selectedStatus : undefined,
           byBookableLimit: this.bookableLimit,
           isBookable: this.onlyBookables,
