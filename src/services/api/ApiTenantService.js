@@ -30,7 +30,6 @@ export default {
   },
   async getDashboardDataByTenant(tenantId, query = {}) {
     const _query = { granularity: "week", ...query };
-    console.log("query", _query);
     const response = await ApiClient.get(
       `api/v2/${tenantId}/dashboard/summary`,
       { params: _query }

@@ -103,23 +103,6 @@
             </v-col>
 
             <v-col cols="12" md="8" lg="9">
-              <!-- VERSION A
-          <v-card-text>
-            <dashboard-chart :option="bookablesRankingOption" height="420px" />
-            <div class="text-center mt-2">
-              <v-btn
-                v-if="hasMoreBookables"
-                text
-                small
-                color="primary"
-                @click="showMoreBookables"
-              >
-                Weitere {{ Math.min(15, remainingBookablesCount) }} anzeigen
-              </v-btn>
-            </div>
-          </v-card-text>
-          -->
-              <!-- VERSION B -->
               <v-card outlined>
                 <v-data-table
                   dense
@@ -128,7 +111,7 @@
                   :items-per-page="bookablesItemsPerPage"
                   :page.sync="bookablesTablePage"
                   :hide-default-footer="!showBookablesPagination"
-                  class="elevation-0"
+                  class="elevation-0 dashboard-bookables-table"
                 >
                   <template #item.rank="{ index }">
                     {{
@@ -164,62 +147,22 @@
                       rounded
                     />
                   </template>
+                  <template #footer.prepend>
+                    <div v-if="tenantPayload.byBookableHasMore" class="mr-4">
+                      <v-btn
+                        small
+                        outlined
+                        color="primary"
+                        @click="loadMoreBookables"
+                      >
+                        Weitere laden
+                      </v-btn>
+                    </div>
+                  </template>
+
                   <template #no-data>Keine Buchungsobjekte vorhanden.</template>
                 </v-data-table>
               </v-card>
-
-              <!-- VERSION C
-          <v-card outlined>
-            <v-card-title class="subtitle-1">Top Buchungsobjekte</v-card-title>
-            <v-list dense>
-              <v-list-item
-                v-for="(item, index) in visibleBookables"
-                :key="item.bookableId"
-              >
-                <v-list-item-avatar size="28" color="cyan darken-2">
-                  <span class="white--text caption">{{ index + 1 }}</span>
-                </v-list-item-avatar>
-                <v-list-item-content>
-                  <v-list-item-title>
-                    {{ truncateTitle(item.bookableTitle, 48) }}
-                  </v-list-item-title>
-                  <v-progress-linear
-                    class="mt-1"
-                    :value="
-                      maxBookableBookings
-                        ? (item.bookings / maxBookableBookings) * 100
-                        : 0
-                    "
-                    height="6"
-                    color="cyan darken-2"
-                    rounded
-                  />
-                </v-list-item-content>
-                <v-list-item-action>
-                  <div class="text-right">
-                    <div class="font-weight-medium">
-                      {{ formatNumber(item.bookings) }}
-                    </div>
-                    <div class="caption grey--text">
-                      {{ formatNumber(item.cancellations) }} Stornos
-                    </div>
-                  </div>
-                </v-list-item-action>
-              </v-list-item>
-            </v-list>
-            <div class="text-center pa-3">
-              <v-btn
-                v-if="hasMoreBookables"
-                text
-                small
-                color="primary"
-                @click="showMoreBookables"
-              >
-                Weitere {{ Math.min(15, remainingBookablesCount) }} anzeigen
-              </v-btn>
-            </div>
-          </v-card>
-          -->
             </v-col>
           </v-row>
         </section>
@@ -430,6 +373,7 @@ export default {
       }
       return [];
     },
+
     //Labels
     tenantAndStatusLabel() {
       const values = [];
@@ -498,21 +442,21 @@ export default {
       ];
     },
     rankedBookables() {
-      const temp = [...this.byBookable].sort(
+      return [...this.byBookable].sort(
         (a, b) => Number(b.bookings || 0) - Number(a.bookings || 0)
       );
-      return temp;
-    },
-    visibleBookables() {
-      return this.rankedBookables;
     },
     showBookablesPagination() {
-      return this.rankedBookables.length >= this.bookablesItemsPerPage;
+      return (
+        this.rankedBookables.length >= this.bookablesItemsPerPage ||
+        !!this.tenantPayload.byBookableHasMore
+      );
     },
     maxBookableBookings() {
       const first = this.rankedBookables[0];
       return first ? Number(first.bookings || 0) : 0;
     },
+
     //Graph Options
     usersByTenantOption() {
       return {
@@ -638,26 +582,6 @@ export default {
         ],
       };
     },
-    bookablesRankingOption() {
-      const items = [...this.visibleBookables].reverse();
-      return {
-        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-        grid: { left: 8, right: 24, top: 8, bottom: 8, containLabel: true },
-        xAxis: { type: "value", minInterval: 1 },
-        yAxis: {
-          type: "category",
-          data: items.map((item) => this.truncateTitle(item.bookableTitle)),
-        },
-        series: [
-          {
-            name: "Buchungen",
-            type: "bar",
-            data: items.map((item) => item.bookings),
-            itemStyle: { color: "#00838F" },
-          },
-        ],
-      };
-    },
   },
   watch: {
     rankedBookables() {
@@ -665,6 +589,10 @@ export default {
     },
   },
   methods: {
+    loadMoreBookables() {
+      const currentLimit = Number(this.tenantPayload.byBookableLimit || 0);
+      this.$emit("more-bookables", currentLimit + 50);
+    },
     //Formating
     formatNumber(value) {
       return Number(value || 0).toLocaleString("de-DE");
@@ -716,5 +644,11 @@ export default {
   align-items: baseline;
   gap: 12px;
   padding: 6px 0;
+}
+
+.dashboard-bookables-table::v-deep th,
+.dashboard-bookables-table::v-deep td {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
 }
 </style>

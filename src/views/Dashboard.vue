@@ -38,15 +38,8 @@
       :dashboard-data="dashboardData"
       :tenant-data="tenantData"
       :selected-status="selectedStatus"
+      @more-bookables="onMoreBookables"
     />
-
-    <!--
-    <pre class="light-green pa-1 text-caption">
-      {{ dashboardData }}
-    </pre>-->
-    <pre class="light-blue pa-1 text-caption">
-      {{ tenantData }}
-    </pre>
   </AdminLayout>
 </template>
 <script>
@@ -74,6 +67,7 @@ export default {
       selectedTenantId: null, // aus $route.query.tenantId
       onlyBookables: null, // true | false | null
       selectedStatus: [], // e.g. ['status.payment_expected', 'status.awaiting_approval']
+      bookableLimit: 100,
       dashboardData: null,
       tenantData: null,
     };
@@ -114,8 +108,6 @@ export default {
     tenantOptions() {
       return (this.dashboardData && this.dashboardData.data.byTenant) || [];
     },
-
-    //toDo
   },
   watch: {
     selectedTenantId(newTenantId) {
@@ -133,12 +125,19 @@ export default {
       select: "tenants/select",
       setTenants: "tenants/setTenants",
     }),
+    onMoreBookables(nextLimit) {
+      this.bookableLimit = nextLimit;
+      this.loadDashboard();
+    },
     async loadDashboard() {
+      if (this.selectedTenantId) {
+        this.fetchDashboardDataByTenantId(this.selectedTenantId);
+      }
       const filterParams = {
         from: this.dateFrom,
         to: this.dateTo,
         status: this.selectedStatus.length ? this.selectedStatus : undefined,
-        //bookableId: null,
+        byBookableLimit: this.bookableLimit,
         isBookable: this.onlyBookables,
       };
       this.dashboardData = await ApiTenantService.getDashboardData(
@@ -175,8 +174,17 @@ export default {
       try {
         this.loading = true;
 
+        const filterParams = {
+          from: this.dateFrom,
+          to: this.dateTo,
+          status: this.selectedStatus.length ? this.selectedStatus : undefined,
+          byBookableLimit: this.bookableLimit,
+          isBookable: this.onlyBookables,
+        };
+
         this.tenantData = await ApiTenantService.getDashboardDataByTenant(
-          tenantId
+          tenantId,
+          filterParams
         );
       } catch (error) {
         console.error(error);
