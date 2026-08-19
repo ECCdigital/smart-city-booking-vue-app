@@ -165,13 +165,38 @@
                       {{ formatNumber(item.cancellations) }}
                     </div>
                   </template>
+                  <template #header.share="{ header }">
+                    <v-tooltip bottom max-width="280">
+                      <template v-slot:activator="{ on, attrs }">
+                        <span
+                          v-bind="attrs"
+                          v-on="on"
+                          class="d-inline-flex align-center"
+                        >
+                          {{ header.text }}
+                          <v-icon x-small class="ml-1" color="grey"
+                            >mdi-information-outline</v-icon
+                          >
+                        </span>
+                      </template>
+                      <span>
+                        Balken relativ zum Buchungsobjekt mit den meisten
+                        Buchungen (100&nbsp;%).
+                      </span>
+                    </v-tooltip>
+                  </template>
                   <template #item.share="{ item }">
-                    <v-progress-linear
-                      :value="bookableShare(item)"
-                      height="8"
-                      color="cyan darken-2"
-                      rounded
-                    />
+                    <div class="d-flex align-center bookable-share-cell">
+                      <v-progress-linear
+                        :value="bookableShare(item)"
+                        height="8"
+                        color="cyan darken-2"
+                        rounded
+                      />
+                      <span class="caption grey--text bookable-share-pct">
+                        {{ formatSharePercent(item) }}
+                      </span>
+                    </div>
                   </template>
                   <template #footer.prepend>
                     <div
@@ -197,6 +222,7 @@
                         class="ml-2"
                         @click="loadMoreBookables"
                       >
+                        <v-icon left small>mdi-reload</v-icon>
                         Weitere laden
                       </v-btn>
                     </div>
@@ -279,6 +305,12 @@
                           {{ item.bookableTitle || "Ohne Titel" }}
                         </div>
 
+                        <div
+                          class="d-flex align-center justify-space-between caption grey--text mb-1"
+                        >
+                          <span>Relativ zum Top-Objekt</span>
+                          <span>{{ formatSharePercent(item) }}</span>
+                        </div>
                         <v-progress-linear
                           :value="bookableShare(item)"
                           height="8"
@@ -299,6 +331,8 @@
                         class="mb-2"
                         @click="loadMoreBookables"
                       >
+                        <v-icon left small>mdi-reload</v-icon>
+
                         Weitere laden
                       </v-btn>
 
@@ -744,7 +778,7 @@ export default {
           align: "end",
           sortable: true,
         },
-        { text: "Anteil", value: "share", sortable: false, width: "28%" },
+        { text: "Relativ zum Top", value: "share", sortable: false, width: "28%" },
       ];
     },
 
@@ -1366,6 +1400,10 @@ export default {
         : 0;
     },
 
+    formatSharePercent(item) {
+      return `${Math.round(this.bookableShare(item))}\u00a0%`;
+    },
+
     formatNumber(value) {
       return Number(value || 0).toLocaleString("de-DE");
     },
@@ -1461,6 +1499,16 @@ export default {
 .dashboard-bookables-table::v-deep td {
   padding-top: 4px !important;
   padding-bottom: 4px !important;
+}
+
+.bookable-share-cell {
+  gap: 8px;
+}
+
+.bookable-share-pct {
+  flex: 0 0 auto;
+  min-width: 2.75rem;
+  text-align: right;
 }
 
 /* Bookables mobile */
