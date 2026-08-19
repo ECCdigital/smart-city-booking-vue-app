@@ -53,23 +53,36 @@
             <v-card-title
               class="subtitle-1 d-flex align-center justify-space-between"
             >
-              <span>Buchungen im Zeitverlauf</span>
-              <v-btn
-                icon
-                small
-                @click="
-                  openChartDialog(
-                    'Buchungen im Zeitverlauf',
-                    bookingsOverTimeOption
-                  )
-                "
-                aria-label="Vollansicht"
-              >
-                <v-icon small>mdi-fullscreen</v-icon>
-              </v-btn>
+              <span class="chart-card-heading">Buchungen im Zeitverlauf</span>
+              <div class="chart-card-actions">
+                <chart-export-menu
+                  title="Buchungen im Zeitverlauf"
+                  @jpg="
+                    exportChartImage(
+                      'bookingsChart',
+                      'Buchungen im Zeitverlauf'
+                    )
+                  "
+                  @excel="exportBookingsOverTimeExcel"
+                />
+                <v-btn
+                  icon
+                  small
+                  @click="
+                    openChartDialog(
+                      'Buchungen im Zeitverlauf',
+                      bookingsOverTimeOption
+                    )
+                  "
+                  aria-label="Vollansicht"
+                >
+                  <v-icon small>mdi-fullscreen</v-icon>
+                </v-btn>
+              </div>
             </v-card-title>
             <v-card-text>
               <dashboard-chart
+                ref="bookingsChart"
                 :option="bookingsOverTimeOption"
                 :height="chartHeight"
               />
@@ -320,24 +333,34 @@
             <v-card-title
               class="subtitle-1 d-flex align-center justify-space-between"
             >
-              <span>Umsatz im Zeitverlauf</span>
-              <v-btn
-                icon
-                small
-                @click="
-                  openChartDialog(
-                    'Umsatz im Zeitverlauf',
-                    revenueOverTimeOption
-                  )
-                "
-                aria-label="Vollansicht"
-              >
-                <v-icon small>mdi-fullscreen</v-icon>
-              </v-btn>
+              <span class="chart-card-heading">Umsatz im Zeitverlauf</span>
+              <div class="chart-card-actions">
+                <chart-export-menu
+                  title="Umsatz im Zeitverlauf"
+                  @jpg="
+                    exportChartImage('revenueChart', 'Umsatz im Zeitverlauf')
+                  "
+                  @excel="exportRevenueOverTimeExcel"
+                />
+                <v-btn
+                  icon
+                  small
+                  @click="
+                    openChartDialog(
+                      'Umsatz im Zeitverlauf',
+                      revenueOverTimeOption
+                    )
+                  "
+                  aria-label="Vollansicht"
+                >
+                  <v-icon small>mdi-fullscreen</v-icon>
+                </v-btn>
+              </div>
             </v-card-title>
 
             <v-card-text>
               <dashboard-chart
+                ref="revenueChart"
                 :option="revenueOverTimeOption"
                 :height="chartHeight"
               />
@@ -348,13 +371,14 @@
     </section>
 
     <!-- Angebote -->
-    <section v-if="!hasTenantPayload" class="mb-8">
+    <section class="mb-8">
       <div
         class="d-flex flex-column flex-sm-row align-sm-center justify-space-between mb-3"
       >
         <h2 class="text-h6 mb-2 mb-sm-0">
           <v-icon left color="primary">mdi-office-building</v-icon>
           Angebote
+          <span v-if="hasTenantPayload"> für alle Mandanten</span>
         </h2>
         <v-btn
           small
@@ -402,28 +426,39 @@
           </v-card>
         </v-col>
 
+        <!-- user per tenant -->
         <v-col cols="12" sm="7" md="4">
           <v-card outlined class="fill-height">
             <v-card-title
               class="subtitle-1 d-flex align-center justify-space-between"
             >
-              <span>Anteil der Benutzer:innen</span>
-              <v-btn
-                icon
-                small
-                @click="
-                  openChartDialog(
-                    'Anteil der Benutzer:innen',
-                    usersByTenantOption
-                  )
-                "
-                aria-label="Vollansicht"
-              >
-                <v-icon small>mdi-fullscreen</v-icon>
-              </v-btn>
+              <span class="chart-card-heading">Anteil der Benutzer:innen</span>
+              <div class="chart-card-actions">
+                <chart-export-menu
+                  title="Anteil der Benutzer:innen"
+                  @jpg="
+                    exportChartImage('usersChart', 'Anteil der Benutzerinnen')
+                  "
+                  @excel="exportUsersByTenantExcel"
+                />
+                <v-btn
+                  icon
+                  small
+                  @click="
+                    openChartDialog(
+                      'Anteil der Benutzer:innen',
+                      usersByTenantOption
+                    )
+                  "
+                  aria-label="Vollansicht"
+                >
+                  <v-icon small>mdi-fullscreen</v-icon>
+                </v-btn>
+              </div>
             </v-card-title>
             <v-card-text>
               <dashboard-chart
+                ref="usersChart"
                 :option="usersByTenantOption"
                 :height="chartHeight"
               />
@@ -431,29 +466,45 @@
           </v-card>
         </v-col>
 
+        <!-- Bookables and events per tenant -->
         <v-col cols="12" md="5">
           <v-card outlined class="fill-height chart-card">
             <v-card-title
               class="subtitle-1 d-flex align-center justify-space-between"
             >
-              <span>Buchungsobjekte &amp; Events je Mandant</span>
-              <v-btn
-                icon
-                small
-                @click="
-                  openChartDialog(
-                    'Buchungsobjekte & Events je Mandant',
-                    offerByTenantOption
-                  )
-                "
-                aria-label="Vollansicht"
+              <span class="chart-card-heading"
+                >Buchungsobjekte &amp; Events je Mandant</span
               >
-                <v-icon small>mdi-fullscreen</v-icon>
-              </v-btn>
+              <div class="chart-card-actions">
+                <chart-export-menu
+                  title="Buchungsobjekte und Events je Mandant"
+                  @jpg="
+                    exportChartImage(
+                      'offerChart',
+                      'Buchungsobjekte und Events je Mandant'
+                    )
+                  "
+                  @excel="exportOfferByTenantExcel"
+                />
+                <v-btn
+                  icon
+                  small
+                  @click="
+                    openChartDialog(
+                      'Buchungsobjekte & Events je Mandant',
+                      offerByTenantOption
+                    )
+                  "
+                  aria-label="Vollansicht"
+                >
+                  <v-icon small>mdi-fullscreen</v-icon>
+                </v-btn>
+              </div>
             </v-card-title>
             <v-card-text class="chart-card-text">
               <div class="chart-hscroll">
                 <dashboard-chart
+                  ref="offerChart"
                   :option="offerByTenantOption"
                   :height="chartHeight"
                   :min-width="offerChartMinWidth"
@@ -485,22 +536,6 @@
         </v-card-title>
 
         <v-card-text class="chart-dialog-body">
-          <div class="chart-dialog-actions">
-            <v-btn
-              small
-              color="primary"
-              outlined
-              @click="exportDialogChartImage"
-            >
-              <v-icon left small>mdi-download</v-icon>
-              Bild (PNG)
-            </v-btn>
-            <v-btn small outlined @click="exportDialogChartData">
-              <v-icon left small>mdi-file-download</v-icon>
-              Datenbasis (JSON)
-            </v-btn>
-          </div>
-
           <div ref="dialogChartEl" class="dialog-chart-el" />
         </v-card-text>
       </v-card>
@@ -510,11 +545,14 @@
 
 <script>
 import DashboardChart from "@/components/dashboard/DashboardChart.vue";
+import ChartExportMenu from "@/components/dashboard/ChartExportMenu.vue";
 import * as echarts from "echarts";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 
 export default {
   name: "DashboardDataCombo",
-  components: { DashboardChart },
+  components: { DashboardChart, ChartExportMenu },
 
   data() {
     return {
@@ -572,7 +610,7 @@ export default {
 
     // Horizontaler Scroll nur bei Buchungsobjekten je Mandant
     offerChartMinWidth() {
-      return this.chartScrollMinWidth((this.byTenant || []).length, 80);
+      return this.chartScrollMinWidth((this.byTenant || []).length, 60);
     },
 
     payload() {
@@ -720,6 +758,50 @@ export default {
         Number(x.bookings || 0)
       );
       return bookings.length ? Math.max(...bookings) : 0;
+    },
+
+    usersByTenantExportOption() {
+      const tenants = this.byTenant || [];
+      return {
+        animation: false,
+        legend: {
+          type: "plain",
+          orient: "vertical",
+          right: 16,
+          top: "middle",
+          itemGap: 8,
+          itemWidth: 14,
+          itemHeight: 10,
+          textStyle: {
+            fontSize: 12,
+          },
+        },
+        series: [
+          {
+            type: "pie",
+            radius: ["38%", "62%"],
+            center: ["36%", "50%"],
+            avoidLabelOverlap: true,
+            label: {
+              show: true,
+              formatter: "{b}",
+              fontSize: 11,
+            },
+            labelLine: {
+              show: true,
+              length: 12,
+              length2: 10,
+            },
+            labelLayout: {
+              hideOverlap: false,
+            },
+            data: tenants.map((t) => ({
+              name: t.tenantName,
+              value: t.users,
+            })),
+          },
+        ],
+      };
     },
 
     usersByTenantOption() {
@@ -1050,56 +1132,179 @@ export default {
       this.dialogChartInstance = null;
     },
 
-    exportDialogChartImage() {
-      if (!this.dialogChartInstance) return;
+    exportChartImage(refName, title) {
+      if (refName === "usersChart") {
+        this.exportUsersByTenantImage(title);
+        return;
+      }
 
-      const title = this.chartDialog.title || "chart";
-      const fileName = title.replace(/[^\w\d-_]+/g, "_").slice(0, 80);
+      const chart = this.$refs[refName];
+      if (!chart || typeof chart.getDataURL !== "function") return;
 
-      // PNG export
-      const dataUrl = this.dialogChartInstance.getDataURL({
-        type: "png",
+      const dataUrl = chart.getDataURL({ type: "jpeg" });
+      if (!dataUrl) return;
+
+      this.downloadDataUrl(dataUrl, `${this.chartFileName(title)}.jpg`);
+    },
+
+    exportUsersByTenantImage(title) {
+      const tenants = this.byTenant || [];
+      const longestName = tenants.reduce(
+        (max, tenant) => Math.max(max, String(tenant.tenantName || "").length),
+        8
+      );
+      const width = Math.min(1400, 720 + Math.max(180, longestName * 8 + 48));
+      const height = Math.max(520, 80 + tenants.length * 22);
+
+      const el = document.createElement("div");
+      el.style.width = `${width}px`;
+      el.style.height = `${height}px`;
+      el.style.position = "fixed";
+      el.style.left = "-9999px";
+      el.style.top = "0";
+      document.body.appendChild(el);
+
+      const chart = echarts.init(el, null, {
+        renderer: "canvas",
+        width,
+        height,
+      });
+      chart.setOption(this.usersByTenantExportOption, { notMerge: true });
+
+      const dataUrl = chart.getDataURL({
+        type: "jpeg",
         pixelRatio: 2,
         backgroundColor: "#ffffff",
       });
 
+      chart.dispose();
+      document.body.removeChild(el);
+
+      if (!dataUrl) return;
+      this.downloadDataUrl(dataUrl, `${this.chartFileName(title)}.jpg`);
+    },
+
+    downloadDataUrl(dataUrl, fileName) {
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = `${fileName}.png`;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     },
 
-    exportDialogChartData() {
-      const title = this.chartDialog.title || "chart";
-      const option = this.chartDialog.option || {};
-
-      const payload = {
-        title,
-        // nur die Daten extrahieren (damit kein JSON an Functions scheitert)
-        xAxis: option.xAxis?.data || null,
-        series: (option.series || []).map((s) => ({
-          name: s.name || null,
-          type: s.type || null,
-          data: s.data || null,
-        })),
-      };
-
-      const fileName = title.replace(/[^\w\d-_]+/g, "_").slice(0, 80);
-      const blob = new Blob([JSON.stringify(payload, null, 2)], {
-        type: "application/json;charset=utf-8",
+    async exportBookingsOverTimeExcel() {
+      const rows = (this.byPeriod || []).map((entry) => {
+        const bookings = Number(entry.bookings || 0);
+        const cancellations = Number(entry.cancellations || 0);
+        return {
+          period: this.formatPeriodExcel(entry.period),
+          bookings,
+          cancellations,
+          cancellationRate: bookings ? cancellations / bookings : 0,
+        };
       });
-      const url = URL.createObjectURL(blob);
 
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${fileName}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await this.downloadExcel({
+        title: "Buchungen im Zeitverlauf",
+        sheetName: "Buchungen",
+        columns: [
+          { header: "Zeitraum", key: "period", width: 18 },
+          { header: "Buchungen", key: "bookings", width: 14 },
+          { header: "Stornierungen", key: "cancellations", width: 16 },
+          { header: "Stornoquote", key: "cancellationRate", width: 14 },
+        ],
+        rows,
+        columnFormats: { cancellationRate: "0.0%" },
+      });
+    },
 
-      URL.revokeObjectURL(url);
+    async exportRevenueOverTimeExcel() {
+      const rows = (this.byPeriod || []).map((entry) => ({
+        period: this.formatPeriodExcel(entry.period),
+        revenueEur: Number(entry.revenueEur || 0),
+      }));
+
+      await this.downloadExcel({
+        title: "Umsatz im Zeitverlauf",
+        sheetName: "Umsatz",
+        columns: [
+          { header: "Zeitraum", key: "period", width: 18 },
+          { header: "Umsatz", key: "revenueEur", width: 18 },
+        ],
+        rows,
+        columnFormats: { revenueEur: "#,##0.00 €" },
+      });
+    },
+
+    async exportUsersByTenantExcel() {
+      const rows = (this.byTenant || []).map((tenant) => ({
+        tenantName: tenant.tenantName || "–",
+        users: Number(tenant.users || 0),
+      }));
+
+      await this.downloadExcel({
+        title: "Anteil der Benutzerinnen",
+        sheetName: "Benutzerinnen",
+        columns: [
+          { header: "Mandant", key: "tenantName", width: 36 },
+          { header: "Benutzer:innen", key: "users", width: 18 },
+        ],
+        rows,
+      });
+    },
+
+    async exportOfferByTenantExcel() {
+      const rows = (this.byTenant || []).map((tenant) => ({
+        tenantName: tenant.tenantName || "–",
+        bookables: Number(tenant.bookables ?? tenant.bookableObjects ?? 0),
+        events: Number(tenant.events ?? tenant.activeEvents ?? 0),
+      }));
+
+      await this.downloadExcel({
+        title: "Buchungsobjekte und Events je Mandant",
+        sheetName: "Angebote",
+        columns: [
+          { header: "Mandant", key: "tenantName", width: 36 },
+          { header: "Buchungsobjekte", key: "bookables", width: 18 },
+          { header: "Events", key: "events", width: 14 },
+        ],
+        rows,
+      });
+    },
+
+    async downloadExcel({ title, sheetName, columns, rows, columnFormats }) {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet(sheetName.slice(0, 31));
+
+      worksheet.columns = columns;
+      worksheet.getRow(1).font = { bold: true };
+
+      Object.entries(columnFormats || {}).forEach(([key, numFmt]) => {
+        const column = worksheet.getColumn(key);
+        if (column) column.numFmt = numFmt;
+      });
+
+      rows.forEach((row) => worksheet.addRow(row));
+
+      if (columns.length) {
+        worksheet.autoFilter = {
+          from: { row: 1, column: 1 },
+          to: { row: 1, column: columns.length },
+        };
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      saveAs(
+        new Blob([buffer], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        `${this.chartFileName(title)}.xlsx`
+      );
+    },
+
+    chartFileName(title) {
+      return (title || "chart").replace(/[^\w\d-_]+/g, "_").slice(0, 80);
     },
 
     loadMoreBookables() {
@@ -1141,6 +1346,13 @@ export default {
       return String(value);
     },
 
+    formatPeriodExcel(value) {
+      if (!value) return "–";
+      const weekMatch = String(value).match(/^(\d{4})-W(\d{2})$/);
+      if (weekMatch) return `${weekMatch[1]} KW ${weekMatch[2]}`;
+      return String(value);
+    },
+
     truncateTitle(title, max = 42) {
       const text = title || "Ohne Titel";
       return text.length > max ? `${text.slice(0, max)}…` : text;
@@ -1165,6 +1377,17 @@ export default {
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
+}
+
+.chart-card-heading {
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.chart-card-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 .theme-card {
@@ -1281,14 +1504,6 @@ export default {
   flex-direction: column;
   overflow: hidden;
   padding-bottom: 16px !important;
-}
-
-.chart-dialog-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  flex: 0 0 auto;
-  margin-bottom: 12px;
 }
 
 .dialog-chart-el {

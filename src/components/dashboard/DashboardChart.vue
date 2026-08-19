@@ -73,6 +73,15 @@ export default {
         this.chart.resize();
       }
     },
+    getDataURL(options = {}) {
+      if (!this.chart) return null;
+      return this.chart.getDataURL({
+        type: "jpeg",
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        ...options,
+      });
+    },
   },
 };
 </script>
