@@ -778,7 +778,12 @@ export default {
           align: "end",
           sortable: true,
         },
-        { text: "Relativ zum Top", value: "share", sortable: false, width: "28%" },
+        {
+          text: "Relativ zum Top",
+          value: "share",
+          sortable: false,
+          width: "28%",
+        },
       ];
     },
 
@@ -1054,8 +1059,6 @@ export default {
 
     openChartDialog(title, option) {
       this.chartDialog.title = title;
-      // option contains functions (valueFormatter/formatter). ECharts accepts them.
-      // For export-data we will extract only the series/data.
       this.chartDialog.option = option;
       this.chartDialog.open = true;
     },
