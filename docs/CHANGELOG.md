@@ -7,6 +7,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Added
+
+- Custom field dialog: "In Buchungs-E-Mails anzeigen" switch for checkout fields (`usageOptions.showInMail`) — value shows up in the booking-details block of all booking mails; reset when the field leaves the checkout context
+
 ### Fixed
 
 - BFF mode: Keycloak SSO login no longer fails with a gateway error — nginx proxy buffers raised so the callback's token cookies fit (`upstream sent too big header` → 502 on `/api/auth/sso/callback`)
