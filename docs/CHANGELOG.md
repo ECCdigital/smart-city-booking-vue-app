@@ -7,6 +7,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Added
+
+- Tenant access apps: Salto KS IQ activation checklist for remote-open — progress header, IQs sorted by required action, guided modal wizard for the first activation (app-ban acknowledgement, PIN mail, one-time PIN capture), inline PIN entry for pending activations, discard with confirmation — requires the matching backend wizard endpoints
+
 ### Changed
 
 - Tenant access apps: Salto KS picks an environment (`Accept (Sandbox)` / `Production`) instead of a free-text API base URL; the connection test sends `environment` and shows the server's own error (e.g. `invalid_client`) — requires the matching backend

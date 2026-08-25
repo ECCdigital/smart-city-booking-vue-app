@@ -28,4 +28,29 @@ export default {
       }
     );
   },
+  // Salto KS IQ activation wizard - provider-specific by nature (backend spec
+  // docs/specs/salto-ks-remote-open.md §3), hence no provider parameter.
+  getSaltoIqs(tenantID) {
+    const t = tenantID || store.getters["tenants/currentTenantId"];
+    return ApiClient.get(`/api/${t}/access-apps/salto-ks/iqs`);
+  },
+  startSaltoIqActivation(tenantID, iqId) {
+    const t = tenantID || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `/api/${t}/access-apps/salto-ks/iqs/${iqId}/activation/start`
+    );
+  },
+  completeSaltoIqActivation(tenantID, iqId, pin) {
+    const t = tenantID || store.getters["tenants/currentTenantId"];
+    return ApiClient.post(
+      `/api/${t}/access-apps/salto-ks/iqs/${iqId}/activation/complete`,
+      { pin }
+    );
+  },
+  discardSaltoIqActivation(tenantID, iqId) {
+    const t = tenantID || store.getters["tenants/currentTenantId"];
+    return ApiClient.delete(
+      `/api/${t}/access-apps/salto-ks/iqs/${iqId}/activation`
+    );
+  },
 };

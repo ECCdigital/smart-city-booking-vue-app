@@ -2,6 +2,7 @@
 import BaseSection from "@/components/commons/BaseSection.vue";
 import AppPanel from "@/components/AppPanel.vue";
 import AccessAuditExport from "@/components/Tenant/Edit/AccessAuditExport.vue";
+import SaltoIqActivationSection from "@/components/Tenant/Edit/SaltoIqActivation/SaltoIqActivationSection.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import ToastService from "@/services/ToastService";
@@ -9,7 +10,12 @@ import { mapActions } from "vuex";
 
 export default {
   name: "TenantEditAccess",
-  components: { AppPanel, BaseSection, AccessAuditExport },
+  components: {
+    AppPanel,
+    BaseSection,
+    AccessAuditExport,
+    SaltoIqActivationSection,
+  },
   props: {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
@@ -783,6 +789,12 @@ export default {
                 </v-alert>
               </v-col>
             </v-row>
+
+            <!-- IQ activation for remote-open -->
+            <SaltoIqActivationSection
+              v-if="localApps['salto-ks'].active"
+              :tenant-id="tenant.id"
+            />
           </AppPanel>
 
           <div v-if="allowAuditExport" class="mt-8">
