@@ -814,8 +814,31 @@
       "tickets": "Tickets",
       "bookings": "Buchungen",
       "coupons": "Rabatte",
+      "media": "Mediathek",
       "none": "-",
       "all": "Alle"
+    }
+  },
+  "media": {
+    "updateSuccess": {
+      "title": "Medium aktualisiert",
+      "message": "Die Metadaten wurden gespeichert."
+    },
+    "updateError": {
+      "title": "Speichern fehlgeschlagen",
+      "message": "Die Metadaten konnten nicht gespeichert werden."
+    },
+    "deleteSuccess": {
+      "title": "Medium gelöscht",
+      "message": "Das Medium wurde endgültig gelöscht."
+    },
+    "deleteError": {
+      "title": "Löschen fehlgeschlagen",
+      "message": "Das Medium konnte nicht gelöscht werden."
+    },
+    "copySuccess": {
+      "title": "URL kopiert",
+      "message": "Die Medien-URL wurde in die Zwischenablage kopiert."
     }
   },
   "receipt": {

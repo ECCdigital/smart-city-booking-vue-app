@@ -4,8 +4,24 @@ const RolePermission = Object.freeze({
   MANAGE_TENANTS: "manageTenants",
   MANAGE_ROLES: "manageRoles",
   MANAGE_BOOKINGS: "manageBookings",
+  MANAGE_MEDIA: "manageMedia",
   FREE_BOOKINGS: "freeBookings",
 });
+
+// The admin interfaces a role can grant access to, as shown in the role
+// editor. The backend keeps the matching enum in its role schema.
+const adminInterfaceOptions = [
+  { name: "Rollen", value: "roles" },
+  { name: "Benutzer", value: "users" },
+  { name: "Buchungen", value: "bookings" },
+  { name: "Rabatte", value: "coupons" },
+  { name: "Veranstaltungsräume", value: "locations" },
+  { name: "Räume", value: "rooms" },
+  { name: "Geräte & Weiteres", value: "resources" },
+  { name: "Tickets", value: "tickets" },
+  { name: "Veranstaltungen", value: "events" },
+  { name: "Mediathek", value: "media" },
+];
 
 class Role {
   constructor(
@@ -18,7 +34,8 @@ class Role {
     manageBookings,
     manageRoles,
     manageCoupons,
-    freeBookings
+    freeBookings,
+    manageMedia
   ) {
     this.id = id;
     this.name = name;
@@ -77,8 +94,17 @@ class Role {
       deleteOwn: false,
       deleteAny: false,
     };
+    this.manageMedia = manageMedia || {
+      create: false,
+      readAny: false,
+      readOwn: false,
+      updateAny: false,
+      updateOwn: false,
+      deleteOwn: false,
+      deleteAny: false,
+    };
     this.freeBookings = freeBookings || false;
   }
 }
 
-export { Role, RolePermission };
+export { Role, RolePermission, adminInterfaceOptions };
