@@ -820,6 +820,10 @@
     }
   },
   "media": {
+    "loadError": {
+      "title": "Mediathek nicht erreichbar",
+      "message": "Die Medienliste konnte nicht geladen werden."
+    },
     "updateSuccess": {
       "title": "Medium aktualisiert",
       "message": "Die Metadaten wurden gespeichert."

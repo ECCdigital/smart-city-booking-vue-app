@@ -71,7 +71,7 @@
           <strong>Dateien hierher ziehen</strong> oder klicken — landen direkt
           in der Mediathek<br />
           <span class="text--secondary" style="font-size: 12px">
-            JPEG, PNG, WebP, GIF, SVG bis 15 MB · PDF bis 50 MB
+            {{ allowedTypesLabel }} bis 15 MB · PDF bis 50 MB
           </span>
         </div>
         <v-select
@@ -208,8 +208,10 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import ApiMediaService, { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
+import FormatService from "@/services/FormatService";
+import ToastService from "@/services/ToastService";
 import MediaPermissionService from "@/services/permissions/MediaPermissionService";
 import MediaDetailPanel from "@/components/Media/MediaDetailPanel.vue";
 import MediaImage from "@/components/Media/MediaImage.vue";
@@ -258,6 +260,7 @@ export default {
       uploadQueue: [],
       uploading: false,
       dragOver: false,
+      fetchRequestId: 0,
     };
   },
   computed: {
@@ -269,10 +272,12 @@ export default {
       return Math.ceil(this.total / PAGE_SIZE) || 1;
     },
     allowCreate() {
-      if (this.scope === MEDIA_SCOPE.INSTANCE) {
-        return MediaPermissionService.isInstanceOwner();
-      }
-      return MediaPermissionService.allowCreate();
+      return MediaPermissionService.allowCreate(this.scope);
+    },
+    // ICO is in the global allowlist of the backend (favicons), so both
+    // scopes advertise it.
+    allowedTypesLabel() {
+      return "JPEG, PNG, WebP, GIF, SVG, ICO";
     },
   },
   watch: {
@@ -300,20 +305,12 @@ export default {
     clearTimeout(this.searchDebounce);
   },
   methods: {
+    ...mapActions({ addToast: "toasts/add" }),
     formatBytes(bytes) {
-      if (!bytes && bytes !== 0) return "—";
-      if (bytes >= 1024 * 1024) {
-        return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
-      }
-      return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+      return FormatService.bytes(bytes);
     },
     formatDate(value) {
-      if (!value) return "—";
-      return new Date(value).toLocaleDateString("de-DE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
+      return value ? FormatService.date(value, "medium") : "—";
     },
     resetAndFetch() {
       this.items = [];
@@ -339,6 +336,9 @@ export default {
       this.fetchMedia();
     },
     async fetchMedia() {
+      // Rapid filter changes race their responses; only the latest one may
+      // land in the list.
+      const requestId = ++this.fetchRequestId;
       this.loading = true;
       try {
         const response = await ApiMediaService.getMediaList(this.scope, {
@@ -349,6 +349,9 @@ export default {
           q: this.filters.q || undefined,
           visibility: this.filters.visibility || undefined,
         });
+        if (requestId !== this.fetchRequestId) {
+          return;
+        }
         this.items = response.data.items;
         this.total = response.data.total;
         this.collectTags(this.items);
@@ -357,8 +360,13 @@ export default {
         }
       } catch (error) {
         console.error(error);
+        if (requestId === this.fetchRequestId) {
+          this.addToast(ToastService.createToast("media.loadError", "error"));
+        }
       } finally {
-        this.loading = false;
+        if (requestId === this.fetchRequestId) {
+          this.loading = false;
+        }
       }
     },
     collectTags(items) {
@@ -443,7 +451,7 @@ export default {
           return `Datei ist zu groß${limit} — Upload abgelehnt.`;
         }
         case "unsupported_file_type":
-          return "Dateityp wird nicht unterstützt — erlaubt sind JPEG, PNG, WebP, GIF, SVG und PDF.";
+          return `Dateityp wird nicht unterstützt — erlaubt sind ${this.allowedTypesLabel} und PDF.`;
         case "invalid_image":
           return "Die Bilddatei ist ungültig oder beschädigt.";
         case "empty_file":

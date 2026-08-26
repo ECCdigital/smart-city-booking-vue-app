@@ -133,6 +133,12 @@
           <v-progress-circular indeterminate size="16" width="2" class="mr-2" />
           Verwendung wird geprüft …
         </div>
+        <div v-else-if="usageError" class="error--text d-flex align-center">
+          <v-icon color="error" small class="mr-2"
+            >mdi-alert-circle-outline</v-icon
+          >
+          Verwendung konnte nicht geladen werden.
+        </div>
         <div
           v-else-if="usage.length === 0"
           class="success--text d-flex align-center"
@@ -251,6 +257,7 @@ import ApiMediaService, { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import MediaPermissionService from "@/services/permissions/MediaPermissionService";
 import MediaImage from "@/components/Media/MediaImage.vue";
+import FormatService from "@/services/FormatService";
 import ToastService from "@/services/ToastService";
 import { getApiHttpBaseUrl } from "@/services/auth/authMode";
 
@@ -289,6 +296,7 @@ export default {
       ],
       usage: [],
       usageLoading: false,
+      usageError: false,
       saving: false,
       deleting: false,
       confirmDialog: false,
@@ -301,16 +309,10 @@ export default {
       return this.media.title || this.media.originalFileName;
     },
     allowUpdate() {
-      if (this.scope === MEDIA_SCOPE.INSTANCE) {
-        return MediaPermissionService.isInstanceOwner();
-      }
-      return MediaPermissionService.allowUpdate(this.media);
+      return MediaPermissionService.allowUpdate(this.media, this.scope);
     },
     allowDelete() {
-      if (this.scope === MEDIA_SCOPE.INSTANCE) {
-        return MediaPermissionService.isInstanceOwner();
-      }
-      return MediaPermissionService.allowDelete(this.media);
+      return MediaPermissionService.allowDelete(this.media, this.scope);
     },
     isDirty() {
       return (
@@ -341,19 +343,10 @@ export default {
       };
     },
     formatBytes(bytes) {
-      if (!bytes && bytes !== 0) return "—";
-      if (bytes >= 1024 * 1024) {
-        return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
-      }
-      return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+      return FormatService.bytes(bytes);
     },
     formatDate(value) {
-      if (!value) return "—";
-      return new Date(value).toLocaleDateString("de-DE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
+      return value ? FormatService.date(value, "medium") : "—";
     },
     usageIcon(type) {
       return USAGE_PRESENTATION[type]?.icon || "mdi-link-variant";
@@ -363,6 +356,7 @@ export default {
     },
     async fetchUsage() {
       this.usageLoading = true;
+      this.usageError = false;
       this.usage = [];
       const mediaId = this.media.id;
       try {
@@ -376,6 +370,9 @@ export default {
         this.usage = await this.resolveUsageRoutes(response.data);
       } catch (error) {
         console.error(error);
+        if (this.media.id === mediaId) {
+          this.usageError = true;
+        }
       } finally {
         if (this.media.id === mediaId) {
           this.usageLoading = false;
