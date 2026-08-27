@@ -17,6 +17,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 - Tenant access apps: Salto KS credentials and the IQ activation wizard are behind a "coming soon" state — visible and greyed out for everyone, instance owners included; stored configuration is untouched and still travels through a save
 - Access point dialog: the PIN-at-the-lock modes (`PIN-Code`, `PIN-Code & App`) are behind a "coming soon" state and cannot be picked; a new access point starts on `Öffnen per App`. Access points already stored on a PIN mode keep it
 
+### Removed
+
+- Tenant access apps: webhook configuration is gone — Nuki's callback-URL/notification-ID form with its register/unregister buttons, and the Salto KS webhook registration status. The method is not supported (the Salto Connect API has no webhooks at all)
+
 ### Fixed
 
 - Tenant owners can edit their tenant and its access providers again — the permission check asked for a `manageTenants` dimension the API never sends, which left the tenant and access pages to instance owners only

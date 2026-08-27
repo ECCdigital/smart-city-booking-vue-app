@@ -1018,17 +1018,10 @@
       "permissionAction": "Geräte bedienen (smartlock.action) – Türen öffnen und schließen",
       "permissionsFullTitle": "Zusätzlich für die volle Funktionalität",
       "permissionAuth": "Berechtigungen verwalten (smartlock.auth) – zeitlich begrenzte Keypad-PIN-Codes (erfordert ein gepairtes Keypad)",
-      "permissionLog": "Aktivitätsprotokolle anzeigen / Benachrichtigungen (smartlock.log) – Webhooks für Tür-Events",
+      "permissionLog": "Aktivitätsprotokolle anzeigen / Benachrichtigungen (smartlock.log) – Tür-Events",
       "permissionsNote": "Den umfassenden Scope „Geräte verwalten“ (smartlock) bewusst NICHT vergeben (Least Privilege). Das Backend liest Geräte nur, legt sie aber nicht an und ändert keine Gerätekonfiguration.",
       "testConnection": "Verbindung testen",
       "connectionSuccess": "Verbindung erfolgreich!",
-      "webhookTitle": "Webhook (optional)",
-      "webhookInfo": "Damit Tür-Events (geöffnet/geschlossen) im UI ankommen, kann ein Webhook bei Nuki registriert werden.",
-      "callbackUrl": "Callback-URL",
-      "notificationId": "Notification-ID",
-      "notificationIdHint": "Wird zum Deregistrieren benötigt.",
-      "registerWebhook": "Webhook registrieren",
-      "unregisterWebhook": "Webhook deregistrieren",
       "salto": {
         "providerTitle": "Salto KS – Cloud-Schließanlage",
         "providerDescription": "Mit Salto KS verwalten Sie Türen cloudbasiert. Buchende erhalten während ihres Buchungszeitraums automatisch eine zeitlich begrenzte Zutrittsberechtigung und einen PIN-Code.",
@@ -1052,10 +1045,6 @@
         "environmentHint": "Accept ist die Salto-Testumgebung (Sandbox), Production die echte Anlage. Connect API und Identity-Server ergeben sich daraus – Zugangsdaten gelten nur in ihrer Umgebung.",
         "environmentAccept": "Accept (Sandbox)",
         "environmentProduction": "Production",
-        "webhookInfo": "Der Webhook für Tür-Events wird beim Speichern automatisch bei Salto KS registriert, sobald die App aktiv ist.",
-        "webhookRegistered": "Webhook aktiv – registriert am",
-        "webhookError": "Webhook-Registrierung fehlgeschlagen:",
-        "webhookPending": "Webhook noch nicht registriert. Speichern Sie den Mandanten mit aktiver Salto-KS-App, um die Registrierung auszulösen.",
         "iq": {
           "title": "IQ-Aktivierung für Remote-Open",
           "refresh": "IQ-Liste aktualisieren",
@@ -1269,28 +1258,6 @@
       "error": {
         "title": "Türen konnten nicht geladen werden",
         "message": "Die Türliste konnte nicht vom Nuki-System abgerufen werden."
-      }
-    },
-    "webhook": {
-      "register": {
-        "success": {
-          "title": "Webhook registriert",
-          "message": "Der Webhook wurde erfolgreich bei Nuki registriert."
-        },
-        "error": {
-          "title": "Registrierung fehlgeschlagen",
-          "message": "Der Webhook konnte nicht registriert werden."
-        }
-      },
-      "unregister": {
-        "success": {
-          "title": "Webhook deregistriert",
-          "message": "Der Webhook wurde erfolgreich deregistriert."
-        },
-        "error": {
-          "title": "Deregistrierung fehlgeschlagen",
-          "message": "Der Webhook konnte nicht deregistriert werden."
-        }
       }
     },
     "blockingReasons": {
