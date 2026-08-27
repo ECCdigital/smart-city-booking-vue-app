@@ -215,6 +215,10 @@ import ToastService from "@/services/ToastService";
 import MediaPermissionService from "@/services/permissions/MediaPermissionService";
 import MediaDetailPanel from "@/components/Media/MediaDetailPanel.vue";
 import MediaImage from "@/components/Media/MediaImage.vue";
+import {
+  MEDIA_ALLOWED_TYPES_LABEL,
+  mediaUploadErrorMessage,
+} from "@/utils/mediaUploadError";
 
 const PAGE_SIZE = 25;
 
@@ -274,10 +278,8 @@ export default {
     allowCreate() {
       return MediaPermissionService.allowCreate(this.scope);
     },
-    // ICO is in the global allowlist of the backend (favicons), so both
-    // scopes advertise it.
     allowedTypesLabel() {
-      return "JPEG, PNG, WebP, GIF, SVG, ICO";
+      return MEDIA_ALLOWED_TYPES_LABEL;
     },
   },
   watch: {
@@ -437,30 +439,7 @@ export default {
         await this.fetchMedia();
       } catch (error) {
         entry.status = "error";
-        entry.message = this.uploadErrorMessage(error);
-      }
-    },
-    uploadErrorMessage(error) {
-      const body = error.response?.data;
-      switch (body?.code) {
-        case "file_too_large": {
-          const maxBytes = body.params?.maxBytes;
-          const limit = maxBytes
-            ? ` (Limit: ${this.formatBytes(maxBytes)})`
-            : "";
-          return `Datei ist zu groß${limit} — Upload abgelehnt.`;
-        }
-        case "unsupported_file_type":
-          return `Dateityp wird nicht unterstützt — erlaubt sind ${this.allowedTypesLabel} und PDF.`;
-        case "invalid_image":
-          return "Die Bilddatei ist ungültig oder beschädigt.";
-        case "empty_file":
-          return "Die Datei ist leer.";
-        default:
-          if (error.response?.status === 413) {
-            return "Datei ist zu groß — Upload abgelehnt.";
-          }
-          return "Upload fehlgeschlagen.";
+        entry.message = mediaUploadErrorMessage(error);
       }
     },
     dismissUpload(index) {

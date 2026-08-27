@@ -71,13 +71,14 @@
         </v-menu>
       </div>
 
-      <v-img
-        v-if="item.imgUrl"
-        :lazy-src="item.imgUrl"
+      <MediaReferenceImage
+        v-if="coverImage"
+        :reference="coverImage"
+        size="sm"
+        lazy-size="thumb"
         aspect-ratio="16/9"
-        :src="item.imgUrl"
         class="bookable-image"
-        height="200"
+        :height="200"
       >
         <div
           v-if="!item.isBookable || !item.isPublic"
@@ -115,7 +116,7 @@
             <span>Nicht buchbar</span>
           </v-tooltip>
         </div>
-      </v-img>
+      </MediaReferenceImage>
 
       <div v-else class="placeholder-container">
         <PlaceholderPattern variant="poly" :theme="isDark ? 'dark' : 'light'" />
@@ -368,9 +369,10 @@ import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiLockerService from "@/services/api/ApiLockerService";
 import ToastService from "@/services/ToastService";
 import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
+import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 
 export default {
-  components: { PlaceholderPattern },
+  components: { MediaReferenceImage, PlaceholderPattern },
   props: {
     editRoute: String,
     fromRoute: String,
@@ -395,6 +397,14 @@ export default {
     }),
     isDark() {
       return this.$vuetify?.theme?.dark || false;
+    },
+    /**
+     * The cover image: the first entry of the image list, determined by
+     * position (§4.8). A bookable the media import has not touched yet falls
+     * back to its legacy `imgUrl`.
+     */
+    coverImage() {
+      return this.item.images?.[0] || this.item.imgUrl || null;
     },
     duplicateDisabled() {
       return (

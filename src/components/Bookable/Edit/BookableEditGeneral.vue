@@ -1,7 +1,7 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import Tiptap from "@/components/Tiptap.vue";
-import ChooseFile from "@/components/Files/ChooseFile.vue";
+import MediaReferenceList from "@/components/Media/MediaReferenceList.vue";
 import debounce from "lodash/debounce";
 import ApiEventService from "@/services/api/ApiEventService";
 import AddressLookup from "@/components/commons/AddressLookup.vue";
@@ -9,7 +9,7 @@ import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditGeneral",
-  components: { AddressLookup, ChooseFile, Tiptap, BaseSection },
+  components: { AddressLookup, MediaReferenceList, Tiptap, BaseSection },
   mixins: [bookableExpertMode],
   props: { bookable: { type: Object, required: true } },
   data() {
@@ -43,6 +43,22 @@ export default {
       set(value) {
         this.model.location = value;
       },
+    },
+    images: {
+      get() {
+        return this.model.images || [];
+      },
+      set(value) {
+        this.$set(this.model, "images", value);
+      },
+    },
+    /**
+     * A bookable the media import has not touched yet still carries its cover
+     * in the legacy `imgUrl`. It is shown, never silently moved into the image
+     * list — rewriting stored values is the import's job, not the editor's.
+     */
+    legacyCoverUrl() {
+      return this.images.length === 0 ? this.model.imgUrl || "" : "";
     },
   },
   created() {
@@ -136,22 +152,6 @@ export default {
 
         <v-row class="mt-2">
           <v-col cols="12">
-            <ChooseFile
-              v-model="model.imgUrl"
-              :allow-protected="false"
-              :tenant-id="model.tenantId"
-              filled
-              dense
-              images-only
-              label="Cover-Bild"
-              background-color="accent"
-              forced-subdirectory="rooms"
-            />
-          </v-col>
-        </v-row>
-
-        <v-row class="mt-2">
-          <v-col cols="12">
             <Tiptap
               v-model="model.description"
               label="Beschreibung"
@@ -165,6 +165,39 @@ export default {
             <AddressLookup v-model="location" label="Adresse"></AddressLookup>
           </v-col>
         </v-row>
+      </v-card-text>
+    </v-card>
+
+    <v-card
+      id="be-section-general-images"
+      class="mb-6 section-card"
+      elevation="2"
+      outlined
+    >
+      <v-card-title class="section-header pa-4">
+        <v-icon class="mr-2">mdi-image-multiple-outline</v-icon>
+        <span class="text-h6 font-weight-bold">Bilder</span>
+      </v-card-title>
+      <v-divider></v-divider>
+      <v-card-text class="pa-4">
+        <v-alert
+          v-if="legacyCoverUrl"
+          dense
+          text
+          type="info"
+          class="text-caption"
+        >
+          Das bisherige Titelbild liegt noch in der alten Dateiablage:
+          <span class="font-weight-medium">{{ legacyCoverUrl }}</span
+          >. Es bleibt aktiv, bis hier Bilder aus der Mediathek zugeordnet
+          werden.
+        </v-alert>
+
+        <MediaReferenceList
+          v-model="images"
+          :public-only="!!model.isPublic"
+          public-only-reason="Dieses Buchungsobjekt ist öffentlich sichtbar — interne Medien können hier nicht gespeichert werden."
+        />
       </v-card-text>
     </v-card>
 

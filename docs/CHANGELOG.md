@@ -11,6 +11,19 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 -   Media library admin view (`/media`, admin interface `media`): split view with facets (kind, tags, visibility), server-side search and pagination, permanent upload dropzone with per-file progress and error details, metadata editing, auto-loaded usage proof, and deletion blocked while a medium is in use; instance media tab for instance owners (`/api/v2/instance/media`)
 -   Role editor: `manageMedia` permission group and the `media` admin interface
+-   Media picker: gallery grid in a modal with multi-select, server-side search and tag filter, upload straight from the picker, and `intern` media greyed out with a reason wherever the entity is publicly visible
+-   Bookable editor: new "Bilder" section with an ordered image list — position 0 is the cover image, drag to reorder, remove drops the reference and keeps the medium
+
+### Changed
+
+-   Bookable and event editors now store media references instead of raw file URLs: bookable images and attachments, event teaser and contact photo, event image list and speaker photos, event attachments (now with title, caption, `show`, `required`, `mailAttach`) — external links stay possible
+-   Bookable and event cards load images in fixed presets (`sm`, with `thumb` as the lazy placeholder), which replaces the full-size placeholder they used to fetch
+-   Event attachments and images steps, the simple event creator and the speaker photos pick from the media library
+-   Event image list and speaker photos follow the event's visibility: `intern` media are selectable at a non-public event, matching the backend's reference guard
+
+### Removed
+
+-   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone; `ChooseFile` remains for the instance editors until the instance media UI lands)
 
 ## [4.2.8] — 2026-08-25
 
@@ -20,6 +33,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   Untyped image sites (event image list, speaker photo) store the backend's own delivery address again instead of this app's transport URL. In BFF mode the transport URL carries the BFF base, so a picked medium was persisted as `/api/api/v2/…/media/…/file` — an address only the admin UI can resolve, which left the storefront, mails and the HTML endpoint with a dead link. The admin UI kept working throughout, which is why it went unnoticed
 -   BFF mode: Keycloak SSO login no longer fails with a gateway error — nginx proxy buffers raised so the callback's token cookies fit (`upstream sent too big header` → 502 on `/api/auth/sso/callback`)
 
 ## [4.2.7] — 2026-08-10

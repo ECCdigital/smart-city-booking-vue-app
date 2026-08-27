@@ -1,4 +1,5 @@
 import store from "@/store";
+import { getApiHttpBaseUrl } from "@/services/auth/authMode";
 
 export const MEDIA_SCOPE = Object.freeze({
   TENANT: "tenant",
@@ -47,6 +48,23 @@ export default {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress,
     });
+  },
+  // The address of the binary route. Public media are served without auth
+  // (`optionalAuth` at the route, §4.6), so a plain <img src> reaches them —
+  // and gets the browser cache the header matrix is written for.
+  getMediaFileUrl(scope, mediaId, size) {
+    const query = size ? `?size=${encodeURIComponent(size)}` : "";
+    return `${getApiHttpBaseUrl()}/${basePath(scope)}/${mediaId}/file${query}`;
+  },
+  // The address of a medium as it is *stored* on an entity — the backend's own
+  // delivery route, with no client prefix in front of it.
+  //
+  // `getMediaFileUrl` is for loading an image inside this app: it carries the
+  // BFF base, which is an address only this browser understands. Persisting
+  // that would hand the storefront, the mails and the HTML endpoint a URL that
+  // means nothing to them, so an untyped legacy site gets this instead.
+  getMediaFilePath(scope, mediaId) {
+    return `/${basePath(scope)}/${mediaId}/file`;
   },
   // Binary delivery goes through the API client so `intern` media load with
   // credentials in both auth modes — a plain <img src> would carry none.
