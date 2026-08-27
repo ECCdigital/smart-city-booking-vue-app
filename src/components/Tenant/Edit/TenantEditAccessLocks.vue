@@ -15,7 +15,7 @@ export default {
   },
   computed: {
     showAccess() {
-      return TenantPermissionService.allowUpdate(this.tenant);
+      return TenantPermissionService.allowUpdate();
     },
   },
   methods: {

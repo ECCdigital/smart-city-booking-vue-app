@@ -9,6 +9,7 @@ import {
   requiresQrScan,
   QR_SCAN_RULE,
 } from "@/utilities/access-points";
+import { isComingSoonAccessPointMode } from "@/utilities/coming-soon";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
 
@@ -20,7 +21,7 @@ function emptyForm() {
     provider: "",
     externalId: "",
     providerLocationId: "",
-    mode: "authorization",
+    mode: "remote",
     location: null,
   };
 }
@@ -77,12 +78,21 @@ export default {
         text: this.$t(`accessPoint.management.types.${value}`),
       }));
     },
+    // The PIN-at-the-lock modes stay listed while they are unfinished, so the
+    // dialog shows what is coming - but they cannot be chosen. An access point
+    // already stored on one keeps it; only picking it anew is barred.
     modeOptions() {
-      return ["authorization", "remote", "both"].map((value) => ({
-        value,
-        text: this.$t(`accessPoint.management.modes.${value}`),
-        description: this.$t(`accessPoint.management.modeHints.${value}`),
-      }));
+      return ["authorization", "remote", "both"].map((value) => {
+        const comingSoon = isComingSoonAccessPointMode(value);
+        return {
+          value,
+          text: this.$t(`accessPoint.management.modes.${value}`),
+          description: comingSoon
+            ? this.$t("accessPoint.comingSoon.mode")
+            : this.$t(`accessPoint.management.modeHints.${value}`),
+          disabled: comingSoon,
+        };
+      });
     },
     providerOptions() {
       return this.providers.map((provider) => ({
@@ -515,7 +525,19 @@ export default {
               >
                 <template v-slot:item="{ item }">
                   <v-list-item-content>
-                    <v-list-item-title>{{ item.text }}</v-list-item-title>
+                    <v-list-item-title>
+                      {{ item.text }}
+                      <v-chip
+                        v-if="item.disabled"
+                        x-small
+                        color="warning"
+                        text-color="white"
+                        label
+                        class="ml-2"
+                      >
+                        {{ $t("accessPoint.comingSoon.badge") }}
+                      </v-chip>
+                    </v-list-item-title>
                     <v-list-item-subtitle
                       class="text-wrap"
                       style="white-space: normal"

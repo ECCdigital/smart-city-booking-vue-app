@@ -14,6 +14,12 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 ### Changed
 
 - Tenant access apps: Salto KS picks an environment (`Accept (Sandbox)` / `Production`) instead of a free-text API base URL; the connection test sends `environment` and shows the server's own error (e.g. `invalid_client`) — requires the matching backend
+- Tenant access apps: Salto KS credentials and the IQ activation wizard are behind a "coming soon" state — visible and greyed out for everyone, instance owners included; stored configuration is untouched and still travels through a save
+- Access point dialog: the PIN-at-the-lock modes (`PIN-Code`, `PIN-Code & App`) are behind a "coming soon" state and cannot be picked; a new access point starts on `Öffnen per App`. Access points already stored on a PIN mode keep it
+
+### Fixed
+
+- Tenant owners can edit their tenant and its access providers again — the permission check asked for a `manageTenants` dimension the API never sends, which left the tenant and access pages to instance owners only
 
 ## [4.2.8] — 2026-08-25
 

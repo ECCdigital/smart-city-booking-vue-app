@@ -993,6 +993,11 @@
         }
       }
     },
+    "comingSoon": {
+      "badge": "Bald verfügbar",
+      "salto": "Die Salto-KS-Anbindung befindet sich noch in der Fertigstellung. Die Konfiguration wird zu einem späteren Zeitpunkt freigeschaltet.",
+      "mode": "Diese Öffnungsart befindet sich noch in der Fertigstellung und kann derzeit nicht ausgewählt werden."
+    },
     "tenant": {
       "title": "Türsteuerung & Zugang",
       "sectionHint": "Verbinden Sie smarte Türschlösser, damit Buchende Türen während ihres Buchungszeitraums öffnen und schließen können.",

@@ -4,6 +4,7 @@ import AppPanel from "@/components/AppPanel.vue";
 import AccessAuditExport from "@/components/Tenant/Edit/AccessAuditExport.vue";
 import SaltoIqActivationSection from "@/components/Tenant/Edit/SaltoIqActivation/SaltoIqActivationSection.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
+import { SALTO_KS_COMING_SOON } from "@/utilities/coming-soon";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
@@ -61,6 +62,9 @@ export default {
     },
   },
   computed: {
+    saltoComingSoon() {
+      return SALTO_KS_COMING_SOON;
+    },
     allowAuditExport() {
       return BookingPermissionService.allowAuditExport();
     },
@@ -525,276 +529,323 @@ export default {
             :active="localApps['salto-ks'].active"
             class="mb-2"
           >
-            <!-- Beschreibung -->
+            <template v-if="saltoComingSoon" v-slot:badges>
+              <v-chip
+                small
+                color="warning"
+                text-color="white"
+                label
+                class="ml-2"
+              >
+                {{ $t("accessPoint.comingSoon.badge") }}
+              </v-chip>
+            </template>
+
             <v-alert
-              color="primary"
+              v-if="saltoComingSoon"
+              type="info"
               text
               dense
-              class="provider-description mb-4 mt-2"
+              class="mb-4 mt-2"
             >
-              <div class="d-flex">
-                <v-icon color="primary" class="mr-3 mt-1">mdi-door</v-icon>
-                <div>
-                  <div class="font-weight-bold mb-1">
-                    {{ $t("accessPoint.tenant.salto.providerTitle") }}
-                  </div>
-                  <div class="text-body-2">
-                    {{ $t("accessPoint.tenant.salto.providerDescription") }}
-                  </div>
-                  <v-btn
-                    text
-                    small
-                    color="primary"
-                    class="px-0 mt-1"
-                    href="https://saltoks.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <v-icon left small>mdi-open-in-new</v-icon>
-                    {{ $t("accessPoint.tenant.salto.providerLink") }}
-                  </v-btn>
-                </div>
+              <div class="font-weight-bold mb-1">
+                {{ $t("accessPoint.comingSoon.badge") }}
+              </div>
+              <div class="text-body-2">
+                {{ $t("accessPoint.comingSoon.salto") }}
               </div>
             </v-alert>
 
-            <!-- Aktivierung -->
-            <v-row dense>
-              <v-col cols="12">
-                <v-switch
-                  v-model="localApps['salto-ks'].active"
-                  color="primary"
-                  hide-details
-                  :label="$t('accessPoint.tenant.salto.activate')"
-                  @change="emitApps()"
-                />
-              </v-col>
-            </v-row>
-
-            <!-- Hinweis: System-User fehlt (Migration bestehender Integrationen) -->
-            <v-row
-              v-if="
-                localApps['salto-ks'].active &&
-                !localApps['salto-ks'].username &&
-                !saltoPasswordConfigured
-              "
-              dense
+            <!--
+              Everything below stays on screen but out of reach while the
+              integration is unfinished: a disabled fieldset takes the native
+              controls out of the tab order, the class covers what a fieldset
+              cannot disable (the select's menu activator is a plain div).
+              The stored configuration is untouched and still travels through
+              a save.
+            -->
+            <fieldset
+              :disabled="saltoComingSoon"
+              :class="{ 'coming-soon': saltoComingSoon }"
+              class="plain-fieldset"
             >
-              <v-col cols="12">
-                <v-alert type="warning" text dense class="mb-0">
-                  <v-icon left>mdi-account-alert</v-icon>
-                  {{ $t("accessPoint.tenant.salto.systemUserMissing") }}
-                </v-alert>
-              </v-col>
-            </v-row>
-
-            <!-- API-Zugangsdaten -->
-            <div class="section-title mt-4 mb-2">
-              <v-icon small left>mdi-key-variant</v-icon>
-              <span class="font-weight-medium">{{
-                $t("accessPoint.tenant.apiCredentials")
-              }}</span>
-            </div>
-            <v-row dense>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  :label="$t('accessPoint.tenant.salto.clientId')"
-                  v-model="localApps['salto-ks'].clientId"
-                  @input="emitApps()"
-                  autocomplete="off"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  :label="$t('accessPoint.tenant.salto.siteId')"
-                  v-model="localApps['salto-ks'].siteId"
-                  @input="emitApps()"
-                  autocomplete="off"
-                />
-              </v-col>
-              <v-col cols="12">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  :label="$t('accessPoint.tenant.salto.clientSecret')"
-                  v-model="localApps['salto-ks'].clientSecret"
-                  @input="emitApps()"
-                  :placeholder="
-                    saltoSecretConfigured
-                      ? $t('accessPoint.tenant.salto.clientSecretUnchanged')
-                      : $t('accessPoint.tenant.salto.clientSecretPlaceholder')
-                  "
-                  :hint="
-                    saltoSecretConfigured
-                      ? $t('accessPoint.tenant.salto.clientSecretHint')
-                      : ''
-                  "
-                  persistent-hint
-                  :append-icon="
-                    showSecret['salto-ks'] ? 'mdi-eye' : 'mdi-eye-off'
-                  "
-                  @click:append="
-                    showSecret['salto-ks'] = !showSecret['salto-ks']
-                  "
-                  :type="showSecret['salto-ks'] ? 'text' : 'password'"
-                  autocomplete="off"
-                />
-              </v-col>
-              <!-- System-User (Password-Grant) -->
-              <v-col cols="12" md="6">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  type="email"
-                  :label="$t('accessPoint.tenant.salto.username')"
-                  v-model="localApps['salto-ks'].username"
-                  @input="emitApps()"
-                  :placeholder="
-                    $t('accessPoint.tenant.salto.usernamePlaceholder')
-                  "
-                  :hint="$t('accessPoint.tenant.salto.usernameHint')"
-                  persistent-hint
-                  autocomplete="off"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  :label="$t('accessPoint.tenant.salto.password')"
-                  v-model="localApps['salto-ks'].password"
-                  @input="emitApps()"
-                  :placeholder="
-                    saltoPasswordConfigured
-                      ? $t('accessPoint.tenant.salto.passwordUnchanged')
-                      : $t('accessPoint.tenant.salto.passwordPlaceholder')
-                  "
-                  :hint="
-                    saltoPasswordConfigured
-                      ? $t('accessPoint.tenant.salto.passwordHint')
-                      : ''
-                  "
-                  persistent-hint
-                  :append-icon="
-                    showSecret['salto-ks-password'] ? 'mdi-eye' : 'mdi-eye-off'
-                  "
-                  @click:append="
-                    showSecret['salto-ks-password'] =
-                      !showSecret['salto-ks-password']
-                  "
-                  :type="showSecret['salto-ks-password'] ? 'text' : 'password'"
-                  autocomplete="off"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  background-color="accent"
-                  filled
-                  dense
-                  :label="$t('accessPoint.tenant.salto.environment')"
-                  v-model="localApps['salto-ks'].environment"
-                  :items="saltoEnvironments"
-                  :hint="$t('accessPoint.tenant.salto.environmentHint')"
-                  persistent-hint
-                  @change="emitApps()"
-                />
-              </v-col>
-            </v-row>
-
-            <!-- Testergebnis -->
-            <v-row v-if="testResult['salto-ks']" dense>
-              <v-col cols="12">
-                <v-alert
-                  :color="testResult['salto-ks'].success ? 'success' : 'error'"
-                  dense
-                  text
-                >
-                  <div v-if="testResult['salto-ks'].success">
-                    <v-icon left>mdi-check-circle</v-icon>
-                    {{
-                      testResult["salto-ks"].message ||
-                      $t("accessPoint.tenant.connectionSuccess")
-                    }}
+              <!-- Beschreibung -->
+              <v-alert
+                color="primary"
+                text
+                dense
+                class="provider-description mb-4 mt-2"
+              >
+                <div class="d-flex">
+                  <v-icon color="primary" class="mr-3 mt-1">mdi-door</v-icon>
+                  <div>
+                    <div class="font-weight-bold mb-1">
+                      {{ $t("accessPoint.tenant.salto.providerTitle") }}
+                    </div>
+                    <div class="text-body-2">
+                      {{ $t("accessPoint.tenant.salto.providerDescription") }}
+                    </div>
+                    <v-btn
+                      text
+                      small
+                      color="primary"
+                      class="px-0 mt-1"
+                      href="https://saltoks.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <v-icon left small>mdi-open-in-new</v-icon>
+                      {{ $t("accessPoint.tenant.salto.providerLink") }}
+                    </v-btn>
                   </div>
-                  <div v-else>
+                </div>
+              </v-alert>
+
+              <!-- Aktivierung -->
+              <v-row dense>
+                <v-col cols="12">
+                  <v-switch
+                    v-model="localApps['salto-ks'].active"
+                    color="primary"
+                    hide-details
+                    :label="$t('accessPoint.tenant.salto.activate')"
+                    @change="emitApps()"
+                  />
+                </v-col>
+              </v-row>
+
+              <!-- Hinweis: System-User fehlt (Migration bestehender Integrationen) -->
+              <v-row
+                v-if="
+                  localApps['salto-ks'].active &&
+                  !localApps['salto-ks'].username &&
+                  !saltoPasswordConfigured
+                "
+                dense
+              >
+                <v-col cols="12">
+                  <v-alert type="warning" text dense class="mb-0">
+                    <v-icon left>mdi-account-alert</v-icon>
+                    {{ $t("accessPoint.tenant.salto.systemUserMissing") }}
+                  </v-alert>
+                </v-col>
+              </v-row>
+
+              <!-- API-Zugangsdaten -->
+              <div class="section-title mt-4 mb-2">
+                <v-icon small left>mdi-key-variant</v-icon>
+                <span class="font-weight-medium">{{
+                  $t("accessPoint.tenant.apiCredentials")
+                }}</span>
+              </div>
+              <v-row dense>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    background-color="accent"
+                    filled
+                    dense
+                    :label="$t('accessPoint.tenant.salto.clientId')"
+                    v-model="localApps['salto-ks'].clientId"
+                    @input="emitApps()"
+                    autocomplete="off"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    background-color="accent"
+                    filled
+                    dense
+                    :label="$t('accessPoint.tenant.salto.siteId')"
+                    v-model="localApps['salto-ks'].siteId"
+                    @input="emitApps()"
+                    autocomplete="off"
+                  />
+                </v-col>
+                <v-col cols="12">
+                  <v-text-field
+                    background-color="accent"
+                    filled
+                    dense
+                    :label="$t('accessPoint.tenant.salto.clientSecret')"
+                    v-model="localApps['salto-ks'].clientSecret"
+                    @input="emitApps()"
+                    :placeholder="
+                      saltoSecretConfigured
+                        ? $t('accessPoint.tenant.salto.clientSecretUnchanged')
+                        : $t('accessPoint.tenant.salto.clientSecretPlaceholder')
+                    "
+                    :hint="
+                      saltoSecretConfigured
+                        ? $t('accessPoint.tenant.salto.clientSecretHint')
+                        : ''
+                    "
+                    persistent-hint
+                    :append-icon="
+                      showSecret['salto-ks'] ? 'mdi-eye' : 'mdi-eye-off'
+                    "
+                    @click:append="
+                      showSecret['salto-ks'] = !showSecret['salto-ks']
+                    "
+                    :type="showSecret['salto-ks'] ? 'text' : 'password'"
+                    autocomplete="off"
+                  />
+                </v-col>
+                <!-- System-User (Password-Grant) -->
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    background-color="accent"
+                    filled
+                    dense
+                    type="email"
+                    :label="$t('accessPoint.tenant.salto.username')"
+                    v-model="localApps['salto-ks'].username"
+                    @input="emitApps()"
+                    :placeholder="
+                      $t('accessPoint.tenant.salto.usernamePlaceholder')
+                    "
+                    :hint="$t('accessPoint.tenant.salto.usernameHint')"
+                    persistent-hint
+                    autocomplete="off"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    background-color="accent"
+                    filled
+                    dense
+                    :label="$t('accessPoint.tenant.salto.password')"
+                    v-model="localApps['salto-ks'].password"
+                    @input="emitApps()"
+                    :placeholder="
+                      saltoPasswordConfigured
+                        ? $t('accessPoint.tenant.salto.passwordUnchanged')
+                        : $t('accessPoint.tenant.salto.passwordPlaceholder')
+                    "
+                    :hint="
+                      saltoPasswordConfigured
+                        ? $t('accessPoint.tenant.salto.passwordHint')
+                        : ''
+                    "
+                    persistent-hint
+                    :append-icon="
+                      showSecret['salto-ks-password']
+                        ? 'mdi-eye'
+                        : 'mdi-eye-off'
+                    "
+                    @click:append="
+                      showSecret['salto-ks-password'] =
+                        !showSecret['salto-ks-password']
+                    "
+                    :type="
+                      showSecret['salto-ks-password'] ? 'text' : 'password'
+                    "
+                    autocomplete="off"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-select
+                    background-color="accent"
+                    filled
+                    dense
+                    :label="$t('accessPoint.tenant.salto.environment')"
+                    v-model="localApps['salto-ks'].environment"
+                    :items="saltoEnvironments"
+                    :hint="$t('accessPoint.tenant.salto.environmentHint')"
+                    persistent-hint
+                    @change="emitApps()"
+                  />
+                </v-col>
+              </v-row>
+
+              <!-- Testergebnis -->
+              <v-row v-if="testResult['salto-ks']" dense>
+                <v-col cols="12">
+                  <v-alert
+                    :color="
+                      testResult['salto-ks'].success ? 'success' : 'error'
+                    "
+                    dense
+                    text
+                  >
+                    <div v-if="testResult['salto-ks'].success">
+                      <v-icon left>mdi-check-circle</v-icon>
+                      {{
+                        testResult["salto-ks"].message ||
+                        $t("accessPoint.tenant.connectionSuccess")
+                      }}
+                    </div>
+                    <div v-else>
+                      <v-icon left>mdi-alert-circle</v-icon>
+                      {{ testResult["salto-ks"].message }}
+                    </div>
+                  </v-alert>
+                </v-col>
+              </v-row>
+
+              <!-- Aktion -->
+              <v-row dense class="mt-2">
+                <v-col class="text-right">
+                  <v-btn
+                    color="primary"
+                    :loading="testing['salto-ks']"
+                    :disabled="testing['salto-ks']"
+                    @click="testConnection('salto-ks')"
+                  >
+                    <v-icon left>mdi-connection</v-icon>
+                    {{ $t("accessPoint.tenant.testConnection") }}
+                  </v-btn>
+                </v-col>
+              </v-row>
+
+              <!-- Webhook-Status (automatisch registriert) -->
+              <div class="section-title mt-6 mb-2">
+                <v-icon small left>mdi-webhook</v-icon>
+                <span class="font-weight-medium">{{
+                  $t("accessPoint.tenant.webhookTitle")
+                }}</span>
+              </div>
+              <v-alert type="info" text dense class="mb-3">
+                {{ $t("accessPoint.tenant.salto.webhookInfo") }}
+              </v-alert>
+              <v-row dense>
+                <v-col cols="12">
+                  <v-alert
+                    v-if="localApps['salto-ks'].webhookRegistrationError"
+                    color="error"
+                    text
+                    dense
+                    class="mb-0"
+                  >
                     <v-icon left>mdi-alert-circle</v-icon>
-                    {{ testResult["salto-ks"].message }}
-                  </div>
-                </v-alert>
-              </v-col>
-            </v-row>
+                    {{ $t("accessPoint.tenant.salto.webhookError") }}
+                    {{ localApps["salto-ks"].webhookRegistrationError }}
+                  </v-alert>
+                  <v-alert
+                    v-else-if="localApps['salto-ks'].webhookRegisteredAt"
+                    color="success"
+                    text
+                    dense
+                    class="mb-0"
+                  >
+                    <v-icon left>mdi-check-circle</v-icon>
+                    {{ $t("accessPoint.tenant.salto.webhookRegistered") }}
+                    {{
+                      formatTimestamp(localApps["salto-ks"].webhookRegisteredAt)
+                    }}
+                  </v-alert>
+                  <v-alert v-else color="grey" text dense class="mb-0">
+                    <v-icon left>mdi-information-outline</v-icon>
+                    {{ $t("accessPoint.tenant.salto.webhookPending") }}
+                  </v-alert>
+                </v-col>
+              </v-row>
 
-            <!-- Aktion -->
-            <v-row dense class="mt-2">
-              <v-col class="text-right">
-                <v-btn
-                  color="primary"
-                  :loading="testing['salto-ks']"
-                  :disabled="testing['salto-ks']"
-                  @click="testConnection('salto-ks')"
-                >
-                  <v-icon left>mdi-connection</v-icon>
-                  {{ $t("accessPoint.tenant.testConnection") }}
-                </v-btn>
-              </v-col>
-            </v-row>
-
-            <!-- Webhook-Status (automatisch registriert) -->
-            <div class="section-title mt-6 mb-2">
-              <v-icon small left>mdi-webhook</v-icon>
-              <span class="font-weight-medium">{{
-                $t("accessPoint.tenant.webhookTitle")
-              }}</span>
-            </div>
-            <v-alert type="info" text dense class="mb-3">
-              {{ $t("accessPoint.tenant.salto.webhookInfo") }}
-            </v-alert>
-            <v-row dense>
-              <v-col cols="12">
-                <v-alert
-                  v-if="localApps['salto-ks'].webhookRegistrationError"
-                  color="error"
-                  text
-                  dense
-                  class="mb-0"
-                >
-                  <v-icon left>mdi-alert-circle</v-icon>
-                  {{ $t("accessPoint.tenant.salto.webhookError") }}
-                  {{ localApps["salto-ks"].webhookRegistrationError }}
-                </v-alert>
-                <v-alert
-                  v-else-if="localApps['salto-ks'].webhookRegisteredAt"
-                  color="success"
-                  text
-                  dense
-                  class="mb-0"
-                >
-                  <v-icon left>mdi-check-circle</v-icon>
-                  {{ $t("accessPoint.tenant.salto.webhookRegistered") }}
-                  {{
-                    formatTimestamp(localApps["salto-ks"].webhookRegisteredAt)
-                  }}
-                </v-alert>
-                <v-alert v-else color="grey" text dense class="mb-0">
-                  <v-icon left>mdi-information-outline</v-icon>
-                  {{ $t("accessPoint.tenant.salto.webhookPending") }}
-                </v-alert>
-              </v-col>
-            </v-row>
-
-            <!-- IQ activation for remote-open -->
-            <SaltoIqActivationSection
-              v-if="localApps['salto-ks'].active"
-              :tenant-id="tenant.id"
-            />
+              <!-- IQ activation for remote-open -->
+              <SaltoIqActivationSection
+                v-if="localApps['salto-ks'].active"
+                :tenant-id="tenant.id"
+              />
+            </fieldset>
           </AppPanel>
 
           <div v-if="allowAuditExport" class="mt-8">
@@ -829,5 +880,16 @@ export default {
 }
 .provider-description {
   border-left: 3px solid var(--v-primary-base);
+}
+/* A fieldset used only for its disabled state, not for its looks. */
+.plain-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.coming-soon {
+  opacity: 0.5;
+  pointer-events: none;
 }
 </style>

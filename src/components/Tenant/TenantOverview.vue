@@ -355,7 +355,7 @@ export default {
     isTabVisible(tab) {
       if (!tab.permission) return true;
       if (tab.permission === "manageTenants") {
-        return TenantPermissionService.allowUpdate(this.tenant);
+        return TenantPermissionService.allowUpdate();
       }
       return true;
     },
