@@ -13,6 +13,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 -   Role editor: `manageMedia` permission group and the `media` admin interface
 -   Media picker: gallery grid in a modal with multi-select, server-side search and tag filter, upload straight from the picker, and `intern` media greyed out with a reason wherever the entity is publicly visible
 -   Bookable editor: new "Bilder" section with an ordered image list — position 0 is the cover image, drag to reorder, remove drops the reference and keeps the medium
+-   Instance editor: new tab "Rechtliches" with the three legal documents (privacy policy, legal notice, terms) — each picked from the instance media library and stored as a media reference, public media only, external links stay possible; the fields moved out of tab "Allgemein" and the derived `url`/`fileName` are no longer sent back once a reference stands
 
 ### Changed
 
@@ -22,9 +23,13 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 -   Event image list and speaker photos follow the event's visibility: `intern` media are selectable at a non-public event, matching the backend's reference guard
 -   Instance editor, tab "Portal": logo and favicon are picked from the instance media library and stored as media references (`branding.logo`, `branding.favicon`) instead of plain file paths — public media only, external links stay possible, and the derived `logoUrl`/`faviconUrl` are no longer sent back once a reference stands
 
+### Fixed
+
+-   Legal document links reach a document served from the media library: the login, card login, registration and password-reset pages resolve its root-relative address against the API instead of prefixing `https://` — and the login and password-reset footers read the documents themselves instead of `dataProtectionUrl`/`legalNoticeUrl`, which the backend migration to the document fields removed
+
 ### Removed
 
--   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone; `ChooseFile` remains for the instance editors that still hold plain file paths)
+-   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone; `ChooseFile` has no caller left since the instance's legal documents moved to the media library)
 
 ## [4.2.8] — 2026-08-25
 

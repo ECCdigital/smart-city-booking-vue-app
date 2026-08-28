@@ -87,6 +87,7 @@ import SaveBar from "@/components/commons/SaveBar.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
 import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import InstanceEditGeneral from "@/components/Instance/Edit/InstanceEditGeneral.vue";
+import InstanceEditLegal from "@/components/Instance/Edit/InstanceEditLegal.vue";
 import InstanceEditMail from "@/components/Instance/Edit/InstanceEditMail.vue";
 import InstanceEditOwners from "@/components/Instance/Edit/InstanceEditOwners.vue";
 import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
@@ -97,6 +98,7 @@ import InstanceEditBookables from "@/components/Instance/Edit/InstanceEditBookab
 import InstanceEditAuth from "@/components/Instance/Edit/InstanceEditAuth.vue";
 import InstanceEditCheckout from "@/components/Instance/Edit/InstanceEditCheckout.vue";
 import { brandingForSave, defaultBranding } from "@/utils/instanceBranding";
+import { legalDocumentsForSave } from "@/utils/instanceLegalDocuments";
 
 export default {
   name: "Instances",
@@ -105,6 +107,7 @@ export default {
     SaveBar,
     UnsavedChangesDialog,
     InstanceEditGeneral,
+    InstanceEditLegal,
     InstanceEditMail,
     InstanceEditOwners,
     InstanceEditAuth,
@@ -132,6 +135,12 @@ export default {
           label: "Allgemein",
           icon: "mdi-home",
           comp: "InstanceEditGeneral",
+        },
+        {
+          key: "legal",
+          label: "Rechtliches",
+          icon: "mdi-scale-balance",
+          comp: "InstanceEditLegal",
         },
         {
           key: "mail",
@@ -374,15 +383,16 @@ export default {
       return true;
     },
     /**
-     * The instance as it goes to the API: the derived branding read fields
-     * drop out wherever a media reference stands, because the backend derives
-     * them from that reference on the way out (§4.9 of the media spec).
+     * The instance as it goes to the API: the derived read fields of the
+     * branding and of the legal documents drop out wherever a media reference
+     * stands, because the backend derives them from that reference on the way
+     * out (§4.9 of the media spec).
      */
     instancePayload() {
-      return {
+      return legalDocumentsForSave({
         ...this.instance,
         branding: brandingForSave(this.instance.branding),
-      };
+      });
     },
     async submitChanges() {
       const ok = await this.validateActiveChild();
