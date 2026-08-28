@@ -14,6 +14,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 -   Media picker: gallery grid in a modal with multi-select, server-side search and tag filter, upload straight from the picker, and `intern` media greyed out with a reason wherever the entity is publicly visible
 -   Bookable editor: new "Bilder" section with an ordered image list — position 0 is the cover image, drag to reorder, remove drops the reference and keeps the medium
 -   Instance editor: new tab "Rechtliches" with the three legal documents (privacy policy, legal notice, terms) — each picked from the instance media library and stored as a media reference, public media only, external links stay possible; the fields moved out of tab "Allgemein" and the derived `url`/`fileName` are no longer sent back once a reference stands
+-   Tenant editor: new tab "Rechtliches" with an expandable list of legal documents (`tenant.legalDocuments`) — privacy policy, legal notice, terms, right of withdrawal and freely named documents, each picked from the tenant media library and stored as a media reference, public media only, external links stay possible; a type already filed is no longer offered and two freely named documents may not share a title. The documents are filed only — nothing delivers them to end users yet
 
 ### Changed
 
