@@ -20,10 +20,11 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 -   Bookable and event cards load images in fixed presets (`sm`, with `thumb` as the lazy placeholder), which replaces the full-size placeholder they used to fetch
 -   Event attachments and images steps, the simple event creator and the speaker photos pick from the media library
 -   Event image list and speaker photos follow the event's visibility: `intern` media are selectable at a non-public event, matching the backend's reference guard
+-   Instance editor, tab "Portal": logo and favicon are picked from the instance media library and stored as media references (`branding.logo`, `branding.favicon`) instead of plain file paths — public media only, external links stay possible, and the derived `logoUrl`/`faviconUrl` are no longer sent back once a reference stands
 
 ### Removed
 
--   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone; `ChooseFile` remains for the instance editors until the instance media UI lands)
+-   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone; `ChooseFile` remains for the instance editors that still hold plain file paths)
 
 ## [4.2.8] — 2026-08-25
 

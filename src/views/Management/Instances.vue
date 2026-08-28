@@ -96,6 +96,7 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import InstanceEditBookables from "@/components/Instance/Edit/InstanceEditBookables.vue";
 import InstanceEditAuth from "@/components/Instance/Edit/InstanceEditAuth.vue";
 import InstanceEditCheckout from "@/components/Instance/Edit/InstanceEditCheckout.vue";
+import { brandingForSave, defaultBranding } from "@/utils/instanceBranding";
 
 export default {
   name: "Instances",
@@ -181,14 +182,6 @@ export default {
           title: "",
           subtitle: "",
         },
-      },
-      defaultBranding: {
-        active: false,
-        theme: {
-          colors: { primary: "", secondary: "" },
-        },
-        logoUrl: "",
-        faviconUrl: "",
       },
       defaultKeycloak: {
         id: "keycloak",
@@ -310,14 +303,15 @@ export default {
       this.instance = await ApiInstanceService.getInstance();
       await this.fetchCatalog();
 
+      const branding = defaultBranding();
       this.instance.branding = {
-        ...this.defaultBranding,
+        ...branding,
         ...(this.instance.branding || {}),
         theme: {
-          ...this.defaultBranding.theme,
+          ...branding.theme,
           ...((this.instance.branding && this.instance.branding.theme) || {}),
           colors: {
-            ...this.defaultBranding.theme.colors,
+            ...branding.theme.colors,
             ...(((this.instance.branding && this.instance.branding.theme) || {})
               .colors || {}),
           },
@@ -379,13 +373,24 @@ export default {
       }
       return true;
     },
+    /**
+     * The instance as it goes to the API: the derived branding read fields
+     * drop out wherever a media reference stands, because the backend derives
+     * them from that reference on the way out (§4.9 of the media spec).
+     */
+    instancePayload() {
+      return {
+        ...this.instance,
+        branding: brandingForSave(this.instance.branding),
+      };
+    },
     async submitChanges() {
       const ok = await this.validateActiveChild();
       if (!ok) return;
 
       this.inProgress = true;
       try {
-        await ApiInstanceService.updateInstance(this.instance);
+        await ApiInstanceService.updateInstance(this.instancePayload());
         await ApiCatalogService.updateCatalog(this.catalog);
         this.originalSnapshot = JSON.stringify({
           instance: this.instance,
