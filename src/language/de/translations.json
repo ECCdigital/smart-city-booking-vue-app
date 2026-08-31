@@ -865,6 +865,10 @@
     "copySuccess": {
       "title": "URL kopiert",
       "message": "Die Medien-URL wurde in die Zwischenablage kopiert."
+    },
+    "copySuccessIntern": {
+      "title": "URL kopiert",
+      "message": "Die Medien-URL wurde in die Zwischenablage kopiert. Das Medium ist intern — der Link ist nur mit Anmeldung aufrufbar."
     }
   },
   "receipt": {

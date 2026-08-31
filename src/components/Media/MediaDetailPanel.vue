@@ -259,7 +259,6 @@ import MediaPermissionService from "@/services/permissions/MediaPermissionServic
 import MediaImage from "@/components/Media/MediaImage.vue";
 import FormatService from "@/services/FormatService";
 import ToastService from "@/services/ToastService";
-import { getApiHttpBaseUrl } from "@/services/auth/authMode";
 
 const BOOKABLE_EDIT_ROUTES = {
   room: "room-edit",
@@ -468,10 +467,16 @@ export default {
       }
     },
     async copyUrl() {
-      const url = `${getApiHttpBaseUrl()}${this.media.url}`;
+      const url = ApiMediaService.getAbsoluteMediaUrl(this.media);
       try {
         await navigator.clipboard.writeText(url);
-        this.addToast(ToastService.createToast("media.copySuccess", "success"));
+        // A non-public medium copies fine, but the link only answers to a
+        // login — the toast says so instead of promising a public URL.
+        const toastKey =
+          this.media.visibility === "public"
+            ? "media.copySuccess"
+            : "media.copySuccessIntern";
+        this.addToast(ToastService.createToast(toastKey, "success"));
       } catch (error) {
         console.error(error);
       }

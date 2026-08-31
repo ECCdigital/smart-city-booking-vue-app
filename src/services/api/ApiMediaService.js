@@ -56,6 +56,22 @@ export default {
     const query = size ? `?size=${encodeURIComponent(size)}` : "";
     return `${getApiHttpBaseUrl()}/${basePath(scope)}/${mediaId}/file${query}`;
   },
+  // The address of a medium for use *outside* this app (clipboard, sharing):
+  // the medium's own stored path behind the API base. That base may be
+  // relative — the BFF default is `/admin/api`, and the direct-mode base may
+  // be unset — which is fine inside the app but leaves a copied URL without a
+  // domain, so it is anchored on the current origin (and a protocol-relative
+  // base gets the current scheme) to be callable from anywhere.
+  getAbsoluteMediaUrl(media) {
+    const url = `${getApiHttpBaseUrl()}${media.url}`;
+    if (/^https?:\/\//i.test(url)) {
+      return url;
+    }
+    if (url.startsWith("//")) {
+      return `${window.location.protocol}${url}`;
+    }
+    return `${window.location.origin}${url}`;
+  },
   // The address of a medium as it is *stored* on an entity — the backend's own
   // delivery route, with no client prefix in front of it.
   //

@@ -26,6 +26,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   Media library: "URL kopieren" always copies an absolute URL — a relative API base (BFF mode, or an unset direct-mode base URL) is anchored on the current origin; for `intern` media the success toast notes that the link needs a login
 -   Legal document links reach a document served from the media library: the login, card login, registration and password-reset pages resolve its root-relative address against the API instead of prefixing `https://` — and the login and password-reset footers read the documents themselves instead of `dataProtectionUrl`/`legalNoticeUrl`, which the backend migration to the document fields removed
 
 ### Removed
