@@ -7,6 +7,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Custom field dialog: "Speichern" no longer stays disabled when "Pflichtfeld im Buchungsprozess" is enabled — the preview's inputs no longer register with the dialog's `v-form`
+
 ## [4.2.8] — 2026-08-25
 
 ### Added
