@@ -310,6 +310,15 @@ export default {
   transition: all 0.2s ease;
 }
 
+/*
+ * The hover/active overlay (`.v-list-item--link::before`) carries no radius of
+ * its own outside a nav or rounded list, so the grey backdrop sat square behind
+ * the rounded row and stuck out at every corner. Let it follow the row.
+ */
+.attachment-item::before {
+  border-radius: inherit;
+}
+
 .theme--dark .attachment-item {
   background-color: rgba(255, 255, 255, 0.05);
 }

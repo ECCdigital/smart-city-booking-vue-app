@@ -24,4 +24,14 @@
   .v-card {
     border-radius: var(--media-surface-radius) !important;
   }
+
+  // Vuetify pins the list-item hover/active overlay to a fixed 4px
+  // (`.v-list-item::before`), so on a card with any other radius the highlight
+  // of the first and last row juts out past the rounded corner. Clip the list
+  // to the card's own corners instead of chasing the overlay's radius — that
+  // also keeps ripples and row dividers inside.
+  .v-card > .v-list {
+    border-radius: inherit;
+    overflow: hidden;
+  }
 }
