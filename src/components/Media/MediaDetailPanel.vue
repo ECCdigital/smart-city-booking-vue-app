@@ -51,30 +51,41 @@
       </div>
 
       <template v-if="media.variants && media.variants.length > 0">
-        <div class="text-overline">Größenvarianten</div>
-        <v-simple-table dense class="mb-4">
-          <template v-slot:default>
-            <thead>
-              <tr>
-                <th>Preset</th>
-                <th>Maße</th>
-                <th>Format</th>
-                <th class="text-right">Größe</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="variant in media.variants" :key="variant.name">
-                <td>{{ variant.name }}</td>
-                <td>{{ variant.width }} × {{ variant.height }} px</td>
-                <td>{{ variant.format }}</td>
-                <td class="text-right">{{ formatBytes(variant.size) }}</td>
-              </tr>
-            </tbody>
-          </template>
-        </v-simple-table>
+        <div class="media-detail__section">Größenvarianten</div>
+        <div class="media-variants mb-4">
+          <div
+            v-for="variant in media.variants"
+            :key="variant.name"
+            class="media-variants__row"
+          >
+            <span class="media-variants__preset">{{ variant.name }}</span>
+            <span class="media-variants__spec">
+              {{ variant.width }} × {{ variant.height }} px ·
+              {{ variant.format }}
+            </span>
+            <span class="media-variants__size">{{
+              formatBytes(variant.size)
+            }}</span>
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <button
+                  type="button"
+                  class="media-variants__copy"
+                  :aria-label="`URL der Variante ${variant.name} kopieren`"
+                  v-bind="attrs"
+                  v-on="on"
+                  @click="copyUrl(variant.name)"
+                >
+                  <v-icon>mdi-link-variant</v-icon>
+                </button>
+              </template>
+              <span>URL kopieren</span>
+            </v-tooltip>
+          </div>
+        </div>
       </template>
 
-      <div class="text-overline">Metadaten</div>
+      <div class="media-detail__section">Metadaten</div>
       <v-text-field
         v-model="form.title"
         label="Titel"
@@ -127,7 +138,7 @@
         Speichern
       </v-btn>
 
-      <div class="text-overline mt-4">Verwendung</div>
+      <div class="media-detail__section mt-4">Verwendung</div>
       <v-sheet outlined rounded class="pa-3">
         <div v-if="usageLoading" class="text--secondary">
           <v-progress-circular indeterminate size="16" width="2" class="mr-2" />
@@ -173,7 +184,7 @@
       </v-sheet>
 
       <div class="d-flex mt-4">
-        <v-btn small text @click="copyUrl">
+        <v-btn small text @click="copyUrl()">
           <v-icon left small>mdi-link-variant</v-icon>
           URL kopieren
         </v-btn>
@@ -474,8 +485,10 @@ export default {
         this.deleting = false;
       }
     },
-    async copyUrl() {
-      const url = ApiMediaService.getAbsoluteMediaUrl(this.media);
+    // Without a size this copies the original; a variant row passes its preset
+    // name, which the URL carries as `?size=`.
+    async copyUrl(size) {
+      const url = ApiMediaService.getAbsoluteMediaUrl(this.media, size);
       try {
         await navigator.clipboard.writeText(url);
         // A non-public medium copies fine, but the link only answers to a
@@ -494,10 +507,136 @@ export default {
 </script>
 
 <style scoped>
+/* The panel spells out its own text colours, so both themes are named here as
+   tokens — the same small-caps headings the filter column carries. */
+.media-detail {
+  --detail-section-color: rgba(0, 0, 0, 0.45);
+  --variant-preset-color: rgba(0, 0, 0, 0.78);
+  --variant-spec-color: rgba(0, 0, 0, 0.6);
+  --variant-size-color: rgba(0, 0, 0, 0.87);
+  --variant-rule-color: rgba(0, 0, 0, 0.06);
+  --variant-copy-color: rgba(0, 0, 0, 0.54);
+}
+
+.theme--dark.media-detail {
+  --detail-section-color: rgba(255, 255, 255, 0.55);
+  --variant-preset-color: rgba(255, 255, 255, 0.87);
+  --variant-spec-color: rgba(255, 255, 255, 0.7);
+  --variant-size-color: rgba(255, 255, 255, 0.87);
+  --variant-rule-color: rgba(255, 255, 255, 0.12);
+  --variant-copy-color: rgba(255, 255, 255, 0.7);
+}
+
 .media-detail__facts {
   font-size: 13px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.media-detail__section {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--detail-section-color);
+  margin-bottom: 6px;
+}
+
+/* A borderless list instead of a table: no header row, the presets separated
+   by a hairline rather than by table rules. */
+.media-variants {
+  display: flex;
+  flex-direction: column;
+}
+
+.media-variants__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  border-bottom: 1px solid var(--variant-rule-color);
+}
+
+.media-variants__row:last-child {
+  border-bottom: 0;
+}
+
+/* 48px holds the presets the backend generates; a longer name takes the room
+   it needs rather than spilling, since the preset is what the copied URL is
+   keyed to and must stay readable. */
+.media-variants__preset {
+  flex: none;
+  min-width: 48px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--variant-preset-color);
+}
+
+/* The measurements give way first — the preset, the file size and the copy
+   action all keep their width. */
+.media-variants__spec {
+  flex-grow: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--variant-spec-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-variants__size {
+  flex: none;
+  font-size: 13px;
+  color: var(--variant-size-color);
+}
+
+.media-variants__copy {
+  position: relative;
+  /* Keeps the hover tint above the button's own background but below the
+     icon. */
+  isolation: isolate;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--variant-copy-color);
+  cursor: pointer;
+}
+
+.media-variants__copy .v-icon {
+  font-size: 16px;
+  color: inherit;
+}
+
+.media-variants__copy:hover,
+.media-variants__copy:focus-visible {
+  color: var(--v-primary-base);
+}
+
+.media-variants__copy:focus-visible {
+  outline: 2px solid var(--v-primary-base);
+  outline-offset: -2px;
+}
+
+/* The tint follows the theme's primary rather than a fixed blue: currentColor
+   is primary on hover, so a 10% overlay needs no second colour. */
+.media-variants__copy:hover::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0.1;
 }
 </style>

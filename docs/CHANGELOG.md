@@ -25,6 +25,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 -   Instance editor, tab "Portal": logo and favicon are picked from the instance media library and stored as media references (`branding.logo`, `branding.favicon`) instead of plain file paths — public media only, external links stay possible, and the derived `logoUrl`/`faviconUrl` are no longer sent back once a reference stands
 -   Media library, detail panel and media picker: cards, dialogs and dropzones drop from the app-wide 25px corner radius to 8px — overridden for the media surfaces only, the global radius is unchanged
 -   Media library: the filter column drops its card and reads as a borderless navigation — small caps section headings, 36px entries, and the active filter as a primary-tinted 8px pill; the filters themselves are unchanged
+-   Media library, detail panel: the size variants drop their table and read as a borderless compact list — preset, measurements and file size per row, each with a copy button for the variant's absolute URL (`?size=<preset>`); the panel's section headings match the filter column's small caps
 
 ### Fixed
 

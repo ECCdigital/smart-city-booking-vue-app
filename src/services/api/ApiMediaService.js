@@ -6,6 +6,18 @@ export const MEDIA_SCOPE = Object.freeze({
   INSTANCE: "instance",
 });
 
+// `?size=` names one of a medium's generated variants; both URL builders below
+// hang it off their own address. The separator is chosen rather than assumed —
+// `getAbsoluteMediaUrl` builds on the medium's server-supplied path, which is
+// not guaranteed to be query-free.
+function withSize(url, size) {
+  if (!size) {
+    return url;
+  }
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}size=${encodeURIComponent(size)}`;
+}
+
 // The instance library shares the routes of the tenant library; the missing
 // tenant segment is what puts a request into the instance scope.
 function basePath(scope) {
@@ -53,8 +65,8 @@ export default {
   // (`optionalAuth` at the route, §4.6), so a plain <img src> reaches them —
   // and gets the browser cache the header matrix is written for.
   getMediaFileUrl(scope, mediaId, size) {
-    const query = size ? `?size=${encodeURIComponent(size)}` : "";
-    return `${getApiHttpBaseUrl()}/${basePath(scope)}/${mediaId}/file${query}`;
+    const url = `${getApiHttpBaseUrl()}/${basePath(scope)}/${mediaId}/file`;
+    return withSize(url, size);
   },
   // The address of a medium for use *outside* this app (clipboard, sharing):
   // the medium's own stored path behind the API base. That base may be
@@ -62,8 +74,11 @@ export default {
   // be unset — which is fine inside the app but leaves a copied URL without a
   // domain, so it is anchored on the current origin (and a protocol-relative
   // base gets the current scheme) to be callable from anywhere.
-  getAbsoluteMediaUrl(media) {
-    const url = `${getApiHttpBaseUrl()}${media.url}`;
+  //
+  // A `size` names one of the medium's generated variants and rides along as
+  // the same `?size=` the delivery route reads for an in-app <img>.
+  getAbsoluteMediaUrl(media, size) {
+    const url = withSize(`${getApiHttpBaseUrl()}${media.url}`, size);
     if (/^https?:\/\//i.test(url)) {
       return url;
     }
