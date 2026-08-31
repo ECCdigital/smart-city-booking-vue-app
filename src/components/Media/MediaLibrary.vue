@@ -488,7 +488,7 @@ export default {
   display: flex;
   align-items: center;
   border: 2px dashed #b9c4cc;
-  border-radius: 6px;
+  border-radius: var(--media-surface-radius, 8px);
   padding: 12px 16px;
   margin-bottom: 12px;
   cursor: pointer;

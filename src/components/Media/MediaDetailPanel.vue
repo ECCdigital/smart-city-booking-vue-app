@@ -192,7 +192,11 @@
     </v-card-text>
 
     <!-- Confirm deletion of an unused medium -->
-    <v-dialog v-model="confirmDialog" max-width="480">
+    <v-dialog
+      v-model="confirmDialog"
+      max-width="480"
+      content-class="media-dialog"
+    >
       <v-card>
         <v-card-title>Endgültig löschen?</v-card-title>
         <v-card-text>
@@ -215,7 +219,11 @@
     </v-dialog>
 
     <!-- Deletion blocked: the medium is still referenced (409) -->
-    <v-dialog v-model="blockedDialog" max-width="520">
+    <v-dialog
+      v-model="blockedDialog"
+      max-width="520"
+      content-class="media-dialog"
+    >
       <v-card>
         <v-card-title>
           <v-icon color="warning" class="mr-2">mdi-alert-outline</v-icon>

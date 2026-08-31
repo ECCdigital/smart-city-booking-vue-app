@@ -23,6 +23,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 -   Event attachments and images steps, the simple event creator and the speaker photos pick from the media library
 -   Event image list and speaker photos follow the event's visibility: `intern` media are selectable at a non-public event, matching the backend's reference guard
 -   Instance editor, tab "Portal": logo and favicon are picked from the instance media library and stored as media references (`branding.logo`, `branding.favicon`) instead of plain file paths — public media only, external links stay possible, and the derived `logoUrl`/`faviconUrl` are no longer sent back once a reference stands
+-   Media library, detail panel and media picker: cards, dialogs and dropzones drop from the app-wide 25px corner radius to 8px — overridden for the media surfaces only, the global radius is unchanged
 
 ### Fixed
 

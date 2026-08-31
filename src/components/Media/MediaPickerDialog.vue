@@ -3,6 +3,7 @@
     :value="value"
     max-width="900"
     scrollable
+    content-class="media-dialog"
     @input="$emit('input', $event)"
   >
     <v-card>
@@ -404,7 +405,7 @@ export default {
 .media-picker__tile {
   position: relative;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 6px;
+  border-radius: var(--media-surface-radius, 8px);
   overflow: hidden;
   cursor: pointer;
   transition: border-color 0.15s ease;
@@ -452,7 +453,7 @@ export default {
   display: flex;
   align-items: center;
   border: 2px dashed #b9c4cc;
-  border-radius: 6px;
+  border-radius: var(--media-surface-radius, 8px);
   padding: 8px 12px;
   font-size: 13px;
 }
