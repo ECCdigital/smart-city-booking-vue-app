@@ -1,52 +1,58 @@
 <template>
   <div class="media-library">
     <!-- Facets -->
-    <div class="media-library__facets">
-      <v-card outlined>
-        <v-list dense class="py-1">
-          <v-subheader>Typ</v-subheader>
-          <v-list-item
-            v-for="option in kindOptions"
-            :key="String(option.value)"
-            @click="setKind(option.value)"
-            :input-value="filters.kind === option.value"
-            color="primary"
-          >
-            <v-list-item-icon class="mr-3">
-              <v-icon small>{{ option.icon }}</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>{{ option.text }}</v-list-item-title>
-          </v-list-item>
+    <nav class="media-library__facets" aria-label="Filter">
+      <div class="media-facets__group">
+        <div class="media-facets__title">Typ</div>
+        <button
+          v-for="option in kindOptions"
+          :key="String(option.value)"
+          type="button"
+          class="media-facets__item"
+          :class="{
+            'media-facets__item--active': filters.kind === option.value,
+          }"
+          :aria-pressed="String(filters.kind === option.value)"
+          @click="setKind(option.value)"
+        >
+          <v-icon>{{ option.icon }}</v-icon>
+          <span>{{ option.text }}</span>
+        </button>
+      </div>
 
-          <v-subheader>Sichtbarkeit</v-subheader>
-          <v-list-item
-            v-for="option in visibilityOptions"
-            :key="String(option.value)"
-            @click="setVisibility(option.value)"
-            :input-value="filters.visibility === option.value"
-            color="primary"
-          >
-            <v-list-item-title>{{ option.text }}</v-list-item-title>
-          </v-list-item>
+      <div class="media-facets__group">
+        <div class="media-facets__title">Sichtbarkeit</div>
+        <button
+          v-for="option in visibilityOptions"
+          :key="String(option.value)"
+          type="button"
+          class="media-facets__item"
+          :class="{
+            'media-facets__item--active': filters.visibility === option.value,
+          }"
+          :aria-pressed="String(filters.visibility === option.value)"
+          @click="setVisibility(option.value)"
+        >
+          <span>{{ option.text }}</span>
+        </button>
+      </div>
 
-          <template v-if="knownTags.length > 0">
-            <v-subheader>Tags</v-subheader>
-            <v-list-item
-              v-for="tag in knownTags"
-              :key="tag"
-              @click="toggleTag(tag)"
-              :input-value="filters.tag === tag"
-              color="primary"
-            >
-              <v-list-item-icon class="mr-3">
-                <v-icon small>mdi-tag-outline</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>{{ tag }}</v-list-item-title>
-            </v-list-item>
-          </template>
-        </v-list>
-      </v-card>
-    </div>
+      <div v-if="knownTags.length > 0" class="media-facets__group">
+        <div class="media-facets__title">Tags</div>
+        <button
+          v-for="tag in knownTags"
+          :key="tag"
+          type="button"
+          class="media-facets__item"
+          :class="{ 'media-facets__item--active': filters.tag === tag }"
+          :aria-pressed="String(filters.tag === tag)"
+          @click="toggleTag(tag)"
+        >
+          <v-icon>mdi-tag-outline</v-icon>
+          <span class="text-truncate">{{ tag }}</span>
+        </button>
+      </div>
+    </nav>
 
     <!-- List column -->
     <div class="media-library__list">
@@ -467,9 +473,106 @@ export default {
   gap: 16px;
 }
 
+/* Borderless facet navigation: no card, active entry as a primary-tinted
+   pill. The facets carry their own colours instead of Vuetify's list classes,
+   so both themes are spelled out here — as tokens, so the dark overrides never
+   out-specify the active entry. */
 .media-library__facets {
-  width: 200px;
+  --facet-title-color: rgba(0, 0, 0, 0.45);
+  --facet-item-color: rgba(0, 0, 0, 0.72);
+  --facet-hover-bg: rgba(0, 0, 0, 0.04);
+
+  width: 210px;
   flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding-top: 2px;
+}
+
+.theme--dark .media-library__facets {
+  --facet-title-color: rgba(255, 255, 255, 0.55);
+  --facet-item-color: rgba(255, 255, 255, 0.8);
+  --facet-hover-bg: rgba(255, 255, 255, 0.08);
+}
+
+.media-facets__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.media-facets__title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--facet-title-color);
+  padding: 0 10px 6px;
+}
+
+.media-facets__item {
+  position: relative;
+  /* Keeps the tint of ::before above the item's own background but below its
+     label. */
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--media-surface-radius, 8px);
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--facet-item-color);
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Long tag names shrink instead of pushing the pill past the column. */
+.media-facets__item > span {
+  min-width: 0;
+}
+
+.media-facets__item .v-icon {
+  font-size: 16px;
+  color: inherit;
+}
+
+.media-facets__item:hover {
+  background: var(--facet-hover-bg);
+}
+
+.media-facets__item:focus-visible {
+  outline: 2px solid var(--v-primary-base);
+  outline-offset: -2px;
+}
+
+.media-facets__item--active {
+  color: var(--v-primary-base);
+  font-weight: 600;
+}
+
+.media-facets__item--active:hover {
+  background: none;
+}
+
+/* The pill tint follows the theme's primary: currentColor is primary on the
+   active entry, so a 10% overlay needs no second colour definition. */
+.media-facets__item--active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0.1;
 }
 
 .media-library__list {
