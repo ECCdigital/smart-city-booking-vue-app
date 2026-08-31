@@ -38,53 +38,92 @@
           </v-avatar>
 
           <div class="flex-grow-1 text-truncate">
-            <div class="d-flex align-center text-truncate">
-              <span class="font-weight-medium text-truncate">
-                {{ nameOf(reference) }}
-              </span>
-              <v-chip
-                v-if="coverBadge && index === 0"
-                x-small
-                color="primary"
-                class="ml-2"
-              >
-                <v-icon x-small left>mdi-star</v-icon>
-                Titelbild
-              </v-chip>
-              <v-chip
-                v-if="isIntern(reference)"
-                x-small
-                color="warning"
-                text-color="white"
-                class="ml-2"
-              >
-                <v-icon x-small left>mdi-lock-outline</v-icon>
-                intern
-              </v-chip>
-            </div>
-            <div class="text-caption text--secondary text-truncate">
-              {{ metaOf(reference) }}
-            </div>
+            <v-text-field
+              v-if="editingIndex === index"
+              v-model="editingUrl"
+              placeholder="https://…"
+              dense
+              hide-details
+              solo
+              flat
+              autofocus
+              background-color="transparent"
+              @keyup.enter="commitEdit(index)"
+              @keyup.esc="cancelEdit"
+            />
+            <template v-else>
+              <div class="d-flex align-center text-truncate">
+                <span class="font-weight-medium text-truncate">
+                  {{ nameOf(reference) }}
+                </span>
+                <v-chip
+                  v-if="coverBadge && index === 0"
+                  x-small
+                  color="primary"
+                  class="ml-2"
+                >
+                  <v-icon x-small left>mdi-star</v-icon>
+                  Titelbild
+                </v-chip>
+                <v-chip
+                  v-if="isIntern(reference)"
+                  x-small
+                  color="warning"
+                  text-color="white"
+                  class="ml-2"
+                >
+                  <v-icon x-small left>mdi-lock-outline</v-icon>
+                  intern
+                </v-chip>
+              </div>
+              <div class="text-caption text--secondary text-truncate">
+                {{ metaOf(reference) }}
+              </div>
+            </template>
           </div>
 
-          <v-btn
-            v-if="coverBadge"
-            icon
-            small
-            :disabled="index === 0"
-            title="Zum Titelbild machen"
-            @click="makeCover(index)"
-          >
-            <v-icon small>mdi-star-outline</v-icon>
-          </v-btn>
-          <v-btn
-            icon
-            small
-            title="Entfernen (das Medium bleibt in der Mediathek)"
-            @click="remove(index)"
-          >
-            <v-icon small>mdi-close</v-icon>
-          </v-btn>
+          <template v-if="editingIndex === index">
+            <v-btn
+              icon
+              small
+              title="Adresse übernehmen"
+              @click="commitEdit(index)"
+            >
+              <v-icon small>mdi-check</v-icon>
+            </v-btn>
+            <v-btn icon small title="Abbrechen" @click="cancelEdit">
+              <v-icon small>mdi-close</v-icon>
+            </v-btn>
+          </template>
+          <template v-else>
+            <v-btn
+              v-if="isEditableExternal(reference)"
+              icon
+              small
+              title="Adresse bearbeiten"
+              @click="startEdit(index, reference)"
+            >
+              <v-icon small>mdi-pencil-outline</v-icon>
+            </v-btn>
+            <v-btn
+              v-if="coverBadge"
+              icon
+              small
+              :disabled="index === 0"
+              title="Zum Titelbild machen"
+              @click="makeCover(index)"
+            >
+              <v-icon small>mdi-star-outline</v-icon>
+            </v-btn>
+            <v-btn
+              icon
+              small
+              title="Entfernen (das Medium bleibt in der Mediathek)"
+              @click="remove(index)"
+            >
+              <v-icon small>mdi-close</v-icon>
+            </v-btn>
+          </template>
         </div>
       </draggable>
     </v-card>
@@ -107,7 +146,7 @@
 
     <v-btn small color="primary" @click="pickerOpen = true">
       <v-icon small left>mdi-image-multiple-outline</v-icon>
-      Aus Mediathek wählen
+      Bilder hinzufügen
     </v-btn>
 
     <MediaPickerDialog
@@ -120,6 +159,7 @@
       :exclude-ids="mediaIds"
       title="Bilder aus der Mediathek wählen"
       @select="onSelect"
+      @select-external="onSelectExternal"
     />
   </div>
 </template>
@@ -135,6 +175,7 @@ import {
   displayMediaId,
   externalReferenceOf,
   externalReferenceUrl,
+  isValidExternalUrl,
   mediaReferenceOf,
   referencedMediaId,
   toMediaReference,
@@ -172,6 +213,8 @@ export default {
     return {
       pickerOpen: false,
       mediaById: {},
+      editingIndex: null,
+      editingUrl: "",
     };
   },
   computed: {
@@ -254,6 +297,40 @@ export default {
       this.$emit("input", references);
     },
     onReorder(references) {
+      this.cancelEdit();
+      this.emit(references);
+    },
+    // Only a genuinely foreign address is edited as text — a row that points
+    // at a library medium (typed or as a bare address) is repicked instead.
+    isEditableExternal(reference) {
+      return Boolean(
+        externalReferenceUrl(reference) && !displayMediaId(reference)
+      );
+    },
+    startEdit(index, reference) {
+      this.editingIndex = index;
+      this.editingUrl = externalReferenceUrl(reference) || "";
+    },
+    cancelEdit() {
+      this.editingIndex = null;
+      this.editingUrl = "";
+    },
+    commitEdit(index) {
+      const url = this.editingUrl.trim();
+      if (!url) {
+        // An emptied field is a cancelled correction — removal has its own
+        // button on the row.
+        this.cancelEdit();
+        return;
+      }
+      if (!isValidExternalUrl(url)) {
+        // Same bar as the picker's "Externer Link" tab; the row stays in
+        // edit mode until the address passes or the edit is cancelled.
+        return;
+      }
+      this.cancelEdit();
+      const references = [...this.references];
+      references.splice(index, 1, externalReferenceOf(url));
       this.emit(references);
     },
     makeCover(index) {
@@ -294,6 +371,19 @@ export default {
         added.push(reference);
       });
       this.emit([...this.references, ...added]);
+    },
+    // The dialog's "Externer Link" tab hands over a finished external
+    // reference; it joins the list like a picked medium does — an address
+    // already in the list is not added twice.
+    onSelectExternal(reference) {
+      const key = this.rowKey(reference, null);
+      const exists = this.references.some(
+        (existing) => this.rowKey(existing, null) === key
+      );
+      if (exists) {
+        return;
+      }
+      this.emit([...this.references, reference]);
     },
   },
 };

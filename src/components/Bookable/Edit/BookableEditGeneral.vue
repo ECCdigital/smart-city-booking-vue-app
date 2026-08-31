@@ -6,6 +6,7 @@ import debounce from "lodash/debounce";
 import ApiEventService from "@/services/api/ApiEventService";
 import AddressLookup from "@/components/commons/AddressLookup.vue";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
+import { externalReferenceOf } from "@/utils/mediaReference";
 
 export default {
   name: "BookableEditGeneral",
@@ -55,7 +56,8 @@ export default {
     /**
      * A bookable the media import has not touched yet still carries its cover
      * in the legacy `imgUrl`. It is shown, never silently moved into the image
-     * list — rewriting stored values is the import's job, not the editor's.
+     * list — rewriting the stored value takes an explicit click on
+     * "Als Bild übernehmen".
      */
     legacyCoverUrl() {
       return this.images.length === 0 ? this.model.imgUrl || "" : "";
@@ -88,6 +90,14 @@ export default {
       const flags = this.model.flags || [];
       const index = flags.indexOf(item);
       if (index > -1) flags.splice(index, 1);
+    },
+    // Turns the legacy cover into the first image — as an external reference,
+    // exactly what the old URL is — and retires `imgUrl` for this bookable.
+    adoptLegacyCover() {
+      const url = this.model.imgUrl;
+      if (!url) return;
+      this.images = [externalReferenceOf(url), ...this.images];
+      this.model.imgUrl = "";
     },
   },
   watch: {
@@ -191,6 +201,12 @@ export default {
           <span class="font-weight-medium">{{ legacyCoverUrl }}</span
           >. Es bleibt aktiv, bis hier Bilder aus der Mediathek zugeordnet
           werden.
+          <div class="mt-2">
+            <v-btn x-small outlined color="info" @click="adoptLegacyCover">
+              <v-icon x-small left>mdi-image-move</v-icon>
+              Als Bild übernehmen
+            </v-btn>
+          </div>
         </v-alert>
 
         <MediaReferenceList

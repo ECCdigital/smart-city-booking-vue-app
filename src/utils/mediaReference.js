@@ -105,6 +105,18 @@ export function isMediaReference(value) {
 }
 
 /**
+ * What the editors accept as a new external address: an absolute http(s) URL.
+ * Every entry point shares this — the picker's "Externer Link" tab and the
+ * inline correction of an existing external row alike.
+ *
+ * @param {string|null} url - The candidate address.
+ * @returns {boolean}
+ */
+export function isValidExternalUrl(url) {
+  return typeof url === "string" && /^https?:\/\/\S+$/.test(url.trim());
+}
+
+/**
  * The external address of a reference site, if it has one.
  *
  * @param {Object|string|null} value - The stored value of a reference site.

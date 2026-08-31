@@ -49,19 +49,7 @@
 
       <v-btn small text color="primary" @click="pickerOpen = true">
         <v-icon small left>mdi-image-multiple-outline</v-icon>
-        Mediathek
-      </v-btn>
-      <v-btn
-        v-if="allowExternal"
-        icon
-        small
-        :color="externalMode ? 'primary' : undefined"
-        :title="
-          externalMode ? 'Externen Link schließen' : 'Externen Link eingeben'
-        "
-        @click="toggleExternal"
-      >
-        <v-icon small>mdi-link-variant</v-icon>
+        Auswählen
       </v-btn>
       <v-btn
         v-if="reference"
@@ -92,6 +80,7 @@
       :exclude-ids="excludeIds"
       :title="pickerTitle"
       @select="onSelect"
+      @select-external="onSelectExternal"
     />
   </div>
 </template>
@@ -130,7 +119,6 @@ export default {
       default:
         "Dieses Objekt ist öffentlich sichtbar — interne Medien sind hier nicht wählbar.",
     },
-    allowExternal: { type: Boolean, default: true },
     hint: { type: String, default: "" },
     emptyLabel: { type: String, default: "Nichts ausgewählt" },
     // Legacy sites that the media spec leaves untyped (§4.8) still hold a bare
@@ -259,8 +247,13 @@ export default {
       }
       this.$emit("input", url ? externalReferenceOf(url) : null);
     },
-    toggleExternal() {
-      this.externalMode = !this.externalMode;
+    // The dialog's "Externer Link" tab hands over a finished external
+    // reference — from here on it behaves like a value that arrived external.
+    onSelectExternal(reference) {
+      this.$emit(
+        "input",
+        this.valueFormat === "url" ? reference.url : reference
+      );
     },
     clear() {
       this.externalMode = false;

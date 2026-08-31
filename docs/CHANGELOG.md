@@ -9,6 +9,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
+-   Media picker: new tab "Externer Link" — a pasted `https://` address is stored as an external reference (hotlink, no import) wherever the picker opens, restoring external image URLs for bookable and event images
+-   Bookable and event image lists: an existing external entry's address can be corrected in place (pencil icon on the row)
+-   Bookable editor: "Als Bild übernehmen" on the legacy cover alert moves `imgUrl` into the image list as an external entry and clears the old field
+
 -   Media library admin view (`/media`, admin interface `media`): split view with facets (kind, tags, visibility), server-side search and pagination, permanent upload dropzone with per-file progress and error details, metadata editing, auto-loaded usage proof, and deletion blocked while a medium is in use; instance media tab for instance owners (`/api/v2/instance/media`)
 -   Role editor: `manageMedia` permission group and the `media` admin interface
 -   Media picker: gallery grid in a modal with multi-select, server-side search and tag filter, upload straight from the picker, and `intern` media greyed out with a reason wherever the entity is publicly visible
@@ -18,6 +22,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
+-   Media picker: upload moved from the grid header into a tab of its own (Mediathek | Upload | Externer Link); successful uploads land back on the grid, selected
+-   Single-image fields (teaser, speaker photo, logo, …) route external links through the picker's "Externer Link" tab; the unlabeled link-icon toggle is gone, an existing external address stays editable in place
 -   Bookable and event editors now store media references instead of raw file URLs: bookable images and attachments, event teaser and contact photo, event image list and speaker photos, event attachments (now with title, caption, `show`, `required`, `mailAttach`) — external links stay possible
 -   Bookable and event cards load images in fixed presets (`sm`, with `thumb` as the lazy placeholder), which replaces the full-size placeholder they used to fetch
 -   Event attachments and images steps, the simple event creator and the speaker photos pick from the media library
@@ -35,7 +41,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Removed
 
--   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone; `ChooseFile` has no caller left since the instance's legal documents moved to the media library)
+-   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone); the orphaned `ChooseFile` component and `ApiFileService` are now deleted too, so nothing addresses the removed `/api/:tenant/files` endpoints
 
 ## [4.2.8] — 2026-08-25
 

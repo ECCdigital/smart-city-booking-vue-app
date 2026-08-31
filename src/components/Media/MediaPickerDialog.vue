@@ -15,159 +15,192 @@
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-card-title>
+
+      <v-tabs v-model="tab" class="flex-grow-0">
+        <v-tab href="#library">Mediathek</v-tab>
+        <v-tab v-if="allowCreate" href="#upload">Upload</v-tab>
+        <v-tab href="#external">Externer Link</v-tab>
+      </v-tabs>
       <v-divider />
 
       <v-card-text
         class="pa-4"
         style="min-height: 420px"
-        @dragover.prevent="dragOver = true"
+        @dragover.prevent="onDragOver"
         @dragleave.prevent="dragOver = false"
         @drop.prevent="onDrop"
       >
-        <div class="d-flex align-center flex-wrap mb-3" style="gap: 8px">
-          <v-text-field
-            v-model="searchInput"
-            label="Suchen (Titel, Dateiname, Alt-Text) …"
-            prepend-inner-icon="mdi-magnify"
-            dense
-            solo
-            flat
-            clearable
-            hide-details
-            background-color="accent"
-            style="min-width: 220px"
-          />
-          <v-select
-            v-if="knownTags.length > 0"
-            v-model="filters.tag"
-            :items="tagItems"
-            label="Tag"
-            dense
-            solo
-            flat
-            clearable
-            hide-details
-            background-color="accent"
-            style="max-width: 180px"
-            @change="reload"
-          />
-          <v-chip v-if="kind" small label>{{ kindLabel }}</v-chip>
-          <v-chip v-if="publicOnly" small label color="warning" outlined>
-            <v-icon x-small left>mdi-lock-outline</v-icon>
-            intern = nicht wählbar
-          </v-chip>
-          <v-spacer />
-          <v-btn
-            v-if="allowCreate"
-            small
-            outlined
-            color="primary"
-            :loading="uploading"
-            @click="$refs.fileInput.click()"
-          >
-            <v-icon small left>mdi-upload</v-icon>
-            Neu hochladen
-          </v-btn>
-          <input
-            ref="fileInput"
-            type="file"
-            multiple
-            hidden
-            :accept="acceptAttribute"
-            @change="onFilePick"
-          />
-        </div>
-
-        <v-alert v-if="uploadError" type="error" dense outlined class="mb-3">
-          {{ uploadError }}
-        </v-alert>
-
-        <div
-          v-if="allowCreate"
-          class="media-picker__dropzone mb-3"
-          :class="{ 'media-picker__dropzone--active': dragOver }"
-        >
-          <v-icon small class="mr-2">mdi-cloud-upload-outline</v-icon>
-          Dateien hierher ziehen — sie landen als öffentliches Medium in der
-          Mediathek und sind direkt ausgewählt. Interne Medien lädt die
-          Mediathek selbst hoch.
-        </div>
-
-        <v-skeleton-loader v-if="loading && items.length === 0" type="image" />
-
-        <div v-else-if="items.length > 0" class="media-picker__grid">
-          <div
-            v-for="item in items"
-            :key="item.id"
-            class="media-picker__tile"
-            :class="{
-              'media-picker__tile--blocked': isBlocked(item),
-              'media-picker__tile--picked': isPicked(item),
-            }"
-            :title="tileTooltip(item)"
-            @click="toggle(item)"
-          >
-            <MediaImage
-              :media="item"
-              :scope="scope"
-              size="sm"
-              lazy-size="thumb"
-              :height="120"
+        <template v-if="tab === 'library'">
+          <div class="d-flex align-center flex-wrap mb-3" style="gap: 8px">
+            <v-text-field
+              v-model="searchInput"
+              label="Suchen (Titel, Dateiname, Alt-Text) …"
+              prepend-inner-icon="mdi-magnify"
+              dense
+              solo
+              flat
+              clearable
+              hide-details
+              background-color="accent"
+              style="min-width: 220px"
             />
-            <div class="media-picker__badges">
-              <v-chip
-                v-if="item.visibility === 'intern'"
-                x-small
-                color="warning"
-                text-color="white"
-              >
-                <v-icon x-small left>mdi-lock-outline</v-icon>
-                intern
-              </v-chip>
-              <v-chip v-if="isExcluded(item)" x-small color="grey" dark>
-                <v-icon x-small left>mdi-check</v-icon>
-                zugeordnet
-              </v-chip>
-            </div>
-            <v-icon
-              v-if="isPicked(item)"
-              class="media-picker__check"
-              color="primary"
+            <v-select
+              v-if="knownTags.length > 0"
+              v-model="filters.tag"
+              :items="tagItems"
+              label="Tag"
+              dense
+              solo
+              flat
+              clearable
+              hide-details
+              background-color="accent"
+              style="max-width: 180px"
+              @change="reload"
+            />
+            <v-chip v-if="kind" small label>{{ kindLabel }}</v-chip>
+            <v-chip v-if="publicOnly" small label color="warning" outlined>
+              <v-icon x-small left>mdi-lock-outline</v-icon>
+              intern = nicht wählbar
+            </v-chip>
+          </div>
+
+          <v-skeleton-loader
+            v-if="loading && items.length === 0"
+            type="image"
+          />
+
+          <div v-else-if="items.length > 0" class="media-picker__grid">
+            <div
+              v-for="item in items"
+              :key="item.id"
+              class="media-picker__tile"
+              :class="{
+                'media-picker__tile--blocked': isBlocked(item),
+                'media-picker__tile--picked': isPicked(item),
+              }"
+              :title="tileTooltip(item)"
+              @click="toggle(item)"
             >
-              mdi-check-circle
-            </v-icon>
-            <div class="media-picker__meta">
-              <div class="text-truncate font-weight-medium">
-                {{ item.title || item.originalFileName }}
+              <MediaImage
+                :media="item"
+                :scope="scope"
+                size="sm"
+                lazy-size="thumb"
+                :height="120"
+              />
+              <div class="media-picker__badges">
+                <v-chip
+                  v-if="item.visibility === 'intern'"
+                  x-small
+                  color="warning"
+                  text-color="white"
+                >
+                  <v-icon x-small left>mdi-lock-outline</v-icon>
+                  intern
+                </v-chip>
+                <v-chip v-if="isExcluded(item)" x-small color="grey" dark>
+                  <v-icon x-small left>mdi-check</v-icon>
+                  zugeordnet
+                </v-chip>
               </div>
-              <div class="text--secondary text-truncate">
-                {{ formatBytes(item.size) }}
+              <v-icon
+                v-if="isPicked(item)"
+                class="media-picker__check"
+                color="primary"
+              >
+                mdi-check-circle
+              </v-icon>
+              <div class="media-picker__meta">
+                <div class="text-truncate font-weight-medium">
+                  {{ item.title || item.originalFileName }}
+                </div>
+                <div class="text--secondary text-truncate">
+                  {{ formatBytes(item.size) }}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div v-else class="pa-8 text-center text--secondary font-italic">
-          Keine Medien für diesen Filter.
-        </div>
+          <div v-else class="pa-8 text-center text--secondary font-italic">
+            Keine Medien für diesen Filter.
+          </div>
 
-        <v-pagination
-          v-if="pageCount > 1"
-          v-model="page"
-          :length="pageCount"
-          total-visible="7"
-          class="mt-3"
-        />
+          <v-pagination
+            v-if="pageCount > 1"
+            v-model="page"
+            :length="pageCount"
+            total-visible="7"
+            class="mt-3"
+          />
+        </template>
+
+        <template v-else-if="tab === 'upload'">
+          <v-alert v-if="uploadError" type="error" dense outlined class="mb-3">
+            {{ uploadError }}
+          </v-alert>
+
+          <div
+            class="media-picker__dropzone media-picker__dropzone--tall"
+            :class="{ 'media-picker__dropzone--active': dragOver }"
+          >
+            <v-icon large class="mb-2">mdi-cloud-upload-outline</v-icon>
+            <div class="text-center" style="max-width: 420px">
+              Dateien hierher ziehen — sie landen als öffentliches Medium in der
+              Mediathek und sind direkt ausgewählt. Interne Medien lädt die
+              Mediathek selbst hoch.
+            </div>
+            <v-btn
+              small
+              outlined
+              color="primary"
+              :loading="uploading"
+              class="mt-4"
+              @click="$refs.fileInput.click()"
+            >
+              <v-icon small left>mdi-upload</v-icon>
+              Dateien auswählen
+            </v-btn>
+            <input
+              ref="fileInput"
+              type="file"
+              multiple
+              hidden
+              :accept="acceptAttribute"
+              @change="onFilePick"
+            />
+          </div>
+        </template>
+
+        <template v-else>
+          <p class="text-caption text--secondary mb-3">
+            Eine Datei einbinden, die nicht in der Mediathek liegt. Gespeichert
+            wird nur die Adresse — die Datei wird nicht importiert und muss
+            öffentlich erreichbar bleiben.
+          </p>
+          <v-text-field
+            v-model="externalUrl"
+            label="URL"
+            placeholder="https://…"
+            prepend-inner-icon="mdi-link-variant"
+            dense
+            solo
+            flat
+            hide-details
+            background-color="accent"
+            @keyup.enter="applyExternal"
+          />
+        </template>
       </v-card-text>
 
       <v-divider />
       <v-card-actions>
-        <span class="text--secondary ml-2">
+        <span v-if="tab !== 'external'" class="text--secondary ml-2">
           {{ selected.length }} ausgewählt
         </span>
         <v-spacer />
         <v-btn text @click="close">Abbrechen</v-btn>
-        <v-btn color="primary" :disabled="selected.length === 0" @click="apply">
+        <v-btn color="primary" :disabled="confirmDisabled" @click="confirm">
           <v-icon small left>mdi-plus</v-icon>
           Übernehmen
         </v-btn>
@@ -183,6 +216,10 @@ import MediaResolveService from "@/services/MediaResolveService";
 import FormatService from "@/services/FormatService";
 import MediaImage from "@/components/Media/MediaImage.vue";
 import { mediaUploadErrorMessage } from "@/utils/mediaUploadError";
+import {
+  externalReferenceOf,
+  isValidExternalUrl,
+} from "@/utils/mediaReference";
 
 const PAGE_SIZE = 24;
 
@@ -191,6 +228,10 @@ const PAGE_SIZE = 24;
  * Filtering and search run server-side against the listing endpoint — the same
  * endpoint the media library reads — and upload happens right here, so picking
  * an image never means leaving the form.
+ *
+ * Besides the library, the picker is also the single entry point for external
+ * addresses: the "Externer Link" tab stores a URL as an external reference —
+ * hotlinked, never imported.
  *
  * In a public context `intern` media stay visible but unselectable: the save
  * would be refused by the reference guard, and a greyed-out tile with the
@@ -220,6 +261,7 @@ export default {
   },
   data() {
     return {
+      tab: "library",
       items: [],
       total: 0,
       page: 1,
@@ -233,6 +275,7 @@ export default {
       dragOver: false,
       uploading: false,
       uploadError: null,
+      externalUrl: "",
     };
   },
   computed: {
@@ -253,12 +296,22 @@ export default {
     tagItems() {
       return this.knownTags.map((tag) => ({ text: tag, value: tag }));
     },
+    externalUrlValid() {
+      return isValidExternalUrl(this.externalUrl);
+    },
+    confirmDisabled() {
+      return this.tab === "external"
+        ? !this.externalUrlValid
+        : this.selected.length === 0;
+    },
   },
   watch: {
     value(open) {
       if (open) {
+        this.tab = "library";
         this.selected = [];
         this.uploadError = null;
+        this.externalUrl = "";
         this.reload();
       }
     },
@@ -353,17 +406,41 @@ export default {
       // A single-value site takes the last click, not a growing list.
       this.selected = this.multiple ? [...this.selected, media] : [media];
     },
+    confirm() {
+      if (this.tab === "external") {
+        this.applyExternal();
+        return;
+      }
+      this.apply();
+    },
     apply() {
       this.$emit("select", this.selected);
+      this.close();
+    },
+    // Confirming the "Externer Link" tab hands out an external reference
+    // instead of a media pick — the caller stores the address as it is.
+    applyExternal() {
+      if (!this.externalUrlValid) {
+        return;
+      }
+      this.$emit(
+        "select-external",
+        externalReferenceOf(this.externalUrl.trim())
+      );
       this.close();
     },
     onFilePick(event) {
       this.uploadFiles([...event.target.files]);
       event.target.value = "";
     },
+    onDragOver() {
+      if (this.tab === "upload") {
+        this.dragOver = true;
+      }
+    },
     onDrop(event) {
       this.dragOver = false;
-      if (!this.allowCreate) return;
+      if (this.tab !== "upload" || !this.allowCreate) return;
       this.uploadFiles([...event.dataTransfer.files]);
     },
     // One file per request; every upload that succeeds is selected right away,
@@ -387,6 +464,10 @@ export default {
           }
         }
         await this.reload();
+        // Back to the grid, where the fresh uploads show up selected.
+        if (!this.uploadError) {
+          this.tab = "library";
+        }
       } finally {
         this.uploading = false;
       }
@@ -456,6 +537,13 @@ export default {
   border-radius: var(--media-surface-radius, 8px);
   padding: 8px 12px;
   font-size: 13px;
+}
+
+.media-picker__dropzone--tall {
+  flex-direction: column;
+  justify-content: center;
+  min-height: 320px;
+  padding: 24px;
 }
 
 .media-picker__dropzone--active {
