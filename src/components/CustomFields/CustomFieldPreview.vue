@@ -97,6 +97,10 @@ import CustomFieldInput from "@/components/Booking/CustomFieldInput.vue";
 export default {
   name: "CustomFieldPreview",
   components: { CustomFieldInput },
+  // The preview is illustrative only. Without this, its inputs register with a
+  // surrounding v-form and an empty required preview field marks that form
+  // invalid — which disabled the save button in CustomFieldDialog.
+  provide: () => ({ form: null }),
   props: {
     field: { type: Object, required: true },
   },

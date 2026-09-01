@@ -49,17 +49,9 @@
 
     <v-card elevation="0" max-width="500" class="mx-auto mt-2">
       <v-card-text class="text-right pa-0">
-        <a
-          :href="'https://' + Utils.sanitizeUrl(instance?.dataProtectionUrl)"
-          target="_blank"
-        >Datenschutz</a
-        >
+        <a :href="dataProtectionHref" target="_blank">Datenschutz</a>
         |
-        <a
-          :href="'https://' + Utils.sanitizeUrl(instance?.legalNoticeUrl)"
-          target="_blank"
-        >Nutzungsbedingungen</a
-        >
+        <a :href="legalNoticeHref" target="_blank">Nutzungsbedingungen</a>
       </v-card-text>
     </v-card>
   </v-container>
@@ -71,13 +63,16 @@ import ApiAuthService from "@/services/api/ApiAuthService";
 import {mapActions, mapGetters} from "vuex";
 import ToastService from "@/services/ToastService";
 import ApiTenantService from "@/services/api/ApiTenantService";
-import Utils from "@/utils/Utils";
+import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
 
 export default {
   name: "PasswordReset",
   computed: {
-    Utils() {
-      return Utils
+    dataProtectionHref() {
+      return legalDocumentHref(this.instance?.dataProtection?.url);
+    },
+    legalNoticeHref() {
+      return legalDocumentHref(this.instance?.legalNotice?.url);
     },
     ...mapGetters({
       instance: "instance/instance",

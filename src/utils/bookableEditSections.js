@@ -56,6 +56,12 @@ const ALL_SECTIONS = [
   },
   {
     tabKey: "general",
+    id: "general-images",
+    labelKey: "bookable.edit.sections.generalImages",
+    type: "scroll",
+  },
+  {
+    tabKey: "general",
     id: "general-booker-info",
     labelKey: "bookable.edit.sections.generalBookerInfo",
     type: "scroll",

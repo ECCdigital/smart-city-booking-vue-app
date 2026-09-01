@@ -233,6 +233,13 @@ export default {
             interfaceName: "events",
             context: "tenant",
           },
+          {
+            title: "Mediathek",
+            link: "media",
+            icon: "mdi-image-multiple-outline",
+            interfaceName: "media",
+            context: "tenant",
+          },
         ],
       },
       {

@@ -9,6 +9,9 @@ export default class Bookable {
     this.title = "";
     this.description = "";
     this.isPublic = false;
+    // Ordered media references; position 0 is the cover image (§4.8 of the
+    // media spec). `imgUrl` stays as the legacy value of unmigrated bookables.
+    this.images = [];
     this.imgUrl = "";
     this.flags = [];
     this.tags = [];

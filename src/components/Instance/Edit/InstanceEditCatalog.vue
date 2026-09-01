@@ -159,32 +159,52 @@
       class="mt-4"
       title="Logo & Favicon"
       icon="mdi-image-area"
-      description="Laden Sie ein benutzerdefiniertes Logo für Ihr Portal hoch, um Ihre Marke zu präsentieren. Das Logo wird im Kopfbereich des Portals angezeigt und sollte idealerweise eine Größe von 200x50 Pixel haben. Das Favicon erscheint im Browser-Tab und sollte quadratisch (z. B. 32x32 oder 64x64 Pixel) sein."
+      description="Wählen Sie Logo und Favicon aus der Mediathek der Instanz. Beide werden allen Besuchern des Portals ausgeliefert, daher sind nur öffentliche Medien wählbar."
       no-margin
     >
       <v-row>
         <v-col cols="12" md="6">
-          <ChooseFile
-            v-model="local.branding.logoUrl"
-            :allow-protected="false"
-            filled
-            images-only
+          <MediaReferenceField
+            v-model="logo"
+            :scope="mediaScope"
             label="Logo"
-            background-color="accent"
-            forced-subdirectory="assets"
-            @input="emitUpdate"
+            public-only
+            :public-only-reason="publicOnlyReason"
+            empty-label="Kein Logo ausgewählt"
+            hint="Wird im Kopfbereich des Portals angezeigt, idealerweise 200 × 50 Pixel."
+          />
+          <MediaReferenceImage
+            v-if="logo"
+            :reference="logo"
+            :scope="mediaScope"
+            size="sm"
+            lazy-size="thumb"
+            :height="72"
+            contain
+            rounded
+            class="mt-2"
           />
         </v-col>
         <v-col cols="12" md="6">
-          <ChooseFile
-            v-model="local.branding.faviconUrl"
-            :allow-protected="false"
-            filled
-            images-only
+          <MediaReferenceField
+            v-model="favicon"
+            :scope="mediaScope"
             label="Favicon"
-            background-color="accent"
-            forced-subdirectory="assets"
-            @input="emitUpdate"
+            public-only
+            :public-only-reason="publicOnlyReason"
+            empty-label="Kein Favicon ausgewählt"
+            hint="Erscheint im Browser-Tab und sollte quadratisch sein, z. B. 32 × 32 oder 64 × 64 Pixel."
+          />
+          <MediaReferenceImage
+            v-if="favicon"
+            :reference="favicon"
+            :scope="mediaScope"
+            size="thumb"
+            :lazy-size="null"
+            :height="72"
+            contain
+            rounded
+            class="mt-2"
           />
         </v-col>
       </v-row>
@@ -227,12 +247,25 @@
 
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
-import ChooseFile from "@/components/Files/ChooseFile.vue";
+import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
+import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import SubSection from "@/components/commons/SubSection.vue";
+import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
+import { BRANDING_IMAGES, defaultBranding } from "@/utils/instanceBranding";
+
+// Logo and favicon are served to every visitor of the portal, so they may only
+// ever point at public media — the backend refuses anything else on save.
+const PUBLIC_ONLY_REASON =
+  "Logo und Favicon werden öffentlich ausgeliefert — interne Medien sind hier nicht wählbar.";
 
 export default {
   name: "InstanceEditCatalog",
-  components: { SubSection, ChooseFile, BaseSection },
+  components: {
+    SubSection,
+    MediaReferenceField,
+    MediaReferenceImage,
+    BaseSection,
+  },
   props: {
     instance: { type: Object, required: true },
     catalog: { type: Object, required: true },
@@ -246,9 +279,27 @@ export default {
         { text: "Öffentlich", value: "public" },
         { text: "Privat", value: "private" },
       ],
+      mediaScope: MEDIA_SCOPE.INSTANCE,
+      publicOnlyReason: PUBLIC_ONLY_REASON,
     };
   },
   computed: {
+    logo: {
+      get() {
+        return this.brandingImage("logo");
+      },
+      set(value) {
+        this.setBrandingImage("logo", value);
+      },
+    },
+    favicon: {
+      get() {
+        return this.brandingImage("favicon");
+      },
+      set(value) {
+        this.setBrandingImage("favicon", value);
+      },
+    },
     tenantsOptions() {
       return this.tenants.map((t) => ({
         id: t.id,
@@ -287,12 +338,7 @@ export default {
     cloneInstance(instance) {
       const cloned = { ...instance };
       cloned.branding = {
-        active: false,
-        theme: {
-          colors: { primary: "", secondary: "" },
-        },
-        logoUrl: "",
-        faviconUrl: "",
+        ...defaultBranding(),
         ...(instance.branding || {}),
       };
       cloned.branding.theme = {
@@ -306,6 +352,29 @@ export default {
           {}),
       };
       return cloned;
+    },
+    /**
+     * A branding image as the form reads it: the stored media reference or —
+     * as long as the media import has not converted it — the legacy address,
+     * which reads as an external reference (§4.9 of the media spec).
+     */
+    brandingImage(name) {
+      const { reference, readField } = BRANDING_IMAGES[name];
+      return (
+        this.local.branding[reference] || this.local.branding[readField] || null
+      );
+    },
+    /**
+     * Writes the reference and drops the legacy address along with it. The
+     * read field is derived from the reference on the way out (§4.9); an
+     * address left behind would resurface the old image the moment the user
+     * removes the reference again.
+     */
+    setBrandingImage(name, value) {
+      const { reference, readField } = BRANDING_IMAGES[name];
+      this.$set(this.local.branding, reference, value || null);
+      this.$set(this.local.branding, readField, "");
+      this.emitUpdate();
     },
     emitUpdate() {
       this.$emit("update:instance", { ...this.local });

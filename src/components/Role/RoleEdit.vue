@@ -192,6 +192,7 @@
 
 <script>
 import ApiRolesService from "@/services/api/ApiRolesService";
+import { adminInterfaceOptions } from "@/entities/role";
 
 export default {
   name: "RoleEdit",
@@ -210,41 +211,7 @@ export default {
     return {
       valid: true,
       inProgress: false,
-      adminInterfaceProps: [
-        {
-          name: "Rollen",
-          value: "roles",
-        },
-        { name: "Benutzer", value: "users" },
-        {
-          name: "Buchungen",
-          value: "bookings",
-        },
-        {
-          name: "Rabatte",
-          value: "coupons",
-        },
-        {
-          name: "Veranstaltungsräume",
-          value: "locations",
-        },
-        {
-          name: "Räume",
-          value: "rooms",
-        },
-        {
-          name: "Geräte & Weiteres",
-          value: "resources",
-        },
-        {
-          name: "Tickets",
-          value: "tickets",
-        },
-        {
-          name: "Veranstaltungen",
-          value: "events",
-        },
-      ],
+      adminInterfaceProps: adminInterfaceOptions,
       permissionStructure: [
         {
           name: "Rollen",
@@ -265,6 +232,10 @@ export default {
         {
           name: "Buchungsobjekte",
           value: "manageBookables",
+        },
+        {
+          name: "Mediathek",
+          value: "manageMedia",
         },
       ],
       rules: {

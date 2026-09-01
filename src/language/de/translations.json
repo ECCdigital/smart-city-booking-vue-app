@@ -156,6 +156,7 @@
       "openEvent": "Veranstaltung in neuem Tab öffnen",
       "sections": {
         "generalInfo": "Allgemeine Infos",
+        "generalImages": "Bilder",
         "generalBookerInfo": "Infos für Buchende",
         "generalTags": "Interne Tags",
         "pricingExternal": "Externe Datenquelle",
@@ -305,6 +306,27 @@
       "uniqueDays": "Für diese Tagesgrenze existiert bereits eine Stufe",
       "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
       "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden."
+    },
+    "legalDocuments": {
+      "title": "Rechtsdokumente",
+      "hint": "Datenschutzerklärung, Impressum, AGB, Widerrufsbelehrung und weitere Dokumente dieses Mandanten",
+      "description": "Hinterlegen Sie hier die Rechtsdokumente Ihres Mandanten. Wählen Sie je Dokument eine Datei aus der Mediathek dieses Mandanten oder tragen Sie einen externen Link ein. Die Dokumente werden abgelegt und noch nirgends automatisch angezeigt.",
+      "add": "Dokument hinzufügen",
+      "remove": "Dokument entfernen",
+      "type": "Art des Dokuments",
+      "documentTitle": "Titel",
+      "document": "Dokument",
+      "empty": "Kein Dokument ausgewählt",
+      "none": "Es sind noch keine Rechtsdokumente hinterlegt.",
+      "duplicateTitle": "Es gibt bereits ein sonstiges Dokument mit diesem Titel.",
+      "publicOnlyReason": "Rechtsdokumente sind zur Veröffentlichung bestimmt — interne Medien sind hier nicht wählbar.",
+      "types": {
+        "dataProtection": "Datenschutzerklärung",
+        "legalNotice": "Impressum",
+        "termsAndConditions": "AGB",
+        "rightOfWithdrawal": "Widerrufsbelehrung",
+        "other": "Sonstiges Dokument"
+      }
     }
   },
 
@@ -814,8 +836,39 @@
       "tickets": "Tickets",
       "bookings": "Buchungen",
       "coupons": "Rabatte",
+      "media": "Mediathek",
       "none": "-",
       "all": "Alle"
+    }
+  },
+  "media": {
+    "loadError": {
+      "title": "Mediathek nicht erreichbar",
+      "message": "Die Medienliste konnte nicht geladen werden."
+    },
+    "updateSuccess": {
+      "title": "Medium aktualisiert",
+      "message": "Die Metadaten wurden gespeichert."
+    },
+    "updateError": {
+      "title": "Speichern fehlgeschlagen",
+      "message": "Die Metadaten konnten nicht gespeichert werden."
+    },
+    "deleteSuccess": {
+      "title": "Medium gelöscht",
+      "message": "Das Medium wurde endgültig gelöscht."
+    },
+    "deleteError": {
+      "title": "Löschen fehlgeschlagen",
+      "message": "Das Medium konnte nicht gelöscht werden."
+    },
+    "copySuccess": {
+      "title": "URL kopiert",
+      "message": "Die Medien-URL wurde in die Zwischenablage kopiert."
+    },
+    "copySuccessIntern": {
+      "title": "URL kopiert",
+      "message": "Die Medien-URL wurde in die Zwischenablage kopiert. Das Medium ist intern — der Link ist nur mit Anmeldung aufrufbar."
     }
   },
   "receipt": {
