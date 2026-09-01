@@ -42,6 +42,12 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 ### Removed
 
 -   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone); the orphaned `ChooseFile` component and `ApiFileService` are now deleted too, so nothing addresses the removed `/api/:tenant/files` endpoints
+## [4.2.9] — 2026-08-31
+
+### Fixed
+
+- Custom field dialog: "Speichern" no longer stays disabled when "Pflichtfeld im Buchungsprozess" is enabled — the preview's inputs no longer register with the dialog's `v-form`
+
 
 ## [4.2.8] — 2026-08-25
 
@@ -254,6 +260,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.2.9]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.8...v4.2.9
 [4.2.8]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.7...v4.2.8
 [4.2.7]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.6...v4.2.7
 [4.2.6]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.5...v4.2.6
