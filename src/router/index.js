@@ -397,6 +397,16 @@ const routes = [
     ],
   },
   {
+    path: "/media",
+    name: "media",
+    component: lazyLoad("Media/Media"),
+    meta: {
+      title: "Mediathek",
+      requiresAuth: true,
+      interfaceName: "media",
+    },
+  },
+  {
     path: "/settings",
     name: "settings",
     component: Settings,

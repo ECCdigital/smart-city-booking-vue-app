@@ -1,14 +1,22 @@
 import ApiClient from "./ApiClientService";
+import { legalDocumentsForSave } from "@/utils/tenantLegalDocuments";
 
 export default {
   getTenants(publicTenants = false) {
     return ApiClient.get(`api/tenants?publicTenants=${publicTenants}`);
   },
+  /**
+   * Writes a tenant. The legal documents are normalised here rather than at
+   * the editors, because three screens save a tenant and every one of them
+   * would otherwise write back the addresses the backend derives from the
+   * media references on the way out — a shape the platform rejects (§4.8 of
+   * the media spec).
+   */
   submitTenant(tenant) {
-    return ApiClient.put("api/tenants", tenant);
+    return ApiClient.put("api/tenants", legalDocumentsForSave(tenant));
   },
   createTenant(tenant) {
-    return ApiClient.post("api/tenants", tenant);
+    return ApiClient.post("api/tenants", legalDocumentsForSave(tenant));
   },
   deleteTenant(tenant) {
     return ApiClient.delete(`api/tenants/${tenant.id}`);

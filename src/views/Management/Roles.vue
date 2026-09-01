@@ -56,6 +56,9 @@
           <template v-slot:item.manageCoupons="{ item }">
             {{ translateAccessLevels(item.manageCoupons) }}
           </template>
+          <template v-slot:item.manageMedia="{ item }">
+            {{ translateAccessLevels(item.manageMedia) }}
+          </template>
           <template v-slot:item.controls="{ item }">
             <span v-if="item.id !== 'super-admin'">
               <v-menu offset-y>
@@ -124,7 +127,7 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import RoleEdit from "@/components/Role/RoleEdit";
 import { mapActions, mapGetters } from "vuex";
 import RoleDeleteConformationDialog from "@/components/Role/roleDeleteConformationDialog";
-import { Role, RolePermission } from "@/entities/role";
+import { Role, RolePermission, adminInterfaceOptions } from "@/entities/role";
 import i18n from "../../language/index";
 import RolePermissionService from "@/services/permissions/RolePermissionService";
 
@@ -152,6 +155,7 @@ export default {
         { text: "Buchungen", value: "manageBookings" },
         { text: "Rollen", value: "manageRoles" },
         { text: "Rabatte", value: "manageCoupons" },
+        { text: "Mediathek", value: "manageMedia" },
         { text: "", value: "controls", sortable: false },
       ],
       openEditDialog: false,
@@ -243,7 +247,7 @@ export default {
         return i18n.t("permissions.adminInterfaces.none");
       }
 
-      if (adminInterfaces.length === 10) {
+      if (adminInterfaces.length === adminInterfaceOptions.length) {
         return i18n.t("permissions.adminInterfaces.all");
       }
 

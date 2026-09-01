@@ -1,5 +1,5 @@
 <script>
-import ChooseFile from "@/components/Files/ChooseFile.vue";
+import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 import Tiptap from "@/components/Tiptap.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiEventService from "@/services/api/ApiEventService";
@@ -8,7 +8,7 @@ import AddressLookup from "@/components/commons/AddressLookup.vue";
 
 export default {
   name: "SimpleEventCreator",
-  components: { Tiptap, ChooseFile, AddressLookup },
+  components: { Tiptap, MediaReferenceField, AddressLookup },
   data() {
     return {
       api: {
@@ -71,6 +71,11 @@ export default {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
     }),
+    // A publicly listed event carries public media only — the reference guard
+    // of the backend refuses the save otherwise (§4.3).
+    isPublic() {
+      return Boolean(this.$store.state.events.form.isPublic);
+    },
     eventName: {
       get() {
         return this.$store.state.events.form.information.name;
@@ -316,7 +321,9 @@ export default {
       },
     },
     hasExternalBookingUrl() {
-      return !!this.externalBookingUrl && this.externalBookingUrl.trim().length > 0;
+      return (
+        !!this.externalBookingUrl && this.externalBookingUrl.trim().length > 0
+      );
     },
     ...mapGetters({
       form: "events/form",
@@ -344,15 +351,13 @@ export default {
           ></v-text-field>
         </v-col>
         <v-col cols="12">
-          <ChooseFile
-            :tenant-id="tenantId"
+          <MediaReferenceField
             v-model="teaserImage"
-            background-color="accent"
             label="Titelbild der Veranstaltung"
-            images-only
-            filled
-            forced-subdirectory="events"
-          ></ChooseFile>
+            :public-only="isPublic"
+            public-only-reason="Diese Veranstaltung ist öffentlich sichtbar — interne Medien können hier nicht gespeichert werden."
+            empty-label="Kein Titelbild ausgewählt"
+          />
         </v-col>
         <v-col cols="12">
           <Tiptap label="Kurzbeschreibung" v-model="teaserText"></Tiptap>
@@ -528,7 +533,8 @@ export default {
             type="info"
             text
           >
-            Diese Veranstaltung wird über eine externe Buchungs-URL gebucht. Die Angaben zu Teilnehmern sind deaktiviert.
+            Diese Veranstaltung wird über eine externe Buchungs-URL gebucht. Die
+            Angaben zu Teilnehmern sind deaktiviert.
           </v-alert>
         </v-col>
       </v-row>

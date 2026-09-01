@@ -23,16 +23,13 @@
             </v-col>
 
             <v-col cols="12">
-              <ChooseFile
-                :tenant-id="tenantId"
+              <MediaReferenceField
                 v-model="teaserImage"
-                background-color="accent"
                 label="Titelbild der Veranstaltung"
-                images-only
-                filled
-                forced-subdirectory="events"
-
-              ></ChooseFile>
+                :public-only="isPublic"
+                public-only-reason="Diese Veranstaltung ist öffentlich sichtbar — interne Medien können hier nicht gespeichert werden."
+                empty-label="Kein Titelbild ausgewählt"
+              />
             </v-col>
 
             <v-col cols="12">
@@ -177,7 +174,7 @@ import {
 import Pager from "@/components/Events/Form/Pager";
 import ApiEventService from "@/services/api/ApiEventService";
 import Tiptap from "@/components/Tiptap";
-import ChooseFile from "@/components/Files/ChooseFile.vue";
+import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 
 setInteractionMode("eager");
 
@@ -206,7 +203,7 @@ export default {
     };
   },
   components: {
-    ChooseFile,
+    MediaReferenceField,
     ValidationProvider,
     ValidationObserver,
     Pager,
@@ -236,6 +233,11 @@ export default {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
     }),
+    // A publicly listed event carries public media only — the reference guard
+    // of the backend refuses the save otherwise (§4.3).
+    isPublic() {
+      return Boolean(this.$store.state.events.form.isPublic);
+    },
     name: {
       get() {
         return this.$store.state.events.form.information.name;

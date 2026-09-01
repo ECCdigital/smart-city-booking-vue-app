@@ -1,0 +1,37 @@
+// Surfaces of the media library (MediaLibrary, MediaDetailPanel,
+// MediaPickerDialog).
+//
+// The app-wide $card-border-radius / $dialog-border-radius (25px !important,
+// see variables.scss) are far too round for these dense, list-heavy views. They
+// are toned down for the media surfaces only — the global values stay as they
+// are. The !important is unavoidable: the Vuetify rules generated from those
+// variables carry one themselves, so only a more specific !important wins.
+//
+// These selectors are global on purpose: the picker and the confirm/delete
+// dialogs render detached from their component, out of reach of scoped styles.
+// They opt in via `content-class="media-dialog"`.
+
+.media-library,
+.media-detail,
+.media-dialog {
+  // Outer surfaces: cards, dialogs, dropzones, picker tiles. Everything nested
+  // inside one — list avatars, thumbnails, the usage box — stays a step tighter
+  // at 4px on Vuetify's `rounded` helper, which needs no override.
+  --media-surface-radius: 8px;
+
+  &.v-card,
+  &.v-dialog,
+  .v-card {
+    border-radius: var(--media-surface-radius) !important;
+  }
+
+  // Vuetify pins the list-item hover/active overlay to a fixed 4px
+  // (`.v-list-item::before`), so on a card with any other radius the highlight
+  // of the first and last row juts out past the rounded corner. Clip the list
+  // to the card's own corners instead of chasing the overlay's radius — that
+  // also keeps ripples and row dividers inside.
+  .v-card > .v-list {
+    border-radius: inherit;
+    overflow: hidden;
+  }
+}

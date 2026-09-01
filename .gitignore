@@ -39,3 +39,7 @@ temp/
 
 # Local agent instruction overrides (Codex)
 AGENTS.override.md
+
+#Claude local overrides
+CLAUDE.override.md
+.claude

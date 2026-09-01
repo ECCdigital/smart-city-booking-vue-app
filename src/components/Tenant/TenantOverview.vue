@@ -129,6 +129,7 @@ import TenantEditEvents from "@/components/Tenant/Edit/TenantEditEvents.vue";
 import TenantEditWorkflow from "@/components/Tenant/Edit/TenantEditWorkflow.vue";
 import TenantEditVerificationChallenges from "@/components/Tenant/Edit/TenantEditVerificationChallenges.vue";
 import TenantEditCatalog from "@/components/Tenant/Edit/TenantEditCatalog.vue";
+import TenantEditLegal from "@/components/Tenant/Edit/TenantEditLegal.vue";
 
 import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
 import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
@@ -161,6 +162,7 @@ export default {
     TenantEditVerificationChallenges,
     TenantEditCatalog,
     TenantEditBookables,
+    TenantEditLegal,
   },
   mixins: [unsavedChangesGuard],
   data() {
@@ -232,6 +234,12 @@ export default {
           label: "Kataloge",
           icon: "mdi-book-open-page-variant",
           comp: "TenantEditCatalog",
+        },
+        {
+          key: "legal",
+          label: "Rechtliches",
+          icon: "mdi-scale-balance",
+          comp: "TenantEditLegal",
         },
       ],
       instanceCustomFields: [],
