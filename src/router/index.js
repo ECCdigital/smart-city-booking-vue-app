@@ -17,6 +17,7 @@ import Locations from "@/views/Bookables/Locations/Locations";
 import Tenants from "@/views/Management/Tenants";
 import Users from "@/views/Management/TenantUsers.vue";
 import Roles from "@/views/Management/Roles";
+import AccessPoints from "@/views/Management/AccessPoints.vue";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
 import Bookings from "@/views/Bookings.vue";
 import BookingEditPage from "@/views/BookingEditPage.vue";
@@ -157,6 +158,16 @@ const routes = [
       title: "Rollen",
       requiresAuth: true,
       interfaceName: "roles",
+    },
+  },
+  {
+    path: "/tenant/access-points",
+    name: "access-points",
+    component: AccessPoints,
+    meta: {
+      title: "Zutritt & Schließsysteme",
+      requiresAuth: true,
+      interfaceName: "tenants",
     },
   },
   {

@@ -9,10 +9,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
+-   Tenant access apps: Salto KS IQ activation checklist for remote-open — progress header, IQs sorted by required action, guided modal wizard for the first activation (app-ban acknowledgement, PIN mail, one-time PIN capture), inline PIN entry for pending activations, discard with confirmation — requires the matching backend wizard endpoints
 -   Media picker: new tab "Externer Link" — a pasted `https://` address is stored as an external reference (hotlink, no import) wherever the picker opens, restoring external image URLs for bookable and event images
 -   Bookable and event image lists: an existing external entry's address can be corrected in place (pencil icon on the row)
 -   Bookable editor: "Als Bild übernehmen" on the legacy cover alert moves `imgUrl` into the image list as an external entry and clears the old field
-
 -   Media library admin view (`/media`, admin interface `media`): split view with facets (kind, tags, visibility), server-side search and pagination, permanent upload dropzone with per-file progress and error details, metadata editing, auto-loaded usage proof, and deletion blocked while a medium is in use; instance media tab for instance owners (`/api/v2/instance/media`)
 -   Role editor: `manageMedia` permission group and the `media` admin interface
 -   Media picker: gallery grid in a modal with multi-select, server-side search and tag filter, upload straight from the picker, and `intern` media greyed out with a reason wherever the entity is publicly visible
@@ -22,6 +22,9 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
+-   Tenant access apps: Salto KS picks an environment (`Accept (Sandbox)` / `Production`) instead of a free-text API base URL; the connection test sends `environment` and shows the server's own error (e.g. `invalid_client`) — requires the matching backend
+-   Tenant access apps: Salto KS credentials and the IQ activation wizard are behind a "coming soon" state — visible and greyed out for everyone, instance owners included; stored configuration is untouched and still travels through a save
+-   Access point dialog: the PIN-at-the-lock modes (`PIN-Code`, `PIN-Code & App`) are behind a "coming soon" state and cannot be picked; a new access point starts on `Öffnen per App`. Access points already stored on a PIN mode keep it
 -   Media picker: upload moved from the grid header into a tab of its own (Mediathek | Upload | Externer Link); successful uploads land back on the grid, selected
 -   Single-image fields (teaser, speaker photo, logo, …) route external links through the picker's "Externer Link" tab; the unlabeled link-icon toggle is gone, an existing external address stays editable in place
 -   Bookable and event editors now store media references instead of raw file URLs: bookable images and attachments, event teaser and contact photo, event image list and speaker photos, event attachments (now with title, caption, `show`, `required`, `mailAttach`) — external links stay possible
@@ -35,19 +38,21 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   Tenant owners can edit their tenant and its access providers again — the permission check asked for a `manageTenants` dimension the API never sends, which left the tenant and access pages to instance owners only
 -   Selected and hovered rows no longer paint outside their rounded corner: Vuetify gives the list-item overlay no radius of its own, so the attachment list's grey backdrop sat square behind a 4px row, and the media library's row highlight stuck out past the card
 -   Media library: "URL kopieren" always copies an absolute URL — a relative API base (BFF mode, or an unset direct-mode base URL) is anchored on the current origin; for `intern` media the success toast notes that the link needs a login
 -   Legal document links reach a document served from the media library: the login, card login, registration and password-reset pages resolve its root-relative address against the API instead of prefixing `https://` — and the login and password-reset footers read the documents themselves instead of `dataProtectionUrl`/`legalNoticeUrl`, which the backend migration to the document fields removed
 
 ### Removed
 
+-   Tenant access apps: webhook configuration is gone — Nuki's callback-URL/notification-ID form with its register/unregister buttons, and the Salto KS webhook registration status. The method is not supported (the Salto Connect API has no webhooks at all)
 -   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone); the orphaned `ChooseFile` component and `ApiFileService` are now deleted too, so nothing addresses the removed `/api/:tenant/files` endpoints
+
 ## [4.2.9] — 2026-08-31
 
 ### Fixed
 
-- Custom field dialog: "Speichern" no longer stays disabled when "Pflichtfeld im Buchungsprozess" is enabled — the preview's inputs no longer register with the dialog's `v-form`
-
+-   Custom field dialog: "Speichern" no longer stays disabled when "Pflichtfeld im Buchungsprozess" is enabled — the preview's inputs no longer register with the dialog's `v-form`
 
 ## [4.2.8] — 2026-08-25
 

@@ -891,6 +891,511 @@
       }
     }
   },
+  "accessPoint": {
+    "management": {
+      "tab": "Zugangspunkte",
+      "providersTab": "Schließsysteme",
+      "title": "Zugangspunkte",
+      "hint": "Türen und Schließfächer dieses Mandanten. Ein Zugangspunkt wird hier einmal angelegt und kann anschließend in beliebig vielen Buchungsobjekten verwendet werden.",
+      "create": "Zugangspunkt anlegen",
+      "edit": "Bearbeiten",
+      "reload": "Neu laden",
+      "search": "Zugangspunkt suchen...",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "close": "Schließen",
+      "required": "Pflichtfeld",
+      "modeUnsupported": "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt.",
+      "table": {
+        "assignment": "Zuordnung",
+        "unassigned": "Keinem Buchungsobjekt zugeordnet",
+        "loading": "Daten werden geladen...",
+        "empty": "Es ist noch kein Zugangspunkt angelegt.",
+        "perPage": "Zugangspunkte pro Seite"
+      },
+      "types": {
+        "door": "Tür",
+        "locker": "Schließfach"
+      },
+      "modes": {
+        "authorization": "PIN-Code",
+        "remote": "Öffnen per App",
+        "both": "PIN-Code & App"
+      },
+      "modeHints": {
+        "authorization": "Der Buchende gibt einen PIN-Code direkt am Schloss ein.",
+        "remote": "Der Buchende öffnet per Knopfdruck in der App – ohne PIN-Eingabe.",
+        "both": "Beides möglich: PIN-Code am Schloss oder Öffnen per App."
+      },
+      "fields": {
+        "label": "Bezeichnung",
+        "type": "Typ",
+        "provider": "Anbieter",
+        "externalId": "Schloss-ID beim Anbieter",
+        "externalIdHint": "Ändern Sie diese ID, um das Schloss auszutauschen, ohne den QR-Code neu zu drucken.",
+        "providerLocationId": "Standort-ID beim Anbieter",
+        "mode": "Modus",
+        "config": "Konfiguration",
+        "location": "Standort",
+        "validationRules": "Validierungsregeln"
+      },
+      "picker": {
+        "title": "Schloss vom Anbieter übernehmen",
+        "provider": "Anbieter",
+        "lock": "Schloss",
+        "apply": "Übernehmen",
+        "alreadyCreated": "bereits angelegt",
+        "hint": "Die übernommenen Angaben lassen sich anschließend frei ändern. Ohne Auswahl legen Sie den Zugangspunkt manuell an.",
+        "noProvider": "Es ist kein Anbieter für Türschlösser aktiv. Sie können den Zugangspunkt manuell anlegen oder zuerst unter „Schließsysteme“ einen Anbieter aktivieren."
+      },
+      "ruleTypes": {
+        "qrScan": "QR-Scan erforderlich"
+      },
+      "rules": {
+        "title": "Validierungsregeln",
+        "qrScan": "QR-Scan erforderlich",
+        "qrScanShort": "QR-Scan",
+        "qrScanHint": "Der Zugangspunkt lässt sich nur öffnen, wenn der QR-Code vor Ort gescannt wurde.",
+        "defaultHint": "Unverändert übernommen: Beim Anlegen setzt der Server die Regel „QR-Scan erforderlich“ selbst. Schalten Sie den Schalter aus, um den Zugangspunkt bewusst ohne Scan-Pflicht anzulegen.",
+        "required": "erforderlich",
+        "notRequired": "nicht nötig"
+      },
+      "location": {
+        "title": "Standort",
+        "address": "Adresse",
+        "coordinates": "Koordinaten",
+        "prefill": "Standort vom Anbieter übernehmen",
+        "prefillAfterSave": "Den Standort kann der Anbieter erst vorschlagen, wenn der Zugangspunkt angelegt ist.",
+        "prefillApplied": "Die Koordinaten des Anbieters wurden übernommen. Speichern Sie, um sie zu sichern.",
+        "prefillEmpty": "Der Anbieter kennt für dieses Schloss keinen Standort."
+      },
+      "config": {
+        "title": "Erweiterte Konfiguration",
+        "label": "Anbieter-Konfiguration (JSON)",
+        "hint": "Anbieterspezifische Zusatzangaben. Leer lassen, wenn nicht benötigt.",
+        "invalid": "Kein gültiges JSON.",
+        "notObject": "Die Konfiguration muss ein JSON-Objekt sein."
+      },
+      "qr": {
+        "pdf": "QR-Code drucken (PDF, A4)",
+        "svg": "QR-Code als SVG",
+        "png": "QR-Code als PNG",
+        "error": "Der QR-Code konnte nicht erzeugt werden."
+      },
+      "rotate": {
+        "action": "Scan-Code rotieren",
+        "title": "Scan-Code rotieren",
+        "question": "Soll der Scan-Code von „{label}“ ersetzt werden?",
+        "warning": "Alle bereits gedruckten und angebrachten QR-Codes dieses Zugangspunkts werden damit sofort ungültig. Drucken Sie den neuen QR-Code aus und bringen Sie ihn an.",
+        "confirm": "Rotieren",
+        "done": "Der Scan-Code wurde ersetzt. Die alten QR-Codes sind ab sofort ungültig.",
+        "reprint": "Neuen QR-Code drucken:",
+        "error": "Der Scan-Code konnte nicht rotiert werden."
+      },
+      "delete": {
+        "action": "Löschen",
+        "title": "Zugangspunkt löschen",
+        "question": "Soll der Zugangspunkt „{label}“ gelöscht werden?",
+        "confirm": "Löschen",
+        "affectedTitle": "Diese Buchungsobjekte verlieren damit ihren Zugangspunkt:",
+        "affectedHint": "Die Zuordnung wird automatisch aus den Buchungsobjekten entfernt.",
+        "noneAffected": "Der Zugangspunkt ist keinem Buchungsobjekt zugeordnet."
+      },
+      "dialog": {
+        "createTitle": "Zugangspunkt anlegen",
+        "editTitle": "Zugangspunkt bearbeiten"
+      },
+      "errors": {
+        "generic": "Die Aktion konnte nicht ausgeführt werden.",
+        "forbidden": "Dafür fehlt Ihnen die Berechtigung. Zugangspunkte dürfen nur Mandanten-Eigentümer ändern.",
+        "notFound": "Der Zugangspunkt existiert nicht mehr. Bitte laden Sie die Liste neu.",
+        "loadFailed": "Die Zugangspunkte konnten nicht geladen werden.",
+        "saveFailed": "Der Zugangspunkt konnte nicht gespeichert werden.",
+        "deleteFailed": "Der Zugangspunkt konnte nicht gelöscht werden.",
+        "preconditionFailed": "Die Regel „{rule}“ lässt sich nicht aktivieren, solange folgende Angaben fehlen: {requires}.",
+        "fieldInvalid": "{field}: {reason}",
+        "codes": {
+          "required": "Pflichtangabe",
+          "enum": "Unzulässiger Wert",
+          "validate": "Unzulässiger Wert",
+          "type_array": "Es wird eine Liste erwartet",
+          "type_string": "Es wird ein Text erwartet"
+        },
+        "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
+      },
+      "toasts": {
+        "saved": {
+          "title": "Gespeichert",
+          "message": "Der Zugangspunkt wurde gespeichert."
+        },
+        "deleted": {
+          "title": "Gelöscht",
+          "message": "Der Zugangspunkt wurde gelöscht."
+        },
+        "qrFailed": {
+          "title": "QR-Code fehlgeschlagen",
+          "message": "Der QR-Code konnte nicht erzeugt werden."
+        },
+        "tenantSaved": {
+          "title": "Gespeichert",
+          "message": "Änderungen wurden erfolgreich gespeichert."
+        },
+        "tenantSaveFailed": {
+          "title": "Speichern fehlgeschlagen",
+          "message": "Fehler beim Speichern der Änderungen."
+        }
+      }
+    },
+    "comingSoon": {
+      "badge": "Bald verfügbar",
+      "salto": "Die Salto-KS-Anbindung befindet sich noch in der Fertigstellung. Die Konfiguration wird zu einem späteren Zeitpunkt freigeschaltet.",
+      "mode": "Diese Öffnungsart befindet sich noch in der Fertigstellung und kann derzeit nicht ausgewählt werden."
+    },
+    "tenant": {
+      "title": "Türsteuerung & Zugang",
+      "sectionHint": "Verbinden Sie smarte Türschlösser, damit Buchende Türen während ihres Buchungszeitraums öffnen und schließen können.",
+      "providerTitle": "Smarte Türschlösser",
+      "providerDescription": "Mit Nuki öffnen und schließen Sie Türen aus der Ferne. Buchende erhalten während ihres Buchungszeitraums automatisch Zugang.",
+      "providerLink": "Mehr über Nuki",
+      "activate": "Nuki aktivieren",
+      "apiCredentials": "API-Zugangsdaten",
+      "apiToken": "API-Token",
+      "apiTokenPlaceholder": "Nuki Web API Token",
+      "apiTokenUnchanged": "•••••••• (unverändert)",
+      "apiTokenHint": "Es ist bereits ein Token hinterlegt. Leer lassen, um ihn unverändert zu übernehmen.",
+      "apiBaseUrl": "API Base-URL",
+      "permissionsTitle": "Benötigte Token-Berechtigungen",
+      "permissionsIntro": "Der Nuki Web API-Token muss beim Anlegen in Nuki Web (MENÜ → API) mit den passenden Berechtigungen versehen werden. Tokens erhalten dauerhaft genau die Rechte, die beim Erstellen angehakt wurden, und werden ungültig, sobald das Passwort des Nuki-Web-Accounts geändert wird.",
+      "permissionsMinTitle": "Minimum (öffnen/schließen + Status)",
+      "permissionReadOnly": "Geräte anzeigen (smartlock.readOnly) – Verbindungstest, Türen auflisten, Status lesen",
+      "permissionAction": "Geräte bedienen (smartlock.action) – Türen öffnen und schließen",
+      "permissionsFullTitle": "Zusätzlich für die volle Funktionalität",
+      "permissionAuth": "Berechtigungen verwalten (smartlock.auth) – zeitlich begrenzte Keypad-PIN-Codes (erfordert ein gepairtes Keypad)",
+      "permissionLog": "Aktivitätsprotokolle anzeigen / Benachrichtigungen (smartlock.log) – Tür-Events",
+      "permissionsNote": "Den umfassenden Scope „Geräte verwalten“ (smartlock) bewusst NICHT vergeben (Least Privilege). Das Backend liest Geräte nur, legt sie aber nicht an und ändert keine Gerätekonfiguration.",
+      "testConnection": "Verbindung testen",
+      "connectionSuccess": "Verbindung erfolgreich!",
+      "salto": {
+        "providerTitle": "Salto KS – Cloud-Schließanlage",
+        "providerDescription": "Mit Salto KS verwalten Sie Türen cloudbasiert. Buchende erhalten während ihres Buchungszeitraums automatisch eine zeitlich begrenzte Zutrittsberechtigung und einen PIN-Code.",
+        "providerLink": "Mehr über Salto KS",
+        "activate": "Salto KS aktivieren",
+        "clientId": "Client-ID",
+        "clientSecret": "Client-Secret",
+        "clientSecretPlaceholder": "Salto KS Client-Secret",
+        "clientSecretUnchanged": "•••••••• (unverändert)",
+        "clientSecretHint": "Es ist bereits ein Secret hinterlegt. Leer lassen, um es unverändert zu übernehmen.",
+        "username": "System-User (E-Mail)",
+        "usernamePlaceholder": "z. B. service-user@example.com",
+        "usernameHint": "E-Mail des Salto-KS-System-Users mit der Rolle „site_admin“ für alle relevanten Sites.",
+        "password": "System-User-Passwort",
+        "passwordPlaceholder": "Salto KS System-User-Passwort",
+        "passwordUnchanged": "•••••••• (unverändert)",
+        "passwordHint": "Es ist bereits ein Passwort hinterlegt. Leer lassen, um es unverändert zu übernehmen.",
+        "systemUserMissing": "System-User fehlt – ohne E-Mail und Passwort ist keine Verbindung möglich. Bitte tragen Sie die Zugangsdaten des KS-System-Users ein und speichern Sie.",
+        "siteId": "Site-ID",
+        "environment": "Umgebung",
+        "environmentHint": "Accept ist die Salto-Testumgebung (Sandbox), Production die echte Anlage. Connect API und Identity-Server ergeben sich daraus – Zugangsdaten gelten nur in ihrer Umgebung.",
+        "environmentAccept": "Accept (Sandbox)",
+        "environmentProduction": "Production",
+        "iq": {
+          "title": "IQ-Aktivierung für Remote-Open",
+          "refresh": "IQ-Liste aktualisieren",
+          "appBan": "Wichtig: Den System-User niemals in der Salto-App an einem IQ aktivieren („Get Code“ / IQ-Aktivierung). Die App-Aktivierung macht das hier gespeicherte Secret still ungültig – jedes Fernöffnen schlägt danach mit otp_invalid fehl.",
+          "progress": "{ready} von {total} IQs bereit für Remote-Open",
+          "progressActionNeeded": "Noch nicht bereit: {count} – die Liste ist nach Handlungsbedarf sortiert.",
+          "progressAllDone": "Alles erledigt – alle Türen an diesen IQs lassen sich fernöffnen.",
+          "noIqs": "An der Salto-Site wurden keine IQs gefunden.",
+          "notConfigured": "Die IQ-Liste ist erst verfügbar, wenn der Mandant mit aktiver Salto-KS-App gespeichert wurde.",
+          "loadError": "Die IQ-Liste konnte nicht geladen werden:",
+          "online": "online",
+          "offline": "offline",
+          "lastErrorLabel": "Letzter Fehler:",
+          "nextStepLabel": "Nächster Schritt:",
+          "pinLabel": "PIN aus der E-Mail",
+          "pinPlaceholder": "z. B. 1234",
+          "state": {
+            "no_otp": {
+              "label": "Keine Aktivierung nötig",
+              "doneNote": "benötigt keine Aktivierung (otp_enabled ist aus)"
+            },
+            "activated": {
+              "label": "Aktiviert",
+              "doneNote": "aktiviert am"
+            },
+            "not_activated": {
+              "label": "Nicht aktiviert",
+              "nextStep": "Aktivierung starten – Salto sendet eine PIN an das Postfach des System-Users."
+            },
+            "pending_pin": {
+              "label": "PIN ausstehend",
+              "nextStep": "Die PIN aus der E-Mail an das Postfach des System-Users hier eintragen."
+            },
+            "degraded": {
+              "label": "Gestört",
+              "nextStep": "Beim Fernöffnen kam es mehrfach in Folge zu otp_invalid. Ein erfolgreiches Öffnen stellt den Zustand automatisch wieder her – hilft das nicht, die Aktivierung verwerfen und neu durchlaufen."
+            },
+            "reactivation_required": {
+              "label": "Re-Aktivierung nötig",
+              "nextStep": "Das IQ meldet restore_required – Remote-Open ist für diese Türen ausgesetzt, bis die Aktivierung neu durchlaufen wurde. Nach einem IQ-Reset müssen alle Nutzer des IQ neu aktivieren."
+            }
+          },
+          "actions": {
+            "start": "Aktivierung starten",
+            "complete": "Abschließen",
+            "resendMail": "PIN-Mail erneut senden",
+            "discard": "Verwerfen",
+            "discardAndRestart": "Verwerfen & neu aktivieren",
+            "discardTooltip": "Aktivierung verwerfen"
+          },
+          "wizard": {
+            "title": "IQ aktivieren –",
+            "stepPrepare": "Vorbereitung",
+            "prepareText": "Der Assistent aktiviert den System-User des Mandanten an diesem IQ. Dabei wird eine PIN an das Postfach des System-Users gesendet – halten Sie den Zugriff auf dieses Postfach bereit.",
+            "appBanAck": "Verstanden – der System-User wird nicht in der Salto-App verwendet.",
+            "next": "Weiter",
+            "stepStart": "Secret sichern & PIN-Mail senden",
+            "startProgress": "Gerätegeheimnis wird gesichert und die PIN-Mail ausgelöst …",
+            "stepPin": "PIN aus dem Postfach eingeben",
+            "pinText": "Salto hat eine 4-stellige PIN an das Postfach des System-Users gesendet. Bitte dort nachsehen und die PIN hier eintragen – sie wird nur einmalig erfasst.",
+            "completeActivation": "Aktivierung abschließen",
+            "resendHint": "„Erneut senden“ wiederholt nur die E-Mail; das gesicherte Geheimnis bleibt bestehen.",
+            "stepDone": "Fertig",
+            "doneText": "ist aktiviert – Türen an diesem IQ lassen sich jetzt fernöffnen.",
+            "close": "Schließen"
+          },
+          "discardConfirm": {
+            "title": "Aktivierung verwerfen?",
+            "activatedWarning": "Verwerfen löscht die hier gespeicherten Zutrittsdaten unwiderruflich; bei Salto bleibt der System-User an diesem IQ aktiviert. Eine Neu-Aktivierung über den Assistenten gelingt erst, wenn der System-User dort als nicht aktiviert gilt (z. B. nach einem IQ-Reset) – andernfalls ist ein Salto-seitiger Reset des Users bzw. IQs nötig.",
+            "pendingText": "Verwerfen entfernt das gespeicherte Gerätegeheimnis; die zuletzt gemailte PIN wird damit unbrauchbar. Der Assistent kann danach neu gestartet werden.",
+            "cancel": "Abbrechen",
+            "confirm": "Verwerfen"
+          },
+          "errors": {
+            "salto_iq_already_activated_at_salto": "Der System-User ist an diesem IQ bereits aktiviert (vermutlich eine frühere Aktivierung über die Salto-App). Das ist per API nicht behebbar – Ausweg: Salto-seitiger Reset des Users bzw. IQs, siehe Einrichtungsanleitung.",
+            "salto_iq_activation_exists": "Für dieses IQ existiert bereits eine Aktivierung. Erst verwerfen, dann neu starten.",
+            "salto_iq_invalid_pin": "Bitte die 4-stellige PIN aus der E-Mail eingeben.",
+            "salto_iq_activation_not_started": "Für dieses IQ ist keine Aktivierung gestartet – bitte den Assistenten von vorn beginnen.",
+            "salto_iq_activation_otp_rejected": "Salto hat die Aktivierung abgelehnt (otp_invalid). Stimmt die PIN mit der zuletzt gemailten überein? Der Eintrag bleibt in „PIN ausstehend“.",
+            "salto_ks_application_not_found": "Für diesen Mandanten ist keine aktive Salto-KS-App gespeichert.",
+            "generic": "Der Schritt ist fehlgeschlagen. Bitte erneut versuchen."
+          }
+        }
+      }
+    },
+    "audit": {
+      "title": "Zugriffsprotokoll exportieren",
+      "info": "Exportieren Sie das mandantenweite Zugriffsprotokoll (Türöffnungen, Schließungen, QR-Scans, abgelehnte Versuche, Provisionierungen, Webhook-Events) als CSV oder PDF. Optional lässt sich der Export über die Filter eingrenzen.",
+      "from": "Von",
+      "to": "Bis",
+      "provider": "Anbieter",
+      "action": "Aktion",
+      "result": "Ergebnis",
+      "bookingId": "Buchungsnummer",
+      "accessPointId": "Access-Point-ID",
+      "reset": "Filter zurücksetzen",
+      "exportCsv": "Als CSV exportieren",
+      "exportPdf": "Als PDF exportieren",
+      "deniedColumnsTitle": "Spalten zu abgelehnten Versuchen",
+      "deniedColumns": {
+        "blockingReasons": {
+          "label": "Blockierungsgründe",
+          "hint": "Warum der Versuch abgelehnt wurde, wichtigster Grund zuerst."
+        },
+        "channel": {
+          "label": "Kanal",
+          "hint": "Ob der Versuch per QR-Scan an der Tür oder aus der Ferne kam."
+        },
+        "evidenceBypassed": {
+          "label": "Evidence-Bypass",
+          "hint": "Ob eine berechtigte Person die Nachweisregeln übersprungen hat. Bleibt leer, wenn der Eintrag älter als dieses Feld ist."
+        },
+        "accessRole": {
+          "label": "Zugriffsrolle",
+          "hint": "In welcher Eigenschaft die Tür bedient wurde – als Buchender der eigenen Buchung oder aus der Verwaltung. Trennt zwei Abweisungen, die sonst gleich aussehen; eine leere Zelle heißt „nicht erfasst“."
+        }
+      },
+      "actions": {
+        "open": "Öffnen",
+        "close": "Schließen",
+        "unlatch": "Entriegeln",
+        "scan": "QR-Scan",
+        "provision": "Provisionierung",
+        "revoke": "Entzug",
+        "status": "Status",
+        "webhook": "Webhook"
+      },
+      "results": {
+        "success": "Erfolg",
+        "denied": "Abgelehnt",
+        "failure": "Fehler",
+        "pending": "Ausstehend"
+      },
+      "error": {
+        "forbidden": {
+          "title": "Keine Berechtigung",
+          "message": "Sie haben keine Berechtigung für den Audit-Export."
+        },
+        "failed": {
+          "title": "Export fehlgeschlagen",
+          "message": "Das Zugriffsprotokoll konnte nicht exportiert werden. Bitte versuchen Sie es erneut."
+        }
+      }
+    },
+    "bookable": {
+      "title": "Türen / Zugang",
+      "activate": "Türen aktivieren",
+      "activateHint": "Buchende erhalten zeitbasierte Zugangsberechtigungen oder können Türen aus der Buchung heraus öffnen.",
+      "reload": "Neu laden",
+      "selectTitle": "Zugangspunkte auswählen",
+      "select": "Zugangspunkte",
+      "selectHint": "Mehrfachauswahl möglich. Derselbe Zugangspunkt darf in mehreren Buchungsobjekten verwendet werden.",
+      "selectedCount": "{count} ausgewählt",
+      "noneAvailable": "Für diesen Mandanten ist noch kein Zugangspunkt angelegt.",
+      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier wählen Sie nur aus, welche davon dieses Buchungsobjekt öffnet.",
+      "manageLink": "Zugangspunkte verwalten",
+      "readForbidden": "Ihnen fehlt die Berechtigung, die Zugangspunkte dieses Mandanten zu lesen. Bitte wenden Sie sich an eine Person mit Mandanten-Rechten.",
+      "unknownTitle": "Unbekannte Zugangspunkte in der Auswahl",
+      "unknownHint": "Zu diesen IDs gibt es keinen Zugangspunkt dieses Mandanten – vermutlich wurden sie gelöscht. Entfernen Sie sie, sonst lässt sich das Buchungsobjekt nicht speichern.",
+      "emptyTitle": "Noch keine Zugangspunkte zugeordnet",
+      "emptyHint": "Wählen Sie oben einen oder mehrere Zugangspunkte aus.",
+      "buffer": {
+        "title": "Pufferzeiten",
+        "hint": "Zeitspanne vor und nach dem Buchungszeitraum, in der die Zugangspunkte zusätzlich bedient werden dürfen. Der Wert gilt für alle ausgewählten Zugangspunkte.",
+        "before": "Vorlauf",
+        "after": "Nachlauf",
+        "minutes": "Min.",
+        "invalid": "Bitte eine ganze Zahl zwischen 0 und {max} Minuten angeben."
+      },
+      "saveError": {
+        "title": "Speichern fehlgeschlagen"
+      }
+    },
+    "booking": {
+      "title": "Tür-Steuerung",
+      "reload": "neu laden",
+      "pinInfo": "PINs werden aus Sicherheitsgründen nicht angezeigt. Falls eine PIN erzeugt wurde, wird sie per E-Mail an den Buchenden gesendet.",
+      "provisioned": "provisioniert",
+      "provisionedAt": "Provisioniert:",
+      "checkStatus": "Status prüfen",
+      "close": "Schließen",
+      "open": "Aufschließen",
+      "unlatch": "Tür öffnen",
+      "status": {
+        "waitingClose": "Warte auf Schließen…",
+        "waitingOpen": "Warte auf Bestätigung…",
+        "opened": "Geöffnet",
+        "openedAt": "Geöffnet ({time})",
+        "error": "Fehler",
+        "errorCode": "Fehler {code}",
+        "unlocked": "Entsperrt",
+        "locked": "Verschlossen",
+        "lastEvent": "Letztes Event vorhanden",
+        "provisioned": "Zugang bereitgestellt",
+        "notProvisioned": "Nicht provisioniert"
+      },
+      "window": {
+        "before": "Zugang ab {time} möglich.",
+        "after": "Zugangszeitraum bis {time} abgelaufen.",
+        "until": "Zugang bis {time} möglich.",
+        "outside": "Außerhalb des erlaubten Zeitfensters. {hint}"
+      }
+    },
+    "connection": {
+      "error": {
+        "title": "Verbindung fehlgeschlagen",
+        "message": "Die Verbindung zu Nuki konnte nicht hergestellt werden."
+      }
+    },
+    "load": {
+      "error": {
+        "title": "Türen konnten nicht geladen werden",
+        "message": "Die Türliste konnte nicht vom Nuki-System abgerufen werden."
+      }
+    },
+    "blockingReasons": {
+      "rejected": "Der Zugang wurde abgelehnt.",
+      "not_committed": "Die Buchung ist noch nicht bestätigt.",
+      "payment_required": "Die Buchung ist noch nicht bezahlt.",
+      "authorization_revoked": "Die Zugangsberechtigung wurde widerrufen.",
+      "outside_access_window": "Außerhalb des erlaubten Zeitfensters.",
+      "not_provisioned": "Der Zugang ist noch nicht freigegeben.",
+      "locker_not_ready": "Das Schließfach ist noch nicht bereit.",
+      "no_remote_access": "Für diesen Zugangspunkt ist keine Fernsteuerung verfügbar.",
+      "evidence_missing": "Der Zugang muss vor Ort per QR-Code bestätigt werden.",
+      "evidence_invalid": "Der QR-Code ist nicht mehr gültig. Bitte scannen Sie den Code an der Tür erneut.",
+      "evidence_rule_unavailable": "Der Zugang ist derzeit nicht prüfbar. Bitte wenden Sie sich an den Betreiber.",
+      "unknown": "Die Tür konnte nicht geöffnet werden."
+    },
+    "open": {
+      "success": {
+        "title": "Tür geöffnet",
+        "message": "Der Öffnen-Befehl wurde bestätigt."
+      },
+      "error": {
+        "title": "Fehler beim Öffnen",
+        "message": "Die Tür konnte nicht geöffnet werden."
+      },
+      "timeout": {
+        "title": "Bestätigung ausstehend",
+        "message": "Die Tür hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+      },
+      "sendError": {
+        "title": "Befehl fehlgeschlagen",
+        "message": "Fehler beim Senden des Öffnen-Befehls. Bitte erneut versuchen."
+      }
+    },
+    "unlatch": {
+      "success": {
+        "title": "Tür geöffnet",
+        "message": "Die Tür wurde geöffnet."
+      },
+      "error": {
+        "title": "Fehler beim Öffnen",
+        "message": "Die Tür konnte nicht geöffnet werden. Möglicherweise unterstützt dieses Gerät kein Aufdrücken der Tür. Bitte stattdessen \"Aufschließen\" verwenden."
+      },
+      "timeout": {
+        "title": "Bestätigung ausstehend",
+        "message": "Die Tür hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+      },
+      "sendError": {
+        "title": "Befehl fehlgeschlagen",
+        "message": "Fehler beim Senden des Öffnen-Befehls. Bitte erneut versuchen."
+      }
+    },
+    "close": {
+      "success": {
+        "title": "Tür geschlossen",
+        "message": "Der Schließen-Befehl wurde bestätigt."
+      },
+      "error": {
+        "title": "Fehler beim Schließen",
+        "message": "Die Tür konnte nicht geschlossen werden."
+      },
+      "timeout": {
+        "title": "Bestätigung ausstehend",
+        "message": "Die Tür hat den Schließen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+      },
+      "sendError": {
+        "title": "Befehl fehlgeschlagen",
+        "message": "Fehler beim Senden des Schließen-Befehls. Bitte erneut versuchen."
+      }
+    },
+    "status": {
+      "error": {
+        "title": "Statusabfrage fehlgeschlagen",
+        "message": "Der Tür-Status konnte nicht abgerufen werden."
+      },
+      "waitTimeout": {
+        "title": "Zeitüberschreitung",
+        "message": "Zeitüberschreitung beim Warten auf Bestätigung. Bitte Status manuell prüfen."
+      },
+      "doorError": {
+        "title": "Tür-Fehler",
+        "message": "Bei der Tür ist ein Fehler aufgetreten (Code {code})."
+      }
+    }
+  },
   "locker": {
     "open": {
       "success": {

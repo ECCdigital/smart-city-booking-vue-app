@@ -38,6 +38,18 @@ class BookingPermissionService {
     );
   }
 
+  static allowAuditExport() {
+    if (BookingPermissionService.isInstanceOwner()) return true;
+    const tenantId = store.getters["tenants/currentTenantId"];
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    if (!permissions) return false;
+    if (permissions.isOwner) return true;
+
+    return !!permissions.manageBookings?.readAny;
+  }
+
   static allowDelete(booking) {
     if (BookingPermissionService.isInstanceOwner()) return true;
     const tenantId = store.getters["tenants/currentTenantId"];
