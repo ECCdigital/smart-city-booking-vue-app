@@ -1347,15 +1347,24 @@
       "pickerLoading": "Zugangspunkte werden geladen ..."
     },
     "booking": {
-      "title": "Tür-Steuerung",
+      "title": "Zugänge",
       "reload": "neu laden",
       "pinInfo": "PINs werden aus Sicherheitsgründen nicht angezeigt. Falls eine PIN erzeugt wurde, wird sie per E-Mail an den Buchenden gesendet.",
-      "provisioned": "provisioniert",
-      "provisionedAt": "Provisioniert:",
+      "compartment": "{label} — Fach {compartment}",
+      "process": "Vorgang:",
       "checkStatus": "Status prüfen",
       "close": "Schließen",
       "open": "Aufschließen",
+      "openCompartment": "Fach öffnen",
       "unlatch": "Tür öffnen",
+      "state": {
+        "held": "Vorgemerkt",
+        "granted": "Erteilt",
+        "revoked": "Widerrufen"
+      },
+      "blocked": {
+        "forbidden": "Ihnen fehlt die Berechtigung, diese Buchung zu bedienen."
+      },
       "status": {
         "waitingClose": "Warte auf Schließen…",
         "waitingOpen": "Warte auf Bestätigung…",
@@ -1364,10 +1373,7 @@
         "error": "Fehler",
         "errorCode": "Fehler {code}",
         "unlocked": "Entsperrt",
-        "locked": "Verschlossen",
-        "lastEvent": "Letztes Event vorhanden",
-        "provisioned": "Zugang bereitgestellt",
-        "notProvisioned": "Nicht provisioniert"
+        "locked": "Verschlossen"
       },
       "window": {
         "before": "Zugang ab {time} möglich.",
@@ -1400,20 +1406,20 @@
       "evidence_missing": "Der Zugang muss vor Ort per QR-Code bestätigt werden.",
       "evidence_invalid": "Der QR-Code ist nicht mehr gültig. Bitte scannen Sie den Code an der Tür erneut.",
       "evidence_rule_unavailable": "Der Zugang ist derzeit nicht prüfbar. Bitte wenden Sie sich an den Betreiber.",
-      "unknown": "Die Tür konnte nicht geöffnet werden."
+      "unknown": "Der Zugangspunkt konnte nicht geöffnet werden."
     },
     "open": {
       "success": {
-        "title": "Tür geöffnet",
+        "title": "Zugang geöffnet",
         "message": "Der Öffnen-Befehl wurde bestätigt."
       },
       "error": {
         "title": "Fehler beim Öffnen",
-        "message": "Die Tür konnte nicht geöffnet werden."
+        "message": "Der Zugangspunkt konnte nicht geöffnet werden."
       },
       "timeout": {
         "title": "Bestätigung ausstehend",
-        "message": "Die Tür hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+        "message": "Der Zugangspunkt hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
       },
       "sendError": {
         "title": "Befehl fehlgeschlagen",
@@ -1459,27 +1465,16 @@
     "status": {
       "error": {
         "title": "Statusabfrage fehlgeschlagen",
-        "message": "Der Tür-Status konnte nicht abgerufen werden."
+        "message": "Der Status des Zugangspunkts konnte nicht abgerufen werden."
       },
       "waitTimeout": {
         "title": "Zeitüberschreitung",
         "message": "Zeitüberschreitung beim Warten auf Bestätigung. Bitte Status manuell prüfen."
       },
-      "doorError": {
-        "title": "Tür-Fehler",
-        "message": "Bei der Tür ist ein Fehler aufgetreten (Code {code})."
-      }
-    }
-  },
-  "locker": {
-    "open": {
-      "success": {
-        "title": "Erfolgreich geöffnet",
-        "message": "Das Schließfach wurde erfolgreich geöffnet."
-      },
-      "error": {
-        "title": "Fehler beim Öffnen",
-        "message": "Das Schließfach konnte nicht geöffnet werden."
+      "pointError": {
+        "title": "Fehler am Zugangspunkt",
+        "message": "Am Zugangspunkt ist ein Fehler aufgetreten (Code {code}).",
+        "detailedMessage": "Am Zugangspunkt ist ein Fehler aufgetreten (Code {code}): {detail}"
       }
     }
   },
