@@ -9,6 +9,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
+-   Test setup: Vitest with `@vue/test-utils@1`, `@vitejs/plugin-vue2` and jsdom, running beside the Vue CLI toolchain — `npm test` and `npm run test:watch`, specs under `tests/unit/` mirroring `src/`, shared Vuetify/Vuex mount boilerplate in `tests/unit/support/mount.js`, conventions in `docs/agents/testing.md`
+-   Characterisation tests pinning today's behaviour ahead of the 4.3.x API migration: `apiErrorMessage`, `TenantPermissionService`, `bookingPaymentStatus` and the three status switches of `BookingEditStatus`
 -   Tenant access apps: Salto KS IQ activation checklist for remote-open — progress header, IQs sorted by required action, guided modal wizard for the first activation (app-ban acknowledgement, PIN mail, one-time PIN capture), inline PIN entry for pending activations, discard with confirmation — requires the matching backend wizard endpoints
 -   Media picker: new tab "Externer Link" — a pasted `https://` address is stored as an external reference (hotlink, no import) wherever the picker opens, restoring external image URLs for bookable and event images
 -   Bookable and event image lists: an existing external entry's address can be corrected in place (pencil icon on the row)
@@ -22,6 +24,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
+-   `vue` and `vue-template-compiler` are aligned on 2.7.16 — they had drifted apart, which breaks any tool that compiles templates outside webpack
+-   The stale eslint `overrides` block for `mocha` test globals is gone; Vitest globals stay off and specs import `describe`/`it`/`expect` from `vitest`
 -   Tenant access apps: Salto KS picks an environment (`Accept (Sandbox)` / `Production`) instead of a free-text API base URL; the connection test sends `environment` and shows the server's own error (e.g. `invalid_client`) — requires the matching backend
 -   Tenant access apps: Salto KS credentials and the IQ activation wizard are behind a "coming soon" state — visible and greyed out for everyone, instance owners included; stored configuration is untouched and still travels through a save
 -   Access point dialog: the PIN-at-the-lock modes (`PIN-Code`, `PIN-Code & App`) are behind a "coming soon" state and cannot be picked; a new access point starts on `Öffnen per App`. Access points already stored on a PIN mode keep it

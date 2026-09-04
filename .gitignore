@@ -32,6 +32,9 @@ pnpm-debug.log*
 
 temp/
 
+# Local working notes
+.scratch/
+
 # Cursor: commit shared rules, ignore local IDE state
 .cursor/*
 !.cursor/rules/

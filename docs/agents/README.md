@@ -14,6 +14,7 @@ docs/agents/
   components.md           ← Vue component & view conventions
   api-services.md         ← API client layer
   web-integration.md      ← JS web interface (BookingManager)
+  testing.md              ← Vitest setup, layout & conventions
 docs/
   shared-session-deploy.md                   ← shared-origin Admin + Storefront deploy
 .cursor/rules/

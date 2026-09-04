@@ -15,6 +15,7 @@ Vue 2.7 SPA for multi-tenant resource booking administration (rooms, sports faci
 | State | `src/store/modules/` | Vuex modules |
 | Routing | `src/router/` | Routes and auth middleware pipeline |
 | i18n | `src/language/` | German UI strings (`de/translations.json`) |
+| Tests | `tests/unit/` | Vitest specs, mirroring the `src/` tree |
 | JS embed | `src/js-web-interface/` | Standalone `BookingManager` for external websites |
 | Entities | `src/entities/` | Lightweight domain helpers |
 
@@ -41,9 +42,11 @@ npm run lint:check   # eslint
 npm run lint:fix     # eslint --fix
 npm run format:check # prettier --check
 npm run format:write # prettier --write
+npm test             # vitest, single run
+npm run test:watch   # vitest, watch mode
 ```
 
-Run `npm run lint:check` before finishing a task. Fix lint issues you introduce.
+Run `npm run lint:check` and `npm test` before finishing a task. Fix lint issues you introduce.
 
 ## Coding standards
 
@@ -66,6 +69,7 @@ Details: [docs/agents/coding-standards.md](docs/agents/coding-standards.md)
 | Topic | File |
 |-------|------|
 | Architecture & data flow | [docs/agents/architecture.md](docs/agents/architecture.md) |
+| Testing (Vitest) | [docs/agents/testing.md](docs/agents/testing.md) |
 | Vue components & views | [docs/agents/components.md](docs/agents/components.md) |
 | API services | [docs/agents/api-services.md](docs/agents/api-services.md) |
 | JS web interface (embed) | [docs/agents/web-integration.md](docs/agents/web-integration.md) |
