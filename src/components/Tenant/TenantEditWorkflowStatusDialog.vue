@@ -30,9 +30,10 @@
               <em>abgelehnt/storniert</em> oder <em>bezahlt</em>.
             </li>
           </ul>
-          Mehrere Aktionen können kombiniert werden. Als Benutzer stehen nur
-          Mitglieder dieses Mandanten zur Auswahl; bereits gespeicherte
-          Empfänger von außerhalb bleiben erhalten und sind als
+          Mehrere Aktionen können kombiniert werden. Zur Auswahl stehen nur
+          Mitglieder dieses Mandanten; ein Empfänger, der keines ist - eine frei
+          eingetragene Adresse oder ein früher instanzweit konfigurierter
+          Benutzer -, bleibt gespeichert und ist als
           <em>Unbekannter Empfänger</em> gekennzeichnet.
         </v-alert>
         <h3>Workflow Aktionen</h3>
@@ -74,6 +75,24 @@
                   ></v-select>
                 </v-col>
                 <v-col class="col-12 col-md-8">
+                  <v-alert
+                    v-if="action.receiverType === 'user' && usersUnavailable"
+                    type="warning"
+                    dense
+                    outlined
+                    class="mx-1"
+                  >
+                    Die Mitglieder dieses Mandanten konnten nicht geladen
+                    werden. Gespeicherte Empfänger bleiben erhalten, neue lassen
+                    sich gerade nicht auswählen.
+                  </v-alert>
+                  <!--
+                    A combobox, not a select: `v-select` rebuilds its value from
+                    the items it knows, so a recipient that is no longer a
+                    member of this tenant would silently drop out of `sendTo` on
+                    the next edit. `return-object` has to be set explicitly -
+                    unlike `v-select`, `v-combobox` defaults it to true.
+                  -->
                   <v-combobox
                     v-if="action.receiverType === 'user'"
                     class="mx-1"
@@ -98,7 +117,7 @@
                         v-bind="attrs"
                         :input-value="selected.value"
                         close
-                        :color="isKnownUser(item) ? 'secondary' : 'warning'"
+                        :color="isUnknownUser(item) ? 'warning' : 'secondary'"
                         @click="select"
                         @click:close="removeUser(idx, item)"
                       >
@@ -198,6 +217,7 @@
 <script>
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { tenantUserOptions } from "@/utils/tenantUsers";
 
 export default {
   name: "TenantEditWorkflowStatusDialog",
@@ -222,6 +242,7 @@ export default {
       },
       availableRoles: [],
       availableUsers: [],
+      usersUnavailable: false,
       actionTypes: [
         { label: "Email-Benachrichtigung ", value: "email" },
         { label: "Buchung-Statusänderung", value: "bookingStatus" },
@@ -284,30 +305,22 @@ export default {
 
       try {
         const response = await ApiTenantService.getTenantUsers(this.tenantId);
-        const userDetails = response?.userDetails || [];
-
-        this.availableUsers = (response?.users || [])
-          .map((user) => {
-            const details = userDetails.find(
-              (detail) => detail.id === user.userId
-            );
-            const firstName = details?.firstName || user.firstName || "";
-            const lastName = details?.lastName || user.lastName || "";
-            const fullName = `${firstName} ${lastName}`.trim();
-
-            return {
-              userId: user.userId,
-              label: fullName || user.userId,
-            };
-          })
-          .filter((user) => !!user.userId);
+        this.availableUsers = tenantUserOptions(response);
+        this.usersUnavailable = false;
       } catch (error) {
         console.error("Error fetching tenant users:", error);
         this.availableUsers = [];
+        this.usersUnavailable = true;
       }
     },
-    isKnownUser(userId) {
-      return this.availableUsers.some((user) => user.userId === userId);
+    /**
+     * Only a member list that was actually read can tell us that a recipient is
+     * not in it. While it could not be read, no id is called unknown - that
+     * would be the "no data" lie in place of "no access".
+     */
+    isUnknownUser(userId) {
+      if (this.usersUnavailable) return false;
+      return !this.availableUsers.some((user) => user.userId === userId);
     },
     /**
      * A recipient that is not a member of this tenant stays in `sendTo` and
@@ -316,7 +329,10 @@ export default {
      */
     userLabel(userId) {
       const user = this.availableUsers.find((u) => u.userId === userId);
-      return user ? user.label : `${userId} (Unbekannter Empfänger)`;
+      if (user) return user.label;
+      return this.isUnknownUser(userId)
+        ? `${userId} (Unbekannter Empfänger)`
+        : userId;
     },
     addAction() {
       this.workflowStatus.actions.push({

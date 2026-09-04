@@ -107,6 +107,17 @@ describe("TenantEditWorkflow", () => {
     ]);
   });
 
+  it("does not call a recipient unknown when the member list could not be read", async () => {
+    ApiTenantService.getTenantUsers.mockRejectedValue(new Error("403"));
+    const wrapper = mountWorkflow(workflowWithRecipients(["anna@example.org"]));
+    await flush(wrapper);
+    await openFirstStatus(wrapper);
+
+    expect(wrapper.text()).toContain("anna@example.org");
+    expect(wrapper.text()).not.toContain("Unbekannter Empfänger");
+    expect(wrapper.text()).toContain("konnten nicht geladen werden");
+  });
+
   it("marks a recipient outside this tenant as unknown instead of hiding it", async () => {
     const wrapper = mountWorkflow(
       workflowWithRecipients(["ghost@example.org"])

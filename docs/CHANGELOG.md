@@ -24,7 +24,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
--   Tenant editor, tab "Workflow": e-mail recipients are now the members of the tenant being edited (`GET /api/:tenant/users`) instead of every user of the instance — `GET /api/users` is instance-owner-only from 4.3.x on, so the screen degraded to raw user ids for a tenant owner and the recipient picker of the status dialog stayed empty. Recipients from outside the tenant are no longer selectable; ids already stored keep their place, are labelled "Unbekannter Empfänger" and survive a save unless the admin removes them
+-   Tenant editor, tab "Workflow": e-mail recipients are now the members of the tenant being edited (`GET /api/:tenant/users`) instead of every user of the instance — `GET /api/users` is instance-owner-only from 4.3.x on, so the screen degraded to raw user ids for a tenant owner and the recipient picker of the status dialog stayed empty. Recipients from outside the tenant are no longer selectable; ids already stored keep their place, are labelled "Unbekannter Empfänger" and survive a save unless the admin removes them. When the member list itself cannot be read, both screens say so rather than calling every recipient unknown
+-   The join of `users` and `userDetails` from `GET /api/:tenant/users` moved into `src/utils/tenantUsers.js`; the bookable permissions editor, the workflow tab and the workflow status dialog share it instead of carrying a copy each
 
 -   `vue` and `vue-template-compiler` are aligned on 2.7.16 — they had drifted apart, which breaks any tool that compiles templates outside webpack
 -   The stale eslint `overrides` block for `mocha` test globals is gone; Vitest globals stay off and specs import `describe`/`it`/`expect` from `vitest`

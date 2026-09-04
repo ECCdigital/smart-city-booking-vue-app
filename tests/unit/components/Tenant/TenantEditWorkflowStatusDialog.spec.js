@@ -85,18 +85,26 @@ describe("TenantEditWorkflowStatusDialog", () => {
     await flush(wrapper);
 
     expect(ApiTenantService.getTenantUsers).toHaveBeenCalledWith(TENANT_ID);
-    expect(userPicker(wrapper).props("items")).toEqual([
-      { userId: "anna@example.org", label: "Anna Admin" },
-      { userId: "bernd@example.org", label: "Bernd Bucher" },
+    expect(
+      userPicker(wrapper)
+        .props("items")
+        .map((item) => [item.userId, item.label])
+    ).toEqual([
+      ["anna@example.org", "Anna Admin"],
+      ["bernd@example.org", "Bernd Bucher"],
     ]);
   });
 
-  it("keeps the recipient list empty when the member list cannot be read", async () => {
+  it("says so when the member list cannot be read, instead of calling every recipient unknown", async () => {
     ApiTenantService.getTenantUsers.mockRejectedValue(new Error("403"));
-    const wrapper = mountDialog(emailStatus([]));
+    const wrapper = mountDialog(emailStatus(["anna@example.org"]));
     await flush(wrapper);
 
     expect(userPicker(wrapper).props("items")).toEqual([]);
+    expect(wrapper.find(".v-alert--dense").text()).toContain(
+      "konnten nicht geladen werden"
+    );
+    expect(recipientChips(wrapper)).toEqual(["anna@example.org"]);
   });
 
   it("labels a stored recipient outside this tenant as unknown", async () => {

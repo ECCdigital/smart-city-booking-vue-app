@@ -5,6 +5,7 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { tenantUserOptions } from "@/utils/tenantUsers";
 
 export default {
   name: "TenantEditWorkflow",
@@ -24,6 +25,7 @@ export default {
       creatingStatusId: null,
       availableRoles: [],
       availableUsers: [],
+      usersUnavailable: false,
       showEditStatusDialog: false,
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
@@ -111,26 +113,12 @@ export default {
 
       try {
         const response = await ApiTenantService.getTenantUsers(this.tenantId);
-        const userDetails = response?.userDetails || [];
-
-        this.availableUsers = (response?.users || [])
-          .map((user) => {
-            const details = userDetails.find(
-              (detail) => detail.id === user.userId
-            );
-            const firstName = details?.firstName || user.firstName || "";
-            const lastName = details?.lastName || user.lastName || "";
-            const fullName = `${firstName} ${lastName}`.trim();
-
-            return {
-              userId: user.userId,
-              fullName: fullName || user.userId,
-            };
-          })
-          .filter((user) => !!user.userId);
+        this.availableUsers = tenantUserOptions(response);
+        this.usersUnavailable = false;
       } catch (error) {
         console.error("Error fetching tenant users:", error);
         this.availableUsers = [];
+        this.usersUnavailable = true;
       }
     },
     emitTenant() {
@@ -259,8 +247,14 @@ export default {
       const r = this.availableRoles.find((x) => x.id === roleId);
       return r?.name || `Rolle ${roleId}`;
     },
-    isKnownUser(userId) {
-      return this.availableUsers.some((u) => u.userId === userId);
+    /**
+     * Only a member list that was actually read can tell us that a recipient is
+     * not in it. While it could not be read, no id is called unknown - that
+     * would be the "no data" lie in place of "no access".
+     */
+    isUnknownUser(userId) {
+      if (this.usersUnavailable) return false;
+      return !this.availableUsers.some((u) => u.userId === userId);
     },
     /**
      * A stored recipient that is not a member of this tenant stays visible and
@@ -268,8 +262,11 @@ export default {
      * recipient without anyone noticing.
      */
     userLabel(userId) {
-      const u = this.availableUsers.find((x) => x.userId === userId);
-      return u ? u.fullName : `${userId} (Unbekannter Empfänger)`;
+      const user = this.availableUsers.find((u) => u.userId === userId);
+      if (user) return user.label;
+      return this.isUnknownUser(userId)
+        ? `${userId} (Unbekannter Empfänger)`
+        : userId;
     },
     actionSummary(action) {
       if (!action || !action.type) return "Unbekannte Aktion";
@@ -319,6 +316,11 @@ export default {
         </v-btn>
       </v-col>
     </v-row>
+
+    <v-alert v-if="usersUnavailable" type="warning" dense outlined class="mt-4">
+      Die Mitglieder dieses Mandanten konnten nicht geladen werden. Empfänger
+      werden deshalb mit ihrer Benutzer-Id angezeigt.
+    </v-alert>
 
     <v-expansion-panels
       v-if="localWorkflow.states.length"
@@ -441,7 +443,8 @@ export default {
                             small
                             class="mr-1 mb-1"
                             :color="
-                              action.receiverType === 'user' && !isKnownUser(id)
+                              action.receiverType === 'user' &&
+                              isUnknownUser(id)
                                 ? 'warning'
                                 : 'grey lighten-3'
                             "

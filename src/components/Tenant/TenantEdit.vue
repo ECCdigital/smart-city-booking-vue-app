@@ -721,15 +721,15 @@
       <v-divider class="mb-5"></v-divider>
       <v-row>
         <v-col class="col-12 col-md-6">
-            <v-alert type="info" border="left" elevation="1" colored-border>
-              <span>
-                Mit dieser Option können Sie das Erstellen einer Veranstaltung
-                standardmäßig auf den einfachen Modus umstellen. Dieser Modus
-                ist für die meisten Anwendungsfälle ausreichend. Das Erstellen
-                einer detaillierte Veranstaltung lässt sich weiterhin über den
-                "Veranstaltung Erstellen" Knopf auswählen.
-              </span>
-            </v-alert>
+          <v-alert type="info" border="left" elevation="1" colored-border>
+            <span>
+              Mit dieser Option können Sie das Erstellen einer Veranstaltung
+              standardmäßig auf den einfachen Modus umstellen. Dieser Modus ist
+              für die meisten Anwendungsfälle ausreichend. Das Erstellen einer
+              detaillierte Veranstaltung lässt sich weiterhin über den
+              "Veranstaltung Erstellen" Knopf auswählen.
+            </span>
+          </v-alert>
         </v-col>
       </v-row>
       <v-row>
@@ -795,7 +795,12 @@
 
                 <v-row no-gutters class="mt-4">
                   <v-col cols="12">
-                    <v-alert type="info" border="left" elevation="1" colored-border>
+                    <v-alert
+                      type="info"
+                      border="left"
+                      elevation="1"
+                      colored-border
+                    >
                       Weisen Sie jedem Ereignis (Buchungs-Event) einen Status
                       zu.
                       <br />
@@ -937,6 +942,7 @@
     <TenantEditWorkflowStatusDialog
       :open="showEditStatusDialog"
       :states="selectedSatus"
+      :tenant-id="tenant.id"
       @close="showEditStatusDialog = false"
       @save="updateStatus"
     />
@@ -1205,7 +1211,9 @@ export default {
           };
 
           const catalogWithoutTenantID = removeTenantID(this.catalog);
-          const defaultCatalogWithoutTenantID = removeTenantID(this.defaultCatalog);
+          const defaultCatalogWithoutTenantID = removeTenantID(
+            this.defaultCatalog
+          );
           const areEqual =
             JSON.stringify(catalogWithoutTenantID) ===
             JSON.stringify(defaultCatalogWithoutTenantID);
@@ -1233,7 +1241,7 @@ export default {
           await this.addToast({
             message: getApiErrorMessage(
               e,
-              "Fehler beim Speichern der Änderungen.",
+              "Fehler beim Speichern der Änderungen."
             ),
             type: "error",
           });
