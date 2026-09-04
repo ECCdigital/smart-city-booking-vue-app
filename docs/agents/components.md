@@ -107,6 +107,30 @@ computed: {
 },
 ```
 
+### Known gap: `create` without `update` in the role editor
+
+`src/components/Role/RoleEdit.vue` renders every access level of a role
+dimension as a free-standing checkbox. There is no coupling between them —
+no `watch`, no `computed` setter, no `@change` — and the backend role schema
+does not couple them either. A role with `manageRoles.create` and neither
+`updateOwn` nor `updateAny` is two clicks away, and it is the most obvious
+state of a freshly created role where somebody ticks only "Erstellen".
+
+That role does not work. The obsolete PUT store routes carry `update` at the
+door and only decide inside the handler whether something is created; for
+`role` the backend authorization table knows no `updateOwn` at all, so the
+request is rejected with 403 before it ever reaches the creating path.
+
+**Deliberately not fixed** (§E9 of the 4.3.x permissions spec). Coupling the
+checkboxes in the UI would be the lie in the opposite direction — it would
+claim that creating implies editing, which is not true of the domain, and it
+would have to come out again once the store routes are dropped. A backend PR
+for routes that are meant to die is not worth it either.
+
+**The caveat, on the record:** if customers maintain roles themselves, a
+silent 403 two clicks into the editor becomes a support ticket. If that
+happens, coupling the checkboxes in the UI is the fastest answer.
+
 ## Dialogs
 
 - Confirmation dialogs follow the naming pattern `*ConformationDialog.vue` (existing convention)

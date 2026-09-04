@@ -1,7 +1,6 @@
 const RolePermission = Object.freeze({
   MANAGE_BOOKABLES: "manageBookables",
   MANAGE_USERS: "manageUsers",
-  MANAGE_TENANTS: "manageTenants",
   MANAGE_ROLES: "manageRoles",
   MANAGE_BOOKINGS: "manageBookings",
   MANAGE_MEDIA: "manageMedia",
@@ -30,7 +29,6 @@ class Role {
     adminInterfaces,
     manageBookables,
     manageUsers,
-    manageTenants,
     manageBookings,
     manageRoles,
     manageCoupons,
@@ -50,15 +48,6 @@ class Role {
       deleteAny: false,
     };
     this.manageUsers = manageUsers || {
-      create: false,
-      readAny: false,
-      readOwn: false,
-      updateAny: false,
-      updateOwn: false,
-      deleteOwn: false,
-      deleteAny: false,
-    };
-    this.manageTenants = manageTenants || {
       create: false,
       readAny: false,
       readOwn: false,

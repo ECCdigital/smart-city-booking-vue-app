@@ -598,9 +598,6 @@ export default {
       if (this.hasPermission(RolePermission.MANAGE_USERS)) {
         permissions.push("Benutzer verwalten");
       }
-      if (this.hasPermission(RolePermission.MANAGE_TENANTS)) {
-        permissions.push("Mandanten verwalten");
-      }
       if (this.hasPermission(RolePermission.MANAGE_BOOKINGS)) {
         permissions.push("Buchungen verwalten");
       }
