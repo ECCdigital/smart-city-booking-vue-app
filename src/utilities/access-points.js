@@ -47,7 +47,8 @@ export function isLockerAccessPoint(accessPoint) {
 /**
  * The `accessPointDetails` a bookable starts out with. Everything that reads
  * the block tolerates missing keys, but writing it from one place keeps the
- * shared buffer from quietly going missing when access is switched on.
+ * shared buffer - and the compartments distributed over the locker systems -
+ * from quietly going missing when access is switched on.
  *
  * @returns {Object} A fresh, empty access configuration
  */
@@ -56,6 +57,7 @@ export function defaultAccessPointDetails() {
     active: false,
     accessBuffer: { before: 0, after: 0 },
     accessPointIds: [],
+    accessPointAmounts: {},
   };
 }
 

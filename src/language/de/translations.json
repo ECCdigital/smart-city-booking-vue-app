@@ -1326,7 +1326,9 @@
         "title": "Stückzahl",
         "hint": "Die Stückzahl dieses Buchungsobjekts. Sie begrenzt, wie viele Fächer an einer zugeordneten Anlage gleichzeitig belegt sein können. Leer heißt unbegrenzt.",
         "label": "Stückzahl",
-        "externalHint": "Die Stückzahl meldet der Anbieter. Sie lässt sich hier nicht ändern und begrenzt, wie viele Fächer an einer zugeordneten Anlage gleichzeitig belegt sein können."
+        "externalHint": "Die Stückzahl meldet der Anbieter. Sie lässt sich hier nicht ändern und begrenzt, wie viele Fächer an einer zugeordneten Anlage gleichzeitig belegt sein können.",
+        "mismatchTitle": "Mengen und Stückzahl weichen voneinander ab",
+        "mismatchHint": "Die Mengen der zugeordneten Anlagen ergeben zusammen {distributed} Fächer, die Stückzahl dieses Buchungsobjekts ist {capacity}. Speichern ist möglich – die Belegung wird weiterhin gegen die Stückzahl gerechnet."
       },
       "selectTitle": "Zugeordnete Zugangspunkte",
       "assign": "Zuordnen",
@@ -1336,12 +1338,15 @@
         "point": "Zugangspunkt",
         "type": "Typ",
         "provider": "Anbieter",
+        "amount": "Menge",
         "grants": "Was die Buchung bekommt",
         "remove": "Entfernen"
       },
       "grants": {
         "door": "Geteilter Zugang im Buchungszeitraum",
-        "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt"
+        "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt",
+        "lockerOne": "Ein Fach je Buchung, vom Anbieter zugeteilt",
+        "lockerMany": "{count} Fächer je Buchung, vom Anbieter zugeteilt"
       },
       "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
       "manageLink": "Zugangspunkte verwalten",

@@ -1,4 +1,5 @@
 import store from "@/store";
+import { prunedAmounts } from "@/utilities/access-point-amounts";
 export default {
   getBookables(tenant, populate) {
     const t = tenant || store.getters["tenants/currentTenantId"];
@@ -30,6 +31,22 @@ export default {
     // Derived from the access points on the way out, dropped on the way in:
     // sending it would claim a write permission that does not exist.
     delete formData.lockerDetails;
+
+    // An amount distributed to an access point the bookable no longer
+    // references means nothing. The backend discards it as well - doing it
+    // here too keeps the request free of what it cannot mean. A bookable that
+    // carries no distribution at all keeps carrying none: the field is
+    // additive, and an empty map is not the same statement as its absence.
+    const accessDetails = formData.accessPointDetails;
+    if (accessDetails && accessDetails.accessPointAmounts !== undefined) {
+      formData.accessPointDetails = {
+        ...accessDetails,
+        accessPointAmounts: prunedAmounts(
+          accessDetails.accessPointAmounts,
+          accessDetails.accessPointIds
+        ),
+      };
+    }
 
     if (formData.priceEur && typeof formData.priceEur === "string") {
       formData.priceEur = formData.priceEur.replace(",", ".");

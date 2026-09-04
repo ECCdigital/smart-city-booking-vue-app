@@ -6,6 +6,12 @@ import {
   accessPointLabel,
   accessPointTypeLabel,
 } from "@/utilities/access-points";
+import {
+  capacityMismatch,
+  compartmentsAt,
+  prunedAmounts,
+  withCompartmentsAt,
+} from "@/utilities/access-point-amounts";
 import { mapGetters } from "vuex";
 
 const MAX_BUFFER_MINUTES = 1440;
@@ -43,10 +49,15 @@ function toRow(accessPoint) {
  *
  * Since the locker fold a locker system is an access point like a door, so the
  * same table carries both. What differs is what a booking gets: a door is
- * shared for the booking period, a locker system hands out one compartment per
- * unit the booking books, picked by the provider. The bookable's `amount` is
- * not that number - it is the capacity the concurrent bookings are counted
- * against - which is why it is shown one level up, not in this table.
+ * shared for the booking period, a locker system hands out compartments picked
+ * by the provider - as many as the amount column distributes to it
+ * (`accessPointAmounts`), and one per booked unit where that column is empty.
+ * A door has no amount at all, which is why the distribution is a second field
+ * beside the flat `accessPointIds` rather than a list of objects.
+ *
+ * The bookable's `amount` is the capacity the concurrent bookings are counted
+ * against, and it is edited one level up. It stays freely editable: where the
+ * distribution disagrees with it this table warns and saves anyway (§L2.2).
  *
  * The list is read through the access point management API, which grants
  * reading to everyone who may read bookables. Editors without tenant owner
@@ -100,7 +111,22 @@ export default {
       return this.selectedIds
         .map((id) => this.accessPoints.find((point) => point.id === id))
         .filter(Boolean)
-        .map(toRow);
+        .map((point) => ({
+          ...toRow(point),
+          amount: compartmentsAt(this.accessPointDetails, point.id),
+        }));
+    },
+    // Only locker systems carry an amount, so only they count towards the sum
+    // the capacity is compared against.
+    assignedLockerIds() {
+      return this.assignedRows
+        .filter((row) => row.isLocker)
+        .map((row) => row.id);
+    },
+    // The two numbers where the distribution and the capacity disagree, or
+    // `null`. A warning, never a lock - see the module for the risk it carries.
+    capacityWarning() {
+      return capacityMismatch(this.bookable, this.assignedLockerIds);
     },
     // The picker lists what the tenant has and this bookable does not use yet.
     // It says nothing about whether the provider is active - that question
@@ -180,26 +206,49 @@ export default {
       }
     },
     /**
-     * What a booking gets at this access point. At a locker system it gets one
-     * compartment per unit it books (`bookableItem.amount`), assigned by the
-     * provider - not the bookable's `amount`, which the backend uses as the
-     * capacity the concurrent bookings are counted against. A door is not
+     * What a booking gets at this access point. At a locker system it gets the
+     * compartments the amount column distributes to it; where that column is
+     * empty the backend falls back to one compartment per unit the booking
+     * books (`bookableItem.amount`) - never the bookable's `amount`, which is
+     * the capacity the concurrent bookings are counted against. A door is not
      * handed out at all; it is shared for the booking period.
      */
     grantText(row) {
-      return row.isLocker
-        ? this.$t("accessPoint.bookable.grants.locker")
-        : this.$t("accessPoint.bookable.grants.door");
+      if (!row.isLocker) return this.$t("accessPoint.bookable.grants.door");
+      if (row.amount === null) {
+        return this.$t("accessPoint.bookable.grants.locker");
+      }
+      return row.amount === 1
+        ? this.$t("accessPoint.bookable.grants.lockerOne")
+        : this.$t("accessPoint.bookable.grants.lockerMany", {
+            count: row.amount,
+          });
+    },
+    setAmount(id, value) {
+      this.patchDetails({
+        accessPointAmounts: withCompartmentsAt(
+          this.accessPointDetails,
+          id,
+          value
+        ),
+      });
     },
     assignAccessPoint(id) {
       this.pickerOpen = false;
       if (this.selectedIds.includes(id)) return;
       this.patchDetails({ accessPointIds: [...this.selectedIds, id] });
     },
+    // An amount outlives its assignment nowhere: the reference and the number
+    // the bookable distributes to it go together.
     removeAccessPoint(id) {
+      const accessPointIds = this.selectedIds.filter(
+        (selectedId) => selectedId !== id
+      );
       this.patchDetails({
-        accessPointIds: this.selectedIds.filter(
-          (selectedId) => selectedId !== id
+        accessPointIds,
+        accessPointAmounts: prunedAmounts(
+          this.accessPointDetails.accessPointAmounts,
+          accessPointIds
         ),
       });
     },
@@ -405,12 +454,35 @@ export default {
           </v-chip>
         </v-alert>
 
+        <v-alert
+          v-if="capacityWarning"
+          class="capacity-mismatch mb-4"
+          color="warning"
+          dense
+          text
+        >
+          <div class="font-weight-medium">
+            {{ $t("accessPoint.bookable.capacity.mismatchTitle") }}
+          </div>
+          <div class="text-caption">
+            {{
+              $t("accessPoint.bookable.capacity.mismatchHint", {
+                distributed: capacityWarning.distributed,
+                capacity: capacityWarning.capacity,
+              })
+            }}
+          </div>
+        </v-alert>
+
         <v-simple-table class="assignment-table">
           <thead>
             <tr>
               <th>{{ $t("accessPoint.bookable.table.point") }}</th>
               <th>{{ $t("accessPoint.bookable.table.type") }}</th>
               <th>{{ $t("accessPoint.bookable.table.provider") }}</th>
+              <th class="amount-column">
+                {{ $t("accessPoint.bookable.table.amount") }}
+              </th>
               <th>{{ $t("accessPoint.bookable.table.grants") }}</th>
               <th class="text-right">
                 {{ $t("accessPoint.bookable.table.remove") }}
@@ -440,6 +512,24 @@ export default {
                 </v-chip>
               </td>
               <td class="text-caption">{{ row.provider }}</td>
+              <td class="amount-column">
+                <!-- A door is shared, not handed out - it carries no amount. -->
+                <v-text-field
+                  v-if="row.isLocker"
+                  class="assignment-amount"
+                  :value="row.amount"
+                  type="number"
+                  min="0"
+                  step="1"
+                  :aria-label="$t('accessPoint.bookable.table.amount')"
+                  background-color="accent"
+                  filled
+                  dense
+                  hide-details
+                  single-line
+                  @input="setAmount(row.id, $event)"
+                />
+              </td>
               <td class="text-caption">{{ grantText(row) }}</td>
               <td class="text-right">
                 <v-btn
@@ -454,7 +544,7 @@ export default {
               </td>
             </tr>
             <tr v-if="!assignedRows.length">
-              <td colspan="5" class="text-center py-6">
+              <td colspan="6" class="text-center py-6">
                 <div class="text-body-1 mb-1">
                   {{ $t("accessPoint.bookable.emptyTitle") }}
                 </div>
@@ -494,5 +584,8 @@ export default {
 }
 .theme--dark .assignment-table {
   border-color: rgba(255, 255, 255, 0.12);
+}
+.amount-column {
+  width: 120px;
 }
 </style>

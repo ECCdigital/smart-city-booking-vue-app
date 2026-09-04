@@ -230,6 +230,159 @@ describe("BookableEditAccessPoints", () => {
     expect(wrapper.text()).toMatch(/noch kein Zugangspunkt angelegt/);
   });
 
+  /**
+   * The amount column distributes the bookable's `amount` over its locker
+   * systems (`accessPointAmounts`, locker spec §L2.1). A door is shared, not
+   * handed out, so its cell stays empty.
+   */
+  describe("the amount column", () => {
+    it("offers a field at a locker system and none at a door", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [DOOR, LOCKER],
+        bookable: {
+          accessPointDetails: {
+            active: true,
+            accessBuffer: { before: 0, after: 0 },
+            accessPointIds: [DOOR.id, LOCKER.id],
+          },
+        },
+      });
+
+      expect(
+        rows(wrapper).at(0).findAll(".assignment-amount input")
+      ).toHaveLength(0);
+      expect(
+        rows(wrapper).at(1).findAll(".assignment-amount input")
+      ).toHaveLength(1);
+    });
+
+    it("shows the amount distributed to a locker system", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [LOCKER],
+        bookable: {
+          accessPointDetails: {
+            active: true,
+            accessBuffer: { before: 0, after: 0 },
+            accessPointIds: [LOCKER.id],
+            accessPointAmounts: { [LOCKER.id]: 4 },
+          },
+        },
+      });
+
+      expect(
+        rows(wrapper).at(0).find(".assignment-amount input").element.value
+      ).toBe("4");
+    });
+
+    it("writes an edited amount beside the unchanged id list", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [DOOR, LOCKER],
+        bookable: {
+          accessPointDetails: {
+            active: true,
+            accessBuffer: { before: 0, after: 0 },
+            accessPointIds: [DOOR.id, LOCKER.id],
+          },
+        },
+      });
+
+      await rows(wrapper).at(1).find(".assignment-amount input").setValue("5");
+
+      const details = lastUpdate(wrapper).accessPointDetails;
+      expect(details.accessPointAmounts).toEqual({ [LOCKER.id]: 5 });
+      expect(details.accessPointIds).toEqual([DOOR.id, LOCKER.id]);
+    });
+
+    it("drops the amount when the locker system is unassigned", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [DOOR, LOCKER],
+        bookable: {
+          accessPointDetails: {
+            active: true,
+            accessBuffer: { before: 0, after: 0 },
+            accessPointIds: [DOOR.id, LOCKER.id],
+            accessPointAmounts: { [LOCKER.id]: 4 },
+          },
+        },
+      });
+
+      await rows(wrapper)
+        .at(1)
+        .find("button.assignment-remove")
+        .trigger("click");
+
+      const details = lastUpdate(wrapper).accessPointDetails;
+      expect(details.accessPointIds).toEqual([DOOR.id]);
+      expect(details.accessPointAmounts).toEqual({});
+    });
+
+    it("names the distributed compartments in the grant column", async () => {
+      const wrapper = await mountPoints({
+        accessPoints: [LOCKER],
+        bookable: {
+          amount: 4,
+          accessPointDetails: {
+            active: true,
+            accessBuffer: { before: 0, after: 0 },
+            accessPointIds: [LOCKER.id],
+            accessPointAmounts: { [LOCKER.id]: 4 },
+          },
+        },
+      });
+
+      expect(rows(wrapper).at(0).text()).toMatch(/4 Fächer je Buchung/);
+    });
+  });
+
+  /**
+   * `amount` stays freely editable (§L2.2): it is the general count of any
+   * bookable. Where the distribution disagrees with it the UI warns and lets
+   * the admin save anyway - a deliberate decision, and a known risk.
+   */
+  describe("the capacity warning", () => {
+    async function mountWithDistribution(amount, accessPointAmounts) {
+      return mountPoints({
+        accessPoints: [LOCKER, { ...LOCKER, id: "ap-locker-2" }],
+        bookable: {
+          amount,
+          accessPointDetails: {
+            active: true,
+            accessBuffer: { before: 0, after: 0 },
+            accessPointIds: [LOCKER.id, "ap-locker-2"],
+            accessPointAmounts,
+          },
+        },
+      });
+    }
+
+    it("warns while the distributed amounts do not add up to the capacity", async () => {
+      const wrapper = await mountWithDistribution(12, {
+        [LOCKER.id]: 3,
+        "ap-locker-2": 4,
+      });
+
+      const warning = wrapper.find(".capacity-mismatch");
+      expect(warning.exists()).toBe(true);
+      expect(warning.text()).toMatch(/7/);
+      expect(warning.text()).toMatch(/12/);
+    });
+
+    it("stays silent while they add up", async () => {
+      const wrapper = await mountWithDistribution(12, {
+        [LOCKER.id]: 5,
+        "ap-locker-2": 7,
+      });
+
+      expect(wrapper.find(".capacity-mismatch").exists()).toBe(false);
+    });
+
+    it("stays silent for a bookable that distributes nothing", async () => {
+      const wrapper = await mountWithDistribution(12, {});
+
+      expect(wrapper.find(".capacity-mismatch").exists()).toBe(false);
+    });
+  });
+
   it("keeps the buffer editable for the whole bookable", async () => {
     const wrapper = await mountPoints({ accessPoints: [DOOR] });
 
