@@ -101,6 +101,15 @@
                     </v-col>
                   </v-row>
 
+                  <!--
+                    Known gap, deliberately left open: these access levels are
+                    free-standing, so "Erstellen" without "Eigene/Alle
+                    Bearbeiten" is two clicks away and yields a role the API
+                    rejects with 403 - the obsolete PUT store routes are
+                    authorised as `update`. Not coupled here on purpose; see
+                    docs/agents/components.md, "Known gap: `create` without
+                    `update` in the role editor".
+                  -->
                   <v-row no-gutters>
                     <v-col>
                       <v-checkbox

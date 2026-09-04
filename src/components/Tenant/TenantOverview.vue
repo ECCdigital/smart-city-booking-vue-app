@@ -360,9 +360,12 @@ export default {
         await this.fetchTenant();
       }
     },
+    // A tab may name the tenant operation it needs. `updateTenant` is tenant
+    // ownership (instance owners trump it) - the marker used to be called
+    // `manageTenants`, after a role dimension 4.3.x no longer has.
     isTabVisible(tab) {
       if (!tab.permission) return true;
-      if (tab.permission === "manageTenants") {
+      if (tab.permission === "updateTenant") {
         return TenantPermissionService.allowUpdate();
       }
       return true;
@@ -424,14 +427,14 @@ export default {
       this.workflow = data?.id
         ? data
         : {
-          active: false,
-          states: [],
-          archive: [],
-          description: "",
-          name: "",
-          eventStateMapping: "",
-          tenantId: this.tenant.id,
-        };
+            active: false,
+            states: [],
+            archive: [],
+            description: "",
+            name: "",
+            eventStateMapping: "",
+            tenantId: this.tenant.id,
+          };
     },
     async fetchChallenges() {
       try {
@@ -557,7 +560,7 @@ export default {
         await this.addToast({
           message: getApiErrorMessage(
             e,
-            "Fehler beim Speichern der Änderungen.",
+            "Fehler beim Speichern der Änderungen."
           ),
           type: "error",
         });

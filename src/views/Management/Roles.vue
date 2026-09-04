@@ -10,12 +10,16 @@
           clearable
           class="search-field"
         ></v-text-field>
-        <div v-if="loading" class="elevation-2" style="border-radius: 25px; overflow: hidden;">
+        <div
+          v-if="loading"
+          class="elevation-2"
+          style="border-radius: 25px; overflow: hidden"
+        >
           <v-skeleton-loader
             type="table-thead, table-tbody, table-tfoot"
             :types="{
-          'table-tbody': 'table-row-divider@6',
-        }"
+              'table-tbody': 'table-row-divider@6',
+            }"
           ></v-skeleton-loader>
         </div>
         <v-data-table
@@ -43,9 +47,6 @@
           </template>
           <template v-slot:item.manageUsers="{ item }">
             {{ translateAccessLevels(item.manageUsers) }}
-          </template>
-          <template v-slot:item.manageTenants="{ item }">
-            {{ translateAccessLevels(item.manageTenants) }}
           </template>
           <template v-slot:item.manageBookables="{ item }">
             {{ translateAccessLevels(item.manageBookables) }}

@@ -24,10 +24,14 @@ const TenantPermissionService = (
 const USER_ID = "user-1";
 const TENANT_ID = "tenant-1";
 
-function signIn({ instanceOwner = false, tenants = [] } = {}) {
+function signIn({
+  instanceOwner = false,
+  allowCreateTenant = false,
+  tenants = [],
+} = {}) {
   userState.data = {
     user: { id: USER_ID },
-    permissions: { instanceOwner, tenants },
+    permissions: { instanceOwner, allowCreateTenant, tenants },
   };
 }
 
@@ -36,9 +40,15 @@ function membership(overrides = {}) {
 }
 
 /**
- * Characterisation: the service reads the permissions payload straight from the
- * user store singleton and scopes it with `tenants/currentTenantId`. Pinned
- * here before the permissions strand touches `manageTenants` gating.
+ * The service reads the permissions payload straight from the user store
+ * singleton and scopes it with `tenants/currentTenantId`.
+ *
+ * Rewritten with §E7 of the permissions strand: 4.3.x dropped the
+ * `manageTenants` role dimension, so creating a tenant now follows the
+ * instance setting `allowCreateTenant` and deleting one follows the
+ * membership's `isOwner` flag. The characterisation quirks this file used to
+ * pin - `allowCreate`/`allowDelete` returning `undefined` rather than `false`
+ * - went away with the dimension they read.
  */
 describe("TenantPermissionService", () => {
   beforeEach(() => {
@@ -59,44 +69,36 @@ describe("TenantPermissionService", () => {
     });
   });
 
-  describe("isOwner", () => {
-    it("compares the tenant's owner against the signed-in user id", () => {
-      signIn();
-      expect(TenantPermissionService.isOwner({ ownerUserId: USER_ID })).toBe(
-        true
-      );
-      expect(TenantPermissionService.isOwner({ ownerUserId: "someone" })).toBe(
-        false
-      );
-    });
-  });
-
   describe("allowCreate", () => {
-    it("lets the instance owner through without looking at memberships", () => {
-      signIn({ instanceOwner: true, tenants: [] });
+    it("lets the instance owner through", () => {
+      signIn({ instanceOwner: true, allowCreateTenant: false });
       expect(TenantPermissionService.allowCreate()).toBe(true);
     });
 
-    it("reads `manageTenants.create` of the current tenant's membership", () => {
-      signIn({
-        tenants: [membership({ manageTenants: { create: true } })],
-      });
+    it("reads the instance setting `allowCreateTenant`", () => {
+      signIn({ allowCreateTenant: true });
       expect(TenantPermissionService.allowCreate()).toBe(true);
 
+      signIn({ allowCreateTenant: false });
+      expect(TenantPermissionService.allowCreate()).toBe(false);
+    });
+
+    it("does not look at tenant memberships at all", () => {
       signIn({
-        tenants: [membership({ manageTenants: { create: false } })],
+        allowCreateTenant: true,
+        tenants: [membership({ tenantId: "other-tenant" })],
       });
+      storeState.currentTenantId = TENANT_ID;
+      expect(TenantPermissionService.allowCreate()).toBe(true);
+
+      signIn({ allowCreateTenant: false, tenants: [membership()] });
       expect(TenantPermissionService.allowCreate()).toBe(false);
     });
 
-    it("returns false without a membership for the current tenant", () => {
-      signIn({ tenants: [membership({ tenantId: "other-tenant" })] });
+    it("returns false - not undefined - when the payload omits the setting", () => {
+      signIn();
+      delete userState.data.permissions.allowCreateTenant;
       expect(TenantPermissionService.allowCreate()).toBe(false);
-    });
-
-    it("returns undefined - not false - when the membership carries no `manageTenants`", () => {
-      signIn({ tenants: [membership()] });
-      expect(TenantPermissionService.allowCreate()).toBeUndefined();
     });
   });
 
@@ -106,13 +108,18 @@ describe("TenantPermissionService", () => {
       expect(TenantPermissionService.allowUpdate()).toBe(true);
     });
 
-    it("asks the membership's `isOwner` flag, not `manageTenants`", () => {
+    it("asks the membership's `isOwner` flag", () => {
       signIn({ tenants: [membership({ isOwner: true })] });
       expect(TenantPermissionService.allowUpdate()).toBe(true);
 
+      signIn({ tenants: [membership({ isOwner: false })] });
+      expect(TenantPermissionService.allowUpdate()).toBe(false);
+    });
+
+    it("ignores role dimensions - no role grants tenant editing", () => {
       signIn({
         tenants: [
-          membership({ isOwner: false, manageTenants: { updateAny: true } }),
+          membership({ isOwner: false, manageUsers: { updateAny: true } }),
         ],
       });
       expect(TenantPermissionService.allowUpdate()).toBe(false);
@@ -125,33 +132,48 @@ describe("TenantPermissionService", () => {
   });
 
   describe("allowDelete", () => {
-    const ownedTenant = { ownerUserId: USER_ID };
-    const foreignTenant = { ownerUserId: "someone" };
-
     it("lets the instance owner through", () => {
       signIn({ instanceOwner: true, tenants: [] });
-      expect(TenantPermissionService.allowDelete(foreignTenant)).toBe(true);
+      expect(TenantPermissionService.allowDelete({ id: TENANT_ID })).toBe(true);
     });
 
-    it("accepts `deleteAny` for any tenant", () => {
-      signIn({ tenants: [membership({ manageTenants: { deleteAny: true } })] });
-      expect(TenantPermissionService.allowDelete(foreignTenant)).toBe(true);
+    it("asks the membership's `isOwner` flag", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowDelete({ id: TENANT_ID })).toBe(true);
+
+      signIn({ tenants: [membership({ isOwner: false })] });
+      expect(TenantPermissionService.allowDelete({ id: TENANT_ID })).toBe(
+        false
+      );
     });
 
-    it("limits `deleteOwn` to tenants the user owns", () => {
-      signIn({ tenants: [membership({ manageTenants: { deleteOwn: true } })] });
-      expect(TenantPermissionService.allowDelete(ownedTenant)).toBe(true);
-      expect(TenantPermissionService.allowDelete(foreignTenant)).toBe(false);
+    it("scopes the lookup to the tenant that is about to be deleted", () => {
+      signIn({
+        tenants: [
+          membership({ tenantId: "tenant-a", isOwner: true }),
+          membership({ tenantId: "tenant-b", isOwner: false }),
+        ],
+      });
+      storeState.currentTenantId = "tenant-a";
+
+      expect(TenantPermissionService.allowDelete({ id: "tenant-a" })).toBe(
+        true
+      );
+      expect(TenantPermissionService.allowDelete({ id: "tenant-b" })).toBe(
+        false
+      );
     });
 
-    it("returns false without a membership for the current tenant", () => {
+    it("falls back to the current tenant when none is passed", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowDelete()).toBe(true);
+    });
+
+    it("returns false without a membership for that tenant", () => {
       signIn({ tenants: [membership({ tenantId: "other-tenant" })] });
-      expect(TenantPermissionService.allowDelete(ownedTenant)).toBe(false);
-    });
-
-    it("returns undefined - not false - when the membership carries no `manageTenants`", () => {
-      signIn({ tenants: [membership()] });
-      expect(TenantPermissionService.allowDelete(ownedTenant)).toBeUndefined();
+      expect(TenantPermissionService.allowDelete({ id: TENANT_ID })).toBe(
+        false
+      );
     });
   });
 
