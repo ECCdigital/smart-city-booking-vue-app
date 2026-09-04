@@ -232,6 +232,7 @@ export default {
       tenants: "tenants/tenants",
       currentTenant: "tenants/currentTenantId",
       allowCreate: "user/allowToCreateTenants",
+      isDenied: "user/isDenied",
     }),
     createDisabled() {
       return false;
@@ -270,6 +271,13 @@ export default {
       const redirect = this.$route.query.redirect;
       if (isSafeInternalRedirect(redirect, this.$router)) {
         await this.$router.push(redirect);
+        return;
+      }
+      // The booking list is the default landing screen, but the router turns
+      // a membership without that reach away again; staying on the overview
+      // beats sending the user through a permission notice they did not ask
+      // for.
+      if (this.isDenied("bookings")) {
         return;
       }
       await this.$router.push({ name: "bookings" });

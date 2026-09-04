@@ -72,6 +72,10 @@
       "title": "Nicht gefunden",
       "message": "Die angeforderte Seite konnte nicht gefunden werden."
     },
+    "not-found-or-forbidden": {
+      "title": "Nicht gefunden oder nicht zugänglich",
+      "message": "Der Eintrag wurde nicht gefunden. Entweder existiert er nicht mehr, oder er liegt außerhalb Ihrer Berechtigung."
+    },
     "unauthorized": {
       "title": "Nicht autorisiert",
       "message": "Sie haben keine Berechtigung für diese Aktion."
@@ -83,6 +87,14 @@
     "validation": {
       "title": "Validierungsfehler",
       "message": "Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
+    },
+    "session-expired": "Ihre Sitzung ist nicht mehr aktuell. Bitte laden Sie die Seite neu und versuchen Sie es erneut.",
+    "forbidden-codes": {
+      "forbidden": "Sie haben keine Berechtigung für diese Aktion."
+    },
+    "interface-forbidden": {
+      "title": "Kein Zugriff auf diesen Bereich",
+      "message": "Für diesen Bereich fehlt Ihnen die Berechtigung im aktuellen Mandanten."
     }
   },
   "validation": {
@@ -198,7 +210,16 @@
           "label": "Manuelle Freigabe",
           "tooltip": "Eine Buchung muss vom Administrator freigegeben werden."
         }
+      },
+      "overview": {
+        "titlesForbidden": "Titel der verknüpften Buchungsobjekte nicht abrufbar – Sie haben keinen Zugriff auf Buchungsobjekte."
       }
+    },
+    "list": {
+      "forbidden": "Sie haben keinen Zugriff auf Buchungsobjekte."
+    },
+    "select": {
+      "forbidden": "Keine Auswahl möglich – Sie haben keinen Zugriff auf Buchungsobjekte."
     }
   },
   "event": {
@@ -239,8 +260,10 @@
       }
     }
   },
-
   "tenant": {
+    "catalog": {
+      "unavailable": "Für diesen Mandanten wurde kein Katalog gefunden. Entweder ist noch keiner angelegt, oder der vorhandene Katalog ist für Sie nicht zugänglich. Unten steht deshalb ein leerer Katalog – wenn Sie ihn speichern, kann ein bestehender Katalog überschrieben werden."
+    },
     "error": {
       "user-exists": {
         "title": "Benutzer existiert bereits",
@@ -259,7 +282,7 @@
       "error": {
         "not-found": {
           "title": "Benutzer nicht gefunden",
-          "message": "Der Benutzer konnte nicht gefunden werden. Um den angeforderten Benutzer zum Mandanten hinzuzufügen, muss dieser zuerst registriert sein"
+          "message": "Der Benutzer konnte nicht gefunden werden. Um ihn zum Mandanten hinzuzufügen, muss er zuerst registriert sein. Möglich ist auch, dass dieser Mandant für Sie nicht zugänglich ist."
         },
         "user-exists": {
           "title": "Benutzer existiert bereits",
@@ -329,7 +352,6 @@
       }
     }
   },
-
   "password": {
     "reset": {
       "success": {
@@ -445,6 +467,9 @@
       "error-time-confict": {
         "title": "Zeitkonflikt",
         "message": "Die Buchung konnte nicht bearbeitet werden, da es zu einem Zeitkonflikt kommt."
+      },
+      "hints": {
+        "bookablesForbidden": "Sie haben keinen Zugriff auf Buchungsobjekte. Die Auswahl der Buchungsobjekte bleibt daher leer."
       }
     },
     "copyId": {
@@ -526,7 +551,6 @@
           "message": "Bitte wählen Sie einen Zahlungsanbieter aus."
         }
       },
-
       "fallback": {
         "title": "Validierungsfehler",
         "message": "Bitte überprüfen Sie Ihre Eingaben."
@@ -622,6 +646,9 @@
     }
   },
   "checkout": {
+    "no-permission": {
+      "message": "Dieses Angebot ist für Sie nicht buchbar. Entweder ist es nicht verfügbar, oder Ihnen fehlt die Berechtigung dafür."
+    },
     "error": {
       "booking-conflict": {
         "title": "Objekt nicht verfügbar.",
@@ -810,6 +837,9 @@
         "title": "Fehler beim Bearbeiten",
         "message": "Der Rabatt konnte nicht bearbeitet werden."
       }
+    },
+    "list": {
+      "forbidden": "Sie haben keinen Zugriff auf Rabattcodes."
     }
   },
   "permissions": {
@@ -911,7 +941,8 @@
         "unassigned": "Keinem Buchungsobjekt zugeordnet",
         "loading": "Daten werden geladen...",
         "empty": "Es ist noch kein Zugangspunkt angelegt.",
-        "perPage": "Zugangspunkte pro Seite"
+        "perPage": "Zugangspunkte pro Seite",
+        "assignmentForbidden": "Nicht abrufbar"
       },
       "types": {
         "door": "Tür",
@@ -1008,7 +1039,7 @@
       "errors": {
         "generic": "Die Aktion konnte nicht ausgeführt werden.",
         "forbidden": "Dafür fehlt Ihnen die Berechtigung. Zugangspunkte dürfen nur Mandanten-Eigentümer ändern.",
-        "notFound": "Der Zugangspunkt existiert nicht mehr. Bitte laden Sie die Liste neu.",
+        "notFoundOrForbidden": "Nicht gefunden oder nicht zugänglich. Der Eintrag existiert nicht mehr, oder er liegt außerhalb Ihrer Berechtigung.",
         "loadFailed": "Die Zugangspunkte konnten nicht geladen werden.",
         "saveFailed": "Der Zugangspunkt konnte nicht gespeichert werden.",
         "deleteFailed": "Der Zugangspunkt konnte nicht gelöscht werden.",
@@ -1044,6 +1075,9 @@
           "title": "Speichern fehlgeschlagen",
           "message": "Fehler beim Speichern der Änderungen."
         }
+      },
+      "hints": {
+        "assignmentForbidden": "Die Spalte „Zuordnung“ kann nicht gefüllt werden – Sie haben keinen Zugriff auf Buchungsobjekte."
       }
     },
     "comingSoon": {
@@ -1235,6 +1269,10 @@
         "forbidden": {
           "title": "Keine Berechtigung",
           "message": "Sie haben keine Berechtigung für den Audit-Export."
+        },
+        "notFoundOrForbidden": {
+          "title": "Nicht gefunden oder nicht zugänglich",
+          "message": "Das Zugriffsprotokoll wurde nicht gefunden, oder es liegt außerhalb Ihrer Berechtigung."
         },
         "failed": {
           "title": "Export fehlgeschlagen",

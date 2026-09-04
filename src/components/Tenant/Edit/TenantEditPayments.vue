@@ -780,6 +780,7 @@ import debounce from "lodash/debounce";
 import AppPanel from "@/components/AppPanel.vue";
 import BaseSection from "@/components/commons/BaseSection.vue";
 import ApiPaymentService from "@/services/api/ApiPaymentService";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import SubSection from "@/components/commons/SubSection.vue";
 import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 
@@ -878,7 +879,9 @@ export default {
     },
     pdfBookingTableMetaModel: {
       get() {
-        return normalizePdfBookingTableMeta(this.modelTenant.pdfBookingTableMeta);
+        return normalizePdfBookingTableMeta(
+          this.modelTenant.pdfBookingTableMeta
+        );
       },
       set(value) {
         this.$emit("update:tenant", {
@@ -947,8 +950,12 @@ export default {
         if (data && data.checks) {
           this.ePayBLTestResult = data;
         } else {
-          this.ePayBLTestError =
-            data?.message || err?.message || "Verbindungstest fehlgeschlagen.";
+          // The 4.3.x error shape carries no `message`, so a denied test used
+          // to read "Request failed with status code 403".
+          this.ePayBLTestError = getApiErrorMessage(
+            err,
+            data?.message || err?.message || "Verbindungstest fehlgeschlagen."
+          );
         }
       } finally {
         this.ePayBLTestLoading = false;

@@ -4,7 +4,8 @@ import TenantEditWorkflowStatusDialog from "@/components/Tenant/TenantEditWorkfl
 import BaseSection from "@/components/commons/BaseSection.vue";
 
 import ApiRolesService from "@/services/api/ApiRolesService";
-import ApiUsersService from "@/services/api/ApiUsersService";
+import ApiTenantService from "@/services/api/ApiTenantService";
+import { tenantUserOptions } from "@/utils/tenantUsers";
 
 export default {
   name: "TenantEditWorkflow",
@@ -24,6 +25,7 @@ export default {
       creatingStatusId: null,
       availableRoles: [],
       availableUsers: [],
+      usersUnavailable: false,
       showEditStatusDialog: false,
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
@@ -44,6 +46,9 @@ export default {
     };
   },
   computed: {
+    tenantId() {
+      return this.tenant?.id;
+    },
     workflowEvents() {
       return [
         {
@@ -82,6 +87,9 @@ export default {
         this.localWorkflow = JSON.parse(JSON.stringify(v));
       },
     },
+    tenantId() {
+      this.fetchUsers();
+    },
   },
   methods: {
     async fetchRoles() {
@@ -92,16 +100,25 @@ export default {
         this.availableRoles = [];
       }
     },
+    /**
+     * Recipients are the members of *this* tenant. The instance-wide user list
+     * is owner-only from 4.3.x on, and a workflow of tenant A notifying a user
+     * of tenant B was a leak rather than a feature.
+     */
     async fetchUsers() {
-      try {
-        const result = await ApiUsersService.getUsers();
-        this.availableUsers = Array.isArray(result)
-          ? result
-          : Array.isArray(result?.data)
-          ? result.data
-          : [];
-      } catch (e) {
+      if (!this.tenantId) {
         this.availableUsers = [];
+        return;
+      }
+
+      try {
+        const response = await ApiTenantService.getTenantUsers(this.tenantId);
+        this.availableUsers = tenantUserOptions(response);
+        this.usersUnavailable = false;
+      } catch (error) {
+        console.error("Error fetching tenant users:", error);
+        this.availableUsers = [];
+        this.usersUnavailable = true;
       }
     },
     emitTenant() {
@@ -230,9 +247,26 @@ export default {
       const r = this.availableRoles.find((x) => x.id === roleId);
       return r?.name || `Rolle ${roleId}`;
     },
-    userName(userId) {
-      const u = this.availableUsers.find((x) => x.id === userId);
-      return u?.name || u?.displayName || u?.email || `User ${userId}`;
+    /**
+     * Only a member list that was actually read can tell us that a recipient is
+     * not in it. While it could not be read, no id is called unknown - that
+     * would be the "no data" lie in place of "no access".
+     */
+    isUnknownUser(userId) {
+      if (this.usersUnavailable) return false;
+      return !this.availableUsers.some((u) => u.userId === userId);
+    },
+    /**
+     * A stored recipient that is not a member of this tenant stays visible and
+     * is labelled as such - dropping it silently would remove a notification
+     * recipient without anyone noticing.
+     */
+    userLabel(userId) {
+      const user = this.availableUsers.find((u) => u.userId === userId);
+      if (user) return user.label;
+      return this.isUnknownUser(userId)
+        ? `${userId} (Unbekannter Empfänger)`
+        : userId;
     },
     actionSummary(action) {
       if (!action || !action.type) return "Unbekannte Aktion";
@@ -282,6 +316,11 @@ export default {
         </v-btn>
       </v-col>
     </v-row>
+
+    <v-alert v-if="usersUnavailable" type="warning" dense outlined class="mt-4">
+      Die Mitglieder dieses Mandanten konnten nicht geladen werden. Empfänger
+      werden deshalb mit ihrer Benutzer-Id angezeigt.
+    </v-alert>
 
     <v-expansion-panels
       v-if="localWorkflow.states.length"
@@ -403,11 +442,16 @@ export default {
                             :key="id"
                             small
                             class="mr-1 mb-1"
-                            color="grey lighten-3"
+                            :color="
+                              action.receiverType === 'user' &&
+                              isUnknownUser(id)
+                                ? 'warning'
+                                : 'grey lighten-3'
+                            "
                           >
                             {{
                               action.receiverType === "user"
-                                ? userName(id)
+                                ? userLabel(id)
                                 : roleName(id)
                             }}
                           </v-chip>
@@ -526,6 +570,7 @@ export default {
     <TenantEditWorkflowStatusDialog
       :open="showEditStatusDialog"
       :states="selectedSatus"
+      :tenant-id="tenantId"
       @close="cancelEditStatus"
       @save="updateStatus"
     />

@@ -47,6 +47,12 @@
           <v-icon x-small>mdi-open-in-new</v-icon>
         </v-btn>
       </component>
+      <div
+        v-if="showTitlesForbidden"
+        class="overview-row overview-row--static text-caption text--secondary"
+      >
+        {{ $t("bookable.edit.overview.titlesForbidden") }}
+      </div>
     </template>
 
     <template v-else>
@@ -116,12 +122,19 @@
           <v-icon x-small>mdi-open-in-new</v-icon>
         </v-btn>
       </component>
+      <div
+        v-if="showTitlesForbidden"
+        class="overview-band-detail overview-band-detail--static text-caption text--secondary"
+      >
+        {{ $t("bookable.edit.overview.titlesForbidden") }}
+      </div>
     </template>
   </div>
 </template>
 
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import ApiEventService from "@/services/api/ApiEventService";
 import store from "@/store";
 import { getBookableOverviewTraits } from "@/utils/bookableOverview";
@@ -133,9 +146,18 @@ let eventTitlesCache = null;
 let eventTitlesPromise = null;
 let eventTitlesTenantId = null;
 
+/**
+ * Resolves `{ titlesById, forbidden }`. `forbidden` is carried out of the
+ * loader because an empty map has two very different causes: there is nothing
+ * to name, or the list may not be read. Only the second one is worth telling
+ * the user about, and without it the overview would quietly print raw ids.
+ */
 function loadBookableTitlesById() {
   if (bookableTitlesCache) {
-    return Promise.resolve(bookableTitlesCache);
+    return Promise.resolve({
+      titlesById: bookableTitlesCache,
+      forbidden: false,
+    });
   }
   if (!bookableTitlesPromise) {
     bookableTitlesPromise = ApiBookablesService.getBookables()
@@ -147,12 +169,12 @@ function loadBookableTitlesById() {
           }
         });
         bookableTitlesCache = map;
-        return map;
+        return { titlesById: map, forbidden: false };
       })
       .catch((error) => {
         console.error("Error loading bookable titles for overview:", error);
         bookableTitlesPromise = null;
-        return {};
+        return { titlesById: {}, forbidden: isForbiddenError(error) };
       });
   }
   return bookableTitlesPromise;
@@ -210,6 +232,7 @@ export default {
   data() {
     return {
       bookableTitlesById: bookableTitlesCache || {},
+      bookableTitlesForbidden: false,
       eventTitlesById: eventTitlesCache || {},
     };
   },
@@ -225,6 +248,15 @@ export default {
     },
     longTraits() {
       return this.traits.filter((trait) => this.isLongTrait(trait));
+    },
+    // Only worth saying when there is actually something the missing titles
+    // would have named - otherwise the notice is noise on every bookable.
+    showTitlesForbidden() {
+      return (
+        this.bookableTitlesForbidden &&
+        (this.bookable?.checkoutBookableIds?.length > 0 ||
+          this.bookable?.relatedBookableIds?.length > 0)
+      );
     },
     needsEventTitles() {
       return (
@@ -273,8 +305,9 @@ export default {
       window.open(routeData.href, "_blank", "noopener,noreferrer");
     },
     async ensureBookableTitles() {
-      const map = await loadBookableTitlesById();
-      this.bookableTitlesById = map;
+      const { titlesById, forbidden } = await loadBookableTitlesById();
+      this.bookableTitlesById = titlesById;
+      this.bookableTitlesForbidden = forbidden;
     },
     async ensureEventTitles() {
       const map = await loadEventTitlesById();

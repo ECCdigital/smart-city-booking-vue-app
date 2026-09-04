@@ -27,8 +27,8 @@
           <code>&lt;!doctype html&gt;</code>-Gerüst eingebettet. Pflicht-
           Platzhalter wie <code>{{ requiredVariableLabels.join(", ") }}</code>
           (oder ein entsprechendes Partial wie
-          <code>{{ partialExampleSnippet }}</code>) müssen vorhanden
-          bleiben, sonst rendert das PDF unvollständig.
+          <code>{{ partialExampleSnippet }}</code
+          >) müssen vorhanden bleiben, sonst rendert das PDF unvollständig.
         </v-alert>
       </v-card-subtitle>
 
@@ -91,9 +91,9 @@
               class="mt-3"
             >
               Pflicht-Platzhalter im visuellen Modell fehlen:
-              <code>{{ missingInBlocks.join(", ") }}</code>. Füge sie als
-              Roh-HTML-Baustein oder über den Variablen-Picker im Text-Baustein
-              ein.
+              <code>{{ missingInBlocks.join(", ") }}</code
+              >. Füge sie als Roh-HTML-Baustein oder über den Variablen-Picker
+              im Text-Baustein ein.
             </v-alert>
 
             <v-card outlined class="mt-4">
@@ -116,7 +116,8 @@
                   dense
                   class="text-caption mb-3"
                 >
-                  Experten-Modus: Beim Speichern ersetzen diese Felder vorhandene
+                  Experten-Modus: Beim Speichern ersetzen diese Felder
+                  vorhandene
                   <code>&lt;template data-pdf-header/footer&gt;</code>-Elemente
                   im Experten-HTML.
                 </v-alert>
@@ -191,8 +192,8 @@
                       ? "PDF-Vorschau (mit mehrseitigen Demodaten)"
                       : "Live-Vorschau (mit Demodaten)"
                   }}
-                  · Buchungsdarstellung: {{ pdfBookingLayoutLabel }}
-                  · {{ pdfBookingTableMetaLabel }}
+                  · Buchungsdarstellung: {{ pdfBookingLayoutLabel }} ·
+                  {{ pdfBookingTableMetaLabel }}
                 </v-toolbar-title>
                 <v-spacer />
                 <v-btn-toggle
@@ -249,13 +250,7 @@
                   ></iframe>
                 </div>
                 <div v-else class="pdf-preview-container">
-                  <v-alert
-                    v-if="pdfError"
-                    type="error"
-                    text
-                    dense
-                    class="ma-3"
-                  >
+                  <v-alert v-if="pdfError" type="error" text dense class="ma-3">
                     <div class="pdf-error-text">{{ pdfError }}</div>
                   </v-alert>
                   <div v-if="pdfLoading" class="pdf-preview-loading">
@@ -286,10 +281,10 @@
                 echten PDF.
               </template>
               <template v-else>
-                Vorgerendert mit Demodaten
-                ({{ Object.keys(catalog.sampleData).join(", ") }}).
-                Seitenumbrüche und Kopf-/Fußzeilen sind nur in der PDF-Vorschau
-                sichtbar.
+                Vorgerendert mit Demodaten ({{
+                  Object.keys(catalog.sampleData).join(", ")
+                }}). Seitenumbrüche und Kopf-/Fußzeilen sind nur in der
+                PDF-Vorschau sichtbar.
               </template>
             </div>
           </v-tab-item>
@@ -323,9 +318,9 @@
               dense
               class="mt-2"
             >
-              Das Template enthält nicht alle Pflicht-Tags
-              (<code>&lt;!DOCTYPE html&gt;</code>,
-              <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>,
+              Das Template enthält nicht alle Pflicht-Tags (<code
+                >&lt;!DOCTYPE html&gt;</code
+              >, <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>,
               <code>&lt;body&gt;</code>) – der Server würde ein leeres PDF
               erzeugen.
             </v-alert>
@@ -337,7 +332,8 @@
               class="mt-2"
             >
               Pflicht-Platzhalter fehlen:
-              <code>{{ missingInExpert.join(", ") }}</code>.
+              <code>{{ missingInExpert.join(", ") }}</code
+              >.
             </v-alert>
             <div class="d-flex flex-wrap mt-2">
               <v-btn small outlined @click="resetToDefault" class="mr-2 mb-1">
@@ -360,7 +356,11 @@
                   <v-list
                     dense
                     class="variable-menu"
-                    style="max-height: 320px; overflow-y: auto; background: #fff;"
+                    style="
+                      max-height: 320px;
+                      overflow-y: auto;
+                      background: #fff;
+                    "
                   >
                     <template v-for="group in groupedVariables">
                       <v-subheader
@@ -429,6 +429,10 @@ import {
   stripVariableChips,
 } from "@/components/PDF/pdfTemplateCatalog.js";
 import ApiTenantService from "@/services/api/ApiTenantService.js";
+import {
+  getApiErrorMessage,
+  unpackBlobErrorBody,
+} from "@/services/api/apiErrorMessage";
 import { registerPdfRuntime } from "@/components/PDF/pdfHandlebarsRuntime.js";
 import { buildPdfPreviewSampleData } from "@/components/PDF/pdfSampleDataBuilder.js";
 import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
@@ -474,8 +478,8 @@ export default {
       pdfRequestToken: 0,
       pageHeaderHtml: "",
       pageFooterHtml: "",
-      pageNumberSpan: "<span class=\"pageNumber\"></span>",
-      totalPagesSpan: "<span class=\"totalPages\"></span>",
+      pageNumberSpan: '<span class="pageNumber"></span>',
+      totalPagesSpan: '<span class="totalPages"></span>',
     };
   },
   computed: {
@@ -509,7 +513,7 @@ export default {
     missingInBlocks() {
       if (!this.catalog) return [];
       const html = this.normalizeBlockHtml(
-        renderBlocksToHtml(this.blocks || []),
+        renderBlocksToHtml(this.blocks || [])
       );
       return findMissingRequiredVariables(html, this.catalog.requiredVariables);
     },
@@ -518,7 +522,7 @@ export default {
       if (this.mode !== "expert") return [];
       return findMissingRequiredVariables(
         this.expertHtml,
-        this.catalog.requiredVariables,
+        this.catalog.requiredVariables
       );
     },
     previewDeviceClass() {
@@ -661,7 +665,7 @@ export default {
       const { blocks, body } = extractBlockMetadata(incoming);
       if (blocks) {
         this.blocks = this.normalizeBlockIds(
-          this.normalizeLegacyBlocks(blocks),
+          this.normalizeLegacyBlocks(blocks)
         );
         this.expertHtml = body;
         this.mode = "visual";
@@ -680,7 +684,7 @@ export default {
       if (!this.catalog) return [];
       try {
         return this.normalizeBlockIds(
-          this.normalizeLegacyBlocks(this.catalog.defaultBlocks()),
+          this.normalizeLegacyBlocks(this.catalog.defaultBlocks())
         );
       } catch (_) {
         return [];
@@ -703,7 +707,9 @@ export default {
         "{{#unless alreadyPaid}}" +
         "<p>Sofern noch keine Zahlung erfolgt ist, entfällt die Zahlungsverpflichtung aus der ursprünglichen Rechnung.</p>" +
         "{{/unless}}";
-      return String(html || "").split(oldRefundBlock).join(newRefundBlock);
+      return String(html || "")
+        .split(oldRefundBlock)
+        .join(newRefundBlock);
     },
     normalizeLegacyBlocks(blocks) {
       const normalizeBlock = (block) => {
@@ -767,7 +773,7 @@ export default {
     composeFromBlocks(blocks) {
       if (!this.catalog) return "";
       const bodyHtml = this.normalizeBlockHtml(
-        renderBlocksToHtml(blocks || []),
+        renderBlocksToHtml(blocks || [])
       );
       return this.catalog.buildDocument(bodyHtml, this.currentPageTemplates());
     },
@@ -810,7 +816,7 @@ export default {
       }
       return applyPdfPageTemplates(
         this.expertHtml || "",
-        this.currentPageTemplates(),
+        this.currentPageTemplates()
       );
     },
     onPageTemplatesChange() {
@@ -887,7 +893,7 @@ export default {
         this.templateType,
         this.pdfBookingLayout,
         hb,
-        this.resolvedPdfBookingTableMeta,
+        this.resolvedPdfBookingTableMeta
       );
     },
     schedulePreviewUpdate() {
@@ -925,7 +931,7 @@ export default {
         }
       } catch (e) {
         rendered =
-          "<!doctype html><html><body style=\"font-family:sans-serif;color:#b71c1c;padding:24px;\">" +
+          '<!doctype html><html><body style="font-family:sans-serif;color:#b71c1c;padding:24px;">' +
           `<strong>Vorschau-Fehler:</strong> ${String(e.message || e)}` +
           "</body></html>";
       }
@@ -947,7 +953,7 @@ export default {
             htmlEl.scrollHeight,
             body.offsetHeight,
             htmlEl.offsetHeight,
-            500,
+            500
           );
           iframe.style.height = h + 32 + "px";
         } catch (_) {
@@ -979,14 +985,14 @@ export default {
           this.templateType,
           this.composeOutput(),
           this.pdfBookingLayout,
-          this.resolvedPdfBookingTableMeta,
+          this.resolvedPdfBookingTableMeta
         );
         if (token !== this.pdfRequestToken) return;
         if (this.pdfUrl) {
           URL.revokeObjectURL(this.pdfUrl);
         }
         this.pdfUrl = URL.createObjectURL(
-          new Blob([response.data], { type: "application/pdf" }),
+          new Blob([response.data], { type: "application/pdf" })
         );
       } catch (error) {
         if (token !== this.pdfRequestToken) return;
@@ -998,19 +1004,26 @@ export default {
       }
     },
     async extractPdfPreviewError(error) {
-      const data = error?.response?.data;
-      if (data instanceof Blob) {
-        try {
-          const text = await data.text();
-          if (text) return text;
-        } catch (_) {
-          // fall through to generic message
-        }
-      } else if (typeof data === "string" && data) {
-        return data;
+      // Status first, body second. The preview asks for a Blob, so a 403 body
+      // arrives as one too; unpacking it is what lets the central reader see
+      // the status and the `code`. Reading the Blob *instead of* looking at
+      // the status showed the raw JSON body to the admin.
+      const unpacked = await unpackBlobErrorBody(error);
+      const message = getApiErrorMessage(unpacked, null);
+      if (message) {
+        return message;
       }
-      if (error?.response?.status === 403) {
-        return "Keine Berechtigung für die PDF-Vorschau (403).";
+
+      // Since 4.3.x a template outside the caller's reach answers 404 like a
+      // deleted one, so the message names both readings instead of falling
+      // through to a sentence that names no reason at all.
+      if (unpacked?.response?.status === 404) {
+        return this.$t("errors.not-found-or-forbidden.message");
+      }
+
+      const data = unpacked?.response?.data;
+      if (typeof data === "string" && data) {
+        return data;
       }
       return "PDF-Vorschau konnte nicht erzeugt werden.";
     },
@@ -1026,7 +1039,7 @@ export default {
           this.schedulePreviewUpdate();
         }
       },
-      { deep: true },
+      { deep: true }
     );
   },
 };

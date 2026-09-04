@@ -132,10 +132,16 @@ export default {
         window.URL.revokeObjectURL(url);
       } catch (error) {
         const status = error.response?.status;
-        const key =
-          status === 403
-            ? "accessPoint.audit.error.forbidden"
-            : "accessPoint.audit.error.failed";
+        // A 404 is ambiguous since 4.3.x - the protocol may not exist, or the
+        // tenant may lie outside the caller's reach - so it gets a neutral
+        // sentence rather than the generic failure, which invites a retry
+        // that cannot help.
+        let key = "accessPoint.audit.error.failed";
+        if (status === 403) {
+          key = "accessPoint.audit.error.forbidden";
+        } else if (status === 404) {
+          key = "accessPoint.audit.error.notFoundOrForbidden";
+        }
         await this.addToast(ToastService.createToast(key, "error"));
       } finally {
         this.exporting = null;

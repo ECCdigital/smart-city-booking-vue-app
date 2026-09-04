@@ -30,7 +30,9 @@ export default {
   >
     <div style="width: 520px; max-width: 100vw">
       <v-alert type="error" icon="mdi-alert" border="left" elevation="2">
-        <span>Sie sind nicht berechtigt, dieses Objekt zu buchen.</span>
+        <!-- Reached by a denied *and* by an out-of-reach bookable, which
+             4.3.x answers with the same 404, so the sentence claims neither. -->
+        <span>{{ $t("checkout.no-permission.message") }}</span>
       </v-alert>
 
       <v-btn class="mt-12" outlined elevation="0" @click="signOut">

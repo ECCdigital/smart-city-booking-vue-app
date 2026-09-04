@@ -1,4 +1,5 @@
 import i18n from "@/language/index";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 
 const FIELD_LABEL_PREFIX = "accessPoint.management.fields";
 const RULE_LABEL_PREFIX = "accessPoint.management.ruleTypes";
@@ -74,18 +75,40 @@ export function formatAccessPointErrorMessage(
   } = {}
 ) {
   const response = error?.response;
+  const status = response?.status;
   const details = response?.data?.details;
 
   if (Array.isArray(details) && details.length > 0) {
     return details.map((detail) => formatDetail(detail)).join(" ");
   }
 
-  if (response?.status === 403) {
+  // Since 4.3.x a record outside the caller's reach answers 404 instead of
+  // 403, on purpose: the existence of a foreign record must not leak. A 404
+  // therefore means "gone" *or* "not yours" and the message may claim neither
+  // - least of all the reload it used to ask for, which fixes neither case.
+  if (status === 404) {
+    return i18n.t("accessPoint.management.errors.notFoundOrForbidden");
+  }
+
+  // A denial keeps the caller's own sentence; every caller has one today, and
+  // `forbiddenKey: null` hands the 403 to the central reader instead.
+  if (forbiddenKey && status === 403) {
     return i18n.t(forbiddenKey);
   }
 
-  if (response?.status === 404) {
-    return i18n.t("accessPoint.management.errors.notFound");
+  // Every status this helper does not own goes to the central reader, which
+  // owns the status-to-message table - the 403 `code` map today, the BFF's own
+  // status for a stale CSRF token once that lands. That is what lets a new
+  // status arrive here without a third status check being added.
+  //
+  // 400 is not handed over: the bad request of this API is a detail list
+  // (above), and its `message` is the bare token `validation_failed`, which
+  // the branches below drop on purpose in favour of the caller's sentence.
+  if (status !== 400) {
+    const central = getApiErrorMessage(error, null);
+    if (central) {
+      return central;
+    }
   }
 
   // Endpoints outside the access point API answer a bad request with a bare

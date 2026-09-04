@@ -15,7 +15,8 @@ npm test -- tests/unit/utils/bookingPaymentStatus.spec.js   # one file
 ```
 tests/unit/                          ← mirrors the src/ tree
   setup.js                           ← global setup, loaded by vitest.config.js
-  support/mount.js                   ← Vuetify/Vuex boilerplate for component specs
+  support/mount.js                   ← Vuetify/Vuex/i18n boilerplate for component specs
+  support/api.js                     ← shared API failure doubles and `flushPromises`
   services/api/apiErrorMessage.spec.js
   services/permissions/TenantPermissionService.spec.js
   utils/bookingPaymentStatus.spec.js
@@ -41,6 +42,23 @@ const wrapper = mountComponent(MyComponent, { propsData: { … } });
 ```
 
 `mountComponent` gives every mount its own Vuetify instance and its own host element inside `data-app`, and registers the wrapper for teardown — a global `afterEach` destroys it, so specs do not clean up themselves. A component that needs a store gets one through `options.store` (`new Vuex.Store(…)`); Vuex is already installed on Vue.
+
+`mountComponent` also hands every mount the app's i18n instance, so `$t` in a template resolves against the real German catalogue and a spec asserting on UI copy fails when the key is missing.
+
+Vitest resolves `vue` to the **runtime-only** build. A component double therefore needs a `render` function — a `template` string does not compile:
+
+```js
+vi.mock("@/layouts/Admin.vue", () => ({
+    default: {
+        name: "AdminLayout",
+        render(h) {
+            return h("div", this.$slots.default);
+        },
+    },
+}));
+```
+
+`tests/unit/support/api.js` holds the shared API failure doubles — `forbiddenError()` (the 4.3.x `ForbiddenError` body), `serverError()` and `flushPromises()`, which lets a component's awaited API call settle before `$nextTick`.
 
 Drive the real DOM (`trigger("click")`, `setValue(…)`) instead of calling component methods, so the spec breaks when the markup stops matching the behaviour.
 

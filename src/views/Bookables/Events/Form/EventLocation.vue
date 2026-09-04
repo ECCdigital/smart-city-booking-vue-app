@@ -91,6 +91,10 @@
                   item-text="title"
                   item-value="id"
                   :items="api.locations"
+                  :hint="
+                    locationsForbidden ? $t('bookable.select.forbidden') : ''
+                  "
+                  :persistent-hint="locationsForbidden"
                   type="select"
                 ></v-select>
               </v-col>
@@ -103,6 +107,8 @@
                   :items="api.rooms"
                   item-text="title"
                   item-value="id"
+                  :hint="roomsForbidden ? $t('bookable.select.forbidden') : ''"
+                  :persistent-hint="roomsForbidden"
                   required
                   type="select"
                 ></v-select>
@@ -149,6 +155,7 @@ import {
 import Pager from "@/components/Events/Form/Pager";
 import uniqueId from "lodash/uniqueId";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import AddressLookup from "@/components/commons/AddressLookup.vue";
 
 setInteractionMode("eager");
@@ -186,6 +193,8 @@ export default {
         rooms: [],
         locations: [],
       },
+      roomsForbidden: false,
+      locationsForbidden: false,
       eventFormats: [
         {
           id: uniqueId(),
@@ -210,6 +219,7 @@ export default {
       this.$router.push({ name: "events" });
     },
     fetchRooms() {
+      this.roomsForbidden = false;
       ApiBookablesService.getBookables()
         .then((response) => {
           this.api.rooms = response.data.filter(
@@ -217,10 +227,14 @@ export default {
           );
         })
         .catch((error) => {
+          // An empty select in a form is not the place for a dialog error:
+          // the field stays empty and carries the reason as a hint.
+          this.roomsForbidden = isForbiddenError(error);
           console.log(error);
         });
     },
     fetchLocations() {
+      this.locationsForbidden = false;
       ApiBookablesService.getBookables()
         .then((response) => {
           this.api.locations = response.data.filter(
@@ -228,6 +242,7 @@ export default {
           );
         })
         .catch((error) => {
+          this.locationsForbidden = isForbiddenError(error);
           console.log(error);
         });
     },

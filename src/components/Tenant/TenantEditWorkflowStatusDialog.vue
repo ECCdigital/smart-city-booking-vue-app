@@ -21,8 +21,8 @@
           <ul class="mt-2 mb-2">
             <li>
               <strong>E-Mail-Aktion:</strong> Versendet eine Nachricht entweder
-              an bestimmte Benutzer der ausgewählte Rolle, oder direkt an
-              eine benutzerdefinierte E-Mail-Adresse.
+              an bestimmte Benutzer der ausgewählte Rolle, oder direkt an eine
+              benutzerdefinierte E-Mail-Adresse.
             </li>
             <li>
               <strong>Buchungsstatus-Aktion:</strong> Ändert den Status einer
@@ -30,7 +30,11 @@
               <em>abgelehnt/storniert</em> oder <em>bezahlt</em>.
             </li>
           </ul>
-          Mehrere Aktionen können kombiniert werden.
+          Mehrere Aktionen können kombiniert werden. Zur Auswahl stehen nur
+          Mitglieder dieses Mandanten; ein Empfänger, der keines ist - eine frei
+          eingetragene Adresse oder ein früher instanzweit konfigurierter
+          Benutzer -, bleibt gespeichert und ist als
+          <em>Unbekannter Empfänger</em> gekennzeichnet.
         </v-alert>
         <h3>Workflow Aktionen</h3>
         <div v-for="(action, idx) in workflowStatus.actions" :key="idx">
@@ -71,6 +75,24 @@
                   ></v-select>
                 </v-col>
                 <v-col class="col-12 col-md-8">
+                  <v-alert
+                    v-if="action.receiverType === 'user' && usersUnavailable"
+                    type="warning"
+                    dense
+                    outlined
+                    class="mx-1"
+                  >
+                    Die Mitglieder dieses Mandanten konnten nicht geladen
+                    werden. Gespeicherte Empfänger bleiben erhalten, neue lassen
+                    sich gerade nicht auswählen.
+                  </v-alert>
+                  <!--
+                    A combobox, not a select: `v-select` rebuilds its value from
+                    the items it knows, so a recipient that is no longer a
+                    member of this tenant would silently drop out of `sendTo` on
+                    the next edit. `return-object` has to be set explicitly -
+                    unlike `v-select`, `v-combobox` defaults it to true.
+                  -->
                   <v-combobox
                     v-if="action.receiverType === 'user'"
                     class="mx-1"
@@ -84,6 +106,9 @@
                     label="Benutzer"
                     v-model="action.sendTo"
                     :items="availableUsers"
+                    item-text="label"
+                    item-value="userId"
+                    :return-object="false"
                   >
                     <template
                       v-slot:selection="{ attrs, item, select, selected }"
@@ -92,11 +117,11 @@
                         v-bind="attrs"
                         :input-value="selected.value"
                         close
-                        color="secondary"
+                        :color="isUnknownUser(item) ? 'warning' : 'secondary'"
                         @click="select"
                         @click:close="removeUser(idx, item)"
                       >
-                        <strong>{{ item }}</strong>
+                        <strong>{{ userLabel(item) }}</strong>
                       </v-chip>
                     </template>
                   </v-combobox>
@@ -191,7 +216,8 @@
 
 <script>
 import ApiRolesService from "@/services/api/ApiRolesService";
-import ApiUsersService from "@/services/api/ApiUsersService";
+import ApiTenantService from "@/services/api/ApiTenantService";
+import { tenantUserOptions } from "@/utils/tenantUsers";
 
 export default {
   name: "TenantEditWorkflowStatusDialog",
@@ -204,6 +230,10 @@ export default {
       type: Object,
       required: true,
     },
+    tenantId: {
+      type: String,
+      default: "",
+    },
   },
   data() {
     return {
@@ -212,6 +242,7 @@ export default {
       },
       availableRoles: [],
       availableUsers: [],
+      usersUnavailable: false,
       actionTypes: [
         { label: "Email-Benachrichtigung ", value: "email" },
         { label: "Buchung-Statusänderung", value: "bookingStatus" },
@@ -230,12 +261,15 @@ export default {
 
   watch: {
     states: {
-      handler: async function (newVal, oldVal) {
+      handler: async function (newVal) {
         this.workflowStatus = JSON.parse(JSON.stringify(newVal));
         await this.fetchRoles();
         await this.fetchUsers();
       },
       immediate: true,
+    },
+    tenantId() {
+      this.fetchUsers();
     },
   },
 
@@ -258,10 +292,47 @@ export default {
         this.availableRoles = [];
       }
     },
+    /**
+     * Recipients are the members of *this* tenant. The instance-wide user list
+     * is owner-only from 4.3.x on, and a workflow of tenant A notifying a user
+     * of tenant B was a leak rather than a feature.
+     */
     async fetchUsers() {
-      await ApiUsersService.getUsers().then((result) => {
-        this.availableUsers = result.map((user) => user.id);
-      });
+      if (!this.tenantId) {
+        this.availableUsers = [];
+        return;
+      }
+
+      try {
+        const response = await ApiTenantService.getTenantUsers(this.tenantId);
+        this.availableUsers = tenantUserOptions(response);
+        this.usersUnavailable = false;
+      } catch (error) {
+        console.error("Error fetching tenant users:", error);
+        this.availableUsers = [];
+        this.usersUnavailable = true;
+      }
+    },
+    /**
+     * Only a member list that was actually read can tell us that a recipient is
+     * not in it. While it could not be read, no id is called unknown - that
+     * would be the "no data" lie in place of "no access".
+     */
+    isUnknownUser(userId) {
+      if (this.usersUnavailable) return false;
+      return !this.availableUsers.some((user) => user.userId === userId);
+    },
+    /**
+     * A recipient that is not a member of this tenant stays in `sendTo` and
+     * stays visible - only removing the chip drops it. Hiding it would delete
+     * a notification recipient on the next save without anyone noticing.
+     */
+    userLabel(userId) {
+      const user = this.availableUsers.find((u) => u.userId === userId);
+      if (user) return user.label;
+      return this.isUnknownUser(userId)
+        ? `${userId} (Unbekannter Empfänger)`
+        : userId;
     },
     addAction() {
       this.workflowStatus.actions.push({

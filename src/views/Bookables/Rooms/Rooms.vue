@@ -9,6 +9,13 @@
         </v-alert>
       </v-col>
     </v-row>
+    <v-row v-if="bookablesForbidden">
+      <v-col cols="12">
+        <v-alert type="warning" elevation="2" class="custom-alert">
+          {{ $t("bookable.list.forbidden") }}
+        </v-alert>
+      </v-col>
+    </v-row>
     <v-row>
       <v-col cols="12">
         <Search
@@ -28,7 +35,7 @@
         ></Search>
       </v-col>
     </v-row>
-    <v-row gutters >
+    <v-row gutters>
       <v-col
         cols="12"
         sm="6"
@@ -77,6 +84,7 @@ import AdminLayout from "@/layouts/Admin.vue";
 import BookableCard from "@/components/Bookable/BookableCard.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import ApiTagsService from "@/services/api/ApiTagsService";
 import ToastService from "@/services/ToastService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
@@ -96,6 +104,7 @@ export default {
       },
       filters: [],
       bookableCountCheck: true,
+      bookablesForbidden: false,
       searchResults: [],
       searchKeys: ["title", "id"],
     };
@@ -189,6 +198,7 @@ export default {
     },
     fetchRooms() {
       this.startLoading("fetch-rooms");
+      this.bookablesForbidden = false;
       ApiBookablesService.getBookables()
         .then((response) => {
           this.api.rooms = response.data.filter(
@@ -200,6 +210,9 @@ export default {
           this.stopLoading("fetch-rooms");
         })
         .catch((error) => {
+          // A 403 means "no reach", not "nothing there" - an empty grid would
+          // claim the second. Every other failure keeps the old silence.
+          this.bookablesForbidden = isForbiddenError(error);
           console.log(error);
         });
     },

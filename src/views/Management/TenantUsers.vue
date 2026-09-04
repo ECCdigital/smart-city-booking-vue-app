@@ -732,7 +732,12 @@ export default {
 
         this.showInviteDialog = false;
       } catch (error) {
-        if (error.response.status === 404) {
+        // The exception to the neutral wording of a 4.3.x 404: the frequent
+        // reading here is still "this address has no account yet", and that
+        // one carries an instruction. A tenant outside the caller's reach now
+        // answers the same 404, so the message names both readings instead of
+        // dropping the useful one.
+        if (error?.response?.status === 404) {
           await this.addToast(
             ToastService.createToast("tenant.addUser.error.not-found", "error")
           );
