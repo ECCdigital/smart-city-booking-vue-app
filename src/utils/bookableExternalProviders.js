@@ -9,6 +9,9 @@
  * provider reports.
  */
 
+/** The only external provider the UI configures by name today. */
+export const IFBS_PROVIDER = "ifbs";
+
 /**
  * Whether an active provider entry takes over the given capability.
  *

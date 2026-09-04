@@ -3,7 +3,10 @@
  * DOM id: be-section-{id}
  */
 
-import { providerHandles } from "@/utils/bookableExternalProviders";
+import {
+  IFBS_PROVIDER,
+  providerHandles,
+} from "@/utils/bookableExternalProviders";
 
 export function bookableEditSectionElementId(sectionId) {
   return `be-section-${sectionId}`;
@@ -21,9 +24,19 @@ function getBookingMode(bookable) {
   return "independent";
 }
 
-function hasIfbsLocker(bookable) {
-  return (bookable?.lockerDetails?.units || []).some(
-    (unit) => unit?.lockerSystem === "ifbs"
+/**
+ * Whether the bookable declares the external data source the pricing tab
+ * configures.
+ *
+ * Since the locker fold the bookable no longer says which of its access points
+ * is a locker system - the ids alone do not, and resolving them needs the
+ * tenant's access point list, which this module cannot load. The declaration
+ * is the part of that section that does live on the bookable, so it is what
+ * the anchor keys on.
+ */
+function declaresExternalProvider(bookable) {
+  return (bookable?.externalProviders || []).some(
+    (provider) => provider?.provider === IFBS_PROVIDER
   );
 }
 
@@ -32,7 +45,8 @@ function handlesExternalPricing(bookable) {
   if (!Array.isArray(providers)) return false;
   return providers.some(
     (provider) =>
-      provider?.provider === "ifbs" && providerHandles(provider, "pricing")
+      provider?.provider === IFBS_PROVIDER &&
+      providerHandles(provider, "pricing")
   );
 }
 
@@ -215,9 +229,8 @@ function isSectionVisible(section, { bookable, expertMode }) {
   const mode = getBookingMode(bookable);
   const isTimeWindowMode = mode === "schedule" || mode === "timePeriod";
   const visibilityById = {
-    "pricing-external": () => hasIfbsLocker(bookable),
-    "pricing-tiers": () =>
-      !hasIfbsLocker(bookable) || !handlesExternalPricing(bookable),
+    "pricing-external": () => declaresExternalProvider(bookable),
+    "pricing-tiers": () => !handlesExternalPricing(bookable),
     "bookingType-duration": () => mode === "schedule",
     "bookingType-time-periods": () => mode === "timePeriod",
     "bookingType-block-periods": () => mode === "blockPeriod",

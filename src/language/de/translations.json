@@ -212,6 +212,23 @@
         "titlesForbidden": "Titel der verknüpften Buchungsobjekte nicht abrufbar – Sie haben keinen Zugriff auf Buchungsobjekte."
       }
     },
+    "externalPrice": {
+      "title": "Preise vom Anbieter",
+      "units": {
+        "minute": "pro Minute",
+        "hour": "pro Stunde",
+        "day": "pro Tag",
+        "week": "pro Woche",
+        "month": "pro Monat",
+        "year": "pro Jahr"
+      },
+      "serviceFee": "Servicegebühr",
+      "retry": "Erneut versuchen",
+      "loadFailed": "Preise konnten nicht vom Anbieter geladen werden.",
+      "empty": "Keine Preise verfügbar",
+      "notSaved": "Die Preise des Anbieters erscheinen, sobald das Buchungsobjekt gespeichert ist.",
+      "notPublic": "Die Preise des Anbieters erscheinen, sobald das Buchungsobjekt öffentlich sichtbar ist."
+    },
     "list": {
       "forbidden": "Sie haben keinen Zugriff auf Buchungsobjekte."
     },
