@@ -24,7 +24,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
--   Tenant permissions follow 4.3.x: creating a tenant asks the instance setting `allowCreateTenant` (the signal `Home.vue` and `InstanceTenants.vue` already used), deleting one asks the membership's `isOwner` flag scoped to the tenant being deleted, and instance ownership trumps both. `TenantPermissionService.isOwner(tenant)` is gone with them — it compared `tenant.ownerUserId`, a field no tenant carries (tenants have `ownerUserIds`), so it could never be true. The characterisation spec was rewritten in the same commit: the `undefined`-instead-of-`false` quirks it pinned went away with the role dimension they read
+-   Tenant permissions follow 4.3.x: creating a tenant asks the instance setting `allowCreateTenant`, deleting one asks the membership's `isOwner` flag. `TenantPermissionService.isOwner(tenant)` is gone — it read `tenant.ownerUserId`, a field the tenant schema does not define, so it was never true
 -   `vue` and `vue-template-compiler` are aligned on 2.7.16 — they had drifted apart, which breaks any tool that compiles templates outside webpack
 -   The stale eslint `overrides` block for `mocha` test globals is gone; Vitest globals stay off and specs import `describe`/`it`/`expect` from `vitest`
 -   Tenant access apps: Salto KS picks an environment (`Accept (Sandbox)` / `Production`) instead of a free-text API base URL; the connection test sends `environment` and shows the server's own error (e.g. `invalid_client`) — requires the matching backend
@@ -50,7 +50,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Removed
 
--   The `manageTenants` role dimension, which the 4.3.x API no longer knows: `RolePermission.MANAGE_TENANTS` and the defaults a new role seeded (`src/entities/role.js`), the dead column template in the role list, and "Mandanten verwalten" in the settings permission summary — an entry that claimed a right nobody could hold. Existing role documents are untouched; the schema still carries the field, nothing reads it
+-   The `manageTenants` role dimension, which the 4.3.x API no longer knows — role defaults, the role-list column and the settings permission summary. Existing role documents are untouched
 -   Tenant access apps: webhook configuration is gone — Nuki's callback-URL/notification-ID form with its register/unregister buttons, and the Salto KS webhook registration status. The method is not supported (the Salto Connect API has no webhooks at all)
 -   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone); the orphaned `ChooseFile` component and `ApiFileService` are now deleted too, so nothing addresses the removed `/api/:tenant/files` endpoints
 
