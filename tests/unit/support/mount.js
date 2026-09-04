@@ -48,7 +48,6 @@ export function mountComponent(component, options = {}) {
     vuetify: new Vuetify(),
     i18n,
     attachTo: createHost(),
-    i18n,
     ...options,
   });
   mountedWrappers.add(wrapper);

@@ -344,6 +344,10 @@ describe("isForbiddenError", () => {
     expect(isForbiddenError(new Error("Network Error"))).toBe(false);
     expect(isForbiddenError(undefined)).toBe(false);
     expect(isForbiddenError(null)).toBe(false);
+  });
+});
+
+/**
  * Since 4.3.x a record the caller may not see answers 404 rather than 403, so
  * that its existence stays hidden. Wherever the UI only asks "may this be
  * shown at all?", the two statuses are one question.
