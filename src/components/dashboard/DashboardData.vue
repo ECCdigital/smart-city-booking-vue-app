@@ -151,8 +151,19 @@
                     {{ bookableRank(index) }}
                   </template>
                   <template #item.bookableTitle="{ item }">
-                    <div class="font-weight-medium">
-                      {{ truncateTitle(item.bookableTitle, 56) }}
+                    <div class="font-weight-medium d-flex align-center">
+                      <span>{{ truncateTitle(item.bookableTitle, 56) }}</span>
+                      <v-chip
+                        v-if="item.bookableDeleted"
+                        x-small
+                        rounded
+                        label
+                        color="grey lighten-2"
+                        text-color="grey darken-2"
+                        class="ml-2 bookable-deleted-chip"
+                      >
+                        Gelöscht
+                      </v-chip>
                     </div>
                   </template>
                   <template #item.bookings="{ item }">
@@ -302,7 +313,18 @@
                         </div>
 
                         <div class="bookable-mobile-title mb-2">
-                          {{ item.bookableTitle || "Ohne Titel" }}
+                          <span>{{ item.bookableTitle || "Ohne Titel" }}</span>
+                          <v-chip
+                            v-if="item.bookableDeleted"
+                            x-small
+                            rounded
+                            label
+                            color="grey lighten-2"
+                            text-color="grey darken-2"
+                            class="ml-2 bookable-deleted-chip"
+                          >
+                            Gelöscht
+                          </v-chip>
                         </div>
 
                         <div
@@ -771,12 +793,19 @@ export default {
       return [
         { text: "#", value: "rank", sortable: false, width: "56px" },
         { text: "Objekt", value: "bookableTitle", sortable: false },
-        { text: "Buchungen", value: "bookings", align: "end", sortable: true },
+        {
+          text: "Buchungen",
+          value: "bookings",
+          align: "end",
+          sortable: true,
+          width: "100px",
+        },
         {
           text: "Stornos",
           value: "cancellations",
           align: "end",
           sortable: true,
+          width: "120px",
         },
         {
           text: "Relativ zum Top",
@@ -1504,8 +1533,16 @@ export default {
   padding-bottom: 4px !important;
 }
 
+.dashboard-bookables-table::v-deep table {
+  table-layout: fixed;
+}
+
 .bookable-share-cell {
   gap: 8px;
+}
+
+.bookable-deleted-chip {
+  opacity: 0.9;
 }
 
 .bookable-share-pct {
