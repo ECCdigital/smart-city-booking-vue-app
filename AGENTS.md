@@ -70,6 +70,7 @@ Details: [docs/agents/coding-standards.md](docs/agents/coding-standards.md)
 |-------|------|
 | Architecture & data flow | [docs/agents/architecture.md](docs/agents/architecture.md) |
 | Testing (Vitest) | [docs/agents/testing.md](docs/agents/testing.md) |
+| Access vocabulary (Anlage, Fach, Grant, Reichweite) | [docs/agents/access-vocabulary.md](docs/agents/access-vocabulary.md) |
 | Vue components & views | [docs/agents/components.md](docs/agents/components.md) |
 | API services | [docs/agents/api-services.md](docs/agents/api-services.md) |
 | JS web interface (embed) | [docs/agents/web-integration.md](docs/agents/web-integration.md) |
