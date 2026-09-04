@@ -8,12 +8,24 @@ import i18n from "@/language/index";
  */
 const FORBIDDEN_CODE_PREFIX = "errors.forbidden-codes";
 const GENERIC_FORBIDDEN_KEY = `${FORBIDDEN_CODE_PREFIX}.forbidden`;
+const SESSION_EXPIRED_KEY = "errors.session-expired.message";
+
+/**
+ * The status the Admin BFF answers a failed CSRF check with (`bff/src/csrf.js`).
+ * It is not a backend `ForbiddenError`: the request never reached the backend,
+ * and the user is not lacking a permission - the browser sent a mutating
+ * request whose `Origin`/`Referer` no longer matches the served origin, which
+ * a reload fixes. 419 is unassigned in the IANA registry, so it cannot
+ * contradict a registered meaning the way 428 (Precondition Required) would.
+ */
+export const CSRF_FAILED_STATUS = 419;
 
 /**
  * The `code` of a 4.3.x error body (`BaseError.toJSON`):
  * `{ error, code, statusCode, params }`. Anything that does not carry both
- * `code` and `statusCode` is not that shape - the BFF answers a stale CSRF
- * token with a 403 of its own - and is read as a generic denial.
+ * `code` and `statusCode` is not that shape and is read as a generic denial -
+ * which is what a deployment still running an older BFF needs, because that
+ * BFF answered a stale CSRF token with a 403 of its own.
  */
 function getForbiddenCode(data) {
   if (!data || typeof data !== "object") {
@@ -50,7 +62,8 @@ function getForbiddenMessage(data) {
  * Bei 400-Antworten mit Klartext-Body (z. B. serverseitige PDF-Template-
  * Validierung von PUT /api/tenants) wird dieser Text zurückgegeben,
  * bei 403-Antworten die über `code` übersetzte Meldung,
- * sonst der Fallback.
+ * bei 419-Antworten (CSRF-Prüfung der BFF) den Hinweis auf die abgelaufene
+ * Sitzung, sonst der Fallback.
  */
 export function getApiErrorMessage(error, fallback) {
   if (error?.response?.status === 400) {
@@ -64,6 +77,11 @@ export function getApiErrorMessage(error, fallback) {
   }
   if (error?.response?.status === 403) {
     return getForbiddenMessage(error.response.data);
+  }
+  // The BFF is the only source of this status and sends it for exactly one
+  // reason, so the body is not read.
+  if (error?.response?.status === CSRF_FAILED_STATUS) {
+    return i18n.t(SESSION_EXPIRED_KEY);
   }
   return fallback;
 }

@@ -7,6 +7,7 @@ import {
 
 const FALLBACK = "Fallback";
 const FORBIDDEN = i18n.t("errors.forbidden-codes.forbidden");
+const SESSION_EXPIRED = i18n.t("errors.session-expired.message");
 
 /**
  * Characterisation: the 400 branch is unchanged by the permissions strand and
@@ -120,7 +121,9 @@ describe("getApiErrorMessage", () => {
     });
 
     it("treats a 403 without the new shape as a generic denial", () => {
-      // The BFF answers a stale CSRF token with a shape of its own.
+      // Kept as the fallback for a deployment still running an older BFF,
+      // which answered a stale CSRF token with a 403 of its own. A current
+      // BFF sends 419 for that — see the 419 block below.
       expect(
         getApiErrorMessage(
           {
@@ -151,6 +154,31 @@ describe("getApiErrorMessage", () => {
         },
       };
       expect(getApiErrorMessage(error, FALLBACK)).toBe(FORBIDDEN);
+    });
+  });
+
+  describe("on a 419 response", () => {
+    it("reads the BFF's stale-CSRF answer as an expired session", () => {
+      const error = {
+        response: {
+          status: 419,
+          data: { success: false, message: "CSRF check failed" },
+        },
+      };
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(SESSION_EXPIRED);
+      expect(getApiErrorMessage(error, FALLBACK)).not.toBe(FORBIDDEN);
+    });
+
+    it("ignores the body — every 419 means the same thing", () => {
+      expect(getApiErrorMessage({ response: { status: 419 } }, FALLBACK)).toBe(
+        SESSION_EXPIRED
+      );
+      expect(
+        getApiErrorMessage(
+          { response: { status: 419, data: "Page Expired" } },
+          FALLBACK
+        )
+      ).toBe(SESSION_EXPIRED);
     });
   });
 
@@ -240,6 +268,18 @@ describe("unpackBlobErrorBody", () => {
   it("keeps the axios message reachable", async () => {
     const unpacked = await unpackBlobErrorBody(blobError("{}"));
     expect(unpacked.message).toBe("Request failed with status code 403");
+  });
+
+  it("makes a blob 419 readable for getApiErrorMessage", async () => {
+    const unpacked = await unpackBlobErrorBody(
+      blobError(
+        JSON.stringify({ success: false, message: "CSRF check failed" }),
+        {
+          status: 419,
+        }
+      )
+    );
+    expect(getApiErrorMessage(unpacked, FALLBACK)).toBe(SESSION_EXPIRED);
   });
 
   it("makes a blob 403 readable for getApiErrorMessage", async () => {
