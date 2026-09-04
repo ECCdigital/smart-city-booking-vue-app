@@ -9,6 +9,7 @@ import AccessPointPermissionService from "@/services/permissions/AccessPointPerm
 import ToastService from "@/services/ToastService";
 import {
   createLockAndAccessAppDefaults,
+  findTenantApp,
   withoutUnchangedSecrets,
   LOCK_AND_ACCESS_APP_IDS,
 } from "@/utilities/access-apps";
@@ -107,7 +108,7 @@ export default {
       const existing = this.tenant.applications || [];
       const map = {};
       LOCK_AND_ACCESS_APP_IDS.forEach((id) => {
-        const found = existing.find((app) => app.id === id);
+        const found = findTenantApp(existing, id);
         map[id] = found ? { ...found } : { ...this.defaultApps[id] };
       });
 

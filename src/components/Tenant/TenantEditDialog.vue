@@ -742,6 +742,7 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
 import { mapActions } from "vuex";
+import { findTenantApp } from "@/utilities/access-apps";
 
 export default {
   name: "TenantEdit",
@@ -843,9 +844,7 @@ export default {
     },
     parevaSystem: {
       get() {
-        return (
-          this.tenant.applications?.find((app) => app.id === "pareva") || {}
-        );
+        return findTenantApp(this.tenant.applications, "pareva") || {};
       },
     },
     eventCreationMode: {
@@ -924,7 +923,7 @@ export default {
           await this.addToast({
             message: getApiErrorMessage(
               e,
-              "Fehler beim Speichern der Änderungen.",
+              "Fehler beim Speichern der Änderungen."
             ),
             type: "error",
           });

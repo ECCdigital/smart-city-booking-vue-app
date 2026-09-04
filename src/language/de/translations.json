@@ -191,9 +191,6 @@
         "customFieldsDefinitions": "Felder definieren",
         "relatedCheckout": "Zusatzoptionen",
         "relatedHierarchy": "Hierarchie",
-        "lockersSelect": "System wählen",
-        "lockersPareva": "Pareva",
-        "lockersIfbs": "IFBS",
         "additionalRequiredFields": "Pflichtfelder",
         "additionalNotes": "Buchungshinweise"
       },
@@ -214,6 +211,23 @@
       "overview": {
         "titlesForbidden": "Titel der verknüpften Buchungsobjekte nicht abrufbar – Sie haben keinen Zugriff auf Buchungsobjekte."
       }
+    },
+    "externalPrice": {
+      "title": "Preise vom Anbieter",
+      "units": {
+        "minute": "pro Minute",
+        "hour": "pro Stunde",
+        "day": "pro Tag",
+        "week": "pro Woche",
+        "month": "pro Monat",
+        "year": "pro Jahr"
+      },
+      "serviceFee": "Servicegebühr",
+      "retry": "Erneut versuchen",
+      "loadFailed": "Preise konnten nicht vom Anbieter geladen werden.",
+      "empty": "Keine Preise verfügbar",
+      "notSaved": "Die Preise des Anbieters erscheinen, sobald das Buchungsobjekt gespeichert ist.",
+      "notPublic": "Die Preise des Anbieters erscheinen, sobald das Buchungsobjekt öffentlich sichtbar ist."
     },
     "list": {
       "forbidden": "Sie haben keinen Zugriff auf Buchungsobjekte."
@@ -926,8 +940,7 @@
       "tab": "Zugangspunkte",
       "providersTab": "Schließsysteme",
       "title": "Zugangspunkte",
-      "hint": "Türen und Schließfächer dieses Mandanten. Ein Zugangspunkt wird hier einmal angelegt und kann anschließend in beliebig vielen Buchungsobjekten verwendet werden.",
-      "create": "Zugangspunkt anlegen",
+      "hint": "Türen und Schließfachanlagen dieses Mandanten. Ein Zugangspunkt wird hier einmal angelegt und kann anschließend in beliebig vielen Buchungsobjekten verwendet werden.",
       "edit": "Bearbeiten",
       "reload": "Neu laden",
       "search": "Zugangspunkt suchen...",
@@ -942,11 +955,20 @@
         "loading": "Daten werden geladen...",
         "empty": "Es ist noch kein Zugangspunkt angelegt.",
         "perPage": "Zugangspunkte pro Seite",
-        "assignmentForbidden": "Nicht abrufbar"
+        "assignmentForbidden": "Nicht abrufbar",
+        "origin": "Herkunft",
+        "originManual": "Selbst angelegt",
+        "originProvider": "Vom Anbieter",
+        "capacityHint": "Kapazität steht am Buchungsobjekt",
+        "typeFilter": "Typ",
+        "filterAll": "Alle",
+        "filterDoors": "Türen",
+        "filterLockers": "Anlagen",
+        "emptyFiltered": "Kein Zugangspunkt dieses Typs."
       },
       "types": {
         "door": "Tür",
-        "locker": "Schließfach"
+        "locker": "Anlage"
       },
       "modes": {
         "authorization": "PIN-Code",
@@ -962,22 +984,24 @@
         "label": "Bezeichnung",
         "type": "Typ",
         "provider": "Anbieter",
-        "externalId": "Schloss-ID beim Anbieter",
+        "externalId": "ID beim Anbieter",
         "externalIdHint": "Ändern Sie diese ID, um das Schloss auszutauschen, ohne den QR-Code neu zu drucken.",
         "providerLocationId": "Standort-ID beim Anbieter",
         "mode": "Modus",
         "config": "Konfiguration",
         "location": "Standort",
-        "validationRules": "Validierungsregeln"
+        "validationRules": "Validierungsregeln",
+        "typeHint": "Der Typ ergibt sich aus dem Anbieter und ist nicht wählbar.",
+        "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen."
       },
       "picker": {
-        "title": "Schloss vom Anbieter übernehmen",
+        "title": "Zugangspunkt vom Anbieter übernehmen",
         "provider": "Anbieter",
-        "lock": "Schloss",
+        "lock": "Zugangspunkt",
         "apply": "Übernehmen",
         "alreadyCreated": "bereits angelegt",
-        "hint": "Die übernommenen Angaben lassen sich anschließend frei ändern. Ohne Auswahl legen Sie den Zugangspunkt manuell an.",
-        "noProvider": "Es ist kein Anbieter für Türschlösser aktiv. Sie können den Zugangspunkt manuell anlegen oder zuerst unter „Schließsysteme“ einen Anbieter aktivieren."
+        "hint": "Der Anbieter sagt, ob es eine Tür oder eine Schließfachanlage ist. Die übernommenen Angaben lassen sich anschließend frei ändern.",
+        "noProvider": "Es ist kein Anbieter aktiv. Aktivieren Sie zuerst unter „Schließsysteme“ einen Anbieter, oder legen Sie eine Tür manuell an."
       },
       "ruleTypes": {
         "qrScan": "QR-Scan erforderlich"
@@ -989,7 +1013,8 @@
         "qrScanHint": "Der Zugangspunkt lässt sich nur öffnen, wenn der QR-Code vor Ort gescannt wurde.",
         "defaultHint": "Unverändert übernommen: Beim Anlegen setzt der Server die Regel „QR-Scan erforderlich“ selbst. Schalten Sie den Schalter aus, um den Zugangspunkt bewusst ohne Scan-Pflicht anzulegen.",
         "required": "erforderlich",
-        "notRequired": "nicht nötig"
+        "notRequired": "nicht nötig",
+        "notApplicable": "entfällt"
       },
       "location": {
         "title": "Standort",
@@ -1030,11 +1055,18 @@
         "confirm": "Löschen",
         "affectedTitle": "Diese Buchungsobjekte verlieren damit ihren Zugangspunkt:",
         "affectedHint": "Die Zuordnung wird automatisch aus den Buchungsobjekten entfernt.",
-        "noneAffected": "Der Zugangspunkt ist keinem Buchungsobjekt zugeordnet."
+        "noneAffected": "Der Zugangspunkt ist keinem Buchungsobjekt zugeordnet.",
+        "bookingsTitle": "Laufende Buchungen mit erteiltem Zugang:",
+        "bookingsHint": "Die erteilten Berechtigungen werden dabei nicht widerrufen – beim Anbieter bleiben sie bestehen und lassen sich anschließend hier nicht mehr entziehen. Bedienen lässt sich der Zugangspunkt aus diesen Buchungen nicht mehr.",
+        "bookingsNone": "Keine laufende Buchung hält an diesem Zugangspunkt einen erteilten Zugang.",
+        "bookingsLoading": "Laufende Buchungen werden geprüft …",
+        "bookingsUnreadable": "Ob laufende Buchungen hier einen erteilten Zugang halten, ist nicht abrufbar – die Buchungen dieses Mandanten konnten nicht gelesen werden.",
+        "bookingsMore": "… und {count} weitere."
       },
       "dialog": {
-        "createTitle": "Zugangspunkt anlegen",
-        "editTitle": "Zugangspunkt bearbeiten"
+        "editTitle": "Zugangspunkt bearbeiten",
+        "createDoorTitle": "Tür anlegen",
+        "createFromProviderTitle": "Zugangspunkt aus Anbieter übernehmen"
       },
       "errors": {
         "generic": "Die Aktion konnte nicht ausgeführt werden.",
@@ -1078,7 +1110,9 @@
       },
       "hints": {
         "assignmentForbidden": "Die Spalte „Zuordnung“ kann nicht gefüllt werden – Sie haben keinen Zugriff auf Buchungsobjekte."
-      }
+      },
+      "createDoor": "Tür anlegen",
+      "createFromProvider": "Aus Anbieter übernehmen"
     },
     "comingSoon": {
       "badge": "Bald verfügbar",
@@ -1281,22 +1315,46 @@
       }
     },
     "bookable": {
-      "title": "Türen / Zugang",
-      "activate": "Türen aktivieren",
-      "activateHint": "Buchende erhalten zeitbasierte Zugangsberechtigungen oder können Türen aus der Buchung heraus öffnen.",
+      "title": "Zugang & Schließsysteme",
+      "intro": "Ordnen Sie diesem Buchungsobjekt Türen und Schließfachanlagen zu. Angelegt und eingerichtet werden sie zentral beim Mandanten.",
+      "assignedCount": "{count} zugeordnet",
+      "activate": "Zugang aktivieren",
+      "activateHint": "Buchende erhalten für die zugeordneten Zugangspunkte zeitbasierte Berechtigungen und können sie aus der Buchung heraus bedienen.",
+      "writeForbidden": "Ihnen fehlt die Berechtigung, dieses Buchungsobjekt zu ändern. Die Zuordnung von Zugangspunkten lässt sich deshalb hier nicht bearbeiten.",
       "reload": "Neu laden",
-      "selectTitle": "Zugangspunkte auswählen",
-      "select": "Zugangspunkte",
-      "selectHint": "Mehrfachauswahl möglich. Derselbe Zugangspunkt darf in mehreren Buchungsobjekten verwendet werden.",
-      "selectedCount": "{count} ausgewählt",
+      "capacity": {
+        "title": "Stückzahl",
+        "hint": "Die Stückzahl dieses Buchungsobjekts. Sie begrenzt, wie viele Fächer an einer zugeordneten Anlage gleichzeitig belegt sein können. Leer heißt unbegrenzt.",
+        "label": "Stückzahl",
+        "externalHint": "Die Stückzahl meldet der Anbieter. Sie lässt sich hier nicht ändern und begrenzt, wie viele Fächer an einer zugeordneten Anlage gleichzeitig belegt sein können.",
+        "mismatchTitle": "Mengen und Stückzahl weichen voneinander ab",
+        "mismatchHint": "Die Mengen der zugeordneten Anlagen ergeben zusammen {distributed} Fächer, die Stückzahl dieses Buchungsobjekts ist {capacity}. Speichern ist möglich – die Belegung wird weiterhin gegen die Stückzahl gerechnet."
+      },
+      "selectTitle": "Zugeordnete Zugangspunkte",
+      "assign": "Zuordnen",
+      "allAssigned": "Alle Zugangspunkte sind bereits zugeordnet.",
       "noneAvailable": "Für diesen Mandanten ist noch kein Zugangspunkt angelegt.",
-      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier wählen Sie nur aus, welche davon dieses Buchungsobjekt öffnet.",
+      "table": {
+        "point": "Zugangspunkt",
+        "type": "Typ",
+        "provider": "Anbieter",
+        "amount": "Menge",
+        "grants": "Was die Buchung bekommt",
+        "remove": "Entfernen"
+      },
+      "grants": {
+        "door": "Geteilter Zugang im Buchungszeitraum",
+        "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt",
+        "lockerOne": "Ein Fach je Buchung, vom Anbieter zugeteilt",
+        "lockerMany": "{count} Fächer je Buchung, vom Anbieter zugeteilt"
+      },
+      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
       "manageLink": "Zugangspunkte verwalten",
       "readForbidden": "Ihnen fehlt die Berechtigung, die Zugangspunkte dieses Mandanten zu lesen. Bitte wenden Sie sich an eine Person mit Mandanten-Rechten.",
       "unknownTitle": "Unbekannte Zugangspunkte in der Auswahl",
       "unknownHint": "Zu diesen IDs gibt es keinen Zugangspunkt dieses Mandanten – vermutlich wurden sie gelöscht. Entfernen Sie sie, sonst lässt sich das Buchungsobjekt nicht speichern.",
       "emptyTitle": "Noch keine Zugangspunkte zugeordnet",
-      "emptyHint": "Wählen Sie oben einen oder mehrere Zugangspunkte aus.",
+      "emptyHint": "Über „Zuordnen“ fügen Sie Türen und Anlagen hinzu.",
       "buffer": {
         "title": "Pufferzeiten",
         "hint": "Zeitspanne vor und nach dem Buchungszeitraum, in der die Zugangspunkte zusätzlich bedient werden dürfen. Der Wert gilt für alle ausgewählten Zugangspunkte.",
@@ -1307,18 +1365,34 @@
       },
       "saveError": {
         "title": "Speichern fehlgeschlagen"
-      }
+      },
+      "pickerLoading": "Zugangspunkte werden geladen ..."
     },
     "booking": {
-      "title": "Tür-Steuerung",
+      "title": "Zugänge",
       "reload": "neu laden",
       "pinInfo": "PINs werden aus Sicherheitsgründen nicht angezeigt. Falls eine PIN erzeugt wurde, wird sie per E-Mail an den Buchenden gesendet.",
-      "provisioned": "provisioniert",
-      "provisionedAt": "Provisioniert:",
+      "compartment": "{label} — Fach {compartment}",
+      "process": "Vorgang:",
       "checkStatus": "Status prüfen",
       "close": "Schließen",
       "open": "Aufschließen",
+      "openCompartment": "Fach öffnen",
       "unlatch": "Tür öffnen",
+      "state": {
+        "held": "Vorgemerkt",
+        "granted": "Erteilt",
+        "revoked": "Widerrufen"
+      },
+      "blocked": {
+        "forbidden": "Ihnen fehlt die Berechtigung, diese Buchung zu bedienen.",
+        "noStatus": "Der Anbieter meldet für diesen Zugangspunkt keinen Status."
+      },
+      "denied": {
+        "noPermission": "Ihnen fehlt die Berechtigung, diesen Zugangspunkt aus dieser Buchung zu bedienen.",
+        "notInBooking": "Dieser Zugangspunkt gehört nicht mehr zu dieser Buchung. Bitte laden Sie die Zugänge neu.",
+        "notOperable": "Dieser Zugangspunkt lässt sich aus dieser Buchung derzeit nicht bedienen – etwa weil das Zeitfenster abgelaufen ist, die Berechtigung fehlt oder widerrufen wurde, oder die Buchung noch offen ist."
+      },
       "status": {
         "waitingClose": "Warte auf Schließen…",
         "waitingOpen": "Warte auf Bestätigung…",
@@ -1327,10 +1401,7 @@
         "error": "Fehler",
         "errorCode": "Fehler {code}",
         "unlocked": "Entsperrt",
-        "locked": "Verschlossen",
-        "lastEvent": "Letztes Event vorhanden",
-        "provisioned": "Zugang bereitgestellt",
-        "notProvisioned": "Nicht provisioniert"
+        "locked": "Verschlossen"
       },
       "window": {
         "before": "Zugang ab {time} möglich.",
@@ -1358,25 +1429,28 @@
       "authorization_revoked": "Die Zugangsberechtigung wurde widerrufen.",
       "outside_access_window": "Außerhalb des erlaubten Zeitfensters.",
       "not_provisioned": "Der Zugang ist noch nicht freigegeben.",
-      "locker_not_ready": "Das Schließfach ist noch nicht bereit.",
       "no_remote_access": "Für diesen Zugangspunkt ist keine Fernsteuerung verfügbar.",
       "evidence_missing": "Der Zugang muss vor Ort per QR-Code bestätigt werden.",
       "evidence_invalid": "Der QR-Code ist nicht mehr gültig. Bitte scannen Sie den Code an der Tür erneut.",
       "evidence_rule_unavailable": "Der Zugang ist derzeit nicht prüfbar. Bitte wenden Sie sich an den Betreiber.",
-      "unknown": "Die Tür konnte nicht geöffnet werden."
+      "unknown": "Der Zugangspunkt konnte nicht geöffnet werden."
+    },
+    "openFailure": {
+      "configuration": "Der Zugangspunkt ist beim Anbieter nicht richtig eingerichtet. Bitte wenden Sie sich an die Verwaltung.",
+      "temporary": "Der Anbieter konnte den Zugangspunkt gerade nicht öffnen. Bitte versuchen Sie es in einigen Minuten erneut."
     },
     "open": {
       "success": {
-        "title": "Tür geöffnet",
+        "title": "Zugang geöffnet",
         "message": "Der Öffnen-Befehl wurde bestätigt."
       },
       "error": {
         "title": "Fehler beim Öffnen",
-        "message": "Die Tür konnte nicht geöffnet werden."
+        "message": "Der Zugangspunkt konnte nicht geöffnet werden."
       },
       "timeout": {
         "title": "Bestätigung ausstehend",
-        "message": "Die Tür hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+        "message": "Der Zugangspunkt hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
       },
       "sendError": {
         "title": "Befehl fehlgeschlagen",
@@ -1387,10 +1461,6 @@
       "success": {
         "title": "Tür geöffnet",
         "message": "Die Tür wurde geöffnet."
-      },
-      "error": {
-        "title": "Fehler beim Öffnen",
-        "message": "Die Tür konnte nicht geöffnet werden. Möglicherweise unterstützt dieses Gerät kein Aufdrücken der Tür. Bitte stattdessen \"Aufschließen\" verwenden."
       },
       "timeout": {
         "title": "Bestätigung ausstehend",
@@ -1422,27 +1492,20 @@
     "status": {
       "error": {
         "title": "Statusabfrage fehlgeschlagen",
-        "message": "Der Tür-Status konnte nicht abgerufen werden."
+        "message": "Der Status des Zugangspunkts konnte nicht abgerufen werden."
       },
       "waitTimeout": {
         "title": "Zeitüberschreitung",
         "message": "Zeitüberschreitung beim Warten auf Bestätigung. Bitte Status manuell prüfen."
       },
-      "doorError": {
-        "title": "Tür-Fehler",
-        "message": "Bei der Tür ist ein Fehler aufgetreten (Code {code})."
-      }
-    }
-  },
-  "locker": {
-    "open": {
-      "success": {
-        "title": "Erfolgreich geöffnet",
-        "message": "Das Schließfach wurde erfolgreich geöffnet."
+      "unconfirmed": {
+        "title": "Keine Rückmeldung",
+        "message": "Der Anbieter meldet zum Öffnen-Vorgang nichts zurück. Ob der Zugangspunkt geöffnet hat, lässt sich von hier nicht feststellen."
       },
-      "error": {
-        "title": "Fehler beim Öffnen",
-        "message": "Das Schließfach konnte nicht geöffnet werden."
+      "pointError": {
+        "title": "Fehler am Zugangspunkt",
+        "message": "Am Zugangspunkt ist ein Fehler aufgetreten (Code {code}).",
+        "detailedMessage": "Am Zugangspunkt ist ein Fehler aufgetreten (Code {code}): {detail}"
       }
     }
   },

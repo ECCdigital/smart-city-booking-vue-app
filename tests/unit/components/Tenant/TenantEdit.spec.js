@@ -97,3 +97,86 @@ describe("TenantEdit catalog loading", () => {
     expect(wrapper.vm.catalogUnavailable).toBe(false);
   });
 });
+
+/**
+ * The page carries the tenant's applications through a save, and writes its
+ * own default for one that is not there yet. Since the backend migration the
+ * only application type Pareva may have is `access` - `locker` is out of the
+ * schema, so a default carrying it takes the app out of the backend's sight
+ * on the next save.
+ */
+describe("TenantEdit applications", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiCatalogService.getCatalog.mockResolvedValue({ data: {} });
+    ApiWorkflowService.getWorkflow.mockResolvedValue({});
+  });
+
+  it("writes the Pareva default as an access application", async () => {
+    ApiTenantService.getTenant.mockResolvedValue({ data: { id: "t1" } });
+
+    const wrapper = await mountTenantEdit();
+    wrapper.vm.replaceApps();
+
+    const pareva = wrapper.vm.tenant.applications.find(
+      (app) => app.id === "pareva"
+    );
+    expect(pareva.type).toBe("access");
+  });
+
+  it("carries a stored application through unchanged", async () => {
+    ApiTenantService.getTenant.mockResolvedValue({
+      data: {
+        id: "t1",
+        applications: [
+          {
+            id: "pareva",
+            type: "access",
+            active: true,
+            serverUrl: "https://p",
+          },
+        ],
+      },
+    });
+
+    const wrapper = await mountTenantEdit();
+    wrapper.vm.replaceApps();
+
+    const pareva = wrapper.vm.tenant.applications.find(
+      (app) => app.id === "pareva"
+    );
+    expect(pareva).toMatchObject({
+      type: "access",
+      active: true,
+      serverUrl: "https://p",
+    });
+  });
+
+  it("reads an unmigrated locker application as not configured", async () => {
+    ApiTenantService.getTenant.mockResolvedValue({
+      data: {
+        id: "t1",
+        applications: [
+          {
+            id: "pareva",
+            type: "locker",
+            active: true,
+            serverUrl: "https://old",
+          },
+        ],
+      },
+    });
+
+    const wrapper = await mountTenantEdit();
+    wrapper.vm.replaceApps();
+
+    const pareva = wrapper.vm.tenant.applications.find(
+      (app) => app.id === "pareva"
+    );
+    expect(pareva).toMatchObject({
+      type: "access",
+      active: false,
+      serverUrl: "",
+    });
+  });
+});

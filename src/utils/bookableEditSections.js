@@ -3,6 +3,11 @@
  * DOM id: be-section-{id}
  */
 
+import {
+  IFBS_PROVIDER,
+  providerHandles,
+} from "@/utils/bookableExternalProviders";
+
 export function bookableEditSectionElementId(sectionId) {
   return `be-section-${sectionId}`;
 }
@@ -19,9 +24,19 @@ function getBookingMode(bookable) {
   return "independent";
 }
 
-function hasIfbsLocker(bookable) {
-  return (bookable?.lockerDetails?.units || []).some(
-    (unit) => unit?.lockerSystem === "ifbs"
+/**
+ * Whether the bookable declares the external data source the pricing tab
+ * configures.
+ *
+ * Since the locker fold the bookable no longer says which of its access points
+ * is a locker system - the ids alone do not, and resolving them needs the
+ * tenant's access point list, which this module cannot load. The declaration
+ * is the part of that section that does live on the bookable, so it is what
+ * the anchor keys on.
+ */
+function declaresExternalProvider(bookable) {
+  return (bookable?.externalProviders || []).some(
+    (provider) => provider?.provider === IFBS_PROVIDER
   );
 }
 
@@ -30,20 +45,9 @@ function handlesExternalPricing(bookable) {
   if (!Array.isArray(providers)) return false;
   return providers.some(
     (provider) =>
-      provider?.provider === "ifbs" &&
-      provider?.active === true &&
-      Array.isArray(provider.handles) &&
-      provider.handles.includes("pricing")
+      provider?.provider === IFBS_PROVIDER &&
+      providerHandles(provider, "pricing")
   );
-}
-
-function lockerSystemType(bookable) {
-  const units = bookable?.lockerDetails?.units || [];
-  if (!bookable?.lockerDetails?.active) return null;
-  if (!units.length) return "select";
-  const type = units[0]?.lockerSystem;
-  if (type === "pareva" || type === "ifbs") return type;
-  return "select";
 }
 
 /** All known sections (labelKey → i18n bookable.edit.sections.*) */
@@ -203,24 +207,6 @@ const ALL_SECTIONS = [
     type: "scroll",
   },
   {
-    tabKey: "accessLocks",
-    id: "lockers-select",
-    labelKey: "bookable.edit.sections.lockersSelect",
-    type: "scroll",
-  },
-  {
-    tabKey: "accessLocks",
-    id: "lockers-pareva",
-    labelKey: "bookable.edit.sections.lockersPareva",
-    type: "scroll",
-  },
-  {
-    tabKey: "accessLocks",
-    id: "lockers-ifbs",
-    labelKey: "bookable.edit.sections.lockersIfbs",
-    type: "scroll",
-  },
-  {
     tabKey: "additional",
     id: "additional-required-fields",
     labelKey: "bookable.edit.sections.additionalRequiredFields",
@@ -243,9 +229,8 @@ function isSectionVisible(section, { bookable, expertMode }) {
   const mode = getBookingMode(bookable);
   const isTimeWindowMode = mode === "schedule" || mode === "timePeriod";
   const visibilityById = {
-    "pricing-external": () => hasIfbsLocker(bookable),
-    "pricing-tiers": () =>
-      !hasIfbsLocker(bookable) || !handlesExternalPricing(bookable),
+    "pricing-external": () => declaresExternalProvider(bookable),
+    "pricing-tiers": () => !handlesExternalPricing(bookable),
     "bookingType-duration": () => mode === "schedule",
     "bookingType-time-periods": () => mode === "timePeriod",
     "bookingType-block-periods": () => mode === "blockPeriod",
@@ -254,9 +239,6 @@ function isSectionVisible(section, { bookable, expertMode }) {
     "bookingType-buffer": () => mode === "schedule",
     "openingHours-regular": () => isTimeWindowMode,
     "openingHours-special": () => isTimeWindowMode,
-    "lockers-select": () => lockerSystemType(bookable) === "select",
-    "lockers-pareva": () => lockerSystemType(bookable) === "pareva",
-    "lockers-ifbs": () => lockerSystemType(bookable) === "ifbs",
   };
 
   const check = visibilityById[section.id];
