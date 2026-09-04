@@ -8,12 +8,24 @@ import i18n from "@/language/index";
  */
 const FORBIDDEN_CODE_PREFIX = "errors.forbidden-codes";
 const GENERIC_FORBIDDEN_KEY = `${FORBIDDEN_CODE_PREFIX}.forbidden`;
+const SESSION_EXPIRED_KEY = "errors.session-expired";
+
+/**
+ * The status the Admin BFF answers a failed CSRF check with (`bff/src/csrf.js`).
+ * It is not a backend `ForbiddenError`: the request never reached the backend,
+ * and the user is not lacking a permission - the browser sent a mutating
+ * request whose `Origin`/`Referer` no longer matches the served origin, which
+ * a reload fixes. 419 is unassigned in the IANA registry, so it cannot
+ * contradict a registered meaning the way 428 (Precondition Required) would.
+ */
+export const CSRF_FAILED_STATUS = 419;
 
 /**
  * The `code` of a 4.3.x error body (`BaseError.toJSON`):
  * `{ error, code, statusCode, params }`. Anything that does not carry both
- * `code` and `statusCode` is not that shape - the BFF answers a stale CSRF
- * token with a 403 of its own - and is read as a generic denial.
+ * `code` and `statusCode` is not that shape and is read as a generic denial -
+ * which is what a deployment still running an older BFF needs, because that
+ * BFF answered a stale CSRF token with a 403 of its own.
  */
 function getForbiddenCode(data) {
   if (!data || typeof data !== "object") {
@@ -52,22 +64,22 @@ function getForbiddenMessage(data) {
  * a permission notice - never to turn a legitimately empty result into a
  * permission error.
  *
- * It reads the status only, so the BFF's own CSRF 403 matches too. That is a
- * known imprecision, not an intent: a stale CSRF token means "your session is
- * not fresh", not "you may not". It cannot bite the callers here - the CSRF
- * guard only fires on writes and these are all GETs - and it disappears when
- * the BFF moves off 403 for CSRF.
+ * It reads the status only, which is precise now that the BFF answers a failed
+ * CSRF check with `CSRF_FAILED_STATUS` instead of a 403 of its own. Against a
+ * deployment still running an older BFF the old imprecision remains, and it
+ * cannot bite these callers: the CSRF guard only fires on writes and every
+ * call site here is a GET.
  */
 export function isForbiddenError(error) {
   return error?.response?.status === 403;
 }
 
 /**
- * Extrahiert eine anzeigbare Fehlermeldung aus einer axios-Fehlerantwort.
- * Bei 400-Antworten mit Klartext-Body (z. B. serverseitige PDF-Template-
- * Validierung von PUT /api/tenants) wird dieser Text zurückgegeben,
- * bei 403-Antworten die über `code` übersetzte Meldung,
- * sonst der Fallback.
+ * Extract a displayable message from an axios error response. A 400 with a
+ * plain-text body (e.g. the server-side PDF template validation of
+ * `PUT /api/tenants`) returns that text, a 403 the message translated over
+ * `code`, a 419 the hint that the session is no longer fresh; anything else
+ * returns the fallback.
  */
 export function getApiErrorMessage(error, fallback) {
   if (error?.response?.status === 400) {
@@ -81,6 +93,11 @@ export function getApiErrorMessage(error, fallback) {
   }
   if (error?.response?.status === 403) {
     return getForbiddenMessage(error.response.data);
+  }
+  // The BFF is the only source of this status and sends it for exactly one
+  // reason, so the body is not read.
+  if (error?.response?.status === CSRF_FAILED_STATUS) {
+    return i18n.t(SESSION_EXPIRED_KEY);
   }
   return fallback;
 }
