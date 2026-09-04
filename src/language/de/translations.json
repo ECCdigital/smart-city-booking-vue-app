@@ -1363,7 +1363,13 @@
         "revoked": "Widerrufen"
       },
       "blocked": {
-        "forbidden": "Ihnen fehlt die Berechtigung, diese Buchung zu bedienen."
+        "forbidden": "Ihnen fehlt die Berechtigung, diese Buchung zu bedienen.",
+        "noStatus": "Der Anbieter meldet für diesen Zugangspunkt keinen Status."
+      },
+      "denied": {
+        "noPermission": "Ihnen fehlt die Berechtigung, diesen Zugangspunkt aus dieser Buchung zu bedienen.",
+        "notInBooking": "Dieser Zugangspunkt gehört nicht mehr zu dieser Buchung. Bitte laden Sie die Zugänge neu.",
+        "notOperable": "Dieser Zugangspunkt lässt sich aus dieser Buchung derzeit nicht bedienen – etwa weil das Zeitfenster abgelaufen ist, die Berechtigung fehlt oder widerrufen wurde, oder die Buchung noch offen ist."
       },
       "status": {
         "waitingClose": "Warte auf Schließen…",
@@ -1401,12 +1407,15 @@
       "authorization_revoked": "Die Zugangsberechtigung wurde widerrufen.",
       "outside_access_window": "Außerhalb des erlaubten Zeitfensters.",
       "not_provisioned": "Der Zugang ist noch nicht freigegeben.",
-      "locker_not_ready": "Das Schließfach ist noch nicht bereit.",
       "no_remote_access": "Für diesen Zugangspunkt ist keine Fernsteuerung verfügbar.",
       "evidence_missing": "Der Zugang muss vor Ort per QR-Code bestätigt werden.",
       "evidence_invalid": "Der QR-Code ist nicht mehr gültig. Bitte scannen Sie den Code an der Tür erneut.",
       "evidence_rule_unavailable": "Der Zugang ist derzeit nicht prüfbar. Bitte wenden Sie sich an den Betreiber.",
       "unknown": "Der Zugangspunkt konnte nicht geöffnet werden."
+    },
+    "openFailure": {
+      "configuration": "Der Zugangspunkt ist beim Anbieter nicht richtig eingerichtet. Bitte wenden Sie sich an die Verwaltung.",
+      "temporary": "Der Anbieter konnte den Zugangspunkt gerade nicht öffnen. Bitte versuchen Sie es in einigen Minuten erneut."
     },
     "open": {
       "success": {
@@ -1430,10 +1439,6 @@
       "success": {
         "title": "Tür geöffnet",
         "message": "Die Tür wurde geöffnet."
-      },
-      "error": {
-        "title": "Fehler beim Öffnen",
-        "message": "Die Tür konnte nicht geöffnet werden. Möglicherweise unterstützt dieses Gerät kein Aufdrücken der Tür. Bitte stattdessen \"Aufschließen\" verwenden."
       },
       "timeout": {
         "title": "Bestätigung ausstehend",
@@ -1470,6 +1475,10 @@
       "waitTimeout": {
         "title": "Zeitüberschreitung",
         "message": "Zeitüberschreitung beim Warten auf Bestätigung. Bitte Status manuell prüfen."
+      },
+      "unconfirmed": {
+        "title": "Keine Rückmeldung",
+        "message": "Der Anbieter meldet zum Öffnen-Vorgang nichts zurück. Ob der Zugangspunkt geöffnet hat, lässt sich von hier nicht feststellen."
       },
       "pointError": {
         "title": "Fehler am Zugangspunkt",

@@ -4,19 +4,57 @@ import BookingPermissionService from "@/services/permissions/BookingPermissionSe
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 import {
-  EVIDENCE_MISSING_BLOCKING_REASON,
+  ACCESS_BLOCKING_REASON,
   formatBlockingReasonMessage,
+  formatOpenRefusalMessage,
 } from "@/utilities/access-blocking-reasons";
 import {
+  ACCESS_CAPABILITY,
+  OPEN_PROGRESS,
   accessEntriesOf,
   accessState,
   accessStateChip,
+  hasAccessWindow,
+  hasCapability,
+  isRemotelyOperable,
+  isWithinAccessWindow,
+  openBlockOf,
+  openProgressOf,
 } from "@/utilities/booking-access-points";
 import { isLockerAccessPoint } from "@/utilities/access-points";
 import { getIfbsErrorMessage } from "@/utils/ifbsErrors";
 
-const NO_REMOTE_ACCESS_BLOCKING_REASON = "no_remote_access";
 const WINDOW_TICK_MS = 30000;
+
+/**
+ * How often a started open is asked about before this screen stops asking,
+ * and how long it waits in between. iFBS answers one poll only after waiting
+ * up to 30 seconds for the box itself, so few attempts cover a long wait.
+ */
+const OPEN_CONFIRM_ATTEMPTS = 3;
+const OPEN_CONFIRM_DELAY_MS = 1500;
+
+/** How long the lock is asked to report itself closed after a close. */
+const CLOSE_CONFIRM_ATTEMPTS = 8;
+const CLOSE_CONFIRM_DELAY_MS = 1500;
+
+/**
+ * The readings of a 403 at an access route, which is why `resolveAccessError`
+ * has no default. `open` and `unlatch` refuse with 403 only where the access
+ * point does not belong to the booking at all (`AccessService._resolve`),
+ * while `close`, `/status` and `/open-status` refuse whenever `canOperate`
+ * says no - an expired window, a missing or withdrawn grant, an unpaid
+ * booking. Reading every 403 as "outside the time window", as this screen
+ * used to, is wrong for both.
+ *
+ * A third reading comes before either: the `authorize` middleware turns the
+ * request away ahead of the route, and it does so with a `ForbiddenError`
+ * body, where a route's own refusal is a bare `sendStatus(403)`. So the body
+ * says which of the two answered.
+ */
+const DENIED_NO_PERMISSION = "accessPoint.booking.denied.noPermission";
+const DENIED_NOT_IN_BOOKING = "accessPoint.booking.denied.notInBooking";
+const DENIED_NOT_OPERABLE = "accessPoint.booking.denied.notOperable";
 
 /**
  * The accesses of one booking: the doors it opens and the compartments a
@@ -96,49 +134,75 @@ export default {
         ? this.$t("accessPoint.booking.openCompartment")
         : this.$t("accessPoint.booking.open");
     },
-    isRemoteCapable(entry) {
-      const mode = entry?.mode || "both";
-      return mode === "remote" || mode === "both";
-    },
     /**
-     * Whether closing and unlatching are offered at all. Both are Nuki door
-     * business: a compartment has neither - it is shut by hand and has no
-     * latch to pull - and Salto KS locks by itself and supports neither.
+     * Whether closing is offered. A lock that cannot be closed remotely is
+     * not asked to: Nuki declares `close`, Salto KS locks by itself, and a
+     * compartment is shut by hand.
      */
-    canOperateLatch(entry) {
+    canClose(entry) {
       return (
-        !isLockerAccessPoint(entry) &&
-        this.isRemoteCapable(entry) &&
-        entry?.provider !== "salto-ks"
+        isRemotelyOperable(entry) &&
+        hasCapability(entry, ACCESS_CAPABILITY.CLOSE)
       );
     },
-    requiresOnSiteEvidence(entry) {
-      // Open is called without a body - from here no evidence can be given, so
-      // the click would run into a refusal. The server leaves
-      // `validationRuleTypes` empty where its rules do not bite.
-      return (entry?.validationRuleTypes || []).length > 0;
+    /**
+     * Whether pulling the latch is offered. `unlatch` is deliberately not
+     * among the projected capabilities - the lock decides behind `open`
+     * whether it pulls its latch - so `close` stands in for it as the nearest
+     * declared signal of a lock that takes mechanical commands at all. A
+     * compartment has no latch to pull whatever its system declares.
+     */
+    canUnlatch(entry) {
+      return !isLockerAccessPoint(entry) && this.canClose(entry);
+    },
+    /**
+     * Whether the lock can be asked how it stands. iFBS knows nothing about a
+     * box at rest and Pareva nothing at all; asking them yields a status that
+     * is unknown on every count, which is a button that never answers.
+     */
+    canQueryStatus(entry) {
+      return hasCapability(entry, ACCESS_CAPABILITY.GET_STATUS);
+    },
+    /**
+     * Why the status button is dead, or null while it is not. Blocked with
+     * its reason rather than hidden, for the reason the open button is.
+     */
+    statusBlockReason(entry) {
+      if (!this.canControl) {
+        return this.$t("accessPoint.booking.blocked.forbidden");
+      }
+      if (!this.canQueryStatus(entry)) {
+        return this.$t("accessPoint.booking.blocked.noStatus");
+      }
+      return null;
     },
     /**
      * Why the open button is dead, or null while it is not. The button stays
      * where it is either way: a button that vanished says nothing, and one
      * that stays live lets the admin click into nothing.
+     *
+     * The permission to operate the booking is this screen's own question;
+     * everything else is read off the entry (`openBlockOf`). A closed window
+     * keeps its own wording, which names the times.
      */
     openBlockReason(entry) {
       if (!this.canControl) {
         return this.$t("accessPoint.booking.blocked.forbidden");
       }
-      if (!this.isRemoteCapable(entry)) {
-        return this.formatBlockingReasons([NO_REMOTE_ACCESS_BLOCKING_REASON]);
+
+      const reason = openBlockOf(entry, { now: this.now });
+
+      if (!reason) {
+        return null;
       }
-      if (!this.isWithinAccessWindow(entry)) {
+
+      if (reason === ACCESS_BLOCKING_REASON.OUTSIDE_ACCESS_WINDOW) {
         return this.$t("accessPoint.booking.window.outside", {
           hint: this.accessWindowHint(entry),
         });
       }
-      if (this.requiresOnSiteEvidence(entry)) {
-        return this.formatBlockingReasons([EVIDENCE_MISSING_BLOCKING_REASON]);
-      }
-      return null;
+
+      return this.formatBlockingReasons([reason]);
     },
     isBusy(entry) {
       const id = entry.id;
@@ -178,29 +242,42 @@ export default {
         this.$t(key)
       );
     },
-    resolveAccessError(error, entry, fallbackKey, options = {}) {
-      const { treat403AsWindow = true } = options;
-      if (error?.response?.status === 403 && treat403AsWindow) {
-        return this.$t("accessPoint.booking.window.outside", {
-          hint: this.accessWindowHint(entry),
-        });
-      }
-      return this.$t(fallbackKey);
+    /**
+     * What a refused open says: the reasons of the access decision, or the
+     * failure class the provider's own error was reduced to. Both arrive on
+     * HTTP 200 as a soft failure.
+     */
+    formatOpenRefusal(refusal) {
+      return formatOpenRefusalMessage(refusal, (key) => this.$t(key));
     },
     /**
-     * Whether the entry declares a window at all. The projection carries
-     * `accessFrom`/`accessTo` as `null` where it knows none, and a null read
-     * as a number would put every such entry outside its window for good.
+     * What a failed call says. A 403 means something different at each route,
+     * so the caller names which reading applies - there is no default to fall
+     * into. A 403 the middleware sent carries a `ForbiddenError` body and is
+     * a denial whatever the route is, so it is answered before the reading.
+     *
+     * @param {Error} error The rejected call
+     * @param {Object} reading
+     * @param {string} reading.forbiddenKey What the route's own 403 means
+     * @param {string} reading.fallbackKey What everything else means
+     * @returns {string} The message to show at the access point
      */
-    hasAccessWindow(entry) {
-      return entry?.accessFrom != null && entry?.accessTo != null;
+    resolveAccessError(error, { forbiddenKey, fallbackKey }) {
+      const response = error?.response;
+
+      if (response?.status !== 403) {
+        return this.$t(fallbackKey);
+      }
+
+      return this.$t(
+        response.data?.error ? DENIED_NO_PERMISSION : forbiddenKey
+      );
     },
     isWithinAccessWindow(entry) {
-      if (!this.hasAccessWindow(entry)) return true;
-      return entry.accessFrom <= this.now && entry.accessTo >= this.now;
+      return isWithinAccessWindow(entry, this.now);
     },
     accessWindowHint(entry) {
-      if (!this.hasAccessWindow(entry)) return "";
+      if (!hasAccessWindow(entry)) return "";
       if (this.now < entry.accessFrom) {
         return this.$t("accessPoint.booking.window.before", {
           time: this.formatDateTime(entry.accessFrom),
@@ -312,11 +389,6 @@ export default {
       const responseData = response.data || {};
       return responseData.data || responseData.status || responseData;
     },
-    isOpened(status) {
-      if (!status) return false;
-      if (status.confirmed) return true;
-      return status.open === true;
-    },
     isClosed(status) {
       if (!status) return false;
       if (
@@ -373,25 +445,19 @@ export default {
         const responseData = response.data || {};
 
         if (responseData.success === false) {
-          this.$set(
-            this.errors,
-            id,
-            this.formatBlockingReasons(responseData.data?.blockingReasons)
-          );
+          this.$set(this.errors, id, this.formatOpenRefusal(responseData.data));
           return;
         }
 
-        await this.waitForStatusChange(entry, "open");
+        await this.confirmOpen(entry, "open", responseData.data?.openProcessId);
       } catch (error) {
         this.$set(
           this.errors,
           id,
-          this.resolveAccessError(
-            error,
-            entry,
-            "accessPoint.open.sendError.message",
-            { treat403AsWindow: false }
-          )
+          this.resolveAccessError(error, {
+            forbiddenKey: DENIED_NOT_IN_BOOKING,
+            fallbackKey: "accessPoint.open.sendError.message",
+          })
         );
       } finally {
         this.$set(this.actionLoading, id + "_open", false);
@@ -413,25 +479,23 @@ export default {
         const responseData = response.data || {};
 
         if (responseData.success === false) {
-          this.$set(
-            this.errors,
-            id,
-            responseData.errors?.[0]?.message ||
-              this.$t("accessPoint.unlatch.error.message")
-          );
+          this.$set(this.errors, id, this.formatOpenRefusal(responseData.data));
           return;
         }
 
-        await this.waitForStatusChange(entry, "unlatch");
+        await this.confirmOpen(
+          entry,
+          "unlatch",
+          responseData.data?.openProcessId
+        );
       } catch (error) {
         this.$set(
           this.errors,
           id,
-          this.resolveAccessError(
-            error,
-            entry,
-            "accessPoint.unlatch.sendError.message"
-          )
+          this.resolveAccessError(error, {
+            forbiddenKey: DENIED_NOT_IN_BOOKING,
+            fallbackKey: "accessPoint.unlatch.sendError.message",
+          })
         );
       } finally {
         this.$set(this.actionLoading, id + "_unlatch", false);
@@ -462,44 +526,152 @@ export default {
           return;
         }
 
-        await this.waitForStatusChange(entry, "close");
+        await this.waitForClose(entry);
       } catch (error) {
         this.$set(
           this.errors,
           id,
-          this.resolveAccessError(
-            error,
-            entry,
-            "accessPoint.close.sendError.message"
-          )
+          this.resolveAccessError(error, {
+            forbiddenKey: DENIED_NOT_OPERABLE,
+            fallbackKey: "accessPoint.close.sendError.message",
+          })
         );
       } finally {
         this.$set(this.actionLoading, id + "_close", false);
       }
     },
-    async waitForStatusChange(entry, action) {
+    /**
+     * Follows a started open until the provider confirms it - through
+     * `/open-status`, which is the route that knows about open processes.
+     * `/status` is not: it reports the lock at rest, and a locker system that
+     * declares no `getStatus` answers it unknown on every count, which used
+     * to leave every compartment open ending in a timeout.
+     *
+     * The provider's answer says by itself whether there is anything to
+     * follow: an open that names no process was already carried out
+     * (`OpenOutcome`), so there is nothing to ask about.
+     *
+     * A poll that could not tell (`confirmed: null`) is not an open that has
+     * not happened yet (`confirmed: false`). The first says the provider
+     * could not answer and names its own reason where it has one; the second
+     * says the box has not confirmed. They end in different messages.
+     *
+     * @param {Object} entry The entry that was opened
+     * @param {"open"|"unlatch"} action Which command was sent
+     * @param {string|null} openProcessId The process the answer named
+     */
+    async confirmOpen(entry, action, openProcessId) {
       const id = entry.id;
-      const isOpenAction = action === "open" || action === "unlatch";
-      const loadingKey = isOpenAction ? "_waitOpen" : "_waitClose";
-      const isDone = (status) =>
-        isOpenAction ? this.isOpened(status) : this.isClosed(status);
       const successKey = `accessPoint.${action}.success`;
-      const errorKey = `accessPoint.${action}.error.message`;
-      const timeoutKey = `accessPoint.${action}.timeout.message`;
 
-      this.$set(this.actionLoading, id + loadingKey, true);
+      if (!openProcessId) {
+        // Made here, not received: the answer only said that it opened, and
+        // the chip beside the title reads its verdict in this shape.
+        this.$set(this.statuses, id, {
+          confirmed: true,
+          confirmedAt: Date.now(),
+        });
+        await this.addToast(ToastService.createToast(successKey, "success"));
+        return;
+      }
+
+      this.$set(this.actionLoading, id + "_waitOpen", true);
+      let unanswered = null;
 
       try {
-        for (let attempt = 0; attempt < 8; attempt += 1) {
+        for (let attempt = 0; attempt < OPEN_CONFIRM_ATTEMPTS; attempt += 1) {
           if (attempt > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            await new Promise((resolve) =>
+              setTimeout(resolve, OPEN_CONFIRM_DELAY_MS)
+            );
+          }
+
+          const response = await ApiAccessService.getOpenStatus(
+            this.booking.id,
+            id,
+            this.booking.tenantId,
+            openProcessId
+          );
+          const status = this.getAccessResponseData(response);
+          const progress = openProgressOf(status);
+
+          if (progress === OPEN_PROGRESS.CONFIRMED) {
+            this.$set(this.statuses, id, status);
+            await this.addToast(
+              ToastService.createToast(successKey, "success")
+            );
+            return;
+          }
+
+          // The last poll has the last word: one that could not tell is only
+          // the final answer while no later one told us anything.
+          unanswered =
+            progress === OPEN_PROGRESS.UNKNOWN
+              ? { errorCode: status?.errorCode ?? null }
+              : null;
+        }
+
+        this.$set(
+          this.errors,
+          id,
+          this.unconfirmedMessage(entry, action, unanswered)
+        );
+      } catch (error) {
+        this.$set(
+          this.errors,
+          id,
+          this.resolveAccessError(error, {
+            forbiddenKey: DENIED_NOT_OPERABLE,
+            fallbackKey: "accessPoint.status.error.message",
+          })
+        );
+      } finally {
+        this.$set(this.actionLoading, id + "_waitOpen", false);
+      }
+    },
+    /**
+     * What an open that never confirmed says: the provider's own reason where
+     * a poll failed with one, that nothing came back where a poll failed
+     * without one, and the plain timeout where every poll answered "not yet".
+     *
+     * @param {Object} entry The entry that was opened
+     * @param {"open"|"unlatch"} action Which command was sent
+     * @param {{errorCode: string|number|null}|null} unanswered The last poll,
+     *   where it could not tell - null where it answered "not yet"
+     * @returns {string} The message to show at the access point
+     */
+    unconfirmedMessage(entry, action, unanswered) {
+      if (!unanswered) {
+        return this.$t(`accessPoint.${action}.timeout.message`);
+      }
+      return unanswered.errorCode
+        ? this.providerErrorMessage(entry, unanswered.errorCode)
+        : this.$t("accessPoint.status.unconfirmed.message");
+    },
+    /**
+     * Waits for the lock to report itself closed. Unlike an open, a close is
+     * not a process anybody polls - it is read off the lock, and it is only
+     * offered where the provider reports one.
+     *
+     * @param {Object} entry The entry that was closed
+     */
+    async waitForClose(entry) {
+      const id = entry.id;
+      this.$set(this.actionLoading, id + "_waitClose", true);
+
+      try {
+        for (let attempt = 0; attempt < CLOSE_CONFIRM_ATTEMPTS; attempt += 1) {
+          if (attempt > 0) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, CLOSE_CONFIRM_DELAY_MS)
+            );
           }
 
           const status = await this.queryStatus(entry);
 
-          if (isDone(status)) {
+          if (this.isClosed(status)) {
             await this.addToast(
-              ToastService.createToast(successKey, "success")
+              ToastService.createToast("accessPoint.close.success", "success")
             );
             return;
           }
@@ -510,25 +682,32 @@ export default {
               id,
               status.errorCode
                 ? this.providerErrorMessage(entry, status.errorCode)
-                : this.$t(errorKey)
+                : this.$t("accessPoint.close.error.message")
             );
             return;
           }
         }
 
-        this.$set(this.errors, id, this.$t(timeoutKey));
+        this.$set(
+          this.errors,
+          id,
+          this.$t("accessPoint.close.timeout.message")
+        );
       } catch (error) {
         this.$set(
           this.errors,
           id,
-          this.$t("accessPoint.status.waitTimeout.message")
+          this.resolveAccessError(error, {
+            forbiddenKey: DENIED_NOT_OPERABLE,
+            fallbackKey: "accessPoint.status.waitTimeout.message",
+          })
         );
       } finally {
-        this.$set(this.actionLoading, id + loadingKey, false);
+        this.$set(this.actionLoading, id + "_waitClose", false);
       }
     },
     async fetchStatus(entry) {
-      if (!this.canControl) return;
+      if (this.statusBlockReason(entry)) return;
       const id = entry.id;
       this.$set(this.actionLoading, id + "_status", true);
       this.$set(this.errors, id, null);
@@ -539,11 +718,10 @@ export default {
         this.$set(
           this.errors,
           id,
-          this.resolveAccessError(
-            error,
-            entry,
-            "accessPoint.status.error.message"
-          )
+          this.resolveAccessError(error, {
+            forbiddenKey: DENIED_NOT_OPERABLE,
+            fallbackKey: "accessPoint.status.error.message",
+          })
         );
       } finally {
         this.$set(this.actionLoading, id + "_status", false);
@@ -715,8 +893,10 @@ export default {
               small
               text
               color="info"
+              data-test="access-status"
+              :title="statusBlockReason(entry) || ''"
               :loading="actionLoading[entry.id + '_status']"
-              :disabled="!canControl"
+              :disabled="Boolean(statusBlockReason(entry))"
               @click="fetchStatus(entry)"
             >
               <v-icon left small>mdi-refresh</v-icon>
@@ -727,7 +907,7 @@ export default {
 
             <div class="access-point-tile__action-group">
               <v-btn
-                v-if="canOperateLatch(entry)"
+                v-if="canClose(entry)"
                 small
                 outlined
                 color="warning"
@@ -741,17 +921,13 @@ export default {
                 {{ $t("accessPoint.booking.close") }}
               </v-btn>
               <v-btn
-                v-if="canOperateLatch(entry)"
+                v-if="canUnlatch(entry)"
                 small
                 outlined
                 color="primary"
                 :loading="actionLoading[entry.id + '_unlatch']"
-                :disabled="
-                  !canControl ||
-                  !isWithinAccessWindow(entry) ||
-                  isBusy(entry) ||
-                  requiresOnSiteEvidence(entry)
-                "
+                :disabled="Boolean(openBlockReason(entry)) || isBusy(entry)"
+                :title="openBlockReason(entry) || ''"
                 @click="unlatch(entry)"
               >
                 <v-icon left small>mdi-door-open</v-icon>

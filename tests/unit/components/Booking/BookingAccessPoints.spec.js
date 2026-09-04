@@ -4,7 +4,11 @@ import BookingAccessPoints from "@/components/Booking/BookingAccessPoints.vue";
 import ApiAccessService from "@/services/api/ApiAccessService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises, serverError } from "@tests/unit/support/api";
+import {
+  flushPromises,
+  forbiddenError,
+  serverError,
+} from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiAccessService", () => ({
   default: {
@@ -95,6 +99,14 @@ function tiles(wrapper) {
 
 function openButton(tile) {
   return tile.find("[data-test='access-open']");
+}
+
+function statusButton(tile) {
+  return tile.find("[data-test='access-status']");
+}
+
+function errorText(tile) {
+  return tile.find(".access-point-tile__error").text();
 }
 
 beforeEach(() => {
@@ -268,6 +280,208 @@ describe("BookingAccessPoints", () => {
       expect(openButton(tile).attributes("disabled")).toBeFalsy();
       expect(tile.find("[data-test='access-blocked']").exists()).toBe(false);
       expect(tile.find(".access-point-tile__window").exists()).toBe(false);
+    });
+  });
+
+  describe("the provider's answer to an open", () => {
+    it("names a configuration failure instead of an unknown reason", async () => {
+      ApiAccessService.open.mockResolvedValue({
+        data: { success: false, data: { openFailure: "configuration" } },
+      });
+
+      const wrapper = await mountList({ entries: [compartment()] });
+      await openButton(tiles(wrapper).at(0)).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(errorText(tiles(wrapper).at(0))).toContain(
+        "nicht richtig eingerichtet"
+      );
+    });
+
+    it("names a temporary failure as one worth retrying", async () => {
+      ApiAccessService.open.mockResolvedValue({
+        data: { success: false, data: { openFailure: "temporary" } },
+      });
+
+      const wrapper = await mountList({ entries: [compartment()] });
+      await openButton(tiles(wrapper).at(0)).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(errorText(tiles(wrapper).at(0))).toContain("in einigen Minuten");
+    });
+
+    it("says the access point left the booking, rather than blaming the window, on a bare 403", async () => {
+      ApiAccessService.open.mockRejectedValue(serverError(403));
+
+      const wrapper = await mountList({ entries: [compartment()] });
+      await openButton(tiles(wrapper).at(0)).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      const message = errorText(tiles(wrapper).at(0));
+      expect(message).toContain("gehört nicht mehr zu dieser Buchung");
+      expect(message).not.toContain("Außerhalb des erlaubten");
+    });
+
+    it("reads a 403 that carries a ForbiddenError body as the denial it is", async () => {
+      ApiAccessService.open.mockRejectedValue(forbiddenError());
+
+      const wrapper = await mountList({ entries: [compartment()] });
+      await openButton(tiles(wrapper).at(0)).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      const message = errorText(tiles(wrapper).at(0));
+      expect(message).toContain("fehlt die Berechtigung");
+      expect(message).not.toContain("gehört nicht mehr zu dieser Buchung");
+    });
+  });
+
+  describe("confirming a started open", () => {
+    beforeEach(() => {
+      ApiAccessService.open.mockResolvedValue({
+        data: { success: true, data: { openProcessId: "op-9" } },
+      });
+    });
+
+    it("polls the open process, not the lock status", async () => {
+      ApiAccessService.getOpenStatus.mockResolvedValue({
+        data: { success: true, data: { confirmed: true, confirmedAt: null } },
+      });
+
+      const wrapper = await mountList({ entries: [compartment()] });
+      await openButton(tiles(wrapper).at(0)).trigger("click");
+      await flushPromises();
+
+      expect(ApiAccessService.getOpenStatus).toHaveBeenCalledWith(
+        "bk-1",
+        "ap-locker:auth-77",
+        "t1",
+        "op-9"
+      );
+      expect(ApiAccessService.getStatus).not.toHaveBeenCalled();
+    });
+
+    it("asks nothing where the provider opened straight away", async () => {
+      ApiAccessService.open.mockResolvedValue({
+        data: { success: true, data: { openProcessId: null } },
+      });
+
+      const wrapper = await mountList({ entries: [door()] });
+      await openButton(tiles(wrapper).at(0)).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(ApiAccessService.getOpenStatus).not.toHaveBeenCalled();
+      expect(ApiAccessService.getStatus).not.toHaveBeenCalled();
+      expect(tiles(wrapper).at(0).text()).toContain("Geöffnet");
+    });
+
+    it("does not read a poll that could not tell as one that is still running", async () => {
+      ApiAccessService.getOpenStatus.mockResolvedValue({
+        data: {
+          success: true,
+          data: { confirmed: null, errorCode: null, errorMessage: null },
+        },
+      });
+
+      const wrapper = await mountList({ entries: [compartment()] });
+      vi.useFakeTimers();
+      try {
+        await openButton(tiles(wrapper).at(0)).trigger("click");
+        await vi.advanceTimersByTimeAsync(20000);
+      } finally {
+        vi.useRealTimers();
+      }
+      await wrapper.vm.$nextTick();
+
+      expect(errorText(tiles(wrapper).at(0))).toContain("nichts zurück");
+    });
+
+    it("keeps calling an open that stays unconfirmed unconfirmed", async () => {
+      ApiAccessService.getOpenStatus.mockResolvedValue({
+        data: { success: true, data: { confirmed: false, errorCode: null } },
+      });
+
+      const wrapper = await mountList({ entries: [compartment()] });
+      vi.useFakeTimers();
+      try {
+        await openButton(tiles(wrapper).at(0)).trigger("click");
+        await vi.advanceTimersByTimeAsync(20000);
+      } finally {
+        vi.useRealTimers();
+      }
+      await wrapper.vm.$nextTick();
+
+      expect(errorText(tiles(wrapper).at(0))).toContain("noch nicht bestätigt");
+    });
+  });
+
+  describe("what the provider can be asked for", () => {
+    it("blocks the open button where the provider declares no open at all", async () => {
+      const wrapper = await mountList({
+        entries: [
+          compartment({ provider: "pareva", capabilities: [], mode: "both" }),
+        ],
+      });
+
+      const tile = tiles(wrapper).at(0);
+      expect(openButton(tile).exists()).toBe(true);
+      expect(openButton(tile).attributes("disabled")).toBeTruthy();
+      expect(tile.find("[data-test='access-blocked']").text()).toContain(
+        "keine Fernsteuerung"
+      );
+    });
+
+    it("blocks the open button of a compartment whose grant was taken back", async () => {
+      const wrapper = await mountList({
+        entries: [compartment({ isProvisioned: false })],
+      });
+
+      const tile = tiles(wrapper).at(0);
+      expect(openButton(tile).attributes("disabled")).toBeTruthy();
+      expect(tile.find("[data-test='access-blocked']").text()).toContain(
+        "widerrufen"
+      );
+    });
+
+    it("keeps the status button visible but blocked where the provider reports no status", async () => {
+      const wrapper = await mountList({
+        entries: [compartment(), door()],
+      });
+
+      const compartmentTile = statusButton(tiles(wrapper).at(0));
+      expect(compartmentTile.exists()).toBe(true);
+      expect(compartmentTile.attributes("disabled")).toBeTruthy();
+      expect(compartmentTile.attributes("title")).toContain("keinen Status");
+      expect(statusButton(tiles(wrapper).at(1)).attributes("disabled")).toBe(
+        undefined
+      );
+    });
+
+    it("offers no close button where the provider cannot close", async () => {
+      const wrapper = await mountList({
+        entries: [
+          door({ provider: "salto-ks", capabilities: ["open", "getStatus"] }),
+        ],
+      });
+
+      expect(tiles(wrapper).at(0).text()).not.toContain("Schließen");
+    });
+
+    it("does not blame the window for a status route that answers 403", async () => {
+      ApiAccessService.getStatus.mockRejectedValue(serverError(403));
+
+      const wrapper = await mountList({ entries: [door()] });
+      await statusButton(tiles(wrapper).at(0)).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      const message = errorText(tiles(wrapper).at(0));
+      expect(message).toContain("derzeit nicht bedienen");
+      expect(message).not.toContain("Außerhalb des erlaubten");
     });
   });
 

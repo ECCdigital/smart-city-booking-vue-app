@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   ACCESS_STATE,
+  OPEN_PROGRESS,
   accessEntriesOf,
   accessState,
   accessStateChip,
+  hasCapability,
+  isRemotelyOperable,
+  openBlockOf,
+  openProgressOf,
 } from "@/utilities/booking-access-points";
+import { ACCESS_BLOCKING_REASON } from "@/utilities/access-blocking-reasons";
 
 const door = (overrides = {}) => ({
   id: "ap-door",
@@ -107,5 +113,153 @@ describe("accessEntriesOf", () => {
       "d-1",
       "d-2",
     ]);
+  });
+});
+
+const HOUR = 60 * 60 * 1000;
+const NOW = 1700000000000;
+
+const operable = (overrides = {}) =>
+  compartment({
+    mode: "remote",
+    capabilities: ["open"],
+    validationRuleTypes: [],
+    accessFrom: NOW - HOUR,
+    accessTo: NOW + HOUR,
+    ...overrides,
+  });
+
+describe("isRemotelyOperable", () => {
+  it("is false where the provider declares no open, whatever the mode says", () => {
+    expect(
+      isRemotelyOperable(operable({ capabilities: [], mode: "both" }))
+    ).toBe(false);
+  });
+
+  it("is false where the mode leaves no remote way in, though the provider could open", () => {
+    expect(
+      isRemotelyOperable(
+        operable({ capabilities: ["open"], mode: "authorization" })
+      )
+    ).toBe(false);
+  });
+
+  it("is true where the provider can open and the mode allows it remotely", () => {
+    expect(isRemotelyOperable(operable({ mode: "remote" }))).toBe(true);
+    expect(isRemotelyOperable(operable({ mode: "both" }))).toBe(true);
+  });
+
+  it("does not read a missing declaration as permission", () => {
+    expect(isRemotelyOperable({})).toBe(false);
+    expect(isRemotelyOperable(undefined)).toBe(false);
+  });
+});
+
+describe("hasCapability", () => {
+  it("reads the capabilities of the projection, nothing else", () => {
+    expect(hasCapability(operable({ capabilities: ["open"] }), "open")).toBe(
+      true
+    );
+    expect(hasCapability(operable({ capabilities: ["open"] }), "close")).toBe(
+      false
+    );
+    expect(hasCapability(undefined, "getStatus")).toBe(false);
+  });
+});
+
+describe("openBlockOf", () => {
+  it("finds nothing in the way of an operable entry", () => {
+    expect(openBlockOf(operable(), { now: NOW })).toBe(null);
+  });
+
+  it("names the missing remote access first, before a window that is closed too", () => {
+    expect(
+      openBlockOf(
+        operable({
+          capabilities: [],
+          accessFrom: NOW + HOUR,
+          accessTo: NOW + 2 * HOUR,
+        }),
+        { now: NOW }
+      )
+    ).toBe(ACCESS_BLOCKING_REASON.NO_REMOTE_ACCESS);
+  });
+
+  it("names the closed window before and after it", () => {
+    expect(
+      openBlockOf(
+        operable({ accessFrom: NOW + HOUR, accessTo: NOW + 2 * HOUR }),
+        {
+          now: NOW,
+        }
+      )
+    ).toBe(ACCESS_BLOCKING_REASON.OUTSIDE_ACCESS_WINDOW);
+    expect(
+      openBlockOf(
+        operable({ accessFrom: NOW - 2 * HOUR, accessTo: NOW - HOUR }),
+        {
+          now: NOW,
+        }
+      )
+    ).toBe(ACCESS_BLOCKING_REASON.OUTSIDE_ACCESS_WINDOW);
+  });
+
+  it("leaves an entry that declares no window alone", () => {
+    expect(
+      openBlockOf(operable({ accessFrom: null, accessTo: null }), { now: NOW })
+    ).toBe(null);
+  });
+
+  it("names the missing grant of a compartment, which has no other way in", () => {
+    expect(
+      openBlockOf(operable({ isProvisioned: false, externalBookingId: null }), {
+        now: NOW,
+      })
+    ).toBe(ACCESS_BLOCKING_REASON.NOT_PROVISIONED);
+  });
+
+  it("names a withdrawn grant as withdrawn, not as missing", () => {
+    expect(openBlockOf(operable({ isProvisioned: false }), { now: NOW })).toBe(
+      ACCESS_BLOCKING_REASON.AUTHORIZATION_REVOKED
+    );
+  });
+
+  it("does not hold the grant against a door that opens remotely anyway", () => {
+    expect(
+      openBlockOf(
+        door({
+          mode: "both",
+          capabilities: ["open", "close", "getStatus"],
+          isProvisioned: false,
+          accessFrom: NOW - HOUR,
+          accessTo: NOW + HOUR,
+        }),
+        { now: NOW }
+      )
+    ).toBe(null);
+  });
+
+  it("names the evidence this screen cannot send", () => {
+    expect(
+      openBlockOf(operable({ validationRuleTypes: ["qrScan"] }), { now: NOW })
+    ).toBe(ACCESS_BLOCKING_REASON.EVIDENCE_MISSING);
+  });
+});
+
+describe("openProgressOf", () => {
+  it("reads a confirmed open as confirmed", () => {
+    expect(openProgressOf({ confirmed: true })).toBe(OPEN_PROGRESS.CONFIRMED);
+  });
+
+  it("reads an open that is not confirmed yet as pending", () => {
+    expect(openProgressOf({ confirmed: false })).toBe(OPEN_PROGRESS.PENDING);
+  });
+
+  it("does not read a poll that could not tell as pending", () => {
+    expect(openProgressOf({ confirmed: null, errorCode: null })).toBe(
+      OPEN_PROGRESS.UNKNOWN
+    );
+    expect(openProgressOf({})).toBe(OPEN_PROGRESS.UNKNOWN);
+    expect(openProgressOf(undefined)).toBe(OPEN_PROGRESS.UNKNOWN);
   });
 });
