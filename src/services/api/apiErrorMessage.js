@@ -8,7 +8,7 @@ import i18n from "@/language/index";
  */
 const FORBIDDEN_CODE_PREFIX = "errors.forbidden-codes";
 const GENERIC_FORBIDDEN_KEY = `${FORBIDDEN_CODE_PREFIX}.forbidden`;
-const SESSION_EXPIRED_KEY = "errors.session-expired.message";
+const SESSION_EXPIRED_KEY = "errors.session-expired";
 
 /**
  * The status the Admin BFF answers a failed CSRF check with (`bff/src/csrf.js`).
@@ -58,12 +58,11 @@ function getForbiddenMessage(data) {
 }
 
 /**
- * Extrahiert eine anzeigbare Fehlermeldung aus einer axios-Fehlerantwort.
- * Bei 400-Antworten mit Klartext-Body (z. B. serverseitige PDF-Template-
- * Validierung von PUT /api/tenants) wird dieser Text zurückgegeben,
- * bei 403-Antworten die über `code` übersetzte Meldung,
- * bei 419-Antworten (CSRF-Prüfung der BFF) den Hinweis auf die abgelaufene
- * Sitzung, sonst der Fallback.
+ * Extract a displayable message from an axios error response. A 400 with a
+ * plain-text body (e.g. the server-side PDF template validation of
+ * `PUT /api/tenants`) returns that text, a 403 the message translated over
+ * `code`, a 419 the hint that the session is no longer fresh; anything else
+ * returns the fallback.
  */
 export function getApiErrorMessage(error, fallback) {
   if (error?.response?.status === 400) {

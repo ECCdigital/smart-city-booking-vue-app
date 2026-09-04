@@ -7,7 +7,7 @@ import {
 
 const FALLBACK = "Fallback";
 const FORBIDDEN = i18n.t("errors.forbidden-codes.forbidden");
-const SESSION_EXPIRED = i18n.t("errors.session-expired.message");
+const SESSION_EXPIRED = i18n.t("errors.session-expired");
 
 /**
  * Characterisation: the 400 branch is unchanged by the permissions strand and

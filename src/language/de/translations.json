@@ -84,10 +84,7 @@
       "title": "Validierungsfehler",
       "message": "Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
     },
-    "session-expired": {
-      "title": "Sitzung abgelaufen",
-      "message": "Ihre Sitzung ist nicht mehr aktuell. Bitte laden Sie die Seite neu und versuchen Sie es erneut."
-    },
+    "session-expired": "Ihre Sitzung ist nicht mehr aktuell. Bitte laden Sie die Seite neu und versuchen Sie es erneut.",
     "forbidden-codes": {
       "forbidden": "Sie haben keine Berechtigung für diese Aktion."
     }

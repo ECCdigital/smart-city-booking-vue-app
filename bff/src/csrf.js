@@ -74,4 +74,4 @@ function createCsrfGuard() {
   };
 }
 
-module.exports = { createCsrfGuard, CSRF_FAILED_STATUS };
+module.exports = { createCsrfGuard };
