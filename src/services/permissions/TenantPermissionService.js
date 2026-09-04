@@ -57,11 +57,15 @@ class TenantPermissionService {
    *
    * The tenant argument scopes the membership lookup, because the tenant being
    * deleted is not necessarily the selected one - the instance tenant list
-   * deletes any of them.
+   * deletes any of them. A tenant passed without an id resolves to no
+   * membership and therefore to false: the check fails closed rather than
+   * quietly answering for the selected tenant.
    */
   static allowDelete(tenant) {
     if (TenantPermissionService.isInstanceOwner()) return true;
-    const tenantId = tenant?.id ?? store.getters["tenants/currentTenantId"];
+    const tenantId = tenant
+      ? tenant.id
+      : store.getters["tenants/currentTenantId"];
     return TenantPermissionService.isTenantOwner(tenantId);
   }
 }
