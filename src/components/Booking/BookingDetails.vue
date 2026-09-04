@@ -131,9 +131,7 @@
               <v-col cols="12" md="6">
                 <div class="info-item">
                   <div class="info-label">
-                    <v-icon small class="mr-2"
-                      >mdi-book-cancel-outline</v-icon
-                    >
+                    <v-icon small class="mr-2">mdi-book-cancel-outline</v-icon>
                     Stornierungsrichtlinie
                   </div>
                   <div class="info-value">
@@ -541,11 +539,7 @@
                   </div>
                 </v-alert>
               </v-col>
-              <v-col
-                cols="12"
-                md="6"
-                v-if="hasPaidDate(booking)"
-              >
+              <v-col cols="12" md="6" v-if="hasPaidDate(booking)">
                 <div class="info-item">
                   <div class="info-label">
                     <v-icon small class="mr-2">mdi-calendar-check</v-icon>
@@ -727,7 +721,9 @@
         >
           <v-card-title class="section-header pa-4">
             <v-icon class="mr-2">mdi-form-textbox</v-icon>
-            <span class="text-h6 font-weight-bold">Benutzerdefinierte Felder</span>
+            <span class="text-h6 font-weight-bold"
+              >Benutzerdefinierte Felder</span
+            >
           </v-card-title>
           <v-divider></v-divider>
           <v-card-text class="pa-4">
