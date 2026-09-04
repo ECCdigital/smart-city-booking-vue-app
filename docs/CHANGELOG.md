@@ -24,6 +24,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
+-   Tenant editor, tab "Workflow": e-mail recipients are now the members of the tenant being edited (`GET /api/:tenant/users`) instead of every user of the instance — `GET /api/users` is instance-owner-only from 4.3.x on, so the screen degraded to raw user ids for a tenant owner and the recipient picker of the status dialog stayed empty. Recipients from outside the tenant are no longer selectable; ids already stored keep their place, are labelled "Unbekannter Empfänger" and survive a save unless the admin removes them
+
 -   `vue` and `vue-template-compiler` are aligned on 2.7.16 — they had drifted apart, which breaks any tool that compiles templates outside webpack
 -   The stale eslint `overrides` block for `mocha` test globals is gone; Vitest globals stay off and specs import `describe`/`it`/`expect` from `vitest`
 -   Tenant access apps: Salto KS picks an environment (`Accept (Sandbox)` / `Production`) instead of a free-text API base URL; the connection test sends `environment` and shows the server's own error (e.g. `invalid_client`) — requires the matching backend

@@ -21,8 +21,8 @@
           <ul class="mt-2 mb-2">
             <li>
               <strong>E-Mail-Aktion:</strong> Versendet eine Nachricht entweder
-              an bestimmte Benutzer der ausgewählte Rolle, oder direkt an
-              eine benutzerdefinierte E-Mail-Adresse.
+              an bestimmte Benutzer der ausgewählte Rolle, oder direkt an eine
+              benutzerdefinierte E-Mail-Adresse.
             </li>
             <li>
               <strong>Buchungsstatus-Aktion:</strong> Ändert den Status einer
@@ -30,7 +30,10 @@
               <em>abgelehnt/storniert</em> oder <em>bezahlt</em>.
             </li>
           </ul>
-          Mehrere Aktionen können kombiniert werden.
+          Mehrere Aktionen können kombiniert werden. Als Benutzer stehen nur
+          Mitglieder dieses Mandanten zur Auswahl; bereits gespeicherte
+          Empfänger von außerhalb bleiben erhalten und sind als
+          <em>Unbekannter Empfänger</em> gekennzeichnet.
         </v-alert>
         <h3>Workflow Aktionen</h3>
         <div v-for="(action, idx) in workflowStatus.actions" :key="idx">
@@ -84,6 +87,9 @@
                     label="Benutzer"
                     v-model="action.sendTo"
                     :items="availableUsers"
+                    item-text="label"
+                    item-value="userId"
+                    :return-object="false"
                   >
                     <template
                       v-slot:selection="{ attrs, item, select, selected }"
@@ -92,11 +98,11 @@
                         v-bind="attrs"
                         :input-value="selected.value"
                         close
-                        color="secondary"
+                        :color="isKnownUser(item) ? 'secondary' : 'warning'"
                         @click="select"
                         @click:close="removeUser(idx, item)"
                       >
-                        <strong>{{ item }}</strong>
+                        <strong>{{ userLabel(item) }}</strong>
                       </v-chip>
                     </template>
                   </v-combobox>
@@ -191,7 +197,7 @@
 
 <script>
 import ApiRolesService from "@/services/api/ApiRolesService";
-import ApiUsersService from "@/services/api/ApiUsersService";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   name: "TenantEditWorkflowStatusDialog",
@@ -203,6 +209,10 @@ export default {
     states: {
       type: Object,
       required: true,
+    },
+    tenantId: {
+      type: String,
+      default: "",
     },
   },
   data() {
@@ -230,12 +240,15 @@ export default {
 
   watch: {
     states: {
-      handler: async function (newVal, oldVal) {
+      handler: async function (newVal) {
         this.workflowStatus = JSON.parse(JSON.stringify(newVal));
         await this.fetchRoles();
         await this.fetchUsers();
       },
       immediate: true,
+    },
+    tenantId() {
+      this.fetchUsers();
     },
   },
 
@@ -258,10 +271,52 @@ export default {
         this.availableRoles = [];
       }
     },
+    /**
+     * Recipients are the members of *this* tenant. The instance-wide user list
+     * is owner-only from 4.3.x on, and a workflow of tenant A notifying a user
+     * of tenant B was a leak rather than a feature.
+     */
     async fetchUsers() {
-      await ApiUsersService.getUsers().then((result) => {
-        this.availableUsers = result.map((user) => user.id);
-      });
+      if (!this.tenantId) {
+        this.availableUsers = [];
+        return;
+      }
+
+      try {
+        const response = await ApiTenantService.getTenantUsers(this.tenantId);
+        const userDetails = response?.userDetails || [];
+
+        this.availableUsers = (response?.users || [])
+          .map((user) => {
+            const details = userDetails.find(
+              (detail) => detail.id === user.userId
+            );
+            const firstName = details?.firstName || user.firstName || "";
+            const lastName = details?.lastName || user.lastName || "";
+            const fullName = `${firstName} ${lastName}`.trim();
+
+            return {
+              userId: user.userId,
+              label: fullName || user.userId,
+            };
+          })
+          .filter((user) => !!user.userId);
+      } catch (error) {
+        console.error("Error fetching tenant users:", error);
+        this.availableUsers = [];
+      }
+    },
+    isKnownUser(userId) {
+      return this.availableUsers.some((user) => user.userId === userId);
+    },
+    /**
+     * A recipient that is not a member of this tenant stays in `sendTo` and
+     * stays visible - only removing the chip drops it. Hiding it would delete
+     * a notification recipient on the next save without anyone noticing.
+     */
+    userLabel(userId) {
+      const user = this.availableUsers.find((u) => u.userId === userId);
+      return user ? user.label : `${userId} (Unbekannter Empfänger)`;
     },
     addAction() {
       this.workflowStatus.actions.push({

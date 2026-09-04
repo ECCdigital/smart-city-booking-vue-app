@@ -4,7 +4,7 @@ import TenantEditWorkflowStatusDialog from "@/components/Tenant/TenantEditWorkfl
 import BaseSection from "@/components/commons/BaseSection.vue";
 
 import ApiRolesService from "@/services/api/ApiRolesService";
-import ApiUsersService from "@/services/api/ApiUsersService";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
 export default {
   name: "TenantEditWorkflow",
@@ -44,6 +44,9 @@ export default {
     };
   },
   computed: {
+    tenantId() {
+      return this.tenant?.id;
+    },
     workflowEvents() {
       return [
         {
@@ -82,6 +85,9 @@ export default {
         this.localWorkflow = JSON.parse(JSON.stringify(v));
       },
     },
+    tenantId() {
+      this.fetchUsers();
+    },
   },
   methods: {
     async fetchRoles() {
@@ -92,15 +98,38 @@ export default {
         this.availableRoles = [];
       }
     },
+    /**
+     * Recipients are the members of *this* tenant. The instance-wide user list
+     * is owner-only from 4.3.x on, and a workflow of tenant A notifying a user
+     * of tenant B was a leak rather than a feature.
+     */
     async fetchUsers() {
+      if (!this.tenantId) {
+        this.availableUsers = [];
+        return;
+      }
+
       try {
-        const result = await ApiUsersService.getUsers();
-        this.availableUsers = Array.isArray(result)
-          ? result
-          : Array.isArray(result?.data)
-          ? result.data
-          : [];
-      } catch (e) {
+        const response = await ApiTenantService.getTenantUsers(this.tenantId);
+        const userDetails = response?.userDetails || [];
+
+        this.availableUsers = (response?.users || [])
+          .map((user) => {
+            const details = userDetails.find(
+              (detail) => detail.id === user.userId
+            );
+            const firstName = details?.firstName || user.firstName || "";
+            const lastName = details?.lastName || user.lastName || "";
+            const fullName = `${firstName} ${lastName}`.trim();
+
+            return {
+              userId: user.userId,
+              fullName: fullName || user.userId,
+            };
+          })
+          .filter((user) => !!user.userId);
+      } catch (error) {
+        console.error("Error fetching tenant users:", error);
         this.availableUsers = [];
       }
     },
@@ -230,9 +259,17 @@ export default {
       const r = this.availableRoles.find((x) => x.id === roleId);
       return r?.name || `Rolle ${roleId}`;
     },
-    userName(userId) {
-      const u = this.availableUsers.find((x) => x.id === userId);
-      return u?.name || u?.displayName || u?.email || `User ${userId}`;
+    isKnownUser(userId) {
+      return this.availableUsers.some((u) => u.userId === userId);
+    },
+    /**
+     * A stored recipient that is not a member of this tenant stays visible and
+     * is labelled as such - dropping it silently would remove a notification
+     * recipient without anyone noticing.
+     */
+    userLabel(userId) {
+      const u = this.availableUsers.find((x) => x.userId === userId);
+      return u ? u.fullName : `${userId} (Unbekannter Empfänger)`;
     },
     actionSummary(action) {
       if (!action || !action.type) return "Unbekannte Aktion";
@@ -403,11 +440,15 @@ export default {
                             :key="id"
                             small
                             class="mr-1 mb-1"
-                            color="grey lighten-3"
+                            :color="
+                              action.receiverType === 'user' && !isKnownUser(id)
+                                ? 'warning'
+                                : 'grey lighten-3'
+                            "
                           >
                             {{
                               action.receiverType === "user"
-                                ? userName(id)
+                                ? userLabel(id)
                                 : roleName(id)
                             }}
                           </v-chip>
@@ -526,6 +567,7 @@ export default {
     <TenantEditWorkflowStatusDialog
       :open="showEditStatusDialog"
       :states="selectedSatus"
+      :tenant-id="tenantId"
       @close="cancelEditStatus"
       @save="updateStatus"
     />
