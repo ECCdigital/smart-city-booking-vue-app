@@ -401,14 +401,45 @@
               >
                 {{ formatCurrency(totals.revenueEur) }}
               </div>
-              <div class="caption grey--text mb-4">Gesamtumsatz</div>
+              <div class="caption grey--text mb-4">Gesamtumsatz (brutto)</div>
               <div class="metric-row">
-                <span>Ø Umsatz / Buchung</span>
+                <span>Ø Umsatz (brutto) / Buchung</span>
                 <strong>{{ formatCurrency(avgRevenuePerBooking) }}</strong>
               </div>
               <div v-if="!tenantData" class="metric-row">
                 <span>Top-Mandant</span>
                 <strong>{{ topRevenueTenant }}</strong>
+              </div>
+
+              <div class="metric-row mt-4">
+                <div class="d-flex align-center items-center">
+                  <span>Regulärer Gesamtumsatz (brutto)</span>
+                  <v-tooltip bottom max-width="320">
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-icon
+                        v-bind="attrs"
+                        v-on="on"
+                        small
+                        class="ml-1"
+                        color="grey"
+                        aria-label="Informationen zum katalogbasierten Gesamtbruttoumsatz"
+                      >
+                        mdi-information-outline
+                      </v-icon>
+                    </template>
+                    <span>
+                      Theoretischer Gesamtumsatz in Brutto ohne berücksichtigung
+                      von Rabatten und Sonderpreisen.
+                    </span>
+                  </v-tooltip>
+                </div>
+                <strong>{{ formatCurrency(totals.regularRevenueEur) }}</strong>
+              </div>
+              <div class="metric-row">
+                <div class="d-flex align-center items-center">
+                  <span>Entganger Umsatz (brutto)</span>
+                </div>
+                <strong>{{ formatCurrency(missedRevenue) }}</strong>
               </div>
             </v-card-text>
           </v-card>
@@ -784,6 +815,12 @@ export default {
       )[0];
       return top.tenantName;
     },
+    missedRevenue() {
+      return (
+        Number(this.totals.regularRevenueEur || 0) -
+        Number(this.totals.revenueEur || 0)
+      );
+    },
 
     hasAnyTenantEvents() {
       return this.byTenant.some((t) => Number(t.events || 0) > 0);
@@ -1031,7 +1068,7 @@ export default {
           appendTo: "body",
           valueFormatter: (value) => this.formatCurrency(value),
         },
-        legend: { show: false },
+        legend: { top: 0 },
         grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
         xAxis: {
           type: "category",
@@ -1045,7 +1082,15 @@ export default {
         yAxis: { type: "value" },
         series: [
           {
-            name: "Umsatz",
+            name: "Regulärer Umsatz (brutto)",
+            type: "line",
+            showSymbol: false,
+            smooth: true,
+            data: this.byPeriod?.map((entry) => entry.regularRevenueEur),
+            itemStyle: { color: "#ffda22" },
+          },
+          {
+            name: "Umsatz (brutto)",
             type: "line",
             showSymbol: false,
             smooth: true,
