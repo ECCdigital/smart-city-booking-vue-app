@@ -83,6 +83,9 @@
     "validation": {
       "title": "Validierungsfehler",
       "message": "Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
+    },
+    "forbidden-codes": {
+      "forbidden": "Sie haben keine Berechtigung für diese Aktion."
     }
   },
   "validation": {

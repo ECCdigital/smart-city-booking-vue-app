@@ -24,6 +24,9 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
+-   `getApiErrorMessage` reads the 4.3.x error shape of a 403 (`{ error, code, statusCode, params }`) and translates it over `code` — one i18n table under `errors.forbidden-codes`, today with the generic `forbidden` entry the backend sends on 26 of its 32 denials; a 403 without that shape counts as a generic denial. The 400 branch is unchanged, its characterisation test that pinned "a 403 body is ignored" was rewritten deliberately
+-   PDF template editor: a failed preview looks at the status before it reads the body — a 403 used to show the raw JSON body, because the response arrives as a Blob and the Blob branch ran first. The Blob unpacker now sits next to `getApiErrorMessage` as `unpackBlobErrorBody`
+-   Tenant payments: a denied ePayBL connection test shows a permission message instead of "Request failed with status code 403"
 -   `vue` and `vue-template-compiler` are aligned on 2.7.16 — they had drifted apart, which breaks any tool that compiles templates outside webpack
 -   The stale eslint `overrides` block for `mocha` test globals is gone; Vitest globals stay off and specs import `describe`/`it`/`expect` from `vitest`
 -   Tenant access apps: Salto KS picks an environment (`Accept (Sandbox)` / `Production`) instead of a free-text API base URL; the connection test sends `environment` and shows the server's own error (e.g. `invalid_client`) — requires the matching backend
