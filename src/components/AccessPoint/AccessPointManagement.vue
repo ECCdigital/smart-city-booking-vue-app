@@ -3,6 +3,7 @@ import { mapActions, mapGetters } from "vuex";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import ToastService from "@/services/ToastService";
 import BaseSection from "@/components/commons/BaseSection.vue";
 import AccessPointEditDialog from "@/components/AccessPoint/AccessPointEditDialog.vue";
@@ -31,6 +32,7 @@ export default {
       loadError: "",
       accessPoints: [],
       bookables: [],
+      bookablesForbidden: false,
       providers: [],
       editDialog: false,
       selectedAccessPoint: null,
@@ -93,10 +95,17 @@ export default {
           assignedBookables: assigned,
           assignmentLabel: assigned.length
             ? assigned.map((bookable) => bookable.title).join(", ")
-            : this.$t("accessPoint.management.table.unassigned"),
+            : this.assignmentUnknownLabel,
           qrScanRequired: requiresQrScan(accessPoint),
         };
       });
+    },
+    // "Not assigned" is a statement about the bookables; it may only be made
+    // when they were actually readable.
+    assignmentUnknownLabel() {
+      return this.bookablesForbidden
+        ? this.$t("accessPoint.management.table.assignmentForbidden")
+        : this.$t("accessPoint.management.table.unassigned");
     },
     qrFormats() {
       return QR_FORMATS;
@@ -136,6 +145,7 @@ export default {
       await Promise.all([this.fetchBookables(), this.fetchProviders()]);
     },
     async fetchBookables() {
+      this.bookablesForbidden = false;
       try {
         const response = await ApiBookablesService.getBookables(
           this.tenantId,
@@ -143,8 +153,15 @@ export default {
         );
         this.bookables = response.data || [];
       } catch (error) {
-        // The list stays usable without the assignment column.
+        // The list stays usable without the assignment column - that decision
+        // stands, so no error banner replaces the table. What does not stand is
+        // the column then reading "Keinem Buchungsobjekt zugeordnet" for every
+        // row: on a denial we cannot tell, and saying "not assigned" would be a
+        // claim about data we were refused. The cells say "not readable" and
+        // one hint above the table says why. Any other failure keeps the old
+        // silence.
         this.bookables = [];
+        this.bookablesForbidden = isForbiddenError(error);
       }
     },
     async fetchProviders() {
@@ -260,6 +277,11 @@ export default {
       {{ loadError }}
     </v-alert>
 
+    <v-alert v-if="bookablesForbidden" color="info" text dense class="mb-4">
+      <v-icon left>mdi-information-outline</v-icon>
+      {{ $t("accessPoint.management.hints.assignmentForbidden") }}
+    </v-alert>
+
     <v-text-field
       v-model="search"
       :label="$t('accessPoint.management.search')"
@@ -295,7 +317,7 @@ export default {
           v-if="item.assignedBookables.length === 0"
           class="text--secondary"
         >
-          {{ $t("accessPoint.management.table.unassigned") }}
+          {{ assignmentUnknownLabel }}
         </span>
         <span v-else>{{ item.assignmentLabel }}</span>
       </template>

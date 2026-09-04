@@ -1,17 +1,21 @@
 <template>
   <AdminLayout scroll-body>
-
     <v-skeleton-loader v-if="loading" type="article" />
 
-    <BookingEdit
-      v-else-if="ready"
-      :booking="booking"
-      :bookables="bookables"
-      :workflow="workflow"
-      :group-booking="groupBooking"
-      @saved="onSaved"
-      @cancel="goBack"
-    />
+    <template v-else-if="ready">
+      <v-alert v-if="bookablesForbidden" type="warning" text class="mb-4">
+        {{ $t("booking.edit.hints.bookablesForbidden") }}
+      </v-alert>
+
+      <BookingEdit
+        :booking="booking"
+        :bookables="bookables"
+        :workflow="workflow"
+        :group-booking="groupBooking"
+        @saved="onSaved"
+        @cancel="goBack"
+      />
+    </template>
   </AdminLayout>
 </template>
 
@@ -23,6 +27,7 @@ import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import { createEmptyBooking } from "@/utils/bookingForm";
 import { mapGetters } from "vuex";
 
@@ -36,6 +41,7 @@ export default {
       booking: null,
       groupBooking: null,
       bookables: [],
+      bookablesForbidden: false,
       workflow: {},
     };
   },
@@ -81,13 +87,14 @@ export default {
       this.loading = true;
       this.ready = false;
       this.groupBooking = null;
+      this.bookablesForbidden = false;
 
       try {
-        const [bookablesRes, workflow] = await Promise.all([
-          ApiBookablesService.getBookables(this.tenantId, true),
+        const [bookables, workflow] = await Promise.all([
+          this.loadBookables(),
           ApiWorkflowService.getWorkflowStates(),
         ]);
-        this.bookables = bookablesRes.data;
+        this.bookables = bookables;
         this.workflow = workflow;
 
         if (this.isCreate) {
@@ -108,6 +115,24 @@ export default {
         this.goBack();
       } finally {
         this.loading = false;
+      }
+    },
+    /**
+     * A denied bookable list is not a reason to throw the user out of the
+     * editor - it only empties the object picker, and the screen says so. Every
+     * other failure (network, 5xx) still rejects and `load` leaves as before.
+     */
+    async loadBookables() {
+      try {
+        const response = await ApiBookablesService.getBookables(
+          this.tenantId,
+          true
+        );
+        return response.data;
+      } catch (error) {
+        if (!isForbiddenError(error)) throw error;
+        this.bookablesForbidden = true;
+        return [];
       }
     },
     async loadGroupBooking() {

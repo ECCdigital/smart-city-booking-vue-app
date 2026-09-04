@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import i18n from "@/language/index";
 import {
   getApiErrorMessage,
+  isForbiddenError,
   unpackBlobErrorBody,
 } from "@/services/api/apiErrorMessage";
 
@@ -254,5 +255,53 @@ describe("unpackBlobErrorBody", () => {
       )
     );
     expect(getApiErrorMessage(unpacked, FALLBACK)).toBe(FORBIDDEN);
+  });
+});
+
+/**
+ * The predicate the list screens read. It answers one question - "was this
+ * refused?" - and deliberately says nothing about an empty result: a 200 with
+ * `[]` means "nothing there", a 403 means "no access", and the two must stay
+ * tellable apart.
+ *
+ * Reading the status alone means the BFF's own CSRF 403 matches too. That is
+ * pinned as the current imprecision, not endorsed: spec §E3 moves CSRF off 403
+ * because a stale session is not a denial. No caller of this predicate can hit
+ * it - the CSRF guard fires on writes only.
+ */
+describe("isForbiddenError", () => {
+  it("is true for a 403, whatever the body looks like", () => {
+    expect(
+      isForbiddenError({
+        response: {
+          status: 403,
+          data: {
+            error: "ForbiddenError",
+            code: "forbidden",
+            statusCode: 403,
+            params: {},
+          },
+        },
+      })
+    ).toBe(true);
+    expect(isForbiddenError({ response: { status: 403 } })).toBe(true);
+    // Known imprecision, see the block comment above.
+    expect(
+      isForbiddenError({
+        response: { status: 403, data: { message: "CSRF check failed" } },
+      })
+    ).toBe(true);
+  });
+
+  it("is false for every other status", () => {
+    expect(isForbiddenError({ response: { status: 401 } })).toBe(false);
+    expect(isForbiddenError({ response: { status: 404 } })).toBe(false);
+    expect(isForbiddenError({ response: { status: 500 } })).toBe(false);
+  });
+
+  it("is false when there is no response at all", () => {
+    expect(isForbiddenError(new Error("Network Error"))).toBe(false);
+    expect(isForbiddenError(undefined)).toBe(false);
+    expect(isForbiddenError(null)).toBe(false);
   });
 });

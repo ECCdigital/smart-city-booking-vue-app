@@ -46,6 +46,23 @@ function getForbiddenMessage(data) {
 }
 
 /**
+ * True when a request was refused. It exists to keep two things apart that a
+ * list screen must never confuse: a 200 with `[]` means "nothing there", a 403
+ * means "no access". Callers use it to pick between an ordinary empty list and
+ * a permission notice - never to turn a legitimately empty result into a
+ * permission error.
+ *
+ * It reads the status only, so the BFF's own CSRF 403 matches too. That is a
+ * known imprecision, not an intent: a stale CSRF token means "your session is
+ * not fresh", not "you may not". It cannot bite the callers here - the CSRF
+ * guard only fires on writes and these are all GETs - and it disappears when
+ * the BFF moves off 403 for CSRF.
+ */
+export function isForbiddenError(error) {
+  return error?.response?.status === 403;
+}
+
+/**
  * Extrahiert eine anzeigbare Fehlermeldung aus einer axios-Fehlerantwort.
  * Bei 400-Antworten mit Klartext-Body (z. B. serverseitige PDF-Template-
  * Validierung von PUT /api/tenants) wird dieser Text zurückgegeben,

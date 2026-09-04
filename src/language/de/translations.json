@@ -201,7 +201,16 @@
           "label": "Manuelle Freigabe",
           "tooltip": "Eine Buchung muss vom Administrator freigegeben werden."
         }
+      },
+      "overview": {
+        "titlesForbidden": "Titel der verknüpften Buchungsobjekte nicht abrufbar – Sie haben keinen Zugriff auf Buchungsobjekte."
       }
+    },
+    "list": {
+      "forbidden": "Sie haben keinen Zugriff auf Buchungsobjekte."
+    },
+    "select": {
+      "forbidden": "Keine Auswahl möglich – Sie haben keinen Zugriff auf Buchungsobjekte."
     }
   },
   "event": {
@@ -242,7 +251,6 @@
       }
     }
   },
-
   "tenant": {
     "error": {
       "user-exists": {
@@ -332,7 +340,6 @@
       }
     }
   },
-
   "password": {
     "reset": {
       "success": {
@@ -448,6 +455,9 @@
       "error-time-confict": {
         "title": "Zeitkonflikt",
         "message": "Die Buchung konnte nicht bearbeitet werden, da es zu einem Zeitkonflikt kommt."
+      },
+      "hints": {
+        "bookablesForbidden": "Sie haben keinen Zugriff auf Buchungsobjekte. Die Auswahl der Buchungsobjekte bleibt daher leer."
       }
     },
     "copyId": {
@@ -529,7 +539,6 @@
           "message": "Bitte wählen Sie einen Zahlungsanbieter aus."
         }
       },
-
       "fallback": {
         "title": "Validierungsfehler",
         "message": "Bitte überprüfen Sie Ihre Eingaben."
@@ -813,6 +822,9 @@
         "title": "Fehler beim Bearbeiten",
         "message": "Der Rabatt konnte nicht bearbeitet werden."
       }
+    },
+    "list": {
+      "forbidden": "Sie haben keinen Zugriff auf Rabattcodes."
     }
   },
   "permissions": {
@@ -914,7 +926,8 @@
         "unassigned": "Keinem Buchungsobjekt zugeordnet",
         "loading": "Daten werden geladen...",
         "empty": "Es ist noch kein Zugangspunkt angelegt.",
-        "perPage": "Zugangspunkte pro Seite"
+        "perPage": "Zugangspunkte pro Seite",
+        "assignmentForbidden": "Nicht abrufbar"
       },
       "types": {
         "door": "Tür",
@@ -1047,6 +1060,9 @@
           "title": "Speichern fehlgeschlagen",
           "message": "Fehler beim Speichern der Änderungen."
         }
+      },
+      "hints": {
+        "assignmentForbidden": "Die Spalte „Zuordnung“ kann nicht gefüllt werden – Sie haben keinen Zugriff auf Buchungsobjekte."
       }
     },
     "comingSoon": {
