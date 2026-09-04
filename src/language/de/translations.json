@@ -923,8 +923,7 @@
       "tab": "Zugangspunkte",
       "providersTab": "Schließsysteme",
       "title": "Zugangspunkte",
-      "hint": "Türen und Schließfächer dieses Mandanten. Ein Zugangspunkt wird hier einmal angelegt und kann anschließend in beliebig vielen Buchungsobjekten verwendet werden.",
-      "create": "Zugangspunkt anlegen",
+      "hint": "Türen und Schließfachanlagen dieses Mandanten. Ein Zugangspunkt wird hier einmal angelegt und kann anschließend in beliebig vielen Buchungsobjekten verwendet werden.",
       "edit": "Bearbeiten",
       "reload": "Neu laden",
       "search": "Zugangspunkt suchen...",
@@ -939,7 +938,16 @@
         "loading": "Daten werden geladen...",
         "empty": "Es ist noch kein Zugangspunkt angelegt.",
         "perPage": "Zugangspunkte pro Seite",
-        "assignmentForbidden": "Nicht abrufbar"
+        "assignmentForbidden": "Nicht abrufbar",
+        "origin": "Herkunft",
+        "originManual": "Selbst angelegt",
+        "originProvider": "Vom Anbieter",
+        "capacityHint": "Kapazität steht am Buchungsobjekt",
+        "typeFilter": "Typ",
+        "filterAll": "Alle",
+        "filterDoors": "Türen",
+        "filterLockers": "Anlagen",
+        "emptyFiltered": "Kein Zugangspunkt dieses Typs."
       },
       "types": {
         "door": "Tür",
@@ -959,22 +967,24 @@
         "label": "Bezeichnung",
         "type": "Typ",
         "provider": "Anbieter",
-        "externalId": "Schloss-ID beim Anbieter",
+        "externalId": "ID beim Anbieter",
         "externalIdHint": "Ändern Sie diese ID, um das Schloss auszutauschen, ohne den QR-Code neu zu drucken.",
         "providerLocationId": "Standort-ID beim Anbieter",
         "mode": "Modus",
         "config": "Konfiguration",
         "location": "Standort",
-        "validationRules": "Validierungsregeln"
+        "validationRules": "Validierungsregeln",
+        "typeHint": "Der Typ ergibt sich aus dem Anbieter und ist nicht wählbar.",
+        "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen."
       },
       "picker": {
-        "title": "Schloss vom Anbieter übernehmen",
+        "title": "Zugangspunkt vom Anbieter übernehmen",
         "provider": "Anbieter",
-        "lock": "Schloss",
+        "lock": "Zugangspunkt",
         "apply": "Übernehmen",
         "alreadyCreated": "bereits angelegt",
-        "hint": "Die übernommenen Angaben lassen sich anschließend frei ändern. Ohne Auswahl legen Sie den Zugangspunkt manuell an.",
-        "noProvider": "Es ist kein Anbieter für Türschlösser aktiv. Sie können den Zugangspunkt manuell anlegen oder zuerst unter „Schließsysteme“ einen Anbieter aktivieren."
+        "hint": "Der Anbieter sagt, ob es eine Tür oder eine Schließfachanlage ist. Die übernommenen Angaben lassen sich anschließend frei ändern.",
+        "noProvider": "Es ist kein Anbieter aktiv. Aktivieren Sie zuerst unter „Schließsysteme“ einen Anbieter, oder legen Sie eine Tür manuell an."
       },
       "ruleTypes": {
         "qrScan": "QR-Scan erforderlich"
@@ -986,7 +996,8 @@
         "qrScanHint": "Der Zugangspunkt lässt sich nur öffnen, wenn der QR-Code vor Ort gescannt wurde.",
         "defaultHint": "Unverändert übernommen: Beim Anlegen setzt der Server die Regel „QR-Scan erforderlich“ selbst. Schalten Sie den Schalter aus, um den Zugangspunkt bewusst ohne Scan-Pflicht anzulegen.",
         "required": "erforderlich",
-        "notRequired": "nicht nötig"
+        "notRequired": "nicht nötig",
+        "notApplicable": "entfällt"
       },
       "location": {
         "title": "Standort",
@@ -1027,11 +1038,18 @@
         "confirm": "Löschen",
         "affectedTitle": "Diese Buchungsobjekte verlieren damit ihren Zugangspunkt:",
         "affectedHint": "Die Zuordnung wird automatisch aus den Buchungsobjekten entfernt.",
-        "noneAffected": "Der Zugangspunkt ist keinem Buchungsobjekt zugeordnet."
+        "noneAffected": "Der Zugangspunkt ist keinem Buchungsobjekt zugeordnet.",
+        "bookingsTitle": "Laufende Buchungen mit erteiltem Zugang:",
+        "bookingsHint": "Die erteilten Berechtigungen werden dabei nicht widerrufen – beim Anbieter bleiben sie bestehen und lassen sich anschließend hier nicht mehr entziehen. Bedienen lässt sich der Zugangspunkt aus diesen Buchungen nicht mehr.",
+        "bookingsNone": "Keine laufende Buchung hält an diesem Zugangspunkt einen erteilten Zugang.",
+        "bookingsLoading": "Laufende Buchungen werden geprüft …",
+        "bookingsUnreadable": "Ob laufende Buchungen hier einen erteilten Zugang halten, ist nicht abrufbar – die Buchungen dieses Mandanten konnten nicht gelesen werden.",
+        "bookingsMore": "… und {count} weitere."
       },
       "dialog": {
-        "createTitle": "Zugangspunkt anlegen",
-        "editTitle": "Zugangspunkt bearbeiten"
+        "editTitle": "Zugangspunkt bearbeiten",
+        "createDoorTitle": "Tür anlegen",
+        "createFromProviderTitle": "Zugangspunkt aus Anbieter übernehmen"
       },
       "errors": {
         "generic": "Die Aktion konnte nicht ausgeführt werden.",
@@ -1075,7 +1093,9 @@
       },
       "hints": {
         "assignmentForbidden": "Die Spalte „Zuordnung“ kann nicht gefüllt werden – Sie haben keinen Zugriff auf Buchungsobjekte."
-      }
+      },
+      "createDoor": "Tür anlegen",
+      "createFromProvider": "Aus Anbieter übernehmen"
     },
     "comingSoon": {
       "badge": "Bald verfügbar",

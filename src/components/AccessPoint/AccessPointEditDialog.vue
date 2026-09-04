@@ -6,7 +6,11 @@ import AddressLookup from "@/components/commons/AddressLookup.vue";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
   accessPointLabel,
+  accessPointTypeLabel,
+  isLockerAccessPoint,
+  providerAccessPointDefaults,
   requiresQrScan,
+  DOOR_TYPE,
   QR_SCAN_RULE,
 } from "@/utilities/access-points";
 import { isComingSoonAccessPointMode } from "@/utilities/coming-soon";
@@ -17,7 +21,7 @@ function emptyForm() {
   return {
     id: null,
     label: "",
-    type: "door",
+    type: DOOR_TYPE,
     provider: "",
     externalId: "",
     providerLocationId: "",
@@ -37,6 +41,14 @@ export default {
     accessPoints: { type: Array, default: () => [] },
     // Active providers incl. their `providerCapabilities`.
     providers: { type: Array, default: () => [] },
+    // Which of the two buttons over the table opened the dialog: "manual"
+    // starts on an empty form, "provider" starts at the provider listing. The
+    // dialog is one and the same - only where it begins differs.
+    source: {
+      type: String,
+      default: "provider",
+      validator: (value) => ["manual", "provider"].includes(value),
+    },
   },
   data() {
     return {
@@ -68,15 +80,36 @@ export default {
       return !!this.form.id;
     },
     title() {
-      return this.isEdit
-        ? this.$t("accessPoint.management.dialog.editTitle")
-        : this.$t("accessPoint.management.dialog.createTitle");
+      if (this.isEdit) {
+        return this.$t("accessPoint.management.dialog.editTitle");
+      }
+      return this.showPicker
+        ? this.$t("accessPoint.management.dialog.createFromProviderTitle")
+        : this.$t("accessPoint.management.dialog.createDoorTitle");
     },
-    typeOptions() {
-      return ["door", "locker"].map((value) => ({
-        value,
-        text: this.$t(`accessPoint.management.types.${value}`),
-      }));
+    isLocker() {
+      return isLockerAccessPoint(this.form);
+    },
+    // The type is shown, not asked: it follows the provider, and a select
+    // whose answer is already settled is a question without a choice.
+    typeLabel() {
+      return accessPointTypeLabel(this.form);
+    },
+    // Swapping the device behind a door keeps its QR code; a locker system
+    // has none, so the sentence about reprinting must not be shown for it.
+    externalIdHint() {
+      return this.isLocker
+        ? this.$t("accessPoint.management.fields.externalIdHintLocker")
+        : this.$t("accessPoint.management.fields.externalIdHint");
+    },
+    typeIcon() {
+      return this.isLocker ? "mdi-locker-multiple" : "mdi-door-closed-lock";
+    },
+    // The picker is the way into a locker system - it is what reads
+    // `listAccessPoints` - and the shortcut for a door. Entering a door by
+    // hand starts without it.
+    showPicker() {
+      return !this.isEdit && this.source === "provider";
     },
     // The PIN-at-the-lock modes stay listed while they are unfinished, so the
     // dialog shows what is coming - but they cannot be chosen. An access point
@@ -163,9 +196,24 @@ export default {
     },
     // The provider list may still be loading while the dialog opens.
     providerOptions(options) {
-      if (this.open && !this.isEdit && !this.pickerProvider && options.length) {
+      if (
+        this.open &&
+        this.showPicker &&
+        !this.pickerProvider &&
+        options.length
+      ) {
         this.pickerProvider = options[0].value;
       }
+    },
+    // What a provider hands out is the provider's business: Nuki and Salto KS
+    // list doors, iFBS and Pareva locker systems, whose mode follows from the
+    // provider too. A provider outside that table leaves the type as it is.
+    "form.provider": function (provider) {
+      const defaults = providerAccessPointDefaults(provider);
+      if (!defaults) return;
+
+      this.form.type = defaults.type;
+      if (defaults.mode) this.form.mode = defaults.mode;
     },
   },
   methods: {
@@ -185,7 +233,9 @@ export default {
       // A new access point starts with the rule the server would default to,
       // so what the switch shows is what an untouched create produces.
       this.qrScanRequired = source ? requiresQrScan(source) : true;
-      this.pickerProvider = source ? "" : this.providerOptions[0]?.value || "";
+      this.pickerProvider = this.showPicker
+        ? this.providerOptions[0]?.value || ""
+        : "";
       this.$nextTick(() => this.$refs.form?.resetValidation());
     },
     async fetchProviderLocks() {
@@ -221,6 +271,14 @@ export default {
       this.form.externalId = lock.externalId;
       this.form.label = lock.label || this.form.label;
       this.form.providerLocationId = lock.locationId || "";
+      // What the provider lists is what it hands out. For the four providers
+      // the table above knows, its watcher answers the same and overwrites
+      // these two on the next tick; for any other provider the listing is the
+      // only answer there is.
+      if (lock.type) this.form.type = lock.type;
+      if (isLockerAccessPoint(lock) && lock.supportedModes?.length) {
+        this.form.mode = lock.supportedModes[0];
+      }
     },
     async prefillLocation() {
       this.prefilling = true;
@@ -293,10 +351,14 @@ export default {
         location: this.form.location || null,
       };
 
-      if (this.isEdit) {
-        payload.id = this.form.id;
-        payload.validationRules = this.buildValidationRules();
-      } else if (this.validationRulesTouched) {
+      if (this.isEdit) payload.id = this.form.id;
+
+      if (this.isLocker) {
+        // A locker system has no rules to validate - the compartment is opened
+        // through the provider, not at a QR code. Left out on create, the
+        // server would apply its `qrScan` default.
+        payload.validationRules = [];
+      } else if (this.isEdit || this.validationRulesTouched) {
         // Explicitly empty means "no scan needed"; leaving the field out on
         // create is what makes the server apply its qrScan default.
         payload.validationRules = this.buildValidationRules();
@@ -355,16 +417,17 @@ export default {
   >
     <v-card>
       <v-card-title class="d-flex align-center">
-        <v-icon left color="primary">mdi-door-closed-lock</v-icon>
+        <v-icon left color="primary">{{ typeIcon }}</v-icon>
         {{ title }}
       </v-card-title>
       <v-divider />
 
       <v-card-text class="pt-4">
         <v-form ref="form" v-model="valid">
-          <!-- Provider lock picker, create only -->
-          <template v-if="!isEdit">
-            <div class="section-title mb-3">
+          <!-- Provider listing, the way a locker system and optionally a door
+               is taken over -->
+          <template v-if="showPicker">
+            <div class="provider-picker section-title mb-3">
               <v-icon small left>mdi-magnify</v-icon>
               <span class="font-weight-medium">
                 {{ $t("accessPoint.management.picker.title") }}
@@ -395,6 +458,7 @@ export default {
               </v-col>
               <v-col cols="12" md="6">
                 <v-select
+                  ref="lockSelect"
                   v-model="pickerLockId"
                   :items="pickerItems"
                   :item-text="lockText"
@@ -433,6 +497,7 @@ export default {
               </v-col>
               <v-col cols="12" md="2" class="text-right">
                 <v-btn
+                  class="apply-lock"
                   color="primary"
                   outlined
                   :disabled="!pickerLockId"
@@ -466,18 +531,27 @@ export default {
               />
             </v-col>
             <v-col cols="12" md="6">
-              <v-select
-                v-model="form.type"
-                :items="typeOptions"
-                :label="$t('accessPoint.management.fields.type')"
-                background-color="accent"
-                filled
-                dense
-                :rules="requiredRule"
-              />
+              <div class="access-point-type">
+                <div class="text-caption text--secondary">
+                  {{ $t("accessPoint.management.fields.type") }}
+                </div>
+                <v-chip
+                  small
+                  label
+                  :color="isLocker ? 'indigo' : 'primary'"
+                  dark
+                >
+                  <v-icon left small>{{ typeIcon }}</v-icon>
+                  {{ typeLabel }}
+                </v-chip>
+                <div class="text-caption text--secondary mt-1">
+                  {{ $t("accessPoint.management.fields.typeHint") }}
+                </div>
+              </div>
             </v-col>
             <v-col cols="12" md="6">
               <v-combobox
+                class="provider-field"
                 v-model="form.provider"
                 :items="providerIds"
                 :label="$t('accessPoint.management.fields.provider')"
@@ -491,7 +565,7 @@ export default {
               <v-text-field
                 v-model="form.externalId"
                 :label="$t('accessPoint.management.fields.externalId')"
-                :hint="$t('accessPoint.management.fields.externalIdHint')"
+                :hint="externalIdHint"
                 persistent-hint
                 background-color="accent"
                 filled
@@ -507,7 +581,7 @@ export default {
                 dense
               />
             </v-col>
-            <v-col cols="12" md="6">
+            <v-col v-if="!isLocker" cols="12" md="6">
               <v-select
                 v-model="form.mode"
                 :items="modeOptions"
@@ -550,73 +624,77 @@ export default {
             </v-col>
           </v-row>
 
-          <!-- Validation rules -->
-          <div class="section-title mt-4 mb-2">
-            <v-icon small left>mdi-shield-check</v-icon>
-            <span class="font-weight-medium">
-              {{ $t("accessPoint.management.rules.title") }}
-            </span>
-          </div>
-          <v-switch
-            :input-value="qrScanRequired"
-            color="primary"
-            hide-details
-            class="mt-0"
-            @change="onValidationRuleChange($event)"
-          >
-            <template v-slot:label>
-              <div>
-                <div class="font-weight-medium">
-                  {{ $t("accessPoint.management.rules.qrScan") }}
-                </div>
-                <div class="text-caption text--secondary">
-                  {{ $t("accessPoint.management.rules.qrScanHint") }}
-                </div>
-              </div>
-            </template>
-          </v-switch>
-          <div
-            v-if="!isEdit && !validationRulesTouched"
-            class="text-caption text--secondary mt-2"
-          >
-            {{ $t("accessPoint.management.rules.defaultHint") }}
-          </div>
-
-          <!-- Location -->
-          <div class="section-title mt-6 mb-3">
-            <v-icon small left>mdi-map-marker</v-icon>
-            <span class="font-weight-medium">
-              {{ $t("accessPoint.management.location.title") }}
-            </span>
-          </div>
-          <AddressLookup
-            :value="form.location"
-            :label="$t('accessPoint.management.location.address')"
-            @input="onLocationChange"
-          />
-          <div v-if="coordinates" class="text-caption text--secondary mb-2">
-            {{ $t("accessPoint.management.location.coordinates") }}:
-            {{ coordinates }}
-          </div>
-          <div v-if="!isEdit" class="text-caption text--secondary mb-2">
-            {{ $t("accessPoint.management.location.prefillAfterSave") }}
-          </div>
-          <div v-if="canPrefillLocation" class="mb-2">
-            <v-btn
-              small
-              outlined
+          <!-- Mode, QR rules and address describe a door; a locker system has
+               none of them -->
+          <template v-if="!isLocker">
+            <!-- Validation rules -->
+            <div class="section-title mt-4 mb-2">
+              <v-icon small left>mdi-shield-check</v-icon>
+              <span class="font-weight-medium">
+                {{ $t("accessPoint.management.rules.title") }}
+              </span>
+            </div>
+            <v-switch
+              :input-value="qrScanRequired"
               color="primary"
-              :loading="prefilling"
-              :disabled="prefilling"
-              @click="prefillLocation"
+              hide-details
+              class="mt-0"
+              @change="onValidationRuleChange($event)"
             >
-              <v-icon left small>mdi-crosshairs-gps</v-icon>
-              {{ $t("accessPoint.management.location.prefill") }}
-            </v-btn>
-          </div>
-          <div v-if="prefillHint" class="text-caption text--secondary mb-2">
-            {{ prefillHint }}
-          </div>
+              <template v-slot:label>
+                <div>
+                  <div class="font-weight-medium">
+                    {{ $t("accessPoint.management.rules.qrScan") }}
+                  </div>
+                  <div class="text-caption text--secondary">
+                    {{ $t("accessPoint.management.rules.qrScanHint") }}
+                  </div>
+                </div>
+              </template>
+            </v-switch>
+            <div
+              v-if="!isEdit && !validationRulesTouched"
+              class="text-caption text--secondary mt-2"
+            >
+              {{ $t("accessPoint.management.rules.defaultHint") }}
+            </div>
+
+            <!-- Location -->
+            <div class="section-title mt-6 mb-3">
+              <v-icon small left>mdi-map-marker</v-icon>
+              <span class="font-weight-medium">
+                {{ $t("accessPoint.management.location.title") }}
+              </span>
+            </div>
+            <AddressLookup
+              :value="form.location"
+              :label="$t('accessPoint.management.location.address')"
+              @input="onLocationChange"
+            />
+            <div v-if="coordinates" class="text-caption text--secondary mb-2">
+              {{ $t("accessPoint.management.location.coordinates") }}:
+              {{ coordinates }}
+            </div>
+            <div v-if="!isEdit" class="text-caption text--secondary mb-2">
+              {{ $t("accessPoint.management.location.prefillAfterSave") }}
+            </div>
+            <div v-if="canPrefillLocation" class="mb-2">
+              <v-btn
+                small
+                outlined
+                color="primary"
+                :loading="prefilling"
+                :disabled="prefilling"
+                @click="prefillLocation"
+              >
+                <v-icon left small>mdi-crosshairs-gps</v-icon>
+                {{ $t("accessPoint.management.location.prefill") }}
+              </v-btn>
+            </div>
+            <div v-if="prefillHint" class="text-caption text--secondary mb-2">
+              {{ prefillHint }}
+            </div>
+          </template>
 
           <!-- Advanced -->
           <v-expansion-panels
@@ -659,7 +737,12 @@ export default {
         <v-btn text :disabled="saving" @click="close">
           {{ $t("accessPoint.management.cancel") }}
         </v-btn>
-        <v-btn color="primary" :loading="saving" @click="submit">
+        <v-btn
+          class="save-access-point"
+          color="primary"
+          :loading="saving"
+          @click="submit"
+        >
           {{ $t("accessPoint.management.save") }}
         </v-btn>
       </v-card-actions>
