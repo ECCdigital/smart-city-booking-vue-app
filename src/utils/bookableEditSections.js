@@ -3,6 +3,8 @@
  * DOM id: be-section-{id}
  */
 
+import { providerHandles } from "@/utils/bookableExternalProviders";
+
 export function bookableEditSectionElementId(sectionId) {
   return `be-section-${sectionId}`;
 }
@@ -30,20 +32,8 @@ function handlesExternalPricing(bookable) {
   if (!Array.isArray(providers)) return false;
   return providers.some(
     (provider) =>
-      provider?.provider === "ifbs" &&
-      provider?.active === true &&
-      Array.isArray(provider.handles) &&
-      provider.handles.includes("pricing")
+      provider?.provider === "ifbs" && providerHandles(provider, "pricing")
   );
-}
-
-function lockerSystemType(bookable) {
-  const units = bookable?.lockerDetails?.units || [];
-  if (!bookable?.lockerDetails?.active) return null;
-  if (!units.length) return "select";
-  const type = units[0]?.lockerSystem;
-  if (type === "pareva" || type === "ifbs") return type;
-  return "select";
 }
 
 /** All known sections (labelKey → i18n bookable.edit.sections.*) */
@@ -203,24 +193,6 @@ const ALL_SECTIONS = [
     type: "scroll",
   },
   {
-    tabKey: "accessLocks",
-    id: "lockers-select",
-    labelKey: "bookable.edit.sections.lockersSelect",
-    type: "scroll",
-  },
-  {
-    tabKey: "accessLocks",
-    id: "lockers-pareva",
-    labelKey: "bookable.edit.sections.lockersPareva",
-    type: "scroll",
-  },
-  {
-    tabKey: "accessLocks",
-    id: "lockers-ifbs",
-    labelKey: "bookable.edit.sections.lockersIfbs",
-    type: "scroll",
-  },
-  {
     tabKey: "additional",
     id: "additional-required-fields",
     labelKey: "bookable.edit.sections.additionalRequiredFields",
@@ -254,9 +226,6 @@ function isSectionVisible(section, { bookable, expertMode }) {
     "bookingType-buffer": () => mode === "schedule",
     "openingHours-regular": () => isTimeWindowMode,
     "openingHours-special": () => isTimeWindowMode,
-    "lockers-select": () => lockerSystemType(bookable) === "select",
-    "lockers-pareva": () => lockerSystemType(bookable) === "pareva",
-    "lockers-ifbs": () => lockerSystemType(bookable) === "ifbs",
   };
 
   const check = visibilityById[section.id];

@@ -433,7 +433,9 @@
                 >
                   <template v-slot:label>
                     <div>
-                      <div class="font-weight-medium">Gutscheine aktivieren</div>
+                      <div class="font-weight-medium">
+                        Gutscheine aktivieren
+                      </div>
                       <div class="text-caption text--secondary">
                         Ermöglicht die Verwendung von Gutscheinen
                       </div>
@@ -960,6 +962,7 @@ import debounce from "lodash/debounce";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
 import ApiLockerService from "@/services/api/ApiLockerService";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
+import { providerHandles } from "@/utils/bookableExternalProviders";
 
 const DEFAULT_EXTERNAL_PROVIDER = {
   active: false,
@@ -1052,26 +1055,13 @@ export default {
       return this.findIfbsProvider() || this._ifbsProviderFallback;
     },
     handlesPricing() {
-      const provider = this.externalProvider;
-      return !!(
-        provider.active && provider.handles && provider.handles.includes("pricing")
-      );
+      return providerHandles(this.externalProvider, "pricing");
     },
     handlesAvailability() {
-      const provider = this.externalProvider;
-      return !!(
-        provider.active &&
-        provider.handles &&
-        provider.handles.includes("availability")
-      );
+      return providerHandles(this.externalProvider, "availability");
     },
     handlesMaxAmount() {
-      const provider = this.externalProvider;
-      return !!(
-        provider.active &&
-        provider.handles &&
-        provider.handles.includes("maxAmount")
-      );
+      return providerHandles(this.externalProvider, "maxAmount");
     },
     hasIfbsData() {
       return !!this.ifbsPrices || !!this.ifbsStatus;

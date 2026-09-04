@@ -67,7 +67,6 @@ const state = {
     checkoutBookableIds: [],
 
     attachments: [],
-    lockerDetails: { active: false, units: [] },
     requiredFields: [],
     eventId: null,
     ownerUserId: "",
@@ -170,7 +169,6 @@ const mutations = {
       checkoutBookableIds: [],
 
       attachments: [],
-      lockerDetails: { active: false, units: [] },
       requiredFields: [],
       eventId: null,
       ownerUserId: "",

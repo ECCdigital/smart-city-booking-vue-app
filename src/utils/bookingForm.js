@@ -12,7 +12,6 @@ export function createEmptyBooking(tenantId) {
     isCommitted: false,
     isPayed: false,
     location: null,
-    lockerInfo: null,
     mail: null,
     name: null,
     paymentProvider: null,

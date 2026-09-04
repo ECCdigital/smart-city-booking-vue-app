@@ -191,9 +191,6 @@
         "customFieldsDefinitions": "Felder definieren",
         "relatedCheckout": "Zusatzoptionen",
         "relatedHierarchy": "Hierarchie",
-        "lockersSelect": "System wählen",
-        "lockersPareva": "Pareva",
-        "lockersIfbs": "IFBS",
         "additionalRequiredFields": "Pflichtfelder",
         "additionalNotes": "Buchungshinweise"
       },
@@ -946,7 +943,7 @@
       },
       "types": {
         "door": "Tür",
-        "locker": "Schließfach"
+        "locker": "Anlage"
       },
       "modes": {
         "authorization": "PIN-Code",
@@ -1281,22 +1278,41 @@
       }
     },
     "bookable": {
-      "title": "Türen / Zugang",
-      "activate": "Türen aktivieren",
-      "activateHint": "Buchende erhalten zeitbasierte Zugangsberechtigungen oder können Türen aus der Buchung heraus öffnen.",
+      "title": "Zugang & Schließsysteme",
+      "intro": "Ordnen Sie diesem Buchungsobjekt Türen und Schließfachanlagen zu. Angelegt und eingerichtet werden sie zentral beim Mandanten.",
+      "assignedCount": "{count} zugeordnet",
+      "activate": "Zugang aktivieren",
+      "activateHint": "Buchende erhalten für die zugeordneten Zugangspunkte zeitbasierte Berechtigungen und können sie aus der Buchung heraus bedienen.",
+      "writeForbidden": "Ihnen fehlt die Berechtigung, dieses Buchungsobjekt zu ändern. Die Zuordnung von Zugangspunkten lässt sich deshalb hier nicht bearbeiten.",
       "reload": "Neu laden",
-      "selectTitle": "Zugangspunkte auswählen",
-      "select": "Zugangspunkte",
-      "selectHint": "Mehrfachauswahl möglich. Derselbe Zugangspunkt darf in mehreren Buchungsobjekten verwendet werden.",
-      "selectedCount": "{count} ausgewählt",
+      "capacity": {
+        "title": "Stückzahl",
+        "hint": "Die Stückzahl dieses Buchungsobjekts. Sie begrenzt, wie viele Fächer an einer zugeordneten Anlage gleichzeitig belegt sein können. Leer heißt unbegrenzt.",
+        "label": "Stückzahl",
+        "externalHint": "Die Stückzahl meldet der Anbieter. Sie lässt sich hier nicht ändern und begrenzt, wie viele Fächer an einer zugeordneten Anlage gleichzeitig belegt sein können."
+      },
+      "selectTitle": "Zugeordnete Zugangspunkte",
+      "assign": "Zuordnen",
+      "allAssigned": "Alle Zugangspunkte sind bereits zugeordnet.",
       "noneAvailable": "Für diesen Mandanten ist noch kein Zugangspunkt angelegt.",
-      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier wählen Sie nur aus, welche davon dieses Buchungsobjekt öffnet.",
+      "table": {
+        "point": "Zugangspunkt",
+        "type": "Typ",
+        "provider": "Anbieter",
+        "grants": "Was die Buchung bekommt",
+        "remove": "Entfernen"
+      },
+      "grants": {
+        "door": "Geteilter Zugang im Buchungszeitraum",
+        "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt"
+      },
+      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
       "manageLink": "Zugangspunkte verwalten",
       "readForbidden": "Ihnen fehlt die Berechtigung, die Zugangspunkte dieses Mandanten zu lesen. Bitte wenden Sie sich an eine Person mit Mandanten-Rechten.",
       "unknownTitle": "Unbekannte Zugangspunkte in der Auswahl",
       "unknownHint": "Zu diesen IDs gibt es keinen Zugangspunkt dieses Mandanten – vermutlich wurden sie gelöscht. Entfernen Sie sie, sonst lässt sich das Buchungsobjekt nicht speichern.",
       "emptyTitle": "Noch keine Zugangspunkte zugeordnet",
-      "emptyHint": "Wählen Sie oben einen oder mehrere Zugangspunkte aus.",
+      "emptyHint": "Über „Zuordnen“ fügen Sie Türen und Anlagen hinzu.",
       "buffer": {
         "title": "Pufferzeiten",
         "hint": "Zeitspanne vor und nach dem Buchungszeitraum, in der die Zugangspunkte zusätzlich bedient werden dürfen. Der Wert gilt für alle ausgewählten Zugangspunkte.",
@@ -1307,7 +1323,8 @@
       },
       "saveError": {
         "title": "Speichern fehlgeschlagen"
-      }
+      },
+      "pickerLoading": "Zugangspunkte werden geladen ..."
     },
     "booking": {
       "title": "Tür-Steuerung",

@@ -27,6 +27,10 @@ export default {
     const formData = { ...bookable };
     formData.tenantId = t;
 
+    // Derived from the access points on the way out, dropped on the way in:
+    // sending it would claim a write permission that does not exist.
+    delete formData.lockerDetails;
+
     if (formData.priceEur && typeof formData.priceEur === "string") {
       formData.priceEur = formData.priceEur.replace(",", ".");
       formData.priceEur = Number(formData.priceEur);
@@ -64,6 +68,7 @@ export default {
 
           delete bookable.id;
           delete bookable._id;
+          delete bookable.lockerDetails;
 
           bookable.title = `${bookable.title} (Kopie)`;
 

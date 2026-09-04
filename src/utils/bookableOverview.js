@@ -399,29 +399,21 @@ function getDiscountsLabel(bookable) {
   return parts.join(", ");
 }
 
-const LOCKER_SYSTEM_LABELS = {
-  ifbs: "IFBS",
-  pareva: "Pareva",
-};
-
-function getLockerSystemsLabel(bookable) {
-  const details = bookable?.lockerDetails;
+/**
+ * How much access this bookable hands out. Doors and locker systems are one
+ * kind of thing since the locker fold, so the trait counts assignments rather
+ * than naming providers - the provider belongs to the access point, not here.
+ */
+function getAccessPointsLabel(bookable) {
+  const details = bookable?.accessPointDetails;
   if (!details?.active) return "";
 
-  const units = Array.isArray(details.units) ? details.units : [];
-  if (!units.length) return "Aktiviert";
+  const ids = Array.isArray(details.accessPointIds)
+    ? details.accessPointIds
+    : [];
+  if (!ids.length) return "Aktiviert, nichts zugeordnet";
 
-  const types = [
-    ...new Set(
-      units
-        .map((unit) => unit?.lockerSystem)
-        .filter(Boolean)
-        .map((type) => LOCKER_SYSTEM_LABELS[type] || type)
-    ),
-  ];
-
-  if (!types.length) return "Konfiguriert";
-  return types.join(", ");
+  return countLabel(ids.length, "Zugangspunkt", "Zugangspunkte");
 }
 
 /**
@@ -563,15 +555,15 @@ export function getBookableOverviewTraits(bookable, options = {}) {
     }
   }
 
-  const lockerSystems = getLockerSystemsLabel(bookable);
-  if (lockerSystems) {
+  const accessPoints = getAccessPointsLabel(bookable);
+  if (accessPoints) {
     traits.push(
       trait(
-        "lockerSystems",
-        "Schließsystem",
-        lockerSystems,
+        "accessPoints",
+        "Zugang",
+        accessPoints,
         "accessLocks",
-        "mdi-lock-outline"
+        "mdi-shield-key-outline"
       )
     );
   }
