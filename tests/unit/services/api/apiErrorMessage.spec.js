@@ -3,6 +3,7 @@ import i18n from "@/language/index";
 import {
   getApiErrorMessage,
   isForbiddenError,
+  isOutOfReach,
   unpackBlobErrorBody,
 } from "@/services/api/apiErrorMessage";
 
@@ -343,5 +344,26 @@ describe("isForbiddenError", () => {
     expect(isForbiddenError(new Error("Network Error"))).toBe(false);
     expect(isForbiddenError(undefined)).toBe(false);
     expect(isForbiddenError(null)).toBe(false);
+ * Since 4.3.x a record the caller may not see answers 404 rather than 403, so
+ * that its existence stays hidden. Wherever the UI only asks "may this be
+ * shown at all?", the two statuses are one question.
+ */
+describe("isOutOfReach", () => {
+  it("reads a denial as out of reach", () => {
+    expect(isOutOfReach({ response: { status: 403 } })).toBe(true);
+  });
+
+  it("reads a 404 as out of reach too", () => {
+    expect(isOutOfReach({ response: { status: 404 } })).toBe(true);
+  });
+
+  it("does not read any other status as out of reach", () => {
+    expect(isOutOfReach({ response: { status: 401 } })).toBe(false);
+    expect(isOutOfReach({ response: { status: 500 } })).toBe(false);
+  });
+
+  it("does not read an error without a response as out of reach", () => {
+    expect(isOutOfReach(new Error("Network Error"))).toBe(false);
+    expect(isOutOfReach(undefined)).toBe(false);
   });
 });

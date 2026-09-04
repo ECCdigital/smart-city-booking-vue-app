@@ -3,6 +3,7 @@ import BookableEditLockerSystems from "@/components/Bookable/Edit/BookableEditLo
 import BookableEditAccessPoints from "@/components/Bookable/Edit/BookableEditAccessPoints.vue";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { isOutOfReach } from "@/services/api/apiErrorMessage";
 import { defaultAccessPointDetails } from "@/utilities/access-points";
 import { mapGetters } from "vuex";
 
@@ -133,7 +134,9 @@ export default {
         this.tenantAppsReadable = true;
       } catch (error) {
         this.tenantApps = [];
-        this.tenantAppsReadable = error.response?.status !== 403;
+        // Out of reach means "unknown", not "empty" - reading it as an empty
+        // app list would claim the provider is not configured.
+        this.tenantAppsReadable = !isOutOfReach(error);
       } finally {
         this.loadingApps = false;
       }

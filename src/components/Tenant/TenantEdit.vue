@@ -721,15 +721,15 @@
       <v-divider class="mb-5"></v-divider>
       <v-row>
         <v-col class="col-12 col-md-6">
-            <v-alert type="info" border="left" elevation="1" colored-border>
-              <span>
-                Mit dieser Option können Sie das Erstellen einer Veranstaltung
-                standardmäßig auf den einfachen Modus umstellen. Dieser Modus
-                ist für die meisten Anwendungsfälle ausreichend. Das Erstellen
-                einer detaillierte Veranstaltung lässt sich weiterhin über den
-                "Veranstaltung Erstellen" Knopf auswählen.
-              </span>
-            </v-alert>
+          <v-alert type="info" border="left" elevation="1" colored-border>
+            <span>
+              Mit dieser Option können Sie das Erstellen einer Veranstaltung
+              standardmäßig auf den einfachen Modus umstellen. Dieser Modus ist
+              für die meisten Anwendungsfälle ausreichend. Das Erstellen einer
+              detaillierte Veranstaltung lässt sich weiterhin über den
+              "Veranstaltung Erstellen" Knopf auswählen.
+            </span>
+          </v-alert>
         </v-col>
       </v-row>
       <v-row>
@@ -795,7 +795,12 @@
 
                 <v-row no-gutters class="mt-4">
                   <v-col cols="12">
-                    <v-alert type="info" border="left" elevation="1" colored-border>
+                    <v-alert
+                      type="info"
+                      border="left"
+                      elevation="1"
+                      colored-border
+                    >
                       Weisen Sie jedem Ereignis (Buchungs-Event) einen Status
                       zu.
                       <br />
@@ -902,6 +907,15 @@
       </v-row>
       <h3 class="mb-5 mt-5">Katalog</h3>
       <v-divider class="mb-5"></v-divider>
+      <v-alert
+        v-if="catalogUnavailable"
+        type="warning"
+        border="left"
+        elevation="1"
+        colored-border
+      >
+        {{ $t("tenant.catalog.unavailable") }}
+      </v-alert>
       <CatalogSettings :catalog.sync="catalog" :allow-type-change="false" />
     </v-form>
 
@@ -1056,6 +1070,10 @@ export default {
       },
       tenant: {},
       catalog: {},
+      // The catalog request answered 404, which means either "no catalog yet"
+      // or "not yours" - the screen shows the empty default either way and has
+      // to say that saving it may overwrite a catalog it could not read.
+      catalogUnavailable: false,
       defaultCatalog: {
         type: "single",
         tenantId: "",
@@ -1168,9 +1186,16 @@ export default {
         this.isLoading = true;
         const response = await ApiCatalogService.getCatalog(this.tenantId);
         this.catalog = response.data;
+        this.catalogUnavailable = false;
       } catch (e) {
+        // A 404 used to mean one thing: this tenant has no catalog yet, so
+        // offer an empty one. Since 4.3.x a catalog outside the caller's reach
+        // answers the same 404, and the empty default would then be saved over
+        // a catalog nobody on this screen ever saw. The default stays - a
+        // first catalog has to be creatable - but the screen says so.
         if (e.response && e.response.status === 404) {
           this.catalog = { ...this.defaultCatalog, tenantId: this.tenantId };
+          this.catalogUnavailable = true;
         }
       } finally {
         this.isLoading = false;
@@ -1205,7 +1230,9 @@ export default {
           };
 
           const catalogWithoutTenantID = removeTenantID(this.catalog);
-          const defaultCatalogWithoutTenantID = removeTenantID(this.defaultCatalog);
+          const defaultCatalogWithoutTenantID = removeTenantID(
+            this.defaultCatalog
+          );
           const areEqual =
             JSON.stringify(catalogWithoutTenantID) ===
             JSON.stringify(defaultCatalogWithoutTenantID);
@@ -1233,7 +1260,7 @@ export default {
           await this.addToast({
             message: getApiErrorMessage(
               e,
-              "Fehler beim Speichern der Änderungen.",
+              "Fehler beim Speichern der Änderungen."
             ),
             type: "error",
           });

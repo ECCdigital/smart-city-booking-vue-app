@@ -46,6 +46,7 @@ function createHost() {
 export function mountComponent(component, options = {}) {
   const wrapper = mount(component, {
     vuetify: new Vuetify(),
+    i18n,
     attachTo: createHost(),
     i18n,
     ...options,

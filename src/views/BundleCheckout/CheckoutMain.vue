@@ -91,6 +91,7 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import ToastService from "@/services/ToastService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import { formatCheckoutValidationError } from "@/utils/checkoutErrors";
+import { isOutOfReach } from "@/services/api/apiErrorMessage";
 
 export default {
   name: "CheckoutMain",
@@ -159,7 +160,7 @@ export default {
     this.tenant = this.$route.query.tenant;
     this.leadItem.bookableId = this.$route.query.id;
     this.leadItem.amount = parseInt(this.$route.query.amount || 1);
-    this.timeBegin = this.parseStringToTimestamp(this.$route.query.start) ;
+    this.timeBegin = this.parseStringToTimestamp(this.$route.query.start);
     this.timeEnd = this.parseStringToTimestamp(this.$route.query.end);
     await this.init();
     await this.fetchTenant();
@@ -456,9 +457,14 @@ export default {
         this.preventBooking = false;
       } catch (error) {
         console.log("Error while checking checkout permissions", error);
+        // `init` awaits this method, so an error without a response - a
+        // network failure - must not throw here: it would leave the checkout
+        // loading forever.
         this.preventBooking = true;
-        this.loginRequired = error.response.status === 401;
-        this.bookingPermission = error.response.status !== 403;
+        this.loginRequired = error.response?.status === 401;
+        // A bookable out of reach reads like a denied one: the customer may
+        // not book it either way, and the permission step is what says so.
+        this.bookingPermission = !isOutOfReach(error);
       }
     },
 
@@ -718,7 +724,7 @@ export default {
 
     parseStringToTimestamp(dateString) {
       const timestamp = parseInt(dateString);
-      if(!isNaN(timestamp)) {
+      if (!isNaN(timestamp)) {
         return timestamp;
       }
       return null;
