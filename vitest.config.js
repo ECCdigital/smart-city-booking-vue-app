@@ -8,6 +8,9 @@ import vue from "@vitejs/plugin-vue2";
 export default defineConfig({
   plugins: [vue()],
   resolve: {
+    // The webpack config resolves `.vue` without the extension, and several
+    // views import their layout that way; Vite does not do so by default.
+    extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "@tests": fileURLToPath(new URL("./tests", import.meta.url)),

@@ -1,12 +1,19 @@
-import { describe, expect, it } from "vitest";
-import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+import { describe, expect, it, vi } from "vitest";
+import i18n from "@/language/index";
+import {
+  getApiErrorMessage,
+  isForbiddenError,
+  unpackBlobErrorBody,
+} from "@/services/api/apiErrorMessage";
 
 const FALLBACK = "Fallback";
+const FORBIDDEN = i18n.t("errors.forbidden-codes.forbidden");
 
 /**
- * Characterisation: today `getApiErrorMessage` only looks at the response body
- * when the status is exactly 400. Every other status - 403 included - returns
- * the fallback untouched. Pinned here before the permissions strand changes it.
+ * Characterisation: the 400 branch is unchanged by the permissions strand and
+ * pinned here. The 403 branch was added for the 4.3.x error shape
+ * `{ error, code, statusCode, params }`; the test that used to pin "a 403 body
+ * is ignored" was rewritten in the same commit, deliberately.
  */
 describe("getApiErrorMessage", () => {
   describe("on a 400 response", () => {
@@ -44,8 +51,8 @@ describe("getApiErrorMessage", () => {
     });
   });
 
-  describe("on any other status", () => {
-    it("ignores a 403 body entirely", () => {
+  describe("on a 403 response", () => {
+    it("translates the generic `forbidden` code", () => {
       const error = {
         response: {
           status: 403,
@@ -53,13 +60,102 @@ describe("getApiErrorMessage", () => {
             error: "ForbiddenError",
             code: "forbidden",
             statusCode: 403,
-            message: "Not permitted",
+            params: {},
           },
         },
       };
-      expect(getApiErrorMessage(error, FALLBACK)).toBe(FALLBACK);
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(FORBIDDEN);
     });
 
+    it("uses the generic message for a code without an entry", () => {
+      const error = {
+        response: {
+          status: 403,
+          data: {
+            error: "ForbiddenError",
+            code: "booking_already_rejected",
+            statusCode: 403,
+            params: {},
+          },
+        },
+      };
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(FORBIDDEN);
+    });
+
+    it("hands `params` to the translation", () => {
+      const spy = vi.spyOn(i18n, "t");
+      const params = { bookingId: "42" };
+      getApiErrorMessage(
+        {
+          response: {
+            status: 403,
+            data: {
+              error: "ForbiddenError",
+              code: "forbidden",
+              statusCode: 403,
+              params,
+            },
+          },
+        },
+        FALLBACK
+      );
+      expect(spy).toHaveBeenCalledWith(
+        "errors.forbidden-codes.forbidden",
+        params
+      );
+    });
+
+    it("survives `params` that are not an object", () => {
+      const error = {
+        response: {
+          status: 403,
+          data: {
+            error: "ForbiddenError",
+            code: "forbidden",
+            statusCode: 403,
+            params: "nonsense",
+          },
+        },
+      };
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(FORBIDDEN);
+    });
+
+    it("treats a 403 without the new shape as a generic denial", () => {
+      // The BFF answers a stale CSRF token with a shape of its own.
+      expect(
+        getApiErrorMessage(
+          {
+            response: {
+              status: 403,
+              data: { success: false, message: "CSRF check failed" },
+            },
+          },
+          FALLBACK
+        )
+      ).toBe(FORBIDDEN);
+      expect(
+        getApiErrorMessage(
+          { response: { status: 403, data: "Forbidden" } },
+          FALLBACK
+        )
+      ).toBe(FORBIDDEN);
+      expect(getApiErrorMessage({ response: { status: 403 } }, FALLBACK)).toBe(
+        FORBIDDEN
+      );
+    });
+
+    it("ignores a `code` that does not come with `statusCode` 403", () => {
+      const error = {
+        response: {
+          status: 403,
+          data: { code: "some_other_code", statusCode: 400 },
+        },
+      };
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(FORBIDDEN);
+    });
+  });
+
+  describe("on any other status", () => {
     it("ignores a 404 and a 500 body", () => {
       expect(
         getApiErrorMessage(
@@ -86,5 +182,126 @@ describe("getApiErrorMessage", () => {
 
   it("passes the fallback through unchanged, whatever it is", () => {
     expect(getApiErrorMessage(undefined, undefined)).toBeUndefined();
+  });
+});
+
+function blobError(body, { status = 403, type = "application/json" } = {}) {
+  const error = new Error("Request failed with status code " + status);
+  error.response = { status, data: new Blob([body], { type }) };
+  return error;
+}
+
+describe("unpackBlobErrorBody", () => {
+  it("returns the error untouched when the body is not a Blob", async () => {
+    const error = { response: { status: 403, data: { code: "forbidden" } } };
+    await expect(unpackBlobErrorBody(error)).resolves.toBe(error);
+  });
+
+  it("returns errors without a response untouched", async () => {
+    const error = new Error("Network Error");
+    await expect(unpackBlobErrorBody(error)).resolves.toBe(error);
+    await expect(unpackBlobErrorBody(undefined)).resolves.toBeUndefined();
+  });
+
+  it("parses a JSON body", async () => {
+    const unpacked = await unpackBlobErrorBody(
+      blobError(JSON.stringify({ error: "ForbiddenError", code: "forbidden" }))
+    );
+    expect(unpacked.response.data).toEqual({
+      error: "ForbiddenError",
+      code: "forbidden",
+    });
+    expect(unpacked.response.status).toBe(403);
+  });
+
+  it("returns a non-JSON body as trimmed text", async () => {
+    const unpacked = await unpackBlobErrorBody(
+      blobError("  Template is invalid  ", {
+        status: 400,
+        type: "text/plain",
+      })
+    );
+    expect(unpacked.response.data).toBe("Template is invalid");
+  });
+
+  it("returns null for an empty body", async () => {
+    const unpacked = await unpackBlobErrorBody(blobError("   "));
+    expect(unpacked.response.data).toBeNull();
+  });
+
+  it("returns null when the Blob cannot be read", async () => {
+    const error = new Error("boom");
+    const blob = new Blob(["{}"]);
+    vi.spyOn(blob, "text").mockRejectedValue(new Error("unreadable"));
+    error.response = { status: 403, data: blob };
+    const unpacked = await unpackBlobErrorBody(error);
+    expect(unpacked.response.data).toBeNull();
+  });
+
+  it("keeps the axios message reachable", async () => {
+    const unpacked = await unpackBlobErrorBody(blobError("{}"));
+    expect(unpacked.message).toBe("Request failed with status code 403");
+  });
+
+  it("makes a blob 403 readable for getApiErrorMessage", async () => {
+    const unpacked = await unpackBlobErrorBody(
+      blobError(
+        JSON.stringify({
+          error: "ForbiddenError",
+          code: "forbidden",
+          statusCode: 403,
+          params: {},
+        })
+      )
+    );
+    expect(getApiErrorMessage(unpacked, FALLBACK)).toBe(FORBIDDEN);
+  });
+});
+
+/**
+ * The predicate the list screens read. It answers one question - "was this
+ * refused?" - and deliberately says nothing about an empty result: a 200 with
+ * `[]` means "nothing there", a 403 means "no access", and the two must stay
+ * tellable apart.
+ *
+ * Reading the status alone means the BFF's own CSRF 403 matches too. That is
+ * pinned as the current imprecision, not endorsed: spec §E3 moves CSRF off 403
+ * because a stale session is not a denial. No caller of this predicate can hit
+ * it - the CSRF guard fires on writes only.
+ */
+describe("isForbiddenError", () => {
+  it("is true for a 403, whatever the body looks like", () => {
+    expect(
+      isForbiddenError({
+        response: {
+          status: 403,
+          data: {
+            error: "ForbiddenError",
+            code: "forbidden",
+            statusCode: 403,
+            params: {},
+          },
+        },
+      })
+    ).toBe(true);
+    expect(isForbiddenError({ response: { status: 403 } })).toBe(true);
+    // Known imprecision, see the block comment above.
+    expect(
+      isForbiddenError({
+        response: { status: 403, data: { message: "CSRF check failed" } },
+      })
+    ).toBe(true);
+  });
+
+  it("is false for every other status", () => {
+    expect(isForbiddenError({ response: { status: 401 } })).toBe(false);
+    expect(isForbiddenError({ response: { status: 404 } })).toBe(false);
+    expect(isForbiddenError({ response: { status: 500 } })).toBe(false);
+  });
+
+  it("is false when there is no response at all", () => {
+    expect(isForbiddenError(new Error("Network Error"))).toBe(false);
+    expect(isForbiddenError(undefined)).toBe(false);
+    expect(isForbiddenError(null)).toBe(false);
   });
 });

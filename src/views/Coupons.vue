@@ -1,5 +1,12 @@
 <template>
   <AdminLayout class="pb-15">
+    <v-row v-if="couponsForbidden">
+      <v-col cols="12">
+        <v-alert type="warning" elevation="2">
+          {{ $t("coupon.list.forbidden") }}
+        </v-alert>
+      </v-col>
+    </v-row>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12">
         <Search
@@ -10,17 +17,25 @@
           :show-filters="false"
         ></Search>
       </v-col>
-      <v-col cols="12" class="mx-xs-auto d-flex flex-column mb-10" height="100%">
-        <div v-if="loading" class="elevation-2" style="border-radius: 25px; overflow: hidden;">
+      <v-col
+        cols="12"
+        class="mx-xs-auto d-flex flex-column mb-10"
+        height="100%"
+      >
+        <div
+          v-if="loading"
+          class="elevation-2"
+          style="border-radius: 25px; overflow: hidden"
+        >
           <v-skeleton-loader
             type="table-thead, table-tbody, table-tfoot"
             :types="{
-          'table-tbody': 'table-row-divider@6',
-        }"
+              'table-tbody': 'table-row-divider@6',
+            }"
           ></v-skeleton-loader>
         </div>
         <v-data-table
-          v-else
+          v-else-if="!couponsForbidden"
           :headers="headers"
           :items="displayedCoupons"
           :footer-props="{
@@ -125,6 +140,7 @@ import AdminLayout from "@/layouts/Admin.vue";
 import CouponEdit from "../components/Coupon/CouponEdit.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiCouponService from "@/services/api/ApiCouponService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import CouponDeleteConformationDialog from "@/components/Coupon/CouponDeleteConformationDialog.vue";
 import CouponPermissionService from "@/services/permissions/CouponPermissionService";
 import Search from "@/components/commons/Search.vue";
@@ -141,6 +157,7 @@ export default {
     return {
       search: "",
       openEditDialog: false,
+      couponsForbidden: false,
       api: {
         coupons: [],
       },
@@ -219,6 +236,7 @@ export default {
     },
     fetchCoupons() {
       this.startLoading("fetch-coupons");
+      this.couponsForbidden = false;
 
       ApiCouponService.getCoupons(this.tenantId)
         .then((response) => {
@@ -228,6 +246,9 @@ export default {
           this.stopLoading("fetch-coupons");
         })
         .catch((error) => {
+          // A 403 means "no reach", not "no discount codes" - an empty table
+          // would claim the second. Every other failure keeps the old silence.
+          this.couponsForbidden = isForbiddenError(error);
           console.log(error);
         });
     },

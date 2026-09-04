@@ -29,13 +29,7 @@ import InstanceTenants from "@/views/Management/InstanceTenants.vue";
 import RuleEngineRules from "@/views/Management/RuleEngineRules.vue";
 import RuleEngineEdit from "@/views/Management/RuleEngineEdit.vue";
 import RuleEngineExecutions from "@/views/Management/RuleEngineExecutions.vue";
-import { pipeline } from "./middleware";
-
-import { requiresAuth } from "./middlewares/auth";
-import { checkGroupBooking } from "./middlewares/groupBooking";
-import { checkInterface } from "./middlewares/interface";
-import { requireTenant } from "./middlewares/requireTenant";
-import { finalAuthRedirect } from "./middlewares/finalAuth";
+import { middlewares, pipeline } from "./middleware";
 
 Vue.use(VueRouter);
 
@@ -603,13 +597,6 @@ if (process.env.BASE_URL) {
 const router = new VueRouter(routerConfig);
 
 router.beforeEach((to, from, next) => {
-  const middlewares = [
-    requiresAuth,
-    checkGroupBooking,
-    checkInterface,
-    requireTenant,
-    finalAuthRedirect,
-  ];
   const context = { to, from, next, router };
   const first = pipeline(context, middlewares, 0);
   return first();

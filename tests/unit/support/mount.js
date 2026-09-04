@@ -1,5 +1,6 @@
 import Vuetify from "vuetify";
 import { mount } from "@vue/test-utils";
+import i18n from "@/language/index";
 
 const mountedWrappers = new Set();
 
@@ -37,11 +38,16 @@ function createHost() {
  *
  * Pass a `new Vuex.Store(...)` through `options.store` when a component needs
  * one.
+ *
+ * The app's single i18n instance is handed to every mount, so that `$t` in a
+ * template resolves against the real German catalogue - a spec that asserts on
+ * UI copy then fails when the key is missing, instead of rendering the key.
  */
 export function mountComponent(component, options = {}) {
   const wrapper = mount(component, {
     vuetify: new Vuetify(),
     attachTo: createHost(),
+    i18n,
     ...options,
   });
   mountedWrappers.add(wrapper);
