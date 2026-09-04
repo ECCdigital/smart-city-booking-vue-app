@@ -86,6 +86,10 @@
     },
     "forbidden-codes": {
       "forbidden": "Sie haben keine Berechtigung für diese Aktion."
+    },
+    "interface-forbidden": {
+      "title": "Kein Zugriff auf diesen Bereich",
+      "message": "Für diesen Bereich fehlt Ihnen die Berechtigung im aktuellen Mandanten."
     }
   },
   "validation": {
