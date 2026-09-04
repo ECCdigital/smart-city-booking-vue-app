@@ -1,5 +1,6 @@
 import Vuetify from "vuetify";
 import { mount } from "@vue/test-utils";
+import i18n from "@/language/index";
 
 const mountedWrappers = new Set();
 
@@ -36,11 +37,13 @@ function createHost() {
  * state does not leak between specs.
  *
  * Pass a `new Vuex.Store(...)` through `options.store` when a component needs
- * one.
+ * one. The app's own i18n instance is handed to every mount, so `$t` resolves
+ * the real German strings rather than the key.
  */
 export function mountComponent(component, options = {}) {
   const wrapper = mount(component, {
     vuetify: new Vuetify(),
+    i18n,
     attachTo: createHost(),
     ...options,
   });

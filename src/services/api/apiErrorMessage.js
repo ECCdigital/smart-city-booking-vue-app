@@ -46,6 +46,21 @@ function getForbiddenMessage(data) {
 }
 
 /**
+ * Whether an error says the record is outside the caller's reach. Since 4.3.x
+ * a record the caller may not see answers 404 rather than 403, so that its
+ * existence stays hidden - which turns the two statuses into one question
+ * wherever the UI only wants to know "may this be shown at all?".
+ *
+ * Use it for that question only. A message that has to *name* a reason still
+ * looks at the status itself, because "not yours" and "gone" read differently
+ * to the person on the screen.
+ */
+export function isOutOfReach(error) {
+  const status = error?.response?.status;
+  return status === 403 || status === 404;
+}
+
+/**
  * Extrahiert eine anzeigbare Fehlermeldung aus einer axios-Fehlerantwort.
  * Bei 400-Antworten mit Klartext-Body (z. B. serverseitige PDF-Template-
  * Validierung von PUT /api/tenants) wird dieser Text zurückgegeben,

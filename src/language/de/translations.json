@@ -72,6 +72,10 @@
       "title": "Nicht gefunden",
       "message": "Die angeforderte Seite konnte nicht gefunden werden."
     },
+    "not-found-or-forbidden": {
+      "title": "Nicht gefunden oder nicht zugänglich",
+      "message": "Der Eintrag wurde nicht gefunden. Entweder existiert er nicht mehr, oder er liegt außerhalb Ihrer Berechtigung."
+    },
     "unauthorized": {
       "title": "Nicht autorisiert",
       "message": "Sie haben keine Berechtigung für diese Aktion."
@@ -244,6 +248,9 @@
   },
 
   "tenant": {
+    "catalog": {
+      "unavailable": "Für diesen Mandanten wurde kein Katalog gefunden. Entweder ist noch keiner angelegt, oder der vorhandene Katalog ist für Sie nicht zugänglich. Unten steht deshalb ein leerer Katalog – wenn Sie ihn speichern, kann ein bestehender Katalog überschrieben werden."
+    },
     "error": {
       "user-exists": {
         "title": "Benutzer existiert bereits",
@@ -262,7 +269,7 @@
       "error": {
         "not-found": {
           "title": "Benutzer nicht gefunden",
-          "message": "Der Benutzer konnte nicht gefunden werden. Um den angeforderten Benutzer zum Mandanten hinzuzufügen, muss dieser zuerst registriert sein"
+          "message": "Der Benutzer konnte nicht gefunden werden. Um ihn zum Mandanten hinzuzufügen, muss er zuerst registriert sein. Möglich ist auch, dass dieser Mandant für Sie nicht zugänglich ist."
         },
         "user-exists": {
           "title": "Benutzer existiert bereits",
@@ -625,6 +632,9 @@
     }
   },
   "checkout": {
+    "no-permission": {
+      "message": "Dieses Angebot ist für Sie nicht buchbar. Entweder ist es nicht verfügbar, oder Ihnen fehlt die Berechtigung dafür."
+    },
     "error": {
       "booking-conflict": {
         "title": "Objekt nicht verfügbar.",
@@ -1011,7 +1021,7 @@
       "errors": {
         "generic": "Die Aktion konnte nicht ausgeführt werden.",
         "forbidden": "Dafür fehlt Ihnen die Berechtigung. Zugangspunkte dürfen nur Mandanten-Eigentümer ändern.",
-        "notFound": "Der Zugangspunkt existiert nicht mehr. Bitte laden Sie die Liste neu.",
+        "notFoundOrForbidden": "Nicht gefunden oder nicht zugänglich. Der Eintrag existiert nicht mehr, oder er liegt außerhalb Ihrer Berechtigung.",
         "loadFailed": "Die Zugangspunkte konnten nicht geladen werden.",
         "saveFailed": "Der Zugangspunkt konnte nicht gespeichert werden.",
         "deleteFailed": "Der Zugangspunkt konnte nicht gelöscht werden.",
@@ -1238,6 +1248,10 @@
         "forbidden": {
           "title": "Keine Berechtigung",
           "message": "Sie haben keine Berechtigung für den Audit-Export."
+        },
+        "notFoundOrForbidden": {
+          "title": "Nicht gefunden oder nicht zugänglich",
+          "message": "Das Zugriffsprotokoll wurde nicht gefunden, oder es liegt außerhalb Ihrer Berechtigung."
         },
         "failed": {
           "title": "Export fehlgeschlagen",

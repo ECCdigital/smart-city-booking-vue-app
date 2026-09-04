@@ -1014,6 +1014,13 @@ export default {
         return message;
       }
 
+      // Since 4.3.x a template outside the caller's reach answers 404 like a
+      // deleted one, so the message names both readings instead of falling
+      // through to a sentence that names no reason at all.
+      if (unpacked?.response?.status === 404) {
+        return this.$t("errors.not-found-or-forbidden.message");
+      }
+
       const data = unpacked?.response?.data;
       if (typeof data === "string" && data) {
         return data;
