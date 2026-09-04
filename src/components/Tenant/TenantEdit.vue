@@ -951,6 +951,7 @@
     <TenantEditWorkflowStatusDialog
       :open="showEditStatusDialog"
       :states="selectedSatus"
+      :tenant-id="tenant.id"
       @close="showEditStatusDialog = false"
       @save="updateStatus"
     />
