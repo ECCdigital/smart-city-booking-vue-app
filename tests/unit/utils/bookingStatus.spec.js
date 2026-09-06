@@ -6,6 +6,7 @@ import {
   actionLabel,
   allowedActions,
   allowsAction,
+  filterBookingsByStatus,
   freeMarker,
   groupBookingStatus,
   isFree,
@@ -117,6 +118,41 @@ describe("statusRank", () => {
   it("sorts an unknown status after the known ones", () => {
     expect(statusRank("archived")).toBeGreaterThan(statusRank("rejected"));
     expect(statusRank(undefined)).toBeGreaterThan(statusRank("rejected"));
+  });
+});
+
+/** The list's status filter (spec E11): a booking stays iff its state is selected. */
+describe("filterBookingsByStatus", () => {
+  const bookings = [
+    { id: "b-requested", status: "requested" },
+    { id: "b-payment-due", status: "payment_due" },
+    { id: "b-confirmed", status: "confirmed" },
+    { id: "b-rejected", status: "rejected" },
+    { id: "b-cancelled", status: "cancelled" },
+  ];
+
+  it("keeps the bookings whose state is selected, in their order", () => {
+    expect(
+      filterBookingsByStatus(bookings, ["cancelled", "requested"]).map(
+        (booking) => booking.id
+      )
+    ).toEqual(["b-requested", "b-cancelled"]);
+  });
+
+  it("keeps every booking while all five states are selected", () => {
+    expect(
+      filterBookingsByStatus(bookings, Object.values(BOOKING_STATUS))
+    ).toEqual(bookings);
+  });
+
+  it("keeps nothing for an empty selection", () => {
+    expect(filterBookingsByStatus(bookings, [])).toEqual([]);
+  });
+
+  it("drops a booking without a state", () => {
+    expect(filterBookingsByStatus([{ id: "b-none" }], ["requested"])).toEqual(
+      []
+    );
   });
 });
 

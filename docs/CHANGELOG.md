@@ -9,6 +9,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
+-   Booking list: a status filter beside the search field (spec E11) — a multi-select over the five states (Angefragt, Zahlung offen, Bestätigt, Abgelehnt, Storniert), all selected to begin with, that narrows the table and the calendar; the kanban keeps every booking, its columns being workflow states. An empty selection shows nothing, and the selection is not persisted. `filterBookingsByStatus` joins `bookingStatus.js`; new string `booking.filter.status`
 -   `docs/agents/booking-status-vocabulary.md`: the glossary of the booking lifecycle — the five German state words (Angefragt, Zahlung offen, Bestätigt, Abgelehnt, Storniert) against `booking.status`, the derived Kostenfrei and Gemischt, the action verbs against the transitions and their routes, and the rule that the UI reads `status` and never a flag. Listed in `AGENTS.md` and `docs/agents/README.md`
 -   Test setup: Vitest with `@vue/test-utils@1`, `@vitejs/plugin-vue2` and jsdom, running beside the Vue CLI toolchain — `npm test` and `npm run test:watch`, specs under `tests/unit/` mirroring `src/`, shared Vuetify/Vuex mount boilerplate in `tests/unit/support/mount.js`, conventions in `docs/agents/testing.md`
 -   `docs/agents/access-vocabulary.md`: the glossary of the access area — the German UI terms (Anlage, Fach, Vorgemerkt/Erteilt/Widerrufen, Menge, Stückzahl, Reichweite) against the code identifiers they map to, and the one source a booking's Zugänge are read from. Listed in `AGENTS.md` and `docs/agents/README.md`

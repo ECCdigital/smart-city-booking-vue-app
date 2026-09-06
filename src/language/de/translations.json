@@ -602,6 +602,9 @@
       "free": "Kostenfrei",
       "paidAt": "Bezahlt am {date}"
     },
+    "filter": {
+      "status": "Status"
+    },
     "action": {
       "confirm": "Freigeben",
       "pay": "Als bezahlt markieren",
