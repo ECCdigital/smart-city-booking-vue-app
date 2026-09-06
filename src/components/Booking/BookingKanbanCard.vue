@@ -55,6 +55,9 @@
           <v-list-item
             v-for="action in transitionActions(element.bookingItem?.status)"
             :key="action"
+            :disabled="
+              !BookingPermissionService.allowUpdate(element.bookingItem)
+            "
             @click.stop="transition(action, element.bookingItem.id)"
           >
             <v-list-item-icon>
@@ -155,6 +158,7 @@
 </template>
 
 <script>
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
   actionColor,
   actionIcon,
@@ -184,6 +188,9 @@ export default {
     },
   },
   computed: {
+    BookingPermissionService() {
+      return BookingPermissionService;
+    },
     bookableTitle() {
       return this.element.bookingItem?.bookableItems?.[0]?._bookableUsed?.title;
     },

@@ -108,7 +108,6 @@ const ACTION_PRESENTATION = {
   [BOOKING_ACTION.PAY]: { icon: "mdi-cash-check", color: "success" },
   [BOOKING_ACTION.CANCEL]: { icon: "mdi-close-circle", color: "orange" },
   [BOOKING_ACTION.REINSTATE]: { icon: "mdi-restore", color: "warning" },
-  [BOOKING_ACTION.DELETE]: { icon: "mdi-delete", color: "red" },
 };
 
 export function actionIcon(action) {

@@ -158,28 +158,34 @@ export default {
       this.target = target;
       this.error = null;
       if (!allowsAction(this.booking, action)) {
-        return this.refuse(action, "booking.transition.not-allowed");
+        this.refuse(action, "booking.transition.not-allowed");
+        return;
       }
       switch (action) {
         case BOOKING_ACTION.CONFIRM:
-          return this.groupBooking
-            ? this.openDialog("commitGroup")
-            : this.confirmSingle();
+          if (this.groupBooking) {
+            this.openDialog("commitGroup");
+          } else {
+            this.confirmSingle();
+          }
+          break;
         case BOOKING_ACTION.PAY:
-          return this.openDialog("pay");
+          this.openDialog("pay");
+          break;
         case BOOKING_ACTION.CANCEL:
-          return this.openDialog(this.groupBooking ? "cancelGroup" : "cancel");
+          this.openDialog(this.groupBooking ? "cancelGroup" : "cancel");
+          break;
         case BOOKING_ACTION.REINSTATE:
           // There is no series-wide reinstate; a member is reinstated alone.
-          return this.openDialog("reinstate");
+          this.openDialog("reinstate");
+          break;
         default:
-          return undefined;
+          break;
       }
     },
 
     openDialog(dialog) {
       this.dialog = dialog;
-      return undefined;
     },
     closeDialog() {
       this.dialog = null;
@@ -203,7 +209,7 @@ export default {
       });
     },
     async confirmGroup() {
-      if (!this.groupAllows(BOOKING_ACTION.CONFIRM)) return false;
+      if (!(await this.groupAllows(BOOKING_ACTION.CONFIRM))) return false;
       return this.run(BOOKING_ACTION.CONFIRM, {
         overlay: "Serienbuchung wird freigegeben...",
         call: () =>
@@ -225,7 +231,7 @@ export default {
       });
     },
     async payGroup({ paymentMethod, timePaid }) {
-      if (!this.groupAllows(BOOKING_ACTION.PAY)) return false;
+      if (!(await this.groupAllows(BOOKING_ACTION.PAY))) return false;
       return this.run(BOOKING_ACTION.PAY, {
         overlay: "Zahlung wird verarbeitet...",
         call: () =>
@@ -249,7 +255,10 @@ export default {
       refundPercentage
     ) {
       return this.run(BOOKING_ACTION.CANCEL, {
-        overlay: "Buchung wird storniert...",
+        overlay:
+          this.booking?.status === BOOKING_STATUS.REQUESTED
+            ? "Buchung wird abgelehnt..."
+            : "Buchung wird storniert...",
         // `POST …/reject` answers 200 with an empty body.
         call: () =>
           ApiBookingService.rejectBooking(
@@ -272,7 +281,7 @@ export default {
       bankDetails,
       refundPercentage
     ) {
-      if (!this.groupAllows(BOOKING_ACTION.CANCEL)) return false;
+      if (!(await this.groupAllows(BOOKING_ACTION.CANCEL))) return false;
       return this.run(BOOKING_ACTION.CANCEL, {
         overlay: "Serienbuchung wird storniert...",
         call: () =>
@@ -307,14 +316,14 @@ export default {
      * (spec E9); a mixed series is refused with a word, and its members are
      * acted on one by one.
      */
-    groupAllows(action) {
+    async groupAllows(action) {
       const status = groupBookingStatus(this.members);
       if (status === MIXED) {
-        this.refuse(action, "group-booking.transition.mixed");
+        await this.refuse(action, "group-booking.transition.mixed");
         return false;
       }
       if (!allowsAction({ status }, action)) {
-        this.refuse(action, "booking.transition.not-allowed");
+        await this.refuse(action, "booking.transition.not-allowed");
         return false;
       }
       return true;
@@ -350,9 +359,16 @@ export default {
       }
     },
 
-    /** The route answered 200 with `success: false` - today's message stays. */
+    /**
+     * The route answered 200 with `success: false` - today's evaluation
+     * stays: the first error's code picks the message, and a body without
+     * errors says nothing, as the list did before.
+     */
     async failConsistency(action, errorKey, errors, group) {
-      const code = errors?.[0]?.code;
+      if (!errors?.length) {
+        return this.fail(action, null, null, false);
+      }
+      const code = errors[0]?.code;
       const message = group
         ? getGroupBookingErrorMessage(code)
         : getBookingErrorMessage(code);
