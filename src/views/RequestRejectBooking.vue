@@ -222,6 +222,10 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
 import FormatService from "@/services/FormatService";
+import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+
+/** The 403 `request-reject` answers with when the tenant's policy forbids it. */
+const USER_CANCELLATION_DISABLED = "booking_user_cancellation_disabled";
 
 const IBAN_REGEX = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/;
 const BIC_REGEX = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
@@ -474,7 +478,17 @@ export default {
         }
       } catch (error) {
         const status = error && error.response && error.response.status;
-        if (status === 401 || status === 403 || status === 404) {
+        const code = error && error.response && error.response.data?.code;
+        // `request-reject` answers `{ code, message }`: a 409 is a booking
+        // that is already cancelled, a 403 with this code the tenant's
+        // policy - not a wrong name, which the other 401/403/404 mean.
+        if (status === 409) {
+          this.submitError = this.$t(
+            "booking.userCancellation.alreadyCancelled"
+          );
+        } else if (status === 403 && code === USER_CANCELLATION_DISABLED) {
+          this.submitError = getApiErrorMessage(error, null);
+        } else if (status === 401 || status === 403 || status === 404) {
           this.showVerificationError = true;
         } else {
           this.submitError =

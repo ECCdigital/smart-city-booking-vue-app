@@ -28,6 +28,17 @@
         @request-reject="openCancellationDialog"
         @confirm-unreject="unrejectBooking"
       />
+      <v-alert
+        v-if="transitionError"
+        type="error"
+        text
+        dense
+        dismissible
+        class="booking-transition-error mb-4"
+        @input="transitionError = null"
+      >
+        {{ transitionError }}
+      </v-alert>
       <v-row dense>
         <v-col cols="12" lg="9">
           <BaseSection title="Objekt & Zeitraum" icon="mdi-cube-outline">
@@ -859,6 +870,7 @@
       :to-reject="selectedBooking"
       :open="openRejectDialog"
       :loading="inProgress"
+      :error="rejectError"
       @close="openRejectDialog = false"
       @reject-booking="rejectBooking"
     />
@@ -901,6 +913,10 @@ import {
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
 import GroupBookingRejectConformationDialog from "@/components/Booking/GroupBookingRejectConformationDialog.vue";
+import {
+  getApiErrorMessage,
+  shouldRefetch,
+} from "@/services/api/apiErrorMessage";
 import _ from "lodash";
 
 export default {
@@ -1056,6 +1072,7 @@ export default {
       openRejectDialog: false,
       openGroupRejectDialog: false,
       rejectError: null,
+      transitionError: null,
     };
   },
   computed: {
@@ -1731,8 +1748,33 @@ export default {
       }
       this.externalPricesMap = _.cloneDeep(snap.externalPrices || {});
     },
+    /**
+     * A transition or save the backend refused (spec E5). The message is read
+     * through the central reader and shown as a toast and inline; after a 409
+     * or 404 the page is asked to reload the booking, so that the form shows
+     * the server's state instead of the one the change was attempted against.
+     * Returns the message for a dialog that shows it too.
+     */
+    async failTransition(error, key) {
+      const message =
+        // `POST …/reject` answers a bad percentage with the naked string.
+        error?.response?.data === "invalid_refund_percentage"
+          ? this.$t("booking.cancellationRefund.percentageRange")
+          : getApiErrorMessage(error, this.$t(`${key}.message`));
+      this.transitionError = message;
+      await this.addToast({
+        title: this.$t(`${key}.title`),
+        message,
+        type: "error",
+      });
+      if (shouldRefetch(error)) {
+        this.$emit("reload");
+      }
+      return message;
+    },
     openCancellationDialog() {
       this.rejectError = null;
+      this.transitionError = null;
       if (this.groupBooking?.id) {
         this.openGroupRejectDialog = true;
       } else {
@@ -1763,8 +1805,9 @@ export default {
         this.openGroupRejectDialog = false;
         this.finishSave();
       } catch (error) {
-        await this.addToast(
-          ToastService.createToast("booking.reject.error", "error")
+        this.rejectError = await this.failTransition(
+          error,
+          "booking.reject.error"
         );
       } finally {
         this.inProgress = false;
@@ -1798,7 +1841,10 @@ export default {
         this.openGroupRejectDialog = false;
         this.finishSave();
       } catch (error) {
-        this.rejectError = this.$t("group-booking.reject.error.message");
+        this.rejectError = await this.failTransition(
+          error,
+          "group-booking.reject.error"
+        );
       } finally {
         this.inProgress = false;
       }
@@ -1807,6 +1853,7 @@ export default {
       if (!this.selectedBooking?.id) return;
 
       this.inProgress = true;
+      this.transitionError = null;
       try {
         const response = await ApiBookingService.getBooking(
           this.selectedBooking.id,
@@ -1826,9 +1873,7 @@ export default {
         );
         this.finishSave();
       } catch (error) {
-        await this.addToast(
-          ToastService.createToast("booking.unreject.error", "error")
-        );
+        await this.failTransition(error, "booking.unreject.error");
       } finally {
         this.inProgress = false;
       }
@@ -1837,6 +1882,7 @@ export default {
       this.$emit("saved");
     },
     async submitChanges() {
+      this.transitionError = null;
       const missingFields = validateRequiredCustomFields(
         this.editableCustomFields,
         this.selectedBooking.customFieldValues || []
@@ -1916,9 +1962,7 @@ export default {
                 );
               });
             } else {
-              this.addToast(
-                ToastService.createToast("booking.edit.error", "error")
-              );
+              this.failTransition(err, "booking.edit.error");
             }
             this.inProgress = false;
           });

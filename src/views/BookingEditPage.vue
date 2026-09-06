@@ -13,6 +13,7 @@
         :workflow="workflow"
         :group-booking="groupBooking"
         @saved="onSaved"
+        @reload="reloadBooking"
         @cancel="goBack"
       />
     </template>
@@ -81,6 +82,32 @@ export default {
     onSaved() {
       this.goBack();
     },
+    /**
+     * Refetch the booking after a transition the backend refused with 409 or
+     * 404 (spec E5), without leaving the screen: the editor keeps its inline
+     * message and takes the fresh state through its `booking` prop. A
+     * booking that cannot be read any more leaves the screen the way `load`
+     * does.
+     */
+    async reloadBooking() {
+      if (this.isCreate) return;
+
+      try {
+        await this.fetchBooking();
+      } catch (error) {
+        console.error(error);
+        this.goBack();
+      }
+    },
+    async fetchBooking() {
+      const response = await ApiBookingService.getBooking(
+        this.bookingId,
+        undefined,
+        true
+      );
+      this.booking = response.data;
+      await this.loadGroupBooking();
+    },
     async load() {
       if (!this.tenantId) return;
 
@@ -100,13 +127,7 @@ export default {
         if (this.isCreate) {
           this.booking = createEmptyBooking(this.tenantId);
         } else {
-          const response = await ApiBookingService.getBooking(
-            this.bookingId,
-            undefined,
-            true
-          );
-          this.booking = response.data;
-          await this.loadGroupBooking();
+          await this.fetchBooking();
         }
 
         this.ready = true;

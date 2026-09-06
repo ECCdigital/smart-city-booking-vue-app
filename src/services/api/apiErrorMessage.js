@@ -1,4 +1,5 @@
 import i18n from "@/language/index";
+import { statusLabel } from "@/utils/bookingStatus";
 
 /**
  * i18n table for the `code` field of a 403 body. The 4.3.x backend answers 26
@@ -11,6 +12,30 @@ const GENERIC_FORBIDDEN_KEY = `${FORBIDDEN_CODE_PREFIX}.forbidden`;
 const SESSION_EXPIRED_KEY = "errors.session-expired";
 
 /**
+ * i18n table for the `code` of a 409: the booking lifecycle refusing a
+ * transition that no longer fits the stored state (spec E5). `invalid_transition`
+ * names the state the booking is in now when `params.status` carries it, and
+ * lists the diverging members when a group transition sends
+ * `params.bookingIds`. An unknown code, an empty body and a body without a
+ * code fall back to the generic entry.
+ */
+const CONFLICT_CODE_PREFIX = "errors.conflict-codes";
+const GENERIC_CONFLICT_KEY = `${CONFLICT_CODE_PREFIX}.conflict`;
+const INVALID_TRANSITION_CODE = "invalid_transition";
+const INVALID_TRANSITION_UNKNOWN_STATUS_KEY = `${CONFLICT_CODE_PREFIX}.invalid_transition-unknown-status`;
+const DIVERGING_BOOKINGS_KEY = `${CONFLICT_CODE_PREFIX}.diverging-bookings`;
+
+/**
+ * The lifecycle's codes on the two other statuses. A 404 `booking_not_found`
+ * says the booking is gone; every other 404 keeps the caller's fallback,
+ * because "not found" reads differently per screen. A 400
+ * `invalid_status_change` is unreachable once the admin PUT carries no flags
+ * (spec E1), and named anyway.
+ */
+const NOT_FOUND_CODE_PREFIX = "errors.not-found-codes";
+const BAD_REQUEST_CODE_PREFIX = "errors.bad-request-codes";
+
+/**
  * The status the Admin BFF answers a failed CSRF check with (`bff/src/csrf.js`).
  * It is not a backend `ForbiddenError`: the request never reached the backend,
  * and the user is not lacking a permission - the browser sent a mutating
@@ -21,40 +46,81 @@ const SESSION_EXPIRED_KEY = "errors.session-expired";
 export const CSRF_FAILED_STATUS = 419;
 
 /**
- * The `code` of a 4.3.x error body (`BaseError.toJSON`):
- * `{ error, code, statusCode, params }`. Anything that does not carry both
- * `code` and `statusCode` is not that shape and is read as a generic denial -
- * which is what a deployment still running an older BFF needs, because that
- * BFF answered a stale CSRF token with a 403 of its own.
+ * The `code` of a 4.3.x error body. It comes in two forms: `BaseError.toJSON`
+ * sends `{ error, code, statusCode, params }`, the customer's request-reject
+ * route sends `{ code, message }` without a `statusCode`. A body whose
+ * `statusCode` contradicts the response status is not read - and a body
+ * without any `code` (an empty body, a raw string, an older BFF's own CSRF
+ * 403 of `{ success, message }`) reads as the generic entry of its status.
  */
-function getForbiddenCode(data) {
+function getErrorCode(data, status) {
   if (!data || typeof data !== "object") {
     return null;
   }
-  if (data.statusCode !== 403 || typeof data.code !== "string" || !data.code) {
+  if (typeof data.code !== "string" || !data.code) {
+    return null;
+  }
+  if (data.statusCode !== undefined && data.statusCode !== status) {
     return null;
   }
   return data.code;
 }
 
 /**
- * `params` are empty on every 403 the backend sends today. They are handed to
- * the translation for interpolation, but nothing is read out of them.
+ * `params` are empty on every 403 the backend sends today; a 409 carries the
+ * booking's state and, for a group transition, the diverging members. They are
+ * handed to the translation for interpolation either way.
  */
-function getForbiddenParams(data) {
+function getErrorParams(data) {
   const params = data?.params;
   return params && typeof params === "object" ? params : {};
 }
 
 function getForbiddenMessage(data) {
-  const code = getForbiddenCode(data);
+  const code = getErrorCode(data, 403);
   const key = code ? `${FORBIDDEN_CODE_PREFIX}.${code}` : null;
-  const params = getForbiddenParams(data);
+  const params = getErrorParams(data);
 
   if (key && i18n.te(key)) {
     return i18n.t(key, params);
   }
   return i18n.t(GENERIC_FORBIDDEN_KEY, params);
+}
+
+/** The table entry for `code` under `prefix`, or `null` when there is none. */
+function getCodedMessage(data, status, prefix) {
+  const code = getErrorCode(data, status);
+  const key = code ? `${prefix}.${code}` : null;
+  return key && i18n.te(key) ? i18n.t(key, getErrorParams(data)) : null;
+}
+
+function getConflictMessage(data) {
+  // A readable string body is already the message, the way the 400 branch
+  // reads one; the lifecycle's own 409s always carry a code.
+  if (typeof data === "string" && data.trim()) {
+    return data.trim();
+  }
+  const code = getErrorCode(data, 409);
+  const params = getErrorParams(data);
+  let message;
+
+  if (code === INVALID_TRANSITION_CODE) {
+    const status = statusLabel(params.status);
+    message = status
+      ? i18n.t(`${CONFLICT_CODE_PREFIX}.${code}`, { status })
+      : i18n.t(INVALID_TRANSITION_UNKNOWN_STATUS_KEY);
+  } else if (code && i18n.te(`${CONFLICT_CODE_PREFIX}.${code}`)) {
+    message = i18n.t(`${CONFLICT_CODE_PREFIX}.${code}`, params);
+  } else {
+    message = i18n.t(GENERIC_CONFLICT_KEY);
+  }
+
+  if (Array.isArray(params.bookingIds) && params.bookingIds.length > 0) {
+    message += ` ${i18n.t(DIVERGING_BOOKINGS_KEY, {
+      ids: params.bookingIds.join(", "),
+    })}`;
+  }
+  return message;
 }
 
 /**
@@ -92,15 +158,36 @@ export function isOutOfReach(error) {
 }
 
 /**
+ * The refetch rule of spec E5: after every 409 and 404 the host reloads the
+ * booking (form, detail) or the list (list, calendar, kanban), so that the
+ * screen shows the server's state instead of the one the transition was
+ * attempted against. A 409 says the state moved under the user, a 404 that
+ * the booking is gone or out of reach - either way what is on screen is
+ * stale. The message stays `getApiErrorMessage`'s business.
+ *
+ * It overlaps `isOutOfReach` on the 404 only and answers a different
+ * question: not "may this be shown at all?" but "is what is shown still
+ * current?" - a 403 leaves the screen as it was, a 409 does not.
+ */
+export function shouldRefetch(error) {
+  const status = error?.response?.status;
+  return status === 409 || status === 404;
+}
+
+/**
  * Extract a displayable message from an axios error response. A 400 with a
  * plain-text body (e.g. the server-side PDF template validation of
  * `PUT /api/tenants`) returns that text, a 403 the message translated over
- * `code`, a 419 the hint that the session is no longer fresh; anything else
- * returns the fallback.
+ * `code`, a 409 the conflict translated over `code`, a 419 the hint that the
+ * session is no longer fresh; anything else returns the fallback.
  */
 export function getApiErrorMessage(error, fallback) {
   if (error?.response?.status === 400) {
     const data = error.response.data;
+    const coded = getCodedMessage(data, 400, BAD_REQUEST_CODE_PREFIX);
+    if (coded) {
+      return coded;
+    }
     if (typeof data === "string" && data.trim()) {
       return data.trim();
     }
@@ -110,6 +197,15 @@ export function getApiErrorMessage(error, fallback) {
   }
   if (error?.response?.status === 403) {
     return getForbiddenMessage(error.response.data);
+  }
+  if (error?.response?.status === 404) {
+    return (
+      getCodedMessage(error.response.data, 404, NOT_FOUND_CODE_PREFIX) ??
+      fallback
+    );
+  }
+  if (error?.response?.status === 409) {
+    return getConflictMessage(error.response.data);
   }
   // The BFF is the only source of this status and sends it for exactly one
   // reason, so the body is not read.

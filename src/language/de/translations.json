@@ -90,7 +90,21 @@
     },
     "session-expired": "Ihre Sitzung ist nicht mehr aktuell. Bitte laden Sie die Seite neu und versuchen Sie es erneut.",
     "forbidden-codes": {
-      "forbidden": "Sie haben keine Berechtigung für diese Aktion."
+      "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
+      "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden."
+    },
+    "conflict-codes": {
+      "conflict": "Der Vorgang ist in diesem Zustand nicht möglich.",
+      "invalid_transition": "Die Buchung ist inzwischen in einem anderen Zustand ({status}).",
+      "invalid_transition-unknown-status": "Die Buchung ist inzwischen in einem anderen Zustand.",
+      "not_cancelled": "Die Buchung ist nicht storniert.",
+      "diverging-bookings": "Betroffene Buchungen: {ids}"
+    },
+    "not-found-codes": {
+      "booking_not_found": "Die Buchung existiert nicht mehr."
+    },
+    "bad-request-codes": {
+      "invalid_status_change": "Dieser Statuswechsel ist nicht möglich."
     },
     "interface-forbidden": {
       "title": "Kein Zugriff auf diesen Bereich",
@@ -410,6 +424,9 @@
         "title": "Fehler beim Stornieren",
         "message": "Die Buchung konnte nicht storniert werden."
       }
+    },
+    "userCancellation": {
+      "alreadyCancelled": "Diese Buchung wurde bereits storniert."
     },
     "unreject": {
       "success": {

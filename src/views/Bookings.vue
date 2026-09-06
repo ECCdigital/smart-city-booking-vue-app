@@ -229,6 +229,7 @@
       :to-reject="selectedBooking"
       :open="openRejectDialog"
       :loading="loading"
+      :error="errors.reject"
       @close="onCloseRejectDialog"
       @reject-booking="rejectBooking"
     />
@@ -256,6 +257,7 @@
       :booking-id="selectedBooking.id"
       :open="openPayDialog"
       :has-group-booking="!!selectedGroupBooking?.id"
+      :error="errors.pay"
       @close="openPayDialog = false"
       @pay-single-booking="payBooking"
       @pay-group-booking="payGroupBooking"
@@ -324,6 +326,10 @@ import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
 import { allowsAction } from "@/utils/bookingStatus";
+import {
+  getApiErrorMessage,
+  shouldRefetch,
+} from "@/services/api/apiErrorMessage";
 
 export default {
   components: {
@@ -569,6 +575,31 @@ export default {
       );
       this.errors[action] = getBookingErrorMessage(code);
     },
+    /**
+     * A transition the backend refused (spec E5). The message is read through
+     * the central reader, shown as a toast and kept for the dialog that is
+     * open; after a 409 or 404 the list is reloaded so that list, calendar and
+     * kanban show the server's state instead of the one the transition was
+     * attempted against.
+     */
+    async failTransition(error, action, { group = false } = {}) {
+      const key = `${group ? "group-booking" : "booking"}.${action}.error`;
+      const message =
+        // `POST …/reject` answers a bad percentage with the naked string.
+        error?.response?.data === "invalid_refund_percentage"
+          ? this.$t("booking.cancellationRefund.percentageRange")
+          : getApiErrorMessage(error, this.$t(`${key}.message`));
+      this.errors[action] = message;
+      await this.addToast({
+        title: this.$t(`${key}.title`),
+        message,
+        type: "error",
+      });
+      if (shouldRefetch(error)) {
+        await this.fetchBookings();
+        await this.fetchGroupBookings();
+      }
+    },
 
     async fetchBookings() {
       await this.startLoading("fetch-bookings");
@@ -743,6 +774,8 @@ export default {
             await this.fetchGroupBookings();
             this.openCommitGroupBookingDialog = false;
           }
+        } catch (error) {
+          await this.failTransition(error, "commit");
         } finally {
           ProcessingService.hide(operationId);
         }
@@ -794,6 +827,8 @@ export default {
           await this.fetchBookings();
           await this.fetchGroupBookings();
         }
+      } catch (error) {
+        await this.failTransition(error, "pay");
       } finally {
         await this.stopLoading("pay-booking");
         ProcessingService.hide(operationId);
@@ -823,6 +858,8 @@ export default {
           await this.fetchBookings();
           await this.fetchGroupBookings();
         }
+      } catch (error) {
+        await this.failTransition(error, "pay", { group: true });
       } finally {
         await this.stopLoading("pay-booking");
         ProcessingService.hide(operationId);
@@ -849,6 +886,8 @@ export default {
           await this.fetchGroupBookings();
           this.openCommitGroupBookingDialog = false;
         }
+      } catch (error) {
+        await this.failTransition(error, "commit", { group: true });
       } finally {
         ProcessingService.hide(operationId);
       }
@@ -881,9 +920,7 @@ export default {
         this.openRejectDialog = false;
         this.openRejectGroupBookingDialog = false;
       } catch (error) {
-        await this.addToast(
-          ToastService.createToast("booking.reject.error", "error")
-        );
+        await this.failTransition(error, "reject");
       } finally {
         await this.stopLoading("reject-booking");
         ProcessingService.hide(operationId);
@@ -925,13 +962,7 @@ export default {
           this.openRejectGroupBookingDialog = false;
         }
       } catch (error) {
-        this.errors.reject =
-          error?.response?.data === "invalid_refund_percentage"
-            ? this.$t("booking.cancellationRefund.percentageRange")
-            : this.$t("group-booking.reject.error.message");
-        await this.addToast(
-          ToastService.createToast("group-booking.reject.error", "error")
-        );
+        await this.failTransition(error, "reject", { group: true });
       } finally {
         await this.stopLoading("reject-booking");
         ProcessingService.hide(operationId);
