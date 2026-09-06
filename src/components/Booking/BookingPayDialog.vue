@@ -1,6 +1,10 @@
 <script>
+import GroupBookingStatusSummary from "@/components/Booking/GroupBookingStatusSummary.vue";
+import { BOOKING_ACTION, groupAllowsAction } from "@/utils/bookingStatus";
+
 export default {
   name: "BookingPayDialog",
+  components: { GroupBookingStatusSummary },
   props: {
     open: {
       type: Boolean,
@@ -13,6 +17,11 @@ export default {
     hasGroupBooking: {
       type: Boolean,
       default: false,
+    },
+    /** The members of the series, for the derived state (spec E9). */
+    groupBookings: {
+      type: Array,
+      default: () => [],
     },
     inProgress: {
       type: Boolean,
@@ -54,6 +63,10 @@ export default {
       get() {
         return this.open;
       },
+    },
+    /** The series is offered only while every member awaits payment (spec E9). */
+    canPayGroup() {
+      return groupAllowsAction(this.groupBookings, BOOKING_ACTION.PAY);
     },
     timePaid() {
       if (!this.selectedDate) return null;
@@ -253,10 +266,19 @@ export default {
               >
                 <span class="text-subtitle-1">
                   Die Buchung <strong>{{ bookingId }}</strong> ist Teil einer
-                  Serienbuchung.<br />
-                  Möchten Sie die gesamte Serie freigeben?
+                  Serienbuchung.
+                  <template v-if="canPayGroup">
+                    <br />
+                    Möchten Sie die gesamte Serie als bezahlt markieren?
+                  </template>
                 </span>
               </v-alert>
+            </v-col>
+            <v-col cols="12">
+              <GroupBookingStatusSummary
+                :members="groupBookings"
+                action="pay"
+              />
             </v-col>
           </v-row>
 
@@ -272,6 +294,7 @@ export default {
 
       <v-card-text v-if="hasGroupBooking" class="d-flex justify-center">
         <v-btn
+          v-if="canPayGroup"
           color="primary"
           class="ma-2"
           large

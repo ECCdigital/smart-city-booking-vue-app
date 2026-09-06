@@ -720,10 +720,18 @@
         "message": "Die Sammelrechnung konnte nicht erstellt werden."
       }
     },
+    "status": {
+      "title": "Zustand der Serie",
+      "members": "Buchungen der Serie"
+    },
     "transition": {
       "mixed": {
         "title": "Gemischter Zustand",
         "message": "Die Buchungen der Serie sind in unterschiedlichen Zuständen. Bitte führen Sie die Aktion je Buchung aus."
+      },
+      "not-allowed": {
+        "title": "Aktion nicht möglich",
+        "message": "Diese Aktion ist im aktuellen Zustand der Serie nicht möglich."
       }
     }
   },

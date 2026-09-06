@@ -8,9 +8,14 @@
       <v-card-text>
         <span class="text-h6">
           Die Buchung
-          <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung. Möchten
-          Sie die gesamte Serie freigeben?
+          <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung.
+          <template v-if="canCommitGroup">
+            Möchten Sie die gesamte Serie freigeben?
+          </template>
         </span>
+      </v-card-text>
+      <v-card-text>
+        <GroupBookingStatusSummary :members="groupBookings" action="confirm" />
       </v-card-text>
       <v-card-text v-if="error" class="text-center">
         <v-alert type="error" border="left" elevation="2">
@@ -18,7 +23,7 @@
         </v-alert>
       </v-card-text>
       <v-card-text class="d-flex justify-center">
-        <v-col cols="auto">
+        <v-col v-if="canCommitGroup" cols="auto">
           <v-btn
             large
             color="primary"
@@ -42,8 +47,12 @@
 </template>
 
 <script>
+import GroupBookingStatusSummary from "@/components/Booking/GroupBookingStatusSummary.vue";
+import { BOOKING_ACTION, groupAllowsAction } from "@/utils/bookingStatus";
+
 export default {
   name: "GroupBookingCommitDialog",
+  components: { GroupBookingStatusSummary },
   props: {
     open: {
       type: Boolean,
@@ -52,6 +61,11 @@ export default {
     bookingId: {
       type: String,
       required: true,
+    },
+    /** The members of the series, for the derived state (spec E9). */
+    groupBookings: {
+      type: Array,
+      default: () => [],
     },
     inProgress: {
       type: Boolean,
@@ -67,6 +81,10 @@ export default {
       get() {
         return this.open;
       },
+    },
+    /** The series is offered only while every member is Angefragt (spec E9). */
+    canCommitGroup() {
+      return groupAllowsAction(this.groupBookings, BOOKING_ACTION.CONFIRM);
     },
   },
   methods: {

@@ -11,9 +11,15 @@
             Die Buchung
             <strong>{{ toReject.id }}</strong> ist Teil einer Serienbuchung.
           </span>
+          <GroupBookingStatusSummary
+            class="mt-4"
+            :members="groupBookings"
+            action="cancel"
+          />
           <v-radio-group v-model="cancellationScope" class="mt-4">
             <v-radio
               value="group"
+              :disabled="!canCancelGroup"
               :label="$t('booking.cancellationRefund.cancelGroup')"
             />
             <v-radio
@@ -128,8 +134,14 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import CancellationRefundPreview from "@/components/Booking/CancellationRefundPreview.vue";
+import GroupBookingStatusSummary from "@/components/Booking/GroupBookingStatusSummary.vue";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
-import { BOOKING_STATUS, groupBookingStatus } from "@/utils/bookingStatus";
+import {
+  BOOKING_ACTION,
+  BOOKING_STATUS,
+  groupAllowsAction,
+  groupBookingStatus,
+} from "@/utils/bookingStatus";
 
 const IBAN_REGEX = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/;
 const BIC_REGEX = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
@@ -164,7 +176,7 @@ function isValidIban(value) {
 
 export default {
   name: "GroupBookingRejectConformationDialog",
-  components: { CancellationRefundPreview },
+  components: { CancellationRefundPreview, GroupBookingStatusSummary },
   props: {
     open: {
       type: Boolean,
@@ -217,6 +229,16 @@ export default {
       get() {
         return this.open;
       },
+    },
+    /**
+     * The series is offered only while the members share a state that can
+     * be cancelled (spec E9); a mixed series starts on "Nur diese Buchung".
+     */
+    canCancelGroup() {
+      return groupAllowsAction(this.groupBookings, BOOKING_ACTION.CANCEL);
+    },
+    defaultScope() {
+      return this.canCancelGroup ? "group" : "single";
     },
     canProvideBankDetails() {
       if (!this.toReject || this.skipCancellation !== false) return false;
@@ -276,10 +298,16 @@ export default {
   },
   watch: {
     open(value) {
-      if (value) {
-        this.loadRefundPreview();
-      } else {
+      if (!value) {
         this.resetDialog();
+        return;
+      }
+      // A changed scope loads the preview through its own watcher; loading
+      // here as well would race the two previews against each other.
+      if (this.cancellationScope !== this.defaultScope) {
+        this.cancellationScope = this.defaultScope;
+      } else {
+        this.loadRefundPreview();
       }
     },
     cancellationScope() {
@@ -389,6 +417,7 @@ export default {
         : this.refundPercentage;
       const bankDetails = this.buildBankDetailsPayload();
       if (this.cancellationScope === "group") {
+        if (!this.canCancelGroup) return;
         this.$emit(
           "reject-group-booking",
           this.toReject.id,

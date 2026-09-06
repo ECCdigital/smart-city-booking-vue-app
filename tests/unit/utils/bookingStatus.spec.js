@@ -6,6 +6,7 @@ import {
   allowedActions,
   allowsAction,
   freeMarker,
+  groupAllowsAction,
   groupBookingStatus,
   isFree,
   isAwaitingPayment,
@@ -251,5 +252,33 @@ describe("groupBookingStatus", () => {
   it("is null for no members", () => {
     expect(groupBookingStatus([])).toBeNull();
     expect(groupBookingStatus(undefined)).toBeNull();
+  });
+});
+
+/**
+ * A series-wide action is offered only where the members share one state and
+ * that state allows the action (spec E9); a mixed series acts per member.
+ */
+describe("groupAllowsAction", () => {
+  it("allows the action every member's shared state allows", () => {
+    const requested = [{ status: "requested" }, { status: "requested" }];
+    expect(groupAllowsAction(requested, "confirm")).toBe(true);
+    expect(groupAllowsAction(requested, "cancel")).toBe(true);
+  });
+
+  it("refuses the action the shared state does not allow", () => {
+    const requested = [{ status: "requested" }, { status: "requested" }];
+    expect(groupAllowsAction(requested, "pay")).toBe(false);
+  });
+
+  it("refuses everything for a mixed series", () => {
+    const mixed = [{ status: "requested" }, { status: "confirmed" }];
+    expect(groupAllowsAction(mixed, "confirm")).toBe(false);
+    expect(groupAllowsAction(mixed, "cancel")).toBe(false);
+  });
+
+  it("refuses everything without members", () => {
+    expect(groupAllowsAction([], "confirm")).toBe(false);
+    expect(groupAllowsAction(undefined, "confirm")).toBe(false);
   });
 });
