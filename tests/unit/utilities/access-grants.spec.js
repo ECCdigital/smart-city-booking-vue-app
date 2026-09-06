@@ -61,10 +61,23 @@ describe("bookingsWithLiveAccess", () => {
     expect(bookingsWithLiveAccess([b], "ap-1", NOW)).toEqual([b]);
   });
 
-  it("ignores a rejected booking, whatever its entry says", () => {
-    const b = { ...booking("b1", [entry()]), isRejected: true };
+  it("ignores a rejected or cancelled booking, whatever its entry says", () => {
+    const rejected = { ...booking("b1", [entry()]), status: "rejected" };
+    const cancelled = { ...booking("b2", [entry()]), status: "cancelled" };
 
-    expect(bookingsWithLiveAccess([b], "ap-1", NOW)).toEqual([]);
+    expect(bookingsWithLiveAccess([rejected, cancelled], "ap-1", NOW)).toEqual(
+      []
+    );
+  });
+
+  it("reads the state, not the flag the backend still derives from it", () => {
+    const b = {
+      ...booking("b1", [entry()]),
+      status: "confirmed",
+      isRejected: true,
+    };
+
+    expect(bookingsWithLiveAccess([b], "ap-1", NOW)).toEqual([b]);
   });
 
   it("ignores a booking whose period has passed", () => {

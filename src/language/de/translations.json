@@ -398,7 +398,7 @@
       },
       "requires-rejection": {
         "title": "Stornierung erforderlich",
-        "message": "Bestätigte oder bezahlte Buchungen können nicht gelöscht werden. Bitte stornieren Sie die Buchung."
+        "message": "Nur angefragte oder abgelehnte Buchungen können gelöscht werden. Bitte stornieren Sie die Buchung."
       }
     },
     "reject": {
@@ -575,6 +575,29 @@
         "title": "Fehler beim Generieren",
         "message": "Leider ist ein Fehler beim Generieren der iCal-Datei aufgetreten. Bitte versuchen Sie es erneut."
       }
+    },
+    "status": {
+      "requested": "Angefragt",
+      "payment_due": "Zahlung offen",
+      "confirmed": "Bestätigt",
+      "rejected": "Abgelehnt",
+      "cancelled": "Storniert",
+      "mixed": "Gemischt",
+      "free": "Kostenfrei"
+    },
+    "action": {
+      "confirm": "Freigeben",
+      "pay": "Als bezahlt markieren",
+      "reject": "Ablehnen",
+      "cancel": "Stornieren",
+      "reinstate": "Wiederherstellen",
+      "delete": "Löschen"
+    },
+    "payment": {
+      "paid": "Ja",
+      "unpaid": "Nein",
+      "settled": "Bezahlt",
+      "open": "Offen"
     }
   },
   "group-booking": {

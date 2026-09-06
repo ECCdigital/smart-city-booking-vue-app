@@ -179,7 +179,10 @@
           <v-list-item
             link
             @click="commitBooking(selectedEvent.id)"
-            :disabled="!BookingPermissionService.allowUpdate(selectedEvent)"
+            :disabled="
+              !BookingPermissionService.allowUpdate(selectedEvent) ||
+              !allowsAction(selectedEvent, 'confirm')
+            "
           >
             <v-list-item-icon>
               <v-icon>mdi-checkbox-marked-circle</v-icon>
@@ -191,7 +194,7 @@
             @click="payBooking(selectedEvent.id)"
             :disabled="
               !BookingPermissionService.allowUpdate(selectedEvent) ||
-              selectedEvent.isPayed
+              !allowsAction(selectedEvent, 'pay')
             "
           >
             <v-list-item-icon>
@@ -202,7 +205,10 @@
           <v-list-item
             link
             @click="rejectBooking(selectedEvent.id)"
-            :disabled="!BookingPermissionService.allowUpdate(selectedEvent)"
+            :disabled="
+              !BookingPermissionService.allowUpdate(selectedEvent) ||
+              !allowsAction(selectedEvent, 'cancel')
+            "
           >
             <v-list-item-icon>
               <v-icon>mdi-close-circle</v-icon>
@@ -214,7 +220,10 @@
             link
             @click="onOpenDeleteDialog(selectedEvent.id)"
             class="red--text"
-            :disabled="!BookingPermissionService.allowDelete(selectedEvent)"
+            :disabled="
+              !BookingPermissionService.allowDelete(selectedEvent) ||
+              !allowsAction(selectedEvent, 'delete')
+            "
           >
             <v-list-item-icon>
               <v-icon color="red">mdi-delete</v-icon>
@@ -229,6 +238,11 @@
 <script>
 import { mapGetters } from "vuex";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
+import {
+  BOOKING_STATUS,
+  allowsAction,
+  isRejectedOrCancelled,
+} from "@/utils/bookingStatus";
 
 export default {
   name: "BookingOverviewCalendar",
@@ -296,7 +310,9 @@ export default {
         this.bookings
           .filter(
             (booking) =>
-              !booking.isRejected && booking.timeBegin && booking.timeEnd
+              !isRejectedOrCancelled(booking) &&
+              booking.timeBegin &&
+              booking.timeEnd
           )
           .map((booking) => {
             const start = Date.parse(booking.timeBegin) || booking.timeBegin;
@@ -306,19 +322,21 @@ export default {
               name: this.getBookingTitle(booking),
               start: start,
               end: end,
-              color: booking.isCommitted ? booking.color : "grey",
+              color:
+                booking.status === BOOKING_STATUS.REQUESTED
+                  ? "grey"
+                  : booking.color,
               timed: true,
               user: booking.name,
               company: booking.company || "",
-              isPayed: booking.isPayed,
-              isCommitted: booking.isCommitted,
-              isRejected: booking.isRejected,
+              status: booking.status,
             };
           }) || []
       );
     },
   },
   methods: {
+    allowsAction,
     getBookingTitle(booking) {
       const bookableItems = booking.bookableItems;
       if (!bookableItems) {

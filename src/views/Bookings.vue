@@ -274,6 +274,7 @@
     <GroupBookingRejectConformationDialog
       :to-reject="selectedBooking"
       :group-booking-id="selectedGroupBooking?.id"
+      :group-bookings="selectedGroupBookingMembers"
       :open="openRejectGroupBookingDialog"
       :in-progress="loading"
       :error="errors.reject"
@@ -322,6 +323,7 @@ import BookingPayDialog from "@/components/Booking/BookingPayDialog.vue";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
+import { allowsAction } from "@/utils/bookingStatus";
 
 export default {
   components: {
@@ -384,8 +386,7 @@ export default {
         { text: "Erstellt am", value: "timeCreated" },
         { text: "Name", value: "name" },
         { text: "Preis", value: "priceEur" },
-        { text: "Status", value: "isCommitted" },
-        { text: "Zahlung", value: "isPayed" },
+        { text: "Status", value: "status" },
         { text: "Zahlungsart", value: "payMethod" },
         { text: "", value: "controls", sortable: false },
       ],
@@ -420,15 +421,17 @@ export default {
       return this.bookingTypeFilter !== "all";
     },
     isSelectedBookingHardDeleteBlocked() {
-      return !!(
-        this.selectedBooking?.isCommitted || this.selectedBooking?.isPayed
-      );
+      return !allowsAction(this.selectedBooking, "delete");
+    },
+    selectedGroupBookingMembers() {
+      const ids = this.selectedGroupBooking?.bookingIds || [];
+      return this.api.bookings.filter((booking) => ids.includes(booking.id));
     },
     isSelectedGroupHardDeleteBlocked() {
       if (!this.selectedGroupBooking?.bookingIds) return false;
       return this.selectedGroupBooking.bookingIds.some((bookingId) => {
         const booking = this.api.bookings.find((item) => item.id === bookingId);
-        return booking?.isCommitted || booking?.isPayed;
+        return !allowsAction(booking, "delete");
       });
     },
     mappedBookings() {
@@ -647,7 +650,7 @@ export default {
     },
     async deleteBooking(bookingId) {
       const booking = this.api.bookings.find((item) => item.id === bookingId);
-      if (booking?.isCommitted || booking?.isPayed) {
+      if (!allowsAction(booking, "delete")) {
         await this.addToast(
           ToastService.createToast("booking.delete.requires-rejection", "error")
         );
@@ -672,7 +675,7 @@ export default {
       );
       const hasProtectedBooking = groupBooking.bookingIds.some((id) => {
         const booking = this.api.bookings.find((item) => item.id === id);
-        return booking?.isCommitted || booking?.isPayed;
+        return !allowsAction(booking, "delete");
       });
       if (hasProtectedBooking) {
         await this.addToast(

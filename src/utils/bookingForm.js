@@ -9,8 +9,6 @@ export function createEmptyBooking(tenantId) {
     comment: null,
     company: null,
     couponCode: null,
-    isCommitted: false,
-    isPayed: false,
     location: null,
     mail: null,
     name: null,

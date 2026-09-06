@@ -5,7 +5,7 @@ import { mapActions } from "vuex";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ProcessingService from "@/services/ProcessingService";
 import ToastService from "@/services/ToastService";
-import { getPaymentStatusExportValue } from "@/utils/bookingPaymentStatus";
+import { paymentLabel, statusExportValue } from "@/utils/bookingStatus";
 
 export default {
   name: "BookingExportButton",
@@ -54,18 +54,17 @@ export default {
 
         { header: "Startzeit", key: "Startzeit", width: 20 },
         { header: "Endzeit", key: "Endzeit", width: 20 },
-        { header: "Bestätigt", key: "Bestätigt", width: 12 },
+        { header: "Status", key: "Status", width: 14 },
 
         { header: "Endpreis (brutto in EUR)", key: "Preis", width: 20 },
         { header: "End-MwSt (EUR)", key: "MwSt", width: 15 },
         { header: "Grundpreis (brutto in EUR)", key: "regularPreis", width: 15 },
         { header: "Grund-MwSt (EUR)", key: "regularMwSt", width: 15 },
 
-        { header: "Zahlungsstatus", key: "Bezahlt", width: 14 },
+        { header: "Bezahlt", key: "Bezahlt", width: 12 },
         { header: "Payment Provider", key: "PaymentProvider", width: 15 },
         { header: "Payment Method", key: "PaymentMethod", width: 15 },
 
-        { header: "Abgelehnt", key: "Abgelehnt", width: 12 },
         { header: "Ablehnungsgrund", key: "AblehnungsGrund", width: 25 },
 
         { header: "Erstellt am", key: "Erstellt", width: 20 },
@@ -111,18 +110,17 @@ export default {
 
           Startzeit: booking.timeBegin ? new Date(booking.timeBegin) : "",
           Endzeit: booking.timeEnd ? new Date(booking.timeEnd) : "",
-          Bestätigt: booking.isCommitted ? "Ja" : "Nein",
+          Status: statusExportValue(booking),
 
           Preis: booking.priceEur || 0,
           MwSt: booking.vatIncludedEur || 0,
           regularPreis: this.getRegularGrossPriceSum(booking) || 0,
           regularMwSt: this.getRegularVatIncludedSum(booking) || 0,
 
-          Bezahlt: getPaymentStatusExportValue(booking),
+          Bezahlt: paymentLabel(booking),
           PaymentProvider: booking.PaymentProvider || "",
           PaymentMethod: this.getPaymentMethod(booking.paymentMethod) || "",
 
-          Abgelehnt: booking.isRejected ? "Ja" : "Nein",
           AblehnungsGrund: booking.rejectionReason || "-",
 
           Erstellt: booking.timeCreated ? new Date(booking.timeCreated) : "",
@@ -134,7 +132,7 @@ export default {
 
       worksheet.autoFilter = {
         from: "A1",
-        to: "AA1",
+        to: "Z1",
       };
 
       const buffer = await workbook.xlsx.writeBuffer();

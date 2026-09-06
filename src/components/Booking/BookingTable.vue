@@ -143,27 +143,25 @@
           </div>
         </template>
 
-        <template v-slot:item.isCommitted="{ item }">
+        <template v-slot:item.status="{ item }">
           <v-chip
             small
-            :color="getStatusChipColor(item)"
+            :color="statusColor(item.status)"
             text-color="white"
             class="font-weight-medium"
           >
-            <v-icon left x-small>{{ getStatusIcon(item) }}</v-icon>
-            {{ getStatusText(item) }}
+            <v-icon left x-small>{{ statusIcon(item.status) }}</v-icon>
+            {{ statusLabel(item.status) }}
           </v-chip>
-        </template>
-
-        <template v-slot:item.isPayed="{ item }">
           <v-chip
+            v-if="isFree(item)"
             small
-            :color="getPaymentColor(item)"
-            :text-color="getPaymentTextColor(item)"
-            class="font-weight-medium"
+            :color="freeChip.color"
+            :text-color="freeChip.textColor"
+            class="font-weight-medium ml-1"
           >
-            <v-icon left x-small>{{ getPaymentIcon(item) }}</v-icon>
-            {{ payedStatus(item) }}
+            <v-icon left x-small>{{ freeChip.icon }}</v-icon>
+            {{ freeChip.label }}
           </v-chip>
         </template>
 
@@ -224,7 +222,7 @@
                 @click="commitBooking(item.id)"
                 :disabled="
                   !BookingPermissionService.allowUpdate(item) ||
-                  item.isCommitted
+                  !allowsAction(item, 'confirm')
                 "
               >
                 <v-list-item-icon>
@@ -239,7 +237,8 @@
                 link
                 @click="payBooking(item.id)"
                 :disabled="
-                  !BookingPermissionService.allowUpdate(item) || item.isPayed
+                  !BookingPermissionService.allowUpdate(item) ||
+                  !allowsAction(item, 'pay')
                 "
               >
                 <v-list-item-icon>
@@ -251,13 +250,16 @@
               <v-list-item
                 link
                 @click="rejectBooking(item.id)"
-                :disabled="!BookingPermissionService.allowUpdate(item)"
+                :disabled="
+                  !BookingPermissionService.allowUpdate(item) ||
+                  !allowsAction(item, 'cancel')
+                "
               >
                 <v-list-item-icon>
                   <v-icon small color="orange">mdi-close-circle</v-icon>
                 </v-list-item-icon>
                 <v-list-item-title>
-                  {{ item.isCommitted ? "Stornieren" : "Ablehnen" }}
+                  {{ actionLabel("cancel", item.status) }}
                 </v-list-item-title>
               </v-list-item>
 
@@ -266,7 +268,10 @@
               <v-list-item
                 link
                 @click="onOpenDeleteDialog(item.id)"
-                :disabled="!BookingPermissionService.allowDelete(item)"
+                :disabled="
+                  !BookingPermissionService.allowDelete(item) ||
+                  !allowsAction(item, 'delete')
+                "
               >
                 <v-list-item-icon>
                   <v-icon small color="red">mdi-delete</v-icon>
@@ -296,12 +301,15 @@
 <script>
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
-  getPaymentStatusColor,
-  getPaymentStatusIcon,
-  getPaymentStatusLabel,
-  getPaymentStatusTextColor,
-  isFreeBooking,
-} from "@/utils/bookingPaymentStatus";
+  actionLabel,
+  allowsAction,
+  freeMarker,
+  isFree,
+  statusColor,
+  statusIcon,
+  statusLabel,
+  statusRank,
+} from "@/utils/bookingStatus";
 
 export default {
   name: "BookingTable",
@@ -334,16 +342,28 @@ export default {
         { text: "Von", value: "timeBegin" },
         { text: "Bis", value: "timeEnd" },
         { text: "Preis", value: "priceEur" },
-        { text: "Status", value: "isCommitted" },
-        { text: "Zahlung", value: "isPayed" },
+        {
+          text: "Status",
+          value: "status",
+          cellClass: "status-cell",
+          sort: (a, b) => statusRank(a) - statusRank(b),
+        },
         { text: "Zahlungsart", value: "paymentMethod" },
-        { text: "", value: "controls", sortable: false },
+        {
+          text: "",
+          value: "controls",
+          sortable: false,
+          cellClass: "controls-cell",
+        },
       ],
     };
   },
   computed: {
     BookingPermissionService() {
       return BookingPermissionService;
+    },
+    freeChip() {
+      return freeMarker();
     },
     headers() {
       return this.showGroupBooking
@@ -354,11 +374,12 @@ export default {
     },
   },
   methods: {
-    getStatusColor(item) {
-      if (item.isRejected) return "red";
-      if (item.isCommitted) return "green";
-      return "orange";
-    },
+    actionLabel,
+    allowsAction,
+    isFree,
+    statusColor,
+    statusIcon,
+    statusLabel,
     formatDate(date) {
       return Intl.DateTimeFormat("de-DE", {
         dateStyle: "short",
@@ -369,32 +390,6 @@ export default {
         timeStyle: "short",
       }).format(new Date(date));
     },
-    getStatusIcon(item) {
-      if (item.isRejected) return "mdi-cancel";
-      if (item.isCommitted) return "mdi-check-circle";
-      return "mdi-clock-outline";
-    },
-    getStatusChipColor(item) {
-      if (item.isRejected) return "error";
-      if (item.isCommitted) return "success";
-      return "orange";
-    },
-    getStatusText(item) {
-      if (item.isRejected && !item.isCommitted) return "Abgelehnt";
-      if (item.isRejected && item.isCommitted) return "Storniert";
-      if (item.isCommitted) return "Freigegeben";
-      return "Ausstehend";
-    },
-    isFreeBooking,
-    getPaymentColor(item) {
-      return getPaymentStatusColor(item);
-    },
-    getPaymentTextColor(item) {
-      return getPaymentStatusTextColor(item);
-    },
-    getPaymentIcon(item) {
-      return getPaymentStatusIcon(item);
-    },
     hasEventId(item) {
       return item.bookableItems.some((b) => b._bookableUsed.eventId);
     },
@@ -403,9 +398,6 @@ export default {
         style: "currency",
         currency: "EUR",
       }).format(amount || 0);
-    },
-    payedStatus(item) {
-      return getPaymentStatusLabel(item);
     },
     translatePayMethod(paymentMethod) {
       const methods = {

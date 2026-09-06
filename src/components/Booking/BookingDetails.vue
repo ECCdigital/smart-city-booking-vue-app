@@ -280,13 +280,13 @@
                   <div class="info-value">
                     <v-chip
                       small
-                      :color="getPaymentStatusColor(booking)"
-                      :text-color="getPaymentStatusTextColor(booking)"
+                      :color="paymentChip(booking).color"
+                      :text-color="paymentChip(booking).textColor"
                     >
                       <v-icon left x-small>
-                        {{ getPaymentStatusIcon(booking) }}
+                        {{ paymentChip(booking).icon }}
                       </v-icon>
-                      {{ getPaymentStatusLabel(booking) }}
+                      {{ paymentChip(booking).label }}
                     </v-chip>
                   </div>
                 </div>
@@ -319,7 +319,6 @@
                 cols="12"
                 v-if="
                   isPaymentPending(booking) &&
-                  booking.isCommitted &&
                   booking.paymentProvider &&
                   booking.paymentProvider !== 'invoice'
                 "
@@ -449,7 +448,9 @@
                 </div>
               </v-col>
             </v-row>
-            <v-row v-if="booking.isRejected && booking.rejectionReason">
+            <v-row
+              v-if="isRejectedOrCancelled(booking) && booking.rejectionReason"
+            >
               <v-col cols="12">
                 <v-alert type="error" dense outlined border="left" class="mb-0">
                   <div class="d-flex align-center">
@@ -978,13 +979,15 @@ import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
 import {
-  getPaymentStatus,
-  getPaymentStatusColor,
-  getPaymentStatusIcon,
-  getPaymentStatusLabel,
-  getPaymentStatusTextColor,
-  PAYMENT_STATUS,
-} from "@/utils/bookingPaymentStatus";
+  BOOKING_STATUS,
+  freeMarker,
+  isFree,
+  isPaid,
+  isRejectedOrCancelled,
+  statusColor,
+  statusIcon,
+  statusLabel,
+} from "@/utils/bookingStatus";
 import BookingAccessPoints from "@/components/Booking/BookingAccessPoints.vue";
 
 export default {
@@ -1091,18 +1094,31 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
-    getPaymentStatus,
-    getPaymentStatusLabel,
-    getPaymentStatusColor,
-    getPaymentStatusIcon,
-    getPaymentStatusTextColor,
+    isRejectedOrCancelled,
     isPaymentPending(booking) {
-      return getPaymentStatus(booking) === PAYMENT_STATUS.UNPAID;
+      return booking.status === BOOKING_STATUS.PAYMENT_DUE;
     },
     hasPaidDate(booking) {
-      return (
-        getPaymentStatus(booking) === PAYMENT_STATUS.PAID && booking.timePaid
-      );
+      return isPaid(booking) && booking.timePaid;
+    },
+    paymentChip(booking) {
+      if (isFree(booking)) {
+        return freeMarker();
+      }
+      if (isPaid(booking)) {
+        return {
+          label: this.$t("booking.payment.settled"),
+          color: "success",
+          textColor: "white",
+          icon: "mdi-check-circle",
+        };
+      }
+      return {
+        label: this.$t("booking.payment.open"),
+        color: "grey",
+        textColor: "white",
+        icon: "mdi-clock-outline",
+      };
     },
 
     generateAndSendInvoice() {
@@ -1295,34 +1311,13 @@ export default {
       }
     },
     getApprovalStatusText() {
-      if (this.booking.isRejected && !this.booking.isCommitted) {
-        return "Abgelehnt";
-      }
-      if (this.booking.isRejected && this.booking.isCommitted) {
-        return "Storniert";
-      }
-      if (this.booking.isCommitted) {
-        return "Freigegeben";
-      }
-      return "Ausstehend";
+      return statusLabel(this.booking.status);
     },
     getApprovalStatusColor() {
-      if (this.booking.isRejected) {
-        return "error";
-      }
-      if (this.booking.isCommitted) {
-        return "success";
-      }
-      return "warning";
+      return statusColor(this.booking.status);
     },
     getApprovalStatusIcon() {
-      if (this.booking.isRejected) {
-        return "mdi-close-circle";
-      }
-      if (this.booking.isCommitted) {
-        return "mdi-check-circle";
-      }
-      return "mdi-clock-outline";
+      return statusIcon(this.booking.status);
     },
     createReceipt(bookingId) {
       if (this.groupBooking) {

@@ -16,6 +16,7 @@ docs/agents/
   web-integration.md      ← JS web interface (BookingManager)
   testing.md              ← Vitest setup, layout & conventions
   access-vocabulary.md    ← doors, locker systems, grants: German UI terms ↔ code
+  booking-status-vocabulary.md ← the five booking states, the action verbs, "read status, never a flag"
 docs/
   shared-session-deploy.md                   ← shared-origin Admin + Storefront deploy
 .cursor/rules/

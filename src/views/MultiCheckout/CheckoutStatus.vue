@@ -227,10 +227,16 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
-import {
-  isCheckoutStatusComplete,
-  isFreeBooking,
-} from "@/utils/bookingPaymentStatus";
+import { isFree } from "@/utils/bookingStatus";
+
+// Still reads the flags; the status poll moves onto `booking.status` with the
+// customer views (booking strand, ticket 4).
+function isCheckoutStatusComplete(booking) {
+  if (!booking?.isCommitted) {
+    return false;
+  }
+  return isFree(booking) || !!booking.isPayed;
+}
 
 export default {
   name: "CheckoutSuccess",
@@ -395,7 +401,7 @@ export default {
       if (booking.isRejected && booking.isCommitted) {
         return "Storniert";
       }
-      if (booking.isCommitted && isFreeBooking(booking)) {
+      if (booking.isCommitted && isFree(booking)) {
         return "Abgeschlossen (kostenfrei)";
       }
       if (booking.isCommitted && booking.isPayed) {

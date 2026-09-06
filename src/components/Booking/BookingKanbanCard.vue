@@ -118,24 +118,25 @@
     <div class="d-flex align-center justify-space-between px-2 pb-2">
       <div class="d-flex align-center flex-wrap" style="gap: 4px">
         <v-chip
-          v-if="showPaymentStatusChip"
+          v-if="element.bookingItem?.status"
           x-small
-          :color="getPaymentStatusColor(element.bookingItem)"
-          :text-color="getPaymentStatusTextColor(element.bookingItem)"
+          :color="statusColor(element.bookingItem.status)"
+          text-color="white"
         >
           <v-icon x-small left>{{
-            getPaymentStatusIcon(element.bookingItem)
+            statusIcon(element.bookingItem.status)
           }}</v-icon>
-          {{ getPaymentStatusLabel(element.bookingItem) }}
+          {{ statusLabel(element.bookingItem.status) }}
         </v-chip>
 
         <v-chip
-          v-if="element.bookingItem?.isCommitted"
+          v-if="isFree(element.bookingItem)"
           x-small
-          color="primary"
-          text-color="white"
+          :color="freeChip.color"
+          :text-color="freeChip.textColor"
         >
-          Freigegeben
+          <v-icon x-small left>{{ freeChip.icon }}</v-icon>
+          {{ freeChip.label }}
         </v-chip>
       </div>
 
@@ -155,13 +156,12 @@
 <script>
 import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
 import {
-  getPaymentStatus,
-  getPaymentStatusColor,
-  getPaymentStatusIcon,
-  getPaymentStatusLabel,
-  getPaymentStatusTextColor,
-  PAYMENT_STATUS,
-} from "@/utils/bookingPaymentStatus";
+  freeMarker,
+  isFree,
+  statusColor,
+  statusIcon,
+  statusLabel,
+} from "@/utils/bookingStatus";
 
 export default {
   name: "BookingKanbanCard",
@@ -200,17 +200,15 @@ export default {
       if (days >= 2) return "duration--warning";
       return "duration--ok";
     },
-    showPaymentStatusChip() {
-      const booking = this.element.bookingItem;
-      if (!booking) return false;
-      return getPaymentStatus(booking) !== PAYMENT_STATUS.UNPAID;
+    freeChip() {
+      return freeMarker();
     },
   },
   methods: {
-    getPaymentStatusLabel,
-    getPaymentStatusColor,
-    getPaymentStatusIcon,
-    getPaymentStatusTextColor,
+    isFree,
+    statusColor,
+    statusIcon,
+    statusLabel,
     onOpenBooking(bookingId) {
       this.$emit("open-booking", bookingId);
     },

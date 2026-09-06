@@ -1,5 +1,7 @@
+import { isRejectedOrCancelled } from "@/utils/bookingStatus";
+
 export function getCancellationRefundAudit(booking) {
-  if (!booking?.isRejected) {
+  if (!isRejectedOrCancelled(booking)) {
     return null;
   }
 

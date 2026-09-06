@@ -101,6 +101,7 @@
 import ApiBookingService from "@/services/api/ApiBookingService";
 import CancellationRefundPreview from "@/components/Booking/CancellationRefundPreview.vue";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+import { BOOKING_STATUS } from "@/utils/bookingStatus";
 
 const IBAN_REGEX = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/;
 const BIC_REGEX = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
@@ -177,7 +178,7 @@ export default {
     canProvideBankDetails() {
       return !!(
         this.toReject &&
-        this.toReject.isPayed === true &&
+        this.toReject.status === BOOKING_STATUS.CONFIRMED &&
         typeof this.toReject.priceEur === "number" &&
         this.toReject.priceEur > 0 &&
         this.skipCancellation === false

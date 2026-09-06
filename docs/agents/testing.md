@@ -7,7 +7,7 @@ Vitest runs beside the Vue CLI/webpack toolchain. It does not replace it: `npm r
 ```bash
 npm test          # single run (CI)
 npm run test:watch  # watch mode
-npm test -- tests/unit/utils/bookingPaymentStatus.spec.js   # one file
+npm test -- tests/unit/utils/bookingStatus.spec.js   # one file
 ```
 
 ## Where tests live
@@ -19,7 +19,7 @@ tests/unit/                          ← mirrors the src/ tree
   support/api.js                     ← shared API failure doubles and `flushPromises`
   services/api/apiErrorMessage.spec.js
   services/permissions/TenantPermissionService.spec.js
-  utils/bookingPaymentStatus.spec.js
+  utils/bookingStatus.spec.js
   components/Booking/BookingEditStatus.spec.js
 ```
 
@@ -64,4 +64,4 @@ Drive the real DOM (`trigger("click")`, `setValue(…)`) instead of calling comp
 
 ## Characterisation tests
 
-The specs that exist today pin **current** behaviour ahead of the 4.3.x API migration, including behaviour that is arguably wrong (`allowCreate` returning `undefined` rather than `false`; a zero-price booking reading as free whatever `isPayed` says). They are a baseline, not an endorsement. When a ticket deliberately changes one of these behaviours, change the spec in the same commit and say so in the changelog.
+The specs that exist today pin **current** behaviour ahead of the 4.3.x API migration, including behaviour that is arguably wrong (`allowCreate` returning `undefined` rather than `false`). They are a baseline, not an endorsement. When a ticket deliberately changes one of these behaviours, change the spec in the same commit and say so in the changelog — `bookingPaymentStatus.spec.js` became `bookingStatus.spec.js` that way when the list moved from the flags to `booking.status`.

@@ -129,6 +129,7 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import CancellationRefundPreview from "@/components/Booking/CancellationRefundPreview.vue";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+import { BOOKING_STATUS, groupBookingStatus } from "@/utils/bookingStatus";
 
 const IBAN_REGEX = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/;
 const BIC_REGEX = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
@@ -177,6 +178,11 @@ export default {
       type: String,
       default: null,
     },
+    /** The members of the series, for the group-wide questions. */
+    groupBookings: {
+      type: Array,
+      default: () => [],
+    },
     inProgress: {
       type: Boolean,
       default: false,
@@ -213,12 +219,19 @@ export default {
       },
     },
     canProvideBankDetails() {
-      return !!(
-        this.toReject &&
-        this.toReject.isPayed === true &&
-        typeof this.toReject.priceEur === "number" &&
-        this.toReject.priceEur > 0 &&
-        this.skipCancellation === false
+      if (!this.toReject || this.skipCancellation !== false) return false;
+      // Bank details are asked for a paid cancellation: `confirmed` with a
+      // price, and for the whole series only where every member is confirmed.
+      const members =
+        this.cancellationScope === "group" && this.groupBookings.length
+          ? this.groupBookings
+          : [this.toReject];
+      return (
+        groupBookingStatus(members) === BOOKING_STATUS.CONFIRMED &&
+        members.some(
+          (booking) =>
+            typeof booking.priceEur === "number" && booking.priceEur > 0
+        )
       );
     },
     canSubmit() {
