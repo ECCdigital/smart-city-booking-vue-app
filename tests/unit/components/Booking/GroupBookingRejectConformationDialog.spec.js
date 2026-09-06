@@ -23,13 +23,18 @@ function member(id, status, priceEur = 25) {
  * Mounted closed and then opened, the way `BookingTransitions` drives it, so
  * that the dialog's own opening runs.
  */
-async function openDialog(groupBookings, toReject = groupBookings[0]) {
+async function openDialog(
+  groupBookings,
+  toReject = groupBookings[0],
+  props = {}
+) {
   const wrapper = mountComponent(GroupBookingRejectConformationDialog, {
     propsData: {
       open: false,
       toReject,
       groupBookingId: "grp-1",
       groupBookings,
+      ...props,
     },
   });
   await wrapper.setProps({ open: true });
@@ -153,6 +158,21 @@ describe("GroupBookingRejectConformationDialog", () => {
         i18n.t("booking.cancellationRefund.bankDetailsTitle")
       );
     });
+  });
+
+  it("offers only the series scope where the host acts on the series as a whole", async () => {
+    const members = [member("bk-1", "confirmed"), member("bk-2", "confirmed")];
+    const wrapper = await openDialog(members, members[0], {
+      seriesOnly: true,
+    });
+
+    expect(radio("Gesamte Serie stornieren")).toBeDefined();
+    expect(radio("Nur diese Buchung stornieren")).toBeUndefined();
+
+    await submitWithReason(wrapper);
+
+    expect(wrapper.emitted("reject-group-booking")).toHaveLength(1);
+    expect(wrapper.emitted("reject-single-booking")).toBeUndefined();
   });
 
   /**

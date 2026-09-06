@@ -78,6 +78,16 @@ describe("GroupBookingCommitDialog", () => {
     expect(dialogButton("Serie freigeben")).toBeDefined();
   });
 
+  it("offers only the series where the host acts on the series as a whole", () => {
+    mountDialog([member("bk-1", "requested"), member("bk-2", "requested")], {
+      seriesOnly: true,
+    });
+
+    expect(dialogButton("Serie freigeben")).toBeDefined();
+    expect(dialogButton("Nur diese Buchung freigeben")).toBeUndefined();
+    expect(activeDialogText()).not.toContain("ist Teil einer Serienbuchung");
+  });
+
   it("keeps the inline error where the route refused", () => {
     mountDialog([member("bk-1", "requested")], {
       error: "Betroffene Buchungen: bk-2",

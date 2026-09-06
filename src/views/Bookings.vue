@@ -306,6 +306,7 @@ import {
   filterBookingsByStatus,
   statusColor,
   statusLabel,
+  transitionTarget,
 } from "@/utils/bookingStatus";
 
 export default {
@@ -539,19 +540,10 @@ export default {
      */
     onTransition(action, bookingId) {
       const booking = this.api.bookings.find((item) => item.id === bookingId);
-      const groupBooking = this.api.groupBookings.find((item) =>
-        item.bookingIds.includes(bookingId)
+      this.$refs.transitions.start(
+        action,
+        transitionTarget(booking, this.groupBookingOf(bookingId))
       );
-      const target = groupBooking
-        ? {
-            booking,
-            groupBooking,
-            bookings: this.api.bookings.filter((item) =>
-              groupBooking.bookingIds.includes(item.id)
-            ),
-          }
-        : { booking };
-      this.$refs.transitions.start(action, target);
     },
     async onTransitioned() {
       await this.reloadBookings();
@@ -691,36 +683,34 @@ export default {
         {},
         this.api.bookings.find((booking) => booking.id === bookingId)
       );
-      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(bookingId)
-      );
-      if (hasGroupBooking) {
-        this.selectedGroupBooking = Object.assign(
-          {},
-          this.api.groupBookings.find((groupBooking) =>
-            groupBooking.bookingIds.includes(bookingId)
-          )
-        );
-      } else {
-        this.selectedGroupBooking = null;
-      }
+      this.selectedGroupBooking = this.groupBookingOf(bookingId);
       this.openBookingDialog = true;
+    },
+    /**
+     * The series a booking belongs to, with its members populated, so that
+     * the drawer can act on a member with its series (spec E3); `null` for
+     * a single booking.
+     */
+    groupBookingOf(bookingId) {
+      const groupBooking = this.api.groupBookings.find((item) =>
+        item.bookingIds.includes(bookingId)
+      );
+      return groupBooking ? this.withMembers(groupBooking) : null;
+    },
+    /** A series with its members populated from the loaded bookings. */
+    withMembers(groupBooking) {
+      return {
+        ...groupBooking,
+        bookings: groupBooking.bookingIds
+          .map((id) => this.api.bookings.find((booking) => booking.id === id))
+          .filter(Boolean),
+      };
     },
     onOpenGroupBooking(groupBookingId) {
       const groupBooking = this.api.groupBookings.find(
         (groupBooking) => groupBooking.id === groupBookingId
       );
-      this.selectedGroupBooking = Object.assign(
-        {},
-        {
-          ...groupBooking,
-          bookings: groupBooking.bookingIds
-            .map((bookingId) =>
-              this.api.bookings.find((booking) => booking.id === bookingId)
-            )
-            .filter(Boolean),
-        }
-      );
+      this.selectedGroupBooking = this.withMembers(groupBooking);
       this.openGroupBookingDialog = true;
     },
     onOpenEditBooking(bookingId) {
@@ -753,14 +743,23 @@ export default {
     onCloseBookingDialog() {
       this.openBookingDialog = false;
     },
+    /**
+     * The drawer asks for a reload after a transition, a reprint or a
+     * refused call that says the screen is stale (spec E5). A booking that
+     * is gone by then closes the drawer instead of showing an empty one.
+     */
     async updateBooking(bookingId) {
       await this.fetchBookings();
       await this.fetchGroupBookings();
-      this.selectedBooking = Object.assign(
-        {},
-        this.api.bookings.find((booking) => booking.id === bookingId)
-      );
+      const booking = this.api.bookings.find((item) => item.id === bookingId);
+      if (!booking) {
+        this.openBookingDialog = false;
+        return;
+      }
+      this.selectedBooking = Object.assign({}, booking);
+      this.selectedGroupBooking = this.groupBookingOf(bookingId);
     },
+    /** The series drawer's reload; a series gone by then closes the drawer, as `updateBooking` does. */
     async updateGroupBookingView() {
       const groupBookingId = this.selectedGroupBooking?.id;
       if (!groupBookingId) return;
@@ -771,19 +770,12 @@ export default {
       const groupBooking = this.api.groupBookings.find(
         (gb) => gb.id === groupBookingId
       );
-      if (!groupBooking) return;
+      if (!groupBooking) {
+        this.openGroupBookingDialog = false;
+        return;
+      }
 
-      this.selectedGroupBooking = Object.assign(
-        {},
-        {
-          ...groupBooking,
-          bookings: groupBooking.bookingIds
-            .map((bookingId) =>
-              this.api.bookings.find((booking) => booking.id === bookingId)
-            )
-            .filter(Boolean),
-        }
-      );
+      this.selectedGroupBooking = this.withMembers(groupBooking);
     },
     initializeFuse() {
       const options = {

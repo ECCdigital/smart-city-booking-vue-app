@@ -66,6 +66,15 @@ export default {
     );
     return response.data;
   },
+  /** Reissues the series' aggregated cancellation receipt as a revision; answers with the series. */
+  async reprintGroupCancellationReceipt(tenantId, groupBookingId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const response = await ApiClient.post(
+      `api/${t}/group-bookings/${groupBookingId}/cancellation-receipt`,
+      {}
+    );
+    return response.data;
+  },
   async generateGroupInvoice(tenantId, groupBookingId, sendEmail = false) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     const response = await ApiClient.post(

@@ -9,6 +9,7 @@ import {
   filterBookingsByStatus,
   freeMarker,
   groupAllowsAction,
+  transitionTarget,
   groupBookingStatus,
   isFree,
   isAwaitingPayment,
@@ -329,5 +330,45 @@ describe("groupAllowsAction", () => {
   it("refuses everything without members", () => {
     expect(groupAllowsAction([], "confirm")).toBe(false);
     expect(groupAllowsAction(undefined, "confirm")).toBe(false);
+  });
+});
+
+/**
+ * The target a host hands `BookingTransitions.start()`: a member with its
+ * series and members where the members are at hand, the booking alone
+ * otherwise (spec E3, E9).
+ */
+describe("transitionTarget", () => {
+  const booking = { id: "bk-1", status: "requested" };
+
+  it("hands a single booking alone", () => {
+    expect(transitionTarget(booking, null)).toEqual({ booking });
+    expect(transitionTarget(booking, undefined)).toEqual({ booking });
+  });
+
+  it("hands a series member with its series and members", () => {
+    const other = { id: "bk-2", status: "requested" };
+    const groupBooking = { id: "grp-1", bookings: [booking, other] };
+
+    expect(transitionTarget(booking, groupBooking)).toEqual({
+      booking,
+      groupBooking,
+      bookings: [booking, other],
+    });
+  });
+
+  it("acts on the member alone where the series' members are not at hand", () => {
+    expect(
+      transitionTarget(booking, { id: "grp-1", bookingIds: ["bk-1", "bk-2"] })
+    ).toEqual({ booking });
+    expect(transitionTarget(booking, { id: "grp-1", bookings: [] })).toEqual({
+      booking,
+    });
+  });
+
+  it("drops a member the list has not loaded", () => {
+    const groupBooking = { id: "grp-1", bookings: [booking, undefined] };
+
+    expect(transitionTarget(booking, groupBooking).bookings).toEqual([booking]);
   });
 });

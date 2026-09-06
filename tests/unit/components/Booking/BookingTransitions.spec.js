@@ -829,6 +829,80 @@ describe("BookingTransitions", () => {
     });
   });
 
+  /**
+   * A series drawer acts on the whole series (`seriesOnly`): the dialogs
+   * offer no "Nur diese Buchung", and the action is gated on the members'
+   * shared state - a mixed series is refused before any dialog opens.
+   */
+  describe("a series-only target", () => {
+    const seriesOnly = (target) => ({ ...target, seriesOnly: true });
+
+    it("offers the series without the single-member option, and confirms it", async () => {
+      const { wrapper } = mountTransitions();
+      ApiGroupBookingService.commitGroupBooking.mockResolvedValue(OK);
+
+      await start(wrapper, "confirm", seriesOnly(series()));
+
+      expect(dialogButton("Nur diese Buchung freigeben")).toBeUndefined();
+      await clickDialogButton(wrapper, "Serie freigeben");
+
+      expect(ApiGroupBookingService.commitGroupBooking).toHaveBeenCalledWith(
+        null,
+        "grp-1"
+      );
+      expect(ApiBookingService.commitBooking).not.toHaveBeenCalled();
+    });
+
+    it("leaves the cancel dialog only the series scope", async () => {
+      const { wrapper } = mountTransitions();
+
+      await start(wrapper, "cancel", seriesOnly(series()));
+
+      const text = document.querySelector(".v-dialog--active").textContent;
+      expect(text).toContain(i18n.t("booking.cancellationRefund.cancelGroup"));
+      expect(text).not.toContain(
+        i18n.t("booking.cancellationRefund.cancelSingle")
+      );
+    });
+
+    it("refuses a mixed series before any dialog opens", async () => {
+      const { wrapper, store } = mountTransitions();
+
+      await start(
+        wrapper,
+        "confirm",
+        seriesOnly(series([{}, { id: "bk-2", status: "confirmed" }]))
+      );
+
+      expect(document.querySelector(".v-dialog--active")).toBeNull();
+      expect(ApiGroupBookingService.commitGroupBooking).not.toHaveBeenCalled();
+      const expected = i18n.t("group-booking.transition.mixed.message");
+      expect(toastMessages(store)).toContain(expected);
+      expect(wrapper.emitted("failed")[0][0]).toMatchObject({
+        action: "confirm",
+        message: expected,
+        refetch: false,
+      });
+    });
+
+    it("knows no series-wide reinstate", async () => {
+      const { wrapper, store } = mountTransitions();
+
+      await start(
+        wrapper,
+        "reinstate",
+        seriesOnly(
+          series([{ status: "rejected" }, { id: "bk-2", status: "rejected" }])
+        )
+      );
+
+      expect(document.querySelector(".v-dialog--active")).toBeNull();
+      expect(toastMessages(store)).toContain(
+        i18n.t("group-booking.transition.not-allowed.message")
+      );
+    });
+  });
+
   describe("an action the state does not allow", () => {
     it("is refused before anything is called", async () => {
       const { wrapper, store } = mountTransitions();

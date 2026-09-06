@@ -23,6 +23,11 @@ export default {
       type: Array,
       default: () => [],
     },
+    /** The host acts on the series as a whole: no "Nur diese Buchung" (spec E9). */
+    seriesOnly: {
+      type: Boolean,
+      default: false,
+    },
     inProgress: {
       type: Boolean,
       default: false,
@@ -272,10 +277,12 @@ export default {
                 dense
               >
                 <span class="text-subtitle-1">
-                  Die Buchung <strong>{{ bookingId }}</strong> ist Teil einer
-                  Serienbuchung.
-                  <template v-if="canPayGroup">
+                  <template v-if="!seriesOnly">
+                    Die Buchung <strong>{{ bookingId }}</strong> ist Teil einer
+                    Serienbuchung.
                     <br />
+                  </template>
+                  <template v-if="canPayGroup">
                     Möchten Sie die gesamte Serie als bezahlt markieren?
                   </template>
                 </span>
@@ -311,6 +318,7 @@ export default {
           Serie als bezahlt markieren
         </v-btn>
         <v-btn
+          v-if="!seriesOnly"
           color="secondary"
           class="ma-2"
           large

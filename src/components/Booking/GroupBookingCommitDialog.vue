@@ -7,8 +7,10 @@
       </v-card-title>
       <v-card-text>
         <span class="text-h6">
-          Die Buchung
-          <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung.
+          <template v-if="!seriesOnly">
+            Die Buchung
+            <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung.
+          </template>
           <template v-if="canCommitGroup">
             Möchten Sie die gesamte Serie freigeben?
           </template>
@@ -35,7 +37,7 @@
             >Serie freigeben</v-btn
           >
         </v-col>
-        <v-col cols="auto">
+        <v-col v-if="!seriesOnly" cols="auto">
           <v-btn large color="primary" @click="commitSingleBooking" :loading="inProgress"
             >Nur diese Buchung freigeben</v-btn
           >
@@ -69,6 +71,11 @@ export default {
     groupBookings: {
       type: Array,
       default: () => [],
+    },
+    /** The host acts on the series as a whole: no "Nur diese Buchung" (spec E9). */
+    seriesOnly: {
+      type: Boolean,
+      default: false,
     },
     inProgress: {
       type: Boolean,

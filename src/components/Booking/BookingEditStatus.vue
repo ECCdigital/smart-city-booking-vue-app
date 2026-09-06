@@ -107,55 +107,16 @@
       </v-row>
     </v-sheet>
 
-    <v-sheet v-else class="mb-4 px-4 py-3 status-indicator" rounded>
-      <div class="d-flex flex-wrap align-center">
-        <v-chip
-          class="booking-status-chip mr-2 my-1"
-          :color="statusColor(booking.status)"
-          text-color="white"
-          small
-        >
-          <v-icon small left>{{ statusIcon(booking.status) }}</v-icon>
-          {{ statusLabel(booking.status) }}
-        </v-chip>
-        <v-chip
-          v-if="isFree(booking)"
-          class="booking-status-free mr-2 my-1"
-          :color="freeMarker().color"
-          :text-color="freeMarker().textColor"
-          small
-        >
-          <v-icon small left>{{ freeMarker().icon }}</v-icon>
-          {{ freeMarker().label }}
-        </v-chip>
-        <span
-          v-if="paidAt"
-          class="booking-status-paid-at text--secondary text-body-2 mr-2 my-1"
-        >
-          {{ $t("booking.status.paidAt", { date: paidAt }) }}
-        </span>
-        <v-spacer />
-        <v-btn
-          v-for="action in actions"
-          :key="action"
-          class="booking-action ml-2 my-1"
-          :color="actionColor(action)"
-          :disabled="dirty"
-          small
-          outlined
-          @click="transition(action)"
-        >
-          <v-icon small left>{{ actionIcon(action) }}</v-icon>
-          {{ actionLabel(action, booking.status) }}
-        </v-btn>
-      </div>
-      <div
-        v-if="dirty && actions.length"
-        class="booking-status-hint text-caption text--secondary mt-1"
-      >
-        {{ $t("booking.edit.saveFirst") }}
-      </div>
-    </v-sheet>
+    <BookingStatusBar
+      v-else
+      class="mb-4"
+      :status="booking.status"
+      :booking="booking"
+      :actions="actions"
+      :disabled="dirty"
+      :hint="dirty && actions.length ? $t('booking.edit.saveFirst') : null"
+      @action="transition"
+    />
 
     <v-expand-transition>
       <v-sheet
@@ -191,6 +152,7 @@
 </template>
 
 <script>
+import BookingStatusBar from "@/components/Booking/BookingStatusBar.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
@@ -203,16 +165,10 @@ import {
 } from "@/utils/bookingForm";
 import {
   BOOKING_STATUS,
-  actionColor,
-  actionIcon,
-  actionLabel,
-  freeMarker,
-  isFree,
   isRejectedOrCancelled,
-  statusColor,
-  statusIcon,
   statusLabel,
   transitionActions,
+  transitionTarget,
 } from "@/utils/bookingStatus";
 
 /**
@@ -230,7 +186,7 @@ import {
  */
 export default {
   name: "BookingEditStatus",
-  components: { BookingTransitions, CancellationRefundAudit },
+  components: { BookingStatusBar, BookingTransitions, CancellationRefundAudit },
   props: {
     booking: {
       type: Object,
@@ -298,18 +254,6 @@ export default {
     actions() {
       return transitionActions(this.booking.status);
     },
-    paidAt() {
-      if (
-        this.booking.status !== BOOKING_STATUS.CONFIRMED ||
-        !this.booking.timePaid
-      ) {
-        return null;
-      }
-      return new Intl.DateTimeFormat("de-DE", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(new Date(this.booking.timePaid));
-    },
     rejectionReasonLabel() {
       return this.booking.status === BOOKING_STATUS.CANCELLED
         ? this.$t("booking.edit.reason.cancelled")
@@ -320,23 +264,6 @@ export default {
     },
     cancellationRefundAudit() {
       return getCancellationRefundAudit(this.booking);
-    },
-    /**
-     * A series member is acted on with its series where the members are at
-     * hand (`groupBooking.bookings`, populated by the page); without them
-     * the module could not tell the series' shared state, so the member is
-     * acted on alone.
-     */
-    transitionTarget() {
-      const members = this.groupBooking?.bookings;
-      if (Array.isArray(members) && members.length > 0) {
-        return {
-          booking: this.booking,
-          groupBooking: this.groupBooking,
-          bookings: members,
-        };
-      }
-      return { booking: this.booking };
     },
   },
   watch: {
@@ -359,18 +286,13 @@ export default {
     }
   },
   methods: {
-    actionColor,
-    actionIcon,
-    actionLabel,
-    freeMarker,
-    isFree,
     isRejectedOrCancelled,
-    statusColor,
-    statusIcon,
-    statusLabel,
     transition(action) {
       if (this.dirty) return;
-      this.$refs.transitions.start(action, this.transitionTarget);
+      this.$refs.transitions.start(
+        action,
+        transitionTarget(this.booking, this.groupBooking)
+      );
     },
     setSelection(selection) {
       this.initialState.selection = selection;
@@ -398,15 +320,6 @@ export default {
 </script>
 
 <style scoped>
-.status-indicator {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  background-color: var(--v-accent-base, #f5f5f5) !important;
-}
-
-.theme--dark .status-indicator {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
 .status-reason {
   background-color: var(--v-accent-base, #f5f5f5) !important;
 }

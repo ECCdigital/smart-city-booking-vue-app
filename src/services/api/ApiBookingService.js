@@ -162,6 +162,14 @@ export default {
       }
     );
   },
+  /** Reissues the cancellation receipt as a revision under the same number; answers with the booking. */
+  async reprintCancellationReceipt(id) {
+    const response = await ApiClient.post(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/cancellation-receipt`,
+      {}
+    );
+    return response.data;
+  },
   getCancellationReceipt(id, cancellationReceiptId) {
     return ApiClient.get(
       `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/cancellation-receipt/${cancellationReceiptId}`,

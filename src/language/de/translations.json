@@ -615,9 +615,32 @@
     },
     "payment": {
       "paid": "Ja",
-      "unpaid": "Nein",
-      "settled": "Bezahlt",
-      "open": "Offen"
+      "unpaid": "Nein"
+    },
+    "cancellationReceipt": {
+      "title": "Stornobelege",
+      "issuedAt": "Ausstellungsdatum:",
+      "empty": "Keine Stornobelege vorhanden",
+      "reprint": {
+        "label": "Stornobeleg erneut ausstellen",
+        "hint": "Erzeugt eine Revision unter derselben Nummer.",
+        "progress": "Stelle Stornobeleg erneut aus...",
+        "success": {
+          "title": "Stornobeleg ausgestellt",
+          "message": "Der Stornobeleg wurde erneut ausgestellt."
+        },
+        "error": {
+          "title": "Fehler beim Ausstellen",
+          "message": "Der Stornobeleg konnte nicht erneut ausgestellt werden."
+        }
+      },
+      "download": {
+        "progress": "Stelle Stornobeleg bereit...",
+        "error": {
+          "title": "Fehler beim Herunterladen",
+          "message": "Der Stornobeleg konnte nicht heruntergeladen werden."
+        }
+      }
     },
     "initialState": {
       "label": "Anfangszustand",
@@ -735,6 +758,19 @@
     "status": {
       "title": "Zustand der Serie",
       "members": "Buchungen der Serie"
+    },
+    "cancellationReceipt": {
+      "reprint": {
+        "progress": "Stelle Stornobeleg der Serie erneut aus...",
+        "success": {
+          "title": "Stornobeleg ausgestellt",
+          "message": "Der Stornobeleg der Serie wurde erneut ausgestellt."
+        },
+        "error": {
+          "title": "Fehler beim Ausstellen",
+          "message": "Der Stornobeleg der Serie konnte nicht erneut ausgestellt werden."
+        }
+      }
     },
     "transition": {
       "mixed": {

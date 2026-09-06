@@ -92,6 +92,18 @@ describe("BookingPayDialog for a member of a series", () => {
     expect(dialogButton("Serie als bezahlt markieren")).toBeDefined();
   });
 
+  it("offers only the series where the host acts on the series as a whole", () => {
+    mountGroupDialog(
+      [member("bk-1", "payment_due"), member("bk-2", "payment_due")],
+      { seriesOnly: true }
+    );
+
+    expect(dialogButton("Serie als bezahlt markieren")).toBeDefined();
+    expect(
+      dialogButton("Nur diese Buchung als bezahlt markieren")
+    ).toBeUndefined();
+  });
+
   it("shows no series state for a booking outside a series", () => {
     mountComponent(BookingPayDialog, {
       propsData: { open: true, bookingId: "bk-1" },

@@ -232,3 +232,20 @@ export function groupBookingStatus(members) {
 export function groupAllowsAction(members, action) {
   return allowedActions(groupBookingStatus(members)).includes(action);
 }
+
+/**
+ * The target a host hands `BookingTransitions.start()`: `{ booking }` for a
+ * single booking, `{ booking, groupBooking, bookings }` for a member of a
+ * series whose members are at hand (`groupBooking.bookings`, populated by
+ * the page). Without the members the module could not tell the series'
+ * shared state, so the member is acted on alone (spec E3, E9).
+ */
+export function transitionTarget(booking, groupBooking) {
+  const members = Array.isArray(groupBooking?.bookings)
+    ? groupBooking.bookings.filter(Boolean)
+    : [];
+  if (members.length === 0) {
+    return { booking };
+  }
+  return { booking, groupBooking, bookings: members };
+}

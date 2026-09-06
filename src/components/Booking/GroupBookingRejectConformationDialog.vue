@@ -7,7 +7,7 @@
           <span class="text-h5">Buchung stornieren</span>
         </v-card-title>
         <v-card-text>
-          <span class="text-h6">
+          <span v-if="!seriesOnly" class="text-h6">
             Die Buchung
             <strong>{{ toReject.id }}</strong> ist Teil einer Serienbuchung.
           </span>
@@ -23,6 +23,7 @@
               :label="$t('booking.cancellationRefund.cancelGroup')"
             />
             <v-radio
+              v-if="!seriesOnly"
               value="single"
               :label="$t('booking.cancellationRefund.cancelSingle')"
             />
@@ -194,6 +195,11 @@ export default {
     groupBookings: {
       type: Array,
       default: () => [],
+    },
+    /** The host acts on the series as a whole: no "Nur diese Buchung" (spec E9). */
+    seriesOnly: {
+      type: Boolean,
+      default: false,
     },
     inProgress: {
       type: Boolean,

@@ -4,6 +4,7 @@
       v-if="booking"
       :booking-id="booking.id"
       :group-bookings="members"
+      :series-only="seriesOnly"
       :open="dialog === 'commitGroup'"
       :in-progress="inProgress"
       :error="error"
@@ -17,6 +18,7 @@
       :open="dialog === 'pay'"
       :has-group-booking="!!groupBooking"
       :group-bookings="members"
+      :series-only="seriesOnly"
       :in-progress="inProgress"
       :error="error"
       @close="closeDialog"
@@ -37,6 +39,7 @@
       :to-reject="booking"
       :group-booking-id="groupBooking?.id"
       :group-bookings="members"
+      :series-only="seriesOnly"
       :open="dialog === 'cancelGroup'"
       :in-progress="inProgress"
       :error="error"
@@ -139,6 +142,10 @@ export default {
     members() {
       return this.target?.bookings || [];
     },
+    /** The host acts on the series as a whole; the dialogs offer no "Nur diese Buchung". */
+    seriesOnly() {
+      return this.target?.seriesOnly === true;
+    },
     reinstateHint() {
       const key =
         this.booking?.status === BOOKING_STATUS.CANCELLED
@@ -154,13 +161,27 @@ export default {
      * `target` is `{ booking }` for a single booking or
      * `{ booking, groupBooking, bookings }` for a member of a series, where
      * `bookings` are the members and `booking` the one the action was
-     * triggered from. Availability is the host's business (`allowsAction`);
-     * the module only refuses what the state forbids.
+     * triggered from (`transitionTarget()` builds both). A series drawer
+     * adds `seriesOnly: true` to act on the whole series: the group dialogs
+     * then offer no "Nur diese Buchung", and the action is gated on the
+     * members' shared state instead of the one member's. Availability is
+     * otherwise the host's business (`allowsAction`); the module only
+     * refuses what the state forbids.
      */
     start(action, target) {
       this.target = target;
       this.error = null;
-      if (!allowsAction(this.booking, action)) {
+      if (this.seriesOnly) {
+        // There is no series-wide reinstate (spec E9).
+        if (action === BOOKING_ACTION.REINSTATE) {
+          this.refuse(action, "group-booking.transition.not-allowed");
+          return;
+        }
+        if (!groupAllowsAction(this.members, action)) {
+          this.groupAllows(action);
+          return;
+        }
+      } else if (!allowsAction(this.booking, action)) {
         this.refuse(action, "booking.transition.not-allowed");
         return;
       }
