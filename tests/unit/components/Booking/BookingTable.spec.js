@@ -100,56 +100,65 @@ describe("BookingTable", () => {
     });
   });
 
+  /**
+   * The menu carries the entries that are not transitions, then exactly the
+   * transitions the state allows (spec E2) - a transition the state forbids
+   * is not there at all, and "Freigabe zurücknehmen" / "Zahlung zurücknehmen"
+   * exist nowhere. Delete is not a transition and keeps its own, disabled
+   * entry where the state forbids it.
+   */
   describe("the row menu", () => {
-    it("offers confirm, reject and delete on a requested booking", async () => {
-      const wrapper = mountTable([booking({ status: "requested" })]);
+    const FIXED = ["Details ansehen", "Bearbeiten", "Löschen"];
 
+    async function transitionsOffered(wrapper) {
       const menu = await openRowMenu(wrapper);
-      expect(menu["Freigeben"]).toBe(false);
-      expect(menu["Als bezahlt markieren"]).toBe(true);
-      expect(menu["Ablehnen"]).toBe(false);
-      expect(menu["Löschen"]).toBe(false);
+      return Object.keys(menu).filter((title) => !FIXED.includes(title));
+    }
+
+    it.each([
+      ["requested", ["Freigeben", "Ablehnen"]],
+      ["payment_due", ["Als bezahlt markieren", "Stornieren"]],
+      ["confirmed", ["Stornieren"]],
+      ["rejected", ["Wiederherstellen"]],
+      ["cancelled", ["Wiederherstellen"]],
+    ])("offers exactly %s's transitions: %j", async (status, expected) => {
+      const wrapper = mountTable([booking({ status })]);
+
+      expect(await transitionsOffered(wrapper)).toEqual(expected);
     });
 
-    it("offers pay and cancel on a booking whose payment is due", async () => {
-      const wrapper = mountTable([booking({ status: "payment_due" })]);
-
-      const menu = await openRowMenu(wrapper);
-      expect(menu["Freigeben"]).toBe(true);
-      expect(menu["Als bezahlt markieren"]).toBe(false);
-      expect(menu["Stornieren"]).toBe(false);
-      expect(menu["Löschen"]).toBe(true);
-    });
-
-    it("offers only cancel on a confirmed booking", async () => {
+    it("never offers to take a confirmation or a payment back", async () => {
       const wrapper = mountTable([booking({ status: "confirmed" })]);
 
       const menu = await openRowMenu(wrapper);
-      expect(menu["Freigeben"]).toBe(true);
-      expect(menu["Als bezahlt markieren"]).toBe(true);
-      expect(menu["Stornieren"]).toBe(false);
-      expect(menu["Löschen"]).toBe(true);
+      expect(Object.keys(menu).join(" ")).not.toContain("zurücknehmen");
     });
 
-    it("lets a rejected booking be deleted, nothing else", async () => {
-      const menu = await openRowMenu(
-        mountTable([booking({ status: "rejected" })])
-      );
+    it.each([
+      ["requested", false],
+      ["rejected", false],
+      ["payment_due", true],
+      ["confirmed", true],
+      ["cancelled", true],
+    ])("on a %s booking Löschen is disabled: %s", async (status, disabled) => {
+      const menu = await openRowMenu(mountTable([booking({ status })]));
 
-      expect(menu["Löschen"]).toBe(false);
-      expect(menu["Freigeben"]).toBe(true);
-      expect(menu["Stornieren"]).toBe(true);
+      expect(menu["Löschen"]).toBe(disabled);
     });
 
-    it("offers no transition on a cancelled booking", async () => {
-      const menu = await openRowMenu(
-        mountTable([booking({ status: "cancelled" })])
-      );
+    it("hands the chosen transition and the booking to the host", async () => {
+      const wrapper = mountTable([booking({ status: "rejected" })]);
 
-      expect(menu["Löschen"]).toBe(true);
-      expect(menu["Freigeben"]).toBe(true);
-      expect(menu["Als bezahlt markieren"]).toBe(true);
-      expect(menu["Stornieren"]).toBe(true);
+      await openRowMenu(wrapper);
+      Array.from(document.querySelectorAll(".v-menu__content .v-list-item"))
+        .find(
+          (el) =>
+            el.querySelector(".v-list-item__title")?.textContent.trim() ===
+            "Wiederherstellen"
+        )
+        .click();
+
+      expect(wrapper.emitted("transition")).toEqual([["reinstate", "bk-1"]]);
     });
   });
 });

@@ -177,43 +177,18 @@
             <v-list-item-title>Buchung bearbeiten</v-list-item-title>
           </v-list-item>
           <v-list-item
+            v-for="action in transitionActions(selectedEvent.status)"
+            :key="action"
             link
-            @click="commitBooking(selectedEvent.id)"
-            :disabled="
-              !BookingPermissionService.allowUpdate(selectedEvent) ||
-              !allowsAction(selectedEvent, 'confirm')
-            "
+            @click="transition(action, selectedEvent.id)"
+            :disabled="!BookingPermissionService.allowUpdate(selectedEvent)"
           >
             <v-list-item-icon>
-              <v-icon>mdi-checkbox-marked-circle</v-icon>
+              <v-icon>{{ actionIcon(action) }}</v-icon>
             </v-list-item-icon>
-            <v-list-item-title>Buchung freigeben</v-list-item-title>
-          </v-list-item>
-          <v-list-item
-            link
-            @click="payBooking(selectedEvent.id)"
-            :disabled="
-              !BookingPermissionService.allowUpdate(selectedEvent) ||
-              !allowsAction(selectedEvent, 'pay')
-            "
-          >
-            <v-list-item-icon>
-              <v-icon>mdi-cash-check</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Buchung als bezahlt markieren</v-list-item-title>
-          </v-list-item>
-          <v-list-item
-            link
-            @click="rejectBooking(selectedEvent.id)"
-            :disabled="
-              !BookingPermissionService.allowUpdate(selectedEvent) ||
-              !allowsAction(selectedEvent, 'cancel')
-            "
-          >
-            <v-list-item-icon>
-              <v-icon>mdi-close-circle</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Buchung stornieren</v-list-item-title>
+            <v-list-item-title>
+              {{ actionLabel(action, selectedEvent.status) }}
+            </v-list-item-title>
           </v-list-item>
           <v-divider />
           <v-list-item
@@ -240,8 +215,11 @@ import { mapGetters } from "vuex";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
   BOOKING_STATUS,
+  actionIcon,
+  actionLabel,
   allowsAction,
   isRejectedOrCancelled,
+  transitionActions,
 } from "@/utils/bookingStatus";
 
 export default {
@@ -336,7 +314,10 @@ export default {
     },
   },
   methods: {
+    actionIcon,
+    actionLabel,
     allowsAction,
+    transitionActions,
     getBookingTitle(booking) {
       const bookableItems = booking.bookableItems;
       if (!bookableItems) {
@@ -442,11 +423,9 @@ export default {
     onOpenEditBooking(bookingId) {
       this.$emit("open-edit-booking", bookingId);
     },
-    commitBooking(bookingId) {
-      this.$emit("commit-booking", bookingId);
-    },
-    rejectBooking(bookingId) {
-      this.$emit("reject-booking", bookingId);
+    /** A transition of `BOOKING_ACTION`; the host runs it through `BookingTransitions`. */
+    transition(action, bookingId) {
+      this.$emit("transition", action, bookingId);
     },
     onOpenDeleteDialog(bookingId) {
       this.$emit("open-delete-dialog", bookingId);
@@ -457,9 +436,6 @@ export default {
           this.calendarTitle = this.$refs.calendar.title;
         }
       });
-    },
-    payBooking(bookingId) {
-      this.$emit("pay-booking", bookingId);
     },
   },
   mounted() {

@@ -89,6 +89,36 @@ export function actionLabel(action, status) {
   return i18n.t(`booking.action.${action}`);
 }
 
+/**
+ * The transitions a host's menu offers (spec E2): the actions the state
+ * allows except the hard delete, which is not a transition and keeps its own
+ * entry.
+ */
+export function transitionActions(status) {
+  return allowedActions(status).filter(
+    (action) => action !== BOOKING_ACTION.DELETE
+  );
+}
+
+const ACTION_PRESENTATION = {
+  [BOOKING_ACTION.CONFIRM]: {
+    icon: "mdi-checkbox-marked-circle",
+    color: "success",
+  },
+  [BOOKING_ACTION.PAY]: { icon: "mdi-cash-check", color: "success" },
+  [BOOKING_ACTION.CANCEL]: { icon: "mdi-close-circle", color: "orange" },
+  [BOOKING_ACTION.REINSTATE]: { icon: "mdi-restore", color: "warning" },
+  [BOOKING_ACTION.DELETE]: { icon: "mdi-delete", color: "red" },
+};
+
+export function actionIcon(action) {
+  return ACTION_PRESENTATION[action]?.icon || "mdi-help-circle-outline";
+}
+
+export function actionColor(action) {
+  return ACTION_PRESENTATION[action]?.color || "grey";
+}
+
 /** The order of the "Status" column: requested < payment_due < confirmed < cancelled < rejected. */
 const RANK = [
   BOOKING_STATUS.REQUESTED,
