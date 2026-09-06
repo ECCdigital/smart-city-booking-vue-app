@@ -158,6 +158,11 @@ export function isRejectedOrCancelled(booking) {
   );
 }
 
+/** The one state with something left to pay - the checkout's cue to collect it. */
+export function isAwaitingPayment(booking) {
+  return booking?.status === BOOKING_STATUS.PAYMENT_DUE;
+}
+
 /**
  * The state of a group: the members' shared status, `MIXED` where they
  * disagree, `null` without members (spec E9).

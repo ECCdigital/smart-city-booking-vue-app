@@ -18,6 +18,10 @@ const NAME_MISMATCH = "Die eingegebene Name entspricht nicht der Buchung.";
 const USER_CANCELLATION_DISABLED =
   "Diese Buchung kann nicht vom Buchenden storniert werden.";
 const ALREADY_CANCELLED = "Diese Buchung wurde bereits storniert.";
+const DISABLED_BY_POLICY =
+  "Diese Buchung kann nicht vom Buchenden storniert werden. Bitte wenden Sie sich an den Anbieter, falls Sie eine Stornierung wünschen.";
+const CANCEL_QUESTION = "wirklich stornieren?";
+const BANK_DETAILS = "Bankverbindung für die Rückzahlung";
 
 /** The customer route's error body: `{ code, message }`, no `statusCode`. */
 function customerError(status, code) {
@@ -26,16 +30,19 @@ function customerError(status, code) {
   return error;
 }
 
-async function mountPage() {
-  ApiBookingService.getBookingStatus.mockResolvedValue({
-    data: [
-      {
-        bookingId: "bk-1",
-        priceEur: 0,
-        cancellationPolicy: { userCancellable: true },
-      },
-    ],
-  });
+/** One entry of the bare array `GET /:tenant/bookings/:ids/status` answers with. */
+function statusEntry(overrides = {}) {
+  return {
+    bookingId: "bk-1",
+    priceEur: 0,
+    status: "requested",
+    cancellationPolicy: { userCancellable: true, contactHint: "" },
+    ...overrides,
+  };
+}
+
+async function mountPage(entry = statusEntry()) {
+  ApiBookingService.getBookingStatus.mockResolvedValue({ data: [entry] });
   ApiBookingService.verifyBookingOwnership.mockResolvedValue({ status: 200 });
   ApiBookingService.getPublicCancellationRefundPreview.mockResolvedValue({
     originalAmountEur: 0,
@@ -99,5 +106,93 @@ describe("RequestRejectBooking", () => {
     await submitWith(wrapper, error);
 
     expect(wrapper.text()).toContain(NAME_MISMATCH);
+  });
+
+  /**
+   * Whether the form is offered at all is read off the poll (spec E12): the
+   * state says whether there is anything left to cancel, the tenant's policy
+   * whether the customer may do it. The 403 on submit stays the net behind it.
+   */
+  describe("before the form", () => {
+    it.each(["requested", "payment_due", "confirmed"])(
+      "offers the form at %s",
+      async (status) => {
+        const wrapper = await mountPage(statusEntry({ status, priceEur: 50 }));
+
+        expect(wrapper.find("form").exists()).toBe(true);
+        expect(wrapper.text()).toContain(CANCEL_QUESTION);
+      }
+    );
+
+    it.each(["rejected", "cancelled"])(
+      "says a %s booking is already cancelled instead of the form",
+      async (status) => {
+        const wrapper = await mountPage(statusEntry({ status }));
+
+        expect(wrapper.find("form").exists()).toBe(false);
+        expect(wrapper.text()).toContain(ALREADY_CANCELLED);
+      }
+    );
+
+    it("hides the form when the tenant's policy forbids cancelling by the customer", async () => {
+      const wrapper = await mountPage(
+        statusEntry({
+          status: "confirmed",
+          cancellationPolicy: { userCancellable: false, contactHint: "" },
+        })
+      );
+
+      expect(wrapper.find("form").exists()).toBe(false);
+      expect(wrapper.text()).toContain(DISABLED_BY_POLICY);
+    });
+
+    it("passes the policy's contact hint on with the explanation", async () => {
+      const wrapper = await mountPage(
+        statusEntry({
+          cancellationPolicy: {
+            userCancellable: false,
+            contactHint: "Telefonisch unter 0123 456.",
+          },
+        })
+      );
+
+      expect(wrapper.text()).toContain(DISABLED_BY_POLICY);
+      expect(wrapper.text()).toContain("Telefonisch unter 0123 456.");
+    });
+
+    it("hides the form when the poll carries no policy answer, as the backend refuses then", async () => {
+      const wrapper = await mountPage(
+        statusEntry({ cancellationPolicy: { contactHint: "" } })
+      );
+
+      expect(wrapper.find("form").exists()).toBe(false);
+      expect(wrapper.text()).toContain(DISABLED_BY_POLICY);
+    });
+  });
+
+  describe("bank details", () => {
+    it("asks for them at confirmed with a price", async () => {
+      const wrapper = await mountPage(
+        statusEntry({ status: "confirmed", priceEur: 50 })
+      );
+
+      expect(wrapper.text()).toContain(BANK_DETAILS);
+    });
+
+    it("does not ask for them while the payment is still due", async () => {
+      const wrapper = await mountPage(
+        statusEntry({ status: "payment_due", priceEur: 50 })
+      );
+
+      expect(wrapper.text()).not.toContain(BANK_DETAILS);
+    });
+
+    it("does not ask for them for a free confirmed booking", async () => {
+      const wrapper = await mountPage(
+        statusEntry({ status: "confirmed", priceEur: 0 })
+      );
+
+      expect(wrapper.text()).not.toContain(BANK_DETAILS);
+    });
   });
 });

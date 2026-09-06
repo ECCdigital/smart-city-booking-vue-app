@@ -319,6 +319,8 @@ import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import { getCheckoutErrorToastKey } from "@/utils/checkoutErrors";
+import { isAwaitingPayment } from "@/utils/bookingStatus";
+import { continuesToProvider } from "@/utils/checkoutNextStep";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 
@@ -508,10 +510,7 @@ export default {
 
       try {
         const checkoutResponse = await this.performCheckout();
-        if (
-          checkoutResponse.data.isCommitted === true &&
-          checkoutResponse.data.isPayed === false
-        ) {
+        if (isAwaitingPayment(checkoutResponse.data)) {
           const paymentResponse = await this.processPayment(
             checkoutResponse.data
           );
@@ -553,7 +552,7 @@ export default {
     async handlePaymentOutcome(paymentResponse) {
       const finalBooking = paymentResponse.data.bookings[0];
 
-      if (finalBooking?.totalPrice <= 0 || !finalBooking?.isCommitted) {
+      if (!continuesToProvider([finalBooking])) {
         await this.routeToStatus(finalBooking);
         return;
       }

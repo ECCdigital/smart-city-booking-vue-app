@@ -426,7 +426,8 @@
       }
     },
     "userCancellation": {
-      "alreadyCancelled": "Diese Buchung wurde bereits storniert."
+      "alreadyCancelled": "Diese Buchung wurde bereits storniert.",
+      "disabledByPolicy": "Diese Buchung kann nicht vom Buchenden storniert werden. Bitte wenden Sie sich an den Anbieter, falls Sie eine Stornierung wünschen."
     },
     "unreject": {
       "success": {

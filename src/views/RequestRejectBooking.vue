@@ -41,7 +41,7 @@
     </v-card>
 
     <v-card
-      v-else-if="!isCancellable"
+      v-else-if="!isCancellable || !userCancellationAllowed"
       class="pa-4 rounded-sm"
       style="min-width: 350px; max-width: 500px"
     >
@@ -49,10 +49,10 @@
         <v-icon size="45px" color="warning">mdi-cancel</v-icon>
         <p class="text-h6 font-weight-bold mt-2">Stornierung nicht möglich</p>
         <p>
-          Die Buchung <strong>#{{ bookingNumber }}</strong> kann nicht über
-          dieses Formular storniert werden. Bitte wenden Sie sich an den
-          Anbieter, falls Sie eine Stornierung wünschen.
+          <strong>Buchung #{{ bookingNumber }}:</strong>
+          {{ cancellationBlockedMessage }}
         </p>
+        <p v-if="contactHint">{{ contactHint }}</p>
       </v-card-text>
     </v-card>
 
@@ -223,6 +223,7 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
 import FormatService from "@/services/FormatService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+import { BOOKING_STATUS, isRejectedOrCancelled } from "@/utils/bookingStatus";
 
 /** The 403 `request-reject` answers with when the tenant's policy forbids it. */
 const USER_CANCELLATION_DISABLED = "booking_user_cancellation_disabled";
@@ -294,13 +295,30 @@ export default {
     appLogo() {
       return process.env.BASE_URL + "/app-logo.png";
     },
+    /** The state leaves something to cancel: not `rejected`, not `cancelled`. */
     isCancellable() {
-      return !!(
-        this.bookingStatus &&
-        this.bookingStatus.cancellationPolicy &&
-        this.bookingStatus.cancellationPolicy.userCancellable === true &&
-        this.bookingStatus.isRejected !== true
-      );
+      return !!this.bookingStatus && !isRejectedOrCancelled(this.bookingStatus);
+    },
+    /**
+     * The tenant's policy lets the customer cancel. Read the way the backend
+     * reads it before `request-reject`: anything but `true` - `false` or a
+     * booking stored before the policy existed - is refused there.
+     */
+    userCancellationAllowed() {
+      return this.bookingStatus?.cancellationPolicy?.userCancellable === true;
+    },
+    cancellationBlockedMessage() {
+      return this.isCancellable
+        ? this.$t("booking.userCancellation.disabledByPolicy")
+        : this.$t("booking.userCancellation.alreadyCancelled");
+    },
+    contactHint() {
+      if (this.isCancellable) {
+        return (
+          this.bookingStatus?.cancellationPolicy?.contactHint?.trim() || ""
+        );
+      }
+      return "";
     },
     showRefundPanel() {
       return (
@@ -322,10 +340,11 @@ export default {
         percentage: this.refundPreview.suggestedRefundPercentage,
       });
     },
+    /** A refund is only owed at `confirmed` with a price (spec E12). */
     requiresBankDetails() {
       return !!(
         this.bookingStatus &&
-        this.bookingStatus.isPayed === true &&
+        this.bookingStatus.status === BOOKING_STATUS.CONFIRMED &&
         typeof this.bookingStatus.priceEur === "number" &&
         this.bookingStatus.priceEur > 0
       );

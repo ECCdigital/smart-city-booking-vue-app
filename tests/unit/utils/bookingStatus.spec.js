@@ -8,6 +8,7 @@ import {
   freeMarker,
   groupBookingStatus,
   isFree,
+  isAwaitingPayment,
   isPaid,
   isRejectedOrCancelled,
   paymentLabel,
@@ -220,6 +221,16 @@ describe("isRejectedOrCancelled", () => {
 });
 
 /** A group has one state when its members agree, and is "mixed" otherwise (E9). */
+describe("isAwaitingPayment", () => {
+  it("is true at payment_due only", () => {
+    expect(isAwaitingPayment({ status: "payment_due" })).toBe(true);
+    expect(isAwaitingPayment({ status: "requested" })).toBe(false);
+    expect(isAwaitingPayment({ status: "confirmed" })).toBe(false);
+    expect(isAwaitingPayment({ status: "cancelled" })).toBe(false);
+    expect(isAwaitingPayment(undefined)).toBe(false);
+  });
+});
+
 describe("groupBookingStatus", () => {
   it("is the shared status of the members", () => {
     expect(
