@@ -6,6 +6,7 @@ import {
   lifecycleError,
   serverError,
 } from "@tests/unit/support/api";
+import { dialogButton } from "@tests/unit/support/dialog";
 import i18n from "@/language/index";
 import toasts from "@/store/modules/toasts";
 
@@ -77,15 +78,14 @@ function dialog(wrapper, name) {
   return wrapper.findComponent({ name });
 }
 
-/** Clicks the button with `label` inside any open dialog. */
 async function clickDialogButton(wrapper, label) {
-  const button = Array.from(
-    document.querySelectorAll(".v-dialog--active button")
-  ).find((el) => el.textContent.trim() === label);
-  button.click();
+  dialogButton(label).click();
   await flushPromises();
   await wrapper.vm.$nextTick();
 }
+
+const DIVERGING_BK2 =
+  "Die Buchung ist inzwischen in einem anderen Zustand. Betroffene Buchungen: bk-2";
 
 /**
  * The one module that owns the four transitions (spec E2, E3): a host hands
@@ -279,43 +279,93 @@ describe("BookingTransitions", () => {
       await start(wrapper, "confirm", series());
       await clickDialogButton(wrapper, "Serie freigeben");
 
-      const expected =
-        "Die Buchung ist inzwischen in einem anderen Zustand. Betroffene Buchungen: bk-2";
       expect(wrapper.emitted("failed")[0][0]).toMatchObject({
         action: "confirm",
-        message: expected,
+        message: DIVERGING_BK2,
         refetch: true,
       });
-      expect(toastMessages(store)).toContain(expected);
+      expect(toastMessages(store)).toContain(DIVERGING_BK2);
       expect(dialog(wrapper, "GroupBookingCommitDialog").props("error")).toBe(
-        expected
+        DIVERGING_BK2
       );
       expect(dialog(wrapper, "GroupBookingCommitDialog").props("open")).toBe(
         true
       );
     });
 
-    it("refuses the series-wide confirm while the members are in mixed states", async () => {
+    it("keeps the consistency check's message when the members' states do not match", async () => {
       const { wrapper, store } = mountTransitions();
+      ApiGroupBookingService.commitGroupBooking.mockResolvedValue({
+        success: false,
+        data: null,
+        errors: [{ code: "STATUS_MISMATCH" }],
+      });
 
-      await start(
-        wrapper,
-        "confirm",
-        series([{}, { id: "bk-2", status: "confirmed" }])
-      );
+      await start(wrapper, "confirm", series());
       await clickDialogButton(wrapper, "Serie freigeben");
 
-      expect(ApiGroupBookingService.commitGroupBooking).not.toHaveBeenCalled();
-      const expected = i18n.t("group-booking.transition.mixed.message");
+      const expected = "Die Buchungen haben unterschiedliche Status.";
       expect(wrapper.emitted("failed")[0][0]).toMatchObject({
         action: "confirm",
         message: expected,
         refetch: false,
       });
-      expect(toastMessages(store)).toContain(expected);
       expect(dialog(wrapper, "GroupBookingCommitDialog").props("error")).toBe(
         expected
       );
+      expect(toastMessages(store)).toContain(
+        "Die Buchungen konnten nicht freigegeben werden."
+      );
+    });
+
+    describe("while the members are in mixed states", () => {
+      const mixed = () => series([{}, { id: "bk-2", status: "confirmed" }]);
+
+      it("shows the series as mixed and offers only the one booking", async () => {
+        const { wrapper } = mountTransitions();
+        ApiBookingService.commitBooking.mockResolvedValue(OK);
+
+        await start(wrapper, "confirm", mixed());
+
+        const text = document.querySelector(".v-dialog--active").textContent;
+        expect(text).toContain("Gemischt");
+        expect(text).toContain(
+          i18n.t("group-booking.transition.mixed.message")
+        );
+        expect(dialogButton("Serie freigeben")).toBeUndefined();
+
+        await clickDialogButton(wrapper, "Nur diese Buchung freigeben");
+
+        expect(ApiBookingService.commitBooking).toHaveBeenCalledWith("bk-1");
+        expect(wrapper.emitted("transitioned")).toEqual([
+          [{ action: "confirm", bookingId: "bk-1" }],
+        ]);
+      });
+
+      it("still refuses a series-wide confirm that reaches it", async () => {
+        const { wrapper, store } = mountTransitions();
+
+        await start(wrapper, "confirm", mixed());
+        dialog(wrapper, "GroupBookingCommitDialog").vm.$emit(
+          "commit-group-booking"
+        );
+        await flushPromises();
+        await wrapper.vm.$nextTick();
+
+        expect(
+          ApiGroupBookingService.commitGroupBooking
+        ).not.toHaveBeenCalled();
+        const expected = i18n.t("group-booking.transition.mixed.message");
+        expect(wrapper.emitted("failed")[0][0]).toMatchObject({
+          action: "confirm",
+          message: expected,
+          refetch: false,
+        });
+        expect(toastMessages(store)).toContain(expected);
+        expect(dialog(wrapper, "GroupBookingCommitDialog").props("error")).toBe(
+          expected
+        );
+      });
     });
   });
 
@@ -408,6 +458,60 @@ describe("BookingTransitions", () => {
       expect(wrapper.emitted("transitioned")).toEqual([
         [{ action: "pay", groupBookingId: "grp-1" }],
       ]);
+    });
+
+    it("lists the diverging members in the dialog and asks for a reload on a 409", async () => {
+      const { wrapper, store } = mountTransitions();
+      ApiGroupBookingService.payGroupBooking.mockRejectedValue(
+        lifecycleError(409, "invalid_transition", { bookingIds: ["bk-2"] })
+      );
+
+      await start(
+        wrapper,
+        "pay",
+        series([
+          { status: "payment_due" },
+          { id: "bk-2", status: "payment_due" },
+        ])
+      );
+      await clickDialogButton(wrapper, "Serie als bezahlt markieren");
+
+      expect(ApiGroupBookingService.payGroupBooking).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "grp-1" })
+      );
+      expect(wrapper.emitted("failed")[0][0]).toMatchObject({
+        action: "pay",
+        message: DIVERGING_BK2,
+        refetch: true,
+      });
+      expect(toastMessages(store)).toContain(DIVERGING_BK2);
+      expect(dialog(wrapper, "BookingPayDialog").props("error")).toBe(
+        DIVERGING_BK2
+      );
+      expect(dialog(wrapper, "BookingPayDialog").props("open")).toBe(true);
+    });
+
+    it("offers a mixed series only member by member", async () => {
+      const { wrapper } = mountTransitions();
+      ApiBookingService.payBooking.mockResolvedValue(OK);
+
+      await start(
+        wrapper,
+        "pay",
+        series([{ status: "payment_due" }, { id: "bk-2", status: "confirmed" }])
+      );
+      const text = document.querySelector(".v-dialog--active").textContent;
+      expect(text).toContain("Gemischt");
+      expect(dialogButton("Serie als bezahlt markieren")).toBeUndefined();
+
+      await payWith(wrapper, {});
+
+      expect(ApiBookingService.payBooking).toHaveBeenCalledWith(
+        "bk-1",
+        "CASH",
+        1_700_000_000_000
+      );
+      expect(ApiGroupBookingService.payGroupBooking).not.toHaveBeenCalled();
     });
   });
 
@@ -540,6 +644,78 @@ describe("BookingTransitions", () => {
       expect(wrapper.emitted("transitioned")).toEqual([
         [{ action: "cancel", groupBookingId: "grp-1" }],
       ]);
+    });
+
+    it("lists the diverging members in the dialog and asks for a reload on a 409", async () => {
+      const { wrapper, store } = mountTransitions();
+      ApiGroupBookingService.rejectGroupBooking.mockRejectedValue(
+        lifecycleError(409, "invalid_transition", { bookingIds: ["bk-2"] })
+      );
+
+      await start(wrapper, "cancel", series());
+      const groupDialog = dialog(
+        wrapper,
+        "GroupBookingRejectConformationDialog"
+      );
+      groupDialog.vm.$emit(
+        "reject-group-booking",
+        "bk-1",
+        "Grund",
+        true,
+        undefined,
+        undefined
+      );
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.emitted("failed")[0][0]).toMatchObject({
+        action: "cancel",
+        message: DIVERGING_BK2,
+        refetch: true,
+      });
+      expect(toastMessages(store)).toContain(DIVERGING_BK2);
+      expect(groupDialog.props("error")).toBe(DIVERGING_BK2);
+      expect(groupDialog.props("open")).toBe(true);
+    });
+
+    it("offers a mixed series only member by member", async () => {
+      const { wrapper } = mountTransitions();
+      ApiBookingService.rejectBooking.mockResolvedValue({ data: "" });
+
+      await start(
+        wrapper,
+        "cancel",
+        series([{}, { id: "bk-2", status: "confirmed" }])
+      );
+      const text = document.querySelector(".v-dialog--active").textContent;
+      expect(text).toContain("Gemischt");
+      expect(
+        Array.from(
+          document.querySelectorAll(".v-dialog--active .v-radio")
+        ).find((el) => el.textContent.includes("Gesamte Serie stornieren"))
+          .className
+      ).toContain("v-radio--is-disabled");
+
+      dialog(wrapper, "GroupBookingRejectConformationDialog").vm.$emit(
+        "reject-single-booking",
+        "bk-1",
+        "Grund",
+        true,
+        undefined,
+        undefined
+      );
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(ApiBookingService.rejectBooking).toHaveBeenCalledWith(
+        "bk-1",
+        null,
+        "Grund",
+        true,
+        undefined,
+        undefined
+      );
+      expect(ApiGroupBookingService.rejectGroupBooking).not.toHaveBeenCalled();
     });
 
     it("cancels only the one member when asked to", async () => {

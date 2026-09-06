@@ -223,3 +223,12 @@ export function groupBookingStatus(members) {
   const [first, ...rest] = members.map((member) => member?.status);
   return rest.every((status) => status === first) ? first : MIXED;
 }
+
+/**
+ * Whether a series-wide action may be offered: only where the members share
+ * one state and that state allows the action (spec E9). A mixed series acts
+ * per member; `allowedActions(MIXED)` is empty, so it falls out of this too.
+ */
+export function groupAllowsAction(members, action) {
+  return allowedActions(groupBookingStatus(members)).includes(action);
+}

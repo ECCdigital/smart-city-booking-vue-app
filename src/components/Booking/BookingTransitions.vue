@@ -3,6 +3,7 @@
     <GroupBookingCommitDialog
       v-if="booking"
       :booking-id="booking.id"
+      :group-bookings="members"
       :open="dialog === 'commitGroup'"
       :in-progress="inProgress"
       :error="error"
@@ -15,6 +16,7 @@
       :booking-id="booking.id"
       :open="dialog === 'pay'"
       :has-group-booking="!!groupBooking"
+      :group-bookings="members"
       :in-progress="inProgress"
       :error="error"
       @close="closeDialog"
@@ -94,6 +96,7 @@ import {
   BOOKING_STATUS,
   MIXED,
   allowsAction,
+  groupAllowsAction,
   groupBookingStatus,
 } from "@/utils/bookingStatus";
 import {
@@ -322,20 +325,19 @@ export default {
 
     /**
      * A series-wide action runs only where the members share one state
-     * (spec E9); a mixed series is refused with a word, and its members are
-     * acted on one by one.
+     * (spec E9). The group dialogs do not offer it otherwise; this is the
+     * net behind them, for a call that reaches the module anyway.
      */
     async groupAllows(action) {
-      const status = groupBookingStatus(this.members);
-      if (status === MIXED) {
-        await this.refuse(action, "group-booking.transition.mixed");
-        return false;
+      if (groupAllowsAction(this.members, action)) {
+        return true;
       }
-      if (!allowsAction({ status }, action)) {
-        await this.refuse(action, "booking.transition.not-allowed");
-        return false;
-      }
-      return true;
+      const key =
+        groupBookingStatus(this.members) === MIXED
+          ? "group-booking.transition.mixed"
+          : "group-booking.transition.not-allowed";
+      await this.refuse(action, key);
+      return false;
     },
 
     /**
