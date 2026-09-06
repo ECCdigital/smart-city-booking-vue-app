@@ -138,6 +138,48 @@ describe("BookingEditPage", () => {
     expect(push).toHaveBeenCalledWith({ name: "bookings" });
   });
 
+  /**
+   * After a transition the backend refused with 409 or 404, the editor asks
+   * for a reload (spec E5). The page refetches the booking and hands the
+   * fresh one down without leaving the screen - the editor keeps its inline
+   * message and takes the server's state through its `booking` prop.
+   */
+  it("refetches the booking and hands it to the editor when the editor asks for a reload", async () => {
+    ApiBookablesService.getBookables.mockResolvedValue({ data: [] });
+    ApiWorkflowService.getWorkflowStates.mockResolvedValue({});
+    ApiBookingService.getBooking.mockResolvedValue({
+      data: { id: "b1", status: "requested" },
+    });
+    ApiGroupBookingService.getGroupBookings.mockResolvedValue({ data: [] });
+    const { wrapper, push } = await mountPage();
+    ApiBookingService.getBooking.mockResolvedValue({
+      data: { id: "b1", status: "confirmed" },
+    });
+
+    wrapper.findComponent({ name: "BookingEdit" }).vm.$emit("reload");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper.findComponent({ name: "BookingEdit" }).props("booking")
+    ).toEqual({ id: "b1", status: "confirmed" });
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("leaves the screen when the reload finds the booking gone", async () => {
+    ApiBookablesService.getBookables.mockResolvedValue({ data: [] });
+    ApiWorkflowService.getWorkflowStates.mockResolvedValue({});
+    ApiBookingService.getBooking.mockResolvedValue({ data: { id: "b1" } });
+    ApiGroupBookingService.getGroupBookings.mockResolvedValue({ data: [] });
+    const { wrapper, push } = await mountPage();
+    ApiBookingService.getBooking.mockRejectedValue(serverError(404));
+
+    wrapper.findComponent({ name: "BookingEdit" }).vm.$emit("reload");
+    await flushPromises();
+
+    expect(push).toHaveBeenCalledWith({ name: "bookings" });
+  });
+
   it("shows no notice when an empty bookable list comes back legitimately", async () => {
     ApiBookablesService.getBookables.mockResolvedValue({ data: [] });
     ApiWorkflowService.getWorkflowStates.mockResolvedValue({});

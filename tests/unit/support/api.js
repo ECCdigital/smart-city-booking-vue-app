@@ -22,6 +22,21 @@ export function forbiddenError(code = "forbidden") {
   return error;
 }
 
+/**
+ * An axios error carrying the 4.3.x `BaseError.toJSON` body
+ * (`{ error, code, statusCode, params }`) on the status it belongs to - what
+ * the booking lifecycle answers a transition that no longer fits the stored
+ * state with (409 `invalid_transition`, 404 `booking_not_found`, ...).
+ */
+export function lifecycleError(status, code, params = {}) {
+  const error = new Error(`Request failed with status code ${status}`);
+  error.response = {
+    status,
+    data: { error: "LifecycleError", code, statusCode: status, params },
+  };
+  return error;
+}
+
 /** An axios error for a failure that is not a denial. */
 export function serverError(status = 500) {
   const error = new Error(`Request failed with status code ${status}`);

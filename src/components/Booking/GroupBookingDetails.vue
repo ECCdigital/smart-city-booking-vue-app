@@ -14,6 +14,14 @@
       <v-divider />
 
       <v-card-text class="px-6 py-6 booking-details-content">
+        <BookingStatusBar
+          class="mb-6"
+          :label="$t('group-booking.status.title')"
+          :status="seriesStatus"
+          :actions="seriesActions"
+          @action="transitionSeries"
+        />
+
         <v-card class="mb-6 section-card" elevation="2" outlined>
           <v-card-title
             class="section-header pa-4 d-flex justify-space-between align-center"
@@ -260,6 +268,15 @@
           </v-card-text>
         </v-card>
 
+        <CancellationReceiptsCard
+          :receipts="cancellationReceipts"
+          :can-reprint="canReprintCancellationReceipt"
+          :busy="reprintInProgress"
+          :error="cancellationReceiptError"
+          @reprint="reprintCancellationReceipt"
+          @download="downloadCancellationReceipt"
+        />
+
         <!-- Einzelbuchungen -->
         <v-card class="mb-6 section-card" elevation="2" outlined>
           <v-card-title class="section-header pa-4">
@@ -271,6 +288,7 @@
             <BookingTable
               :bookings="groupBooking.bookings"
               :show-group-booking="false"
+              @transition="transitionMember"
             />
           </v-card-text>
         </v-card>
@@ -285,26 +303,63 @@
           Schließen
         </v-btn>
       </v-card-actions>
+      <BookingTransitions
+        ref="transitions"
+        @transitioned="$emit('update')"
+        @failed="onTransitionFailed"
+      />
     </v-card>
   </div>
 </template>
 
 <script>
+import BookingStatusBar from "@/components/Booking/BookingStatusBar.vue";
 import BookingTable from "@/components/Booking/BookingTable.vue";
+import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
+import CancellationReceiptsCard from "@/components/Booking/CancellationReceiptsCard.vue";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import ApiBookingService from "@/services/api/ApiBookingService";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import ToastService from "@/services/ToastService";
 import ProcessingService from "@/services/ProcessingService";
 import { getGroupBookingErrorMessage } from "@/utils/errorMessages";
 import {
+  getApiErrorMessage,
+  shouldRefetch,
+  unpackBlobErrorBody,
+} from "@/services/api/apiErrorMessage";
+import {
+  collectGroupCancellationReceipts,
   collectGroupInvoices,
   groupUsesInvoicePayment,
 } from "@/utils/groupBookingInvoices";
+import {
+  BOOKING_ACTION,
+  groupAllowsAction,
+  groupBookingStatus,
+  isRejectedOrCancelled,
+  transitionActions,
+  transitionTarget,
+} from "@/utils/bookingStatus";
 import { mapActions } from "vuex";
 
+/**
+ * The series drawer shows the series' derived state (spec E9) - the
+ * members' shared state or Gemischt - and offers a series-wide action only
+ * where that state allows it, through the mounted `BookingTransitions`;
+ * there is no series-wide Wiederherstellen. A mixed series acts per member:
+ * the member rows' menus hand their transition to the same module. The
+ * aggregated cancellation receipt is reissued here once every member is
+ * cancelled (spec E8).
+ */
 export default {
   name: "GroupBookingDetails",
-  components: { BookingTable },
+  components: {
+    BookingStatusBar,
+    BookingTable,
+    BookingTransitions,
+    CancellationReceiptsCard,
+  },
   props: {
     groupBooking: {
       type: Object,
@@ -319,9 +374,42 @@ export default {
       invoiceLoading: false,
       invoiceGenerateLoading: false,
       invoiceError: null,
+      reprintInProgress: false,
+      cancellationReceiptError: null,
     };
   },
   computed: {
+    members() {
+      return (this.groupBooking.bookings || []).filter(Boolean);
+    },
+    seriesStatus() {
+      return groupBookingStatus(this.members);
+    },
+    /** The series-wide transitions: the shared state's, for whoever may edit every member. */
+    seriesActions() {
+      if (!this.members.every((b) => BookingPermissionService.allowUpdate(b))) {
+        return [];
+      }
+      return transitionActions(this.seriesStatus).filter(
+        (action) =>
+          action !== BOOKING_ACTION.REINSTATE &&
+          groupAllowsAction(this.members, action)
+      );
+    },
+    /** The aggregated cancellation receipt exists once every member is cancelled; the right is `booking.reprint` on each. */
+    canReprintCancellationReceipt() {
+      return (
+        this.members.length > 0 &&
+        this.members.every(
+          (b) =>
+            isRejectedOrCancelled(b) && BookingPermissionService.allowReprint(b)
+        )
+      );
+    },
+    /** The members' cancellation receipts, the aggregated one counted once. */
+    cancellationReceipts() {
+      return collectGroupCancellationReceipts(this.members);
+    },
     usesInvoicePayment() {
       return groupUsesInvoicePayment(this.groupBooking.bookings);
     },
@@ -351,6 +439,116 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    /**
+     * A series-wide button acts on the whole series: `seriesOnly` keeps the
+     * group dialogs from offering "Nur diese Buchung", which would otherwise
+     * act on an arbitrary member.
+     */
+    transitionSeries(action) {
+      this.$refs.transitions.start(action, {
+        ...transitionTarget(this.members[0], this.groupBooking),
+        seriesOnly: true,
+      });
+    },
+    /** A member row's menu: the member with its series, so the dialogs can still offer the series where it is uniform. */
+    transitionMember(action, bookingId) {
+      const member = this.members.find((booking) => booking.id === bookingId);
+      if (!member) return;
+      this.$refs.transitions.start(
+        action,
+        transitionTarget(member, this.groupBooking)
+      );
+    },
+    onTransitionFailed({ refetch }) {
+      if (refetch) {
+        this.$emit("update");
+      }
+    },
+    async reprintCancellationReceipt() {
+      const operationId = ProcessingService.showOverlay(
+        this.$t("group-booking.cancellationReceipt.reprint.progress")
+      );
+      this.reprintInProgress = true;
+      this.cancellationReceiptError = null;
+      try {
+        const response =
+          await ApiGroupBookingService.reprintGroupCancellationReceipt(
+            undefined,
+            this.groupBooking.id
+          );
+        if (response && response.success === false) {
+          this.cancellationReceiptError = getGroupBookingErrorMessage(
+            response.errors?.[0]?.code
+          );
+          await this.addToast(
+            ToastService.createToast(
+              "group-booking.cancellationReceipt.reprint.error",
+              "error"
+            )
+          );
+          return;
+        }
+        await this.addToast(
+          ToastService.createToast(
+            "group-booking.cancellationReceipt.reprint.success",
+            "success"
+          )
+        );
+        this.$emit("update");
+      } catch (error) {
+        const message = getApiErrorMessage(
+          error,
+          this.$t("group-booking.cancellationReceipt.reprint.error.message")
+        );
+        this.cancellationReceiptError = message;
+        await this.addToast({
+          title: this.$t(
+            "group-booking.cancellationReceipt.reprint.error.title"
+          ),
+          message,
+          type: "error",
+        });
+        if (shouldRefetch(error)) {
+          this.$emit("update");
+        }
+      } finally {
+        this.reprintInProgress = false;
+        ProcessingService.hide(operationId);
+      }
+    },
+    downloadCancellationReceipt(item) {
+      const operationId = ProcessingService.showSnackbar(
+        this.$t("booking.cancellationReceipt.download.progress")
+      );
+      ApiBookingService.getCancellationReceipt(item.bookingId, item.title)
+        .then((response) => {
+          const blob = new Blob([response.data], {
+            type: "application/pdf",
+          });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", item.title);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(async (error) => {
+          const unpacked = await unpackBlobErrorBody(error);
+          this.addToast({
+            title: this.$t("booking.cancellationReceipt.download.error.title"),
+            message: getApiErrorMessage(
+              unpacked,
+              this.$t("booking.cancellationReceipt.download.error.message")
+            ),
+            type: "error",
+          });
+        })
+        .finally(() => {
+          ProcessingService.hide(operationId);
+        });
+    },
     onDownloadIcal() {
       const ids = this.groupBooking.bookings?.map((b) => b.id) || [];
       if (ids.length === 0) return;

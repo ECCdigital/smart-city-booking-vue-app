@@ -1,15 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 import i18n from "@/language/index";
+import { lifecycleError } from "@tests/unit/support/api";
 import {
   getApiErrorMessage,
   isForbiddenError,
   isOutOfReach,
+  shouldRefetch,
   unpackBlobErrorBody,
 } from "@/services/api/apiErrorMessage";
 
 const FALLBACK = "Fallback";
 const FORBIDDEN = i18n.t("errors.forbidden-codes.forbidden");
 const SESSION_EXPIRED = i18n.t("errors.session-expired");
+const CONFLICT = "Der Vorgang ist in diesem Zustand nicht möglich.";
 
 /**
  * Characterisation: the 400 branch is unchanged by the permissions strand and
@@ -50,6 +53,35 @@ describe("getApiErrorMessage", () => {
         response: { status: 400, data: { error: "ValidationError" } },
       };
       expect(getApiErrorMessage(error, FALLBACK)).toBe(FALLBACK);
+    });
+
+    it("reads `invalid_status_change` - unreachable once the PUT carries no flags, still named", () => {
+      const error = lifecycleError(400, "invalid_status_change", {
+        status: "confirmed",
+        requested: "requested",
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Dieser Statuswechsel ist nicht möglich."
+      );
+    });
+
+    it("names the payment a booking born paid is missing (spec E10)", () => {
+      const error = lifecycleError(400, "missing_payment_details", {
+        status: "confirmed",
+        missing: ["paymentMethod", "timePaid"],
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum."
+      );
+    });
+
+    it("says a booking cannot be born in the state the create PUT named", () => {
+      const error = lifecycleError(400, "invalid_status", {
+        status: "cancelled",
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "In diesem Zustand kann keine Buchung angelegt werden."
+      );
     });
   });
 
@@ -157,6 +189,105 @@ describe("getApiErrorMessage", () => {
       };
       expect(getApiErrorMessage(error, FALLBACK)).toBe(FORBIDDEN);
     });
+
+    it("reads the customer route's `{ code, message }` form", () => {
+      const error = {
+        response: {
+          status: 403,
+          data: {
+            code: "booking_user_cancellation_disabled",
+            message: "User cancellation is disabled",
+          },
+        },
+      };
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Diese Buchung kann nicht vom Buchenden storniert werden."
+      );
+    });
+  });
+
+  /**
+   * The booking lifecycle answers a transition that no longer fits the stored
+   * state with 409 (spec E5). The body comes in three forms: the full
+   * `{ error, code, statusCode, params }`, the customer route's
+   * `{ code, message }`, or nothing at all - and the reader has to name the
+   * conflict in every one of them.
+   */
+  describe("on a 409 response", () => {
+    it("names the state the booking is in now on `invalid_transition`", () => {
+      const error = lifecycleError(409, "invalid_transition", {
+        bookingId: "b1",
+        status: "confirmed",
+        transition: "confirm",
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Die Buchung ist inzwischen in einem anderen Zustand (Bestätigt)."
+      );
+    });
+
+    it("omits the parenthesis when `params.status` is missing", () => {
+      const error = lifecycleError(409, "invalid_transition", {
+        bookingId: "b1",
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Die Buchung ist inzwischen in einem anderen Zustand."
+      );
+    });
+
+    it("lists the diverging members of a group transition", () => {
+      const error = lifecycleError(409, "invalid_transition", {
+        bookingIds: ["b2", "b3"],
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Die Buchung ist inzwischen in einem anderen Zustand. Betroffene Buchungen: b2, b3"
+      );
+    });
+
+    it("reads `not_cancelled`", () => {
+      expect(
+        getApiErrorMessage(lifecycleError(409, "not_cancelled"), FALLBACK)
+      ).toBe("Die Buchung ist nicht storniert.");
+    });
+
+    it.each([
+      ["a code without an entry", lifecycleError(409, "some_new_code")],
+      [
+        "the `{ code, message }` form with an unknown code",
+        {
+          response: {
+            status: 409,
+            data: { code: "booking_already_rejected", message: "Rejected" },
+          },
+        },
+      ],
+      ["an empty body", { response: { status: 409, data: "" } }],
+      ["no body at all", { response: { status: 409 } }],
+    ])("falls back to the generic conflict on %s", (_, error) => {
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(CONFLICT);
+    });
+
+    it("returns a readable string body as it is, like the 400 branch", () => {
+      // Routes outside the lifecycle answer a 409 with a bare sentence; the
+      // lifecycle's own 409s always carry a code.
+      expect(
+        getApiErrorMessage(
+          { response: { status: 409, data: "  Konflikt  " } },
+          FALLBACK
+        )
+      ).toBe("Konflikt");
+    });
+
+    it("reads the `{ code, message }` form when the code has an entry", () => {
+      const error = {
+        response: {
+          status: 409,
+          data: { code: "not_cancelled", message: "Booking is not cancelled" },
+        },
+      };
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Die Buchung ist nicht storniert."
+      );
+    });
   });
 
   describe("on a 419 response", () => {
@@ -181,6 +312,23 @@ describe("getApiErrorMessage", () => {
           FALLBACK
         )
       ).toBe(SESSION_EXPIRED);
+    });
+  });
+
+  describe("on a 404 response", () => {
+    it("reads `booking_not_found` as a booking that is gone", () => {
+      expect(
+        getApiErrorMessage(lifecycleError(404, "booking_not_found"), FALLBACK)
+      ).toBe("Die Buchung existiert nicht mehr.");
+    });
+
+    it("keeps the fallback for every other 404", () => {
+      expect(
+        getApiErrorMessage(lifecycleError(404, "some_other_code"), FALLBACK)
+      ).toBe(FALLBACK);
+      expect(getApiErrorMessage({ response: { status: 404 } }, FALLBACK)).toBe(
+        FALLBACK
+      );
     });
   });
 
@@ -369,5 +517,32 @@ describe("isOutOfReach", () => {
   it("does not read an error without a response as out of reach", () => {
     expect(isOutOfReach(new Error("Network Error"))).toBe(false);
     expect(isOutOfReach(undefined)).toBe(false);
+  });
+});
+
+/**
+ * The refetch rule of spec E5: after every 409 and 404 the host reloads the
+ * booking or the list, so that the screen shows the server's state again. The
+ * predicate answers that one question; the message is `getApiErrorMessage`'s.
+ */
+describe("shouldRefetch", () => {
+  it("is true after a 409, whatever the body", () => {
+    expect(shouldRefetch(lifecycleError(409, "invalid_transition"))).toBe(true);
+    expect(shouldRefetch({ response: { status: 409 } })).toBe(true);
+  });
+
+  it("is true after a 404", () => {
+    expect(shouldRefetch(lifecycleError(404, "booking_not_found"))).toBe(true);
+  });
+
+  it("is false for every other status", () => {
+    expect(shouldRefetch({ response: { status: 400 } })).toBe(false);
+    expect(shouldRefetch({ response: { status: 403 } })).toBe(false);
+    expect(shouldRefetch({ response: { status: 500 } })).toBe(false);
+  });
+
+  it("is false when there is no response at all", () => {
+    expect(shouldRefetch(new Error("Network Error"))).toBe(false);
+    expect(shouldRefetch(undefined)).toBe(false);
   });
 });

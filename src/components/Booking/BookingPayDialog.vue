@@ -1,6 +1,10 @@
 <script>
+import GroupBookingStatusSummary from "@/components/Booking/GroupBookingStatusSummary.vue";
+import { BOOKING_ACTION, groupAllowsAction } from "@/utils/bookingStatus";
+
 export default {
   name: "BookingPayDialog",
+  components: { GroupBookingStatusSummary },
   props: {
     open: {
       type: Boolean,
@@ -11,6 +15,16 @@ export default {
       required: true,
     },
     hasGroupBooking: {
+      type: Boolean,
+      default: false,
+    },
+    /** The members of the series, for the derived state (spec E9). */
+    groupBookings: {
+      type: Array,
+      default: () => [],
+    },
+    /** The host acts on the series as a whole: no "Nur diese Buchung" (spec E9). */
+    seriesOnly: {
       type: Boolean,
       default: false,
     },
@@ -54,6 +68,17 @@ export default {
       get() {
         return this.open;
       },
+    },
+    /**
+     * The series is offered only while every member awaits payment (spec E9).
+     * A host that hands over no members leaves the dialog knowing nothing
+     * about the series: it offers it as before, and the route refuses.
+     */
+    canPayGroup() {
+      return (
+        !this.groupBookings.length ||
+        groupAllowsAction(this.groupBookings, BOOKING_ACTION.PAY)
+      );
     },
     timePaid() {
       if (!this.selectedDate) return null;
@@ -252,11 +277,22 @@ export default {
                 dense
               >
                 <span class="text-subtitle-1">
-                  Die Buchung <strong>{{ bookingId }}</strong> ist Teil einer
-                  Serienbuchung.<br />
-                  Möchten Sie die gesamte Serie freigeben?
+                  <template v-if="!seriesOnly">
+                    Die Buchung <strong>{{ bookingId }}</strong> ist Teil einer
+                    Serienbuchung.
+                    <br />
+                  </template>
+                  <template v-if="canPayGroup">
+                    Möchten Sie die gesamte Serie als bezahlt markieren?
+                  </template>
                 </span>
               </v-alert>
+            </v-col>
+            <v-col cols="12">
+              <GroupBookingStatusSummary
+                :members="groupBookings"
+                :series-allowed="canPayGroup"
+              />
             </v-col>
           </v-row>
 
@@ -272,6 +308,7 @@ export default {
 
       <v-card-text v-if="hasGroupBooking" class="d-flex justify-center">
         <v-btn
+          v-if="canPayGroup"
           color="primary"
           class="ma-2"
           large
@@ -281,6 +318,7 @@ export default {
           Serie als bezahlt markieren
         </v-btn>
         <v-btn
+          v-if="!seriesOnly"
           color="secondary"
           class="ma-2"
           large

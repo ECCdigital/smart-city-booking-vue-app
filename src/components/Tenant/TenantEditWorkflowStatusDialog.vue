@@ -252,9 +252,9 @@ export default {
         { label: "Rolle", value: "role" },
       ],
       bookingStatus: [
-        { label: "Buchung freigegeben", value: "commit" },
-        { label: "Buchung bezahlt", value: "paid" },
-        { label: "Buchung storniert", value: "reject" },
+        { label: this.$t("booking.action.confirm"), value: "commit" },
+        { label: this.$t("booking.action.pay"), value: "paid" },
+        { label: this.$t("booking.action.cancel"), value: "reject" },
       ],
     };
   },

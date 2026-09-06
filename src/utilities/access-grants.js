@@ -1,3 +1,5 @@
+import { isRejectedOrCancelled } from "@/utils/bookingStatus";
+
 /**
  * Which bookings still hold a live access at an access point.
  *
@@ -8,8 +10,9 @@
  * is "provisioned and not revoked", not "has a grant".
  *
  * Bookings whose period has passed are left out: their access is over, so
- * removing the access point takes nothing from them. So are rejected ones -
- * a cancelled booking may still carry a stale entry, but it is not running.
+ * removing the access point takes nothing from them. So are rejected and
+ * cancelled ones - they may still carry a stale entry, but they are not
+ * running.
  *
  * @param {Array} bookings The tenant's bookings, as `GET /:tenant/bookings`
  *   hands them out
@@ -25,7 +28,7 @@ export function bookingsWithLiveAccess(
   const id = String(accessPointId);
 
   return (bookings || []).filter((booking) => {
-    if (booking?.isRejected) return false;
+    if (isRejectedOrCancelled(booking)) return false;
     if (booking?.timeEnd && booking.timeEnd < now) return false;
 
     return (booking?.accessInfo || []).some(

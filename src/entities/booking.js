@@ -10,7 +10,6 @@ class Booking {
     this.timeBegin = timeBegin;
     this.timeEnd = timeEnd;
     this.timeCreated = timeCreated
-    this.isCommitted = false;
   }
 }
 

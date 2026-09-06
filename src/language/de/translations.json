@@ -90,7 +90,23 @@
     },
     "session-expired": "Ihre Sitzung ist nicht mehr aktuell. Bitte laden Sie die Seite neu und versuchen Sie es erneut.",
     "forbidden-codes": {
-      "forbidden": "Sie haben keine Berechtigung für diese Aktion."
+      "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
+      "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden."
+    },
+    "conflict-codes": {
+      "conflict": "Der Vorgang ist in diesem Zustand nicht möglich.",
+      "invalid_transition": "Die Buchung ist inzwischen in einem anderen Zustand ({status}).",
+      "invalid_transition-unknown-status": "Die Buchung ist inzwischen in einem anderen Zustand.",
+      "not_cancelled": "Die Buchung ist nicht storniert.",
+      "diverging-bookings": "Betroffene Buchungen: {ids}"
+    },
+    "not-found-codes": {
+      "booking_not_found": "Die Buchung existiert nicht mehr."
+    },
+    "bad-request-codes": {
+      "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
+      "invalid_status": "In diesem Zustand kann keine Buchung angelegt werden.",
+      "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum."
     },
     "interface-forbidden": {
       "title": "Kein Zugriff auf diesen Bereich",
@@ -398,7 +414,7 @@
       },
       "requires-rejection": {
         "title": "Stornierung erforderlich",
-        "message": "Bestätigte oder bezahlte Buchungen können nicht gelöscht werden. Bitte stornieren Sie die Buchung."
+        "message": "Nur angefragte oder abgelehnte Buchungen können gelöscht werden. Bitte stornieren Sie die Buchung."
       }
     },
     "reject": {
@@ -411,15 +427,9 @@
         "message": "Die Buchung konnte nicht storniert werden."
       }
     },
-    "unreject": {
-      "success": {
-        "title": "Stornierung aufgehoben",
-        "message": "Die Buchung ist wieder aktiv."
-      },
-      "error": {
-        "title": "Fehler beim Aufheben",
-        "message": "Die Stornierung konnte nicht rückgängig gemacht werden."
-      }
+    "userCancellation": {
+      "alreadyCancelled": "Diese Buchung wurde bereits storniert.",
+      "disabledByPolicy": "Diese Buchung kann nicht vom Buchenden storniert werden. Bitte wenden Sie sich an den Anbieter, falls Sie eine Stornierung wünschen."
     },
     "cancellationRefund": {
       "title": "Erstattungsvorschau",
@@ -484,6 +494,12 @@
       },
       "hints": {
         "bookablesForbidden": "Sie haben keinen Zugriff auf Buchungsobjekte. Die Auswahl der Buchungsobjekte bleibt daher leer."
+      },
+      "saveFirst": "Erst speichern – die Aktionen sind gesperrt, solange das Formular ungespeicherte Änderungen hat.",
+      "reason": {
+        "rejected": "Ablehnungsgrund",
+        "cancelled": "Stornierungsgrund",
+        "required": "Begründung ist erforderlich"
       }
     },
     "copyId": {
@@ -575,6 +591,87 @@
         "title": "Fehler beim Generieren",
         "message": "Leider ist ein Fehler beim Generieren der iCal-Datei aufgetreten. Bitte versuchen Sie es erneut."
       }
+    },
+    "status": {
+      "requested": "Angefragt",
+      "payment_due": "Zahlung offen",
+      "confirmed": "Bestätigt",
+      "rejected": "Abgelehnt",
+      "cancelled": "Storniert",
+      "mixed": "Gemischt",
+      "free": "Kostenfrei",
+      "paidAt": "Bezahlt am {date}"
+    },
+    "filter": {
+      "status": "Status"
+    },
+    "action": {
+      "confirm": "Freigeben",
+      "pay": "Als bezahlt markieren",
+      "reject": "Ablehnen",
+      "cancel": "Stornieren",
+      "reinstate": "Wiederherstellen",
+      "delete": "Löschen"
+    },
+    "payment": {
+      "paid": "Ja",
+      "unpaid": "Nein"
+    },
+    "cancellationReceipt": {
+      "title": "Stornobelege",
+      "issuedAt": "Ausstellungsdatum:",
+      "empty": "Keine Stornobelege vorhanden",
+      "reprint": {
+        "label": "Stornobeleg erneut ausstellen",
+        "hint": "Erzeugt eine Revision unter derselben Nummer.",
+        "progress": "Stelle Stornobeleg erneut aus...",
+        "success": {
+          "title": "Stornobeleg ausgestellt",
+          "message": "Der Stornobeleg wurde erneut ausgestellt."
+        },
+        "error": {
+          "title": "Fehler beim Ausstellen",
+          "message": "Der Stornobeleg konnte nicht erneut ausgestellt werden."
+        }
+      },
+      "download": {
+        "progress": "Stelle Stornobeleg bereit...",
+        "error": {
+          "title": "Fehler beim Herunterladen",
+          "message": "Der Stornobeleg konnte nicht heruntergeladen werden."
+        }
+      }
+    },
+    "initialState": {
+      "label": "Anfangszustand",
+      "requested": "Angefragt",
+      "confirmed": "Freigegeben",
+      "paid": "Bezahlt",
+      "hint": "Wird angelegt als: {status}",
+      "paymentMethod": "Zahlungsmethode auswählen",
+      "date": "Zahldatum",
+      "time": "Uhrzeit"
+    },
+    "reinstate": {
+      "success": {
+        "title": "Wiederhergestellt",
+        "message": "Die Buchung wurde wiederhergestellt."
+      },
+      "error": {
+        "title": "Fehler beim Wiederherstellen",
+        "message": "Die Buchung konnte nicht wiederhergestellt werden."
+      },
+      "dialog": {
+        "title": "Buchung wiederherstellen",
+        "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt.",
+        "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+      }
+    },
+    "transition": {
+      "not-allowed": {
+        "title": "Aktion nicht möglich",
+        "message": "Diese Aktion ist im aktuellen Zustand der Buchung nicht möglich."
+      }
     }
   },
   "group-booking": {
@@ -616,7 +713,9 @@
       "error": {
         "title": "Fehler beim Freigeben",
         "message": "Die Buchungen konnten nicht freigegeben werden."
-      }
+      },
+      "member-of-series": "Die Buchung {bookingId} ist Teil einer Serienbuchung.",
+      "question": "Möchten Sie die gesamte Serie freigeben?"
     },
     "pay": {
       "success": {
@@ -656,6 +755,33 @@
       "error": {
         "title": "Fehler beim Erstellen",
         "message": "Die Sammelrechnung konnte nicht erstellt werden."
+      }
+    },
+    "status": {
+      "title": "Zustand der Serie",
+      "members": "Buchungen der Serie"
+    },
+    "cancellationReceipt": {
+      "reprint": {
+        "progress": "Stelle Stornobeleg der Serie erneut aus...",
+        "success": {
+          "title": "Stornobeleg ausgestellt",
+          "message": "Der Stornobeleg der Serie wurde erneut ausgestellt."
+        },
+        "error": {
+          "title": "Fehler beim Ausstellen",
+          "message": "Der Stornobeleg der Serie konnte nicht erneut ausgestellt werden."
+        }
+      }
+    },
+    "transition": {
+      "mixed": {
+        "title": "Gemischter Zustand",
+        "message": "Die Buchungen der Serie sind in unterschiedlichen Zuständen. Bitte führen Sie die Aktion je Buchung aus."
+      },
+      "not-allowed": {
+        "title": "Aktion nicht möglich",
+        "message": "Diese Aktion ist im aktuellen Zustand der Serie nicht möglich."
       }
     }
   },
