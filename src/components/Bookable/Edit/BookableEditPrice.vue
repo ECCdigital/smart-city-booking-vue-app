@@ -219,127 +219,80 @@
                 </v-col>
               </v-row>
 
+              <!-- Only the prices are previewed here: what the provider
+                   reports about availability and capacity it reports at
+                   checkout, and the 4.3.x API no longer answers it out of
+                   band. -->
               <v-expand-transition>
-                <div
-                  v-if="
-                    externalProvider.handles &&
-                    externalProvider.handles.length > 0
-                  "
-                >
+                <div v-if="handlesPricing">
                   <v-divider class="my-4" />
 
                   <v-progress-linear
-                    v-if="isLoadingIfbs"
+                    v-if="isLoadingPrices"
                     indeterminate
                     color="primary"
                     class="mb-4"
                   />
 
                   <v-alert
-                    v-if="ifbsError"
+                    v-if="priceError"
                     type="error"
                     dense
                     text
-                    class="mb-4"
+                    class="mb-4 external-price-error"
                   >
-                    {{ ifbsError }}
+                    {{ priceError }}
                     <template #append>
-                      <v-btn small text color="error" @click="fetchIfbsData">
-                        Erneut versuchen
+                      <v-btn
+                        small
+                        text
+                        color="error"
+                        @click="fetchExternalPrices"
+                      >
+                        {{ $t("bookable.externalPrice.retry") }}
                       </v-btn>
                     </template>
                   </v-alert>
 
-                  <div v-if="hasIfbsData && !isLoadingIfbs">
-                    <v-row v-if="ifbsStatus && handlesMaxAmount" class="mb-4">
-                      <v-col cols="12" md="6">
-                        <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
-                          <div class="d-flex align-center">
-                            <v-icon color="primary" class="mr-3">
-                              mdi-locker-multiple
-                            </v-icon>
-                            <div>
-                              <div
-                                class="text-caption text--secondary font-weight-medium"
-                              >
-                                Fahrradboxen gesamt
-                              </div>
-                              <div class="text-h6 font-weight-bold">
-                                {{ ifbsStatus.LocationTotal ?? "–" }}
-                              </div>
-                            </div>
+                  <div
+                    v-if="hasExternalPriceData && !isLoadingPrices"
+                    class="mb-2"
+                  >
+                    <v-row>
+                      <v-col
+                        v-for="row in externalPriceTiers"
+                        :key="row.unit"
+                        cols="6"
+                        sm="4"
+                        md="4"
+                        lg="2"
+                      >
+                        <v-card
+                          flat
+                          class="pa-3 rounded-lg text-center ifbs-price-tile external-price-tier"
+                        >
+                          <v-icon color="primary" class="mb-2">
+                            {{ row.icon }}
+                          </v-icon>
+                          <div class="text-h6 font-weight-bold">
+                            {{ formatPrice(row.priceEur) }} €
                           </div>
-                        </v-card>
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
-                          <div class="d-flex align-center">
-                            <v-icon color="primary" class="mr-3">
-                              mdi-timer-lock-outline
-                            </v-icon>
-                            <div>
-                              <div
-                                class="text-caption text--secondary font-weight-medium"
-                              >
-                                Pufferzeit
-                              </div>
-                              <div class="text-h6 font-weight-bold">
-                                {{ formatDuration(ifbsStatus.LocationBuffer) }}
-                              </div>
-                              <div
-                                v-if="ifbsStatus.LocationBuffer"
-                                class="text-caption text--secondary"
-                              >
-                                Vor und nach jeder Buchung
-                              </div>
-                            </div>
+                          <div class="text-caption text--secondary">
+                            {{ $t(row.labelKey) }}
                           </div>
                         </v-card>
                       </v-col>
                     </v-row>
 
-                    <v-divider
-                      v-if="
-                        ifbsStatus &&
-                        ifbsPrices &&
-                        handlesMaxAmount &&
-                        handlesPricing
-                      "
-                      class="my-4"
-                    />
-
-                    <div v-if="ifbsPrices && handlesPricing">
-                      <v-row>
-                        <v-col
-                          v-for="row in ifbsPriceRows"
-                          :key="row.key"
-                          cols="6"
-                          sm="4"
-                          md="4"
-                          lg="2"
-                        >
-                          <v-card
-                            flat
-                            class="pa-3 rounded-lg text-center ifbs-price-tile"
-                          >
-                            <v-icon color="primary" class="mb-2">
-                              {{ row.icon }}
-                            </v-icon>
-                            <div class="text-h6 font-weight-bold">
-                              {{ row.value }}
-                            </div>
-                            <div class="text-caption text--secondary">
-                              {{ row.label }}
-                            </div>
-                          </v-card>
-                        </v-col>
-                      </v-row>
-
+                    <template v-if="externalServiceFee !== null">
                       <v-divider class="my-4" />
 
                       <v-row>
                         <v-col cols="12" md="6">
-                          <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
+                          <v-card
+                            flat
+                            class="pa-3 rounded-lg ifbs-price-tile external-price-fee"
+                          >
                             <div class="d-flex align-center">
                               <v-icon color="primary" class="mr-3">
                                 mdi-cash-plus
@@ -348,56 +301,36 @@
                                 <div
                                   class="text-caption text--secondary font-weight-medium"
                                 >
-                                  Servicegebühr
+                                  {{ $t("bookable.externalPrice.serviceFee") }}
                                 </div>
                                 <div class="text-h6 font-weight-bold">
-                                  {{
-                                    formatPrice(
-                                      ifbsPrices["Preis_Servicegebühr"]
-                                    )
-                                  }}
-                                  €
-                                </div>
-                              </div>
-                            </div>
-                          </v-card>
-                        </v-col>
-                        <v-col cols="12" md="6">
-                          <v-card flat class="pa-3 rounded-lg ifbs-price-tile">
-                            <div class="d-flex align-center">
-                              <v-icon color="primary" class="mr-3">
-                                mdi-timer-outline
-                              </v-icon>
-                              <div>
-                                <div
-                                  class="text-caption text--secondary font-weight-medium"
-                                >
-                                  Mindestnutzungsdauer
-                                </div>
-                                <div class="text-h6 font-weight-bold">
-                                  {{
-                                    formatDuration(
-                                      ifbsPrices["minimum_usage_time_mins"]
-                                    )
-                                  }}
+                                  {{ formatPrice(externalServiceFee) }} €
                                 </div>
                               </div>
                             </div>
                           </v-card>
                         </v-col>
                       </v-row>
-                    </div>
+                    </template>
                   </div>
 
                   <div
-                    v-if="!hasIfbsData && !isLoadingIfbs && !ifbsError"
-                    class="text-center py-6"
+                    v-if="
+                      !hasExternalPriceData && !isLoadingPrices && !priceError
+                    "
+                    class="text-center py-6 external-price-empty"
                   >
                     <v-icon large color="grey lighten-1">
                       mdi-cloud-question
                     </v-icon>
                     <div class="text-body-2 grey--text mt-2">
-                      Keine Daten verfügbar
+                      {{ $t("bookable.externalPrice.empty") }}
+                    </div>
+                    <div
+                      v-if="externalPricesUnavailableReason"
+                      class="text-caption grey--text mt-1"
+                    >
+                      {{ $t(externalPricesUnavailableReason) }}
                     </div>
                   </div>
                 </div>
@@ -433,7 +366,9 @@
                 >
                   <template v-slot:label>
                     <div>
-                      <div class="font-weight-medium">Gutscheine aktivieren</div>
+                      <div class="font-weight-medium">
+                        Gutscheine aktivieren
+                      </div>
                       <div class="text-caption text--secondary">
                         Ermöglicht die Verwendung von Gutscheinen
                       </div>
@@ -494,6 +429,9 @@
         </v-card-text>
       </v-card>
 
+      <!-- The own price tiers step aside only where the provider really
+           prices: a stale declaration without an assigned locker system must
+           not leave the bookable with no price editor at all. -->
       <v-card
         v-if="!isIfbsActive || !handlesPricing"
         id="be-section-pricing-tiers"
@@ -957,13 +895,18 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import debounce from "lodash/debounce";
+import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
-import ApiLockerService from "@/services/api/ApiLockerService";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
+import externalPrices from "@/mixins/externalPrices";
+import {
+  IFBS_PROVIDER,
+  providerHandles,
+} from "@/utils/bookableExternalProviders";
 
 const DEFAULT_EXTERNAL_PROVIDER = {
   active: false,
-  provider: "ifbs",
+  provider: IFBS_PROVIDER,
   handles: [],
   config: {
     locationId: null,
@@ -974,17 +917,15 @@ const DEFAULT_EXTERNAL_PROVIDER = {
 export default {
   name: "BookableEditPrice",
   components: { BaseSection },
-  mixins: [bookableExpertMode],
+  mixins: [bookableExpertMode, externalPrices],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
       useGraduatedPrices: false,
       valid: false,
       expandedCategories: [],
-      isLoadingIfbs: false,
-      ifbsPrices: null,
-      ifbsStatus: null,
-      ifbsError: null,
+      accessPoints: [],
+      priceError: null,
       priceTypes: [
         { id: "per-item", name: "pro Stück" },
         { id: "per-hour", name: "pro Stunde" },
@@ -1037,85 +978,40 @@ export default {
         this._emitDebounced(val);
       },
     },
-    isIfbsActive() {
-      const details = this.bookable?.lockerDetails;
-      if (!details?.active) return false;
-      return details.units?.some((u) => u.lockerSystem === "ifbs") ?? false;
-    },
-    ifbsUnit() {
-      if (!this.isIfbsActive) return null;
-      return this.bookable.lockerDetails.units.find(
-        (u) => u.lockerSystem === "ifbs"
+    /**
+     * The locker system of the provider this bookable hands out - an access
+     * point since the fold, referenced by id like every other. Its
+     * `externalId` is the location the provider prices and books against.
+     */
+    ifbsAccessPoint() {
+      const details = this.bookable?.accessPointDetails;
+      if (details?.active !== true) return null;
+      const ids = details.accessPointIds || [];
+      return (
+        this.accessPoints.find(
+          (point) => point.provider === IFBS_PROVIDER && ids.includes(point.id)
+        ) || null
       );
+    },
+    isIfbsActive() {
+      return this.ifbsAccessPoint !== null;
     },
     externalProvider() {
       return this.findIfbsProvider() || this._ifbsProviderFallback;
     },
     handlesPricing() {
-      const provider = this.externalProvider;
-      return !!(
-        provider.active && provider.handles && provider.handles.includes("pricing")
-      );
+      return providerHandles(this.externalProvider, "pricing");
     },
     handlesAvailability() {
-      const provider = this.externalProvider;
-      return !!(
-        provider.active &&
-        provider.handles &&
-        provider.handles.includes("availability")
-      );
+      return providerHandles(this.externalProvider, "availability");
     },
     handlesMaxAmount() {
-      const provider = this.externalProvider;
-      return !!(
-        provider.active &&
-        provider.handles &&
-        provider.handles.includes("maxAmount")
-      );
+      return providerHandles(this.externalProvider, "maxAmount");
     },
-    hasIfbsData() {
-      return !!this.ifbsPrices || !!this.ifbsStatus;
-    },
-    ifbsPriceRows() {
-      if (!this.ifbsPrices) return [];
-      return [
-        {
-          key: "1min",
-          label: "pro Minute",
-          value: this.formatPrice(this.ifbsPrices["Preis_1 Minute"]) + " €",
-          icon: "mdi-timer-sand",
-        },
-        {
-          key: "1h",
-          label: "pro Stunde",
-          value: this.formatPrice(this.ifbsPrices["Preis_1h"]) + " €",
-          icon: "mdi-clock-outline",
-        },
-        {
-          key: "1d",
-          label: "pro Tag",
-          value: this.formatPrice(this.ifbsPrices["Preis_1d"]) + " €",
-          icon: "mdi-calendar-today",
-        },
-        {
-          key: "1w",
-          label: "pro Woche",
-          value: this.formatPrice(this.ifbsPrices["Preis_1w"]) + " €",
-          icon: "mdi-calendar-week",
-        },
-        {
-          key: "1m",
-          label: "pro Monat",
-          value: this.formatPrice(this.ifbsPrices["Preis_1m"]) + " €",
-          icon: "mdi-calendar-month",
-        },
-        {
-          key: "1y",
-          label: "pro Jahr",
-          value: this.formatPrice(this.ifbsPrices["Preis_1y"]) + " €",
-          icon: "mdi-calendar-star",
-        },
-      ];
+    // Why there is nothing to preview: the prices route is the public one,
+    // so it answers only for a stored, publicly visible bookable.
+    externalPricesUnavailableReason() {
+      return this.externalPricesUnavailableKey(this.bookable);
     },
     intervalSuffix() {
       const map = {
@@ -1192,40 +1088,25 @@ export default {
           JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)
         );
         this.fetchHolidays();
+        this.fetchAccessPoints();
       },
     },
     isIfbsActive: {
       immediate: true,
       handler(active) {
         if (active) {
-          const provider = this.findIfbsProvider();
-          if (provider?.active) {
-            this.fetchIfbsData();
-          }
+          this.fetchExternalPrices();
         } else {
-          this.ifbsPrices = null;
-          this.ifbsStatus = null;
-          this.ifbsError = null;
+          this.externalPrices = null;
+          this.priceError = null;
         }
       },
     },
-    "externalProvider.active"(active) {
-      if (active && this.isIfbsActive && this.findIfbsProvider()) {
-        this.fetchIfbsData();
-      }
+    handlesPricing() {
+      this.fetchExternalPrices();
     },
-    "externalProvider.handles": {
-      deep: true,
-      handler() {
-        if (
-          this.findIfbsProvider()?.active &&
-          this.isIfbsActive &&
-          !this.hasIfbsData &&
-          !this.isLoadingIfbs
-        ) {
-          this.fetchIfbsData();
-        }
-      },
+    externalPricesUnavailableReason() {
+      this.fetchExternalPrices();
     },
     bookable: {
       immediate: true,
@@ -1266,8 +1147,32 @@ export default {
   methods: {
     findIfbsProvider() {
       return (
-        this.model.externalProviders?.find((p) => p.provider === "ifbs") || null
+        this.model.externalProviders?.find(
+          (p) => p.provider === IFBS_PROVIDER
+        ) || null
       );
+    },
+    /**
+     * The tenant's access points, so that the assigned ids can say which of
+     * them is a locker system of the provider. A bookable only ever
+     * references access points by id since the fold.
+     */
+    async fetchAccessPoints() {
+      try {
+        const response = await ApiAccessPointService.getAccessPoints(
+          this.bookable?.tenantId
+        );
+        this.accessPoints = response.data || [];
+      } catch (error) {
+        // Without the list the panel cannot tell that a locker system is
+        // assigned and stays away; the access tab is where that failure has
+        // a place to be reported.
+        console.error(
+          `Could not read the access points of tenant ${this.bookable?.tenantId}`,
+          error
+        );
+        this.accessPoints = [];
+      }
     },
     ensureExternalProviderExists() {
       const existing = this.findIfbsProvider();
@@ -1286,22 +1191,25 @@ export default {
       this._emitDebounced({ ...this.model });
       return provider;
     },
+    // What the provider prices against: the location behind the assigned
+    // locker system, and the bookable's own capacity.
     syncExternalProviderConfig() {
-      const unit = this.ifbsUnit;
+      const accessPoint = this.ifbsAccessPoint;
       const provider = this.findIfbsProvider();
-      if (!unit || !provider) return;
+      if (!accessPoint || !provider) return;
 
-      const needsUpdate =
-        provider.config.locationId !== unit.locationId ||
-        provider.config.amount !== (unit.amount || 1);
+      const locationId = accessPoint.externalId;
+      const amount = Number(this.model.amount) || 1;
 
-      if (needsUpdate) {
-        this.$set(provider, "config", {
-          locationId: unit.locationId,
-          amount: unit.amount || 1,
-        });
-        this._emitDebounced({ ...this.model });
+      if (
+        provider.config?.locationId === locationId &&
+        provider.config?.amount === amount
+      ) {
+        return;
       }
+
+      this.$set(provider, "config", { locationId, amount });
+      this._emitDebounced({ ...this.model });
     },
     onExternalProviderChanged() {
       this.ensureExternalProviderExists();
@@ -1316,7 +1224,7 @@ export default {
       this.syncExternalProviderConfig();
 
       this._emitDebounced({ ...this.model });
-      this.fetchIfbsData();
+      this.fetchExternalPrices();
     },
 
     activateMissingHandles() {
@@ -1349,24 +1257,6 @@ export default {
         obj[lastKey] = null;
       }
     },
-    formatDuration(minutes) {
-      const mins = parseInt(minutes, 10);
-      if (!mins || mins === 0) return "Keine";
-
-      const weeks = Math.floor(mins / 10080);
-      const days = Math.floor((mins % 10080) / 1440);
-      const hours = Math.floor((mins % 1440) / 60);
-      const remainingMins = mins % 60;
-
-      const parts = [];
-      if (weeks > 0) parts.push(`${weeks} ${weeks === 1 ? "Woche" : "Wochen"}`);
-      if (days > 0) parts.push(`${days} ${days === 1 ? "Tag" : "Tage"}`);
-      if (hours > 0)
-        parts.push(`${hours} ${hours === 1 ? "Stunde" : "Stunden"}`);
-      if (remainingMins > 0) parts.push(`${remainingMins} Min.`);
-
-      return parts.join(", ");
-    },
     removePriceCategory(index) {
       this.model.priceCategories.splice(index, 1);
       const expandIdx = this.expandedCategories.indexOf(index);
@@ -1387,47 +1277,29 @@ export default {
           stateCode: this.selectedState,
         }));
     },
-    async fetchIfbsData() {
-      const unit = this.ifbsUnit;
-      if (!unit?.locationId || !this.bookable?.tenantId) return;
-
-      this.isLoadingIfbs = true;
-      this.ifbsError = null;
-
-      const tenantId = this.bookable.tenantId;
-      const locationId = unit.locationId;
-
-      const [priceResult, statusResult] = await Promise.allSettled([
-        ApiLockerService.getPrice(tenantId, "ifbs", locationId),
-        ApiLockerService.getLocationStatus(tenantId, "ifbs", locationId),
-      ]);
-
-      if (priceResult.status === "fulfilled") {
-        this.ifbsPrices = priceResult.value.data;
-      } else {
-        this.ifbsPrices = null;
-      }
-
-      if (statusResult.status === "fulfilled") {
-        this.ifbsStatus = statusResult.value.data;
-      } else {
-        this.ifbsStatus = null;
-      }
+    /**
+     * What the provider charges for this bookable. The prices route reads the
+     * stored bookable, so a declaration that was only just made answers after
+     * the save - and the route answers at all only for a publicly visible
+     * bookable, which the empty state names rather than reporting as a
+     * provider failure.
+     */
+    async fetchExternalPrices() {
+      this.priceError = null;
 
       if (
-        priceResult.status === "rejected" &&
-        statusResult.status === "rejected"
+        !this.isIfbsActive ||
+        !this.handlesPricing ||
+        this.externalPricesUnavailableReason
       ) {
-        this.ifbsError = "Daten konnten nicht vom IFBS-Dienst geladen werden.";
-      } else if (priceResult.status === "rejected") {
-        this.ifbsError =
-          "Preise konnten nicht geladen werden. Status wurde erfolgreich abgerufen.";
-      } else if (statusResult.status === "rejected") {
-        this.ifbsError =
-          "Status konnte nicht geladen werden. Preise wurden erfolgreich abgerufen.";
+        this.externalPrices = null;
+        return;
       }
 
-      this.isLoadingIfbs = false;
+      const error = await this.loadExternalPrices(this.bookable);
+      if (error) {
+        this.priceError = this.$t("bookable.externalPrice.loadFailed");
+      }
     },
     addPriceCategory() {
       const last =

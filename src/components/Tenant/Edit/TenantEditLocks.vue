@@ -1,7 +1,7 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import AppPanel from "@/components/AppPanel.vue";
-import ApiLockerService from "@/services/api/ApiLockerService";
+import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 
 export default {
   name: "TenantEditLocks",
@@ -97,11 +97,11 @@ export default {
           apiKey: this.localApps.ifbs.apiKey,
         };
 
-        const response = await ApiLockerService.testConnection({
-          tenantID: this.tenant.id,
-          provider: "ifbs",
+        const response = await ApiAccessAppsService.testConnection(
+          this.tenant.id,
           config,
-        });
+          "ifbs"
+        );
 
         this.testResults.ifbs = {
           success:
@@ -135,11 +135,11 @@ export default {
           password: this.localApps.pareva.password,
         };
 
-        const response = await ApiLockerService.testConnection({
-          tenantID: this.tenant.id,
-          provider: "pareva",
+        const response = await ApiAccessAppsService.testConnection(
+          this.tenant.id,
           config,
-        });
+          "pareva"
+        );
 
         this.testResults.pareva = {
           success:
@@ -183,7 +183,12 @@ export default {
             class="mb-2"
           >
             <!-- Beschreibung -->
-            <v-alert color="primary" text dense class="provider-description mb-4 mt-2">
+            <v-alert
+              color="primary"
+              text
+              dense
+              class="provider-description mb-4 mt-2"
+            >
               <div class="d-flex">
                 <v-icon color="primary" class="mr-3 mt-1"
                   >mdi-locker-multiple</v-icon
@@ -332,7 +337,12 @@ export default {
             :active="localApps.ifbs.active"
           >
             <!-- Beschreibung -->
-            <v-alert color="primary" text dense class="provider-description mb-4 mt-2">
+            <v-alert
+              color="primary"
+              text
+              dense
+              class="provider-description mb-4 mt-2"
+            >
               <div class="d-flex">
                 <v-icon color="primary" class="mr-3 mt-1">mdi-bike</v-icon>
                 <div>
@@ -342,8 +352,8 @@ export default {
                   <div class="text-body-2">
                     Die Fahrradboxen der PRS Parkraum Service GmbH
                     (Parkraumservice) bieten sichere Stellplätze für Fahrräder
-                    und E-Bikes. Buchende reservieren eine Box und öffnen sie zum
-                    Zeitpunkt ihrer Buchung.
+                    und E-Bikes. Buchende reservieren eine Box und öffnen sie
+                    zum Zeitpunkt ihrer Buchung.
                   </div>
                   <v-btn
                     text

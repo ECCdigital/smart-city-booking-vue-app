@@ -70,7 +70,6 @@ export default class Bookable {
     this.eventId = "";
 
     this.attachments = [];
-    this.lockerDetails = { active: false, units: [] };
     this.accessPointDetails = defaultAccessPointDetails();
     this.requiredFields = [];
 

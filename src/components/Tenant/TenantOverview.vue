@@ -144,6 +144,7 @@ import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutCon
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 import {
   createLockAndAccessAppDefaults,
+  findTenantApp,
   withoutUnchangedSecrets,
 } from "@/utilities/access-apps";
 
@@ -409,7 +410,7 @@ export default {
       const existing = this.tenant.applications || [];
       const map = {};
       Object.keys(this.defaultApps).forEach((k) => {
-        const found = existing.find((a) => a.id === k);
+        const found = findTenantApp(existing, k);
         map[k] = found ? { ...found } : { ...this.defaultApps[k] };
       });
       // Die Zugangs- und Schließsystem-Apps werden unter "Zutritt &

@@ -971,6 +971,10 @@ import TenantEditWorkflowStatusDialog from "@/components/Tenant/TenantEditWorkfl
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 import CatalogSettings from "@/components/Catalog/CatalogSettings.vue";
 import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
+import {
+  createLockAndAccessAppDefaults,
+  findTenantApp,
+} from "@/utilities/access-apps";
 
 export default {
   name: "TenantEdit",
@@ -1046,16 +1050,10 @@ export default {
           daysUntilPaymentDue: null,
           active: false,
         },
-        pareva: {
-          type: "locker",
-          id: "pareva",
-          title: "Pareva",
-          serverUrl: "",
-          lockerId: "",
-          user: "",
-          password: "",
-          active: false,
-        },
+        // The one lock and access app this page still carries. Its shape is
+        // owned by `utilities/access-apps` - both pages have to agree on it,
+        // or a save here writes a default the other page does not know.
+        pareva: createLockAndAccessAppDefaults().pareva,
       },
       apps: {},
       workflow: {
@@ -1278,7 +1276,7 @@ export default {
       const existing = this.tenant.applications || [];
 
       Object.keys(this.defaultApps).forEach((appId) => {
-        const found = existing.find((a) => a.id === appId);
+        const found = findTenantApp(existing, appId);
         if (found) {
           this.$set(this.apps, appId, { ...found });
         } else {
