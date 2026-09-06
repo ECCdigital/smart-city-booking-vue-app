@@ -178,22 +178,23 @@ describe("BookingTransitions", () => {
       );
     });
 
-    it("stays quiet on a 200 with success false and no errors, as before", async () => {
+    it("falls back to the generic message on a 200 with success false and no errors", async () => {
       const { wrapper, store } = mountTransitions();
       ApiBookingService.commitBooking.mockResolvedValue({
         success: false,
         data: null,
         errors: [],
       });
-      const toastsBefore = toastMessages(store).length;
 
       await start(wrapper, "confirm", { booking: booking() });
 
-      expect(toastMessages(store)).toHaveLength(toastsBefore);
+      expect(toastMessages(store)).toContain(
+        "Die Buchung konnte nicht freigegeben werden."
+      );
       expect(wrapper.emitted("transitioned")).toBeUndefined();
       expect(wrapper.emitted("failed")[0][0]).toMatchObject({
         action: "confirm",
-        message: null,
+        message: "Die Buchung konnte nicht freigegeben werden.",
         refetch: false,
       });
     });

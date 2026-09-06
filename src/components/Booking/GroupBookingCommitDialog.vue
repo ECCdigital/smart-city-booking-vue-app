@@ -7,12 +7,17 @@
       </v-card-title>
       <v-card-text>
         <span class="text-h6">
-          <template v-if="!seriesOnly">
-            Die Buchung
-            <strong>{{ bookingId }}</strong> ist Teil einer Serienbuchung.
-          </template>
+          <i18n
+            v-if="!seriesOnly"
+            path="group-booking.commit.member-of-series"
+            tag="span"
+          >
+            <template #bookingId>
+              <strong>{{ bookingId }}</strong>
+            </template>
+          </i18n>
           <template v-if="canCommitGroup">
-            Möchten Sie die gesamte Serie freigeben?
+            {{ $t("group-booking.commit.question") }}
           </template>
         </span>
       </v-card-text>

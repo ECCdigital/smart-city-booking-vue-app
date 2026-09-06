@@ -10,7 +10,8 @@ export function groupUsesInvoicePayment(bookings = []) {
  * The members' attachments of one `type`, each counted once across the
  * series (an aggregated document hangs on every member), newest first.
  * `keyOf` names the attachment: invoices by file name, cancellation
- * receipts by title.
+ * receipts by title - an untitled one by itself, so that two of them
+ * are not read as one.
  */
 function collectGroupAttachments(bookings, type, keyOf) {
   const seen = new Set();
@@ -51,6 +52,6 @@ export function collectGroupCancellationReceipts(bookings = []) {
   return collectGroupAttachments(
     bookings,
     "cancellation",
-    (attachment) => attachment.title
+    (attachment) => attachment.title ?? attachment
   );
 }

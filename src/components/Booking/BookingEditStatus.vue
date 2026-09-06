@@ -155,6 +155,7 @@
 import BookingStatusBar from "@/components/Booking/BookingStatusBar.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
 import {
   INITIAL_STATE,
@@ -251,7 +252,9 @@ export default {
         new Date(this.paymentDate)
       );
     },
+    /** The state's transitions, for whoever may edit the booking - the gate the list and the drawer use. */
     actions() {
+      if (!BookingPermissionService.allowUpdate(this.booking)) return [];
       return transitionActions(this.booking.status);
     },
     rejectionReasonLabel() {

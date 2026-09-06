@@ -33,6 +33,15 @@ describe("collectGroupCancellationReceipts", () => {
     ]);
   });
 
+  it("lists an untitled receipt of each member, none swallowed by the other", () => {
+    const receipts = collectGroupCancellationReceipts([
+      { id: "bk-1", attachments: [{ type: "cancellation", timeCreated: 1 }] },
+      { id: "bk-2", attachments: [{ type: "cancellation", timeCreated: 2 }] },
+    ]);
+
+    expect(receipts.map((r) => r.bookingId)).toEqual(["bk-2", "bk-1"]);
+  });
+
   it("leaves the other attachments to their own lists", () => {
     const invoice = { type: "invoice", name: "re-1.pdf" };
     const members = [{ id: "bk-1", attachments: [aggregated, invoice] }, null];

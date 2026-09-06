@@ -35,6 +35,20 @@ describe("GroupBookingCommitDialog", () => {
       expect(activeDialogText()).not.toContain("Gemischt");
     });
 
+    it("names the booking as a member of the series and asks about the whole of it", () => {
+      mountDialog(members);
+
+      expect(activeDialogText()).toContain(
+        i18n.t("group-booking.commit.member-of-series", { bookingId: "bk-1" })
+      );
+      expect(
+        document.querySelector(".v-dialog--active strong").textContent
+      ).toBe("bk-1");
+      expect(activeDialogText()).toContain(
+        i18n.t("group-booking.commit.question")
+      );
+    });
+
     it("offers to confirm the whole series", async () => {
       const wrapper = mountDialog(members);
 

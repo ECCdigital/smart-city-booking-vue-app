@@ -713,7 +713,9 @@
       "error": {
         "title": "Fehler beim Freigeben",
         "message": "Die Buchungen konnten nicht freigegeben werden."
-      }
+      },
+      "member-of-series": "Die Buchung {bookingId} ist Teil einer Serienbuchung.",
+      "question": "Möchten Sie die gesamte Serie freigeben?"
     },
     "pay": {
       "success": {

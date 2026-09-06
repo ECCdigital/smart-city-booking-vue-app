@@ -36,6 +36,9 @@ vi.mock("@/services/api/ApiBookablesService", () => ({
 vi.mock("@/services/api/ApiCheckoutService", () => ({
   default: { validateCheckoutItem: vi.fn() },
 }));
+vi.mock("@/services/permissions/BookingPermissionService", () => ({
+  default: { allowUpdate: vi.fn(() => true) },
+}));
 vi.mock("@/components/Checkout/CheckoutCalendar.vue", () => ({
   default: {
     name: "CheckoutCalendar",
@@ -253,6 +256,30 @@ describe("BookingEdit", () => {
 
       expect(inlineError(wrapper).text()).toBe(GONE);
       expect(wrapper.emitted("reload")).toHaveLength(1);
+    });
+  });
+
+  describe("the paid date", () => {
+    function paymentDateField(wrapper) {
+      return wrapper
+        .findAllComponents({ name: "v-text-field" })
+        .wrappers.find((field) => field.props("label") === "Bezahldatum");
+    }
+
+    it("is editable at Bestätigt only, not on a booking cancelled out of it", async () => {
+      const confirmed = await mountEdit({
+        booking: booking({ status: "confirmed", timePaid: 1_700_000_000_000 }),
+      });
+      expect(paymentDateField(confirmed.wrapper).props("disabled")).toBe(false);
+
+      const cancelled = await mountEdit({
+        booking: booking({
+          status: "cancelled",
+          timePaid: 1_700_000_000_000,
+          cancellationRefund: { cancelledFrom: "confirmed" },
+        }),
+      });
+      expect(paymentDateField(cancelled.wrapper).props("disabled")).toBe(true);
     });
   });
 

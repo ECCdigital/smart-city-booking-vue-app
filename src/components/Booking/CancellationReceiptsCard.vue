@@ -40,7 +40,7 @@
     <v-card-text class="pa-0" v-if="receipts.length > 0">
       <v-list dense>
         <template v-for="(item, index) in receipts">
-          <v-list-item :key="item.title" class="px-4">
+          <v-list-item :key="receiptKey(item)" class="px-4">
             <v-list-item-avatar color="success lighten-4">
               <v-icon color="success">mdi-file-pdf-box</v-icon>
             </v-list-item-avatar>
@@ -90,7 +90,7 @@
 export default {
   name: "CancellationReceiptsCard",
   props: {
-    /** The `cancellation` attachments, each with `title`, `timeCreated` and (for a series) `bookingId`. */
+    /** The `cancellation` attachments, each with `title`, `timeCreated`, `revision` and (for a series) `bookingId`. */
     receipts: {
       type: Array,
       default: () => [],
@@ -112,6 +112,10 @@ export default {
     },
   },
   methods: {
+    /** A reprint shares the title (and number) of the receipt it revises; the moment of issue tells them apart. */
+    receiptKey(item) {
+      return `${item.title}-${item.timeCreated}`;
+    },
     issuedAt(item) {
       return Intl.DateTimeFormat("de-DE", {
         dateStyle: "short",

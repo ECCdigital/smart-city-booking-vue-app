@@ -693,7 +693,7 @@
                           >
                             <template v-slot:activator="{ on, attrs }">
                               <v-text-field
-                                :value="paymentDate ? new Date(paymentDate).toLocaleDateString('de-DE') : ''"
+                                :value="paymentDate ? paymentDateOf(paymentDate).toLocaleDateString('de-DE') : ''"
                                 label="Bezahldatum"
                                 prepend-icon="mdi-calendar"
                                 background-color="accent"
@@ -903,11 +903,12 @@ import {
 } from "@/services/api/apiErrorMessage";
 import {
   defaultInitialState,
+  paymentDateOf,
   timePaidOf,
   toCreatePayload,
   toUpdatePayload,
 } from "@/utils/bookingForm";
-import { isPaid, isRejectedOrCancelled } from "@/utils/bookingStatus";
+import { BOOKING_STATUS, isRejectedOrCancelled } from "@/utils/bookingStatus";
 import _ from "lodash";
 
 export default {
@@ -1071,9 +1072,9 @@ export default {
     isCreateMode() {
       return !this.selectedBooking.id;
     },
-    /** The paid date is content of a paid booking; the payment itself is the `pay` transition. */
+    /** The paid date belongs to Bestätigt only; the payment itself is the `pay` transition. */
     paymentEditable() {
-      return isPaid(this.selectedBooking);
+      return this.selectedBooking?.status === BOOKING_STATUS.CONFIRMED;
     },
     bookingTenantLabel() {
       const tenant = this.tenants.find(
@@ -1215,7 +1216,7 @@ export default {
     formattedPaymentDateTime() {
       if (!this.paymentDate) return "";
 
-      const date = new Date(this.paymentDate);
+      const date = paymentDateOf(this.paymentDate);
       if (this.paymentTime) {
         const [hours, minutes] = this.paymentTime.split(":");
         date.setHours(parseInt(hours));
@@ -1427,6 +1428,7 @@ export default {
     getTypeIcon,
     getTypeText,
     getTypeColor,
+    paymentDateOf,
     ...mapActions({
       addToast: "toasts/add",
     }),

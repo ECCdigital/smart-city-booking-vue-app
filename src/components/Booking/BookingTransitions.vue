@@ -392,18 +392,17 @@ export default {
     },
 
     /**
-     * The route answered 200 with `success: false` - today's evaluation
-     * stays: the first error's code picks the message, and a body without
-     * errors says nothing, as the list did before.
+     * The route answered 200 with `success: false`: the first error's code
+     * picks the message, and a body without errors gets the action's generic
+     * one - the dialog stays open either way, never without a word.
      */
     async failConsistency(action, errorKey, errors, group) {
-      if (!errors?.length) {
-        return this.fail(action, null, null, false);
-      }
-      const code = errors[0]?.code;
-      const message = group
-        ? getGroupBookingErrorMessage(code)
-        : getBookingErrorMessage(code);
+      const code = errors?.[0]?.code;
+      const message = code
+        ? group
+          ? getGroupBookingErrorMessage(code)
+          : getBookingErrorMessage(code)
+        : this.$t(`${errorKey}.message`);
       await this.addToast(ToastService.createToast(errorKey, "error"));
       return this.fail(action, null, message, false);
     },

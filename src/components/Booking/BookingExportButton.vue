@@ -132,7 +132,7 @@ export default {
 
       worksheet.autoFilter = {
         from: "A1",
-        to: "Z1",
+        to: "AA1",
       };
 
       const buffer = await workbook.xlsx.writeBuffer();

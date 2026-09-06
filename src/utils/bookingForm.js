@@ -88,13 +88,24 @@ export function initialStateWire(initialState, priceEur) {
 const pad = (number) => String(number).padStart(2, "0");
 
 /**
+ * The date picker's `YYYY-MM-DD` as a `Date` at local midnight. `new Date`
+ * reads that string as UTC midnight, which west of UTC is the previous
+ * local day; the numeric parts keep the day the admin picked. No date, `null`.
+ */
+export function paymentDateOf(paymentDate) {
+  if (!paymentDate) return null;
+  const [year, month, day] = paymentDate.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
  * `timePaid` as the form edits it: a `YYYY-MM-DD` date from the date picker
  * and an `HH:mm` time from the time picker, combined into the epoch
  * milliseconds the booking stores. No date, no moment.
  */
 export function timePaidOf(paymentDate, paymentTime) {
-  if (!paymentDate) return null;
-  const dateTime = new Date(paymentDate);
+  const dateTime = paymentDateOf(paymentDate);
+  if (!dateTime) return null;
   if (paymentTime) {
     const [hours, minutes] = paymentTime.split(":");
     dateTime.setHours(parseInt(hours));

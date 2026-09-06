@@ -53,7 +53,7 @@ async function exportRows(bookings) {
     const values = row.values.slice(1);
     rows.push(Object.fromEntries(headers.map((h, i) => [h, values[i]])));
   });
-  return { headers, rows };
+  return { headers, rows, autoFilter: sheet.autoFilter };
 }
 
 /**
@@ -102,6 +102,13 @@ describe("BookingExportButton", () => {
       ["cancelled-paid", "Ja"],
       ["cancelled-unpaid", "Nein"],
     ]);
+  });
+
+  it("spans the filter over every column", async () => {
+    const { headers, autoFilter } = await exportRows([booking()]);
+
+    expect(headers).toHaveLength(27);
+    expect(autoFilter).toBe("A1:AA1");
   });
 
   it("keeps the rejection reason column", async () => {

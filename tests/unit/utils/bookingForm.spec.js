@@ -4,6 +4,7 @@ import {
   defaultInitialState,
   initialStateChoices,
   initialStateWire,
+  paymentDateOf,
   timePaidOf,
   timePaidParts,
   toCreatePayload,
@@ -181,11 +182,19 @@ describe("timePaidOf and timePaidParts", () => {
     expect(timePaidOf("2026-03-05", "14:30")).toBe(moment);
   });
 
-  it("reads a date without a time as its midnight, and no date as no moment", () => {
-    expect(timePaidOf("2026-03-05", null)).toBe(
-      new Date("2026-03-05").getTime()
-    );
+  it("reads a date without a time as its local midnight, and no date as no moment", () => {
+    const midnight = new Date(timePaidOf("2026-03-05", null));
+    expect(midnight.getFullYear()).toBe(2026);
+    expect(midnight.getMonth()).toBe(2);
+    expect(midnight.getDate()).toBe(5);
+    expect(midnight.getHours()).toBe(0);
     expect(timePaidOf(null, "14:30")).toBeNull();
+  });
+
+  it("reads the picker's date as a local day, not as UTC midnight", () => {
+    expect(paymentDateOf("2026-03-05")).toEqual(new Date(2026, 2, 5));
+    expect(paymentDateOf("")).toBeNull();
+    expect(paymentDateOf(null)).toBeNull();
   });
 
   it("splits a moment back into the pickers' values", () => {

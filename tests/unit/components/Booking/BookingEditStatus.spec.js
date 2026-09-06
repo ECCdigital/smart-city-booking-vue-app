@@ -23,8 +23,12 @@ vi.mock("@/services/api/ApiGroupBookingService", () => ({
     getCancellationRefundPreview: vi.fn(),
   },
 }));
+vi.mock("@/services/permissions/BookingPermissionService", () => ({
+  default: { allowUpdate: vi.fn(() => true) },
+}));
 
 import BookingEditStatus from "@/components/Booking/BookingEditStatus.vue";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 
 const SAVE_FIRST = "Erst speichern";
 
@@ -72,6 +76,7 @@ function spyOnStart(wrapper) {
 describe("BookingEditStatus", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    BookingPermissionService.allowUpdate.mockReturnValue(true);
   });
 
   describe("the state", () => {
@@ -125,6 +130,18 @@ describe("BookingEditStatus", () => {
     ])("offers at %s exactly %j", (status, labels) => {
       const wrapper = mountStatus({ booking: booking({ status }) });
       expect(actionLabels(wrapper)).toEqual(labels);
+    });
+
+    it("offers none to whoever may not edit the booking", () => {
+      BookingPermissionService.allowUpdate.mockReturnValue(false);
+
+      const wrapper = mountStatus();
+
+      expect(BookingPermissionService.allowUpdate).toHaveBeenCalledWith(
+        booking()
+      );
+      expect(actionButtons(wrapper)).toHaveLength(0);
+      expect(wrapper.find(".booking-status-chip").text()).toBe("Angefragt");
     });
 
     it("hands a single booking to the transition module", async () => {
