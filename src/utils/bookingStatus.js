@@ -22,6 +22,18 @@ export const BOOKING_STATUS = Object.freeze({
 /** What `groupBookingStatus()` answers when the members disagree. */
 export const MIXED = "mixed";
 
+/**
+ * The keys of a booking that are state, not content: the stored value and
+ * the three derivations the backend delivers with it. The write path drops
+ * them before a PUT (spec E1.1) - a save never carries a state.
+ */
+export const STATE_KEYS = Object.freeze([
+  "status",
+  "isCommitted",
+  "isPayed",
+  "isRejected",
+]);
+
 const PRESENTATION = {
   [BOOKING_STATUS.REQUESTED]: { color: "orange", icon: "mdi-clock-outline" },
   [BOOKING_STATUS.PAYMENT_DUE]: { color: "blue", icon: "mdi-cash-clock" },

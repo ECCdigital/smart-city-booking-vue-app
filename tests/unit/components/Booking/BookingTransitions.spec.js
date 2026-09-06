@@ -425,6 +425,21 @@ describe("BookingTransitions", () => {
       await wrapper.vm.$nextTick();
     }
 
+    it("loads the refund preview when the dialog opens for the first time", async () => {
+      const { wrapper } = mountTransitions();
+
+      await start(wrapper, "cancel", { booking: booking() });
+
+      // The dialog mounts with the target; it must still see `open` turn
+      // true, or its preview never loads and its confirm stays disabled.
+      expect(
+        ApiBookingService.getCancellationRefundPreview
+      ).toHaveBeenCalledWith("bk-1");
+      expect(
+        dialog(wrapper, "BookingRejectConformationDialog").props("open")
+      ).toBe(true);
+    });
+
     it("asks for the reason and posts the cancellation to the reject route", async () => {
       const { wrapper, store } = mountTransitions();
       ApiBookingService.rejectBooking.mockResolvedValue({ data: "" });

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   BOOKING_STATUS,
   MIXED,
+  STATE_KEYS,
   actionLabel,
   allowedActions,
   allowsAction,
@@ -251,5 +252,17 @@ describe("groupBookingStatus", () => {
   it("is null for no members", () => {
     expect(groupBookingStatus([])).toBeNull();
     expect(groupBookingStatus(undefined)).toBeNull();
+  });
+});
+
+/** What a save must never carry (spec E1.1): the stored state and its three derivations. */
+describe("STATE_KEYS", () => {
+  it("names the stored value and the three flags", () => {
+    expect([...STATE_KEYS]).toEqual([
+      "status",
+      "isCommitted",
+      "isPayed",
+      "isRejected",
+    ]);
   });
 });

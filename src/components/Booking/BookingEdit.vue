@@ -24,9 +24,13 @@
 
       <BookingEditStatus
         :booking="selectedBooking"
-        :reject-dialog-open="openRejectDialog || openGroupRejectDialog"
-        @request-reject="openCancellationDialog"
-        @confirm-unreject="unrejectBooking"
+        :dirty="hasUnsavedChanges"
+        :group-booking="groupBooking"
+        :price-eur="totalPriceEur"
+        :payment-methods="paymentMethod"
+        @transitioned="onTransitioned"
+        @failed="onTransitionFailed"
+        @update:initial-state="initialState = $event"
       />
       <v-alert
         v-if="transitionError"
@@ -665,7 +669,7 @@
                             </template>
                           </v-select>
                         </v-col>
-                        <v-col cols="12" sm="6">
+                        <v-col v-if="!isCreateMode" cols="12" sm="6">
                           <v-select
                             :items="paymentMethod"
                             v-model="selectedBooking.paymentMethod"
@@ -680,11 +684,11 @@
                         </v-col>
                       </v-row>
 
-                      <v-row dense class="mt-2">
+                      <v-row v-if="!isCreateMode" dense class="mt-2">
                         <v-col cols="12" sm="6">
                           <v-dialog
                             v-model="paymentDateModal"
-                            :disabled="!selectedBooking.isPayed"
+                            :disabled="!paymentEditable"
                             width="290px"
                           >
                             <template v-slot:activator="{ on, attrs }">
@@ -696,7 +700,7 @@
                                 filled
                                 dense
                                 readonly
-                                :disabled="!selectedBooking.isPayed"
+                                :disabled="!paymentEditable"
                                 v-bind="attrs"
                                 v-on="on"
                                 hide-details
@@ -713,7 +717,7 @@
                         <v-col cols="12" sm="6">
                           <v-dialog
                             v-model="paymentTimeModal"
-                            :disabled="!selectedBooking.isPayed"
+                            :disabled="!paymentEditable"
                             width="290px"
                           >
                             <template v-slot:activator="{ on, attrs }">
@@ -725,7 +729,7 @@
                                 filled
                                 dense
                                 readonly
-                                :disabled="!selectedBooking.isPayed"
+                                :disabled="!paymentEditable"
                                 v-bind="attrs"
                                 v-on="on"
                                 hide-details
@@ -743,7 +747,7 @@
                       </v-row>
 
                       <v-row
-                        v-if="selectedBooking.isPayed"
+                        v-if="paymentEditable"
                         dense
                         class="mt-1"
                       >
@@ -866,24 +870,6 @@
       @submit="submitChanges"
       @cancel="resetChanges"
     />
-    <BookingRejectConformationDialog
-      :to-reject="selectedBooking"
-      :open="openRejectDialog"
-      :loading="inProgress"
-      :error="rejectError"
-      @close="openRejectDialog = false"
-      @reject-booking="rejectBooking"
-    />
-    <GroupBookingRejectConformationDialog
-      :to-reject="selectedBooking"
-      :group-booking-id="groupBooking?.id"
-      :open="openGroupRejectDialog"
-      :in-progress="inProgress"
-      :error="rejectError"
-      @close="openGroupRejectDialog = false"
-      @reject-single-booking="rejectBooking"
-      @reject-group-booking="rejectGroupBooking"
-    />
   </div>
 </template>
 
@@ -911,19 +897,22 @@ import {
   validateRequiredCustomFields,
 } from "@/utils/bookingCustomFields";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
-import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
-import GroupBookingRejectConformationDialog from "@/components/Booking/GroupBookingRejectConformationDialog.vue";
 import {
   getApiErrorMessage,
   shouldRefetch,
 } from "@/services/api/apiErrorMessage";
+import {
+  defaultInitialState,
+  timePaidOf,
+  toCreatePayload,
+  toUpdatePayload,
+} from "@/utils/bookingForm";
+import { isPaid, isRejectedOrCancelled } from "@/utils/bookingStatus";
 import _ from "lodash";
 
 export default {
   name: "BookingEdit",
   components: {
-    GroupBookingRejectConformationDialog,
-    BookingRejectConformationDialog,
     BookableTypeChip,
     BaseSection,
     SaveBar,
@@ -1069,10 +1058,9 @@ export default {
 
       editableBooking: null,
       originalSnapshot: null,
-      openRejectDialog: false,
-      openGroupRejectDialog: false,
-      rejectError: null,
       transitionError: null,
+      // Create mode: the "Anfangszustand" the status section reports (spec E10).
+      initialState: defaultInitialState(),
     };
   },
   computed: {
@@ -1082,6 +1070,10 @@ export default {
     }),
     isCreateMode() {
       return !this.selectedBooking.id;
+    },
+    /** The paid date is content of a paid booking; the payment itself is the `pay` transition. */
+    paymentEditable() {
+      return isPaid(this.selectedBooking);
     },
     bookingTenantLabel() {
       const tenant = this.tenants.find(
@@ -1206,16 +1198,7 @@ export default {
     },
     timePaid: {
       get() {
-        if (!this.paymentDate) return null;
-
-        const dateTime = new Date(this.paymentDate);
-        if (this.paymentTime) {
-          const [hours, minutes] = this.paymentTime.split(":");
-          dateTime.setHours(parseInt(hours));
-          dateTime.setMinutes(parseInt(minutes));
-        }
-
-        return dateTime.getTime();
+        return timePaidOf(this.paymentDate, this.paymentTime);
       },
       set(value) {
         if (!value) {
@@ -1415,12 +1398,6 @@ export default {
     },
     timePaid: function (newValue) {
       this.selectedBooking.timePaid = newValue;
-    },
-    "selectedBooking.isPayed": function (isPayed) {
-      if (!isPayed) {
-        this.paymentDateModal = false;
-        this.paymentTimeModal = false;
-      }
     },
     activePaymentApps: {
       immediate: true,
@@ -1772,110 +1749,19 @@ export default {
       }
       return message;
     },
-    openCancellationDialog() {
-      this.rejectError = null;
+    /**
+     * The status section ran a transition (spec E2): the booking is reloaded
+     * from the server, which is where the state now lives. A refused one is
+     * shown inline; after a 409 or 404 the reload follows as well (spec E5).
+     */
+    onTransitioned() {
       this.transitionError = null;
-      if (this.groupBooking?.id) {
-        this.openGroupRejectDialog = true;
-      } else {
-        this.openRejectDialog = true;
-      }
+      this.$emit("reload");
     },
-    async rejectBooking(
-      id,
-      reason,
-      skipCancellation,
-      bankDetails,
-      refundPercentage
-    ) {
-      this.inProgress = true;
-      try {
-        await ApiBookingService.rejectBooking(
-          id,
-          this.tenantId,
-          reason,
-          skipCancellation,
-          bankDetails,
-          refundPercentage
-        );
-        await this.addToast(
-          ToastService.createToast("booking.reject.success", "success")
-        );
-        this.openRejectDialog = false;
-        this.openGroupRejectDialog = false;
-        this.finishSave();
-      } catch (error) {
-        this.rejectError = await this.failTransition(
-          error,
-          "booking.reject.error"
-        );
-      } finally {
-        this.inProgress = false;
-      }
-    },
-    async rejectGroupBooking(
-      id,
-      reason,
-      skipCancellation,
-      bankDetails,
-      refundPercentage
-    ) {
-      this.inProgress = true;
-      this.rejectError = null;
-      try {
-        const response = await ApiGroupBookingService.rejectGroupBooking(
-          this.tenantId,
-          this.groupBooking.id,
-          reason,
-          skipCancellation,
-          bankDetails,
-          refundPercentage
-        );
-        if (!response.success) {
-          this.rejectError = this.$t("group-booking.reject.error.message");
-          return;
-        }
-        await this.addToast(
-          ToastService.createToast("group-booking.reject.success", "success")
-        );
-        this.openGroupRejectDialog = false;
-        this.finishSave();
-      } catch (error) {
-        this.rejectError = await this.failTransition(
-          error,
-          "group-booking.reject.error"
-        );
-      } finally {
-        this.inProgress = false;
-      }
-    },
-    async unrejectBooking() {
-      if (!this.selectedBooking?.id) return;
-
-      this.inProgress = true;
-      this.transitionError = null;
-      try {
-        const response = await ApiBookingService.getBooking(
-          this.selectedBooking.id,
-          this.tenantId,
-          true
-        );
-        const payload = {
-          ...response.data,
-          isRejected: false,
-          rejectionReason: "",
-        };
-        delete payload._id;
-        delete payload._populated;
-        await ApiBookingService.storeBooking(payload);
-        await this.addToast(
-          ToastService.createToast("booking.unreject.success", "success")
-        );
-        this.finishSave();
-      } catch (error) {
-        await this.failTransition(error, "booking.unreject.error");
-      } finally {
-        this.inProgress = false;
+    onTransitionFailed({ message, refetch }) {
+      this.transitionError = message;
+      if (refetch) {
+        this.$emit("reload");
       }
     },
     finishSave() {
@@ -1895,7 +1781,7 @@ export default {
       }
 
       if (
-        this.selectedBooking.isRejected &&
+        isRejectedOrCancelled(this.selectedBooking) &&
         !this.selectedBooking.rejectionReason?.trim()
       ) {
         await this.addToast(
@@ -1922,7 +1808,15 @@ export default {
           return;
         }
 
-        await ApiBookingService.storeBooking(this.selectedBooking)
+        // The create PUT carries the chosen initial state as `status` and no
+        // flag (spec E10).
+        await ApiBookingService.storeBooking(
+          toCreatePayload(
+            this.selectedBooking,
+            this.initialState,
+            this.totalPriceEur
+          )
+        )
           .then(async () => {
             await this.saveGroupBookingIfNeeded();
             this.inProgress = false;
@@ -1937,16 +1831,17 @@ export default {
                 );
               });
             } else {
-              this.addToast(
-                ToastService.createToast("booking.create.error", "error")
-              );
+              this.failTransition(err, "booking.create.error");
             }
             this.inProgress = false;
           });
       } else {
         this.inProgress = true;
-        delete this.selectedBooking._id;
-        await ApiBookingService.storeBooking(this.selectedBooking)
+        // The update PUT carries content only (spec E1.1): no flag, no
+        // `status` - the state is moved by the transitions, never by a save.
+        await ApiBookingService.storeBooking(
+          toUpdatePayload(this.selectedBooking)
+        )
           .then(async () => {
             await this.saveGroupBookingIfNeeded();
             this.inProgress = false;

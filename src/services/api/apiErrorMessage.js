@@ -30,7 +30,8 @@ const DIVERGING_BOOKINGS_KEY = `${CONFLICT_CODE_PREFIX}.diverging-bookings`;
  * says the booking is gone; every other 404 keeps the caller's fallback,
  * because "not found" reads differently per screen. A 400
  * `invalid_status_change` is unreachable once the admin PUT carries no flags
- * (spec E1), and named anyway.
+ * (spec E1), and named anyway; the create PUT's `invalid_status` and
+ * `missing_payment_details` (spec E10) are read the same way.
  */
 const NOT_FOUND_CODE_PREFIX = "errors.not-found-codes";
 const BAD_REQUEST_CODE_PREFIX = "errors.bad-request-codes";

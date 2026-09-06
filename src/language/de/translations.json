@@ -104,7 +104,9 @@
       "booking_not_found": "Die Buchung existiert nicht mehr."
     },
     "bad-request-codes": {
-      "invalid_status_change": "Dieser Statuswechsel ist nicht möglich."
+      "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
+      "invalid_status": "In diesem Zustand kann keine Buchung angelegt werden.",
+      "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum."
     },
     "interface-forbidden": {
       "title": "Kein Zugriff auf diesen Bereich",
@@ -429,16 +431,6 @@
       "alreadyCancelled": "Diese Buchung wurde bereits storniert.",
       "disabledByPolicy": "Diese Buchung kann nicht vom Buchenden storniert werden. Bitte wenden Sie sich an den Anbieter, falls Sie eine Stornierung wünschen."
     },
-    "unreject": {
-      "success": {
-        "title": "Stornierung aufgehoben",
-        "message": "Die Buchung ist wieder aktiv."
-      },
-      "error": {
-        "title": "Fehler beim Aufheben",
-        "message": "Die Stornierung konnte nicht rückgängig gemacht werden."
-      }
-    },
     "cancellationRefund": {
       "title": "Erstattungsvorschau",
       "expectedTitle": "Erwartete Erstattung",
@@ -502,6 +494,12 @@
       },
       "hints": {
         "bookablesForbidden": "Sie haben keinen Zugriff auf Buchungsobjekte. Die Auswahl der Buchungsobjekte bleibt daher leer."
+      },
+      "saveFirst": "Erst speichern – die Aktionen sind gesperrt, solange das Formular ungespeicherte Änderungen hat.",
+      "reason": {
+        "rejected": "Ablehnungsgrund",
+        "cancelled": "Stornierungsgrund",
+        "required": "Begründung ist erforderlich"
       }
     },
     "copyId": {
@@ -601,7 +599,8 @@
       "rejected": "Abgelehnt",
       "cancelled": "Storniert",
       "mixed": "Gemischt",
-      "free": "Kostenfrei"
+      "free": "Kostenfrei",
+      "paidAt": "Bezahlt am {date}"
     },
     "action": {
       "confirm": "Freigeben",
@@ -616,6 +615,16 @@
       "unpaid": "Nein",
       "settled": "Bezahlt",
       "open": "Offen"
+    },
+    "initialState": {
+      "label": "Anfangszustand",
+      "requested": "Angefragt",
+      "confirmed": "Freigegeben",
+      "paid": "Bezahlt",
+      "hint": "Wird angelegt als: {status}",
+      "paymentMethod": "Zahlungsmethode auswählen",
+      "date": "Zahldatum",
+      "time": "Uhrzeit"
     },
     "reinstate": {
       "success": {

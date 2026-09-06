@@ -184,8 +184,17 @@ export default {
       }
     },
 
+    /**
+     * The dialogs mount with the target (`v-if="booking"`). Opening one in
+     * the same tick would create it already open, and its `open` watcher -
+     * which loads the refund preview the cancel dialogs need before they
+     * let the user confirm - would never fire. So the dialog is opened one
+     * tick after the target is set.
+     */
     openDialog(dialog) {
-      this.dialog = dialog;
+      this.$nextTick(() => {
+        this.dialog = dialog;
+      });
     },
     closeDialog() {
       this.dialog = null;

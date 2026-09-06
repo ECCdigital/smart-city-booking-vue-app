@@ -64,6 +64,25 @@ describe("getApiErrorMessage", () => {
         "Dieser Statuswechsel ist nicht möglich."
       );
     });
+
+    it("names the payment a booking born paid is missing (spec E10)", () => {
+      const error = lifecycleError(400, "missing_payment_details", {
+        status: "confirmed",
+        missing: ["paymentMethod", "timePaid"],
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum."
+      );
+    });
+
+    it("says a booking cannot be born in the state the create PUT named", () => {
+      const error = lifecycleError(400, "invalid_status", {
+        status: "cancelled",
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "In diesem Zustand kann keine Buchung angelegt werden."
+      );
+    });
   });
 
   describe("on a 403 response", () => {

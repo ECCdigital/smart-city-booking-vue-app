@@ -11,11 +11,21 @@ vi.mock("@/services/api/ApiBookingService", () => ({
   default: {
     getBooking: vi.fn(),
     storeBooking: vi.fn(),
+    commitBooking: vi.fn(),
+    payBooking: vi.fn(),
     rejectBooking: vi.fn(),
+    reinstateBooking: vi.fn(),
+    getCancellationRefundPreview: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiGroupBookingService", () => ({
-  default: { rejectGroupBooking: vi.fn(), updateGroupBooking: vi.fn() },
+  default: {
+    commitGroupBooking: vi.fn(),
+    payGroupBooking: vi.fn(),
+    rejectGroupBooking: vi.fn(),
+    updateGroupBooking: vi.fn(),
+    getCancellationRefundPreview: vi.fn(),
+  },
 }));
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenantActivePaymentApps: vi.fn() },
@@ -103,31 +113,85 @@ function inlineError(wrapper) {
   return wrapper.find(".booking-transition-error");
 }
 
+function actionButton(wrapper, label) {
+  return wrapper
+    .findAll("button.booking-action")
+    .wrappers.find((button) => button.text() === label);
+}
+
+function nameInput(wrapper) {
+  return wrapper
+    .findAllComponents({ name: "v-text-field" })
+    .wrappers.find((field) => field.props("label") === "Name *")
+    .find("input");
+}
+
+/** Clicks the button with `label` inside the open dialog of the transition module. */
+async function clickDialogButton(wrapper, label) {
+  const button = Array.from(
+    document.querySelectorAll(".v-dialog--active button")
+  ).find((el) => el.textContent.trim() === label);
+  button.click();
+  await flushPromises();
+  await wrapper.vm.$nextTick();
+}
+
+async function submit(wrapper) {
+  wrapper.findComponent({ name: "SaveBar" }).vm.$emit("submit");
+  await flushPromises();
+  await wrapper.vm.$nextTick();
+}
+
+function putBody() {
+  return ApiBookingService.storeBooking.mock.calls[0][0];
+}
+
 /**
- * The form's transition handlers follow spec E5: a refused transition is
- * read through the central reader and shown inline (like the group dialog's
- * `rejectError`), and after a 409 or 404 the form asks its page to reload the
- * booking, so that it shows the server's state.
+ * The form hosts the transition module through its status section (spec E2,
+ * E3): a button runs a transition, the form reloads the booking afterwards,
+ * and a refused one is shown inline (spec E5) with a reload after a 409 or
+ * 404. The save PUT carries content only (spec E1.1); a create carries the
+ * chosen initial state as `status` (spec E10). Nothing here sends a flag.
  */
 describe("BookingEdit", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    ApiBookingService.getCancellationRefundPreview.mockResolvedValue({
+      originalAmountEur: 25,
+    });
   });
 
   describe("Ablehnen", () => {
+    async function reject(wrapper, refundPercentage) {
+      await actionButton(wrapper, "Ablehnen").trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+      const dialog = wrapper.findComponent({
+        name: "BookingRejectConformationDialog",
+      });
+      dialog.vm.$emit(
+        "reject-booking",
+        "bk-1",
+        "Grund",
+        false,
+        undefined,
+        refundPercentage
+      );
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+      return dialog;
+    }
+
     it("shows the conflict inline and asks for a reload on a 409", async () => {
       const { wrapper } = await mountEdit();
       ApiBookingService.rejectBooking.mockRejectedValue(
         lifecycleError(409, "invalid_transition", { status: "cancelled" })
       );
 
-      const dialog = wrapper.findComponent({
-        name: "BookingRejectConformationDialog",
-      });
-      dialog.vm.$emit("reject-booking", "bk-1", "Grund", false, undefined, 100);
-      await flushPromises();
-      await wrapper.vm.$nextTick();
+      const dialog = await reject(wrapper, 100);
 
       expect(inlineError(wrapper).text()).toBe(CONFLICT_IN_CANCELLED);
       expect(dialog.props("error")).toBe(CONFLICT_IN_CANCELLED);
@@ -141,11 +205,7 @@ describe("BookingEdit", () => {
       error.response = { status: 400, data: "invalid_refund_percentage" };
       ApiBookingService.rejectBooking.mockRejectedValue(error);
 
-      wrapper
-        .findComponent({ name: "BookingRejectConformationDialog" })
-        .vm.$emit("reject-booking", "bk-1", "Grund", false, undefined, 150);
-      await flushPromises();
-      await wrapper.vm.$nextTick();
+      await reject(wrapper, 150);
 
       expect(inlineError(wrapper).text()).toBe(
         "Der Wert muss zwischen 0 und 100 liegen"
@@ -155,40 +215,162 @@ describe("BookingEdit", () => {
   });
 
   describe("Wiederherstellen", () => {
+    async function reinstate(wrapper) {
+      await actionButton(wrapper, "Wiederherstellen").trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+      await clickDialogButton(wrapper, "Wiederherstellen");
+    }
+
+    it("posts to the reinstate route and reloads the booking", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({ status: "rejected" }),
+      });
+      ApiBookingService.reinstateBooking.mockResolvedValue({
+        success: true,
+        data: null,
+        errors: [],
+      });
+
+      await reinstate(wrapper);
+
+      expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1");
+      expect(ApiBookingService.storeBooking).not.toHaveBeenCalled();
+      expect(wrapper.emitted("reload")).toHaveLength(1);
+      expect(wrapper.emitted("saved")).toBeUndefined();
+      expect(inlineError(wrapper).exists()).toBe(false);
+    });
+
     it("says the booking is gone and asks for a reload on a 404", async () => {
       const { wrapper } = await mountEdit({
         booking: booking({ status: "rejected" }),
       });
-      ApiBookingService.getBooking.mockRejectedValue(
+      ApiBookingService.reinstateBooking.mockRejectedValue(
         lifecycleError(404, "booking_not_found", { bookingId: "bk-1" })
       );
 
-      wrapper
-        .findComponent({ name: "BookingEditStatus" })
-        .vm.$emit("confirm-unreject");
-      await flushPromises();
-      await wrapper.vm.$nextTick();
+      await reinstate(wrapper);
 
       expect(inlineError(wrapper).text()).toBe(GONE);
       expect(wrapper.emitted("reload")).toHaveLength(1);
     });
   });
 
-  describe("Speichern", () => {
-    async function saveWith(error) {
+  describe("the actions while the form is dirty", () => {
+    it("are locked once a field is edited, with the hint to save first", async () => {
       const { wrapper } = await mountEdit();
-      ApiBookingService.storeBooking.mockRejectedValue(error);
+      expect(actionButton(wrapper, "Freigeben").element.disabled).toBe(false);
 
-      wrapper.findComponent({ name: "SaveBar" }).vm.$emit("submit");
-      await flushPromises();
+      await nameInput(wrapper).setValue("Max Muster");
       await wrapper.vm.$nextTick();
-      return wrapper;
-    }
+
+      expect(actionButton(wrapper, "Freigeben").element.disabled).toBe(true);
+      expect(actionButton(wrapper, "Ablehnen").element.disabled).toBe(true);
+      expect(wrapper.find(".booking-status-hint").text()).toContain(
+        "Erst speichern"
+      );
+    });
+  });
+
+  describe("Speichern", () => {
+    it("sends content only on an update - no flag, no status", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({
+          _id: "mongo-1",
+          status: "confirmed",
+          isCommitted: true,
+          isPayed: true,
+          isRejected: false,
+        }),
+      });
+      ApiBookingService.storeBooking.mockResolvedValue({ data: {} });
+      await nameInput(wrapper).setValue("Max Muster");
+
+      await submit(wrapper);
+
+      expect(putBody()).toMatchObject({ id: "bk-1", name: "Max Muster" });
+      ["_id", "status", "isCommitted", "isPayed", "isRejected"].forEach((key) =>
+        expect(putBody()).not.toHaveProperty(key)
+      );
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("sends the chosen initial state and no flag on a create", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({
+          id: null,
+          status: undefined,
+          paymentProvider: "invoice",
+        }),
+      });
+      ApiBookingService.storeBooking.mockResolvedValue({ data: {} });
+      wrapper
+        .findComponent({ name: "BookingEditStatus" })
+        .vm.$emit("update:initial-state", {
+          selection: "paid",
+          paymentMethod: "CASH",
+          timePaid: 1_700_000_000_000,
+        });
+
+      await submit(wrapper);
+
+      expect(putBody()).toMatchObject({
+        status: "confirmed",
+        paymentMethod: "CASH",
+        timePaid: 1_700_000_000_000,
+      });
+      ["isCommitted", "isPayed", "isRejected"].forEach((key) =>
+        expect(putBody()).not.toHaveProperty(key)
+      );
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("creates as Angefragt when nothing else was chosen", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({
+          id: null,
+          status: undefined,
+          paymentProvider: "invoice",
+        }),
+      });
+      ApiBookingService.storeBooking.mockResolvedValue({ data: {} });
+
+      await submit(wrapper);
+
+      expect(putBody().status).toBe("requested");
+    });
+
+    it("names the missing payment inline when the create is refused with a 400", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({
+          id: null,
+          status: undefined,
+          paymentProvider: "invoice",
+        }),
+      });
+      ApiBookingService.storeBooking.mockRejectedValue(
+        lifecycleError(400, "missing_payment_details", {
+          status: "confirmed",
+          missing: ["paymentMethod"],
+        })
+      );
+
+      await submit(wrapper);
+
+      expect(inlineError(wrapper).text()).toBe(
+        "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum."
+      );
+      expect(wrapper.emitted("reload")).toBeUndefined();
+      expect(wrapper.emitted("saved")).toBeUndefined();
+    });
 
     it("shows the conflict inline and asks for a reload on a 409", async () => {
-      const wrapper = await saveWith(
+      const { wrapper } = await mountEdit();
+      ApiBookingService.storeBooking.mockRejectedValue(
         lifecycleError(409, "invalid_transition", { status: "cancelled" })
       );
+
+      await submit(wrapper);
 
       expect(inlineError(wrapper).text()).toBe(CONFLICT_IN_CANCELLED);
       expect(wrapper.emitted("reload")).toHaveLength(1);
@@ -196,12 +378,15 @@ describe("BookingEdit", () => {
     });
 
     it("names a refused status change inline without a reload on a 400", async () => {
-      const wrapper = await saveWith(
+      const { wrapper } = await mountEdit();
+      ApiBookingService.storeBooking.mockRejectedValue(
         lifecycleError(400, "invalid_status_change", {
           status: "confirmed",
           requested: "requested",
         })
       );
+
+      await submit(wrapper);
 
       expect(inlineError(wrapper).text()).toBe(
         "Dieser Statuswechsel ist nicht möglich."
