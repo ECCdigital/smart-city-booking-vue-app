@@ -153,6 +153,28 @@
             </v-card>
           </v-menu>
         </template>
+        <template v-slot:append-outer>
+          <v-select
+            v-model="statusFilter"
+            :items="statusFilterOptions"
+            :label="$t('booking.filter.status')"
+            multiple
+            solo
+            hide-details
+            class="status-filter"
+          >
+            <template v-slot:selection="{ item }">
+              <v-chip
+                small
+                :color="item.color"
+                text-color="white"
+                class="my-1 mr-1"
+              >
+                {{ item.text }}
+              </v-chip>
+            </template>
+          </v-select>
+        </template>
       </v-text-field>
     </div>
 
@@ -161,7 +183,7 @@
       <div v-if="currentView === 'list'">
         <v-skeleton-loader type="table" class="flex">
           <BookingTable
-            :bookings="filteredBookings"
+            :bookings="statusFilteredBookings"
             :loading="loading"
             @open-booking="onOpenBooking"
             @open-group-booking="onOpenGroupBooking"
@@ -176,7 +198,7 @@
       <!-- Calendar view -->
       <div v-else-if="currentView === 'calendar'">
         <BookingOverviewCalendar
-          :bookings="filteredBookings"
+          :bookings="statusFilteredBookings"
           :loading="loading"
           @open-booking="onOpenBooking"
           @open-edit-booking="onOpenEditBooking"
@@ -278,7 +300,13 @@ import ToastService from "@/services/ToastService";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
-import { allowsAction } from "@/utils/bookingStatus";
+import {
+  BOOKING_STATUS,
+  allowsAction,
+  filterBookingsByStatus,
+  statusColor,
+  statusLabel,
+} from "@/utils/bookingStatus";
 
 export default {
   components: {
@@ -301,6 +329,9 @@ export default {
       value: "",
       searchTerm: "",
       bookingTypeFilter: "all",
+      // The list's status filter (spec E11): all five states to begin with,
+      // plain component state - nothing persists it.
+      statusFilter: Object.values(BOOKING_STATUS),
       bookingTypeFilterOptions: [
         {
           value: "all",
@@ -363,6 +394,13 @@ export default {
     hasActiveBookingTypeFilter() {
       return this.bookingTypeFilter !== "all";
     },
+    statusFilterOptions() {
+      return Object.values(BOOKING_STATUS).map((status) => ({
+        value: status,
+        text: statusLabel(status),
+        color: statusColor(status),
+      }));
+    },
     isSelectedBookingHardDeleteBlocked() {
       return !allowsAction(this.selectedBooking, "delete");
     },
@@ -424,6 +462,13 @@ export default {
       }
 
       return this.applyBookingTypeFilter(bookings);
+    },
+    /**
+     * What the table and the calendar show. The kanban stays on
+     * `filteredBookings` - its columns are workflow states, not booking states.
+     */
+    statusFilteredBookings() {
+      return filterBookingsByStatus(this.filteredBookings, this.statusFilter);
     },
   },
   watch: {
@@ -830,6 +875,10 @@ export default {
 <style scoped lang="scss">
 .search-field {
   border-radius: 15px;
+}
+
+.status-filter {
+  width: 28rem;
 }
 
 .booking-type-filter-trigger--active {

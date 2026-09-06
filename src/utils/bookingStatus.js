@@ -132,6 +132,14 @@ export function statusRank(status) {
   return rank === -1 ? RANK.length : rank;
 }
 
+/**
+ * The list's status filter (spec E11): the bookings whose state is among
+ * `statuses`, in their order. An empty selection keeps nothing.
+ */
+export function filterBookingsByStatus(bookings, statuses) {
+  return bookings.filter((booking) => statuses.includes(booking?.status));
+}
+
 /** The "Status" column of the Excel export (spec E6). */
 export function statusExportValue(booking) {
   return statusLabel(booking?.status);

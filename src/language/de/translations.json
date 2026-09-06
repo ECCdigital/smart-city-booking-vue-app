@@ -603,6 +603,9 @@
       "mixed": "Gemischt",
       "free": "Kostenfrei"
     },
+    "filter": {
+      "status": "Status"
+    },
     "action": {
       "confirm": "Freigeben",
       "pay": "Als bezahlt markieren",

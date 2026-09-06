@@ -8,6 +8,7 @@ import {
 } from "@tests/unit/support/api";
 import i18n from "@/language/index";
 import toasts from "@/store/modules/toasts";
+import { BOOKING_STATUS } from "@/utils/bookingStatus";
 
 vi.mock("@/store", () => ({
   default: { getters: { "tenants/currentTenantId": "tenant-1" } },
@@ -60,6 +61,14 @@ const OK = { success: true, data: null, errors: [] };
 const CONFLICT_IN_CONFIRMED =
   "Die Buchung ist inzwischen in einem anderen Zustand (Bestätigt).";
 const GONE = "Die Buchung existiert nicht mehr.";
+/** The five state words in the order the filter lists them. */
+const STATUS_LABELS = [
+  "Angefragt",
+  "Zahlung offen",
+  "Bestätigt",
+  "Abgelehnt",
+  "Storniert",
+];
 
 function booking(overrides = {}) {
   return {
@@ -74,12 +83,24 @@ function booking(overrides = {}) {
   };
 }
 
-async function mountBookings({ bookings = [booking()], groupBookings = [] }) {
+/** One booking per state, ids `bk-<status>`. */
+function bookingsInEveryState() {
+  return Object.values(BOOKING_STATUS).map((status) =>
+    booking({ id: `bk-${status}`, status })
+  );
+}
+
+async function mountBookings({
+  bookings = [booking()],
+  groupBookings = [],
+  workflow = { active: false },
+}) {
   ApiBookingService.getBookings.mockResolvedValue({ data: bookings });
   ApiGroupBookingService.getGroupBookings.mockResolvedValue({
     data: groupBookings,
   });
-  ApiWorkflowService.getWorkflowStates.mockResolvedValue({ active: false });
+  ApiWorkflowService.getWorkflowStates.mockResolvedValue(workflow);
+  ApiWorkflowService.getBacklog.mockResolvedValue([]);
   ApiBookingService.getCancellationRefundPreview.mockResolvedValue({});
 
   const store = new Vuex.Store({
@@ -95,6 +116,12 @@ async function mountBookings({ bookings = [booking()], groupBookings = [] }) {
       tenants: {
         namespaced: true,
         getters: { currentTenantId: () => "tenant-1" },
+      },
+      // The kanban asks whether to skip its status confirmation.
+      userPreferences: {
+        namespaced: true,
+        getters: { shouldSkipStatusConfirmation: () => () => false },
+        actions: { loadSkipStatusConfirmations() {} },
       },
     },
   });
@@ -119,6 +146,46 @@ async function mountBookings({ bookings = [booking()], groupBookings = [] }) {
         ApiGroupBookingService.getGroupBookings.mock.calls.length - groupLoads,
     }),
   };
+}
+
+function bookingIdsOf(wrapper, componentName) {
+  return wrapper
+    .findComponent({ name: componentName })
+    .props("bookings")
+    .map((item) => item.id);
+}
+
+/** The state words the status filter currently shows as selected. */
+function selectedStatusLabels(wrapper) {
+  return wrapper
+    .findAll(".status-filter .v-chip")
+    .wrappers.map((chip) => chip.text().trim());
+}
+
+/** Opens the status filter and clicks the entry with `label`, toggling it. */
+async function toggleStatusFilter(wrapper, label) {
+  await wrapper.find(".status-filter .v-input__slot").trigger("click");
+  await wrapper.vm.$nextTick();
+  Array.from(document.querySelectorAll(".v-select-list .v-list-item"))
+    .find(
+      (el) =>
+        el.querySelector(".v-list-item__title")?.textContent.trim() === label
+    )
+    .click();
+  await wrapper.vm.$nextTick();
+  // Close the menu again so the next toggle opens a fresh one.
+  await wrapper.find(".status-filter .v-input__slot").trigger("click");
+  await wrapper.vm.$nextTick();
+}
+
+/** Switches the view through the toggle in the page header. */
+async function switchView(wrapper, label) {
+  wrapper
+    .findAll(".v-btn-toggle .v-btn")
+    .wrappers.find((btn) => btn.text().trim() === label)
+    .trigger("click");
+  await flushPromises();
+  await wrapper.vm.$nextTick();
 }
 
 function toastMessages(store) {
@@ -161,6 +228,96 @@ describe("Bookings", () => {
     vi.clearAllMocks();
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  /**
+   * The status filter (spec E11): a multi-select over the five states, all
+   * selected by default, narrowing the table and the calendar - not the
+   * kanban, whose columns are workflow states. Plain component state, no
+   * persistence.
+   */
+  describe("the status filter", () => {
+    it("has all five states selected by default and the table shows every booking", async () => {
+      const { wrapper } = await mountBookings({
+        bookings: bookingsInEveryState(),
+      });
+
+      expect(selectedStatusLabels(wrapper)).toEqual(STATUS_LABELS);
+      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([
+        "bk-requested",
+        "bk-payment_due",
+        "bk-confirmed",
+        "bk-rejected",
+        "bk-cancelled",
+      ]);
+    });
+
+    it("drops the bookings of a deselected state from the table", async () => {
+      const { wrapper } = await mountBookings({
+        bookings: bookingsInEveryState(),
+      });
+
+      await toggleStatusFilter(wrapper, "Storniert");
+      await toggleStatusFilter(wrapper, "Abgelehnt");
+
+      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([
+        "bk-requested",
+        "bk-payment_due",
+        "bk-confirmed",
+      ]);
+    });
+
+    it("applies to the calendar as well", async () => {
+      const { wrapper } = await mountBookings({
+        bookings: bookingsInEveryState(),
+      });
+
+      await toggleStatusFilter(wrapper, "Angefragt");
+      await switchView(wrapper, "Kalender");
+
+      expect(bookingIdsOf(wrapper, "BookingOverviewCalendar")).toEqual([
+        "bk-payment_due",
+        "bk-confirmed",
+        "bk-rejected",
+        "bk-cancelled",
+      ]);
+    });
+
+    it("leaves the kanban alone, whose columns are workflow states", async () => {
+      const { wrapper } = await mountBookings({
+        bookings: bookingsInEveryState(),
+        workflow: {
+          active: true,
+          states: [
+            { id: "st-1", name: "Neu", tasks: [{ id: "bk-requested" }] },
+          ],
+        },
+      });
+
+      await toggleStatusFilter(wrapper, "Angefragt");
+      await switchView(wrapper, "Kanban");
+
+      expect(bookingIdsOf(wrapper, "BookingWorkflow")).toEqual([
+        "bk-requested",
+        "bk-payment_due",
+        "bk-confirmed",
+        "bk-rejected",
+        "bk-cancelled",
+      ]);
+    });
+
+    it("shows nothing once every state is deselected", async () => {
+      const { wrapper } = await mountBookings({
+        bookings: bookingsInEveryState(),
+      });
+
+      for (const label of STATUS_LABELS) {
+        await toggleStatusFilter(wrapper, label);
+      }
+
+      expect(selectedStatusLabels(wrapper)).toEqual([]);
+      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([]);
+    });
   });
 
   describe("after a transition", () => {
