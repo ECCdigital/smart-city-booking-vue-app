@@ -2,7 +2,7 @@ import i18n from "@/language/index";
 
 export const QR_SCAN_RULE = "qrScan";
 
-const LOCKER_TYPE = "locker";
+export const LOCKER_TYPE = "locker";
 export const DOOR_TYPE = "door";
 
 /**

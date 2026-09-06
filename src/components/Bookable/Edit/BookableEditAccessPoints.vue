@@ -5,6 +5,7 @@ import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
   accessPointLabel,
   accessPointTypeLabel,
+  isLockerAccessPoint,
 } from "@/utilities/access-points";
 import {
   capacityMismatch,
@@ -30,7 +31,7 @@ function toRow(accessPoint) {
     label: accessPointLabel(accessPoint),
     externalId: accessPoint.externalId || "",
     provider: accessPoint.provider || "",
-    isLocker: accessPoint.type === "locker",
+    isLocker: isLockerAccessPoint(accessPoint),
     typeLabel,
     subtitle: [typeLabel, accessPoint.provider, accessPoint.externalId]
       .filter(Boolean)

@@ -205,18 +205,23 @@ export default {
         this.pickerProvider = options[0].value;
       }
     },
+  },
+  methods: {
     // What a provider hands out is the provider's business: Nuki and Salto KS
     // list doors, iFBS and Pareva locker systems, whose mode follows from the
     // provider too. A provider outside that table leaves the type as it is.
-    "form.provider": function (provider) {
+    //
+    // Applied where the provider is chosen - typed in, or taken over from a
+    // listing - and not on a watcher: a stored access point opens with the
+    // provider it has, and its mode must survive that, since for a locker
+    // system the mode field is not even shown.
+    applyProviderDefaults(provider) {
       const defaults = providerAccessPointDefaults(provider);
       if (!defaults) return;
 
       this.form.type = defaults.type;
       if (defaults.mode) this.form.mode = defaults.mode;
     },
-  },
-  methods: {
     reset() {
       const source = this.accessPoint;
       this.form = source ? { ...emptyForm(), ...source } : emptyForm();
@@ -271,14 +276,14 @@ export default {
       this.form.externalId = lock.externalId;
       this.form.label = lock.label || this.form.label;
       this.form.providerLocationId = lock.locationId || "";
-      // What the provider lists is what it hands out. For the four providers
-      // the table above knows, its watcher answers the same and overwrites
-      // these two on the next tick; for any other provider the listing is the
-      // only answer there is.
+      // What the provider lists is what it hands out. For a provider the
+      // defaults table knows, the table has the last word; for any other
+      // provider the listing is the only answer there is.
       if (lock.type) this.form.type = lock.type;
       if (isLockerAccessPoint(lock) && lock.supportedModes?.length) {
         this.form.mode = lock.supportedModes[0];
       }
+      this.applyProviderDefaults(this.form.provider);
     },
     async prefillLocation() {
       this.prefilling = true;
@@ -554,6 +559,7 @@ export default {
                 class="provider-field"
                 v-model="form.provider"
                 :items="providerIds"
+                @change="applyProviderDefaults"
                 :label="$t('accessPoint.management.fields.provider')"
                 background-color="accent"
                 filled

@@ -17,8 +17,13 @@ import {
   accessPointTypeLabel,
   isLockerAccessPoint,
   requiresQrScan,
+  DOOR_TYPE,
+  LOCKER_TYPE,
 } from "@/utilities/access-points";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
+
+// The values of the type filter over the table: both kinds, or one of them.
+const TYPE_FILTER = { all: "all", door: DOOR_TYPE, locker: LOCKER_TYPE };
 
 export default {
   name: "AccessPointManagement",
@@ -32,7 +37,7 @@ export default {
     return {
       search: "",
       // "all" | "door" | "locker" - the three buttons over the table
-      typeFilter: "all",
+      typeFilter: TYPE_FILTER.all,
       loading: false,
       loadError: "",
       accessPoints: [],
@@ -124,13 +129,16 @@ export default {
     // Everything that is not a locker system counts as a door - that is the
     // schema's default for a row without a type.
     filteredItems() {
-      if (this.typeFilter === "locker") {
+      if (this.typeFilter === TYPE_FILTER.locker) {
         return this.items.filter((item) => item.isLocker);
       }
-      if (this.typeFilter === "door") {
+      if (this.typeFilter === TYPE_FILTER.door) {
         return this.items.filter((item) => !item.isLocker);
       }
       return this.items;
+    },
+    typeFilters() {
+      return TYPE_FILTER;
     },
     // "Not assigned" is a statement about the bookables; it may only be made
     // when they were actually readable.
@@ -142,7 +150,7 @@ export default {
     // "Nothing created yet" would be wrong while the list is narrowed to one
     // kind - then it is this filter that finds nothing.
     emptyText() {
-      return this.typeFilter === "all"
+      return this.typeFilter === TYPE_FILTER.all
         ? this.$t("accessPoint.management.table.empty")
         : this.$t("accessPoint.management.table.emptyFiltered");
     },
@@ -384,13 +392,13 @@ export default {
         class="flex-grow-1 mr-4"
       />
       <v-btn-toggle v-model="typeFilter" mandatory dense class="type-filter">
-        <v-btn small value="all" class="type-filter-all">
+        <v-btn small :value="typeFilters.all" class="type-filter-all">
           {{ $t("accessPoint.management.table.filterAll") }}
         </v-btn>
-        <v-btn small value="door" class="type-filter-door">
+        <v-btn small :value="typeFilters.door" class="type-filter-door">
           {{ $t("accessPoint.management.table.filterDoors") }}
         </v-btn>
-        <v-btn small value="locker" class="type-filter-locker">
+        <v-btn small :value="typeFilters.locker" class="type-filter-locker">
           {{ $t("accessPoint.management.table.filterLockers") }}
         </v-btn>
       </v-btn-toggle>

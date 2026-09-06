@@ -164,6 +164,27 @@ describe("AccessPointEditDialog", () => {
     );
   });
 
+  /**
+   * A stored locker system opens with the provider it has, and the provider
+   * defaults must not run over the mode it was saved with - the mode field is
+   * hidden for a locker system, so nobody could notice the downgrade before
+   * saving it.
+   */
+  it("keeps the stored mode of a locker system that is opened for editing", async () => {
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+
+    const wrapper = await mountDialog({
+      source: "manual",
+      accessPoint: { ...LOCKER, mode: "both" },
+    });
+
+    await wrapper.find(".save-access-point").trigger("click");
+    await flushPromises();
+
+    const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+    expect(payload).toMatchObject({ id: "ap-locker", mode: "both" });
+  });
+
   it("saves a taken-over locker system with its type and mode", async () => {
     ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
     ApiAccessAppsService.getAccessPoints.mockResolvedValue({

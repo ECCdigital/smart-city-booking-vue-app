@@ -1,5 +1,6 @@
 <script>
 import ApiAccessService from "@/services/api/ApiAccessService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
@@ -263,14 +264,12 @@ export default {
      * @returns {string} The message to show at the access point
      */
     resolveAccessError(error, { forbiddenKey, fallbackKey }) {
-      const response = error?.response;
-
-      if (response?.status !== 403) {
+      if (!isForbiddenError(error)) {
         return this.$t(fallbackKey);
       }
 
       return this.$t(
-        response.data?.error ? DENIED_NO_PERMISSION : forbiddenKey
+        error.response.data?.error ? DENIED_NO_PERMISSION : forbiddenKey
       );
     },
     isWithinAccessWindow(entry) {
