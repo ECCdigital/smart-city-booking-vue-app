@@ -616,6 +616,27 @@
       "unpaid": "Nein",
       "settled": "Bezahlt",
       "open": "Offen"
+    },
+    "reinstate": {
+      "success": {
+        "title": "Wiederhergestellt",
+        "message": "Die Buchung wurde wiederhergestellt."
+      },
+      "error": {
+        "title": "Fehler beim Wiederherstellen",
+        "message": "Die Buchung konnte nicht wiederhergestellt werden."
+      },
+      "dialog": {
+        "title": "Buchung wiederherstellen",
+        "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt.",
+        "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+      }
+    },
+    "transition": {
+      "not-allowed": {
+        "title": "Aktion nicht möglich",
+        "message": "Diese Aktion ist im aktuellen Zustand der Buchung nicht möglich."
+      }
     }
   },
   "group-booking": {
@@ -697,6 +718,12 @@
       "error": {
         "title": "Fehler beim Erstellen",
         "message": "Die Sammelrechnung konnte nicht erstellt werden."
+      }
+    },
+    "transition": {
+      "mixed": {
+        "title": "Gemischter Zustand",
+        "message": "Die Buchungen der Serie sind in unterschiedlichen Zuständen. Bitte führen Sie die Aktion je Buchung aus."
       }
     }
   },

@@ -218,48 +218,19 @@
               </v-list-item>
 
               <v-list-item
+                v-for="action in transitionActions(item.status)"
+                :key="action"
                 link
-                @click="commitBooking(item.id)"
-                :disabled="
-                  !BookingPermissionService.allowUpdate(item) ||
-                  !allowsAction(item, 'confirm')
-                "
+                @click="transition(action, item.id)"
+                :disabled="!BookingPermissionService.allowUpdate(item)"
               >
                 <v-list-item-icon>
-                  <v-icon small color="success"
-                    >mdi-checkbox-marked-circle</v-icon
-                  >
-                </v-list-item-icon>
-                <v-list-item-title>Freigeben</v-list-item-title>
-              </v-list-item>
-
-              <v-list-item
-                link
-                @click="payBooking(item.id)"
-                :disabled="
-                  !BookingPermissionService.allowUpdate(item) ||
-                  !allowsAction(item, 'pay')
-                "
-              >
-                <v-list-item-icon>
-                  <v-icon small color="success">mdi-cash-check</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>Als bezahlt markieren</v-list-item-title>
-              </v-list-item>
-
-              <v-list-item
-                link
-                @click="rejectBooking(item.id)"
-                :disabled="
-                  !BookingPermissionService.allowUpdate(item) ||
-                  !allowsAction(item, 'cancel')
-                "
-              >
-                <v-list-item-icon>
-                  <v-icon small color="orange">mdi-close-circle</v-icon>
+                  <v-icon small :color="actionColor(action)">
+                    {{ actionIcon(action) }}
+                  </v-icon>
                 </v-list-item-icon>
                 <v-list-item-title>
-                  {{ actionLabel("cancel", item.status) }}
+                  {{ actionLabel(action, item.status) }}
                 </v-list-item-title>
               </v-list-item>
 
@@ -301,6 +272,8 @@
 <script>
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
+  actionColor,
+  actionIcon,
   actionLabel,
   allowsAction,
   freeMarker,
@@ -309,6 +282,7 @@ import {
   statusIcon,
   statusLabel,
   statusRank,
+  transitionActions,
 } from "@/utils/bookingStatus";
 
 export default {
@@ -374,12 +348,15 @@ export default {
     },
   },
   methods: {
+    actionColor,
+    actionIcon,
     actionLabel,
     allowsAction,
     isFree,
     statusColor,
     statusIcon,
     statusLabel,
+    transitionActions,
     formatDate(date) {
       return Intl.DateTimeFormat("de-DE", {
         dateStyle: "short",
@@ -442,14 +419,9 @@ export default {
     onDownloadIcal(bookingId) {
       this.$emit("download-ical", bookingId);
     },
-    commitBooking(bookingId) {
-      this.$emit("commit-booking", bookingId);
-    },
-    rejectBooking(bookingId) {
-      this.$emit("reject-booking", bookingId);
-    },
-    payBooking(bookingId) {
-      this.$emit("pay-booking", bookingId);
+    /** A transition of `BOOKING_ACTION`; the host runs it through `BookingTransitions`. */
+    transition(action, bookingId) {
+      this.$emit("transition", action, bookingId);
     },
   },
 };

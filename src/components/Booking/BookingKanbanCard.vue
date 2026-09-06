@@ -52,18 +52,22 @@
 
           <v-divider />
 
-          <v-list-item @click.stop="commitBooking(element.bookingItem.id)">
+          <v-list-item
+            v-for="action in transitionActions(element.bookingItem?.status)"
+            :key="action"
+            :disabled="
+              !BookingPermissionService.allowUpdate(element.bookingItem)
+            "
+            @click.stop="transition(action, element.bookingItem.id)"
+          >
             <v-list-item-icon>
-              <v-icon small color="success">mdi-check-circle</v-icon>
+              <v-icon small :color="actionColor(action)">
+                {{ actionIcon(action) }}
+              </v-icon>
             </v-list-item-icon>
-            <v-list-item-title>Freigeben</v-list-item-title>
-          </v-list-item>
-
-          <v-list-item @click.stop="payBooking(element.bookingItem.id)">
-            <v-list-item-icon>
-              <v-icon small color="success">mdi-cash-check</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Bezahlt</v-list-item-title>
+            <v-list-item-title>
+              {{ actionLabel(action, element.bookingItem.status) }}
+            </v-list-item-title>
           </v-list-item>
 
           <v-list-item @click.stop="archiveTask(element.id)">
@@ -154,18 +158,21 @@
 </template>
 
 <script>
-import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
+  actionColor,
+  actionIcon,
+  actionLabel,
   freeMarker,
   isFree,
   statusColor,
   statusIcon,
   statusLabel,
+  transitionActions,
 } from "@/utils/bookingStatus";
 
 export default {
   name: "BookingKanbanCard",
-  components: { BookingRejectConformationDialog },
   props: {
     element: {
       type: Object,
@@ -180,12 +187,10 @@ export default {
       default: false,
     },
   },
-  data() {
-    return {
-      dialogOpen: false,
-    };
-  },
   computed: {
+    BookingPermissionService() {
+      return BookingPermissionService;
+    },
     bookableTitle() {
       return this.element.bookingItem?.bookableItems?.[0]?._bookableUsed?.title;
     },
@@ -205,10 +210,14 @@ export default {
     },
   },
   methods: {
+    actionColor,
+    actionIcon,
+    actionLabel,
     isFree,
     statusColor,
     statusIcon,
     statusLabel,
+    transitionActions,
     onOpenBooking(bookingId) {
       this.$emit("open-booking", bookingId);
     },
@@ -222,25 +231,15 @@ export default {
       if (!text) return "";
       return text.length > max ? text.slice(0, max - 1) + "…" : text;
     },
-    commitBooking(bookingId) {
-      this.$emit("commit-booking", bookingId);
-    },
-    rejectBooking(bookingId, reason = "", skipCancellation = false) {
-      console.log("rejectBooking", bookingId, reason, skipCancellation);
-      this.dialogOpen = false;
-      this.$emit("reject-booking", bookingId, reason, skipCancellation);
-    },
-    onRejectBooking() {
-      this.dialogOpen = true;
+    /** A transition of `BOOKING_ACTION`; the host runs it through `BookingTransitions`. */
+    transition(action, bookingId) {
+      this.$emit("transition", action, bookingId);
     },
     archiveTask(taskId) {
       this.$emit("archive-task", taskId);
     },
     moveTask(event, status) {
       this.$emit("move-task", event, status);
-    },
-    payBooking(bookingId) {
-      this.$emit("pay-booking", bookingId);
     },
   },
 };

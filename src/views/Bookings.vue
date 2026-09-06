@@ -166,10 +166,8 @@
             @open-booking="onOpenBooking"
             @open-group-booking="onOpenGroupBooking"
             @open-edit-booking="onOpenEditBooking"
-            @commit-booking="commitBooking"
-            @pay-booking="onPayBooking"
+            @transition="onTransition"
             @open-delete-dialog="onOpenDeleteDialog"
-            @reject-booking="onOpenRejectDialog"
             @download-ical="onDownloadIcal"
           />
         </v-skeleton-loader>
@@ -182,9 +180,7 @@
           :loading="loading"
           @open-booking="onOpenBooking"
           @open-edit-booking="onOpenEditBooking"
-          @commit-booking="commitBooking"
-          @pay-booking="onPayBooking"
-          @reject-booking="onOpenRejectDialog"
+          @transition="onTransition"
           @open-delete-dialog="onOpenDeleteDialog"
         ></BookingOverviewCalendar>
       </div>
@@ -198,8 +194,7 @@
           @open-booking="onOpenBooking"
           @open-edit-booking="onOpenEditBooking"
           @open-group-booking="onOpenGroupBooking"
-          @pay-booking="onPayBooking"
-          @commit-booking="commitBooking"
+          @transition="onTransition"
           @update:booking="fetchBooking"
         >
         </BookingKanban>
@@ -225,13 +220,10 @@
       @close="onCloseDeleteDialog"
       @delete-booking="deleteBooking"
     />
-    <BookingRejectConformationDialog
-      :to-reject="selectedBooking"
-      :open="openRejectDialog"
-      :loading="loading"
-      :error="errors.reject"
-      @close="onCloseRejectDialog"
-      @reject-booking="rejectBooking"
+    <BookingTransitions
+      ref="transitions"
+      @transitioned="onTransitioned"
+      @failed="onTransitionFailed"
     />
     <v-dialog v-model="openBookingDialog" max-width="800px">
       <BookingDetails
@@ -252,38 +244,6 @@
         ></GroupBookingDetails>
       </div>
     </v-dialog>
-    <BookingPayDialog
-      v-if="selectedBooking.id"
-      :booking-id="selectedBooking.id"
-      :open="openPayDialog"
-      :has-group-booking="!!selectedGroupBooking?.id"
-      :error="errors.pay"
-      @close="openPayDialog = false"
-      @pay-single-booking="payBooking"
-      @pay-group-booking="payGroupBooking"
-    />
-
-    <GroupBookingCommitDialog
-      v-if="selectedBooking.id"
-      :booking-id="selectedBooking.id"
-      :open="openCommitGroupBookingDialog"
-      :in-progress="loading"
-      :error="errors.commit"
-      @close="closeDialog('commitGroupBooking')"
-      @commit-single-booking="commitBooking(selectedBooking.id, true)"
-      @commit-group-booking="commitGroupBooking(selectedGroupBooking.id)"
-    />
-    <GroupBookingRejectConformationDialog
-      :to-reject="selectedBooking"
-      :group-booking-id="selectedGroupBooking?.id"
-      :group-bookings="selectedGroupBookingMembers"
-      :open="openRejectGroupBookingDialog"
-      :in-progress="loading"
-      :error="errors.reject"
-      @close="closeDialog('rejectGroupBooking')"
-      @reject-single-booking="rejectBooking"
-      @reject-group-booking="rejectGroupBooking"
-    />
     <GroupBookingDeleteConformationDialog
       v-if="selectedBooking.id"
       :booking-id="selectedBooking.id"
@@ -305,46 +265,32 @@ import { mapActions, mapGetters } from "vuex";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteConformationDialog.vue";
-import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import BookingDetails from "@/components/Booking/BookingDetails.vue";
 import BookingOverviewCalendar from "@/components/Booking/BookingOverviewCalendar.vue";
 import BookingTable from "@/components/Booking/BookingTable.vue";
 import BookingKanban from "@/components/Booking/BookingKanban.vue";
+import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import GroupBookingDetails from "@/components/Booking/GroupBookingDetails.vue";
-import GroupBookingCommitDialog from "@/components/Booking/GroupBookingCommitDialog.vue";
-import GroupBookingRejectConformationDialog from "@/components/Booking/GroupBookingRejectConformationDialog.vue";
 import GroupBookingDeleteConformationDialog from "@/components/Booking/GroupBookingDeleteConformationDialog.vue";
 import ToastService from "@/services/ToastService";
-import {
-  getBookingErrorMessage,
-  getGroupBookingErrorMessage,
-} from "@/utils/errorMessages";
-import BookingPayDialog from "@/components/Booking/BookingPayDialog.vue";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
 import { allowsAction } from "@/utils/bookingStatus";
-import {
-  getApiErrorMessage,
-  shouldRefetch,
-} from "@/services/api/apiErrorMessage";
 
 export default {
   components: {
     BookingExportButton,
     ProcessingIndicator,
-    BookingPayDialog,
     GroupBookingDeleteConformationDialog,
-    GroupBookingRejectConformationDialog,
-    GroupBookingCommitDialog,
     GroupBookingDetails,
     BookingTable,
     BookingOverviewCalendar,
     BookingDetails,
     BookingDeleteConformationDialog,
-    BookingRejectConformationDialog,
+    BookingTransitions,
     AdminLayout,
     BookingKanban,
   },
@@ -397,22 +343,13 @@ export default {
         { text: "", value: "controls", sortable: false },
       ],
       openDeleteDialog: false,
-      openRejectDialog: false,
       openGroupBookingDialog: false,
-      openCommitGroupBookingDialog: false,
-      openRejectGroupBookingDialog: false,
       openDeleteGroupBookingDialog: false,
-      openPayDialog: false,
       selectedBooking: {},
       selectedGroupBooking: {},
       openBookingDialog: false,
       currentView: "list",
       workflow: {},
-      errors: {
-        commit: null,
-        reject: null,
-        pay: null,
-      },
     };
   },
   computed: {
@@ -428,10 +365,6 @@ export default {
     },
     isSelectedBookingHardDeleteBlocked() {
       return !allowsAction(this.selectedBooking, "delete");
-    },
-    selectedGroupBookingMembers() {
-      const ids = this.selectedGroupBooking?.bookingIds || [];
-      return this.api.bookings.filter((booking) => ids.includes(booking.id));
     },
     isSelectedGroupHardDeleteBlocked() {
       if (!this.selectedGroupBooking?.bookingIds) return false;
@@ -555,50 +488,42 @@ export default {
       }
     },
 
-    handleGroupBookingError(action, errors) {
-      const code = errors[0]?.code;
-      if (errors.length === 0) {
-        return;
-      }
-      this.addToast(
-        ToastService.createToast(`group-booking.${action}.error`, "error")
+    /**
+     * A menu raised a transition (spec E3): the module runs it against the
+     * booking and, for a series member, its series and members.
+     */
+    onTransition(action, bookingId) {
+      const booking = this.api.bookings.find((item) => item.id === bookingId);
+      const groupBooking = this.api.groupBookings.find((item) =>
+        item.bookingIds.includes(bookingId)
       );
-      this.errors[action] = getGroupBookingErrorMessage(code);
+      const target = groupBooking
+        ? {
+            booking,
+            groupBooking,
+            bookings: this.api.bookings.filter((item) =>
+              groupBooking.bookingIds.includes(item.id)
+            ),
+          }
+        : { booking };
+      this.$refs.transitions.start(action, target);
     },
-    handleBookingError(action, errors) {
-      if (errors.length === 0) {
-        return;
-      }
-      const code = errors[0]?.code;
-      this.addToast(
-        ToastService.createToast(`booking.${action}.error`, "error")
-      );
-      this.errors[action] = getBookingErrorMessage(code);
+    async onTransitioned() {
+      await this.reloadBookings();
     },
     /**
-     * A transition the backend refused (spec E5). The message is read through
-     * the central reader, shown as a toast and kept for the dialog that is
-     * open; after a 409 or 404 the list is reloaded so that list, calendar and
-     * kanban show the server's state instead of the one the transition was
-     * attempted against.
+     * After a 409 or 404 the module asks for a reload (spec E5), so that list,
+     * calendar and kanban show the server's state instead of the one the
+     * transition was attempted against.
      */
-    async failTransition(error, action, { group = false } = {}) {
-      const key = `${group ? "group-booking" : "booking"}.${action}.error`;
-      const message =
-        // `POST …/reject` answers a bad percentage with the naked string.
-        error?.response?.data === "invalid_refund_percentage"
-          ? this.$t("booking.cancellationRefund.percentageRange")
-          : getApiErrorMessage(error, this.$t(`${key}.message`));
-      this.errors[action] = message;
-      await this.addToast({
-        title: this.$t(`${key}.title`),
-        message,
-        type: "error",
-      });
-      if (shouldRefetch(error)) {
-        await this.fetchBookings();
-        await this.fetchGroupBookings();
+    async onTransitionFailed({ refetch }) {
+      if (refetch) {
+        await this.reloadBookings();
       }
+    },
+    async reloadBookings() {
+      await this.fetchBookings();
+      await this.fetchGroupBookings();
     },
 
     async fetchBookings() {
@@ -654,9 +579,6 @@ export default {
         case "delete":
           this.openDeleteDialog = false;
           break;
-        case "reject":
-          this.errors.reject = null;
-          break;
         case "booking":
           this.openBookingDialog = false;
           break;
@@ -664,16 +586,8 @@ export default {
           await this.fetchGroupBookings();
           this.openGroupBookingDialog = false;
           break;
-        case "commitGroupBooking":
-          this.errors.commit = null;
-          this.openCommitGroupBookingDialog = false;
-          break;
         case "deleteGroupBooking":
           this.openDeleteGroupBookingDialog = false;
-          break;
-        case "rejectGroupBooking":
-          this.errors.reject = null;
-          this.openRejectGroupBookingDialog = false;
           break;
         default:
           break;
@@ -725,247 +639,6 @@ export default {
       } finally {
         ProcessingService.hide(optionId);
         await this.stopLoading("delete-booking");
-      }
-    },
-    async commitBooking(id, force = false) {
-      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(id)
-      );
-      if (!force && hasGroupBooking) {
-        this.selectedBooking = Object.assign(
-          {},
-          this.api.bookings.find((booking) => booking.id === id)
-        );
-        this.selectedGroupBooking = Object.assign(
-          {},
-          this.api.groupBookings.find((groupBooking) =>
-            groupBooking.bookingIds.includes(id)
-          )
-        );
-        this.openCommitGroupBookingDialog = true;
-      } else {
-        const operationId = ProcessingService.showOverlay(
-          "Buchung wird freigegeben..."
-        );
-        try {
-          const booking = this.api.bookings.find(
-            (booking) => booking.id === id
-          );
-
-          if (booking.priceEur > 0 && !booking.paymentProvider) {
-            await this.addToast(
-              ToastService.createToast(
-                "booking.commit.no-payment-method",
-                "error"
-              )
-            );
-            return;
-          }
-          const data = await ApiBookingService.commitBooking(id);
-
-          if (!data.success) {
-            this.handleBookingError("commit", data.errors);
-          } else {
-            await this.addToast(
-              ToastService.createToast("booking.commit.success", "success")
-            );
-            this.errors.commit = null;
-            await this.fetchBookings();
-            await this.fetchGroupBookings();
-            this.openCommitGroupBookingDialog = false;
-          }
-        } catch (error) {
-          await this.failTransition(error, "commit");
-        } finally {
-          ProcessingService.hide(operationId);
-        }
-      }
-    },
-    hasGroupBooking(id) {
-      return !!this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(id)
-      );
-    },
-    async onPayBooking(id) {
-      this.selectedBooking = Object.assign(
-        {},
-        this.api.bookings.find((booking) => booking.id === id)
-      );
-      if (this.hasGroupBooking(id)) {
-        this.selectedGroupBooking = Object.assign(
-          {},
-          this.api.groupBookings.find((groupBooking) =>
-            groupBooking.bookingIds.includes(id)
-          )
-        );
-      } else {
-        this.selectedGroupBooking = null;
-      }
-      this.openPayDialog = true;
-    },
-
-    async payBooking({ id, paymentMethod, timePaid }) {
-      const operationId = ProcessingService.showOverlay(
-        "Zahlung wird verarbeitet..."
-      );
-      try {
-        await this.startLoading("pay-booking");
-        const data = await ApiBookingService.payBooking(
-          id,
-          paymentMethod,
-          timePaid
-        );
-
-        if (!data.success) {
-          this.handleBookingError("pay", data.errors);
-        } else {
-          await this.addToast(
-            ToastService.createToast("booking.pay.success", "success")
-          );
-          this.openPayDialog = false;
-          this.errors.pay = null;
-          await this.fetchBookings();
-          await this.fetchGroupBookings();
-        }
-      } catch (error) {
-        await this.failTransition(error, "pay");
-      } finally {
-        await this.stopLoading("pay-booking");
-        ProcessingService.hide(operationId);
-      }
-    },
-
-    async payGroupBooking({ paymentMethod, timePaid }) {
-      const operationId = ProcessingService.showOverlay(
-        "Zahlung wird verarbeitet..."
-      );
-      try {
-        await this.startLoading("pay-booking");
-        const response = await ApiGroupBookingService.payGroupBooking({
-          id: this.selectedGroupBooking.id,
-          paymentMethod,
-          timePaid,
-        });
-
-        if (!response.success) {
-          this.handleGroupBookingError("pay", response.errors);
-        } else {
-          await this.addToast(
-            ToastService.createToast("group-booking.pay.success", "success")
-          );
-          this.errors.pay = null;
-          this.openPayDialog = false;
-          await this.fetchBookings();
-          await this.fetchGroupBookings();
-        }
-      } catch (error) {
-        await this.failTransition(error, "pay", { group: true });
-      } finally {
-        await this.stopLoading("pay-booking");
-        ProcessingService.hide(operationId);
-      }
-    },
-    async commitGroupBooking(id) {
-      const operationId = ProcessingService.showOverlay(
-        "Serienbuchung wird freigegeben..."
-      );
-      try {
-        const response = await ApiGroupBookingService.commitGroupBooking(
-          null,
-          id
-        );
-
-        if (!response.success) {
-          this.handleGroupBookingError("commit", response.errors);
-        } else {
-          await this.addToast(
-            ToastService.createToast("group-booking.commit.success", "success")
-          );
-          this.errors.commit = null;
-          await this.fetchBookings();
-          await this.fetchGroupBookings();
-          this.openCommitGroupBookingDialog = false;
-        }
-      } catch (error) {
-        await this.failTransition(error, "commit", { group: true });
-      } finally {
-        ProcessingService.hide(operationId);
-      }
-    },
-    async rejectBooking(
-      id,
-      rejectReason,
-      skipCancellation,
-      bankDetails,
-      refundPercentage
-    ) {
-      const operationId = ProcessingService.showOverlay(
-        "Buchung wird abgelehnt..."
-      );
-      try {
-        await this.startLoading("reject-booking");
-        await ApiBookingService.rejectBooking(
-          id,
-          this.tenantId,
-          rejectReason,
-          skipCancellation,
-          bankDetails,
-          refundPercentage
-        );
-        await this.addToast(
-          ToastService.createToast("booking.reject.success", "success")
-        );
-        await this.fetchBookings();
-        await this.fetchGroupBookings();
-        this.openRejectDialog = false;
-        this.openRejectGroupBookingDialog = false;
-      } catch (error) {
-        await this.failTransition(error, "reject");
-      } finally {
-        await this.stopLoading("reject-booking");
-        ProcessingService.hide(operationId);
-      }
-    },
-    async rejectGroupBooking(
-      id,
-      rejectReason,
-      skipCancellation,
-      bankDetails,
-      refundPercentage
-    ) {
-      const groupBooking = this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(id)
-      );
-      const operationId = ProcessingService.showOverlay(
-        "Serienbuchung wird abgelehnt..."
-      );
-      try {
-        await this.startLoading("reject-booking");
-        const response = await ApiGroupBookingService.rejectGroupBooking(
-          null,
-          groupBooking.id,
-          rejectReason,
-          skipCancellation,
-          bankDetails,
-          refundPercentage
-        );
-
-        if (!response.success) {
-          this.handleGroupBookingError("reject", response.errors);
-        } else {
-          await this.addToast(
-            ToastService.createToast("group-booking.reject.success", "success")
-          );
-          this.errors.reject = null;
-          await this.fetchBookings();
-          await this.fetchGroupBookings();
-          this.openRejectGroupBookingDialog = false;
-        }
-      } catch (error) {
-        await this.failTransition(error, "reject", { group: true });
-      } finally {
-        await this.stopLoading("reject-booking");
-        ProcessingService.hide(operationId);
       }
     },
     onOpenBooking(bookingId) {
@@ -1027,31 +700,10 @@ export default {
         this.openDeleteDialog = true;
       }
     },
-    onOpenRejectDialog(bookingId) {
-      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(bookingId)
-      );
-      this.selectedBooking = Object.assign(
-        {},
-        this.api.bookings.find((booking) => booking.id === bookingId)
-      );
-      if (hasGroupBooking) {
-        this.selectedGroupBooking = Object.assign({}, hasGroupBooking);
-        this.openRejectGroupBookingDialog = true;
-      } else {
-        this.selectedGroupBooking = null;
-        this.openRejectDialog = true;
-      }
-    },
     onCloseDeleteDialog() {
       this.fetchBookings();
       this.fetchGroupBookings();
       this.openDeleteDialog = false;
-    },
-    onCloseRejectDialog() {
-      this.fetchBookings();
-      this.fetchGroupBookings();
-      this.openRejectDialog = false;
     },
     onCloseBookingDialog() {
       this.openBookingDialog = false;
