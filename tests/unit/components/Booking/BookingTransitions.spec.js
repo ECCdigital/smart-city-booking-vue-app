@@ -6,6 +6,7 @@ import {
   lifecycleError,
   serverError,
 } from "@tests/unit/support/api";
+import { dialogButton } from "@tests/unit/support/dialog";
 import i18n from "@/language/index";
 import toasts from "@/store/modules/toasts";
 
@@ -75,13 +76,6 @@ function toastMessages(store) {
 
 function dialog(wrapper, name) {
   return wrapper.findComponent({ name });
-}
-
-/** The button with `label` inside any open dialog, or `undefined`. */
-function dialogButton(label) {
-  return Array.from(document.querySelectorAll(".v-dialog--active button")).find(
-    (el) => el.textContent.trim() === label
-  );
 }
 
 async function clickDialogButton(wrapper, label) {
@@ -480,13 +474,11 @@ describe("BookingTransitions", () => {
           { id: "bk-2", status: "payment_due" },
         ])
       );
-      dialog(wrapper, "BookingPayDialog").vm.$emit("pay-group-booking", {
-        paymentMethod: "CASH",
-        timePaid: null,
-      });
-      await flushPromises();
-      await wrapper.vm.$nextTick();
+      await clickDialogButton(wrapper, "Serie als bezahlt markieren");
 
+      expect(ApiGroupBookingService.payGroupBooking).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "grp-1" })
+      );
       expect(wrapper.emitted("failed")[0][0]).toMatchObject({
         action: "pay",
         message: DIVERGING_BK2,

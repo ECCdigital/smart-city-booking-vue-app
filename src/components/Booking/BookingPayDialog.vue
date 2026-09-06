@@ -64,9 +64,16 @@ export default {
         return this.open;
       },
     },
-    /** The series is offered only while every member awaits payment (spec E9). */
+    /**
+     * The series is offered only while every member awaits payment (spec E9).
+     * A host that hands over no members leaves the dialog knowing nothing
+     * about the series: it offers it as before, and the route refuses.
+     */
     canPayGroup() {
-      return groupAllowsAction(this.groupBookings, BOOKING_ACTION.PAY);
+      return (
+        !this.groupBookings.length ||
+        groupAllowsAction(this.groupBookings, BOOKING_ACTION.PAY)
+      );
     },
     timePaid() {
       if (!this.selectedDate) return null;
@@ -277,7 +284,7 @@ export default {
             <v-col cols="12">
               <GroupBookingStatusSummary
                 :members="groupBookings"
-                action="pay"
+                :series-allowed="canPayGroup"
               />
             </v-col>
           </v-row>

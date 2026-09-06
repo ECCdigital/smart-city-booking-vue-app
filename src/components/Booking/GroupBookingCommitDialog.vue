@@ -15,7 +15,10 @@
         </span>
       </v-card-text>
       <v-card-text>
-        <GroupBookingStatusSummary :members="groupBookings" action="confirm" />
+        <GroupBookingStatusSummary
+          :members="groupBookings"
+          :series-allowed="canCommitGroup"
+        />
       </v-card-text>
       <v-card-text v-if="error" class="text-center">
         <v-alert type="error" border="left" elevation="2">
@@ -82,9 +85,16 @@ export default {
         return this.open;
       },
     },
-    /** The series is offered only while every member is Angefragt (spec E9). */
+    /**
+     * The series is offered only while every member is Angefragt (spec E9).
+     * A host that hands over no members leaves the dialog knowing nothing
+     * about the series: it offers it as before, and the route refuses.
+     */
     canCommitGroup() {
-      return groupAllowsAction(this.groupBookings, BOOKING_ACTION.CONFIRM);
+      return (
+        !this.groupBookings.length ||
+        groupAllowsAction(this.groupBookings, BOOKING_ACTION.CONFIRM)
+      );
     },
   },
   methods: {

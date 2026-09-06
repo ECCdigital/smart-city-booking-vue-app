@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import GroupBookingCommitDialog from "@/components/Booking/GroupBookingCommitDialog.vue";
 import { mountComponent } from "@tests/unit/support/mount";
+import { activeDialogText, dialogButton } from "@tests/unit/support/dialog";
 import i18n from "@/language/index";
 
 function member(id, status) {
@@ -11,16 +12,6 @@ function mountDialog(groupBookings, props = {}) {
   return mountComponent(GroupBookingCommitDialog, {
     propsData: { open: true, bookingId: "bk-1", groupBookings, ...props },
   });
-}
-
-function dialogText() {
-  return document.querySelector(".v-dialog--active").textContent;
-}
-
-function dialogButton(label) {
-  return Array.from(document.querySelectorAll(".v-dialog--active button")).find(
-    (el) => el.textContent.trim() === label
-  );
 }
 
 /**
@@ -36,12 +27,12 @@ describe("GroupBookingCommitDialog", () => {
     it("shows the shared state of the series and each member's own", () => {
       mountDialog(members);
 
-      expect(dialogText()).toContain("Zustand der Serie");
+      expect(activeDialogText()).toContain("Zustand der Serie");
       expect(
         document.querySelectorAll(".v-dialog--active .v-chip")
       ).toHaveLength(3);
-      expect(dialogText()).toContain("bk-2");
-      expect(dialogText()).not.toContain("Gemischt");
+      expect(activeDialogText()).toContain("bk-2");
+      expect(activeDialogText()).not.toContain("Gemischt");
     });
 
     it("offers to confirm the whole series", async () => {
@@ -60,12 +51,12 @@ describe("GroupBookingCommitDialog", () => {
     it("says the series is mixed and shows the members' own states", () => {
       mountDialog(members);
 
-      expect(dialogText()).toContain("Gemischt");
-      expect(dialogText()).toContain(
+      expect(activeDialogText()).toContain("Gemischt");
+      expect(activeDialogText()).toContain(
         i18n.t("group-booking.transition.mixed.message")
       );
-      expect(dialogText()).toContain("Angefragt");
-      expect(dialogText()).toContain("Bestätigt");
+      expect(activeDialogText()).toContain("Angefragt");
+      expect(activeDialogText()).toContain("Bestätigt");
     });
 
     it("offers only this one booking", async () => {
@@ -80,11 +71,18 @@ describe("GroupBookingCommitDialog", () => {
     });
   });
 
+  it("offers the series as before when it was not handed the members", () => {
+    mountDialog([]);
+
+    expect(activeDialogText()).not.toContain("Zustand der Serie");
+    expect(dialogButton("Serie freigeben")).toBeDefined();
+  });
+
   it("keeps the inline error where the route refused", () => {
     mountDialog([member("bk-1", "requested")], {
       error: "Betroffene Buchungen: bk-2",
     });
 
-    expect(dialogText()).toContain("Betroffene Buchungen: bk-2");
+    expect(activeDialogText()).toContain("Betroffene Buchungen: bk-2");
   });
 });

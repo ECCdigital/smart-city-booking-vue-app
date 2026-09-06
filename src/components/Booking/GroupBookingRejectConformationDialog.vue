@@ -14,7 +14,7 @@
           <GroupBookingStatusSummary
             class="mt-4"
             :members="groupBookings"
-            action="cancel"
+            :series-allowed="canCancelGroup"
           />
           <v-radio-group v-model="cancellationScope" class="mt-4">
             <v-radio
@@ -233,9 +233,15 @@ export default {
     /**
      * The series is offered only while the members share a state that can
      * be cancelled (spec E9); a mixed series starts on "Nur diese Buchung".
+     * A host that hands over no members (the edit form still mounts this
+     * dialog itself) leaves it knowing nothing about the series: it offers
+     * the series as before, and the route refuses.
      */
     canCancelGroup() {
-      return groupAllowsAction(this.groupBookings, BOOKING_ACTION.CANCEL);
+      return (
+        !this.groupBookings.length ||
+        groupAllowsAction(this.groupBookings, BOOKING_ACTION.CANCEL)
+      );
     },
     defaultScope() {
       return this.canCancelGroup ? "group" : "single";
@@ -417,7 +423,6 @@ export default {
         : this.refundPercentage;
       const bankDetails = this.buildBankDetailsPayload();
       if (this.cancellationScope === "group") {
-        if (!this.canCancelGroup) return;
         this.$emit(
           "reject-group-booking",
           this.toReject.id,

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
+import { activeDialogText } from "@tests/unit/support/dialog";
 import i18n from "@/language/index";
 
 vi.mock("@/services/api/ApiBookingService", () => ({
@@ -35,10 +36,6 @@ async function openDialog(groupBookings, toReject = groupBookings[0]) {
   await flushPromises();
   await wrapper.vm.$nextTick();
   return wrapper;
-}
-
-function dialogText() {
-  return document.querySelector(".v-dialog--active").textContent;
 }
 
 function radio(label) {
@@ -80,12 +77,12 @@ describe("GroupBookingRejectConformationDialog", () => {
     it("shows the shared state, starts on the whole series and asks for bank details", async () => {
       await openDialog(members);
 
-      expect(dialogText()).toContain("Zustand der Serie");
-      expect(dialogText()).not.toContain("Gemischt");
+      expect(activeDialogText()).toContain("Zustand der Serie");
+      expect(activeDialogText()).not.toContain("Gemischt");
       expect(radio("Gesamte Serie stornieren").className).not.toContain(
         "v-radio--is-disabled"
       );
-      expect(dialogText()).toContain(
+      expect(activeDialogText()).toContain(
         i18n.t("booking.cancellationRefund.bankDetailsTitle")
       );
     });
@@ -111,12 +108,12 @@ describe("GroupBookingRejectConformationDialog", () => {
     it("says the series is mixed and shows the members' own states", async () => {
       await openDialog(members);
 
-      expect(dialogText()).toContain("Gemischt");
-      expect(dialogText()).toContain(
+      expect(activeDialogText()).toContain("Gemischt");
+      expect(activeDialogText()).toContain(
         i18n.t("group-booking.transition.mixed.message")
       );
-      expect(dialogText()).toContain("Angefragt");
-      expect(dialogText()).toContain("Bestätigt");
+      expect(activeDialogText()).toContain("Angefragt");
+      expect(activeDialogText()).toContain("Bestätigt");
     });
 
     it("greys the series option and cancels only this one booking", async () => {
@@ -144,7 +141,7 @@ describe("GroupBookingRejectConformationDialog", () => {
     it("asks for no bank details for a requested member", async () => {
       await openDialog(members);
 
-      expect(dialogText()).not.toContain(
+      expect(activeDialogText()).not.toContain(
         i18n.t("booking.cancellationRefund.bankDetailsTitle")
       );
     });
@@ -152,9 +149,30 @@ describe("GroupBookingRejectConformationDialog", () => {
     it("asks for bank details for a confirmed, priced member", async () => {
       await openDialog(members, members[1]);
 
-      expect(dialogText()).toContain(
+      expect(activeDialogText()).toContain(
         i18n.t("booking.cancellationRefund.bankDetailsTitle")
       );
     });
+  });
+
+  /**
+   * A host that hands over no members (the edit form still mounts the
+   * dialog on its own) knows nothing about the series - the dialog offers
+   * it as before, and the route refuses a mixed one.
+   */
+  it("offers the series as before when it was not handed the members", async () => {
+    const wrapper = await openDialog([], member("bk-1", "confirmed"));
+
+    expect(activeDialogText()).not.toContain("Zustand der Serie");
+    expect(radio("Gesamte Serie stornieren").className).not.toContain(
+      "v-radio--is-disabled"
+    );
+    expect(
+      ApiGroupBookingService.getCancellationRefundPreview
+    ).toHaveBeenCalled();
+
+    await submitWithReason(wrapper);
+
+    expect(wrapper.emitted("reject-group-booking")).toHaveLength(1);
   });
 });

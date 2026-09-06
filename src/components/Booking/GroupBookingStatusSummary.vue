@@ -1,5 +1,51 @@
+<script>
+import {
+  MIXED,
+  groupBookingStatus,
+  statusColor,
+  statusIcon,
+  statusLabel,
+} from "@/utils/bookingStatus";
+
+/**
+ * The state of a series as the group dialogs show it (spec E9): one derived
+ * chip - the shared state or "Gemischt" - the members with their own, and,
+ * where the dialog does not offer the series-wide action, the reason. The
+ * dialog decides what it offers (`seriesAllowed`); this only says why.
+ * Without members there is nothing to say, and nothing is rendered.
+ */
+export default {
+  name: "GroupBookingStatusSummary",
+  props: {
+    members: {
+      type: Array,
+      default: () => [],
+    },
+    seriesAllowed: {
+      type: Boolean,
+      required: true,
+    },
+  },
+  computed: {
+    status() {
+      return groupBookingStatus(this.members);
+    },
+    seriesActionHint() {
+      return this.status === MIXED
+        ? this.$t("group-booking.transition.mixed.message")
+        : this.$t("group-booking.transition.not-allowed.message");
+    },
+  },
+  methods: {
+    statusColor,
+    statusIcon,
+    statusLabel,
+  },
+};
+</script>
+
 <template>
-  <div class="group-booking-status-summary">
+  <div v-if="members.length" class="group-booking-status-summary">
     <div class="d-flex align-center flex-wrap mb-2">
       <span class="text-subtitle-2 mr-2">{{
         $t("group-booking.status.title")
@@ -15,7 +61,7 @@
       </v-chip>
     </div>
     <v-alert
-      v-if="!seriesActionAllowed"
+      v-if="!seriesAllowed"
       type="info"
       border="left"
       colored-border
@@ -45,56 +91,6 @@
     </div>
   </div>
 </template>
-
-<script>
-import {
-  MIXED,
-  groupAllowsAction,
-  groupBookingStatus,
-  statusColor,
-  statusIcon,
-  statusLabel,
-} from "@/utils/bookingStatus";
-
-/**
- * The state of a series as the group dialogs show it (spec E9): one derived
- * chip - the shared state or "Gemischt" - the members with their own, and,
- * where the series-wide `action` is not on, the reason. The dialog decides
- * what to offer with `groupAllowsAction` itself; this only says why.
- */
-export default {
-  name: "GroupBookingStatusSummary",
-  props: {
-    members: {
-      type: Array,
-      default: () => [],
-    },
-    /** The `BOOKING_ACTION` the dialog asks for the whole series. */
-    action: {
-      type: String,
-      required: true,
-    },
-  },
-  computed: {
-    status() {
-      return groupBookingStatus(this.members);
-    },
-    seriesActionAllowed() {
-      return groupAllowsAction(this.members, this.action);
-    },
-    seriesActionHint() {
-      return this.status === MIXED
-        ? this.$t("group-booking.transition.mixed.message")
-        : this.$t("group-booking.transition.not-allowed.message");
-    },
-  },
-  methods: {
-    statusColor,
-    statusIcon,
-    statusLabel,
-  },
-};
-</script>
 
 <style scoped>
 .group-booking-status-summary__members {
