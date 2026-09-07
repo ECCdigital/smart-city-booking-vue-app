@@ -600,7 +600,8 @@
       "cancelled": "Storniert",
       "mixed": "Gemischt",
       "free": "Kostenfrei",
-      "paidAt": "Bezahlt am {date}"
+      "paidAt": "Bezahlt am {date}",
+      "paidShort": "bezahlt"
     },
     "filter": {
       "title": "Filter",

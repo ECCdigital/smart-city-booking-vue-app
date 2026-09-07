@@ -249,3 +249,120 @@ export function transitionTarget(booking, groupBooking) {
   }
   return { booking, groupBooking, bookings: members };
 }
+
+/** The state of one step of the main path, as the headline draws it (spec N2). */
+export const STEP_STATE = Object.freeze({
+  DONE: "done",
+  CURRENT: "current",
+  UPCOMING: "upcoming",
+  VOID: "void",
+});
+
+const PRIMARY_ACTIONS = [
+  BOOKING_ACTION.CONFIRM,
+  BOOKING_ACTION.PAY,
+  BOOKING_ACTION.REINSTATE,
+];
+
+function presentation(status) {
+  return {
+    status,
+    label: statusLabel(status),
+    color: statusColor(status),
+    icon: statusIcon(status),
+  };
+}
+
+/**
+ * The booking's state read as a path (spec N2): the main path Angefragt ->
+ * Zahlung offen -> Bestätigt (without Zahlung offen for a free booking), each
+ * step with a `STEP_STATE`, and for Abgelehnt / Storniert the point where the
+ * path was cut - behind Angefragt, or behind `cancelledFrom` (behind Bestätigt
+ * where that is unknown). Dates are raw: `timeCreated` at Angefragt,
+ * `timePaid` at Bestätigt only while the booking is Bestätigt and priced
+ * (glossary), `cancelledAt` at the end; a missing or zero timestamp is
+ * `null`. The headline formats them.
+ */
+export function pathOf(booking) {
+  const status = booking?.status;
+  const free = isFree(booking);
+  const mainPath = [
+    BOOKING_STATUS.REQUESTED,
+    ...(free ? [] : [BOOKING_STATUS.PAYMENT_DUE]),
+    BOOKING_STATUS.CONFIRMED,
+  ];
+  const terminal = isRejectedOrCancelled(booking);
+
+  let reachedFrom = status;
+  if (status === BOOKING_STATUS.REJECTED) {
+    reachedFrom = BOOKING_STATUS.REQUESTED;
+  } else if (status === BOOKING_STATUS.CANCELLED) {
+    reachedFrom =
+      booking.cancellationRefund?.cancelledFrom || BOOKING_STATUS.CONFIRMED;
+  }
+  const reachedIndex = Math.max(0, mainPath.indexOf(reachedFrom));
+
+  const steps = mainPath.map((step, index) => {
+    let state;
+    if (index < reachedIndex) {
+      state = STEP_STATE.DONE;
+    } else if (index === reachedIndex) {
+      state = terminal ? STEP_STATE.DONE : STEP_STATE.CURRENT;
+    } else {
+      state = terminal ? STEP_STATE.VOID : STEP_STATE.UPCOMING;
+    }
+    return {
+      ...presentation(step),
+      state,
+      free: free && step === BOOKING_STATUS.CONFIRMED,
+      date: stepDate(step, booking, free),
+    };
+  });
+
+  let end = null;
+  if (terminal) {
+    end = {
+      ...presentation(status),
+      afterIndex: reachedIndex,
+      date: booking.cancellationRefund?.cancelledAt || null,
+      reason: booking.rejectionReason || null,
+    };
+  }
+
+  return {
+    free,
+    terminal,
+    reachedIndex,
+    steps,
+    end,
+    current: end || steps[reachedIndex],
+  };
+}
+
+function stepDate(step, booking, free) {
+  if (step === BOOKING_STATUS.REQUESTED) {
+    return booking?.timeCreated || null;
+  }
+  if (
+    step === BOOKING_STATUS.CONFIRMED &&
+    booking?.status === BOOKING_STATUS.CONFIRMED &&
+    !free
+  ) {
+    return booking.timePaid || null;
+  }
+  return null;
+}
+
+/**
+ * The one action that moves along the path (Freigeben, Als bezahlt
+ * markieren, Wiederherstellen), and the side ways (Ablehnen / Stornieren,
+ * the delete) in their order (spec N2).
+ */
+export function splitActions(actions) {
+  const primary =
+    actions.find((action) => PRIMARY_ACTIONS.includes(action)) || null;
+  return {
+    primary,
+    secondary: actions.filter((action) => action !== primary),
+  };
+}

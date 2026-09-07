@@ -3,6 +3,7 @@ import {
   BOOKING_STATUS,
   MIXED,
   STATE_KEYS,
+  STEP_STATE,
   actionLabel,
   allowedActions,
   allowsAction,
@@ -15,7 +16,9 @@ import {
   isAwaitingPayment,
   isPaid,
   isRejectedOrCancelled,
+  pathOf,
   paymentLabel,
+  splitActions,
   statusColor,
   statusExportValue,
   statusIcon,
@@ -370,5 +373,260 @@ describe("transitionTarget", () => {
     const groupBooking = { id: "grp-1", bookings: [booking, undefined] };
 
     expect(transitionTarget(booking, groupBooking).bookings).toEqual([booking]);
+  });
+});
+
+/**
+ * The path view (spec N2): the main path Angefragt -> (Zahlung offen) ->
+ * Bestätigt, each step with a state, and for Abgelehnt / Storniert the
+ * point where the path was cut. The headline draws the segments from it.
+ */
+describe("pathOf", () => {
+  const CREATED = 1_700_000_000_000;
+  const PAID = 1_700_100_000_000;
+  const CANCELLED_AT = 1_700_200_000_000;
+
+  function priced(overrides = {}) {
+    return { priceEur: 25, timeCreated: CREATED, ...overrides };
+  }
+
+  function free(overrides = {}) {
+    return { priceEur: 0, timeCreated: CREATED, ...overrides };
+  }
+
+  function cancelled(from, overrides = {}) {
+    return {
+      status: BOOKING_STATUS.CANCELLED,
+      cancellationRefund: { cancelledFrom: from, cancelledAt: CANCELLED_AT },
+      ...overrides,
+    };
+  }
+
+  function stepStates(path) {
+    return path.steps.map((step) => step.state);
+  }
+
+  it("walks Angefragt · Zahlung offen · Bestätigt for a priced booking", () => {
+    const path = pathOf(priced({ status: BOOKING_STATUS.REQUESTED }));
+    expect(path.steps.map((step) => step.status)).toEqual([
+      BOOKING_STATUS.REQUESTED,
+      BOOKING_STATUS.PAYMENT_DUE,
+      BOOKING_STATUS.CONFIRMED,
+    ]);
+    expect(path.free).toBe(false);
+    expect(path.steps.map((step) => step.label)).toEqual([
+      "Angefragt",
+      "Zahlung offen",
+      "Bestätigt",
+    ]);
+  });
+
+  it("skips Zahlung offen for a free booking and marks Bestätigt as Kostenfrei", () => {
+    const path = pathOf(free({ status: BOOKING_STATUS.REQUESTED }));
+    expect(path.steps.map((step) => step.status)).toEqual([
+      BOOKING_STATUS.REQUESTED,
+      BOOKING_STATUS.CONFIRMED,
+    ]);
+    expect(path.free).toBe(true);
+    expect(path.steps.map((step) => step.free)).toEqual([false, true]);
+    expect(
+      pathOf(priced({ status: BOOKING_STATUS.CONFIRMED })).steps.map(
+        (step) => step.free
+      )
+    ).toEqual([false, false, false]);
+  });
+
+  describe("on the path", () => {
+    it.each([
+      [BOOKING_STATUS.REQUESTED, ["current", "upcoming", "upcoming"], 0],
+      [BOOKING_STATUS.PAYMENT_DUE, ["done", "current", "upcoming"], 1],
+      [BOOKING_STATUS.CONFIRMED, ["done", "done", "current"], 2],
+    ])("a priced booking at %s", (status, states, reachedIndex) => {
+      const path = pathOf(priced({ status }));
+      expect(stepStates(path)).toEqual(states);
+      expect(path.reachedIndex).toBe(reachedIndex);
+      expect(path.terminal).toBe(false);
+      expect(path.end).toBeNull();
+      expect(path.current).toBe(path.steps[reachedIndex]);
+      expect(path.current.status).toBe(status);
+    });
+
+    it.each([
+      [BOOKING_STATUS.REQUESTED, ["current", "upcoming"], 0],
+      [BOOKING_STATUS.CONFIRMED, ["done", "current"], 1],
+    ])("a free booking at %s", (status, states, reachedIndex) => {
+      const path = pathOf(free({ status }));
+      expect(stepStates(path)).toEqual(states);
+      expect(path.reachedIndex).toBe(reachedIndex);
+      expect(path.end).toBeNull();
+      expect(path.current.status).toBe(status);
+    });
+  });
+
+  describe("cut off the path", () => {
+    it("cuts Abgelehnt behind Angefragt", () => {
+      const path = pathOf(
+        priced({ status: BOOKING_STATUS.REJECTED, rejectionReason: "Zu spät" })
+      );
+      expect(stepStates(path)).toEqual(["done", "void", "void"]);
+      expect(path.terminal).toBe(true);
+      expect(path.reachedIndex).toBe(0);
+      expect(path.end).toMatchObject({
+        status: BOOKING_STATUS.REJECTED,
+        label: "Abgelehnt",
+        color: "error",
+        afterIndex: 0,
+        reason: "Zu spät",
+      });
+      expect(path.current).toBe(path.end);
+    });
+
+    it("cuts Storniert behind the step it was cancelled from", () => {
+      const fromPaymentDue = pathOf(
+        priced(cancelled(BOOKING_STATUS.PAYMENT_DUE))
+      );
+      expect(stepStates(fromPaymentDue)).toEqual(["done", "done", "void"]);
+      expect(fromPaymentDue.end.afterIndex).toBe(1);
+
+      const fromConfirmed = pathOf(priced(cancelled(BOOKING_STATUS.CONFIRMED)));
+      expect(stepStates(fromConfirmed)).toEqual(["done", "done", "done"]);
+      expect(fromConfirmed.end.afterIndex).toBe(2);
+      expect(fromConfirmed.end.label).toBe("Storniert");
+    });
+
+    it("cuts Storniert behind Bestätigt where the origin is unknown", () => {
+      const path = pathOf(
+        priced({ status: BOOKING_STATUS.CANCELLED, cancellationRefund: null })
+      );
+      expect(stepStates(path)).toEqual(["done", "done", "done"]);
+      expect(path.end.afterIndex).toBe(2);
+      expect(path.end.date).toBeNull();
+      expect(path.end.reason).toBeNull();
+    });
+
+    it("cuts a free booking's path the same way, without Zahlung offen", () => {
+      expect(
+        stepStates(pathOf(free({ status: BOOKING_STATUS.REJECTED })))
+      ).toEqual(["done", "void"]);
+      expect(
+        stepStates(pathOf(free(cancelled(BOOKING_STATUS.CONFIRMED))))
+      ).toEqual(["done", "done"]);
+    });
+  });
+
+  describe("the dates", () => {
+    it("carries the request date at Angefragt, raw", () => {
+      const path = pathOf(priced({ status: BOOKING_STATUS.PAYMENT_DUE }));
+      expect(path.steps[0].date).toBe(CREATED);
+      expect(path.steps[1].date).toBeNull();
+      expect(path.steps[2].date).toBeNull();
+    });
+
+    it("carries the paid date at Bestätigt only while the booking is Bestätigt and priced", () => {
+      const paid = pathOf(
+        priced({ status: BOOKING_STATUS.CONFIRMED, timePaid: PAID })
+      );
+      expect(paid.steps[2].date).toBe(PAID);
+
+      const freePaid = pathOf(
+        free({ status: BOOKING_STATUS.CONFIRMED, timePaid: PAID })
+      );
+      expect(freePaid.steps[1].date).toBeNull();
+
+      const cancelledPaid = pathOf(
+        priced(cancelled(BOOKING_STATUS.CONFIRMED, { timePaid: PAID }))
+      );
+      expect(cancelledPaid.steps[2].date).toBeNull();
+
+      const notYet = pathOf(
+        priced({ status: BOOKING_STATUS.PAYMENT_DUE, timePaid: PAID })
+      );
+      expect(notYet.steps[2].date).toBeNull();
+    });
+
+    it("reads a zero timestamp, as the backend delivers it, as no date", () => {
+      const path = pathOf(
+        priced({
+          status: BOOKING_STATUS.CONFIRMED,
+          timeCreated: 0,
+          timePaid: 0,
+        })
+      );
+      expect(path.steps[0].date).toBeNull();
+      expect(path.steps[2].date).toBeNull();
+      expect(
+        pathOf(
+          priced(
+            cancelled(BOOKING_STATUS.CONFIRMED, {
+              cancellationRefund: {
+                cancelledFrom: BOOKING_STATUS.CONFIRMED,
+                cancelledAt: 0,
+              },
+            })
+          )
+        ).end.date
+      ).toBeNull();
+    });
+
+    it("carries the cancellation date at the end", () => {
+      const path = pathOf(priced(cancelled(BOOKING_STATUS.PAYMENT_DUE)));
+      expect(path.end.date).toBe(CANCELLED_AT);
+    });
+  });
+
+  it("copes with no booking at all", () => {
+    const path = pathOf(null);
+    expect(path.steps.map((step) => step.status)).toEqual([
+      BOOKING_STATUS.REQUESTED,
+      BOOKING_STATUS.PAYMENT_DUE,
+      BOOKING_STATUS.CONFIRMED,
+    ]);
+    expect(path.reachedIndex).toBe(0);
+    expect(path.end).toBeNull();
+  });
+
+  it("names the four step states", () => {
+    expect(STEP_STATE).toEqual({
+      DONE: "done",
+      CURRENT: "current",
+      UPCOMING: "upcoming",
+      VOID: "void",
+    });
+  });
+});
+
+/**
+ * The headline shows one action along the path as a button and the side
+ * ways in a menu (spec N2, N3).
+ */
+describe("splitActions", () => {
+  it("takes Freigeben, Als bezahlt markieren or Wiederherstellen as the primary action", () => {
+    expect(splitActions(["confirm", "cancel"])).toEqual({
+      primary: "confirm",
+      secondary: ["cancel"],
+    });
+    expect(splitActions(["pay", "cancel"])).toEqual({
+      primary: "pay",
+      secondary: ["cancel"],
+    });
+    expect(splitActions(["reinstate"])).toEqual({
+      primary: "reinstate",
+      secondary: [],
+    });
+  });
+
+  it("leaves a lone Stornieren as a side way without a primary action", () => {
+    expect(splitActions(["cancel"])).toEqual({
+      primary: null,
+      secondary: ["cancel"],
+    });
+    expect(splitActions([])).toEqual({ primary: null, secondary: [] });
+  });
+
+  it("keeps the side ways in their order", () => {
+    expect(splitActions(["cancel", "reinstate", "delete"])).toEqual({
+      primary: "reinstate",
+      secondary: ["cancel", "delete"],
+    });
   });
 });
