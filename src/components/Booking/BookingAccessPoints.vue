@@ -1,6 +1,6 @@
 <script>
 import ApiAccessService from "@/services/api/ApiAccessService";
-import { isForbiddenError } from "@/services/api/apiErrorMessage";
+import { isForbiddenError, isOutOfReach } from "@/services/api/apiErrorMessage";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
@@ -99,6 +99,14 @@ export default {
       handler() {
         this.fetchEntries();
       },
+    },
+    /**
+     * A booking released in the drawer is reloaded by `BookingDetails` under
+     * the same id, and only a confirmed booking has accesses to show - so the
+     * status is the second impulse to read them again.
+     */
+    "booking.status"() {
+      this.fetchEntries();
     },
   },
   mounted() {
@@ -421,9 +429,14 @@ export default {
         );
         this.entries = accessEntriesOf(response.data);
       } catch (error) {
-        console.error(error);
+        // The route answers 403 for every booking that is not confirmed and
+        // 404 for one outside the caller's reach: nothing to show, not a
+        // failure. The card stays away as it does on an empty list.
         this.entries = [];
-        this.loadFailed = true;
+        if (!isOutOfReach(error)) {
+          console.error(error);
+          this.loadFailed = true;
+        }
       } finally {
         this.loading = false;
       }

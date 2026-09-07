@@ -499,4 +499,50 @@ describe("BookingAccessPoints", () => {
       "konnten nicht geladen werden"
     );
   });
+
+  /**
+   * The access route answers 403 for every booking that is not confirmed,
+   * with or without access points, and 404 for one outside the caller's
+   * reach. Neither is a failure: there is nothing to show, so the card stays
+   * away as it does on an empty list.
+   */
+  describe("reach", () => {
+    async function mountRefused(status) {
+      ApiAccessService.getAccessPoints.mockRejectedValue(serverError(status));
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const wrapper = mountComponent(BookingAccessPoints, {
+        store: store(),
+        propsData: { booking: { ...BOOKING } },
+      });
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+      return { wrapper, error };
+    }
+
+    it.each([403, 404])(
+      "stays invisible, without alert or log, when the route answers %i",
+      async (status) => {
+        const { wrapper, error } = await mountRefused(status);
+
+        expect(wrapper.find(".v-card").exists()).toBe(false);
+        expect(wrapper.find("[data-test='access-load-error']").exists()).toBe(
+          false
+        );
+        expect(error).not.toHaveBeenCalled();
+      }
+    );
+
+    it("reads the accesses again when the booking's status changes under the same id", async () => {
+      const wrapper = await mountList({ entries: [] });
+      expect(ApiAccessService.getAccessPoints).toHaveBeenCalledTimes(1);
+
+      await wrapper.setProps({
+        booking: { ...BOOKING, status: "confirmed" },
+      });
+      await flushPromises();
+
+      expect(ApiAccessService.getAccessPoints).toHaveBeenCalledTimes(2);
+    });
+  });
 });
