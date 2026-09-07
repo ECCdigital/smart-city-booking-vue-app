@@ -93,6 +93,19 @@ async function mountList({ entries = [], booking = {} } = {}) {
   return wrapper;
 }
 
+/** The card mounted on a read that failed with `error`. */
+async function mountRefused(error) {
+  ApiAccessService.getAccessPoints.mockRejectedValue(error);
+
+  const wrapper = mountComponent(BookingAccessPoints, {
+    store: store(),
+    propsData: { booking: { ...BOOKING } },
+  });
+  await flushPromises();
+  await wrapper.vm.$nextTick();
+  return wrapper;
+}
+
 function tiles(wrapper) {
   return wrapper.findAll(".access-point-tile");
 }
@@ -486,17 +499,44 @@ describe("BookingAccessPoints", () => {
   });
 
   it("says so when the accesses could not be read, instead of looking empty", async () => {
-    ApiAccessService.getAccessPoints.mockRejectedValue(serverError());
-
-    const wrapper = mountComponent(BookingAccessPoints, {
-      store: store(),
-      propsData: { booking: { ...BOOKING } },
-    });
-    await flushPromises();
-    await wrapper.vm.$nextTick();
+    const wrapper = await mountRefused(serverError());
 
     expect(wrapper.find("[data-test='access-load-error']").text()).toContain(
       "konnten nicht geladen werden"
     );
+  });
+
+  /**
+   * The access route answers 403 for every booking that is not confirmed,
+   * with or without access points, and 404 for one outside the caller's
+   * reach. Neither is a failure: there is nothing to show, so the card stays
+   * away as it does on an empty list.
+   */
+  describe("reach", () => {
+    it.each([403, 404])(
+      "stays invisible, without alert or log, when the route answers %i",
+      async (status) => {
+        const error = vi.spyOn(console, "error").mockImplementation(() => {});
+        const wrapper = await mountRefused(serverError(status));
+
+        expect(wrapper.find(".v-card").exists()).toBe(false);
+        expect(wrapper.find("[data-test='access-load-error']").exists()).toBe(
+          false
+        );
+        expect(error).not.toHaveBeenCalled();
+      }
+    );
+
+    it("reads the accesses again when the booking's status changes under the same id", async () => {
+      const wrapper = await mountList({ entries: [] });
+      expect(ApiAccessService.getAccessPoints).toHaveBeenCalledTimes(1);
+
+      await wrapper.setProps({
+        booking: { ...BOOKING, status: "confirmed" },
+      });
+      await flushPromises();
+
+      expect(ApiAccessService.getAccessPoints).toHaveBeenCalledTimes(2);
+    });
   });
 });

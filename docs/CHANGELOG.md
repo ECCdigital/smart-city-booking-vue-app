@@ -81,6 +81,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   Booking detail drawer: the card „Zugänge“ stays away, without the red alert, when `GET …/access?bookingId=` answers 403 or 404 — the route refuses every booking that is not Bestätigt, with or without access points, which is Reichweite and not a failure (`isOutOfReach`); 5xx and network errors still show the alert. The card also reloads when `booking.status` changes, so a booking released in the drawer shows its accesses without closing it
 -   Tenant owners can edit their tenant and its access providers again — the permission check asked for a `manageTenants` dimension the API never sends, which left the tenant and access pages to instance owners only
 -   Selected and hovered rows no longer paint outside their rounded corner: Vuetify gives the list-item overlay no radius of its own, so the attachment list's grey backdrop sat square behind a 4px row, and the media library's row highlight stuck out past the card
 -   Media library: "URL kopieren" always copies an absolute URL — a relative API base (BFF mode, or an unset direct-mode base URL) is anchored on the current origin; for `intern` media the success toast notes that the link needs a login
