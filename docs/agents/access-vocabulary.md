@@ -26,7 +26,7 @@ Every code cell leads with the identifier, so the table can be read from either 
 
 ## The way in is not the Herkunft
 
-The create dialog opens on one button, „Zugangspunkt anlegen“, and the switch at its top chooses the way in: „Vom Anbieter übernehmen“ shows the provider's listing over the form, „Manuell anlegen“ the form alone. The switch is offered only while a provider is active and is then preset to the provider; switching hides the listing and touches nothing entered. Without a provider the dialog is the door form, without a hint. The dialog's `mode` is this choice and not the door's Modus, which is `form.mode` in the same component.
+The switch is offered only while a provider is active and is then preset to the provider; switching hides the listing and touches nothing entered. Without a provider the dialog is the door form, without a hint. The dialog's `mode` is this choice and not the door's Modus, which is `form.mode` in the same component.
 
 The Herkunft column stays derived from the type: a door taken over from the listing still reads „Selbst angelegt“, because nothing records the way in, and an Anlage always reads „Vom Anbieter“, because there is no other way to one.
 
