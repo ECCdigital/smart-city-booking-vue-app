@@ -165,12 +165,27 @@ function funnelBadge(wrapper) {
   return badge.exists() && badge.isVisible() ? badge.text().trim() : null;
 }
 
-/** Clicks the status row with `label` in the open card, toggling it. */
-async function toggleStatus(wrapper, label) {
-  Array.from(filterCard().querySelectorAll(".booking-filter-row"))
+/** Clicks the element matching `selector` with `label` in the open card. */
+async function clickInCard(wrapper, selector, label) {
+  Array.from(filterCard().querySelectorAll(selector))
     .find((el) => el.textContent.trim() === label)
     .click();
   await wrapper.vm.$nextTick();
+}
+
+/** Clicks the status row with `label` in the open card, toggling it. */
+function toggleStatus(wrapper, label) {
+  return clickInCard(wrapper, ".booking-filter-row", label);
+}
+
+/** Clicks the segment with `label` (Alle / Einzel / Serie) in the open card. */
+function chooseType(wrapper, label) {
+  return clickInCard(wrapper, ".booking-filter-types .v-btn", label);
+}
+
+/** Clicks the button with `label` in the open card (the resets). */
+function clickCardButton(wrapper, label) {
+  return clickInCard(wrapper, "button", label);
 }
 
 /** The state words whose row the open card shows as selected. */
@@ -178,22 +193,6 @@ function selectedStatusLabels() {
   return Array.from(
     filterCard().querySelectorAll(".booking-filter-row[aria-pressed='true']")
   ).map((el) => el.textContent.trim());
-}
-
-/** Clicks the segment with `label` (Alle / Einzel / Serie) in the open card. */
-async function chooseType(wrapper, label) {
-  Array.from(filterCard().querySelectorAll(".booking-filter-types .v-btn"))
-    .find((el) => el.textContent.trim() === label)
-    .click();
-  await wrapper.vm.$nextTick();
-}
-
-/** Clicks the button with `label` in the open card (the resets). */
-async function clickCardButton(wrapper, label) {
-  Array.from(filterCard().querySelectorAll("button"))
-    .find((el) => el.textContent.trim() === label)
-    .click();
-  await wrapper.vm.$nextTick();
 }
 
 /** The segment (Alle / Einzel / Serie) the open card shows as chosen. */

@@ -88,14 +88,12 @@
           <v-icon small :color="option.color">{{ option.icon }}</v-icon>
         </div>
         <span class="booking-filter-row__title">{{ option.label }}</span>
-        <v-simple-checkbox
-          :value="isSelected(option.value)"
-          color="primary"
-          dense
-          :ripple="false"
+        <v-icon
+          :color="isSelected(option.value) ? 'primary' : undefined"
           class="booking-filter-row__box"
-          @click.stop="toggleStatus(option.value)"
-        />
+        >
+          {{ isSelected(option.value) ? "$checkboxOn" : "$checkboxOff" }}
+        </v-icon>
       </button>
     </div>
   </v-card>
@@ -186,11 +184,13 @@ export default {
  */
 @mixin primary-tint($opacity) {
   position: relative;
+  isolation: isolate;
 
   &::before {
     content: "";
     position: absolute;
     inset: 0;
+    z-index: -1;
     border-radius: inherit;
     background: var(--v-primary-base);
     opacity: $opacity;
