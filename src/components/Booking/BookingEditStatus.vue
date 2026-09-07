@@ -107,38 +107,41 @@
       </v-row>
     </v-sheet>
 
-    <BookingStatusBar
+    <BookingStatusPath
       v-else
       class="mb-4"
       :status="booking.status"
-      :booking="booking"
+      :path="path"
       :actions="actions"
       :disabled="dirty"
       :hint="dirty && actions.length ? $t('booking.edit.saveFirst') : null"
       @action="transition"
-    />
-
-    <v-expand-transition>
-      <v-sheet
-        v-if="isRejectedOrCancelled(booking)"
-        class="mb-4 px-4 py-3 status-reason"
-        rounded
-      >
+    >
+      <template v-if="isRejectedOrCancelled(booking)" #reason>
+        <div class="text-caption font-weight-bold error--text">
+          {{ rejectionReasonLabel }}
+        </div>
         <v-textarea
-          v-model="booking.rejectionReason"
-          :label="rejectionReasonLabel"
-          filled
+          class="mt-1"
+          :value="booking.rejectionReason"
+          outlined
           dense
-          background-color="accent"
           rows="2"
           hide-details="auto"
           :rules="rejectionReasonRules"
+          @input="$emit('update:rejection-reason', $event)"
         />
-        <CancellationRefundAudit
-          v-if="cancellationRefundAudit"
-          :audit="cancellationRefundAudit"
-          class="mt-3"
-        />
+      </template>
+    </BookingStatusPath>
+
+    <v-expand-transition>
+      <v-sheet
+        v-if="cancellationRefundAudit"
+        class="mb-4 px-4 py-3"
+        outlined
+        rounded
+      >
+        <CancellationRefundAudit :audit="cancellationRefundAudit" />
       </v-sheet>
     </v-expand-transition>
 
@@ -152,7 +155,7 @@
 </template>
 
 <script>
-import BookingStatusBar from "@/components/Booking/BookingStatusBar.vue";
+import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
@@ -167,18 +170,22 @@ import {
 import {
   BOOKING_STATUS,
   isRejectedOrCancelled,
+  pathOf,
   statusLabel,
   transitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
 
 /**
- * The status section of the edit form (spec E2): the state as one chip and
- * one button per transition the state allows, each run by the mounted
- * `BookingTransitions`. The buttons are locked while the form has unsaved
- * changes - there is no "save, then transition", and no transition on the
- * server's copy while the local one differs. The form hears `transitioned`
- * and `failed` and reloads the booking.
+ * The status section of the edit form (spec E2, N4): the state as a
+ * headline over its path, with the one action along the path as a button
+ * and the side ways in the menu, each run by the mounted
+ * `BookingTransitions`. Button and menu are locked while the form has
+ * unsaved changes - there is no "save, then transition", and no transition
+ * on the server's copy while the local one differs. At Abgelehnt /
+ * Storniert the reason is edited under the path; the section reports the
+ * edit as `update:rejection-reason` and leaves the booking to the form. The
+ * form hears `transitioned` and `failed` and reloads the booking.
  *
  * In create mode (spec E10) there is no state yet: the section asks for the
  * "Anfangszustand" - Angefragt, Freigegeben, or Bezahlt with the payment
@@ -187,7 +194,11 @@ import {
  */
 export default {
   name: "BookingEditStatus",
-  components: { BookingStatusBar, BookingTransitions, CancellationRefundAudit },
+  components: {
+    BookingStatusPath,
+    BookingTransitions,
+    CancellationRefundAudit,
+  },
   props: {
     booking: {
       type: Object,
@@ -251,6 +262,9 @@ export default {
       return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
         new Date(this.paymentDate)
       );
+    },
+    path() {
+      return pathOf(this.booking);
     },
     /** The state's transitions, for whoever may edit the booking - the gate the list and the drawer use. */
     actions() {
@@ -321,13 +335,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.status-reason {
-  background-color: var(--v-accent-base, #f5f5f5) !important;
-}
-
-.theme--dark .status-reason {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-</style>

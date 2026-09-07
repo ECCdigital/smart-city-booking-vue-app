@@ -31,6 +31,7 @@
         @transitioned="onTransitioned"
         @failed="onTransitionFailed"
         @update:initial-state="initialState = $event"
+        @update:rejection-reason="setRejectionReason"
       />
       <v-alert
         v-if="transitionError"
@@ -1750,6 +1751,10 @@ export default {
         this.$emit("reload");
       }
       return message;
+    },
+    /** The status section edits the reason under the path; the form owns the booking (spec N4). */
+    setRejectionReason(reason) {
+      this.$set(this.selectedBooking, "rejectionReason", reason);
     },
     /**
      * The status section ran a transition (spec E2): the booking is reloaded

@@ -45,16 +45,53 @@ function mountStatus(propsData = {}) {
   return wrapper;
 }
 
+function segmentLabels(wrapper) {
+  return wrapper
+    .findAll(".booking-status-segment-label")
+    .wrappers.map((label) => label.text());
+}
+
 function actionButtons(wrapper) {
   return wrapper.findAll("button.booking-action").wrappers;
 }
 
-function actionLabels(wrapper) {
-  return actionButtons(wrapper).map((button) => button.text());
+function primaryButton(wrapper) {
+  return wrapper.find("button.booking-action-primary");
 }
 
-function actionButton(wrapper, label) {
-  return actionButtons(wrapper).find((button) => button.text() === label);
+function menuButton(wrapper) {
+  return wrapper.find("button.booking-action-menu");
+}
+
+/** Opens the headline's side-way menu, if any, and reads its entries; the menu detaches into `data-app`. */
+async function menuEntries(wrapper) {
+  const activator = menuButton(wrapper);
+  if (!activator.exists()) {
+    return null;
+  }
+  await activator.trigger("click");
+  await wrapper.vm.$nextTick();
+  return Array.from(
+    document.querySelectorAll(".v-menu__content .booking-action-secondary")
+  );
+}
+
+/** The headline's actions as the reader sees them: the button's word and the menu's words. */
+async function offeredActions(wrapper) {
+  const button = primaryButton(wrapper);
+  const entries = await menuEntries(wrapper);
+  return {
+    button: button.exists() ? button.text() : null,
+    menu: entries && entries.map((entry) => entry.textContent.trim()),
+  };
+}
+
+async function clickMenuEntry(wrapper, label) {
+  const entry = (await menuEntries(wrapper)).find(
+    (candidate) => candidate.textContent.trim() === label
+  );
+  entry.click();
+  await wrapper.vm.$nextTick();
 }
 
 /** Spies on the mounted transition module, so that no route is called. */
@@ -86,9 +123,36 @@ describe("BookingEditStatus", () => {
       ["confirmed", "Bestätigt"],
       ["rejected", "Abgelehnt"],
       ["cancelled", "Storniert"],
-    ])("shows %s as %s", (status, word) => {
+    ])("shows %s as %s in the headline", (status, word) => {
       const wrapper = mountStatus({ booking: booking({ status }) });
-      expect(wrapper.find(".booking-status-chip").text()).toBe(word);
+      expect(wrapper.find(".booking-status-word").text()).toBe(word);
+    });
+
+    it("draws the path under the headline, cut where the booking ended", () => {
+      const onPath = mountStatus({
+        booking: booking({ status: "payment_due" }),
+      });
+      expect(segmentLabels(onPath)).toEqual([
+        "Angefragt",
+        "Zahlung offen",
+        "Bestätigt",
+      ]);
+
+      const cancelled = mountStatus({
+        booking: booking({
+          status: "cancelled",
+          cancellationRefund: { cancelledFrom: "payment_due" },
+        }),
+      });
+      expect(segmentLabels(cancelled)).toEqual([
+        "Angefragt",
+        "Zahlung offen",
+        "Bestätigt",
+        "Storniert",
+      ]);
+      expect(cancelled.find(".booking-status-segment--void").text()).toBe(
+        "Bestätigt"
+      );
     });
 
     it("marks a free booking as Kostenfrei beside the state", () => {
@@ -99,19 +163,17 @@ describe("BookingEditStatus", () => {
       expect(priced.find(".booking-status-free").exists()).toBe(false);
     });
 
-    it("names the paid date where the booking carries one", () => {
-      const wrapper = mountStatus({
+    it("names the paid date under Bestätigt where the booking carries one", () => {
+      const paid = mountStatus({
         booking: booking({
           status: "confirmed",
           timePaid: new Date(2026, 2, 5, 14, 30).getTime(),
         }),
       });
-      expect(wrapper.find(".booking-status-paid-at").text()).toBe(
-        "Bezahlt am 05.03.2026, 14:30"
-      );
+      expect(paid.text()).toContain("bezahlt 05.03.2026, 14:30");
 
       const unpaid = mountStatus({ booking: booking({ status: "confirmed" }) });
-      expect(unpaid.find(".booking-status-paid-at").exists()).toBe(false);
+      expect(unpaid.text()).not.toContain("bezahlt");
     });
 
     it("has no switch anywhere", () => {
@@ -122,17 +184,20 @@ describe("BookingEditStatus", () => {
 
   describe("the actions", () => {
     it.each([
-      ["requested", ["Freigeben", "Ablehnen"]],
-      ["payment_due", ["Als bezahlt markieren", "Stornieren"]],
-      ["confirmed", ["Stornieren"]],
-      ["rejected", ["Wiederherstellen"]],
-      ["cancelled", ["Wiederherstellen"]],
-    ])("offers at %s exactly %j", (status, labels) => {
-      const wrapper = mountStatus({ booking: booking({ status }) });
-      expect(actionLabels(wrapper)).toEqual(labels);
-    });
+      ["requested", "Freigeben", ["Ablehnen"]],
+      ["payment_due", "Als bezahlt markieren", ["Stornieren"]],
+      ["confirmed", null, ["Stornieren"]],
+      ["rejected", "Wiederherstellen", null],
+      ["cancelled", "Wiederherstellen", null],
+    ])(
+      "offers at %s the button %s and the menu %j",
+      async (status, button, menu) => {
+        const wrapper = mountStatus({ booking: booking({ status }) });
+        expect(await offeredActions(wrapper)).toEqual({ button, menu });
+      }
+    );
 
-    it("offers none to whoever may not edit the booking", () => {
+    it("offers none to whoever may not edit the booking", async () => {
       BookingPermissionService.allowUpdate.mockReturnValue(false);
 
       const wrapper = mountStatus();
@@ -140,15 +205,18 @@ describe("BookingEditStatus", () => {
       expect(BookingPermissionService.allowUpdate).toHaveBeenCalledWith(
         booking()
       );
-      expect(actionButtons(wrapper)).toHaveLength(0);
-      expect(wrapper.find(".booking-status-chip").text()).toBe("Angefragt");
+      expect(await offeredActions(wrapper)).toEqual({
+        button: null,
+        menu: null,
+      });
+      expect(wrapper.find(".booking-status-word").text()).toBe("Angefragt");
     });
 
     it("hands a single booking to the transition module", async () => {
       const wrapper = mountStatus();
       const start = spyOnStart(wrapper);
 
-      await actionButton(wrapper, "Freigeben").trigger("click");
+      await primaryButton(wrapper).trigger("click");
 
       expect(start).toHaveBeenCalledWith("confirm", { booking: booking() });
     });
@@ -166,7 +234,7 @@ describe("BookingEditStatus", () => {
       });
       const start = spyOnStart(wrapper);
 
-      await actionButton(wrapper, "Stornieren").trigger("click");
+      await clickMenuEntry(wrapper, "Stornieren");
 
       expect(start).toHaveBeenCalledWith("cancel", {
         booking: booking({ status: "confirmed" }),
@@ -182,7 +250,7 @@ describe("BookingEditStatus", () => {
       });
       const start = spyOnStart(wrapper);
 
-      await actionButton(wrapper, "Wiederherstellen").trigger("click");
+      await primaryButton(wrapper).trigger("click");
 
       expect(start).toHaveBeenCalledWith("reinstate", {
         booking: booking({ status: "rejected" }),
@@ -214,16 +282,15 @@ describe("BookingEditStatus", () => {
   });
 
   describe("while the form has unsaved changes", () => {
-    it("locks every action and says to save first", async () => {
+    it("locks the button and the menu and says to save first under the path", async () => {
       const wrapper = mountStatus({ dirty: true });
       const start = spyOnStart(wrapper);
 
-      expect(
-        actionButtons(wrapper).every((button) => button.element.disabled)
-      ).toBe(true);
+      expect(primaryButton(wrapper).element.disabled).toBe(true);
+      expect(menuButton(wrapper).element.disabled).toBe(true);
       expect(wrapper.find(".booking-status-hint").text()).toContain(SAVE_FIRST);
 
-      await actionButton(wrapper, "Freigeben").trigger("click");
+      await primaryButton(wrapper).trigger("click");
       expect(start).not.toHaveBeenCalled();
     });
 
@@ -232,9 +299,14 @@ describe("BookingEditStatus", () => {
 
       await wrapper.setProps({ dirty: false });
 
-      expect(
-        actionButtons(wrapper).some((button) => button.element.disabled)
-      ).toBe(false);
+      expect(primaryButton(wrapper).element.disabled).toBe(false);
+      expect(menuButton(wrapper).element.disabled).toBe(false);
+      expect(wrapper.find(".booking-status-hint").exists()).toBe(false);
+    });
+
+    it("says nothing to whoever has no action to lock", () => {
+      BookingPermissionService.allowUpdate.mockReturnValue(false);
+      const wrapper = mountStatus({ dirty: true });
       expect(wrapper.find(".booking-status-hint").exists()).toBe(false);
     });
   });
@@ -361,25 +433,82 @@ describe("BookingEditStatus", () => {
   });
 
   describe("the rejection reason", () => {
-    it("is shown for a rejected or cancelled booking, labelled by state, and edits the booking", async () => {
-      const rejected = booking({ status: "rejected", rejectionReason: "" });
-      const wrapper = mountStatus({ booking: rejected });
-      expect(wrapper.find(".status-reason label").text()).toBe(
-        "Ablehnungsgrund"
-      );
-      await wrapper.find(".status-reason textarea").setValue("Zu spät");
-      expect(rejected.rejectionReason).toBe("Zu spät");
+    function reasonBlock(wrapper) {
+      return wrapper.find(".booking-status-path .booking-status-reason");
+    }
 
-      expect(
-        mountStatus({ booking: booking({ status: "cancelled" }) })
-          .find(".status-reason label")
-          .text()
-      ).toBe("Stornierungsgrund");
-      expect(
-        mountStatus({ booking: booking({ status: "confirmed" }) })
-          .find(".status-reason")
-          .exists()
-      ).toBe(false);
+    it.each([
+      ["rejected", "Ablehnungsgrund"],
+      ["cancelled", "Stornierungsgrund"],
+    ])(
+      "is asked for under the path of a %s booking, captioned %s, without a label of its own",
+      (status, caption) => {
+        const wrapper = mountStatus({
+          booking: booking({ status, rejectionReason: "" }),
+        });
+
+        const block = reasonBlock(wrapper);
+        expect(block.text()).toContain(caption);
+        expect(block.find("textarea").exists()).toBe(true);
+        expect(block.find("label").exists()).toBe(false);
+      }
+    );
+
+    it("is not asked for while the booking is on its path", () => {
+      const wrapper = mountStatus({
+        booking: booking({ status: "confirmed", rejectionReason: "alt" }),
+      });
+      expect(reasonBlock(wrapper).exists()).toBe(false);
+      expect(wrapper.find("textarea").exists()).toBe(false);
+    });
+
+    it("shows the booking's reason and reports an edit to the form instead of writing the booking", async () => {
+      const rejected = booking({ status: "rejected", rejectionReason: "Alt" });
+      const wrapper = mountStatus({ booking: rejected });
+      const textarea = reasonBlock(wrapper).find("textarea");
+      expect(textarea.element.value).toBe("Alt");
+
+      await textarea.setValue("Zu spät");
+
+      expect(wrapper.emitted("update:rejection-reason")).toEqual([["Zu spät"]]);
+      expect(rejected.rejectionReason).toBe("Alt");
+    });
+
+    it("insists on a reason", async () => {
+      const wrapper = mountStatus({
+        booking: booking({ status: "cancelled", rejectionReason: "Alt" }),
+      });
+      const textarea = reasonBlock(wrapper).find("textarea");
+
+      await textarea.setValue("");
+      await wrapper.vm.$nextTick();
+
+      expect(reasonBlock(wrapper).text()).toContain(
+        "Begründung ist erforderlich"
+      );
+    });
+
+    it("keeps the refund audit as a sheet of its own under the headline", () => {
+      const wrapper = mountStatus({
+        booking: booking({
+          status: "cancelled",
+          rejectionReason: "Alt",
+          cancellationRefund: {
+            cancelledFrom: "confirmed",
+            originalAmountEur: 25,
+            refundAmountEur: 20,
+            cancellationFeeEur: 5,
+            appliedRefundPercentage: 80,
+            daysBeforeStart: 3,
+          },
+        }),
+      });
+
+      const audit = wrapper.findComponent({ name: "CancellationRefundAudit" });
+      expect(audit.exists()).toBe(true);
+      expect(wrapper.find(".booking-status-path").text()).not.toContain(
+        audit.text()
+      );
     });
   });
 });
