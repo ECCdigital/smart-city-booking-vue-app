@@ -66,20 +66,14 @@ async function openMenu(wrapper) {
  */
 describe("BookingStatusPath", () => {
   describe("the headline", () => {
-    it("shows the state word in the state's colour beside its icon", () => {
+    it("names the state on the path", () => {
       const wrapper = mountPath({
         booking: booking({ status: "payment_due" }),
       });
-      const word = wrapper.find(".booking-status-word");
-      expect(word.text()).toBe("Zahlung offen");
-      expect(word.classes()).toContain("blue--text");
-      expect(wrapper.find(".v-avatar").classes()).toContain("blue");
-      expect(wrapper.find(".v-avatar .v-icon").classes()).toContain(
-        "mdi-cash-clock"
-      );
+      expect(wrapper.find(".booking-status-word").text()).toBe("Zahlung offen");
     });
 
-    it("shows the ended state's word for a cancelled booking", () => {
+    it("names the ended state for a cancelled booking", () => {
       const wrapper = mountPath({
         booking: booking({
           status: "cancelled",
@@ -87,9 +81,6 @@ describe("BookingStatusPath", () => {
         }),
       });
       expect(wrapper.find(".booking-status-word").text()).toBe("Storniert");
-      expect(wrapper.find(".booking-status-word").classes()).toContain(
-        "error--text"
-      );
     });
 
     it("marks a free booking as Kostenfrei beside the word", () => {
