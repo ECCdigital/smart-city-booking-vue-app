@@ -35,6 +35,48 @@ export function providerAccessPointDefaults(provider) {
 }
 
 /**
+ * The id fields the dialog shows for an access point, by provider. A door
+ * carries two - the id at the provider and, informative, the account or site
+ * it lives in (`providerLocationId`) - and so does an access point of a
+ * provider this table does not know. A locker system of iFBS or Pareva carries
+ * one, because its provider knows only one: iFBS the `LocationID` of the
+ * location, Pareva the `size` of the product, both stored in `externalId`.
+ * `providerLocationId` is read by no provider and stays out of sight for them.
+ *
+ * `label` and `hint` name keys under `accessPoint.management.fields`; a `null`
+ * hint leaves the dialog's own hint - the one by type - in place.
+ */
+const DEFAULT_ID_FIELDS = Object.freeze({
+  label: "externalId",
+  hint: null,
+  locationField: true,
+});
+const PROVIDER_ID_FIELDS = {
+  ifbs: Object.freeze({
+    label: "locationId",
+    hint: "locationIdHint",
+    locationField: false,
+  }),
+  pareva: Object.freeze({
+    label: "productSize",
+    hint: "productSizeHint",
+    locationField: false,
+  }),
+};
+
+/**
+ * Which id fields an access point of the provider shows.
+ *
+ * @param {string} provider A provider id, e.g. "nuki" or "ifbs"
+ * @returns {{label: string, hint: string|null, locationField: boolean}} The
+ *   translation key of the `externalId` label, that of its hint (or `null` for
+ *   the hint by type), and whether the `providerLocationId` field is shown
+ */
+export function providerIdFields(provider) {
+  return PROVIDER_ID_FIELDS[provider] || DEFAULT_ID_FIELDS;
+}
+
+/**
  * Whether the access point is a locker system rather than a door.
  *
  * @param {Object} accessPoint The access point to inspect

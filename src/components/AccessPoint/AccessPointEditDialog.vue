@@ -9,6 +9,7 @@ import {
   accessPointTypeLabel,
   isLockerAccessPoint,
   providerAccessPointDefaults,
+  providerIdFields,
   requiresQrScan,
   DOOR_TYPE,
   QR_SCAN_RULE,
@@ -97,12 +98,29 @@ export default {
     typeLabel() {
       return accessPointTypeLabel(this.form);
     },
-    // Swapping the device behind a door keeps its QR code; a locker system
-    // has none, so the sentence about reprinting must not be shown for it.
+    // Which id fields the access point shows follows the provider, the same
+    // way on create and on edit: a door and an unknown provider carry both,
+    // a locker system of iFBS or Pareva only the one its provider reads.
+    idFields() {
+      return providerIdFields(this.form.provider);
+    },
+    externalIdLabel() {
+      return this.$t(`accessPoint.management.fields.${this.idFields.label}`);
+    },
+    // A provider with a field of its own brings its hint along. Otherwise the
+    // hint goes by type: swapping the device behind a door keeps its QR code,
+    // a locker system has none, so the sentence about reprinting must not be
+    // shown for it.
     externalIdHint() {
+      if (this.idFields.hint) {
+        return this.$t(`accessPoint.management.fields.${this.idFields.hint}`);
+      }
       return this.isLocker
         ? this.$t("accessPoint.management.fields.externalIdHintLocker")
         : this.$t("accessPoint.management.fields.externalIdHint");
+    },
+    showLocationField() {
+      return this.idFields.locationField;
     },
     typeIcon() {
       return this.isLocker ? "mdi-locker-multiple" : "mdi-door-closed-lock";
@@ -311,7 +329,12 @@ export default {
       this.form.provider = lock.provider || this.pickerProvider;
       this.form.externalId = lock.externalId;
       this.form.label = lock.label || this.form.label;
-      this.form.providerLocationId = lock.locationId || "";
+      // A provider whose access point shows no location field gets none from
+      // the listing either: Pareva lists the `lockerId` of the app there, iFBS
+      // its `LocationID` a second time - neither is read back.
+      if (this.showLocationField) {
+        this.form.providerLocationId = lock.locationId || "";
+      }
       // What the provider lists is what it hands out. For a provider the
       // defaults table knows, the table has the last word; for any other
       // provider the listing is the only answer there is.
@@ -386,7 +409,13 @@ export default {
         type: this.form.type,
         provider: this.form.provider,
         externalId: this.form.externalId,
-        providerLocationId: this.form.providerLocationId || null,
+        // Created without a location field, the access point is created
+        // without a location id. Edited, the stored one passes through unseen
+        // - an old Pareva row loses nothing.
+        providerLocationId:
+          this.isEdit || this.showLocationField
+            ? this.form.providerLocationId || null
+            : null,
         mode: this.form.mode,
         config: this.form.config,
         location: this.form.location || null,
@@ -623,7 +652,7 @@ export default {
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="form.externalId"
-                :label="$t('accessPoint.management.fields.externalId')"
+                :label="externalIdLabel"
                 :hint="externalIdHint"
                 persistent-hint
                 background-color="accent"
@@ -631,7 +660,7 @@ export default {
                 dense
               />
             </v-col>
-            <v-col cols="12" md="6">
+            <v-col v-if="showLocationField" cols="12" md="6">
               <v-text-field
                 v-model="form.providerLocationId"
                 :label="$t('accessPoint.management.fields.providerLocationId')"

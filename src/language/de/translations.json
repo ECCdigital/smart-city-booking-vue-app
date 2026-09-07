@@ -1131,7 +1131,11 @@
         "location": "Standort",
         "validationRules": "Validierungsregeln",
         "typeHint": "Der Typ ergibt sich aus dem Anbieter und ist nicht wählbar.",
-        "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen."
+        "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen.",
+        "locationId": "Standort-ID",
+        "locationIdHint": "Ändern Sie die Standort-ID, um die Anlage bei iFBS auszutauschen.",
+        "productSize": "Produktgröße",
+        "productSizeHint": "Ändern Sie die Produktgröße, um die Anlage bei Pareva auszutauschen."
       },
       "picker": {
         "title": "Zugangspunkt vom Anbieter übernehmen",
