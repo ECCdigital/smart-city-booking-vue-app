@@ -154,6 +154,12 @@ describe("AccessPointEditDialog", () => {
 
       expect(dialogText(wrapper)).toContain("Zugangspunkt anlegen");
       expect(wrapper.find(".create-mode-toggle").exists()).toBe(true);
+      expect(wrapper.find(".create-mode-provider").classes()).toContain(
+        "v-item--active"
+      );
+      expect(wrapper.find(".create-mode-manual").classes()).not.toContain(
+        "v-item--active"
+      );
       expect(dialogText(wrapper)).toContain("Vom Anbieter übernehmen");
       expect(dialogText(wrapper)).toContain("Manuell anlegen");
       expect(dialogText(wrapper)).toContain(
@@ -178,12 +184,19 @@ describe("AccessPointEditDialog", () => {
     });
 
     it("hides only the picker row on 'Manuell' and keeps what was entered", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [{ id: "lock-9", externalId: "lock-9", label: "Seitentür" }],
+      });
       const wrapper = await mountDialog();
+      wrapper.findComponent({ ref: "lockSelect" }).vm.$emit("input", "lock-9");
       await wrapper.find(".label-field input").setValue("Hintereingang");
 
       await wrapper.find(".create-mode-manual").trigger("click");
+      await wrapper.vm.$nextTick();
+      expect(wrapper.find(".create-mode-manual").classes()).toContain(
+        "v-item--active"
+      );
       expect(wrapper.find(".provider-picker").exists()).toBe(false);
-      expect(wrapper.find(".create-mode-toggle").exists()).toBe(true);
       expect(dialogText(wrapper)).toContain("Eine Tür von Hand eintragen");
       expect(wrapper.find(".label-field input").element.value).toBe(
         "Hintereingang"
@@ -194,7 +207,11 @@ describe("AccessPointEditDialog", () => {
       expect(wrapper.find(".label-field input").element.value).toBe(
         "Hintereingang"
       );
-      // The provider picked before stays picked - the list is not fetched anew.
+      // The provider and the lock picked before stay picked - the list is
+      // not fetched anew.
+      expect(wrapper.findComponent({ ref: "lockSelect" }).props("value")).toBe(
+        "lock-9"
+      );
       expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledTimes(1);
     });
 

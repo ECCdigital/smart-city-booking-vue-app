@@ -21,6 +21,10 @@ const GET_LOCATION_CAPABILITY = "getLocation";
 // lists, or entered by hand.
 const PROVIDER_MODE = "provider";
 const MANUAL_MODE = "manual";
+const CREATE_MODES = [
+  { value: PROVIDER_MODE, icon: "mdi-cloud-download-outline" },
+  { value: MANUAL_MODE, icon: "mdi-pencil-outline" },
+];
 
 function emptyForm() {
   return {
@@ -33,16 +37,6 @@ function emptyForm() {
     mode: "remote",
     location: null,
   };
-}
-
-// Nothing typed yet - the fields an admin fills, not the defaults.
-function isUntouched(form) {
-  return (
-    !form.label &&
-    !form.provider &&
-    !form.externalId &&
-    !form.providerLocationId
-  );
 }
 
 export default {
@@ -118,8 +112,32 @@ export default {
     showModeToggle() {
       return !this.isEdit && this.providerOptions.length > 0;
     },
+    createModes() {
+      return CREATE_MODES.map((mode) => ({
+        ...mode,
+        text: this.$t(`accessPoint.management.dialog.modes.${mode.value}`),
+      }));
+    },
     modeHint() {
       return this.$t(`accessPoint.management.dialog.modeHints.${this.mode}`);
+    },
+    // Nothing entered yet: the form is what `reset()` made of it, the
+    // configuration untouched, the QR switch not flipped. The provider
+    // defaults only ever run behind a provider, so type and mode need no
+    // check of their own.
+    untouched() {
+      const blank = emptyForm();
+      return (
+        [
+          "label",
+          "provider",
+          "externalId",
+          "providerLocationId",
+          "location",
+        ].every((field) => this.form[field] === blank[field]) &&
+        this.configText === "{}" &&
+        !this.validationRulesTouched
+      );
     },
     // The picker is the way into a locker system - it is what reads
     // `listAccessPoints` - and the shortcut for a door. Entering a door by
@@ -215,7 +233,7 @@ export default {
     // provider once the list arrives - as long as nothing has been typed yet.
     providerOptions(options) {
       if (!this.open || this.isEdit || !options.length) return;
-      if (this.mode === MANUAL_MODE && isUntouched(this.form)) {
+      if (this.mode === MANUAL_MODE && this.untouched) {
         this.mode = PROVIDER_MODE;
       }
       if (this.showPicker && !this.pickerProvider) {
@@ -457,16 +475,15 @@ export default {
               class="create-mode-toggle d-flex mb-2"
             >
               <v-btn
-                value="provider"
-                class="create-mode-provider flex-grow-1"
+                v-for="option in createModes"
+                :key="option.value"
+                :value="option.value"
+                :class="`create-mode-${option.value}`"
+                class="flex-grow-1"
                 text
               >
-                <v-icon left small>mdi-cloud-download-outline</v-icon>
-                {{ $t("accessPoint.management.dialog.modes.provider") }}
-              </v-btn>
-              <v-btn value="manual" class="create-mode-manual flex-grow-1" text>
-                <v-icon left small>mdi-pencil-outline</v-icon>
-                {{ $t("accessPoint.management.dialog.modes.manual") }}
+                <v-icon left small>{{ option.icon }}</v-icon>
+                {{ option.text }}
               </v-btn>
             </v-btn-toggle>
             <div class="create-mode-hint text-caption text--secondary mb-4">
