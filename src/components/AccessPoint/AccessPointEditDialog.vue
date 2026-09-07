@@ -17,6 +17,11 @@ import { isComingSoonAccessPointMode } from "@/utilities/coming-soon";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
 
+// The two ways into a new access point: taken over from what the provider
+// lists, or entered by hand.
+const PROVIDER_MODE = "provider";
+const MANUAL_MODE = "manual";
+
 function emptyForm() {
   return {
     id: null,
@@ -30,6 +35,16 @@ function emptyForm() {
   };
 }
 
+// Nothing typed yet - the fields an admin fills, not the defaults.
+function isUntouched(form) {
+  return (
+    !form.label &&
+    !form.provider &&
+    !form.externalId &&
+    !form.providerLocationId
+  );
+}
+
 export default {
   name: "AccessPointEditDialog",
   components: { AddressLookup },
@@ -41,18 +56,14 @@ export default {
     accessPoints: { type: Array, default: () => [] },
     // Active providers incl. their `providerCapabilities`.
     providers: { type: Array, default: () => [] },
-    // Which of the two buttons over the table opened the dialog: "manual"
-    // starts on an empty form, "provider" starts at the provider listing. The
-    // dialog is one and the same - only where it begins differs.
-    source: {
-      type: String,
-      default: "provider",
-      validator: (value) => ["manual", "provider"].includes(value),
-    },
   },
   data() {
     return {
       valid: false,
+      // The way into a new access point, chosen by the switch at the top:
+      // "provider" shows the listing over the form, "manual" the form alone.
+      // Switching hides and shows the listing and touches nothing entered.
+      mode: PROVIDER_MODE,
       form: emptyForm(),
       configText: "{}",
       configError: "",
@@ -80,12 +91,9 @@ export default {
       return !!this.form.id;
     },
     title() {
-      if (this.isEdit) {
-        return this.$t("accessPoint.management.dialog.editTitle");
-      }
-      return this.showPicker
-        ? this.$t("accessPoint.management.dialog.createFromProviderTitle")
-        : this.$t("accessPoint.management.dialog.createDoorTitle");
+      return this.isEdit
+        ? this.$t("accessPoint.management.dialog.editTitle")
+        : this.$t("accessPoint.management.dialog.createTitle");
     },
     isLocker() {
       return isLockerAccessPoint(this.form);
@@ -105,11 +113,19 @@ export default {
     typeIcon() {
       return this.isLocker ? "mdi-locker-multiple" : "mdi-door-closed-lock";
     },
+    // The choice between the two ways in is only offered while there is a
+    // provider to take over from; without one the dialog is the door form.
+    showModeToggle() {
+      return !this.isEdit && this.providerOptions.length > 0;
+    },
+    modeHint() {
+      return this.$t(`accessPoint.management.dialog.modeHints.${this.mode}`);
+    },
     // The picker is the way into a locker system - it is what reads
     // `listAccessPoints` - and the shortcut for a door. Entering a door by
-    // hand starts without it.
+    // hand goes without it.
     showPicker() {
-      return !this.isEdit && this.source === "provider";
+      return this.showModeToggle && this.mode === PROVIDER_MODE;
     },
     // The PIN-at-the-lock modes stay listed while they are unfinished, so the
     // dialog shows what is coming - but they cannot be chosen. An access point
@@ -194,14 +210,15 @@ export default {
       this.pickerLockId = "";
       if (provider) this.fetchProviderLocks();
     },
-    // The provider list may still be loading while the dialog opens.
+    // The provider list may still be loading while the dialog opens: a dialog
+    // that opened on the door form for want of a provider turns to the
+    // provider once the list arrives - as long as nothing has been typed yet.
     providerOptions(options) {
-      if (
-        this.open &&
-        this.showPicker &&
-        !this.pickerProvider &&
-        options.length
-      ) {
+      if (!this.open || this.isEdit || !options.length) return;
+      if (this.mode === MANUAL_MODE && isUntouched(this.form)) {
+        this.mode = PROVIDER_MODE;
+      }
+      if (this.showPicker && !this.pickerProvider) {
         this.pickerProvider = options[0].value;
       }
     },
@@ -238,6 +255,7 @@ export default {
       // A new access point starts with the rule the server would default to,
       // so what the switch shows is what an untouched create produces.
       this.qrScanRequired = source ? requiresQrScan(source) : true;
+      this.mode = this.providerOptions.length ? PROVIDER_MODE : MANUAL_MODE;
       this.pickerProvider = this.showPicker
         ? this.providerOptions[0]?.value || ""
         : "";
@@ -429,6 +447,33 @@ export default {
 
       <v-card-text class="pt-4">
         <v-form ref="form" v-model="valid">
+          <!-- The way in: from the provider's listing, or by hand -->
+          <template v-if="showModeToggle">
+            <v-btn-toggle
+              v-model="mode"
+              mandatory
+              dense
+              color="primary"
+              class="create-mode-toggle d-flex mb-2"
+            >
+              <v-btn
+                value="provider"
+                class="create-mode-provider flex-grow-1"
+                text
+              >
+                <v-icon left small>mdi-cloud-download-outline</v-icon>
+                {{ $t("accessPoint.management.dialog.modes.provider") }}
+              </v-btn>
+              <v-btn value="manual" class="create-mode-manual flex-grow-1" text>
+                <v-icon left small>mdi-pencil-outline</v-icon>
+                {{ $t("accessPoint.management.dialog.modes.manual") }}
+              </v-btn>
+            </v-btn-toggle>
+            <div class="create-mode-hint text-caption text--secondary mb-4">
+              {{ modeHint }}
+            </div>
+          </template>
+
           <!-- Provider listing, the way a locker system and optionally a door
                is taken over -->
           <template v-if="showPicker">
@@ -438,18 +483,8 @@ export default {
                 {{ $t("accessPoint.management.picker.title") }}
               </span>
             </div>
-            <v-alert
-              v-if="providerOptions.length === 0"
-              color="info"
-              text
-              dense
-              class="mb-4"
-            >
-              <v-icon left>mdi-information-outline</v-icon>
-              {{ $t("accessPoint.management.picker.noProvider") }}
-            </v-alert>
 
-            <v-row v-else dense align="center">
+            <v-row dense align="center">
               <v-col cols="12" md="4">
                 <v-select
                   v-model="pickerProvider"
@@ -528,6 +563,7 @@ export default {
           <v-row dense>
             <v-col cols="12" md="6">
               <v-text-field
+                class="label-field"
                 v-model="form.label"
                 :label="$t('accessPoint.management.fields.label')"
                 background-color="accent"

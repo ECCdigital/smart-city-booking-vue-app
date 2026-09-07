@@ -45,7 +45,6 @@ export default {
       bookablesForbidden: false,
       providers: [],
       editDialog: false,
-      editSource: "provider",
       selectedAccessPoint: null,
       deleteDialog: false,
       deleting: false,
@@ -231,11 +230,10 @@ export default {
         this.providers = [];
       }
     },
-    // Two buttons, one dialog: a door is entered by hand, a locker system -
-    // and a door as well, if it is listed - is taken over from the provider.
-    openCreate(source) {
+    // One button, one dialog: whether the access point is taken over from
+    // the provider or entered by hand is chosen inside the dialog.
+    openCreate() {
       this.selectedAccessPoint = null;
-      this.editSource = source;
       this.editDialog = true;
     },
     openEdit(accessPoint) {
@@ -351,21 +349,12 @@ export default {
         <v-icon>mdi-refresh</v-icon>
       </v-btn>
       <v-btn
-        class="create-door ml-2"
+        class="create-access-point ml-2"
         color="primary"
-        outlined
-        @click="openCreate('manual')"
+        @click="openCreate"
       >
-        <v-icon left>mdi-door-closed-lock</v-icon>
-        {{ $t("accessPoint.management.createDoor") }}
-      </v-btn>
-      <v-btn
-        class="create-from-provider ml-2"
-        color="primary"
-        @click="openCreate('provider')"
-      >
-        <v-icon left>mdi-cloud-download-outline</v-icon>
-        {{ $t("accessPoint.management.createFromProvider") }}
+        <v-icon left>mdi-plus</v-icon>
+        {{ $t("accessPoint.management.create") }}
       </v-btn>
     </template>
 
@@ -530,7 +519,6 @@ export default {
       :access-point="selectedAccessPoint"
       :access-points="accessPoints"
       :providers="providers"
-      :source="editSource"
       @close="editDialog = false"
       @saved="onSaved"
     />
