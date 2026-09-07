@@ -99,16 +99,45 @@ const RECEIPT = {
   timeCreated: 1_700_000_000_000,
 };
 
-function actionLabels(wrapper) {
-  return wrapper
-    .findAll("button.booking-action")
-    .wrappers.map((button) => button.text());
+function primaryButton(wrapper) {
+  return wrapper.find("button.booking-action-primary");
 }
 
-function actionButton(wrapper, label) {
+/** Opens the headline's side-way menu, if any, and reads its entries; the menu detaches into `data-app`. */
+async function menuEntries(wrapper) {
+  const activator = wrapper.find("button.booking-action-menu");
+  if (!activator.exists()) {
+    return null;
+  }
+  await activator.trigger("click");
+  await wrapper.vm.$nextTick();
+  return Array.from(
+    document.querySelectorAll(".v-menu__content .booking-action-secondary")
+  );
+}
+
+/** The headline's actions as the reader sees them: the button's word and the menu's words. */
+async function offeredActions(wrapper) {
+  const button = primaryButton(wrapper);
+  const entries = await menuEntries(wrapper);
+  return {
+    button: button.exists() ? button.text() : null,
+    menu: entries && entries.map((entry) => entry.textContent.trim()),
+  };
+}
+
+async function clickMenuEntry(wrapper, label) {
+  const entry = (await menuEntries(wrapper)).find(
+    (candidate) => candidate.textContent.trim() === label
+  );
+  entry.click();
+  await wrapper.vm.$nextTick();
+}
+
+function infoCard(wrapper) {
   return wrapper
-    .findAll("button.booking-action")
-    .wrappers.find((button) => button.text() === label);
+    .findAll(".section-card")
+    .wrappers.find((card) => card.text().includes("Buchungsinformationen"));
 }
 
 /** Spies on the mounted transition module, so that no route is called. */
@@ -120,11 +149,12 @@ function spyOnStart(wrapper) {
 
 /**
  * The detail drawer reads `booking.status` (spec E4) and offers the state's
- * transitions (spec E3) and the receipts by state (spec E8): one chip with
- * the state word beside the Kostenfrei marker and the paid date, one button
- * per transition the state allows, "Beleg erstellen" only at Bestätigt,
- * and the cancellation receipt's reprint only at Abgelehnt / Storniert for
- * whoever holds `booking.reprint`.
+ * transitions (spec E3) and the receipts by state (spec E8): the state word
+ * in the headline beside the Kostenfrei marker, the path under it with the
+ * paid date at Bestätigt, the primary transition as a button and the side
+ * way in the menu (spec N3, N4), the reason block at Abgelehnt / Storniert,
+ * "Beleg erstellen" only at Bestätigt, and the cancellation receipt's
+ * reprint only at Abgelehnt / Storniert for whoever holds `booking.reprint`.
  */
 describe("BookingDetails", () => {
   beforeEach(() => {
@@ -141,15 +171,41 @@ describe("BookingDetails", () => {
       ["rejected", "Abgelehnt"],
       ["cancelled", "Storniert"],
     ])(
-      "shows %s as %s, and nothing else as a payment state",
+      "shows %s as %s in the headline, and nothing else as a payment state",
       (status, word) => {
         const wrapper = mountDetails({ booking: booking({ status }) });
 
-        expect(wrapper.find(".booking-status-chip").text()).toBe(word);
+        expect(wrapper.find(".booking-status-word").text()).toBe(word);
         expect(wrapper.text()).not.toContain("Status der Zahlung");
         expect(wrapper.text()).not.toContain("Offen");
       }
     );
+
+    it("draws the path under the headline, cut where the booking ended", () => {
+      const onPath = mountDetails({
+        booking: booking({ status: "payment_due" }),
+      });
+      expect(
+        onPath
+          .findAll(".booking-status-segment-label")
+          .wrappers.map((label) => label.text())
+      ).toEqual(["Angefragt", "Zahlung offen", "Bestätigt"]);
+
+      const cancelled = mountDetails({
+        booking: booking({
+          status: "cancelled",
+          cancellationRefund: { cancelledFrom: "payment_due" },
+        }),
+      });
+      expect(
+        cancelled
+          .findAll(".booking-status-segment-label")
+          .wrappers.map((label) => label.text())
+      ).toEqual(["Angefragt", "Zahlung offen", "Bestätigt", "Storniert"]);
+      expect(cancelled.find(".booking-status-segment--void").text()).toBe(
+        "Bestätigt"
+      );
+    });
 
     it("marks a free booking as Kostenfrei beside the state", () => {
       const free = mountDetails({ booking: booking({ priceEur: 0 }) });
@@ -159,47 +215,84 @@ describe("BookingDetails", () => {
       expect(priced.find(".booking-status-free").exists()).toBe(false);
     });
 
-    it("names the paid date where the booking carries one", () => {
+    it("names the paid date under Bestätigt where the booking carries one", () => {
       const paid = mountDetails({
         booking: booking({
           status: "confirmed",
           timePaid: new Date(2026, 2, 5, 14, 30).getTime(),
         }),
       });
-      expect(paid.find(".booking-status-paid-at").text()).toBe(
-        "Bezahlt am 05.03.2026, 14:30"
-      );
+      expect(paid.text()).toContain("bezahlt 05.03.2026, 14:30");
 
       const unpaid = mountDetails({
         booking: booking({ status: "payment_due", timePaid: 1 }),
       });
-      expect(unpaid.find(".booking-status-paid-at").exists()).toBe(false);
+      const dates = unpaid
+        .findAll(".booking-status-segment-date")
+        .wrappers.map((date) => date.text());
+      expect(dates).toHaveLength(1);
+      expect(dates[0]).not.toContain("bezahlt");
+    });
+
+    it.each([
+      ["rejected", "Ablehnungsgrund"],
+      ["cancelled", "Stornierungsgrund"],
+    ])(
+      "shows the reason of a %s booking as %s under the path, and nowhere else",
+      (status, caption) => {
+        const wrapper = mountDetails({
+          booking: booking({ status, rejectionReason: "Zu spät" }),
+        });
+
+        const block = wrapper.find(".booking-status-reason");
+        expect(block.text()).toContain(caption);
+        expect(block.text()).toContain("Zu spät");
+        expect(infoCard(wrapper).text()).not.toContain("grund");
+      }
+    );
+
+    it("shows no reason block without a reason, or on the path", () => {
+      const noReason = mountDetails({
+        booking: booking({ status: "rejected" }),
+      });
+      expect(noReason.find(".booking-status-reason").exists()).toBe(false);
+
+      const onPath = mountDetails({
+        booking: booking({ status: "requested", rejectionReason: "alt" }),
+      });
+      expect(onPath.find(".booking-status-reason").exists()).toBe(false);
     });
   });
 
   describe("the actions", () => {
     it.each([
-      ["requested", ["Freigeben", "Ablehnen"]],
-      ["payment_due", ["Als bezahlt markieren", "Stornieren"]],
-      ["confirmed", ["Stornieren"]],
-      ["rejected", ["Wiederherstellen"]],
-      ["cancelled", ["Wiederherstellen"]],
-    ])("offers at %s exactly %j", (status, labels) => {
-      const wrapper = mountDetails({ booking: booking({ status }) });
-      expect(actionLabels(wrapper)).toEqual(labels);
-    });
+      ["requested", "Freigeben", ["Ablehnen"]],
+      ["payment_due", "Als bezahlt markieren", ["Stornieren"]],
+      ["confirmed", null, ["Stornieren"]],
+      ["rejected", "Wiederherstellen", null],
+      ["cancelled", "Wiederherstellen", null],
+    ])(
+      "offers at %s the button %s and the menu %j",
+      async (status, button, menu) => {
+        const wrapper = mountDetails({ booking: booking({ status }) });
+        expect(await offeredActions(wrapper)).toEqual({ button, menu });
+      }
+    );
 
-    it("offers nothing to a reader without the update right", () => {
+    it("offers nothing to a reader without the update right", async () => {
       BookingPermissionService.allowUpdate.mockReturnValue(false);
       const wrapper = mountDetails();
-      expect(actionLabels(wrapper)).toEqual([]);
+      expect(await offeredActions(wrapper)).toEqual({
+        button: null,
+        menu: null,
+      });
     });
 
     it("hands a single booking to the transition module", async () => {
       const wrapper = mountDetails();
       const start = spyOnStart(wrapper);
 
-      await actionButton(wrapper, "Freigeben").trigger("click");
+      await primaryButton(wrapper).trigger("click");
 
       expect(start).toHaveBeenCalledWith("confirm", { booking: booking() });
     });
@@ -217,7 +310,7 @@ describe("BookingDetails", () => {
       const wrapper = mountDetails({ booking: members[0], groupBooking });
       const start = spyOnStart(wrapper);
 
-      await actionButton(wrapper, "Stornieren").trigger("click");
+      await clickMenuEntry(wrapper, "Stornieren");
 
       expect(start).toHaveBeenCalledWith("cancel", {
         booking: members[0],
@@ -233,7 +326,7 @@ describe("BookingDetails", () => {
       });
       const start = spyOnStart(wrapper);
 
-      await actionButton(wrapper, "Wiederherstellen").trigger("click");
+      await primaryButton(wrapper).trigger("click");
 
       expect(start).toHaveBeenCalledWith("reinstate", {
         booking: booking({ status: "rejected" }),

@@ -23,13 +23,20 @@
           Gruppenbuchung haben.
         </v-alert>
 
-        <BookingStatusBar
+        <BookingStatusPath
           class="mb-6"
           :status="booking.status"
-          :booking="booking"
+          :path="path"
           :actions="actions"
           @action="transition"
-        />
+        >
+          <template v-if="path.end && path.end.reason" #reason>
+            <div class="text-caption font-weight-bold error--text">
+              {{ $t(`booking.edit.reason.${path.end.status}`) }}
+            </div>
+            <div class="text-body-2">{{ path.end.reason }}</div>
+          </template>
+        </BookingStatusPath>
 
         <v-card class="mb-6 section-card" elevation="2" outlined>
           <v-card-title
@@ -395,21 +402,6 @@
                           </v-list-item>
                         </v-list>
                       </v-menu>
-                    </div>
-                  </div>
-                </v-alert>
-              </v-col>
-            </v-row>
-            <v-row
-              v-if="isRejectedOrCancelled(booking) && booking.rejectionReason"
-            >
-              <v-col cols="12">
-                <v-alert type="error" dense outlined border="left" class="mb-0">
-                  <div class="d-flex align-center">
-                    <v-icon class="mr-2">mdi-alert-circle</v-icon>
-                    <div>
-                      <div class="font-weight-bold">Ablehnungsgrund</div>
-                      <div>{{ booking.rejectionReason }}</div>
                     </div>
                   </div>
                 </v-alert>
@@ -901,11 +893,12 @@ import {
   BOOKING_STATUS,
   groupBookingStatus,
   isRejectedOrCancelled,
+  pathOf,
   transitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
 import BookingAccessPoints from "@/components/Booking/BookingAccessPoints.vue";
-import BookingStatusBar from "@/components/Booking/BookingStatusBar.vue";
+import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import CancellationReceiptsCard from "@/components/Booking/CancellationReceiptsCard.vue";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
@@ -917,17 +910,17 @@ import {
 
 /**
  * The detail drawer is the third host of `BookingTransitions` (spec E3):
- * it shows the state as one chip and one button per transition the state
- * allows, hands the action to the mounted module, and asks its host to
- * reload the booking (`update`) after a transition - and after a refused
- * one that says the screen is stale (spec E5).
+ * it shows the state as a headline over its path (spec N3, N4) with the
+ * state's transitions, hands the action to the mounted module, and asks
+ * its host to reload the booking (`update`) after a transition - and after
+ * a refused one that says the screen is stale (spec E5).
  */
 export default {
   name: "BookingDetails",
   components: {
     BookableTypeChip,
     BookingAccessPoints,
-    BookingStatusBar,
+    BookingStatusPath,
     BookingTransitions,
     CancellationReceiptsCard,
     CancellationRefundAudit,
@@ -1024,6 +1017,10 @@ export default {
     userCancellable() {
       return this.booking?.cancellationPolicy?.userCancellable !== false;
     },
+    /** The state read as a path (spec N2): the segments, and the cut with its reason. */
+    path() {
+      return pathOf(this.booking);
+    },
     /** The transitions the state allows, for whoever may edit the booking. */
     actions() {
       if (!BookingPermissionService.allowUpdate(this.booking)) {
@@ -1065,7 +1062,6 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
-    isRejectedOrCancelled,
     isPaymentPending(booking) {
       return booking.status === BOOKING_STATUS.PAYMENT_DUE;
     },
