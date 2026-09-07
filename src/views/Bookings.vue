@@ -56,27 +56,29 @@
         <template v-slot:prepend-inner>
           <v-menu
             bottom
-            left
+            right
             offset-y
             nudge-bottom="8"
-            max-width="320"
-            content-class="booking-type-filter-menu"
+            min-width="340"
+            max-width="340"
+            :close-on-content-click="false"
+            content-class="booking-filter-menu"
           >
             <template v-slot:activator="{ on, attrs }">
               <v-badge
-                :value="hasActiveBookingTypeFilter"
+                :value="activeFilterCount > 0"
+                :content="activeFilterCount"
                 color="primary"
-                dot
                 overlap
+                class="booking-filter-trigger-badge"
               >
                 <v-btn
                   icon
                   v-bind="attrs"
                   v-on="on"
-                  class="booking-type-filter-trigger"
+                  class="booking-filter-trigger"
                   :class="{
-                    'booking-type-filter-trigger--active':
-                      hasActiveBookingTypeFilter,
+                    'booking-filter-trigger--active': activeFilterCount > 0,
                   }"
                   @click.stop
                 >
@@ -85,95 +87,13 @@
               </v-badge>
             </template>
 
-            <v-card class="booking-type-filter-card" elevation="8" rounded="lg">
-              <div class="booking-type-filter-card__header">
-                <div class="d-flex align-center">
-                  <div class="booking-type-filter-card__header-icon mr-3">
-                    <v-icon color="primary" small>mdi-tune-variant</v-icon>
-                  </div>
-                  <div>
-                    <div class="text-subtitle-2 font-weight-bold line-height-tight">
-                      Buchungstyp
-                    </div>
-                    <div class="text-caption grey--text">
-                      Ansicht einschränken
-                    </div>
-                  </div>
-                </div>
-                <v-btn
-                  v-if="hasActiveBookingTypeFilter"
-                  text
-                  x-small
-                  color="primary"
-                  class="px-2"
-                  @click="bookingTypeFilter = 'all'"
-                >
-                  Zurücksetzen
-                </v-btn>
-              </div>
-
-              <v-divider />
-
-              <div class="booking-type-filter-card__options">
-                <button
-                  v-for="option in bookingTypeFilterOptions"
-                  :key="option.value"
-                  type="button"
-                  class="booking-type-filter-option"
-                  :class="{
-                    'booking-type-filter-option--active':
-                      bookingTypeFilter === option.value,
-                  }"
-                  @click="bookingTypeFilter = option.value"
-                >
-                  <div
-                    class="booking-type-filter-option__icon"
-                    :class="`booking-type-filter-option__icon--${option.value}`"
-                  >
-                    <v-icon small>{{ option.icon }}</v-icon>
-                  </div>
-                  <div class="booking-type-filter-option__content">
-                    <span class="booking-type-filter-option__title">{{
-                      option.text
-                    }}</span>
-                    <span class="booking-type-filter-option__desc">{{
-                      option.description
-                    }}</span>
-                  </div>
-                  <v-icon
-                    v-if="bookingTypeFilter === option.value"
-                    small
-                    color="primary"
-                    class="booking-type-filter-option__check"
-                  >
-                    mdi-check-circle
-                  </v-icon>
-                </button>
-              </div>
-            </v-card>
+            <BookingFilterCard
+              :booking-type-filter.sync="bookingTypeFilter"
+              :status-filter.sync="statusFilter"
+              :active-count="activeFilterCount"
+              @reset="resetFilters"
+            />
           </v-menu>
-        </template>
-        <template v-slot:append-outer>
-          <v-select
-            v-model="statusFilter"
-            :items="statusFilterOptions"
-            :label="$t('booking.filter.status')"
-            multiple
-            solo
-            hide-details
-            class="status-filter"
-          >
-            <template v-slot:selection="{ item }">
-              <v-chip
-                small
-                :color="item.color"
-                text-color="white"
-                class="my-1 mr-1"
-              >
-                {{ item.text }}
-              </v-chip>
-            </template>
-          </v-select>
         </template>
       </v-text-field>
     </div>
@@ -300,17 +220,16 @@ import ToastService from "@/services/ToastService";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
+import BookingFilterCard from "@/components/Booking/BookingFilterCard.vue";
 import {
-  BOOKING_STATUS,
   allowsAction,
   filterBookingsByStatus,
-  statusColor,
-  statusLabel,
   transitionTarget,
 } from "@/utils/bookingStatus";
 
 export default {
   components: {
+    BookingFilterCard,
     BookingExportButton,
     ProcessingIndicator,
     GroupBookingDeleteConformationDialog,
@@ -330,29 +249,9 @@ export default {
       value: "",
       searchTerm: "",
       bookingTypeFilter: "all",
-      // The list's status filter (spec E11): all five states to begin with,
-      // plain component state - nothing persists it.
-      statusFilter: Object.values(BOOKING_STATUS),
-      bookingTypeFilterOptions: [
-        {
-          value: "all",
-          text: "Alle Buchungen",
-          description: "Einzel- und Serienbuchungen",
-          icon: "mdi-view-grid-outline",
-        },
-        {
-          value: "single",
-          text: "Einzelbuchungen",
-          description: "Ohne Serienzuordnung",
-          icon: "mdi-calendar-check-outline",
-        },
-        {
-          value: "series",
-          text: "Serienbuchungen",
-          description: "Teil einer Buchungsserie",
-          icon: "mdi-calendar-multiple",
-        },
-      ],
+      // The list's status filter (spec E11, N1): nothing selected means no
+      // filter; plain component state - nothing persists it.
+      statusFilter: [],
       api: {
         users: [],
         bookings: [],
@@ -392,15 +291,11 @@ export default {
     BookingPermissionService() {
       return BookingPermissionService;
     },
-    hasActiveBookingTypeFilter() {
-      return this.bookingTypeFilter !== "all";
-    },
-    statusFilterOptions() {
-      return Object.values(BOOKING_STATUS).map((status) => ({
-        value: status,
-        text: statusLabel(status),
-        color: statusColor(status),
-      }));
+    /** One restriction for a type other than "all", one per selected state. */
+    activeFilterCount() {
+      return (
+        (this.bookingTypeFilter !== "all" ? 1 : 0) + this.statusFilter.length
+      );
     },
     isSelectedBookingHardDeleteBlocked() {
       return !allowsAction(this.selectedBooking, "delete");
@@ -469,6 +364,9 @@ export default {
      * `filteredBookings` - its columns are workflow states, not booking states.
      */
     statusFilteredBookings() {
+      if (this.statusFilter.length === 0) {
+        return this.filteredBookings;
+      }
       return filterBookingsByStatus(this.filteredBookings, this.statusFilter);
     },
   },
@@ -491,6 +389,10 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+    resetFilters() {
+      this.bookingTypeFilter = "all";
+      this.statusFilter = [];
+    },
     applyBookingTypeFilter(bookings) {
       if (this.bookingTypeFilter === "single") {
         return bookings.filter((booking) => !booking.groupBooking);
@@ -869,162 +771,12 @@ export default {
   border-radius: 15px;
 }
 
-.status-filter {
-  width: 28rem;
-}
+/* The tint rides on the button's own overlay: Vuetify's `::before` is `currentColor`. */
+.booking-filter-trigger--active {
+  color: var(--v-primary-base) !important;
 
-.booking-type-filter-trigger--active {
-  background: rgba(var(--v-primary-base), 0.12) !important;
-
-  .v-icon {
-    color: var(--v-primary-base) !important;
-  }
-}
-
-.booking-type-filter-card {
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.booking-type-filter-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px 12px;
-  background: linear-gradient(
-    135deg,
-    rgba(var(--v-primary-base), 0.06) 0%,
-    rgba(var(--v-primary-base), 0.02) 100%
-  );
-}
-
-.booking-type-filter-card__header-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: rgba(var(--v-primary-base), 0.12);
-}
-
-.line-height-tight {
-  line-height: 1.25;
-}
-
-.booking-type-filter-card__options {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-}
-
-.booking-type-filter-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid transparent;
-  border-radius: 12px;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.04);
-    transform: translateX(2px);
-  }
-
-  &--active {
-    background: rgba(var(--v-primary-base), 0.08);
-    border-color: rgba(var(--v-primary-base), 0.35);
-    box-shadow: 0 2px 8px rgba(var(--v-primary-base), 0.12);
-
-    .booking-type-filter-option__title {
-      color: var(--v-primary-base);
-      font-weight: 600;
-    }
-  }
-}
-
-.booking-type-filter-option__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  transition: transform 0.2s ease;
-
-  .booking-type-filter-option--active & {
-    transform: scale(1.05);
-  }
-
-  &--all {
-    background: transparent;
-    color: #607d8b;
-  }
-
-  &--single {
-    background: transparent;
-    color: #2196f3;
-  }
-
-  &--series {
-    background: rgba(var(--v-primary-base), 0.16);
-    color: var(--v-primary-base);
-  }
-}
-
-.booking-type-filter-option__content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.booking-type-filter-option__title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.3;
-  color: rgba(0, 0, 0, 0.87);
-}
-
-.booking-type-filter-option__desc {
-  font-size: 0.75rem;
-  line-height: 1.3;
-  color: rgba(0, 0, 0, 0.54);
-  margin-top: 2px;
-}
-
-.booking-type-filter-option__check {
-  flex-shrink: 0;
-}
-
-.theme--dark {
-  .booking-type-filter-card {
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-
-  .booking-type-filter-option {
-    &:hover {
-      background: rgba(255, 255, 255, 0.06);
-    }
-
-    &--active {
-      background: rgba(var(--v-primary-base), 0.15);
-    }
-  }
-
-  .booking-type-filter-option__title {
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .booking-type-filter-option__desc {
-    color: rgba(255, 255, 255, 0.55);
+  &::before {
+    opacity: 0.12;
   }
 }
 
@@ -1060,7 +812,7 @@ body {
 </style>
 
 <style lang="scss">
-.booking-type-filter-menu {
+.booking-filter-menu {
   border-radius: 14px !important;
   overflow: hidden;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14) !important;

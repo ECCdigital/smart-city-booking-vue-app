@@ -61,14 +61,6 @@ const OK = { success: true, data: null, errors: [] };
 const CONFLICT_IN_CONFIRMED =
   "Die Buchung ist inzwischen in einem anderen Zustand (Bestätigt).";
 const GONE = "Die Buchung existiert nicht mehr.";
-/** The five state words in the order the filter lists them. */
-const STATUS_LABELS = [
-  "Angefragt",
-  "Zahlung offen",
-  "Bestätigt",
-  "Abgelehnt",
-  "Storniert",
-];
 
 function booking(overrides = {}) {
   return {
@@ -155,27 +147,81 @@ function bookingIdsOf(wrapper, componentName) {
     .map((item) => item.id);
 }
 
-/** The state words the status filter currently shows as selected. */
-function selectedStatusLabels(wrapper) {
-  return wrapper
-    .findAll(".status-filter .v-chip")
-    .wrappers.map((chip) => chip.text().trim());
+/** The filter card behind the funnel, once the menu is open (it detaches into `data-app`). */
+function filterCard() {
+  return document.querySelector(".v-menu__content .booking-filter-card");
 }
 
-/** Opens the status filter and clicks the entry with `label`, toggling it. */
-async function toggleStatusFilter(wrapper, label) {
-  await wrapper.find(".status-filter .v-input__slot").trigger("click");
+/** Opens the filter card behind the funnel beside the search field. */
+async function openFilterCard(wrapper) {
+  await wrapper.find(".booking-filter-trigger").trigger("click");
   await wrapper.vm.$nextTick();
-  Array.from(document.querySelectorAll(".v-select-list .v-list-item"))
-    .find(
-      (el) =>
-        el.querySelector(".v-list-item__title")?.textContent.trim() === label
-    )
+  return filterCard();
+}
+
+/** The number on the funnel's badge, or `null` while nothing is restricted. */
+function funnelBadge(wrapper) {
+  const badge = wrapper.find(".booking-filter-trigger-badge .v-badge__badge");
+  return badge.exists() && badge.isVisible() ? badge.text().trim() : null;
+}
+
+/** Clicks the status row with `label` in the open card, toggling it. */
+async function toggleStatus(wrapper, label) {
+  Array.from(filterCard().querySelectorAll(".booking-filter-row"))
+    .find((el) => el.textContent.trim() === label)
     .click();
   await wrapper.vm.$nextTick();
-  // Close the menu again so the next toggle opens a fresh one.
-  await wrapper.find(".status-filter .v-input__slot").trigger("click");
+}
+
+/** The state words whose row the open card shows as selected. */
+function selectedStatusLabels() {
+  return Array.from(
+    filterCard().querySelectorAll(".booking-filter-row[aria-pressed='true']")
+  ).map((el) => el.textContent.trim());
+}
+
+/** Clicks the segment with `label` (Alle / Einzel / Serie) in the open card. */
+async function chooseType(wrapper, label) {
+  Array.from(filterCard().querySelectorAll(".booking-filter-types .v-btn"))
+    .find((el) => el.textContent.trim() === label)
+    .click();
   await wrapper.vm.$nextTick();
+}
+
+/** Clicks the button with `label` in the open card (the resets). */
+async function clickCardButton(wrapper, label) {
+  Array.from(filterCard().querySelectorAll("button"))
+    .find((el) => el.textContent.trim() === label)
+    .click();
+  await wrapper.vm.$nextTick();
+}
+
+/** The segment (Alle / Einzel / Serie) the open card shows as chosen. */
+function selectedType() {
+  return filterCard()
+    .querySelector(".booking-filter-types .v-btn--active")
+    .textContent.trim();
+}
+
+/**
+ * Whether the filter menu is open. Vuetify shows and hides the menu's
+ * content two animation frames after `isActive` changes, so this waits for
+ * those frames and a render before reading the content's visibility.
+ */
+async function filterMenuIsOpen(wrapper) {
+  for (let frame = 0; frame < 2; frame += 1) {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  }
+  await wrapper.vm.$nextTick();
+  const content = filterCard()?.closest(".v-menu__content");
+  return !!content && content.style.display !== "none";
+}
+
+/** The labels of the reset buttons the open card shows. */
+function resetButtons() {
+  return Array.from(filterCard().querySelectorAll("button"))
+    .map((el) => el.textContent.trim())
+    .filter((text) => /zurücksetzen/i.test(text));
 }
 
 /** Switches the view through the toggle in the page header. */
@@ -231,18 +277,23 @@ describe("Bookings", () => {
   });
 
   /**
-   * The status filter (spec E11): a multi-select over the five states, all
-   * selected by default, narrowing the table and the calendar - not the
-   * kanban, whose columns are workflow states. Plain component state, no
+   * The filter card behind the funnel (spec E11, N1): the booking type as a
+   * segment switch and the five states as a checkbox list, narrowing the
+   * table and the calendar - not the kanban, whose columns are workflow
+   * states. Nothing selected means no filter; plain component state, no
    * persistence.
    */
   describe("the status filter", () => {
-    it("has all five states selected by default and the table shows every booking", async () => {
+    it("starts with nothing selected and the table shows every booking", async () => {
       const { wrapper } = await mountBookings({
         bookings: bookingsInEveryState(),
       });
 
-      expect(selectedStatusLabels(wrapper)).toEqual(STATUS_LABELS);
+      const card = await openFilterCard(wrapper);
+
+      expect(funnelBadge(wrapper)).toBeNull();
+      expect(card.textContent).toContain("Keine Einschränkung");
+      expect(selectedStatusLabels()).toEqual([]);
       expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([
         "bk-requested",
         "bk-payment_due",
@@ -252,17 +303,18 @@ describe("Bookings", () => {
       ]);
     });
 
-    it("drops the bookings of a deselected state from the table", async () => {
+    it("keeps only the bookings of the selected states in the table", async () => {
       const { wrapper } = await mountBookings({
         bookings: bookingsInEveryState(),
       });
 
-      await toggleStatusFilter(wrapper, "Storniert");
-      await toggleStatusFilter(wrapper, "Abgelehnt");
+      await openFilterCard(wrapper);
+      await toggleStatus(wrapper, "Angefragt");
+      await toggleStatus(wrapper, "Bestätigt");
 
+      expect(selectedStatusLabels()).toEqual(["Angefragt", "Bestätigt"]);
       expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([
         "bk-requested",
-        "bk-payment_due",
         "bk-confirmed",
       ]);
     });
@@ -272,13 +324,11 @@ describe("Bookings", () => {
         bookings: bookingsInEveryState(),
       });
 
-      await toggleStatusFilter(wrapper, "Angefragt");
+      await openFilterCard(wrapper);
+      await toggleStatus(wrapper, "Storniert");
       await switchView(wrapper, "Kalender");
 
       expect(bookingIdsOf(wrapper, "BookingOverviewCalendar")).toEqual([
-        "bk-payment_due",
-        "bk-confirmed",
-        "bk-rejected",
         "bk-cancelled",
       ]);
     });
@@ -294,7 +344,8 @@ describe("Bookings", () => {
         },
       });
 
-      await toggleStatusFilter(wrapper, "Angefragt");
+      await openFilterCard(wrapper);
+      await toggleStatus(wrapper, "Angefragt");
       await switchView(wrapper, "Kanban");
 
       expect(bookingIdsOf(wrapper, "BookingWorkflow")).toEqual([
@@ -306,17 +357,80 @@ describe("Bookings", () => {
       ]);
     });
 
-    it("shows nothing once every state is deselected", async () => {
+    it("counts the restrictions on the funnel and in the card's subtitle", async () => {
       const { wrapper } = await mountBookings({
         bookings: bookingsInEveryState(),
       });
 
-      for (const label of STATUS_LABELS) {
-        await toggleStatusFilter(wrapper, label);
-      }
+      const card = await openFilterCard(wrapper);
+      await chooseType(wrapper, "Einzel");
 
-      expect(selectedStatusLabels(wrapper)).toEqual([]);
-      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([]);
+      expect(funnelBadge(wrapper)).toBe("1");
+      expect(card.textContent).toContain("1 Einschränkung aktiv");
+
+      await toggleStatus(wrapper, "Angefragt");
+      await toggleStatus(wrapper, "Bestätigt");
+
+      expect(funnelBadge(wrapper)).toBe("3");
+      expect(card.textContent).toContain("3 Einschränkungen aktiv");
+    });
+
+    it("offers a reset per section only while that section restricts", async () => {
+      const { wrapper } = await mountBookings({
+        bookings: bookingsInEveryState(),
+      });
+
+      await openFilterCard(wrapper);
+      expect(resetButtons()).toEqual([]);
+
+      await chooseType(wrapper, "Serie");
+      await toggleStatus(wrapper, "Abgelehnt");
+      expect(resetButtons()).toEqual([
+        "Alle zurücksetzen",
+        "zurücksetzen",
+        "zurücksetzen",
+      ]);
+
+      // The type section's reset comes first in the card.
+      await clickCardButton(wrapper, "zurücksetzen");
+      expect(selectedType()).toBe("Alle");
+      expect(selectedStatusLabels()).toEqual(["Abgelehnt"]);
+      expect(resetButtons()).toEqual(["Alle zurücksetzen", "zurücksetzen"]);
+
+      await clickCardButton(wrapper, "zurücksetzen");
+      expect(selectedStatusLabels()).toEqual([]);
+      expect(resetButtons()).toEqual([]);
+      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(5);
+    });
+
+    it("resets type and status together with Alle zurücksetzen", async () => {
+      const { wrapper } = await mountBookings({
+        bookings: bookingsInEveryState(),
+      });
+
+      await openFilterCard(wrapper);
+      await chooseType(wrapper, "Einzel");
+      await toggleStatus(wrapper, "Storniert");
+      await clickCardButton(wrapper, "Alle zurücksetzen");
+
+      expect(selectedType()).toBe("Alle");
+      expect(selectedStatusLabels()).toEqual([]);
+      expect(funnelBadge(wrapper)).toBeNull();
+      expect(bookingIdsOf(wrapper, "BookingTable")).toHaveLength(5);
+    });
+
+    it("stays open while toggling", async () => {
+      const { wrapper } = await mountBookings({
+        bookings: bookingsInEveryState(),
+      });
+
+      await openFilterCard(wrapper);
+      expect(await filterMenuIsOpen(wrapper)).toBe(true);
+
+      await toggleStatus(wrapper, "Angefragt");
+      await chooseType(wrapper, "Einzel");
+
+      expect(await filterMenuIsOpen(wrapper)).toBe(true);
     });
   });
 
