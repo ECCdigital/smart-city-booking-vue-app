@@ -18,7 +18,7 @@ vi.mock("@/services/api/ApiBookingService", () => ({
 vi.mock("@/components/AccessPoint/AccessPointEditDialog.vue", () => ({
   default: {
     name: "AccessPointEditDialog",
-    props: ["open", "accessPoint", "accessPoints", "providers", "source"],
+    props: ["open", "accessPoint", "accessPoints", "providers"],
     render: () => null,
   },
 }));
@@ -236,31 +236,25 @@ describe("AccessPointManagement", () => {
   });
 
   /**
-   * Two buttons, one dialog: a door is entered by hand, a locker system is
-   * taken over from the provider listing.
+   * One button, one dialog: where the access point comes from - the
+   * provider's listing or the admin's hand - is chosen inside the dialog, not
+   * by the button that opened it.
    */
-  describe("the two ways into the dialog", () => {
-    it("opens the dialog for a hand-entered door", async () => {
+  describe("one button opens the dialog", () => {
+    it("opens the dialog in create mode", async () => {
       ApiAccessPointService.getAccessPoints.mockResolvedValue({ data: [] });
 
       const wrapper = await mountManagement();
-      await wrapper.find(".create-door").trigger("click");
+      expect(wrapper.find(".create-door").exists()).toBe(false);
+      expect(wrapper.find(".create-from-provider").exists()).toBe(false);
+
+      const button = wrapper.find(".create-access-point");
+      expect(button.text()).toContain("Zugangspunkt anlegen");
+      await button.trigger("click");
 
       const dialog = wrapper.findComponent({ name: "AccessPointEditDialog" });
       expect(dialog.props("open")).toBe(true);
       expect(dialog.props("accessPoint")).toBe(null);
-      expect(dialog.props("source")).toBe("manual");
-    });
-
-    it("opens the same dialog on the provider picker", async () => {
-      ApiAccessPointService.getAccessPoints.mockResolvedValue({ data: [] });
-
-      const wrapper = await mountManagement();
-      await wrapper.find(".create-from-provider").trigger("click");
-
-      const dialog = wrapper.findComponent({ name: "AccessPointEditDialog" });
-      expect(dialog.props("open")).toBe(true);
-      expect(dialog.props("source")).toBe("provider");
     });
   });
 

@@ -129,7 +129,7 @@ describe("AccessPointEditDialog", () => {
   });
 
   it("lets the type follow the provider that is typed in", async () => {
-    const wrapper = await mountDialog({ source: "manual" });
+    const wrapper = await mountDialog({ providers: [] });
 
     expect(wrapper.find(".access-point-type").text()).toContain("Tür");
 
@@ -143,25 +143,117 @@ describe("AccessPointEditDialog", () => {
   });
 
   /**
-   * Two buttons over the table open this one dialog in two states: a door is
-   * entered by hand, a locker system is taken over from the provider - which
-   * is the same picker mechanism the door creation already had.
+   * One button opens this dialog, and the way in is chosen at its top: taken
+   * over from the provider's listing, or entered by hand. The switch is only
+   * there while a provider is active - without one, the dialog is the door
+   * form and nothing else, no hint included.
    */
-  it("opens without the provider picker when a door is entered by hand", async () => {
-    const wrapper = await mountDialog({ source: "manual" });
+  describe("the way in: from the provider or by hand", () => {
+    it("offers the switch with a provider active, preset to the provider", async () => {
+      const wrapper = await mountDialog();
 
-    expect(wrapper.find(".provider-picker").exists()).toBe(false);
-    expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
-  });
+      expect(dialogText(wrapper)).toContain("Zugangspunkt anlegen");
+      expect(wrapper.find(".create-mode-toggle").exists()).toBe(true);
+      expect(wrapper.find(".create-mode-provider").classes()).toContain(
+        "v-item--active"
+      );
+      expect(wrapper.find(".create-mode-manual").classes()).not.toContain(
+        "v-item--active"
+      );
+      expect(dialogText(wrapper)).toContain("Vom Anbieter übernehmen");
+      expect(dialogText(wrapper)).toContain("Manuell anlegen");
+      expect(dialogText(wrapper)).toContain(
+        "Der Anbieter listet seine Türen und Anlagen"
+      );
+      expect(wrapper.find(".provider-picker").exists()).toBe(true);
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "nuki"
+      );
+    });
 
-  it("opens with the provider picker when taking one over", async () => {
-    const wrapper = await mountDialog({ source: "provider" });
+    it("is the door form without a switch or a hint when no provider is active", async () => {
+      const wrapper = await mountDialog({ providers: [] });
 
-    expect(wrapper.find(".provider-picker").exists()).toBe(true);
-    expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
-      "t1",
-      "nuki"
-    );
+      expect(dialogText(wrapper)).toContain("Zugangspunkt anlegen");
+      expect(wrapper.find(".create-mode-toggle").exists()).toBe(false);
+      expect(wrapper.find(".provider-picker").exists()).toBe(false);
+      expect(dialogText(wrapper)).not.toContain("kein Anbieter aktiv");
+      expect(labels(wrapper)).toContain("Modus");
+      expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+    });
+
+    it("hides only the picker row on 'Manuell' and keeps what was entered", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [{ id: "lock-9", externalId: "lock-9", label: "Seitentür" }],
+      });
+      const wrapper = await mountDialog();
+      wrapper.findComponent({ ref: "lockSelect" }).vm.$emit("input", "lock-9");
+      await wrapper.find(".label-field input").setValue("Hintereingang");
+
+      await wrapper.find(".create-mode-manual").trigger("click");
+      await wrapper.vm.$nextTick();
+      expect(wrapper.find(".create-mode-manual").classes()).toContain(
+        "v-item--active"
+      );
+      expect(wrapper.find(".provider-picker").exists()).toBe(false);
+      expect(dialogText(wrapper)).toContain("Eine Tür von Hand eintragen");
+      expect(wrapper.find(".label-field input").element.value).toBe(
+        "Hintereingang"
+      );
+
+      await wrapper.find(".create-mode-provider").trigger("click");
+      expect(wrapper.find(".provider-picker").exists()).toBe(true);
+      expect(wrapper.find(".label-field input").element.value).toBe(
+        "Hintereingang"
+      );
+      // The provider and the lock picked before stay picked - the list is
+      // not fetched anew.
+      expect(wrapper.findComponent({ ref: "lockSelect" }).props("value")).toBe(
+        "lock-9"
+      );
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledTimes(1);
+    });
+
+    /**
+     * The provider list may still be loading while the dialog opens: it then
+     * turns to the provider once the list arrives, as long as nothing has
+     * been typed yet.
+     */
+    it("turns to the provider once the list arrives on an empty form", async () => {
+      const wrapper = await mountDialog({ providers: [] });
+      expect(wrapper.find(".create-mode-toggle").exists()).toBe(false);
+
+      await wrapper.setProps({ providers: PROVIDERS });
+      await flushPromises();
+
+      expect(wrapper.find(".create-mode-toggle").exists()).toBe(true);
+      expect(wrapper.find(".provider-picker").exists()).toBe(true);
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "nuki"
+      );
+    });
+
+    it("stays on the hand-entered door when the list arrives after typing", async () => {
+      const wrapper = await mountDialog({ providers: [] });
+      await wrapper.find(".label-field input").setValue("Hintereingang");
+
+      await wrapper.setProps({ providers: PROVIDERS });
+      await flushPromises();
+
+      expect(wrapper.find(".create-mode-toggle").exists()).toBe(true);
+      expect(wrapper.find(".provider-picker").exists()).toBe(false);
+      expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+    });
+
+    it("shows no switch when editing", async () => {
+      const wrapper = await mountDialog({ accessPoint: DOOR });
+
+      expect(dialogText(wrapper)).toContain("Zugangspunkt bearbeiten");
+      expect(wrapper.find(".create-mode-toggle").exists()).toBe(false);
+      expect(wrapper.find(".provider-picker").exists()).toBe(false);
+    });
   });
 
   /**
@@ -174,7 +266,6 @@ describe("AccessPointEditDialog", () => {
     ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
 
     const wrapper = await mountDialog({
-      source: "manual",
       accessPoint: { ...LOCKER, mode: "both" },
     });
 
@@ -202,7 +293,6 @@ describe("AccessPointEditDialog", () => {
     });
 
     const wrapper = await mountDialog({
-      source: "provider",
       providers: [{ id: "ifbs", title: "Parkraumservice" }],
     });
 

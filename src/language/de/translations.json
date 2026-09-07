@@ -1139,8 +1139,7 @@
         "lock": "Zugangspunkt",
         "apply": "Übernehmen",
         "alreadyCreated": "bereits angelegt",
-        "hint": "Der Anbieter sagt, ob es eine Tür oder eine Schließfachanlage ist. Die übernommenen Angaben lassen sich anschließend frei ändern.",
-        "noProvider": "Es ist kein Anbieter aktiv. Aktivieren Sie zuerst unter „Schließsysteme“ einen Anbieter, oder legen Sie eine Tür manuell an."
+        "hint": "Der Anbieter sagt, ob es eine Tür oder eine Schließfachanlage ist. Die übernommenen Angaben lassen sich anschließend frei ändern."
       },
       "ruleTypes": {
         "qrScan": "QR-Scan erforderlich"
@@ -1204,8 +1203,15 @@
       },
       "dialog": {
         "editTitle": "Zugangspunkt bearbeiten",
-        "createDoorTitle": "Tür anlegen",
-        "createFromProviderTitle": "Zugangspunkt aus Anbieter übernehmen"
+        "createTitle": "Zugangspunkt anlegen",
+        "modes": {
+          "provider": "Vom Anbieter übernehmen",
+          "manual": "Manuell anlegen"
+        },
+        "modeHints": {
+          "provider": "Der Anbieter listet seine Türen und Anlagen; das Formular füllt sich aus der Liste.",
+          "manual": "Eine Tür von Hand eintragen. Eine Schließfachanlage kommt immer vom Anbieter."
+        }
       },
       "errors": {
         "generic": "Die Aktion konnte nicht ausgeführt werden.",
@@ -1250,8 +1256,7 @@
       "hints": {
         "assignmentForbidden": "Die Spalte „Zuordnung“ kann nicht gefüllt werden – Sie haben keinen Zugriff auf Buchungsobjekte."
       },
-      "createDoor": "Tür anlegen",
-      "createFromProvider": "Aus Anbieter übernehmen"
+      "create": "Zugangspunkt anlegen"
     },
     "comingSoon": {
       "badge": "Bald verfügbar",
