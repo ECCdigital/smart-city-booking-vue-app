@@ -88,17 +88,31 @@ export function allowsAction(booking, action) {
 }
 
 /**
- * The verb for an action. A cancel is "Ablehnen" while the booking is only
- * requested and "Stornieren" once it has been confirmed - the one place the
- * wording depends on the state.
+ * The verb for an action under a key prefix. A cancel is "Ablehnen" while
+ * the booking is only requested and "Stornieren" once it has been
+ * confirmed - the one place the wording depends on the state.
  */
-export function actionLabel(action, status) {
+function verbOf(prefix, action, status) {
   if (action === BOOKING_ACTION.CANCEL) {
     return status === BOOKING_STATUS.REQUESTED
-      ? i18n.t("booking.action.reject")
-      : i18n.t("booking.action.cancel");
+      ? i18n.t(`${prefix}.reject`)
+      : i18n.t(`${prefix}.cancel`);
   }
-  return i18n.t(`booking.action.${action}`);
+  return i18n.t(`${prefix}.${action}`);
+}
+
+/** The verb for an action on one booking: Freigeben, Als bezahlt markieren, Ablehnen / Stornieren, Wiederherstellen. */
+export function actionLabel(action, status) {
+  return verbOf("booking.action", action, status);
+}
+
+/**
+ * The verb of a series-wide action, worded with "Serie" (spec N5): "Serie
+ * freigeben", "Serie als bezahlt markieren", "Serie ablehnen" / "Serie
+ * stornieren". The members' menus keep `actionLabel`.
+ */
+export function seriesActionLabel(action, status) {
+  return verbOf("group-booking.action", action, status);
 }
 
 /**
@@ -273,32 +287,35 @@ function presentation(status) {
   };
 }
 
-/**
- * The booking's state read as a path (spec N2): the main path Angefragt ->
- * Zahlung offen -> Bestätigt (without Zahlung offen for a free booking), each
- * step with a `STEP_STATE`, and for Abgelehnt / Storniert the point where the
- * path was cut - behind Angefragt, or behind `cancelledFrom` (behind Bestätigt
- * where that is unknown). Dates are raw: `timeCreated` at Angefragt,
- * `timePaid` at Bestätigt only while the booking is Bestätigt and priced
- * (glossary), `cancelledAt` at the end; a missing or zero timestamp is
- * `null`. The headline formats them.
- */
-export function pathOf(booking) {
-  const status = booking?.status;
-  const free = isFree(booking);
-  const mainPath = [
+function mainPathOf(free) {
+  return [
     BOOKING_STATUS.REQUESTED,
     ...(free ? [] : [BOOKING_STATUS.PAYMENT_DUE]),
     BOOKING_STATUS.CONFIRMED,
   ];
-  const terminal = isRejectedOrCancelled(booking);
+}
+
+/** The step a cancelled booking was cut behind: `cancelledFrom`, or Bestätigt where that is unknown. */
+function cancelledOriginOf(booking) {
+  return booking?.cancellationRefund?.cancelledFrom || BOOKING_STATUS.CONFIRMED;
+}
+
+/**
+ * The path itself, shared by a booking and a series: the main path with a
+ * `STEP_STATE` per step, cut behind Angefragt at Abgelehnt and behind
+ * `cancelledFrom` at Storniert. `dateOf(step)` and `end` carry the raw
+ * dates and the reason.
+ */
+function buildPath({ status, free, cancelledFrom, dateOf, end }) {
+  const mainPath = mainPathOf(free);
+  const terminal =
+    status === BOOKING_STATUS.REJECTED || status === BOOKING_STATUS.CANCELLED;
 
   let reachedFrom = status;
   if (status === BOOKING_STATUS.REJECTED) {
     reachedFrom = BOOKING_STATUS.REQUESTED;
   } else if (status === BOOKING_STATUS.CANCELLED) {
-    reachedFrom =
-      booking.cancellationRefund?.cancelledFrom || BOOKING_STATUS.CONFIRMED;
+    reachedFrom = cancelledFrom;
   }
   const reachedIndex = Math.max(0, mainPath.indexOf(reachedFrom));
 
@@ -315,28 +332,46 @@ export function pathOf(booking) {
       ...presentation(step),
       state,
       free: free && step === BOOKING_STATUS.CONFIRMED,
-      date: stepDate(step, booking, free),
+      date: dateOf(step),
     };
   });
 
-  let end = null;
-  if (terminal) {
-    end = {
-      ...presentation(status),
-      afterIndex: reachedIndex,
-      date: booking.cancellationRefund?.cancelledAt || null,
-      reason: booking.rejectionReason || null,
-    };
-  }
+  const cut = terminal
+    ? { ...presentation(status), afterIndex: reachedIndex, ...end }
+    : null;
 
   return {
     free,
     terminal,
     reachedIndex,
     steps,
-    end,
-    current: end || steps[reachedIndex],
+    end: cut,
+    current: cut || steps[reachedIndex],
   };
+}
+
+/**
+ * The booking's state read as a path (spec N2): the main path Angefragt ->
+ * Zahlung offen -> Bestätigt (without Zahlung offen for a free booking), each
+ * step with a `STEP_STATE`, and for Abgelehnt / Storniert the point where the
+ * path was cut - behind Angefragt, or behind `cancelledFrom` (behind Bestätigt
+ * where that is unknown). Dates are raw: `timeCreated` at Angefragt,
+ * `timePaid` at Bestätigt only while the booking is Bestätigt and priced
+ * (glossary), `cancelledAt` at the end; a missing or zero timestamp is
+ * `null`. The headline formats them.
+ */
+export function pathOf(booking) {
+  const free = isFree(booking);
+  return buildPath({
+    status: booking?.status,
+    free,
+    cancelledFrom: cancelledOriginOf(booking),
+    dateOf: (step) => stepDate(step, booking, free),
+    end: {
+      date: booking?.cancellationRefund?.cancelledAt || null,
+      reason: booking?.rejectionReason || null,
+    },
+  });
 }
 
 function stepDate(step, booking, free) {
@@ -351,6 +386,69 @@ function stepDate(step, booking, free) {
     return booking.timePaid || null;
   }
   return null;
+}
+
+/** The price of a series: its members' prices summed; a missing or unparsable one counts nothing. */
+export function totalPriceOf(members) {
+  return (Array.isArray(members) ? members : []).reduce(
+    (sum, member) => sum + (Number(member?.priceEur) || 0),
+    0
+  );
+}
+
+/**
+ * The series read as a booking (spec N5): the path from the total price
+ * (free where it is zero) at the members' shared state; `null` for a mixed
+ * series or one without members, which the headline draws without a path.
+ * Abgelehnt cuts behind Angefragt, Storniert behind the step every member
+ * reached - the lowest of their `cancelledFrom`s, a missing one read as
+ * Bestätigt. The only date is the series' own request; there is no paid and
+ * no cancellation date. The reason stands only where every member gives the
+ * same one - the rule after "Serie stornieren".
+ */
+export function seriesPathOf(groupBooking, members) {
+  const status = groupBookingStatus(members);
+  if (status == null || status === MIXED) {
+    return null;
+  }
+  const free = totalPriceOf(members) <= 0;
+  const mainPath = mainPathOf(free);
+
+  return buildPath({
+    status,
+    free,
+    cancelledFrom: members
+      .map(cancelledOriginOf)
+      .reduce((lowest, from) =>
+        mainPath.indexOf(from) < mainPath.indexOf(lowest) ? from : lowest
+      ),
+    dateOf: (step) =>
+      step === BOOKING_STATUS.REQUESTED
+        ? groupBooking?.timeCreated || null
+        : null,
+    end: { date: null, reason: sharedReason(members) },
+  });
+}
+
+function sharedReason(members) {
+  const [first, ...rest] = members.map(
+    (member) => member?.rejectionReason || null
+  );
+  return first && rest.every((reason) => reason === first) ? first : null;
+}
+
+/**
+ * A mixed series counted per state (spec N5), in the vocabulary's order and
+ * only the states with members: `{ status, label, color, icon, count }`.
+ */
+export function mixedCounts(members) {
+  const list = Array.isArray(members) ? members : [];
+  return Object.values(BOOKING_STATUS)
+    .map((status) => ({
+      ...presentation(status),
+      count: list.filter((member) => member?.status === status).length,
+    }))
+    .filter((entry) => entry.count > 0);
 }
 
 /**

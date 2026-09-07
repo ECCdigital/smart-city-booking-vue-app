@@ -600,7 +600,6 @@
       "cancelled": "Storniert",
       "mixed": "Gemischt",
       "free": "Kostenfrei",
-      "paidAt": "Bezahlt am {date}",
       "paidShort": "bezahlt"
     },
     "filter": {
@@ -765,7 +764,15 @@
     },
     "status": {
       "title": "Zustand der Serie",
-      "members": "Buchungen der Serie"
+      "members": "Buchungen der Serie",
+      "count": "{count} {state}",
+      "mixedHint": "Aktionen je Buchung in der Liste unten"
+    },
+    "action": {
+      "confirm": "Serie freigeben",
+      "pay": "Serie als bezahlt markieren",
+      "reject": "Serie ablehnen",
+      "cancel": "Serie stornieren"
     },
     "cancellationReceipt": {
       "reprint": {

@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import {
+  clickMenuEntry,
+  offeredActions,
+  primaryButton,
+} from "@tests/unit/support/statusPath";
+import {
   flushPromises,
   lifecycleError,
   serverError,
@@ -98,41 +103,6 @@ const RECEIPT = {
   title: "storno-1.pdf",
   timeCreated: 1_700_000_000_000,
 };
-
-function primaryButton(wrapper) {
-  return wrapper.find("button.booking-action-primary");
-}
-
-/** Opens the headline's side-way menu, if any, and reads its entries; the menu detaches into `data-app`. */
-async function menuEntries(wrapper) {
-  const activator = wrapper.find("button.booking-action-menu");
-  if (!activator.exists()) {
-    return null;
-  }
-  await activator.trigger("click");
-  await wrapper.vm.$nextTick();
-  return Array.from(
-    document.querySelectorAll(".v-menu__content .booking-action-secondary")
-  );
-}
-
-/** The headline's actions as the reader sees them: the button's word and the menu's words. */
-async function offeredActions(wrapper) {
-  const button = primaryButton(wrapper);
-  const entries = await menuEntries(wrapper);
-  return {
-    button: button.exists() ? button.text() : null,
-    menu: entries && entries.map((entry) => entry.textContent.trim()),
-  };
-}
-
-async function clickMenuEntry(wrapper, label) {
-  const entry = (await menuEntries(wrapper)).find(
-    (candidate) => candidate.textContent.trim() === label
-  );
-  entry.click();
-  await wrapper.vm.$nextTick();
-}
 
 function infoCard(wrapper) {
   return wrapper

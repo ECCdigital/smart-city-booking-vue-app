@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
+import {
+  clickMenuEntry,
+  offeredActions,
+  segments,
+} from "@tests/unit/support/statusPath";
 import { flushPromises, lifecycleError } from "@tests/unit/support/api";
 import toasts from "@/store/modules/toasts";
 
@@ -55,16 +60,33 @@ function member(overrides = {}) {
   };
 }
 
+const CREATED = new Date(2026, 2, 1, 9, 0).getTime();
+
+/** A series of members at `statuses`; a member given as an object carries its own fields. */
 function series(statuses) {
   const bookings = statuses.map((status, index) =>
-    member({ id: `bk-${index + 1}`, status })
+    member({
+      id: `bk-${index + 1}`,
+      ...(typeof status === "string" ? { status } : status),
+    })
   );
   return {
     id: "grp-1",
     tenantId: "tenant-1",
-    timeCreated: 1_700_000_000_000,
+    timeCreated: CREATED,
     bookingIds: bookings.map((b) => b.id),
     bookings,
+  };
+}
+
+function cancelledFrom(from, overrides = {}) {
+  return {
+    status: "cancelled",
+    cancellationRefund: {
+      cancelledFrom: from,
+      cancelledAt: new Date(2026, 2, 7, 8, 15).getTime(),
+    },
+    ...overrides,
   };
 }
 
@@ -82,10 +104,9 @@ function button(wrapper, label) {
     .wrappers.find((button) => button.text() === label);
 }
 
-function actionLabels(wrapper) {
-  return wrapper
-    .findAll("button.booking-action")
-    .wrappers.map((button) => button.text());
+function hint(wrapper) {
+  const line = wrapper.find(".booking-status-hint");
+  return line.exists() ? line.text() : null;
 }
 
 function toastMessages(wrapper) {
@@ -93,11 +114,13 @@ function toastMessages(wrapper) {
 }
 
 /**
- * The series drawer shows the series' derived state (spec E9) - the
- * members' shared state or Gemischt - offers a series-wide action only where
- * that state allows it, hands a member row's action to the same module, and
- * offers the aggregated cancellation receipt's reprint once every member is
- * cancelled (spec E8). There is no series-wide Wiederherstellen.
+ * The series drawer shows the series as a booking (spec E9, N5): the
+ * members' shared state as a headline over the series' path, or Gemischt
+ * with a count per state; it offers a series-wide action, worded with
+ * "Serie", only where the shared state allows it, hands a member row's
+ * action to the same module, and offers the aggregated cancellation
+ * receipt's reprint once every member is cancelled (spec E8). There is no
+ * series-wide Wiederherstellen.
  */
 describe("GroupBookingDetails", () => {
   beforeEach(() => {
@@ -107,40 +130,139 @@ describe("GroupBookingDetails", () => {
   });
 
   describe("the series' state", () => {
-    it("shows the members' shared state", () => {
+    it("shows the members' shared state in the headline, captioned as the series' state", () => {
       const wrapper = mountDetails(series(["confirmed", "confirmed"]));
-      expect(wrapper.find(".booking-status-chip").text()).toBe("Bestätigt");
+      expect(wrapper.find(".booking-status-label").text()).toBe(
+        "Zustand der Serie"
+      );
+      expect(wrapper.find(".booking-status-word").text()).toBe("Bestätigt");
     });
 
-    it("says Gemischt where the members disagree", () => {
-      const wrapper = mountDetails(series(["confirmed", "cancelled"]));
-      expect(wrapper.find(".booking-status-chip").text()).toBe("Gemischt");
+    it("draws the path from the total price, dated by the series' request only", () => {
+      const priced = mountDetails(
+        series([
+          { status: "confirmed", timePaid: 1_700_100_000_000 },
+          { status: "confirmed", timePaid: 1_700_100_000_000 },
+        ])
+      );
+      expect(segments(priced)).toEqual([
+        { label: "Angefragt", state: "done", date: "01.03.2026, 09:00" },
+        { label: "Zahlung offen", state: "done", date: null },
+        { label: "Bestätigt", state: "current", date: null },
+      ]);
+      expect(priced.find(".booking-status-free").exists()).toBe(false);
+
+      const free = mountDetails(
+        series([
+          { status: "requested", priceEur: 0 },
+          { status: "requested", priceEur: 0 },
+        ])
+      );
+      expect(segments(free).map((segment) => segment.label)).toEqual([
+        "Angefragt",
+        "Bestätigt",
+      ]);
+      expect(free.find(".booking-status-free").text()).toBe("Kostenfrei");
+    });
+
+    it("cuts a cancelled series behind the step every member reached, without a date", () => {
+      const wrapper = mountDetails(
+        series([cancelledFrom("payment_due"), cancelledFrom("confirmed")])
+      );
+      expect(wrapper.find(".booking-status-word").text()).toBe("Storniert");
+      expect(segments(wrapper)).toEqual([
+        { label: "Angefragt", state: "done", date: "01.03.2026, 09:00" },
+        { label: "Zahlung offen", state: "done", date: null },
+        { label: "Bestätigt", state: "void", date: null },
+        { label: "Storniert", state: "end", date: null },
+      ]);
+    });
+
+    it("shows the reason under the path only where every member gives the same one", () => {
+      const agreed = mountDetails(
+        series([
+          cancelledFrom("confirmed", { rejectionReason: "Krank" }),
+          cancelledFrom("confirmed", { rejectionReason: "Krank" }),
+        ])
+      );
+      const block = agreed.find(".booking-status-reason");
+      expect(block.text()).toContain("Stornierungsgrund");
+      expect(block.text()).toContain("Krank");
+
+      const differing = mountDetails(
+        series([
+          cancelledFrom("confirmed", { rejectionReason: "Krank" }),
+          cancelledFrom("confirmed", { rejectionReason: "Umzug" }),
+        ])
+      );
+      expect(differing.find(".booking-status-reason").exists()).toBe(false);
+    });
+
+    it("says Gemischt where the members disagree, counts them per state and points at the list", async () => {
+      const wrapper = mountDetails(
+        series(["confirmed", "requested", "confirmed", "cancelled"])
+      );
+
+      expect(wrapper.find(".booking-status-word").text()).toBe("Gemischt");
+      expect(
+        wrapper
+          .findAll(".series-status-count")
+          .wrappers.map((count) => count.text())
+      ).toEqual(["1 Angefragt", "2 Bestätigt", "1 Storniert"]);
+      expect(hint(wrapper)).toBe("Aktionen je Buchung in der Liste unten");
+      expect(wrapper.find(".booking-status-segment").exists()).toBe(false);
+      expect(await offeredActions(wrapper)).toEqual({
+        button: null,
+        menu: null,
+      });
     });
   });
 
   describe("the series' actions", () => {
     it.each([
-      [
-        ["requested", "requested"],
-        ["Freigeben", "Ablehnen"],
-      ],
+      [["requested", "requested"], "Serie freigeben", ["Serie ablehnen"]],
       [
         ["payment_due", "payment_due"],
-        ["Als bezahlt markieren", "Stornieren"],
+        "Serie als bezahlt markieren",
+        ["Serie stornieren"],
       ],
-      [["confirmed", "confirmed"], ["Stornieren"]],
-      [["rejected", "rejected"], []],
-      [["cancelled", "cancelled"], []],
-      [["requested", "confirmed"], []],
-    ])("offers for members %j exactly %j", (statuses, labels) => {
-      const wrapper = mountDetails(series(statuses));
-      expect(actionLabels(wrapper)).toEqual(labels);
+      [["confirmed", "confirmed"], null, ["Serie stornieren"]],
+      [["rejected", "rejected"], null, null],
+      [["cancelled", "cancelled"], null, null],
+      [["requested", "confirmed"], null, null],
+    ])(
+      "offers for members %j the button %s and the menu %j",
+      async (statuses, button, menu) => {
+        const wrapper = mountDetails(series(statuses));
+        expect(await offeredActions(wrapper)).toEqual({ button, menu });
+      }
+    );
+
+    it("keeps the plain verbs in the members' rows", async () => {
+      const wrapper = mountDetails(series(["confirmed", "confirmed"]));
+      expect(wrapper.text()).not.toContain("Serie stornieren");
+      await wrapper.find("td.controls-cell button").trigger("click");
+      await wrapper.vm.$nextTick();
+      const rowEntries = Array.from(
+        document.querySelectorAll(".v-menu__content .v-list-item__title")
+      ).map((entry) => entry.textContent.trim());
+      expect(rowEntries).toContain("Stornieren");
+      expect(rowEntries).not.toContain("Serie stornieren");
     });
 
-    it("offers nothing to a reader without the update right", () => {
+    it("offers nothing to a reader without the update right, and no hint either", async () => {
       BookingPermissionService.allowUpdate.mockReturnValue(false);
-      const wrapper = mountDetails(series(["requested", "requested"]));
-      expect(actionLabels(wrapper)).toEqual([]);
+
+      const uniform = mountDetails(series(["requested", "requested"]));
+      expect(await offeredActions(uniform)).toEqual({
+        button: null,
+        menu: null,
+      });
+      expect(hint(uniform)).toBeNull();
+
+      const mixed = mountDetails(series(["requested", "confirmed"]));
+      expect(mixed.find(".booking-status-word").text()).toBe("Gemischt");
+      expect(hint(mixed)).toBeNull();
     });
 
     it("hands the whole series to the transition module, with no single-member option", async () => {
@@ -150,7 +272,7 @@ describe("GroupBookingDetails", () => {
         .spyOn(wrapper.vm.$refs.transitions, "start")
         .mockImplementation(() => {});
 
-      await button(wrapper, "Stornieren").trigger("click");
+      await clickMenuEntry(wrapper, "Serie stornieren");
 
       expect(start).toHaveBeenCalledWith("cancel", {
         booking: groupBooking.bookings[0],
@@ -166,7 +288,10 @@ describe("GroupBookingDetails", () => {
       const start = vi
         .spyOn(wrapper.vm.$refs.transitions, "start")
         .mockImplementation(() => {});
-      expect(actionLabels(wrapper)).toEqual([]);
+      expect(await offeredActions(wrapper)).toEqual({
+        button: null,
+        menu: null,
+      });
 
       wrapper
         .findComponent({ name: "BookingTable" })

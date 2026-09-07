@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
+import {
+  clickMenuEntry,
+  menuButton,
+  offeredActions,
+  primaryButton,
+} from "@tests/unit/support/statusPath";
 import toasts from "@/store/modules/toasts";
 
 vi.mock("@/store", () => ({
@@ -55,45 +61,6 @@ function segmentLabels(wrapper) {
 
 function actionButtons(wrapper) {
   return wrapper.findAll("button.booking-action").wrappers;
-}
-
-function primaryButton(wrapper) {
-  return wrapper.find("button.booking-action-primary");
-}
-
-function menuButton(wrapper) {
-  return wrapper.find("button.booking-action-menu");
-}
-
-/** Opens the headline's side-way menu, if any, and reads its entries; the menu detaches into `data-app`. */
-async function menuEntries(wrapper) {
-  const activator = menuButton(wrapper);
-  if (!activator.exists()) {
-    return null;
-  }
-  await activator.trigger("click");
-  await wrapper.vm.$nextTick();
-  return Array.from(
-    document.querySelectorAll(".v-menu__content .booking-action-secondary")
-  );
-}
-
-/** The headline's actions as the reader sees them: the button's word and the menu's words. */
-async function offeredActions(wrapper) {
-  const button = primaryButton(wrapper);
-  const entries = await menuEntries(wrapper);
-  return {
-    button: button.exists() ? button.text() : null,
-    menu: entries && entries.map((entry) => entry.textContent.trim()),
-  };
-}
-
-async function clickMenuEntry(wrapper, label) {
-  const entry = (await menuEntries(wrapper)).find(
-    (candidate) => candidate.textContent.trim() === label
-  );
-  entry.click();
-  await wrapper.vm.$nextTick();
 }
 
 /** Spies on the mounted transition module, so that no route is called. */
