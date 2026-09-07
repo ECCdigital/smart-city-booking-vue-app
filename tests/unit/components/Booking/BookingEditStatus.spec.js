@@ -454,7 +454,7 @@ describe("BookingEditStatus", () => {
       }
     );
 
-    it("is not asked for on the path", () => {
+    it("is not asked for while the booking is on its path", () => {
       const wrapper = mountStatus({
         booking: booking({ status: "confirmed", rejectionReason: "alt" }),
       });

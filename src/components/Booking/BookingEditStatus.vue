@@ -122,7 +122,7 @@
           {{ rejectionReasonLabel }}
         </div>
         <v-textarea
-          class="booking-status-reason-input mt-1"
+          class="mt-1"
           :value="booking.rejectionReason"
           outlined
           dense
