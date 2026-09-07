@@ -122,6 +122,25 @@ function actionButton(wrapper, label) {
     .wrappers.find((button) => button.text() === label);
 }
 
+function menuButton(wrapper) {
+  return wrapper.find("button.booking-action-menu");
+}
+
+/** Opens the headline's side-way menu and clicks the entry with `label`; the menu detaches into `data-app`. */
+async function clickMenuEntry(wrapper, label) {
+  await menuButton(wrapper).trigger("click");
+  await wrapper.vm.$nextTick();
+  const entry = Array.from(
+    document.querySelectorAll(".v-menu__content .booking-action-secondary")
+  ).find((candidate) => candidate.textContent.trim() === label);
+  entry.click();
+  await wrapper.vm.$nextTick();
+}
+
+function reasonInput(wrapper) {
+  return wrapper.find(".booking-status-reason textarea");
+}
+
 function nameInput(wrapper) {
   return wrapper
     .findAllComponents({ name: "v-text-field" })
@@ -169,7 +188,7 @@ describe("BookingEdit", () => {
 
   describe("Ablehnen", () => {
     async function reject(wrapper, refundPercentage) {
-      await actionButton(wrapper, "Ablehnen").trigger("click");
+      await clickMenuEntry(wrapper, "Ablehnen");
       await flushPromises();
       await wrapper.vm.$nextTick();
       const dialog = wrapper.findComponent({
@@ -292,7 +311,7 @@ describe("BookingEdit", () => {
       await wrapper.vm.$nextTick();
 
       expect(actionButton(wrapper, "Freigeben").element.disabled).toBe(true);
-      expect(actionButton(wrapper, "Ablehnen").element.disabled).toBe(true);
+      expect(menuButton(wrapper).element.disabled).toBe(true);
       expect(wrapper.find(".booking-status-hint").text()).toContain(
         "Erst speichern"
       );
@@ -320,6 +339,26 @@ describe("BookingEdit", () => {
         expect(putBody()).not.toHaveProperty(key)
       );
       expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("sends the reason typed under the path with a cancelled booking", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({ status: "cancelled", rejectionReason: "Alt" }),
+      });
+      ApiBookingService.storeBooking.mockResolvedValue({ data: {} });
+
+      await reasonInput(wrapper).setValue("Zu spät");
+      await wrapper.vm.$nextTick();
+      expect(actionButton(wrapper, "Wiederherstellen").element.disabled).toBe(
+        true
+      );
+
+      await submit(wrapper);
+
+      expect(putBody()).toMatchObject({
+        id: "bk-1",
+        rejectionReason: "Zu spät",
+      });
     });
 
     it("sends the chosen initial state and no flag on a create", async () => {
