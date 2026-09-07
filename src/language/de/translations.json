@@ -603,7 +603,16 @@
       "paidAt": "Bezahlt am {date}"
     },
     "filter": {
-      "status": "Status"
+      "title": "Filter",
+      "none": "Keine Einschränkung",
+      "active": "1 Einschränkung aktiv | {n} Einschränkungen aktiv",
+      "type": "Buchungstyp",
+      "typeAll": "Alle",
+      "typeSingle": "Einzel",
+      "typeSeries": "Serie",
+      "status": "Status",
+      "reset": "zurücksetzen",
+      "resetAll": "Alle zurücksetzen"
     },
     "action": {
       "confirm": "Freigeben",
