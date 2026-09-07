@@ -93,6 +93,19 @@ async function mountList({ entries = [], booking = {} } = {}) {
   return wrapper;
 }
 
+/** The card mounted on a read that failed with `error`. */
+async function mountRefused(error) {
+  ApiAccessService.getAccessPoints.mockRejectedValue(error);
+
+  const wrapper = mountComponent(BookingAccessPoints, {
+    store: store(),
+    propsData: { booking: { ...BOOKING } },
+  });
+  await flushPromises();
+  await wrapper.vm.$nextTick();
+  return wrapper;
+}
+
 function tiles(wrapper) {
   return wrapper.findAll(".access-point-tile");
 }
@@ -486,14 +499,7 @@ describe("BookingAccessPoints", () => {
   });
 
   it("says so when the accesses could not be read, instead of looking empty", async () => {
-    ApiAccessService.getAccessPoints.mockRejectedValue(serverError());
-
-    const wrapper = mountComponent(BookingAccessPoints, {
-      store: store(),
-      propsData: { booking: { ...BOOKING } },
-    });
-    await flushPromises();
-    await wrapper.vm.$nextTick();
+    const wrapper = await mountRefused(serverError());
 
     expect(wrapper.find("[data-test='access-load-error']").text()).toContain(
       "konnten nicht geladen werden"
@@ -507,23 +513,11 @@ describe("BookingAccessPoints", () => {
    * away as it does on an empty list.
    */
   describe("reach", () => {
-    async function mountRefused(status) {
-      ApiAccessService.getAccessPoints.mockRejectedValue(serverError(status));
-      const error = vi.spyOn(console, "error").mockImplementation(() => {});
-
-      const wrapper = mountComponent(BookingAccessPoints, {
-        store: store(),
-        propsData: { booking: { ...BOOKING } },
-      });
-      await flushPromises();
-      await wrapper.vm.$nextTick();
-      return { wrapper, error };
-    }
-
     it.each([403, 404])(
       "stays invisible, without alert or log, when the route answers %i",
       async (status) => {
-        const { wrapper, error } = await mountRefused(status);
+        const error = vi.spyOn(console, "error").mockImplementation(() => {});
+        const wrapper = await mountRefused(serverError(status));
 
         expect(wrapper.find(".v-card").exists()).toBe(false);
         expect(wrapper.find("[data-test='access-load-error']").exists()).toBe(

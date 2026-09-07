@@ -92,21 +92,22 @@ export default {
     canControl() {
       return BookingPermissionService.allowUpdate(this.booking);
     },
+    /**
+     * What a read of the accesses depends on: the booking, and its state -
+     * a booking released in the drawer is reloaded by `BookingDetails` under
+     * the same id, and only a confirmed booking has accesses to show. One key
+     * rather than two watchers, so a swap of the shown booking reads once.
+     */
+    accessSource() {
+      return `${this.booking?.id}|${this.booking?.status}`;
+    },
   },
   watch: {
-    "booking.id": {
+    accessSource: {
       immediate: true,
       handler() {
         this.fetchEntries();
       },
-    },
-    /**
-     * A booking released in the drawer is reloaded by `BookingDetails` under
-     * the same id, and only a confirmed booking has accesses to show - so the
-     * status is the second impulse to read them again.
-     */
-    "booking.status"() {
-      this.fetchEntries();
     },
   },
   mounted() {
