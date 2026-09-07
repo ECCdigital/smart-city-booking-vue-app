@@ -654,10 +654,6 @@
     },
     "initialState": {
       "label": "Anfangszustand",
-      "requested": "Angefragt",
-      "confirmed": "Freigegeben",
-      "paid": "Bezahlt",
-      "hint": "Wird angelegt als: {status}",
       "paymentMethod": "Zahlungsmethode auswählen",
       "date": "Zahldatum",
       "time": "Uhrzeit"

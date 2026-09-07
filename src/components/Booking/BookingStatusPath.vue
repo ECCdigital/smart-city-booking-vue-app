@@ -77,15 +77,40 @@
       </div>
     </div>
 
-    <div v-if="path" class="booking-status-segments">
+    <div
+      v-if="path"
+      class="booking-status-segments"
+      :role="chooser ? 'radiogroup' : null"
+      :aria-label="chooser ? label : null"
+    >
       <div
         v-for="step in path.steps"
         :key="step.status"
         class="booking-status-segment"
-        :class="`booking-status-segment--${step.state}`"
+        :class="[
+          `booking-status-segment--${step.state}`,
+          { 'booking-status-segment--pickable': chooser },
+        ]"
+        :role="chooser ? 'radio' : null"
+        :aria-checked="chooser ? String(step.status === value) : null"
+        :tabindex="chooser ? 0 : null"
+        @click="choose(step)"
+        @keydown.enter.space.prevent="choose(step)"
       >
         <div class="booking-status-segment-bar" :class="barClass(step)" />
-        <div class="booking-status-segment-label">{{ step.label }}</div>
+        <div class="booking-status-segment-label">
+          <v-icon
+            v-if="chooser"
+            class="booking-status-segment-radio"
+            size="13"
+            :color="step.status === value ? step.color : null"
+            >{{
+              step.status === value
+                ? "mdi-radiobox-marked"
+                : "mdi-radiobox-blank"
+            }}</v-icon
+          >{{ step.label }}
+        </div>
         <div v-if="stepDate(step)" class="booking-status-segment-date">
           {{ stepDate(step) }}
         </div>
@@ -106,6 +131,10 @@
 
     <div v-if="hint" class="booking-status-hint text-caption text--secondary">
       {{ hint }}
+    </div>
+
+    <div v-if="$scopedSlots.payment" class="booking-status-payment">
+      <slot name="payment" />
     </div>
 
     <div v-if="$scopedSlots.reason" class="booking-status-reason">
@@ -135,6 +164,13 @@ import {
  * steps as segments with their dates, and the host's reason block. The
  * hosts of `BookingTransitions` render this with `pathOf(booking)` and
  * decide the actions themselves; the headline only reports the click.
+ *
+ * As a `chooser` (spec N6) the same headline is the choice of the state a
+ * booking is created in: each segment is a radio - a click, Enter or the
+ * space bar reports its state as `input` - the one equal to `value` is
+ * checked, and the host's payment fields ride in the `payment` slot under
+ * the line. The host builds the draft's path so that the chosen step is
+ * current, the ones before done and the rest upcoming.
  */
 export default {
   name: "BookingStatusPath",
@@ -165,6 +201,16 @@ export default {
     },
     /** A caption before the word, e.g. "Zustand der Serie". */
     label: {
+      type: String,
+      default: null,
+    },
+    /** Chooser mode: the segments are radios reporting their state as `input`. */
+    chooser: {
+      type: Boolean,
+      default: false,
+    },
+    /** Chooser mode: the status of the checked segment. */
+    value: {
       type: String,
       default: null,
     },
@@ -209,6 +255,11 @@ export default {
       if (step.state === STEP_STATE.DONE) return "success";
       if (step.state === STEP_STATE.CURRENT) return step.color;
       return "booking-status-segment-bar--empty";
+    },
+    choose(step) {
+      if (this.chooser) {
+        this.$emit("input", step.status);
+      }
     },
   },
 };
@@ -289,8 +340,50 @@ export default {
 .theme--dark .booking-status-segment--void .booking-status-segment-label {
   color: rgba(255, 255, 255, 0.38);
 }
+.booking-status-segment--pickable {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px 6px 2px;
+  margin: -4px -6px -2px;
+  outline: none;
+  transition: background-color 0.15s;
+}
+.booking-status-segment--pickable:hover,
+.booking-status-segment--pickable:focus-visible {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+.booking-status-segment--pickable:focus-visible {
+  box-shadow: 0 0 0 2px var(--v-primary-base) inset;
+}
+.booking-status-segment--pickable:hover .booking-status-segment-label {
+  color: rgba(0, 0, 0, 0.87);
+}
+.booking-status-segment--pickable:hover .booking-status-segment-bar--empty {
+  background: rgba(0, 0, 0, 0.24);
+}
+.booking-status-segment-radio {
+  vertical-align: -2px;
+  margin-right: 3px;
+}
+.theme--dark .booking-status-segment--pickable:hover,
+.theme--dark .booking-status-segment--pickable:focus-visible {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+.theme--dark
+  .booking-status-segment--pickable:hover
+  .booking-status-segment-label {
+  color: #fff;
+}
+.theme--dark
+  .booking-status-segment--pickable:hover
+  .booking-status-segment-bar--empty {
+  background: rgba(255, 255, 255, 0.28);
+}
 .booking-status-hint {
   margin-top: calc(var(--gap) / 2);
+}
+.booking-status-payment {
+  margin-top: var(--gap);
 }
 .booking-status-reason {
   margin-top: var(--gap);
