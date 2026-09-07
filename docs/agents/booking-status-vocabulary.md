@@ -40,6 +40,45 @@ Each verb is an i18n key under `booking.action.*` and names one backend transiti
 
 `allowedActions(status)` answers the third column, `allowsAction(booking, action)` asks it for one booking, and `actionLabel(action, status)` picks Ablehnen or Stornieren for a cancel. "Freigeben" stays the tenants' established word for `confirm`; the kanban's workflow actions (`commit`, `paid`, `reject`) use the same verbs.
 
+## The headline over the path
+
+Since 4.3.x a booking's state is drawn once, the same way in three hosts - the detail drawer, the edit form and the series drawer - and once more as the choice in the create form. The words below are the strand's own (spec N2-N6) and, like Reichweite in the access glossary, terms of these docs and not of the UI copy; the code is `src/utils/bookingStatus.js`, `src/utils/bookingForm.js` and `src/components/Booking/BookingStatusPath.vue`. There is no `BookingStatusBar` any more.
+
+| German            | Code                                                   | What it is                                                                                                                                                                                                                                     |
+| ----------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Kopfzeile         | `BookingStatusPath.vue`                                | The state area of a booking: avatar and state word, the actions, the segments with their dates, `hint` under the line, and the slots `reason`, `payment` and the default one. The host computes the path; the component never reads the route. |
+| Hauptpfad         | `pathOf(booking)` → `path.steps`                       | Angefragt → Zahlung offen → Bestätigt; without Zahlung offen where the booking is free.                                                                                                                                                        |
+| Schritt, Segment  | `STEP_STATE` - `done`, `current`, `upcoming`, `void`   | One state of the main path as one segment of the line: reached, the current one, still to come, or dropped by a cut. In the chooser the segments are radios.                                                                                   |
+| Endsegment        | `path.end`, `path.terminal`                            | The red segment Abgelehnt / Storniert that cuts the path after the step reached (`end.afterIndex`); it carries `cancelledAt` as `date` and the `rejectionReason` as `reason`.                                                                  |
+| Erreicht          | `path.reachedIndex`                                    | The last step the booking had before the cut: Angefragt at Abgelehnt, `cancelledFrom` at Storniert, Bestätigt where that is unknown. For a series, see below.                                                                                  |
+| Hauptaktion       | `splitActions(actions).primary`                        | The one action along the path - Freigeben, Als bezahlt markieren, Wiederherstellen - as a filled button (`booking-action-primary`).                                                                                                            |
+| Nebenweg          | `splitActions(actions).secondary`                      | Ablehnen / Stornieren (and the delete). **Always in the ⋮-menu** (`booking-action-menu`), also without a Hauptaktion: at Bestätigt, Stornieren stands alone in the menu, never as a button.                                                    |
+| Zustand der Serie | `seriesPathOf(groupBooking, members)`, `label` prop    | The series read as one booking, captioned so in the series drawer (see below).                                                                                                                                                                 |
+| Anfangszustand    | `chooser` + `value` props, event `input`, `label` prop | The choice in the create form, on the same headline, captioned so (see below).                                                                                                                                                                 |
+
+### The Anfangszustand is chosen with the state words
+
+The choice in the create form names the state the booking is born in; internally it stays the act (`requested / confirmed / paid`), so that the price may move it. That is the addendum to spec E10: the segments read Angefragt / Zahlung offen / Bestätigt (`statusLabel()`), not Angefragt / Freigegeben / Bezahlt.
+
+| Segment clicked (`input`) | Choice (`INITIAL_STATE`)                     | Wire (`initialStateWire`)                                          |
+| ------------------------- | -------------------------------------------- | ------------------------------------------------------------------ |
+| Angefragt                 | `requested`                                  | `status: requested`                                                |
+| Zahlung offen             | `confirmed`                                  | `status: payment_due`                                              |
+| Bestätigt                 | `paid` with a price, `confirmed` without one | `status: confirmed`, with `paymentMethod` and `timePaid` at `paid` |
+
+`choose()` in `BookingEditStatus.vue` is that translation; `initialStateChoices(priceEur)` in `bookingForm.js` offers `paid` only with something to pay, and a paid draft that turns free falls back to `confirmed`. The headline's word and checked segment follow `initialStateWire(initialState, priceEur).status`, so a `confirmed` draft reads Zahlung offen with a price and Bestätigt without.
+
+### A series read as a booking
+
+`seriesPathOf(groupBooking, members)` draws the series on the same headline, captioned "Zustand der Serie":
+
+-   **Kostenfrei** for a series means a total price of zero: `totalPriceOf(members) <= 0`. Then the path has no Zahlung offen and the chip stands beside the word.
+-   **Erreicht** is what every member reached: at Storniert the cut sits behind the lowest of the members' `cancelledFrom`s (a missing one reads as Bestätigt); at Abgelehnt behind Angefragt.
+-   **The only date** is the series' own request (`groupBooking.timeCreated`); there is no paid and no cancellation date.
+-   **The reason** stands only where every member gives the same one (`sharedReason`, local to the module), the rule after "Serie stornieren"; otherwise the block is absent.
+-   **Gemischt** (see above) has no path - `seriesPathOf` answers `null`, as for a series without members. The drawer counts the members per state instead (`mixedCounts(members)` - "2 Angefragt · 1 Bestätigt", in the vocabulary's order, only states with members) in the headline's default slot and, for whoever may edit every member, points at the list below; no button, no menu.
+-   **Series verbs**: series-wide actions are worded with "Serie" - "Serie freigeben", "Serie als bezahlt markieren", "Serie ablehnen" / "Serie stornieren" (`seriesActionLabel(action, status)`, `group-booking.action.*`); the member rows keep the plain verbs.
+
 ## The UI reads `status`, never a flag
 
 A flag is a derivation, and the derivations lie in the places that matter: `isPayed` means "nothing left to pay", so a free booking carries it in every state - which is why a free, unconfirmed booking used to read as "Bezahlt" and could not be deleted. Reading `status` heals both.

@@ -13,6 +13,7 @@ Every code cell leads with the identifier, so the table can be read from either 
 | Schließfachanlage, short **Anlage**           | `LOCKER_TYPE`, `type: "locker"`, `isLockerAccessPoint()`            | iFBS, Pareva. One row per tenant and iFBS location, or per tenant and Pareva product size.                          |
 | Fach                                          | `compartment`                                                       | The compartment a booking is assigned at an Anlage. Lives in the grant, not in the Anlage.                          |
 | Herkunft — „Selbst angelegt“ / „Vom Anbieter“ | `originLabel` in `AccessPointManagement.vue`, derived from the type | A door is typed in by hand, an Anlage is taken over from what the provider lists. There is no stored origin field.  |
+| Vom Anbieter übernehmen / Manuell anlegen     | `mode: "provider" \| "manual"` in `AccessPointEditDialog.vue`       | The two sides of the switch in the create dialog: the listing over the form, or the form alone. Not `form.mode`.    |
 | Anbieter                                      | `provider` — `nuki`, `salto-ks`, `ifbs`, `pareva`                   | Chosen in the dialog; it then settles the type and, for an Anlage, the mode (`providerAccessPointDefaults`).        |
 | Vorgemerkt (die Vormerkung)                   | `ACCESS_STATE.HELD`                                                 | Claimed for the booking, not granted yet.                                                                           |
 | Erteilt (der Grant)                           | `ACCESS_STATE.GRANTED`                                              | Granted and not taken back.                                                                                         |
@@ -22,6 +23,12 @@ Every code cell leads with the identifier, so the table can be read from either 
 | Pufferzeit — Vorlauf / Nachlauf               | `accessPointDetails.accessBuffer.before` / `.after`                 | Minutes around the booking period in which the access points may still be operated. Per bookable.                   |
 | Zugänge                                       | `BookingAccessPoints.vue`, `accessEntriesOf()`                      | The one list of doors and Fächer in booking details.                                                                |
 | Reichweite                                    | `isOutOfReach()`                                                    | Whether a record is visible to the caller at all. A term of these docs and the changelog, not of the UI copy.       |
+
+## The way in is not the Herkunft
+
+The switch is offered only while a provider is active and is then preset to the provider; switching hides the listing and touches nothing entered. Without a provider the dialog is the door form, without a hint. The dialog's `mode` is this choice and not the door's Modus, which is `form.mode` in the same component.
+
+The Herkunft column stays derived from the type: a door taken over from the listing still reads „Selbst angelegt“, because nothing records the way in, and an Anlage always reads „Vom Anbieter“, because there is no other way to one.
 
 ## „Locker“ is not a German word here
 
