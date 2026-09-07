@@ -5,6 +5,19 @@
  * the words a reader sees.
  */
 
+/** The segments of the path as drawn: word, `STEP_STATE` (or `end`) and the date line under it. */
+export function segments(wrapper) {
+  return wrapper.findAll(".booking-status-segment").wrappers.map((segment) => ({
+    label: segment.find(".booking-status-segment-label").text(),
+    state: ["done", "current", "upcoming", "void", "end"].find((state) =>
+      segment.classes(`booking-status-segment--${state}`)
+    ),
+    date: segment.find(".booking-status-segment-date").exists()
+      ? segment.find(".booking-status-segment-date").text()
+      : null,
+  }));
+}
+
 export function primaryButton(wrapper) {
   return wrapper.find("button.booking-action-primary");
 }

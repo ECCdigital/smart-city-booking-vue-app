@@ -378,6 +378,7 @@ import {
   mixedCounts,
   seriesActionLabel,
   seriesPathOf,
+  totalPriceOf,
   transitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
@@ -478,10 +479,7 @@ export default {
       return collectGroupInvoices(this.groupBooking.bookings);
     },
     totalPriceEur() {
-      if (!this.groupBooking.bookings) return 0;
-      return this.groupBooking.bookings
-        .filter(Boolean)
-        .reduce((acc, booking) => acc + (booking.priceEur || 0), 0);
+      return totalPriceOf(this.members);
     },
     formattedDate() {
       return Intl.DateTimeFormat("de-DE", {

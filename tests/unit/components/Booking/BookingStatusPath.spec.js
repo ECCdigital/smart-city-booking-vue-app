@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
+import { segments } from "@tests/unit/support/statusPath";
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import { pathOf } from "@/utils/bookingStatus";
 
@@ -29,18 +30,6 @@ function mountPath(propsData = {}, options = {}) {
     },
     ...options,
   });
-}
-
-function segments(wrapper) {
-  return wrapper.findAll(".booking-status-segment").wrappers.map((segment) => ({
-    label: segment.find(".booking-status-segment-label").text(),
-    state: ["done", "current", "upcoming", "void", "end"].find((state) =>
-      segment.classes(`booking-status-segment--${state}`)
-    ),
-    date: segment.find(".booking-status-segment-date").exists()
-      ? segment.find(".booking-status-segment-date").text()
-      : null,
-  }));
 }
 
 function primaryButton(wrapper) {

@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
-import { clickMenuEntry, offeredActions } from "@tests/unit/support/statusPath";
+import {
+  clickMenuEntry,
+  offeredActions,
+  segments,
+} from "@tests/unit/support/statusPath";
 import { flushPromises, lifecycleError } from "@tests/unit/support/api";
 import toasts from "@/store/modules/toasts";
 
@@ -98,18 +102,6 @@ function button(wrapper, label) {
   return wrapper
     .findAll("button")
     .wrappers.find((button) => button.text() === label);
-}
-
-function segments(wrapper) {
-  return wrapper.findAll(".booking-status-segment").wrappers.map((segment) => ({
-    label: segment.find(".booking-status-segment-label").text(),
-    state: ["done", "current", "upcoming", "void", "end"].find((state) =>
-      segment.classes(`booking-status-segment--${state}`)
-    ),
-    date: segment.find(".booking-status-segment-date").exists()
-      ? segment.find(".booking-status-segment-date").text()
-      : null,
-  }));
 }
 
 function hint(wrapper) {

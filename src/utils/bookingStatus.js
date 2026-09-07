@@ -88,17 +88,31 @@ export function allowsAction(booking, action) {
 }
 
 /**
- * The verb for an action. A cancel is "Ablehnen" while the booking is only
- * requested and "Stornieren" once it has been confirmed - the one place the
- * wording depends on the state.
+ * The verb for an action under a key prefix. A cancel is "Ablehnen" while
+ * the booking is only requested and "Stornieren" once it has been
+ * confirmed - the one place the wording depends on the state.
  */
-export function actionLabel(action, status) {
+function verbOf(prefix, action, status) {
   if (action === BOOKING_ACTION.CANCEL) {
     return status === BOOKING_STATUS.REQUESTED
-      ? i18n.t("booking.action.reject")
-      : i18n.t("booking.action.cancel");
+      ? i18n.t(`${prefix}.reject`)
+      : i18n.t(`${prefix}.cancel`);
   }
-  return i18n.t(`booking.action.${action}`);
+  return i18n.t(`${prefix}.${action}`);
+}
+
+/** The verb for an action on one booking: Freigeben, Als bezahlt markieren, Ablehnen / Stornieren, Wiederherstellen. */
+export function actionLabel(action, status) {
+  return verbOf("booking.action", action, status);
+}
+
+/**
+ * The verb of a series-wide action, worded with "Serie" (spec N5): "Serie
+ * freigeben", "Serie als bezahlt markieren", "Serie ablehnen" / "Serie
+ * stornieren". The members' menus keep `actionLabel`.
+ */
+export function seriesActionLabel(action, status) {
+  return verbOf("group-booking.action", action, status);
 }
 
 /**
@@ -282,19 +296,27 @@ function mainPathOf(free) {
 }
 
 /** The step a cancelled booking was cut behind: `cancelledFrom`, or Bestätigt where that is unknown. */
-function cancelledFrom(booking) {
+function cancelledOriginOf(booking) {
   return booking?.cancellationRefund?.cancelledFrom || BOOKING_STATUS.CONFIRMED;
 }
 
 /**
  * The path itself, shared by a booking and a series: the main path with a
- * `STEP_STATE` per step, cut behind `reachedFrom` where `status` is
- * terminal. `dateOf(step)` and `end` carry the raw dates and the reason.
+ * `STEP_STATE` per step, cut behind Angefragt at Abgelehnt and behind
+ * `cancelledFrom` at Storniert. `dateOf(step)` and `end` carry the raw
+ * dates and the reason.
  */
-function buildPath({ status, free, reachedFrom, dateOf, end }) {
+function buildPath({ status, free, cancelledFrom, dateOf, end }) {
   const mainPath = mainPathOf(free);
   const terminal =
     status === BOOKING_STATUS.REJECTED || status === BOOKING_STATUS.CANCELLED;
+
+  let reachedFrom = status;
+  if (status === BOOKING_STATUS.REJECTED) {
+    reachedFrom = BOOKING_STATUS.REQUESTED;
+  } else if (status === BOOKING_STATUS.CANCELLED) {
+    reachedFrom = cancelledFrom;
+  }
   const reachedIndex = Math.max(0, mainPath.indexOf(reachedFrom));
 
   const steps = mainPath.map((step, index) => {
@@ -339,20 +361,11 @@ function buildPath({ status, free, reachedFrom, dateOf, end }) {
  * `null`. The headline formats them.
  */
 export function pathOf(booking) {
-  const status = booking?.status;
   const free = isFree(booking);
-
-  let reachedFrom = status;
-  if (status === BOOKING_STATUS.REJECTED) {
-    reachedFrom = BOOKING_STATUS.REQUESTED;
-  } else if (status === BOOKING_STATUS.CANCELLED) {
-    reachedFrom = cancelledFrom(booking);
-  }
-
   return buildPath({
-    status,
+    status: booking?.status,
     free,
-    reachedFrom,
+    cancelledFrom: cancelledOriginOf(booking),
     dateOf: (step) => stepDate(step, booking, free),
     end: {
       date: booking?.cancellationRefund?.cancelledAt || null,
@@ -375,6 +388,14 @@ function stepDate(step, booking, free) {
   return null;
 }
 
+/** The price of a series: its members' prices summed; a missing or unparsable one counts nothing. */
+export function totalPriceOf(members) {
+  return (Array.isArray(members) ? members : []).reduce(
+    (sum, member) => sum + (Number(member?.priceEur) || 0),
+    0
+  );
+}
+
 /**
  * The series read as a booking (spec N5): the path from the total price
  * (free where it is zero) at the members' shared state; `null` for a mixed
@@ -390,28 +411,17 @@ export function seriesPathOf(groupBooking, members) {
   if (status == null || status === MIXED) {
     return null;
   }
-  const total = members.reduce(
-    (sum, member) => sum + (Number(member?.priceEur) || 0),
-    0
-  );
-  const free = total <= 0;
-
-  let reachedFrom = status;
-  if (status === BOOKING_STATUS.REJECTED) {
-    reachedFrom = BOOKING_STATUS.REQUESTED;
-  } else if (status === BOOKING_STATUS.CANCELLED) {
-    const mainPath = mainPathOf(free);
-    reachedFrom = members
-      .map(cancelledFrom)
-      .reduce((lowest, from) =>
-        mainPath.indexOf(from) < mainPath.indexOf(lowest) ? from : lowest
-      );
-  }
+  const free = totalPriceOf(members) <= 0;
+  const mainPath = mainPathOf(free);
 
   return buildPath({
     status,
     free,
-    reachedFrom,
+    cancelledFrom: members
+      .map(cancelledOriginOf)
+      .reduce((lowest, from) =>
+        mainPath.indexOf(from) < mainPath.indexOf(lowest) ? from : lowest
+      ),
     dateOf: (step) =>
       step === BOOKING_STATUS.REQUESTED
         ? groupBooking?.timeCreated || null
@@ -439,21 +449,6 @@ export function mixedCounts(members) {
       count: list.filter((member) => member?.status === status).length,
     }))
     .filter((entry) => entry.count > 0);
-}
-
-/**
- * The verb of a series-wide action, worded with "Serie" (spec N5): "Serie
- * freigeben", "Serie als bezahlt markieren", and for a cancel "Serie
- * ablehnen" while the series is only requested, "Serie stornieren" after.
- * The members' menus keep `actionLabel`.
- */
-export function seriesActionLabel(action, status) {
-  if (action === BOOKING_ACTION.CANCEL) {
-    return status === BOOKING_STATUS.REQUESTED
-      ? i18n.t("group-booking.action.reject")
-      : i18n.t("group-booking.action.cancel");
-  }
-  return i18n.t(`group-booking.action.${action}`);
 }
 
 /**

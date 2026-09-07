@@ -22,6 +22,7 @@ import {
   seriesActionLabel,
   seriesPathOf,
   splitActions,
+  totalPriceOf,
   statusColor,
   statusExportValue,
   statusIcon,
@@ -836,6 +837,16 @@ describe("seriesPathOf", () => {
       member(BOOKING_STATUS.REJECTED),
     ]);
     expect(none.end.reason).toBeNull();
+  });
+});
+
+describe("totalPriceOf", () => {
+  it("sums the members' prices, reading a string and skipping what is missing", () => {
+    expect(totalPriceOf([{ priceEur: 25 }, { priceEur: "5" }, {}, null])).toBe(
+      30
+    );
+    expect(totalPriceOf([])).toBe(0);
+    expect(totalPriceOf(null)).toBe(0);
   });
 });
 
