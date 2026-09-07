@@ -31,6 +31,8 @@ import BookingEditStatus from "@/components/Booking/BookingEditStatus.vue";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 
 const SAVE_FIRST = "Erst speichern";
+/** A segment of the chooser, as the keyboard reaches it. */
+const RADIO = "[role=radio]";
 
 function booking(overrides = {}) {
   return { id: "bk-1", priceEur: 25, status: "requested", ...overrides };
@@ -311,6 +313,14 @@ describe("BookingEditStatus", () => {
     });
   });
 
+  /**
+   * Create mode (spec E10, N6): the headline is the choice of the
+   * Anfangszustand - the draft's path with the segments as radios, named
+   * with the state words. The choice stays the act underneath: Angefragt
+   * is `requested`, Zahlung offen is `confirmed`, Bestätigt is `paid` on a
+   * priced draft and `confirmed` on a free one; the wire the form hears is
+   * unchanged. Rewritten from the select of the first cut.
+   */
   describe("in create mode", () => {
     const PAYMENT_METHODS = [
       { type: "CASH", title: "Bar" },
@@ -330,9 +340,40 @@ describe("BookingEditStatus", () => {
       return emitted[emitted.length - 1][0];
     }
 
-    /** Opens a Vuetify select by its class and clicks the option with `text`. */
-    async function choose(wrapper, selector, text) {
-      await wrapper.find(`${selector} .v-input__slot`).trigger("click");
+    /** The segments as the admin reads them: word, checked, and how the line draws them. */
+    function choices(wrapper) {
+      return wrapper.findAll(RADIO).wrappers.map((segment) => ({
+        label: segment.find(".booking-status-segment-label").text(),
+        checked: segment.attributes("aria-checked") === "true",
+        state: ["done", "current", "upcoming"].find((state) =>
+          segment.classes(`booking-status-segment--${state}`)
+        ),
+      }));
+    }
+
+    function segment(wrapper, label) {
+      return wrapper
+        .findAll(RADIO)
+        .wrappers.find(
+          (candidate) =>
+            candidate.find(".booking-status-segment-label").text() === label
+        );
+    }
+
+    async function pick(wrapper, label) {
+      await segment(wrapper, label).trigger("click");
+      await wrapper.vm.$nextTick();
+    }
+
+    function paymentFields(wrapper) {
+      return wrapper.findAll(".initial-state-payment").wrappers;
+    }
+
+    /** Opens the payment method select and clicks the option with `text`. */
+    async function chooseMethod(wrapper, text) {
+      await wrapper
+        .find(".initial-state-payment-method .v-input__slot")
+        .trigger("click");
       await wrapper.vm.$nextTick();
       const option = Array.from(
         document.querySelectorAll(
@@ -343,19 +384,22 @@ describe("BookingEditStatus", () => {
       await wrapper.vm.$nextTick();
     }
 
-    function selectOptions(wrapper) {
-      return wrapper
-        .findComponent({ ref: "initialStateSelect" })
-        .props("items");
-    }
-
-    it("asks for the Anfangszustand instead of showing a state or actions", () => {
+    it("offers the Anfangszustand as the segments of the draft's path, Angefragt chosen, without actions", () => {
       const wrapper = mountCreate();
 
-      expect(wrapper.find(".initial-state-select").exists()).toBe(true);
-      expect(wrapper.find(".booking-status-chip").exists()).toBe(false);
+      expect(wrapper.find(".booking-status-label").text()).toBe(
+        "Anfangszustand"
+      );
+      expect(wrapper.find(".booking-status-word").text()).toBe("Angefragt");
+      expect(choices(wrapper)).toEqual([
+        { label: "Angefragt", checked: true, state: "current" },
+        { label: "Zahlung offen", checked: false, state: "upcoming" },
+        { label: "Bestätigt", checked: false, state: "upcoming" },
+      ]);
       expect(actionButtons(wrapper)).toHaveLength(0);
-      expect(wrapper.findAllComponents({ name: "v-switch" })).toHaveLength(0);
+      expect(menuButton(wrapper).exists()).toBe(false);
+      expect(wrapper.find(".booking-status-hint").exists()).toBe(false);
+      expect(paymentFields(wrapper)).toHaveLength(0);
       expect(lastInitialState(wrapper)).toEqual({
         selection: "requested",
         paymentMethod: null,
@@ -363,72 +407,121 @@ describe("BookingEditStatus", () => {
       });
     });
 
-    it("offers Bezahlt only on a priced booking", () => {
-      expect(selectOptions(mountCreate(25)).map((item) => item.text)).toEqual([
+    it("offers a free draft the path without Zahlung offen, marked Kostenfrei", () => {
+      const wrapper = mountCreate(0);
+
+      expect(choices(wrapper).map((choice) => choice.label)).toEqual([
         "Angefragt",
-        "Freigegeben",
-        "Bezahlt",
+        "Bestätigt",
       ]);
-      expect(selectOptions(mountCreate(0)).map((item) => item.text)).toEqual([
-        "Angefragt",
-        "Freigegeben",
-      ]);
+      expect(wrapper.find(".booking-status-free").text()).toBe("Kostenfrei");
     });
 
-    it("says which state Freigegeben lands in", async () => {
+    it("reads Zahlung offen as the act of releasing, without payment", async () => {
       const wrapper = mountCreate(25);
 
-      await choose(wrapper, ".initial-state-select", "Freigegeben");
+      await pick(wrapper, "Zahlung offen");
 
       expect(lastInitialState(wrapper)).toEqual({
         selection: "confirmed",
         paymentMethod: null,
         timePaid: null,
       });
-      expect(wrapper.find(".initial-state-hint").text()).toBe(
-        "Wird angelegt als: Zahlung offen"
-      );
-      expect(wrapper.find(".initial-state-payment").exists()).toBe(false);
+      expect(wrapper.find(".booking-status-word").text()).toBe("Zahlung offen");
+      expect(choices(wrapper)).toEqual([
+        { label: "Angefragt", checked: false, state: "done" },
+        { label: "Zahlung offen", checked: true, state: "current" },
+        { label: "Bestätigt", checked: false, state: "upcoming" },
+      ]);
+      expect(paymentFields(wrapper)).toHaveLength(0);
     });
 
-    it("asks for the payment when Bezahlt is chosen, dated now", async () => {
+    it("reads Bestätigt on a free draft as releasing, chosen by keyboard", async () => {
+      const wrapper = mountCreate(0);
+
+      await segment(wrapper, "Bestätigt").trigger("keydown.enter");
+      await wrapper.vm.$nextTick();
+
+      expect(lastInitialState(wrapper)).toEqual({
+        selection: "confirmed",
+        paymentMethod: null,
+        timePaid: null,
+      });
+      expect(wrapper.find(".booking-status-word").text()).toBe("Bestätigt");
+      expect(paymentFields(wrapper)).toHaveLength(0);
+
+      await segment(wrapper, "Angefragt").trigger("keydown.space");
+      await wrapper.vm.$nextTick();
+      expect(lastInitialState(wrapper)).toMatchObject({
+        selection: "requested",
+      });
+    });
+
+    it("asks for the payment under the line when Bestätigt is chosen with a price, dated now", async () => {
       const now = new Date(2026, 8, 6, 10, 15);
       vi.useFakeTimers({ now, toFake: ["Date"] });
       try {
         const wrapper = mountCreate(25);
 
-        await choose(wrapper, ".initial-state-select", "Bezahlt");
-        expect(wrapper.find(".initial-state-payment").exists()).toBe(true);
+        await pick(wrapper, "Bestätigt");
+
         expect(lastInitialState(wrapper)).toEqual({
           selection: "paid",
           paymentMethod: null,
           timePaid: now.getTime(),
         });
+        expect(wrapper.find(".booking-status-word").text()).toBe("Bestätigt");
+        expect(wrapper.find(".booking-status-payment").exists()).toBe(true);
+        expect(paymentFields(wrapper)).toHaveLength(3);
+        expect(
+          segment(wrapper, "Bestätigt")
+            .find(".booking-status-segment-date")
+            .text()
+        ).toBe("bezahlt 06.09.2026, 10:15");
 
-        await choose(wrapper, ".initial-state-payment-method", "Überweisung");
+        await chooseMethod(wrapper, "Überweisung");
         expect(lastInitialState(wrapper)).toEqual({
           selection: "paid",
           paymentMethod: "TRANSFER",
           timePaid: now.getTime(),
         });
-        expect(wrapper.find(".initial-state-hint").text()).toBe(
-          "Wird angelegt als: Bestätigt"
-        );
       } finally {
         vi.useRealTimers();
       }
     });
 
-    it("falls back to Freigegeben when the booking turns free", async () => {
+    it("moves the mark with the price while the choice stays the act", async () => {
       const wrapper = mountCreate(25);
-      await choose(wrapper, ".initial-state-select", "Bezahlt");
+      await pick(wrapper, "Zahlung offen");
 
       await wrapper.setProps({ priceEur: 0 });
 
       expect(lastInitialState(wrapper)).toMatchObject({
         selection: "confirmed",
       });
-      expect(wrapper.find(".initial-state-payment").exists()).toBe(false);
+      expect(wrapper.find(".booking-status-word").text()).toBe("Bestätigt");
+      expect(choices(wrapper)).toEqual([
+        { label: "Angefragt", checked: false, state: "done" },
+        { label: "Bestätigt", checked: true, state: "current" },
+      ]);
+
+      await wrapper.setProps({ priceEur: 40 });
+      expect(wrapper.find(".booking-status-word").text()).toBe("Zahlung offen");
+    });
+
+    it("falls back to releasing when a paid draft turns free", async () => {
+      const wrapper = mountCreate(25);
+      await pick(wrapper, "Bestätigt");
+      expect(paymentFields(wrapper)).toHaveLength(3);
+
+      await wrapper.setProps({ priceEur: 0 });
+
+      expect(lastInitialState(wrapper)).toMatchObject({
+        selection: "confirmed",
+      });
+      expect(wrapper.find(".booking-status-word").text()).toBe("Bestätigt");
+      expect(paymentFields(wrapper)).toHaveLength(0);
+      expect(wrapper.find(".booking-status-segment-date").exists()).toBe(false);
     });
   });
 

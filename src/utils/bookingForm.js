@@ -30,10 +30,11 @@ export function createEmptyBooking(tenantId) {
 }
 
 /**
- * The three words the create form offers as "Anfangszustand" (spec E10).
- * They are the admin's choices, not states: Freigegeben lands at
- * `payment_due` or `confirmed` depending on the price, and Bezahlt is
- * `confirmed` with the payment named.
+ * The three choices the create form offers as "Anfangszustand" (spec E10,
+ * N6). They are the admin's acts, not states - the form names them with the
+ * state words of the draft's path: `confirmed` lands at `payment_due` or
+ * `confirmed` depending on the price, and `paid` is `confirmed` with the
+ * payment named.
  */
 export const INITIAL_STATE = Object.freeze({
   REQUESTED: "requested",

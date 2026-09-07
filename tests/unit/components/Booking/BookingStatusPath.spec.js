@@ -6,6 +6,8 @@ import { pathOf } from "@/utils/bookingStatus";
 const CREATED = new Date(2026, 2, 1, 9, 0).getTime();
 const PAID = new Date(2026, 2, 5, 14, 30).getTime();
 const CANCELLED_AT = new Date(2026, 2, 7, 8, 15).getTime();
+/** A segment of the chooser, as the keyboard reaches it. */
+const RADIO = "[role=radio]";
 
 function booking(overrides = {}) {
   return {
@@ -245,6 +247,123 @@ describe("BookingStatusPath", () => {
 
       const empty = mountPath({ booking: booking({ status: "rejected" }) });
       expect(empty.find(".booking-status-reason").exists()).toBe(false);
+    });
+  });
+
+  /**
+   * The chooser (spec N6): the same headline with the segments as the
+   * choice of the state a booking is created in. The host hands the path of
+   * the draft and the chosen state as `value`, and hears `input` with the
+   * state of the segment picked.
+   */
+  describe("the choice", () => {
+    function draft(status, overrides = {}) {
+      return { status, priceEur: 25, ...overrides };
+    }
+
+    function mountChooser(status = "requested", propsData = {}, options = {}) {
+      const shown = draft(status, propsData.draft);
+      return mountPath(
+        {
+          booking: shown,
+          chooser: true,
+          value: status,
+          label: "Anfangszustand",
+          ...propsData,
+        },
+        options
+      );
+    }
+
+    function radios(wrapper) {
+      return wrapper.findAll(RADIO).wrappers;
+    }
+
+    it("offers each segment as a radio that can be reached by keyboard, the chosen one checked", () => {
+      const wrapper = mountChooser("payment_due");
+
+      const segments = radios(wrapper);
+      expect(segments.map((segment) => segment.text())).toEqual([
+        "Angefragt",
+        "Zahlung offen",
+        "Bestätigt",
+      ]);
+      expect(segments.map((s) => s.attributes("tabindex"))).toEqual([
+        "0",
+        "0",
+        "0",
+      ]);
+      expect(segments.map((s) => s.attributes("aria-checked"))).toEqual([
+        "false",
+        "true",
+        "false",
+      ]);
+      expect(
+        segments.map((s) =>
+          s.find(".booking-status-segment-radio").classes("mdi-radiobox-marked")
+        )
+      ).toEqual([false, true, false]);
+      expect(wrapper.find(".booking-status-label").text()).toBe(
+        "Anfangszustand"
+      );
+    });
+
+    it("draws the chosen segment as current, the ones before as done and the rest empty", () => {
+      const wrapper = mountChooser("payment_due");
+      expect(segments(wrapper).map((segment) => segment.state)).toEqual([
+        "done",
+        "current",
+        "upcoming",
+      ]);
+      expect(wrapper.find(".booking-status-word").text()).toBe("Zahlung offen");
+    });
+
+    it("reports a click, Enter and the space bar as the state of that segment", async () => {
+      const wrapper = mountChooser("requested");
+      const [, paymentDue, confirmed] = radios(wrapper);
+
+      await paymentDue.trigger("click");
+      await confirmed.trigger("keydown.enter");
+      await paymentDue.trigger("keydown.space");
+
+      expect(wrapper.emitted("input")).toEqual([
+        ["payment_due"],
+        ["confirmed"],
+        ["payment_due"],
+      ]);
+    });
+
+    it("keeps the segments of the display mode out of the tab order and without radios", () => {
+      const wrapper = mountPath({
+        booking: booking({ status: "payment_due" }),
+      });
+      expect(radios(wrapper)).toHaveLength(0);
+      expect(wrapper.find(".booking-status-segment-radio").exists()).toBe(
+        false
+      );
+
+      wrapper.findAll(".booking-status-segment").wrappers.forEach((segment) => {
+        expect(segment.attributes("tabindex")).toBeUndefined();
+      });
+    });
+
+    it("renders the host's payment fields under the line only where the host fills the slot", () => {
+      const filled = mountChooser(
+        "confirmed",
+        {},
+        {
+          scopedSlots: {
+            payment: "<div class=the-payment>Zahlungsmethode</div>",
+          },
+        }
+      );
+      expect(filled.find(".booking-status-payment .the-payment").text()).toBe(
+        "Zahlungsmethode"
+      );
+
+      expect(
+        mountChooser("confirmed").find(".booking-status-payment").exists()
+      ).toBe(false);
     });
   });
 });
