@@ -16,8 +16,11 @@ import {
   isAwaitingPayment,
   isPaid,
   isRejectedOrCancelled,
+  mixedCounts,
   pathOf,
   paymentLabel,
+  seriesActionLabel,
+  seriesPathOf,
   splitActions,
   statusColor,
   statusExportValue,
@@ -628,5 +631,281 @@ describe("splitActions", () => {
       primary: "reinstate",
       secondary: ["cancel", "delete"],
     });
+  });
+});
+
+/**
+ * The series read as a booking (spec N5): its path from the total price and
+ * the members' shared state, cut where every member got to, dated by the
+ * series' own request only, with the reason where the members agree on one.
+ */
+describe("seriesPathOf", () => {
+  const CREATED = 1_700_000_000_000;
+
+  function member(status, overrides = {}) {
+    return {
+      priceEur: 25,
+      timeCreated: 1_600_000_000_000,
+      timePaid: 1_600_100_000_000,
+      status,
+      ...overrides,
+    };
+  }
+
+  function cancelledMember(from, overrides = {}) {
+    return member(BOOKING_STATUS.CANCELLED, {
+      cancellationRefund: {
+        cancelledFrom: from,
+        cancelledAt: 1_600_200_000_000,
+      },
+      ...overrides,
+    });
+  }
+
+  function series(members, overrides = {}) {
+    return {
+      id: "grp-1",
+      timeCreated: CREATED,
+      ...overrides,
+      bookings: members,
+    };
+  }
+
+  function pathOfSeries(members, overrides = {}) {
+    return seriesPathOf(series(members, overrides), members);
+  }
+
+  function stepStates(path) {
+    return path.steps.map((step) => step.state);
+  }
+
+  it("walks Angefragt · Zahlung offen · Bestätigt for a series with a total price", () => {
+    const path = pathOfSeries([
+      member(BOOKING_STATUS.REQUESTED),
+      member(BOOKING_STATUS.REQUESTED),
+    ]);
+    expect(path.free).toBe(false);
+    expect(path.steps.map((step) => step.label)).toEqual([
+      "Angefragt",
+      "Zahlung offen",
+      "Bestätigt",
+    ]);
+    expect(stepStates(path)).toEqual(["current", "upcoming", "upcoming"]);
+  });
+
+  it("is free where the total price is zero, whatever the members' shares", () => {
+    const free = pathOfSeries([
+      member(BOOKING_STATUS.REQUESTED, { priceEur: 0 }),
+      member(BOOKING_STATUS.REQUESTED, { priceEur: "0" }),
+    ]);
+    expect(free.free).toBe(true);
+    expect(free.steps.map((step) => step.status)).toEqual([
+      BOOKING_STATUS.REQUESTED,
+      BOOKING_STATUS.CONFIRMED,
+    ]);
+    expect(free.steps.map((step) => step.free)).toEqual([false, true]);
+
+    const priced = pathOfSeries([
+      member(BOOKING_STATUS.REQUESTED, { priceEur: 0 }),
+      member(BOOKING_STATUS.REQUESTED, { priceEur: 25 }),
+    ]);
+    expect(priced.free).toBe(false);
+  });
+
+  it.each([
+    [BOOKING_STATUS.REQUESTED, ["current", "upcoming", "upcoming"]],
+    [BOOKING_STATUS.PAYMENT_DUE, ["done", "current", "upcoming"]],
+    [BOOKING_STATUS.CONFIRMED, ["done", "done", "current"]],
+  ])("stands at the members' shared state %s", (status, states) => {
+    const path = pathOfSeries([member(status), member(status)]);
+    expect(stepStates(path)).toEqual(states);
+    expect(path.end).toBeNull();
+    expect(path.current.status).toBe(status);
+  });
+
+  it("is null for a mixed series and for one without members", () => {
+    expect(
+      pathOfSeries([
+        member(BOOKING_STATUS.REQUESTED),
+        member(BOOKING_STATUS.CONFIRMED),
+      ])
+    ).toBeNull();
+    expect(pathOfSeries([])).toBeNull();
+    expect(seriesPathOf(series([]), null)).toBeNull();
+  });
+
+  it("cuts Abgelehnt behind Angefragt", () => {
+    const path = pathOfSeries([
+      member(BOOKING_STATUS.REJECTED),
+      member(BOOKING_STATUS.REJECTED),
+    ]);
+    expect(stepStates(path)).toEqual(["done", "void", "void"]);
+    expect(path.end).toMatchObject({
+      status: BOOKING_STATUS.REJECTED,
+      label: "Abgelehnt",
+      afterIndex: 0,
+    });
+    expect(path.current).toBe(path.end);
+  });
+
+  it("cuts Storniert behind the step every member reached", () => {
+    const shared = pathOfSeries([
+      cancelledMember(BOOKING_STATUS.CONFIRMED),
+      cancelledMember(BOOKING_STATUS.CONFIRMED),
+    ]);
+    expect(stepStates(shared)).toEqual(["done", "done", "done"]);
+    expect(shared.end.afterIndex).toBe(2);
+
+    const oneStillOpen = pathOfSeries([
+      cancelledMember(BOOKING_STATUS.PAYMENT_DUE),
+      cancelledMember(BOOKING_STATUS.CONFIRMED),
+    ]);
+    expect(stepStates(oneStillOpen)).toEqual(["done", "done", "void"]);
+    expect(oneStillOpen.end.afterIndex).toBe(1);
+
+    const oneOnlyRequested = pathOfSeries([
+      cancelledMember(BOOKING_STATUS.REQUESTED),
+      cancelledMember(BOOKING_STATUS.CONFIRMED),
+    ]);
+    expect(stepStates(oneOnlyRequested)).toEqual(["done", "void", "void"]);
+    expect(oneOnlyRequested.end.afterIndex).toBe(0);
+  });
+
+  it("reads a member without an origin as cancelled out of Bestätigt", () => {
+    const path = pathOfSeries([
+      member(BOOKING_STATUS.CANCELLED, { cancellationRefund: null }),
+      cancelledMember(BOOKING_STATUS.CONFIRMED),
+    ]);
+    expect(path.end.afterIndex).toBe(2);
+  });
+
+  it("cuts a free series' path the same way, without Zahlung offen", () => {
+    const path = pathOfSeries([
+      cancelledMember(BOOKING_STATUS.CONFIRMED, { priceEur: 0 }),
+      cancelledMember(BOOKING_STATUS.REQUESTED, { priceEur: 0 }),
+    ]);
+    expect(stepStates(path)).toEqual(["done", "void"]);
+    expect(path.end.afterIndex).toBe(0);
+  });
+
+  it("dates the series' request only - no paid date, no cancellation date", () => {
+    const confirmed = pathOfSeries([
+      member(BOOKING_STATUS.CONFIRMED),
+      member(BOOKING_STATUS.CONFIRMED),
+    ]);
+    expect(confirmed.steps.map((step) => step.date)).toEqual([
+      CREATED,
+      null,
+      null,
+    ]);
+
+    const cancelled = pathOfSeries([
+      cancelledMember(BOOKING_STATUS.CONFIRMED),
+      cancelledMember(BOOKING_STATUS.CONFIRMED),
+    ]);
+    expect(cancelled.steps[0].date).toBe(CREATED);
+    expect(cancelled.end.date).toBeNull();
+
+    expect(
+      pathOfSeries([member(BOOKING_STATUS.REQUESTED)], { timeCreated: 0 })
+        .steps[0].date
+    ).toBeNull();
+  });
+
+  it("carries the reason only where every member gives the same one", () => {
+    const agreed = pathOfSeries([
+      member(BOOKING_STATUS.REJECTED, { rejectionReason: "Zu spät" }),
+      member(BOOKING_STATUS.REJECTED, { rejectionReason: "Zu spät" }),
+    ]);
+    expect(agreed.end.reason).toBe("Zu spät");
+
+    const differing = pathOfSeries([
+      cancelledMember(BOOKING_STATUS.CONFIRMED, { rejectionReason: "Krank" }),
+      cancelledMember(BOOKING_STATUS.CONFIRMED, { rejectionReason: "Umzug" }),
+    ]);
+    expect(differing.end.reason).toBeNull();
+
+    const oneWithout = pathOfSeries([
+      member(BOOKING_STATUS.REJECTED, { rejectionReason: "Zu spät" }),
+      member(BOOKING_STATUS.REJECTED),
+    ]);
+    expect(oneWithout.end.reason).toBeNull();
+
+    const none = pathOfSeries([
+      member(BOOKING_STATUS.REJECTED),
+      member(BOOKING_STATUS.REJECTED),
+    ]);
+    expect(none.end.reason).toBeNull();
+  });
+});
+
+/**
+ * A mixed series is counted per state instead of drawn as a path (spec N5).
+ */
+describe("mixedCounts", () => {
+  function members(...statuses) {
+    return statuses.map((status) => ({ status }));
+  }
+
+  it("counts the members per state in the vocabulary's order, states without members left out", () => {
+    const counts = mixedCounts(
+      members(
+        BOOKING_STATUS.CANCELLED,
+        BOOKING_STATUS.CONFIRMED,
+        BOOKING_STATUS.REQUESTED,
+        BOOKING_STATUS.CONFIRMED,
+        BOOKING_STATUS.REQUESTED,
+        BOOKING_STATUS.CONFIRMED
+      )
+    );
+    expect(counts.map((entry) => [entry.status, entry.count])).toEqual([
+      [BOOKING_STATUS.REQUESTED, 2],
+      [BOOKING_STATUS.CONFIRMED, 3],
+      [BOOKING_STATUS.CANCELLED, 1],
+    ]);
+  });
+
+  it("names each count with the state's word and colour", () => {
+    const [requested, paymentDue] = mixedCounts(
+      members(BOOKING_STATUS.PAYMENT_DUE, BOOKING_STATUS.REQUESTED)
+    );
+    expect(requested).toMatchObject({ label: "Angefragt", color: "orange" });
+    expect(paymentDue).toMatchObject({
+      label: "Zahlung offen",
+      color: "blue",
+      count: 1,
+    });
+  });
+
+  it("is empty without members", () => {
+    expect(mixedCounts([])).toEqual([]);
+    expect(mixedCounts(null)).toEqual([]);
+  });
+});
+
+/**
+ * A series-wide action is worded with "Serie" (spec N5); the members' menus
+ * keep the plain verbs of `actionLabel`.
+ */
+describe("seriesActionLabel", () => {
+  it("names the series verbs", () => {
+    expect(seriesActionLabel("confirm", BOOKING_STATUS.REQUESTED)).toBe(
+      "Serie freigeben"
+    );
+    expect(seriesActionLabel("pay", BOOKING_STATUS.PAYMENT_DUE)).toBe(
+      "Serie als bezahlt markieren"
+    );
+  });
+
+  it("calls a cancel from requested Serie ablehnen and from anywhere else Serie stornieren", () => {
+    expect(seriesActionLabel("cancel", BOOKING_STATUS.REQUESTED)).toBe(
+      "Serie ablehnen"
+    );
+    expect(seriesActionLabel("cancel", BOOKING_STATUS.PAYMENT_DUE)).toBe(
+      "Serie stornieren"
+    );
+    expect(seriesActionLabel("cancel", BOOKING_STATUS.CONFIRMED)).toBe(
+      "Serie stornieren"
+    );
   });
 });

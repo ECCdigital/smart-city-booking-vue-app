@@ -129,6 +129,10 @@
       </div>
     </div>
 
+    <div v-if="!path && $scopedSlots.default" class="booking-status-body">
+      <slot />
+    </div>
+
     <div v-if="hint" class="booking-status-hint text-caption text--secondary">
       {{ hint }}
     </div>
@@ -163,7 +167,10 @@ import {
  * the path as a button and the side ways in a menu; under it the path's
  * steps as segments with their dates, and the host's reason block. The
  * hosts of `BookingTransitions` render this with `pathOf(booking)` and
- * decide the actions themselves; the headline only reports the click.
+ * decide the actions themselves; the headline only reports the click. A
+ * host may word the actions itself (`actionLabel`, the series drawer's
+ * "Serie freigeben"), and without a `path` it may fill the default slot
+ * with a line of its own where the segments would stand (spec N5).
  *
  * As a `chooser` (spec N6) the same headline is the choice of the state a
  * booking is created in: each segment is a radio - a click, Enter or the
@@ -204,6 +211,11 @@ export default {
       type: String,
       default: null,
     },
+    /** The verb of an action, `(action, status) => word`; the glossary's by default. */
+    actionLabel: {
+      type: Function,
+      default: actionLabel,
+    },
     /** Chooser mode: the segments are radios reporting their state as `input`. */
     chooser: {
       type: Boolean,
@@ -233,7 +245,6 @@ export default {
   methods: {
     actionColor,
     actionIcon,
-    actionLabel,
     freeMarker,
     formatDateTime(value) {
       return new Intl.DateTimeFormat("de-DE", {
@@ -378,6 +389,9 @@ export default {
   .booking-status-segment--pickable:hover
   .booking-status-segment-bar--empty {
   background: rgba(255, 255, 255, 0.28);
+}
+.booking-status-body {
+  margin-top: var(--gap);
 }
 .booking-status-hint {
   margin-top: calc(var(--gap) / 2);

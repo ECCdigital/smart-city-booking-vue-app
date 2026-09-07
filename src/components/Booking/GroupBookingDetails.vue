@@ -14,13 +14,49 @@
       <v-divider />
 
       <v-card-text class="px-6 py-6 booking-details-content">
-        <BookingStatusBar
+        <BookingStatusPath
           class="mb-6"
           :label="$t('group-booking.status.title')"
           :status="seriesStatus"
+          :path="seriesPath"
           :actions="seriesActions"
+          :action-label="seriesActionLabel"
+          :hint="mixedHint"
           @action="transitionSeries"
-        />
+        >
+          <template v-if="mixed" #default>
+            <div class="series-status-counts text-body-2">
+              <template v-for="(entry, index) in counts">
+                <span
+                  v-if="index > 0"
+                  :key="`${entry.status}-dot`"
+                  class="mx-2 text--disabled"
+                  >·</span
+                >
+                <span
+                  :key="entry.status"
+                  class="series-status-count font-weight-medium"
+                  :class="`${entry.color}--text`"
+                  >{{
+                    $t("group-booking.status.count", {
+                      count: entry.count,
+                      state: entry.label,
+                    })
+                  }}</span
+                >
+              </template>
+            </div>
+          </template>
+          <template
+            v-if="seriesPath && seriesPath.end && seriesPath.end.reason"
+            #reason
+          >
+            <div class="text-caption font-weight-bold error--text">
+              {{ $t(`booking.edit.reason.${seriesPath.end.status}`) }}
+            </div>
+            <div class="text-body-2">{{ seriesPath.end.reason }}</div>
+          </template>
+        </BookingStatusPath>
 
         <v-card class="mb-6 section-card" elevation="2" outlined>
           <v-card-title
@@ -313,7 +349,7 @@
 </template>
 
 <script>
-import BookingStatusBar from "@/components/Booking/BookingStatusBar.vue";
+import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import BookingTable from "@/components/Booking/BookingTable.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import CancellationReceiptsCard from "@/components/Booking/CancellationReceiptsCard.vue";
@@ -335,27 +371,33 @@ import {
 } from "@/utils/groupBookingInvoices";
 import {
   BOOKING_ACTION,
+  MIXED,
   groupAllowsAction,
   groupBookingStatus,
   isRejectedOrCancelled,
+  mixedCounts,
+  seriesActionLabel,
+  seriesPathOf,
   transitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
 import { mapActions } from "vuex";
 
 /**
- * The series drawer shows the series' derived state (spec E9) - the
- * members' shared state or Gemischt - and offers a series-wide action only
- * where that state allows it, through the mounted `BookingTransitions`;
- * there is no series-wide Wiederherstellen. A mixed series acts per member:
- * the member rows' menus hand their transition to the same module. The
- * aggregated cancellation receipt is reissued here once every member is
- * cancelled (spec E8).
+ * The series drawer shows the series as a booking (spec E9, N5): the
+ * members' shared state as a headline over the series' path
+ * (`seriesPathOf`), with a series-wide action - worded "Serie freigeben"
+ * and so on - only where that state allows it, through the mounted
+ * `BookingTransitions`; there is no series-wide Wiederherstellen. A mixed
+ * series is counted per state instead and acts per member: the member
+ * rows' menus hand their transition to the same module. The aggregated
+ * cancellation receipt is reissued here once every member is cancelled
+ * (spec E8).
  */
 export default {
   name: "GroupBookingDetails",
   components: {
-    BookingStatusBar,
+    BookingStatusPath,
     BookingTable,
     BookingTransitions,
     CancellationReceiptsCard,
@@ -385,9 +427,28 @@ export default {
     seriesStatus() {
       return groupBookingStatus(this.members);
     },
+    mixed() {
+      return this.seriesStatus === MIXED;
+    },
+    /** The series' path; `null` while the series is mixed, so the headline shows the count instead. */
+    seriesPath() {
+      return seriesPathOf(this.groupBooking, this.members);
+    },
+    counts() {
+      return mixedCounts(this.members);
+    },
+    canEditEveryMember() {
+      return this.members.every((b) => BookingPermissionService.allowUpdate(b));
+    },
+    /** Why a mixed series offers no action - for whoever could act on the members. */
+    mixedHint() {
+      return this.mixed && this.canEditEveryMember
+        ? this.$t("group-booking.status.mixedHint")
+        : null;
+    },
     /** The series-wide transitions: the shared state's, for whoever may edit every member. */
     seriesActions() {
-      if (!this.members.every((b) => BookingPermissionService.allowUpdate(b))) {
+      if (!this.canEditEveryMember) {
         return [];
       }
       return transitionActions(this.seriesStatus).filter(
@@ -439,6 +500,7 @@ export default {
     ...mapActions({
       addToast: "toasts/add",
     }),
+    seriesActionLabel,
     /**
      * A series-wide button acts on the whole series: `seriesOnly` keeps the
      * group dialogs from offering "Nur diese Buchung", which would otherwise

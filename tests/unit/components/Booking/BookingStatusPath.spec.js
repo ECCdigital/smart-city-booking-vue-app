@@ -217,6 +217,19 @@ describe("BookingStatusPath", () => {
       expect(wrapper.emitted("action")).toEqual([["confirm"], ["cancel"]]);
     });
 
+    it("words the actions the way the host asks, the state still deciding the verb", async () => {
+      const wrapper = mountPath({
+        actions: ["confirm", "cancel"],
+        actionLabel: (action, status) => `Serie ${action} @ ${status}`,
+      });
+      expect(primaryButton(wrapper).text()).toBe("Serie confirm @ requested");
+
+      const entries = await openMenu(wrapper);
+      expect(entries.map((entry) => entry.textContent.trim())).toEqual([
+        "Serie cancel @ requested",
+      ]);
+    });
+
     it("locks button and menu while disabled, and says why under the line", () => {
       const wrapper = mountPath({
         actions: ["confirm", "cancel"],
@@ -228,6 +241,34 @@ describe("BookingStatusPath", () => {
       expect(wrapper.find(".booking-status-hint").text()).toBe(
         "Erst speichern"
       );
+    });
+  });
+
+  describe("without a path", () => {
+    it("names the bare state and draws no segments", () => {
+      const wrapper = mountPath({ status: "mixed", path: null });
+      expect(wrapper.find(".booking-status-word").text()).toBe("Gemischt");
+      expect(wrapper.find(".booking-status-segments").exists()).toBe(false);
+      expect(wrapper.find(".booking-status-free").exists()).toBe(false);
+    });
+
+    it("renders the host's own line in place of the segments, above the hint", () => {
+      const wrapper = mountPath(
+        { status: "mixed", path: null, hint: "Aktionen je Buchung" },
+        {
+          scopedSlots: {
+            default: "<div class=the-counts>2 Angefragt · 1 Bestätigt</div>",
+          },
+        }
+      );
+      expect(wrapper.find(".booking-status-body .the-counts").text()).toBe(
+        "2 Angefragt · 1 Bestätigt"
+      );
+      expect(wrapper.text().indexOf("2 Angefragt")).toBeLessThan(
+        wrapper.text().indexOf("Aktionen je Buchung")
+      );
+
+      expect(mountPath().find(".booking-status-body").exists()).toBe(false);
     });
   });
 
