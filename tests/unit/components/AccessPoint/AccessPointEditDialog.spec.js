@@ -309,6 +309,30 @@ describe("AccessPointEditDialog", () => {
       expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
     });
 
+    /**
+     * A preset is the dialog's doing, not the admin's: when a listing
+     * provider arrives after it, the preset goes with the bare form and the
+     * listing takes over - nothing typed is lost, because nothing was.
+     */
+    it("lets a listing provider that arrives later replace the preset", async () => {
+      const wrapper = await mountDialog({ providers: [PAREVA] });
+      expect(wrapper.find(".provider-field input").element.value).toBe(
+        "pareva"
+      );
+
+      await wrapper.setProps({ providers: [PAREVA, PROVIDERS[0]] });
+      await flushPromises();
+
+      expect(wrapper.find(".create-mode-toggle").exists()).toBe(true);
+      expect(wrapper.find(".provider-picker").exists()).toBe(true);
+      expect(wrapper.find(".provider-field input").element.value).toBe("");
+      expect(wrapper.find(".access-point-type").text()).toContain("Tür");
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "nuki"
+      );
+    });
+
     it("shows no switch when editing", async () => {
       const wrapper = await mountDialog({ accessPoint: DOOR });
 

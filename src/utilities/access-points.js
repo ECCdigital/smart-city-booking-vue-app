@@ -89,20 +89,29 @@ export function providerIdFields(provider) {
 const LIST_ACCESS_POINTS_CAPABILITY = "listAccessPoints";
 
 /**
- * Whether the provider lists access points to take over - the backend's
- * `listAccessPoints` capability, reported per provider. Nuki, Salto KS and
- * iFBS do; Pareva does not, because what it could list are size codes, not
- * the products a Pareva Anlage stands for. The picker offers only providers
- * that do; the others are entered by hand.
+ * Whether the provider reports a capability - one of the provider actions
+ * the backend lists per active provider in `providerCapabilities`.
  *
- * @param {Object} provider A provider as `getProviders` reports it, with its
- *   `providerCapabilities`
+ * @param {Object} provider A provider as `getProviders` reports it
+ * @param {string} capability A capability name, e.g. "listAccessPoints"
+ * @returns {boolean} True when the provider reports it
+ */
+export function hasProviderCapability(provider, capability) {
+  return !!provider?.providerCapabilities?.includes(capability);
+}
+
+/**
+ * Whether the provider lists access points to take over - the backend's
+ * `listAccessPoints` capability. Nuki, Salto KS and iFBS do; Pareva does
+ * not, because what it could list are size codes, not the products a Pareva
+ * Anlage stands for. The picker offers only providers that do; the others
+ * are entered by hand.
+ *
+ * @param {Object} provider A provider as `getProviders` reports it
  * @returns {boolean} True when the provider lists access points
  */
 export function canListAccessPoints(provider) {
-  return !!provider?.providerCapabilities?.includes(
-    LIST_ACCESS_POINTS_CAPABILITY
-  );
+  return hasProviderCapability(provider, LIST_ACCESS_POINTS_CAPABILITY);
 }
 
 /**

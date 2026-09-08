@@ -8,6 +8,7 @@ import {
   accessPointLabel,
   accessPointTypeLabel,
   canListAccessPoints,
+  hasProviderCapability,
   isLockerAccessPoint,
   providerAccessPointDefaults,
   providerIdFields,
@@ -242,9 +243,7 @@ export default {
     canPrefillLocation() {
       if (!this.isEdit) return false;
       const provider = this.providers.find((p) => p.id === this.form.provider);
-      return !!provider?.providerCapabilities?.includes(
-        GET_LOCATION_CAPABILITY
-      );
+      return hasProviderCapability(provider, GET_LOCATION_CAPABILITY);
     },
     coordinates() {
       const points = this.form.location?.coordinates?.points;
@@ -262,10 +261,12 @@ export default {
       if (provider) this.fetchProviderLocks();
     },
     // The provider list may still be loading while the dialog opens: a dialog
-    // that opened on the bare form for want of a provider chooses its way in
-    // anew once the list arrives - as long as nothing has been typed yet.
+    // that opened on the bare form for want of a listing chooses its way in
+    // anew once the list arrives - as long as nothing has been typed yet. A
+    // dialog that already had a listing keeps what the admin did with it.
     providers() {
       if (!this.open || this.isEdit || !this.untouched) return;
+      if (this.mode === PROVIDER_MODE || this.pickerProvider) return;
       this.chooseWayIn();
     },
   },
@@ -301,10 +302,15 @@ export default {
       // A new access point starts with the rule the server would default to,
       // so what the switch shows is what an untouched create produces.
       this.qrScanRequired = source ? requiresQrScan(source) : true;
-      this.presetProvider = "";
-      this.mode = MANUAL_MODE;
-      this.pickerProvider = "";
-      if (!source) this.chooseWayIn();
+      // A stored access point is edited as it is; only a new one has a way
+      // in to choose.
+      if (source) {
+        this.mode = MANUAL_MODE;
+        this.pickerProvider = "";
+        this.presetProvider = "";
+      } else {
+        this.chooseWayIn();
+      }
       this.$nextTick(() => this.$refs.form?.resetValidation());
     },
     // The way into a new access point, from what is active: a provider that
@@ -313,18 +319,26 @@ export default {
     // provider active, the form starts on it, the way a tenant with Pareva
     // alone lands on the Pareva Anlage without being asked. Two providers
     // and no listing leave the choice to the admin.
+    //
+    // Runs on an untouched form only - fresh from `reset()`, or before
+    // anything was typed - so the provider it finds there is its own doing:
+    // a preset from an earlier run goes when the preset goes, with the type
+    // and mode it brought along.
     chooseWayIn() {
       const listable = this.pickerProviderOptions;
-      this.mode = listable.length ? PROVIDER_MODE : MANUAL_MODE;
-      this.pickerProvider = listable[0]?.value || "";
-      this.presetProvider =
+      const preset =
         !listable.length && this.providers.length === 1
           ? this.providers[0].id
           : "";
-      if (this.presetProvider) {
-        this.form.provider = this.presetProvider;
-        this.applyProviderDefaults(this.presetProvider);
-      }
+      const blank = emptyForm();
+
+      this.mode = listable.length ? PROVIDER_MODE : MANUAL_MODE;
+      this.pickerProvider = listable[0]?.value || "";
+      this.presetProvider = preset;
+      this.form.provider = preset || blank.provider;
+      this.form.type = blank.type;
+      this.form.mode = blank.mode;
+      if (preset) this.applyProviderDefaults(preset);
     },
     async fetchProviderLocks() {
       this.loadingLocks = true;
