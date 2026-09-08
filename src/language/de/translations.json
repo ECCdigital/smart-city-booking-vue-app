@@ -242,8 +242,7 @@
       "retry": "Erneut versuchen",
       "loadFailed": "Preise konnten nicht vom Anbieter geladen werden.",
       "empty": "Keine Preise verfügbar",
-      "notSaved": "Die Preise des Anbieters erscheinen, sobald das Buchungsobjekt gespeichert ist.",
-      "notPublic": "Die Preise des Anbieters erscheinen, sobald das Buchungsobjekt öffentlich sichtbar ist."
+      "notSaved": "Die Preise des Anbieters erscheinen, sobald das Buchungsobjekt gespeichert ist."
     },
     "list": {
       "forbidden": "Sie haben keinen Zugriff auf Buchungsobjekte."

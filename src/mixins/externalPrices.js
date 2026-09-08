@@ -11,9 +11,10 @@ import {
  *
  * The prices come from `GET /:tenant/bookables/:id/prices` - the categories
  * the checkout itself prices with, so what a screen shows and what a booking
- * pays cannot disagree. That route is a public one: it answers only for a
- * bookable that is stored and publicly visible, which is why the caller asks
- * {@link externalPricesUnavailableKey} before it reads.
+ * pays cannot disagree. The route reads the stored bookable, and it answers
+ * a hidden one to whoever may read the bookable itself - the admin is
+ * that reader - so the only thing the caller asks first, with
+ * {@link externalPricesUnavailableKey}, is whether the bookable is stored.
  *
  * Reading and saying what a failure means are kept apart on purpose: the
  * failure reaches the caller, which knows whether its screen has room for a
@@ -48,9 +49,6 @@ export default {
     externalPricesUnavailableKey(bookable) {
       if (!bookable?.id || !bookable?.tenantId) {
         return "bookable.externalPrice.notSaved";
-      }
-      if (bookable.isPublic !== true) {
-        return "bookable.externalPrice.notPublic";
       }
       return null;
     },

@@ -170,17 +170,18 @@ describe("BookableEditPrice - the provider's prices", () => {
     expect(wrapper.find(".external-price-tier").exists()).toBe(false);
   });
 
-  // The prices route is the public one - it answers 403 for a bookable that
-  // is not publicly visible. Asking and reporting the refusal as a provider
-  // failure would blame the provider for a state of the bookable.
-  it("names the visibility instead of asking for a hidden bookable", async () => {
+  // The prices route answers a hidden bookable to whoever may read it, and
+  // the editor is opened by such a reader - so a bookable that is not yet
+  // listed previews its provider's prices like a public one.
+  it("asks for a hidden bookable as for a public one", async () => {
     const wrapper = await mountPrice({ isPublic: false });
 
-    expect(ApiBookablesService.getBookablePrices).not.toHaveBeenCalled();
-    expect(wrapper.find(".external-price-error").exists()).toBe(false);
-    expect(wrapper.find(".external-price-empty").text()).toContain(
-      "öffentlich sichtbar"
+    expect(ApiBookablesService.getBookablePrices).toHaveBeenCalledWith(
+      "b1",
+      "t1"
     );
+    expect(tiles(wrapper)).toHaveLength(2);
+    expect(wrapper.find(".external-price-empty").exists()).toBe(false);
   });
 
   it("names the save instead of asking for an unsaved bookable", async () => {

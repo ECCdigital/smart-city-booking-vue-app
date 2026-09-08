@@ -150,12 +150,13 @@ describe("BookableCard - the provider's prices", () => {
     expect(wrapper.text()).toContain("Preise nicht verfügbar");
   });
 
-  // The prices route is the public one and refuses a bookable that is not
-  // publicly visible; the card does not ask for one.
-  it("does not ask for a bookable that is not publicly visible", async () => {
+  // The prices route answers a hidden bookable to whoever may read it, and
+  // the list is read by such a reader - so the card of a bookable that is
+  // not yet listed shows its provider's prices like any other.
+  it("asks for a bookable that is not publicly visible", async () => {
     const wrapper = await mountCard({ isPublic: false });
 
-    expect(ApiBookablesService.getBookablePrices).not.toHaveBeenCalled();
-    expect(wrapper.find(".external-price-row").exists()).toBe(false);
+    expect(ApiBookablesService.getBookablePrices).toHaveBeenCalled();
+    expect(wrapper.findAll(".external-price-row").length).toBeGreaterThan(0);
   });
 });
