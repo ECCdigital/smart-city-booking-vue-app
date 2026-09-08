@@ -1,6 +1,6 @@
 # Spec: A Pareva Anlage is a product — Produkt-ID, and availability asked live
 
-**Status:** ready for implementation
+**Status:** implemented. Decisions 2 and 10 are superseded by `.scratch/schliesssysteme-ohne-menge/spec.md` (local, not committed): there is no „Menge“ (`accessPointDetails.accessPointAmounts`) any more, and `needed` is the booked units of the item, not `compartmentsAt`. The text below stays as history.
 **Repo:** smart-city-booking-vue-app, branch `version/4.3.x`
 **Backend:** changes required (smart-city-booking-backend, `version/4.3.x`) — see [Backend's share](#backends-share); the admin UI part can ship first, the wording does not depend on the backend.
 

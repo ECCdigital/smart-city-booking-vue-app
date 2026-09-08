@@ -54,61 +54,37 @@ describe("ApiBookablesService", () => {
   });
 
   /**
-   * An amount for an access point the bookable does not reference means
-   * nothing - the backend drops it too, and the UI has no reason to send
-   * something meaningless (locker spec §L2.1).
+   * `accessPointDetails.accessPointAmounts` is retired: a booking gets one
+   * compartment per booked unit at each assigned locker system, and nothing is
+   * distributed. A map a bookable saved before that must not travel on, so the
+   * field is dropped on the way out - the caller's object stays as it is.
    */
-  it("drops distributed amounts of access points that are not assigned", async () => {
-    await ApiBookablesService.createOrUpdateBookable(
-      bookable({
-        accessPointDetails: {
-          active: true,
-          accessBuffer: { before: 0, after: 0 },
-          accessPointIds: ["ap-1"],
-          accessPointAmounts: { "ap-1": 3, "ap-gone": 5 },
-        },
-      })
-    );
-
-    const [, body] = global.ApiClient.put.mock.calls[0];
-    expect(body.accessPointDetails.accessPointAmounts).toEqual({ "ap-1": 3 });
-  });
-
-  it("leaves the caller's amounts untouched while pruning", async () => {
+  it("sends no accessPointAmounts, even when the bookable still carries one", async () => {
     const original = bookable({
       accessPointDetails: {
         active: true,
         accessBuffer: { before: 0, after: 0 },
         accessPointIds: ["ap-1"],
-        accessPointAmounts: { "ap-1": 3, "ap-gone": 5 },
+        accessPointAmounts: { "ap-1": 3 },
       },
     });
 
     await ApiBookablesService.createOrUpdateBookable(original);
 
+    const [, body] = global.ApiClient.put.mock.calls[0];
+    expect(body.accessPointDetails).not.toHaveProperty("accessPointAmounts");
+    expect(body.accessPointDetails.accessPointIds).toEqual(["ap-1"]);
     expect(original.accessPointDetails.accessPointAmounts).toEqual({
       "ap-1": 3,
-      "ap-gone": 5,
     });
   });
 
-  it("sends no amounts block for a bookable without access details", async () => {
+  it("sends no access details block for a bookable without one", async () => {
     await ApiBookablesService.createOrUpdateBookable(
       bookable({ accessPointDetails: undefined })
     );
 
     const [, body] = global.ApiClient.put.mock.calls[0];
     expect(body.accessPointDetails).toBeUndefined();
-  });
-
-  /**
-   * The field is additive: a bookable that carries no distribution keeps
-   * carrying none. An empty map is not the same statement as its absence.
-   */
-  it("does not invent an amounts map for a bookable that has none", async () => {
-    await ApiBookablesService.createOrUpdateBookable(bookable());
-
-    const [, body] = global.ApiClient.put.mock.calls[0];
-    expect(body.accessPointDetails).not.toHaveProperty("accessPointAmounts");
   });
 });
