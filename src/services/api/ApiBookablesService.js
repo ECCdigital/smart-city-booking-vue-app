@@ -34,7 +34,8 @@ export default {
     // Retired: nothing is distributed over the locker systems any more, a
     // booking gets one compartment per booked unit at each of them. A map a
     // bookable saved before that is dropped here so an old state does not
-    // travel on.
+    // travel on - from a copy, because the shallow clone above still shares
+    // the nested block with the caller's bookable.
     if (formData.accessPointDetails?.accessPointAmounts !== undefined) {
       formData.accessPointDetails = { ...formData.accessPointDetails };
       delete formData.accessPointDetails.accessPointAmounts;

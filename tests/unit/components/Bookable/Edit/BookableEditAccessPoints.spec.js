@@ -234,7 +234,8 @@ describe("BookableEditAccessPoints", () => {
    * There is no number per Anlage. A booking gets one compartment per unit it
    * books at each assigned locker system, and the capacity is the bookable's
    * `amount` on the pricing tab plus the provider's live answer
-   * (`.scratch/schliesssysteme-ohne-menge/spec.md`, R2 and R4).
+   * (`.scratch/schliesssysteme-ohne-menge/spec.md`, local, not committed;
+   * R2 and R4).
    */
   it("offers no amount field at an Anlage and names the rule instead", async () => {
     const wrapper = await mountPoints({
@@ -249,7 +250,7 @@ describe("BookableEditAccessPoints", () => {
     });
 
     expect(wrapper.find("thead").text()).not.toMatch(/Menge/);
-    expect(wrapper.findAll(".assignment-amount")).toHaveLength(0);
+    expect(rows(wrapper).at(1).findAll("input")).toHaveLength(0);
     expect(rows(wrapper).at(1).text()).toMatch(
       /Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt/
     );

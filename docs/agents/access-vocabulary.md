@@ -61,7 +61,7 @@ An Anlage has no capacity of its own — the management table says so in its ass
 
 Two checks, and both must pass: the platform counts the concurrent bookings against `amount` (empty means unlimited), and the provider is asked live whether it has the compartments — Pareva answers one entry per free unit of the product in the window, and the check needs at least as many entries as the item books. With an unlimited `amount` the provider alone decides; with the provider unreachable, the count alone does. A booking gets one Fach per booked unit of its item at each assigned Anlage; a bookable with several Anlagen hands out that number at each of them.
 
-A Pareva product has a stock of its own, and that number is Pareva's: the platform stores no amount on the Anlage, and the checkout asks Pareva live whether the product is free in the booked window, beside the platform's own count (spec `docs/specs/pareva-anlage.md`; the retirement of the Menge in `.scratch/schliesssysteme-ohne-menge/spec.md`).
+A Pareva product has a stock of its own, and that number is Pareva's: the platform stores no amount on the Anlage, and the checkout asks Pareva live whether the product is free in the booked window, beside the platform's own count (spec `docs/specs/pareva-anlage.md`; the retirement of the Menge in `.scratch/schliesssysteme-ohne-menge/spec.md`, local, not committed).
 
 ## One source for a booking's Zugänge
 

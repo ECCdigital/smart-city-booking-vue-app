@@ -84,7 +84,9 @@ describe("BookableEditAccessLocks", () => {
   it("renders no Stückzahl field", async () => {
     const wrapper = await mountLocks({ amount: 3 });
 
-    expect(wrapper.find(".capacity-field").exists()).toBe(false);
     expect(wrapper.text()).not.toMatch(/Stückzahl/);
+    expect(
+      wrapper.findAll("input").wrappers.map((i) => i.element.value)
+    ).not.toContain("3");
   });
 });
