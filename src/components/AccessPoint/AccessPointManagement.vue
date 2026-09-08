@@ -15,6 +15,7 @@ import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
   accessPointLabel,
   accessPointTypeLabel,
+  canListAccessPoints,
   isLockerAccessPoint,
   requiresQrScan,
   DOOR_TYPE,
@@ -111,11 +112,14 @@ export default {
           displayLabel: accessPointLabel(accessPoint),
           typeLabel: accessPointTypeLabel(accessPoint),
           isLocker,
-          // Where the row comes from: a door is entered by hand, a locker
-          // system is taken over from what the provider lists.
-          originLabel: isLocker
-            ? this.$t("accessPoint.management.table.originProvider")
-            : this.$t("accessPoint.management.table.originManual"),
+          // Where the row comes from - derived, since nothing stores it: a
+          // locker system of a provider that lists access points is taken
+          // over from that listing; a door, and a Pareva Anlage typed in by
+          // its Produkt-ID, are entered by hand.
+          originLabel:
+            isLocker && this.listableProviderIds.has(accessPoint.provider)
+              ? this.$t("accessPoint.management.table.originProvider")
+              : this.$t("accessPoint.management.table.originManual"),
           assignedBookables: assigned,
           assignmentLabel: assigned.length
             ? assigned.map((bookable) => bookable.title).join(", ")
@@ -123,6 +127,11 @@ export default {
           qrScanRequired: requiresQrScan(accessPoint),
         };
       });
+    },
+    listableProviderIds() {
+      return new Set(
+        this.providers.filter(canListAccessPoints).map((p) => p.id)
+      );
     },
     // One list for doors and locker systems, narrowed to one kind on demand.
     // Everything that is not a locker system counts as a door - that is the

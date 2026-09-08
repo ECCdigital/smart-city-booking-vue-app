@@ -14,10 +14,16 @@ import AccessPointEditDialog from "@/components/AccessPoint/AccessPointEditDialo
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 
+const LISTS = ["listAccessPoints"];
+
 const PROVIDERS = [
-  { id: "nuki", title: "Nuki" },
-  { id: "ifbs", title: "Parkraumservice" },
+  { id: "nuki", title: "Nuki", providerCapabilities: LISTS },
+  { id: "ifbs", title: "Parkraumservice", providerCapabilities: LISTS },
 ];
+
+// Pareva lists size codes, not products, so the backend reports it without
+// `listAccessPoints`: a Pareva Anlage is entered by hand.
+const PAREVA = { id: "pareva", title: "Pareva", providerCapabilities: [] };
 
 const DOOR = {
   id: "ap-door",
@@ -83,9 +89,9 @@ function labels(wrapper) {
 
 /**
  * One dialog carries doors and locker systems. The type follows the provider -
- * Nuki and Salto KS list doors, iFBS and Pareva list locker systems
- * (`listAccessPoints` in the four providers) - so it is shown, not asked: a
- * select whose answer is already settled is a question without a choice.
+ * Nuki and Salto KS hand out doors, iFBS and Pareva locker systems - so it is
+ * shown, not asked: a select whose answer is already settled is a question
+ * without a choice.
  */
 describe("AccessPointEditDialog", () => {
   beforeEach(() => {
@@ -199,7 +205,9 @@ describe("AccessPointEditDialog", () => {
         "v-item--active"
       );
       expect(wrapper.find(".provider-picker").exists()).toBe(false);
-      expect(dialogText(wrapper)).toContain("Eine Tür von Hand eintragen");
+      expect(dialogText(wrapper)).toContain(
+        "Eine Tür oder eine Pareva-Anlage von Hand eintragen"
+      );
       expect(wrapper.find(".label-field input").element.value).toBe(
         "Hintereingang"
       );
@@ -249,6 +257,82 @@ describe("AccessPointEditDialog", () => {
       expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
     });
 
+    /**
+     * The listing is a way in only where the provider lists what it hands
+     * out. Pareva lists size codes, not products, so it comes without
+     * `listAccessPoints`: alone, it leaves the dialog on the form with the
+     * provider preset; beside Nuki, the switch stands and the picker's
+     * provider select names Nuki only.
+     */
+    it("offers the picker only for providers that list access points", async () => {
+      const alone = await mountDialog({ providers: [PAREVA] });
+
+      expect(alone.find(".create-mode-toggle").exists()).toBe(false);
+      expect(alone.find(".provider-picker").exists()).toBe(false);
+      expect(alone.find(".provider-field input").element.value).toBe("pareva");
+      expect(alone.find(".access-point-type").text()).toContain("Anlage");
+      expect(labels(alone)).toContain("Produkt-ID");
+      expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+
+      const beside = await mountDialog({ providers: [PROVIDERS[0], PAREVA] });
+
+      expect(beside.find(".create-mode-toggle").exists()).toBe(true);
+      expect(beside.find(".provider-picker").exists()).toBe(true);
+      expect(
+        beside
+          .findComponent({ ref: "pickerProviderSelect" })
+          .props("items")
+          .map((item) => item.value)
+      ).toEqual(["nuki"]);
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledTimes(1);
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "nuki"
+      );
+      // The form's own provider field still knows every active provider.
+      expect(
+        beside.findComponent({ name: "v-combobox" }).props("items")
+      ).toEqual(["nuki", "pareva"]);
+    });
+
+    it("presets the one hand-entered provider once the list arrives", async () => {
+      const wrapper = await mountDialog({ providers: [] });
+      expect(wrapper.find(".provider-field input").element.value).toBe("");
+
+      await wrapper.setProps({ providers: [PAREVA] });
+      await flushPromises();
+
+      expect(wrapper.find(".create-mode-toggle").exists()).toBe(false);
+      expect(wrapper.find(".provider-field input").element.value).toBe(
+        "pareva"
+      );
+      expect(ApiAccessAppsService.getAccessPoints).not.toHaveBeenCalled();
+    });
+
+    /**
+     * A preset is the dialog's doing, not the admin's: when a listing
+     * provider arrives after it, the preset goes with the bare form and the
+     * listing takes over - nothing typed is lost, because nothing was.
+     */
+    it("lets a listing provider that arrives later replace the preset", async () => {
+      const wrapper = await mountDialog({ providers: [PAREVA] });
+      expect(wrapper.find(".provider-field input").element.value).toBe(
+        "pareva"
+      );
+
+      await wrapper.setProps({ providers: [PAREVA, PROVIDERS[0]] });
+      await flushPromises();
+
+      expect(wrapper.find(".create-mode-toggle").exists()).toBe(true);
+      expect(wrapper.find(".provider-picker").exists()).toBe(true);
+      expect(wrapper.find(".provider-field input").element.value).toBe("");
+      expect(wrapper.find(".access-point-type").text()).toContain("Tür");
+      expect(ApiAccessAppsService.getAccessPoints).toHaveBeenCalledWith(
+        "t1",
+        "nuki"
+      );
+    });
+
     it("shows no switch when editing", async () => {
       const wrapper = await mountDialog({ accessPoint: DOOR });
 
@@ -294,9 +378,7 @@ describe("AccessPointEditDialog", () => {
       ],
     });
 
-    const wrapper = await mountDialog({
-      providers: [{ id: "ifbs", title: "Parkraumservice" }],
-    });
+    const wrapper = await mountDialog({ providers: [PROVIDERS[1]] });
 
     wrapper.findComponent({ ref: "lockSelect" }).vm.$emit("input", "loc-42");
     await wrapper.vm.$nextTick();
@@ -326,44 +408,34 @@ describe("AccessPointEditDialog", () => {
 
   /**
    * An Anlage shows the one id field its provider reads - iFBS a location,
-   * Pareva a product size - and no "Standort-ID beim Anbieter", which no
-   * provider reads. Created, it goes out without one, whatever the listing
-   * offered there (Pareva lists the lockerId of the app); edited, a stored
-   * one passes through unseen. A door keeps both fields as they were.
+   * Pareva a product - and no "Standort-ID beim Anbieter", which no provider
+   * reads. Created, it goes out without one, whatever the listing offered
+   * there (iFBS lists its LocationID a second time); edited, a stored one
+   * passes through unseen. A door keeps both fields as they were.
    */
   describe("the id fields of an Anlage", () => {
-    it("saves a taken-over Pareva system by its product size alone", async () => {
+    /**
+     * A Pareva Anlage is a Pareva product, and its id is the product's
+     * 24-hex id from Pareva's administration - typed in, since the listing
+     * has no products to offer.
+     */
+    it("saves a hand-entered Pareva Anlage by its Produkt-ID alone", async () => {
       ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
-      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
-        data: [
-          {
-            id: "M",
-            type: "locker",
-            provider: "pareva",
-            externalId: "M",
-            locationId: "locker-7",
-            label: "Schließfächer Rathaus",
-            supportedModes: ["authorization"],
-          },
-        ],
-      });
 
-      const wrapper = await mountDialog({
-        providers: [{ id: "pareva", title: "Pareva" }],
-      });
+      const wrapper = await mountDialog({ providers: [PAREVA] });
 
-      wrapper.findComponent({ ref: "lockSelect" }).vm.$emit("input", "M");
-      await wrapper.vm.$nextTick();
-      await wrapper.find(".apply-lock").trigger("click");
-      await wrapper.vm.$nextTick();
-
-      expect(labels(wrapper)).toContain("Produktgröße");
+      expect(labels(wrapper)).toContain("Produkt-ID");
       expect(labels(wrapper)).not.toContain("ID beim Anbieter");
       expect(labels(wrapper)).not.toContain("Standort-ID beim Anbieter");
       expect(dialogText(wrapper)).toContain(
-        "Ändern Sie die Produktgröße, um die Anlage bei Pareva auszutauschen."
+        "Ändern Sie die Produkt-ID, um die Anlage bei Pareva auszutauschen."
+      );
+      const productIdInput = wrapper.find(".external-id-field input");
+      expect(productIdInput.attributes("placeholder")).toBe(
+        "z. B. 66570d1a1f9b6357ed971746"
       );
 
+      await productIdInput.setValue("66570d1a1f9b6357ed971746");
       await wrapper.find(".save-access-point").trigger("click");
       await flushPromises();
 
@@ -371,10 +443,32 @@ describe("AccessPointEditDialog", () => {
       expect(payload).toMatchObject({
         type: "locker",
         provider: "pareva",
-        externalId: "M",
+        externalId: "66570d1a1f9b6357ed971746",
         providerLocationId: null,
         mode: "authorization",
+        validationRules: [],
       });
+    });
+
+    it("shows a stored Pareva Anlage the same field", async () => {
+      const wrapper = await mountDialog({
+        providers: [PAREVA],
+        accessPoint: {
+          id: "ap-pareva",
+          type: "locker",
+          provider: "pareva",
+          label: "Schließfächer Rathaus",
+          externalId: "66570d1a1f9b6357ed971746",
+          mode: "authorization",
+          validationRules: [],
+        },
+      });
+
+      expect(labels(wrapper)).toContain("Produkt-ID");
+      expect(labels(wrapper)).not.toContain("Standort-ID beim Anbieter");
+      expect(dialogText(wrapper)).toContain(
+        "Ändern Sie die Produkt-ID, um die Anlage bei Pareva auszutauschen."
+      );
     });
 
     it("passes a stored location id through unseen when editing", async () => {

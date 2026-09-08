@@ -7,6 +7,8 @@ import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
   accessPointLabel,
   accessPointTypeLabel,
+  canListAccessPoints,
+  hasProviderCapability,
   isLockerAccessPoint,
   providerAccessPointDefaults,
   providerIdFields,
@@ -71,6 +73,11 @@ export default {
       saveError: "",
       pickerProvider: "",
       pickerLockId: "",
+      // The provider the form was opened on when there was nothing to take
+      // over from and one provider active - a Pareva Anlage is entered by
+      // hand, and with Pareva alone there is no choice to ask for. Remembered
+      // so that a preset does not count as something typed.
+      presetProvider: "",
       providerLocks: [],
       loadingLocks: false,
       lockLoadError: "",
@@ -119,6 +126,11 @@ export default {
         ? this.$t("accessPoint.management.fields.externalIdHintLocker")
         : this.$t("accessPoint.management.fields.externalIdHint");
     },
+    externalIdPlaceholder() {
+      return this.idFields.placeholder
+        ? this.$t(`accessPoint.management.fields.${this.idFields.placeholder}`)
+        : "";
+    },
     showLocationField() {
       return this.idFields.locationField;
     },
@@ -126,9 +138,10 @@ export default {
       return this.isLocker ? "mdi-locker-multiple" : "mdi-door-closed-lock";
     },
     // The choice between the two ways in is only offered while there is a
-    // provider to take over from; without one the dialog is the door form.
+    // provider that lists access points to take over from; without one the
+    // dialog is the form alone.
     showModeToggle() {
-      return !this.isEdit && this.providerOptions.length > 0;
+      return !this.isEdit && this.pickerProviderOptions.length > 0;
     },
     createModes() {
       return CREATE_MODES.map((mode) => ({
@@ -139,27 +152,25 @@ export default {
     modeHint() {
       return this.$t(`accessPoint.management.dialog.modeHints.${this.mode}`);
     },
-    // Nothing entered yet: the form is what `reset()` made of it, the
-    // configuration untouched, the QR switch not flipped. The provider
-    // defaults only ever run behind a provider, so type and mode need no
-    // check of their own.
+    // Nothing entered yet: the form is what `reset()` made of it - a preset
+    // provider included - the configuration untouched, the QR switch not
+    // flipped. The provider defaults only ever run behind a provider, so
+    // type and mode need no check of their own.
     untouched() {
       const blank = emptyForm();
       return (
-        [
-          "label",
-          "provider",
-          "externalId",
-          "providerLocationId",
-          "location",
-        ].every((field) => this.form[field] === blank[field]) &&
+        ["label", "externalId", "providerLocationId", "location"].every(
+          (field) => this.form[field] === blank[field]
+        ) &&
+        (this.form.provider === blank.provider ||
+          this.form.provider === this.presetProvider) &&
         this.configText === "{}" &&
         !this.validationRulesTouched
       );
     },
-    // The picker is the way into a locker system - it is what reads
-    // `listAccessPoints` - and the shortcut for a door. Entering a door by
-    // hand goes without it.
+    // The picker is the way into an iFBS locker system and the shortcut for
+    // a door - it is what reads `listAccessPoints`. Entering a door or a
+    // Pareva Anlage by hand goes without it.
     showPicker() {
       return this.showModeToggle && this.mode === PROVIDER_MODE;
     },
@@ -179,14 +190,19 @@ export default {
         };
       });
     },
-    providerOptions() {
-      return this.providers.map((provider) => ({
+    // The picker offers only what can be taken over: providers that list
+    // access points. Pareva is not among them - its listing names size
+    // codes, not the products a Pareva Anlage stands for.
+    pickerProviderOptions() {
+      return this.providers.filter(canListAccessPoints).map((provider) => ({
         value: provider.id,
         text: provider.title || provider.id,
       }));
     },
-    // The free-text field keeps plain ids: a provider may be edited to one
-    // that is not active for this tenant (swapping a lock, migrations).
+    // The free-text field keeps plain ids, and every active provider: one
+    // that lists nothing is still entered by hand here, and a provider may
+    // be edited to one that is not active for this tenant (swapping a lock,
+    // migrations).
     providerIds() {
       return this.providers.map((provider) => provider.id);
     },
@@ -227,9 +243,7 @@ export default {
     canPrefillLocation() {
       if (!this.isEdit) return false;
       const provider = this.providers.find((p) => p.id === this.form.provider);
-      return !!provider?.providerCapabilities?.includes(
-        GET_LOCATION_CAPABILITY
-      );
+      return hasProviderCapability(provider, GET_LOCATION_CAPABILITY);
     },
     coordinates() {
       const points = this.form.location?.coordinates?.points;
@@ -247,16 +261,13 @@ export default {
       if (provider) this.fetchProviderLocks();
     },
     // The provider list may still be loading while the dialog opens: a dialog
-    // that opened on the door form for want of a provider turns to the
-    // provider once the list arrives - as long as nothing has been typed yet.
-    providerOptions(options) {
-      if (!this.open || this.isEdit || !options.length) return;
-      if (this.mode === MANUAL_MODE && this.untouched) {
-        this.mode = PROVIDER_MODE;
-      }
-      if (this.showPicker && !this.pickerProvider) {
-        this.pickerProvider = options[0].value;
-      }
+    // that opened on the bare form for want of a listing chooses its way in
+    // anew once the list arrives - as long as nothing has been typed yet. A
+    // dialog that already had a listing keeps what the admin did with it.
+    providers() {
+      if (!this.open || this.isEdit || !this.untouched) return;
+      if (this.mode === PROVIDER_MODE || this.pickerProvider) return;
+      this.chooseWayIn();
     },
   },
   methods: {
@@ -291,11 +302,43 @@ export default {
       // A new access point starts with the rule the server would default to,
       // so what the switch shows is what an untouched create produces.
       this.qrScanRequired = source ? requiresQrScan(source) : true;
-      this.mode = this.providerOptions.length ? PROVIDER_MODE : MANUAL_MODE;
-      this.pickerProvider = this.showPicker
-        ? this.providerOptions[0]?.value || ""
-        : "";
+      // A stored access point is edited as it is; only a new one has a way
+      // in to choose.
+      if (source) {
+        this.mode = MANUAL_MODE;
+        this.pickerProvider = "";
+        this.presetProvider = "";
+      } else {
+        this.chooseWayIn();
+      }
       this.$nextTick(() => this.$refs.form?.resetValidation());
+    },
+    // The way into a new access point, from what is active: a provider that
+    // lists access points opens the listing, preset to the first of them.
+    // Without one the dialog is the form alone - and with exactly one
+    // provider active, the form starts on it, the way a tenant with Pareva
+    // alone lands on the Pareva Anlage without being asked. Two providers
+    // and no listing leave the choice to the admin.
+    //
+    // Runs on an untouched form only - fresh from `reset()`, or before
+    // anything was typed - so the provider it finds there is its own doing:
+    // a preset from an earlier run goes when the preset goes, with the type
+    // and mode it brought along.
+    chooseWayIn() {
+      const listable = this.pickerProviderOptions;
+      const preset =
+        !listable.length && this.providers.length === 1
+          ? this.providers[0].id
+          : "";
+      const blank = emptyForm();
+
+      this.mode = listable.length ? PROVIDER_MODE : MANUAL_MODE;
+      this.pickerProvider = listable[0]?.value || "";
+      this.presetProvider = preset;
+      this.form.provider = preset || blank.provider;
+      this.form.type = blank.type;
+      this.form.mode = blank.mode;
+      if (preset) this.applyProviderDefaults(preset);
     },
     async fetchProviderLocks() {
       this.loadingLocks = true;
@@ -520,8 +563,8 @@ export default {
             </div>
           </template>
 
-          <!-- Provider listing, the way a locker system and optionally a door
-               is taken over -->
+          <!-- Provider listing, the way an iFBS locker system and optionally
+               a door is taken over -->
           <template v-if="showPicker">
             <div class="provider-picker section-title mb-3">
               <v-icon small left>mdi-magnify</v-icon>
@@ -533,8 +576,9 @@ export default {
             <v-row dense align="center">
               <v-col cols="12" md="4">
                 <v-select
+                  ref="pickerProviderSelect"
                   v-model="pickerProvider"
-                  :items="providerOptions"
+                  :items="pickerProviderOptions"
                   :label="$t('accessPoint.management.picker.provider')"
                   background-color="accent"
                   filled
@@ -651,9 +695,12 @@ export default {
             </v-col>
             <v-col cols="12" md="6">
               <v-text-field
+                class="external-id-field"
                 v-model="form.externalId"
                 :label="externalIdLabel"
                 :hint="externalIdHint"
+                :placeholder="externalIdPlaceholder"
+                :persistent-placeholder="!!externalIdPlaceholder"
                 persistent-hint
                 background-color="accent"
                 filled
