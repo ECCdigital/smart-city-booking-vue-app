@@ -6,11 +6,12 @@ export const LOCKER_TYPE = "locker";
 export const DOOR_TYPE = "door";
 
 /**
- * What each access provider hands out, mirroring what its `listAccessPoints`
- * answers in the backend: Nuki and Salto KS list doors, iFBS and Pareva list
- * locker systems. The mode of a locker system follows from the provider as
- * well - iFBS opens a compartment remotely, Pareva hands out a code - which is
- * the table the fold migration used (`MODE_BY_PROVIDER`).
+ * What each access provider hands out: Nuki and Salto KS doors, iFBS and
+ * Pareva locker systems. The mode of a locker system follows from the
+ * provider as well - iFBS opens a compartment remotely, Pareva hands out a
+ * code - which is the table the fold migration used (`MODE_BY_PROVIDER`).
+ * Whether the provider also lists them is a capability of its own, see
+ * `canListAccessPoints`.
  *
  * A provider outside this table says nothing about the type; the access point
  * keeps the one it has.
@@ -40,26 +41,34 @@ export function providerAccessPointDefaults(provider) {
  * it lives in (`providerLocationId`) - and so does an access point of a
  * provider this table does not know. A locker system of iFBS or Pareva carries
  * one, because its provider knows only one: iFBS the `LocationID` of the
- * location, Pareva the `size` of the product, both stored in `externalId`.
- * `providerLocationId` is read by no provider and stays out of sight for them.
+ * location, Pareva the product id - a Pareva Anlage is a Pareva product, and
+ * the id is the product's 24-hex id from Pareva's administration - both stored
+ * in `externalId`. `providerLocationId` is read by no provider and stays out
+ * of sight for them.
  *
- * `label` and `hint` name keys under `accessPoint.management.fields`; a `null`
- * hint leaves the dialog's own hint - the one by type - in place.
+ * `label`, `hint` and `placeholder` name keys under
+ * `accessPoint.management.fields`; a `null` hint leaves the dialog's own hint
+ * - the one by type - in place, a `null` placeholder leaves the field bare.
+ * Only the Pareva product id has one, because a 24-hex id is nothing an admin
+ * would guess the shape of.
  */
 const DEFAULT_ID_FIELDS = Object.freeze({
   label: "externalId",
   hint: null,
+  placeholder: null,
   locationField: true,
 });
 const PROVIDER_ID_FIELDS = {
   ifbs: Object.freeze({
     label: "locationId",
     hint: "locationIdHint",
+    placeholder: null,
     locationField: false,
   }),
   pareva: Object.freeze({
-    label: "productSize",
-    hint: "productSizeHint",
+    label: "productId",
+    hint: "productIdHint",
+    placeholder: "productIdPlaceholder",
     locationField: false,
   }),
 };
@@ -68,12 +77,32 @@ const PROVIDER_ID_FIELDS = {
  * Which id fields an access point of the provider shows.
  *
  * @param {string} provider A provider id, e.g. "nuki" or "ifbs"
- * @returns {{label: string, hint: string|null, locationField: boolean}} The
- *   translation key of the `externalId` label, that of its hint (or `null` for
- *   the hint by type), and whether the `providerLocationId` field is shown
+ * @returns {{label: string, hint: string|null, placeholder: string|null, locationField: boolean}}
+ *   The translation key of the `externalId` label, that of its hint (or
+ *   `null` for the hint by type), that of its placeholder (or `null` for
+ *   none), and whether the `providerLocationId` field is shown
  */
 export function providerIdFields(provider) {
   return PROVIDER_ID_FIELDS[provider] || DEFAULT_ID_FIELDS;
+}
+
+const LIST_ACCESS_POINTS_CAPABILITY = "listAccessPoints";
+
+/**
+ * Whether the provider lists access points to take over - the backend's
+ * `listAccessPoints` capability, reported per provider. Nuki, Salto KS and
+ * iFBS do; Pareva does not, because what it could list are size codes, not
+ * the products a Pareva Anlage stands for. The picker offers only providers
+ * that do; the others are entered by hand.
+ *
+ * @param {Object} provider A provider as `getProviders` reports it, with its
+ *   `providerCapabilities`
+ * @returns {boolean} True when the provider lists access points
+ */
+export function canListAccessPoints(provider) {
+  return !!provider?.providerCapabilities?.includes(
+    LIST_ACCESS_POINTS_CAPABILITY
+  );
 }
 
 /**

@@ -74,6 +74,26 @@ const LOCKER = {
   validationRules: [],
 };
 
+const PAREVA_LOCKER = {
+  id: "ap-pareva",
+  type: "locker",
+  provider: "pareva",
+  label: "Schließfächer Rathaus",
+  externalId: "66570d1a1f9b6357ed971746",
+  validationRules: [],
+};
+
+// What the backend reports: iFBS lists its locations, Pareva lists nothing
+// to take over (its listing names size codes, not products).
+const PROVIDERS = [
+  {
+    id: "ifbs",
+    title: "Parkraumservice",
+    providerCapabilities: ["listAccessPoints"],
+  },
+  { id: "pareva", title: "Pareva", providerCapabilities: [] },
+];
+
 async function mountManagement() {
   const store = new Vuex.Store({
     modules: {
@@ -160,9 +180,15 @@ describe("AccessPointManagement", () => {
    * it came from, not by a screen of its own.
    */
   describe("doors and locker systems in one list", () => {
+    /**
+     * The Herkunft is derived, not stored: "Vom Anbieter" for an Anlage whose
+     * provider lists access points, "Selbst angelegt" for everything else -
+     * a door, and a Pareva Anlage, which is typed in by its Produkt-ID.
+     */
     it("names the type and the origin of both", async () => {
+      ApiAccessAppsService.getProviders.mockResolvedValue({ data: PROVIDERS });
       ApiAccessPointService.getAccessPoints.mockResolvedValue({
-        data: [DOOR, LOCKER],
+        data: [DOOR, LOCKER, PAREVA_LOCKER],
       });
 
       const wrapper = await mountManagement();
@@ -174,6 +200,11 @@ describe("AccessPointManagement", () => {
       const lockerRow = rowFor(wrapper, "Fahrradboxen Bahnhof");
       expect(lockerRow.text()).toContain("Anlage");
       expect(lockerRow.text()).toContain("Vom Anbieter");
+
+      const parevaRow = rowFor(wrapper, "Schließfächer Rathaus");
+      expect(parevaRow.text()).toContain("Anlage");
+      expect(parevaRow.text()).toContain("Selbst angelegt");
+      expect(parevaRow.text()).not.toContain("Vom Anbieter");
     });
 
     /**

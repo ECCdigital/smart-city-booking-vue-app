@@ -1134,8 +1134,9 @@
         "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen.",
         "locationId": "Standort-ID",
         "locationIdHint": "Ändern Sie die Standort-ID, um die Anlage bei iFBS auszutauschen.",
-        "productSize": "Produktgröße",
-        "productSizeHint": "Ändern Sie die Produktgröße, um die Anlage bei Pareva auszutauschen."
+        "productId": "Produkt-ID",
+        "productIdHint": "Ändern Sie die Produkt-ID, um die Anlage bei Pareva auszutauschen.",
+        "productIdPlaceholder": "z. B. 66570d1a1f9b6357ed971746"
       },
       "picker": {
         "title": "Zugangspunkt vom Anbieter übernehmen",
@@ -1143,7 +1144,7 @@
         "lock": "Zugangspunkt",
         "apply": "Übernehmen",
         "alreadyCreated": "bereits angelegt",
-        "hint": "Der Anbieter sagt, ob es eine Tür oder eine Schließfachanlage ist. Die übernommenen Angaben lassen sich anschließend frei ändern."
+        "hint": "Was der Anbieter listet, bringt seinen Typ mit – Tür oder Schließfachanlage. Die übernommenen Angaben lassen sich anschließend frei ändern."
       },
       "ruleTypes": {
         "qrScan": "QR-Scan erforderlich"
@@ -1214,7 +1215,7 @@
         },
         "modeHints": {
           "provider": "Der Anbieter listet seine Türen und Anlagen; das Formular füllt sich aus der Liste.",
-          "manual": "Eine Tür von Hand eintragen. Eine Schließfachanlage kommt immer vom Anbieter."
+          "manual": "Eine Tür oder eine Pareva-Anlage von Hand eintragen. Eine iFBS-Anlage kommt immer vom Anbieter."
         }
       },
       "errors": {
