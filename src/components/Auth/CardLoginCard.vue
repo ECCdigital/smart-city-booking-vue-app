@@ -189,6 +189,7 @@
 <script>
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ToastService from "@/services/ToastService";
+import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
 import { mapActions, mapGetters } from "vuex";
 
 export default {
@@ -249,10 +250,10 @@ export default {
       return !!this.termsAndConditions.url;
     },
     dataProtectionHref() {
-      return this.legalHref(this.dataProtection.url);
+      return legalDocumentHref(this.dataProtection.url);
     },
     termsHref() {
-      return this.legalHref(this.termsAndConditions.url);
+      return legalDocumentHref(this.termsAndConditions.url);
     },
   },
 
@@ -303,11 +304,6 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-
-    legalHref(url) {
-      if (!url) return "";
-      return /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
     },
 
     buildLegalAcceptance() {

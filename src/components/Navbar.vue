@@ -233,6 +233,13 @@ export default {
             interfaceName: "events",
             context: "tenant",
           },
+          {
+            title: "Mediathek",
+            link: "media",
+            icon: "mdi-image-multiple-outline",
+            interfaceName: "media",
+            context: "tenant",
+          },
         ],
       },
       {
@@ -257,6 +264,13 @@ export default {
             link: "roles",
             icon: "mdi-shield-account-outline",
             interfaceName: "roles",
+            context: "tenant",
+          },
+          {
+            title: "Zutritt & Schließsysteme",
+            link: "access-points",
+            icon: "mdi-door-closed-lock",
+            interfaceName: "tenants",
             context: "tenant",
           },
         ],

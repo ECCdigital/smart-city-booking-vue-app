@@ -23,6 +23,21 @@
           Gruppenbuchung haben.
         </v-alert>
 
+        <BookingStatusPath
+          class="mb-6"
+          :status="booking.status"
+          :path="path"
+          :actions="actions"
+          @action="transition"
+        >
+          <template v-if="path.end && path.end.reason" #reason>
+            <div class="text-caption font-weight-bold error--text">
+              {{ $t(`booking.edit.reason.${path.end.status}`) }}
+            </div>
+            <div class="text-body-2">{{ path.end.reason }}</div>
+          </template>
+        </BookingStatusPath>
+
         <v-card class="mb-6 section-card" elevation="2" outlined>
           <v-card-title
             class="section-header pa-4 d-flex justify-space-between align-center"
@@ -111,26 +126,6 @@
               <v-col cols="12" md="6">
                 <div class="info-item">
                   <div class="info-label">
-                    <v-icon small class="mr-2">mdi-shield-check-outline</v-icon>
-                    Freigabestatus
-                  </div>
-                  <div class="info-value">
-                    <v-chip
-                      small
-                      :color="getApprovalStatusColor()"
-                      text-color="white"
-                    >
-                      <v-icon left x-small>
-                        {{ getApprovalStatusIcon() }}
-                      </v-icon>
-                      {{ getApprovalStatusText() }}
-                    </v-chip>
-                  </div>
-                </div>
-              </v-col>
-              <v-col cols="12" md="6">
-                <div class="info-item">
-                  <div class="info-label">
                     <v-icon small class="mr-2">mdi-book-cancel-outline</v-icon>
                     Stornierungsrichtlinie
                   </div>
@@ -156,114 +151,7 @@
           </v-card-text>
         </v-card>
 
-        <v-card
-          v-if="confirmedIfbsLockers.length > 0"
-          class="mb-6 section-card"
-          elevation="2"
-          outlined
-        >
-          <v-card-title class="section-header pa-4">
-            <v-icon class="mr-2">mdi-lock-outline</v-icon>
-            <span class="text-h6 font-weight-bold">Schließfach-Steuerung</span>
-          </v-card-title>
-          <v-divider></v-divider>
-          <v-card-text class="pa-1">
-            <v-list dense>
-              <template v-for="(locker, index) in confirmedIfbsLockers">
-                <v-list-item :key="locker.processId" class="px-4 py-2">
-                  <v-list-item-avatar color="indigo lighten-4">
-                    <v-icon color="indigo">mdi-locker</v-icon>
-                  </v-list-item-avatar>
-                  <v-list-item-content>
-                    <v-list-item-title class="font-weight-bold">
-                      Fahrradbox #{{ locker.ifbsMetadata?.nummer || locker.id }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle>
-                      <span class="mr-3">
-                        <v-icon x-small>mdi-identifier</v-icon>
-                        Box-ID: {{ locker.ifbsMetadata?.boxId }}
-                      </span>
-                      <span class="mr-3">
-                        <v-icon x-small>mdi-tag-outline</v-icon>
-                        Vorgang: {{ locker.processId }}
-                      </span>
-                    </v-list-item-subtitle>
-                    <v-list-item-subtitle class="mt-1">
-                      <v-chip
-                        v-if="getLockerDisplayStatus(locker.processId)"
-                        x-small
-                        :color="getLockerDisplayStatus(locker.processId).color"
-                        text-color="white"
-                      >
-                        <v-progress-circular
-                          v-if="
-                            getLockerDisplayStatus(locker.processId).loading
-                          "
-                          indeterminate
-                          size="10"
-                          width="1"
-                          color="white"
-                          class="mr-1"
-                        />
-                        <v-icon v-else left x-small>
-                          {{ getLockerDisplayStatus(locker.processId).icon }}
-                        </v-icon>
-                        {{ getLockerDisplayStatus(locker.processId).text }}
-                      </v-chip>
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
-                  <v-list-item-action
-                    class="flex-row align-center"
-                    style="gap: 8px"
-                  >
-                    <v-btn
-                      small
-                      outlined
-                      color="info"
-                      :loading="lockerLoading[locker.processId + '_status']"
-                      :disabled="!lockerOpenIds[locker.processId]"
-                      @click="fetchLockerStatus(locker)"
-                    >
-                      <v-icon left small>mdi-refresh</v-icon>
-                      Status prüfen
-                    </v-btn>
-                    <v-btn
-                      small
-                      color="success"
-                      :loading="lockerLoading[locker.processId + '_open']"
-                      :disabled="lockerLoading[locker.processId + '_waitOpen']"
-                      @click="openLocker(locker)"
-                    >
-                      <v-icon left small>mdi-lock-open-variant</v-icon>
-                      Öffnen
-                    </v-btn>
-                  </v-list-item-action>
-                </v-list-item>
-
-                <v-expand-transition :key="'alert-' + locker.processId">
-                  <div v-if="lockerErrors[locker.processId]" class="px-4 pb-2">
-                    <v-alert
-                      type="error"
-                      dense
-                      outlined
-                      border="left"
-                      class="mb-0 mt-1"
-                      dismissible
-                      @input="$set(lockerErrors, locker.processId, null)"
-                    >
-                      {{ lockerErrors[locker.processId] }}
-                    </v-alert>
-                  </div>
-                </v-expand-transition>
-
-                <v-divider
-                  v-if="index < confirmedIfbsLockers.length - 1"
-                  :key="`locker-divider-${index}`"
-                />
-              </template>
-            </v-list>
-          </v-card-text>
-        </v-card>
+        <BookingAccessPoints :booking="booking" />
 
         <v-card class="mb-6 section-card" elevation="2" outlined>
           <v-card-title class="section-header pa-4">
@@ -378,26 +266,6 @@
                   </div>
                 </div>
               </v-col>
-              <v-col cols="12" md="6">
-                <div class="info-item">
-                  <div class="info-label">
-                    <v-icon small class="mr-2">mdi-check-circle-outline</v-icon>
-                    Status der Zahlung
-                  </div>
-                  <div class="info-value">
-                    <v-chip
-                      small
-                      :color="getPaymentStatusColor(booking)"
-                      :text-color="getPaymentStatusTextColor(booking)"
-                    >
-                      <v-icon left x-small>
-                        {{ getPaymentStatusIcon(booking) }}
-                      </v-icon>
-                      {{ getPaymentStatusLabel(booking) }}
-                    </v-chip>
-                  </div>
-                </div>
-              </v-col>
               <v-col
                 cols="12"
                 md="6"
@@ -426,7 +294,6 @@
                 cols="12"
                 v-if="
                   isPaymentPending(booking) &&
-                  booking.isCommitted &&
                   booking.paymentProvider &&
                   booking.paymentProvider !== 'invoice'
                 "
@@ -535,35 +402,6 @@
                           </v-list-item>
                         </v-list>
                       </v-menu>
-                    </div>
-                  </div>
-                </v-alert>
-              </v-col>
-              <v-col cols="12" md="6" v-if="hasPaidDate(booking)">
-                <div class="info-item">
-                  <div class="info-label">
-                    <v-icon small class="mr-2">mdi-calendar-check</v-icon>
-                    Bezahldatum
-                  </div>
-                  <div class="info-value">
-                    {{
-                      Intl.DateTimeFormat("de-DE", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      }).format(new Date(booking.timePaid))
-                    }}
-                  </div>
-                </div>
-              </v-col>
-            </v-row>
-            <v-row v-if="booking.isRejected && booking.rejectionReason">
-              <v-col cols="12">
-                <v-alert type="error" dense outlined border="left" class="mb-0">
-                  <div class="d-flex align-center">
-                    <v-icon class="mr-2">mdi-alert-circle</v-icon>
-                    <div>
-                      <div class="font-weight-bold">Ablehnungsgrund</div>
-                      <div>{{ booking.rejectionReason }}</div>
                     </div>
                   </div>
                 </v-alert>
@@ -760,56 +598,14 @@
           </v-card-text>
         </v-card>
 
-        <v-card
-          v-if="cancellationReceipts?.length > 0"
-          class="mb-6 section-card"
-          elevation="2"
-          outlined
-        >
-          <v-card-title class="section-header pa-4">
-            <v-icon class="mr-2">mdi-book-cancel-outline</v-icon>
-            <span class="text-h6 font-weight-bold">Stornobelege</span>
-          </v-card-title>
-          <v-divider></v-divider>
-          <v-card-text class="pa-0">
-            <v-list dense>
-              <template v-for="(item, index) in cancellationReceipts">
-                <v-list-item :key="index" class="px-4">
-                  <v-list-item-avatar color="success lighten-4">
-                    <v-icon color="success">mdi-file-pdf-box</v-icon>
-                  </v-list-item-avatar>
-                  <v-list-item-content>
-                    <v-list-item-title class="font-weight-bold">
-                      {{ item.title }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle v-if="item.timeCreated">
-                      <v-icon x-small>mdi-calendar</v-icon>
-                      Ausstellungsdatum:
-                      {{
-                        Intl.DateTimeFormat("de-DE", {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        }).format(new Date(item.timeCreated))
-                      }}
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
-                  <v-list-item-action>
-                    <v-btn
-                      icon
-                      @click="downloadCancellationReceipt(item.title)"
-                    >
-                      <v-icon>mdi-download</v-icon>
-                    </v-btn>
-                  </v-list-item-action>
-                </v-list-item>
-                <v-divider
-                  v-if="index < cancellationReceipts.length - 1"
-                  :key="`divider-${index}`"
-                />
-              </template>
-            </v-list>
-          </v-card-text>
-        </v-card>
+        <CancellationReceiptsCard
+          :receipts="cancellationReceipts"
+          :can-reprint="canReprintCancellationReceipt"
+          :busy="reprintInProgress"
+          :error="errors.cancellationReceipt"
+          @reprint="reprintCancellationReceipt"
+          @download="downloadCancellationReceipt"
+        />
 
         <v-card
           v-if="invoices?.length > 0"
@@ -867,7 +663,11 @@
               <v-icon class="mr-2">mdi-file-document-outline</v-icon>
               <span class="text-h6 font-weight-bold">Buchungsbelege</span>
             </div>
-            <v-btn small @click="createReceipt(booking.id)">
+            <v-btn
+              v-if="canCreateReceipt"
+              small
+              @click="createReceipt(booking.id)"
+            >
               <v-icon left small>mdi-plus</v-icon>
               Beleg erstellen
             </v-btn>
@@ -1046,6 +846,11 @@
         </v-btn>
       </v-card-actions>
       <ProcessingIndicator ref="processingIndicator" />
+      <BookingTransitions
+        ref="transitions"
+        @transitioned="onTransitioned"
+        @failed="onTransitionFailed"
+      />
       <GroupBookingCreateReceipt
         :open="openCreateAggregatedReceipt"
         :booking-id="booking.id"
@@ -1070,7 +875,6 @@
 
 <script>
 import ApiBookingService from "@/services/api/ApiBookingService";
-import ApiAccessService from "@/services/api/ApiAccessService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 import GroupBookingCreateReceipt from "@/components/Booking/GroupBookingCreateReceipt.vue";
@@ -1080,25 +884,45 @@ import {
   getBookingErrorMessage,
   getGroupBookingErrorMessage,
 } from "@/utils/errorMessages";
-import { getIfbsErrorMessage } from "@/utils/ifbsErrors";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
 import {
-  getPaymentStatus,
-  getPaymentStatusColor,
-  getPaymentStatusIcon,
-  getPaymentStatusLabel,
-  getPaymentStatusTextColor,
-  PAYMENT_STATUS,
-} from "@/utils/bookingPaymentStatus";
+  BOOKING_STATUS,
+  groupBookingStatus,
+  isRejectedOrCancelled,
+  pathOf,
+  transitionActions,
+  transitionTarget,
+} from "@/utils/bookingStatus";
+import BookingAccessPoints from "@/components/Booking/BookingAccessPoints.vue";
+import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
+import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
+import CancellationReceiptsCard from "@/components/Booking/CancellationReceiptsCard.vue";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
+import {
+  getApiErrorMessage,
+  shouldRefetch,
+  unpackBlobErrorBody,
+} from "@/services/api/apiErrorMessage";
 
+/**
+ * The detail drawer is the third host of `BookingTransitions` (spec E3):
+ * it shows the state as a headline over its path (spec N3, N4) with the
+ * state's transitions, hands the action to the mounted module, and asks
+ * its host to reload the booking (`update`) after a transition - and after
+ * a refused one that says the screen is stale (spec E5).
+ */
 export default {
   name: "BookingDetails",
   components: {
     BookableTypeChip,
+    BookingAccessPoints,
+    BookingStatusPath,
+    BookingTransitions,
+    CancellationReceiptsCard,
     CancellationRefundAudit,
     ProcessingIndicator,
     GroupBookingCreateReceipt,
@@ -1123,7 +947,9 @@ export default {
       errors: {
         receipt: null,
         invoice: null,
+        cancellationReceipt: null,
       },
+      reprintInProgress: false,
       invoiceLoading: false,
       invoiceGenerateLoading: false,
       paymentLinkCopied: false,
@@ -1132,10 +958,6 @@ export default {
       paymentLinkCopiedTimeout: null,
       singlePaymentLinkCopiedTimeout: null,
       groupPaymentLinkCopiedTimeout: null,
-      lockerStatuses: {},
-      lockerLoading: {},
-      lockerOpenIds: {},
-      lockerErrors: {},
     };
   },
   computed: {
@@ -1169,14 +991,6 @@ export default {
           attachment.type !== "cancellation"
       );
     },
-    confirmedIfbsLockers() {
-      if (!this.booking.lockerInfo || !Array.isArray(this.booking.lockerInfo)) {
-        return [];
-      }
-      return this.booking.lockerInfo.filter(
-        (locker) => locker.lockerSystem === "ifbs" && locker.isConfirmed
-      );
-    },
     hasEventId() {
       return Object.values(this.booking.bookableItems || {}).some(
         (item) => item._bookableUsed?.eventId
@@ -1203,6 +1017,44 @@ export default {
     userCancellable() {
       return this.booking?.cancellationPolicy?.userCancellable !== false;
     },
+    /** The state read as a path (spec N2): the segments, and the cut with its reason. */
+    path() {
+      return pathOf(this.booking);
+    },
+    /** The transitions the state allows, for whoever may edit the booking. */
+    actions() {
+      if (!BookingPermissionService.allowUpdate(this.booking)) {
+        return [];
+      }
+      return transitionActions(this.booking.status);
+    },
+    /** The series' members, where the host handed them over (`groupBooking.bookings`). */
+    members() {
+      return (this.groupBooking?.bookings || []).filter(Boolean);
+    },
+    /**
+     * "Beleg erstellen" is offered at Bestätigt only (spec E8) - for a
+     * series member only while every member is Bestätigt, so that the
+     * aggregated receipt's `PAYED_STATUS` never reaches the UI. Without the
+     * members at hand the member counts as a single booking.
+     */
+    canCreateReceipt() {
+      if (this.members.length > 0) {
+        return this.canCreateGroupReceipt;
+      }
+      return this.booking.status === BOOKING_STATUS.CONFIRMED;
+    },
+    /** The series' aggregated receipt: offered only while every member is confirmed (spec E8). */
+    canCreateGroupReceipt() {
+      return groupBookingStatus(this.members) === BOOKING_STATUS.CONFIRMED;
+    },
+    /** The cancellation receipt's reprint: at Abgelehnt / Storniert, for `booking.reprint` (spec E8). */
+    canReprintCancellationReceipt() {
+      return (
+        isRejectedOrCancelled(this.booking) &&
+        BookingPermissionService.allowReprint(this.booking)
+      );
+    },
   },
   methods: {
     ...mapActions({
@@ -1210,18 +1062,22 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
-    getPaymentStatus,
-    getPaymentStatusLabel,
-    getPaymentStatusColor,
-    getPaymentStatusIcon,
-    getPaymentStatusTextColor,
     isPaymentPending(booking) {
-      return getPaymentStatus(booking) === PAYMENT_STATUS.UNPAID;
+      return booking.status === BOOKING_STATUS.PAYMENT_DUE;
     },
-    hasPaidDate(booking) {
-      return (
-        getPaymentStatus(booking) === PAYMENT_STATUS.PAID && booking.timePaid
+    transition(action) {
+      this.$refs.transitions.start(
+        action,
+        transitionTarget(this.booking, this.groupBooking)
       );
+    },
+    onTransitioned() {
+      this.$emit("update", this.booking.id);
+    },
+    onTransitionFailed({ refetch }) {
+      if (refetch) {
+        this.$emit("update", this.booking.id);
+      }
     },
 
     generateAndSendInvoice() {
@@ -1363,54 +1219,6 @@ export default {
           return String(value);
       }
     },
-    getIfbsErrorMessage(errorCode) {
-      return getIfbsErrorMessage(errorCode);
-    },
-    getLockerDisplayStatus(processId) {
-      const isWaiting = this.lockerLoading[processId + "_waitOpen"];
-      const status = this.lockerStatuses[processId];
-
-      if (isWaiting) {
-        return {
-          color: "orange",
-          icon: null,
-          text: "Warte auf Bestätigung…",
-          loading: true,
-        };
-      }
-
-      if (!status) return null;
-
-      if (status.confirmed) {
-        return {
-          color: "success",
-          icon: "mdi-lock-open-variant",
-          text: status.confirmedAt
-            ? `Geöffnet (${new Date(status.confirmedAt).toLocaleTimeString(
-                "de-DE",
-                { hour: "2-digit", minute: "2-digit", second: "2-digit" }
-              )})`
-            : "Geöffnet",
-          loading: false,
-        };
-      }
-
-      if (status.errorCode) {
-        return {
-          color: "error",
-          icon: "mdi-alert-circle",
-          text: `Fehler ${status.errorCode}`,
-          loading: false,
-        };
-      }
-
-      return {
-        color: "orange darken-1",
-        icon: "mdi-timer-sand",
-        text: "Noch nicht bestätigt",
-        loading: false,
-      };
-    },
     translatePaymentProvider(provider) {
       switch (provider) {
         case "giroCockpit":
@@ -1461,38 +1269,8 @@ export default {
           return "Unbekannt";
       }
     },
-    getApprovalStatusText() {
-      if (this.booking.isRejected && !this.booking.isCommitted) {
-        return "Abgelehnt";
-      }
-      if (this.booking.isRejected && this.booking.isCommitted) {
-        return "Storniert";
-      }
-      if (this.booking.isCommitted) {
-        return "Freigegeben";
-      }
-      return "Ausstehend";
-    },
-    getApprovalStatusColor() {
-      if (this.booking.isRejected) {
-        return "error";
-      }
-      if (this.booking.isCommitted) {
-        return "success";
-      }
-      return "warning";
-    },
-    getApprovalStatusIcon() {
-      if (this.booking.isRejected) {
-        return "mdi-close-circle";
-      }
-      if (this.booking.isCommitted) {
-        return "mdi-check-circle";
-      }
-      return "mdi-clock-outline";
-    },
     createReceipt(bookingId) {
-      if (this.groupBooking) {
+      if (this.canCreateGroupReceipt) {
         this.openCreateAggregatedReceipt = true;
       } else {
         this.createSingleReceipt(bookingId);
@@ -1595,24 +1373,91 @@ export default {
           ProcessingService.hide(operationId);
         });
     },
-    downloadCancellationReceipt(name) {
-      const operationId = ProcessingService.showSnackbar(
-        "Stelle Stornobeleg bereit..."
+    /**
+     * Reissues the cancellation receipt as a further revision under the same
+     * number (spec E8) and asks the host to reload, so that the new
+     * attachment shows. A 409 `not_cancelled` says the screen is stale and
+     * reloads as well (spec E5).
+     */
+    async reprintCancellationReceipt() {
+      const operationId = ProcessingService.showOverlay(
+        this.$t("booking.cancellationReceipt.reprint.progress")
       );
-      ApiBookingService.getCancellationReceipt(this.booking.id, name).then(
-        (response) => {
+      this.reprintInProgress = true;
+      this.errors.cancellationReceipt = null;
+      try {
+        const response = await ApiBookingService.reprintCancellationReceipt(
+          this.booking.id
+        );
+        if (response && response.success === false) {
+          this.errors.cancellationReceipt = getBookingErrorMessage(
+            response.errors?.[0]?.code
+          );
+          await this.addToast(
+            ToastService.createToast(
+              "booking.cancellationReceipt.reprint.error",
+              "error"
+            )
+          );
+          return;
+        }
+        await this.addToast(
+          ToastService.createToast(
+            "booking.cancellationReceipt.reprint.success",
+            "success"
+          )
+        );
+        this.$emit("update", this.booking.id);
+      } catch (error) {
+        const message = getApiErrorMessage(
+          error,
+          this.$t("booking.cancellationReceipt.reprint.error.message")
+        );
+        this.errors.cancellationReceipt = message;
+        await this.addToast({
+          title: this.$t("booking.cancellationReceipt.reprint.error.title"),
+          message,
+          type: "error",
+        });
+        if (shouldRefetch(error)) {
+          this.$emit("update", this.booking.id);
+        }
+      } finally {
+        this.reprintInProgress = false;
+        ProcessingService.hide(operationId);
+      }
+    },
+    downloadCancellationReceipt({ title }) {
+      const operationId = ProcessingService.showSnackbar(
+        this.$t("booking.cancellationReceipt.download.progress")
+      );
+      ApiBookingService.getCancellationReceipt(this.booking.id, title)
+        .then((response) => {
           const blob = new Blob([response.data], {
             type: "application/pdf",
           });
           const url = window.URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
-          link.setAttribute("download", name);
+          link.setAttribute("download", title);
           document.body.appendChild(link);
           link.click();
+        })
+        .catch(async (error) => {
+          // The request asked for a Blob, so the body is unpacked before it is read.
+          const unpacked = await unpackBlobErrorBody(error);
+          this.addToast({
+            title: this.$t("booking.cancellationReceipt.download.error.title"),
+            message: getApiErrorMessage(
+              unpacked,
+              this.$t("booking.cancellationReceipt.download.error.message")
+            ),
+            type: "error",
+          });
+        })
+        .finally(() => {
           ProcessingService.hide(operationId);
-        }
-      );
+        });
     },
     downloadAttachment({ url, label }) {
       const operationId = ProcessingService.showSnackbar(
@@ -1638,6 +1483,7 @@ export default {
     closeDialog() {
       this.errors.receipt = null;
       this.errors.invoice = null;
+      this.errors.cancellationReceipt = null;
       this.$emit("close");
     },
     closeAggregatedReceipt() {
@@ -1758,159 +1604,6 @@ export default {
     openPaymentLink(isGroupBooking = false) {
       const link = this.getPaymentLink(isGroupBooking);
       window.open(link, "_blank", "noopener,noreferrer");
-    },
-
-    async openLocker(locker) {
-      const pid = locker.processId;
-      this.$set(this.lockerLoading, pid + "_open", true);
-      this.$set(this.lockerErrors, pid, null);
-      this.$set(this.lockerStatuses, pid, null);
-
-      try {
-        const response = await ApiAccessService.open(
-          this.booking.id,
-          locker.processId
-        );
-
-        const responseData = response.data || {};
-
-        if (responseData.success === false) {
-          this.$set(
-            this.lockerErrors,
-            pid,
-            responseData.errors?.[0]?.message || "Fehler beim Öffnen der Box."
-          );
-          this.$set(this.lockerLoading, pid + "_open", false);
-          return;
-        } else if (responseData.success === true) {
-          const openProcessId = responseData.data?.openProcessId;
-          if (openProcessId) {
-            this.$set(this.lockerOpenIds, pid, openProcessId);
-          }
-
-          this.$set(this.lockerLoading, pid + "_open", false);
-          await this.waitForLockerConfirmation(locker);
-        }
-      } catch (error) {
-        this.$set(
-          this.lockerErrors,
-          pid,
-          "Fehler beim Senden des Öffnen-Befehls. Bitte erneut versuchen."
-        );
-        this.$set(this.lockerLoading, pid + "_open", false);
-      }
-    },
-
-    async waitForLockerConfirmation(locker) {
-      const pid = locker.processId;
-      const openProcessId = this.lockerOpenIds[pid];
-
-      if (!openProcessId) {
-        this.$set(
-          this.lockerErrors,
-          pid,
-          "Keine OpenBox-ID vorhanden. Öffnen-Befehl konnte nicht verifiziert werden."
-        );
-        return;
-      }
-
-      this.$set(this.lockerLoading, pid + "_waitOpen", true);
-
-      try {
-        const response = await ApiAccessService.getOpenStatus(
-          this.booking.id,
-          pid,
-          this.booking.tenantId,
-          openProcessId
-        );
-
-        const responseData = response.data || {};
-
-        console.log("Locker-Status-Antwort:", responseData);
-
-        if (responseData.success === false) {
-          this.$set(
-            this.lockerErrors,
-            pid,
-            responseData.errors?.[0]?.message ||
-              "Fehler beim Abrufen des Box-Status."
-          );
-          return;
-        } else {
-          const status = responseData.data;
-
-          this.$set(this.lockerStatuses, pid, status);
-          if (status.confirmed) {
-            await this.addToast(
-              ToastService.createToast("locker.open.success", "success")
-            );
-          } else if (status.errorCode) {
-            this.$set(
-              this.lockerErrors,
-              pid,
-              `Schließfach-Fehler ${status.errorCode}: ${getIfbsErrorMessage(
-                status.errorCode
-              )}`
-            );
-          } else {
-            this.$set(
-              this.lockerErrors,
-              pid,
-              "Die Box hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
-            );
-          }
-        }
-      } catch (error) {
-        this.$set(
-          this.lockerErrors,
-          pid,
-          "Zeitüberschreitung beim Warten auf Bestätigung. Bitte Status manuell prüfen."
-        );
-      } finally {
-        this.$set(this.lockerLoading, pid + "_waitOpen", false);
-      }
-    },
-
-    async fetchLockerStatus(locker) {
-      const pid = locker.processId;
-      const openProcessId = this.lockerOpenIds[pid];
-
-      if (!openProcessId) {
-        return;
-      }
-
-      this.$set(this.lockerLoading, pid + "_status", true);
-      this.$set(this.lockerErrors, pid, null);
-
-      try {
-        const response = await ApiAccessService.getOpenStatus(
-          this.booking.id,
-          pid,
-          this.booking.tenantId,
-          openProcessId
-        );
-
-        const status = response.data?.status || response.data;
-        this.$set(this.lockerStatuses, pid, status);
-
-        if (status?.confirmed) {
-          await this.addToast(
-            ToastService.createToast("locker.open.success", "success")
-          );
-        } else if (status?.errorCode) {
-          this.$set(
-            this.lockerErrors,
-            pid,
-            `Schließfach-Fehler ${status.errorCode}: ${getIfbsErrorMessage(
-              status.errorCode
-            )}`
-          );
-        }
-      } catch (error) {
-        this.$set(this.lockerErrors, pid, "Fehler beim Abfragen des Status.");
-      } finally {
-        this.$set(this.lockerLoading, pid + "_status", false);
-      }
     },
   },
   mounted() {

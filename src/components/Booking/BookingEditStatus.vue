@@ -1,291 +1,339 @@
 <template>
   <div>
-    <v-sheet
-      class="mb-4 px-4 py-2 d-flex flex-wrap align-center status-indicator"
-      rounded
+    <BookingStatusPath
+      v-if="isCreateMode"
+      class="mb-4"
+      chooser
+      :label="$t('booking.initialState.label')"
+      :status="draftStatus"
+      :path="draftPath"
+      :value="draftStatus"
+      @input="choose"
     >
-      <v-switch
-        v-model="booking.isCommitted"
-        label="Freigegeben"
-        hide-details
-        dense
-        class="status-switch mt-0 mr-6"
-        color="primary"
-      >
-        <template v-slot:prepend>
-          <v-icon :color="booking.isCommitted ? 'primary' : 'grey'">
-            {{
-              booking.isCommitted ? "mdi-check-circle" : "mdi-circle-outline"
-            }}
-          </v-icon>
-        </template>
-      </v-switch>
+      <template v-if="asksPayment" #payment>
+        <v-row dense>
+          <v-col cols="12" sm="6">
+            <v-select
+              class="initial-state-payment initial-state-payment-method"
+              :value="initialState.paymentMethod"
+              :items="paymentMethods"
+              item-text="title"
+              item-value="type"
+              :label="$t('booking.initialState.paymentMethod')"
+              outlined
+              dense
+              hide-details
+              @change="setPaymentMethod"
+            />
+          </v-col>
+          <v-col cols="6" sm="3">
+            <v-menu
+              v-model="dateMenu"
+              :close-on-content-click="false"
+              offset-y
+              min-width="auto"
+            >
+              <template #activator="{ on, attrs }">
+                <v-text-field
+                  class="initial-state-payment initial-state-payment-date"
+                  :value="paymentDateLabel"
+                  :label="$t('booking.initialState.date')"
+                  prepend-inner-icon="mdi-calendar"
+                  outlined
+                  dense
+                  readonly
+                  hide-details
+                  v-bind="attrs"
+                  v-on="on"
+                />
+              </template>
+              <v-date-picker
+                v-model="paymentDate"
+                locale="de-DE"
+                :first-day-of-week="1"
+                @input="dateMenu = false"
+              />
+            </v-menu>
+          </v-col>
+          <v-col cols="6" sm="3">
+            <v-menu
+              v-model="timeMenu"
+              :close-on-content-click="false"
+              offset-y
+              max-width="290px"
+              min-width="290px"
+            >
+              <template #activator="{ on, attrs }">
+                <v-text-field
+                  class="initial-state-payment initial-state-payment-time"
+                  :value="paymentTime"
+                  :label="$t('booking.initialState.time')"
+                  prepend-inner-icon="mdi-clock-outline"
+                  outlined
+                  dense
+                  readonly
+                  hide-details
+                  v-bind="attrs"
+                  v-on="on"
+                />
+              </template>
+              <v-time-picker
+                v-if="timeMenu"
+                v-model="paymentTime"
+                format="24hr"
+                full-width
+                @click:minute="timeMenu = false"
+              />
+            </v-menu>
+          </v-col>
+        </v-row>
+      </template>
+    </BookingStatusPath>
 
-      <v-switch
-        v-model="booking.isPayed"
-        label="Bezahlt"
-        hide-details
-        dense
-        class="status-switch mt-0 mr-6"
-        color="primary"
-      >
-        <template v-slot:prepend>
-          <v-icon :color="booking.isPayed ? 'primary' : 'grey'">
-            {{ booking.isPayed ? "mdi-cash-check" : "mdi-cash" }}
-          </v-icon>
-        </template>
-      </v-switch>
-
-      <v-switch
-        :key="rejectedSwitchKey"
-        :input-value="!!booking.isRejected"
-        label="Storniert"
-        hide-details
-        dense
-        class="status-switch mt-0"
-        color="primary"
-        @change="onRejectedChange"
-      >
-        <template v-slot:prepend>
-          <v-icon :color="booking.isRejected ? 'error' : 'grey'">
-            {{ booking.isRejected ? "mdi-cancel" : "mdi-close-circle-outline" }}
-          </v-icon>
-        </template>
-      </v-switch>
-    </v-sheet>
-
-    <v-expand-transition>
-      <v-sheet
-        v-if="booking.isRejected"
-        class="mb-4 px-4 py-3 status-reason"
-        rounded
-      >
+    <BookingStatusPath
+      v-else
+      class="mb-4"
+      :status="booking.status"
+      :path="path"
+      :actions="actions"
+      :disabled="dirty"
+      :hint="dirty && actions.length ? $t('booking.edit.saveFirst') : null"
+      @action="transition"
+    >
+      <template v-if="isRejectedOrCancelled(booking)" #reason>
+        <div class="text-caption font-weight-bold error--text">
+          {{ rejectionReasonLabel }}
+        </div>
         <v-textarea
-          v-model="booking.rejectionReason"
-          :label="rejectionReasonLabel"
-          filled
+          class="mt-1"
+          :value="booking.rejectionReason"
+          outlined
           dense
-          background-color="accent"
           rows="2"
           hide-details="auto"
           :rules="rejectionReasonRules"
+          @input="$emit('update:rejection-reason', $event)"
         />
-        <CancellationRefundAudit
-          v-if="cancellationRefundAudit"
-          :audit="cancellationRefundAudit"
-          class="mt-3"
-        />
+      </template>
+    </BookingStatusPath>
+
+    <v-expand-transition>
+      <v-sheet
+        v-if="cancellationRefundAudit"
+        class="mb-4 px-4 py-3"
+        outlined
+        rounded
+      >
+        <CancellationRefundAudit :audit="cancellationRefundAudit" />
       </v-sheet>
     </v-expand-transition>
 
-    <v-dialog v-model="rejectDialog" persistent max-width="520px">
-      <v-card color="">
-        <v-card-title class="d-flex align-center">
-          <v-icon class="mr-2" color="error">mdi-alert</v-icon>
-          <span class="text-h6">{{ rejectDialogTitle }}</span>
-        </v-card-title>
-        <v-card-text>
-          <p class="mb-4 text-body-2">
-            {{ rejectDialogHint }}
-          </p>
-          <v-textarea
-            v-model="rejectReasonDraft"
-            :label="rejectionReasonLabel"
-            :placeholder="rejectReasonPlaceholder"
-            filled
-            dense
-            background-color="accent"
-            rows="3"
-            autofocus
-            :rules="rejectionReasonRules"
-            @keydown.enter.prevent
-          />
-        </v-card-text>
-        <v-card-actions class="px-4 pb-4">
-          <v-spacer />
-          <v-btn text @click="cancelReject">Abbrechen</v-btn>
-          <v-btn
-            color="error"
-            :disabled="!rejectReasonDraft || !rejectReasonDraft.trim()"
-            @click="confirmReject"
-          >
-            Bestätigen
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-dialog v-model="unrejectDialog" persistent max-width="520px">
-      <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon class="mr-2" color="warning">mdi-undo</v-icon>
-          <span class="text-h6">{{ unrejectDialogTitle }}</span>
-        </v-card-title>
-        <v-card-text>
-          <p class="mb-0 text-body-2">{{ unrejectDialogHint }}</p>
-        </v-card-text>
-        <v-card-actions class="px-4 pb-4">
-          <v-spacer />
-          <v-btn text @click="cancelUnreject">Abbrechen</v-btn>
-          <v-btn color="primary" @click="confirmUnreject">
-            {{ unrejectConfirmLabel }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <BookingTransitions
+      v-if="!isCreateMode"
+      ref="transitions"
+      @transitioned="$emit('transitioned', $event)"
+      @failed="$emit('failed', $event)"
+    />
   </div>
 </template>
 
 <script>
+import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
+import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
+import {
+  INITIAL_STATE,
+  initialStateChoices,
+  initialStateWire,
+  timePaidOf,
+  timePaidParts,
+} from "@/utils/bookingForm";
+import {
+  BOOKING_STATUS,
+  isRejectedOrCancelled,
+  pathOf,
+  transitionActions,
+  transitionTarget,
+} from "@/utils/bookingStatus";
 
+/**
+ * The status section of the edit form (spec E2, N4): the state as a
+ * headline over its path, with the one action along the path as a button
+ * and the side ways in the menu, each run by the mounted
+ * `BookingTransitions`. Button and menu are locked while the form has
+ * unsaved changes - there is no "save, then transition", and no transition
+ * on the server's copy while the local one differs. At Abgelehnt /
+ * Storniert the reason is edited under the path; the section reports the
+ * edit as `update:rejection-reason` and leaves the booking to the form. The
+ * form hears `transitioned` and `failed` and reloads the booking.
+ *
+ * In create mode (spec E10, N6) there is no state yet: the same headline is
+ * the choice of the "Anfangszustand" - the draft's path with its segments
+ * as radios, named with the state words. The choice stays the act: Angefragt
+ * is `requested`, Zahlung offen is `confirmed`, Bestätigt is `paid` on a
+ * priced draft (with the payment named under the line) and `confirmed` on a
+ * free one. The section reports it as `update:initial-state`; the form turns
+ * it into the create PUT's `status`.
+ */
 export default {
   name: "BookingEditStatus",
-  components: { CancellationRefundAudit },
+  components: {
+    BookingStatusPath,
+    BookingTransitions,
+    CancellationRefundAudit,
+  },
   props: {
     booking: {
       type: Object,
       required: true,
     },
-    rejectDialogOpen: {
+    /** True while the form has unsaved changes; locks the actions. */
+    dirty: {
       type: Boolean,
       default: false,
+    },
+    /** The series the booking belongs to, with its `bookings` where the page loaded them populated. */
+    groupBooking: {
+      type: Object,
+      default: null,
+    },
+    /** Create mode: the price the booking will be created with, deciding whether Bezahlt is offered. */
+    priceEur: {
+      type: Number,
+      default: 0,
+    },
+    /** Create mode: the form's `{ type, title }` payment methods. */
+    paymentMethods: {
+      type: Array,
+      default: () => [],
     },
   },
   data() {
     return {
-      rejectedSwitchKey: 0,
-      rejectDialog: false,
-      unrejectDialog: false,
-      rejectReasonDraft: "",
+      // Create mode: the choice; its `timePaid` is derived from the pickers below.
+      initialState: { selection: INITIAL_STATE.REQUESTED, paymentMethod: null },
+      paymentDate: null,
+      paymentTime: null,
+      dateMenu: false,
+      timeMenu: false,
     };
   },
   computed: {
-    isCancellation() {
-      return !!this.booking.isCommitted;
+    isCreateMode() {
+      return !this.booking.id;
+    },
+    /** The choices the price allows; Bezahlt only with something to pay. */
+    initialStateChoices() {
+      return initialStateChoices(this.priceEur);
+    },
+    asksPayment() {
+      return this.initialState.selection === INITIAL_STATE.PAID;
+    },
+    /** The state the draft would be born in - what the headline wears and checks. */
+    draftStatus() {
+      return initialStateWire(this.initialState, this.priceEur).status;
+    },
+    /** The draft read as a path: the chosen step current, the paid date under Bestätigt. */
+    draftPath() {
+      return pathOf({
+        status: this.draftStatus,
+        priceEur: this.priceEur,
+        timePaid: this.asksPayment ? this.timePaid : null,
+      });
+    },
+    timePaid() {
+      return timePaidOf(this.paymentDate, this.paymentTime);
+    },
+    paymentDateLabel() {
+      if (!this.paymentDate) return "";
+      return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
+        new Date(this.paymentDate)
+      );
+    },
+    path() {
+      return pathOf(this.booking);
+    },
+    /** The state's transitions, for whoever may edit the booking - the gate the list and the drawer use. */
+    actions() {
+      if (!BookingPermissionService.allowUpdate(this.booking)) return [];
+      return transitionActions(this.booking.status);
     },
     rejectionReasonLabel() {
-      return this.isCancellation ? "Stornierungsgrund" : "Ablehnungsgrund";
-    },
-    rejectDialogTitle() {
-      return this.isCancellation ? "Buchung stornieren" : "Buchung ablehnen";
-    },
-    unrejectDialogTitle() {
-      return this.isCancellation
-        ? "Stornierung rückgängig machen"
-        : "Ablehnung rückgängig machen";
-    },
-    unrejectDialogHint() {
-      return this.isCancellation
-        ? "Die Buchung wird wieder als aktiv geführt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
-        : "Die Buchung wird wieder als aktiv geführt.";
-    },
-    unrejectConfirmLabel() {
-      return this.isCancellation
-        ? "Stornierung aufheben"
-        : "Ablehnung aufheben";
-    },
-    rejectDialogHint() {
-      return this.isCancellation
-        ? "Bitte geben Sie einen Grund für die Stornierung an."
-        : "Bitte geben Sie einen Grund für die Ablehnung an.";
-    },
-    rejectReasonPlaceholder() {
-      return this.isCancellation
-        ? "Aus welchem Grund wird die Stornierung durchgeführt?"
-        : "Aus welchem Grund wird die Buchung abgelehnt?";
+      return this.booking.status === BOOKING_STATUS.CANCELLED
+        ? this.$t("booking.edit.reason.cancelled")
+        : this.$t("booking.edit.reason.rejected");
     },
     rejectionReasonRules() {
-      return [(v) => !!v?.trim() || "Begründung ist erforderlich"];
+      return [(v) => !!v?.trim() || this.$t("booking.edit.reason.required")];
     },
     cancellationRefundAudit() {
       return getCancellationRefundAudit(this.booking);
     },
   },
   watch: {
-    rejectDialogOpen(open, wasOpen) {
-      if (wasOpen && !open) {
-        this.resetRejectedSwitch();
+    /** Bezahlt is only offered with a price; a paid draft that turns free falls back to `confirmed`. */
+    initialStateChoices(choices) {
+      if (this.asksPayment && !choices.includes(INITIAL_STATE.PAID)) {
+        this.setSelection(INITIAL_STATE.CONFIRMED);
       }
     },
-    rejectDialog(open, wasOpen) {
-      if (wasOpen && !open) {
-        this.resetRejectedSwitch();
-      }
+    timePaid() {
+      this.emitInitialState();
     },
   },
+  created() {
+    if (this.isCreateMode) {
+      this.emitInitialState();
+    }
+  },
   methods: {
-    resetRejectedSwitch() {
-      this.rejectedSwitchKey += 1;
+    isRejectedOrCancelled,
+    transition(action) {
+      if (this.dirty) return;
+      this.$refs.transitions.start(
+        action,
+        transitionTarget(this.booking, this.groupBooking)
+      );
     },
-    onRejectedChange(value) {
-      if (this.booking.id) {
-        if (value && !this.booking.isRejected) {
-          this.$emit("request-reject");
-        } else if (!value && this.booking.isRejected) {
-          this.unrejectDialog = true;
-        }
-        this.$nextTick(() => this.resetRejectedSwitch());
-        return;
+    /**
+     * A segment names a state; the choice is the act that gets there:
+     * Angefragt `requested`, Zahlung offen `confirmed`, Bestätigt `paid`
+     * where there is something to pay, else `confirmed`.
+     */
+    choose(status) {
+      let selection = INITIAL_STATE.REQUESTED;
+      if (status === BOOKING_STATUS.PAYMENT_DUE) {
+        selection = INITIAL_STATE.CONFIRMED;
+      } else if (status === BOOKING_STATUS.CONFIRMED) {
+        selection = this.initialStateChoices.includes(INITIAL_STATE.PAID)
+          ? INITIAL_STATE.PAID
+          : INITIAL_STATE.CONFIRMED;
       }
-
-      if (value) {
-        this.rejectReasonDraft = this.booking.rejectionReason || "";
-        this.rejectDialog = true;
-        this.$nextTick(() => this.resetRejectedSwitch());
-        return;
+      this.setSelection(selection);
+    },
+    setSelection(selection) {
+      this.initialState.selection = selection;
+      if (selection === INITIAL_STATE.PAID && !this.paymentDate) {
+        // A booking born paid needs its `timePaid`; now is the honest default.
+        const { paymentDate, paymentTime } = timePaidParts(Date.now());
+        this.paymentDate = paymentDate;
+        this.paymentTime = paymentTime;
       }
-
-      this.$set(this.booking, "isRejected", false);
-      this.$set(this.booking, "rejectionReason", null);
+      this.emitInitialState();
     },
-    cancelReject() {
-      this.$set(this.booking, "isRejected", false);
-      this.rejectDialog = false;
-      this.rejectReasonDraft = "";
-      this.resetRejectedSwitch();
+    setPaymentMethod(paymentMethod) {
+      this.initialState.paymentMethod = paymentMethod;
+      this.emitInitialState();
     },
-    confirmReject() {
-      const reason = (this.rejectReasonDraft || "").trim();
-      if (!reason) return;
-
-      this.$set(this.booking, "isRejected", true);
-      this.$set(this.booking, "rejectionReason", reason);
-      this.rejectDialog = false;
-      this.rejectReasonDraft = "";
-    },
-    cancelUnreject() {
-      this.unrejectDialog = false;
-      this.resetRejectedSwitch();
-    },
-    confirmUnreject() {
-      this.unrejectDialog = false;
-      this.$emit("confirm-unreject");
+    emitInitialState() {
+      this.$emit("update:initial-state", {
+        selection: this.initialState.selection,
+        paymentMethod: this.initialState.paymentMethod,
+        timePaid: this.timePaid,
+      });
     },
   },
 };
 </script>
-
-<style scoped>
-.status-indicator {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  background-color: var(--v-accent-base, #f5f5f5) !important;
-}
-
-.theme--dark .status-indicator {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-.status-reason {
-  background-color: var(--v-accent-base, #f5f5f5) !important;
-}
-
-.theme--dark .status-reason {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-.status-switch >>> .v-input--selection-controls__input {
-  margin-right: 4px;
-}
-</style>

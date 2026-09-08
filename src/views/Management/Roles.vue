@@ -10,12 +10,16 @@
           clearable
           class="search-field"
         ></v-text-field>
-        <div v-if="loading" class="elevation-2" style="border-radius: 25px; overflow: hidden;">
+        <div
+          v-if="loading"
+          class="elevation-2"
+          style="border-radius: 25px; overflow: hidden"
+        >
           <v-skeleton-loader
             type="table-thead, table-tbody, table-tfoot"
             :types="{
-          'table-tbody': 'table-row-divider@6',
-        }"
+              'table-tbody': 'table-row-divider@6',
+            }"
           ></v-skeleton-loader>
         </div>
         <v-data-table
@@ -44,9 +48,6 @@
           <template v-slot:item.manageUsers="{ item }">
             {{ translateAccessLevels(item.manageUsers) }}
           </template>
-          <template v-slot:item.manageTenants="{ item }">
-            {{ translateAccessLevels(item.manageTenants) }}
-          </template>
           <template v-slot:item.manageBookables="{ item }">
             {{ translateAccessLevels(item.manageBookables) }}
           </template>
@@ -55,6 +56,9 @@
           </template>
           <template v-slot:item.manageCoupons="{ item }">
             {{ translateAccessLevels(item.manageCoupons) }}
+          </template>
+          <template v-slot:item.manageMedia="{ item }">
+            {{ translateAccessLevels(item.manageMedia) }}
           </template>
           <template v-slot:item.controls="{ item }">
             <span v-if="item.id !== 'super-admin'">
@@ -124,7 +128,7 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 import RoleEdit from "@/components/Role/RoleEdit";
 import { mapActions, mapGetters } from "vuex";
 import RoleDeleteConformationDialog from "@/components/Role/roleDeleteConformationDialog";
-import { Role, RolePermission } from "@/entities/role";
+import { Role, RolePermission, adminInterfaceOptions } from "@/entities/role";
 import i18n from "../../language/index";
 import RolePermissionService from "@/services/permissions/RolePermissionService";
 
@@ -152,6 +156,7 @@ export default {
         { text: "Buchungen", value: "manageBookings" },
         { text: "Rollen", value: "manageRoles" },
         { text: "Rabatte", value: "manageCoupons" },
+        { text: "Mediathek", value: "manageMedia" },
         { text: "", value: "controls", sortable: false },
       ],
       openEditDialog: false,
@@ -243,7 +248,7 @@ export default {
         return i18n.t("permissions.adminInterfaces.none");
       }
 
-      if (adminInterfaces.length === 10) {
+      if (adminInterfaces.length === adminInterfaceOptions.length) {
         return i18n.t("permissions.adminInterfaces.all");
       }
 

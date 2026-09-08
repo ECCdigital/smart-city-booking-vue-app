@@ -17,6 +17,7 @@ import Locations from "@/views/Bookables/Locations/Locations";
 import Tenants from "@/views/Management/Tenants";
 import Users from "@/views/Management/TenantUsers.vue";
 import Roles from "@/views/Management/Roles";
+import AccessPoints from "@/views/Management/AccessPoints.vue";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
 import Bookings from "@/views/Bookings.vue";
 import BookingEditPage from "@/views/BookingEditPage.vue";
@@ -28,13 +29,7 @@ import InstanceTenants from "@/views/Management/InstanceTenants.vue";
 import RuleEngineRules from "@/views/Management/RuleEngineRules.vue";
 import RuleEngineEdit from "@/views/Management/RuleEngineEdit.vue";
 import RuleEngineExecutions from "@/views/Management/RuleEngineExecutions.vue";
-import { pipeline } from "./middleware";
-
-import { requiresAuth } from "./middlewares/auth";
-import { checkGroupBooking } from "./middlewares/groupBooking";
-import { checkInterface } from "./middlewares/interface";
-import { requireTenant } from "./middlewares/requireTenant";
-import { finalAuthRedirect } from "./middlewares/finalAuth";
+import { middlewares, pipeline } from "./middleware";
 import Dashboard from "@/views/Dashboard.vue";
 
 Vue.use(VueRouter);
@@ -59,7 +54,8 @@ const routes = [
       interfaceName: "dashboard",
       public: true,
     },
-  },{
+  },
+  {
     path: "/dataDashboard",
     name: "dataDashboard",
     component: Dashboard,
@@ -168,6 +164,16 @@ const routes = [
       title: "Rollen",
       requiresAuth: true,
       interfaceName: "roles",
+    },
+  },
+  {
+    path: "/tenant/access-points",
+    name: "access-points",
+    component: AccessPoints,
+    meta: {
+      title: "Zutritt & Schließsysteme",
+      requiresAuth: true,
+      interfaceName: "tenants",
     },
   },
   {
@@ -408,6 +414,16 @@ const routes = [
     ],
   },
   {
+    path: "/media",
+    name: "media",
+    component: lazyLoad("Media/Media"),
+    meta: {
+      title: "Mediathek",
+      requiresAuth: true,
+      interfaceName: "media",
+    },
+  },
+  {
     path: "/settings",
     name: "settings",
     component: Settings,
@@ -593,13 +609,6 @@ if (process.env.BASE_URL) {
 const router = new VueRouter(routerConfig);
 
 router.beforeEach((to, from, next) => {
-  const middlewares = [
-    requiresAuth,
-    checkGroupBooking,
-    checkInterface,
-    requireTenant,
-    finalAuthRedirect,
-  ];
   const context = { to, from, next, router };
   const first = pipeline(context, middlewares, 0);
   return first();

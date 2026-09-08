@@ -9,6 +9,13 @@
         </v-alert>
       </v-col>
     </v-row>
+    <v-row v-if="bookablesForbidden">
+      <v-col cols="12">
+        <v-alert type="warning" elevation="2" class="custom-alert">
+          {{ $t("bookable.list.forbidden") }}
+        </v-alert>
+      </v-col>
+    </v-row>
     <v-row>
       <v-col cols="12">
         <Search
@@ -78,6 +85,7 @@ import AdminLayout from "@/layouts/Admin.vue";
 import { mapGetters, mapActions } from "vuex";
 import BookableCard from "@/components/Bookable/BookableCard.vue";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import ApiTagsService from "@/services/api/ApiTagsService";
 import ToastService from "@/services/ToastService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
@@ -97,6 +105,7 @@ export default {
       },
       filters: [],
       bookableCountCheck: true,
+      bookablesForbidden: false,
       searchResults: [],
       searchKeys: ["title", "id", "location"],
     };
@@ -190,6 +199,7 @@ export default {
     },
     fetchLocations() {
       this.startLoading("fetch-locations");
+      this.bookablesForbidden = false;
       ApiBookablesService.getBookables()
         .then((response) => {
           this.api.locations = response.data.filter(
@@ -200,6 +210,9 @@ export default {
           this.stopLoading("fetch-locations");
         })
         .catch((error) => {
+          // A 403 means "no reach", not "nothing there" - an empty grid would
+          // claim the second. Every other failure keeps the old silence.
+          this.bookablesForbidden = isForbiddenError(error);
           console.log(error);
         });
     },

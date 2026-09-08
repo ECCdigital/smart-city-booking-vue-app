@@ -73,13 +73,14 @@
         </v-menu>
       </div>
 
-      <v-img
-        v-if="item.information?.teaserImage"
-        :lazy-src="item.information?.teaserImage"
+      <MediaReferenceImage
+        v-if="teaserImage"
+        :reference="teaserImage"
+        size="sm"
+        lazy-size="thumb"
         aspect-ratio="16/9"
-        :src="item.information?.teaserImage"
         class="event-image"
-        height="200"
+        :height="200"
       >
         <div v-if="!item.isPublic" class="status-badges pa-3">
           <v-tooltip bottom>
@@ -92,7 +93,7 @@
             <span>Nicht öffentlich sichtbar</span>
           </v-tooltip>
         </div>
-      </v-img>
+      </MediaReferenceImage>
 
       <div v-else class="placeholder-container">
         <PlaceholderPattern variant="poly" :theme="isDark ? 'dark' : 'light'" />
@@ -264,9 +265,10 @@ import ApiEventService from "@/services/api/ApiEventService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import ApiExportService from "@/services/api/ApiExportService";
 import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
+import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 
 export default {
-  components: { PlaceholderPattern },
+  components: { MediaReferenceImage, PlaceholderPattern },
   props: {
     fromRoute: String,
     item: {
@@ -283,6 +285,9 @@ export default {
     };
   },
   computed: {
+    teaserImage() {
+      return this.item.information?.teaserImage || null;
+    },
     titleSizeClass() {
       const len = this.item.information?.name?.length || 0;
       if (len <= 25) return "text-h6";

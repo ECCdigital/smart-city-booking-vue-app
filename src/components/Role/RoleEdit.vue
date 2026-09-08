@@ -101,6 +101,15 @@
                     </v-col>
                   </v-row>
 
+                  <!--
+                    Known gap, deliberately left open: these access levels are
+                    free-standing, so "Erstellen" without "Eigene/Alle
+                    Bearbeiten" is two clicks away and yields a role the API
+                    rejects with 403 - the obsolete PUT store routes are
+                    authorised as `update`. Not coupled here on purpose; see
+                    docs/agents/components.md, "Known gap: `create` without
+                    `update` in the role editor".
+                  -->
                   <v-row no-gutters>
                     <v-col>
                       <v-checkbox
@@ -192,6 +201,7 @@
 
 <script>
 import ApiRolesService from "@/services/api/ApiRolesService";
+import { adminInterfaceOptions } from "@/entities/role";
 
 export default {
   name: "RoleEdit",
@@ -210,41 +220,7 @@ export default {
     return {
       valid: true,
       inProgress: false,
-      adminInterfaceProps: [
-        {
-          name: "Rollen",
-          value: "roles",
-        },
-        { name: "Benutzer", value: "users" },
-        {
-          name: "Buchungen",
-          value: "bookings",
-        },
-        {
-          name: "Rabatte",
-          value: "coupons",
-        },
-        {
-          name: "Veranstaltungsräume",
-          value: "locations",
-        },
-        {
-          name: "Räume",
-          value: "rooms",
-        },
-        {
-          name: "Geräte & Weiteres",
-          value: "resources",
-        },
-        {
-          name: "Tickets",
-          value: "tickets",
-        },
-        {
-          name: "Veranstaltungen",
-          value: "events",
-        },
-      ],
+      adminInterfaceProps: adminInterfaceOptions,
       permissionStructure: [
         {
           name: "Rollen",
@@ -265,6 +241,10 @@ export default {
         {
           name: "Buchungsobjekte",
           value: "manageBookables",
+        },
+        {
+          name: "Mediathek",
+          value: "manageMedia",
         },
       ],
       rules: {

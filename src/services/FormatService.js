@@ -23,6 +23,13 @@ function createDateTimeObject(input) {
 }
 
 export default {
+  bytes(bytes) {
+    if (!bytes && bytes !== 0) return "—";
+    if (bytes >= 1024 * 1024) {
+      return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+    }
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  },
   currency(number, currency = "EUR", locale = "de-DE") {
     return new Intl.NumberFormat(locale, {
       style: "currency",

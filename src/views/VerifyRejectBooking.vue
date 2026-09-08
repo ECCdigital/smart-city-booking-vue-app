@@ -41,12 +41,16 @@
       <v-card-text class="text-center" v-else-if="rejectError">
         <v-icon size="45px" color="error">mdi-close</v-icon>
         <p class="text-h6 font-weight-bold">Stornierung nicht möglich</p>
-        <p>
+        <p v-if="alreadyCancelled">
+          {{ $t("booking.userCancellation.alreadyCancelled") }}
+        </p>
+        <p v-else>
           Die Stornierung konnte nicht durchgeführt werden. Bitte versuchen Sie
           es erneut oder kontaktieren Sie Ihren Ansprechpartner.
         </p>
 
         <v-btn
+          v-if="!alreadyCancelled"
           color="primary"
           class="mt-4"
           @click="releaseRejectHook"
@@ -124,6 +128,9 @@ export default {
       hookId: this.$route.query.hookId,
       rejectSuccess: false,
       rejectError: false,
+      // `…/release` answers 409 on a booking that is already cancelled - a
+      // retry cannot succeed, so the page says so instead of offering one.
+      alreadyCancelled: false,
       fetching: false,
       refundPreview: null,
       loadingRefundPreview: false,
@@ -175,6 +182,7 @@ export default {
     async releaseRejectHook() {
       this.fetching = true;
       this.rejectError = false;
+      this.alreadyCancelled = false;
 
       try {
         const response = await ApiBookingService.releaseBookingHook(
@@ -191,6 +199,7 @@ export default {
       } catch (error) {
         console.error(error);
         this.rejectError = true;
+        this.alreadyCancelled = error?.response?.status === 409;
       } finally {
         this.fetching = false;
       }

@@ -72,6 +72,10 @@
       "title": "Nicht gefunden",
       "message": "Die angeforderte Seite konnte nicht gefunden werden."
     },
+    "not-found-or-forbidden": {
+      "title": "Nicht gefunden oder nicht zugänglich",
+      "message": "Der Eintrag wurde nicht gefunden. Entweder existiert er nicht mehr, oder er liegt außerhalb Ihrer Berechtigung."
+    },
     "unauthorized": {
       "title": "Nicht autorisiert",
       "message": "Sie haben keine Berechtigung für diese Aktion."
@@ -83,6 +87,30 @@
     "validation": {
       "title": "Validierungsfehler",
       "message": "Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut."
+    },
+    "session-expired": "Ihre Sitzung ist nicht mehr aktuell. Bitte laden Sie die Seite neu und versuchen Sie es erneut.",
+    "forbidden-codes": {
+      "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
+      "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden."
+    },
+    "conflict-codes": {
+      "conflict": "Der Vorgang ist in diesem Zustand nicht möglich.",
+      "invalid_transition": "Die Buchung ist inzwischen in einem anderen Zustand ({status}).",
+      "invalid_transition-unknown-status": "Die Buchung ist inzwischen in einem anderen Zustand.",
+      "not_cancelled": "Die Buchung ist nicht storniert.",
+      "diverging-bookings": "Betroffene Buchungen: {ids}"
+    },
+    "not-found-codes": {
+      "booking_not_found": "Die Buchung existiert nicht mehr."
+    },
+    "bad-request-codes": {
+      "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
+      "invalid_status": "In diesem Zustand kann keine Buchung angelegt werden.",
+      "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum."
+    },
+    "interface-forbidden": {
+      "title": "Kein Zugriff auf diesen Bereich",
+      "message": "Für diesen Bereich fehlt Ihnen die Berechtigung im aktuellen Mandanten."
     }
   },
   "validation": {
@@ -156,6 +184,7 @@
       "openEvent": "Veranstaltung in neuem Tab öffnen",
       "sections": {
         "generalInfo": "Allgemeine Infos",
+        "generalImages": "Bilder",
         "generalBookerInfo": "Infos für Buchende",
         "generalTags": "Interne Tags",
         "pricingExternal": "Externe Datenquelle",
@@ -178,9 +207,6 @@
         "customFieldsDefinitions": "Felder definieren",
         "relatedCheckout": "Zusatzoptionen",
         "relatedHierarchy": "Hierarchie",
-        "lockersSelect": "System wählen",
-        "lockersPareva": "Pareva",
-        "lockersIfbs": "IFBS",
         "additionalRequiredFields": "Pflichtfelder",
         "additionalNotes": "Buchungshinweise"
       },
@@ -197,7 +223,32 @@
           "label": "Manuelle Freigabe",
           "tooltip": "Eine Buchung muss vom Administrator freigegeben werden."
         }
+      },
+      "overview": {
+        "titlesForbidden": "Titel der verknüpften Buchungsobjekte nicht abrufbar – Sie haben keinen Zugriff auf Buchungsobjekte."
       }
+    },
+    "externalPrice": {
+      "title": "Preise vom Anbieter",
+      "units": {
+        "minute": "pro Minute",
+        "hour": "pro Stunde",
+        "day": "pro Tag",
+        "week": "pro Woche",
+        "month": "pro Monat",
+        "year": "pro Jahr"
+      },
+      "serviceFee": "Servicegebühr",
+      "retry": "Erneut versuchen",
+      "loadFailed": "Preise konnten nicht vom Anbieter geladen werden.",
+      "empty": "Keine Preise verfügbar",
+      "notSaved": "Die Preise des Anbieters erscheinen, sobald das Buchungsobjekt gespeichert ist."
+    },
+    "list": {
+      "forbidden": "Sie haben keinen Zugriff auf Buchungsobjekte."
+    },
+    "select": {
+      "forbidden": "Keine Auswahl möglich – Sie haben keinen Zugriff auf Buchungsobjekte."
     }
   },
   "event": {
@@ -238,8 +289,10 @@
       }
     }
   },
-
   "tenant": {
+    "catalog": {
+      "unavailable": "Für diesen Mandanten wurde kein Katalog gefunden. Entweder ist noch keiner angelegt, oder der vorhandene Katalog ist für Sie nicht zugänglich. Unten steht deshalb ein leerer Katalog – wenn Sie ihn speichern, kann ein bestehender Katalog überschrieben werden."
+    },
     "error": {
       "user-exists": {
         "title": "Benutzer existiert bereits",
@@ -258,7 +311,7 @@
       "error": {
         "not-found": {
           "title": "Benutzer nicht gefunden",
-          "message": "Der Benutzer konnte nicht gefunden werden. Um den angeforderten Benutzer zum Mandanten hinzuzufügen, muss dieser zuerst registriert sein"
+          "message": "Der Benutzer konnte nicht gefunden werden. Um ihn zum Mandanten hinzuzufügen, muss er zuerst registriert sein. Möglich ist auch, dass dieser Mandant für Sie nicht zugänglich ist."
         },
         "user-exists": {
           "title": "Benutzer existiert bereits",
@@ -305,9 +358,29 @@
       "uniqueDays": "Für diese Tagesgrenze existiert bereits eine Stufe",
       "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
       "monotonic": "Mit größerem Vorlauf darf die Erstattung nicht geringer werden."
+    },
+    "legalDocuments": {
+      "title": "Rechtsdokumente",
+      "hint": "Datenschutzerklärung, Impressum, AGB, Widerrufsbelehrung und weitere Dokumente dieses Mandanten",
+      "description": "Hinterlegen Sie hier die Rechtsdokumente Ihres Mandanten. Wählen Sie je Dokument eine Datei aus der Mediathek dieses Mandanten oder tragen Sie einen externen Link ein. Die Dokumente werden abgelegt und noch nirgends automatisch angezeigt.",
+      "add": "Dokument hinzufügen",
+      "remove": "Dokument entfernen",
+      "type": "Art des Dokuments",
+      "documentTitle": "Titel",
+      "document": "Dokument",
+      "empty": "Kein Dokument ausgewählt",
+      "none": "Es sind noch keine Rechtsdokumente hinterlegt.",
+      "duplicateTitle": "Es gibt bereits ein sonstiges Dokument mit diesem Titel.",
+      "publicOnlyReason": "Rechtsdokumente sind zur Veröffentlichung bestimmt — interne Medien sind hier nicht wählbar.",
+      "types": {
+        "dataProtection": "Datenschutzerklärung",
+        "legalNotice": "Impressum",
+        "termsAndConditions": "AGB",
+        "rightOfWithdrawal": "Widerrufsbelehrung",
+        "other": "Sonstiges Dokument"
+      }
     }
   },
-
   "password": {
     "reset": {
       "success": {
@@ -340,7 +413,7 @@
       },
       "requires-rejection": {
         "title": "Stornierung erforderlich",
-        "message": "Bestätigte oder bezahlte Buchungen können nicht gelöscht werden. Bitte stornieren Sie die Buchung."
+        "message": "Nur angefragte oder abgelehnte Buchungen können gelöscht werden. Bitte stornieren Sie die Buchung."
       }
     },
     "reject": {
@@ -353,15 +426,9 @@
         "message": "Die Buchung konnte nicht storniert werden."
       }
     },
-    "unreject": {
-      "success": {
-        "title": "Stornierung aufgehoben",
-        "message": "Die Buchung ist wieder aktiv."
-      },
-      "error": {
-        "title": "Fehler beim Aufheben",
-        "message": "Die Stornierung konnte nicht rückgängig gemacht werden."
-      }
+    "userCancellation": {
+      "alreadyCancelled": "Diese Buchung wurde bereits storniert.",
+      "disabledByPolicy": "Diese Buchung kann nicht vom Buchenden storniert werden. Bitte wenden Sie sich an den Anbieter, falls Sie eine Stornierung wünschen."
     },
     "cancellationRefund": {
       "title": "Erstattungsvorschau",
@@ -423,6 +490,15 @@
       "error-time-confict": {
         "title": "Zeitkonflikt",
         "message": "Die Buchung konnte nicht bearbeitet werden, da es zu einem Zeitkonflikt kommt."
+      },
+      "hints": {
+        "bookablesForbidden": "Sie haben keinen Zugriff auf Buchungsobjekte. Die Auswahl der Buchungsobjekte bleibt daher leer."
+      },
+      "saveFirst": "Erst speichern – die Aktionen sind gesperrt, solange das Formular ungespeicherte Änderungen hat.",
+      "reason": {
+        "rejected": "Ablehnungsgrund",
+        "cancelled": "Stornierungsgrund",
+        "required": "Begründung ist erforderlich"
       }
     },
     "copyId": {
@@ -504,7 +580,6 @@
           "message": "Bitte wählen Sie einen Zahlungsanbieter aus."
         }
       },
-
       "fallback": {
         "title": "Validierungsfehler",
         "message": "Bitte überprüfen Sie Ihre Eingaben."
@@ -514,6 +589,92 @@
       "error": {
         "title": "Fehler beim Generieren",
         "message": "Leider ist ein Fehler beim Generieren der iCal-Datei aufgetreten. Bitte versuchen Sie es erneut."
+      }
+    },
+    "status": {
+      "requested": "Angefragt",
+      "payment_due": "Zahlung offen",
+      "confirmed": "Bestätigt",
+      "rejected": "Abgelehnt",
+      "cancelled": "Storniert",
+      "mixed": "Gemischt",
+      "free": "Kostenfrei",
+      "paidShort": "bezahlt"
+    },
+    "filter": {
+      "title": "Filter",
+      "none": "Keine Einschränkung",
+      "active": "1 Einschränkung aktiv | {n} Einschränkungen aktiv",
+      "type": "Buchungstyp",
+      "typeAll": "Alle",
+      "typeSingle": "Einzel",
+      "typeSeries": "Serie",
+      "status": "Status",
+      "reset": "zurücksetzen",
+      "resetAll": "Alle zurücksetzen"
+    },
+    "action": {
+      "confirm": "Freigeben",
+      "pay": "Als bezahlt markieren",
+      "reject": "Ablehnen",
+      "cancel": "Stornieren",
+      "reinstate": "Wiederherstellen",
+      "delete": "Löschen"
+    },
+    "payment": {
+      "paid": "Ja",
+      "unpaid": "Nein"
+    },
+    "cancellationReceipt": {
+      "title": "Stornobelege",
+      "issuedAt": "Ausstellungsdatum:",
+      "empty": "Keine Stornobelege vorhanden",
+      "reprint": {
+        "label": "Stornobeleg erneut ausstellen",
+        "hint": "Erzeugt eine Revision unter derselben Nummer.",
+        "progress": "Stelle Stornobeleg erneut aus...",
+        "success": {
+          "title": "Stornobeleg ausgestellt",
+          "message": "Der Stornobeleg wurde erneut ausgestellt."
+        },
+        "error": {
+          "title": "Fehler beim Ausstellen",
+          "message": "Der Stornobeleg konnte nicht erneut ausgestellt werden."
+        }
+      },
+      "download": {
+        "progress": "Stelle Stornobeleg bereit...",
+        "error": {
+          "title": "Fehler beim Herunterladen",
+          "message": "Der Stornobeleg konnte nicht heruntergeladen werden."
+        }
+      }
+    },
+    "initialState": {
+      "label": "Anfangszustand",
+      "paymentMethod": "Zahlungsmethode auswählen",
+      "date": "Zahldatum",
+      "time": "Uhrzeit"
+    },
+    "reinstate": {
+      "success": {
+        "title": "Wiederhergestellt",
+        "message": "Die Buchung wurde wiederhergestellt."
+      },
+      "error": {
+        "title": "Fehler beim Wiederherstellen",
+        "message": "Die Buchung konnte nicht wiederhergestellt werden."
+      },
+      "dialog": {
+        "title": "Buchung wiederherstellen",
+        "hint-rejected": "Die Buchung {id} wird wieder als angefragt geführt.",
+        "hint-cancelled": "Die Buchung {id} wird in den Zustand vor der Stornierung zurückversetzt. Bereits erstellte Stornobelege bleiben in den Anhängen erhalten."
+      }
+    },
+    "transition": {
+      "not-allowed": {
+        "title": "Aktion nicht möglich",
+        "message": "Diese Aktion ist im aktuellen Zustand der Buchung nicht möglich."
       }
     }
   },
@@ -556,7 +717,9 @@
       "error": {
         "title": "Fehler beim Freigeben",
         "message": "Die Buchungen konnten nicht freigegeben werden."
-      }
+      },
+      "member-of-series": "Die Buchung {bookingId} ist Teil einer Serienbuchung.",
+      "question": "Möchten Sie die gesamte Serie freigeben?"
     },
     "pay": {
       "success": {
@@ -597,9 +760,47 @@
         "title": "Fehler beim Erstellen",
         "message": "Die Sammelrechnung konnte nicht erstellt werden."
       }
+    },
+    "status": {
+      "title": "Zustand der Serie",
+      "members": "Buchungen der Serie",
+      "count": "{count} {state}",
+      "mixedHint": "Aktionen je Buchung in der Liste unten"
+    },
+    "action": {
+      "confirm": "Serie freigeben",
+      "pay": "Serie als bezahlt markieren",
+      "reject": "Serie ablehnen",
+      "cancel": "Serie stornieren"
+    },
+    "cancellationReceipt": {
+      "reprint": {
+        "progress": "Stelle Stornobeleg der Serie erneut aus...",
+        "success": {
+          "title": "Stornobeleg ausgestellt",
+          "message": "Der Stornobeleg der Serie wurde erneut ausgestellt."
+        },
+        "error": {
+          "title": "Fehler beim Ausstellen",
+          "message": "Der Stornobeleg der Serie konnte nicht erneut ausgestellt werden."
+        }
+      }
+    },
+    "transition": {
+      "mixed": {
+        "title": "Gemischter Zustand",
+        "message": "Die Buchungen der Serie sind in unterschiedlichen Zuständen. Bitte führen Sie die Aktion je Buchung aus."
+      },
+      "not-allowed": {
+        "title": "Aktion nicht möglich",
+        "message": "Diese Aktion ist im aktuellen Zustand der Serie nicht möglich."
+      }
     }
   },
   "checkout": {
+    "no-permission": {
+      "message": "Dieses Angebot ist für Sie nicht buchbar. Entweder ist es nicht verfügbar, oder Ihnen fehlt die Berechtigung dafür."
+    },
     "error": {
       "booking-conflict": {
         "title": "Objekt nicht verfügbar.",
@@ -788,6 +989,9 @@
         "title": "Fehler beim Bearbeiten",
         "message": "Der Rabatt konnte nicht bearbeitet werden."
       }
+    },
+    "list": {
+      "forbidden": "Sie haben keinen Zugriff auf Rabattcodes."
     }
   },
   "permissions": {
@@ -814,8 +1018,39 @@
       "tickets": "Tickets",
       "bookings": "Buchungen",
       "coupons": "Rabatte",
+      "media": "Mediathek",
       "none": "-",
       "all": "Alle"
+    }
+  },
+  "media": {
+    "loadError": {
+      "title": "Mediathek nicht erreichbar",
+      "message": "Die Medienliste konnte nicht geladen werden."
+    },
+    "updateSuccess": {
+      "title": "Medium aktualisiert",
+      "message": "Die Metadaten wurden gespeichert."
+    },
+    "updateError": {
+      "title": "Speichern fehlgeschlagen",
+      "message": "Die Metadaten konnten nicht gespeichert werden."
+    },
+    "deleteSuccess": {
+      "title": "Medium gelöscht",
+      "message": "Das Medium wurde endgültig gelöscht."
+    },
+    "deleteError": {
+      "title": "Löschen fehlgeschlagen",
+      "message": "Das Medium konnte nicht gelöscht werden."
+    },
+    "copySuccess": {
+      "title": "URL kopiert",
+      "message": "Die Medien-URL wurde in die Zwischenablage kopiert."
+    },
+    "copySuccessIntern": {
+      "title": "URL kopiert",
+      "message": "Die Medien-URL wurde in die Zwischenablage kopiert. Das Medium ist intern — der Link ist nur mit Anmeldung aufrufbar."
     }
   },
   "receipt": {
@@ -838,15 +1073,576 @@
       }
     }
   },
-  "locker": {
+  "accessPoint": {
+    "management": {
+      "tab": "Zugangspunkte",
+      "providersTab": "Schließsysteme",
+      "title": "Zugangspunkte",
+      "hint": "Türen und Schließfachanlagen dieses Mandanten. Ein Zugangspunkt wird hier einmal angelegt und kann anschließend in beliebig vielen Buchungsobjekten verwendet werden.",
+      "edit": "Bearbeiten",
+      "reload": "Neu laden",
+      "search": "Zugangspunkt suchen...",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "close": "Schließen",
+      "required": "Pflichtfeld",
+      "modeUnsupported": "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt.",
+      "table": {
+        "assignment": "Zuordnung",
+        "unassigned": "Keinem Buchungsobjekt zugeordnet",
+        "loading": "Daten werden geladen...",
+        "empty": "Es ist noch kein Zugangspunkt angelegt.",
+        "perPage": "Zugangspunkte pro Seite",
+        "assignmentForbidden": "Nicht abrufbar",
+        "origin": "Herkunft",
+        "originManual": "Selbst angelegt",
+        "originProvider": "Vom Anbieter",
+        "capacityHint": "Kapazität steht am Buchungsobjekt",
+        "typeFilter": "Typ",
+        "filterAll": "Alle",
+        "filterDoors": "Türen",
+        "filterLockers": "Anlagen",
+        "emptyFiltered": "Kein Zugangspunkt dieses Typs."
+      },
+      "types": {
+        "door": "Tür",
+        "locker": "Anlage"
+      },
+      "modes": {
+        "authorization": "PIN-Code",
+        "remote": "Öffnen per App",
+        "both": "PIN-Code & App"
+      },
+      "modeHints": {
+        "authorization": "Der Buchende gibt einen PIN-Code direkt am Schloss ein.",
+        "remote": "Der Buchende öffnet per Knopfdruck in der App – ohne PIN-Eingabe.",
+        "both": "Beides möglich: PIN-Code am Schloss oder Öffnen per App."
+      },
+      "fields": {
+        "label": "Bezeichnung",
+        "type": "Typ",
+        "provider": "Anbieter",
+        "externalId": "ID beim Anbieter",
+        "externalIdHint": "Ändern Sie diese ID, um das Schloss auszutauschen, ohne den QR-Code neu zu drucken.",
+        "providerLocationId": "Standort-ID beim Anbieter",
+        "mode": "Modus",
+        "config": "Konfiguration",
+        "location": "Standort",
+        "validationRules": "Validierungsregeln",
+        "typeHint": "Der Typ ergibt sich aus dem Anbieter und ist nicht wählbar.",
+        "externalIdHintLocker": "Ändern Sie diese ID, um die Anlage beim Anbieter auszutauschen.",
+        "locationId": "Standort-ID",
+        "locationIdHint": "Ändern Sie die Standort-ID, um die Anlage bei iFBS auszutauschen.",
+        "productId": "Produkt-ID",
+        "productIdHint": "Ändern Sie die Produkt-ID, um die Anlage bei Pareva auszutauschen.",
+        "productIdPlaceholder": "z. B. 66570d1a1f9b6357ed971746"
+      },
+      "picker": {
+        "title": "Zugangspunkt vom Anbieter übernehmen",
+        "provider": "Anbieter",
+        "lock": "Zugangspunkt",
+        "apply": "Übernehmen",
+        "alreadyCreated": "bereits angelegt",
+        "hint": "Was der Anbieter listet, bringt seinen Typ mit – Tür oder Schließfachanlage. Die übernommenen Angaben lassen sich anschließend frei ändern."
+      },
+      "ruleTypes": {
+        "qrScan": "QR-Scan erforderlich"
+      },
+      "rules": {
+        "title": "Validierungsregeln",
+        "qrScan": "QR-Scan erforderlich",
+        "qrScanShort": "QR-Scan",
+        "qrScanHint": "Der Zugangspunkt lässt sich nur öffnen, wenn der QR-Code vor Ort gescannt wurde.",
+        "defaultHint": "Unverändert übernommen: Beim Anlegen setzt der Server die Regel „QR-Scan erforderlich“ selbst. Schalten Sie den Schalter aus, um den Zugangspunkt bewusst ohne Scan-Pflicht anzulegen.",
+        "required": "erforderlich",
+        "notRequired": "nicht nötig",
+        "notApplicable": "entfällt"
+      },
+      "location": {
+        "title": "Standort",
+        "address": "Adresse",
+        "coordinates": "Koordinaten",
+        "prefill": "Standort vom Anbieter übernehmen",
+        "prefillAfterSave": "Den Standort kann der Anbieter erst vorschlagen, wenn der Zugangspunkt angelegt ist.",
+        "prefillApplied": "Die Koordinaten des Anbieters wurden übernommen. Speichern Sie, um sie zu sichern.",
+        "prefillEmpty": "Der Anbieter kennt für dieses Schloss keinen Standort."
+      },
+      "config": {
+        "title": "Erweiterte Konfiguration",
+        "label": "Anbieter-Konfiguration (JSON)",
+        "hint": "Anbieterspezifische Zusatzangaben. Leer lassen, wenn nicht benötigt.",
+        "invalid": "Kein gültiges JSON.",
+        "notObject": "Die Konfiguration muss ein JSON-Objekt sein."
+      },
+      "qr": {
+        "pdf": "QR-Code drucken (PDF, A4)",
+        "svg": "QR-Code als SVG",
+        "png": "QR-Code als PNG",
+        "error": "Der QR-Code konnte nicht erzeugt werden."
+      },
+      "rotate": {
+        "action": "Scan-Code rotieren",
+        "title": "Scan-Code rotieren",
+        "question": "Soll der Scan-Code von „{label}“ ersetzt werden?",
+        "warning": "Alle bereits gedruckten und angebrachten QR-Codes dieses Zugangspunkts werden damit sofort ungültig. Drucken Sie den neuen QR-Code aus und bringen Sie ihn an.",
+        "confirm": "Rotieren",
+        "done": "Der Scan-Code wurde ersetzt. Die alten QR-Codes sind ab sofort ungültig.",
+        "reprint": "Neuen QR-Code drucken:",
+        "error": "Der Scan-Code konnte nicht rotiert werden."
+      },
+      "delete": {
+        "action": "Löschen",
+        "title": "Zugangspunkt löschen",
+        "question": "Soll der Zugangspunkt „{label}“ gelöscht werden?",
+        "confirm": "Löschen",
+        "affectedTitle": "Diese Buchungsobjekte verlieren damit ihren Zugangspunkt:",
+        "affectedHint": "Die Zuordnung wird automatisch aus den Buchungsobjekten entfernt.",
+        "noneAffected": "Der Zugangspunkt ist keinem Buchungsobjekt zugeordnet.",
+        "bookingsTitle": "Laufende Buchungen mit erteiltem Zugang:",
+        "bookingsHint": "Die erteilten Berechtigungen werden dabei nicht widerrufen – beim Anbieter bleiben sie bestehen und lassen sich anschließend hier nicht mehr entziehen. Bedienen lässt sich der Zugangspunkt aus diesen Buchungen nicht mehr.",
+        "bookingsNone": "Keine laufende Buchung hält an diesem Zugangspunkt einen erteilten Zugang.",
+        "bookingsLoading": "Laufende Buchungen werden geprüft …",
+        "bookingsUnreadable": "Ob laufende Buchungen hier einen erteilten Zugang halten, ist nicht abrufbar – die Buchungen dieses Mandanten konnten nicht gelesen werden.",
+        "bookingsMore": "… und {count} weitere."
+      },
+      "dialog": {
+        "editTitle": "Zugangspunkt bearbeiten",
+        "createTitle": "Zugangspunkt anlegen",
+        "modes": {
+          "provider": "Vom Anbieter übernehmen",
+          "manual": "Manuell anlegen"
+        },
+        "modeHints": {
+          "provider": "Der Anbieter listet seine Türen und Anlagen; das Formular füllt sich aus der Liste.",
+          "manual": "Eine Tür oder eine Pareva-Anlage von Hand eintragen. Eine iFBS-Anlage kommt immer vom Anbieter."
+        }
+      },
+      "errors": {
+        "generic": "Die Aktion konnte nicht ausgeführt werden.",
+        "forbidden": "Dafür fehlt Ihnen die Berechtigung. Zugangspunkte dürfen nur Mandanten-Eigentümer ändern.",
+        "notFoundOrForbidden": "Nicht gefunden oder nicht zugänglich. Der Eintrag existiert nicht mehr, oder er liegt außerhalb Ihrer Berechtigung.",
+        "loadFailed": "Die Zugangspunkte konnten nicht geladen werden.",
+        "saveFailed": "Der Zugangspunkt konnte nicht gespeichert werden.",
+        "deleteFailed": "Der Zugangspunkt konnte nicht gelöscht werden.",
+        "preconditionFailed": "Die Regel „{rule}“ lässt sich nicht aktivieren, solange folgende Angaben fehlen: {requires}.",
+        "fieldInvalid": "{field}: {reason}",
+        "codes": {
+          "required": "Pflichtangabe",
+          "enum": "Unzulässiger Wert",
+          "validate": "Unzulässiger Wert",
+          "type_array": "Es wird eine Liste erwartet",
+          "type_string": "Es wird ein Text erwartet"
+        },
+        "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
+      },
+      "toasts": {
+        "saved": {
+          "title": "Gespeichert",
+          "message": "Der Zugangspunkt wurde gespeichert."
+        },
+        "deleted": {
+          "title": "Gelöscht",
+          "message": "Der Zugangspunkt wurde gelöscht."
+        },
+        "qrFailed": {
+          "title": "QR-Code fehlgeschlagen",
+          "message": "Der QR-Code konnte nicht erzeugt werden."
+        },
+        "tenantSaved": {
+          "title": "Gespeichert",
+          "message": "Änderungen wurden erfolgreich gespeichert."
+        },
+        "tenantSaveFailed": {
+          "title": "Speichern fehlgeschlagen",
+          "message": "Fehler beim Speichern der Änderungen."
+        }
+      },
+      "hints": {
+        "assignmentForbidden": "Die Spalte „Zuordnung“ kann nicht gefüllt werden – Sie haben keinen Zugriff auf Buchungsobjekte."
+      },
+      "create": "Zugangspunkt anlegen"
+    },
+    "comingSoon": {
+      "badge": "Bald verfügbar",
+      "salto": "Die Salto-KS-Anbindung befindet sich noch in der Fertigstellung. Die Konfiguration wird zu einem späteren Zeitpunkt freigeschaltet.",
+      "mode": "Diese Öffnungsart befindet sich noch in der Fertigstellung und kann derzeit nicht ausgewählt werden."
+    },
+    "tenant": {
+      "title": "Türsteuerung & Zugang",
+      "sectionHint": "Verbinden Sie smarte Türschlösser, damit Buchende Türen während ihres Buchungszeitraums öffnen und schließen können.",
+      "providerTitle": "Smarte Türschlösser",
+      "providerDescription": "Mit Nuki öffnen und schließen Sie Türen aus der Ferne. Buchende erhalten während ihres Buchungszeitraums automatisch Zugang.",
+      "providerLink": "Mehr über Nuki",
+      "activate": "Nuki aktivieren",
+      "apiCredentials": "API-Zugangsdaten",
+      "apiToken": "API-Token",
+      "apiTokenPlaceholder": "Nuki Web API Token",
+      "apiTokenUnchanged": "•••••••• (unverändert)",
+      "apiTokenHint": "Es ist bereits ein Token hinterlegt. Leer lassen, um ihn unverändert zu übernehmen.",
+      "apiBaseUrl": "API Base-URL",
+      "permissionsTitle": "Benötigte Token-Berechtigungen",
+      "permissionsIntro": "Der Nuki Web API-Token muss beim Anlegen in Nuki Web (MENÜ → API) mit den passenden Berechtigungen versehen werden. Tokens erhalten dauerhaft genau die Rechte, die beim Erstellen angehakt wurden, und werden ungültig, sobald das Passwort des Nuki-Web-Accounts geändert wird.",
+      "permissionsMinTitle": "Minimum (öffnen/schließen + Status)",
+      "permissionReadOnly": "Geräte anzeigen (smartlock.readOnly) – Verbindungstest, Türen auflisten, Status lesen",
+      "permissionAction": "Geräte bedienen (smartlock.action) – Türen öffnen und schließen",
+      "permissionsFullTitle": "Zusätzlich für die volle Funktionalität",
+      "permissionAuth": "Berechtigungen verwalten (smartlock.auth) – zeitlich begrenzte Keypad-PIN-Codes (erfordert ein gepairtes Keypad)",
+      "permissionLog": "Aktivitätsprotokolle anzeigen / Benachrichtigungen (smartlock.log) – Tür-Events",
+      "permissionsNote": "Den umfassenden Scope „Geräte verwalten“ (smartlock) bewusst NICHT vergeben (Least Privilege). Das Backend liest Geräte nur, legt sie aber nicht an und ändert keine Gerätekonfiguration.",
+      "testConnection": "Verbindung testen",
+      "connectionSuccess": "Verbindung erfolgreich!",
+      "salto": {
+        "providerTitle": "Salto KS – Cloud-Schließanlage",
+        "providerDescription": "Mit Salto KS verwalten Sie Türen cloudbasiert. Buchende erhalten während ihres Buchungszeitraums automatisch eine zeitlich begrenzte Zutrittsberechtigung und einen PIN-Code.",
+        "providerLink": "Mehr über Salto KS",
+        "activate": "Salto KS aktivieren",
+        "clientId": "Client-ID",
+        "clientSecret": "Client-Secret",
+        "clientSecretPlaceholder": "Salto KS Client-Secret",
+        "clientSecretUnchanged": "•••••••• (unverändert)",
+        "clientSecretHint": "Es ist bereits ein Secret hinterlegt. Leer lassen, um es unverändert zu übernehmen.",
+        "username": "System-User (E-Mail)",
+        "usernamePlaceholder": "z. B. service-user@example.com",
+        "usernameHint": "E-Mail des Salto-KS-System-Users mit der Rolle „site_admin“ für alle relevanten Sites.",
+        "password": "System-User-Passwort",
+        "passwordPlaceholder": "Salto KS System-User-Passwort",
+        "passwordUnchanged": "•••••••• (unverändert)",
+        "passwordHint": "Es ist bereits ein Passwort hinterlegt. Leer lassen, um es unverändert zu übernehmen.",
+        "systemUserMissing": "System-User fehlt – ohne E-Mail und Passwort ist keine Verbindung möglich. Bitte tragen Sie die Zugangsdaten des KS-System-Users ein und speichern Sie.",
+        "siteId": "Site-ID",
+        "environment": "Umgebung",
+        "environmentHint": "Accept ist die Salto-Testumgebung (Sandbox), Production die echte Anlage. Connect API und Identity-Server ergeben sich daraus – Zugangsdaten gelten nur in ihrer Umgebung.",
+        "environmentAccept": "Accept (Sandbox)",
+        "environmentProduction": "Production",
+        "iq": {
+          "title": "IQ-Aktivierung für Remote-Open",
+          "refresh": "IQ-Liste aktualisieren",
+          "appBan": "Wichtig: Den System-User niemals in der Salto-App an einem IQ aktivieren („Get Code“ / IQ-Aktivierung). Die App-Aktivierung macht das hier gespeicherte Secret still ungültig – jedes Fernöffnen schlägt danach mit otp_invalid fehl.",
+          "progress": "{ready} von {total} IQs bereit für Remote-Open",
+          "progressActionNeeded": "Noch nicht bereit: {count} – die Liste ist nach Handlungsbedarf sortiert.",
+          "progressAllDone": "Alles erledigt – alle Türen an diesen IQs lassen sich fernöffnen.",
+          "noIqs": "An der Salto-Site wurden keine IQs gefunden.",
+          "notConfigured": "Die IQ-Liste ist erst verfügbar, wenn der Mandant mit aktiver Salto-KS-App gespeichert wurde.",
+          "loadError": "Die IQ-Liste konnte nicht geladen werden:",
+          "online": "online",
+          "offline": "offline",
+          "lastErrorLabel": "Letzter Fehler:",
+          "nextStepLabel": "Nächster Schritt:",
+          "pinLabel": "PIN aus der E-Mail",
+          "pinPlaceholder": "z. B. 1234",
+          "state": {
+            "no_otp": {
+              "label": "Keine Aktivierung nötig",
+              "doneNote": "benötigt keine Aktivierung (otp_enabled ist aus)"
+            },
+            "activated": {
+              "label": "Aktiviert",
+              "doneNote": "aktiviert am"
+            },
+            "not_activated": {
+              "label": "Nicht aktiviert",
+              "nextStep": "Aktivierung starten – Salto sendet eine PIN an das Postfach des System-Users."
+            },
+            "pending_pin": {
+              "label": "PIN ausstehend",
+              "nextStep": "Die PIN aus der E-Mail an das Postfach des System-Users hier eintragen."
+            },
+            "degraded": {
+              "label": "Gestört",
+              "nextStep": "Beim Fernöffnen kam es mehrfach in Folge zu otp_invalid. Ein erfolgreiches Öffnen stellt den Zustand automatisch wieder her – hilft das nicht, die Aktivierung verwerfen und neu durchlaufen."
+            },
+            "reactivation_required": {
+              "label": "Re-Aktivierung nötig",
+              "nextStep": "Das IQ meldet restore_required – Remote-Open ist für diese Türen ausgesetzt, bis die Aktivierung neu durchlaufen wurde. Nach einem IQ-Reset müssen alle Nutzer des IQ neu aktivieren."
+            }
+          },
+          "actions": {
+            "start": "Aktivierung starten",
+            "complete": "Abschließen",
+            "resendMail": "PIN-Mail erneut senden",
+            "discard": "Verwerfen",
+            "discardAndRestart": "Verwerfen & neu aktivieren",
+            "discardTooltip": "Aktivierung verwerfen"
+          },
+          "wizard": {
+            "title": "IQ aktivieren –",
+            "stepPrepare": "Vorbereitung",
+            "prepareText": "Der Assistent aktiviert den System-User des Mandanten an diesem IQ. Dabei wird eine PIN an das Postfach des System-Users gesendet – halten Sie den Zugriff auf dieses Postfach bereit.",
+            "appBanAck": "Verstanden – der System-User wird nicht in der Salto-App verwendet.",
+            "next": "Weiter",
+            "stepStart": "Secret sichern & PIN-Mail senden",
+            "startProgress": "Gerätegeheimnis wird gesichert und die PIN-Mail ausgelöst …",
+            "stepPin": "PIN aus dem Postfach eingeben",
+            "pinText": "Salto hat eine 4-stellige PIN an das Postfach des System-Users gesendet. Bitte dort nachsehen und die PIN hier eintragen – sie wird nur einmalig erfasst.",
+            "completeActivation": "Aktivierung abschließen",
+            "resendHint": "„Erneut senden“ wiederholt nur die E-Mail; das gesicherte Geheimnis bleibt bestehen.",
+            "stepDone": "Fertig",
+            "doneText": "ist aktiviert – Türen an diesem IQ lassen sich jetzt fernöffnen.",
+            "close": "Schließen"
+          },
+          "discardConfirm": {
+            "title": "Aktivierung verwerfen?",
+            "activatedWarning": "Verwerfen löscht die hier gespeicherten Zutrittsdaten unwiderruflich; bei Salto bleibt der System-User an diesem IQ aktiviert. Eine Neu-Aktivierung über den Assistenten gelingt erst, wenn der System-User dort als nicht aktiviert gilt (z. B. nach einem IQ-Reset) – andernfalls ist ein Salto-seitiger Reset des Users bzw. IQs nötig.",
+            "pendingText": "Verwerfen entfernt das gespeicherte Gerätegeheimnis; die zuletzt gemailte PIN wird damit unbrauchbar. Der Assistent kann danach neu gestartet werden.",
+            "cancel": "Abbrechen",
+            "confirm": "Verwerfen"
+          },
+          "errors": {
+            "salto_iq_already_activated_at_salto": "Der System-User ist an diesem IQ bereits aktiviert (vermutlich eine frühere Aktivierung über die Salto-App). Das ist per API nicht behebbar – Ausweg: Salto-seitiger Reset des Users bzw. IQs, siehe Einrichtungsanleitung.",
+            "salto_iq_activation_exists": "Für dieses IQ existiert bereits eine Aktivierung. Erst verwerfen, dann neu starten.",
+            "salto_iq_invalid_pin": "Bitte die 4-stellige PIN aus der E-Mail eingeben.",
+            "salto_iq_activation_not_started": "Für dieses IQ ist keine Aktivierung gestartet – bitte den Assistenten von vorn beginnen.",
+            "salto_iq_activation_otp_rejected": "Salto hat die Aktivierung abgelehnt (otp_invalid). Stimmt die PIN mit der zuletzt gemailten überein? Der Eintrag bleibt in „PIN ausstehend“.",
+            "salto_ks_application_not_found": "Für diesen Mandanten ist keine aktive Salto-KS-App gespeichert.",
+            "generic": "Der Schritt ist fehlgeschlagen. Bitte erneut versuchen."
+          }
+        }
+      }
+    },
+    "audit": {
+      "title": "Zugriffsprotokoll exportieren",
+      "info": "Exportieren Sie das mandantenweite Zugriffsprotokoll (Türöffnungen, Schließungen, QR-Scans, abgelehnte Versuche, Provisionierungen, Webhook-Events) als CSV oder PDF. Optional lässt sich der Export über die Filter eingrenzen.",
+      "from": "Von",
+      "to": "Bis",
+      "provider": "Anbieter",
+      "action": "Aktion",
+      "result": "Ergebnis",
+      "bookingId": "Buchungsnummer",
+      "accessPointId": "Access-Point-ID",
+      "reset": "Filter zurücksetzen",
+      "exportCsv": "Als CSV exportieren",
+      "exportPdf": "Als PDF exportieren",
+      "deniedColumnsTitle": "Spalten zu abgelehnten Versuchen",
+      "deniedColumns": {
+        "blockingReasons": {
+          "label": "Blockierungsgründe",
+          "hint": "Warum der Versuch abgelehnt wurde, wichtigster Grund zuerst."
+        },
+        "channel": {
+          "label": "Kanal",
+          "hint": "Ob der Versuch per QR-Scan an der Tür oder aus der Ferne kam."
+        },
+        "evidenceBypassed": {
+          "label": "Evidence-Bypass",
+          "hint": "Ob eine berechtigte Person die Nachweisregeln übersprungen hat. Bleibt leer, wenn der Eintrag älter als dieses Feld ist."
+        },
+        "accessRole": {
+          "label": "Zugriffsrolle",
+          "hint": "In welcher Eigenschaft die Tür bedient wurde – als Buchender der eigenen Buchung oder aus der Verwaltung. Trennt zwei Abweisungen, die sonst gleich aussehen; eine leere Zelle heißt „nicht erfasst“."
+        }
+      },
+      "actions": {
+        "open": "Öffnen",
+        "close": "Schließen",
+        "unlatch": "Entriegeln",
+        "scan": "QR-Scan",
+        "provision": "Provisionierung",
+        "revoke": "Entzug",
+        "status": "Status",
+        "webhook": "Webhook"
+      },
+      "results": {
+        "success": "Erfolg",
+        "denied": "Abgelehnt",
+        "failure": "Fehler",
+        "pending": "Ausstehend"
+      },
+      "error": {
+        "forbidden": {
+          "title": "Keine Berechtigung",
+          "message": "Sie haben keine Berechtigung für den Audit-Export."
+        },
+        "notFoundOrForbidden": {
+          "title": "Nicht gefunden oder nicht zugänglich",
+          "message": "Das Zugriffsprotokoll wurde nicht gefunden, oder es liegt außerhalb Ihrer Berechtigung."
+        },
+        "failed": {
+          "title": "Export fehlgeschlagen",
+          "message": "Das Zugriffsprotokoll konnte nicht exportiert werden. Bitte versuchen Sie es erneut."
+        }
+      }
+    },
+    "bookable": {
+      "title": "Zugang & Schließsysteme",
+      "intro": "Ordnen Sie diesem Buchungsobjekt Türen und Schließfachanlagen zu. Angelegt und eingerichtet werden sie zentral beim Mandanten.",
+      "assignedCount": "{count} zugeordnet",
+      "activate": "Zugang aktivieren",
+      "activateHint": "Buchende erhalten für die zugeordneten Zugangspunkte zeitbasierte Berechtigungen und können sie aus der Buchung heraus bedienen.",
+      "writeForbidden": "Ihnen fehlt die Berechtigung, dieses Buchungsobjekt zu ändern. Die Zuordnung von Zugangspunkten lässt sich deshalb hier nicht bearbeiten.",
+      "reload": "Neu laden",
+      "selectTitle": "Zugeordnete Zugangspunkte",
+      "assign": "Zuordnen",
+      "allAssigned": "Alle Zugangspunkte sind bereits zugeordnet.",
+      "noneAvailable": "Für diesen Mandanten ist noch kein Zugangspunkt angelegt.",
+      "table": {
+        "point": "Zugangspunkt",
+        "type": "Typ",
+        "provider": "Anbieter",
+        "grants": "Was die Buchung bekommt",
+        "remove": "Entfernen"
+      },
+      "grants": {
+        "door": "Geteilter Zugang im Buchungszeitraum",
+        "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt"
+      },
+      "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
+      "manageLink": "Zugangspunkte verwalten",
+      "readForbidden": "Ihnen fehlt die Berechtigung, die Zugangspunkte dieses Mandanten zu lesen. Bitte wenden Sie sich an eine Person mit Mandanten-Rechten.",
+      "unknownTitle": "Unbekannte Zugangspunkte in der Auswahl",
+      "unknownHint": "Zu diesen IDs gibt es keinen Zugangspunkt dieses Mandanten – vermutlich wurden sie gelöscht. Entfernen Sie sie, sonst lässt sich das Buchungsobjekt nicht speichern.",
+      "emptyTitle": "Noch keine Zugangspunkte zugeordnet",
+      "emptyHint": "Über „Zuordnen“ fügen Sie Türen und Anlagen hinzu.",
+      "buffer": {
+        "title": "Pufferzeiten",
+        "hint": "Zeitspanne vor und nach dem Buchungszeitraum, in der die Zugangspunkte zusätzlich bedient werden dürfen. Der Wert gilt für alle ausgewählten Zugangspunkte.",
+        "before": "Vorlauf",
+        "after": "Nachlauf",
+        "minutes": "Min.",
+        "invalid": "Bitte eine ganze Zahl zwischen 0 und {max} Minuten angeben."
+      },
+      "saveError": {
+        "title": "Speichern fehlgeschlagen"
+      },
+      "pickerLoading": "Zugangspunkte werden geladen ..."
+    },
+    "booking": {
+      "title": "Zugänge",
+      "reload": "neu laden",
+      "pinInfo": "PINs werden aus Sicherheitsgründen nicht angezeigt. Falls eine PIN erzeugt wurde, wird sie per E-Mail an den Buchenden gesendet.",
+      "compartment": "{label} — Fach {compartment}",
+      "process": "Vorgang:",
+      "checkStatus": "Status prüfen",
+      "close": "Schließen",
+      "open": "Aufschließen",
+      "openCompartment": "Fach öffnen",
+      "unlatch": "Tür öffnen",
+      "state": {
+        "held": "Vorgemerkt",
+        "granted": "Erteilt",
+        "revoked": "Widerrufen"
+      },
+      "blocked": {
+        "forbidden": "Ihnen fehlt die Berechtigung, diese Buchung zu bedienen.",
+        "noStatus": "Der Anbieter meldet für diesen Zugangspunkt keinen Status."
+      },
+      "denied": {
+        "noPermission": "Ihnen fehlt die Berechtigung, diesen Zugangspunkt aus dieser Buchung zu bedienen.",
+        "notInBooking": "Dieser Zugangspunkt gehört nicht mehr zu dieser Buchung. Bitte laden Sie die Zugänge neu.",
+        "notOperable": "Dieser Zugangspunkt lässt sich aus dieser Buchung derzeit nicht bedienen – etwa weil das Zeitfenster abgelaufen ist, die Berechtigung fehlt oder widerrufen wurde, oder die Buchung noch offen ist."
+      },
+      "status": {
+        "waitingClose": "Warte auf Schließen…",
+        "waitingOpen": "Warte auf Bestätigung…",
+        "opened": "Geöffnet",
+        "openedAt": "Geöffnet ({time})",
+        "error": "Fehler",
+        "errorCode": "Fehler {code}",
+        "unlocked": "Entsperrt",
+        "locked": "Verschlossen"
+      },
+      "window": {
+        "before": "Zugang ab {time} möglich.",
+        "after": "Zugangszeitraum bis {time} abgelaufen.",
+        "until": "Zugang bis {time} möglich.",
+        "outside": "Außerhalb des erlaubten Zeitfensters. {hint}"
+      }
+    },
+    "connection": {
+      "error": {
+        "title": "Verbindung fehlgeschlagen",
+        "message": "Die Verbindung zu Nuki konnte nicht hergestellt werden."
+      }
+    },
+    "load": {
+      "error": {
+        "title": "Türen konnten nicht geladen werden",
+        "message": "Die Türliste konnte nicht vom Nuki-System abgerufen werden."
+      }
+    },
+    "blockingReasons": {
+      "rejected": "Der Zugang wurde abgelehnt.",
+      "not_committed": "Die Buchung ist noch nicht bestätigt.",
+      "payment_required": "Die Buchung ist noch nicht bezahlt.",
+      "authorization_revoked": "Die Zugangsberechtigung wurde widerrufen.",
+      "outside_access_window": "Außerhalb des erlaubten Zeitfensters.",
+      "not_provisioned": "Der Zugang ist noch nicht freigegeben.",
+      "no_remote_access": "Für diesen Zugangspunkt ist keine Fernsteuerung verfügbar.",
+      "evidence_missing": "Der Zugang muss vor Ort per QR-Code bestätigt werden.",
+      "evidence_invalid": "Der QR-Code ist nicht mehr gültig. Bitte scannen Sie den Code an der Tür erneut.",
+      "evidence_rule_unavailable": "Der Zugang ist derzeit nicht prüfbar. Bitte wenden Sie sich an den Betreiber.",
+      "unknown": "Der Zugangspunkt konnte nicht geöffnet werden."
+    },
+    "openFailure": {
+      "configuration": "Der Zugangspunkt ist beim Anbieter nicht richtig eingerichtet. Bitte wenden Sie sich an die Verwaltung.",
+      "temporary": "Der Anbieter konnte den Zugangspunkt gerade nicht öffnen. Bitte versuchen Sie es in einigen Minuten erneut."
+    },
     "open": {
       "success": {
-        "title": "Erfolgreich geöffnet",
-        "message": "Das Schließfach wurde erfolgreich geöffnet."
+        "title": "Zugang geöffnet",
+        "message": "Der Öffnen-Befehl wurde bestätigt."
       },
       "error": {
         "title": "Fehler beim Öffnen",
-        "message": "Das Schließfach konnte nicht geöffnet werden."
+        "message": "Der Zugangspunkt konnte nicht geöffnet werden."
+      },
+      "timeout": {
+        "title": "Bestätigung ausstehend",
+        "message": "Der Zugangspunkt hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+      },
+      "sendError": {
+        "title": "Befehl fehlgeschlagen",
+        "message": "Fehler beim Senden des Öffnen-Befehls. Bitte erneut versuchen."
+      }
+    },
+    "unlatch": {
+      "success": {
+        "title": "Tür geöffnet",
+        "message": "Die Tür wurde geöffnet."
+      },
+      "timeout": {
+        "title": "Bestätigung ausstehend",
+        "message": "Die Tür hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+      },
+      "sendError": {
+        "title": "Befehl fehlgeschlagen",
+        "message": "Fehler beim Senden des Öffnen-Befehls. Bitte erneut versuchen."
+      }
+    },
+    "close": {
+      "success": {
+        "title": "Tür geschlossen",
+        "message": "Der Schließen-Befehl wurde bestätigt."
+      },
+      "error": {
+        "title": "Fehler beim Schließen",
+        "message": "Die Tür konnte nicht geschlossen werden."
+      },
+      "timeout": {
+        "title": "Bestätigung ausstehend",
+        "message": "Die Tür hat den Schließen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
+      },
+      "sendError": {
+        "title": "Befehl fehlgeschlagen",
+        "message": "Fehler beim Senden des Schließen-Befehls. Bitte erneut versuchen."
+      }
+    },
+    "status": {
+      "error": {
+        "title": "Statusabfrage fehlgeschlagen",
+        "message": "Der Status des Zugangspunkts konnte nicht abgerufen werden."
+      },
+      "waitTimeout": {
+        "title": "Zeitüberschreitung",
+        "message": "Zeitüberschreitung beim Warten auf Bestätigung. Bitte Status manuell prüfen."
+      },
+      "unconfirmed": {
+        "title": "Keine Rückmeldung",
+        "message": "Der Anbieter meldet zum Öffnen-Vorgang nichts zurück. Ob der Zugangspunkt geöffnet hat, lässt sich von hier nicht feststellen."
+      },
+      "pointError": {
+        "title": "Fehler am Zugangspunkt",
+        "message": "Am Zugangspunkt ist ein Fehler aufgetreten (Code {code}).",
+        "detailedMessage": "Am Zugangspunkt ist ein Fehler aufgetreten (Code {code}): {detail}"
       }
     }
   },

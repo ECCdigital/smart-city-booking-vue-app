@@ -27,6 +27,20 @@ export default {
     const formData = { ...bookable };
     formData.tenantId = t;
 
+    // Derived from the access points on the way out, dropped on the way in:
+    // sending it would claim a write permission that does not exist.
+    delete formData.lockerDetails;
+
+    // Retired: nothing is distributed over the locker systems any more, a
+    // booking gets one compartment per booked unit at each of them. A map a
+    // bookable saved before that is dropped here so an old state does not
+    // travel on - from a copy, because the shallow clone above still shares
+    // the nested block with the caller's bookable.
+    if (formData.accessPointDetails?.accessPointAmounts !== undefined) {
+      formData.accessPointDetails = { ...formData.accessPointDetails };
+      delete formData.accessPointDetails.accessPointAmounts;
+    }
+
     if (formData.priceEur && typeof formData.priceEur === "string") {
       formData.priceEur = formData.priceEur.replace(",", ".");
       formData.priceEur = Number(formData.priceEur);
@@ -64,6 +78,7 @@ export default {
 
           delete bookable.id;
           delete bookable._id;
+          delete bookable.lockerDetails;
 
           bookable.title = `${bookable.title} (Kopie)`;
 

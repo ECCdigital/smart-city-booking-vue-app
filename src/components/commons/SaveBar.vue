@@ -1,4 +1,6 @@
 <script>
+import { SAVE_BAR_Z_INDEX } from "@/utilities/overlay-layers";
+
 export default {
   name: "SaveBar",
   props: {
@@ -19,6 +21,7 @@ export default {
     return {
       anchorBox: { left: 0, width: 0 },
       ro: null,
+      zIndex: SAVE_BAR_Z_INDEX,
     };
   },
   computed: {
@@ -128,6 +131,7 @@ export default {
     :style="{
       left: anchorBox.left + 'px',
       width: anchorBox.width + 'px',
+      zIndex: zIndex,
     }"
   >
     <div
@@ -143,7 +147,12 @@ export default {
         <v-icon color="primary" class="mr-2">mdi-content-save</v-icon>
         <span class="mr-4">Änderungen speichern</span>
         <v-spacer />
-        <v-btn v-if="showCancel" text class="save-bar-btn" @click="cancelChanges">
+        <v-btn
+          v-if="showCancel"
+          text
+          class="save-bar-btn"
+          @click="cancelChanges"
+        >
           Abbrechen
         </v-btn>
         <v-btn
@@ -178,7 +187,6 @@ export default {
 .save-bar-wrapper {
   position: fixed;
   bottom: 12px;
-  z-index: 4;
   pointer-events: none;
   padding-bottom: calc(var(--save-bar-gap) + env(safe-area-inset-bottom));
 }

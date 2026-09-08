@@ -177,6 +177,7 @@ import ApiAuthService from "@/services/api/ApiAuthService";
 import { mapActions, mapGetters } from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ContactInformation from "@/components/ContactInformation.vue";
+import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
 
 export default {
   computed: {
@@ -202,15 +203,15 @@ export default {
       return !!this.termsAndConditions.url;
     },
     dataProtectionHref() {
-      return this.legalHref(this.dataProtection.url);
+      return legalDocumentHref(this.dataProtection.url);
     },
     termsHref() {
-      return this.legalHref(this.termsAndConditions.url);
+      return legalDocumentHref(this.termsAndConditions.url);
     },
     legalLinks() {
       const links = [];
       const add = (key, label) => {
-        const url = this.legalHref(this.instance?.[key]?.url);
+        const url = legalDocumentHref(this.instance?.[key]?.url);
         if (url) links.push({ key, label, url });
       };
       add("dataProtection", "Datenschutz");
@@ -285,10 +286,6 @@ export default {
       addToast: "toasts/add",
       updateNextUrl: "authStore/setNextUrl",
     }),
-    legalHref(url) {
-      if (!url) return "";
-      return /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
-    },
     buildLegalAcceptance() {
       const acceptance = {};
       const acceptedAt = new Date().toISOString();

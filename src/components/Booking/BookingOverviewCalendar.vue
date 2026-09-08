@@ -177,44 +177,28 @@
             <v-list-item-title>Buchung bearbeiten</v-list-item-title>
           </v-list-item>
           <v-list-item
+            v-for="action in transitionActions(selectedEvent.status)"
+            :key="action"
             link
-            @click="commitBooking(selectedEvent.id)"
+            @click="transition(action, selectedEvent.id)"
             :disabled="!BookingPermissionService.allowUpdate(selectedEvent)"
           >
             <v-list-item-icon>
-              <v-icon>mdi-checkbox-marked-circle</v-icon>
+              <v-icon>{{ actionIcon(action) }}</v-icon>
             </v-list-item-icon>
-            <v-list-item-title>Buchung freigeben</v-list-item-title>
-          </v-list-item>
-          <v-list-item
-            link
-            @click="payBooking(selectedEvent.id)"
-            :disabled="
-              !BookingPermissionService.allowUpdate(selectedEvent) ||
-              selectedEvent.isPayed
-            "
-          >
-            <v-list-item-icon>
-              <v-icon>mdi-cash-check</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Buchung als bezahlt markieren</v-list-item-title>
-          </v-list-item>
-          <v-list-item
-            link
-            @click="rejectBooking(selectedEvent.id)"
-            :disabled="!BookingPermissionService.allowUpdate(selectedEvent)"
-          >
-            <v-list-item-icon>
-              <v-icon>mdi-close-circle</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Buchung stornieren</v-list-item-title>
+            <v-list-item-title>
+              {{ actionLabel(action, selectedEvent.status) }}
+            </v-list-item-title>
           </v-list-item>
           <v-divider />
           <v-list-item
             link
             @click="onOpenDeleteDialog(selectedEvent.id)"
             class="red--text"
-            :disabled="!BookingPermissionService.allowDelete(selectedEvent)"
+            :disabled="
+              !BookingPermissionService.allowDelete(selectedEvent) ||
+              !allowsAction(selectedEvent, 'delete')
+            "
           >
             <v-list-item-icon>
               <v-icon color="red">mdi-delete</v-icon>
@@ -229,6 +213,14 @@
 <script>
 import { mapGetters } from "vuex";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
+import {
+  BOOKING_STATUS,
+  actionIcon,
+  actionLabel,
+  allowsAction,
+  isRejectedOrCancelled,
+  transitionActions,
+} from "@/utils/bookingStatus";
 
 export default {
   name: "BookingOverviewCalendar",
@@ -296,7 +288,9 @@ export default {
         this.bookings
           .filter(
             (booking) =>
-              !booking.isRejected && booking.timeBegin && booking.timeEnd
+              !isRejectedOrCancelled(booking) &&
+              booking.timeBegin &&
+              booking.timeEnd
           )
           .map((booking) => {
             const start = Date.parse(booking.timeBegin) || booking.timeBegin;
@@ -306,19 +300,24 @@ export default {
               name: this.getBookingTitle(booking),
               start: start,
               end: end,
-              color: booking.isCommitted ? booking.color : "grey",
+              color:
+                booking.status === BOOKING_STATUS.REQUESTED
+                  ? "grey"
+                  : booking.color,
               timed: true,
               user: booking.name,
               company: booking.company || "",
-              isPayed: booking.isPayed,
-              isCommitted: booking.isCommitted,
-              isRejected: booking.isRejected,
+              status: booking.status,
             };
           }) || []
       );
     },
   },
   methods: {
+    actionIcon,
+    actionLabel,
+    allowsAction,
+    transitionActions,
     getBookingTitle(booking) {
       const bookableItems = booking.bookableItems;
       if (!bookableItems) {
@@ -424,11 +423,9 @@ export default {
     onOpenEditBooking(bookingId) {
       this.$emit("open-edit-booking", bookingId);
     },
-    commitBooking(bookingId) {
-      this.$emit("commit-booking", bookingId);
-    },
-    rejectBooking(bookingId) {
-      this.$emit("reject-booking", bookingId);
+    /** A transition of `BOOKING_ACTION`; the host runs it through `BookingTransitions`. */
+    transition(action, bookingId) {
+      this.$emit("transition", action, bookingId);
     },
     onOpenDeleteDialog(bookingId) {
       this.$emit("open-delete-dialog", bookingId);
@@ -439,9 +436,6 @@ export default {
           this.calendarTitle = this.$refs.calendar.title;
         }
       });
-    },
-    payBooking(bookingId) {
-      this.$emit("pay-booking", bookingId);
     },
   },
   mounted() {

@@ -1,6 +1,8 @@
 $body-font-family: 'Work Sans', sans-serif;
 $heading-font-family: 'Work Sans', sans-serif;
 
+// The media library surfaces opt out of the card/dialog radius below — see
+// media-library.scss.
 $card-border-radius: 25px !important;
 $btn-text-transform: capitalize !important;
 $dialog-border-radius: 25px !important;

@@ -1,4 +1,5 @@
 import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
+import { defaultAccessPointDetails } from "@/utilities/access-points";
 
 export default class Bookable {
   constructor(overrides = {}) {
@@ -8,6 +9,9 @@ export default class Bookable {
     this.title = "";
     this.description = "";
     this.isPublic = false;
+    // Ordered media references; position 0 is the cover image (§4.8 of the
+    // media spec). `imgUrl` stays as the legacy value of unmigrated bookables.
+    this.images = [];
     this.imgUrl = "";
     this.flags = [];
     this.tags = [];
@@ -66,7 +70,7 @@ export default class Bookable {
     this.eventId = "";
 
     this.attachments = [];
-    this.lockerDetails = { active: false, units: [] };
+    this.accessPointDetails = defaultAccessPointDetails();
     this.requiredFields = [];
 
     this.customFieldDefinitions = [];

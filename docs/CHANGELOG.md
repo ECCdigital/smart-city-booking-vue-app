@@ -7,199 +7,320 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+### Added
+
+-   Booking list: a status filter over the five states (Angefragt, Zahlung offen, Bestätigt, Abgelehnt, Storniert) that narrows the table and the calendar (spec E11); the kanban keeps every booking, its columns being workflow states. The selection is not persisted. `filterBookingsByStatus` joins `bookingStatus.js`
+-   `docs/agents/booking-status-vocabulary.md`: the glossary of the booking lifecycle — the five German state words (Angefragt, Zahlung offen, Bestätigt, Abgelehnt, Storniert) against `booking.status`, the derived Kostenfrei and Gemischt, the action verbs against the transitions and their routes, and the rule that the UI reads `status` and never a flag. Listed in `AGENTS.md` and `docs/agents/README.md`
+-   Test setup: Vitest with `@vue/test-utils@1`, `@vitejs/plugin-vue2` and jsdom, running beside the Vue CLI toolchain — `npm test` and `npm run test:watch`, specs under `tests/unit/` mirroring `src/`, shared Vuetify/Vuex mount boilerplate in `tests/unit/support/mount.js`, conventions in `docs/agents/testing.md`
+-   `docs/agents/access-vocabulary.md`: the glossary of the access area — the German UI terms (Anlage, Fach, Vorgemerkt/Erteilt/Widerrufen, Stückzahl, Reichweite) against the code identifiers they map to, and the one source a booking's Zugänge are read from. Listed in `AGENTS.md` and `docs/agents/README.md`
+-   Characterisation tests pinning today's behaviour ahead of the 4.3.x API migration: `apiErrorMessage`, `TenantPermissionService`, `bookingPaymentStatus` and the three status switches of `BookingEditStatus`
+-   Tenant access apps: Salto KS IQ activation checklist for remote-open — progress header, IQs sorted by required action, guided modal wizard for the first activation (app-ban acknowledgement, PIN mail, one-time PIN capture), inline PIN entry for pending activations, discard with confirmation — requires the matching backend wizard endpoints
+-   Media picker: new tab "Externer Link" — a pasted `https://` address is stored as an external reference (hotlink, no import) wherever the picker opens, restoring external image URLs for bookable and event images
+-   Bookable and event image lists: an existing external entry's address can be corrected in place (pencil icon on the row)
+-   Bookable editor: "Als Bild übernehmen" on the legacy cover alert moves `imgUrl` into the image list as an external entry and clears the old field
+-   Media library admin view (`/media`, admin interface `media`): split view with facets (kind, tags, visibility), server-side search and pagination, permanent upload dropzone with per-file progress and error details, metadata editing, auto-loaded usage proof, and deletion blocked while a medium is in use; instance media tab for instance owners (`/api/v2/instance/media`)
+-   Role editor: `manageMedia` permission group and the `media` admin interface
+-   Media picker: gallery grid in a modal with multi-select, server-side search and tag filter, upload straight from the picker, and `intern` media greyed out with a reason wherever the entity is publicly visible
+-   Bookable editor: new "Bilder" section with an ordered image list — position 0 is the cover image, drag to reorder, remove drops the reference and keeps the medium
+-   Instance editor: new tab "Rechtliches" with the three legal documents (privacy policy, legal notice, terms) — each picked from the instance media library and stored as a media reference, public media only, external links stay possible; the fields moved out of tab "Allgemein" and the derived `url`/`fileName` are no longer sent back once a reference stands
+-   Tenant editor: new tab "Rechtliches" with an expandable list of legal documents (`tenant.legalDocuments`) — privacy policy, legal notice, terms, right of withdrawal and freely named documents, each picked from the tenant media library and stored as a media reference, public media only, external links stay possible; a type already filed is no longer offered and two freely named documents may not share a title. The documents are filed only — nothing delivers them to end users yet
+
 ### Changed
 
-- Dashboard filter: booking status can be multi-selected under Weitere Filter
-- Block editor text blocks: font size select uses pixel values (7–24 px) instead of small/medium/large; existing S/M/L templates still render correctly
+-   Dashboard filter: booking status can be multi-selected under Weitere Filter
+-   Bookable pricing, external provider: the iFBS price panel and the bookable card ask `GET /:tenant/bookables/:id/prices` for a bookable that is not public too - the backend answers it to whoever may read the bookable (backend entry `bookable.prices`), so a provider's prices are previewed before the bookable is listed. The hint `bookable.externalPrice.notPublic` is gone; `externalPricesUnavailableKey` asks only whether the bookable is stored
+
+-   Access point dialog: a Pareva Anlage names its **Produkt-ID** (the product's 24-hex id at Pareva), no longer a "Produktgröße", and is entered by hand — the provider listing lists size codes, not products, so the picker offers only providers whose `providerCapabilities` include `listAccessPoints` (`canListAccessPoints`); with Pareva alone the form opens with `pareva` preset. The table shows it as "Selbst angelegt". Glossary and tests follow. Spec `docs/specs/pareva-anlage.md`, which also names the backend's share: Pareva drops the listing capability, and availability is asked live at Pareva beside the platform's own count
+-   Access point dialog: an Anlage shows the one id field its provider reads — "Standort-ID" for iFBS, "Produktgröße" for Pareva, each with its own hint — and no "Standort-ID beim Anbieter", which no provider reads; doors and unknown providers keep both fields. A new iFBS or Pareva Anlage is sent with `providerLocationId: null`, an edited one passes its stored value through unchanged. The mapping is `providerIdFields` in `access-points.js`; new strings under `accessPoint.management.fields`. `docs/agents/access-vocabulary.md` gains the rows Standort-ID and Produktgröße
+-   `docs/agents/booking-status-vocabulary.md`: a section on the headline over the path (Kopfzeile, Hauptpfad, Schritt, Endsegment, Erreicht, Hauptaktion, Nebenweg), the Anfangszustand addendum to E10 and the series rules, against the identifiers of `bookingStatus.js`, `bookingForm.js` and `BookingStatusPath.vue`. `docs/agents/access-vocabulary.md`: the row "Vom Anbieter übernehmen / Manuell anlegen" → `mode`, and a note that a door taken over from the listing still reads "Selbst angelegt"
+-   Series drawer (spec N5): the status bar becomes the headline over the series' path - the members' shared state captioned "Zustand der Serie", the path from the total price (Kostenfrei at zero) dated by the series' request only, cut at Storniert behind the step every member reached, the reason under it only where every member gives the same one. A mixed series says "Gemischt", counts its members per state ("2 Angefragt · 1 Bestätigt") and points at the list below, without button or menu. Series-wide actions are worded "Serie freigeben", "Serie als bezahlt markieren", "Serie ablehnen" / "Serie stornieren" (`group-booking.action.*`); the member rows keep the plain verbs. `seriesPathOf`, `mixedCounts` and `seriesActionLabel` join `bookingStatus.js`; the headline takes an `action-label` function and a default slot. `BookingStatusBar.vue` and `booking.status.paidAt` are gone with their last host. `GroupBookingDetails.spec.js` was rewritten deliberately
+-   Booking create form (spec N6): the "Anfangszustand" is chosen on the headline the booking shows afterwards - the segments of the draft's path are radios named with the state words (Angefragt · Zahlung offen · Bestätigt), reachable by keyboard; the choice stays the act underneath and the wire `update:initial-state` is unchanged. The payment fields sit outlined under the line at Bestätigt with a price, the paid date under the segment. `BookingStatusPath` gains `chooser`, `value`, `input` and the `payment` slot; the select sheet and the keys `booking.initialState.requested/confirmed/paid/hint` are gone. The create-mode tests of `BookingEditStatus.spec.js` were rewritten deliberately
+-   Booking edit form (spec N4): the status section renders the headline over the path the detail drawer got, locked with "Erst speichern" under the path while the form is dirty. At Abgelehnt / Storniert the reason is an outlined textarea in the block under the path, reported as `update:rejection-reason` and written by the form; the accent sheet is gone, the refund audit is a sheet of its own below. `BookingEditStatus.spec.js` was rewritten deliberately, the create mode untouched
+-   Booking detail drawer (spec N2, N3, N4): the status bar becomes a headline over the booking's path — the state word beside its avatar, the Kostenfrei marker, the primary transition as a button and the side ways (Ablehnen / Stornieren) in a ⋮-menu, and under it the segments Angefragt · Zahlung offen · Bestätigt with the request and paid dates, cut by a red end segment at Abgelehnt / Storniert. The reason moves out of "Buchungsinformationen" into a block under the path, captioned by state. `pathOf` and `splitActions` join `bookingStatus.js`, the headline is `BookingStatusPath.vue`; the edit form and the series drawer still render `BookingStatusBar`. New string `booking.status.paidShort`; `BookingDetails.spec.js` was rewritten deliberately
+-   Booking list: the status filter moves from the multi-select beside the search field into the filter card behind the funnel (spec N1), which now holds two sections — "Buchungstyp" as a segment switch (Alle / Einzel / Serie) and "Status" as a checkbox list of the five states. Nothing selected means no filter, so the list opens with every booking; each section has its own "zurücksetzen", the header "Alle zurücksetzen", and the funnel's badge counts the restrictions. The card (`BookingFilterCard`) opens to the right under the search field and stays open while toggling. New strings under `booking.filter.*`
+-   Booking detail drawer (spec E3, E8): the drawer reads `booking.status` and is the third host of `BookingTransitions` — a status bar shows the state chip with the Kostenfrei marker and the paid date (at Bestätigt only) and one button per transition the state allows, for whoever may edit the booking; after a transition or a stale refusal (409 / 404) the list reloads the booking, and a booking gone by then closes the drawer. The card "Stornobelege" gains **Stornobeleg erneut ausstellen** at Abgelehnt / Storniert for `booking.reprint` (`BookingPermissionService.allowReprint`, `POST …/cancellation-receipt`, a revision under the same number), and a failed receipt download says so. **Beleg erstellen** is offered at Bestätigt only — for a series member only while every member is Bestätigt. The series drawer shows the series' derived state (the shared state or **Gemischt**), offers Freigeben / Als bezahlt markieren / Stornieren series-wide only where the members share a state that allows it (the dialogs then carry no "Nur diese Buchung": the target's `seriesOnly` flag), lets each member row run its own transitions, and reissues the aggregated cancellation receipt once every member is cancelled. The status bar and the Stornobelege card are shared components (`BookingStatusBar`, `CancellationReceiptsCard`), the transition target is built by `transitionTarget()` in `bookingStatus.js`; the cells "Freigabestatus", "Status der Zahlung" and "Bezahldatum" and `booking.payment.settled` / `open` are gone. New strings under `booking.cancellationReceipt` and `group-booking.cancellationReceipt`
+-   Booking edit form (spec E2, E10): the status section is a state plus action bar instead of three switches. It shows the state chip (with the Kostenfrei marker and the paid date) and one button per transition the state allows — Freigeben and Ablehnen at Angefragt, Als bezahlt markieren and Stornieren at Zahlung offen, Stornieren at Bestätigt, Wiederherstellen at Abgelehnt and Storniert — each run by the mounted `BookingTransitions`, after which the form reloads the booking from the server; a refused transition is shown inline and reloads after a 409 or 404. The actions are offered to whoever may edit the booking (`BookingPermissionService.allowUpdate`, the list's gate) and locked with the hint "Erst speichern" while the form has unsaved changes; there is no implicit save before a transition, and "Freigabe zurücknehmen" / "Zahlung zurücknehmen" are gone with the switches, as is the GET → PUT undo of a cancellation. **The save PUT carries content only**: `isCommitted`, `isPayed`, `isRejected` and `status` are dropped from the body (`toUpdatePayload`), so a save never moves the state. The payment method and paid date are editable at Bestätigt only — no longer on a booking cancelled out of it — and the date picker's day is read as a local day (`paymentDateOf`), so west of UTC the stored `timePaid` no longer lands on the previous day. The create form asks for an **Anfangszustand** — Angefragt, Freigegeben, or Bezahlt (only with a price; asks for payment method and date) — and sends it as `status` with no flag (`initialStateWire`, `toCreatePayload` in `src/utils/bookingForm.js`); "Buchung als storniert anlegen" is gone without replacement. `getApiErrorMessage` reads the create PUT's 400 `invalid_status` and `missing_payment_details`. New strings under `booking.initialState`, `booking.edit.saveFirst`, `booking.edit.reason`, `booking.status.paidAt` and `errors.bad-request-codes`; `booking.unreject` is gone. `BookingEditStatus.spec.js` was rewritten from the switch characterisation onto state and actions, deliberately. In passing, `BookingTransitions` opens its dialogs one tick after the target is set: mounted with the target, a cancel dialog used to be created already open, its refund preview never loaded, and its "Ja" stayed disabled on the first open in every host
+-   Series dialogs show the state of the series (spec E9): the confirm, pay and cancel dialogs of a series member carry one derived chip — the members' shared state or **Gemischt** — and list the members with their own state. The series-wide option (Serie freigeben, Serie als bezahlt markieren, Gesamte Serie stornieren) is offered only while the members share a state that allows it; a mixed series says so and leaves only "Nur diese Buchung" (the cancel dialog greys the series choice and starts on the single one); a host that hands over no members gets the dialog as before. `BookingTransitions` keeps a refusal behind the dialogs and hands them the members over the existing `bookings` of `start(action, target)` — its interface is unchanged. A 409 `invalid_transition` with `params.bookingIds` names the diverging bookings in the dialog and the toast and asks for a reload, as before. The pay dialog's series question said "freigeben"; it says "als bezahlt markieren" now. The chip and member list live in `GroupBookingStatusSummary.vue`, the gate in `groupAllowsAction` of `bookingStatus.js`; new strings under `group-booking.status`, `group-booking.transition.not-allowed` and `group-booking.commit.member-of-series` / `question`
+-   The customer-facing views read `booking.status` instead of the flags (spec E7, E12): the checkout goes to the payment only at `payment_due` and to the status page for every other state (a series pays the members that await payment and shows the rest with them); the checkout status page polls only bookings at `payment_due` and shows its branches by state (`requested` awaiting release, `payment_due` awaiting the invoice or a failed payment, `confirmed` done, `rejected` / `cancelled` cancelled); the public cancellation page offers the form only while the booking is neither `rejected` nor `cancelled`, asks for bank details at `confirmed` with a price, and hides the form with an explanation (and the policy's contact hint) when the poll answers `cancellationPolicy.userCancellable` other than `true` — the reading the backend applies. `isAwaitingPayment` joins `bookingStatus.js`, the series' payment decision lives in `src/utils/checkoutNextStep.js`; new string `booking.userCancellation.disabledByPolicy`
+-   Booking transitions live in one module, `BookingTransitions.vue` (spec E2, E3): it owns the four dialogs (series confirm, pay, cancel, and a new "Wiederherstellen" confirmation), the route calls, the error handling of spec E5 and the refetch impulse. A host mounts it once and drives it with `start(action, target)`; it answers `transitioned` on success and `failed` with the read message and `refetch` after a 409 or 404; a 200 `{ success: false }` without errors, which used to close nothing and say nothing, now shows the action's generic message. The list view is the first host: `Bookings.vue` lost the dialogs and the handler bodies, and its table, calendar and kanban card raise one `transition` event. Their menus offer exactly the state's transitions (a forbidden one is absent, no longer greyed out) — Freigeben and Ablehnen at Angefragt, Als bezahlt markieren and Stornieren at Zahlung offen, Stornieren at Bestätigt, and the new **Wiederherstellen** at Abgelehnt and Storniert, over `POST …/bookings/:id/reinstate` (`ApiBookingService.reinstateBooking`). A series-wide action is refused with a message while the members are in mixed states (Ticket 8 refines the dialogs); a member of such a series is still acted on alone. The kanban card's transition entries follow the state for the first time (they were always shown). New strings under `booking.reinstate`, `booking.transition` and `group-booking.transition`; `Bookings.spec.js` and the row-menu part of `BookingTable.spec.js` were rewritten deliberately
+-   Booking transitions read their errors centrally (spec E5): `getApiErrorMessage` gains a 409 branch keyed on the lifecycle's `code` (`invalid_transition` names the state the booking is in now and, for a series, the diverging members; `not_cancelled`; a generic fallback), reads 404 `booking_not_found` and 400 `invalid_status_change`, and copes with the three body forms the routes answer with (`{error, code, statusCode, params}`, `{code, message}`, empty or bare string). `shouldRefetch(error)` states the rule: after every 409 and 404 the host reloads — the booking list (list, calendar and kanban share it) or the edit form (which asks its page to refetch the booking). Every transition handler in the list and the form has a try/catch now (Freigeben and Als bezahlt markieren had none), shows the read message as a toast, and keeps it inline in the open dialog (the pay dialog and the single cancel dialog show their error for the first time) or, in the form, in an alert under the status section. The public cancellation pages read the customer route's `{code, message}` form: a 403 `booking_user_cancellation_disabled` says the tenant forbids cancelling by the customer instead of "wrong name", and a 409 says the booking is already cancelled (the confirmation page then offers no retry). New strings under `errors.conflict-codes`, `errors.not-found-codes`, `errors.bad-request-codes`, `errors.forbidden-codes.booking_user_cancellation_disabled` and `booking.userCancellation`
+-   Booking list, calendar, kanban card and details read `booking.status` instead of the derived flags `isCommitted` / `isPayed` / `isRejected`. `src/utils/bookingStatus.js` replaces `bookingPaymentStatus.js` (label, chip, icon, sort rank, allowed actions, group state); the state words and action verbs live in `translations.json` (`booking.status.*`, `booking.action.*`). The list shows one status chip (Angefragt, Zahlung offen, Bestätigt, Abgelehnt, Storniert) plus a "Kostenfrei" marker at price 0, and one "Status" sort column in that order (Storniert before Abgelehnt). Menus offer only the state's transitions: Freigeben at Angefragt, Als bezahlt markieren at Zahlung offen, Ablehnen / Stornieren by state, delete only at Angefragt and Abgelehnt — a free requested booking is deletable again. The calendar hides Abgelehnt and Storniert and greys Angefragt; the cancel dialogs ask for bank details at Bestätigt with a price (series: every member Bestätigt). The dead workflow actions `pending` and `cancelled` are gone. `bookingPaymentStatus.spec.js` was rewritten as `bookingStatus.spec.js`
+-   **Excel export format**: the columns "Bestätigt" (Ja/Nein) and "Abgelehnt" (Ja/Nein) are replaced by one column **Status** carrying the state word, and "Zahlungsstatus" is now **Bezahlt** with Kostenfrei / Ja / Nein read off the state (`confirmed` → Ja, `payment_due` → Nein, `cancelled` → Ja only when cancelled out of `confirmed`); "Ablehnungsgrund" stays. Tenants who post-process the export need to adjust to the changed columns
+-   Bookable pricing, external provider: the iFBS price panel and the bookable card read prices from `GET /:tenant/bookables/:id/prices`, a flat array of `{priceEur, unit, external}` — they used to index the answer as an object, so every figure was `undefined`. The panel applies where a locker system of the provider is assigned (`accessPointDetails.accessPointIds`), a rate the provider does not charge is left out, and a draft or unlisted bookable says the public prices route does not answer for it. The `/locker/*` facade and `ApiLockerService` are gone; Mindestnutzungsdauer and Fahrradboxen gesamt / Pufferzeit fall with it, since no 4.3.x route delivers them
+-   Booking details: one list "Zugänge" for doors and compartments, read only from `GET /:tenant/access?bookingId=`; `booking.lockerInfo` and `booking.accessInfo` are no longer read. Each row names its access point, compartment, provider and process id and carries a state chip (Vorgemerkt / Erteilt / Widerrufen). The open command sends the projection's `id` unsplit — the old locker section sent `lockerInfo.processId`, so every open answered 403. A blocked open button stays visible with its reason, an entry without a window no longer reads as expired, and a booking whose accesses cannot be read says so. Lives in `BookingAccessPoints.vue` over `utilities/booking-access-points.js`
+-   Booking details, access messages: a 403 is no longer read as "outside the time window" — each caller names what its route's 403 means, and one carrying a `ForbiddenError` body is named as the denial it is. A provider failure at `open` (HTTP 200 with `openFailure`) is named as a configuration error or a temporary fault. Open, close and status buttons follow the projection's `capabilities` and `mode`, blocked with a reason where the provider declares none; a started open is followed through `/open-status` with its `openProcessId`, and a poll that could not tell says so. `locker_not_ready` is gone from the blocking reasons
+-   Access point management: one table for doors and locker systems — columns Typ and Herkunft, a type filter, and „entfällt“ in the QR column of an Anlage, whose QR and scan-code entries are gone from the row menu. „Tür anlegen“ and „Aus Anbieter übernehmen“ open the one edit dialog in its two starting states; the type follows the provider and is only shown, and mode, QR rules and address are hidden for an Anlage, which is saved with `validationRules: []`. The delete dialog names the running bookings that hold a live grant, read from the tenant's bookings (`accessInfo`) — the only source a tenant owner can reach
+-   Tenant applications: Pareva and Parkraumservice are written and read as `type: "access"`, the only type the 4.3.x schema knows; the UI wrote `"locker"`. An application still carrying `"locker"` does not count as stored — no fallback, no warning — so an unmigrated tenant is set up again instead of writing the dead type back. The connection test moved from `/locker/:provider/test` to `/access-apps/:provider/test`, which asks `accessApp.manage` instead of `manageBookables.readAny`
+-   Bookable editor, tab "Schließsysteme": one assignment table for doors and locker systems instead of the provider cards and the unit list. A locker system is assigned by id in `accessPointDetails.accessPointIds` like a door, with the access buffer, a picker over the tenant's access points, and a column saying what a booking gets. The old view iterated `city.locations` on the facade's flat 4.3.x answer and threw a TypeError. "Schließfach" reads "Anlage" now, in the access point management too
+-   Tenant permissions follow 4.3.x: creating a tenant asks the instance setting `allowCreateTenant`, deleting one asks the membership's `isOwner` flag. `TenantPermissionService.isOwner(tenant)` is gone — it read `tenant.ownerUserId`, a field the tenant schema does not define, so it was never true
+-   Tenant-scoped screens can no longer be entered without the matching admin interface: the router gate (`requireInterfaceAccess`) asks the same getter the navigation hides menu entries with, so a direct link to a screen the menu does not offer ends on the tenant overview with a message instead of a 403 inside the screen. Dashboard, settings and the instance screens stay ungated, and the gate stays silent while the session, the tenant or the permissions are not known yet — the per-screen empty states remain the finer-grained answer
+-   Picking a tenant on the overview only jumps to the booking list when the membership reaches it; without that reach the user stays on the overview instead of being sent straight into the new permission notice
+-   A denied bookable or coupon list shows a permission notice instead of an empty list — 4.3.x answers a signed-in user without reach with 403 instead of `[]`, and all eleven call sites tell the two apart now (`isForbiddenError`): the four bookable overviews and the coupon overview show an empty-state sentence, the embedded pickers (event location, related bookables, bookable overview titles, access point assignment column) a hint beside the field. `BookingEditPage` no longer bounces the user back to the booking list on a denied bookable list — every other failure still leaves; `BookableEditRelatedBookables` no longer leaves an unhandled promise rejection in `mounted`
+-   Test setup: `mountComponent` hands the app's i18n instance to every mount, and vitest resolves extensionless `.vue` imports the way webpack does — component specs can mount views that use `$t`
+-   A 404 no longer reads as "gone": 4.3.x answers a record outside the caller's reach with 404 instead of 403, so the messages name both readings — the shared access point helper (six callers, now routed through `getApiErrorMessage` so it inherits statuses the central reader learns later), the audit export, the PDF preview, and the tenant app list of a bookable, which used to report a denial as "no provider configured". Where the UI only asks whether a record may be shown at all, `isOutOfReach` beside `getApiErrorMessage` carries the rule. `TenantUsers` keeps its registration hint and names the second reading beside it
+-   Tenant editor: a catalog that answered 404 no longer looks silently like "no catalog yet" — the empty default is still offered, with a warning that saving it may overwrite a catalog that could not be read
+-   Public checkout: a bookable that answers 404 reaches the same step as a denied one instead of an unbuilt page, and the step's sentence claims neither reading; a network error no longer throws inside the error handler and leaves the checkout loading forever. `TenantUsers` had the same unguarded `error.response`
+-   `getApiErrorMessage` reads the 4.3.x error shape of a 403 (`{ error, code, statusCode, params }`) and translates it over `code` — one i18n table under `errors.forbidden-codes`, today with the generic `forbidden` entry the backend sends on 26 of its 32 denials; a 403 without that shape counts as a generic denial. The 400 branch is unchanged, its characterisation test that pinned "a 403 body is ignored" was rewritten deliberately
+-   BFF: a failed CSRF check answers `419` instead of `403` (`bff/src/csrf.js`, all three rejection paths, body unchanged) — a `403` was indistinguishable from the backend's `ForbiddenError`, so a stale CSRF session claimed the user lacked a permission. `getApiErrorMessage` reads `419` as "Sitzung nicht mehr aktuell, bitte Seite neu laden". **Deploy UI and BFF together:** a new UI in front of an old BFF falls back on the 403 branch and shows the generic denial
+-   PDF template editor: a failed preview looks at the status before it reads the body — a 403 used to show the raw JSON body, because the response arrives as a Blob and the Blob branch ran first. The Blob unpacker now sits next to `getApiErrorMessage` as `unpackBlobErrorBody`
+-   Tenant payments: a denied ePayBL connection test shows a permission message instead of "Request failed with status code 403"
+-   Tenant editor, tab "Workflow": e-mail recipients are now the members of the tenant being edited (`GET /api/:tenant/users`) instead of every user of the instance — `GET /api/users` is instance-owner-only from 4.3.x on, so the screen degraded to raw user ids for a tenant owner and the recipient picker of the status dialog stayed empty. Recipients from outside the tenant are no longer selectable; ids already stored keep their place, are labelled "Unbekannter Empfänger" and survive a save unless the admin removes them. When the member list itself cannot be read, both screens say so rather than calling every recipient unknown
+-   The join of `users` and `userDetails` from `GET /api/:tenant/users` moved into `src/utils/tenantUsers.js`; the bookable permissions editor, the workflow tab and the workflow status dialog share it instead of carrying a copy each
+
+-   `vue` and `vue-template-compiler` are aligned on 2.7.16 — they had drifted apart, which breaks any tool that compiles templates outside webpack
+-   The stale eslint `overrides` block for `mocha` test globals is gone; Vitest globals stay off and specs import `describe`/`it`/`expect` from `vitest`
+-   Tenant access apps: Salto KS picks an environment (`Accept (Sandbox)` / `Production`) instead of a free-text API base URL; the connection test sends `environment` and shows the server's own error (e.g. `invalid_client`) — requires the matching backend
+-   Tenant access apps: Salto KS credentials and the IQ activation wizard are behind a "coming soon" state — visible and greyed out for everyone, instance owners included; stored configuration is untouched and still travels through a save
+-   Access point dialog: the PIN-at-the-lock modes (`PIN-Code`, `PIN-Code & App`) are behind a "coming soon" state and cannot be picked; a new access point starts on `Öffnen per App`. Access points already stored on a PIN mode keep it
+-   Media picker: upload moved from the grid header into a tab of its own (Mediathek | Upload | Externer Link); successful uploads land back on the grid, selected
+-   Single-image fields (teaser, speaker photo, logo, …) route external links through the picker's "Externer Link" tab; the unlabeled link-icon toggle is gone, an existing external address stays editable in place
+-   Bookable and event editors now store media references instead of raw file URLs: bookable images and attachments, event teaser and contact photo, event image list and speaker photos, event attachments (now with title, caption, `show`, `required`, `mailAttach`) — external links stay possible
+-   Bookable and event cards load images in fixed presets (`sm`, with `thumb` as the lazy placeholder), which replaces the full-size placeholder they used to fetch
+-   Event attachments and images steps, the simple event creator and the speaker photos pick from the media library
+-   Event image list and speaker photos follow the event's visibility: `intern` media are selectable at a non-public event, matching the backend's reference guard
+-   Instance editor, tab "Portal": logo and favicon are picked from the instance media library and stored as media references (`branding.logo`, `branding.favicon`) instead of plain file paths — public media only, external links stay possible, and the derived `logoUrl`/`faviconUrl` are no longer sent back once a reference stands
+-   Media library, detail panel and media picker: cards, dialogs and dropzones drop from the app-wide 25px corner radius to 8px — overridden for the media surfaces only, the global radius is unchanged
+-   Media library: the filter column drops its card and reads as a borderless navigation — small caps section headings, 36px entries, and the active filter as a primary-tinted 8px pill; the filters themselves are unchanged
+-   Media library, detail panel: the size variants drop their table and read as a borderless compact list — preset, measurements and file size per row, each with a copy button for the variant's absolute URL (`?size=<preset>`); the panel's section headings match the filter column's small caps
+
+### Fixed
+
+-   Booking detail drawer: the card „Zugänge“ stays away, without the red alert, when `GET …/access?bookingId=` answers 403 or 404 — the route refuses every booking that is not Bestätigt, with or without access points, which is Reichweite and not a failure (`isOutOfReach`); 5xx and network errors still show the alert. The card also reloads when `booking.status` changes, so a booking released in the drawer shows its accesses without closing it
+-   Tenant owners can edit their tenant and its access providers again — the permission check asked for a `manageTenants` dimension the API never sends, which left the tenant and access pages to instance owners only
+-   Selected and hovered rows no longer paint outside their rounded corner: Vuetify gives the list-item overlay no radius of its own, so the attachment list's grey backdrop sat square behind a 4px row, and the media library's row highlight stuck out past the card
+-   Media library: "URL kopieren" always copies an absolute URL — a relative API base (BFF mode, or an unset direct-mode base URL) is anchored on the current origin; for `intern` media the success toast notes that the link needs a login
+-   Legal document links reach a document served from the media library: the login, card login, registration and password-reset pages resolve its root-relative address against the API instead of prefixing `https://` — and the login and password-reset footers read the documents themselves instead of `dataProtectionUrl`/`legalNoticeUrl`, which the backend migration to the document fields removed
+
+### Removed
+
+-   Bookable editor, tab "Zugang & Schließsysteme": the "Stückzahl" card and the "Menge" column are gone. `amount` is edited on the Preise tab only, and `accessPointDetails.accessPointAmounts` is no longer written or read — a booking gets one compartment per booked unit at each assigned locker system; the capacity is `amount` plus the provider's live answer. `utilities/access-point-amounts.js` removed with its spec; the amount and capacity-warning cases of `BookableEditAccessPoints.spec.js` and the pruning cases of `ApiBookablesService.spec.js` were rewritten deliberately. Spec `.scratch/schliesssysteme-ohne-menge/spec.md` (local, not committed)
+-   `bookable.lockerDetails` from the editor and from the bookable request body — it is derived and read-only since 4.3.x, a write answered 201 and changed nothing. `BookableEditLockerSystems.vue` is deleted with it, the three locker anchors of the editor's sub-navigation are gone, and the bookable overview counts assigned access points where it used to name locker systems. Two read sites stay on the derived field until the iFBS pricing ticket moves them: `BookableEditPrice.vue` and `hasIfbsLocker` in `utils/bookableEditSections.js`
+-   `lockerInfo: null` from the booking form body — the field is derived and read-only, so sending it claimed a write permission that does not exist
+-   The `manageTenants` role dimension, which the 4.3.x API no longer knows — role defaults, the role-list column and the settings permission summary. Existing role documents are untouched
+-   Tenant access apps: webhook configuration is gone — Nuki's callback-URL/notification-ID form with its register/unregister buttons, and the Salto KS webhook registration status. The method is not supported (the Salto Connect API has no webhooks at all)
+-   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone); the orphaned `ChooseFile` component and `ApiFileService` are now deleted too, so nothing addresses the removed `/api/:tenant/files` endpoints
+
+## [4.2.9] — 2026-08-31
+
+### Fixed
+
+-   Custom field dialog: "Speichern" no longer stays disabled when "Pflichtfeld im Buchungsprozess" is enabled — the preview's inputs no longer register with the dialog's `v-form`
+
+## [4.2.8] — 2026-08-25
+
+### Added
+
+-   Custom field dialog: "In Buchungs-E-Mails anzeigen" switch for checkout fields (`usageOptions.showInMail`) — value shows up in the booking-details block of all booking mails; reset when the field leaves the checkout context
+
+### Fixed
+
+-   Untyped image sites (event image list, speaker photo) store the backend's own delivery address again instead of this app's transport URL. In BFF mode the transport URL carries the BFF base, so a picked medium was persisted as `/api/api/v2/…/media/…/file` — an address only the admin UI can resolve, which left the storefront, mails and the HTML endpoint with a dead link. The admin UI kept working throughout, which is why it went unnoticed
+-   BFF mode: Keycloak SSO login no longer fails with a gateway error — nginx proxy buffers raised so the callback's token cookies fit (`upstream sent too big header` → 502 on `/api/auth/sso/callback`)
+
+## [4.2.7] — 2026-08-10
+
+### Fixed
+
+-   Bookable edit: unsaved-changes chip clears after a successful save (snapshot now matches the normalized bookable)
+
+## [4.2.6] — 2026-08-10
+
+### Changed
+
+-   Block editor text blocks: font size select uses pixel values (7–24 px) instead of small/medium/large; existing S/M/L templates still render correctly
 
 ## [4.2.5] — 2026-07-31
 
 ### Added
 
-- Tenant email settings: choose booking-period date format in mails (`mailBookingPeriodFormat`) under Erweitert
-- Mail theme wizard: Arial as a selectable font family for email layouts
+-   Tenant email settings: choose booking-period date format in mails (`mailBookingPeriodFormat`) under Erweitert
+-   Mail theme wizard: Arial as a selectable font family for email layouts
 
 ### Changed
 
-- Support-footer toggle moved into the Erweitert panel together with the booking-period format option
-- Tenant email tab restructured into Versand, E-Mail-Layout, and E-Mail-Inhalte sections
-- Mail layout status: edit/create action separated from the status alert as a primary button
+-   Support-footer toggle moved into the Erweitert panel together with the booking-period format option
+-   Tenant email tab restructured into Versand, E-Mail-Layout, and E-Mail-Inhalte sections
+-   Mail layout status: edit/create action separated from the status alert as a primary button
 
 ## [4.2.4] — 2026-07-29
 
 ### Fixed
 
-- BFF mode: local/card registration and password reset no longer hang (BFF owns `/auth/signup`, `/auth/card/signup`, `/auth/reset`, `/auth/resetpassword` instead of proxying after the body was consumed)
+-   BFF mode: local/card registration and password reset no longer hang (BFF owns `/auth/signup`, `/auth/card/signup`, `/auth/reset`, `/auth/resetpassword` instead of proxying after the body was consumed)
 
 ## [4.2.3] — 2026-07-29
 
 ### Fixed
 
-- Booking edit: availability conflict warnings no longer appear for an unchanged existing booking (self-conflict); validation runs on create or when period/bookables change, excluding the booking being edited
-- **DEV-845:** Series cancellation refund preview lists bookings chronologically by start date, shows each appointment date, and clarifies the mixed-policy hint
-- BFF mode: opening `/register` (and other public auth pages) no longer hard-redirects to login after a cold `/auth/me` 401
-- Mail snippet editor: visual edits in intro or closing section no longer overwrite the other section's expert HTML
-- Mailto link dialog: bare `mailto:` (empty recipient) is rejected instead of being applied
-- Mail theme image insert: only HTTPS URLs are accepted
+-   Booking edit: availability conflict warnings no longer appear for an unchanged existing booking (self-conflict); validation runs on create or when period/bookables change, excluding the booking being edited
+-   **DEV-845:** Series cancellation refund preview lists bookings chronologically by start date, shows each appointment date, and clarifies the mixed-policy hint
+-   BFF mode: opening `/register` (and other public auth pages) no longer hard-redirects to login after a cold `/auth/me` 401
+-   Mail snippet editor: visual edits in intro or closing section no longer overwrite the other section's expert HTML
+-   Mailto link dialog: bare `mailto:` (empty recipient) is rejected instead of being applied
+-   Mail theme image insert: only HTTPS URLs are accepted
 
 ### Added
 
-- Mail snippets: optional closing content (`{snippetKey}__after`) after booking details, buttons, QR, and system footer; combined visual editor shows intro, mocked system block, and closing section in one canvas
-- Tenant setting to show/hide the automatic support-contact system footer in booking mails
-- Mail text editor: E-Mail-Link dialog for arbitrary mailto targets with embedded Handlebars variables (plus button property shortcut)
-- Mail Theme Wizard: rich-text editor for header and footer (links, horizontal rule, image by HTTPS URL with width and alt text for blocked images, font size, line height)
+-   Mail snippets: optional closing content (`{snippetKey}__after`) after booking details, buttons, QR, and system footer; combined visual editor shows intro, mocked system block, and closing section in one canvas
+-   Tenant setting to show/hide the automatic support-contact system footer in booking mails
+-   Mail text editor: E-Mail-Link dialog for arbitrary mailto targets with embedded Handlebars variables (plus button property shortcut)
+-   Mail Theme Wizard: rich-text editor for header and footer (links, horizontal rule, image by HTTPS URL with width and alt text for blocked images, font size, line height)
 
 ### Changed
 
-- Generic mail template footer styling is left-aligned with darker text for longer signatures
-- Align mail theme header/footer/logo horizontal inset with card content padding
-- Mail block/snippet HTML inherits the tenant theme font instead of a hardcoded system stack
-- Mail theme font stacks use single quotes so inline `style` attributes stay valid in HTML emails
+-   Generic mail template footer styling is left-aligned with darker text for longer signatures
+-   Align mail theme header/footer/logo horizontal inset with card content padding
+-   Mail block/snippet HTML inherits the tenant theme font instead of a hardcoded system stack
+-   Mail theme font stacks use single quotes so inline `style` attributes stay valid in HTML emails
 
 ## [4.2.2] — 2026-07-27
 
 ### Fixed
 
-- BFF CSRF behind TLS-terminating proxies (e.g. Coolify): map derived `http` host to allowlisted `https` origin by hostname; container nginx preserves edge `X-Forwarded-Proto` / `X-Forwarded-Host` when proxying to the embedded BFF
+-   BFF CSRF behind TLS-terminating proxies (e.g. Coolify): map derived `http` host to allowlisted `https` origin by hostname; container nginx preserves edge `X-Forwarded-Proto` / `X-Forwarded-Host` when proxying to the embedded BFF
 
 ### Changed
 
-- BFF `PUBLIC_ORIGIN` accepts a comma-separated allowlist (optional `PUBLIC_ORIGINS` merged in): CSRF and OIDC redirects follow the request host when allowlisted; SSO callback reuses `redirect_uri` from the PKCE session. Set-but-invalid config fails closed at startup. **Note:** Storefront BFF may still need a matching multi-origin change for shared session on additional hostnames.
+-   BFF `PUBLIC_ORIGIN` accepts a comma-separated allowlist (optional `PUBLIC_ORIGINS` merged in): CSRF and OIDC redirects follow the request host when allowlisted; SSO callback reuses `redirect_uri` from the PKCE session. Set-but-invalid config fails closed at startup. **Note:** Storefront BFF may still need a matching multi-origin change for shared session on additional hostnames.
 
 ## [4.2.1] — 2026-07-22
 
 ### Added
 
-- Single Admin UI Docker image embeds optional BFF: `VUE_APP_AUTH_MODE=bff` starts in-process BFF + nginx proxy on `/admin/api` and `/api` (works with `STRIP_PREFIX=true` edge strip); Direct mode unchanged
-- BFF `auth/me` rejects non-JSON / SPA HTML fallbacks so a mis-proxied login cannot fake a session
-- BFF env cleanup: loads root `.env` and accepts UI aliases (`VUE_APP_SERVER_BASE_URL`, `VUE_APP_BFF_BASE_URL`, `BASE_URL`, …); `createAuthTransport` uses `isBffAuthMode()`
-- BFF hardening follow-up: Express cookie `maxAge` in ms, SSO open-redirect guard, no `refresh_token` in browser logout URLs, fetch timeouts, session revalidate only on 401, `/admin` base-path aware public routes
-- Reject non-OK Keycloak session revocation responses (still best-effort for local logout)
-- BFF hardening / release notes (Phase 5): CSRF notes + Origin check when `PUBLIC_ORIGIN` is set, legacy token scrub in BFF mode, smoke-test checklists (`docs/bff-smoke-tests.md`), upgrade guidance in README
-- Shared-session invalidation: when BFF cookies are gone / refresh fails, Admin clears client state (incl. persisted Vuex user) and redirects to login; 401 on `/auth/me`, focus/poll re-check, BroadcastChannel + localStorage sync with Storefront
-- Shared Admin↔Storefront session (Phase 4): cookie contract module, login page resumes existing cookie session, Keycloak logout returns IdP browser logout URL, deploy guide in `docs/shared-session-deploy.md`
-- BFF Keycloak/SSO (Phase 3): Admin BFF OIDC+PKCE login/callback/logout/silent-check; Vue BFF mode uses server-side SSO (no `keycloak-js`); Direct mode keeps existing Keycloak client flow
-- Opt-in BFF auth transport (Phase 2): `DirectAuthTransport` / `BffAuthTransport` behind `ApiClientService`; set `VUE_APP_AUTH_MODE=bff` to use Admin BFF cookies (no auth tokens in `localStorage`); default Direct path unchanged
-- Optional Admin BFF MVP (Phase 1): Express service under `bff/` with login/logout/me/refresh/card cookies, generic Bearer proxy, Dockerfile, `docker-compose.bff.example.yml`, nginx `/admin/api` via `ADMIN_BFF_UPSTREAM`, and vue-cli proxy `/admin/api` → local BFF
-- Auth modes contract (Phase 0): optional Admin BFF / shared session with Storefront documented in `docs/adr/0001-optional-admin-bff-shared-session.md`; env placeholders `VUE_APP_AUTH_MODE` / `VUE_APP_BFF_BASE_URL` in `.env-example` (default remains Direct / legacy)
-- Bookable edit expert mode toggle: advanced tabs (Schließsysteme, Abhängigkeiten) and advanced sections (tags, graduated prices, lead times, special hours, discounts, required fields, field definitions, …) can be hidden when `VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT` is set to `true`/`false` (unset = always expert, no toggle); session override in `sessionStorage`; overview shows expert traits as non-clickable hints in simple mode
-- Bookable edit tab navigation shows nested subsections for the active tab (desktop list / mobile chips); clicking jumps to the card or Custom Fields sub-tab; optional deep-link via `?tab=…&section=…`
-- Bookable, tenant, and instance edit ask for confirmation before discarding unsaved changes when leaving the page, closing/reloading the tab, or resetting the form
-- Bookable edit „Eigene Felder“: simple mode shows only value editing; expert mode keeps both sub-tabs (Werte pflegen / Felder definieren)
-- Bookable edit shows a live overview of what the bookable is and how it can be booked (sticky sidebar on large screens, compact band on smaller viewports); empty traits are hidden, opening hours are summarized, and clicking a trait jumps to the matching tab; tickets show the linked event name with an open-in-new-tab action
-- Bookable edit keeps the page header, tab navigation, and overview fixed while only the form content scrolls
-- Bookable tags and flags live under Allgemein, with clearer labels: public info for bookers vs. internal tags for filtering/grouping
-- New bookables default to free time selection (Freie Zeitwahl) as booking type; new tickets default to time-independent (Zeitunabhängig)
+-   Single Admin UI Docker image embeds optional BFF: `VUE_APP_AUTH_MODE=bff` starts in-process BFF + nginx proxy on `/admin/api` and `/api` (works with `STRIP_PREFIX=true` edge strip); Direct mode unchanged
+-   BFF `auth/me` rejects non-JSON / SPA HTML fallbacks so a mis-proxied login cannot fake a session
+-   BFF env cleanup: loads root `.env` and accepts UI aliases (`VUE_APP_SERVER_BASE_URL`, `VUE_APP_BFF_BASE_URL`, `BASE_URL`, …); `createAuthTransport` uses `isBffAuthMode()`
+-   BFF hardening follow-up: Express cookie `maxAge` in ms, SSO open-redirect guard, no `refresh_token` in browser logout URLs, fetch timeouts, session revalidate only on 401, `/admin` base-path aware public routes
+-   Reject non-OK Keycloak session revocation responses (still best-effort for local logout)
+-   BFF hardening / release notes (Phase 5): CSRF notes + Origin check when `PUBLIC_ORIGIN` is set, legacy token scrub in BFF mode, smoke-test checklists (`docs/bff-smoke-tests.md`), upgrade guidance in README
+-   Shared-session invalidation: when BFF cookies are gone / refresh fails, Admin clears client state (incl. persisted Vuex user) and redirects to login; 401 on `/auth/me`, focus/poll re-check, BroadcastChannel + localStorage sync with Storefront
+-   Shared Admin↔Storefront session (Phase 4): cookie contract module, login page resumes existing cookie session, Keycloak logout returns IdP browser logout URL, deploy guide in `docs/shared-session-deploy.md`
+-   BFF Keycloak/SSO (Phase 3): Admin BFF OIDC+PKCE login/callback/logout/silent-check; Vue BFF mode uses server-side SSO (no `keycloak-js`); Direct mode keeps existing Keycloak client flow
+-   Opt-in BFF auth transport (Phase 2): `DirectAuthTransport` / `BffAuthTransport` behind `ApiClientService`; set `VUE_APP_AUTH_MODE=bff` to use Admin BFF cookies (no auth tokens in `localStorage`); default Direct path unchanged
+-   Optional Admin BFF MVP (Phase 1): Express service under `bff/` with login/logout/me/refresh/card cookies, generic Bearer proxy, Dockerfile, `docker-compose.bff.example.yml`, nginx `/admin/api` via `ADMIN_BFF_UPSTREAM`, and vue-cli proxy `/admin/api` → local BFF
+-   Auth modes contract (Phase 0): optional Admin BFF / shared session with Storefront documented in `docs/adr/0001-optional-admin-bff-shared-session.md`; env placeholders `VUE_APP_AUTH_MODE` / `VUE_APP_BFF_BASE_URL` in `.env-example` (default remains Direct / legacy)
+-   Bookable edit expert mode toggle: advanced tabs (Schließsysteme, Abhängigkeiten) and advanced sections (tags, graduated prices, lead times, special hours, discounts, required fields, field definitions, …) can be hidden when `VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT` is set to `true`/`false` (unset = always expert, no toggle); session override in `sessionStorage`; overview shows expert traits as non-clickable hints in simple mode
+-   Bookable edit tab navigation shows nested subsections for the active tab (desktop list / mobile chips); clicking jumps to the card or Custom Fields sub-tab; optional deep-link via `?tab=…&section=…`
+-   Bookable, tenant, and instance edit ask for confirmation before discarding unsaved changes when leaving the page, closing/reloading the tab, or resetting the form
+-   Bookable edit „Eigene Felder“: simple mode shows only value editing; expert mode keeps both sub-tabs (Werte pflegen / Felder definieren)
+-   Bookable edit shows a live overview of what the bookable is and how it can be booked (sticky sidebar on large screens, compact band on smaller viewports); empty traits are hidden, opening hours are summarized, and clicking a trait jumps to the matching tab; tickets show the linked event name with an open-in-new-tab action
+-   Bookable edit keeps the page header, tab navigation, and overview fixed while only the form content scrolls
+-   Bookable tags and flags live under Allgemein, with clearer labels: public info for bookers vs. internal tags for filtering/grouping
+-   New bookables default to free time selection (Freie Zeitwahl) as booking type; new tickets default to time-independent (Zeitunabhängig)
 
 ### Changed
 
-- Bookable edit tab „Preise“ renamed to „Preise & Kapazität“ to reflect capacity settings
-- Member details show a warning when supervisor booking notifications are disabled for the tenant
+-   Bookable edit tab „Preise“ renamed to „Preise & Kapazität“ to reflect capacity settings
+-   Member details show a warning when supervisor booking notifications are disabled for the tenant
 
 ### Fixed
 
-- Bookable edit no longer marks unsaved changes when opening „Preise & Kapazität“; the IFBS external provider is only created when the user enables or configures it
+-   Bookable edit no longer marks unsaved changes when opening „Preise & Kapazität“; the IFBS external provider is only created when the user enables or configures it
 
 ## [4.2.0] — 2026-07-17
 
 ### Added
 
-- Cancellation refund tiers: define refund rules per tenant, preview what customers get back, and show the expected refund during self-cancellation (including mails and cancellation documents)
-- When cancelling a series (or a single booking from a series), optional customer bank details can be collected for the cancellation PDF
-- Series bookings are easier to spot in the Kanban board and can be opened directly from the card; the booking overview can be filtered by single or series bookings
-- Supervisor booking notifications: configure who is notified about new bookings (users, roles, or email addresses) per tenant member
-- Percentage booking discounts for users and roles replace the previous free-booking lists; discounts also apply in bundle checkout
-- Cancellation PDF templates support refund information, with an option to load the standard template in the visual editor
+-   Cancellation refund tiers: define refund rules per tenant, preview what customers get back, and show the expected refund during self-cancellation (including mails and cancellation documents)
+-   When cancelling a series (or a single booking from a series), optional customer bank details can be collected for the cancellation PDF
+-   Series bookings are easier to spot in the Kanban board and can be opened directly from the card; the booking overview can be filtered by single or series bookings
+-   Supervisor booking notifications: configure who is notified about new bookings (users, roles, or email addresses) per tenant member
+-   Percentage booking discounts for users and roles replace the previous free-booking lists; discounts also apply in bundle checkout
+-   Cancellation PDF templates support refund information, with an option to load the standard template in the visual editor
 
 ### Changed
 
-- Custom fields: clearer editor and list with live preview; on bookables, field values and definitions are combined in one „Eigene Felder“ tab
-- Cancelled bookings can be reactivated via the status switch in booking edit
+-   Custom fields: clearer editor and list with live preview; on bookables, field values and definitions are combined in one „Eigene Felder“ tab
+-   Cancelled bookings can be reactivated via the status switch in booking edit
 
 ### Fixed
 
-- Reactivating a cancelled booking keeps the original price instead of resetting it to 0 €
-- Bundle checkout shows the payment step only when there is something left to pay after discounts (including paid add-ons)
-- Supervisor booking notifications can be turned on or off in booking settings; the related mail snippet is customizable
-- Member and user search matches name and email more reliably (case-insensitive substring search)
-- Saving a user or profile no longer overwrites booking contact names
+-   Reactivating a cancelled booking keeps the original price instead of resetting it to 0 €
+-   Bundle checkout shows the payment step only when there is something left to pay after discounts (including paid add-ons)
+-   Supervisor booking notifications can be turned on or off in booking settings; the related mail snippet is customizable
+-   Member and user search matches name and email more reliably (case-insensitive substring search)
+-   Saving a user or profile no longer overwrites booking contact names
 
 ## [4.1.3] — 2026-07-03
 
 ### Added
 
-- Series bookings in booking details can now have collective invoices created, with a choice between collective and single invoice — consistent with the existing collective receipt flow
-- Collective invoices for series bookings can also be created and downloaded from the series booking overview
-- PDF templates for receipts, invoices, and cancellations: choose how booking details are displayed (compact overview, single line, or detailed table)
-- Per tenant, control which booking information (number, period, payment date, payment method) appears in the PDF table — hidden fields remain available for placement elsewhere in the template
-- PDF template editor: preview with page breaks, optional header/footer on every page, and improved variable selection
+-   Series bookings in booking details can now have collective invoices created, with a choice between collective and single invoice — consistent with the existing collective receipt flow
+-   Collective invoices for series bookings can also be created and downloaded from the series booking overview
+-   PDF templates for receipts, invoices, and cancellations: choose how booking details are displayed (compact overview, single line, or detailed table)
+-   Per tenant, control which booking information (number, period, payment date, payment method) appears in the PDF table — hidden fields remain available for placement elsewhere in the template
+-   PDF template editor: preview with page breaks, optional header/footer on every page, and improved variable selection
 
 ### Changed
 
-- PDF template settings for layout and booking fields are combined in one place under payment and receipt settings
+-   PDF template settings for layout and booking fields are combined in one place under payment and receipt settings
 
 ### Fixed
 
-- Tenant-selection redirect hardened against open-redirect vectors (protocol-relative and backslash paths)
+-   Tenant-selection redirect hardened against open-redirect vectors (protocol-relative and backslash paths)
 
 ## [4.1.2] — 2026-07-02
 
 ### Added
 
-- Lead-time configuration (preparation lead time and service hours) for fixed time-window and block-period bookables in the bookable editor
+-   Lead-time configuration (preparation lead time and service hours) for fixed time-window and block-period bookables in the bookable editor
 
 ### Changed
 
-- Lead-time editor placement: time-window and block-period configuration appears before lead-time settings for those booking types
-- Booking buffer settings remain available only for free time-selection (`schedule`) bookables
+-   Lead-time editor placement: time-window and block-period configuration appears before lead-time settings for those booking types
+-   Booking buffer settings remain available only for free time-selection (`schedule`) bookables
 
 ## [4.1.1] — 2026-07-01
 
 ### Fixed
 
-- Free bookings labeled as „Kostenfrei“ instead of „Bezahlt“ across admin UI, checkout status, exports, and the booking-manager JS widget (DEV-776)
-- Payment status chip contrast for free bookings in booking details and public booking status view
-- `isFreeBooking` detection tightened to `priceEur` only; checkout pending filter and completion helpers aligned with shared payment status rules
+-   Free bookings labeled as „Kostenfrei“ instead of „Bezahlt“ across admin UI, checkout status, exports, and the booking-manager JS widget (DEV-776)
+-   Payment status chip contrast for free bookings in booking details and public booking status view
+-   `isFreeBooking` detection tightened to `priceEur` only; checkout pending filter and completion helpers aligned with shared payment status rules
 
 ## [4.1.0] — 2026-06-30
 
 ### Added
 
-- Admin UI for booking lead time: service hours, preparation lead time, and weekday-based configuration on the bookable editor
-- Capacity buffer fields in the lead-time editor (before/after booking), with enable switch and preset durations
-- Shared lead-time utilities (`bookingLeadTime.js`) for field normalization and buffer configuration
+-   Admin UI for booking lead time: service hours, preparation lead time, and weekday-based configuration on the bookable editor
+-   Capacity buffer fields in the lead-time editor (before/after booking), with enable switch and preset durations
+-   Shared lead-time utilities (`bookingLeadTime.js`) for field normalization and buffer configuration
 
 ### Fixed
 
-- Lead-time editor initialization and service-hours time menus for existing entries
-- Lead-time section stays expanded after save; UI state decoupled from unrelated bookable fields (`isLeadTimeRelated`)
-- SaveBar layering when editing lead-time settings
-- Buffer cannot remain enabled without configured before/after values
+-   Lead-time editor initialization and service-hours time menus for existing entries
+-   Lead-time section stays expanded after save; UI state decoupled from unrelated bookable fields (`isLeadTimeRelated`)
+-   SaveBar layering when editing lead-time settings
+-   Buffer cannot remain enabled without configured before/after values
 
 ### Changed
 
-- Booking buffer UI separated from lead-time section with its own enable switch (`isBufferRelated`)
-- Lead-time cards aligned with the elevation-2 card pattern used elsewhere in the editor
+-   Booking buffer UI separated from lead-time section with its own enable switch (`isBufferRelated`)
+-   Lead-time cards aligned with the elevation-2 card pattern used elsewhere in the editor
 
 ## [4.0.1] — 2026-06-29
 
 ### Added
 
-- Redesigned bookable edit page with dedicated view and routing
+-   Redesigned bookable edit page with dedicated view and routing
 
 ### Fixed
 
-- Reject handling for bookable edit workflows
+-   Reject handling for bookable edit workflows
 
 ## [4.0.0] — 2026-06-29
 
-- Initial stable release of the v4.x admin UI (Vue 2 / Vuetify)
-- Bookable and booking management, checkout configuration, and integration with the v4 backend API
+-   Initial stable release of the v4.x admin UI (Vue 2 / Vuetify)
+-   Bookable and booking management, checkout configuration, and integration with the v4 backend API
 
 ## Earlier releases
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.2.9]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.8...v4.2.9
+[4.2.8]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.7...v4.2.8
+[4.2.7]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.6...v4.2.7
+[4.2.6]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.5...v4.2.6
 [4.2.5]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.4...v4.2.5
 [4.2.4]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.3...v4.2.4
 [4.2.3]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.2...v4.2.3

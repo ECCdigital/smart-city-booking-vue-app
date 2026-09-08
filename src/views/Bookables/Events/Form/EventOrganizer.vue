@@ -82,14 +82,12 @@
                 </validation-provider>
               </v-col>
               <v-col cols="12">
-                <ChooseFile
-                  :tenant-id="tenantId"
+                <MediaReferenceField
                   v-model="contactPersonImage"
-                  images-only
-                  background-color="accent"
-                  filled
                   label="Foto des Ansprechpartners"
-                  forced-subdirectory="events/contacts"
+                  :public-only="isPublic"
+                  public-only-reason="Diese Veranstaltung ist öffentlich sichtbar — interne Medien können hier nicht gespeichert werden."
+                  empty-label="Kein Foto ausgewählt"
                 />
               </v-col>
             </v-row>
@@ -151,14 +149,12 @@
                       ></v-text-field>
                     </v-col>
                     <v-col cols="12" md="6">
-                      <ChooseFile
-                        :tenant-id="tenantId"
+                      <MediaReferenceField
                         v-model="speaker.image"
-                        images-only
-                        background-color="accent"
-                        filled
                         label="Foto des Referenten"
-                        forced-subdirectory="events/contacts"
+                        :public-only="isPublic"
+                        public-only-reason="Diese Veranstaltung ist öffentlich sichtbar — interne Medien können hier nicht gespeichert werden."
+                        empty-label="Kein Foto ausgewählt"
                       />
                     </v-col>
                   </v-row>
@@ -202,7 +198,7 @@ import {
 } from "vee-validate";
 import Pager from "@/components/Events/Form/Pager";
 import uniqueId from "lodash/uniqueId";
-import ChooseFile from "@/components/Files/ChooseFile.vue";
+import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 
 setInteractionMode("eager");
 
@@ -224,7 +220,7 @@ extend("max", {
 
 export default {
   components: {
-    ChooseFile,
+    MediaReferenceField,
     ValidationProvider,
     ValidationObserver,
     Pager,
@@ -250,8 +246,12 @@ export default {
     ...mapGetters({
       form: "events/form",
       speakers: "events/speakers",
-      tenantId: "tenants/currentTenantId",
     }),
+    // A publicly listed event carries public media only — the reference guard
+    // of the backend refuses the save otherwise (§4.3).
+    isPublic() {
+      return Boolean(this.$store.state.events.form.isPublic);
+    },
     name: {
       get() {
         return this.$store.state.events.form.eventOrganizer.name;

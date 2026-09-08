@@ -183,6 +183,15 @@
                 class="mt-0 pt-0"
                 dense
               />
+              <v-switch
+                v-model="local.usageOptions.showInMail"
+                label="In Buchungs-E-Mails anzeigen"
+                hint="Der im Buchungsprozess eingegebene Wert erscheint in den Buchungsdetails aller E-Mails zur Buchung — auch in denen an den Betreiber."
+                persistent-hint
+                color="primary"
+                class="mt-3 pt-0"
+                dense
+              />
             </v-card>
 
             <template v-if="local.usageOptions.context === 'catalog'">
@@ -317,6 +326,7 @@ const makeEmptyField = () => ({
   usageOptions: {
     context: "none",
     requiredInCheckout: false,
+    showInMail: false,
     filterable: false,
     catalogFilterType: null,
     catalogFilterPosition: "sidebar",
@@ -558,6 +568,7 @@ export default {
 
       if (v !== "checkout") {
         this.local.usageOptions.requiredInCheckout = false;
+        this.local.usageOptions.showInMail = false;
       }
       if (v !== "catalog") {
         this.local.usageOptions.filterable = false;
@@ -689,6 +700,10 @@ export default {
     normalizeUsageOptions(usageOptions) {
       const u = { ...usageOptions };
 
+      // Mirror of the server-side normalization: showInMail only exists on checkout fields
+      if (u.context !== "checkout") {
+        u.showInMail = false;
+      }
       if (u.context !== "catalog") {
         u.filterable = false;
       }

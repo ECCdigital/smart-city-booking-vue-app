@@ -60,6 +60,11 @@ if [ -n "$ADMIN_BFF_UPSTREAM" ]; then
       proxy_set_header X-Forwarded-Host \$bff_forwarded_host;
       proxy_set_header Cookie \$http_cookie;
       proxy_pass_header Set-Cookie;
+      # Keycloak SSO responses carry two full JWTs as Set-Cookie — far past
+      # nginx's 4k default response-header buffer (→ 502 on /auth/sso/callback).
+      proxy_buffer_size 32k;
+      proxy_buffers 8 32k;
+      proxy_busy_buffers_size 64k;
     }
     location = /api {
       return 301 /api/;
@@ -74,6 +79,9 @@ if [ -n "$ADMIN_BFF_UPSTREAM" ]; then
       proxy_set_header X-Forwarded-Host \$bff_forwarded_host;
       proxy_set_header Cookie \$http_cookie;
       proxy_pass_header Set-Cookie;
+      proxy_buffer_size 32k;
+      proxy_buffers 8 32k;
+      proxy_busy_buffers_size 64k;
     }
 BFLEOF
 )
@@ -111,6 +119,8 @@ http {
   access_log  /var/log/nginx/access.log  main;
   sendfile on;
   keepalive_timeout 65;
+  # Requests carry the BFF session cookies (Keycloak access + refresh JWT).
+  large_client_header_buffers 8 32k;
   add_header X-Frame-Options "DENY" always;
 ${NGINX_FORWARDED_MAPS}
   server {
@@ -160,6 +170,8 @@ http {
   access_log  /var/log/nginx/access.log  main;
   sendfile on;
   keepalive_timeout 65;
+  # Requests carry the BFF session cookies (Keycloak access + refresh JWT).
+  large_client_header_buffers 8 32k;
   add_header X-Frame-Options "DENY" always;
 ${NGINX_FORWARDED_MAPS}
   server {

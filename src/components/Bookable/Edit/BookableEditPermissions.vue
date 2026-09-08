@@ -2,6 +2,7 @@
 import BaseSection from "@/components/commons/BaseSection.vue";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { tenantUserOptions } from "@/utils/tenantUsers";
 import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 import BookingDiscountEditor from "@/components/Bookable/Edit/BookingDiscountEditor.vue";
 import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
@@ -98,24 +99,14 @@ export default {
 
       try {
         const response = await ApiTenantService.getTenantUsers(this.tenantId);
-        const userDetails = response.userDetails || [];
 
-        this.availableUsers = (response.users || [])
-          .map((user) => {
-            const details = userDetails.find((detail) => detail.id === user.userId);
-            const firstName = details?.firstName || user.firstName || "";
-            const lastName = details?.lastName || user.lastName || "";
-            const fullName = `${firstName} ${lastName}`.trim();
-
-            return {
-              userId: user.userId,
-              firstName,
-              lastName,
-              fullName: fullName || user.userId,
-              hasName: !!fullName,
-            };
-          })
-          .filter((user) => !!user.userId);
+        this.availableUsers = tenantUserOptions(response).map((user) => ({
+          userId: user.userId,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          fullName: user.label,
+          hasName: !!user.name,
+        }));
       } catch (error) {
         console.error("Error fetching tenant users:", error);
         this.availableUsers = [];
