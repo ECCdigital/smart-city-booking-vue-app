@@ -140,6 +140,8 @@ describe("AccessPointEditDialog", () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.find(".access-point-type").text()).toContain("Anlage");
+    expect(labels(wrapper)).toContain("Standort-ID");
+    expect(labels(wrapper)).not.toContain("Standort-ID beim Anbieter");
   });
 
   /**
@@ -302,6 +304,11 @@ describe("AccessPointEditDialog", () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.find(".access-point-type").text()).toContain("Anlage");
+    expect(labels(wrapper)).toContain("Standort-ID");
+    expect(labels(wrapper)).not.toContain("Standort-ID beim Anbieter");
+    expect(dialogText(wrapper)).toContain(
+      "Ändern Sie die Standort-ID, um die Anlage bei iFBS auszutauschen."
+    );
 
     await wrapper.find(".save-access-point").trigger("click");
     await flushPromises();
@@ -311,8 +318,92 @@ describe("AccessPointEditDialog", () => {
       type: "locker",
       provider: "ifbs",
       externalId: "loc-42",
+      providerLocationId: null,
       mode: "remote",
       validationRules: [],
+    });
+  });
+
+  /**
+   * An Anlage shows the one id field its provider reads - iFBS a location,
+   * Pareva a product size - and no "Standort-ID beim Anbieter", which no
+   * provider reads. Created, it goes out without one, whatever the listing
+   * offered there (Pareva lists the lockerId of the app); edited, a stored
+   * one passes through unseen. A door keeps both fields as they were.
+   */
+  describe("the id fields of an Anlage", () => {
+    it("saves a taken-over Pareva system by its product size alone", async () => {
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [
+          {
+            id: "M",
+            type: "locker",
+            provider: "pareva",
+            externalId: "M",
+            locationId: "locker-7",
+            label: "Schließfächer Rathaus",
+            supportedModes: ["authorization"],
+          },
+        ],
+      });
+
+      const wrapper = await mountDialog({
+        providers: [{ id: "pareva", title: "Pareva" }],
+      });
+
+      wrapper.findComponent({ ref: "lockSelect" }).vm.$emit("input", "M");
+      await wrapper.vm.$nextTick();
+      await wrapper.find(".apply-lock").trigger("click");
+      await wrapper.vm.$nextTick();
+
+      expect(labels(wrapper)).toContain("Produktgröße");
+      expect(labels(wrapper)).not.toContain("ID beim Anbieter");
+      expect(labels(wrapper)).not.toContain("Standort-ID beim Anbieter");
+      expect(dialogText(wrapper)).toContain(
+        "Ändern Sie die Produktgröße, um die Anlage bei Pareva auszutauschen."
+      );
+
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+
+      const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+      expect(payload).toMatchObject({
+        type: "locker",
+        provider: "pareva",
+        externalId: "M",
+        providerLocationId: null,
+        mode: "authorization",
+      });
+    });
+
+    it("passes a stored location id through unseen when editing", async () => {
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+
+      const wrapper = await mountDialog({
+        accessPoint: { ...LOCKER, providerLocationId: "x" },
+      });
+
+      expect(labels(wrapper)).toContain("Standort-ID");
+      expect(labels(wrapper)).not.toContain("Standort-ID beim Anbieter");
+
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+
+      const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+      expect(payload).toMatchObject({
+        id: "ap-locker",
+        externalId: "loc-42",
+        providerLocationId: "x",
+      });
+    });
+
+    it("keeps both fields for a door", async () => {
+      const wrapper = await mountDialog({ accessPoint: DOOR });
+
+      expect(labels(wrapper)).toContain("ID beim Anbieter");
+      expect(labels(wrapper)).toContain("Standort-ID beim Anbieter");
+      expect(dialogText(wrapper)).toContain("ohne den QR-Code neu zu drucken");
     });
   });
 });

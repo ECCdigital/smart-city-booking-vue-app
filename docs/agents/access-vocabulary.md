@@ -15,6 +15,8 @@ Every code cell leads with the identifier, so the table can be read from either 
 | Herkunft — „Selbst angelegt“ / „Vom Anbieter“ | `originLabel` in `AccessPointManagement.vue`, derived from the type | A door is typed in by hand, an Anlage is taken over from what the provider lists. There is no stored origin field.  |
 | Vom Anbieter übernehmen / Manuell anlegen     | `mode: "provider" \| "manual"` in `AccessPointEditDialog.vue`       | The two sides of the switch in the create dialog: the listing over the form, or the form alone. Not `form.mode`.    |
 | Anbieter                                      | `provider` — `nuki`, `salto-ks`, `ifbs`, `pareva`                   | Chosen in the dialog; it then settles the type and, for an Anlage, the mode (`providerAccessPointDefaults`).        |
+| Standort-ID (iFBS)                            | `externalId` of an Anlage with `provider: "ifbs"`                   | The `LocationID` of the iFBS location. The only id field of an iFBS Anlage; iFBS knows no ids per Fach.             |
+| Produktgröße (Pareva)                         | `externalId` of an Anlage with `provider: "pareva"`                 | The `size` of the Pareva product. The only id field of a Pareva Anlage; the cabinet (`lockerId`) is in the app.     |
 | Vorgemerkt (die Vormerkung)                   | `ACCESS_STATE.HELD`                                                 | Claimed for the booking, not granted yet.                                                                           |
 | Erteilt (der Grant)                           | `ACCESS_STATE.GRANTED`                                              | Granted and not taken back.                                                                                         |
 | Widerrufen (der Widerruf)                     | `ACCESS_STATE.REVOKED`                                              | Granted once, taken back since. The entry stays as the trace.                                                       |
@@ -23,6 +25,10 @@ Every code cell leads with the identifier, so the table can be read from either 
 | Pufferzeit — Vorlauf / Nachlauf               | `accessPointDetails.accessBuffer.before` / `.after`                 | Minutes around the booking period in which the access points may still be operated. Per bookable.                   |
 | Zugänge                                       | `BookingAccessPoints.vue`, `accessEntriesOf()`                      | The one list of doors and Fächer in booking details.                                                                |
 | Reichweite                                    | `isOutOfReach()`                                                    | Whether a record is visible to the caller at all. A term of these docs and the changelog, not of the UI copy.       |
+
+## An Anlage shows the one field its provider reads
+
+The id fields of the dialog follow the provider (`providerIdFields` in `src/utilities/access-points.js`), the same on create and on edit. `providerLocationId` is read by no provider and is not shown for an Anlage; it stays a field of the schema and the API, goes out as `null` when an iFBS or Pareva Anlage is created, and passes through unchanged when a stored one is edited. A door, and an Anlage of a provider the table does not know, keep both fields — „ID beim Anbieter“ and, informative, „Standort-ID beim Anbieter“.
 
 ## The way in is not the Herkunft
 
