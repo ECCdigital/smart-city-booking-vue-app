@@ -1008,8 +1008,8 @@ export default {
     handlesMaxAmount() {
       return providerHandles(this.externalProvider, "maxAmount");
     },
-    // Why there is nothing to preview: the prices route is the public one,
-    // so it answers only for a stored, publicly visible bookable.
+    // Why there is nothing to preview: the prices route reads the stored
+    // bookable, so it has nothing to say before the first save.
     externalPricesUnavailableReason() {
       return this.externalPricesUnavailableKey(this.bookable);
     },
@@ -1280,9 +1280,9 @@ export default {
     /**
      * What the provider charges for this bookable. The prices route reads the
      * stored bookable, so a declaration that was only just made answers after
-     * the save - and the route answers at all only for a publicly visible
-     * bookable, which the empty state names rather than reporting as a
-     * provider failure.
+     * the save - which the empty state names rather than reporting as a
+     * provider failure. A bookable that is not yet listed is asked for like
+     * a public one: the route answers it to whoever may read the bookable.
      */
     async fetchExternalPrices() {
       this.priceError = null;
