@@ -27,6 +27,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
+-   Dashboard filter: booking status can be multi-selected under Weitere Filter
 -   Bookable pricing, external provider: the iFBS price panel and the bookable card ask `GET /:tenant/bookables/:id/prices` for a bookable that is not public too - the backend answers it to whoever may read the bookable (backend entry `bookable.prices`), so a provider's prices are previewed before the bookable is listed. The hint `bookable.externalPrice.notPublic` is gone; `externalPricesUnavailableKey` asks only whether the bookable is stored
 
 -   Access point dialog: a Pareva Anlage names its **Produkt-ID** (the product's 24-hex id at Pareva), no longer a "Produktgröße", and is entered by hand — the provider listing lists size codes, not products, so the picker offers only providers whose `providerCapabilities` include `listAccessPoints` (`canListAccessPoints`); with Pareva alone the form opens with `pareva` preset. The table shows it as "Selbst angelegt". Glossary and tests follow. Spec `docs/specs/pareva-anlage.md`, which also names the backend's share: Pareva drops the listing capability, and availability is asked live at Pareva beside the platform's own count

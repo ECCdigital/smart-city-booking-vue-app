@@ -279,6 +279,12 @@ export default {
         header: "System",
         pages: [
           {
+            title: "Dashboard",
+            link: "dataDashboard",
+            icon: "mdi-view-dashboard",
+            interfaceName: "instance",
+          },
+          {
             title: "Instanz verwalten",
             link: "instances",
             icon: "mdi-home-edit-outline",

@@ -29,11 +29,29 @@ export default {
       withCredentials: withCredentials,
     });
   },
-  async addTenantUser(tenantId, userId, roles, challenges, type) {
-    const response = await ApiClient.post(
-      `/api/tenants/${tenantId}/add-user`,
-      { userId, roles, challenges, type }
+  async getDashboardData(query = {}) {
+    const _query = { granularity: "week", ...query };
+    const response = await ApiClient.get("api/v2/dashboard/summary", {
+      params: _query,
+    });
+    return response.data;
+  },
+  async getDashboardDataByTenant(tenantId, query = {}) {
+    const _query = { granularity: "week", ...query };
+    const response = await ApiClient.get(
+      `api/v2/${tenantId}/dashboard/summary`,
+      { params: _query }
     );
+    console.log(response);
+    return response.data;
+  },
+  async addTenantUser(tenantId, userId, roles, challenges, type) {
+    const response = await ApiClient.post(`/api/tenants/${tenantId}/add-user`, {
+      userId,
+      roles,
+      challenges,
+      type,
+    });
     return response.data;
   },
   async removeTenantUser(tenantId, userId) {
@@ -81,7 +99,7 @@ export default {
   async updateUserStatus(tenantId, userId, status) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/update-user-status`,
-      { userId, status },
+      { userId, status }
     );
     return response.data;
   },
@@ -90,7 +108,7 @@ export default {
     templateType,
     template,
     pdfBookingLayout,
-    pdfBookingTableMeta,
+    pdfBookingTableMeta
   ) {
     const body = { templateType, template };
     if (pdfBookingLayout) {
@@ -107,11 +125,11 @@ export default {
   async updateUserBookingNotificationRecipients(
     tenantId,
     userId,
-    bookingNotificationRecipients,
+    bookingNotificationRecipients
   ) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/update-user-booking-notification-recipients`,
-      { userId, bookingNotificationRecipients },
+      { userId, bookingNotificationRecipients }
     );
     return response.data;
   },

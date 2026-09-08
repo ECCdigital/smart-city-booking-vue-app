@@ -30,6 +30,7 @@ import RuleEngineRules from "@/views/Management/RuleEngineRules.vue";
 import RuleEngineEdit from "@/views/Management/RuleEngineEdit.vue";
 import RuleEngineExecutions from "@/views/Management/RuleEngineExecutions.vue";
 import { middlewares, pipeline } from "./middleware";
+import Dashboard from "@/views/Dashboard.vue";
 
 Vue.use(VueRouter);
 
@@ -52,6 +53,17 @@ const routes = [
       requiresAuth: true,
       interfaceName: "dashboard",
       public: true,
+    },
+  },
+  {
+    path: "/dataDashboard",
+    name: "dataDashboard",
+    component: Dashboard,
+    meta: {
+      title: "Daten-Dashboard",
+      requiresAuth: true,
+      interfaceName: "dataDashboard",
+      //public: true,
     },
   },
   {
