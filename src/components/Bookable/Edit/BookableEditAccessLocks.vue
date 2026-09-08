@@ -2,7 +2,6 @@
 import BookableEditAccessPoints from "@/components/Bookable/Edit/BookableEditAccessPoints.vue";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { defaultAccessPointDetails } from "@/utilities/access-points";
-import { handlesCapability } from "@/utils/bookableExternalProviders";
 
 /**
  * The access tab of the bookable editor.
@@ -13,10 +12,11 @@ import { handlesCapability } from "@/utils/bookableExternalProviders";
  * which access points this bookable uses. The provider is a property of the
  * access point and is chosen where the access point is created.
  *
- * What the tab owns on top of the assignment is the bookable's `amount`: after
- * the fold it is the number that decides how many compartments a booking gets
- * at each assigned locker system, and it lives nowhere near this screen
- * otherwise.
+ * The tab owns the switch, the buffer and the assignment - nothing that
+ * counts. The bookable's `amount` (Stückzahl) is edited on the pricing tab
+ * only; it is the capacity the concurrent bookings are counted against, and a
+ * booking gets one compartment per booked unit at each assigned locker system
+ * regardless of it (`docs/agents/access-vocabulary.md`).
  */
 export default {
   name: "BookableEditAccessLocks",
@@ -53,21 +53,8 @@ export default {
     assignedCount() {
       return (this.accessPointDetails.accessPointIds || []).length;
     },
-    // An external provider may report the amount itself (iFBS reports how many
-    // bike boxes a location has). The pricing tab locks the field for that
-    // reason, and so does this one - two editors, one owner.
-    amountOwnedExternally() {
-      return handlesCapability(this.bookable, "maxAmount");
-    },
   },
   methods: {
-    setAmount(value) {
-      const amount = value === "" || value === null ? null : Number(value);
-      this.$emit("update:bookable", {
-        ...this.bookable,
-        amount: Number.isNaN(amount) ? null : amount,
-      });
-    },
     onChildUpdate(updated) {
       this.$emit("update:bookable", updated);
     },
@@ -115,39 +102,6 @@ export default {
       </v-switch>
 
       <template v-if="active">
-        <v-card outlined class="mb-4">
-          <v-card-text class="d-flex align-center">
-            <v-icon color="primary" size="32" class="mr-4">mdi-counter</v-icon>
-            <div class="flex-grow-1 mr-4">
-              <div class="text-subtitle-1 font-weight-bold">
-                {{ $t("accessPoint.bookable.capacity.title") }}
-              </div>
-              <div class="text-body-2 text--secondary">
-                {{
-                  amountOwnedExternally
-                    ? $t("accessPoint.bookable.capacity.externalHint")
-                    : $t("accessPoint.bookable.capacity.hint")
-                }}
-              </div>
-            </div>
-            <v-text-field
-              class="capacity-field flex-grow-0"
-              :value="bookable.amount"
-              type="number"
-              min="0"
-              step="1"
-              :disabled="amountOwnedExternally"
-              :label="$t('accessPoint.bookable.capacity.label')"
-              background-color="accent"
-              filled
-              dense
-              hide-details
-              style="max-width: 140px"
-              @input="setAmount($event)"
-            />
-          </v-card-text>
-        </v-card>
-
         <BookableEditAccessPoints
           ref="access"
           :bookable="bookable"

@@ -76,32 +76,15 @@ describe("BookableEditAccessLocks", () => {
     expect(ApiTenantService.getTenant).not.toHaveBeenCalled();
   });
 
-  it("shows the capacity of the bookable and hands an edit back", async () => {
+  /**
+   * The Stückzahl is edited on the Preise tab ("Verfügbare Anzahl") and
+   * nowhere else. A second editor here used to invite the mistake of reading
+   * it as a number per Anlage.
+   */
+  it("renders no Stückzahl field", async () => {
     const wrapper = await mountLocks({ amount: 3 });
 
-    const field = wrapper.find(".capacity-field input");
-    expect(field.element.value).toBe("3");
-
-    await field.setValue("7");
-
-    const updates = wrapper.emitted("update:bookable");
-    expect(updates).toBeTruthy();
-    expect(updates[updates.length - 1][0].amount).toBe(7);
-  });
-
-  /**
-   * The pricing tab locks the amount when an external provider reports it
-   * (`handles: ["maxAmount"]`). A second, unguarded editor for the same field
-   * would let an admin overwrite what the provider owns.
-   */
-  it("locks the capacity while an external provider owns it", async () => {
-    const wrapper = await mountLocks({
-      externalProviders: [
-        { provider: "ifbs", active: true, handles: ["maxAmount"] },
-      ],
-    });
-
-    const field = wrapper.find(".capacity-field input");
-    expect(field.attributes("disabled")).toBeTruthy();
+    expect(wrapper.find(".capacity-field").exists()).toBe(false);
+    expect(wrapper.text()).not.toMatch(/Stückzahl/);
   });
 });
