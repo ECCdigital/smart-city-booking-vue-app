@@ -159,28 +159,7 @@
           >
           Wird nirgends verwendet.
         </div>
-        <div v-else>
-          <div
-            v-for="(entry, index) in usage"
-            :key="index"
-            class="d-flex align-center py-1"
-          >
-            <v-icon small class="mr-2">{{ usageIcon(entry.type) }}</v-icon>
-            <span class="mr-1 text--secondary"
-              >{{ usageLabel(entry.type) }}:</span
-            >
-            <router-link
-              v-if="entry.route"
-              :to="entry.route"
-              class="text-truncate"
-            >
-              {{ entry.title || entry.id }}
-            </router-link>
-            <span v-else class="text-truncate">{{
-              entry.title || entry.id
-            }}</span>
-          </div>
-        </div>
+        <MediaUsageList v-else :entries="usage" />
       </v-sheet>
 
       <div class="d-flex mt-4">
@@ -229,7 +208,7 @@
       </v-card>
     </v-dialog>
 
-    <!-- Deletion blocked: the medium is still referenced (409) -->
+    <!-- Blocked by the usage proof (409): a delete, or a downgrade to intern -->
     <v-dialog
       v-model="blockedDialog"
       max-width="520"
@@ -238,25 +217,15 @@
       <v-card>
         <v-card-title>
           <v-icon color="warning" class="mr-2">mdi-alert-outline</v-icon>
-          Löschen nicht möglich
+          {{ blockedCopy.title }}
         </v-card-title>
         <v-card-text>
           <p>
-            „{{ displayTitle }}" wird noch verwendet und kann deshalb nicht
-            gelöscht werden. Entferne zuerst diese Verwendungen:
+            „{{ displayTitle }}" wird noch verwendet und
+            {{ blockedCopy.reason }}. Entferne zuerst diese Verwendungen:
           </p>
           <v-sheet outlined rounded class="pa-3">
-            <div
-              v-for="(entry, index) in blockingUsage"
-              :key="index"
-              class="d-flex align-center py-1"
-            >
-              <v-icon small class="mr-2">{{ usageIcon(entry.type) }}</v-icon>
-              <span class="mr-1 text--secondary"
-                >{{ usageLabel(entry.type) }}:</span
-              >
-              <span class="text-truncate">{{ entry.title || entry.id }}</span>
-            </div>
+            <MediaUsageList :entries="blockingUsage" />
           </v-sheet>
         </v-card-text>
         <v-card-actions>
@@ -276,6 +245,7 @@ import ApiMediaService, { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import MediaPermissionService from "@/services/permissions/MediaPermissionService";
 import MediaImage from "@/components/Media/MediaImage.vue";
+import MediaUsageList from "@/components/Media/MediaUsageList.vue";
 import FormatService from "@/services/FormatService";
 import ToastService from "@/services/ToastService";
 
@@ -286,16 +256,31 @@ const BOOKABLE_EDIT_ROUTES = {
   "event-location": "location-edit",
 };
 
-const USAGE_PRESENTATION = {
-  bookable: { icon: "mdi-cube-outline", label: "Buchungsobjekt" },
-  event: { icon: "mdi-calendar", label: "Veranstaltung" },
-  booking: { icon: "mdi-book-outline", label: "Buchung" },
-  instance: { icon: "mdi-home-edit-outline", label: "Instanz" },
+// A `hero` entry is an image Block of the instance catalog's Hero Layout or the
+// Background image; both are edited on the Portal tab of the instance editor.
+const PORTAL_TAB_ROUTE = { name: "instances", query: { tab: "portal" } };
+
+// What the 409 refused, in the dialog's own words. The neutral `update` wording
+// carries a save that the usage proof stopped for some other reason than the
+// downgrade to intern.
+const USAGE_BLOCK_COPY = {
+  delete: {
+    title: "Löschen nicht möglich",
+    reason: "kann deshalb nicht gelöscht werden",
+  },
+  visibility: {
+    title: "Sichtbarkeit nicht änderbar",
+    reason: "kann deshalb nicht auf intern gestellt werden",
+  },
+  update: {
+    title: "Änderung nicht möglich",
+    reason: "die Änderung wurde deshalb abgelehnt",
+  },
 };
 
 export default {
   name: "MediaDetailPanel",
-  components: { MediaImage },
+  components: { MediaImage, MediaUsageList },
   props: {
     media: { type: Object, required: true },
     scope: { type: String, required: true },
@@ -319,6 +304,7 @@ export default {
       deleting: false,
       confirmDialog: false,
       blockedDialog: false,
+      blockedReason: "delete",
       blockingUsage: [],
     };
   },
@@ -331,6 +317,9 @@ export default {
     },
     allowDelete() {
       return MediaPermissionService.allowDelete(this.media, this.scope);
+    },
+    blockedCopy() {
+      return USAGE_BLOCK_COPY[this.blockedReason] || USAGE_BLOCK_COPY.update;
     },
     isDirty() {
       return (
@@ -365,12 +354,6 @@ export default {
     },
     formatDate(value) {
       return value ? FormatService.date(value, "medium") : "—";
-    },
-    usageIcon(type) {
-      return USAGE_PRESENTATION[type]?.icon || "mdi-link-variant";
-    },
-    usageLabel(type) {
-      return USAGE_PRESENTATION[type]?.label || type;
     },
     async fetchUsage() {
       this.usageLoading = true;
@@ -409,9 +392,14 @@ export default {
     },
     async routeForUsage(entry) {
       if (this.scope === MEDIA_SCOPE.INSTANCE) {
+        if (entry.type === "hero") return PORTAL_TAB_ROUTE;
         return entry.type === "instance" ? { name: "instances" } : null;
       }
       switch (entry.type) {
+        case "hero":
+          return MediaPermissionService.isInstanceOwner()
+            ? PORTAL_TAB_ROUTE
+            : null;
         case "event":
           return { name: "event-edit", query: { id: entry.id } };
         case "booking":
@@ -434,6 +422,22 @@ export default {
           return null;
       }
     },
+    // 409 carries the usage proof as its body — the same list the usage
+    // endpoint answers.
+    isUsageConflict(error) {
+      return (
+        error.response?.status === 409 && Array.isArray(error.response.data)
+      );
+    },
+    async adoptUsageConflict(reason, entries) {
+      // The proof is fresher than the list fetched when the medium was picked,
+      // so the usage list adopts it beside the dialog.
+      const resolved = await this.resolveUsageRoutes(entries);
+      this.blockingUsage = resolved;
+      this.usage = resolved;
+      this.blockedReason = reason;
+      this.blockedDialog = true;
+    },
     async saveMetadata() {
       this.saving = true;
       try {
@@ -452,8 +456,17 @@ export default {
           ToastService.createToast("media.updateSuccess", "success")
         );
       } catch (error) {
-        console.error(error);
-        this.addToast(ToastService.createToast("media.updateError", "error"));
+        // The backend refuses to hide a medium that is still referenced and
+        // answers the usage proof a blocked delete gets. The form keeps the
+        // refused value, so switching back is one click.
+        if (this.isUsageConflict(error)) {
+          const reason =
+            this.form.visibility === "intern" ? "visibility" : "update";
+          await this.adoptUsageConflict(reason, error.response.data);
+        } else {
+          console.error(error);
+          this.addToast(ToastService.createToast("media.updateError", "error"));
+        }
       } finally {
         this.saving = false;
       }
@@ -469,14 +482,8 @@ export default {
         );
       } catch (error) {
         this.confirmDialog = false;
-        // 409 carries the usage proof as its body — the same list the usage
-        // endpoint answers, rendered in the blocked dialog.
-        if (error.response?.status === 409) {
-          this.blockingUsage = Array.isArray(error.response.data)
-            ? error.response.data
-            : [];
-          this.usage = await this.resolveUsageRoutes(this.blockingUsage);
-          this.blockedDialog = true;
+        if (this.isUsageConflict(error)) {
+          await this.adoptUsageConflict("delete", error.response.data);
         } else {
           console.error(error);
           this.addToast(ToastService.createToast("media.deleteError", "error"));
