@@ -1663,5 +1663,17 @@
         "message": "Die Rechnung konnte nicht heruntergeladen werden."
       }
     }
+  },
+  "richtext": {
+    "link": {
+      "button": "Link einfügen",
+      "title": "Link",
+      "address": "Adresse",
+      "hint": "http://, https:// oder mailto:",
+      "invalid": "Nur Adressen mit http://, https:// oder mailto: sind erlaubt.",
+      "apply": "Übernehmen",
+      "remove": "Link entfernen",
+      "cancel": "Abbrechen"
+    }
   }
 }

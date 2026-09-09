@@ -9,6 +9,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
+-   Rich-text editor (`Tiptap.vue`): opt-in props `links` (link toolbar button with address dialog, autolink, only `http`/`https`/`mailto`, `rel="noopener noreferrer"`) and `maxLength` (HTML length counter, red above the limit, nothing truncated) for the Hero Editor's „Formatierter Text“ Blocks; without the props the four existing users are unchanged, pinned by a characterisation spec
 -   Booking list: a status filter over the five states (Angefragt, Zahlung offen, Bestätigt, Abgelehnt, Storniert) that narrows the table and the calendar (spec E11); the kanban keeps every booking, its columns being workflow states. The selection is not persisted. `filterBookingsByStatus` joins `bookingStatus.js`
 -   `docs/agents/booking-status-vocabulary.md`: the glossary of the booking lifecycle — the five German state words (Angefragt, Zahlung offen, Bestätigt, Abgelehnt, Storniert) against `booking.status`, the derived Kostenfrei and Gemischt, the action verbs against the transitions and their routes, and the rule that the UI reads `status` and never a flag. Listed in `AGENTS.md` and `docs/agents/README.md`
 -   Test setup: Vitest with `@vue/test-utils@1`, `@vitejs/plugin-vue2` and jsdom, running beside the Vue CLI toolchain — `npm test` and `npm run test:watch`, specs under `tests/unit/` mirroring `src/`, shared Vuetify/Vuex mount boilerplate in `tests/unit/support/mount.js`, conventions in `docs/agents/testing.md`
