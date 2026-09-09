@@ -38,6 +38,11 @@ export function defaultBranding() {
  * (§4.9). A site that holds only a legacy address keeps it — until the media
  * import has converted it, that address is the branding.
  *
+ * The Background drops out as well. The Hero Editor owns it and saves it
+ * through its own route; a payload without the key keeps the stored
+ * Background, while a stale copy from the tab would overwrite it (hero layout
+ * spec, "Stale-overwrite guard").
+ *
  * @param {Object|null} branding - The branding held by the editor.
  * @returns {Object|null} The branding as it goes out.
  */
@@ -47,6 +52,7 @@ export function brandingForSave(branding) {
   }
 
   const payload = { ...branding };
+  delete payload.background;
 
   for (const image of Object.values(BRANDING_IMAGES)) {
     if (payload[image.reference]) {

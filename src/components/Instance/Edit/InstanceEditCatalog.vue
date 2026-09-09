@@ -2,6 +2,25 @@
   <BaseSection title="Portal Konfiguration" icon="mdi-web">
     <v-row>
       <v-col cols="12" md="6">
+        <v-text-field
+          ref="nameField"
+          v-model="localCatalog.name"
+          background-color="accent"
+          filled
+          dense
+          required
+          label="Portalname"
+          hint="Erscheint im Browser-Titel, im Kopfbereich und auf den Anmeldeseiten."
+          persistent-hint
+          :rules="[rules.required]"
+          :error-messages="nameApiErrors"
+          @input="onNameInput"
+        />
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <v-col cols="12" md="6">
         <v-switch
           v-model="local.publicOffersEnabled"
           color="primary"
@@ -13,12 +32,14 @@
       </v-col>
       <v-col cols="12" md="6">
         <v-text-field
+          ref="portalUrlField"
           v-model="local.portalUrl"
           background-color="accent"
           filled
           dense
           label="Portal-URL"
           hint="Die URL zu Ihrem Portal"
+          :rules="[rules.absoluteHttpUrl]"
           @input="emitUpdate"
         />
       </v-col>
@@ -213,35 +234,34 @@
     <SubSection
       class="mt-8"
       title="Kopfbereich"
-      icon="mdi-format-header-1"
-      description="Passen Sie die Überschrift und Unterzeile im Kopfbereich Ihres Portals an, um Ihren Kunden eine ansprechende Einführung zu bieten. Die Überschrift sollte kurz und prägnant sein, während die Unterzeile zusätzliche Informationen oder einen Slogan enthalten kann, um das Interesse der Besucher zu wecken."
+      icon="mdi-page-layout-header"
+      description="Gestalten Sie den Kopfbereich Ihres Portals mit Textblöcken, Bildern und einem Hintergrund, der auch auf den Anmeldeseiten erscheint."
       no-margin
     >
-      <v-row>
-        <v-col cols="12" md="6">
-          <v-text-field
-            v-model="localCatalog.hero.title"
-            label="Überschrift im Kopfbereich"
-            background-color="accent"
-            placeholder="Marktplatz"
-            filled
-            dense
-            @input="emitCatalog"
-          />
-        </v-col>
-        <v-col ols="12" md="6">
-          <v-text-field
-            v-model="localCatalog.hero.subtitle"
-            label="Unterzeile im Kopfbereich"
-            background-color="accent"
-            placeholder="Entdecken Sie unsere Angebote"
-            filled
-            dense
-            @input="emitCatalog"
-          />
-        </v-col>
-      </v-row>
+      <v-card outlined class="pa-4">
+        <div class="d-flex align-center flex-wrap hero-entry-card">
+          <div class="flex-grow-1">
+            <div class="text-body-1 font-weight-medium">
+              {{ heroStatusLine }}
+            </div>
+            <div v-if="hasUnsavedChanges" class="text-caption text--secondary">
+              Bitte zuerst speichern.
+            </div>
+          </div>
+          <v-btn
+            color="primary"
+            outlined
+            :disabled="hasUnsavedChanges"
+            @click="openHeroEditor"
+          >
+            <v-icon left small>mdi-pencil</v-icon>
+            Kopfbereich bearbeiten
+          </v-btn>
+        </div>
+      </v-card>
     </SubSection>
+
+    <HeroEditorDialog v-model="heroEditorOpen" @closed="$emit('refetch')" />
   </BaseSection>
 </template>
 
@@ -250,6 +270,7 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import SubSection from "@/components/commons/SubSection.vue";
+import HeroEditorDialog from "@/components/Instance/Edit/HeroEditorDialog.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import { BRANDING_IMAGES, defaultBranding } from "@/utils/instanceBranding";
 
@@ -258,6 +279,34 @@ import { BRANDING_IMAGES, defaultBranding } from "@/utils/instanceBranding";
 const PUBLIC_ONLY_REASON =
   "Logo und Favicon werden öffentlich ausgeliefert — interne Medien sind hier nicht wählbar.";
 
+const REQUIRED_MESSAGE = "Pflichtfeld";
+const ABSOLUTE_URL_MESSAGE =
+  "Bitte eine vollständige Adresse mit http:// oder https:// angeben.";
+
+// The Background families of the Shared contract, as the status line names
+// them. A missing Background is the default one, a `variant`.
+const BACKGROUND_LABELS = Object.freeze({
+  variant: "Muster",
+  color: "Farbe",
+  image: "Bild",
+});
+
+/**
+ * Whether `value` is an absolute http(s) address. The Live Preview of the
+ * Hero Editor needs the origin of the Portal-URL, which a bare host or a
+ * relative path does not have.
+ */
+function isAbsoluteHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") && !!url.hostname
+    );
+  } catch {
+    return false;
+  }
+}
+
 export default {
   name: "InstanceEditCatalog",
   components: {
@@ -265,16 +314,27 @@ export default {
     MediaReferenceField,
     MediaReferenceImage,
     BaseSection,
+    HeroEditorDialog,
   },
   props: {
     instance: { type: Object, required: true },
     catalog: { type: Object, required: true },
     tenants: { type: Array, required: false, default: () => [] },
+    // The Hero Editor loads what is stored; it stays closed while the tab
+    // holds changes the editor would not see.
+    hasUnsavedChanges: { type: Boolean, default: false },
   },
   data() {
     return {
       local: this.cloneInstance(this.instance),
       localCatalog: JSON.parse(JSON.stringify(this.catalog)),
+      heroEditorOpen: false,
+      nameApiErrors: [],
+      rules: {
+        required: (v) => !!(v && String(v).trim()) || REQUIRED_MESSAGE,
+        absoluteHttpUrl: (v) =>
+          !v || isAbsoluteHttpUrl(v) || ABSOLUTE_URL_MESSAGE,
+      },
       visibilityOptions: [
         { text: "Öffentlich", value: "public" },
         { text: "Privat", value: "private" },
@@ -305,6 +365,25 @@ export default {
         id: t.id,
         name: t.name || `Tenant #${t.id}`,
       }));
+    },
+    /**
+     * What the entry card says about the stored Hero: the default the
+     * backend derives while no layout is stored, otherwise the stored layout's
+     * size and the Background family. Both are read from the stored objects —
+     * the tab never edits them, so props and store agree.
+     */
+    heroStatusLine() {
+      const layout = this.catalog.heroLayout;
+      if (!layout) {
+        return "Standard-Layout";
+      }
+      const count = Array.isArray(layout.blocks) ? layout.blocks.length : 0;
+      const blocks = count === 1 ? "1 Block" : `${count} Blöcke`;
+      return `Angepasst · ${blocks} · Hintergrund: ${this.backgroundLabel}`;
+    },
+    backgroundLabel() {
+      const type = this.instance.branding?.background?.type;
+      return BACKGROUND_LABELS[type] || BACKGROUND_LABELS.variant;
     },
   },
   watch: {
@@ -382,12 +461,49 @@ export default {
     emitCatalog() {
       this.$emit("update:catalog", this.localCatalog);
     },
-    validate() {
-      return true;
+    onNameInput() {
+      this.nameApiErrors = [];
+      this.emitCatalog();
     },
-    resetValidation() {},
+    openHeroEditor() {
+      this.heroEditorOpen = true;
+    },
+    /**
+     * The backend's answer to the tab save, as `details[].field` JSON paths.
+     * Only `name` belongs to this tab's fields; the rest stays with the toast.
+     */
+    showApiErrors(details) {
+      this.nameApiErrors = (details || [])
+        .filter((detail) => detail && detail.field === "name")
+        .map((detail) =>
+          detail.code === "required"
+            ? REQUIRED_MESSAGE
+            : detail.message || "Ungültiger Wert"
+        );
+    },
+    /** The fields of this tab that carry rules. Refs, so not a computed. */
+    validatedFields() {
+      return [this.$refs.nameField, this.$refs.portalUrlField].filter(Boolean);
+    },
+    validate() {
+      this.nameApiErrors = [];
+      // Validate every field before reading the result, so each one shows its
+      // own message rather than only the first.
+      const results = this.validatedFields().map((field) =>
+        field.validate(true)
+      );
+      return results.every(Boolean);
+    },
+    resetValidation() {
+      this.nameApiErrors = [];
+      this.validatedFields().forEach((field) => field.resetValidation());
+    },
   },
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.hero-entry-card {
+  gap: 12px;
+}
+</style>

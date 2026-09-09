@@ -27,6 +27,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
+-   Instance editor, tab Portal: „Portalname“ (`catalog.name`) is the first field, required; the Portal-URL must be an absolute http(s) address. The two „Kopfbereich“ text fields give way to an entry card with a status line and „Kopfbereich bearbeiten“, which opens the full-screen dialog of the coming Hero Editor once the tab is saved. The tab save no longer carries `branding.background` or `catalog.heroLayout` (`brandingForSave`, `catalogForSave`) — the editor owns both
 -   Dashboard filter: booking status can be multi-selected under Weitere Filter
 -   Bookable pricing, external provider: the iFBS price panel and the bookable card ask `GET /:tenant/bookables/:id/prices` for a bookable that is not public too - the backend answers it to whoever may read the bookable (backend entry `bookable.prices`), so a provider's prices are previewed before the bookable is listed. The hint `bookable.externalPrice.notPublic` is gone; `externalPricesUnavailableKey` asks only whether the bookable is stored
 
