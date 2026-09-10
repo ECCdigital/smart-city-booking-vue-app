@@ -215,6 +215,18 @@
     </SubSection>
 
     <SubSection class="mt-6" title="Darstellung" icon="mdi-tune">
+      <!--
+        „Darstellung“ opens with the tile, so an author reads what
+        „Deckkraft 40“ means before looking at the frames (spec §7).
+      -->
+      <HeroBlockTile
+        :block="block"
+        :background="background"
+        :theme-colors="themeColors"
+        :locale="locale"
+        class="hero-block-form__tile mb-4"
+      />
+
       <div class="hero-block-form__panel">
         <div class="d-flex align-center">
           <v-switch
@@ -422,6 +434,7 @@ import SubSection from "@/components/commons/SubSection.vue";
 import Tiptap from "@/components/Tiptap.vue";
 import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
+import HeroBlockTile from "@/components/Instance/Edit/HeroBlockTile.vue";
 import HeroColorField from "@/components/Instance/Edit/HeroColorField.vue";
 import HeroPositionGrid from "@/components/Instance/Edit/HeroPositionGrid.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
@@ -544,6 +557,7 @@ const ALIGN_NEEDS_WIDTH_HINT = "Wirkt erst ab einer festen Breite.";
 export default {
   name: "HeroBlockForm",
   components: {
+    HeroBlockTile,
     HeroColorField,
     HeroPositionGrid,
     MediaReferenceField,
@@ -560,6 +574,13 @@ export default {
     locale: { type: String, default: "de" },
     /** The instance's `branding.theme.colors`, for the colour chips. */
     themeColors: { type: Object, default: null },
+    /**
+     * The Draft's Background, for the preview tile alone: the tile paints the
+     * Block on a strip of it, so a translucent Panel has something to be
+     * translucent against (hero layout spec §7). No control of this form
+     * writes it — „Hintergrund“ owns it.
+     */
+    background: { type: Object, default: null },
     /**
      * What a backend `400` said about this Block, as `{ field: message }` —
      * already narrowed by the editor, which owns the toggle and knows which

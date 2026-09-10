@@ -11,6 +11,7 @@ import {
   button,
   chooseOption,
   selectByLabel,
+  toggleSwitch,
 } from "@tests/unit/support/vuetify";
 import toasts from "@/store/modules/toasts";
 import {
@@ -121,6 +122,10 @@ function toastMessages(wrapper) {
 
 function blockForm(wrapper) {
   return wrapper.findComponent({ name: "HeroBlockForm" });
+}
+
+function blockTile(wrapper) {
+  return wrapper.findComponent({ name: "HeroBlockTile" });
 }
 
 function row(wrapper, id) {
@@ -1940,5 +1945,57 @@ describe("HeroEditorDialog backend errors", () => {
     expect(toastMessages(wrapper)).toContain(
       "Kopfbereich nicht gespeichert — bitte die markierten Felder prüfen"
     );
+  });
+});
+
+/**
+ * „Darstellung“ opens with the preview tile, and the tile paints the Draft —
+ * the same one the frames are painted from, never a fixture of its own
+ * (hero layout spec §7).
+ */
+describe("HeroEditorDialog, the preview tile of „Darstellung“", () => {
+  it("paints the Block on the Draft's own Background", async () => {
+    const wrapper = await openEditor(
+      storedLayout({ blocks: [heroBlock({ id: "note" })] })
+    );
+    await row(wrapper, "note").trigger("click");
+
+    expect(blockTile(wrapper).props("background")).toBe(
+      wrapper.vm.draft.background
+    );
+    expect(blockTile(wrapper).props("block")).toBe(
+      blockForm(wrapper).props("block")
+    );
+  });
+
+  it("follows the Background the „Hintergrund“ section switches to", async () => {
+    const wrapper = await openEditor(
+      storedLayout({ blocks: [heroBlock({ id: "note" })] })
+    );
+    await row(wrapper, "note").trigger("click");
+
+    await chooseBackgroundFamily(wrapper, "color");
+
+    expect(blockTile(wrapper).props("background")).toEqual(
+      heroBackgroundOfFamily("color")
+    );
+  });
+
+  it("repaints as the Panel group below it is switched on", async () => {
+    const wrapper = await openEditor(
+      storedLayout({ blocks: [heroBlock({ id: "note" })] })
+    );
+    await row(wrapper, "note").trigger("click");
+
+    expect(blockTile(wrapper).props("block").panel).toBeNull();
+
+    await toggleSwitch(blockForm(wrapper), "Fläche hinter dem Block");
+
+    expect(blockTile(wrapper).props("block").panel).toEqual({
+      color: "white",
+      opacity: 60,
+      radius: "md",
+      blur: true,
+    });
   });
 });

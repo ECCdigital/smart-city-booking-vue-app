@@ -17,6 +17,7 @@ import {
 import HeroBlockForm from "@/components/Instance/Edit/HeroBlockForm.vue";
 import Tiptap from "@/components/Tiptap.vue";
 import HeroColorField from "@/components/Instance/Edit/HeroColorField.vue";
+import HeroBlockTile from "@/components/Instance/Edit/HeroBlockTile.vue";
 
 const THEME_COLORS = { primary: "#123456", secondary: "#654321" };
 
@@ -42,9 +43,10 @@ function formOf(block, options = {}) {
     locale = "de",
     themeColors = THEME_COLORS,
     errors = {},
+    background = null,
   } = options;
   return mountComponent(HeroBlockForm, {
-    propsData: { block, blocks, locale, themeColors, errors },
+    propsData: { block, blocks, locale, themeColors, errors, background },
     stubs: { MediaReferenceField: true, MediaReferenceImage: true },
   });
 }
@@ -203,11 +205,11 @@ function corner(wrapper, label) {
 
 /** The groups of „Darstellung“, in the order they stand on screen. */
 function darstellungGroups(wrapper) {
-  const marker = /hero-block-form__(panel|lage|fine)(?:\s|$)/;
+  const marker = /hero-block-form__(tile|panel|lage|fine)(?:\s|$)/;
 
   return Array.from(
     wrapper.element.querySelectorAll(
-      ".hero-block-form__panel, .hero-block-form__lage, .hero-block-form__fine"
+      ".hero-block-form__tile, .hero-block-form__panel, .hero-block-form__lage, .hero-block-form__fine"
     )
   ).map((element) => element.className.match(marker)[1]);
 }
@@ -1174,6 +1176,7 @@ describe("HeroBlockForm, the backend's messages", () => {
 describe("HeroBlockForm, Lage", () => {
   it("stands between the Panel group and Feinabstimmung", () => {
     expect(darstellungGroups(formOf(heroBlock()))).toEqual([
+      "tile",
       "panel",
       "lage",
       "fine",
@@ -1270,5 +1273,33 @@ describe("HeroBlockForm, Lage", () => {
     await toggle(front, "Im Vordergrund");
 
     expect(lastPatch(front)).toEqual({ layer: "back" });
+  });
+});
+
+/**
+ * The preview tile at the head of „Darstellung“ (hero layout spec §7). What it
+ * paints is its own spec's business; what the form owes it is the Draft.
+ */
+describe("HeroBlockForm, the preview tile", () => {
+  it("opens „Darstellung“ with the tile, above the Panel group", () => {
+    expect(darstellungGroups(formOf(heroBlock()))).toEqual([
+      "tile",
+      "panel",
+      "lage",
+      "fine",
+    ]);
+  });
+
+  it("hands it the Block, the Draft's own Background and the branding", () => {
+    const background = { version: 1, type: "color", light: "#f3f4f6" };
+    const block = heroBlock({ panel: GLASS });
+    const tile = formOf(block, { background, locale: "en" }).findComponent(
+      HeroBlockTile
+    );
+
+    expect(tile.props("block")).toBe(block);
+    expect(tile.props("background")).toBe(background);
+    expect(tile.props("themeColors")).toBe(THEME_COLORS);
+    expect(tile.props("locale")).toBe("en");
   });
 });

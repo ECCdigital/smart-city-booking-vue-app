@@ -150,6 +150,7 @@
               :blocks="blocks"
               :locale="locale"
               :theme-colors="themeColors"
+              :background="draft.background"
               :errors="selectedBlockErrors"
               @input="patchSelectedBlock"
               @update:zone="moveSelectedBlock"
