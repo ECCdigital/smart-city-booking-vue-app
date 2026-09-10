@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
+import { button } from "@tests/unit/support/vuetify";
 import { heroBlock } from "@tests/unit/support/heroLayout";
 import HeroBlockList from "@/components/Instance/Edit/HeroBlockList.vue";
 import { MAX_HERO_BLOCKS } from "@/utils/heroBlocks";
@@ -27,12 +28,6 @@ function groupLabels(wrapper) {
   return wrapper
     .findAll(".hero-block-group__label")
     .wrappers.map((label) => label.text());
-}
-
-function button(wrapper, label) {
-  return wrapper
-    .findAll("button")
-    .wrappers.find((entry) => entry.text().trim() === label);
 }
 
 /** The entries of an overlay menu, read off the document it detaches into. */

@@ -63,6 +63,7 @@
 import {
   firstHeroRuleError,
   heroHexRules,
+  heroHexWithoutAlpha,
   isHeroHexColor,
 } from "@/utils/heroBlockValidation";
 
@@ -162,19 +163,10 @@ export default {
      * again must leave the Draft as it was; the first pick is the change.
      */
     pick(picked) {
-      this.$emit("input", withoutAlpha(picked));
+      this.$emit("input", heroHexWithoutAlpha(picked));
     },
   },
 };
-
-/**
- * The picker answers in the format it was given and appends alpha once it has
- * been touched; the contract knows `#rrggbb` only.
- */
-function withoutAlpha(color) {
-  const value = typeof color === "string" ? color : "";
-  return value.length > 7 && value.startsWith("#") ? value.slice(0, 7) : value;
-}
 </script>
 
 <style scoped>

@@ -6,13 +6,25 @@ import {
   forbiddenError,
   serverError,
 } from "@tests/unit/support/api";
+import {
+  button,
+  chooseOption,
+  selectByLabel,
+} from "@tests/unit/support/vuetify";
 import toasts from "@/store/modules/toasts";
 import {
   HERO_BACKGROUND,
+  backgroundFamilyCard as backgroundCard,
+  backgroundIssues,
+  chooseBackgroundFamily,
   heroBlock,
   heroLayout,
   heroLayoutResponse,
 } from "@tests/unit/support/heroLayout";
+import {
+  defaultHeroBackground,
+  heroBackgroundOfFamily,
+} from "@/utils/heroBackground";
 
 vi.mock("@/services/api/ApiCatalogService", () => ({
   default: {
@@ -48,6 +60,9 @@ async function openEditor(answer = storedNothing()) {
   const wrapper = mountComponent(HeroEditorDialog, {
     store: new Vuex.Store({ modules: { toasts } }),
     propsData: { value: false },
+    // The Mediathek picker of the Background's image family talks to the media
+    // API and reads the signed-in user; neither is what this editor is about.
+    stubs: { MediaReferenceField: true, MediaReferenceImage: true },
   });
   await wrapper.setProps({ value: true });
   await flushPromises();
@@ -64,46 +79,33 @@ function editorText(wrapper) {
   return wrapper.findComponent({ name: "v-card" }).text();
 }
 
-function button(wrapper, label) {
+/**
+ * „Höhe“, the section — the search for a height select has to stay inside it,
+ * because „Hintergrund“ carries selects of its own further down the form.
+ */
+function heightSection(wrapper) {
   return wrapper
-    .findAll("button")
-    .wrappers.find((el) => el.text().trim() === label);
+    .findAllComponents({ name: "SubSection" })
+    .wrappers.find((entry) => entry.props("title") === "Höhe");
 }
 
 function heightSelects(wrapper) {
-  return wrapper.findAllComponents({ name: "v-select" }).wrappers;
+  return heightSection(wrapper).findAllComponents({ name: "v-select" })
+    .wrappers;
+}
+
+/** One of the three height selects, by the label the user reads. */
+function heightSelect(wrapper, label) {
+  return selectByLabel(heightSection(wrapper), label);
 }
 
 /** The step a closed height select shows. */
 function chosenHeight(wrapper, label) {
-  return selectByLabel(wrapper, label).find(".v-select__selection").text();
+  return heightSelect(wrapper, label).find(".v-select__selection").text();
 }
 
-function selectByLabel(wrapper, label) {
-  return heightSelects(wrapper).find(
-    (select) => select.props("label") === label
-  );
-}
-
-/**
- * Picks a height the way a user does: open the select, click the step. The
- * menu detaches into the `data-app` container, so the item is read off the
- * document.
- */
-async function chooseHeight(wrapper, label, step) {
-  await selectByLabel(wrapper, label).find(".v-input__slot").trigger("click");
-  await wrapper.vm.$nextTick();
-  await flushPromises();
-
-  const item = Array.from(
-    document.querySelectorAll(".menuable__content__active .v-list-item")
-  ).find((el) => el.textContent.trim() === step);
-  if (!item) {
-    throw new Error(`Der Schritt „${step}“ steht nicht zur Wahl.`);
-  }
-  item.click();
-  await wrapper.vm.$nextTick();
-  await flushPromises();
+function chooseHeight(wrapper, label, step) {
+  return chooseOption(heightSection(wrapper), label, step);
 }
 
 function toastMessages(wrapper) {
@@ -244,7 +246,7 @@ describe("HeroEditorDialog height", () => {
       "Höhe auf Unterseiten",
     ]);
     expect(
-      selectByLabel(wrapper, "Höhe auf der Startseite")
+      heightSelect(wrapper, "Höhe auf der Startseite")
         .props("items")
         .map((item) => item.text)
     ).toEqual(["Niedrig", "Mittel", "Hoch", "Sehr hoch"]);
@@ -254,12 +256,12 @@ describe("HeroEditorDialog height", () => {
     const wrapper = await openEditor();
 
     expect(
-      selectByLabel(wrapper, "Höhe auf der Startseite").props("value")
+      heightSelect(wrapper, "Höhe auf der Startseite").props("value")
     ).toBe("lg");
-    expect(selectByLabel(wrapper, "Höhe auf Mobilgeräten").props("value")).toBe(
+    expect(heightSelect(wrapper, "Höhe auf Mobilgeräten").props("value")).toBe(
       "lg"
     );
-    expect(selectByLabel(wrapper, "Höhe auf Unterseiten").props("value")).toBe(
+    expect(heightSelect(wrapper, "Höhe auf Unterseiten").props("value")).toBe(
       "sm"
     );
   });
@@ -303,20 +305,11 @@ describe("HeroEditorDialog save", () => {
   it("sends no layout while it is still the default one", async () => {
     const wrapper = await openEditor();
     // Only the Background moved — the layout still follows Portalname and
-    // logo. Its control arrives with the Background section, so this spec
-    // reaches for the Draft where a user would reach for a colour field.
-    wrapper.vm.draft.background = {
-      version: 1,
-      type: "color",
-      light: "#ffffff",
-    };
-    await wrapper.vm.$nextTick();
+    // logo.
+    await chooseBackgroundFamily(wrapper, "color");
+    const background = heroBackgroundOfFamily("color");
     ApiCatalogService.updateHeroLayout.mockResolvedValue({
-      data: {
-        heroLayout: layout(),
-        background: wrapper.vm.draft.background,
-        name: "Marktplatz",
-      },
+      data: { heroLayout: layout(), background, name: "Marktplatz" },
     });
 
     await button(wrapper, "Speichern").trigger("click");
@@ -324,7 +317,7 @@ describe("HeroEditorDialog save", () => {
 
     expect(ApiCatalogService.updateHeroLayout).toHaveBeenCalledWith({
       heroLayout: null,
-      background: { version: 1, type: "color", light: "#ffffff" },
+      background,
     });
   });
 
@@ -363,7 +356,7 @@ describe("HeroEditorDialog save", () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    expect(selectByLabel(wrapper, "Höhe auf Mobilgeräten").props("value")).toBe(
+    expect(heightSelect(wrapper, "Höhe auf Mobilgeräten").props("value")).toBe(
       "md"
     );
     expect(toastMessages(wrapper)).toContain("Kopfbereich gespeichert");
@@ -782,6 +775,87 @@ describe("HeroEditorDialog with a Block the backend would refuse", () => {
 
     await edit(wrapper, "note", { size: "xl" });
 
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
+      "disabled"
+    );
+  });
+});
+
+describe("HeroEditorDialog background", () => {
+  it("shows the section on the family of the stored Background", async () => {
+    const wrapper = await openEditor();
+
+    expect(
+      wrapper.findComponent({ name: "HeroBackgroundForm" }).props("value")
+    ).toEqual(HERO_BACKGROUND);
+    expect(backgroundCard(wrapper, "variant").attributes("aria-pressed")).toBe(
+      "true"
+    );
+  });
+
+  it("enables the save on a Background change and leaves the chip alone", async () => {
+    const wrapper = await openEditor();
+
+    await chooseBackgroundFamily(wrapper, "color");
+
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
+    // The chip is about the layout, which still follows Portalname and logo.
+    expect(editorText(wrapper)).toContain(DEFAULT_STATUS);
+  });
+
+  it("keeps a custom layout custom when the Background is reset", async () => {
+    const wrapper = await openEditor(
+      storedLayout({
+        background: { version: 1, type: "color", light: "#fff000" },
+      })
+    );
+
+    await button(wrapper, "Standardhintergrund").trigger("click");
+
+    expect(
+      wrapper.findComponent({ name: "HeroBackgroundForm" }).props("value")
+    ).toEqual(defaultHeroBackground());
+    expect(editorText(wrapper)).toContain("Angepasst");
+  });
+
+  it("disables the save while the Background is invalid and says why at the section", async () => {
+    const wrapper = await openEditor();
+
+    // „Bild“ starts without an image, which is the one thing the backend
+    // insists on.
+    await chooseBackgroundFamily(wrapper, "image");
+
+    expect(backgroundIssues(wrapper)).toHaveLength(1);
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
+      "disabled"
+    );
+  });
+
+  it("sends the Background beside the layout and takes the answer back", async () => {
+    const wrapper = await openEditor();
+    const background = heroBackgroundOfFamily("color");
+    ApiCatalogService.updateHeroLayout.mockResolvedValue({
+      data: {
+        heroLayout: layout({ height: "xl" }),
+        background,
+        name: "Marktplatz",
+      },
+    });
+
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Sehr hoch");
+    await chooseBackgroundFamily(wrapper, "color");
+    await button(wrapper, "Speichern").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(ApiCatalogService.updateHeroLayout).toHaveBeenCalledWith({
+      heroLayout: layout({ height: "xl" }),
+      background,
+    });
+    // The answer carries the Background unchanged, so the save is clean again.
+    expect(
+      wrapper.findComponent({ name: "HeroBackgroundForm" }).props("value")
+    ).toEqual(background);
     expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
       "disabled"
     );

@@ -9,6 +9,10 @@
  * Two shapes come out of the same predicates: `heroBlockIssues` for the badge
  * on the row and the gate on „Speichern“, and the rule arrays a Vuetify input
  * takes for the message under the field.
+ *
+ * The colour helpers — `isHeroHexColor`, `heroHexWithoutAlpha` and the two
+ * hex rule arrays — are the contract's, not a Block's: `heroBackground.js`
+ * and the Background's colour fields read the same `#rrggbb` from here.
  */
 
 import { heroHtmlFirstLine, heroLocalizedText } from "@/utils/heroBlocks";
@@ -45,6 +49,20 @@ const BAD_COLOR_ISSUE = "Die Farbe ist kein gültiger Hex-Wert.";
  */
 export function isHeroHexColor(value) {
   return HEX_COLOR.test(String(value == null ? "" : value));
+}
+
+/**
+ * The picker answers in the format it was given and appends alpha once it has
+ * been touched; the contract knows `#rrggbb` only, everywhere it takes a
+ * colour.
+ *
+ * @param {*} color - What the colour picker answered.
+ * @returns {string} The same colour without its alpha channel.
+ */
+export function heroHexWithoutAlpha(color) {
+  const value = typeof color === "string" ? color : "";
+
+  return value.length > 7 && value.startsWith("#") ? value.slice(0, 7) : value;
 }
 
 /**
@@ -129,6 +147,14 @@ export function heroRichtextRules(locale) {
 /** The rules of a custom colour. */
 export const heroHexRules = Object.freeze([
   (value) => isHeroHexColor(value) || HEX_MESSAGE,
+]);
+
+/**
+ * The rules of a colour the author may also leave empty — the Background's
+ * „Farbe im Dunkelmodus“, whose absence means „follow the light one“.
+ */
+export const heroOptionalHexRules = Object.freeze([
+  (value) => !value || isHeroHexColor(value) || HEX_MESSAGE,
 ]);
 
 /**

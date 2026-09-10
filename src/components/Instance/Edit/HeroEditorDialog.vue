@@ -97,12 +97,11 @@
               @update:zone="moveSelectedBlock"
             />
 
-            <!-- „Hintergrund“ arrives with the Background section. -->
-            <SubSection
-              class="mt-6"
-              title="Hintergrund"
-              icon="mdi-image-filter-hdr"
-              description="Gilt auch für die Anmeldeseiten."
+            <!-- „Hintergrund“ brings its own SubSection, and with it the
+                 spacing the sections above set by hand. -->
+            <HeroBackgroundForm
+              :value="draft.background"
+              @input="setBackground"
             />
           </div>
 
@@ -142,10 +141,12 @@ import { mapActions } from "vuex";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import SubSection from "@/components/commons/SubSection.vue";
+import HeroBackgroundForm from "@/components/Instance/Edit/HeroBackgroundForm.vue";
 import HeroBlockForm from "@/components/Instance/Edit/HeroBlockForm.vue";
 import HeroBlockList from "@/components/Instance/Edit/HeroBlockList.vue";
 import HeroResetConformationDialog from "@/components/Instance/Edit/HeroResetConformationDialog.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
+import { heroBackgroundIssues } from "@/utils/heroBackground";
 import { setHeroBlockZone, updateHeroBlock } from "@/utils/heroBlocks";
 import {
   heroBlockIssues,
@@ -187,6 +188,7 @@ const CUSTOM_STATUS = "Angepasst";
 export default {
   name: "HeroEditorDialog",
   components: {
+    HeroBackgroundForm,
     HeroBlockForm,
     HeroBlockList,
     HeroResetConformationDialog,
@@ -236,17 +238,24 @@ export default {
       return this.loading || this.saving || this.resetting;
     },
     /**
-     * A save is refused while a Block carries something the backend would
-     * reject — the round-trip would only bring the same answer back as a
-     * toast (hero layout spec §9).
+     * A save is refused while a Block or the Background carries something the
+     * backend would reject — the round-trip would only bring the same answer
+     * back as a toast (hero layout spec §9).
      */
     canSave() {
       return (
-        this.isDirty && !this.inProgress && this.invalidBlockIds.length === 0
+        this.isDirty &&
+        !this.inProgress &&
+        this.invalidBlockIds.length === 0 &&
+        this.backgroundIssues.length === 0
       );
     },
     invalidBlockIds() {
       return invalidHeroBlockIds(this.blocks);
+    },
+    /** Why the backend would refuse the Background; the section shows them. */
+    backgroundIssues() {
+      return heroBackgroundIssues(this.draft ? this.draft.background : null);
     },
     cancelLabel() {
       return this.isDirty ? "Abbrechen" : "Schließen";
@@ -391,6 +400,15 @@ export default {
      */
     moveSelectedBlock(zone) {
       this.setBlocks(setHeroBlockZone(this.blocks, this.selectedBlockId, zone));
+    },
+    /**
+     * The Background travels with the layout but is not part of it: it is
+     * instance-wide, the auth pages use the same object, and it never takes
+     * the layout out of the default — the chip is about the layout alone
+     * (hero layout spec §10).
+     */
+    setBackground(background) {
+      this.draft = { ...this.draft, background };
     },
     height(field) {
       return this.draft && this.draft.heroLayout

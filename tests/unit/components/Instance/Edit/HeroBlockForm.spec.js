@@ -1,6 +1,12 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
+import {
+  chooseOption as choose,
+  selectByLabel,
+  switchByLabel,
+  toggleSwitch as toggle,
+} from "@tests/unit/support/vuetify";
 import { stubProseMirrorLayout } from "@tests/unit/support/prosemirror";
 import {
   heroBlock,
@@ -68,48 +74,6 @@ function lastPatch(wrapper) {
 
 function textField(wrapper) {
   return wrapper.find(".hero-block-form__text input");
-}
-
-function selectByLabel(wrapper, label) {
-  const select = wrapper
-    .findAllComponents({ name: "v-select" })
-    .wrappers.find((entry) => entry.props("label") === label);
-  if (!select) {
-    throw new Error(`Das Feld „${label}“ fehlt.`);
-  }
-  return select;
-}
-
-/** Picks an option the way a user does: open the select, click the step. */
-async function choose(wrapper, label, step) {
-  await selectByLabel(wrapper, label).find(".v-input__slot").trigger("click");
-  await wrapper.vm.$nextTick();
-  await flushPromises();
-
-  const item = Array.from(
-    document.querySelectorAll(".menuable__content__active .v-list-item")
-  ).find((el) => el.textContent.trim() === step);
-  if (!item) {
-    throw new Error(`Der Schritt „${step}“ steht nicht zur Wahl.`);
-  }
-  item.click();
-  await wrapper.vm.$nextTick();
-  await flushPromises();
-}
-
-function switchByLabel(wrapper, label) {
-  const entry = wrapper
-    .findAllComponents({ name: "v-switch" })
-    .wrappers.find((candidate) => candidate.props("label") === label);
-  if (!entry) {
-    throw new Error(`Der Schalter „${label}“ fehlt.`);
-  }
-  return entry;
-}
-
-async function toggle(wrapper, label) {
-  await switchByLabel(wrapper, label).find("input").trigger("click");
-  await wrapper.vm.$nextTick();
 }
 
 function chips(wrapper) {

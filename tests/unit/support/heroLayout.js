@@ -1,13 +1,23 @@
 /**
  * The Hero Layout fixtures the Portal tab and the Hero Editor specs share, so
  * that both mean the same thing by "the layout an instance that never stored
- * one is shown".
+ * one is shown" — and the few ways of driving the „Hintergrund“ section,
+ * which the section's own spec and the editor's both reach for.
  */
 
+import Vue from "vue";
+
+/**
+ * The default Background, as the backend answers it: normalised on save, so
+ * every default is filled („Stored = complete“ of the Shared contract).
+ */
 export const HERO_BACKGROUND = Object.freeze({
   version: 1,
   type: "variant",
   variant: "poly",
+  orbs: true,
+  noise: true,
+  intensity: "normal",
 });
 
 /** A layout in the shape the backend normalises to. */
@@ -97,4 +107,42 @@ function withoutTextFields(block) {
   delete block.weight;
 
   return block;
+}
+
+/**
+ * One of the three family cards of the „Hintergrund“ section.
+ *
+ * @param {Object} root - The wrapper to search under.
+ * @param {string} family - `variant`, `color` or `image`.
+ * @returns {Object} The card's wrapper.
+ */
+export function backgroundFamilyCard(root, family) {
+  const entry = root
+    .findAll(".hero-background-form__family")
+    .wrappers.find((card) => card.attributes("data-family") === family);
+  if (!entry) {
+    throw new Error(`Die Hintergrund-Karte „${family}“ fehlt.`);
+  }
+  return entry;
+}
+
+/**
+ * @param {Object} root - The wrapper to search under.
+ * @param {string} family - `variant`, `color` or `image`.
+ */
+export async function chooseBackgroundFamily(root, family) {
+  await backgroundFamilyCard(root, family).trigger("click");
+  await Vue.nextTick();
+}
+
+/**
+ * What the „Hintergrund“ section says the backend would refuse.
+ *
+ * @param {Object} root - The wrapper to search under.
+ * @returns {string[]} The messages shown at the section.
+ */
+export function backgroundIssues(root) {
+  return root
+    .findAll(".hero-background-form__issues .error--text")
+    .wrappers.map((entry) => entry.text());
 }
