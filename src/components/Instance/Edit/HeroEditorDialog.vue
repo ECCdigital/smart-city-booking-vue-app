@@ -72,6 +72,9 @@
                 @input="setBlocks"
                 @update:selectedBlockId="selectedBlockId = $event"
               >
+                <!-- A Block the backend would refuse says so and nothing
+                     else: its warnings describe a render that is one Draft
+                     behind, because an invalid Draft is never sent. -->
                 <template #badge="{ block }">
                   <v-icon
                     v-if="issuesOf(block).length > 0"
@@ -81,6 +84,15 @@
                     :title="issuesOf(block).join(' ')"
                   >
                     mdi-alert-circle
+                  </v-icon>
+                  <v-icon
+                    v-else-if="warningsOf(block).length > 0"
+                    small
+                    color="warning"
+                    class="hero-block-row__warning"
+                    :title="warningsOf(block).join(' ')"
+                  >
+                    mdi-alert
                   </v-icon>
                 </template>
               </HeroBlockList>
@@ -112,7 +124,25 @@
                 :locale="locale"
                 :preview="preview"
                 :selected-block-id="selectedBlockId"
-              />
+                @report="onPreviewReport"
+                @block-click="onPreviewBlockClick"
+                @zone-click="onPreviewZoneClick"
+              >
+                <template #warnings="{ viewport }">
+                  <span
+                    v-if="warningSummaryOf(viewport)"
+                    class="hero-preview-summary text-caption"
+                    :class="
+                      hasWarnings(viewport)
+                        ? 'warning--text'
+                        : 'text--secondary'
+                    "
+                    :data-viewport="viewport"
+                  >
+                    {{ warningSummaryOf(viewport) }}
+                  </span>
+                </template>
+              </HeroLivePreview>
             </SubSection>
           </div>
         </div>
@@ -146,7 +176,11 @@ import HeroLivePreview from "@/components/Instance/Edit/HeroLivePreview.vue";
 import HeroResetConformationDialog from "@/components/Instance/Edit/HeroResetConformationDialog.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
 import { heroBackgroundIssues } from "@/utils/heroBackground";
-import { setHeroBlockZone, updateHeroBlock } from "@/utils/heroBlocks";
+import {
+  HERO_ZONES,
+  setHeroBlockZone,
+  updateHeroBlock,
+} from "@/utils/heroBlocks";
 import {
   heroBlockIssues,
   invalidHeroBlockIds,
@@ -158,6 +192,13 @@ import {
   heroLayoutSavePayload,
   heroPreviewPayload,
 } from "@/utils/heroLayout";
+import {
+  heroPreviewWarningCount,
+  heroPreviewWarningSummary,
+  heroPreviewWarningTexts,
+  isCurrentHeroPreviewReport,
+  noHeroPreviewReports,
+} from "@/utils/heroPreviewReport";
 import { createHeroPreviewResolver } from "@/utils/heroPreviewResolver";
 
 // The four height steps of the Shared contract, in the wording of the spec.
@@ -228,6 +269,9 @@ export default {
       // round-trip was refused.
       preview: null,
       previewRejected: false,
+      // The last Preview Report of each frame. Warnings are advice, so they
+      // sit beside the Draft rather than in it and never reach a save.
+      reports: noHeroPreviewReports(),
       leaveDialogOpen: false,
       leaveResolve: null,
       resetDialogOpen: false,
@@ -266,6 +310,10 @@ export default {
     },
     invalidBlockIds() {
       return invalidHeroBlockIds(this.blocks);
+    },
+    /** What the frames warned about, per Block id — the yellow badges. */
+    previewWarnings() {
+      return heroPreviewWarningTexts(this.reports, this.blocks);
     },
     /** Why the backend would refuse the Background; the section shows them. */
     backgroundIssues() {
@@ -419,6 +467,67 @@ export default {
       this.previewResolver.cancel();
       this.preview = null;
       this.previewRejected = false;
+      this.reports = noHeroPreviewReports();
+    },
+    /** What the yellow badge on a row says. */
+    warningsOf(block) {
+      return this.previewWarnings[block.id] || [];
+    },
+    /** The count beside a frame, empty until that frame has reported. */
+    warningSummaryOf(viewport) {
+      return heroPreviewWarningSummary(this.reports[viewport]);
+    },
+    /** Whether that count is something to look at, or a clean frame. */
+    hasWarnings(viewport) {
+      return heroPreviewWarningCount(this.reports[viewport]) > 0;
+    },
+    /**
+     * A Preview Report. A frame renders on its own clock, so a report about a
+     * Draft that has since been replaced is dropped — that frame is about to
+     * send another one, and until it does the badges keep describing what is
+     * actually on screen.
+     *
+     * A frame that could not read the Draft at all answers with an error
+     * instead of warnings. The two sides disagree about the protocol then,
+     * which is nothing the author can act on: it goes to the console, the
+     * frame keeps its last valid render and the badges keep matching it.
+     */
+    onPreviewReport(message) {
+      const draftId = this.preview ? this.preview.draftId : null;
+      if (!isCurrentHeroPreviewReport(message, draftId)) {
+        return;
+      }
+      if (message.error) {
+        console.error("Hero preview rejected the Draft:", message.error);
+        return;
+      }
+
+      this.reports[message.viewport] = message;
+    },
+    /**
+     * A Block click in a frame. Selecting is all it does: the Draft travels
+     * back down with the new selection on its own, which is what makes the
+     * frame draw the highlight and that Block's Zone overlay.
+     */
+    onPreviewBlockClick(blockId) {
+      if (this.blocks.some((block) => block.id === blockId)) {
+        this.selectedBlockId = blockId;
+      }
+    },
+    /**
+     * A Zone click. The storefront reports the Zone and moves nothing itself;
+     * the editor puts the selected Block at the end of that Zone’s stack, the
+     * same move the Position grid and a drop into another group make. Its own
+     * Zone is a no-op, so a stray click leaves both the array and the
+     * „Angepasst“ chip untouched.
+     */
+    onPreviewZoneClick(zone) {
+      const block = this.selectedBlock;
+      if (!block || !HERO_ZONES.includes(zone) || block.zone === zone) {
+        return;
+      }
+
+      this.moveSelectedBlock(zone);
     },
     askForReset() {
       this.resetDialogOpen = true;

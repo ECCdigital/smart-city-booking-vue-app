@@ -231,6 +231,21 @@ export function heroBlockSummary(block) {
 }
 
 /**
+ * How a Block is named where its own row is not doing the naming — in another
+ * Block's warning, say. The first line of its German content, and the name of
+ * its type while it has none.
+ *
+ * The row itself shows the same two but paints them differently, an unwritten
+ * Block reading as its type in italics, so it keeps its own branches.
+ *
+ * @param {?Object} block - The Block, or none.
+ * @returns {string} The name.
+ */
+export function heroBlockLabel(block) {
+  return heroBlockSummary(block) || heroBlockType(block && block.type).label;
+}
+
+/**
  * The text of one locale of a localised string — `text.text`, `richtext.html`
  * and `image.alt` all carry one. A locale nobody has written yet reads as
  * empty, which is what the field shows.

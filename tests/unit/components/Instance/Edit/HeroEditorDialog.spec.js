@@ -26,6 +26,10 @@ import {
   heroBackgroundOfFamily,
 } from "@/utils/heroBackground";
 import { HERO_PREVIEW_DEBOUNCE } from "@/utils/heroPreviewResolver";
+import {
+  HERO_PREVIEW_PROTOCOL,
+  HERO_PREVIEW_REPORT,
+} from "@/utils/heroPreviewProtocol";
 
 vi.mock("@/services/api/ApiCatalogService", () => ({
   default: {
@@ -125,6 +129,29 @@ function row(wrapper, id) {
 
 function leaveDialog(wrapper) {
   return wrapper.findComponent({ name: "UnsavedChangesDialog" });
+}
+
+/** What the preview route answers, in Theme Bundle export form. */
+const RESOLVED = Object.freeze({
+  heroLayout: heroLayout({ height: "xl" }),
+  background: HERO_BACKGROUND,
+  name: "Marktplatz",
+});
+
+/**
+ * The round-trip is debounced, so a spec that wants to see it has to wait the
+ * debounce out before the promises can settle.
+ */
+async function settlePreview(wrapper) {
+  await new Promise((resolve) =>
+    setTimeout(resolve, HERO_PREVIEW_DEBOUNCE + 20)
+  );
+  await flushPromises();
+  await wrapper.vm.$nextTick();
+}
+
+function livePreview(wrapper) {
+  return wrapper.findComponent({ name: "HeroLivePreview" });
 }
 
 beforeEach(() => {
@@ -868,28 +895,6 @@ describe("HeroEditorDialog background", () => {
  * editor on the derived default, and saving nothing changes nothing.
  */
 describe("HeroEditorDialog live preview", () => {
-  const RESOLVED = Object.freeze({
-    heroLayout: heroLayout({ height: "xl" }),
-    background: HERO_BACKGROUND,
-    name: "Marktplatz",
-  });
-
-  /**
-   * The round-trip is debounced, so a spec that wants to see it has to wait
-   * the debounce out before the promises can settle.
-   */
-  async function settlePreview(wrapper) {
-    await new Promise((resolve) =>
-      setTimeout(resolve, HERO_PREVIEW_DEBOUNCE + 20)
-    );
-    await flushPromises();
-    await wrapper.vm.$nextTick();
-  }
-
-  function livePreview(wrapper) {
-    return wrapper.findComponent({ name: "HeroLivePreview" });
-  }
-
   beforeEach(() => {
     ApiCatalogService.previewHeroLayout.mockResolvedValue({ data: RESOLVED });
   });
@@ -1031,6 +1036,439 @@ describe("HeroEditorDialog live preview", () => {
     await wrapper.vm.$nextTick();
 
     expect(livePreview(wrapper).props("selectedBlockId")).toBe("title");
+  });
+});
+
+/**
+ * Section 3 of the spec: the frames answer back. A Block click selects, a Zone
+ * click moves the selected Block — the storefront never moves anything itself.
+ */
+describe("HeroEditorDialog preview clicks", () => {
+  /** Two Blocks in two Zones, so a move has somewhere to come from. */
+  function twoBlocks() {
+    return heroLayoutResponse({
+      heroLayout: heroLayout({
+        blocks: [
+          heroBlock({ id: "title", zone: "top-left", text: { de: "Titel" } }),
+          heroBlock({ id: "note", zone: "bottom-right", text: { de: "Note" } }),
+        ],
+      }),
+      isDefault: false,
+    });
+  }
+
+  function rowIds(wrapper) {
+    return wrapper
+      .findAll(".hero-block-row")
+      .wrappers.map((entry) => entry.attributes("data-id"));
+  }
+
+  /**
+   * Which Zone each row is shown under, read off the groups the list paints —
+   * `data-zone` on the group, `data-id` on the row.
+   */
+  function zonesOf(wrapper) {
+    const zones = {};
+    for (const group of wrapper.findAll("[data-zone]").wrappers) {
+      for (const entry of group.findAll(".hero-block-row").wrappers) {
+        zones[entry.attributes("data-id")] = group.attributes("data-zone");
+      }
+    }
+
+    return zones;
+  }
+
+  async function fromFrame(wrapper, event, payload) {
+    livePreview(wrapper).vm.$emit(event, payload);
+    await wrapper.vm.$nextTick();
+  }
+
+  beforeEach(() => {
+    ApiCatalogService.previewHeroLayout.mockResolvedValue({ data: RESOLVED });
+  });
+
+  it("selects the Block a frame reports as clicked", async () => {
+    const wrapper = await openEditor(twoBlocks());
+
+    await fromFrame(wrapper, "block-click", "note");
+
+    expect(blockForm(wrapper).props("block").id).toBe("note");
+    expect(row(wrapper, "note").classes()).toContain(
+      "hero-block-row--selected"
+    );
+  });
+
+  it("sends the new selection back down to the frames", async () => {
+    const wrapper = await openEditor(twoBlocks());
+
+    await fromFrame(wrapper, "block-click", "note");
+
+    expect(livePreview(wrapper).props("selectedBlockId")).toBe("note");
+  });
+
+  it("ignores a click on a Block the Draft no longer holds", async () => {
+    const wrapper = await openEditor(twoBlocks());
+    await fromFrame(wrapper, "block-click", "title");
+
+    await fromFrame(wrapper, "block-click", "gone");
+
+    expect(livePreview(wrapper).props("selectedBlockId")).toBe("title");
+  });
+
+  it("moves the selected Block to the end of a clicked Zone", async () => {
+    const wrapper = await openEditor(twoBlocks());
+    await fromFrame(wrapper, "block-click", "title");
+
+    await fromFrame(wrapper, "zone-click", "bottom-right");
+
+    expect(zonesOf(wrapper)).toEqual({
+      title: "bottom-right",
+      note: "bottom-right",
+    });
+    // Behind the Block that was already there, and the list is canonical.
+    expect(rowIds(wrapper)).toEqual(["note", "title"]);
+  });
+
+  it("selects without taking the layout out of the default", async () => {
+    const wrapper = await openEditor(
+      heroLayoutResponse({
+        heroLayout: heroLayout({
+          blocks: [heroBlock({ id: "title", text: { de: "Titel" } })],
+        }),
+      })
+    );
+
+    await fromFrame(wrapper, "block-click", "title");
+
+    // A selection is editor state: it travels with the Draft but is nothing
+    // the layout has changed about.
+    expect(livePreview(wrapper).props("selectedBlockId")).toBe("title");
+    expect(editorText(wrapper)).toContain(DEFAULT_STATUS);
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
+      "disabled"
+    );
+  });
+
+  it("does nothing when the clicked Zone is the Block's own", async () => {
+    const wrapper = await openEditor(twoBlocks());
+    await fromFrame(wrapper, "block-click", "title");
+
+    await fromFrame(wrapper, "zone-click", "top-left");
+
+    expect(zonesOf(wrapper)).toEqual({
+      title: "top-left",
+      note: "bottom-right",
+    });
+    // A no-op is a no-op: nothing to save, and the chip is untouched.
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
+      "disabled"
+    );
+  });
+
+  it("does nothing while no Block is selected", async () => {
+    const wrapper = await openEditor(twoBlocks());
+
+    await fromFrame(wrapper, "zone-click", "middle-center");
+
+    expect(zonesOf(wrapper)).toEqual({
+      title: "top-left",
+      note: "bottom-right",
+    });
+  });
+
+  it("ignores a Zone that is none of the nine", async () => {
+    const wrapper = await openEditor(twoBlocks());
+    await fromFrame(wrapper, "block-click", "title");
+
+    await fromFrame(wrapper, "zone-click", "top-middle");
+
+    expect(zonesOf(wrapper)).toEqual({
+      title: "top-left",
+      note: "bottom-right",
+    });
+  });
+
+  /**
+   * Acceptance 2 of the spec: a text Block added, moved by a Zone click and
+   * saved keeps the Zone the click gave it.
+   */
+  it("persists the Zone a click gave a freshly added Block", async () => {
+    const wrapper = await openEditor(twoBlocks());
+    ApiCatalogService.updateHeroLayout.mockResolvedValue({
+      data: {
+        heroLayout: layout(),
+        background: BACKGROUND,
+        name: "Marktplatz",
+      },
+    });
+
+    await button(wrapper, "Block hinzufügen").trigger("click");
+    await flushPromises();
+    const entry = Array.from(
+      document.querySelectorAll(".menuable__content__active .v-list-item")
+    ).find((item) => item.textContent.trim() === "Text");
+    entry.click();
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    blockForm(wrapper).vm.$emit("input", { text: { de: "Neu" } });
+    await wrapper.vm.$nextTick();
+    // Without a selection the new Block went into „Mitte zentriert“, so the
+    // Zone the click has to carry it to is another one.
+    expect(blockForm(wrapper).props("block").zone).toBe("middle-center");
+
+    await fromFrame(wrapper, "zone-click", "bottom-left");
+    await button(wrapper, "Speichern").trigger("click");
+    await flushPromises();
+
+    const saved = ApiCatalogService.updateHeroLayout.mock.calls.at(-1)[0];
+    const added = saved.heroLayout.blocks.find(
+      (block) => block.text && block.text.de === "Neu"
+    );
+    expect(added.zone).toBe("bottom-left");
+  });
+});
+
+/**
+ * Section 9 of the spec: the Preview Report. Warnings are advice on the row
+ * and a count in the toolbar; they never hold a save back.
+ */
+describe("HeroEditorDialog preview report", () => {
+  /**
+   * Two Blocks, and a Portal-URL: the per-frame summary sits in the frames,
+   * and without an origin there are none (hero layout spec §3).
+   */
+  function openWithFrames() {
+    return openEditor(
+      heroLayoutResponse({
+        heroLayout: heroLayout({
+          blocks: [
+            heroBlock({ id: "title", zone: "top-left", text: { de: "Titel" } }),
+            heroBlock({
+              id: "note",
+              zone: "bottom-right",
+              text: { de: "Note" },
+            }),
+          ],
+        }),
+        isDefault: false,
+      }),
+      { portalUrl: "https://portal.example.org" }
+    );
+  }
+
+  /** A report as the panel hands it up, envelope and all. */
+  function report(overrides = {}) {
+    return {
+      protocol: HERO_PREVIEW_PROTOCOL,
+      type: HERO_PREVIEW_REPORT,
+      draftId: 1,
+      viewport: "desktop",
+      warnings: [],
+      ...overrides,
+    };
+  }
+
+  function outside(id) {
+    return { code: "outside-content-area", blockIds: [id] };
+  }
+
+  async function sendReport(wrapper, overrides) {
+    livePreview(wrapper).vm.$emit("report", report(overrides));
+    await wrapper.vm.$nextTick();
+  }
+
+  /** The yellow badge of a row, or null while it carries none. */
+  function warningBadge(wrapper, id) {
+    const badge = row(wrapper, id).find(".hero-block-row__warning");
+    return badge.exists() ? badge.attributes("title") : null;
+  }
+
+  function summary(wrapper, viewport) {
+    const entry = wrapper
+      .findAll(".hero-preview-summary")
+      .wrappers.find((slot) => slot.attributes("data-viewport") === viewport);
+    return entry ? entry.text() : null;
+  }
+
+  beforeEach(() => {
+    ApiCatalogService.previewHeroLayout.mockResolvedValue({ data: RESOLVED });
+  });
+
+  it("marks the row a frame warned about, in that frame's words", async () => {
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+
+    await sendReport(wrapper, { warnings: [outside("title")] });
+
+    expect(warningBadge(wrapper, "title")).toBe(
+      "Ragt auf dem Desktop aus dem Kopfbereich heraus"
+    );
+    expect(warningBadge(wrapper, "note")).toBeNull();
+  });
+
+  it("gives both Blocks of an overlap a badge naming the other", async () => {
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+
+    await sendReport(wrapper, {
+      warnings: [{ code: "overlap", blockIds: ["title", "note"] }],
+    });
+
+    expect(warningBadge(wrapper, "title")).toBe(
+      "Überlappt auf dem Desktop mit ‚Note‘"
+    );
+    expect(warningBadge(wrapper, "note")).toBe(
+      "Überlappt auf dem Desktop mit ‚Titel‘"
+    );
+  });
+
+  it("collects what both frames say on one badge", async () => {
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+
+    await sendReport(wrapper, { warnings: [outside("title")] });
+    await sendReport(wrapper, {
+      viewport: "mobile",
+      warnings: [outside("title")],
+    });
+
+    expect(warningBadge(wrapper, "title")).toBe(
+      "Ragt auf dem Desktop aus dem Kopfbereich heraus Wird auf Mobilgeräten abgeschnitten"
+    );
+  });
+
+  it("shows no badge for an overlap a mobile frame claims", async () => {
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+
+    // The storefront measures overlaps on the desktop frame only: the rows
+    // stack on mobile, so where a Block lands is not the author’s choice.
+    await sendReport(wrapper, {
+      viewport: "mobile",
+      warnings: [{ code: "overlap", blockIds: ["title", "note"] }],
+    });
+
+    expect(warningBadge(wrapper, "title")).toBeNull();
+    expect(warningBadge(wrapper, "note")).toBeNull();
+  });
+
+  it("says what blocks the save rather than what a stale render warned", async () => {
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+    await sendReport(wrapper, { warnings: [outside("title")] });
+
+    // An invalid Block is never sent, so its warning describes a render one
+    // Draft old; the row says the thing the author has to act on.
+    await row(wrapper, "title").trigger("click");
+    blockForm(wrapper).vm.$emit("input", { text: { de: "" } });
+    await wrapper.vm.$nextTick();
+
+    expect(row(wrapper, "title").find(".hero-block-row__error").exists()).toBe(
+      true
+    );
+    expect(warningBadge(wrapper, "title")).toBeNull();
+  });
+
+  it("counts the warnings of each frame in the toolbar", async () => {
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+
+    await sendReport(wrapper, {
+      warnings: [outside("title"), outside("note")],
+    });
+    await sendReport(wrapper, { viewport: "mobile" });
+
+    expect(summary(wrapper, "desktop")).toBe("2 Hinweise");
+    expect(summary(wrapper, "mobile")).toBe("0 Hinweise");
+  });
+
+  it("says nothing about a frame that has not reported yet", async () => {
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+
+    expect(summary(wrapper, "desktop")).toBeNull();
+  });
+
+  it("discards a report of a Draft that has been superseded", async () => {
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+    await sendReport(wrapper, { warnings: [outside("title")] });
+
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Niedrig");
+    await settlePreview(wrapper);
+    await sendReport(wrapper, { draftId: 1, warnings: [outside("note")] });
+
+    expect(warningBadge(wrapper, "note")).toBeNull();
+    expect(warningBadge(wrapper, "title")).toBe(
+      "Ragt auf dem Desktop aus dem Kopfbereich heraus"
+    );
+  });
+
+  it("logs an invalid Draft and leaves the last badges standing", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+    await sendReport(wrapper, { warnings: [outside("title")] });
+
+    await sendReport(wrapper, { warnings: [], error: "invalid-draft" });
+
+    expect(logged).toHaveBeenCalled();
+    expect(warningBadge(wrapper, "title")).toBe(
+      "Ragt auf dem Desktop aus dem Kopfbereich heraus"
+    );
+    expect(summary(wrapper, "desktop")).toBe("1 Hinweis");
+  });
+
+  it("forgets the reports of the Draft it had when the dialog closes", async () => {
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+    await sendReport(wrapper, { warnings: [outside("title")] });
+
+    await button(wrapper, "Schließen").trigger("click");
+    await flushPromises();
+    await wrapper.setProps({ value: false });
+    await wrapper.setProps({ value: true });
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    // The frames start over with the reopened dialog, so nothing of the last
+    // session's render is claimed about this one.
+    expect(warningBadge(wrapper, "title")).toBeNull();
+    expect(summary(wrapper, "desktop")).toBeNull();
+  });
+
+  /**
+   * Acceptance 3 of the spec: a Block that leaves the Hero warns in both
+   * frames and still saves.
+   */
+  it("saves with warnings from both frames standing", async () => {
+    const wrapper = await openWithFrames();
+    await settlePreview(wrapper);
+    ApiCatalogService.updateHeroLayout.mockResolvedValue({
+      data: {
+        heroLayout: layout(),
+        background: BACKGROUND,
+        name: "Marktplatz",
+      },
+    });
+
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Niedrig");
+    await settlePreview(wrapper);
+    await sendReport(wrapper, { draftId: 2, warnings: [outside("title")] });
+    await sendReport(wrapper, {
+      draftId: 2,
+      viewport: "mobile",
+      warnings: [outside("title")],
+    });
+
+    expect(warningBadge(wrapper, "title")).not.toBeNull();
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
+
+    await button(wrapper, "Speichern").trigger("click");
+    await flushPromises();
+
+    expect(ApiCatalogService.updateHeroLayout).toHaveBeenCalled();
   });
 });
 
