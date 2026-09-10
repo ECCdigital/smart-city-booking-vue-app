@@ -18,6 +18,14 @@ import Tiptap from "@/components/Tiptap.vue";
 
 const THEME_COLORS = { primary: "#123456", secondary: "#654321" };
 
+/** The „Glas“ preset, as a Block that carries a Panel holds it. */
+const GLASS = Object.freeze({
+  color: "white",
+  opacity: 60,
+  radius: "md",
+  blur: true,
+});
+
 // The rich-text Block mounts the real editor; the image Block's media field
 // talks to the media API, which is not what this form is about.
 beforeAll(stubProseMirrorLayout);
@@ -71,6 +79,17 @@ function patches(wrapper) {
 
 function lastPatch(wrapper) {
   return patches(wrapper).at(-1);
+}
+
+/** The switch carrying a label, so its state can be read off its props. */
+function switchOf(wrapper, label) {
+  const found = wrapper
+    .findAllComponents({ name: "v-switch" })
+    .wrappers.find((entry) => entry.props("label") === label);
+  if (!found) {
+    throw new Error(`Der Schalter „${label}“ fehlt.`);
+  }
+  return found;
 }
 
 function textField(wrapper) {
@@ -495,16 +514,33 @@ describe("HeroBlockForm, Darstellung and Sichtbarkeit", () => {
     expect(lastPatch(wrapper)).toEqual({ width: "full" });
   });
 
-  it("turns the translucent panel on and off", async () => {
+  /**
+   * The Panel is an object now, and the switch speaks that shape: on writes
+   * the „Glas“ preset, off writes `null`. The four keys have no controls yet —
+   * the switch is still the whole of the Panel in this form.
+   */
+  it("turns the Panel on and off", async () => {
     const wrapper = formOf(heroBlock());
     const label = "Halbtransparente Fläche hinter dem Block";
 
     await toggle(wrapper, label);
-    expect(lastPatch(wrapper)).toEqual({ panel: "translucent" });
+    expect(lastPatch(wrapper)).toEqual({
+      panel: { color: "white", opacity: 60, radius: "md", blur: true },
+    });
 
-    await wrapper.setProps({ block: heroBlock({ panel: "translucent" }) });
+    await wrapper.setProps({ block: heroBlock({ panel: GLASS }) });
     await toggle(wrapper, label);
-    expect(lastPatch(wrapper)).toEqual({ panel: "none" });
+    expect(lastPatch(wrapper)).toEqual({ panel: null });
+  });
+
+  it("reads a Block that carries a Panel as switched on", async () => {
+    const wrapper = formOf(heroBlock({ panel: { ...GLASS, color: "black" } }));
+
+    expect(
+      switchOf(wrapper, "Halbtransparente Fläche hinter dem Block").props(
+        "inputValue"
+      )
+    ).toBe(true);
   });
 
   it("carries the two visibility switches", async () => {

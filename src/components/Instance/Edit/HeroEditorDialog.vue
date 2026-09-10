@@ -248,6 +248,7 @@ import {
   heroDraftSnapshot,
   heroLayoutSavePayload,
   heroPreviewPayload,
+  normalizeHeroLayout,
 } from "@/utils/heroLayout";
 import {
   heroPreviewWarningCount,
@@ -774,7 +775,7 @@ export default {
         );
         this.draft = {
           ...this.draft,
-          heroLayout: (response.data || {}).heroLayout || null,
+          heroLayout: normalizeHeroLayout((response.data || {}).heroLayout),
           isDefault: true,
         };
         // The derived default carries its own Blocks, so whatever was selected

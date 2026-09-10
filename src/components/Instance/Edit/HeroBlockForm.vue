@@ -217,13 +217,13 @@
         @change="patch({ width: $event })"
       />
       <v-switch
-        :input-value="block.panel === 'translucent'"
+        :input-value="!!block.panel"
         label="Halbtransparente Fläche hinter dem Block"
         color="primary"
         class="mt-0"
         dense
         hide-details
-        @change="patch({ panel: $event ? 'translucent' : 'none' })"
+        @change="patch({ panel: $event ? heroGlassPanel() : null })"
       />
     </SubSection>
 
@@ -261,6 +261,7 @@ import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import {
   heroBlockSummary,
   heroBlockType,
+  heroGlassPanel,
   heroHtmlFirstLine,
   heroLocalizedText,
   setHeroLocalizedText,
@@ -438,6 +439,14 @@ export default {
     },
   },
   methods: {
+    /**
+     * The Panel the switch writes when it is turned on. The Panel is an object
+     * of four keys and this form has controls for none of them yet, so the
+     * switch writes the „Glas“ preset whole and `null` back.
+     *
+     * @returns {Object} A fresh „Glas“ Panel.
+     */
+    heroGlassPanel,
     /**
      * What the English view puts into an empty field: the German text, which
      * is what the storefront shows there. An empty German text has nothing to

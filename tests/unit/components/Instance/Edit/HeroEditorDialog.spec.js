@@ -572,6 +572,46 @@ describe("HeroEditorDialog blocks", () => {
     });
   });
 
+  /**
+   * The derived default arrives from the preview route like any other layout,
+   * so it goes through the same completion: a Block of it carries the new
+   * fields even where the route left them out, and the Draft is whole again
+   * right after „Auf Standard zurücksetzen“.
+   */
+  it("completes the Blocks of the derived default", async () => {
+    const wrapper = await openEditor(withBlocks());
+    ApiCatalogService.previewHeroLayout.mockResolvedValue({
+      data: {
+        heroLayout: heroLayout({
+          blocks: [
+            {
+              id: "derived",
+              type: "text",
+              zone: "middle-center",
+              text: { de: "Marktplatz" },
+            },
+          ],
+        }),
+        background: BACKGROUND,
+        name: "",
+      },
+    });
+
+    await button(wrapper, "Auf Standard zurücksetzen").trigger("click");
+    await wrapper.vm.$nextTick();
+    await button(wrapper, "Zurücksetzen").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(blockList(wrapper).props("blocks")[0]).toMatchObject({
+      id: "derived",
+      align: "auto",
+      panel: null,
+      offset: { x: 0, y: 0 },
+      layer: "back",
+    });
+  });
+
   it("drops the selection when the layout is reset to the default", async () => {
     const wrapper = await openEditor(withBlocks());
     ApiCatalogService.previewHeroLayout.mockResolvedValue({
@@ -895,6 +935,95 @@ describe("HeroEditorDialog background", () => {
     expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
       "disabled"
     );
+  });
+});
+
+/**
+ * The editor knows the amended Block shape before it offers a control for it.
+ * A layout that already carries the new fields has to survive the whole cycle
+ * — load, preview round-trip, save — with them untouched, because an editor
+ * that silently drops what it cannot yet edit is worse than one that does not
+ * offer the fields at all.
+ */
+describe("HeroEditorDialog, on the amended Block shape", () => {
+  /** A Block whose new fields are all away from their defaults. */
+  const DRESSED = Object.freeze({
+    id: "dressed",
+    type: "text",
+    zone: "middle-center",
+    outerSpacing: "none",
+    innerSpacing: "none",
+    width: "auto",
+    align: "right",
+    panel: Object.freeze({
+      color: "black",
+      opacity: 25,
+      radius: "lg",
+      blur: false,
+    }),
+    offset: Object.freeze({ x: -1.5, y: 2.5 }),
+    layer: "front",
+    homeOnly: false,
+    hideOnMobile: false,
+    text: Object.freeze({ de: "Willkommen" }),
+    size: "2xl",
+    color: "white",
+    weight: "bold",
+    shadow: true,
+  });
+
+  function dressedLayout() {
+    return heroLayoutResponse({
+      heroLayout: heroLayout({ blocks: [{ ...DRESSED }] }),
+      isDefault: false,
+    });
+  }
+
+  it("sends the new fields through the preview round-trip", async () => {
+    ApiCatalogService.previewHeroLayout.mockResolvedValue({ data: RESOLVED });
+    const wrapper = await openEditor(dressedLayout());
+
+    await settlePreview(wrapper);
+
+    expect(
+      ApiCatalogService.previewHeroLayout.mock.calls.at(-1)[0].heroLayout
+        .blocks[0]
+    ).toEqual(DRESSED);
+  });
+
+  it("keeps „Speichern“ enabled while the round-trip accepts the Draft", async () => {
+    ApiCatalogService.previewHeroLayout.mockResolvedValue({ data: RESOLVED });
+    const wrapper = await openEditor(dressedLayout());
+
+    // „Speichern“ needs something to save; the height is the change that
+    // leaves the Block itself alone.
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Niedrig");
+    await settlePreview(wrapper);
+
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
+  });
+
+  it("saves them unchanged", async () => {
+    ApiCatalogService.previewHeroLayout.mockResolvedValue({ data: RESOLVED });
+    ApiCatalogService.updateHeroLayout.mockResolvedValue(dressedLayout());
+    const wrapper = await openEditor(dressedLayout());
+
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Niedrig");
+    await button(wrapper, "Speichern").trigger("click");
+    await flushPromises();
+
+    expect(
+      ApiCatalogService.updateHeroLayout.mock.calls.at(-1)[0].heroLayout
+        .blocks[0]
+    ).toEqual(DRESSED);
+  });
+
+  it("hands the detail form the Block whole", async () => {
+    const wrapper = await openEditor(dressedLayout());
+
+    await row(wrapper, "dressed").trigger("click");
+
+    expect(blockForm(wrapper).props("block")).toEqual(DRESSED);
   });
 });
 

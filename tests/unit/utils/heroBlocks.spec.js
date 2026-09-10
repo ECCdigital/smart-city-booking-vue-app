@@ -124,7 +124,10 @@ describe("createHeroBlock", () => {
       outerSpacing: "none",
       innerSpacing: "none",
       width: "auto",
-      panel: "none",
+      align: "auto",
+      panel: null,
+      offset: { x: 0, y: 0 },
+      layer: "back",
       homeOnly: false,
       hideOnMobile: false,
       text: { de: "" },
@@ -139,6 +142,7 @@ describe("createHeroBlock", () => {
     expect(createHeroBlock("richtext", "middle-center", "new")).toMatchObject({
       type: "richtext",
       html: { de: "" },
+      size: "md",
       color: "default",
       shadow: false,
     });
@@ -152,6 +156,32 @@ describe("createHeroBlock", () => {
       maxHeight: "md",
       invertInDarkMode: false,
     });
+  });
+
+  /**
+   * The Draft is complete from the first keystroke, whatever the type: the
+   * backend fills nothing in behind the editor's back, so a Block the author
+   * never opened saves exactly what the preview painted.
+   */
+  it.each(["text", "richtext", "image"])(
+    "gives a new %s Block the common fields at their defaults",
+    (type) => {
+      expect(createHeroBlock(type, "top-left", "new")).toMatchObject({
+        align: "auto",
+        panel: null,
+        offset: { x: 0, y: 0 },
+        layer: "back",
+      });
+    }
+  );
+
+  it("gives every Block an Offset of its own", () => {
+    const first = createHeroBlock("text", "top-left", "a");
+    const second = createHeroBlock("text", "top-left", "b");
+
+    first.offset.x = 2;
+
+    expect(second.offset.x).toBe(0);
   });
 
   it("takes a fresh id when it is given none", () => {
@@ -308,6 +338,21 @@ describe("canMoveHeroBlock", () => {
 });
 
 describe("setHeroBlockZone", () => {
+  it("changes the Zone and nothing else about the Block", () => {
+    const moved = heroBlock({
+      id: "moved",
+      zone: "bottom-right",
+      align: "center",
+      panel: { color: "primary", opacity: 25, radius: "full", blur: false },
+      offset: { x: 0.5, y: -3 },
+      layer: "front",
+    });
+
+    const next = setHeroBlockZone([moved], "moved", "top-left");
+
+    expect(next[0]).toEqual({ ...moved, zone: "top-left" });
+  });
+
   it("sets the Zone and drops the Block at the given position", () => {
     const blocks = [
       block("a", "top-left"),
@@ -413,6 +458,35 @@ describe("duplicateHeroBlock", () => {
 
     expect(next[1].id).toBe("copy");
     expect(blocks[0].text.de).toBe("Willkommen");
+  });
+
+  it("keeps the Panel, the alignment, the Offset and the layer", () => {
+    const original = heroBlock({
+      id: "a",
+      align: "right",
+      panel: { color: "black", opacity: 40, radius: "lg", blur: false },
+      offset: { x: -1.5, y: 2 },
+      layer: "front",
+    });
+
+    const { blocks: next } = duplicateHeroBlock([original], "a", "a", "copy");
+
+    expect(next[1]).toEqual({ ...original, id: "copy" });
+  });
+
+  it("gives the copy a Panel and an Offset of its own", () => {
+    const original = heroBlock({
+      id: "a",
+      panel: { color: "white", opacity: 60, radius: "md", blur: true },
+      offset: { x: 1, y: 1 },
+    });
+
+    const { blocks: next } = duplicateHeroBlock([original], "a", "a", "copy");
+    next[1].panel.opacity = 10;
+    next[1].offset.x = 3;
+
+    expect(original.panel.opacity).toBe(60);
+    expect(original.offset.x).toBe(1);
   });
 
   it("takes a fresh id when it is given none", () => {

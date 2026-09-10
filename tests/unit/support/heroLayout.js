@@ -57,7 +57,10 @@ export function heroBlock(overrides = {}) {
     outerSpacing: "none",
     innerSpacing: "none",
     width: "auto",
-    panel: "none",
+    align: "auto",
+    panel: null,
+    offset: { x: 0, y: 0 },
+    layer: "back",
     homeOnly: false,
     hideOnMobile: false,
     text: { de: "Willkommen" },
@@ -71,7 +74,8 @@ export function heroBlock(overrides = {}) {
 
 /**
  * A rich-text Block: `html` instead of `text`, and none of the fields only a
- * text Block has.
+ * text Block has. `size` is not one of them — a rich-text Block carries it
+ * too, as what a run of words inherits when it has no size of its own.
  */
 export function heroRichtextBlock(overrides = {}) {
   return withoutTextFields(
@@ -95,6 +99,7 @@ export function heroImageBlock(overrides = {}) {
       ...overrides,
     })
   );
+  delete block.size;
   delete block.color;
 
   return block;
@@ -103,7 +108,6 @@ export function heroImageBlock(overrides = {}) {
 /** `heroBlock` builds a text Block; the other two types carry none of this. */
 function withoutTextFields(block) {
   delete block.text;
-  delete block.size;
   delete block.weight;
 
   return block;

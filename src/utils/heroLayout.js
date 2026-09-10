@@ -14,6 +14,30 @@
  * §10).
  */
 
+import { normalizeHeroBlock } from "@/utils/heroBlocks";
+
+/**
+ * The layout with every Block completed — every default of the Shared contract
+ * filled in and the legacy Panel strings read into the shape the Draft holds.
+ *
+ * A layout arrives from three places: the read route, the save route's answer
+ * and the preview route after „Auf Standard zurücksetzen“. All three go
+ * through here, so what the editor holds is one shape, whatever version wrote
+ * it — and a field the form has no control for yet survives the round-trip
+ * instead of being dropped on the next save.
+ *
+ * @param {Object|null} heroLayout - The layout as it arrived.
+ * @returns {Object|null} A new layout, or `null` where there was none.
+ */
+export function normalizeHeroLayout(heroLayout) {
+  const layout = clone(heroLayout);
+  if (!layout || !Array.isArray(layout.blocks)) {
+    return layout;
+  }
+
+  return { ...layout, blocks: layout.blocks.map(normalizeHeroBlock) };
+}
+
 /**
  * A Draft built from what a hero-layout route answered.
  *
@@ -28,7 +52,7 @@ export function heroDraftFromResponse(data, context = {}) {
   const answer = data || {};
 
   return {
-    heroLayout: clone(answer.heroLayout),
+    heroLayout: normalizeHeroLayout(answer.heroLayout),
     background: clone(answer.background),
     name: answer.name || "",
     isDefault:

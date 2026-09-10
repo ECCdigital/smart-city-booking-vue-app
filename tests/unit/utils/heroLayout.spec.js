@@ -57,6 +57,100 @@ describe("heroDraftFromResponse", () => {
   });
 });
 
+/**
+ * The editor learns the amended shape before it offers a control for it: a
+ * layout that already carries the new fields survives a load untouched, and
+ * one that carries none of them is completed on the way in — so the Draft the
+ * preview round-trip receives is the whole Block and the backend fills nothing
+ * in behind the editor's back.
+ */
+describe("heroDraftFromResponse, on the amended Block shape", () => {
+  it("fills the new fields of a Block that carries none of them", () => {
+    const draft = heroDraftFromResponse({
+      heroLayout: layout({
+        blocks: [
+          { id: "a", type: "text", zone: "top-left", text: { de: "Hallo" } },
+        ],
+      }),
+    });
+
+    expect(draft.heroLayout.blocks[0]).toMatchObject({
+      align: "auto",
+      panel: null,
+      offset: { x: 0, y: 0 },
+      layer: "back",
+      size: "md",
+    });
+  });
+
+  it("carries a Block that already has them through untouched", () => {
+    const block = {
+      id: "a",
+      type: "richtext",
+      zone: "middle-center",
+      html: { de: "<p>Hallo</p>" },
+      size: "2xl",
+      color: "white",
+      shadow: true,
+      align: "right",
+      panel: { color: "black", opacity: 0, radius: "full", blur: false },
+      offset: { x: -2.5, y: 1.5 },
+      layer: "front",
+    };
+
+    const draft = heroDraftFromResponse({
+      heroLayout: layout({ blocks: [block] }),
+    });
+
+    expect(draft.heroLayout.blocks[0]).toEqual(expect.objectContaining(block));
+  });
+
+  it("reads the legacy Panel strings into the shape the Draft holds", () => {
+    // `"none"` and `"translucent"` are accepted on input and normalised;
+    // export is always `null` or the object (Shared contract, „Panel“).
+    const draft = heroDraftFromResponse({
+      heroLayout: layout({
+        blocks: [
+          { id: "a", type: "text", zone: "top-left", panel: "none" },
+          { id: "b", type: "text", zone: "top-left", panel: "translucent" },
+        ],
+      }),
+    });
+
+    expect(draft.heroLayout.blocks[0].panel).toBeNull();
+    expect(draft.heroLayout.blocks[1].panel).toEqual({
+      color: "white",
+      opacity: 60,
+      radius: "md",
+      blur: true,
+    });
+  });
+
+  it("completes a partial Panel from the „Glas“ preset", () => {
+    const draft = heroDraftFromResponse({
+      heroLayout: layout({
+        blocks: [
+          { id: "a", type: "text", zone: "top-left", panel: { opacity: 100 } },
+        ],
+      }),
+    });
+
+    expect(draft.heroLayout.blocks[0].panel).toEqual({
+      color: "white",
+      opacity: 100,
+      radius: "md",
+      blur: true,
+    });
+  });
+
+  it("leaves a layout without blocks alone", () => {
+    expect(heroDraftFromResponse({ heroLayout: null }).heroLayout).toBeNull();
+    expect(
+      heroDraftFromResponse({ heroLayout: { version: 1 } }).heroLayout
+    ).toEqual({ version: 1 });
+  });
+});
+
 describe("heroLayoutSavePayload", () => {
   it("sends no layout while it is the default one", () => {
     // A materialised copy would stop following later Portalname and logo
@@ -109,6 +203,44 @@ describe("heroLayoutSavePayload", () => {
 
     expect(payload).not.toHaveProperty("name");
     expect(payload).not.toHaveProperty("isDefault");
+  });
+});
+
+describe("heroLayoutSavePayload, on the amended Block shape", () => {
+  it("sends the Panel, the alignment, the Offset and the layer as they stand", () => {
+    const block = {
+      id: "a",
+      type: "text",
+      zone: "top-left",
+      text: { de: "Hallo" },
+      align: "center",
+      panel: { color: "#1a2b3c", opacity: 80, radius: "sm", blur: false },
+      offset: { x: 3, y: -0.5 },
+      layer: "front",
+    };
+
+    const payload = heroLayoutSavePayload({
+      heroLayout: layout({ blocks: [block] }),
+      background: null,
+      isDefault: false,
+    });
+
+    expect(payload.heroLayout.blocks[0]).toEqual(block);
+  });
+
+  it("copies the Panel, so a Block edited after the send keeps the body as it was", () => {
+    const draft = {
+      heroLayout: layout({
+        blocks: [{ id: "a", panel: { color: "white", opacity: 60 } }],
+      }),
+      background: null,
+      isDefault: false,
+    };
+    const payload = heroLayoutSavePayload(draft);
+
+    draft.heroLayout.blocks[0].panel.opacity = 10;
+
+    expect(payload.heroLayout.blocks[0].panel.opacity).toBe(60);
   });
 });
 

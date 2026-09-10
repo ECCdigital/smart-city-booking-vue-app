@@ -76,12 +76,41 @@ export const HERO_BLOCK_TYPES = Object.freeze([
 /** The cap the backend enforces on a layout. */
 export const MAX_HERO_BLOCKS = 12;
 
-// The fields every Block carries, whatever its type.
-const COMMON_DEFAULTS = Object.freeze({
+/**
+ * The „Glas“ preset: the Panel is defined once, as the default of each of its
+ * four keys, so `panel: {}` normalises to exactly it (Shared contract,
+ * „Panel“). Switching a Panel on produces this object and nothing else.
+ */
+export const HERO_PANEL_DEFAULTS = Object.freeze({
+  color: "white",
+  opacity: 60,
+  radius: "md",
+  blur: true,
+});
+
+/**
+ * A fresh „Glas“ Panel — the object the author gets when a Panel is switched
+ * on, and what the „Glas“ chip writes back.
+ *
+ * @returns {Object} A new Panel carrying the preset.
+ */
+export function heroGlassPanel() {
+  return { ...HERO_PANEL_DEFAULTS };
+}
+
+/** No displacement: a Block sitting where its Zone stack puts it. */
+const NO_OFFSET = Object.freeze({ x: 0, y: 0 });
+
+// The fields every Block carries, whatever its type. A factory, because
+// `offset` is an object and two Blocks must not share one.
+const commonDefaults = () => ({
   outerSpacing: "none",
   innerSpacing: "none",
   width: "auto",
-  panel: "none",
+  align: "auto",
+  panel: null,
+  offset: { ...NO_OFFSET },
+  layer: "back",
   homeOnly: false,
   hideOnMobile: false,
 });
@@ -96,7 +125,12 @@ const TYPE_DEFAULTS = Object.freeze({
     weight: "normal",
     shadow: false,
   }),
-  richtext: () => ({ html: { de: "" }, color: "default", shadow: false }),
+  richtext: () => ({
+    html: { de: "" },
+    size: "md",
+    color: "default",
+    shadow: false,
+  }),
   image: () => ({
     image: null,
     alt: { de: "" },
@@ -145,15 +179,57 @@ export function newHeroBlockId() {
  * @returns {Object} The Block.
  */
 export function createHeroBlock(type, zone, id = newHeroBlockId()) {
-  const content = TYPE_DEFAULTS[type];
+  return normalizeHeroBlock({ id, type, zone });
+}
+
+/**
+ * The Block with every default of the Shared contract filled in and its Panel
+ * read out of the legacy strings — what the editor holds for a Block however
+ * it arrived, so „Stored = complete“ holds in the Draft too.
+ *
+ * What the Block already carries is carried through untouched, including the
+ * keys of a type this editor version has no field for: an editor that
+ * silently drops what it cannot yet edit is worse than one that does not offer
+ * the field at all.
+ *
+ * @param {Object} block - The Block as it arrived.
+ * @returns {Object} A new, complete Block.
+ */
+export function normalizeHeroBlock(block) {
+  const source = block || {};
+  const content = TYPE_DEFAULTS[source.type];
 
   return {
-    id,
-    type,
-    zone,
-    ...COMMON_DEFAULTS,
+    ...commonDefaults(),
     ...(content ? content() : {}),
+    ...source,
+    panel: normalizeHeroPanel(source.panel),
+    offset: { ...NO_OFFSET, ...offsetObject(source.offset) },
   };
+}
+
+/**
+ * A Panel as the Draft holds it: `null` or the four-key object. The legacy
+ * strings `"none"` and `"translucent"` are accepted on input and normalised
+ * here (Shared contract, „Legacy strings“); a partial object is completed from
+ * the „Glas“ preset.
+ *
+ * @param {*} panel - What the layout carried.
+ * @returns {?Object} The Panel, or `null` for a Block that paints none.
+ */
+export function normalizeHeroPanel(panel) {
+  if (panel === "translucent") {
+    return heroGlassPanel();
+  }
+  if (!panel || typeof panel !== "object") {
+    return null;
+  }
+
+  return { ...HERO_PANEL_DEFAULTS, ...panel };
+}
+
+function offsetObject(offset) {
+  return offset && typeof offset === "object" ? offset : {};
 }
 
 /**
