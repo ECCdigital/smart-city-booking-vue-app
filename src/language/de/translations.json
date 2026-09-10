@@ -1665,6 +1665,35 @@
     }
   },
   "richtext": {
+    "group": {
+      "character": "Zeichen",
+      "paragraph": "Absatz"
+    },
+    "inherit": "Übernehmen",
+    "align": {
+      "label": "Ausrichtung",
+      "left": "Links",
+      "center": "Zentriert",
+      "right": "Rechts"
+    },
+    "color": {
+      "label": "Farbe",
+      "default": "Standard",
+      "primary": "Primärfarbe",
+      "secondary": "Sekundärfarbe",
+      "white": "Weiß",
+      "custom": "Eigene Farbe…",
+      "inherit": "Farbe übernehmen"
+    },
+    "size": {
+      "label": "Schriftgröße",
+      "xs": "Sehr klein",
+      "sm": "Klein",
+      "md": "Normal",
+      "lg": "Groß",
+      "xl": "Sehr groß",
+      "2xl": "Riesig"
+    },
     "link": {
       "button": "Link einfügen",
       "title": "Link",

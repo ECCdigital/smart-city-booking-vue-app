@@ -1,6 +1,11 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
 import Tiptap from "@/components/Tiptap.vue";
+import { HERO_COLOR_TOKENS } from "@/utils/heroBlockValidation";
+import {
+  HERO_ALIGN_TOKENS,
+  HERO_SIZE_TOKENS,
+} from "@/utils/heroRichtextClasses";
 import { mountComponent } from "@tests/unit/support/mount";
 import { stubProseMirrorLayout } from "@tests/unit/support/prosemirror";
 
@@ -322,5 +327,492 @@ describe("Tiptap with maxLength", () => {
     await wrapper.setProps({ value: "<p>Hallo Welt und mehr</p>" });
 
     expect(wrapper.find(".tiptap-counter").text()).toBe("26 / 12");
+  });
+});
+
+/**
+ * The size, colour and alignment props of the Hero Editor's „Formatierter
+ * Text“ Blocks. The shapes asserted below are the contract's, verbatim.
+ *
+ * An HTML attribute needs the double quotes the lint rule on quotes will not
+ * let a literal spell, so the markup is composed the way `linkHtml` above
+ * composes its attributes.
+ */
+function tag(name, attributes, text) {
+  const rendered = Object.entries(attributes)
+    .map(([attribute, value]) => ` ${attribute}=${JSON.stringify(value)}`)
+    .join("");
+  return `<${name}${rendered}>${text}</${name}>`;
+}
+
+/** A step of a captioned control, found by the label it shows. */
+function groupButton(wrapper, group, label) {
+  return wrapper
+    .findAll(`${group} button`)
+    .wrappers.find((button) => button.text() === label);
+}
+
+/** The colour dots carry their name in the tooltip, not as text. */
+function colorButton(wrapper, title) {
+  return wrapper
+    .findAll(".tiptap-color-dots button")
+    .wrappers.find((button) => button.attributes("title") === title);
+}
+
+describe("Tiptap with sizes", () => {
+  it("keeps a size class on a run of words", async () => {
+    const marked = tag("span", { class: "hero-size-lg" }, "großes");
+    const html = tag("p", {}, `Ein ${marked} Wort`);
+    const wrapper = await mountEditor({ value: html, sizes: true });
+
+    expect(wrapper.vm.editor.getHTML()).toBe(html);
+  });
+});
+
+describe("Tiptap with colors", () => {
+  it("carries size and a colour token in one span", async () => {
+    const html = tag(
+      "p",
+      {},
+      tag("span", { class: "hero-size-lg hero-color-primary" }, "Wort")
+    );
+    const wrapper = await mountEditor({
+      value: html,
+      sizes: true,
+      colors: true,
+    });
+
+    expect(wrapper.vm.editor.getHTML()).toBe(html);
+  });
+
+  it("keeps a stored colour in an editor that only offers sizes", async () => {
+    // The two props switch controls, not schemas: one mark carries both, and
+    // it loads as soon as either of them is asked for.
+    const html = tag(
+      "p",
+      {},
+      tag("span", { class: "hero-color-secondary" }, "Wort")
+    );
+    const wrapper = await mountEditor({ value: html, sizes: true });
+
+    expect(wrapper.vm.editor.getHTML()).toBe(html);
+  });
+});
+
+describe("Tiptap with a custom colour", () => {
+  it("paints a stored hex so it is visible while typing", async () => {
+    // The backend drops the `style` on save; the editor puts it back, because
+    // nothing else would show the author the colour they picked.
+    const stored = tag(
+      "span",
+      { class: "hero-size-lg", "data-color": "#ff0000" },
+      "Wort"
+    );
+    const painted = tag(
+      "span",
+      {
+        class: "hero-size-lg",
+        "data-color": "#ff0000",
+        style: "color:#ff0000",
+      },
+      "Wort"
+    );
+    const wrapper = await mountEditor({
+      value: tag("p", {}, stored),
+      sizes: true,
+      colors: true,
+    });
+
+    expect(wrapper.vm.editor.getHTML()).toBe(tag("p", {}, painted));
+  });
+});
+
+describe("Tiptap with paragraphAlign", () => {
+  it("keeps the alignment of a paragraph", async () => {
+    const html = tag("p", { class: "hero-align-center" }, "Mitte");
+    const wrapper = await mountEditor({ value: html, paragraphAlign: true });
+
+    expect(wrapper.vm.editor.getHTML()).toBe(html);
+  });
+
+  it("drops the alignment in an editor that does not offer it", async () => {
+    const wrapper = await mountEditor({
+      value: tag("p", { class: "hero-align-center" }, "Mitte"),
+    });
+
+    expect(wrapper.vm.editor.getHTML()).toBe("<p>Mitte</p>");
+  });
+});
+
+describe("Tiptap normalising hand-forged rich text", () => {
+  it("repairs every class off the vocabulary and keeps the text", async () => {
+    const forged = [
+      tag("span", { class: "hero-size-huge" }, "eins"),
+      tag("span", { class: "hero-size-sm hero-size-xl" }, "zwei"),
+      tag(
+        "span",
+        { class: "hero-color-primary", "data-color": "#ff0000" },
+        "drei"
+      ),
+      tag("span", { class: "hero-size-md", "data-color": "red" }, "vier"),
+      tag("span", { style: "color:#ff0000" }, "fünf"),
+      "<b>sechs</b>",
+    ].join(" ");
+    const wrapper = await mountEditor({
+      value: tag("p", { class: "hero-align-nope" }, forged),
+      sizes: true,
+      colors: true,
+      paragraphAlign: true,
+    });
+
+    const repaired = [
+      "eins",
+      tag("span", { class: "hero-size-sm" }, "zwei"),
+      tag("span", { class: "hero-color-primary" }, "drei"),
+      tag("span", { class: "hero-size-md" }, "vier"),
+      "fünf",
+      "<strong>sechs</strong>",
+    ].join(" ");
+    expect(wrapper.vm.editor.getHTML()).toBe(tag("p", {}, repaired));
+  });
+});
+
+function rowCaptions(wrapper) {
+  return wrapper
+    .findAll(".tiptap-toolbar__caption")
+    .wrappers.map((caption) => caption.text());
+}
+
+function rowIcons(wrapper, index) {
+  return wrapper
+    .findAll(".tiptap-toolbar__row")
+    .at(index)
+    .findAll("button .v-icon")
+    .wrappers.map((icon) =>
+      Array.from(icon.element.classList).find((name) => name.startsWith("mdi-"))
+    );
+}
+
+describe("Tiptap's two-row leiste", () => {
+  it("captions the rows „Zeichen“ and „Absatz“", async () => {
+    const wrapper = await mountEditor({ value: "<p>Hallo</p>", sizes: true });
+
+    expect(rowCaptions(wrapper)).toEqual(["Zeichen", "Absatz"]);
+  });
+
+  it("puts the character marks in the first row and the lists in the second", async () => {
+    const wrapper = await mountEditor({
+      value: "<p>Hallo</p>",
+      sizes: true,
+      links: true,
+    });
+
+    expect(rowIcons(wrapper, 0)).toEqual([
+      "mdi-format-bold",
+      "mdi-format-italic",
+      "mdi-format-underline",
+      "mdi-link",
+    ]);
+    expect(rowIcons(wrapper, 1)).toEqual([
+      "mdi-format-list-bulleted",
+      "mdi-format-list-numbered",
+    ]);
+  });
+});
+
+describe("Tiptap's „Schriftgröße“", () => {
+  it("shows the seven steps of the scale, „Übernehmen“ leading", async () => {
+    const wrapper = await mountEditor({ value: "<p>Hallo</p>", sizes: true });
+
+    expect(
+      wrapper
+        .findAll(".tiptap-size-scale button")
+        .wrappers.map((button) => button.text())
+    ).toEqual(["Übernehmen", "XS", "S", "M", "L", "XL", "2XL"]);
+  });
+
+  it("names every step by the word the Block's own select uses", async () => {
+    const wrapper = await mountEditor({ value: "<p>Hallo</p>", sizes: true });
+
+    expect(
+      wrapper
+        .findAll(".tiptap-size-scale button")
+        .wrappers.map((button) => button.attributes("title"))
+    ).toEqual([
+      "Übernehmen",
+      "Sehr klein",
+      "Klein",
+      "Normal",
+      "Groß",
+      "Sehr groß",
+      "Riesig",
+    ]);
+  });
+
+  it("marks the step the words under the caret carry", async () => {
+    const wrapper = await mountEditor({
+      value: tag("p", {}, tag("span", { class: "hero-size-xl" }, "Hallo")),
+      sizes: true,
+    });
+
+    wrapper.vm.editor.commands.selectAll();
+    await flush(wrapper);
+
+    expect(
+      groupButton(wrapper, ".tiptap-size-scale", "XL").classes()
+    ).toContain("v-btn--active");
+    expect(
+      groupButton(wrapper, ".tiptap-size-scale", "Übernehmen").classes()
+    ).not.toContain("v-btn--active");
+  });
+
+  it("writes the step the author picks as a class", async () => {
+    const wrapper = await mountEditor({
+      value: "<p>Hallo Welt</p>",
+      sizes: true,
+    });
+
+    wrapper.vm.editor.commands.selectAll();
+    await groupButton(wrapper, ".tiptap-size-scale", "L").trigger("click");
+
+    expect(lastEmitted(wrapper)).toBe(
+      tag("p", {}, tag("span", { class: "hero-size-lg" }, "Hallo Welt"))
+    );
+  });
+
+  it("writes the Block's own step out instead of leaving it implicit", async () => {
+    // A word set to „Normal“ inside a „Normal“ Block keeps that choice over a
+    // reload only because the class is written out.
+    const wrapper = await mountEditor({ value: "<p>Hallo</p>", sizes: true });
+
+    wrapper.vm.editor.commands.selectAll();
+    await groupButton(wrapper, ".tiptap-size-scale", "M").trigger("click");
+
+    expect(lastEmitted(wrapper)).toBe(
+      tag("p", {}, tag("span", { class: "hero-size-md" }, "Hallo"))
+    );
+  });
+
+  it("takes the class away again at „Übernehmen“, span and all", async () => {
+    const wrapper = await mountEditor({
+      value: tag("p", {}, tag("span", { class: "hero-size-lg" }, "Hallo")),
+      sizes: true,
+    });
+
+    wrapper.vm.editor.commands.selectAll();
+    await groupButton(wrapper, ".tiptap-size-scale", "Übernehmen").trigger(
+      "click"
+    );
+
+    expect(lastEmitted(wrapper)).toBe("<p>Hallo</p>");
+  });
+});
+
+describe("Tiptap's „Farbe“", () => {
+  it("offers the four tokens, the picker and „Farbe übernehmen“", async () => {
+    const wrapper = await mountEditor({ value: "<p>Hallo</p>", colors: true });
+
+    expect(
+      wrapper
+        .findAll(".tiptap-color-dots button")
+        .wrappers.map((button) => button.attributes("title"))
+    ).toEqual([
+      "Standard",
+      "Primärfarbe",
+      "Sekundärfarbe",
+      "Weiß",
+      "Eigene Farbe…",
+      "Farbe übernehmen",
+    ]);
+  });
+
+  it("writes the token into the same span as the size", async () => {
+    const wrapper = await mountEditor({
+      value: "<p>Hallo</p>",
+      sizes: true,
+      colors: true,
+    });
+
+    wrapper.vm.editor.commands.selectAll();
+    await groupButton(wrapper, ".tiptap-size-scale", "L").trigger("click");
+    wrapper.vm.editor.commands.selectAll();
+    await colorButton(wrapper, "Primärfarbe").trigger("click");
+
+    expect(lastEmitted(wrapper)).toBe(
+      tag(
+        "p",
+        {},
+        tag("span", { class: "hero-size-lg hero-color-primary" }, "Hallo")
+      )
+    );
+  });
+
+  it("paints the two token dots with the instance's own colours", async () => {
+    const wrapper = await mountEditor({
+      value: "<p>Hallo</p>",
+      colors: true,
+      themeColors: { primary: "#123456", secondary: "#abcdef" },
+    });
+
+    expect(
+      colorButton(wrapper, "Primärfarbe").find(".tiptap-color-dot").element
+        .style.backgroundColor
+    ).toBe("rgb(18, 52, 86)");
+    expect(
+      colorButton(wrapper, "Sekundärfarbe").find(".tiptap-color-dot").element
+        .style.backgroundColor
+    ).toBe("rgb(171, 205, 239)");
+  });
+
+  it("clears the colour at „Farbe übernehmen“ and keeps the size", async () => {
+    const wrapper = await mountEditor({
+      value: tag(
+        "p",
+        {},
+        tag("span", { class: "hero-size-lg hero-color-primary" }, "Hallo")
+      ),
+      sizes: true,
+      colors: true,
+    });
+
+    wrapper.vm.editor.commands.selectAll();
+    await colorButton(wrapper, "Farbe übernehmen").trigger("click");
+
+    expect(lastEmitted(wrapper)).toBe(
+      tag("p", {}, tag("span", { class: "hero-size-lg" }, "Hallo"))
+    );
+  });
+
+  it("writes a picked hex without its alpha, painted so it is visible", async () => {
+    const wrapper = await mountEditor({
+      value: "<p>Hallo</p>",
+      sizes: true,
+      colors: true,
+    });
+
+    wrapper.vm.editor.commands.selectAll();
+    await groupButton(wrapper, ".tiptap-size-scale", "L").trigger("click");
+    wrapper.vm.editor.commands.selectAll();
+    // The picker hangs in the „Eigene Farbe…“ menu and is built when it opens.
+    await colorButton(wrapper, "Eigene Farbe…").trigger("click");
+    await flush(wrapper);
+    wrapper
+      .findComponent({ name: "v-color-picker" })
+      .vm.$emit("input", "#FF0000FF");
+    await flush(wrapper);
+
+    expect(lastEmitted(wrapper)).toBe(
+      tag(
+        "p",
+        {},
+        tag(
+          "span",
+          {
+            class: "hero-size-lg",
+            "data-color": "#ff0000",
+            style: "color:#ff0000",
+          },
+          "Hallo"
+        )
+      )
+    );
+  });
+});
+
+describe("Tiptap's „Ausrichtung“", () => {
+  it("shows the four states, „Übernehmen“ leading", async () => {
+    const wrapper = await mountEditor({
+      value: "<p>Hallo</p>",
+      paragraphAlign: true,
+    });
+
+    expect(
+      wrapper
+        .findAll(".tiptap-align-segment button")
+        .wrappers.map((button) => button.text())
+    ).toEqual(["Übernehmen", "Links", "Zentriert", "Rechts"]);
+  });
+
+  it("aligns the paragraph the caret sits in", async () => {
+    const wrapper = await mountEditor({
+      value: "<p>Hallo</p>",
+      paragraphAlign: true,
+    });
+
+    wrapper.vm.editor.commands.selectAll();
+    await groupButton(wrapper, ".tiptap-align-segment", "Zentriert").trigger(
+      "click"
+    );
+
+    expect(lastEmitted(wrapper)).toBe(
+      tag("p", { class: "hero-align-center" }, "Hallo")
+    );
+  });
+
+  it("takes the class away again at „Übernehmen“", async () => {
+    const wrapper = await mountEditor({
+      value: tag("p", { class: "hero-align-right" }, "Hallo"),
+      paragraphAlign: true,
+    });
+
+    wrapper.vm.editor.commands.selectAll();
+    await groupButton(wrapper, ".tiptap-align-segment", "Übernehmen").trigger(
+      "click"
+    );
+
+    expect(lastEmitted(wrapper)).toBe("<p>Hallo</p>");
+  });
+});
+
+/**
+ * The editor's `parseHTML` rules are the admin's copy of the contract's class
+ * vocabulary. These two pin them against the exported lists, so a token added
+ * to a list the editor was not taught - or the other way round - fails here.
+ */
+describe("Tiptap against the exported token lists", () => {
+  it("keeps every size and every colour the lists name", async () => {
+    const marked = [
+      ...HERO_SIZE_TOKENS.map((token) =>
+        tag("span", { class: `hero-size-${token}` }, token)
+      ),
+      ...HERO_COLOR_TOKENS.map((token) =>
+        tag("span", { class: `hero-color-${token}` }, token)
+      ),
+    ].join(" ");
+    const html = tag("p", {}, marked);
+    const wrapper = await mountEditor({
+      value: html,
+      sizes: true,
+      colors: true,
+    });
+
+    expect(wrapper.vm.editor.getHTML()).toBe(html);
+  });
+
+  it("keeps every alignment the list names", async () => {
+    const html = HERO_ALIGN_TOKENS.map((token) =>
+      tag("p", { class: `hero-align-${token}` }, token)
+    ).join("");
+    const wrapper = await mountEditor({ value: html, paragraphAlign: true });
+
+    expect(wrapper.vm.editor.getHTML()).toBe(html);
+  });
+
+  it("keeps nothing beside them", async () => {
+    // `black` is Panel-only and `huge` is off the scale, so both parse to
+    // „Übernehmen“ - which leaves the spans with nothing and unwraps them.
+    const marked =
+      tag("span", { class: "hero-color-black" }, "eins") +
+      tag("span", { class: "hero-size-huge" }, "zwei");
+    const wrapper = await mountEditor({
+      value:
+        tag("p", {}, marked) +
+        tag("p", { class: "hero-align-justify" }, "drei"),
+      sizes: true,
+      colors: true,
+      paragraphAlign: true,
+    });
+
+    expect(wrapper.vm.editor.getHTML()).toBe("<p>einszwei</p><p>drei</p>");
   });
 });

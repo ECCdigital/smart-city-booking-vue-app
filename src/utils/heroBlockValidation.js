@@ -27,7 +27,7 @@ export const HERO_RICHTEXT_MAX_LENGTH = 10000;
 // A colour is either one of the four tokens or `#rrggbb` — no alpha, no
 // shorthand (Shared contract, „Conventions“).
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
-const NAMED_COLORS = Object.freeze([
+export const HERO_COLOR_TOKENS = Object.freeze([
   "default",
   "primary",
   "secondary",
@@ -86,7 +86,7 @@ export function heroHexWithoutAlpha(color) {
  * @returns {boolean} Whether a text or rich-text Block may carry it as colour.
  */
 export function isHeroColor(value) {
-  return NAMED_COLORS.includes(value) || isHeroHexColor(value);
+  return HERO_COLOR_TOKENS.includes(value) || isHeroHexColor(value);
 }
 
 // What each type can be wrong about. A type this editor has no form for — only
