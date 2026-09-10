@@ -17,6 +17,7 @@ docs/agents/
   testing.md              ← Vitest setup, layout & conventions
   access-vocabulary.md    ← doors, locker systems, grants: German UI terms ↔ code
   booking-status-vocabulary.md ← the five booking states, the action verbs, the headline over the path, "read status, never a flag"
+  issue-tracker.md        ← where issues live: local markdown under .scratch/<feature>/issues/
 docs/
   shared-session-deploy.md                   ← shared-origin Admin + Storefront deploy
 .cursor/rules/

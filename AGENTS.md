@@ -75,6 +75,7 @@ Details: [docs/agents/coding-standards.md](docs/agents/coding-standards.md)
 | Vue components & views | [docs/agents/components.md](docs/agents/components.md) |
 | API services | [docs/agents/api-services.md](docs/agents/api-services.md) |
 | JS web interface (embed) | [docs/agents/web-integration.md](docs/agents/web-integration.md) |
+| Issue tracker (local markdown under `.scratch/`) | [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md) |
 | Optional Admin BFF / shared session | [docs/adr/0001-optional-admin-bff-shared-session.md](docs/adr/0001-optional-admin-bff-shared-session.md) |
 | Shared-session deploy | [docs/shared-session-deploy.md](docs/shared-session-deploy.md) |
 | BFF hardening / CSRF | [docs/bff-hardening.md](docs/bff-hardening.md) |
