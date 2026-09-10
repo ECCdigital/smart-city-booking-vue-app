@@ -35,6 +35,18 @@ export const HERO_COLOR_TOKENS = Object.freeze([
 ]);
 
 /**
+ * The Panel's own colour vocabulary (Shared contract, „Panel“): `black` is new
+ * and Panel-only, and there is no `default` — a Panel that paints nothing is
+ * `panel: null`, not a token.
+ */
+export const HERO_PANEL_COLOR_TOKENS = Object.freeze([
+  "white",
+  "black",
+  "primary",
+  "secondary",
+]);
+
+/**
  * The three messages the backend's `400` says the same fault with. They are
  * exported so that `heroErrors.js` can answer „Pflichtfeld“ with this
  * „Pflichtfeld“ — an author who fixes a field should not meet two names for
@@ -58,6 +70,8 @@ const MISSING_TEXT_ISSUE = "Der Text auf Deutsch fehlt.";
 const MISSING_ALT_ISSUE = "Der Alternativtext auf Deutsch fehlt.";
 const NO_IMAGE_ISSUE = "Es ist kein Bild aus der Mediathek ausgewählt.";
 const BAD_COLOR_ISSUE = "Die Farbe ist kein gültiger Hex-Wert.";
+const BAD_PANEL_COLOR_ISSUE =
+  "Die Farbe der Fläche ist kein gültiger Hex-Wert.";
 
 /**
  * @param {*} value - The candidate.
@@ -89,6 +103,14 @@ export function isHeroColor(value) {
   return HERO_COLOR_TOKENS.includes(value) || isHeroHexColor(value);
 }
 
+/**
+ * @param {*} value - The candidate.
+ * @returns {boolean} Whether a Panel may carry it as its fill colour.
+ */
+export function isHeroPanelColor(value) {
+  return HERO_PANEL_COLOR_TOKENS.includes(value) || isHeroHexColor(value);
+}
+
 // What each type can be wrong about. A type this editor has no form for — only
 // a hand-written layout produces one — is left alone rather than condemned.
 const ISSUES_OF_TYPE = Object.freeze({
@@ -108,7 +130,9 @@ const ISSUES_OF_TYPE = Object.freeze({
 export function heroBlockIssues(block) {
   const issuesOf = block ? ISSUES_OF_TYPE[block.type] : null;
 
-  return issuesOf ? issuesOf(block) : [];
+  // A Panel belongs to every type — an image Block has no colour of its own
+  // and may still paint one — so it is asked here rather than per type.
+  return issuesOf ? [...issuesOf(block), ...panelIssues(block)] : [];
 }
 
 /**
@@ -264,6 +288,17 @@ function colorIssues(block) {
   return block.color != null && !isHeroColor(block.color)
     ? [BAD_COLOR_ISSUE]
     : [];
+}
+
+/**
+ * The one thing a Panel can be wrong about. Its three other keys come out of a
+ * slider, a toggle and a switch, which cannot produce a value off the
+ * contract; „Eigene…“ can, and takes the Block colour field's rule for it.
+ */
+function panelIssues(block) {
+  const panel = block.panel;
+
+  return panel && !isHeroPanelColor(panel.color) ? [BAD_PANEL_COLOR_ISSUE] : [];
 }
 
 /** German is the required locale; every other one may stay empty (§4). */

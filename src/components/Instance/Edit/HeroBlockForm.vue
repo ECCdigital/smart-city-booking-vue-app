@@ -53,6 +53,7 @@
           :value="block.color"
           :theme-colors="themeColors"
           :error="errorOf('color')"
+          class="hero-block-form__color"
           @input="patch({ color: $event })"
         />
       </template>
@@ -104,6 +105,7 @@
           :value="block.color"
           :theme-colors="themeColors"
           :error="errorOf('color')"
+          class="hero-block-form__color"
           @input="patch({ color: $event })"
         />
       </template>
@@ -189,42 +191,146 @@
     </SubSection>
 
     <SubSection class="mt-6" title="Darstellung" icon="mdi-tune">
-      <v-select
-        :value="block.outerSpacing"
-        :items="spacingSteps"
-        label="Außenabstand"
-        background-color="accent"
-        filled
-        dense
-        @change="patch({ outerSpacing: $event })"
-      />
-      <v-select
-        :value="block.innerSpacing"
-        :items="spacingSteps"
-        label="Innenabstand"
-        background-color="accent"
-        filled
-        dense
-        @change="patch({ innerSpacing: $event })"
-      />
-      <v-select
-        :value="block.width"
-        :items="widthSteps"
-        label="Breite"
-        background-color="accent"
-        filled
-        dense
-        @change="patch({ width: $event })"
-      />
-      <v-switch
-        :input-value="!!block.panel"
-        label="Halbtransparente Fläche hinter dem Block"
-        color="primary"
-        class="mt-0"
-        dense
-        hide-details
-        @change="patch({ panel: $event ? heroGlassPanel() : null })"
-      />
+      <div class="hero-block-form__panel">
+        <div class="d-flex align-center">
+          <v-switch
+            :input-value="hasPanel"
+            label="Fläche hinter dem Block"
+            color="primary"
+            class="mt-0 mb-0"
+            dense
+            hide-details
+            @change="patch({ panel: $event ? heroGlassPanel() : null })"
+          />
+          <v-spacer />
+          <v-chip
+            class="hero-block-form__glass"
+            small
+            outlined
+            title="Fläche auf „Glas“ zurücksetzen"
+            @click="patch({ panel: heroGlassPanel() })"
+          >
+            <v-icon x-small left>mdi-blur</v-icon>
+            Glas
+          </v-chip>
+        </div>
+
+        <template v-if="hasPanel">
+          <HeroColorField
+            :value="block.panel.color"
+            :theme-colors="themeColors"
+            :tokens="panelColorTokens"
+            :error="errorOf('panel.color')"
+            class="hero-block-form__panel-color mt-1"
+            @input="patchPanel({ color: $event })"
+          />
+
+          <v-slider
+            :value="block.panel.opacity"
+            label="Deckkraft"
+            min="0"
+            max="100"
+            step="1"
+            thumb-label
+            :error-messages="errorOf('panel.opacity')"
+            :hide-details="!errorOf('panel.opacity')"
+            class="hero-block-form__opacity mt-2"
+            @input="patchPanel({ opacity: $event })"
+          >
+            <template #append>
+              <span class="text-caption text--secondary">
+                {{ block.panel.opacity }} %
+              </span>
+            </template>
+          </v-slider>
+
+          <div class="text-caption text--secondary mt-2 mb-1">Ecken</div>
+          <v-btn-toggle
+            :value="block.panel.radius"
+            mandatory
+            dense
+            class="hero-block-form__corners mb-2"
+            @change="patchPanel({ radius: $event })"
+          >
+            <v-btn
+              v-for="step in cornerSteps"
+              :key="step.value"
+              :value="step.value"
+              class="hero-block-form__corner"
+              :title="step.text"
+              :aria-label="step.text"
+              :aria-pressed="String(block.panel.radius === step.value)"
+              small
+              text
+            >
+              <span
+                class="hero-block-form__corner-glyph"
+                :style="{ borderRadius: step.glyph }"
+              />
+            </v-btn>
+          </v-btn-toggle>
+
+          <v-switch
+            :input-value="block.panel.blur"
+            label="Hintergrund weichzeichnen"
+            color="primary"
+            class="mt-0"
+            dense
+            hide-details
+            @change="patchPanel({ blur: !!$event })"
+          />
+        </template>
+      </div>
+
+      <v-expansion-panels flat class="hero-block-form__fine mt-4">
+        <v-expansion-panel>
+          <v-expansion-panel-header color="accent" class="px-3">
+            Feinabstimmung
+          </v-expansion-panel-header>
+          <v-expansion-panel-content color="accent" class="pt-3">
+            <v-select
+              :value="block.align"
+              :items="alignSteps"
+              label="Ausrichtung"
+              :hint="alignHint"
+              persistent-hint
+              background-color="accent"
+              filled
+              dense
+              class="mb-4"
+              @change="patch({ align: $event })"
+            />
+            <v-select
+              :value="block.outerSpacing"
+              :items="spacingSteps"
+              label="Außenabstand"
+              background-color="accent"
+              filled
+              dense
+              @change="patch({ outerSpacing: $event })"
+            />
+            <v-select
+              :value="block.innerSpacing"
+              :items="spacingSteps"
+              label="Innenabstand"
+              background-color="accent"
+              filled
+              dense
+              @change="patch({ innerSpacing: $event })"
+            />
+            <v-select
+              :value="block.width"
+              :items="widthSteps"
+              label="Breite"
+              background-color="accent"
+              filled
+              dense
+              hide-details
+              @change="patch({ width: $event })"
+            />
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+      </v-expansion-panels>
     </SubSection>
 
     <SubSection class="mt-6" title="Sichtbarkeit" icon="mdi-eye-outline">
@@ -267,6 +373,7 @@ import {
   setHeroLocalizedText,
 } from "@/utils/heroBlocks";
 import {
+  HERO_PANEL_COLOR_TOKENS,
   HERO_RICHTEXT_MAX_LENGTH,
   HERO_TEXT_MAX_LENGTH,
   firstHeroRuleError,
@@ -283,6 +390,15 @@ const SPACING_STEPS = Object.freeze([
   { value: "md", text: "Mittel" },
   { value: "lg", text: "Groß" },
   { value: "xl", text: "Sehr groß" },
+]);
+
+// „Ausrichtung“ places a Block's content inside its own box, on every type —
+// the lines of a text, the image of an image Block (hero layout spec §11).
+const ALIGN_STEPS = Object.freeze([
+  { value: "auto", text: "Automatisch" },
+  { value: "left", text: "Links" },
+  { value: "center", text: "Zentriert" },
+  { value: "right", text: "Rechts" },
 ]);
 
 const WIDTH_STEPS = Object.freeze([
@@ -312,6 +428,20 @@ const MAX_HEIGHT_STEPS = Object.freeze([
   { value: "xl", text: "Sehr groß" },
 ]);
 
+/**
+ * The five corner steps of a Panel (Shared contract, „Panel“). The glyph is
+ * the step itself — a box drawn with that corner — rather than an icon that
+ * stands for it, so the row reads as the scale it is. `glyph` is the admin's
+ * own drawing; the storefront's real radii follow `--ui-radius`.
+ */
+const CORNER_STEPS = Object.freeze([
+  { value: "none", text: "Kein", glyph: "0" },
+  { value: "sm", text: "Klein", glyph: "2px" },
+  { value: "md", text: "Mittel", glyph: "4px" },
+  { value: "lg", text: "Groß", glyph: "7px" },
+  { value: "full", text: "Rund", glyph: "50%" },
+]);
+
 // An image Block is painted on the public portal, so it may only ever point at
 // a public medium — the backend refuses anything else on save.
 const PUBLIC_ONLY_REASON =
@@ -322,6 +452,11 @@ const PUBLIC_ONLY_REASON =
 const TRANSLATION_HINT = "Leer: Deutsch wird angezeigt";
 
 const ALT_HINT = "Wird vorgelesen und angezeigt, wenn das Bild fehlt";
+
+// What „Ausrichtung“ says about itself, and what it adds while the Block has
+// no width to spare (hero layout spec §7).
+const ALIGN_HINT = "Automatisch folgt der Spalte der Position.";
+const ALIGN_NEEDS_WIDTH_HINT = "Wirkt erst ab einer festen Breite.";
 
 /**
  * The detail form of the selected Block: „Inhalt“ → „Position“ →
@@ -363,11 +498,14 @@ export default {
   data() {
     return {
       spacingSteps: SPACING_STEPS,
+      alignSteps: ALIGN_STEPS,
       widthSteps: WIDTH_STEPS,
       sizeSteps: SIZE_STEPS,
       maxHeightSteps: MAX_HEIGHT_STEPS,
       maxTextLength: HERO_TEXT_MAX_LENGTH,
       maxHtmlLength: HERO_RICHTEXT_MAX_LENGTH,
+      panelColorTokens: HERO_PANEL_COLOR_TOKENS,
+      cornerSteps: CORNER_STEPS,
       mediaScope: MEDIA_SCOPE.INSTANCE,
       publicOnlyReason: PUBLIC_ONLY_REASON,
     };
@@ -375,6 +513,10 @@ export default {
   computed: {
     isText() {
       return this.block.type === "text";
+    },
+    /** Whether the Block paints a Panel — the state of the group's switch. */
+    hasPanel() {
+      return this.block.panel != null;
     },
     isRichtext() {
       return this.block.type === "richtext";
@@ -430,6 +572,16 @@ export default {
         firstHeroRuleError(heroRichtextRules(this.locale), this.html),
         this.errorOf("html"),
       ].filter(Boolean);
+    },
+    /**
+     * A Block whose width is „Automatisch“ shrinks to fit its content, so
+     * there is no room inside it to align anything in — the alignment is set
+     * and stored, it simply has nothing to do yet.
+     */
+    alignHint() {
+      return this.block.width === "auto"
+        ? `${ALIGN_HINT} ${ALIGN_NEEDS_WIDTH_HINT}`
+        : ALIGN_HINT;
     },
     imageErrors() {
       return [
@@ -487,9 +639,38 @@ export default {
         alt: setHeroLocalizedText(this.block.alt, this.locale, value),
       });
     },
+    /**
+     * One key of the Panel. Each control of the group writes exactly its own,
+     * so the other three keep whatever the author set them to.
+     */
+    patchPanel(fields) {
+      this.patch({ panel: { ...this.block.panel, ...fields } });
+    },
     patch(fields) {
       this.$emit("input", fields);
     },
   },
 };
 </script>
+
+<style scoped>
+/* The corner steps are drawn, not named: each button carries a box with that
+   step's radius, and the German word rides along as its label. */
+.hero-block-form__corner-glyph {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+}
+
+/* „Darstellung“ lives in a 420 px column, so nothing in it may push sideways:
+   the steps wrap rather than overflow, and the chip keeps its width whatever
+   the switch beside it asks for. */
+.hero-block-form__corners {
+  flex-wrap: wrap;
+}
+
+.hero-block-form__glass {
+  flex: 0 0 auto;
+}
+</style>

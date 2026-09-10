@@ -1,3 +1,4 @@
+import Vue from "vue";
 import { beforeAll, describe, expect, it } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
@@ -17,6 +18,10 @@ import HeroBlockForm from "@/components/Instance/Edit/HeroBlockForm.vue";
 import Tiptap from "@/components/Tiptap.vue";
 
 const THEME_COLORS = { primary: "#123456", secondary: "#654321" };
+
+const PANEL_SWITCH = "Fläche hinter dem Block";
+const PANEL_COLOR = ".hero-block-form__panel-color";
+const BLUR_SWITCH = "Hintergrund weichzeichnen";
 
 /** The „Glas“ preset, as a Block that carries a Panel holds it. */
 const GLASS = Object.freeze({
@@ -96,23 +101,92 @@ function textField(wrapper) {
   return wrapper.find(".hero-block-form__text input");
 }
 
-function chips(wrapper) {
-  return wrapper
+function chips(root) {
+  return root
     .findAllComponents({ name: "v-chip" })
     .wrappers.map((chip) => ({ chip, label: chip.text().trim() }));
 }
 
-function chipLabels(wrapper) {
-  return chips(wrapper).map((entry) => entry.label);
+function chipLabels(root) {
+  return chips(root).map((entry) => entry.label);
 }
 
-async function clickChip(wrapper, label) {
-  const entry = chips(wrapper).find((candidate) => candidate.label === label);
+/**
+ * A colour control by its class: the Block's own, or the Panel's — the two
+ * speak different vocabularies and stand in the same form.
+ */
+function colorField(wrapper, selector = ".hero-block-form__color") {
+  const field = wrapper.find(selector);
+  if (!field.exists()) {
+    throw new Error(`Die Farbwahl „${selector}“ fehlt.`);
+  }
+  return field;
+}
+
+async function clickChip(root, label) {
+  const entry = chips(root).find((candidate) => candidate.label === label);
   if (!entry) {
     throw new Error(`Der Chip „${label}“ fehlt.`);
   }
   await entry.chip.trigger("click");
-  await wrapper.vm.$nextTick();
+  await Vue.nextTick();
+}
+
+// „End“ puts a slider at its maximum, „Home“ at its minimum. The mouse needs
+// a laid-out track, which jsdom has none of; the keyboard is the interaction
+// that works here — and one a user has too.
+const KEY_END = 35;
+const KEY_HOME = 36;
+
+function sliderByLabel(wrapper, label) {
+  const slider = wrapper
+    .findAllComponents({ name: "v-slider" })
+    .wrappers.find((entry) => entry.props("label") === label);
+  if (!slider) {
+    throw new Error(`Der Regler „${label}“ fehlt.`);
+  }
+  return slider;
+}
+
+async function pressOnSlider(wrapper, label, keyCode) {
+  await sliderByLabel(wrapper, label)
+    .find(".v-slider__thumb-container")
+    .trigger("keydown", { keyCode });
+  await Vue.nextTick();
+}
+
+/** Opens „Feinabstimmung“, whose content Vuetify only renders once asked. */
+async function openFine(wrapper) {
+  await wrapper
+    .find(".hero-block-form__fine .v-expansion-panel-header")
+    .trigger("click");
+  await Vue.nextTick();
+  await flushPromises();
+}
+
+function fineSelectLabels(wrapper) {
+  return wrapper
+    .find(".hero-block-form__fine")
+    .findAllComponents({ name: "v-select" })
+    .wrappers.map((entry) => entry.props("label"));
+}
+
+function corners(wrapper) {
+  return wrapper.findAll(".hero-block-form__corner").wrappers;
+}
+
+function cornerLabels(wrapper) {
+  return corners(wrapper).map((entry) => entry.attributes("aria-label"));
+}
+
+function corner(wrapper, label) {
+  const found = corners(wrapper).find(
+    (entry) => entry.attributes("aria-label") === label
+  );
+  if (!found) {
+    throw new Error(`Die Ecke „${label}“ fehlt.`);
+  }
+  return found;
 }
 
 function cell(wrapper, zone) {
@@ -259,7 +333,7 @@ describe("HeroBlockForm, the rich-text Block's Inhalt", () => {
   it("carries the shadow switch and the colour control, and no font size", async () => {
     const wrapper = formOf(heroRichtextBlock());
 
-    expect(chipLabels(wrapper)).toEqual([
+    expect(chipLabels(colorField(wrapper))).toEqual([
       "Standard",
       "Primärfarbe",
       "Sekundärfarbe",
@@ -364,13 +438,13 @@ describe("HeroBlockForm, the image Block's Inhalt", () => {
     const wrapper = formOf(heroImageBlock());
 
     expect(() => selectByLabel(wrapper, "Schriftgröße")).toThrow();
-    expect(chipLabels(wrapper)).toEqual([]);
+    expect(() => colorField(wrapper)).toThrow();
   });
 });
 
 describe("HeroBlockForm, the colour control", () => {
   it("offers the five chips", () => {
-    expect(chipLabels(formOf(heroBlock()))).toEqual([
+    expect(chipLabels(colorField(formOf(heroBlock())))).toEqual([
       "Standard",
       "Primärfarbe",
       "Sekundärfarbe",
@@ -501,8 +575,29 @@ describe("HeroBlockForm, the Position grid", () => {
 });
 
 describe("HeroBlockForm, Darstellung and Sichtbarkeit", () => {
+  /**
+   * The four controls a Block inherits rather than owns are demoted: they
+   * start folded away, so „Darstellung“ opens with the Block's own look.
+   */
+  it("keeps the four inherited controls in a closed Feinabstimmung", async () => {
+    const wrapper = formOf(heroBlock());
+
+    expect(wrapper.text()).toContain("Feinabstimmung");
+    expect(() => selectByLabel(wrapper, "Breite")).toThrow();
+
+    await openFine(wrapper);
+
+    expect(fineSelectLabels(wrapper)).toEqual([
+      "Ausrichtung",
+      "Außenabstand",
+      "Innenabstand",
+      "Breite",
+    ]);
+  });
+
   it("edits the two spacings and the width", async () => {
     const wrapper = formOf(heroBlock());
+    await openFine(wrapper);
 
     await choose(wrapper, "Außenabstand", "Sehr groß");
     expect(lastPatch(wrapper)).toEqual({ outerSpacing: "xl" });
@@ -515,32 +610,216 @@ describe("HeroBlockForm, Darstellung and Sichtbarkeit", () => {
   });
 
   /**
-   * The Panel is an object now, and the switch speaks that shape: on writes
-   * the „Glas“ preset, off writes `null`. The four keys have no controls yet —
-   * the switch is still the whole of the Panel in this form.
+   * The Panel group leads the section now: the switch speaks the object's
+   * shape — on writes the „Glas“ preset, off writes `null` — under its own
+   * name. „Halbtransparente Fläche hinter dem Block“ is gone with it.
    */
   it("turns the Panel on and off", async () => {
     const wrapper = formOf(heroBlock());
-    const label = "Halbtransparente Fläche hinter dem Block";
 
-    await toggle(wrapper, label);
+    expect(wrapper.text()).not.toContain("Halbtransparente Fläche");
+
+    await toggle(wrapper, PANEL_SWITCH);
     expect(lastPatch(wrapper)).toEqual({
       panel: { color: "white", opacity: 60, radius: "md", blur: true },
     });
 
     await wrapper.setProps({ block: heroBlock({ panel: GLASS }) });
-    await toggle(wrapper, label);
+    await toggle(wrapper, PANEL_SWITCH);
     expect(lastPatch(wrapper)).toEqual({ panel: null });
   });
 
   it("reads a Block that carries a Panel as switched on", async () => {
     const wrapper = formOf(heroBlock({ panel: { ...GLASS, color: "black" } }));
 
-    expect(
-      switchOf(wrapper, "Halbtransparente Fläche hinter dem Block").props(
-        "inputValue"
-      )
-    ).toBe(true);
+    expect(switchOf(wrapper, PANEL_SWITCH).props("inputValue")).toBe(true);
+  });
+
+  /**
+   * The chip is the preset, not a second switch: it writes all four keys back
+   * from any state, including from a Panel that is off — restoring „Glas“ is
+   * what an author who has lost the thread reaches for.
+   */
+  it("restores the Glas preset from any state with the chip", async () => {
+    const wrapper = formOf(
+      heroBlock({
+        panel: { color: "#123456", opacity: 5, radius: "full", blur: false },
+      })
+    );
+
+    await clickChip(wrapper, "Glas");
+    expect(lastPatch(wrapper)).toEqual({ panel: GLASS });
+
+    await wrapper.setProps({ block: heroBlock({ panel: null }) });
+    await clickChip(wrapper, "Glas");
+    expect(lastPatch(wrapper)).toEqual({ panel: GLASS });
+  });
+
+  it("keeps the Panel's controls out of the way while it is off", () => {
+    const wrapper = formOf(heroBlock({ panel: null }));
+
+    expect(() => colorField(wrapper, PANEL_COLOR)).toThrow();
+    expect(wrapper.text()).not.toContain("Deckkraft");
+    expect(wrapper.text()).not.toContain("Ecken");
+    expect(() => switchByLabel(wrapper, "Hintergrund weichzeichnen")).toThrow();
+  });
+
+  /**
+   * The Panel's colour speaks its own vocabulary: „Schwarz“ is Panel-only and
+   * „Standard“ has no meaning behind a Block (Shared contract, „Panel“).
+   */
+  it("offers the Panel's own five colour dots", () => {
+    const wrapper = formOf(heroBlock({ panel: GLASS }));
+
+    expect(chipLabels(colorField(wrapper, PANEL_COLOR))).toEqual([
+      "Weiß",
+      "Schwarz",
+      "Primärfarbe",
+      "Sekundärfarbe",
+      "Eigene…",
+    ]);
+  });
+
+  it("writes only the Panel's colour when a dot is clicked", async () => {
+    const wrapper = formOf(heroBlock({ panel: GLASS }));
+
+    await clickChip(colorField(wrapper, PANEL_COLOR), "Schwarz");
+    expect(lastPatch(wrapper)).toEqual({
+      panel: { ...GLASS, color: "black" },
+    });
+  });
+
+  it("leaves the Block's own colour control speaking its own words", () => {
+    const wrapper = formOf(heroBlock({ panel: GLASS }));
+
+    expect(chipLabels(colorField(wrapper))).toEqual([
+      "Standard",
+      "Primärfarbe",
+      "Sekundärfarbe",
+      "Weiß",
+      "Eigene…",
+    ]);
+  });
+
+  it("covers 0 to 100 with Deckkraft and shows the per-cent readout", async () => {
+    const wrapper = formOf(heroBlock({ panel: GLASS }));
+    const slider = sliderByLabel(wrapper, "Deckkraft");
+
+    expect(slider.props("min")).toBe("0");
+    expect(slider.props("max")).toBe("100");
+    expect(slider.props("step")).toBe("1");
+    expect(wrapper.text()).toContain("60 %");
+
+    await pressOnSlider(wrapper, "Deckkraft", KEY_END);
+    expect(lastPatch(wrapper)).toEqual({ panel: { ...GLASS, opacity: 100 } });
+  });
+
+  it("lets Deckkraft reach nought, which is a value and not a fault", async () => {
+    const wrapper = formOf(heroBlock({ panel: GLASS }));
+
+    await pressOnSlider(wrapper, "Deckkraft", KEY_HOME);
+    expect(lastPatch(wrapper)).toEqual({ panel: { ...GLASS, opacity: 0 } });
+  });
+
+  /**
+   * The five corner steps carry glyphs rather than words, so the German words
+   * of the spec (§12) are what their `title` and `aria-label` say.
+   */
+  it("offers the five corner steps of Ecken", () => {
+    const wrapper = formOf(heroBlock({ panel: GLASS }));
+
+    expect(cornerLabels(wrapper)).toEqual([
+      "Kein",
+      "Klein",
+      "Mittel",
+      "Groß",
+      "Rund",
+    ]);
+    expect(corner(wrapper, "Mittel").attributes("aria-pressed")).toBe("true");
+  });
+
+  it("writes only the radius when a corner step is picked", async () => {
+    const wrapper = formOf(heroBlock({ panel: GLASS }));
+
+    await corner(wrapper, "Rund").trigger("click");
+    await Vue.nextTick();
+
+    expect(lastPatch(wrapper)).toEqual({ panel: { ...GLASS, radius: "full" } });
+  });
+
+  it("writes only the blur when the weichzeichnen switch moves", async () => {
+    const wrapper = formOf(heroBlock({ panel: GLASS }));
+
+    expect(switchOf(wrapper, BLUR_SWITCH).props("inputValue")).toBe(true);
+
+    await toggle(wrapper, BLUR_SWITCH);
+    expect(lastPatch(wrapper)).toEqual({ panel: { ...GLASS, blur: false } });
+  });
+
+  /**
+   * „Ausrichtung“ places the Block's content inside its own box, so it is a
+   * control of every type — the image of an image Block as much as the lines
+   * of a text (hero layout spec §11).
+   */
+  it("offers Ausrichtung on every Block type", async () => {
+    for (const block of [heroBlock(), heroRichtextBlock(), heroImageBlock()]) {
+      const wrapper = formOf(block);
+      await openFine(wrapper);
+
+      expect(selectByLabel(wrapper, "Ausrichtung").props("items")).toEqual([
+        { value: "auto", text: "Automatisch" },
+        { value: "left", text: "Links" },
+        { value: "center", text: "Zentriert" },
+        { value: "right", text: "Rechts" },
+      ]);
+    }
+  });
+
+  it("writes the picked alignment", async () => {
+    const wrapper = formOf(heroBlock());
+    await openFine(wrapper);
+
+    await choose(wrapper, "Ausrichtung", "Zentriert");
+    expect(lastPatch(wrapper)).toEqual({ align: "center" });
+  });
+
+  /**
+   * A Block that shrinks to fit has nothing to align inside, so „Automatisch“
+   * as a width earns the second hint — and loses it again at any fixed one.
+   */
+  it("warns that alignment needs a width while Breite is Automatisch", async () => {
+    const wrapper = formOf(heroBlock({ width: "auto" }));
+    await openFine(wrapper);
+    const hint = () => selectByLabel(wrapper, "Ausrichtung").props("hint");
+
+    expect(hint()).toContain("Automatisch folgt der Spalte der Position.");
+    expect(hint()).toContain("Wirkt erst ab einer festen Breite.");
+
+    await wrapper.setProps({ block: heroBlock({ width: "md" }) });
+
+    expect(hint()).toContain("Automatisch folgt der Spalte der Position.");
+    expect(hint()).not.toContain("Wirkt erst ab einer festen Breite.");
+  });
+
+  /**
+   * „Eigene…“ opens the same hex picker the Block's colour field uses, and
+   * drops the alpha it offers — the contract has no room for one anywhere.
+   */
+  it("takes a custom Panel colour from the picker without its alpha", async () => {
+    const wrapper = formOf(
+      heroBlock({ panel: { ...GLASS, color: "#1a2b3c" } })
+    );
+
+    await clickChip(colorField(wrapper, PANEL_COLOR), "#1a2b3c");
+    await flushPromises();
+    wrapper
+      .findComponent({ name: "v-color-picker" })
+      .vm.$emit("input", "#aabbcc80");
+    await Vue.nextTick();
+
+    expect(lastPatch(wrapper)).toEqual({
+      panel: { ...GLASS, color: "#aabbcc" },
+    });
   });
 
   it("carries the two visibility switches", async () => {
@@ -632,6 +911,31 @@ describe("HeroBlockForm, the backend's messages", () => {
 
     expect(fieldByLabel(wrapper, "Text").props("errorMessages")).toBe(
       "Höchstens 200 Zeichen."
+    );
+  });
+
+  it("puts a Panel fault under the control it is about", () => {
+    const wrapper = formOf(heroBlock({ panel: GLASS }), {
+      errors: {
+        "panel.color": "Bitte eine Farbe als Hex-Wert angeben, z. B. #1a2b3c.",
+        "panel.opacity":
+          "Bitte einen ganzen Prozentwert zwischen 0 und 100 angeben.",
+      },
+    });
+
+    expect(colorField(wrapper, PANEL_COLOR).text()).toContain(
+      "Bitte eine Farbe als Hex-Wert angeben"
+    );
+    expect(sliderByLabel(wrapper, "Deckkraft").props("errorMessages")).toBe(
+      "Bitte einen ganzen Prozentwert zwischen 0 und 100 angeben."
+    );
+  });
+
+  it("marks an invalid custom Panel colour without waiting for the backend", () => {
+    const wrapper = formOf(heroBlock({ panel: { ...GLASS, color: "#12345" } }));
+
+    expect(colorField(wrapper, PANEL_COLOR).text()).toContain(
+      "Bitte eine Farbe als Hex-Wert angeben"
     );
   });
 

@@ -5,6 +5,7 @@ import {
   heroErrorMessage,
   heroSectionErrorText,
   heroValidationDetails,
+  isHeroInlineBlockError,
   resolveHeroErrorPath,
 } from "@/utils/heroErrors";
 
@@ -126,6 +127,29 @@ describe("resolveHeroErrorPath", () => {
     ).toMatchObject({ field: "overlay.dark.opacity" });
     expect(resolveHeroErrorPath("background.focalPoint.y")).toMatchObject({
       field: "focalPoint.y",
+    });
+  });
+
+  it("puts the Panel's own keys on the controls of the Panel group", () => {
+    // „Deckkraft“ and „Farbe“ are controls of their own, so the path stays
+    // whole rather than collapsing onto the Panel switch (spec §9).
+    expect(
+      resolveHeroErrorPath("heroLayout.blocks[2].panel.opacity")
+    ).toMatchObject({ blockIndex: 2, field: "panel.opacity" });
+    expect(
+      resolveHeroErrorPath("heroLayout.blocks[2].panel.color")
+    ).toMatchObject({ blockIndex: 2, field: "panel.color" });
+    expect(
+      resolveHeroErrorPath("heroLayout.blocks[0].panel.radius")
+    ).toMatchObject({ field: "panel.radius" });
+    expect(
+      resolveHeroErrorPath("heroLayout.blocks[0].panel.blur")
+    ).toMatchObject({ field: "panel.blur" });
+  });
+
+  it("keeps a refused Panel itself on the switch", () => {
+    expect(resolveHeroErrorPath("heroLayout.blocks[1].panel")).toMatchObject({
+      field: "panel",
     });
   });
 
@@ -302,7 +326,12 @@ describe("heroErrorEntries", () => {
       "outerSpacing",
       "innerSpacing",
       "width",
+      "align",
       "panel",
+      "panel.color",
+      "panel.opacity",
+      "panel.radius",
+      "panel.blur",
       "homeOnly",
       "hideOnMobile",
       "text",
@@ -357,5 +386,43 @@ describe("heroSectionErrorText", () => {
     ]);
 
     expect(heroSectionErrorText(entry)).toBe(entry.message);
+  });
+});
+
+/**
+ * Which Block faults the detail form has a control for. „Deckkraft“ and the
+ * Panel's „Farbe“ are two of them now; the Panel switch itself is not — a
+ * refused Panel object describes a Draft no control here made (spec §9).
+ */
+describe("isHeroInlineBlockError", () => {
+  function entryOf(path) {
+    return heroErrorEntries([{ field: path, code: "required" }])[0];
+  }
+
+  it("claims the Panel's colour and its opacity", () => {
+    expect(
+      isHeroInlineBlockError(entryOf("heroLayout.blocks[0].panel.color"))
+    ).toBe(true);
+    expect(
+      isHeroInlineBlockError(entryOf("heroLayout.blocks[0].panel.opacity"))
+    ).toBe(true);
+  });
+
+  it("leaves the Panel itself and its two switch-borne keys to the section", () => {
+    expect(isHeroInlineBlockError(entryOf("heroLayout.blocks[0].panel"))).toBe(
+      false
+    );
+    expect(
+      isHeroInlineBlockError(entryOf("heroLayout.blocks[0].panel.radius"))
+    ).toBe(false);
+  });
+
+  it("still claims the Block's own fields", () => {
+    expect(
+      isHeroInlineBlockError(entryOf("heroLayout.blocks[0].text.de"))
+    ).toBe(true);
+    expect(isHeroInlineBlockError(entryOf("heroLayout.blocks[0].zone"))).toBe(
+      false
+    );
   });
 });

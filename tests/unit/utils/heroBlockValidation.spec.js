@@ -11,6 +11,7 @@ import {
   isHeroBlockValid,
   isHeroColor,
   isHeroHexColor,
+  isHeroPanelColor,
 } from "@/utils/heroBlockValidation";
 import {
   heroBlock,
@@ -174,6 +175,63 @@ describe("heroBlockIssues of an image Block", () => {
     ).toEqual([
       `Der Alternativtext ist länger als ${HERO_TEXT_MAX_LENGTH} Zeichen.`,
     ]);
+  });
+});
+
+/**
+ * The Panel's „Eigene…“ colour takes the same hex rule the Block's colour
+ * field has, and it takes it on every Block type — an image Block has no
+ * colour of its own but may well paint a Panel (hero layout spec §9).
+ */
+describe("heroBlockIssues of a Panel", () => {
+  const GLASS = { color: "white", opacity: 60, radius: "md", blur: true };
+
+  it("finds nothing wrong with the Glas preset", () => {
+    expect(heroBlockIssues(heroBlock({ panel: GLASS }))).toEqual([]);
+  });
+
+  it("takes the Panel-only token Schwarz, which no text colour knows", () => {
+    expect(
+      heroBlockIssues(heroBlock({ panel: { ...GLASS, color: "black" } }))
+    ).toEqual([]);
+  });
+
+  it("names a Panel colour that is not a hex value", () => {
+    expect(
+      heroBlockIssues(heroBlock({ panel: { ...GLASS, color: "#12345" } }))
+    ).toEqual(["Die Farbe der Fläche ist kein gültiger Hex-Wert."]);
+  });
+
+  it("refuses Standard, which the Panel vocabulary does not offer", () => {
+    expect(
+      heroBlockIssues(heroBlock({ panel: { ...GLASS, color: "default" } }))
+    ).toEqual(["Die Farbe der Fläche ist kein gültiger Hex-Wert."]);
+  });
+
+  it("watches the Panel of an image Block too", () => {
+    expect(
+      heroBlockIssues(heroImageBlock({ panel: { ...GLASS, color: "#12345" } }))
+    ).toEqual(["Die Farbe der Fläche ist kein gültiger Hex-Wert."]);
+  });
+
+  it("leaves a Block without a Panel alone", () => {
+    expect(heroBlockIssues(heroBlock({ panel: null }))).toEqual([]);
+  });
+});
+
+describe("isHeroPanelColor", () => {
+  it("takes the four Panel tokens and a hex value", () => {
+    expect(isHeroPanelColor("white")).toBe(true);
+    expect(isHeroPanelColor("black")).toBe(true);
+    expect(isHeroPanelColor("primary")).toBe(true);
+    expect(isHeroPanelColor("secondary")).toBe(true);
+    expect(isHeroPanelColor("#1a2b3c")).toBe(true);
+  });
+
+  it("refuses the text vocabulary's Standard and anything else", () => {
+    expect(isHeroPanelColor("default")).toBe(false);
+    expect(isHeroPanelColor("rot")).toBe(false);
+    expect(isHeroPanelColor(null)).toBe(false);
   });
 });
 

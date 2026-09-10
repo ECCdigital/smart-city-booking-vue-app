@@ -71,15 +71,29 @@ import {
   isHeroHexColor,
 } from "@/utils/heroBlockValidation";
 
-// The four named tokens of the contract. Their real look lives in the
-// storefront's theme; „Primärfarbe“ and „Sekundärfarbe“ are painted with the
-// instance's own branding colours so the chip shows what the site will show.
-const NAMED_OPTIONS = Object.freeze([
-  { value: "default", label: "Standard" },
-  { value: "primary", label: "Primärfarbe" },
-  { value: "secondary", label: "Sekundärfarbe" },
-  { value: "white", label: "Weiß" },
+// Every named token the contract knows, in the one wording of the spec (§12).
+// Which of them a control offers is its own vocabulary: a Block's colour has
+// „Standard“ and no „Schwarz“, a Panel has it the other way round.
+const TOKEN_LABELS = Object.freeze({
+  default: "Standard",
+  primary: "Primärfarbe",
+  secondary: "Sekundärfarbe",
+  white: "Weiß",
+  black: "Schwarz",
+});
+
+/** What a text or rich-text Block offers, which is what this control was. */
+const DEFAULT_TOKENS = Object.freeze([
+  "default",
+  "primary",
+  "secondary",
+  "white",
 ]);
+
+// The two tokens whose look is fixed rather than branded. „Primärfarbe“ and
+// „Sekundärfarbe“ are painted with the instance's own branding colours, so the
+// chip shows what the site will show.
+const FIXED_SWATCHES = Object.freeze({ white: "#ffffff", black: "#000000" });
 
 // What „Eigene…“ starts from when the Block still carries a token and the
 // author has not picked anything this session.
@@ -100,6 +114,11 @@ export default {
     value: { type: String, default: null },
     /** The instance's `branding.theme.colors`, for the two painted chips. */
     themeColors: { type: Object, default: null },
+    /**
+     * The tokens this control offers, in the order it offers them — the
+     * Panel's vocabulary is not a Block's (Shared contract, „Panel“).
+     */
+    tokens: { type: Array, default: () => DEFAULT_TOKENS },
     /** What a backend `400` said about this colour, if anything. */
     error: { type: String, default: null },
   },
@@ -110,11 +129,12 @@ export default {
   },
   computed: {
     /**
-     * A Block that carries no colour at all reads as „Standard“: that is the
-     * contract's default, and the backend fills it on save.
+     * A field that carries no colour at all reads as the first token it
+     * offers: „Standard“ for a Block, which is the contract's default and what
+     * the backend fills in on save.
      */
     current() {
-      return this.value == null ? "default" : this.value;
+      return this.value == null ? this.tokens[0] : this.value;
     },
     isCustom() {
       return isHeroHexColor(this.current);
@@ -123,10 +143,11 @@ export default {
       return this.isCustom ? this.current.toLowerCase() : "Eigene…";
     },
     options() {
-      return NAMED_OPTIONS.map((option) => ({
-        ...option,
-        active: this.current === option.value,
-        swatch: this.swatchOf(option.value),
+      return this.tokens.map((value) => ({
+        value,
+        label: TOKEN_LABELS[value] || value,
+        active: this.current === value,
+        swatch: this.swatchOf(value),
       }));
     },
     pickerValue() {
@@ -138,7 +159,7 @@ export default {
      * blocked until it is fixed.
      */
     errorMessage() {
-      if (NAMED_OPTIONS.some((option) => option.value === this.current)) {
+      if (this.tokens.includes(this.current)) {
         return null;
       }
       return firstHeroRuleError(heroHexRules, this.current);
@@ -157,11 +178,9 @@ export default {
   },
   methods: {
     swatchOf(token) {
-      if (token === "white") {
-        return "#ffffff";
-      }
       const colors = this.themeColors || {};
-      return colors[token] || null;
+
+      return FIXED_SWATCHES[token] || colors[token] || null;
     },
     choose(value) {
       if (value !== this.current) {

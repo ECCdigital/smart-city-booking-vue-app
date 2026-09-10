@@ -54,6 +54,10 @@ const HERO_BLOCK_INLINE_FIELDS = Object.freeze([
   "alt",
   "image",
   "color",
+  // The two Panel keys the spec names: „Farbe“ carries „Eigene…“, which an
+  // author can get wrong, and „Deckkraft“ is named at its control by §9.
+  "panel.color",
+  "panel.opacity",
 ]);
 
 /**
@@ -89,7 +93,12 @@ const BLOCK_LABELS = Object.freeze({
   outerSpacing: "Außenabstand",
   innerSpacing: "Innenabstand",
   width: "Breite",
+  align: "Ausrichtung",
   panel: "Fläche hinter dem Block",
+  "panel.color": "Farbe",
+  "panel.opacity": "Deckkraft",
+  "panel.radius": "Ecken",
+  "panel.blur": "Hintergrund weichzeichnen",
   homeOnly: "Nur auf der Startseite anzeigen",
   hideOnMobile: "Auf Mobilgeräten ausblenden",
 });
