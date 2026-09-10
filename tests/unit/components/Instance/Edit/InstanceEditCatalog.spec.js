@@ -1,11 +1,27 @@
-import { describe, expect, it } from "vitest";
-import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
+import { flushPromises } from "@tests/unit/support/api";
 import {
   activeDialog,
   activeDialogText,
   dialogButton,
 } from "@tests/unit/support/dialog";
+import toasts from "@/store/modules/toasts";
+import { heroLayoutResponse } from "@tests/unit/support/heroLayout";
+
+// The Hero Editor the entry card opens fills itself from the hero layout
+// route; the tab around it is what is under test here.
+vi.mock("@/services/api/ApiCatalogService", () => ({
+  default: {
+    getHeroLayout: vi.fn(),
+    updateHeroLayout: vi.fn(),
+    previewHeroLayout: vi.fn(),
+  },
+}));
+
+import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
+import ApiCatalogService from "@/services/api/ApiCatalogService";
 
 function instance(overrides = {}) {
   return {
@@ -51,10 +67,16 @@ function mountTab(propsData = {}) {
   // The two media fields open a picker backed by the media API; what is under
   // test is the tab around them.
   return mountComponent(InstanceEditCatalog, {
+    store: new Vuex.Store({ modules: { toasts } }),
     propsData: { instance: instance(), catalog: catalog(), ...propsData },
     stubs: { MediaReferenceField: true, MediaReferenceImage: true },
   });
 }
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  ApiCatalogService.getHeroLayout.mockResolvedValue(heroLayoutResponse());
+});
 
 function fieldByLabel(wrapper, label) {
   return wrapper
@@ -230,6 +252,7 @@ describe("InstanceEditCatalog Kopfbereich entry card", () => {
     const wrapper = mountTab();
 
     await buttonByLabel(wrapper, "Kopfbereich bearbeiten").trigger("click");
+    await flushPromises();
     await settle(wrapper);
 
     expect(activeDialog()).not.toBeNull();
@@ -240,6 +263,7 @@ describe("InstanceEditCatalog Kopfbereich entry card", () => {
     expect(wrapper.emitted("refetch")).toBeUndefined();
 
     dialogButton("Schließen").click();
+    await flushPromises();
     await settle(wrapper);
 
     expect(wrapper.emitted("refetch")).toHaveLength(1);
