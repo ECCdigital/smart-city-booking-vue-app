@@ -261,7 +261,11 @@
       </v-card>
     </SubSection>
 
-    <HeroEditorDialog v-model="heroEditorOpen" @closed="$emit('refetch')" />
+    <HeroEditorDialog
+      v-model="heroEditorOpen"
+      :theme-colors="themeColors"
+      @closed="$emit('refetch')"
+    />
   </BaseSection>
 </template>
 
@@ -380,6 +384,14 @@ export default {
       const count = Array.isArray(layout.blocks) ? layout.blocks.length : 0;
       const blocks = count === 1 ? "1 Block" : `${count} Blöcke`;
       return `Angepasst · ${blocks} · Hintergrund: ${this.backgroundLabel}`;
+    },
+    /**
+     * The saved branding colours, not the edited ones: the entry button is
+     * disabled while the tab is dirty, so what the editor paints its colour
+     * chips with is what the portal serves.
+     */
+    themeColors() {
+      return this.instance.branding?.theme?.colors || null;
     },
     backgroundLabel() {
       const type = this.instance.branding?.background?.type;

@@ -110,6 +110,16 @@ function toastMessages(wrapper) {
   return wrapper.vm.$store.getters["toasts/all"].map((toast) => toast.message);
 }
 
+function blockForm(wrapper) {
+  return wrapper.findComponent({ name: "HeroBlockForm" });
+}
+
+function row(wrapper, id) {
+  return wrapper
+    .findAll(".hero-block-row")
+    .wrappers.find((entry) => entry.attributes("data-id") === id);
+}
+
 function leaveDialog(wrapper) {
   return wrapper.findComponent({ name: "UnsavedChangesDialog" });
 }
@@ -422,12 +432,6 @@ describe("HeroEditorDialog blocks", () => {
     return wrapper.findComponent({ name: "HeroBlockList" });
   }
 
-  function row(wrapper, id) {
-    return wrapper
-      .findAll(".hero-block-row")
-      .wrappers.find((entry) => entry.attributes("data-id") === id);
-  }
-
   it("hands the list the Blocks of the loaded layout", async () => {
     const wrapper = await openEditor(withBlocks());
 
@@ -481,15 +485,62 @@ describe("HeroEditorDialog blocks", () => {
     );
   });
 
-  it("names the selected Block below the list, where its form will go", async () => {
+  it("shows the detail form of the selected Block below the list", async () => {
     const wrapper = await openEditor(withBlocks());
+
+    expect(blockForm(wrapper).exists()).toBe(false);
 
     await row(wrapper, "note").trigger("click");
 
-    // The placeholder for the detail form: type and id.
-    const placeholder = wrapper.find(".hero-editor-block-form").text();
-    expect(placeholder).toContain("Text");
-    expect(placeholder).toContain("note");
+    expect(blockForm(wrapper).props("block").id).toBe("note");
+    expect(blockForm(wrapper).text()).toContain("Inhalt");
+  });
+
+  it("writes what the detail form changed into the Draft", async () => {
+    const wrapper = await openEditor(withBlocks());
+    await row(wrapper, "note").trigger("click");
+
+    blockForm(wrapper).vm.$emit("input", { size: "xl" });
+    await wrapper.vm.$nextTick();
+
+    expect(blockForm(wrapper).props("block").size).toBe("xl");
+    expect(editorText(wrapper)).toContain("Angepasst");
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
+  });
+
+  it("moves a Block to the end of the Zone the Position grid names", async () => {
+    const wrapper = await openEditor(withBlocks());
+    await row(wrapper, "note").trigger("click");
+
+    blockForm(wrapper).vm.$emit("update:zone", "middle-left");
+    await wrapper.vm.$nextTick();
+
+    expect(
+      blockList(wrapper)
+        .props("blocks")
+        .map((b) => b.id)
+    ).toEqual(["title", "note"]);
+    expect(blockForm(wrapper).props("block").zone).toBe("middle-left");
+  });
+
+  it("hands the form the branding colours the chips are painted with", async () => {
+    ApiCatalogService.getHeroLayout.mockResolvedValue(withBlocks());
+    const wrapper = mountComponent(HeroEditorDialog, {
+      store: new Vuex.Store({ modules: { toasts } }),
+      propsData: {
+        value: false,
+        themeColors: { primary: "#123456", secondary: "#654321" },
+      },
+    });
+    await wrapper.setProps({ value: true });
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+    await row(wrapper, "note").trigger("click");
+
+    expect(blockForm(wrapper).props("themeColors")).toEqual({
+      primary: "#123456",
+      secondary: "#654321",
+    });
   });
 
   it("drops the selection when the layout is reset to the default", async () => {
@@ -641,6 +692,65 @@ describe("HeroEditorDialog cancel", () => {
     await wrapper.vm.$nextTick();
 
     expect(unloadPrevented()).toBe(false);
+  });
+});
+
+/**
+ * Acceptance 4 of the spec: a Block whose German text is empty blocks saving
+ * and marks its row.
+ */
+describe("HeroEditorDialog with a Block the backend would refuse", () => {
+  function withEmptyTitle() {
+    return heroLayoutResponse({
+      heroLayout: heroLayout({
+        blocks: [
+          heroBlock({ id: "title", zone: "middle-left", text: { de: "" } }),
+          heroBlock({ id: "note", zone: "top-right", text: { de: "Hinweis" } }),
+        ],
+      }),
+      isDefault: false,
+    });
+  }
+
+  function errorBadges(wrapper) {
+    return wrapper
+      .findAll(".hero-block-row")
+      .wrappers.filter((entry) => entry.find(".hero-block-row__error").exists())
+      .map((entry) => entry.attributes("data-id"));
+  }
+
+  it("marks only the offending row", async () => {
+    const wrapper = await openEditor(withEmptyTitle());
+
+    expect(errorBadges(wrapper)).toEqual(["title"]);
+  });
+
+  /** Selects a row and lets its detail form answer with a patch. */
+  async function edit(wrapper, id, patch) {
+    await row(wrapper, id).trigger("click");
+    blockForm(wrapper).vm.$emit("input", patch);
+    await wrapper.vm.$nextTick();
+  }
+
+  it("keeps the save disabled while another Block is invalid", async () => {
+    const wrapper = await openEditor(withEmptyTitle());
+
+    // A change that makes the Draft dirty, on the Block that is fine.
+    await edit(wrapper, "note", { size: "xl" });
+
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
+      "disabled"
+    );
+    expect(ApiCatalogService.updateHeroLayout).not.toHaveBeenCalled();
+  });
+
+  it("releases the save once the German text is there", async () => {
+    const wrapper = await openEditor(withEmptyTitle());
+
+    await edit(wrapper, "title", { text: { de: "Titel" } });
+
+    expect(errorBadges(wrapper)).toEqual([]);
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
   });
 });
 

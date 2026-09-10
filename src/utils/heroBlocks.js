@@ -43,6 +43,22 @@ export const HERO_ZONE_LABELS = Object.freeze({
   "bottom-right": "Unten rechts",
 });
 
+/**
+ * The arrow the 3x3 Position grid paints on a Zone's cell. The centre has no
+ * direction to point in and carries a dot instead.
+ */
+export const HERO_ZONE_ICONS = Object.freeze({
+  "top-left": "mdi-arrow-top-left",
+  "top-center": "mdi-arrow-up",
+  "top-right": "mdi-arrow-top-right",
+  "middle-left": "mdi-arrow-left",
+  "middle-center": "mdi-circle-medium",
+  "middle-right": "mdi-arrow-right",
+  "bottom-left": "mdi-arrow-bottom-left",
+  "bottom-center": "mdi-arrow-down",
+  "bottom-right": "mdi-arrow-bottom-right",
+});
+
 /** The Zone a Block without a selection to sit behind goes into. */
 export const DEFAULT_HERO_ZONE = "middle-center";
 
@@ -173,6 +189,27 @@ export function heroBlockGroups(blocks) {
 }
 
 /**
+ * How many Blocks sit in each of the nine Zones. The Position grid asks with
+ * the Block it is about to move, which then does not count itself: what the
+ * cell shows is the crowd the Block would join.
+ *
+ * @param {Array} blocks - The Blocks as they stand.
+ * @param {?string} [exceptId] - A Block that does not count itself.
+ * @returns {Object<string, number>} A count per Zone, zero included.
+ */
+export function heroBlockZoneCounts(blocks, exceptId = null) {
+  const counts = Object.fromEntries(HERO_ZONES.map((zone) => [zone, 0]));
+
+  for (const block of blocks || []) {
+    if (block.id !== exceptId && counts[zoneOf(block)] !== undefined) {
+      counts[block.zone] += 1;
+    }
+  }
+
+  return counts;
+}
+
+/**
  * The first line of a Block's German content — the alt text for an image, the
  * first paragraph without its markup for a rich text. The row shows it, so the
  * author recognises the Block without opening it.
@@ -191,6 +228,45 @@ export function heroBlockSummary(block) {
     return firstLineOfHtml(german(block.html));
   }
   return german(block.text);
+}
+
+/**
+ * The text of one locale of a localised string — `text.text`, `richtext.html`
+ * and `image.alt` all carry one. A locale nobody has written yet reads as
+ * empty, which is what the field shows.
+ *
+ * @param {?Object} localized - The localised string.
+ * @param {string} locale - `de` or `en`.
+ * @returns {string} The text.
+ */
+export function heroLocalizedText(localized, locale) {
+  const value = localized ? localized[locale] : null;
+  return typeof value === "string" ? value : "";
+}
+
+/**
+ * The localised string with one locale rewritten. An emptied English text
+ * loses its key: „an empty `en` counts as absent“ (Shared contract), so a
+ * translation the author clears leaves nothing behind for the save to send.
+ * German is the required locale and keeps its key, empty or not — the
+ * pre-validation is what refuses it.
+ *
+ * @param {?Object} localized - The localised string as it stands.
+ * @param {string} locale - `de` or `en`.
+ * @param {?string} next - What the field now holds.
+ * @returns {Object} A new localised string.
+ */
+export function setHeroLocalizedText(localized, locale, next) {
+  const result = { ...(localized || {}) };
+  const text = String(next == null ? "" : next);
+
+  if (locale !== "de" && !text.trim()) {
+    delete result[locale];
+  } else {
+    result[locale] = text;
+  }
+
+  return result;
 }
 
 /**
@@ -250,6 +326,27 @@ export function setHeroBlockZone(blocks, id, zone, index = null) {
     ...others.filter((entry) => zoneOf(entry) !== zone),
     ...group,
   ]);
+}
+
+/**
+ * Rewrites the fields the detail form changed. The patch carries the keys that
+ * moved and nothing else, so a Block keeps everything the form does not ask
+ * about — including the keys of a type this editor version has no field for.
+ *
+ * A Zone is not one of those fields: moving a Block reorders the array, which
+ * is what `setHeroBlockZone` is for.
+ *
+ * @param {Array} blocks - The Blocks as they stand.
+ * @param {string} id - The Block to rewrite.
+ * @param {Object} patch - The fields that changed.
+ * @returns {Array} A new array in canonical order.
+ */
+export function updateHeroBlock(blocks, id, patch) {
+  return sortHeroBlocks(
+    (blocks || []).map((block) =>
+      block.id === id ? { ...block, ...patch } : block
+    )
+  );
 }
 
 /**

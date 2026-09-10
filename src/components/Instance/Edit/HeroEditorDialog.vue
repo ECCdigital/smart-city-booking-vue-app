@@ -71,18 +71,31 @@
                 :selected-block-id="selectedBlockId"
                 @input="setBlocks"
                 @update:selectedBlockId="selectedBlockId = $event"
-              />
-
-              <!-- The detail form of the selected Block goes here. -->
-              <v-sheet
-                v-if="selectedBlock"
-                color="accent"
-                rounded
-                class="hero-editor-block-form mt-3 pa-3 text-body-2 text--secondary"
               >
-                {{ selectedBlockType.label }} · {{ selectedBlock.id }}
-              </v-sheet>
+                <template #badge="{ block }">
+                  <v-icon
+                    v-if="issuesOf(block).length > 0"
+                    small
+                    color="error"
+                    class="hero-block-row__error"
+                    :title="issuesOf(block).join(' ')"
+                  >
+                    mdi-alert-circle
+                  </v-icon>
+                </template>
+              </HeroBlockList>
             </SubSection>
+
+            <HeroBlockForm
+              v-if="selectedBlock"
+              class="mt-6"
+              :block="selectedBlock"
+              :blocks="blocks"
+              :locale="locale"
+              :theme-colors="themeColors"
+              @input="patchSelectedBlock"
+              @update:zone="moveSelectedBlock"
+            />
 
             <!-- „Hintergrund“ arrives with the Background section. -->
             <SubSection
@@ -129,10 +142,15 @@ import { mapActions } from "vuex";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import SubSection from "@/components/commons/SubSection.vue";
+import HeroBlockForm from "@/components/Instance/Edit/HeroBlockForm.vue";
 import HeroBlockList from "@/components/Instance/Edit/HeroBlockList.vue";
 import HeroResetConformationDialog from "@/components/Instance/Edit/HeroResetConformationDialog.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
-import { heroBlockType } from "@/utils/heroBlocks";
+import { setHeroBlockZone, updateHeroBlock } from "@/utils/heroBlocks";
+import {
+  heroBlockIssues,
+  invalidHeroBlockIds,
+} from "@/utils/heroBlockValidation";
 import {
   heroDefaultPreviewPayload,
   heroDraftFromResponse,
@@ -169,6 +187,7 @@ const CUSTOM_STATUS = "Angepasst";
 export default {
   name: "HeroEditorDialog",
   components: {
+    HeroBlockForm,
     HeroBlockList,
     HeroResetConformationDialog,
     SubSection,
@@ -176,6 +195,11 @@ export default {
   },
   props: {
     value: { type: Boolean, default: false },
+    /**
+     * The instance's `branding.theme.colors`. The colour chips of a text Block
+     * are painted with them, so „Primärfarbe“ shows what the portal shows.
+     */
+    themeColors: { type: Object, default: null },
   },
   data() {
     return {
@@ -211,8 +235,18 @@ export default {
     inProgress() {
       return this.loading || this.saving || this.resetting;
     },
+    /**
+     * A save is refused while a Block carries something the backend would
+     * reject — the round-trip would only bring the same answer back as a
+     * toast (hero layout spec §9).
+     */
     canSave() {
-      return this.isDirty && !this.inProgress;
+      return (
+        this.isDirty && !this.inProgress && this.invalidBlockIds.length === 0
+      );
+    },
+    invalidBlockIds() {
+      return invalidHeroBlockIds(this.blocks);
     },
     cancelLabel() {
       return this.isDirty ? "Abbrechen" : "Schließen";
@@ -226,9 +260,6 @@ export default {
       return (
         this.blocks.find((block) => block.id === this.selectedBlockId) || null
       );
-    },
-    selectedBlockType() {
-      return heroBlockType(this.selectedBlock && this.selectedBlock.type);
     },
     statusLabel() {
       return this.draft && this.draft.isDefault
@@ -345,6 +376,21 @@ export default {
       }
       this.$set(this.draft.heroLayout, "blocks", blocks);
       this.markAsCustom();
+    },
+    /** What the badge on a row says, and why „Speichern“ is disabled. */
+    issuesOf(block) {
+      return heroBlockIssues(block);
+    },
+    /** The fields the detail form changed, on the selected Block. */
+    patchSelectedBlock(patch) {
+      this.setBlocks(updateHeroBlock(this.blocks, this.selectedBlockId, patch));
+    },
+    /**
+     * The Position grid. A Block moves to the **end** of the target Zone's
+     * stack, the same effect a Zone click in the Live Preview has.
+     */
+    moveSelectedBlock(zone) {
+      this.setBlocks(setHeroBlockZone(this.blocks, this.selectedBlockId, zone));
     },
     height(field) {
       return this.draft && this.draft.heroLayout

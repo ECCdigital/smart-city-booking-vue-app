@@ -8,12 +8,16 @@ import {
   heroBlockGroups,
   heroBlockSummary,
   heroBlockType,
+  heroBlockZoneCounts,
+  heroLocalizedText,
   insertHeroBlock,
   moveHeroBlock,
   newHeroBlockId,
   removeHeroBlock,
   setHeroBlockZone,
+  setHeroLocalizedText,
   sortHeroBlocks,
+  updateHeroBlock,
 } from "@/utils/heroBlocks";
 import { heroBlock } from "@tests/unit/support/heroLayout";
 
@@ -540,5 +544,89 @@ describe("insertHeroBlock", () => {
 
     expect(result.blocks).toHaveLength(MAX_HERO_BLOCKS);
     expect(result.selectedBlockId).toBe("b0");
+  });
+});
+
+describe("heroLocalizedText", () => {
+  it("reads the locale it is asked for", () => {
+    expect(heroLocalizedText({ de: "Hallo", en: "Hello" }, "en")).toBe("Hello");
+  });
+
+  it("reads a missing locale and a missing string as empty", () => {
+    expect(heroLocalizedText({ de: "Hallo" }, "en")).toBe("");
+    expect(heroLocalizedText(null, "de")).toBe("");
+  });
+});
+
+describe("setHeroLocalizedText", () => {
+  it("writes the locale without touching the others", () => {
+    expect(setHeroLocalizedText({ de: "Hallo" }, "en", "Hello")).toEqual({
+      de: "Hallo",
+      en: "Hello",
+    });
+  });
+
+  it("keeps an emptied German text, because it is the required one", () => {
+    expect(setHeroLocalizedText({ de: "Hallo" }, "de", "")).toEqual({ de: "" });
+  });
+
+  it("drops an emptied English text, because an empty one counts as absent", () => {
+    expect(
+      setHeroLocalizedText({ de: "Hallo", en: "Hello" }, "en", "  ")
+    ).toEqual({ de: "Hallo" });
+  });
+});
+
+describe("updateHeroBlock", () => {
+  it("rewrites only the fields of the patch, and only on that Block", () => {
+    const blocks = [block("a"), block("b")];
+
+    const next = updateHeroBlock(blocks, "b", { size: "xl", shadow: true });
+
+    expect(next[1]).toMatchObject({ id: "b", size: "xl", shadow: true });
+    expect(next[1].text).toEqual({ de: "Willkommen" });
+    expect(next[0]).toEqual(blocks[0]);
+  });
+
+  it("leaves the array it was given untouched", () => {
+    const blocks = [block("a")];
+
+    updateHeroBlock(blocks, "a", { size: "xl" });
+
+    expect(blocks[0].size).toBe("md");
+  });
+
+  it("takes an id nobody carries as a no-op", () => {
+    const blocks = [block("a")];
+
+    expect(updateHeroBlock(blocks, "gone", { size: "xl" })).toEqual(blocks);
+  });
+});
+
+describe("heroBlockZoneCounts", () => {
+  it("counts every Zone, the empty ones as zero", () => {
+    const counts = heroBlockZoneCounts([
+      block("a", "top-left"),
+      block("b", "top-left"),
+      block("c", "middle-center"),
+    ]);
+
+    expect(counts["top-left"]).toBe(2);
+    expect(counts["middle-center"]).toBe(1);
+    expect(counts["bottom-right"]).toBe(0);
+    expect(Object.keys(counts)).toEqual([...HERO_ZONES]);
+  });
+
+  it("leaves the named Block out of its own count", () => {
+    const blocks = [block("a", "top-left"), block("b", "top-left")];
+
+    expect(heroBlockZoneCounts(blocks, "a")["top-left"]).toBe(1);
+  });
+
+  it("ignores a Zone none of the nine knows", () => {
+    const counts = heroBlockZoneCounts([block("a", "nowhere")]);
+
+    expect(counts.nowhere).toBeUndefined();
+    expect(counts["top-left"]).toBe(0);
   });
 });
