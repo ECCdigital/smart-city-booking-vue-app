@@ -99,6 +99,10 @@ const BLOCK_LABELS = Object.freeze({
   "panel.opacity": "Deckkraft",
   "panel.radius": "Ecken",
   "panel.blur": "Hintergrund weichzeichnen",
+  // „Lage“ is one group, and its pad is one control: an axis of the Offset is
+  // a fault of the group, not of a field of its own.
+  offset: "Lage",
+  layer: "Im Vordergrund",
   homeOnly: "Nur auf der Startseite anzeigen",
   hideOnMobile: "Auf Mobilgeräten ausblenden",
 });

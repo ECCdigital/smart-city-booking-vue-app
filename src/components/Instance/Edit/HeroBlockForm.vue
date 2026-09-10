@@ -282,6 +282,43 @@
         </template>
       </div>
 
+      <div class="hero-block-form__lage mt-4">
+        <div class="text-caption text--secondary mb-1">Lage</div>
+        <div class="d-flex align-center">
+          <div class="hero-block-form__pad">
+            <v-btn
+              v-for="pad in padCells"
+              :key="pad.label"
+              class="hero-block-form__nudge"
+              :title="pad.label"
+              :aria-label="pad.label"
+              :disabled="pad.disabled"
+              outlined
+              depressed
+              small
+              @click="nudge(pad)"
+            >
+              <v-icon small>{{ pad.icon }}</v-icon>
+            </v-btn>
+          </div>
+          <div
+            class="hero-block-form__versatz text-caption text--secondary ml-3"
+          >
+            {{ offsetReadout }}
+          </div>
+        </div>
+
+        <v-switch
+          :input-value="block.layer === 'front'"
+          label="Im Vordergrund"
+          color="primary"
+          class="mt-2"
+          dense
+          hide-details
+          @change="patch({ layer: $event ? 'front' : 'back' })"
+        />
+      </div>
+
       <v-expansion-panels flat class="hero-block-form__fine mt-4">
         <v-expansion-panel>
           <v-expansion-panel-header color="accent" class="px-3">
@@ -372,6 +409,14 @@ import {
   heroLocalizedText,
   setHeroLocalizedText,
 } from "@/utils/heroBlocks";
+import {
+  HERO_NUDGE_CELLS,
+  NO_HERO_OFFSET,
+  heroOffsetReadout,
+  heroOffsetStep,
+  isHeroOffsetStepPossible,
+  isHeroOffsetZero,
+} from "@/utils/heroOffset";
 import {
   HERO_PANEL_COLOR_TOKENS,
   HERO_RICHTEXT_MAX_LENGTH,
@@ -514,6 +559,30 @@ export default {
     isText() {
       return this.block.type === "text";
     },
+    /**
+     * The pad's nine cells with the state of each: a direction that has run
+     * out of grid and the reset of a Block that has not moved are both cells
+     * with nothing left to do, so both are disabled rather than clickable and
+     * inert.
+     */
+    padCells() {
+      const offset = this.block.offset;
+
+      return HERO_NUDGE_CELLS.map((pad) => ({
+        ...pad,
+        disabled: pad.reset
+          ? isHeroOffsetZero(offset)
+          : !isHeroOffsetStepPossible(offset, pad),
+      }));
+    },
+    /**
+     * What the pad has done, in the unit the pad works in: a click is a step,
+     * so the readout counts steps and leaves the stored rem to the contract
+     * (hero layout spec §7).
+     */
+    offsetReadout() {
+      return heroOffsetReadout(this.block.offset);
+    },
     /** Whether the Block paints a Panel — the state of the group's switch. */
     hasPanel() {
       return this.block.panel != null;
@@ -640,6 +709,17 @@ export default {
       });
     },
     /**
+     * One click of the pad: one step of 0.5 rem in that cell's direction, or
+     * back to nought at the middle cell.
+     */
+    nudge(pad) {
+      this.patch({
+        offset: pad.reset
+          ? { ...NO_HERO_OFFSET }
+          : heroOffsetStep(this.block.offset, pad),
+      });
+    },
+    /**
      * One key of the Panel. Each control of the group writes exactly its own,
      * so the other three keep whatever the author set them to.
      */
@@ -672,5 +752,23 @@ export default {
 
 .hero-block-form__glass {
   flex: 0 0 auto;
+}
+
+/* „Lage“ reads as placement, so its cells are a square 3x3 pad rather than a
+   row of controls — and a `v-btn` sizes itself by its content, so the grid has
+   to overrule its width and height. */
+.hero-block-form__pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  width: 120px;
+  flex: 0 0 auto;
+}
+
+.hero-block-form__nudge.v-btn {
+  min-width: 0;
+  width: 100%;
+  height: 36px;
+  padding: 0;
 }
 </style>

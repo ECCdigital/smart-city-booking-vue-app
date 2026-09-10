@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validationError } from "@tests/unit/support/api";
 import {
   heroErrorEntries,
+  heroFieldLabel,
   heroErrorMessage,
   heroSectionErrorText,
   heroValidationDetails,
@@ -145,6 +146,19 @@ describe("resolveHeroErrorPath", () => {
     expect(
       resolveHeroErrorPath("heroLayout.blocks[0].panel.blur")
     ).toMatchObject({ field: "panel.blur" });
+  });
+
+  it("lands an Offset axis at „Lage“, which is the control that made it", () => {
+    // The pad cannot produce a value the contract refuses, so a fault here
+    // describes a Draft this form did not make — it still names the group the
+    // author would go looking in, and marks the Block's row (spec §9).
+    expect(resolveHeroErrorPath("heroLayout.blocks[2].offset.x")).toMatchObject(
+      { section: "blocks", blockIndex: 2, field: "offset" }
+    );
+    expect(resolveHeroErrorPath("heroLayout.blocks[0].offset.y")).toMatchObject(
+      { field: "offset" }
+    );
+    expect(heroFieldLabel("blocks", "offset")).toBe("Lage");
   });
 
   it("keeps a refused Panel itself on the switch", () => {
@@ -344,6 +358,8 @@ describe("heroErrorEntries", () => {
       "image",
       "maxHeight",
       "invertInDarkMode",
+      "offset",
+      "layer",
     ];
     const unnamed = heroErrorEntries(
       keys.map((key) => ({

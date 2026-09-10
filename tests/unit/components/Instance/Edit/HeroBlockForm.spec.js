@@ -189,6 +189,39 @@ function corner(wrapper, label) {
   return found;
 }
 
+/** The groups of „Darstellung“, in the order they stand on screen. */
+function darstellungGroups(wrapper) {
+  const marker = /hero-block-form__(panel|lage|fine)(?:\s|$)/;
+
+  return Array.from(
+    wrapper.element.querySelectorAll(
+      ".hero-block-form__panel, .hero-block-form__lage, .hero-block-form__fine"
+    )
+  ).map((element) => element.className.match(marker)[1]);
+}
+
+/** A cell of the „Lage“ pad, by the German word it carries. */
+function nudge(wrapper, label) {
+  const found = wrapper
+    .findAll(".hero-block-form__nudge")
+    .wrappers.find((entry) => entry.attributes("aria-label") === label);
+  if (!found) {
+    throw new Error(`Die Richtung „${label}“ fehlt.`);
+  }
+  return found;
+}
+
+function nudgeLabels(wrapper) {
+  return wrapper
+    .findAll(".hero-block-form__nudge")
+    .wrappers.map((entry) => entry.attributes("aria-label"));
+}
+
+async function clickNudge(wrapper, label) {
+  await nudge(wrapper, label).trigger("click");
+  await Vue.nextTick();
+}
+
 function cell(wrapper, zone) {
   return wrapper
     .findAll(".hero-position-grid__cell")
@@ -965,5 +998,112 @@ describe("HeroBlockForm, the backend's messages", () => {
     });
 
     expect(wrapper.text()).toContain("Das Bild ist nicht öffentlich.");
+  });
+});
+
+/**
+ * „Lage“ — the nudge pad and „Im Vordergrund“ (hero layout spec §7). The pad
+ * reads as placement, so its cells carry arrows and their German words rather
+ * than numbers, and it cannot produce a value the contract refuses.
+ */
+describe("HeroBlockForm, Lage", () => {
+  it("stands between the Panel group and Feinabstimmung", () => {
+    expect(darstellungGroups(formOf(heroBlock()))).toEqual([
+      "panel",
+      "lage",
+      "fine",
+    ]);
+  });
+
+  it("carries the eight directions and the reset, each named in German", () => {
+    const wrapper = formOf(heroBlock());
+
+    expect(nudgeLabels(wrapper)).toEqual([
+      "Nach links oben",
+      "Nach oben",
+      "Nach rechts oben",
+      "Nach links",
+      "Versatz zurücksetzen",
+      "Nach rechts",
+      "Nach links unten",
+      "Nach unten",
+      "Nach rechts unten",
+    ]);
+    nudgeLabels(wrapper).forEach((label) => {
+      expect(nudge(wrapper, label).attributes("title")).toBe(label);
+    });
+  });
+
+  it("moves the Block one 0.5 rem step in the direction that was clicked", async () => {
+    const wrapper = formOf(heroBlock());
+
+    await clickNudge(wrapper, "Nach rechts");
+
+    expect(lastPatch(wrapper)).toEqual({ offset: { x: 0.5, y: 0 } });
+  });
+
+  it("stops at the sixth step and disables the exhausted cell", async () => {
+    const wrapper = formOf(heroBlock({ offset: { x: 2.5, y: 0 } }));
+
+    await clickNudge(wrapper, "Nach rechts");
+
+    expect(lastPatch(wrapper)).toEqual({ offset: { x: 3, y: 0 } });
+    expect(nudge(wrapper, "Nach rechts").attributes("disabled")).toBeFalsy();
+
+    const atEdge = formOf(heroBlock({ offset: { x: 3, y: 0 } }));
+
+    expect(nudge(atEdge, "Nach rechts").attributes("disabled")).toBe(
+      "disabled"
+    );
+    // The other axis still has room, so the diagonal is still a move.
+    expect(
+      nudge(atEdge, "Nach rechts unten").attributes("disabled")
+    ).toBeFalsy();
+    expect(nudge(atEdge, "Nach links").attributes("disabled")).toBeFalsy();
+  });
+
+  it("resets from the middle cell, which is disabled while there is no Versatz", async () => {
+    const zero = formOf(heroBlock());
+
+    expect(nudge(zero, "Versatz zurücksetzen").attributes("disabled")).toBe(
+      "disabled"
+    );
+
+    const moved = formOf(heroBlock({ offset: { x: -1.5, y: 2 } }));
+
+    expect(
+      nudge(moved, "Versatz zurücksetzen").attributes("disabled")
+    ).toBeFalsy();
+
+    await clickNudge(moved, "Versatz zurücksetzen");
+
+    expect(lastPatch(moved)).toEqual({ offset: { x: 0, y: 0 } });
+  });
+
+  it("counts the Versatz in steps beside the pad", () => {
+    const lage = (block) => formOf(block).find(".hero-block-form__lage").text();
+
+    expect(lage(heroBlock())).toContain("Kein Versatz");
+    expect(lage(heroBlock({ offset: { x: 2, y: -0.5 } }))).toContain(
+      "4 nach rechts · 1 nach oben (Schritte)"
+    );
+  });
+
+  it("writes front and back with Im Vordergrund", async () => {
+    const wrapper = formOf(heroBlock({ layer: "back" }));
+
+    expect(switchOf(wrapper, "Im Vordergrund").props("inputValue")).toBe(false);
+
+    await toggle(wrapper, "Im Vordergrund");
+
+    expect(lastPatch(wrapper)).toEqual({ layer: "front" });
+
+    const front = formOf(heroBlock({ layer: "front" }));
+
+    expect(switchOf(front, "Im Vordergrund").props("inputValue")).toBe(true);
+
+    await toggle(front, "Im Vordergrund");
+
+    expect(lastPatch(front)).toEqual({ layer: "back" });
   });
 });
