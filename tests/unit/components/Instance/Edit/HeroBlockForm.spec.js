@@ -16,6 +16,7 @@ import {
 } from "@tests/unit/support/heroLayout";
 import HeroBlockForm from "@/components/Instance/Edit/HeroBlockForm.vue";
 import Tiptap from "@/components/Tiptap.vue";
+import HeroColorField from "@/components/Instance/Edit/HeroColorField.vue";
 
 const THEME_COLORS = { primary: "#123456", secondary: "#654321" };
 
@@ -56,6 +57,17 @@ function editor(wrapper) {
 async function typeInEditor(wrapper, text) {
   editor(wrapper).vm.editor.chain().focus("end").insertContent(text).run();
   await wrapper.vm.$nextTick();
+}
+
+/** The link button of the leiste, which carries the only link icon there. */
+function linkButton(wrapper) {
+  const found = wrapper
+    .findAll(".tiptap-toolbar button")
+    .wrappers.find((entry) => entry.find(".mdi-link").exists());
+  if (!found) {
+    throw new Error("Der Link-Knopf fehlt.");
+  }
+  return found;
 }
 
 function mediaField(wrapper) {
@@ -309,6 +321,30 @@ describe("HeroBlockForm, the text Block's Inhalt", () => {
   });
 });
 
+/**
+ * An HTML attribute needs the double quotes the lint rule on quotes will not
+ * let a literal spell, so the markup below is composed rather than written.
+ */
+function attr(name, value) {
+  return ` ${name}=${JSON.stringify(value)}`;
+}
+
+/**
+ * Rich text carrying one of everything the contract allows a run of words and
+ * a paragraph to be, in the shape the editor itself writes it — an aligned
+ * paragraph, an inline size, a colour token, the three character marks, a
+ * custom hex with the `style` the admin paints it by, a link and a list.
+ */
+const MARKED_UP =
+  `<p${attr("class", "hero-align-center")}>Ein ` +
+  `<span${attr("class", "hero-size-lg hero-color-primary")}>Wort</span> und ` +
+  "<strong>fett</strong> und <em>kursiv</em> und <u>unterstrichen</u> und " +
+  `<span${attr("data-color", "#1a2b3c")}${attr("style", "color:#1a2b3c")}>` +
+  "eigen</span> und " +
+  `<a${attr("target", "_blank")}${attr("rel", "noopener noreferrer")}` +
+  `${attr("href", "https://example.org/")}>ein Link</a></p>` +
+  "<ul><li><p>Punkt</p></li></ul>";
+
 describe("HeroBlockForm, the rich-text Block's Inhalt", () => {
   it("edits the German HTML in the shared editor, with links and the 10 000 counter", async () => {
     const wrapper = formOf(heroRichtextBlock());
@@ -363,7 +399,7 @@ describe("HeroBlockForm, the rich-text Block's Inhalt", () => {
     expect(wrapper.text()).toContain("Höchstens 10000 Zeichen.");
   });
 
-  it("carries the shadow switch and the colour control, and no font size", async () => {
+  it("carries the shadow switch and the colour control, and no Fett", async () => {
     const wrapper = formOf(heroRichtextBlock());
 
     expect(chipLabels(colorField(wrapper))).toEqual([
@@ -373,12 +409,141 @@ describe("HeroBlockForm, the rich-text Block's Inhalt", () => {
       "Weiß",
       "Eigene…",
     ]);
-    expect(() => selectByLabel(wrapper, "Schriftgröße")).toThrow();
     expect(() => switchByLabel(wrapper, "Fett")).toThrow();
 
     await toggle(wrapper, "Schatten für bessere Lesbarkeit");
 
     expect(lastPatch(wrapper)).toEqual({ shadow: true });
+  });
+
+  /**
+   * The Block's own size is what a run of words inherits while it carries no
+   * class of its own, so a rich-text Block edits it on the same six steps a
+   * text Block does (hero layout spec §7).
+   */
+  it("edits its own Schriftgröße on the six steps of the scale", async () => {
+    const wrapper = formOf(heroRichtextBlock({ size: "lg" }));
+    const select = selectByLabel(wrapper, "Schriftgröße");
+
+    expect(select.props("items")).toEqual([
+      { value: "xs", text: "Sehr klein" },
+      { value: "sm", text: "Klein" },
+      { value: "md", text: "Normal" },
+      { value: "lg", text: "Groß" },
+      { value: "xl", text: "Sehr groß" },
+      { value: "2xl", text: "Riesig" },
+    ]);
+    expect(select.props("value")).toBe("lg");
+
+    await choose(wrapper, "Schriftgröße", "Riesig");
+
+    expect(lastPatch(wrapper)).toEqual({ size: "2xl" });
+  });
+
+  /**
+   * The editor runs with size, colour and alignment switched on, and its two
+   * token dots are painted with the instance's own branding — the same source
+   * the Block's colour control reads (hero layout spec §7).
+   */
+  it("mounts the editor with all four new props and the real theme colours", async () => {
+    const wrapper = formOf(heroRichtextBlock());
+    await wrapper.vm.$nextTick();
+    const tiptap = editor(wrapper);
+
+    expect(tiptap.props("sizes")).toBe(true);
+    expect(tiptap.props("colors")).toBe(true);
+    expect(tiptap.props("paragraphAlign")).toBe(true);
+    expect(tiptap.props("themeColors")).toBe(THEME_COLORS);
+    expect(tiptap.props("themeColors")).toBe(
+      wrapper.findComponent(HeroColorField).props("themeColors")
+    );
+  });
+
+  /**
+   * The new controls split the leiste into two captioned rows. Everything the
+   * Hero Editor already relied on has to survive that: the counter against
+   * 10 000 and the link button beside the character marks.
+   */
+  it("keeps the counter counting and the link button working in the two-row leiste", async () => {
+    const wrapper = formOf(heroRichtextBlock());
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper
+        .findAll(".tiptap-toolbar__caption")
+        .wrappers.map((caption) => caption.text())
+    ).toEqual(["Zeichen", "Absatz"]);
+    expect(wrapper.find(".tiptap-counter").text()).toBe("17 / 10000");
+
+    await typeInEditor(wrapper, "!");
+    expect(wrapper.find(".tiptap-counter").text()).toBe("18 / 10000");
+
+    await linkButton(wrapper).trigger("click");
+    await Vue.nextTick();
+
+    expect(editor(wrapper).vm.linkDialog).toBe(true);
+  });
+
+  /**
+   * Half of the round-trip criterion: what the backend hands back loads into
+   * the editor unchanged. The editor's own normaliser repairs hand-forged
+   * markup, so the proof that it repairs *nothing* here is that the HTML
+   * comes back byte-identical and the form emits no patch — a repair would
+   * be a change, and a change would travel up as one.
+   */
+  it("loads marked-up rich text back out byte-identical, with no repair", async () => {
+    const wrapper = formOf(heroRichtextBlock({ html: { de: MARKED_UP } }));
+    await wrapper.vm.$nextTick();
+
+    expect(editor(wrapper).vm.editor.getHTML()).toBe(MARKED_UP);
+    expect(wrapper.emitted("input")).toBeUndefined();
+  });
+
+  /**
+   * Each locale view gets its own editor instance, so the toggle throws one
+   * away and builds the other: the marks of both have to survive that, and
+   * neither view may repair the text of the one it replaced.
+   */
+  it("keeps the marks in both locale views across the language toggle", async () => {
+    const english = MARKED_UP.replace("Wort", "word");
+    const wrapper = formOf(
+      heroRichtextBlock({ html: { de: MARKED_UP, en: english } })
+    );
+    await wrapper.vm.$nextTick();
+
+    expect(editor(wrapper).vm.editor.getHTML()).toBe(MARKED_UP);
+
+    await wrapper.setProps({ locale: "en" });
+    await wrapper.vm.$nextTick();
+    expect(editor(wrapper).vm.editor.getHTML()).toBe(english);
+
+    await wrapper.setProps({ locale: "de" });
+    await wrapper.vm.$nextTick();
+    expect(editor(wrapper).vm.editor.getHTML()).toBe(MARKED_UP);
+    expect(wrapper.emitted("input")).toBeUndefined();
+  });
+
+  it("puts the size and the colour above the editor, side by side", () => {
+    const wrapper = formOf(heroRichtextBlock());
+    const typography = wrapper.find(".hero-block-form__typography");
+
+    // Both controls stand in the one row, and the row stands before the
+    // editor — DOCUMENT_POSITION_FOLLOWING is "the editor comes after this".
+    expect(typography.find(".hero-block-form__size").exists()).toBe(true);
+    expect(typography.findComponent(HeroColorField).exists()).toBe(true);
+    expect(
+      typography.element.compareDocumentPosition(editor(wrapper).element) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("reads a Block that stores no size as „Normal“", () => {
+    const block = heroRichtextBlock();
+    delete block.size;
+
+    expect(selectByLabel(formOf(block), "Schriftgröße").props("value")).toBe(
+      "md"
+    );
   });
 });
 

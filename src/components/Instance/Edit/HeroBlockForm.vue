@@ -20,7 +20,7 @@
         />
 
         <v-select
-          :value="block.size"
+          :value="size"
           :items="sizeSteps"
           label="Schriftgröße"
           background-color="accent"
@@ -59,6 +59,34 @@
       </template>
 
       <template v-else-if="isRichtext">
+        <!--
+          The Block's own size and colour are what a run of words inherits
+          while it carries no class of its own, so the author reads them
+          first: they stand above the editor, not under it (hero layout
+          spec §7).
+        -->
+        <div class="hero-block-form__typography d-flex flex-wrap align-start">
+          <v-select
+            :value="size"
+            :items="sizeSteps"
+            label="Schriftgröße"
+            background-color="accent"
+            filled
+            dense
+            hide-details
+            class="hero-block-form__size mr-3 mb-3"
+            @change="patch({ size: $event })"
+          />
+
+          <HeroColorField
+            :value="block.color"
+            :theme-colors="themeColors"
+            :error="errorOf('color')"
+            class="hero-block-form__color"
+            @input="patch({ color: $event })"
+          />
+        </div>
+
         <div class="text-caption text--secondary mb-1">{{ textLabel }}</div>
         <!--
           One editor per locale view (hero layout spec §7): the key throws the
@@ -71,7 +99,11 @@
           :label="germanPlaceholder(htmlText)"
           :max-length="maxHtmlLength"
           :min-height="140"
+          :theme-colors="themeColors"
           links
+          sizes
+          colors
+          paragraph-align
           class="hero-block-form__richtext mb-1"
           @input="setHtml"
         />
@@ -97,16 +129,8 @@
           color="primary"
           dense
           hide-details
-          class="mt-2 mb-4"
+          class="mt-2"
           @change="patch({ shadow: !!$event })"
-        />
-
-        <HeroColorField
-          :value="block.color"
-          :theme-colors="themeColors"
-          :error="errorOf('color')"
-          class="hero-block-form__color"
-          @input="patch({ color: $event })"
         />
       </template>
 
@@ -454,6 +478,10 @@ const WIDTH_STEPS = Object.freeze([
   { value: "full", text: "Volle Breite" },
 ]);
 
+// What the contract stores when nobody picked a size (`@/utils/heroBlocks`),
+// so a Block that carries none still reads as the step it will be saved as.
+const DEFAULT_SIZE = "md";
+
 const SIZE_STEPS = Object.freeze([
   { value: "xs", text: "Sehr klein" },
   { value: "sm", text: "Klein" },
@@ -558,6 +586,14 @@ export default {
   computed: {
     isText() {
       return this.block.type === "text";
+    },
+    /**
+     * The step the „Schriftgröße“ select stands at. A text and a rich-text
+     * Block read it the same way — for the rich text it is also what a run of
+     * words inherits while it carries no size of its own (hero layout spec §7).
+     */
+    size() {
+      return this.block.size || DEFAULT_SIZE;
     },
     /**
      * The pad's nine cells with the state of each: a direction that has run
@@ -734,6 +770,17 @@ export default {
 </script>
 
 <style scoped>
+/* „Schriftgröße“ and the colour control stand beside each other above the
+   editor. The column is 420 px wide, so the select keeps a readable width and
+   the chips take what is left, wrapping rather than overflowing. */
+.hero-block-form__size {
+  flex: 0 1 150px;
+}
+
+.hero-block-form__typography .hero-block-form__color {
+  flex: 1 1 180px;
+}
+
 /* The corner steps are drawn, not named: each button carries a box with that
    step's radius, and the German word rides along as its label. */
 .hero-block-form__corner-glyph {
