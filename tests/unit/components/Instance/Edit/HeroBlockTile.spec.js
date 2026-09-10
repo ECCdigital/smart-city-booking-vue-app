@@ -172,9 +172,68 @@ describe("an image Block", () => {
   });
 });
 
+/**
+ * „Ausrichtung“ places content inside the Block's own box, so the box has to
+ * be the size the two frames give it — otherwise the tile shows a movement at
+ * „Breite: Automatisch“ that the frames will not, which is exactly the drift
+ * this one repainting place can produce.
+ */
+describe("the box „Feinabstimmung“ gives the Block", () => {
+  it("shrinks to fit at „Breite: Automatisch“, so there is nothing to align in", () => {
+    const style = wrapperBox(tileOf(heroBlock({ width: "auto" }))).element
+      .style;
+
+    expect(style.width).toBe("auto");
+  });
+
+  it("takes the contract's own width at a fixed step", () => {
+    expect(
+      wrapperBox(tileOf(heroBlock({ width: "sm" }))).element.style.width
+    ).toBe("20rem");
+    expect(
+      wrapperBox(tileOf(heroBlock({ width: "full" }))).element.style.width
+    ).toBe("100%");
+  });
+
+  it("pads the box with „Innenabstand“ rather than a padding of its own", () => {
+    expect(
+      wrapperBox(tileOf(heroBlock({ innerSpacing: "none" }))).element.style
+        .padding
+    ).toBe("0px");
+    expect(
+      wrapperBox(tileOf(heroBlock({ innerSpacing: "lg" }))).element.style
+        .padding
+    ).toBe("2rem");
+  });
+
+  it("keeps the Panel and the alignment beside the two new keys", () => {
+    const style = boxStyle(
+      tileOf(
+        heroBlock({
+          width: "sm",
+          innerSpacing: "sm",
+          align: "right",
+          panel: GLASS,
+        })
+      )
+    );
+
+    expect(style).toContain("width: 20rem");
+    expect(style).toContain("padding: 1rem");
+    expect(style).toContain("text-align: right");
+    expect(style).toContain("background-color: rgba(255, 255, 255, 0.6)");
+  });
+});
+
 describe("what the tile is allowed to know", () => {
   it("keeps no state of its own, so it can only paint the Draft", () => {
     expect(tileOf(heroBlock()).vm.$data).toEqual({});
+  });
+
+  it("says which three placements it leaves to them, in German", () => {
+    expect(tileOf(heroBlock()).find(".hero-block-tile__caption").text()).toBe(
+      "Zone, Versatz und Ebene zeigt die Live-Vorschau"
+    );
   });
 
   it("leaves the Zone, the Offset and the Layer to the frames below", async () => {

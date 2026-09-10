@@ -1674,7 +1674,8 @@
       "label": "Ausrichtung",
       "left": "Links",
       "center": "Zentriert",
-      "right": "Rechts"
+      "right": "Rechts",
+      "inherit": "Ausrichtung übernehmen"
     },
     "color": {
       "label": "Farbe",
@@ -1692,7 +1693,8 @@
       "md": "Normal",
       "lg": "Groß",
       "xl": "Sehr groß",
-      "2xl": "Riesig"
+      "2xl": "Riesig",
+      "inherit": "Größe übernehmen"
     },
     "link": {
       "button": "Link einfügen",

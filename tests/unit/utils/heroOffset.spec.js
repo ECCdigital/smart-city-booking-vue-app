@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  HERO_NUDGE_CELLS,
   heroOffsetReadout,
   heroOffsetStep,
   isHeroOffsetStepPossible,
@@ -83,5 +84,34 @@ describe("isHeroOffsetStepPossible", () => {
     );
     // A diagonal whose other axis still has room is still a move.
     expect(isHeroOffsetStepPossible({ x: 3, y: 0 }, { x: 1, y: 1 })).toBe(true);
+  });
+});
+
+/**
+ * The pad carries the German word of each cell itself, inline, the way the
+ * rest of `Instance/Edit/` and the warning copy of `heroPreviewReport.js` do
+ * (hero layout spec §12) — the arrows are all a cell shows, so the word is
+ * what a hovering pointer and a screen reader get.
+ */
+describe("HERO_NUDGE_CELLS", () => {
+  it("names the eight directions and the reset, in reading order", () => {
+    expect(HERO_NUDGE_CELLS.map((cell) => cell.label)).toEqual([
+      "Nach links oben",
+      "Nach oben",
+      "Nach rechts oben",
+      "Nach links",
+      "Versatz zurücksetzen",
+      "Nach rechts",
+      "Nach links unten",
+      "Nach unten",
+      "Nach rechts unten",
+    ]);
+  });
+
+  it("routes none of its copy through a translation key", () => {
+    HERO_NUDGE_CELLS.forEach((cell) => {
+      expect(cell.label).toBeTruthy();
+      expect(cell.labelKey).toBeUndefined();
+    });
   });
 });

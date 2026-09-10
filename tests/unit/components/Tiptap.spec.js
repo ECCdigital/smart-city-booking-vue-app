@@ -539,7 +539,7 @@ describe("Tiptap's „Schriftgröße“", () => {
         .findAll(".tiptap-size-scale button")
         .wrappers.map((button) => button.attributes("title"))
     ).toEqual([
-      "Übernehmen",
+      "Größe übernehmen",
       "Sehr klein",
       "Klein",
       "Normal",
@@ -547,6 +547,19 @@ describe("Tiptap's „Schriftgröße“", () => {
       "Sehr groß",
       "Riesig",
     ]);
+  });
+
+  /**
+   * The buttons show XS…2XL, so the German word is all a screen reader has to
+   * go on — it is `title` **and** `aria-label`, not one of the two (§12).
+   */
+  it("says every word to a screen reader as well as to a pointer", async () => {
+    const wrapper = await mountEditor({ value: "<p>Hallo</p>", sizes: true });
+
+    wrapper.findAll(".tiptap-size-scale button").wrappers.forEach((button) => {
+      expect(button.attributes("aria-label")).toBe(button.attributes("title"));
+      expect(button.attributes("aria-label")).toBeTruthy();
+    });
   });
 
   it("marks the step the words under the caret carry", async () => {
@@ -647,6 +660,30 @@ describe("Tiptap's „Farbe“", () => {
     );
   });
 
+  it("says every dot's name to a screen reader as well as to a pointer", async () => {
+    const wrapper = await mountEditor({ value: "<p>Hallo</p>", colors: true });
+
+    const named = wrapper
+      .findAll(".tiptap-color-dots button")
+      .wrappers.map((button) => button.attributes("aria-label"));
+
+    // The four dots, „Eigene Farbe…“ and „Farbe übernehmen“ — every one of
+    // them named, in whichever order the group ends up rendering them.
+    expect(named.sort()).toEqual(
+      [
+        "Standard",
+        "Primärfarbe",
+        "Sekundärfarbe",
+        "Weiß",
+        "Eigene Farbe…",
+        "Farbe übernehmen",
+      ].sort()
+    );
+    wrapper.findAll(".tiptap-color-dots button").wrappers.forEach((button) => {
+      expect(button.attributes("aria-label")).toBe(button.attributes("title"));
+    });
+  });
+
   it("paints the two token dots with the instance's own colours", async () => {
     const wrapper = await mountEditor({
       value: "<p>Hallo</p>",
@@ -731,6 +768,26 @@ describe("Tiptap's „Ausrichtung“", () => {
         .findAll(".tiptap-align-segment button")
         .wrappers.map((button) => button.text())
     ).toEqual(["Übernehmen", "Links", "Zentriert", "Rechts"]);
+  });
+
+  it("names its leading state „Ausrichtung übernehmen“, the third tooltip", async () => {
+    const wrapper = await mountEditor({
+      value: "<p>Hallo</p>",
+      paragraphAlign: true,
+    });
+
+    expect(
+      wrapper
+        .findAll(".tiptap-align-segment button")
+        .wrappers.map((button) => button.attributes("title"))
+    ).toEqual(["Ausrichtung übernehmen", "Links", "Zentriert", "Rechts"]);
+    wrapper
+      .findAll(".tiptap-align-segment button")
+      .wrappers.forEach((button) => {
+        expect(button.attributes("aria-label")).toBe(
+          button.attributes("title")
+        );
+      });
   });
 
   it("aligns the paragraph the caret sits in", async () => {

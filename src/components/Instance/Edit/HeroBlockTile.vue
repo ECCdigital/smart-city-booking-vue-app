@@ -48,6 +48,7 @@ import {
 } from "@/utils/heroBlocks";
 import {
   heroAlignStyle,
+  heroBoxStyle,
   heroPanelStyle,
   heroTextStyle,
   heroTileBackground,
@@ -57,6 +58,9 @@ import {
  * What the tile leaves to the two real frames below it. The Zone, the Offset
  * and the Layer are placements of the Block among its neighbours, and a strip
  * that holds one Block has no neighbours to place it against.
+ *
+ * Inline German, like the rest of `Instance/Edit/` (hero layout spec §12) and
+ * like the warning copy of `heroPreviewReport.js`.
  */
 const TILE_SCOPE = "Zone, Versatz und Ebene zeigt die Live-Vorschau";
 
@@ -93,20 +97,23 @@ export default {
     },
     /**
      * What the tile says about itself: the three things it deliberately does
-     * not paint, so that the author looks for them in the frames rather than
-     * here — and the name of a generated pattern, which is the one Background
-     * the strip can only stand in for.
+     * not paint — the Zone, the Offset and the Layer, which place the Block
+     * among neighbours a strip holding one Block does not have — so that the
+     * author looks for them in the frames rather than here. Plus the name of a
+     * generated pattern, the one Background the strip can only stand in for.
      */
     caption() {
       return [this.strip.label, TILE_SCOPE].filter(Boolean).join(" · ");
     },
     /**
-     * The Block's own box. The Panel paints behind the Block's content, so it
-     * is this box that carries it — and a Block without a Panel gets nothing,
-     * not a surface at zero opacity (rendering semantics §8).
+     * The Block's own box: how big „Feinabstimmung“ makes it, where
+     * „Ausrichtung“ puts the content inside it, and the Panel that paints
+     * behind that content — a Block without a Panel gets nothing, not a
+     * surface at zero opacity (rendering semantics §8).
      */
     boxStyle() {
       return {
+        ...heroBoxStyle(this.block),
         ...heroAlignStyle(this.block.align),
         ...heroPanelStyle(this.block.panel, this.themeColors),
       };
@@ -139,11 +146,17 @@ export default {
 </script>
 
 <style scoped>
+/* The strip keeps its height until „Innenabstand“ asks for more: the tile
+   paints the contract's own rem, and growing is how a generous step stays that
+   step instead of being clipped into a smaller one. A box narrower than the
+   strip is centred, the way the mobile tree centres every Block box whatever
+   its Zone column (rendering semantics §4). */
 .hero-block-tile__strip {
   position: relative;
-  height: 88px;
+  min-height: 88px;
   display: flex;
   align-items: center;
+  justify-content: center;
   overflow: hidden;
   border-radius: 4px;
 }
@@ -168,15 +181,18 @@ export default {
   overflow-wrap: anywhere;
 }
 
+/* „Breite“ and „Innenabstand“ come from the Draft, so the box neither grows
+   to the strip nor pads itself on its own — it may only shrink, so that a
+   width past the 420 px column stays inside it. */
 .hero-block-tile__box {
   position: relative;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
-  padding: 8px;
+  max-width: 100%;
 }
 
-/* „Ausrichtung“ places the content inside the box, and the box is the whole
-   strip — so an image has to be inline for the alignment to reach it. */
+/* „Ausrichtung“ places the content inside the box — so an image has to be
+   inline for the alignment to reach it. */
 .hero-block-tile__picture {
   display: inline-block;
   max-width: 100%;

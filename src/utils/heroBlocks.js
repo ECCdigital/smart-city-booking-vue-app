@@ -101,6 +101,16 @@ export function heroGlassPanel() {
 /** No displacement: a Block sitting where its Zone stack puts it. */
 const NO_OFFSET = Object.freeze({ x: 0, y: 0 });
 
+/**
+ * The step of the text scale a Block carries when nobody picked one — the
+ * contract's own default, which the backend fills in on save.
+ *
+ * It lives here, with the rest of the Draft's defaults, so that the
+ * „Schriftgröße“ select and the preview tile read the same middle step as the
+ * Block a fresh `text` or `richtext` type is built with.
+ */
+export const HERO_DEFAULT_SIZE = "md";
+
 // The fields every Block carries, whatever its type. A factory, because
 // `offset` is an object and two Blocks must not share one.
 const commonDefaults = () => ({
@@ -120,14 +130,14 @@ const commonDefaults = () => ({
 const TYPE_DEFAULTS = Object.freeze({
   text: () => ({
     text: { de: "" },
-    size: "md",
+    size: HERO_DEFAULT_SIZE,
     color: "default",
     weight: "normal",
     shadow: false,
   }),
   richtext: () => ({
     html: { de: "" },
-    size: "md",
+    size: HERO_DEFAULT_SIZE,
     color: "default",
     shadow: false,
   }),

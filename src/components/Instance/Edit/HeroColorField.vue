@@ -68,19 +68,9 @@ import {
   firstHeroRuleError,
   heroHexRules,
   heroHexWithoutAlpha,
+  heroTokenSwatch,
   isHeroHexColor,
 } from "@/utils/heroBlockValidation";
-
-// Every named token the contract knows, in the one wording of the spec (§12).
-// Which of them a control offers is its own vocabulary: a Block's colour has
-// „Standard“ and no „Schwarz“, a Panel has it the other way round.
-const TOKEN_LABELS = Object.freeze({
-  default: "Standard",
-  primary: "Primärfarbe",
-  secondary: "Sekundärfarbe",
-  white: "Weiß",
-  black: "Schwarz",
-});
 
 /** What a text or rich-text Block offers, which is what this control was. */
 const DEFAULT_TOKENS = Object.freeze([
@@ -90,10 +80,20 @@ const DEFAULT_TOKENS = Object.freeze([
   "white",
 ]);
 
-// The two tokens whose look is fixed rather than branded. „Primärfarbe“ and
-// „Sekundärfarbe“ are painted with the instance's own branding colours, so the
-// chip shows what the site will show.
-const FIXED_SWATCHES = Object.freeze({ white: "#ffffff", black: "#000000" });
+// Every named token the contract knows, in the one wording of the spec (§12).
+// Which of them a control offers is its own vocabulary: a Block's colour has
+// „Standard“ and no „Schwarz“, a Panel has it the other way round.
+//
+// Deliberately duplicated: Tiptap.vue reads the same words from
+// `richtext.color.*` via $t, its own established pattern, while `Instance/Edit/`
+// stays inline German per spec §12 — the two conventions cannot share a source.
+const TOKEN_LABELS = Object.freeze({
+  default: "Standard",
+  primary: "Primärfarbe",
+  secondary: "Sekundärfarbe",
+  white: "Weiß",
+  black: "Schwarz",
+});
 
 // What „Eigene…“ starts from when the Block still carries a token and the
 // author has not picked anything this session.
@@ -177,10 +177,9 @@ export default {
     },
   },
   methods: {
+    /** The chip's colour, out of the one table every token control reads. */
     swatchOf(token) {
-      const colors = this.themeColors || {};
-
-      return FIXED_SWATCHES[token] || colors[token] || null;
+      return heroTokenSwatch(token, this.themeColors);
     },
     choose(value) {
       if (value !== this.current) {

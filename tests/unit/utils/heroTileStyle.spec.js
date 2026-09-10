@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   heroAlignStyle,
+  heroBoxStyle,
   heroTileBackground,
   heroPanelStyle,
   heroTextStyle,
@@ -156,6 +157,57 @@ describe("the Block's alignment", () => {
   it("centres „Automatisch“, the reading of the tree that has no columns", () => {
     expect(heroAlignStyle("auto").textAlign).toBe("center");
     expect(heroAlignStyle(undefined).textAlign).toBe("center");
+  });
+});
+
+/**
+ * „Breite“ and „Innenabstand“ decide how big the Block's own box is, and
+ * therefore whether „Ausrichtung“ has any room to work in (rendering semantics
+ * §11). The tile paints the contract's own rem so that it cannot invent a
+ * scale of its own and drift from the two frames.
+ */
+describe("the size of the Block's own box", () => {
+  it("shrinks to fit at „Breite: Automatisch“, so alignment has no room", () => {
+    expect(heroBoxStyle({ width: "auto", innerSpacing: "none" }).width).toBe(
+      "auto"
+    );
+  });
+
+  it("takes the contract's rem for the three fixed steps", () => {
+    const widthOf = (width) => heroBoxStyle({ width }).width;
+
+    expect(["sm", "md", "lg"].map(widthOf)).toEqual([
+      "20rem",
+      "32rem",
+      "48rem",
+    ]);
+  });
+
+  it("takes the whole strip at „Volle Breite“", () => {
+    expect(heroBoxStyle({ width: "full" }).width).toBe("100%");
+  });
+
+  it("reads a width off the contract as „Automatisch“", () => {
+    // Only a hand-written layout carries one; the box still has to have a size.
+    expect(heroBoxStyle({ width: "enormous" }).width).toBe("auto");
+    expect(heroBoxStyle({}).width).toBe("auto");
+  });
+
+  it("pads the box with the six steps of „Innenabstand“", () => {
+    const paddingOf = (innerSpacing) => heroBoxStyle({ innerSpacing }).padding;
+
+    expect(["none", "xs", "sm", "md", "lg", "xl"].map(paddingOf)).toEqual([
+      "0",
+      "0.5rem",
+      "1rem",
+      "1.5rem",
+      "2rem",
+      "3rem",
+    ]);
+  });
+
+  it("pads nothing where the step is not one of the six", () => {
+    expect(heroBoxStyle({}).padding).toBe("0");
   });
 });
 

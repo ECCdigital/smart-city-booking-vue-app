@@ -1257,6 +1257,20 @@ describe("HeroBlockForm, Lage", () => {
     );
   });
 
+  /**
+   * „Lage“ is the group; „Versatz“ and „Im Vordergrund“ are the two things in
+   * it, so the readout carries its own name rather than standing unlabelled
+   * beside the pad (hero layout spec §12).
+   */
+  it("names the readout „Versatz“ under the group „Lage“", () => {
+    const wrapper = formOf(heroBlock());
+
+    expect(wrapper.find(".hero-block-form__versatz-label").text()).toBe(
+      "Versatz"
+    );
+    expect(wrapper.find(".hero-block-form__lage").text()).toContain("Lage");
+  });
+
   it("writes front and back with Im Vordergrund", async () => {
     const wrapper = formOf(heroBlock({ layer: "back" }));
 

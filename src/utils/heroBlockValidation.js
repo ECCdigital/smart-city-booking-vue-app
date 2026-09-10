@@ -47,6 +47,20 @@ export const HERO_PANEL_COLOR_TOKENS = Object.freeze([
 ]);
 
 /**
+ * The two tokens whose look is fixed rather than branded, so every control
+ * that paints a token — a colour chip, a colour dot, the preview tile — shows
+ * the same two. „Primärfarbe“ and „Sekundärfarbe“ are missing on purpose:
+ * they come out of the instance's own `branding.theme.colors`.
+ *
+ * „Weiß“ stands in for the storefront's slate-50, four of 255 per channel
+ * apart (Shared contract, „Panel“).
+ */
+export const HERO_FIXED_TOKEN_COLORS = Object.freeze({
+  white: "#ffffff",
+  black: "#000000",
+});
+
+/**
  * The three messages the backend's `400` says the same fault with. They are
  * exported so that `heroErrors.js` can answer „Pflichtfeld“ with this
  * „Pflichtfeld“ — an author who fixes a field should not meet two names for
@@ -72,6 +86,23 @@ const NO_IMAGE_ISSUE = "Es ist kein Bild aus der Mediathek ausgewählt.";
 const BAD_COLOR_ISSUE = "Die Farbe ist kein gültiger Hex-Wert.";
 const BAD_PANEL_COLOR_ISSUE =
   "Die Farbe der Fläche ist kein gültiger Hex-Wert.";
+
+/**
+ * The colour a named token paints, for every control that shows a token as a
+ * dot or a chip rather than as a word: the two fixed ones, then the instance's
+ * own branding colours.
+ *
+ * „Standard“ resolves to nothing on purpose — it is whatever the Block says,
+ * so it has no colour of its own to show and its control carries an icon
+ * instead of a swatch.
+ *
+ * @param {string} token - A colour token.
+ * @param {Object|null} themeColors - The instance's `branding.theme.colors`.
+ * @returns {?string} The `#rrggbb` to paint, or `null` when there is none.
+ */
+export function heroTokenSwatch(token, themeColors) {
+  return HERO_FIXED_TOKEN_COLORS[token] || (themeColors || {})[token] || null;
+}
 
 /**
  * @param {*} value - The candidate.

@@ -7,12 +7,16 @@
  * here is a pure function of the Draft's own values.
  */
 
-import { isHeroHexColor } from "@/utils/heroBlockValidation";
+import {
+  HERO_FIXED_TOKEN_COLORS,
+  isHeroHexColor,
+} from "@/utils/heroBlockValidation";
 import {
   HERO_BACKGROUND_VARIANTS,
   heroBackgroundFamily,
   normalizedHeroBackground,
 } from "@/utils/heroBackground";
+import { HERO_DEFAULT_SIZE } from "@/utils/heroBlocks";
 
 // The Panel's five corner steps in rem, as the storefront's radius classes
 // resolve them at the current `--ui-radius` (Shared contract, „Panel“).
@@ -26,11 +30,6 @@ const PANEL_RADII = Object.freeze({
 
 // The frosting is fixed at 16 px (`backdrop-blur-lg`) and has no steps.
 const PANEL_BLUR = "blur(16px)";
-
-// The two tokens whose look is fixed rather than branded, the way the colour
-// control paints its dots. „Weiß“ stands in for the storefront's slate-50,
-// four of 255 per channel apart (Shared contract, „Panel“).
-const FIXED_COLORS = Object.freeze({ white: "#ffffff", black: "#000000" });
 
 // A branded token an instance without `branding.theme.colors` carries: the
 // tile paints no fill rather than a colour it made up, so the author still
@@ -52,10 +51,6 @@ const TEXT_SIZES = Object.freeze({
   xl: "1.25rem",
   "2xl": "1.5rem",
 });
-
-// What the contract stores when nobody picked a size, so a Block that carries
-// none paints as the step it will be saved as.
-const DEFAULT_SIZE = "md";
 
 /**
  * „Standard“ text is `text-black dark:text-white` outside a Panel and black in
@@ -79,7 +74,7 @@ const DEFAULT_INK = "#000000";
  */
 export function heroTextStyle(block, themeColors = null) {
   return {
-    fontSize: TEXT_SIZES[block.size] || TEXT_SIZES[DEFAULT_SIZE],
+    fontSize: TEXT_SIZES[block.size] || TEXT_SIZES[HERO_DEFAULT_SIZE],
     color: ink(block.color, themeColors),
   };
 }
@@ -91,7 +86,7 @@ export function heroTextStyle(block, themeColors = null) {
  */
 function ink(color, themeColors) {
   if (color === "white") {
-    return FIXED_COLORS.white;
+    return HERO_FIXED_TOKEN_COLORS.white;
   }
   const hex = (themeColors || {})[color] || color;
 
@@ -202,6 +197,53 @@ export function heroAlignStyle(align) {
   return { textAlign: ALIGNMENTS[align] || AUTO_ALIGNMENT };
 }
 
+/** The six spacing steps of the contract, in rem (rendering semantics §7). */
+const SPACINGS = Object.freeze({
+  none: "0",
+  xs: "0.5rem",
+  sm: "1rem",
+  md: "1.5rem",
+  lg: "2rem",
+  xl: "3rem",
+});
+
+/**
+ * The four fixed width steps, in rem (rendering semantics §7). `auto` and
+ * `full` are missing on purpose: they are not lengths. `auto` shrinks the box
+ * to its content and `full` takes the whole content width, which in the tile
+ * is the whole strip.
+ */
+const WIDTHS = Object.freeze({
+  sm: "20rem",
+  md: "32rem",
+  lg: "48rem",
+});
+
+/**
+ * How big the Block's own box is: the two keys of „Feinabstimmung“ that decide
+ * it, in the contract's own rem.
+ *
+ * This is what makes „Ausrichtung“ honest. Alignment places content **inside
+ * the box** and is therefore only visible once the box is wider than its
+ * content (rendering semantics §11) — so a Block at „Breite: Automatisch“ must
+ * shrink to fit here exactly as it does in the two frames, or the tile would
+ * show a movement the frames will not.
+ *
+ * The rem are the contract's, not a scale of the tile's own: a width past the
+ * 420 px form column is held to the strip by the box's `max-width`, and the
+ * strip grows with a generous „Innenabstand“ rather than clipping it, so no
+ * step is silently redrawn as another.
+ *
+ * @param {Object} block - The Block as the Draft holds it.
+ * @returns {Object} The size of the Block's box.
+ */
+export function heroBoxStyle(block) {
+  return {
+    padding: SPACINGS[block.innerSpacing] || SPACINGS.none,
+    width: block.width === "full" ? "100%" : WIDTHS[block.width] || "auto",
+  };
+}
+
 /**
  * The surface a Block paints behind itself, as CSS.
  *
@@ -232,7 +274,8 @@ export function heroPanelStyle(panel, themeColors = null) {
  * ones out of the instance's own colours, or a custom `#rrggbb` as it stands.
  */
 function fill(color, opacity, themeColors) {
-  const hex = FIXED_COLORS[color] || (themeColors || {})[color] || color;
+  const hex =
+    HERO_FIXED_TOKEN_COLORS[color] || (themeColors || {})[color] || color;
 
   return isHeroHexColor(hex) ? rgba(hex, opacity) : UNRESOLVED_COLOR;
 }

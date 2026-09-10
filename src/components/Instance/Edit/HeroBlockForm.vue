@@ -337,9 +337,14 @@
               <v-icon small>{{ pad.icon }}</v-icon>
             </v-btn>
           </div>
+          <!--
+            „Lage“ is the group; „Versatz“ and „Im Vordergrund“ are the two
+            things in it, so the readout carries its own name (spec §12).
+          -->
           <div
             class="hero-block-form__versatz text-caption text--secondary ml-3"
           >
+            <div class="hero-block-form__versatz-label">Versatz</div>
             {{ offsetReadout }}
           </div>
         </div>
@@ -439,6 +444,7 @@ import HeroColorField from "@/components/Instance/Edit/HeroColorField.vue";
 import HeroPositionGrid from "@/components/Instance/Edit/HeroPositionGrid.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import {
+  HERO_DEFAULT_SIZE,
   heroBlockSummary,
   heroBlockType,
   heroGlassPanel,
@@ -476,6 +482,10 @@ const SPACING_STEPS = Object.freeze([
 
 // „Ausrichtung“ places a Block's content inside its own box, on every type —
 // the lines of a text, the image of an image Block (hero layout spec §11).
+//
+// Deliberately duplicated: Tiptap.vue reads the same three words from
+// `richtext.align.*` via $t, its own established pattern, while `Instance/Edit/`
+// stays inline German per spec §12 — the two conventions cannot share a source.
 const ALIGN_STEPS = Object.freeze([
   { value: "auto", text: "Automatisch" },
   { value: "left", text: "Links" },
@@ -491,10 +501,11 @@ const WIDTH_STEPS = Object.freeze([
   { value: "full", text: "Volle Breite" },
 ]);
 
-// What the contract stores when nobody picked a size (`@/utils/heroBlocks`),
-// so a Block that carries none still reads as the step it will be saved as.
-const DEFAULT_SIZE = "md";
-
+// The six steps of „Schriftgröße“ (hero layout spec §12).
+//
+// Deliberately duplicated: Tiptap.vue reads the same six words from
+// `richtext.size.*` via $t, its own established pattern, while `Instance/Edit/`
+// stays inline German per spec §12 — the two conventions cannot share a source.
 const SIZE_STEPS = Object.freeze([
   { value: "xs", text: "Sehr klein" },
   { value: "sm", text: "Klein" },
@@ -614,7 +625,7 @@ export default {
      * words inherits while it carries no size of its own (hero layout spec §7).
      */
     size() {
-      return this.block.size || DEFAULT_SIZE;
+      return this.block.size || HERO_DEFAULT_SIZE;
     },
     /**
      * The pad's nine cells with the state of each: a direction that has run

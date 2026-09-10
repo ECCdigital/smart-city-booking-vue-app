@@ -33,6 +33,7 @@
               :value="step.value"
               small
               :title="step.title"
+              :aria-label="step.title"
             >
               {{ step.label }}
             </v-btn>
@@ -48,6 +49,7 @@
             icon
             small
             :title="dot.title"
+            :aria-label="dot.title"
             @click="applyColor(dot.value)"
           >
             <span
@@ -64,6 +66,7 @@
                 icon
                 small
                 :title="$t('richtext.color.custom')"
+                :aria-label="$t('richtext.color.custom')"
                 v-bind="attrs"
                 v-on="on"
               >
@@ -84,6 +87,7 @@
             icon
             small
             :title="$t('richtext.color.inherit')"
+            :aria-label="$t('richtext.color.inherit')"
             @click="applyColor(null)"
           >
             <v-icon small>mdi-format-color-marker-cancel</v-icon>
@@ -110,6 +114,8 @@
               :key="step.value"
               :value="step.value"
               small
+              :title="step.title"
+              :aria-label="step.title"
             >
               {{ step.label }}
             </v-btn>
@@ -206,6 +212,7 @@ import TextStyle from "@tiptap/extension-text-style";
 
 import {
   HERO_COLOR_TOKENS,
+  HERO_FIXED_TOKEN_COLORS,
   heroHexWithoutAlpha,
   isHeroHexColor,
 } from "@/utils/heroBlockValidation";
@@ -408,10 +415,12 @@ export default {
       return [buttons.bulletList, buttons.orderedList];
     },
     sizeSteps() {
-      const inherit = this.$t("richtext.inherit");
-
       return [
-        { value: INHERIT, label: inherit, title: inherit },
+        {
+          value: INHERIT,
+          label: this.$t("richtext.inherit"),
+          title: this.$t("richtext.size.inherit"),
+        },
         ...HERO_SIZE_TOKENS.map((token) => ({
           value: token,
           label: SIZE_LABELS[token],
@@ -424,11 +433,16 @@ export default {
     },
     alignSteps() {
       return [
-        { value: INHERIT, label: this.$t("richtext.inherit") },
-        ...HERO_ALIGN_TOKENS.map((token) => ({
-          value: token,
-          label: this.$t(`richtext.align.${token}`),
-        })),
+        {
+          value: INHERIT,
+          label: this.$t("richtext.inherit"),
+          title: this.$t("richtext.align.inherit"),
+        },
+        ...HERO_ALIGN_TOKENS.map((token) => {
+          const word = this.$t(`richtext.align.${token}`);
+
+          return { value: token, label: word, title: word };
+        }),
       ];
     },
     activeAlign() {
@@ -647,11 +661,16 @@ export default {
     },
     /**
      * „Standard“ has no colour of its own to show - it is whatever the Block
-     * says - so its dot carries the letter icon instead of a swatch.
+     * says - so its dot carries the letter icon instead of a swatch. The two
+     * branded tokens come out of the instance's own colours; the fixed ones are
+     * the same pair the Block's colour field paints.
      */
     swatchOf(token) {
-      if (token === "white") return "#ffffff";
-      return (this.themeColors || {})[token] || null;
+      return (
+        HERO_FIXED_TOKEN_COLORS[token] ||
+        (this.themeColors || {})[token] ||
+        null
+      );
     },
     openLinkDialog() {
       this.linkActive = this.editor.isActive("link");
