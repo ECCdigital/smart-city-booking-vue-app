@@ -4,6 +4,7 @@ import {
   heroDraftFromResponse,
   heroDraftSnapshot,
   heroLayoutSavePayload,
+  heroPreviewPayload,
 } from "@/utils/heroLayout";
 import { HERO_BACKGROUND, heroLayout } from "@tests/unit/support/heroLayout";
 
@@ -161,6 +162,46 @@ describe("heroDraftSnapshot", () => {
     };
 
     expect(heroDraftSnapshot(changed)).not.toBe(heroDraftSnapshot(stored));
+  });
+});
+
+describe("heroPreviewPayload", () => {
+  it("sends what the save would send, plus the Portalname", () => {
+    const payload = heroPreviewPayload({
+      heroLayout: layout({ height: "xl" }),
+      background: BACKGROUND,
+      name: "Marktplatz",
+      isDefault: false,
+    });
+
+    expect(payload).toEqual({
+      heroLayout: layout({ height: "xl" }),
+      background: BACKGROUND,
+      name: "Marktplatz",
+    });
+  });
+
+  it("asks for the derived default while the layout is still it", () => {
+    const payload = heroPreviewPayload({
+      heroLayout: layout(),
+      background: BACKGROUND,
+      name: "Marktplatz",
+      isDefault: true,
+    });
+
+    expect(payload.heroLayout).toBeNull();
+  });
+
+  it("leaves the Background out when the Draft carries none", () => {
+    const payload = heroPreviewPayload({
+      heroLayout: layout(),
+      background: null,
+      name: "",
+      isDefault: false,
+    });
+
+    expect("background" in payload).toBe(false);
+    expect(payload.name).toBe("");
   });
 });
 

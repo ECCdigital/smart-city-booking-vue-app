@@ -107,14 +107,12 @@
 
           <div class="hero-editor-preview-column">
             <SubSection title="Live-Vorschau" icon="mdi-monitor-eye" no-margin>
-              <!-- The two preview frames arrive with the Live Preview. -->
-              <v-sheet
-                color="accent"
-                rounded
-                class="hero-editor-preview d-flex align-center justify-center text--secondary text-body-2"
-              >
-                Die Vorschau folgt.
-              </v-sheet>
+              <HeroLivePreview
+                :portal-url="portalUrl"
+                :locale="locale"
+                :preview="preview"
+                :selected-block-id="selectedBlockId"
+              />
             </SubSection>
           </div>
         </div>
@@ -144,6 +142,7 @@ import SubSection from "@/components/commons/SubSection.vue";
 import HeroBackgroundForm from "@/components/Instance/Edit/HeroBackgroundForm.vue";
 import HeroBlockForm from "@/components/Instance/Edit/HeroBlockForm.vue";
 import HeroBlockList from "@/components/Instance/Edit/HeroBlockList.vue";
+import HeroLivePreview from "@/components/Instance/Edit/HeroLivePreview.vue";
 import HeroResetConformationDialog from "@/components/Instance/Edit/HeroResetConformationDialog.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
 import { heroBackgroundIssues } from "@/utils/heroBackground";
@@ -157,7 +156,9 @@ import {
   heroDraftFromResponse,
   heroDraftSnapshot,
   heroLayoutSavePayload,
+  heroPreviewPayload,
 } from "@/utils/heroLayout";
+import { createHeroPreviewResolver } from "@/utils/heroPreviewResolver";
 
 // The four height steps of the Shared contract, in the wording of the spec.
 const HEIGHT_STEPS = Object.freeze([
@@ -191,12 +192,19 @@ export default {
     HeroBackgroundForm,
     HeroBlockForm,
     HeroBlockList,
+    HeroLivePreview,
     HeroResetConformationDialog,
     SubSection,
     UnsavedChangesDialog,
   },
   props: {
     value: { type: Boolean, default: false },
+    /**
+     * `instance.portalUrl`. The Live Preview builds the frames' address and
+     * the origin it posts to from it; empty, the panel says so and the editor
+     * goes on editing and saving (hero layout spec, acceptance 6).
+     */
+    portalUrl: { type: String, default: "" },
     /**
      * The instance's `branding.theme.colors`. The colour chips of a text Block
      * are painted with them, so „Primärfarbe“ shows what the portal shows.
@@ -215,6 +223,11 @@ export default {
       // Which Block the form and, from the Live Preview on, the frames show.
       // It is editor state: it travels with a Draft but is never saved.
       selectedBlockId: null,
+      // The last Draft the preview route answered with a 200, in Theme Bundle
+      // export form and carrying its `draftId`, plus whether the last
+      // round-trip was refused.
+      preview: null,
+      previewRejected: false,
       leaveDialogOpen: false,
       leaveResolve: null,
       resetDialogOpen: false,
@@ -247,7 +260,8 @@ export default {
         this.isDirty &&
         !this.inProgress &&
         this.invalidBlockIds.length === 0 &&
-        this.backgroundIssues.length === 0
+        this.backgroundIssues.length === 0 &&
+        !this.previewRejected
       );
     },
     invalidBlockIds() {
@@ -293,9 +307,25 @@ export default {
         window.removeEventListener("beforeunload", this.onBeforeUnload);
       }
     },
+    // Every change to the Draft, wherever it came from, goes to the frames the
+    // same way: through the preview route.
+    draft: {
+      deep: true,
+      handler() {
+        this.queuePreview();
+      },
+    },
+  },
+  created() {
+    this.previewResolver = createHeroPreviewResolver({
+      resolve: ApiCatalogService.previewHeroLayout,
+      onResolved: this.onPreviewResolved,
+      onRejected: this.onPreviewRejected,
+    });
   },
   beforeDestroy() {
     window.removeEventListener("beforeunload", this.onBeforeUnload);
+    this.previewResolver.cancel();
     this.resolveLeave(false);
   },
   methods: {
@@ -309,6 +339,7 @@ export default {
       this.savedSnapshot = null;
       this.locale = "de";
       this.selectedBlockId = null;
+      this.forgetPreview();
       this.loading = true;
       try {
         const response = await ApiCatalogService.getHeroLayout();
@@ -344,6 +375,50 @@ export default {
       } finally {
         this.saving = false;
       }
+    },
+    /**
+     * Queues the Draft for the frames. A Draft the editor itself would refuse
+     * is not sent: the round-trip would bring the same refusal back, so the
+     * last valid preview stays standing while the author fixes the field
+     * (hero layout spec §9).
+     */
+    queuePreview() {
+      if (!this.draft) {
+        return;
+      }
+      if (this.invalidBlockIds.length > 0 || this.backgroundIssues.length > 0) {
+        this.previewResolver.cancel();
+        return;
+      }
+      this.previewResolver.send(heroPreviewPayload(this.draft));
+    },
+    onPreviewResolved(data, draftId) {
+      // The answer travels as it came; the message builder is the one place
+      // that reads a resolved Draft into the protocol's shape.
+      this.preview = { draftId, ...(data || {}) };
+      this.previewRejected = false;
+    },
+    /**
+     * A refusal leaves the last valid preview in the frames. Only a `400` is
+     * the Draft's own fault and holds „Speichern“ back until a later `200` —
+     * a route that is briefly unreachable is not a reason to stop the author
+     * from saving. The fields the `400` names are the error mapping's.
+     *
+     * Anything else is unexpected and goes to the console rather than to a
+     * toast: the round-trip runs on every keystroke, so a portal that is down
+     * would otherwise bury the author in toasts it cannot act on.
+     */
+    onPreviewRejected(error) {
+      if (error && error.response && error.response.status === 400) {
+        this.previewRejected = true;
+        return;
+      }
+      console.error("Hero preview could not be resolved:", error);
+    },
+    forgetPreview() {
+      this.previewResolver.cancel();
+      this.preview = null;
+      this.previewRejected = false;
     },
     askForReset() {
       this.resetDialogOpen = true;
@@ -477,6 +552,7 @@ export default {
       this.draft = null;
       this.savedSnapshot = null;
       this.selectedBlockId = null;
+      this.forgetPreview();
       this.$emit("input", false);
       this.$emit("closed");
     },
@@ -522,9 +598,5 @@ export default {
     min-width: 0;
     overflow-y: auto;
   }
-}
-
-.hero-editor-preview {
-  min-height: 320px;
 }
 </style>

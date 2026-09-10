@@ -60,19 +60,28 @@ export function heroLayoutSavePayload(draft) {
 }
 
 /**
- * The body of `POST /api/catalog/hero-layout/preview` that resolves the
- * derived Default Hero Layout: no layout, the edited Background untouched.
- * „Auf Standard zurücksetzen“ shows the answer before anything is saved, and
- * the route writes nothing.
+ * The body of `POST /api/catalog/hero-layout/preview` — what the save would
+ * send plus the Portalname, which the route needs to derive the default. The
+ * route normalises, sanitises and enriches it into Theme Bundle export form
+ * and writes nothing; it is what the Live Preview paints from.
+ *
+ * @param {Object} draft - The Draft the editor holds.
+ * @returns {Object} The payload.
+ */
+export function heroPreviewPayload(draft) {
+  return { ...heroLayoutSavePayload(draft), name: draft.name || "" };
+}
+
+/**
+ * The same body for the derived Default Hero Layout: no layout, the edited
+ * Background untouched. „Auf Standard zurücksetzen“ shows the answer before
+ * anything is saved.
  *
  * @param {Object} draft - The Draft the editor holds.
  * @returns {Object} The payload.
  */
 export function heroDefaultPreviewPayload(draft) {
-  return {
-    ...heroLayoutSavePayload({ ...draft, isDefault: true }),
-    name: draft.name || "",
-  };
+  return heroPreviewPayload({ ...draft, isDefault: true });
 }
 
 /**

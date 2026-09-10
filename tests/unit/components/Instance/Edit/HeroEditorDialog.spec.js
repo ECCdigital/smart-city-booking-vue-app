@@ -25,6 +25,7 @@ import {
   defaultHeroBackground,
   heroBackgroundOfFamily,
 } from "@/utils/heroBackground";
+import { HERO_PREVIEW_DEBOUNCE } from "@/utils/heroPreviewResolver";
 
 vi.mock("@/services/api/ApiCatalogService", () => ({
   default: {
@@ -55,11 +56,11 @@ function storedLayout(overrides = {}) {
  * The editor fills itself when the dialog opens, so a spec opens it the way
  * the Portal tab does instead of mounting it open.
  */
-async function openEditor(answer = storedNothing()) {
+async function openEditor(answer = storedNothing(), propsData = {}) {
   ApiCatalogService.getHeroLayout.mockResolvedValue(answer);
   const wrapper = mountComponent(HeroEditorDialog, {
     store: new Vuex.Store({ modules: { toasts } }),
-    propsData: { value: false },
+    propsData: { value: false, ...propsData },
     // The Mediathek picker of the Background's image family talks to the media
     // API and reads the signed-in user; neither is what this editor is about.
     stubs: { MediaReferenceField: true, MediaReferenceImage: true },
@@ -866,6 +867,173 @@ describe("HeroEditorDialog background", () => {
  * Acceptance 1 of the spec: an instance that never stored a layout opens the
  * editor on the derived default, and saving nothing changes nothing.
  */
+describe("HeroEditorDialog live preview", () => {
+  const RESOLVED = Object.freeze({
+    heroLayout: heroLayout({ height: "xl" }),
+    background: HERO_BACKGROUND,
+    name: "Marktplatz",
+  });
+
+  /**
+   * The round-trip is debounced, so a spec that wants to see it has to wait
+   * the debounce out before the promises can settle.
+   */
+  async function settlePreview(wrapper) {
+    await new Promise((resolve) =>
+      setTimeout(resolve, HERO_PREVIEW_DEBOUNCE + 20)
+    );
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+  }
+
+  function livePreview(wrapper) {
+    return wrapper.findComponent({ name: "HeroLivePreview" });
+  }
+
+  beforeEach(() => {
+    ApiCatalogService.previewHeroLayout.mockResolvedValue({ data: RESOLVED });
+  });
+
+  it("hands the Portal-URL and the locale to the preview panel", async () => {
+    const wrapper = await openEditor(storedNothing(), {
+      portalUrl: "https://portal.example.org",
+    });
+
+    expect(livePreview(wrapper).props("portalUrl")).toBe(
+      "https://portal.example.org"
+    );
+    expect(livePreview(wrapper).props("locale")).toBe("de");
+  });
+
+  it("resolves the Draft through the preview route and hands the answer down", async () => {
+    const wrapper = await openEditor();
+
+    await settlePreview(wrapper);
+
+    expect(ApiCatalogService.previewHeroLayout).toHaveBeenCalledWith({
+      // The layout is still the derived default, so the route is asked for it.
+      heroLayout: null,
+      background: HERO_BACKGROUND,
+      name: "Marktplatz",
+    });
+    expect(livePreview(wrapper).props("preview")).toEqual({
+      draftId: 1,
+      ...RESOLVED,
+    });
+  });
+
+  it("sends the edited layout once it is no longer the default", async () => {
+    const wrapper = await openEditor();
+    await settlePreview(wrapper);
+
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Niedrig");
+    await settlePreview(wrapper);
+
+    expect(ApiCatalogService.previewHeroLayout).toHaveBeenLastCalledWith({
+      heroLayout: layout({ height: "sm" }),
+      background: HERO_BACKGROUND,
+      name: "Marktplatz",
+    });
+  });
+
+  it("counts the Draft up, so the frames can tell two apart", async () => {
+    const wrapper = await openEditor();
+    await settlePreview(wrapper);
+
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Niedrig");
+    await settlePreview(wrapper);
+
+    expect(livePreview(wrapper).props("preview").draftId).toBe(2);
+  });
+
+  it("sends one round-trip for a burst of changes", async () => {
+    const wrapper = await openEditor();
+    await settlePreview(wrapper);
+    ApiCatalogService.previewHeroLayout.mockClear();
+
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Niedrig");
+    await chooseHeight(wrapper, "Höhe auf Mobilgeräten", "Mittel");
+    await settlePreview(wrapper);
+
+    expect(ApiCatalogService.previewHeroLayout).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends nothing while a Block is one the editor itself refuses", async () => {
+    const wrapper = await openEditor(
+      heroLayoutResponse({
+        heroLayout: heroLayout({
+          blocks: [heroBlock({ id: "title", text: { de: "" } })],
+        }),
+        isDefault: false,
+      })
+    );
+
+    await settlePreview(wrapper);
+
+    expect(ApiCatalogService.previewHeroLayout).not.toHaveBeenCalled();
+    expect(livePreview(wrapper).props("preview")).toBeNull();
+  });
+
+  it("keeps the last valid preview and holds the save back after a refusal", async () => {
+    const wrapper = await openEditor();
+    await settlePreview(wrapper);
+    const lastValid = livePreview(wrapper).props("preview");
+
+    ApiCatalogService.previewHeroLayout.mockRejectedValue(serverError(400));
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Niedrig");
+    await settlePreview(wrapper);
+
+    expect(livePreview(wrapper).props("preview")).toEqual(lastValid);
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
+      "disabled"
+    );
+  });
+
+  it("releases the save again on the next accepted Draft", async () => {
+    const wrapper = await openEditor();
+    await settlePreview(wrapper);
+
+    ApiCatalogService.previewHeroLayout.mockRejectedValueOnce(serverError(400));
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Niedrig");
+    await settlePreview(wrapper);
+
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Mittel");
+    await settlePreview(wrapper);
+
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
+  });
+
+  it("does not hold the save back when the route is merely unreachable", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const wrapper = await openEditor();
+    await settlePreview(wrapper);
+
+    ApiCatalogService.previewHeroLayout.mockRejectedValue(serverError());
+    await chooseHeight(wrapper, "Höhe auf der Startseite", "Niedrig");
+    await settlePreview(wrapper);
+
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
+    // Unexpected, so it reaches the console rather than a toast the author
+    // could not act on anyway.
+    expect(logged).toHaveBeenCalled();
+    expect(toastMessages(wrapper)).toEqual([]);
+  });
+
+  it("tells the frames which Block the form shows", async () => {
+    const wrapper = await openEditor(
+      heroLayoutResponse({
+        heroLayout: heroLayout({ blocks: [heroBlock({ id: "title" })] }),
+        isDefault: false,
+      })
+    );
+
+    await row(wrapper, "title").trigger("click");
+    await wrapper.vm.$nextTick();
+
+    expect(livePreview(wrapper).props("selectedBlockId")).toBe("title");
+  });
+});
+
 describe("HeroEditorDialog on an instance without a stored layout", () => {
   it("shows the derived default and writes nothing when it is closed unchanged", async () => {
     const wrapper = await openEditor();

@@ -248,6 +248,22 @@ describe("InstanceEditCatalog Kopfbereich entry card", () => {
     expect(wrapper.text()).not.toContain("Bitte zuerst speichern.");
   });
 
+  it("hands the stored Portal-URL to the editor, for its Live Preview", () => {
+    const wrapper = mountTab();
+
+    expect(
+      wrapper.findComponent({ name: "HeroEditorDialog" }).props("portalUrl")
+    ).toBe("https://portal.example.org");
+  });
+
+  it("hands an empty string on when no Portal-URL is stored", () => {
+    const wrapper = mountTab({ instance: instance({ portalUrl: undefined }) });
+
+    expect(
+      wrapper.findComponent({ name: "HeroEditorDialog" }).props("portalUrl")
+    ).toBe("");
+  });
+
   it("opens the Kopfbereich dialog and asks for a refetch when it closes", async () => {
     const wrapper = mountTab();
 

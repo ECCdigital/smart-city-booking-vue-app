@@ -263,6 +263,7 @@
 
     <HeroEditorDialog
       v-model="heroEditorOpen"
+      :portal-url="instance.portalUrl || ''"
       :theme-colors="themeColors"
       @closed="$emit('refetch')"
     />
