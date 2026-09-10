@@ -65,9 +65,26 @@
               />
             </SubSection>
 
-            <!-- „Blöcke“ arrives with the block list, „Hintergrund“ with the
-                 Background section. -->
-            <SubSection class="mt-6" title="Blöcke" icon="mdi-view-dashboard" />
+            <SubSection class="mt-6" title="Blöcke" icon="mdi-view-dashboard">
+              <HeroBlockList
+                :blocks="blocks"
+                :selected-block-id="selectedBlockId"
+                @input="setBlocks"
+                @update:selectedBlockId="selectedBlockId = $event"
+              />
+
+              <!-- The detail form of the selected Block goes here. -->
+              <v-sheet
+                v-if="selectedBlock"
+                color="accent"
+                rounded
+                class="hero-editor-block-form mt-3 pa-3 text-body-2 text--secondary"
+              >
+                {{ selectedBlockType.label }} · {{ selectedBlock.id }}
+              </v-sheet>
+            </SubSection>
+
+            <!-- „Hintergrund“ arrives with the Background section. -->
             <SubSection
               class="mt-6"
               title="Hintergrund"
@@ -112,8 +129,10 @@ import { mapActions } from "vuex";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import SubSection from "@/components/commons/SubSection.vue";
+import HeroBlockList from "@/components/Instance/Edit/HeroBlockList.vue";
 import HeroResetConformationDialog from "@/components/Instance/Edit/HeroResetConformationDialog.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
+import { heroBlockType } from "@/utils/heroBlocks";
 import {
   heroDefaultPreviewPayload,
   heroDraftFromResponse,
@@ -149,7 +168,12 @@ const CUSTOM_STATUS = "Angepasst";
  */
 export default {
   name: "HeroEditorDialog",
-  components: { HeroResetConformationDialog, SubSection, UnsavedChangesDialog },
+  components: {
+    HeroBlockList,
+    HeroResetConformationDialog,
+    SubSection,
+    UnsavedChangesDialog,
+  },
   props: {
     value: { type: Boolean, default: false },
   },
@@ -162,6 +186,9 @@ export default {
       saving: false,
       resetting: false,
       locale: "de",
+      // Which Block the form and, from the Live Preview on, the frames show.
+      // It is editor state: it travels with a Draft but is never saved.
+      selectedBlockId: null,
       leaveDialogOpen: false,
       leaveResolve: null,
       resetDialogOpen: false,
@@ -189,6 +216,19 @@ export default {
     },
     cancelLabel() {
       return this.isDirty ? "Abbrechen" : "Schließen";
+    },
+    blocks() {
+      return this.draft && this.draft.heroLayout
+        ? this.draft.heroLayout.blocks || []
+        : [];
+    },
+    selectedBlock() {
+      return (
+        this.blocks.find((block) => block.id === this.selectedBlockId) || null
+      );
+    },
+    selectedBlockType() {
+      return heroBlockType(this.selectedBlock && this.selectedBlock.type);
     },
     statusLabel() {
       return this.draft && this.draft.isDefault
@@ -228,6 +268,7 @@ export default {
       this.draft = null;
       this.savedSnapshot = null;
       this.locale = "de";
+      this.selectedBlockId = null;
       this.loading = true;
       try {
         const response = await ApiCatalogService.getHeroLayout();
@@ -284,12 +325,26 @@ export default {
           heroLayout: (response.data || {}).heroLayout || null,
           isDefault: true,
         };
+        // The derived default carries its own Blocks, so whatever was selected
+        // is gone.
+        this.selectedBlockId = null;
         this.resetDialogOpen = false;
       } catch (e) {
         await this.toastError(e, "Standard-Layout konnte nicht geladen werden");
       } finally {
         this.resetting = false;
       }
+    },
+    /**
+     * The list answers with the array in canonical order — the editor stores
+     * it as it comes and does not reorder it again.
+     */
+    setBlocks(blocks) {
+      if (!this.draft || !this.draft.heroLayout) {
+        return;
+      }
+      this.$set(this.draft.heroLayout, "blocks", blocks);
+      this.markAsCustom();
     },
     height(field) {
       return this.draft && this.draft.heroLayout
@@ -357,6 +412,7 @@ export default {
     close() {
       this.draft = null;
       this.savedSnapshot = null;
+      this.selectedBlockId = null;
       this.$emit("input", false);
       this.$emit("closed");
     },

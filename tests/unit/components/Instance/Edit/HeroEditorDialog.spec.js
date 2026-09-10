@@ -9,6 +9,7 @@ import {
 import toasts from "@/store/modules/toasts";
 import {
   HERO_BACKGROUND,
+  heroBlock,
   heroLayout,
   heroLayoutResponse,
 } from "@tests/unit/support/heroLayout";
@@ -396,6 +397,115 @@ describe("HeroEditorDialog save", () => {
       "Kopfbereich konnte nicht gespeichert werden"
     );
     expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
+  });
+});
+
+describe("HeroEditorDialog blocks", () => {
+  /** A layout with two Blocks, so the list has something to group. */
+  function withBlocks() {
+    return heroLayoutResponse({
+      heroLayout: heroLayout({
+        blocks: [
+          heroBlock({
+            id: "title",
+            zone: "middle-left",
+            text: { de: "Titel" },
+          }),
+          heroBlock({ id: "note", zone: "top-right", text: { de: "Hinweis" } }),
+        ],
+      }),
+      isDefault: false,
+    });
+  }
+
+  function blockList(wrapper) {
+    return wrapper.findComponent({ name: "HeroBlockList" });
+  }
+
+  function row(wrapper, id) {
+    return wrapper
+      .findAll(".hero-block-row")
+      .wrappers.find((entry) => entry.attributes("data-id") === id);
+  }
+
+  it("hands the list the Blocks of the loaded layout", async () => {
+    const wrapper = await openEditor(withBlocks());
+
+    expect(row(wrapper, "title").text()).toContain("Titel");
+    expect(row(wrapper, "note").text()).toContain("Hinweis");
+  });
+
+  it("flips the chip to Angepasst and enables the save on the first Block change", async () => {
+    const wrapper = await openEditor();
+
+    blockList(wrapper).vm.$emit("input", [
+      heroBlock({ id: "new", zone: "middle-center" }),
+    ]);
+    await wrapper.vm.$nextTick();
+
+    expect(editorText(wrapper)).toContain("Angepasst");
+    expect(editorText(wrapper)).not.toContain(DEFAULT_STATUS);
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
+  });
+
+  it("saves the new array", async () => {
+    const wrapper = await openEditor();
+    const blocks = [heroBlock({ id: "new", zone: "middle-center" })];
+    ApiCatalogService.updateHeroLayout.mockResolvedValue({
+      data: {
+        heroLayout: heroLayout({ blocks }),
+        background: BACKGROUND,
+        name: "Marktplatz",
+      },
+    });
+
+    blockList(wrapper).vm.$emit("input", blocks);
+    await wrapper.vm.$nextTick();
+    await button(wrapper, "Speichern").trigger("click");
+    await flushPromises();
+
+    expect(ApiCatalogService.updateHeroLayout).toHaveBeenCalledWith({
+      heroLayout: heroLayout({ blocks }),
+      background: BACKGROUND,
+    });
+  });
+
+  it("selecting a Block changes nothing that would be saved", async () => {
+    const wrapper = await openEditor(withBlocks());
+
+    await row(wrapper, "note").trigger("click");
+
+    expect(blockList(wrapper).props("selectedBlockId")).toBe("note");
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
+      "disabled"
+    );
+  });
+
+  it("names the selected Block below the list, where its form will go", async () => {
+    const wrapper = await openEditor(withBlocks());
+
+    await row(wrapper, "note").trigger("click");
+
+    // The placeholder for the detail form: type and id.
+    const placeholder = wrapper.find(".hero-editor-block-form").text();
+    expect(placeholder).toContain("Text");
+    expect(placeholder).toContain("note");
+  });
+
+  it("drops the selection when the layout is reset to the default", async () => {
+    const wrapper = await openEditor(withBlocks());
+    ApiCatalogService.previewHeroLayout.mockResolvedValue({
+      data: { heroLayout: heroLayout(), background: BACKGROUND, name: "" },
+    });
+
+    await row(wrapper, "note").trigger("click");
+    await button(wrapper, "Auf Standard zurücksetzen").trigger("click");
+    await wrapper.vm.$nextTick();
+    await button(wrapper, "Zurücksetzen").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(blockList(wrapper).props("selectedBlockId")).toBeNull();
   });
 });
 

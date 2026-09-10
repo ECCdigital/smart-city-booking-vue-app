@@ -37,3 +37,24 @@ export function heroLayoutResponse(overrides = {}) {
     },
   };
 }
+
+/** A Block in the shape the backend normalises to. */
+export function heroBlock(overrides = {}) {
+  return {
+    id: "block-1",
+    type: "text",
+    zone: "middle-center",
+    outerSpacing: "none",
+    innerSpacing: "none",
+    width: "auto",
+    panel: "none",
+    homeOnly: false,
+    hideOnMobile: false,
+    text: { de: "Willkommen" },
+    size: "md",
+    color: "default",
+    weight: "normal",
+    shadow: false,
+    ...overrides,
+  };
+}
