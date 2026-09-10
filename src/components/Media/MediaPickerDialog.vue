@@ -19,7 +19,7 @@
       <v-tabs v-model="tab" class="flex-grow-0">
         <v-tab href="#library">Mediathek</v-tab>
         <v-tab v-if="allowCreate" href="#upload">Upload</v-tab>
-        <v-tab href="#external">Externer Link</v-tab>
+        <v-tab v-if="allowExternal" href="#external">Externer Link</v-tab>
       </v-tabs>
       <v-divider />
 
@@ -231,7 +231,8 @@ const PAGE_SIZE = 24;
  *
  * Besides the library, the picker is also the single entry point for external
  * addresses: the "Externer Link" tab stores a URL as an external reference —
- * hotlinked, never imported.
+ * hotlinked, never imported. A site whose reference may only ever be a medium
+ * of the library turns the tab off with `allowExternal`.
  *
  * In a public context `intern` media stay visible but unselectable: the save
  * would be refused by the reference guard, and a greyed-out tile with the
@@ -258,6 +259,10 @@ export default {
     // badge only says they are there already.
     excludeIds: { type: Array, default: () => [] },
     title: { type: String, default: "Aus der Mediathek wählen" },
+    // A few sites store a typed reference the backend refuses to point outside
+    // the library — the Hero's image Blocks are one. They turn the tab off
+    // rather than let an author walk into a value the save would reject.
+    allowExternal: { type: Boolean, default: true },
   },
   data() {
     return {

@@ -225,7 +225,7 @@ export function heroBlockSummary(block) {
     return german(block.alt);
   }
   if (block.type === "richtext") {
-    return firstLineOfHtml(german(block.html));
+    return heroHtmlFirstLine(german(block.html));
   }
   return german(block.text);
 }
@@ -476,10 +476,17 @@ function german(value) {
 }
 
 /**
- * The first line of a sanitised rich text. The allowlist knows `p`, `br` and
- * `li` as the things that end a line; everything else is inline.
+ * The first line of a sanitised rich text — the row's summary, and the answer
+ * to „has the author written anything at all“ that the pre-validation asks:
+ * markup without a line in it is what an emptied editor leaves behind.
+ *
+ * The allowlist knows `p`, `br` and `li` as the things that end a line;
+ * everything else is inline.
+ *
+ * @param {?string} html - The rich text.
+ * @returns {string} The line, empty while the markup carries no text.
  */
-function firstLineOfHtml(html) {
+export function heroHtmlFirstLine(html) {
   if (!html) {
     return "";
   }

@@ -2,26 +2,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import Tiptap from "@/components/Tiptap.vue";
 import { mountComponent } from "@tests/unit/support/mount";
+import { stubProseMirrorLayout } from "@tests/unit/support/prosemirror";
 
-// ProseMirror measures the selection when the editor takes focus; jsdom has no
-// layout, so the measurement has to answer with nothing instead of throwing.
-beforeAll(() => {
-  const noRects = () => [];
-  const noRect = () => ({
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-    width: 0,
-    height: 0,
-  });
-  for (const prototype of [Range.prototype, Element.prototype]) {
-    if (!prototype.getClientRects) prototype.getClientRects = noRects;
-    if (!prototype.getBoundingClientRect) {
-      prototype.getBoundingClientRect = noRect;
-    }
-  }
-});
+beforeAll(stubProseMirrorLayout);
 
 // jsdom cannot select or type text in a contenteditable, so the specs place
 // the selection and insert text through the editor API and drive everything

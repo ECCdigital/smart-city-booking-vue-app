@@ -58,3 +58,43 @@ export function heroBlock(overrides = {}) {
     ...overrides,
   };
 }
+
+/**
+ * A rich-text Block: `html` instead of `text`, and none of the fields only a
+ * text Block has.
+ */
+export function heroRichtextBlock(overrides = {}) {
+  return withoutTextFields(
+    heroBlock({
+      type: "richtext",
+      html: { de: "<p>Willkommen</p>" },
+      ...overrides,
+    })
+  );
+}
+
+/** An image Block, pointing at a medium of the instance's library. */
+export function heroImageBlock(overrides = {}) {
+  const block = withoutTextFields(
+    heroBlock({
+      type: "image",
+      image: { source: "media", mediaId: "m1" },
+      alt: { de: "Das Logo" },
+      maxHeight: "md",
+      invertInDarkMode: false,
+      ...overrides,
+    })
+  );
+  delete block.color;
+
+  return block;
+}
+
+/** `heroBlock` builds a text Block; the other two types carry none of this. */
+function withoutTextFields(block) {
+  delete block.text;
+  delete block.size;
+  delete block.weight;
+
+  return block;
+}

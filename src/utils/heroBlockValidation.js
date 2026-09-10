@@ -9,15 +9,16 @@
  * Two shapes come out of the same predicates: `heroBlockIssues` for the badge
  * on the row and the gate on „Speichern“, and the rule arrays a Vuetify input
  * takes for the message under the field.
- *
- * Rich text and image Blocks pass everything for now — their form, and with it
- * their rules, arrives with ticket 07.
  */
 
-import { heroLocalizedText } from "@/utils/heroBlocks";
+import { heroHtmlFirstLine, heroLocalizedText } from "@/utils/heroBlocks";
+import { isMediaReference } from "@/utils/mediaReference";
 
 /** The cap the contract puts on `text.text` and `image.alt`, per locale. */
 export const HERO_TEXT_MAX_LENGTH = 200;
+
+/** The cap the contract puts on `richtext.html`, per locale. */
+export const HERO_RICHTEXT_MAX_LENGTH = 10000;
 
 // A colour is either one of the four tokens or `#rrggbb` — no alpha, no
 // shorthand (Shared contract, „Conventions“).
@@ -30,11 +31,12 @@ const NAMED_COLORS = Object.freeze([
 ]);
 
 const REQUIRED_MESSAGE = "Pflichtfeld";
-const MAX_LENGTH_MESSAGE = `Höchstens ${HERO_TEXT_MAX_LENGTH} Zeichen.`;
 const HEX_MESSAGE = "Bitte eine Farbe als Hex-Wert angeben, z. B. #1a2b3c.";
+const NO_IMAGE_MESSAGE = "Bitte ein Bild aus der Mediathek wählen.";
 
 const MISSING_TEXT_ISSUE = "Der Text auf Deutsch fehlt.";
-const LONG_TEXT_ISSUE = `Der Text ist länger als ${HERO_TEXT_MAX_LENGTH} Zeichen.`;
+const MISSING_ALT_ISSUE = "Der Alternativtext auf Deutsch fehlt.";
+const NO_IMAGE_ISSUE = "Es ist kein Bild aus der Mediathek ausgewählt.";
 const BAD_COLOR_ISSUE = "Die Farbe ist kein gültiger Hex-Wert.";
 
 /**
@@ -53,6 +55,14 @@ export function isHeroColor(value) {
   return NAMED_COLORS.includes(value) || isHeroHexColor(value);
 }
 
+// What each type can be wrong about. A type this editor has no form for — only
+// a hand-written layout produces one — is left alone rather than condemned.
+const ISSUES_OF_TYPE = Object.freeze({
+  text: textIssues,
+  richtext: richtextIssues,
+  image: imageIssues,
+});
+
 /**
  * Why the backend would refuse this Block, in the author's words. The row
  * shows the first of them on its badge and „Speichern“ stays disabled while
@@ -62,24 +72,9 @@ export function isHeroColor(value) {
  * @returns {string[]} The reasons, empty while the Block is fine.
  */
 export function heroBlockIssues(block) {
-  if (!block || block.type !== "text") {
-    return [];
-  }
+  const issuesOf = block ? ISSUES_OF_TYPE[block.type] : null;
 
-  const issues = [];
-  if (!heroLocalizedText(block.text, "de").trim()) {
-    issues.push(MISSING_TEXT_ISSUE);
-  }
-  if (localeValues(block.text).some((text) => tooLong(text))) {
-    issues.push(LONG_TEXT_ISSUE);
-  }
-  // An absent `color` is legal — the contract's default is `default` and the
-  // backend fills it on save. Only a value that is there and wrong is an issue.
-  if (block.color != null && !isHeroColor(block.color)) {
-    issues.push(BAD_COLOR_ISSUE);
-  }
-
-  return issues;
+  return issuesOf ? issuesOf(block) : [];
 }
 
 /**
@@ -101,23 +96,48 @@ export function invalidHeroBlockIds(blocks) {
 }
 
 /**
- * The rules of a localised text field. Required marking is German only — an
- * empty English text means „use the German one“ (hero layout spec §4).
+ * The rules of a localised text field — the text of a text Block and the alt
+ * text of an image alike, which share the cap and the message. Required
+ * marking is German only: an empty English text means „use the German one“
+ * (hero layout spec §4).
  *
  * @param {string} locale - The locale the field edits.
  * @returns {Array<function(*): (true|string)>} The rules.
  */
 export function heroTextRules(locale) {
   return [
-    (value) =>
-      locale !== "de" || !!String(value || "").trim() || REQUIRED_MESSAGE,
-    (value) => !tooLong(value) || MAX_LENGTH_MESSAGE,
+    (value) => requiredInGerman(locale, String(value || "").trim()),
+    (value) => withinLimit(value, HERO_TEXT_MAX_LENGTH),
+  ];
+}
+
+/**
+ * The rules of the rich-text editor. „Required“ asks for a line of text, not
+ * for markup: an emptied editor answers `<p></p>`, which is a non-empty string
+ * and nothing the author would call a text.
+ *
+ * @param {string} locale - The locale the editor edits.
+ * @returns {Array<function(*): (true|string)>} The rules.
+ */
+export function heroRichtextRules(locale) {
+  return [
+    (value) => requiredInGerman(locale, heroHtmlFirstLine(value)),
+    (value) => withinLimit(value, HERO_RICHTEXT_MAX_LENGTH),
   ];
 }
 
 /** The rules of a custom colour. */
 export const heroHexRules = Object.freeze([
   (value) => isHeroHexColor(value) || HEX_MESSAGE,
+]);
+
+/**
+ * The rules of the image field. The contract knows one kind of image on a
+ * Block: a medium of the library. An external address is refused here rather
+ * than by the backend, which rejects `source: "external"` outright.
+ */
+export const heroImageRules = Object.freeze([
+  (value) => isMediaReference(value) || NO_IMAGE_MESSAGE,
 ]);
 
 /**
@@ -136,8 +156,85 @@ export function firstHeroRuleError(rules, value) {
   return refusal === undefined ? null : refusal;
 }
 
-function tooLong(value) {
-  return String(value || "").length > HERO_TEXT_MAX_LENGTH;
+function textIssues(block) {
+  return [
+    ...localizedIssues(block.text, {
+      max: HERO_TEXT_MAX_LENGTH,
+      missing: MISSING_TEXT_ISSUE,
+      long: `Der Text ist länger als ${HERO_TEXT_MAX_LENGTH} Zeichen.`,
+    }),
+    ...colorIssues(block),
+  ];
+}
+
+function richtextIssues(block) {
+  return [
+    ...localizedIssues(block.html, {
+      max: HERO_RICHTEXT_MAX_LENGTH,
+      textOf: heroHtmlFirstLine,
+      missing: MISSING_TEXT_ISSUE,
+      long: `Der Text ist länger als ${HERO_RICHTEXT_MAX_LENGTH} Zeichen.`,
+    }),
+    ...colorIssues(block),
+  ];
+}
+
+function imageIssues(block) {
+  const issues = isMediaReference(block.image) ? [] : [NO_IMAGE_ISSUE];
+
+  return [
+    ...issues,
+    ...localizedIssues(block.alt, {
+      max: HERO_TEXT_MAX_LENGTH,
+      missing: MISSING_ALT_ISSUE,
+      long: `Der Alternativtext ist länger als ${HERO_TEXT_MAX_LENGTH} Zeichen.`,
+    }),
+  ];
+}
+
+/**
+ * The two things a localised string can be wrong about, in any locale. What
+ * counts as „there“ differs by field: a plain text is its own text, a rich
+ * text is the first line its markup carries.
+ */
+function localizedIssues(localized, { max, missing, long, textOf = plain }) {
+  const issues = [];
+  if (!textOf(heroLocalizedText(localized, "de")).trim()) {
+    issues.push(missing);
+  }
+  if (localeValues(localized).some((value) => tooLong(value, max))) {
+    issues.push(long);
+  }
+
+  return issues;
+}
+
+function plain(value) {
+  return value;
+}
+
+/**
+ * An absent `color` is legal — the contract's default is `default` and the
+ * backend fills it on save. Only a value that is there and wrong is an issue.
+ * An image Block has no colour at all and never reaches this.
+ */
+function colorIssues(block) {
+  return block.color != null && !isHeroColor(block.color)
+    ? [BAD_COLOR_ISSUE]
+    : [];
+}
+
+/** German is the required locale; every other one may stay empty (§4). */
+function requiredInGerman(locale, text) {
+  return locale !== "de" || !!text || REQUIRED_MESSAGE;
+}
+
+function withinLimit(value, max) {
+  return !tooLong(value, max) || `Höchstens ${max} Zeichen.`;
+}
+
+function tooLong(value, max) {
+  return String(value || "").length > max;
 }
 
 function localeValues(localized) {

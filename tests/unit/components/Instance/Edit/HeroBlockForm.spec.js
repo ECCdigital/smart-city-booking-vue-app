@@ -1,10 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
-import { heroBlock } from "@tests/unit/support/heroLayout";
+import { stubProseMirrorLayout } from "@tests/unit/support/prosemirror";
+import {
+  heroBlock,
+  heroImageBlock,
+  heroRichtextBlock,
+} from "@tests/unit/support/heroLayout";
 import HeroBlockForm from "@/components/Instance/Edit/HeroBlockForm.vue";
+import Tiptap from "@/components/Tiptap.vue";
 
 const THEME_COLORS = { primary: "#123456", secondary: "#654321" };
+
+// The rich-text Block mounts the real editor; the image Block's media field
+// talks to the media API, which is not what this form is about.
+beforeAll(stubProseMirrorLayout);
 
 function formOf(block, options = {}) {
   const {
@@ -14,7 +24,32 @@ function formOf(block, options = {}) {
   } = options;
   return mountComponent(HeroBlockForm, {
     propsData: { block, blocks, locale, themeColors },
+    stubs: { MediaReferenceField: true, MediaReferenceImage: true },
   });
+}
+
+function editor(wrapper) {
+  return wrapper.findComponent(Tiptap);
+}
+
+/** Types at the end of the rich text the way the toolbar-less editor is used. */
+async function typeInEditor(wrapper, text) {
+  editor(wrapper).vm.editor.chain().focus("end").insertContent(text).run();
+  await wrapper.vm.$nextTick();
+}
+
+function mediaField(wrapper) {
+  return wrapper.findComponent({ name: "MediaReferenceField" });
+}
+
+function fieldByLabel(wrapper, label) {
+  const field = wrapper
+    .findAllComponents({ name: "v-text-field" })
+    .wrappers.find((entry) => entry.props("label") === label);
+  if (!field) {
+    throw new Error(`Das Feld „${label}“ fehlt.`);
+  }
+  return field;
 }
 
 function sectionTitles(wrapper) {
@@ -181,12 +216,171 @@ describe("HeroBlockForm, the text Block's Inhalt", () => {
     await toggle(wrapper, "Schatten für bessere Lesbarkeit");
     expect(lastPatch(wrapper)).toEqual({ shadow: true });
   });
+});
 
-  it("says nothing to edit on a type whose fields have not arrived", () => {
-    const wrapper = formOf(heroBlock({ type: "richtext", html: { de: "" } }));
+describe("HeroBlockForm, the rich-text Block's Inhalt", () => {
+  it("edits the German HTML in the shared editor, with links and the 10 000 counter", async () => {
+    const wrapper = formOf(heroRichtextBlock());
+    // The editor builds itself on `mounted`; its toolbar and counter appear
+    // with the render that follows.
+    await wrapper.vm.$nextTick();
 
-    expect(sectionTitles(wrapper)).toContain("Inhalt");
-    expect(textField(wrapper).exists()).toBe(false);
+    expect(editor(wrapper).props("links")).toBe(true);
+    expect(editor(wrapper).props("maxLength")).toBe(10000);
+    expect(editor(wrapper).vm.editor.getHTML()).toBe("<p>Willkommen</p>");
+    expect(wrapper.find(".tiptap-counter").text()).toBe("17 / 10000");
+
+    await typeInEditor(wrapper, " zurück");
+
+    expect(lastPatch(wrapper)).toEqual({
+      html: { de: "<p>Willkommen zurück</p>" },
+    });
+  });
+
+  it("edits the English rich text without dropping the German one", async () => {
+    const wrapper = formOf(heroRichtextBlock(), { locale: "en" });
+
+    expect(editor(wrapper).vm.editor.getHTML()).toBe("<p></p>");
+
+    await typeInEditor(wrapper, "Welcome");
+
+    expect(lastPatch(wrapper)).toEqual({
+      html: { de: "<p>Willkommen</p>", en: "<p>Welcome</p>" },
+    });
+  });
+
+  it("gives every locale view its own editor instance", async () => {
+    const wrapper = formOf(heroRichtextBlock());
+    const first = editor(wrapper).vm.editor;
+
+    await wrapper.setProps({ locale: "en" });
+
+    expect(editor(wrapper).vm.editor).not.toBe(first);
+  });
+
+  it("marks markup without a line of text as required", () => {
+    expect(
+      formOf(heroRichtextBlock({ html: { de: "<p></p>" } })).text()
+    ).toContain("Pflichtfeld");
+  });
+
+  it("refuses a rich text past 10 000 characters", () => {
+    const wrapper = formOf(
+      heroRichtextBlock({ html: { de: `<p>${"a".repeat(10000)}</p>` } })
+    );
+
+    expect(wrapper.text()).toContain("Höchstens 10000 Zeichen.");
+  });
+
+  it("carries the shadow switch and the colour control, and no font size", async () => {
+    const wrapper = formOf(heroRichtextBlock());
+
+    expect(chipLabels(wrapper)).toEqual([
+      "Standard",
+      "Primärfarbe",
+      "Sekundärfarbe",
+      "Weiß",
+      "Eigene…",
+    ]);
+    expect(() => selectByLabel(wrapper, "Schriftgröße")).toThrow();
+    expect(() => switchByLabel(wrapper, "Fett")).toThrow();
+
+    await toggle(wrapper, "Schatten für bessere Lesbarkeit");
+
+    expect(lastPatch(wrapper)).toEqual({ shadow: true });
+  });
+});
+
+describe("HeroBlockForm, the image Block's Inhalt", () => {
+  it("offers the instance's public images and shows the thumbnail", () => {
+    const wrapper = formOf(heroImageBlock());
+    const field = mediaField(wrapper);
+
+    expect(field.props("scope")).toBe("instance");
+    expect(field.props("kind")).toBe("image");
+    expect(field.props("publicOnly")).toBe(true);
+    expect(field.props("allowExternal")).toBe(false);
+    expect(
+      wrapper.findComponent({ name: "MediaReferenceImage" }).exists()
+    ).toBe(true);
+  });
+
+  it("writes the picked reference and says so while none is chosen", async () => {
+    const wrapper = formOf(heroImageBlock({ image: null }));
+
+    expect(wrapper.text()).toContain(
+      "Bitte ein Bild aus der Mediathek wählen."
+    );
+    expect(
+      wrapper.findComponent({ name: "MediaReferenceImage" }).exists()
+    ).toBe(false);
+
+    const picked = { source: "media", mediaId: "m2" };
+    mediaField(wrapper).vm.$emit("input", picked);
+    await wrapper.vm.$nextTick();
+
+    expect(lastPatch(wrapper)).toEqual({ image: picked });
+  });
+
+  it("hands an enriched reference on and leaves it alone while the alt text is edited", async () => {
+    const enriched = {
+      source: "media",
+      mediaId: "m1",
+      url: "/api/v2/instance/media/m1/file",
+      width: 800,
+      height: 200,
+    };
+    const wrapper = formOf(heroImageBlock({ image: enriched }));
+
+    expect(mediaField(wrapper).props("value")).toBe(enriched);
+
+    await fieldByLabel(wrapper, "Alternativtext").find("input").setValue("Neu");
+
+    expect(lastPatch(wrapper)).toEqual({ alt: { de: "Neu" } });
+    expect(patches(wrapper).some((patch) => "image" in patch)).toBe(false);
+  });
+
+  it("edits the alt text with its hint and counts to 200", async () => {
+    const wrapper = formOf(heroImageBlock());
+    const alt = fieldByLabel(wrapper, "Alternativtext");
+
+    expect(alt.find("input").element.value).toBe("Das Logo");
+    expect(wrapper.text()).toContain(
+      "Wird vorgelesen und angezeigt, wenn das Bild fehlt"
+    );
+    expect(wrapper.text()).toContain("8 / 200");
+
+    await alt.find("input").setValue("a".repeat(201));
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain("Höchstens 200 Zeichen.");
+  });
+
+  it("marks an empty German alt text as required", async () => {
+    const wrapper = formOf(heroImageBlock());
+
+    await fieldByLabel(wrapper, "Alternativtext").find("input").setValue("");
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain("Pflichtfeld");
+  });
+
+  it("offers the five maximum heights and the invert switch with its hint", async () => {
+    const wrapper = formOf(heroImageBlock());
+
+    await choose(wrapper, "Maximale Höhe", "Sehr klein");
+    expect(lastPatch(wrapper)).toEqual({ maxHeight: "xs" });
+
+    await toggle(wrapper, "Im Dunkelmodus invertieren");
+    expect(lastPatch(wrapper)).toEqual({ invertInDarkMode: true });
+    expect(wrapper.text()).toContain("Für dunkle Logos auf hellem Grund");
+  });
+
+  it("has neither a font size nor a colour control", () => {
+    const wrapper = formOf(heroImageBlock());
+
+    expect(() => selectByLabel(wrapper, "Schriftgröße")).toThrow();
+    expect(chipLabels(wrapper)).toEqual([]);
   });
 });
 

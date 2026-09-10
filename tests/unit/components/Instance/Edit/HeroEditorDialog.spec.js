@@ -752,6 +752,40 @@ describe("HeroEditorDialog with a Block the backend would refuse", () => {
     expect(errorBadges(wrapper)).toEqual([]);
     expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
   });
+
+  it("marks an empty rich text and a picture-less image Block too", async () => {
+    const wrapper = await openEditor(
+      heroLayoutResponse({
+        heroLayout: heroLayout({
+          blocks: [
+            heroBlock({ id: "note", zone: "top-right", text: { de: "Hi" } }),
+            heroBlock({
+              id: "prose",
+              type: "richtext",
+              zone: "middle-left",
+              html: { de: "<p></p>" },
+            }),
+            heroBlock({
+              id: "logo",
+              type: "image",
+              zone: "middle-right",
+              image: null,
+              alt: { de: "Das Logo" },
+            }),
+          ],
+        }),
+        isDefault: false,
+      })
+    );
+
+    expect(errorBadges(wrapper)).toEqual(["prose", "logo"]);
+
+    await edit(wrapper, "note", { size: "xl" });
+
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
+      "disabled"
+    );
+  });
 });
 
 /**
