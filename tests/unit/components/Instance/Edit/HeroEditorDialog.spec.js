@@ -5,6 +5,7 @@ import {
   flushPromises,
   forbiddenError,
   serverError,
+  validationError,
 } from "@tests/unit/support/api";
 import {
   button,
@@ -18,6 +19,7 @@ import {
   backgroundIssues,
   chooseBackgroundFamily,
   heroBlock,
+  heroImageBlock,
   heroLayout,
   heroLayoutResponse,
 } from "@tests/unit/support/heroLayout";
@@ -152,6 +154,12 @@ async function settlePreview(wrapper) {
 
 function livePreview(wrapper) {
   return wrapper.findComponent({ name: "HeroLivePreview" });
+}
+
+/** The header's language toggle, driven the way the author drives it. */
+async function switchToEnglish(wrapper) {
+  await button(wrapper, "English").trigger("click");
+  await wrapper.vm.$nextTick();
 }
 
 beforeEach(() => {
@@ -1494,3 +1502,314 @@ function unloadPrevented() {
   window.dispatchEvent(event);
   return event.defaultPrevented;
 }
+
+/**
+ * Section 4 of the spec: the badge beside the language toggle counts the
+ * Blocks the storefront would show in German on the English page.
+ */
+describe("HeroEditorDialog translation badge", () => {
+  function withBlocks(blocks) {
+    return heroLayoutResponse({
+      heroLayout: heroLayout({ blocks }),
+      isDefault: false,
+    });
+  }
+
+  it("counts the Blocks without an English version", async () => {
+    const wrapper = await openEditor(
+      withBlocks([
+        heroBlock({ id: "a", text: { de: "Titel" } }),
+        heroBlock({ id: "b", zone: "top-left", text: { de: "Note" } }),
+        heroBlock({
+          id: "c",
+          zone: "bottom-left",
+          text: { de: "Fuß", en: "Foot" },
+        }),
+      ])
+    );
+
+    expect(editorText(wrapper)).toContain("2 ohne Übersetzung");
+  });
+
+  it("sends the frames to the other locale's preview route", async () => {
+    const wrapper = await openEditor(
+      withBlocks([heroBlock({ text: { de: "Titel" } })])
+    );
+    expect(livePreview(wrapper).props("locale")).toBe("de");
+
+    await switchToEnglish(wrapper);
+
+    expect(livePreview(wrapper).props("locale")).toBe("en");
+  });
+
+  it("hides the badge once every Block is translated", async () => {
+    const wrapper = await openEditor(
+      withBlocks([heroBlock({ text: { de: "Titel", en: "Title" } })])
+    );
+
+    expect(wrapper.find(".hero-editor__untranslated").exists()).toBe(false);
+  });
+
+  it("counts down as a translation is written in the English view", async () => {
+    const wrapper = await openEditor(
+      withBlocks([heroBlock({ id: "a", text: { de: "Titel" } })])
+    );
+    expect(editorText(wrapper)).toContain("1 ohne Übersetzung");
+
+    await row(wrapper, "a").trigger("click");
+    await switchToEnglish(wrapper);
+
+    const field = blockForm(wrapper).find(".hero-block-form__text input");
+    expect(field.element.value).toBe("");
+
+    await field.setValue("Title");
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.draft.heroLayout.blocks[0].text).toEqual({
+      de: "Titel",
+      en: "Title",
+    });
+    expect(wrapper.find(".hero-editor__untranslated").exists()).toBe(false);
+  });
+});
+
+/**
+ * Section 9 of the spec: `details[].field` is a JSON path, and the editor puts
+ * every one of them somewhere the author can act on — under the control, at
+ * the section, or above the form when it can place it nowhere else.
+ */
+describe("HeroEditorDialog backend errors", () => {
+  const TEXT_BLOCK = heroBlock({ id: "title", text: { de: "Titel" } });
+
+  function withBlock(block = TEXT_BLOCK) {
+    return heroLayoutResponse({
+      heroLayout: heroLayout({ blocks: [block] }),
+      isDefault: false,
+    });
+  }
+
+  /** Drives one refused round-trip of the preview route. */
+  async function refusePreview(wrapper, details) {
+    ApiCatalogService.previewHeroLayout.mockRejectedValue(
+      validationError(details)
+    );
+    await chooseHeight(wrapper, "Höhe auf Mobilgeräten", "Mittel");
+    await settlePreview(wrapper);
+  }
+
+  function blockTextField(wrapper) {
+    return blockForm(wrapper)
+      .findAllComponents({ name: "v-text-field" })
+      .wrappers.find((field) =>
+        String(field.props("label")).startsWith("Text")
+      );
+  }
+
+  function sectionErrors(wrapper, selector) {
+    return wrapper.findAll(selector).wrappers.map((entry) => entry.text());
+  }
+
+  it("puts a Block's field error under its control and marks the row", async () => {
+    const wrapper = await openEditor(withBlock());
+    await row(wrapper, "title").trigger("click");
+
+    await refusePreview(wrapper, [
+      { field: "heroLayout.blocks[0].text.de", code: "required" },
+    ]);
+
+    expect(blockTextField(wrapper).props("errorMessages")).toBe("Pflichtfeld");
+    expect(row(wrapper, "title").find(".hero-block-row__error").exists()).toBe(
+      true
+    );
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBe(
+      "disabled"
+    );
+  });
+
+  it("shows a German fault only in the German view, and keeps the badge", async () => {
+    const wrapper = await openEditor(withBlock());
+    await row(wrapper, "title").trigger("click");
+    await refusePreview(wrapper, [
+      { field: "heroLayout.blocks[0].text.de", code: "required" },
+    ]);
+
+    await switchToEnglish(wrapper);
+
+    expect(blockTextField(wrapper).props("errorMessages")).toBeNull();
+    expect(row(wrapper, "title").find(".hero-block-row__error").exists()).toBe(
+      true
+    );
+  });
+
+  it("names the medium a refused image points at", async () => {
+    const wrapper = await openEditor(
+      withBlock(heroImageBlock({ id: "logo", alt: { de: "Logo" } }))
+    );
+    await row(wrapper, "logo").trigger("click");
+
+    await refusePreview(wrapper, [
+      {
+        field: "heroLayout.blocks[0].image",
+        code: "invalid_custom",
+        params: { reason: "not_public" },
+      },
+    ]);
+
+    expect(blockForm(wrapper).text()).toContain("nicht öffentlich");
+  });
+
+  it("puts a height error at the Höhe section", async () => {
+    const wrapper = await openEditor(withBlock());
+
+    await refusePreview(wrapper, [
+      { field: "heroLayout.height", code: "invalid_enum" },
+    ]);
+
+    expect(sectionErrors(wrapper, ".hero-editor__height-error")).toEqual([
+      "Höhe auf der Startseite: Dieser Wert wird nicht unterstützt.",
+    ]);
+  });
+
+  it("puts a Background error at the Hintergrund section", async () => {
+    const wrapper = await openEditor(withBlock());
+
+    await refusePreview(wrapper, [
+      {
+        field: "background.overlay.light.color",
+        code: "invalid_format",
+        params: { format: "hex" },
+      },
+    ]);
+
+    expect(backgroundIssues(wrapper).join(" ")).toContain(
+      "Farbe der Abdunklung"
+    );
+  });
+
+  it("names the Block of a fault no control can carry", async () => {
+    const wrapper = await openEditor(withBlock());
+
+    await refusePreview(wrapper, [
+      { field: "heroLayout.blocks[0].wibble", code: "unknown_field" },
+    ]);
+
+    expect(sectionErrors(wrapper, ".hero-editor__block-error")).toEqual([
+      "Titel: Dieses Feld wird nicht unterstützt.",
+    ]);
+  });
+
+  it("marks the Block the refused body named, not the one at that index now", async () => {
+    const wrapper = await openEditor(
+      heroLayoutResponse({
+        heroLayout: heroLayout({
+          blocks: [
+            heroBlock({ id: "first", zone: "top-left", text: { de: "Eins" } }),
+            heroBlock({
+              id: "second",
+              zone: "top-right",
+              text: { de: "Zwei" },
+            }),
+          ],
+        }),
+        isDefault: false,
+      })
+    );
+    await settlePreview(wrapper);
+
+    // The round-trip goes out with both Blocks and is refused about the
+    // second; the author deletes the first while it is in flight, so index 1
+    // is nobody's by the time the answer lands.
+    let refuse;
+    ApiCatalogService.previewHeroLayout.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        refuse = reject;
+      })
+    );
+    await chooseHeight(wrapper, "Höhe auf Mobilgeräten", "Mittel");
+    await settlePreview(wrapper);
+
+    wrapper.vm.setBlocks(wrapper.vm.blocks.slice(1));
+    await wrapper.vm.$nextTick();
+    refuse(
+      validationError([
+        { field: "heroLayout.blocks[1].text.de", code: "required" },
+      ])
+    );
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(row(wrapper, "second").find(".hero-block-row__error").exists()).toBe(
+      true
+    );
+  });
+
+  it("puts a fault of the image reference at the Bild control", async () => {
+    const wrapper = await openEditor(
+      withBlock(heroImageBlock({ id: "logo", alt: { de: "Logo" } }))
+    );
+    await row(wrapper, "logo").trigger("click");
+
+    // The backend names the key inside the reference; one control edits both.
+    await refusePreview(wrapper, [
+      {
+        field: "heroLayout.blocks[0].image.mediaId",
+        code: "invalid_custom",
+        params: { reason: "not_instance" },
+      },
+    ]);
+
+    expect(blockForm(wrapper).text()).toContain("Mediathek");
+    expect(sectionErrors(wrapper, ".hero-editor__block-error")).toEqual([]);
+  });
+
+  it("shows a path it cannot place above the form rather than dropping it", async () => {
+    const wrapper = await openEditor(withBlock());
+
+    await refusePreview(wrapper, [{ field: "wibble", code: "required" }]);
+
+    expect(wrapper.find(".hero-editor__errors").text()).toContain(
+      "Pflichtfeld"
+    );
+  });
+
+  it("clears the errors and releases the save on the next accepted Draft", async () => {
+    const wrapper = await openEditor(withBlock());
+    await row(wrapper, "title").trigger("click");
+    await refusePreview(wrapper, [
+      { field: "heroLayout.blocks[0].text.de", code: "required" },
+    ]);
+
+    ApiCatalogService.previewHeroLayout.mockResolvedValue({ data: RESOLVED });
+    await chooseHeight(wrapper, "Höhe auf Unterseiten", "Hoch");
+    await settlePreview(wrapper);
+
+    expect(blockTextField(wrapper).props("errorMessages")).toBeNull();
+    expect(row(wrapper, "title").find(".hero-block-row__error").exists()).toBe(
+      false
+    );
+    expect(button(wrapper, "Speichern").attributes("disabled")).toBeUndefined();
+  });
+
+  it("keeps the dialog open with the fields marked when the save is refused", async () => {
+    const wrapper = await openEditor(withBlock());
+    await row(wrapper, "title").trigger("click");
+    await settlePreview(wrapper);
+    await chooseHeight(wrapper, "Höhe auf Mobilgeräten", "Mittel");
+    await settlePreview(wrapper);
+
+    ApiCatalogService.updateHeroLayout.mockRejectedValue(
+      validationError([
+        { field: "heroLayout.blocks[0].text.de", code: "required" },
+      ])
+    );
+    await button(wrapper, "Speichern").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted("input")).toBeUndefined();
+    expect(blockTextField(wrapper).props("errorMessages")).toBe("Pflichtfeld");
+    expect(toastMessages(wrapper)).toContain(
+      "Kopfbereich nicht gespeichert — bitte die markierten Felder prüfen"
+    );
+  });
+});

@@ -41,19 +41,25 @@ export function heroDraftFromResponse(data, context = {}) {
 /**
  * The body of `PUT /api/catalog/hero-layout`.
  *
+ * The payload is a **snapshot**: it copies what it carries rather than handing
+ * out the Draft's own objects. A round-trip is in flight for as long as the
+ * network takes and the author goes on editing meanwhile — a body that moved
+ * with the Draft would leave the editor unable to say what a refusal was even
+ * about, because `details[].field` names positions in the body that was sent.
+ *
  * @param {Object} draft - The Draft the editor holds.
  * @returns {{ heroLayout: Object|null, background?: Object }} The payload.
  */
 export function heroLayoutSavePayload(draft) {
   const payload = {
-    heroLayout: draft.isDefault ? null : draft.heroLayout || null,
+    heroLayout: draft.isDefault ? null : clone(draft.heroLayout),
   };
 
   // `background: null` is a reset, not a no-op — and the Background is the
   // auth pages' too (Shared contract, "Reset"). A payload without the key
   // keeps the stored one, so a Draft that carries no Background sends none.
   if (draft.background) {
-    payload.background = draft.background;
+    payload.background = clone(draft.background);
   }
 
   return payload;

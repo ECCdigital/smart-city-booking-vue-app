@@ -27,9 +27,10 @@ function formOf(block, options = {}) {
     blocks = [block],
     locale = "de",
     themeColors = THEME_COLORS,
+    errors = {},
   } = options;
   return mountComponent(HeroBlockForm, {
-    propsData: { block, blocks, locale, themeColors },
+    propsData: { block, blocks, locale, themeColors, errors },
     stubs: { MediaReferenceField: true, MediaReferenceImage: true },
   });
 }
@@ -514,5 +515,115 @@ describe("HeroBlockForm, Darstellung and Sichtbarkeit", () => {
 
     await toggle(wrapper, "Auf Mobilgeräten ausblenden");
     expect(lastPatch(wrapper)).toEqual({ hideOnMobile: true });
+  });
+});
+
+/**
+ * Section 4 of the spec: the English view offers the German text as its
+ * placeholder and says what leaving the field empty does. German is the
+ * required locale, so it carries neither.
+ */
+describe("HeroBlockForm, the English view", () => {
+  const HINT = "Leer: Deutsch wird angezeigt";
+
+  it("offers the German text as the placeholder of an empty English one", () => {
+    const wrapper = formOf(heroBlock({ text: { de: "Willkommen" } }), {
+      locale: "en",
+    });
+    const field = fieldByLabel(wrapper, "Text (English)");
+
+    expect(field.props("placeholder")).toBe("Willkommen");
+    expect(field.props("persistentPlaceholder")).toBe(true);
+    expect(field.props("hint")).toBe(HINT);
+  });
+
+  it("drops both once the English text is there", async () => {
+    const wrapper = formOf(
+      heroBlock({ text: { de: "Willkommen", en: "Welcome" } }),
+      { locale: "en" }
+    );
+
+    expect(fieldByLabel(wrapper, "Text (English)").props("placeholder")).toBe(
+      ""
+    );
+    expect(wrapper.text()).not.toContain(HINT);
+  });
+
+  it("leaves the German view without a placeholder or the hint", () => {
+    const wrapper = formOf(heroBlock({ text: { de: "" } }));
+
+    expect(fieldByLabel(wrapper, "Text").props("placeholder")).toBe("");
+    expect(wrapper.text()).not.toContain(HINT);
+  });
+
+  it("offers the German alt text the same way, keeping its own hint", () => {
+    const wrapper = formOf(heroImageBlock({ alt: { de: "Das Logo" } }), {
+      locale: "en",
+    });
+    const field = fieldByLabel(wrapper, "Alternativtext (English)");
+
+    expect(field.props("placeholder")).toBe("Das Logo");
+    // What an alt text is for is what a translator needs to know too.
+    expect(field.props("hint")).toContain(HINT);
+    expect(field.props("hint")).toContain("Wird vorgelesen");
+  });
+
+  it("leaves the alt hint alone in the German view", () => {
+    const wrapper = formOf(heroImageBlock());
+
+    expect(fieldByLabel(wrapper, "Alternativtext").props("hint")).toBe(
+      "Wird vorgelesen und angezeigt, wenn das Bild fehlt"
+    );
+  });
+
+  it("offers the German rich text as the editor's placeholder", () => {
+    const wrapper = formOf(heroRichtextBlock(), { locale: "en" });
+
+    expect(editor(wrapper).props("label")).toBe("Willkommen");
+    expect(wrapper.text()).toContain(HINT);
+  });
+});
+
+/**
+ * Section 9: a `400` of the round-trip or the save is shown at the control it
+ * is about, beside whatever the local rules already say.
+ */
+describe("HeroBlockForm, the backend's messages", () => {
+  it("shows the message of a text field under it", () => {
+    const wrapper = formOf(heroBlock(), {
+      errors: { text: "Höchstens 200 Zeichen." },
+    });
+
+    expect(fieldByLabel(wrapper, "Text").props("errorMessages")).toBe(
+      "Höchstens 200 Zeichen."
+    );
+  });
+
+  it("shows the message of a colour at the colour control", () => {
+    const wrapper = formOf(heroBlock(), {
+      errors: {
+        color: "Bitte eine Farbe als Hex-Wert angeben, z. B. #1a2b3c.",
+      },
+    });
+
+    expect(wrapper.findComponent({ name: "HeroColorField" }).text()).toContain(
+      "Hex-Wert"
+    );
+  });
+
+  it("shows the message of a rich text under the editor", () => {
+    const wrapper = formOf(heroRichtextBlock(), {
+      errors: { html: "Höchstens 10000 Zeichen." },
+    });
+
+    expect(wrapper.text()).toContain("Höchstens 10000 Zeichen.");
+  });
+
+  it("shows the message of an image under the media field", () => {
+    const wrapper = formOf(heroImageBlock(), {
+      errors: { image: "Das Bild ist nicht öffentlich." },
+    });
+
+    expect(wrapper.text()).toContain("Das Bild ist nicht öffentlich.");
   });
 });

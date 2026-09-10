@@ -37,6 +37,24 @@ export function lifecycleError(status, code, params = {}) {
   return error;
 }
 
+/**
+ * An axios error carrying the 4.3.x `ValidationError` body — a `400` whose
+ * `details[]` name the faults, each with a JSON path into the request body.
+ */
+export function validationError(details = []) {
+  const error = new Error("Request failed with status code 400");
+  error.response = {
+    status: 400,
+    data: {
+      error: "ValidationError",
+      message: "validation_failed",
+      statusCode: 400,
+      details,
+    },
+  };
+  return error;
+}
+
 /** An axios error for a failure that is not a denial. */
 export function serverError(status = 500) {
   const error = new Error(`Request failed with status code ${status}`);

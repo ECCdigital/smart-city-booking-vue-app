@@ -34,9 +34,25 @@ const NAMED_COLORS = Object.freeze([
   "white",
 ]);
 
-const REQUIRED_MESSAGE = "Pflichtfeld";
-const HEX_MESSAGE = "Bitte eine Farbe als Hex-Wert angeben, z. B. #1a2b3c.";
+/**
+ * The three messages the backend's `400` says the same fault with. They are
+ * exported so that `heroErrors.js` can answer „Pflichtfeld“ with this
+ * „Pflichtfeld“ — an author who fixes a field should not meet two names for
+ * one rule depending on whether the round-trip or the local rule caught it.
+ */
+export const HERO_REQUIRED_MESSAGE = "Pflichtfeld";
+export const HERO_HEX_MESSAGE =
+  "Bitte eine Farbe als Hex-Wert angeben, z. B. #1a2b3c.";
+
 const NO_IMAGE_MESSAGE = "Bitte ein Bild aus der Mediathek wählen.";
+
+/**
+ * @param {number} max - The cap that was exceeded.
+ * @returns {string} What an over-long field says, wherever it was measured.
+ */
+export function heroMaxLengthMessage(max) {
+  return `Höchstens ${max} Zeichen.`;
+}
 
 const MISSING_TEXT_ISSUE = "Der Text auf Deutsch fehlt.";
 const MISSING_ALT_ISSUE = "Der Alternativtext auf Deutsch fehlt.";
@@ -146,7 +162,7 @@ export function heroRichtextRules(locale) {
 
 /** The rules of a custom colour. */
 export const heroHexRules = Object.freeze([
-  (value) => isHeroHexColor(value) || HEX_MESSAGE,
+  (value) => isHeroHexColor(value) || HERO_HEX_MESSAGE,
 ]);
 
 /**
@@ -154,7 +170,7 @@ export const heroHexRules = Object.freeze([
  * „Farbe im Dunkelmodus“, whose absence means „follow the light one“.
  */
 export const heroOptionalHexRules = Object.freeze([
-  (value) => !value || isHeroHexColor(value) || HEX_MESSAGE,
+  (value) => !value || isHeroHexColor(value) || HERO_HEX_MESSAGE,
 ]);
 
 /**
@@ -252,11 +268,11 @@ function colorIssues(block) {
 
 /** German is the required locale; every other one may stay empty (§4). */
 function requiredInGerman(locale, text) {
-  return locale !== "de" || !!text || REQUIRED_MESSAGE;
+  return locale !== "de" || !!text || HERO_REQUIRED_MESSAGE;
 }
 
 function withinLimit(value, max) {
-  return !tooLong(value, max) || `Höchstens ${max} Zeichen.`;
+  return !tooLong(value, max) || heroMaxLengthMessage(max);
 }
 
 function tooLong(value, max) {

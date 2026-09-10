@@ -89,7 +89,9 @@ describe("createHeroPreviewResolver draftId", () => {
     resolver.send({ name: "Marktplatz" });
     await tick();
 
-    expect(onResolved).toHaveBeenCalledWith({ name: "Marktplatz" }, 1);
+    expect(onResolved).toHaveBeenCalledWith({ name: "Marktplatz" }, 1, {
+      name: "Marktplatz",
+    });
   });
 
   it("discards the answer of a round-trip a newer one has replaced", async () => {
@@ -115,7 +117,9 @@ describe("createHeroPreviewResolver draftId", () => {
     await tick(0);
 
     expect(onResolved).toHaveBeenCalledTimes(1);
-    expect(onResolved).toHaveBeenCalledWith({ name: "second" }, 2);
+    expect(onResolved).toHaveBeenCalledWith({ name: "second" }, 2, {
+      name: "second",
+    });
   });
 
   it("discards the failure of a round-trip a newer one has replaced", async () => {
@@ -155,7 +159,7 @@ describe("createHeroPreviewResolver failures", () => {
     resolver.send({ name: "a" });
     await tick();
 
-    expect(onRejected).toHaveBeenCalledWith(error, 1);
+    expect(onRejected).toHaveBeenCalledWith(error, 1, { name: "a" });
   });
 
   it("keeps resolving after a refusal", async () => {
@@ -174,6 +178,38 @@ describe("createHeroPreviewResolver failures", () => {
     resolver.send({ name: "b" });
     await tick();
 
-    expect(onResolved).toHaveBeenCalledWith({ name: "b" }, 2);
+    expect(onResolved).toHaveBeenCalledWith({ name: "b" }, 2, { name: "b" });
+  });
+});
+
+/**
+ * A `400` names fields of the body that was sent. The Draft moves on while a
+ * request is in flight — the debounce alone is 300 ms — so the answer has to
+ * carry what it is about, or the editor would mark the wrong Block.
+ */
+describe("createHeroPreviewResolver, the body an answer is about", () => {
+  it("hands a refusal the body that was sent, not the newest one", async () => {
+    const onRejected = vi.fn();
+    const error = serverError(400);
+    let refuse;
+    const resolver = createHeroPreviewResolver({
+      resolve: vi.fn().mockReturnValueOnce(
+        new Promise((_, reject) => {
+          refuse = reject;
+        })
+      ),
+      onRejected,
+    });
+
+    resolver.send({ name: "sent" });
+    await tick();
+
+    // The author edits on while the round-trip is in flight: the next body is
+    // only queued, so no newer request has gone out to make this one stale.
+    resolver.send({ name: "queued" });
+    refuse(error);
+    await tick(0);
+
+    expect(onRejected).toHaveBeenCalledWith(error, 1, { name: "sent" });
   });
 });

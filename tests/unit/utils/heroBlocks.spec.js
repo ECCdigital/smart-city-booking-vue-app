@@ -10,6 +10,7 @@ import {
   heroBlockType,
   heroBlockZoneCounts,
   heroLocalizedText,
+  heroUntranslatedBlockIds,
   insertHeroBlock,
   moveHeroBlock,
   newHeroBlockId,
@@ -628,5 +629,55 @@ describe("heroBlockZoneCounts", () => {
 
     expect(counts.nowhere).toBeUndefined();
     expect(counts["top-left"]).toBe(0);
+  });
+});
+
+/**
+ * The badge beside the language toggle: „N ohne Übersetzung“. What counts as
+ * translated is one non-empty English value in the Block's own localised
+ * field — the one field its type carries (hero layout spec §4).
+ */
+describe("heroUntranslatedBlockIds", () => {
+  it("names a text Block whose English text is missing or empty", () => {
+    expect(
+      heroUntranslatedBlockIds([
+        { id: "a", type: "text", text: { de: "Willkommen" } },
+        { id: "b", type: "text", text: { de: "Willkommen", en: "" } },
+        { id: "c", type: "text", text: { de: "Willkommen", en: "   " } },
+      ])
+    ).toEqual(["a", "b", "c"]);
+  });
+
+  it("leaves a translated Block of every type out", () => {
+    expect(
+      heroUntranslatedBlockIds([
+        { id: "a", type: "text", text: { de: "Hallo", en: "Hello" } },
+        {
+          id: "b",
+          type: "richtext",
+          html: { de: "<p>Hallo</p>", en: "<p>Hello</p>" },
+        },
+        { id: "c", type: "image", alt: { de: "Logo", en: "Logo" } },
+      ])
+    ).toEqual([]);
+  });
+
+  it("reads an emptied rich-text editor as no translation", () => {
+    expect(
+      heroUntranslatedBlockIds([
+        {
+          id: "a",
+          type: "richtext",
+          html: { de: "<p>Hallo</p>", en: "<p></p>" },
+        },
+      ])
+    ).toEqual(["a"]);
+  });
+
+  it("says nothing about a Block whose type carries no localised field", () => {
+    expect(heroUntranslatedBlockIds([{ id: "a", type: "divider" }])).toEqual(
+      []
+    );
+    expect(heroUntranslatedBlockIds(null)).toEqual([]);
   });
 });

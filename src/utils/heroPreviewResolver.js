@@ -13,7 +13,9 @@
  *
  * The resolver holds the ordering and nothing else. What a `200` and a `400`
  * mean for the frames and for „Speichern“ is the editor's, through the two
- * callbacks.
+ * callbacks. Both are handed the payload the answer is about: the Draft moves
+ * on while a request is in flight, and a `400` names fields of the body that
+ * was sent, not of the one on screen now.
  */
 
 /** How long a change waits for the next one before it is sent. */
@@ -22,8 +24,10 @@ export const HERO_PREVIEW_DEBOUNCE = 300;
 /**
  * @param {Object} options - How the resolver talks to its surroundings.
  * @param {Function} options.resolve - Sends the payload; answers as axios does.
- * @param {Function} [options.onResolved] - `(preview, draftId)` after a 200.
- * @param {Function} [options.onRejected] - `(error, draftId)` after a failure.
+ * @param {Function} [options.onResolved] - `(preview, draftId, payload)` after
+ *   a 200.
+ * @param {Function} [options.onRejected] - `(error, draftId, payload)` after a
+ *   failure.
  * @param {number} [options.delay] - The debounce, in ms.
  * @returns {{ send: Function, cancel: Function }} The resolver.
  */
@@ -51,11 +55,11 @@ export function createHeroPreviewResolver({
       const response = await resolve(payload);
       // A newer round-trip has gone out since: its answer is the current one.
       if (id === draftId && onResolved) {
-        onResolved((response || {}).data || null, id);
+        onResolved((response || {}).data || null, id, payload);
       }
     } catch (error) {
       if (id === draftId && onRejected) {
-        onRejected(error, id);
+        onRejected(error, id, payload);
       }
     }
   }

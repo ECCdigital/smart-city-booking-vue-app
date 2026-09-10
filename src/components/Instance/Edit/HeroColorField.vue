@@ -53,8 +53,12 @@
       </v-menu>
     </div>
 
-    <div v-if="errorMessage" class="error--text text-caption">
-      {{ errorMessage }}
+    <div
+      v-for="message in messages"
+      :key="message"
+      class="error--text text-caption"
+    >
+      {{ message }}
     </div>
   </div>
 </template>
@@ -96,6 +100,8 @@ export default {
     value: { type: String, default: null },
     /** The instance's `branding.theme.colors`, for the two painted chips. */
     themeColors: { type: Object, default: null },
+    /** What a backend `400` said about this colour, if anything. */
+    error: { type: String, default: null },
   },
   data() {
     // The last hex of this dialog session, so that leaving „Eigene…“ and
@@ -136,6 +142,10 @@ export default {
         return null;
       }
       return firstHeroRuleError(heroHexRules, this.current);
+    },
+    /** What the control says: the local rule first, then the backend's word. */
+    messages() {
+      return [this.errorMessage, this.error].filter(Boolean);
     },
   },
   watch: {

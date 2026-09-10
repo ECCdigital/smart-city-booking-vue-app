@@ -172,13 +172,13 @@
       </template>
     </template>
 
-    <div v-if="issues.length > 0" class="hero-background-form__issues mt-2">
+    <div v-if="messages.length > 0" class="hero-background-form__issues mt-2">
       <div
-        v-for="issue in issues"
-        :key="issue"
+        v-for="message in messages"
+        :key="message"
         class="error--text text-caption"
       >
-        {{ issue }}
+        {{ message }}
       </div>
     </div>
   </SubSection>
@@ -242,6 +242,13 @@ export default {
   props: {
     /** The Background as the Draft holds it; `null` is the default one. */
     value: { type: Object, default: null },
+    /**
+     * What a backend `400` said about the Background, one line per detail.
+     * The Background's controls are a family of small ones and a fault can
+     * name any of them, so the messages stand at the section and name their
+     * field rather than sitting under one control (hero layout spec §9).
+     */
+    errors: { type: Array, default: () => [] },
   },
   data() {
     return {
@@ -270,6 +277,10 @@ export default {
     /** Why the backend would refuse this Background (§9). */
     issues() {
       return heroBackgroundIssues(this.value);
+    },
+    /** What the section says: the local rules first, then the backend's. */
+    messages() {
+      return [...this.issues, ...this.errors];
     },
   },
   watch: {

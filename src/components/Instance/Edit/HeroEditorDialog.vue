@@ -22,10 +22,21 @@
           {{ statusLabel }}
         </v-chip>
         <v-spacer />
-        <v-btn-toggle v-model="locale" mandatory dense class="mr-4">
+        <v-btn-toggle v-model="locale" mandatory dense class="mr-2">
           <v-btn small value="de">Deutsch</v-btn>
           <v-btn small value="en">English</v-btn>
         </v-btn-toggle>
+        <v-chip
+          v-if="untranslatedBlockIds.length > 0"
+          class="mr-4 hero-editor__untranslated"
+          small
+          label
+          outlined
+          color="warning"
+          title="Diese Blöcke werden auf der englischen Seite auf Deutsch angezeigt."
+        >
+          {{ untranslatedLabel }}
+        </v-chip>
         <v-btn text :disabled="!draft || inProgress" @click="askForReset">
           Auf Standard zurücksetzen
         </v-btn>
@@ -51,6 +62,26 @@
 
         <div v-else-if="draft" class="hero-editor-columns">
           <div class="hero-editor-form">
+            <!-- A path this editor has no place for still reaches the author:
+                 dropping it would leave a refused save unexplained. There is
+                 nothing to act on here, so it names the path — that is what a
+                 support request needs. -->
+            <v-alert
+              v-if="unplacedErrorTexts.length > 0"
+              type="error"
+              text
+              dense
+              class="hero-editor__errors mb-4"
+            >
+              <div class="mb-1">
+                Der Server hat Angaben abgelehnt, die dieser Editor keinem Feld
+                zuordnen kann:
+              </div>
+              <div v-for="(message, index) in unplacedErrorTexts" :key="index">
+                {{ message }}
+              </div>
+            </v-alert>
+
             <SubSection title="Höhe" icon="mdi-arrow-expand-vertical" no-margin>
               <v-select
                 v-for="field in heightFields"
@@ -63,6 +94,13 @@
                 dense
                 @change="setHeight(field.key, $event)"
               />
+              <div
+                v-for="(message, index) in layoutErrorTexts"
+                :key="index"
+                class="error--text text-caption hero-editor__height-error"
+              >
+                {{ message }}
+              </div>
             </SubSection>
 
             <SubSection class="mt-6" title="Blöcke" icon="mdi-view-dashboard">
@@ -77,11 +115,11 @@
                      behind, because an invalid Draft is never sent. -->
                 <template #badge="{ block }">
                   <v-icon
-                    v-if="issuesOf(block).length > 0"
+                    v-if="refusalsOf(block).length > 0"
                     small
                     color="error"
                     class="hero-block-row__error"
-                    :title="issuesOf(block).join(' ')"
+                    :title="refusalsOf(block).join(' ')"
                   >
                     mdi-alert-circle
                   </v-icon>
@@ -96,6 +134,13 @@
                   </v-icon>
                 </template>
               </HeroBlockList>
+              <div
+                v-for="(message, index) in blockSectionErrorTexts"
+                :key="index"
+                class="error--text text-caption hero-editor__block-error"
+              >
+                {{ message }}
+              </div>
             </SubSection>
 
             <HeroBlockForm
@@ -105,6 +150,7 @@
               :blocks="blocks"
               :locale="locale"
               :theme-colors="themeColors"
+              :errors="selectedBlockErrors"
               @input="patchSelectedBlock"
               @update:zone="moveSelectedBlock"
             />
@@ -113,6 +159,7 @@
                  spacing the sections above set by hand. -->
             <HeroBackgroundForm
               :value="draft.background"
+              :errors="backgroundErrorTexts"
               @input="setBackground"
             />
           </div>
@@ -178,9 +225,19 @@ import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue"
 import { heroBackgroundIssues } from "@/utils/heroBackground";
 import {
   HERO_ZONES,
+  heroBlockLabel,
+  heroUntranslatedBlockIds,
   setHeroBlockZone,
   updateHeroBlock,
 } from "@/utils/heroBlocks";
+import {
+  HERO_ERROR_SECTIONS,
+  heroErrorEntries,
+  heroSectionErrorText,
+  heroValidationDetails,
+  isHeroErrorInLocale,
+  isHeroInlineBlockError,
+} from "@/utils/heroErrors";
 import {
   heroBlockIssues,
   invalidHeroBlockIds,
@@ -216,8 +273,28 @@ const HEIGHT_FIELDS = Object.freeze([
   { key: "compactHeight", label: "Höhe auf Unterseiten" },
 ]);
 
+/**
+ * The id of the Block at one index of a sent body, or none — a detail about a
+ * layout that was sent as `null` names no Block at all.
+ *
+ * @param {Array} blocks - The Blocks as the body carried them.
+ * @param {?number} index - The index the detail's path named.
+ * @returns {?string} The Block's id.
+ */
+function blockIdAt(blocks, index) {
+  const block = index === null ? null : blocks[index];
+
+  return block ? block.id : null;
+}
+
 const DEFAULT_STATUS = "Standard-Layout (folgt Portalname und Logo)";
 const CUSTOM_STATUS = "Angepasst";
+
+// What a refused save says. The body of a `ValidationError` carries
+// `validation_failed` as its message, which is no sentence for an author — the
+// fields themselves say what is wrong, and the toast points at them.
+const SAVE_REFUSED_TOAST =
+  "Kopfbereich nicht gespeichert — bitte die markierten Felder prüfen";
 
 /**
  * The full-screen dialog the Portal tab opens for the Hero Editor.
@@ -269,6 +346,11 @@ export default {
       // round-trip was refused.
       preview: null,
       previewRejected: false,
+      // The fields the last round-trip refused, resolved to where the form
+      // shows them and carrying the Block id they were about at the time. A
+      // `400` of the preview route and one of the save land here alike; the
+      // next accepted Draft clears them (hero layout spec §9).
+      backendErrors: [],
       // The last Preview Report of each frame. Warnings are advice, so they
       // sit beside the Draft rather than in it and never reach a save.
       reports: noHeroPreviewReports(),
@@ -318,6 +400,69 @@ export default {
     /** Why the backend would refuse the Background; the section shows them. */
     backgroundIssues() {
       return heroBackgroundIssues(this.draft ? this.draft.background : null);
+    },
+    /** The Blocks the storefront would show in German on the English page. */
+    untranslatedBlockIds() {
+      return heroUntranslatedBlockIds(this.blocks);
+    },
+    untranslatedLabel() {
+      return `${this.untranslatedBlockIds.length} ohne Übersetzung`;
+    },
+    /** What the backend refused, per Block id — the red badges. */
+    blockErrors() {
+      return this.backendErrors
+        .filter((entry) => entry.blockId)
+        .reduce((byId, entry) => {
+          byId[entry.blockId] = [...(byId[entry.blockId] || []), entry];
+          return byId;
+        }, {});
+    },
+    /**
+     * The messages the detail form puts under its own controls: the selected
+     * Block's, narrowed to the locale on screen. A fault of the other locale
+     * keeps its red badge on the row and appears when the toggle moves — the
+     * field it belongs to is not the one being edited.
+     */
+    selectedBlockErrors() {
+      return (this.blockErrors[this.selectedBlockId] || [])
+        .filter(
+          (entry) =>
+            isHeroInlineBlockError(entry) &&
+            isHeroErrorInLocale(entry, this.locale)
+        )
+        .reduce((byField, entry) => {
+          byField[entry.field] = entry.message;
+          return byField;
+        }, {});
+    },
+    /** What „Höhe“ shows: the layout's own fields. */
+    layoutErrorTexts() {
+      return this.sectionErrorTexts(HERO_ERROR_SECTIONS.LAYOUT);
+    },
+    /** What „Hintergrund“ shows. */
+    backgroundErrorTexts() {
+      return this.sectionErrorTexts(HERO_ERROR_SECTIONS.BACKGROUND);
+    },
+    /**
+     * What „Blöcke“ shows: the faults of the array itself, and the ones of a
+     * Block that no control of the detail form can carry — an id, a type, a
+     * key the schema does not know. They name their Block, because the row's
+     * badge alone would not say what to fix.
+     */
+    blockSectionErrorTexts() {
+      return this.backendErrors
+        .filter(
+          (entry) =>
+            entry.section === HERO_ERROR_SECTIONS.BLOCKS &&
+            !isHeroInlineBlockError(entry)
+        )
+        .map((entry) => this.namedBlockError(entry));
+    },
+    /** What no section claims — shown above the form rather than dropped. */
+    unplacedErrorTexts() {
+      return this.backendErrors
+        .filter((entry) => entry.section === null)
+        .map((entry) => this.unplacedErrorText(entry));
     },
     cancelLabel() {
       return this.isDirty ? "Abbrechen" : "Schließen";
@@ -402,11 +547,13 @@ export default {
       }
     },
     async save() {
+      // The body is held onto: a refusal names fields of what was sent, and
+      // the Draft is still editable while the save is in flight.
+      const payload = heroLayoutSavePayload(this.draft);
+
       this.saving = true;
       try {
-        const response = await ApiCatalogService.updateHeroLayout(
-          heroLayoutSavePayload(this.draft)
-        );
+        const response = await ApiCatalogService.updateHeroLayout(payload);
         // The save route answers without `isDefault`: what the layout is now
         // is what this save just sent.
         this.setDraft(
@@ -414,12 +561,24 @@ export default {
             isDefault: this.draft.isDefault,
           })
         );
+        this.backendErrors = [];
         await this.addToast({
           message: "Kopfbereich gespeichert",
           type: "success",
         });
       } catch (e) {
-        await this.toastError(e, "Kopfbereich konnte nicht gespeichert werden");
+        // A refused save keeps the dialog open with its fields marked, and the
+        // toast only says that nothing was written: the body of a
+        // `ValidationError` carries `validation_failed` as its message, which
+        // is no sentence to put in front of an author (hero layout spec §9).
+        if (this.takeBackendErrors(e, payload)) {
+          await this.addToast({ message: SAVE_REFUSED_TOAST, type: "error" });
+        } else {
+          await this.toastError(
+            e,
+            "Kopfbereich konnte nicht gespeichert werden"
+          );
+        }
       } finally {
         this.saving = false;
       }
@@ -445,6 +604,7 @@ export default {
       // that reads a resolved Draft into the protocol's shape.
       this.preview = { draftId, ...(data || {}) };
       this.previewRejected = false;
+      this.backendErrors = [];
     },
     /**
      * A refusal leaves the last valid preview in the frames. Only a `400` is
@@ -456,18 +616,86 @@ export default {
      * toast: the round-trip runs on every keystroke, so a portal that is down
      * would otherwise bury the author in toasts it cannot act on.
      */
-    onPreviewRejected(error) {
+    onPreviewRejected(error, draftId, payload) {
       if (error && error.response && error.response.status === 400) {
         this.previewRejected = true;
+        this.takeBackendErrors(error, payload);
         return;
       }
       console.error("Hero preview could not be resolved:", error);
+    },
+    /**
+     * Reads a refusal into the form. A detail names a Block by its **index in
+     * the body that was sent**, which is not the index it has now: the array
+     * is rewritten in canonical order after every move, and the author goes on
+     * editing while a round-trip is in flight. So the index is read against
+     * that body and kept as a Block id, which survives both.
+     *
+     * @param {*} error - What a route rejected with.
+     * @param {Object} payload - The body the answer is about.
+     * @returns {boolean} Whether it was a `400` with fields to mark.
+     */
+    takeBackendErrors(error, payload) {
+      const details = heroValidationDetails(error);
+
+      if (!details) {
+        return false;
+      }
+
+      const sent = ((payload || {}).heroLayout || {}).blocks || [];
+
+      this.backendErrors = heroErrorEntries(details).map((entry) => ({
+        ...entry,
+        blockId: blockIdAt(sent, entry.blockIndex),
+      }));
+
+      return true;
+    },
+    /** The lines one section of the form shows. */
+    sectionErrorTexts(section) {
+      return this.backendErrors
+        .filter((entry) => entry.section === section)
+        .map((entry) => heroSectionErrorText(entry));
+    },
+    /**
+     * A fault no section claims. Its path is all there is to say about it, and
+     * a path is what makes it reportable.
+     */
+    unplacedErrorText(entry) {
+      return `${entry.path}: ${entry.message}`;
+    },
+    /**
+     * A Block's fault said away from its row: „Titel: Dieses Feld wird nicht
+     * unterstützt.“ A fault of the Blocks array itself belongs to no Block and
+     * stands on its own.
+     */
+    namedBlockError(entry) {
+      const block = this.blocks.find(
+        (candidate) => candidate.id === entry.blockId
+      );
+      const text = heroSectionErrorText(entry);
+
+      return block ? `${heroBlockLabel(block)}: ${text}` : text;
     },
     forgetPreview() {
       this.previewResolver.cancel();
       this.preview = null;
       this.previewRejected = false;
+      this.backendErrors = [];
       this.reports = noHeroPreviewReports();
+    },
+    /**
+     * What the red badge on a row says: what the editor itself refuses, and
+     * what the last round-trip refused. Both are reasons the save will not go
+     * through, so they share one badge.
+     */
+    refusalsOf(block) {
+      return [
+        ...this.issuesOf(block),
+        ...(this.blockErrors[block.id] || []).map((entry) =>
+          heroSectionErrorText(entry)
+        ),
+      ];
     },
     /** What the yellow badge on a row says. */
     warningsOf(block) {

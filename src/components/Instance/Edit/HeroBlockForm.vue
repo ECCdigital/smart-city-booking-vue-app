@@ -7,6 +7,11 @@
           :label="textLabel"
           :counter="maxTextLength"
           :rules="textRules"
+          :error-messages="errorOf('text')"
+          :placeholder="germanPlaceholder(text)"
+          :persistent-placeholder="!!germanPlaceholder(text)"
+          :hint="translationHint(text)"
+          :persistent-hint="!!translationHint(text)"
           background-color="accent"
           filled
           dense
@@ -47,6 +52,7 @@
         <HeroColorField
           :value="block.color"
           :theme-colors="themeColors"
+          :error="errorOf('color')"
           @input="patch({ color: $event })"
         />
       </template>
@@ -61,14 +67,27 @@
         <Tiptap
           :key="`${block.id}:${locale}`"
           :value="html"
+          :label="germanPlaceholder(htmlText)"
           :max-length="maxHtmlLength"
           :min-height="140"
           links
           class="hero-block-form__richtext mb-1"
           @input="setHtml"
         />
-        <div v-if="htmlError" class="error--text text-caption mb-3">
-          {{ htmlError }}
+        <div class="hero-block-form__richtext-messages mb-3">
+          <div
+            v-for="(message, index) in htmlErrors"
+            :key="index"
+            class="error--text text-caption"
+          >
+            {{ message }}
+          </div>
+          <div
+            v-if="translationHint(htmlText)"
+            class="text--secondary text-caption"
+          >
+            {{ translationHint(htmlText) }}
+          </div>
         </div>
 
         <v-switch
@@ -84,6 +103,7 @@
         <HeroColorField
           :value="block.color"
           :theme-colors="themeColors"
+          :error="errorOf('color')"
           @input="patch({ color: $event })"
         />
       </template>
@@ -100,8 +120,12 @@
           empty-label="Kein Bild ausgewählt"
           @input="patch({ image: $event })"
         />
-        <div v-if="imageError" class="error--text text-caption mt-1">
-          {{ imageError }}
+        <div
+          v-for="(message, index) in imageErrors"
+          :key="index"
+          class="error--text text-caption mt-1"
+        >
+          {{ message }}
         </div>
         <MediaReferenceImage
           v-if="block.image"
@@ -120,7 +144,10 @@
           :label="altLabel"
           :counter="maxTextLength"
           :rules="textRules"
-          hint="Wird vorgelesen und angezeigt, wenn das Bild fehlt"
+          :error-messages="errorOf('alt')"
+          :placeholder="germanPlaceholder(alt)"
+          :persistent-placeholder="!!germanPlaceholder(alt)"
+          :hint="altHintOf(alt)"
           persistent-hint
           background-color="accent"
           filled
@@ -232,7 +259,9 @@ import HeroColorField from "@/components/Instance/Edit/HeroColorField.vue";
 import HeroPositionGrid from "@/components/Instance/Edit/HeroPositionGrid.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import {
+  heroBlockSummary,
   heroBlockType,
+  heroHtmlFirstLine,
   heroLocalizedText,
   setHeroLocalizedText,
 } from "@/utils/heroBlocks";
@@ -287,6 +316,12 @@ const MAX_HEIGHT_STEPS = Object.freeze([
 const PUBLIC_ONLY_REASON =
   "Der Kopfbereich wird öffentlich ausgeliefert — interne Medien sind hier nicht wählbar.";
 
+// What an empty English field does, said at the field itself (spec §4). German
+// is the required locale, so it never carries the hint.
+const TRANSLATION_HINT = "Leer: Deutsch wird angezeigt";
+
+const ALT_HINT = "Wird vorgelesen und angezeigt, wenn das Bild fehlt";
+
 /**
  * The detail form of the selected Block: „Inhalt“ → „Position“ →
  * „Darstellung“ → „Sichtbarkeit“ (hero layout spec §7).
@@ -316,6 +351,13 @@ export default {
     locale: { type: String, default: "de" },
     /** The instance's `branding.theme.colors`, for the colour chips. */
     themeColors: { type: Object, default: null },
+    /**
+     * What a backend `400` said about this Block, as `{ field: message }` —
+     * already narrowed by the editor, which owns the toggle and knows which
+     * faults a control here can carry (`isHeroInlineBlockError`). The rest is
+     * listed at the „Blöcke“ section instead (hero layout spec §9).
+     */
+    errors: { type: Object, default: () => ({}) },
   },
   data() {
     return {
@@ -351,6 +393,21 @@ export default {
     alt() {
       return heroLocalizedText(this.block.alt, this.locale);
     },
+    /**
+     * The rich text as a line of text. The editor's own value is markup, and
+     * an emptied editor answers `<p></p>` — nothing the placeholder rule may
+     * read as „there is something here“.
+     */
+    htmlText() {
+      return heroHtmlFirstLine(this.html);
+    },
+    /**
+     * The German text the English view offers as its placeholder — the same
+     * line the Block's row shows, whichever localised field its type carries.
+     */
+    germanText() {
+      return heroBlockSummary(this.block);
+    },
     /** German is the required locale, so only it is marked as one. */
     textLabel() {
       return this.locale === "de" ? "Text" : "Text (English)";
@@ -367,14 +424,45 @@ export default {
      * The editor and the media field take no Vuetify `rules`, so the form runs
      * them itself and writes the message underneath.
      */
-    htmlError() {
-      return firstHeroRuleError(heroRichtextRules(this.locale), this.html);
+    htmlErrors() {
+      return [
+        firstHeroRuleError(heroRichtextRules(this.locale), this.html),
+        this.errorOf("html"),
+      ].filter(Boolean);
     },
-    imageError() {
-      return firstHeroRuleError(heroImageRules, this.block.image);
+    imageErrors() {
+      return [
+        firstHeroRuleError(heroImageRules, this.block.image),
+        this.errorOf("image"),
+      ].filter(Boolean);
     },
   },
   methods: {
+    /**
+     * What the English view puts into an empty field: the German text, which
+     * is what the storefront shows there. An empty German text has nothing to
+     * offer and leaves the placeholder off (hero layout spec §4).
+     */
+    germanPlaceholder(value) {
+      return this.locale === "de" || value ? "" : this.germanText;
+    },
+    /** Why an English field may be left empty; German has no such choice. */
+    translationHint(value) {
+      return this.locale === "de" || value ? "" : TRANSLATION_HINT;
+    },
+    /**
+     * „Alternativtext“ already explains what it is for, and a translator needs
+     * that as much as an author does — so the English view adds its hint to
+     * that one rather than replacing it.
+     */
+    altHintOf(value) {
+      return [this.translationHint(value), ALT_HINT]
+        .filter(Boolean)
+        .join(" · ");
+    },
+    errorOf(field) {
+      return this.errors[field] || null;
+    },
     setText(value) {
       this.patch({
         text: setHeroLocalizedText(this.block.text, this.locale, value),

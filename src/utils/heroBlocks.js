@@ -284,6 +284,47 @@ export function setHeroLocalizedText(localized, locale, next) {
   return result;
 }
 
+// The one localised field of each type, and what counts as text in it. Rich
+// text is markup: an emptied editor answers `<p></p>`, which is a non-empty
+// string and no translation at all.
+const LOCALIZED_FIELD_OF_TYPE = Object.freeze({
+  text: { key: "text", textOf: (value) => value },
+  richtext: { key: "html", textOf: heroHtmlFirstLine },
+  image: { key: "alt", textOf: (value) => value },
+});
+
+/**
+ * The keys of the Shared contract that carry a `LocalizedString` — `text.text`,
+ * `richtext.html`, `image.alt`. Read off the map above, so which fields are
+ * translatable is said once: `heroErrors.js` reads a JSON path with it, and a
+ * fourth of them would arrive there on its own.
+ */
+export const HERO_LOCALIZED_FIELDS = Object.freeze(
+  Object.values(LOCALIZED_FIELD_OF_TYPE).map((field) => field.key)
+);
+
+/**
+ * The Blocks the badge beside the language toggle counts: those whose
+ * localised field carries no English text, so the storefront falls back to the
+ * German one (hero layout spec §4). A Block of a type this editor has no field
+ * for is not counted — there is nothing on it to translate here.
+ *
+ * @param {Array} blocks - The Blocks as they stand.
+ * @returns {string[]} The ids without an English version.
+ */
+export function heroUntranslatedBlockIds(blocks) {
+  return (blocks || [])
+    .filter((block) => {
+      const field = LOCALIZED_FIELD_OF_TYPE[block && block.type];
+
+      return (
+        !!field &&
+        !field.textOf(heroLocalizedText(block[field.key], "en")).trim()
+      );
+    })
+    .map((block) => block.id);
+}
+
 /**
  * Whether „Nach oben“ / „Nach unten“ would do anything — false at the edges of
  * the group, where the menu entry is disabled.

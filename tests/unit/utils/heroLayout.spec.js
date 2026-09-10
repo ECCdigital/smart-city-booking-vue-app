@@ -221,3 +221,29 @@ describe("heroDefaultPreviewPayload", () => {
     });
   });
 });
+
+/**
+ * A payload is what was sent, and it has to stay that even while the author
+ * edits on: a `400` names positions in the body of the request, so a body that
+ * moved with the Draft could not be read back at all.
+ */
+describe("heroLayoutSavePayload, as a snapshot", () => {
+  it("does not move with the Draft it was built from", () => {
+    const draft = {
+      isDefault: false,
+      heroLayout: { version: 1, blocks: [{ id: "a" }, { id: "b" }] },
+      background: { version: 1, type: "color", light: "#ffffff" },
+      name: "Marktplatz",
+    };
+    const payload = heroLayoutSavePayload(draft);
+
+    draft.heroLayout.blocks = [{ id: "b" }];
+    draft.background.light = "#000000";
+
+    expect(payload.heroLayout.blocks.map((block) => block.id)).toEqual([
+      "a",
+      "b",
+    ]);
+    expect(payload.background.light).toBe("#ffffff");
+  });
+});
