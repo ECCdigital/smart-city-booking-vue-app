@@ -7,7 +7,9 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
-# Fixed
+## [4.2.10] — 2026-09-11
+
+### Fixed
 
 - GroupBookings: Fixed wrong bookable call. That prevents the group from being created.
 
@@ -227,6 +229,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.2.10]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.9...v4.2.10
 [4.2.9]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.8...v4.2.9
 [4.2.8]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.7...v4.2.8
 [4.2.7]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.6...v4.2.7
