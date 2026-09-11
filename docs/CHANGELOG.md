@@ -45,6 +45,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   BFF mode: uploads above 1 MB no longer fail with a bare `413`. The nginx of the Admin UI image carries the uploads to the API and never set `client_max_body_size`, so its 1 MB default cut them off long before the API's own media limits applied. It is now `60m`, just above the API's upload backstop, and `MAX_UPLOAD_SIZE` overrides it
 -   Hero Editor: `heroLayoutSavePayload` copies what it carries instead of handing out the Draft's own `heroLayout` and `background` objects. A round-trip is in flight for as long as the network takes and the author goes on editing meanwhile, so the body of a request could change after it was sent — which left a `400` unreadable, its `details[].field` naming positions in a body that had moved. The preview resolver now hands both callbacks the payload their answer is about
 
 ### Changed

@@ -81,6 +81,7 @@ PUBLIC_ORIGIN=https://example.com
 # COOKIE_SECURE=true
 # ADMIN_BFF_UPSTREAM=http://other-bff:3001   # only if BFF runs outside this container
 # ADMIN_BFF_ENABLED=false                    # disable embedded BFF
+# MAX_UPLOAD_SIZE=60m                        # nginx client_max_body_size (default 60m)
 ```
 
 **Symptom of a broken BFF proxy:** `POST /api/auth/login` → `405`, or `GET /api/auth/me` returns HTML (`index.html`, ~1KB) with status 200. Then nginx is not forwarding to the BFF — check `STRIP_PREFIX` / edge strip vs. `VUE_APP_BFF_BASE_URL=/admin/api`.
