@@ -1669,13 +1669,10 @@
       "character": "Zeichen",
       "paragraph": "Absatz"
     },
-    "inherit": "Übernehmen",
     "align": {
-      "label": "Ausrichtung",
       "left": "Links",
       "center": "Zentriert",
-      "right": "Rechts",
-      "inherit": "Ausrichtung übernehmen"
+      "right": "Rechts"
     },
     "color": {
       "label": "Farbe",
@@ -1693,8 +1690,7 @@
       "md": "Normal",
       "lg": "Groß",
       "xl": "Sehr groß",
-      "2xl": "Riesig",
-      "inherit": "Größe übernehmen"
+      "2xl": "Riesig"
     },
     "link": {
       "button": "Link einfügen",

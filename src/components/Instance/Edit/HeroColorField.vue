@@ -1,6 +1,8 @@
 <template>
   <div class="hero-color-field">
-    <div class="text-caption text--secondary mb-1">Farbe</div>
+    <div v-if="label" class="text-caption text--secondary mb-1">
+      {{ label }}
+    </div>
 
     <div class="d-flex flex-wrap hero-color-field__chips">
       <v-chip
@@ -121,6 +123,12 @@ export default {
     tokens: { type: Array, default: () => DEFAULT_TOKENS },
     /** What a backend `400` said about this colour, if anything. */
     error: { type: String, default: null },
+    /**
+     * The caption over the chips. A form that already names the row - the
+     * text Block's „Farbe“ row shares the leiste's caption column - passes an
+     * empty string and the control draws none.
+     */
+    label: { type: String, default: "Farbe" },
   },
   data() {
     // The last hex of this dialog session, so that leaving „Eigene…“ and

@@ -342,3 +342,31 @@ function percentOf(offset, size) {
 
   return Math.min(100, Math.max(0, Math.round((offset / size) * 100)));
 }
+
+/**
+ * One line that says what the Background is while its controls are folded
+ * away: the family, and the one value that tells it apart from its siblings.
+ *
+ * Inline German, like the rest of `Instance/Edit/` (hero layout spec §12).
+ *
+ * @param {?Object} background - The Background as the Draft holds it.
+ * @returns {string} The summary.
+ */
+export function heroBackgroundSummary(background) {
+  const family = heroBackgroundFamily(background);
+  const complete = normalizedHeroBackground(background);
+
+  if (family === "color") {
+    return `Farbe ${complete.light}`;
+  }
+  if (family === "image") {
+    return complete.image
+      ? `Bild, Abdunklung ${complete.overlay.light.opacity} %`
+      : "Bild, noch keines gewählt";
+  }
+  const variant = HERO_BACKGROUND_VARIANTS.find(
+    (entry) => entry.value === complete.variant
+  );
+
+  return `Muster „${variant ? variant.text : complete.variant}“`;
+}

@@ -1,20 +1,20 @@
 <template>
-  <SubSection
-    title="Hintergrund"
-    icon="mdi-image-filter-hdr"
-    description="Gilt auch für die Anmeldeseiten."
-    class="hero-background-form"
-  >
-    <template #actions>
+  <div class="hero-background-form">
+    <!-- The heading is the folded row's in the Hero Editor; the section
+         keeps what belongs to its fields — the hint and its own reset. -->
+    <div class="d-flex align-center mb-3">
+      <p class="text--secondary text-body-2 mb-0 flex-grow-1">
+        Gilt auch für die Anmeldeseiten.
+      </p>
       <v-btn
         text
         small
-        class="hero-background-form__reset"
+        class="hero-background-form__reset ml-2"
         @click="resetToDefault"
       >
         Standardhintergrund
       </v-btn>
-    </template>
+    </div>
 
     <div class="hero-background-form__families mb-4">
       <v-card
@@ -181,11 +181,10 @@
         {{ message }}
       </div>
     </div>
-  </SubSection>
+  </div>
 </template>
 
 <script>
-import SubSection from "@/components/commons/SubSection.vue";
 import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 import HeroFocalPointField from "@/components/Instance/Edit/HeroFocalPointField.vue";
 import HeroHexField from "@/components/Instance/Edit/HeroHexField.vue";
@@ -208,9 +207,10 @@ const PUBLIC_ONLY_REASON =
   "Der Hintergrund wird öffentlich ausgeliefert — interne Medien sind hier nicht wählbar.";
 
 /**
- * The „Hintergrund“ section at the foot of the Hero Editor's form: the three
- * family cards „Muster | Farbe | Bild“, the fields of the chosen family and
- * „Standardhintergrund“ (hero layout spec §8).
+ * The „Hintergrund“ section of the Hero Editor, the body of the folded row of
+ * that name above the Block list: the three family cards „Muster | Farbe |
+ * Bild“, the fields of the chosen family and „Standardhintergrund“ (hero
+ * layout spec §8).
  *
  * The section owns no copy of the Background. It reads the one the editor
  * holds — through `normalizedHeroBackground`, so a stored object that predates
@@ -237,7 +237,6 @@ export default {
     HeroFocalPointField,
     HeroHexField,
     MediaReferenceField,
-    SubSection,
   },
   props: {
     /** The Background as the Draft holds it; `null` is the default one. */

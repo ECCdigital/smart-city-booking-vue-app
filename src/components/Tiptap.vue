@@ -1,30 +1,45 @@
 <template>
   <v-card class="rounded-sm" elevation="0" v-if="editor">
+    <!--
+      The leiste of the Hero Editor lives in a 420 px column and reads as one
+      grammar: a caption in a narrow first column, the control beside it, one
+      property per row. A control that does not fit its row drops a line
+      rather than running out of the editor.
+    -->
     <v-sheet v-if="splitToolbar" class="grey lighten-4 pa-2 tiptap-toolbar">
-      <div class="tiptap-toolbar__row d-flex align-center flex-wrap">
-        <span class="tiptap-toolbar__caption text-caption text--secondary mr-2">
+      <div class="tiptap-toolbar__row">
+        <span class="tiptap-toolbar__caption text-caption text--secondary">
           {{ $t("richtext.group.character") }}
         </span>
-        <v-btn
-          v-for="button in characterButtons"
-          :key="button.icon"
-          small
-          elevation="0"
-          :class="{ primary: editor.isActive(button.mark) }"
-          :title="button.title"
-          @click="button.run()"
-        >
-          <v-icon>{{ button.icon }}</v-icon>
-        </v-btn>
-        <div v-if="sizes" class="d-flex align-center ml-2">
-          <span class="tiptap-toolbar__label text-caption text--secondary mr-2">
-            {{ $t("richtext.size.label") }}
-          </span>
+        <div class="tiptap-toolbar__controls">
+          <div class="tiptap-toolbar__group">
+            <v-btn
+              v-for="button in characterButtons"
+              :key="button.icon"
+              small
+              elevation="0"
+              class="tiptap-toolbar__icon-btn"
+              :class="{ primary: editor.isActive(button.mark) }"
+              :title="button.title"
+              :aria-label="button.title"
+              :aria-pressed="String(editor.isActive(button.mark))"
+              @click="button.run()"
+            >
+              <v-icon>{{ button.icon }}</v-icon>
+            </v-btn>
+          </div>
+        </div>
+      </div>
+      <div v-if="sizes" class="tiptap-toolbar__row">
+        <span class="tiptap-toolbar__caption text-caption text--secondary">
+          {{ $t("richtext.size.label") }}
+        </span>
+        <div class="tiptap-toolbar__controls">
           <v-btn-toggle
             class="tiptap-size-scale"
             :value="activeSize"
-            mandatory
             dense
+            color="primary"
             @change="applySize"
           >
             <v-btn
@@ -34,15 +49,18 @@
               small
               :title="step.title"
               :aria-label="step.title"
+              :aria-pressed="String(activeSize === step.value)"
             >
               {{ step.label }}
             </v-btn>
           </v-btn-toggle>
         </div>
-        <div v-if="colors" class="d-flex align-center ml-2 tiptap-color-dots">
-          <span class="tiptap-toolbar__label text-caption text--secondary mr-2">
-            {{ $t("richtext.color.label") }}
-          </span>
+      </div>
+      <div v-if="colors" class="tiptap-toolbar__row">
+        <span class="tiptap-toolbar__caption text-caption text--secondary">
+          {{ $t("richtext.color.label") }}
+        </span>
+        <div class="tiptap-toolbar__controls tiptap-color-dots">
           <v-btn
             v-for="dot in colorDots"
             :key="dot.value"
@@ -50,6 +68,7 @@
             small
             :title="dot.title"
             :aria-label="dot.title"
+            :aria-pressed="String(dot.active)"
             @click="applyColor(dot.value)"
           >
             <span
@@ -57,7 +76,9 @@
               :class="{ 'tiptap-color-dot--active': dot.active }"
               :style="{ backgroundColor: dot.swatch }"
             >
-              <v-icon v-if="!dot.swatch" x-small>mdi-format-color-text</v-icon>
+              <v-icon v-if="!dot.swatch" x-small>
+                mdi-format-color-text
+              </v-icon>
             </span>
           </v-btn>
           <v-menu offset-y :close-on-content-click="false">
@@ -94,19 +115,17 @@
           </v-btn>
         </div>
       </div>
-      <div class="tiptap-toolbar__row d-flex align-center flex-wrap mt-2">
-        <span class="tiptap-toolbar__caption text-caption text--secondary mr-2">
+      <div class="tiptap-toolbar__row">
+        <span class="tiptap-toolbar__caption text-caption text--secondary">
           {{ $t("richtext.group.paragraph") }}
         </span>
-        <div v-if="paragraphAlign" class="d-flex align-center mr-2">
-          <span class="tiptap-toolbar__label text-caption text--secondary mr-2">
-            {{ $t("richtext.align.label") }}
-          </span>
+        <div class="tiptap-toolbar__controls">
           <v-btn-toggle
+            v-if="paragraphAlign"
             class="tiptap-align-segment"
             :value="activeAlign"
-            mandatory
             dense
+            color="primary"
             @change="applyAlign"
           >
             <v-btn
@@ -116,22 +135,28 @@
               small
               :title="step.title"
               :aria-label="step.title"
+              :aria-pressed="String(activeAlign === step.value)"
             >
-              {{ step.label }}
+              <v-icon small>{{ step.icon }}</v-icon>
             </v-btn>
           </v-btn-toggle>
+          <div class="tiptap-toolbar__group">
+            <v-btn
+              v-for="button in listButtons"
+              :key="button.icon"
+              small
+              elevation="0"
+              class="tiptap-toolbar__icon-btn"
+              :class="{ primary: editor.isActive(button.mark) }"
+              :title="button.title"
+              :aria-label="button.title"
+              :aria-pressed="String(editor.isActive(button.mark))"
+              @click="button.run()"
+            >
+              <v-icon>{{ button.icon }}</v-icon>
+            </v-btn>
+          </div>
         </div>
-        <v-btn
-          v-for="button in listButtons"
-          :key="button.icon"
-          small
-          elevation="0"
-          :class="{ primary: editor.isActive(button.mark) }"
-          :title="button.title"
-          @click="button.run()"
-        >
-          <v-icon>{{ button.icon }}</v-icon>
-        </v-btn>
       </div>
     </v-sheet>
     <v-sheet v-else class="grey lighten-4 pa-2 d-flex">
@@ -243,15 +268,12 @@ function isAllowedLinkAddress(address) {
 }
 
 /**
- * „Übernehmen“ is a value of every group, not a toggle - the state in which
- * the word or the paragraph carries no class and follows the Block. It stands
- * for the absence of a class; the segments need a value to name it by.
- */
-const INHERIT = "inherit";
-
-/**
  * The scale is visible, so every step shows its symbol; the German word of the
- * Block's own „Schriftgröße“ select is the tooltip (hero layout spec §7).
+ * Block's own „Schriftgröße“ scale is the tooltip (hero layout spec §7).
+ *
+ * The inherited state - no class, the word follows the Block - has no button
+ * of its own: it is the scale with nothing pressed, and a pressed step is
+ * lifted by clicking it again.
  */
 const SIZE_LABELS = Object.freeze({
   xs: "XS",
@@ -260,6 +282,13 @@ const SIZE_LABELS = Object.freeze({
   lg: "L",
   xl: "XL",
   "2xl": "2XL",
+});
+
+/** „Ausrichtung“ as the three icons every editor draws it with (spec §7). */
+const ALIGN_ICONS = Object.freeze({
+  left: "mdi-format-align-left",
+  center: "mdi-format-align-center",
+  right: "mdi-format-align-right",
 });
 
 export default {
@@ -341,9 +370,10 @@ export default {
       return this.sizes || this.colors;
     },
     /**
-     * With any of the three new controls the leiste splits into the two
-     * captioned rows „Zeichen“ and „Absatz“; without them it is the one row
-     * the four existing users have always had (hero layout spec §7).
+     * With any of the three new controls the leiste becomes the captioned
+     * rows „Zeichen“, „Schriftgröße“, „Farbe“ and „Absatz“, each present when
+     * its prop is; without them it is the one row the four existing users
+     * have always had (hero layout spec §7).
      */
     splitToolbar() {
       return this.sizes || this.colors || this.paragraphAlign;
@@ -415,38 +445,26 @@ export default {
       return [buttons.bulletList, buttons.orderedList];
     },
     sizeSteps() {
-      return [
-        {
-          value: INHERIT,
-          label: this.$t("richtext.inherit"),
-          title: this.$t("richtext.size.inherit"),
-        },
-        ...HERO_SIZE_TOKENS.map((token) => ({
-          value: token,
-          label: SIZE_LABELS[token],
-          title: this.$t(`richtext.size.${token}`),
-        })),
-      ];
+      return HERO_SIZE_TOKENS.map((token) => ({
+        value: token,
+        label: SIZE_LABELS[token],
+        title: this.$t(`richtext.size.${token}`),
+      }));
     },
+    /** The step under the caret, or `null` while the words follow the Block. */
     activeSize() {
-      return this.editor.getAttributes("textStyle").heroSize || INHERIT;
+      return this.editor.getAttributes("textStyle").heroSize || null;
     },
     alignSteps() {
-      return [
-        {
-          value: INHERIT,
-          label: this.$t("richtext.inherit"),
-          title: this.$t("richtext.align.inherit"),
-        },
-        ...HERO_ALIGN_TOKENS.map((token) => {
-          const word = this.$t(`richtext.align.${token}`);
-
-          return { value: token, label: word, title: word };
-        }),
-      ];
+      return HERO_ALIGN_TOKENS.map((token) => ({
+        value: token,
+        icon: ALIGN_ICONS[token],
+        title: this.$t(`richtext.align.${token}`),
+      }));
     },
+    /** The paragraph's alignment, or `null` while it follows the Block. */
     activeAlign() {
-      return this.editor.getAttributes("paragraph").heroAlign || INHERIT;
+      return this.editor.getAttributes("paragraph").heroAlign || null;
     },
     activeColor() {
       return this.editor.getAttributes("textStyle").heroColor || null;
@@ -625,9 +643,9 @@ export default {
     /**
      * Size and colour share one mark, so a step is written with `setMark`,
      * which merges the attributes instead of replacing them - picking a size
-     * leaves the colour of the same words alone. A mark left with nothing but
-     * „Übernehmen“ in it is no mark: `removeEmptyTextStyle` takes the `<span>`
-     * away rather than leaving an empty one behind.
+     * leaves the colour of the same words alone. A mark left with nothing in
+     * it is no mark: `removeEmptyTextStyle` takes the `<span>` away rather
+     * than leaving an empty one behind.
      */
     setInlineFormat(attributes) {
       this.editor
@@ -637,16 +655,18 @@ export default {
         .removeEmptyTextStyle()
         .run();
     },
+    /**
+     * The toggle hands over `undefined` when the pressed step is clicked
+     * again - the author lifting the class, so the words follow the Block.
+     */
     applySize(value) {
-      this.setInlineFormat({ heroSize: value === INHERIT ? null : value });
+      this.setInlineFormat({ heroSize: value || null });
     },
     applyAlign(value) {
       this.editor
         .chain()
         .focus()
-        .updateAttributes("paragraph", {
-          heroAlign: value === INHERIT ? null : value,
-        })
+        .updateAttributes("paragraph", { heroAlign: value || null })
         .run();
     },
     applyColor(value) {
@@ -722,6 +742,64 @@ export default {
 
 .tiptap .ProseMirror {
   min-height: inherit;
+}
+
+/* The captioned leiste: one caption column, wide enough for „Schriftgröße“,
+   and a wrapping controls column, so the six-step scale and the colour dots
+   fit a 420 px form column by dropping a line instead of running out of the
+   editor. `HeroBlockForm.vue` draws its text Block's rows on the same grid. */
+.tiptap-toolbar__row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: start;
+}
+
+.tiptap-toolbar__row + .tiptap-toolbar__row {
+  margin-top: 8px;
+}
+
+.tiptap-toolbar__caption {
+  padding-top: 6px;
+  line-height: 1.2;
+}
+
+.tiptap-toolbar__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  min-width: 0;
+}
+
+.tiptap-toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+
+/* Every button of the leiste is a small square or a short word: Vuetify's
+   50 px minimum is a text button's, not a leiste's. */
+.tiptap-toolbar .v-btn.v-btn.v-size--small {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 8px;
+  letter-spacing: 0;
+}
+
+.tiptap-toolbar .tiptap-toolbar__icon-btn.v-btn.v-size--small {
+  width: 32px;
+  padding: 0;
+}
+
+.tiptap-toolbar .v-btn-toggle {
+  flex-wrap: wrap;
+}
+
+.tiptap-toolbar .v-btn-toggle .v-btn.v-btn.v-size--small {
+  padding: 0 7px;
+  font-size: 12px;
 }
 
 .tiptap-color-dot {

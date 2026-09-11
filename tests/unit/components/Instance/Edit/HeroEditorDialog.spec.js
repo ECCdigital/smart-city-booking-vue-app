@@ -7,12 +7,7 @@ import {
   serverError,
   validationError,
 } from "@tests/unit/support/api";
-import {
-  button,
-  chooseOption,
-  selectByLabel,
-  toggleSwitch,
-} from "@tests/unit/support/vuetify";
+import { button, toggleSwitch } from "@tests/unit/support/vuetify";
 import toasts from "@/store/modules/toasts";
 import {
   HERO_BACKGROUND,
@@ -88,32 +83,57 @@ function editorText(wrapper) {
 }
 
 /**
- * „Höhe“, the section — the search for a height select has to stay inside it,
- * because „Hintergrund“ carries selects of its own further down the form.
+ * „Höhe“, the folded row above the list. Its body is rendered eagerly, so the
+ * three step rows are there whether or not the row is open.
  */
 function heightSection(wrapper) {
-  return wrapper
-    .findAllComponents({ name: "SubSection" })
-    .wrappers.find((entry) => entry.props("title") === "Höhe");
+  return wrapper.find("[data-setting='height']");
 }
 
-function heightSelects(wrapper) {
-  return heightSection(wrapper).findAllComponents({ name: "v-select" })
+function heightRows(wrapper) {
+  return heightSection(wrapper).findAll(".hero-editor__height").wrappers;
+}
+
+/** The labels of the three heights, as the user reads them. */
+function heightLabels(wrapper) {
+  return heightRows(wrapper).map((row) =>
+    row.find(".hero-editor__height-label").text().trim()
+  );
+}
+
+/** One of the three height rows, by the label the user reads. */
+function heightRow(wrapper, label) {
+  const row = heightRows(wrapper).find(
+    (entry) => entry.find(".hero-editor__height-label").text().trim() === label
+  );
+  if (!row) {
+    throw new Error(`Die Höhe „${label}“ fehlt.`);
+  }
+  return row;
+}
+
+function heightSteps(wrapper, label) {
+  return heightRow(wrapper, label).findAll(".hero-editor__height-step")
     .wrappers;
 }
 
-/** One of the three height selects, by the label the user reads. */
-function heightSelect(wrapper, label) {
-  return selectByLabel(heightSection(wrapper), label);
-}
-
-/** The step a closed height select shows. */
+/** The step a height row has pressed. */
 function chosenHeight(wrapper, label) {
-  return heightSelect(wrapper, label).find(".v-select__selection").text();
+  const active = heightSteps(wrapper, label).find((step) =>
+    step.classes().includes("v-btn--active")
+  );
+  return active ? active.text().trim() : null;
 }
 
-function chooseHeight(wrapper, label, step) {
-  return chooseOption(heightSection(wrapper), label, step);
+async function chooseHeight(wrapper, label, step) {
+  const found = heightSteps(wrapper, label).find(
+    (entry) => entry.text().trim() === step
+  );
+  if (!found) {
+    throw new Error(`Der Schritt „${step}“ steht nicht zur Wahl.`);
+  }
+  await found.trigger("click");
+  await wrapper.vm.$nextTick();
 }
 
 function toastMessages(wrapper) {
@@ -276,35 +296,27 @@ describe("HeroEditorDialog header", () => {
 });
 
 describe("HeroEditorDialog height", () => {
-  it("offers the three heights with the German steps", async () => {
+  it("offers the three heights with the German steps, side by side", async () => {
     const wrapper = await openEditor();
 
-    expect(
-      heightSelects(wrapper).map((select) => select.props("label"))
-    ).toEqual([
+    expect(heightLabels(wrapper)).toEqual([
       "Höhe auf der Startseite",
       "Höhe auf Mobilgeräten",
       "Höhe auf Unterseiten",
     ]);
     expect(
-      heightSelect(wrapper, "Höhe auf der Startseite")
-        .props("items")
-        .map((item) => item.text)
+      heightSteps(wrapper, "Höhe auf der Startseite").map((step) =>
+        step.text().trim()
+      )
     ).toEqual(["Niedrig", "Mittel", "Hoch", "Sehr hoch"]);
   });
 
   it("shows the derived values of a layout that arrived as the default one", async () => {
     const wrapper = await openEditor();
 
-    expect(
-      heightSelect(wrapper, "Höhe auf der Startseite").props("value")
-    ).toBe("lg");
-    expect(heightSelect(wrapper, "Höhe auf Mobilgeräten").props("value")).toBe(
-      "lg"
-    );
-    expect(heightSelect(wrapper, "Höhe auf Unterseiten").props("value")).toBe(
-      "sm"
-    );
+    expect(chosenHeight(wrapper, "Höhe auf der Startseite")).toBe("Hoch");
+    expect(chosenHeight(wrapper, "Höhe auf Mobilgeräten")).toBe("Hoch");
+    expect(chosenHeight(wrapper, "Höhe auf Unterseiten")).toBe("Niedrig");
   });
 
   it("edits the three height fields", async () => {
@@ -317,6 +329,18 @@ describe("HeroEditorDialog height", () => {
     expect(chosenHeight(wrapper, "Höhe auf der Startseite")).toBe("Sehr hoch");
     expect(chosenHeight(wrapper, "Höhe auf Mobilgeräten")).toBe("Mittel");
     expect(chosenHeight(wrapper, "Höhe auf Unterseiten")).toBe("Mittel");
+  });
+
+  /**
+   * The row reads its value while it is closed, so an author sees the three
+   * steps without opening anything.
+   */
+  it("sums the three steps up in the folded row", async () => {
+    const wrapper = await openEditor();
+
+    expect(heightSection(wrapper).text()).toContain(
+      "Startseite Hoch, mobil Hoch, Unterseiten Niedrig"
+    );
   });
 });
 
@@ -397,9 +421,7 @@ describe("HeroEditorDialog save", () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    expect(heightSelect(wrapper, "Höhe auf Mobilgeräten").props("value")).toBe(
-      "md"
-    );
+    expect(chosenHeight(wrapper, "Höhe auf Mobilgeräten")).toBe("Mittel");
     expect(toastMessages(wrapper)).toContain("Kopfbereich gespeichert");
     expect(wrapper.emitted("closed")).toBeUndefined();
     expect(button(wrapper, "Schließen")).toBeDefined();

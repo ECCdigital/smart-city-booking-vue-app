@@ -359,6 +359,21 @@ function colorButton(wrapper, title) {
     .wrappers.find((button) => button.attributes("title") === title);
 }
 
+/** A step that carries an icon and its German word as the tooltip. */
+function titledButton(wrapper, group, title) {
+  return wrapper
+    .findAll(`${group} button`)
+    .wrappers.find((button) => button.attributes("title") === title);
+}
+
+/** The pressed buttons of a toggle group, by their tooltip. */
+function pressedTitles(wrapper, group) {
+  return wrapper
+    .findAll(`${group} button`)
+    .wrappers.filter((button) => button.classes("v-btn--active"))
+    .map((button) => button.attributes("title"));
+}
+
 describe("Tiptap with sizes", () => {
   it("keeps a size class on a run of words", async () => {
     const marked = tag("span", { class: "hero-size-lg" }, "großes");
@@ -493,18 +508,34 @@ function rowIcons(wrapper, index) {
     );
 }
 
-describe("Tiptap's two-row leiste", () => {
-  it("captions the rows „Zeichen“ and „Absatz“", async () => {
-    const wrapper = await mountEditor({ value: "<p>Hallo</p>", sizes: true });
-
-    expect(rowCaptions(wrapper)).toEqual(["Zeichen", "Absatz"]);
+/**
+ * The leiste reads as one grammar: a caption per row, one property per row,
+ * every caption in the same column - „Zeichen“, „Schriftgröße“, „Farbe“ and
+ * „Absatz“, each present with its prop (hero layout spec §7).
+ */
+describe("Tiptap's captioned leiste", () => {
+  it("captions one row per property, each row present with its prop", async () => {
+    expect(
+      rowCaptions(await mountEditor({ value: "<p>Hallo</p>", sizes: true }))
+    ).toEqual(["Zeichen", "Schriftgröße", "Absatz"]);
+    expect(
+      rowCaptions(
+        await mountEditor({
+          value: "<p>Hallo</p>",
+          sizes: true,
+          colors: true,
+          paragraphAlign: true,
+        })
+      )
+    ).toEqual(["Zeichen", "Schriftgröße", "Farbe", "Absatz"]);
   });
 
-  it("puts the character marks in the first row and the lists in the second", async () => {
+  it("puts the character marks in the first row and the paragraph's controls in the last", async () => {
     const wrapper = await mountEditor({
       value: "<p>Hallo</p>",
       sizes: true,
       links: true,
+      paragraphAlign: true,
     });
 
     expect(rowIcons(wrapper, 0)).toEqual([
@@ -513,7 +544,10 @@ describe("Tiptap's two-row leiste", () => {
       "mdi-format-underline",
       "mdi-link",
     ]);
-    expect(rowIcons(wrapper, 1)).toEqual([
+    expect(rowIcons(wrapper, 2)).toEqual([
+      "mdi-format-align-left",
+      "mdi-format-align-center",
+      "mdi-format-align-right",
       "mdi-format-list-bulleted",
       "mdi-format-list-numbered",
     ]);
@@ -521,32 +555,29 @@ describe("Tiptap's two-row leiste", () => {
 });
 
 describe("Tiptap's „Schriftgröße“", () => {
-  it("shows the seven steps of the scale, „Übernehmen“ leading", async () => {
+  /**
+   * The inherited state has no button: while the words follow the Block the
+   * scale stands with nothing pressed (hero layout spec §7).
+   */
+  it("shows the six steps of the scale, nothing pressed while the words follow the Block", async () => {
     const wrapper = await mountEditor({ value: "<p>Hallo</p>", sizes: true });
 
     expect(
       wrapper
         .findAll(".tiptap-size-scale button")
         .wrappers.map((button) => button.text())
-    ).toEqual(["Übernehmen", "XS", "S", "M", "L", "XL", "2XL"]);
+    ).toEqual(["XS", "S", "M", "L", "XL", "2XL"]);
+    expect(pressedTitles(wrapper, ".tiptap-size-scale")).toEqual([]);
   });
 
-  it("names every step by the word the Block's own select uses", async () => {
+  it("names every step by the word the Block's own scale uses", async () => {
     const wrapper = await mountEditor({ value: "<p>Hallo</p>", sizes: true });
 
     expect(
       wrapper
         .findAll(".tiptap-size-scale button")
         .wrappers.map((button) => button.attributes("title"))
-    ).toEqual([
-      "Größe übernehmen",
-      "Sehr klein",
-      "Klein",
-      "Normal",
-      "Groß",
-      "Sehr groß",
-      "Riesig",
-    ]);
+    ).toEqual(["Sehr klein", "Klein", "Normal", "Groß", "Sehr groß", "Riesig"]);
   });
 
   /**
@@ -571,12 +602,7 @@ describe("Tiptap's „Schriftgröße“", () => {
     wrapper.vm.editor.commands.selectAll();
     await flush(wrapper);
 
-    expect(
-      groupButton(wrapper, ".tiptap-size-scale", "XL").classes()
-    ).toContain("v-btn--active");
-    expect(
-      groupButton(wrapper, ".tiptap-size-scale", "Übernehmen").classes()
-    ).not.toContain("v-btn--active");
+    expect(pressedTitles(wrapper, ".tiptap-size-scale")).toEqual(["Sehr groß"]);
   });
 
   it("writes the step the author picks as a class", async () => {
@@ -606,16 +632,17 @@ describe("Tiptap's „Schriftgröße“", () => {
     );
   });
 
-  it("takes the class away again at „Übernehmen“, span and all", async () => {
+  it("lifts the class again when the pressed step is clicked, span and all", async () => {
     const wrapper = await mountEditor({
       value: tag("p", {}, tag("span", { class: "hero-size-lg" }, "Hallo")),
       sizes: true,
     });
 
     wrapper.vm.editor.commands.selectAll();
-    await groupButton(wrapper, ".tiptap-size-scale", "Übernehmen").trigger(
-      "click"
-    );
+    await flush(wrapper);
+    expect(pressedTitles(wrapper, ".tiptap-size-scale")).toEqual(["Groß"]);
+
+    await groupButton(wrapper, ".tiptap-size-scale", "L").trigger("click");
 
     expect(lastEmitted(wrapper)).toBe("<p>Hallo</p>");
   });
@@ -757,37 +784,38 @@ describe("Tiptap's „Farbe“", () => {
 });
 
 describe("Tiptap's „Ausrichtung“", () => {
-  it("shows the four states, „Übernehmen“ leading", async () => {
+  /**
+   * Three icons in the „Absatz“ row, the German word as their tooltip and
+   * their name to a screen reader; nothing pressed while the paragraph
+   * follows the Block (hero layout spec §7).
+   */
+  it("shows the three alignments as icons, nothing pressed at first", async () => {
     const wrapper = await mountEditor({
       value: "<p>Hallo</p>",
       paragraphAlign: true,
     });
+    const buttons = wrapper.findAll(".tiptap-align-segment button").wrappers;
 
     expect(
-      wrapper
-        .findAll(".tiptap-align-segment button")
-        .wrappers.map((button) => button.text())
-    ).toEqual(["Übernehmen", "Links", "Zentriert", "Rechts"]);
-  });
-
-  it("names its leading state „Ausrichtung übernehmen“, the third tooltip", async () => {
-    const wrapper = await mountEditor({
-      value: "<p>Hallo</p>",
-      paragraphAlign: true,
+      buttons.map((button) =>
+        Array.from(button.find(".v-icon").element.classList).find((name) =>
+          name.startsWith("mdi-")
+        )
+      )
+    ).toEqual([
+      "mdi-format-align-left",
+      "mdi-format-align-center",
+      "mdi-format-align-right",
+    ]);
+    expect(buttons.map((button) => button.attributes("title"))).toEqual([
+      "Links",
+      "Zentriert",
+      "Rechts",
+    ]);
+    buttons.forEach((button) => {
+      expect(button.attributes("aria-label")).toBe(button.attributes("title"));
     });
-
-    expect(
-      wrapper
-        .findAll(".tiptap-align-segment button")
-        .wrappers.map((button) => button.attributes("title"))
-    ).toEqual(["Ausrichtung übernehmen", "Links", "Zentriert", "Rechts"]);
-    wrapper
-      .findAll(".tiptap-align-segment button")
-      .wrappers.forEach((button) => {
-        expect(button.attributes("aria-label")).toBe(
-          button.attributes("title")
-        );
-      });
+    expect(pressedTitles(wrapper, ".tiptap-align-segment")).toEqual([]);
   });
 
   it("aligns the paragraph the caret sits in", async () => {
@@ -797,7 +825,7 @@ describe("Tiptap's „Ausrichtung“", () => {
     });
 
     wrapper.vm.editor.commands.selectAll();
-    await groupButton(wrapper, ".tiptap-align-segment", "Zentriert").trigger(
+    await titledButton(wrapper, ".tiptap-align-segment", "Zentriert").trigger(
       "click"
     );
 
@@ -806,14 +834,17 @@ describe("Tiptap's „Ausrichtung“", () => {
     );
   });
 
-  it("takes the class away again at „Übernehmen“", async () => {
+  it("lifts the alignment again when the pressed icon is clicked", async () => {
     const wrapper = await mountEditor({
       value: tag("p", { class: "hero-align-right" }, "Hallo"),
       paragraphAlign: true,
     });
 
     wrapper.vm.editor.commands.selectAll();
-    await groupButton(wrapper, ".tiptap-align-segment", "Übernehmen").trigger(
+    await flush(wrapper);
+    expect(pressedTitles(wrapper, ".tiptap-align-segment")).toEqual(["Rechts"]);
+
+    await titledButton(wrapper, ".tiptap-align-segment", "Rechts").trigger(
       "click"
     );
 
@@ -856,8 +887,8 @@ describe("Tiptap against the exported token lists", () => {
   });
 
   it("keeps nothing beside them", async () => {
-    // `black` is Panel-only and `huge` is off the scale, so both parse to
-    // „Übernehmen“ - which leaves the spans with nothing and unwraps them.
+    // `black` is Panel-only and `huge` is off the scale, so both parse to no
+    // class at all - which leaves the spans with nothing and unwraps them.
     const marked =
       tag("span", { class: "hero-color-black" }, "eins") +
       tag("span", { class: "hero-size-huge" }, "zwei");

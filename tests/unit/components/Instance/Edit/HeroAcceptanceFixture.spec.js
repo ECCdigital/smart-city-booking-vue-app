@@ -205,6 +205,30 @@ async function chooseZone(wrapper, zone) {
   await wrapper.vm.$nextTick();
 }
 
+/**
+ * One step of one of the four scales of „Feinabstimmung“, by the label of the
+ * scale and the German word the step's button carries in `title`.
+ */
+async function chooseFineStep(root, label, word) {
+  const field = root
+    .findAll(".hero-block-form__fine-field")
+    .wrappers.find(
+      (entry) =>
+        entry.find(".hero-block-form__fine-label").text().trim() === label
+    );
+  if (!field) {
+    throw new Error(`Das Feld „${label}“ fehlt.`);
+  }
+  const step = field
+    .findAll(".hero-block-form__fine-step")
+    .wrappers.find((entry) => entry.attributes("title") === word);
+  if (!step) {
+    throw new Error(`Der Schritt „${word}“ steht nicht zur Wahl.`);
+  }
+  await step.trigger("click");
+  await Vue.nextTick();
+}
+
 /** „Feinabstimmung“ is closed, and Vuetify renders nothing until it opens. */
 async function openFine(wrapper) {
   await blockForm(wrapper)
@@ -374,8 +398,8 @@ describe("the amendment's acceptance fixture, built through the form", () => {
     await chooseOption(blockForm(wrapper), "Maximale Höhe", "Klein");
 
     await openFine(wrapper);
-    await chooseOption(blockForm(wrapper), "Breite", "Schmal");
-    await chooseOption(blockForm(wrapper), "Ausrichtung", "Zentriert");
+    await chooseFineStep(blockForm(wrapper), "Breite", "Schmal");
+    await chooseFineStep(blockForm(wrapper), "Ausrichtung", "Zentriert");
 
     // One step down hangs it over the Panel's upper edge; „Im Vordergrund“ is
     // what paints it over the Panel rather than under it.
@@ -410,8 +434,8 @@ describe("the amendment's acceptance fixture, built through the form", () => {
     await chooseCorners(wrapper, "Mittel");
 
     await openFine(wrapper);
-    await chooseOption(blockForm(wrapper), "Breite", "Schmal");
-    await chooseOption(blockForm(wrapper), "Innenabstand", "Mittel");
+    await chooseFineStep(blockForm(wrapper), "Breite", "Schmal");
+    await chooseFineStep(blockForm(wrapper), "Innenabstand", "Mittel");
 
     await settlePreview(wrapper);
     await button(wrapper, "Speichern").trigger("click");

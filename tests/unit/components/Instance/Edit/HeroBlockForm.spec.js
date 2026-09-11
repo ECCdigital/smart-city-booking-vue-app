@@ -4,7 +4,6 @@ import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
 import {
   chooseOption as choose,
-  selectByLabel,
   switchByLabel,
   toggleSwitch as toggle,
 } from "@tests/unit/support/vuetify";
@@ -16,7 +15,6 @@ import {
 } from "@tests/unit/support/heroLayout";
 import HeroBlockForm from "@/components/Instance/Edit/HeroBlockForm.vue";
 import Tiptap from "@/components/Tiptap.vue";
-import HeroColorField from "@/components/Instance/Edit/HeroColorField.vue";
 import HeroBlockTile from "@/components/Instance/Edit/HeroBlockTile.vue";
 
 const THEME_COLORS = { primary: "#123456", secondary: "#654321" };
@@ -86,10 +84,11 @@ function fieldByLabel(wrapper, label) {
   return field;
 }
 
+/** The four sections, as the tabs of the Block's card carry them. */
 function sectionTitles(wrapper) {
   return wrapper
-    .findAllComponents({ name: "SubSection" })
-    .wrappers.map((section) => section.props("title"));
+    .findAll(".hero-block-form__tab")
+    .wrappers.map((tab) => tab.text().trim());
 }
 
 function patches(wrapper) {
@@ -113,6 +112,44 @@ function switchOf(wrapper, label) {
 
 function textField(wrapper) {
   return wrapper.find(".hero-block-form__text input");
+}
+
+/** The captions of a text Block's formatting rows, in the leiste's grammar. */
+function formatCaptions(wrapper) {
+  return wrapper
+    .findAll(".hero-block-form__format-caption")
+    .wrappers.map((caption) => caption.text().trim());
+}
+
+/** The six buttons of a text Block's „Schriftgröße“ scale. */
+function sizeSteps(wrapper) {
+  return wrapper.findAll(".hero-block-form__size button").wrappers;
+}
+
+function sizeStep(wrapper, label) {
+  const step = sizeSteps(wrapper).find(
+    (entry) => entry.text().trim() === label
+  );
+  if (!step) {
+    throw new Error(`Der Schritt „${label}“ fehlt an der Skala.`);
+  }
+  return step;
+}
+
+/** The labels of the pressed buttons of a toggle group. */
+function pressed(buttons) {
+  return buttons
+    .filter((button) => button.classes("v-btn--active"))
+    .map((button) => button.text().trim());
+}
+
+/** „Fett“ of a text Block is a button carrying the bold icon, not a switch. */
+function boldButton(wrapper) {
+  const found = wrapper.find(".hero-block-form__bold");
+  if (!found.exists()) {
+    throw new Error("Der Fett-Knopf fehlt.");
+  }
+  return found;
 }
 
 function chips(root) {
@@ -178,11 +215,42 @@ async function openFine(wrapper) {
   await flushPromises();
 }
 
-function fineSelectLabels(wrapper) {
+/** The four scales of „Feinabstimmung“, by the label each carries. */
+function fineFieldLabels(wrapper) {
   return wrapper
-    .find(".hero-block-form__fine")
-    .findAllComponents({ name: "v-select" })
-    .wrappers.map((entry) => entry.props("label"));
+    .findAll(".hero-block-form__fine-label")
+    .wrappers.map((entry) => entry.text().trim());
+}
+
+function fineField(wrapper, label) {
+  const found = wrapper
+    .findAll(".hero-block-form__fine-field")
+    .wrappers.find(
+      (field) =>
+        field.find(".hero-block-form__fine-label").text().trim() === label
+    );
+  if (!found) {
+    throw new Error(`Das Feld „${label}“ fehlt.`);
+  }
+  return found;
+}
+
+/** The German words of a scale's steps, as the buttons carry them in `title`. */
+function fineStepTitles(wrapper, label) {
+  return fineField(wrapper, label)
+    .findAll(".hero-block-form__fine-step")
+    .wrappers.map((step) => step.attributes("title"));
+}
+
+async function chooseFineStep(wrapper, label, word) {
+  const step = fineField(wrapper, label)
+    .findAll(".hero-block-form__fine-step")
+    .wrappers.find((entry) => entry.attributes("title") === word);
+  if (!step) {
+    throw new Error(`Der Schritt „${word}“ steht nicht zur Wahl.`);
+  }
+  await step.trigger("click");
+  await Vue.nextTick();
 }
 
 function corners(wrapper) {
@@ -243,13 +311,51 @@ function cell(wrapper, zone) {
 }
 
 describe("HeroBlockForm", () => {
-  it("shows the four sections in the order of the spec", () => {
+  it("shows the four sections in the order of the spec, as tabs", () => {
     expect(sectionTitles(formOf(heroBlock()))).toEqual([
       "Inhalt",
       "Position",
       "Darstellung",
       "Sichtbarkeit",
     ]);
+  });
+
+  /**
+   * The card names what is being edited before anything can be edited: the
+   * Block's first line, its type and its Zone.
+   */
+  it("names the Block, its type and its Zone in its head", () => {
+    const wrapper = formOf(
+      heroBlock({ text: { de: "Willkommen" }, zone: "top-right" })
+    );
+
+    expect(wrapper.find(".hero-block-form__title").text()).toBe("Willkommen");
+    expect(wrapper.find(".hero-block-form__whereabouts").text()).toBe(
+      "Text an Position „Oben rechts“"
+    );
+  });
+
+  it("names an empty Block by its type", () => {
+    const wrapper = formOf(heroBlock({ text: { de: "" } }));
+
+    expect(wrapper.find(".hero-block-form__title").text()).toBe("Text");
+  });
+
+  /**
+   * A refused field in a section that is not open would go unseen, so its
+   * tab carries a dot.
+   */
+  it("marks the tab of a section that carries a refused field", () => {
+    const wrapper = formOf(heroBlock(), {
+      errors: { "panel.opacity": "Ganze Zahl von 0 bis 100" },
+    });
+
+    const dotted = wrapper
+      .findAll(".hero-block-form__tab")
+      .wrappers.filter((tab) => tab.find(".hero-block-form__tab-dot").exists())
+      .map((tab) => tab.attributes("data-section"));
+
+    expect(dotted).toEqual(["darstellung"]);
   });
 });
 
@@ -304,22 +410,81 @@ describe("HeroBlockForm, the text Block's Inhalt", () => {
     expect(wrapper.text()).not.toContain("Pflichtfeld");
   });
 
-  it("offers the six font sizes and writes the chosen one", async () => {
+  /**
+   * A text is formatted in the leiste's grammar: „Zeichen“, „Schriftgröße“
+   * and „Farbe“ as captioned rows, the scale showing the leiste's symbols and
+   * naming every step by its German word for a pointer and a screen reader
+   * alike; the colour control draws no caption of its own, the row already
+   * carries it (hero layout spec §7).
+   */
+  it("formats in the three captioned rows the leiste has", () => {
     const wrapper = formOf(heroBlock());
 
-    await choose(wrapper, "Schriftgröße", "Riesig");
+    expect(formatCaptions(wrapper)).toEqual([
+      "Zeichen",
+      "Schriftgröße",
+      "Farbe",
+    ]);
+    expect(sizeSteps(wrapper).map((step) => step.text().trim())).toEqual([
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "2XL",
+    ]);
+    expect(sizeSteps(wrapper).map((step) => step.attributes("title"))).toEqual([
+      "Sehr klein",
+      "Klein",
+      "Normal",
+      "Groß",
+      "Sehr groß",
+      "Riesig",
+    ]);
+    sizeSteps(wrapper).forEach((step) => {
+      expect(step.attributes("aria-label")).toBe(step.attributes("title"));
+    });
+    expect(wrapper.findAll(".hero-color-field .text-caption").length).toBe(0);
+  });
+
+  it("offers the six font sizes and writes the chosen one", async () => {
+    const wrapper = formOf(heroBlock({ size: "lg" }));
+
+    expect(pressed(sizeSteps(wrapper))).toEqual(["L"]);
+
+    await sizeStep(wrapper, "2XL").trigger("click");
 
     expect(lastPatch(wrapper)).toEqual({ size: "2xl" });
   });
 
-  it("carries the two text switches", async () => {
+  it("reads a Block that stores no size as „Normal“", () => {
+    const block = heroBlock();
+    delete block.size;
+
+    expect(pressed(sizeSteps(formOf(block)))).toEqual(["M"]);
+  });
+
+  it("sets „Fett“ with the bold button and the shadow with its switch", async () => {
     const wrapper = formOf(heroBlock());
 
-    await toggle(wrapper, "Fett");
+    expect(boldButton(wrapper).attributes("aria-pressed")).toBe("false");
+    expect(() => switchByLabel(wrapper, "Fett")).toThrow();
+
+    await boldButton(wrapper).trigger("click");
     expect(lastPatch(wrapper)).toEqual({ weight: "bold" });
 
     await toggle(wrapper, "Schatten für bessere Lesbarkeit");
     expect(lastPatch(wrapper)).toEqual({ shadow: true });
+  });
+
+  it("lifts „Fett“ again when the pressed button is clicked", async () => {
+    const wrapper = formOf(heroBlock({ weight: "bold" }));
+
+    expect(boldButton(wrapper).attributes("aria-pressed")).toBe("true");
+
+    await boldButton(wrapper).trigger("click");
+
+    expect(lastPatch(wrapper)).toEqual({ weight: "normal" });
   });
 });
 
@@ -401,16 +566,16 @@ describe("HeroBlockForm, the rich-text Block's Inhalt", () => {
     expect(wrapper.text()).toContain("Höchstens 10000 Zeichen.");
   });
 
-  it("carries the shadow switch and the colour control, and no Fett", async () => {
-    const wrapper = formOf(heroRichtextBlock());
+  /**
+   * A rich-text Block offers no size, colour or weight of its own in the
+   * form: every run of words takes them from the leiste, and one that carries
+   * no class follows the Block's stored defaults (hero layout spec §7).
+   */
+  it("carries the shadow switch and no Block-level format control", async () => {
+    const wrapper = formOf(heroRichtextBlock({ size: "lg" }));
 
-    expect(chipLabels(colorField(wrapper))).toEqual([
-      "Standard",
-      "Primärfarbe",
-      "Sekundärfarbe",
-      "Weiß",
-      "Eigene…",
-    ]);
+    expect(() => colorField(wrapper)).toThrow();
+    expect(wrapper.find(".hero-block-form__format").exists()).toBe(false);
     expect(() => switchByLabel(wrapper, "Fett")).toThrow();
 
     await toggle(wrapper, "Schatten für bessere Lesbarkeit");
@@ -419,33 +584,9 @@ describe("HeroBlockForm, the rich-text Block's Inhalt", () => {
   });
 
   /**
-   * The Block's own size is what a run of words inherits while it carries no
-   * class of its own, so a rich-text Block edits it on the same six steps a
-   * text Block does (hero layout spec §7).
-   */
-  it("edits its own Schriftgröße on the six steps of the scale", async () => {
-    const wrapper = formOf(heroRichtextBlock({ size: "lg" }));
-    const select = selectByLabel(wrapper, "Schriftgröße");
-
-    expect(select.props("items")).toEqual([
-      { value: "xs", text: "Sehr klein" },
-      { value: "sm", text: "Klein" },
-      { value: "md", text: "Normal" },
-      { value: "lg", text: "Groß" },
-      { value: "xl", text: "Sehr groß" },
-      { value: "2xl", text: "Riesig" },
-    ]);
-    expect(select.props("value")).toBe("lg");
-
-    await choose(wrapper, "Schriftgröße", "Riesig");
-
-    expect(lastPatch(wrapper)).toEqual({ size: "2xl" });
-  });
-
-  /**
    * The editor runs with size, colour and alignment switched on, and its two
    * token dots are painted with the instance's own branding — the same source
-   * the Block's colour control reads (hero layout spec §7).
+   * a text Block's colour control reads (hero layout spec §7).
    */
   it("mounts the editor with all four new props and the real theme colours", async () => {
     const wrapper = formOf(heroRichtextBlock());
@@ -456,17 +597,14 @@ describe("HeroBlockForm, the rich-text Block's Inhalt", () => {
     expect(tiptap.props("colors")).toBe(true);
     expect(tiptap.props("paragraphAlign")).toBe(true);
     expect(tiptap.props("themeColors")).toBe(THEME_COLORS);
-    expect(tiptap.props("themeColors")).toBe(
-      wrapper.findComponent(HeroColorField).props("themeColors")
-    );
   });
 
   /**
-   * The new controls split the leiste into two captioned rows. Everything the
+   * The new controls give the leiste its four captioned rows. Everything the
    * Hero Editor already relied on has to survive that: the counter against
    * 10 000 and the link button beside the character marks.
    */
-  it("keeps the counter counting and the link button working in the two-row leiste", async () => {
+  it("keeps the counter counting and the link button working in the captioned leiste", async () => {
     const wrapper = formOf(heroRichtextBlock());
     await wrapper.vm.$nextTick();
 
@@ -474,7 +612,7 @@ describe("HeroBlockForm, the rich-text Block's Inhalt", () => {
       wrapper
         .findAll(".tiptap-toolbar__caption")
         .wrappers.map((caption) => caption.text())
-    ).toEqual(["Zeichen", "Absatz"]);
+    ).toEqual(["Zeichen", "Schriftgröße", "Farbe", "Absatz"]);
     expect(wrapper.find(".tiptap-counter").text()).toBe("17 / 10000");
 
     await typeInEditor(wrapper, "!");
@@ -523,29 +661,6 @@ describe("HeroBlockForm, the rich-text Block's Inhalt", () => {
     await wrapper.vm.$nextTick();
     expect(editor(wrapper).vm.editor.getHTML()).toBe(MARKED_UP);
     expect(wrapper.emitted("input")).toBeUndefined();
-  });
-
-  it("puts the size and the colour above the editor, side by side", () => {
-    const wrapper = formOf(heroRichtextBlock());
-    const typography = wrapper.find(".hero-block-form__typography");
-
-    // Both controls stand in the one row, and the row stands before the
-    // editor — DOCUMENT_POSITION_FOLLOWING is "the editor comes after this".
-    expect(typography.find(".hero-block-form__size").exists()).toBe(true);
-    expect(typography.findComponent(HeroColorField).exists()).toBe(true);
-    expect(
-      typography.element.compareDocumentPosition(editor(wrapper).element) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-  });
-
-  it("reads a Block that stores no size as „Normal“", () => {
-    const block = heroRichtextBlock();
-    delete block.size;
-
-    expect(selectByLabel(formOf(block), "Schriftgröße").props("value")).toBe(
-      "md"
-    );
   });
 });
 
@@ -637,7 +752,7 @@ describe("HeroBlockForm, the image Block's Inhalt", () => {
   it("has neither a font size nor a colour control", () => {
     const wrapper = formOf(heroImageBlock());
 
-    expect(() => selectByLabel(wrapper, "Schriftgröße")).toThrow();
+    expect(wrapper.find(".hero-block-form__size").exists()).toBe(false);
     expect(() => colorField(wrapper)).toThrow();
   });
 });
@@ -783,11 +898,11 @@ describe("HeroBlockForm, Darstellung and Sichtbarkeit", () => {
     const wrapper = formOf(heroBlock());
 
     expect(wrapper.text()).toContain("Feinabstimmung");
-    expect(() => selectByLabel(wrapper, "Breite")).toThrow();
+    expect(wrapper.find(".hero-block-form__fine-field").exists()).toBe(false);
 
     await openFine(wrapper);
 
-    expect(fineSelectLabels(wrapper)).toEqual([
+    expect(fineFieldLabels(wrapper)).toEqual([
       "Ausrichtung",
       "Außenabstand",
       "Innenabstand",
@@ -799,13 +914,13 @@ describe("HeroBlockForm, Darstellung and Sichtbarkeit", () => {
     const wrapper = formOf(heroBlock());
     await openFine(wrapper);
 
-    await choose(wrapper, "Außenabstand", "Sehr groß");
+    await chooseFineStep(wrapper, "Außenabstand", "Sehr groß");
     expect(lastPatch(wrapper)).toEqual({ outerSpacing: "xl" });
 
-    await choose(wrapper, "Innenabstand", "Klein");
+    await chooseFineStep(wrapper, "Innenabstand", "Klein");
     expect(lastPatch(wrapper)).toEqual({ innerSpacing: "sm" });
 
-    await choose(wrapper, "Breite", "Volle Breite");
+    await chooseFineStep(wrapper, "Breite", "Volle Breite");
     expect(lastPatch(wrapper)).toEqual({ width: "full" });
   });
 
@@ -966,11 +1081,11 @@ describe("HeroBlockForm, Darstellung and Sichtbarkeit", () => {
       const wrapper = formOf(block);
       await openFine(wrapper);
 
-      expect(selectByLabel(wrapper, "Ausrichtung").props("items")).toEqual([
-        { value: "auto", text: "Automatisch" },
-        { value: "left", text: "Links" },
-        { value: "center", text: "Zentriert" },
-        { value: "right", text: "Rechts" },
+      expect(fineStepTitles(wrapper, "Ausrichtung")).toEqual([
+        "Automatisch",
+        "Links",
+        "Zentriert",
+        "Rechts",
       ]);
     }
   });
@@ -979,7 +1094,7 @@ describe("HeroBlockForm, Darstellung and Sichtbarkeit", () => {
     const wrapper = formOf(heroBlock());
     await openFine(wrapper);
 
-    await choose(wrapper, "Ausrichtung", "Zentriert");
+    await chooseFineStep(wrapper, "Ausrichtung", "Zentriert");
     expect(lastPatch(wrapper)).toEqual({ align: "center" });
   });
 
@@ -990,7 +1105,10 @@ describe("HeroBlockForm, Darstellung and Sichtbarkeit", () => {
   it("warns that alignment needs a width while Breite is Automatisch", async () => {
     const wrapper = formOf(heroBlock({ width: "auto" }));
     await openFine(wrapper);
-    const hint = () => selectByLabel(wrapper, "Ausrichtung").props("hint");
+    const hint = () =>
+      fineField(wrapper, "Ausrichtung")
+        .find(".hero-block-form__fine-hint")
+        .text();
 
     expect(hint()).toContain("Automatisch folgt der Spalte der Position.");
     expect(hint()).toContain("Wirkt erst ab einer festen Breite.");

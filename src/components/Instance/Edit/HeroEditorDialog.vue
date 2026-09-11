@@ -82,70 +82,166 @@
               </div>
             </v-alert>
 
-            <SubSection title="Höhe" icon="mdi-arrow-expand-vertical" no-margin>
-              <v-select
-                v-for="field in heightFields"
-                :key="field.key"
-                :value="height(field.key)"
-                :items="heightSteps"
-                :label="field.label"
-                background-color="accent"
-                filled
-                dense
-                @change="setHeight(field.key, $event)"
-              />
-              <div
-                v-for="(message, index) in layoutErrorTexts"
-                :key="index"
-                class="error--text text-caption hero-editor__height-error"
+            <!-- The Kopfbereich as a whole: two rows that read their value
+                 while they are closed and offer every step once opened, so
+                 the layout-wide settings never pass for a Block's own. -->
+            <v-expansion-panels
+              v-model="openSetting"
+              accordion
+              flat
+              class="hero-editor__settings"
+            >
+              <v-expansion-panel
+                class="hero-editor__setting"
+                data-setting="height"
               >
-                {{ message }}
-              </div>
-            </SubSection>
+                <v-expansion-panel-header class="hero-editor__setting-header">
+                  <div class="d-flex align-center">
+                    <v-icon
+                      small
+                      class="mr-3"
+                      :color="layoutErrorTexts.length > 0 ? 'error' : 'grey'"
+                    >
+                      mdi-arrow-expand-vertical
+                    </v-icon>
+                    <div class="hero-editor__setting-text">
+                      <div class="text-subtitle-2">Höhe</div>
+                      <div
+                        class="text-caption text--secondary hero-editor__setting-summary"
+                      >
+                        {{ heightSummary }}
+                      </div>
+                    </div>
+                  </div>
+                </v-expansion-panel-header>
+                <v-expansion-panel-content
+                  eager
+                  class="hero-editor__setting-body"
+                >
+                  <!-- The four steps stand side by side, so the choice is
+                       read off the row rather than out of a closed select. -->
+                  <div
+                    v-for="field in heightFields"
+                    :key="field.key"
+                    class="hero-editor__height"
+                    :data-height="field.key"
+                  >
+                    <div
+                      class="text-caption text--secondary mb-1 hero-editor__height-label"
+                    >
+                      {{ field.label }}
+                    </div>
+                    <v-btn-toggle
+                      :value="height(field.key)"
+                      mandatory
+                      dense
+                      color="primary"
+                      class="hero-editor__height-steps"
+                      @change="setHeight(field.key, $event)"
+                    >
+                      <v-btn
+                        v-for="step in heightSteps"
+                        :key="step.value"
+                        :value="step.value"
+                        class="hero-editor__height-step"
+                        small
+                        text
+                      >
+                        {{ step.text }}
+                      </v-btn>
+                    </v-btn-toggle>
+                  </div>
+                  <div
+                    v-for="(message, index) in layoutErrorTexts"
+                    :key="index"
+                    class="error--text text-caption hero-editor__height-error mt-2"
+                  >
+                    {{ message }}
+                  </div>
+                </v-expansion-panel-content>
+              </v-expansion-panel>
 
-            <SubSection class="mt-6" title="Blöcke" icon="mdi-view-dashboard">
-              <HeroBlockList
-                :blocks="blocks"
-                :selected-block-id="selectedBlockId"
-                @input="setBlocks"
-                @update:selectedBlockId="selectedBlockId = $event"
+              <v-expansion-panel
+                class="hero-editor__setting"
+                data-setting="background"
               >
-                <!-- A Block the backend would refuse says so and nothing
+                <v-expansion-panel-header class="hero-editor__setting-header">
+                  <div class="d-flex align-center">
+                    <v-icon
+                      small
+                      class="mr-3"
+                      :color="backgroundFaulted ? 'error' : 'grey'"
+                    >
+                      mdi-image-filter-hdr
+                    </v-icon>
+                    <div class="hero-editor__setting-text">
+                      <div class="text-subtitle-2">Hintergrund</div>
+                      <div
+                        class="text-caption text--secondary hero-editor__setting-summary"
+                      >
+                        {{ backgroundSummary }}
+                      </div>
+                    </div>
+                  </div>
+                </v-expansion-panel-header>
+                <!-- „Hintergrund“ remembers the families it switched away
+                     from for as long as it is mounted, so its body is eager:
+                     folding the row away must not cost an author their image. -->
+                <v-expansion-panel-content
+                  eager
+                  class="hero-editor__setting-body"
+                >
+                  <HeroBackgroundForm
+                    :value="draft.background"
+                    :errors="backgroundErrorTexts"
+                    @input="setBackground"
+                  />
+                </v-expansion-panel-content>
+              </v-expansion-panel>
+            </v-expansion-panels>
+
+            <HeroBlockList
+              class="mt-6"
+              :blocks="blocks"
+              :selected-block-id="selectedBlockId"
+              @input="setBlocks"
+              @update:selectedBlockId="selectedBlockId = $event"
+            >
+              <!-- A Block the backend would refuse says so and nothing
                      else: its warnings describe a render that is one Draft
                      behind, because an invalid Draft is never sent. -->
-                <template #badge="{ block }">
-                  <v-icon
-                    v-if="refusalsOf(block).length > 0"
-                    small
-                    color="error"
-                    class="hero-block-row__error"
-                    :title="refusalsOf(block).join(' ')"
-                  >
-                    mdi-alert-circle
-                  </v-icon>
-                  <v-icon
-                    v-else-if="warningsOf(block).length > 0"
-                    small
-                    color="warning"
-                    class="hero-block-row__warning"
-                    :title="warningsOf(block).join(' ')"
-                  >
-                    mdi-alert
-                  </v-icon>
-                </template>
-              </HeroBlockList>
-              <div
-                v-for="(message, index) in blockSectionErrorTexts"
-                :key="index"
-                class="error--text text-caption hero-editor__block-error"
-              >
-                {{ message }}
-              </div>
-            </SubSection>
+              <template #badge="{ block }">
+                <v-icon
+                  v-if="refusalsOf(block).length > 0"
+                  small
+                  color="error"
+                  class="hero-block-row__error"
+                  :title="refusalsOf(block).join(' ')"
+                >
+                  mdi-alert-circle
+                </v-icon>
+                <v-icon
+                  v-else-if="warningsOf(block).length > 0"
+                  small
+                  color="warning"
+                  class="hero-block-row__warning"
+                  :title="warningsOf(block).join(' ')"
+                >
+                  mdi-alert
+                </v-icon>
+              </template>
+            </HeroBlockList>
+            <div
+              v-for="(message, index) in blockSectionErrorTexts"
+              :key="index"
+              class="error--text text-caption hero-editor__block-error"
+            >
+              {{ message }}
+            </div>
 
             <HeroBlockForm
               v-if="selectedBlock"
-              class="mt-6"
+              class="mt-4"
               :block="selectedBlock"
               :blocks="blocks"
               :locale="locale"
@@ -155,14 +251,15 @@
               @input="patchSelectedBlock"
               @update:zone="moveSelectedBlock"
             />
-
-            <!-- „Hintergrund“ brings its own SubSection, and with it the
-                 spacing the sections above set by hand. -->
-            <HeroBackgroundForm
-              :value="draft.background"
-              :errors="backgroundErrorTexts"
-              @input="setBackground"
-            />
+            <!-- The place the detail card takes is not left blank: it says
+                 how a Block gets selected, which the list alone does not. -->
+            <div
+              v-else-if="blocks.length > 0"
+              class="hero-editor__no-selection mt-4 text-body-2 text--secondary"
+            >
+              Kein Block ausgewählt. Wählen Sie einen Block in der Liste oder in
+              der Live-Vorschau aus.
+            </div>
           </div>
 
           <div class="hero-editor-preview-column">
@@ -223,7 +320,10 @@ import HeroBlockList from "@/components/Instance/Edit/HeroBlockList.vue";
 import HeroLivePreview from "@/components/Instance/Edit/HeroLivePreview.vue";
 import HeroResetConformationDialog from "@/components/Instance/Edit/HeroResetConformationDialog.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
-import { heroBackgroundIssues } from "@/utils/heroBackground";
+import {
+  heroBackgroundIssues,
+  heroBackgroundSummary,
+} from "@/utils/heroBackground";
 import {
   HERO_ZONES,
   heroBlockLabel,
@@ -359,6 +459,9 @@ export default {
       leaveDialogOpen: false,
       leaveResolve: null,
       resetDialogOpen: false,
+      // Which of the two folded rows above the list is open: 0 „Höhe“,
+      // 1 „Hintergrund“, none by default — the Blocks are the frequent work.
+      openSetting: null,
       heightSteps: HEIGHT_STEPS,
       heightFields: HEIGHT_FIELDS,
     };
@@ -377,6 +480,29 @@ export default {
     },
     inProgress() {
       return this.loading || this.saving || this.resetting;
+    },
+    /** What the folded „Höhe“ row says: the three steps, in one line. */
+    heightSummary() {
+      const stepOf = (key) => {
+        const step = HEIGHT_STEPS.find(
+          (entry) => entry.value === this.height(key)
+        );
+        return step ? step.text : "";
+      };
+
+      return `Startseite ${stepOf("height")}, mobil ${stepOf(
+        "mobileHeight"
+      )}, Unterseiten ${stepOf("compactHeight")}`;
+    },
+    /** What the folded „Hintergrund“ row says. */
+    backgroundSummary() {
+      return this.draft ? heroBackgroundSummary(this.draft.background) : "";
+    },
+    /** Whether the folded „Hintergrund“ row hides something refused. */
+    backgroundFaulted() {
+      return (
+        this.backgroundIssues.length > 0 || this.backgroundErrorTexts.length > 0
+      );
     },
     /**
      * A save is refused while a Block or the Background carries something the
@@ -486,6 +612,17 @@ export default {
     },
   },
   watch: {
+    // A message under a folded row would go unread, so the row opens itself.
+    layoutErrorTexts(texts) {
+      if (texts.length > 0) {
+        this.openSetting = 0;
+      }
+    },
+    backgroundErrorTexts(texts) {
+      if (texts.length > 0) {
+        this.openSetting = 1;
+      }
+    },
     value: {
       immediate: true,
       handler(open) {
@@ -937,5 +1074,74 @@ export default {
     min-width: 0;
     overflow-y: auto;
   }
+}
+
+/*
+ * The column is three tiers, each an outlined box with an icon-and-title row
+ * at its head: the Kopfbereich as a whole (two folded rows), the Blocks, and
+ * the selected Block's card. The same 8 px radius on all three — the app's
+ * 25 px card radius is a dialog's, not a property panel's.
+ */
+.hero-editor__settings {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.hero-editor__setting + .hero-editor__setting {
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+/* Closed or open, the row keeps one height: it is a heading, not a button
+   that grows when pressed. */
+.hero-editor__setting-header,
+.hero-editor__setting.v-expansion-panel--active > .hero-editor__setting-header {
+  min-height: 56px;
+  padding: 8px 16px;
+}
+
+.hero-editor__setting-text {
+  min-width: 0;
+}
+
+.hero-editor__setting-summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-editor__setting-body ::v-deep .v-expansion-panel-content__wrap {
+  padding: 0 16px 16px;
+}
+
+.hero-editor__height + .hero-editor__height {
+  margin-top: 12px;
+}
+
+/* The four steps share the row equally, whatever their German word measures. */
+.hero-editor__height-steps {
+  display: flex;
+  width: 100%;
+}
+
+.hero-editor__height-step.v-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 6px;
+}
+
+.hero-editor__no-selection {
+  border: 1px dashed rgba(0, 0, 0, 0.24);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.theme--dark .hero-editor__settings,
+.theme--dark .hero-editor__setting + .hero-editor__setting {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.theme--dark .hero-editor__no-selection {
+  border-color: rgba(255, 255, 255, 0.24);
 }
 </style>

@@ -116,15 +116,15 @@ function surface(wrapper) {
 }
 
 describe("HeroBackgroundForm section", () => {
-  it("carries the heading, the hint and the three family cards", () => {
+  /**
+   * The heading „Hintergrund“ is the folded row's in the Hero Editor; the
+   * section itself carries the hint, its reset and the family cards.
+   */
+  it("carries the hint, the reset and the three family cards", () => {
     const wrapper = formOf(variantBackground());
 
-    expect(wrapper.findComponent({ name: "SubSection" }).props()).toMatchObject(
-      {
-        title: "Hintergrund",
-        description: "Gilt auch für die Anmeldeseiten.",
-      }
-    );
+    expect(wrapper.text()).toContain("Gilt auch für die Anmeldeseiten.");
+    expect(button(wrapper, "Standardhintergrund")).toBeTruthy();
     expect(
       wrapper
         .findAll(".hero-background-form__family")
