@@ -78,4 +78,40 @@ describe("BookingPermissionService", () => {
       expect(BookingPermissionService.allowReprint(own)).toBe(false);
     });
   });
+
+  /**
+   * `allowRead` mirrors the backend's read right: whoever placed the booking
+   * may open it, and so may anyone with `manageBookings.readAny`.
+   */
+  describe("allowRead", () => {
+    const own = { id: "bk-1", assignedUserId: USER_ID };
+    const foreign = { id: "bk-2", assignedUserId: "someone-else" };
+
+    it("lets the instance owner and the tenant owner through", () => {
+      signIn({ instanceOwner: true });
+      expect(BookingPermissionService.allowRead(foreign)).toBe(true);
+
+      signIn({ tenants: [membership({}, { isOwner: true })] });
+      expect(BookingPermissionService.allowRead(foreign)).toBe(true);
+    });
+
+    it("lets the booking's own user through without any role", () => {
+      signIn({ tenants: [membership({})] });
+      expect(BookingPermissionService.allowRead(own)).toBe(true);
+      expect(BookingPermissionService.allowRead(foreign)).toBe(false);
+    });
+
+    it("lets readAny through on a foreign booking, updateOwn not", () => {
+      signIn({ tenants: [membership({ readAny: true })] });
+      expect(BookingPermissionService.allowRead(foreign)).toBe(true);
+
+      signIn({ tenants: [membership({ updateOwn: true })] });
+      expect(BookingPermissionService.allowRead(foreign)).toBe(false);
+    });
+
+    it("returns false without a membership for the current tenant", () => {
+      signIn({ tenants: [membership({ readAny: true }, { tenantId: "x" })] });
+      expect(BookingPermissionService.allowRead(own)).toBe(false);
+    });
+  });
 });

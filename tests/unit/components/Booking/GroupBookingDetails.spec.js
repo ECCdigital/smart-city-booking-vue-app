@@ -34,6 +34,7 @@ vi.mock("@/services/api/ApiGroupBookingService", () => ({
 }));
 vi.mock("@/services/permissions/BookingPermissionService", () => ({
   default: {
+    allowRead: vi.fn(() => true),
     allowUpdate: vi.fn(() => true),
     allowDelete: vi.fn(() => true),
     allowReprint: vi.fn(() => true),

@@ -158,7 +158,7 @@
           <v-list-item
             link
             @click="onOpenBooking(selectedEvent.id)"
-            :disabled="!BookingPermissionService.allowUpdate(selectedEvent)"
+            :disabled="!BookingPermissionService.allowRead(selectedEvent)"
           >
             <v-list-item-icon>
               <v-icon>mdi-information</v-icon>

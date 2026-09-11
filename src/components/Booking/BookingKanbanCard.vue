@@ -26,14 +26,22 @@
           </v-btn>
         </template>
         <v-list dense>
-          <v-list-item @click.stop="onOpenBooking(element.bookingItem.id)">
+          <v-list-item
+            @click.stop="onOpenBooking(element.bookingItem.id)"
+            :disabled="!BookingPermissionService.allowRead(element.bookingItem)"
+          >
             <v-list-item-icon>
               <v-icon small>mdi-information</v-icon>
             </v-list-item-icon>
             <v-list-item-title>Details</v-list-item-title>
           </v-list-item>
 
-          <v-list-item @click.stop="onOpenEditBooking(element.bookingItem.id)">
+          <v-list-item
+            @click.stop="onOpenEditBooking(element.bookingItem.id)"
+            :disabled="
+              !BookingPermissionService.allowUpdate(element.bookingItem)
+            "
+          >
             <v-list-item-icon>
               <v-icon small>mdi-pencil</v-icon>
             </v-list-item-icon>
@@ -43,6 +51,7 @@
           <v-list-item
             v-if="element.bookingItem?.groupBooking"
             @click.stop="onOpenGroupBooking(element.bookingItem.groupBooking)"
+            :disabled="!BookingPermissionService.allowRead(element.bookingItem)"
           >
             <v-list-item-icon>
               <v-icon small>mdi-calendar-multiple</v-icon>
@@ -70,7 +79,12 @@
             </v-list-item-title>
           </v-list-item>
 
-          <v-list-item @click.stop="archiveTask(element.id)">
+          <v-list-item
+            @click.stop="archiveTask(element.id)"
+            :disabled="
+              !BookingPermissionService.allowUpdate(element.bookingItem)
+            "
+          >
             <v-list-item-icon>
               <v-icon small>mdi-archive</v-icon>
             </v-list-item-icon>
@@ -84,6 +98,9 @@
                 { added: { element: { id: element.id }, newIndex: 0 } },
                 'backlog'
               )
+            "
+            :disabled="
+              !BookingPermissionService.allowUpdate(element.bookingItem)
             "
           >
             <v-list-item-icon>

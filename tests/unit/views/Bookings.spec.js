@@ -16,6 +16,7 @@ vi.mock("@/store", () => ({
 vi.mock("@/services/permissions/BookingPermissionService", () => ({
   default: {
     allowCreate: vi.fn(() => true),
+    allowRead: vi.fn(() => true),
     allowUpdate: vi.fn(() => true),
     allowDelete: vi.fn(() => true),
   },

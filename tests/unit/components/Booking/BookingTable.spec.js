@@ -3,7 +3,11 @@ import BookingTable from "@/components/Booking/BookingTable.vue";
 import { mountComponent } from "@tests/unit/support/mount";
 
 vi.mock("@/services/permissions/BookingPermissionService", () => ({
-  default: { allowUpdate: vi.fn(() => true), allowDelete: vi.fn(() => true) },
+  default: {
+    allowRead: vi.fn(() => true),
+    allowUpdate: vi.fn(() => true),
+    allowDelete: vi.fn(() => true),
+  },
 }));
 
 function booking(overrides = {}) {

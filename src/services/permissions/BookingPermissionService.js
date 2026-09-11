@@ -84,6 +84,21 @@ class BookingPermissionService {
         BookingPermissionService.isOwner(booking))
     );
   }
+
+  static allowRead(booking) {
+    if (BookingPermissionService.isInstanceOwner()) return true;
+    const tenantId = store.getters["tenants/currentTenantId"];
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    if (!permissions) return false;
+    if (permissions.isOwner) return true;
+
+    return (
+      !!permissions.manageBookings?.readAny ||
+      BookingPermissionService.isOwner(booking)
+    );
+  }
 }
 
 export default BookingPermissionService;

@@ -186,7 +186,7 @@
               <v-list-item
                 link
                 @click="onOpenBooking(item.id)"
-                :disabled="!BookingPermissionService.allowUpdate(item)"
+                :disabled="!BookingPermissionService.allowRead(item)"
               >
                 <v-list-item-icon>
                   <v-icon small>mdi-information</v-icon>
@@ -343,8 +343,8 @@ export default {
       return this.showGroupBooking
         ? this.defaultHeaders
         : this.defaultHeaders.filter(
-          (header) => header.value !== "groupBooking"
-        );
+            (header) => header.value !== "groupBooking"
+          );
     },
   },
   methods: {
