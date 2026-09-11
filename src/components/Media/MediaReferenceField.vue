@@ -77,6 +77,7 @@
       :kind="kind"
       :public-only="enforcePublic"
       :public-only-reason="effectivePublicOnlyReason"
+      :allow-external="allowExternal"
       :exclude-ids="excludeIds"
       :title="pickerTitle"
       @select="onSelect"
@@ -121,6 +122,9 @@ export default {
     },
     hint: { type: String, default: "" },
     emptyLabel: { type: String, default: "Nichts ausgewählt" },
+    // Passed through to the picker: false where the reference may only ever
+    // point at a medium of the library.
+    allowExternal: { type: Boolean, default: true },
     // Legacy sites that the media spec leaves untyped (§4.8) still hold a bare
     // address. They pick from the library like everything else and store the
     // address of the chosen medium — public media only, because a plain URL

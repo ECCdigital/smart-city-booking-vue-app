@@ -49,8 +49,10 @@
                 :catalog="catalog"
                 :available-users="availableUserIds"
                 :available-roles="availableRoles"
+                :has-unsaved-changes="hasUnsavedChanges"
                 @update:instance="onUpdateInstance"
                 @update:catalog="onUpdateCatalog"
+                @refetch="fetchInstance"
               />
             </keep-alive>
           </v-col>
@@ -98,6 +100,7 @@ import InstanceEditBookables from "@/components/Instance/Edit/InstanceEditBookab
 import InstanceEditAuth from "@/components/Instance/Edit/InstanceEditAuth.vue";
 import InstanceEditCheckout from "@/components/Instance/Edit/InstanceEditCheckout.vue";
 import { brandingForSave, defaultBranding } from "@/utils/instanceBranding";
+import { catalogForSave } from "@/utils/instanceCatalog";
 import { legalDocumentsForSave } from "@/utils/instanceLegalDocuments";
 
 export default {
@@ -187,10 +190,6 @@ export default {
       ],
       catalog: {
         type: "instanze",
-        hero: {
-          title: "",
-          subtitle: "",
-        },
       },
       defaultKeycloak: {
         id: "keycloak",
@@ -394,6 +393,29 @@ export default {
         branding: brandingForSave(this.instance.branding),
       });
     },
+    /**
+     * The catalog as it goes to the API: without the Hero Layout, which the
+     * Hero Editor owns and saves through its own route.
+     */
+    catalogPayload() {
+      return catalogForSave(this.catalog);
+    },
+    /**
+     * A 400 `ValidationError` names its fields as JSON paths in
+     * `details[].field`; a tab that knows how to show them inline gets them.
+     */
+    showApiErrors(error) {
+      const data = error?.response?.data;
+      const child = this.$refs.activeChild;
+      if (
+        data?.error === "ValidationError" &&
+        Array.isArray(data.details) &&
+        child &&
+        typeof child.showApiErrors === "function"
+      ) {
+        child.showApiErrors(data.details);
+      }
+    },
     async submitChanges() {
       const ok = await this.validateActiveChild();
       if (!ok) return;
@@ -401,7 +423,7 @@ export default {
       this.inProgress = true;
       try {
         await ApiInstanceService.updateInstance(this.instancePayload());
-        await ApiCatalogService.updateCatalog(this.catalog);
+        await ApiCatalogService.updateCatalog(this.catalogPayload());
         this.originalSnapshot = JSON.stringify({
           instance: this.instance,
           catalog: this.catalog,
@@ -411,6 +433,7 @@ export default {
           type: "success",
         });
       } catch (e) {
+        this.showApiErrors(e);
         await this.addToast({
           message: "Fehler beim Aktualisieren der Instanz",
           type: "error",

@@ -1663,5 +1663,44 @@
         "message": "Die Rechnung konnte nicht heruntergeladen werden."
       }
     }
+  },
+  "richtext": {
+    "group": {
+      "character": "Zeichen",
+      "paragraph": "Absatz"
+    },
+    "align": {
+      "left": "Links",
+      "center": "Zentriert",
+      "right": "Rechts"
+    },
+    "color": {
+      "label": "Farbe",
+      "default": "Standard",
+      "primary": "Primärfarbe",
+      "secondary": "Sekundärfarbe",
+      "white": "Weiß",
+      "custom": "Eigene Farbe…",
+      "inherit": "Farbe übernehmen"
+    },
+    "size": {
+      "label": "Schriftgröße",
+      "xs": "Sehr klein",
+      "sm": "Klein",
+      "md": "Normal",
+      "lg": "Groß",
+      "xl": "Sehr groß",
+      "2xl": "Riesig"
+    },
+    "link": {
+      "button": "Link einfügen",
+      "title": "Link",
+      "address": "Adresse",
+      "hint": "http://, https:// oder mailto:",
+      "invalid": "Nur Adressen mit http://, https:// oder mailto: sind erlaubt.",
+      "apply": "Übernehmen",
+      "remove": "Link entfernen",
+      "cancel": "Abbrechen"
+    }
   }
 }

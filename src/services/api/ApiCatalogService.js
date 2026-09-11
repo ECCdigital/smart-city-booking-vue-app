@@ -19,6 +19,23 @@ export default {
     return ApiClient.put("api/catalog", catalog);
   },
 
+  /**
+   * The Hero Editor's three routes. It reads and writes the Hero Layout and
+   * the Background through them, never through `getCatalog`: the read route
+   * derives the Default Hero Layout while the catalog stores none and
+   * enriches the media references, which the raw entity does not.
+   */
+  getHeroLayout() {
+    return ApiClient.get("api/catalog/hero-layout");
+  },
+  updateHeroLayout(payload) {
+    return ApiClient.put("api/catalog/hero-layout", payload);
+  },
+  /** Normalises, sanitises and enriches a Draft. Writes nothing. */
+  previewHeroLayout(payload) {
+    return ApiClient.post("api/catalog/hero-layout/preview", payload);
+  },
+
   slugAvailability(slug) {
     return ApiClient.get(`api/catalog/availability/${slug}`);
   },
