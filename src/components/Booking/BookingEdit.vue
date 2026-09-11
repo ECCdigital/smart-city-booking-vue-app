@@ -22,28 +22,6 @@
         </div>
       </div>
 
-      <BookingEditStatus
-        :booking="selectedBooking"
-        :dirty="hasUnsavedChanges"
-        :group-booking="groupBooking"
-        :price-eur="totalPriceEur"
-        :payment-methods="paymentMethod"
-        @transitioned="onTransitioned"
-        @failed="onTransitionFailed"
-        @update:initial-state="initialState = $event"
-        @update:rejection-reason="setRejectionReason"
-      />
-      <v-alert
-        v-if="transitionError"
-        type="error"
-        text
-        dense
-        dismissible
-        class="booking-transition-error mb-4"
-        @input="transitionError = null"
-      >
-        {{ transitionError }}
-      </v-alert>
       <v-row dense>
         <v-col cols="12" lg="9">
           <BaseSection title="Objekt & Zeitraum" icon="mdi-cube-outline">
