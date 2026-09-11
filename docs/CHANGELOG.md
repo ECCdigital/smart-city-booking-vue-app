@@ -7,6 +7,10 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ## [Unreleased]
 
+# Fixed
+
+- GroupBookings: Fixed wrong bookable call. That prevents the group from being created.
+
 ## [4.2.9] — 2026-08-31
 
 ### Fixed

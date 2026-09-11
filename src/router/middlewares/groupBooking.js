@@ -5,7 +5,7 @@ import ApiRolesService from "@/services/api/ApiRolesService";
 export async function checkGroupBooking({ to, next }) {
   if (!to.meta.groupBooking) return next();
   const { id, tenant } = to.query;
-  const { data: bookable } = await ApiBookablesService.getBookable(id, tenant);
+  const { data: bookable } = await ApiBookablesService.getPublicBookable(id, tenant);
 
   if (!bookable?.groupBooking?.enabled || bookable.isBlockPeriodRelated) {
     return next({ name: "home" });

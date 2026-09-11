@@ -39,3 +39,5 @@ temp/
 
 # Local agent instruction overrides (Codex)
 AGENTS.override.md
+./claude
+.scratch
