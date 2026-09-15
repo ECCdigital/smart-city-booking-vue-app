@@ -4,6 +4,7 @@
       v-for="group in groups"
       :key="group.key"
       class="booking-documents__group"
+      :class="`booking-documents__group--${group.key}`"
     >
       <div class="d-flex align-center justify-space-between mb-1">
         <div class="booking-documents__heading text-subtitle-2">

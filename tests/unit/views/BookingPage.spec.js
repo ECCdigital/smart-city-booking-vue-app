@@ -3,6 +3,11 @@ import Vue from "vue";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import {
+  clickMenuEntry,
+  offeredActions,
+  primaryButton,
+} from "@tests/unit/support/statusPath";
+import {
   flushPromises,
   lifecycleError,
   serverError,
@@ -19,6 +24,7 @@ vi.mock("@/services/permissions/BookingPermissionService", () => ({
   default: {
     allowUpdate: vi.fn(() => true),
     allowReadAny: vi.fn(() => true),
+    allowReprint: vi.fn(() => true),
   },
 }));
 vi.mock("@/services/api/ApiBookingService", () => ({
@@ -27,10 +33,29 @@ vi.mock("@/services/api/ApiBookingService", () => ({
     getReceipt: vi.fn(),
     getInvoice: vi.fn(),
     getCancellationReceipt: vi.fn(),
+    commitBooking: vi.fn(),
+    payBooking: vi.fn(),
+    rejectBooking: vi.fn(),
+    reinstateBooking: vi.fn(),
+    getCancellationRefundPreview: vi.fn(),
+    downloadBookingIcal: vi.fn(),
+    generateReceipt: vi.fn(),
+    generateInvoice: vi.fn(),
+    reprintCancellationReceipt: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiGroupBookingService", () => ({
-  default: { getGroupBookingByBooking: vi.fn() },
+  default: {
+    getGroupBookingByBooking: vi.fn(),
+    commitGroupBooking: vi.fn(),
+    payGroupBooking: vi.fn(),
+    rejectGroupBooking: vi.fn(),
+    getCancellationRefundPreview: vi.fn(),
+  },
+}));
+vi.mock("@/utils/fileDownload", () => ({
+  saveBlob: vi.fn(),
+  openFileUrl: vi.fn(),
 }));
 vi.mock("@/layouts/Admin.vue", () => ({
   default: {
@@ -60,6 +85,7 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import { isTenantMember } from "@/utils/tenantMembership";
+import { saveBlob } from "@/utils/fileDownload";
 
 const BACK = "Zurück zu Buchungen";
 const COPY = "Link kopieren";
@@ -162,6 +188,17 @@ async function settle(wrapper) {
   // The tenant watcher decides one macrotask later.
   await flushPromises();
   await wrapper.vm.$nextTick();
+}
+
+function toastMessages(store) {
+  return store.getters["toasts/all"].map((toast) => toast.message);
+}
+
+/** Spies on the mounted transition module, so that no route is called. */
+function spyOnStart(wrapper) {
+  return vi
+    .spyOn(wrapper.vm.$refs.transitions, "start")
+    .mockImplementation(() => {});
 }
 
 function toolbar(wrapper) {
@@ -507,6 +544,42 @@ describe("BookingPage", () => {
       expect(details).toContain("Serie");
     });
 
+    it("offers the Zahlungslink while an online payment is pending, and the refund audit once cancelled", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          status: "payment_due",
+          paymentProvider: "giroCockpit",
+        }),
+      });
+      const pending = mountPage();
+      await settle(pending.wrapper);
+      expect(pending.wrapper.find(".booking-page__payment").text()).toContain(
+        "Zahlungslink"
+      );
+      expect(pending.wrapper.text()).not.toContain(
+        "Erstattung bei Stornierung"
+      );
+
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          status: "cancelled",
+          cancellationRefund: {
+            originalAmountEur: 25,
+            refundAmountEur: 20,
+            cancellationFeeEur: 5,
+            appliedRefundPercentage: 80,
+            daysBeforeStart: 3,
+          },
+        }),
+      });
+      const cancelled = mountPage();
+      await settle(cancelled.wrapper);
+      const payment = cancelled.wrapper.find(".booking-page__payment").text();
+      expect(payment).not.toContain("Zahlungslink");
+      expect(payment).toContain("Erstattung bei Stornierung");
+      expect(payment).toMatch(/20,00\s€/);
+    });
+
     it("lists the Dokumente in four groups and downloads a receipt", async () => {
       ApiBookingService.getBooking.mockResolvedValue({
         data: booking({
@@ -529,6 +602,257 @@ describe("BookingPage", () => {
         "bk-1",
         "BELEG-1.pdf"
       );
+    });
+  });
+
+  describe("the state block", () => {
+    it.each([
+      ["requested", "Angefragt"],
+      ["confirmed", "Bestätigt"],
+      ["cancelled", "Storniert"],
+    ])("shows %s as %s in the headline", async (status, word) => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ status }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      expect(wrapper.find(".booking-status-word").text()).toBe(word);
+    });
+
+    it("marks a free booking as Kostenfrei beside the state", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ priceEur: 0 }),
+      });
+      const free = mountPage();
+      await settle(free.wrapper);
+      expect(free.wrapper.find(".booking-status-free").text()).toBe(
+        "Kostenfrei"
+      );
+
+      ApiBookingService.getBooking.mockResolvedValue({ data: booking() });
+      const priced = mountPage();
+      await settle(priced.wrapper);
+      expect(priced.wrapper.find(".booking-status-free").exists()).toBe(false);
+    });
+
+    it("names the paid date under Bestätigt where the booking carries one", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          status: "confirmed",
+          timePaid: new Date(2026, 2, 5, 14, 30).getTime(),
+        }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      expect(wrapper.text()).toContain("bezahlt 05.03.2026, 14:30");
+    });
+
+    it("shows the reason of a cancelled booking under the path", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ status: "cancelled", rejectionReason: "Zu spät" }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      const block = wrapper.find(".booking-status-reason");
+      expect(block.text()).toContain("Stornierungsgrund");
+      expect(block.text()).toContain("Zu spät");
+    });
+  });
+
+  describe("the Dokumente actions", () => {
+    it("offers „Beleg erstellen“ beside Belege and reloads the page after it", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ status: "confirmed" }),
+      });
+      ApiBookingService.generateReceipt.mockResolvedValue({ success: true });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      await buttonLabelled(wrapper, "Beleg erstellen").trigger("click");
+      await settle(wrapper);
+
+      expect(ApiBookingService.generateReceipt).toHaveBeenCalledWith("bk-1");
+      expect(ApiBookingService.getBooking).toHaveBeenCalledTimes(2);
+      expect(wrapper.find(".v-skeleton-loader").exists()).toBe(false);
+    });
+  });
+
+  describe("the iCal on Zeitraum", () => {
+    it("downloads the booking's calendar file, as the list's „Termin herunterladen“ does", async () => {
+      ApiBookingService.downloadBookingIcal.mockResolvedValue({
+        data: "BEGIN:VCALENDAR",
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      const icon = wrapper.find(".booking-page__ical");
+      expect(icon.attributes("title")).toBe("Termin herunterladen");
+      await icon.trigger("click");
+      await settle(wrapper);
+
+      expect(ApiBookingService.downloadBookingIcal).toHaveBeenCalledWith(
+        "bk-1"
+      );
+      expect(saveBlob).toHaveBeenCalledTimes(1);
+      const [blob, filename] = saveBlob.mock.calls[0];
+      expect(blob.type).toBe("text/calendar;charset=utf-8");
+      expect(filename).toBe("buchung-bk-1.ics");
+    });
+
+    it("offers no iCal without a period", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ timeBegin: null, timeEnd: null }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      expect(wrapper.find(".booking-page__ical").exists()).toBe(false);
+    });
+
+    it("toasts when the calendar file cannot be generated", async () => {
+      ApiBookingService.downloadBookingIcal.mockRejectedValue(serverError());
+      const { wrapper, store } = mountPage();
+      await settle(wrapper);
+
+      await wrapper.find(".booking-page__ical").trigger("click");
+      await settle(wrapper);
+
+      expect(saveBlob).not.toHaveBeenCalled();
+      expect(toastMessages(store)).toContainEqual(
+        expect.stringContaining("iCal-Datei")
+      );
+    });
+  });
+
+  /**
+   * The page is a host of `BookingTransitions` (spec E3): the state as a
+   * headline over its path with the state's transitions, handed to the
+   * mounted module; every transition ends in `reload()`, and so does a
+   * refused one that says the screen is stale (spec E5).
+   */
+  describe("the transitions", () => {
+    it.each([
+      ["requested", "Freigeben", ["Ablehnen"]],
+      ["payment_due", "Als bezahlt markieren", ["Stornieren"]],
+      ["confirmed", null, ["Stornieren"]],
+      ["rejected", "Wiederherstellen", null],
+      ["cancelled", "Wiederherstellen", null],
+    ])(
+      "offers at %s the button %s and the menu %j",
+      async (status, button, menu) => {
+        ApiBookingService.getBooking.mockResolvedValue({
+          data: booking({ status }),
+        });
+        const { wrapper } = mountPage();
+        await settle(wrapper);
+        expect(await offeredActions(wrapper)).toEqual({ button, menu });
+      }
+    );
+
+    it("offers nothing to a reader without the update right", async () => {
+      BookingPermissionService.allowUpdate.mockReturnValue(false);
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      expect(await offeredActions(wrapper)).toEqual({
+        button: null,
+        menu: null,
+      });
+    });
+
+    it("hands a single booking to the transition module", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ status: "requested" }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      const start = spyOnStart(wrapper);
+
+      await primaryButton(wrapper).trigger("click");
+
+      expect(start).toHaveBeenCalledWith("confirm", {
+        booking: booking({ status: "requested" }),
+      });
+    });
+
+    it("hands a series member with its series and members", async () => {
+      const members = [
+        booking({ status: "confirmed" }),
+        booking({ id: "bk-2", status: "confirmed" }),
+      ];
+      const groupBooking = {
+        id: "grp-1",
+        bookingIds: ["bk-1", "bk-2"],
+        bookings: members,
+      };
+      ApiBookingService.getBooking.mockResolvedValue({ data: members[0] });
+      ApiGroupBookingService.getGroupBookingByBooking.mockResolvedValue({
+        data: groupBooking,
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      const start = spyOnStart(wrapper);
+
+      await clickMenuEntry(wrapper, "Stornieren");
+
+      expect(start).toHaveBeenCalledWith("cancel", {
+        booking: members[0],
+        groupBooking,
+        bookings: members,
+      });
+    });
+
+    it("reloads the booking after a transition, and after a stale failure", async () => {
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      const transitions = wrapper.findComponent({ name: "BookingTransitions" });
+
+      transitions.vm.$emit("transitioned", {
+        action: "confirm",
+        bookingId: "bk-1",
+      });
+      await settle(wrapper);
+      expect(ApiBookingService.getBooking).toHaveBeenCalledTimes(2);
+
+      transitions.vm.$emit("failed", {
+        action: "confirm",
+        error: null,
+        message: "Nein",
+        refetch: false,
+      });
+      await settle(wrapper);
+      expect(ApiBookingService.getBooking).toHaveBeenCalledTimes(2);
+
+      transitions.vm.$emit("failed", {
+        action: "confirm",
+        error: null,
+        message: "Weg",
+        refetch: true,
+      });
+      await settle(wrapper);
+      expect(ApiBookingService.getBooking).toHaveBeenCalledTimes(3);
+    });
+
+    it("toasts the mapped message on a 409 and reloads, keeping the body in place", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ status: "requested" }),
+      });
+      ApiBookingService.commitBooking.mockRejectedValue(
+        lifecycleError(409, "invalid_transition", { status: "confirmed" })
+      );
+      const { wrapper, store } = mountPage();
+      await settle(wrapper);
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({ status: "confirmed" }),
+      });
+
+      await primaryButton(wrapper).trigger("click");
+      await settle(wrapper);
+
+      expect(toastMessages(store)).toContainEqual(
+        expect.stringContaining("inzwischen in einem anderen Zustand")
+      );
+      expect(ApiBookingService.getBooking).toHaveBeenCalledTimes(2);
+      expect(wrapper.find(".booking-status-word").text()).toBe("Bestätigt");
+      expect(wrapper.find(".v-skeleton-loader").exists()).toBe(false);
     });
   });
 

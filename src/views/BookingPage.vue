@@ -95,7 +95,8 @@
         class="mb-4"
         :status="booking.status"
         :path="path"
-        :actions="[]"
+        :actions="actions"
+        @action="transition"
       >
         <template v-if="path.end && path.end.reason" #reason>
           <div class="text-caption font-weight-bold error--text">
@@ -108,9 +109,21 @@
       <v-card outlined class="booking-page__strip mb-4">
         <v-row no-gutters>
           <v-col cols="12" md="4" class="booking-page__fact pa-4">
-            <div class="booking-page__fact-label text-overline">
-              <v-icon x-small class="mr-1">mdi-calendar-range</v-icon>
-              {{ $t("booking.page.strip.period") }}
+            <div class="d-flex align-center justify-space-between">
+              <div class="booking-page__fact-label text-overline">
+                <v-icon x-small class="mr-1">mdi-calendar-range</v-icon>
+                {{ $t("booking.page.strip.period") }}
+              </div>
+              <v-btn
+                v-if="hasCalendarEntry"
+                icon
+                x-small
+                class="booking-page__ical"
+                :title="$t('booking.page.strip.download-ical')"
+                @click="downloadIcal"
+              >
+                <v-icon small>mdi-calendar-export</v-icon>
+              </v-btn>
             </div>
             <div class="text-subtitle-1 font-weight-bold">{{ period }}</div>
           </v-col>
@@ -292,6 +305,16 @@
                   {{ booking.paymentProvider ? paymentProvider : "–" }}
                 </div>
               </div>
+              <BookingPaymentLink
+                class="mt-3"
+                :booking="booking"
+                :group-booking="groupBooking"
+              />
+              <CancellationRefundAudit
+                v-if="cancellationRefundAudit"
+                class="mt-3"
+                :audit="cancellationRefundAudit"
+              />
             </div>
           </v-card>
 
@@ -302,10 +325,12 @@
               >
               {{ $t("booking.page.documents.title") }}
             </div>
-            <BookingDocuments
+            <BookingDocumentActions
               class="pa-4"
-              :attachments="booking.attachments"
+              :booking="booking"
+              :group-booking="groupBooking"
               @download="downloadDocument"
+              @reload="reload"
             />
           </v-card>
 
@@ -362,15 +387,24 @@
         </v-col>
       </v-row>
     </div>
+
+    <BookingTransitions
+      ref="transitions"
+      @transitioned="reload"
+      @failed="onTransitionFailed"
+    />
   </AdminLayout>
 </template>
 
 <script>
 import AdminLayout from "@/layouts/Admin.vue";
 import BookingPageEmptyState from "@/components/Booking/BookingPageEmptyState.vue";
-import BookingDocuments from "@/components/Booking/BookingDocuments.vue";
+import BookingDocumentActions from "@/components/Booking/BookingDocumentActions.vue";
 import BookingAccessPoints from "@/components/Booking/BookingAccessPoints.vue";
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
+import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
+import BookingPaymentLink from "@/components/Booking/BookingPaymentLink.vue";
+import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import ProcessingService from "@/services/ProcessingService";
 import FormatService from "@/services/FormatService";
@@ -391,8 +425,14 @@ import {
   paymentMethodLabel,
   paymentProviderLabel,
 } from "@/utils/paymentLabels";
-import { pathOf, paymentLabel } from "@/utils/bookingStatus";
+import {
+  pathOf,
+  paymentLabel,
+  transitionActions,
+  transitionTarget,
+} from "@/utils/bookingStatus";
 import { isTenantMember } from "@/utils/tenantMembership";
+import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
 import { mapActions, mapGetters } from "vuex";
 
 /** How long "Link kopiert" stays on the button (the codebase's copy pattern). */
@@ -400,7 +440,11 @@ const LINK_COPIED_MS = 2000;
 
 /**
  * The Buchungsseite (CONTEXT.md): one booking at `/bookings/:bookingId`,
- * reachable by a Buchungslink that names its tenant in `?tenant=`.
+ * reachable by a Buchungslink that names its tenant in `?tenant=`. It is a
+ * host of `BookingTransitions` (spec E3): the state as a headline over its
+ * path with the state's transitions; every action on the page ends in
+ * `reload()`, and so does a refused transition that says the screen is
+ * stale (spec E5).
  */
 export default {
   name: "BookingPage",
@@ -408,9 +452,12 @@ export default {
     AdminLayout,
     BookableTypeChip,
     BookingAccessPoints,
-    BookingDocuments,
+    BookingDocumentActions,
     BookingPageEmptyState,
+    BookingPaymentLink,
     BookingStatusPath,
+    BookingTransitions,
+    CancellationRefundAudit,
   },
   data() {
     return {
@@ -448,6 +495,13 @@ export default {
         !!this.booking && BookingPermissionService.allowUpdate(this.booking)
       );
     },
+    /** An iCal needs a period, or an event behind one of the objects. */
+    hasCalendarEntry() {
+      return (
+        (!!this.booking.timeBegin && !!this.booking.timeEnd) ||
+        this.objects.some((item) => item._bookableUsed?.eventId)
+      );
+    },
     period() {
       const { timeBegin, timeEnd } = this.booking;
       if (!timeBegin || !timeEnd) {
@@ -466,9 +520,16 @@ export default {
     paymentProvider() {
       return paymentProviderLabel(this.booking.paymentProvider);
     },
-    /** The state read as a path (spec N2); no actions in this block yet. */
+    /** The state read as a path (spec N2). */
     path() {
       return pathOf(this.booking);
+    },
+    /** The transitions the state allows, for whoever may edit the booking. */
+    actions() {
+      if (!this.canUpdate) {
+        return [];
+      }
+      return transitionActions(this.booking.status);
     },
     objects() {
       return Object.values(this.booking.bookableItems || {});
@@ -499,6 +560,9 @@ export default {
     },
     userCancellable() {
       return this.booking?.cancellationPolicy?.userCancellable !== false;
+    },
+    cancellationRefundAudit() {
+      return getCancellationRefundAudit(this.booking);
     },
     /**
      * The backend answers 404 alike for gone and out of reach; only a caller
@@ -565,6 +629,16 @@ export default {
         this.state = "non-member";
         return;
       }
+      await this.fetch();
+    },
+    /**
+     * The same fetch as `load()` after an action, with the body kept in
+     * place: the page refreshes rather than flickers through the skeleton.
+     */
+    async reload() {
+      await this.fetch();
+    },
+    async fetch() {
       try {
         const response = await ApiBookingService.getBooking(
           this.bookingId,
@@ -582,6 +656,18 @@ export default {
         console.error(error);
         this.error = error;
         this.state = "error";
+      }
+    },
+    transition(action) {
+      this.$refs.transitions.start(
+        action,
+        transitionTarget(this.booking, this.groupBooking)
+      );
+    },
+    /** The module has toasted the message already; a stale screen reloads. */
+    onTransitionFailed({ refetch }) {
+      if (refetch) {
+        this.reload();
       }
     },
     /**
@@ -673,6 +759,22 @@ export default {
         });
       } finally {
         ProcessingService.hide(operationId);
+      }
+    },
+    /** The same file the list's "Termin herunterladen" saves. */
+    async downloadIcal() {
+      try {
+        const response = await ApiBookingService.downloadBookingIcal(
+          this.bookingId
+        );
+        saveBlob(
+          new Blob([response.data], { type: "text/calendar;charset=utf-8" }),
+          `buchung-${this.bookingId}.ics`
+        );
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast("booking.ical.error", "error")
+        );
       }
     },
     formatDateTime(value) {

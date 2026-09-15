@@ -704,6 +704,7 @@
       },
       "strip": {
         "period": "Zeitraum",
+        "download-ical": "Termin herunterladen",
         "customer": "Kunde",
         "price": "Preis / Zahlungsstatus"
       },
@@ -741,6 +742,13 @@
         "method": "Zahlungsart",
         "provider": "Anbieter",
         "unknown": "Unbekannt",
+        "link": "Zahlungslink",
+        "link-pending": "Die Zahlung steht noch aus.",
+        "link-copy": "Link kopieren",
+        "link-copied": "Kopiert",
+        "link-open": "Link öffnen",
+        "link-single": "Nur diese Buchung",
+        "link-series": "Gesamte Serie ({count} Buchungen)",
         "methods": {
           "CASH": "Bar",
           "TRANSFER": "Überweisung",
@@ -776,6 +784,13 @@
         "accepted": "Gelesen und akzeptiert",
         "not-accepted": "Nicht akzeptiert",
         "download": "Herunterladen",
+        "create-receipt": "Beleg erstellen",
+        "invoice-menu": "Rechnung",
+        "invoice-send": "Erstellen & versenden",
+        "invoice-only": "Nur erstellen",
+        "invoice-resend": "Erneut erstellen & versenden",
+        "invoice-recreate": "Erneut nur erstellen",
+        "reprint": "Neu ausstellen",
         "download-progress": "Stelle Dokument bereit...",
         "download-error": {
           "title": "Fehler beim Herunterladen",
