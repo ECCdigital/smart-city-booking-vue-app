@@ -200,6 +200,11 @@ import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
 import BookingFilterCard from "@/components/Booking/BookingFilterCard.vue";
+import { saveBlob } from "@/utils/fileDownload";
+import {
+  bookingPageRoute,
+  groupBookingPageRoute,
+} from "@/utils/bookingPageRoutes";
 import {
   allowsAction,
   filterBookingsByStatus,
@@ -504,11 +509,7 @@ export default {
     },
     /** "Details" leads to the Buchungsseite; `?tenant=` completes the Buchungslink. */
     onOpenBooking(bookingId) {
-      this.$router.push({
-        name: "booking-details",
-        params: { bookingId },
-        query: { tenant: this.tenantId },
-      });
+      this.$router.push(bookingPageRoute(bookingId, this.tenantId));
     },
     /**
      * The series a booking belongs to, with its members populated, so that
@@ -532,11 +533,7 @@ export default {
     },
     /** "Gruppenbuchung" leads to the Serienbuchungsseite, with `?tenant=` as above. */
     onOpenGroupBooking(groupBookingId) {
-      this.$router.push({
-        name: "group-booking-details",
-        params: { groupBookingId },
-        query: { tenant: this.tenantId },
-      });
+      this.$router.push(groupBookingPageRoute(groupBookingId, this.tenantId));
     },
     onOpenEditBooking(bookingId) {
       this.$router.push({
@@ -607,21 +604,11 @@ export default {
     },
     async onDownloadIcal(bookingId) {
       try {
-        const temp = await ApiBookingService.downloadBookingIcal(bookingId);
-
-        const blob = new Blob([temp.data], {
-          type: "text/calendar;charset=utf-8",
-        });
-        const url = window.URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", `buchung-${bookingId}.ics`);
-        document.body.appendChild(link);
-        link.click();
-
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        const response = await ApiBookingService.downloadBookingIcal(bookingId);
+        saveBlob(
+          new Blob([response.data], { type: "text/calendar;charset=utf-8" }),
+          `buchung-${bookingId}.ics`
+        );
       } catch (error) {
         await this.addToast(
           ToastService.createToast("booking.ical.error", "error")

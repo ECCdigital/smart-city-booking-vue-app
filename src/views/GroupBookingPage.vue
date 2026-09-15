@@ -247,7 +247,7 @@
                 {{ $t("group-booking.page.comments.title") }}
               </span>
               <v-btn
-                v-if="!editingComment"
+                v-if="canEditComment && !editingComment"
                 icon
                 x-small
                 class="group-booking-page__comment-edit"
@@ -412,16 +412,10 @@ import GroupBookingDocumentActions from "@/components/Booking/GroupBookingDocume
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
-import FormatService from "@/services/FormatService";
-import ProcessingService from "@/services/ProcessingService";
-import {
-  getApiErrorMessage,
-  unpackBlobErrorBody,
-} from "@/services/api/apiErrorMessage";
 import ToastService from "@/services/ToastService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import bookingPageShell from "@/mixins/bookingPageShell";
-import { saveBlob } from "@/utils/fileDownload";
+import { bookingPageRoute } from "@/utils/bookingPageRoutes";
 import { paymentMethodLabel } from "@/utils/paymentLabels";
 import {
   collectGroupInvoices,
@@ -571,6 +565,14 @@ export default {
     canEditEveryMember() {
       return this.members.every((b) => BookingPermissionService.allowUpdate(b));
     },
+    /**
+     * The series has no right of its own; its comment is saved over the
+     * members, so whoever may update every member may edit it - the same
+     * rule as the series-wide actions.
+     */
+    canEditComment() {
+      return this.canEditEveryMember;
+    },
     /** Why a mixed series offers no action - for whoever could act on the members. */
     mixedHint() {
       return this.mixed && this.canEditEveryMember
@@ -625,11 +627,7 @@ export default {
       return titles.length > 0 ? titles.join(", ") : "–";
     },
     toMember(bookingId) {
-      this.$router.push({
-        name: "booking-details",
-        params: { bookingId },
-        query: { tenant: this.tenantId },
-      });
+      this.$router.push(bookingPageRoute(bookingId, this.tenantId));
     },
     startEditingComment() {
       this.editedComment = this.groupBooking.internalComments || "";
@@ -667,55 +665,22 @@ export default {
      * One download per Dokumente group, over the route of the member the
      * document hangs on (`item.bookingId`).
      */
-    async downloadDocument({ group, item }) {
-      const name = item.title || item.name;
-      const fetchers = {
-        receipts: ApiBookingService.getReceipt,
-        invoices: ApiBookingService.getInvoice,
-        cancellations: ApiBookingService.getCancellationReceipt,
-      };
-      const operationId = ProcessingService.showSnackbar(
-        this.$t("booking.page.documents.download-progress")
+    downloadDocument({ group, item }) {
+      return this.downloadBookingDocument(
+        item.bookingId,
+        group,
+        item.title || item.name
       );
-      try {
-        const response = await fetchers[group](item.bookingId, name);
-        saveBlob(new Blob([response.data], { type: "application/pdf" }), name);
-      } catch (error) {
-        // The request asked for a Blob, so the body is unpacked before it is read.
-        const unpacked = await unpackBlobErrorBody(error);
-        await this.addToast({
-          title: this.$t("booking.page.documents.download-error.title"),
-          message: getApiErrorMessage(
-            unpacked,
-            this.$t("booking.page.documents.download-error.message")
-          ),
-          type: "error",
-        });
-      } finally {
-        ProcessingService.hide(operationId);
-      }
     },
     /** The same file the list's "Termine für alle Buchungen" saved: every member's dates. */
-    async downloadIcal() {
-      try {
-        const response = await ApiBookingService.downloadGroupBookingIcal(
-          this.members.map((member) => member.id)
-        );
-        saveBlob(
-          new Blob([response.data], { type: "text/calendar;charset=utf-8" }),
-          `serienbuchung-${this.groupBookingId}.ics`
-        );
-      } catch (error) {
-        await this.addToast(
-          ToastService.createToast("booking.ical.error", "error")
-        );
-      }
-    },
-    formatDateTime(value) {
-      return FormatService.dateTime(value);
-    },
-    formatCurrency(value) {
-      return FormatService.currency(value || 0);
+    downloadIcal() {
+      return this.downloadCalendar(
+        () =>
+          ApiBookingService.downloadGroupBookingIcal(
+            this.members.map((member) => member.id)
+          ),
+        `serienbuchung-${this.groupBookingId}.ics`
+      );
     },
     /**
      * A series-wide button acts on the whole series: `seriesOnly` keeps the
@@ -736,12 +701,6 @@ export default {
         action,
         transitionTarget(member, this.groupBooking)
       );
-    },
-    /** The module has toasted the message already; a stale screen reloads. */
-    onTransitionFailed({ refetch }) {
-      if (refetch) {
-        this.reload();
-      }
     },
     resetEntity() {
       this.groupBooking = null;

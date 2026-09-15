@@ -386,22 +386,16 @@ import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import BookingPaymentLink from "@/components/Booking/BookingPaymentLink.vue";
 import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
-import ProcessingService from "@/services/ProcessingService";
-import FormatService from "@/services/FormatService";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
-import ToastService from "@/services/ToastService";
 import bookingPageShell from "@/mixins/bookingPageShell";
+import { groupBookingPageRoute } from "@/utils/bookingPageRoutes";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
-import {
-  getApiErrorMessage,
-  unpackBlobErrorBody,
-} from "@/services/api/apiErrorMessage";
 import {
   filledCustomFields,
   formatCustomFieldValue,
 } from "@/utils/bookingCustomFields";
-import { openFileUrl, saveBlob } from "@/utils/fileDownload";
+import { openFileUrl } from "@/utils/fileDownload";
 import {
   paymentMethodLabel,
   paymentProviderLabel,
@@ -554,12 +548,6 @@ export default {
         transitionTarget(this.booking, this.groupBooking)
       );
     },
-    /** The module has toasted the message already; a stale screen reloads. */
-    onTransitionFailed({ refetch }) {
-      if (refetch) {
-        this.reload();
-      }
-    },
     /**
      * The series a member belongs to, for the toolbar chip. Its failure
      * leaves the chip off and never fails the page: the booking is the page.
@@ -588,11 +576,9 @@ export default {
       });
     },
     toSeries() {
-      this.$router.push({
-        name: "group-booking-details",
-        params: { groupBookingId: this.groupBooking.id },
-        query: { tenant: this.tenantId },
-      });
+      this.$router.push(
+        groupBookingPageRoute(this.groupBooking.id, this.tenantId)
+      );
     },
     formatCustomFieldValue,
     /**
@@ -600,59 +586,20 @@ export default {
      * receipts come as a Blob over the booking's routes, an attachment is
      * opened under its own URL.
      */
-    async downloadDocument({ group, item }) {
+    downloadDocument({ group, item }) {
       const name = item.title || item.name;
       if (group === "attachments") {
         openFileUrl(item.url, name);
         return;
       }
-      const fetchers = {
-        receipts: ApiBookingService.getReceipt,
-        invoices: ApiBookingService.getInvoice,
-        cancellations: ApiBookingService.getCancellationReceipt,
-      };
-      const operationId = ProcessingService.showSnackbar(
-        this.$t("booking.page.documents.download-progress")
-      );
-      try {
-        const response = await fetchers[group](this.bookingId, name);
-        saveBlob(new Blob([response.data], { type: "application/pdf" }), name);
-      } catch (error) {
-        // The request asked for a Blob, so the body is unpacked before it is read.
-        const unpacked = await unpackBlobErrorBody(error);
-        await this.addToast({
-          title: this.$t("booking.page.documents.download-error.title"),
-          message: getApiErrorMessage(
-            unpacked,
-            this.$t("booking.page.documents.download-error.message")
-          ),
-          type: "error",
-        });
-      } finally {
-        ProcessingService.hide(operationId);
-      }
+      return this.downloadBookingDocument(this.bookingId, group, name);
     },
     /** The same file the list's "Termin herunterladen" saves. */
-    async downloadIcal() {
-      try {
-        const response = await ApiBookingService.downloadBookingIcal(
-          this.bookingId
-        );
-        saveBlob(
-          new Blob([response.data], { type: "text/calendar;charset=utf-8" }),
-          `buchung-${this.bookingId}.ics`
-        );
-      } catch (error) {
-        await this.addToast(
-          ToastService.createToast("booking.ical.error", "error")
-        );
-      }
-    },
-    formatDateTime(value) {
-      return FormatService.dateTime(value);
-    },
-    formatCurrency(value) {
-      return FormatService.currency(value || 0);
+    downloadIcal() {
+      return this.downloadCalendar(
+        () => ApiBookingService.downloadBookingIcal(this.bookingId),
+        `buchung-${this.bookingId}.ics`
+      );
     },
   },
   metaInfo() {

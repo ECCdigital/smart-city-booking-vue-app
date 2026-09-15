@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
+import toasts from "@/store/modules/toasts";
 import BookingPaymentLink from "@/components/Booking/BookingPaymentLink.vue";
 
 const ROW = "Zahlungslink";
@@ -25,9 +27,16 @@ function seriesUrl() {
 }
 
 function mountRow(propsData = {}) {
-  return mountComponent(BookingPaymentLink, {
+  const store = new Vuex.Store({ modules: { toasts } });
+  const wrapper = mountComponent(BookingPaymentLink, {
+    store,
     propsData: { booking: booking(), groupBooking: null, ...propsData },
   });
+  return Object.assign(wrapper, { store });
+}
+
+function toastMessages(store) {
+  return store.getters["toasts/all"].map((toast) => toast.message);
 }
 
 /** The entries of the last opened menu, read off the document. */
@@ -110,6 +119,22 @@ describe("BookingPaymentLink", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("toasts and stays „Link kopieren“ when the clipboard refuses", async () => {
+    writeText.mockRejectedValue(new Error("denied"));
+    const wrapper = mountRow();
+
+    await wrapper.find(".booking-payment-link__copy").trigger("click");
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper.find(".booking-payment-link__copy").attributes("title")
+    ).toBe("Link kopieren");
+    expect(toastMessages(wrapper.store)).toContain(
+      "Leider ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+    );
   });
 
   it("opens the booking's payment link in a new tab", async () => {

@@ -89,6 +89,8 @@
 </template>
 
 <script>
+import { mapActions } from "vuex";
+import ToastService from "@/services/ToastService";
 import { isAwaitingPayment } from "@/utils/bookingStatus";
 
 /** How long the copy icon reads "Kopiert" (the codebase's copy pattern). */
@@ -144,6 +146,7 @@ export default {
     clearTimeout(this.copiedTimer);
   },
   methods: {
+    ...mapActions({ addToast: "toasts/add" }),
     /** The storefront's redirection page, for one booking or the whole series. */
     paymentLink(aggregated) {
       const baseUrl = `${window.location.origin}${process.env.BASE_URL}payment/redirection`;
@@ -156,8 +159,16 @@ export default {
         this.booking.tenantId
       }&aggregated=${aggregated && !!this.groupBooking?.bookingIds}`;
     },
+    /** The clipboard may refuse (permission, insecure context); then the row toasts as the shell's "Link kopieren" does. */
     async copy(aggregated) {
-      await navigator.clipboard.writeText(this.paymentLink(aggregated));
+      try {
+        await navigator.clipboard.writeText(this.paymentLink(aggregated));
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast("errors.something-wrong", "error")
+        );
+        return;
+      }
       this.copied = true;
       clearTimeout(this.copiedTimer);
       this.copiedTimer = setTimeout(() => {

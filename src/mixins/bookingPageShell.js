@@ -1,8 +1,23 @@
 import { mapActions, mapGetters } from "vuex";
+import FormatService from "@/services/FormatService";
+import ProcessingService from "@/services/ProcessingService";
 import ToastService from "@/services/ToastService";
+import ApiBookingService from "@/services/api/ApiBookingService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
-import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+import {
+  getApiErrorMessage,
+  unpackBlobErrorBody,
+} from "@/services/api/apiErrorMessage";
+import { saveBlob } from "@/utils/fileDownload";
 import { isTenantMember } from "@/utils/tenantMembership";
+
+/** The booking routes a Dokumente group's PDFs come from, by group. */
+const DOCUMENT_FETCHERS = {
+  receipts: (bookingId, name) => ApiBookingService.getReceipt(bookingId, name),
+  invoices: (bookingId, name) => ApiBookingService.getInvoice(bookingId, name),
+  cancellations: (bookingId, name) =>
+    ApiBookingService.getCancellationReceipt(bookingId, name),
+};
 
 /** How long "Link kopiert" stays on the button (the codebase's copy pattern). */
 const LINK_COPIED_MS = 2000;
@@ -10,7 +25,9 @@ const LINK_COPIED_MS = 2000;
 /**
  * The shell the Buchungsseite and the Serienbuchungsseite share (spec "The
  * pages"): the five page states, the load / reload rule, "Zurück", "Link
- * kopieren" and the navbar tenant switch. A host provides
+ * kopieren", the navbar tenant switch, and the pages' shared hands - the
+ * PDF and iCal downloads with their toasts, the stale-screen reload after a
+ * refused transition, the date and currency formats. A host provides
  * `pageI18nPrefix` (the page's keys under it: `title`, `non-member`,
  * `not-found`, `error`), `resetEntity()` and `fetch()` - the request that
  * fills the page and throws on failure - and records `cameFromList` in its
@@ -139,6 +156,59 @@ export default {
       this.linkCopiedTimer = setTimeout(() => {
         this.linkCopied = false;
       }, LINK_COPIED_MS);
+    },
+    /**
+     * One PDF of a Dokumente group - receipt, invoice or cancellation
+     * receipt - fetched as a Blob over the routes of the booking it hangs on
+     * and saved under `name`, behind the snackbar; a failure toasts.
+     */
+    async downloadBookingDocument(bookingId, group, name) {
+      const operationId = ProcessingService.showSnackbar(
+        this.$t("booking.page.documents.download-progress")
+      );
+      try {
+        const response = await DOCUMENT_FETCHERS[group](bookingId, name);
+        saveBlob(new Blob([response.data], { type: "application/pdf" }), name);
+      } catch (error) {
+        // The request asked for a Blob, so the body is unpacked before it is read.
+        const unpacked = await unpackBlobErrorBody(error);
+        await this.addToast({
+          title: this.$t("booking.page.documents.download-error.title"),
+          message: getApiErrorMessage(
+            unpacked,
+            this.$t("booking.page.documents.download-error.message")
+          ),
+          type: "error",
+        });
+      } finally {
+        ProcessingService.hide(operationId);
+      }
+    },
+    /** Saves the iCal `request` answers under `filename`; a failure toasts as the list's does. */
+    async downloadCalendar(request, filename) {
+      try {
+        const response = await request();
+        saveBlob(
+          new Blob([response.data], { type: "text/calendar;charset=utf-8" }),
+          filename
+        );
+      } catch (error) {
+        await this.addToast(
+          ToastService.createToast("booking.ical.error", "error")
+        );
+      }
+    },
+    /** The module has toasted the message already; a stale screen reloads. */
+    onTransitionFailed({ refetch }) {
+      if (refetch) {
+        this.reload();
+      }
+    },
+    formatDateTime(value) {
+      return FormatService.dateTime(value);
+    },
+    formatCurrency(value) {
+      return FormatService.currency(value || 0);
     },
     toList() {
       this.$router.push({ name: "bookings" });

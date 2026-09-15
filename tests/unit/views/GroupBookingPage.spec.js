@@ -750,6 +750,20 @@ describe("GroupBookingPage", () => {
   });
 
   describe("the Bemerkungen", () => {
+    it("shows no pencil to a reader without the update right on every member", async () => {
+      BookingPermissionService.allowUpdate.mockReturnValue(false);
+      const { wrapper } = await mountLoaded(
+        series(["requested"], { internalComments: "Alt" })
+      );
+
+      expect(wrapper.find(".group-booking-page__comments").text()).toContain(
+        "Alt"
+      );
+      expect(wrapper.find(".group-booking-page__comment-edit").exists()).toBe(
+        false
+      );
+    });
+
     it("saves the internal comment through the series and reloads", async () => {
       ApiGroupBookingService.updateGroupBooking.mockResolvedValue({});
       const groupBooking = series(["requested"], {
