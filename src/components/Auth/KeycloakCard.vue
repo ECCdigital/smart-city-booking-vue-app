@@ -5,6 +5,7 @@ import { isBffAuthMode } from "@/services/auth/authMode";
 import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
+import { isSafeInternalRedirect } from "@/utils/safeRedirect";
 
 export default {
   name: "KeycloakCard",
@@ -142,9 +143,9 @@ export default {
         return;
       }
 
-      if (this.nextUrl) {
-        this.$router.push(this.nextUrl);
-        this.updateNextUrl(null);
+      const next = this.consumeNextUrl();
+      if (isSafeInternalRedirect(next, this.$router)) {
+        this.$router.push(next);
       } else {
         this.$router.push({ name: "dashboard" });
       }
@@ -261,12 +262,19 @@ export default {
       await keycloakService.logout(window.location.href);
     },
     back() {
-      if (this.nextUrl) {
-        this.$router.push(this.nextUrl);
-        this.updateNextUrl(null);
+      const next = this.consumeNextUrl();
+      if (isSafeInternalRedirect(next, this.$router)) {
+        this.$router.push(next);
       } else {
         this.$router.push({ name: "login" });
       }
+    },
+    /** Hands out the stored return target once; it is cleared either way. */
+    consumeNextUrl() {
+      const next = this.nextUrl;
+      this.nextUrl = null;
+      this.updateNextUrl(null);
+      return next;
     },
   },
   async mounted() {
