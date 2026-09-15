@@ -926,6 +926,71 @@
         "title": "Aktion nicht möglich",
         "message": "Diese Aktion ist im aktuellen Zustand der Serie nicht möglich."
       }
+    },
+    "page": {
+      "title": "Serienbuchung #{id}",
+      "non-member": {
+        "headline": "Kein Zugriff auf diesen Mandanten",
+        "sentence": "Diese Serienbuchung gehört zu einem Mandanten, dem Sie nicht angehören."
+      },
+      "not-found": {
+        "headline": "Serienbuchung nicht gefunden",
+        "sentence": "Diese Serienbuchung existiert nicht mehr."
+      },
+      "error": {
+        "headline": "Serienbuchung konnte nicht geladen werden"
+      },
+      "strip": {
+        "period": "Zeitraum",
+        "dates": "{count} Termine",
+        "download-ical": "Termine aller Buchungen herunterladen",
+        "customer": "Kunde",
+        "price": "Preis / Zahlungsstatus"
+      },
+      "members": {
+        "title": "Einzelbuchungen",
+        "number": "Nr.",
+        "period": "Zeitraum",
+        "object": "Objekt",
+        "state": "Zustand",
+        "price": "Preis",
+        "open": "Buchung öffnen"
+      },
+      "comments": {
+        "title": "Bemerkungen",
+        "internal": "Interne Bemerkung",
+        "none": "Kein Kommentar vorhanden",
+        "placeholder": "Kommentar eingeben...",
+        "edit": "Bearbeiten",
+        "save": "Speichern",
+        "cancel": "Abbrechen"
+      },
+      "payment": {
+        "title": "Zahlung",
+        "total": "Gesamtpreis",
+        "status": "Zahlungsstatus",
+        "method": "Zahlungsart",
+        "aggregated-invoice": "Sammelrechnung",
+        "aggregated-invoice-none": "Noch nicht erstellt",
+        "aggregated-invoice-issued": "Erstellt",
+        "not-invoice": "Keine Rechnungszahlung",
+        "mixed": "Unterschiedlich"
+      },
+      "documents": {
+        "title": "Dokumente",
+        "invoice-menu": "Sammelrechnung",
+        "invoice-send": "Erstellen & versenden",
+        "invoice-only": "Nur erstellen",
+        "invoice-resend": "Erneut erstellen & versenden",
+        "invoice-recreate": "Erneut nur erstellen",
+        "reprint": "Neu ausstellen"
+      },
+      "details": {
+        "title": "Details",
+        "number": "Nummer",
+        "created": "Erstellt am",
+        "count": "Anzahl Buchungen"
+      }
     }
   },
   "checkout": {

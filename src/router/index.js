@@ -22,6 +22,7 @@ import Tickets from "@/views/Bookables/Tickets/Tickets";
 import Bookings from "@/views/Bookings.vue";
 import BookingEditPage from "@/views/BookingEditPage.vue";
 import BookingPage from "@/views/BookingPage.vue";
+import GroupBookingPage from "@/views/GroupBookingPage.vue";
 import Settings from "@/views/Settings";
 import Coupons from "@/views/Coupons.vue";
 import Instances from "@/views/Management/Instances.vue";
@@ -223,6 +224,17 @@ const routes = [
     component: BookingPage,
     meta: {
       title: "Buchung",
+      requiresAuth: true,
+      interfaceName: "bookings",
+      tenantFromQuery: true,
+    },
+  },
+  {
+    path: "/group-bookings/:groupBookingId",
+    name: "group-booking-details",
+    component: GroupBookingPage,
+    meta: {
+      title: "Serienbuchung",
       requiresAuth: true,
       interfaceName: "bookings",
       tenantFromQuery: true,

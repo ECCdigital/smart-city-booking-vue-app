@@ -1,17 +1,13 @@
 <template>
   <AdminLayout scroll-body :title="pageTitle">
     <template #page-header>
-      <div class="booking-page__toolbar d-flex align-center flex-wrap mt-1">
-        <v-btn text small class="booking-page__back px-0" @click="goBack">
-          <v-icon left small>mdi-arrow-left</v-icon>
-          {{ $t("booking.page.back") }}
-        </v-btn>
-        <span class="mx-2 grey--text">·</span>
-        <span
-          class="booking-page__tenant text-body-2 grey--text text--darken-2"
-        >
-          {{ $t("booking.page.tenant", { name: tenantName }) }}
-        </span>
+      <BookingPageToolbar
+        :state="state"
+        :tenant-name="tenantName"
+        :link-copied="linkCopied"
+        @back="goBack"
+        @copy-link="copyLink"
+      >
         <template v-if="state === 'ready' && groupBooking">
           <span class="mx-2 grey--text">·</span>
           <v-chip
@@ -25,8 +21,7 @@
             {{ $t("booking.page.series-chip", { id: groupBooking.id }) }}
           </v-chip>
         </template>
-        <v-spacer />
-        <template v-if="state !== 'loading'">
+        <template #actions>
           <v-btn
             v-if="state === 'ready' && canUpdate"
             text
@@ -37,24 +32,8 @@
             <v-icon left small>mdi-pencil</v-icon>
             {{ $t("booking.page.edit") }}
           </v-btn>
-          <v-btn
-            outlined
-            small
-            class="booking-page__copy"
-            :color="linkCopied ? 'success' : undefined"
-            @click="copyLink"
-          >
-            <v-icon left small>
-              {{ linkCopied ? "mdi-check" : "mdi-link-variant" }}
-            </v-icon>
-            {{
-              linkCopied
-                ? $t("booking.page.link-copied")
-                : $t("booking.page.copy-link")
-            }}
-          </v-btn>
         </template>
-      </div>
+      </BookingPageToolbar>
     </template>
 
     <v-skeleton-loader
@@ -399,6 +378,7 @@
 <script>
 import AdminLayout from "@/layouts/Admin.vue";
 import BookingPageEmptyState from "@/components/Booking/BookingPageEmptyState.vue";
+import BookingPageToolbar from "@/components/Booking/BookingPageToolbar.vue";
 import BookingDocumentActions from "@/components/Booking/BookingDocumentActions.vue";
 import BookingAccessPoints from "@/components/Booking/BookingAccessPoints.vue";
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
@@ -411,6 +391,7 @@ import FormatService from "@/services/FormatService";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import ToastService from "@/services/ToastService";
+import bookingPageShell from "@/mixins/bookingPageShell";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
   getApiErrorMessage,
@@ -431,12 +412,7 @@ import {
   transitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
-import { isTenantMember } from "@/utils/tenantMembership";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
-import { mapActions, mapGetters } from "vuex";
-
-/** How long "Link kopiert" stays on the button (the codebase's copy pattern). */
-const LINK_COPIED_MS = 2000;
 
 /**
  * The Buchungsseite (CONTEXT.md): one booking at `/bookings/:bookingId`,
@@ -444,7 +420,8 @@ const LINK_COPIED_MS = 2000;
  * host of `BookingTransitions` (spec E3): the state as a headline over its
  * path with the state's transitions; every action on the page ends in
  * `reload()`, and so does a refused transition that says the screen is
- * stale (spec E5).
+ * stale (spec E5). The shell - states, toolbar, load / reload, "Link
+ * kopieren", the tenant switch - is `bookingPageShell`'s.
  */
 export default {
   name: "BookingPage",
@@ -454,41 +431,28 @@ export default {
     BookingAccessPoints,
     BookingDocumentActions,
     BookingPageEmptyState,
+    BookingPageToolbar,
     BookingPaymentLink,
     BookingStatusPath,
     BookingTransitions,
     CancellationRefundAudit,
   },
+  mixins: [bookingPageShell],
   data() {
     return {
-      state: "loading",
       booking: null,
       groupBooking: null,
-      error: null,
-      cameFromList: false,
-      linkCopied: false,
-      linkCopiedTimer: null,
-      tenantSwitchTimer: null,
     };
   },
   computed: {
-    ...mapGetters({
-      tenantId: "tenants/currentTenantId",
-      currentTenant: "tenants/currentTenant",
-    }),
+    pageI18nPrefix() {
+      return "booking.page";
+    },
     bookingId() {
       return this.$route.params.bookingId;
     },
-    /** The tenant the Buchungslink names; absent, the current tenant stands in. */
-    queryTenant() {
-      const tenant = this.$route.query?.tenant;
-      return typeof tenant === "string" && tenant !== "" ? tenant : null;
-    },
     pageTitle() {
       return this.$t("booking.page.title", { id: this.bookingId });
-    },
-    tenantName() {
-      return this.currentTenant?.name || this.tenantId;
     },
     canUpdate() {
       return (
@@ -564,99 +528,25 @@ export default {
     cancellationRefundAudit() {
       return getCancellationRefundAudit(this.booking);
     },
-    /**
-     * The backend answers 404 alike for gone and out of reach; only a caller
-     * whose Reichweite is *any* can be told the booking is gone.
-     */
-    notFoundSentence() {
-      return BookingPermissionService.allowReadAny()
-        ? this.$t("booking.page.not-found.sentence")
-        : this.$t("errors.not-found-or-forbidden.message");
-    },
-    errorSentence() {
-      return getApiErrorMessage(
-        this.error,
-        this.$t("errors.something-wrong.message")
-      );
-    },
-  },
-  watch: {
-    "$route.fullPath"() {
-      this.load();
-    },
-    /**
-     * A navbar switch leaves for the new tenant's list. A switch the
-     * middleware made on the way to another Buchungslink is not a reason to
-     * leave: then the URL names the new tenant. The middleware selects before
-     * the router confirms the route, and the guards after it only await the
-     * store, so the URL has settled by the next macrotask - the decision
-     * waits for it.
-     */
-    tenantId(newTenantId) {
-      clearTimeout(this.tenantSwitchTimer);
-      this.tenantSwitchTimer = setTimeout(() => {
-        if (newTenantId !== this.queryTenant) {
-          this.toList();
-        }
-      }, 0);
-    },
   },
   beforeRouteEnter(to, from, next) {
     next((vm) => {
       vm.cameFromList = from?.name === "bookings";
     });
   },
-  async mounted() {
-    await this.load();
-  },
-  beforeDestroy() {
-    clearTimeout(this.linkCopiedTimer);
-    clearTimeout(this.tenantSwitchTimer);
-  },
   methods: {
-    ...mapActions({ addToast: "toasts/add" }),
-    /**
-     * Non-member is decided before any request (spec "The five page states"):
-     * the backend would answer 404 alike, and the tenant id of the URL is the
-     * one thing the page can say about it.
-     */
-    async load() {
-      this.state = "loading";
-      this.error = null;
+    resetEntity() {
       this.booking = null;
       this.groupBooking = null;
-      if (this.queryTenant && !isTenantMember(this.queryTenant)) {
-        this.state = "non-member";
-        return;
-      }
-      await this.fetch();
-    },
-    /**
-     * The same fetch as `load()` after an action, with the body kept in
-     * place: the page refreshes rather than flickers through the skeleton.
-     */
-    async reload() {
-      await this.fetch();
     },
     async fetch() {
-      try {
-        const response = await ApiBookingService.getBooking(
-          this.bookingId,
-          undefined,
-          true
-        );
-        this.booking = response.data;
-        this.groupBooking = await this.loadGroupBooking();
-        this.state = "ready";
-      } catch (error) {
-        if (error?.response?.status === 404) {
-          this.state = "not-found";
-          return;
-        }
-        console.error(error);
-        this.error = error;
-        this.state = "error";
-      }
+      const response = await ApiBookingService.getBooking(
+        this.bookingId,
+        undefined,
+        true
+      );
+      this.booking = response.data;
+      this.groupBooking = await this.loadGroupBooking();
     },
     transition(action) {
       this.$refs.transitions.start(
@@ -690,25 +580,6 @@ export default {
         }
         return null;
       }
-    },
-    /**
-     * The Buchungslink is the address bar: the route with its `?tenant=`, as
-     * the openers write it and the middleware reads it.
-     */
-    async copyLink() {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-      } catch (error) {
-        await this.addToast(
-          ToastService.createToast("errors.something-wrong", "error")
-        );
-        return;
-      }
-      this.linkCopied = true;
-      clearTimeout(this.linkCopiedTimer);
-      this.linkCopiedTimer = setTimeout(() => {
-        this.linkCopied = false;
-      }, LINK_COPIED_MS);
     },
     toEditor() {
       this.$router.push({
@@ -782,16 +653,6 @@ export default {
     },
     formatCurrency(value) {
       return FormatService.currency(value || 0);
-    },
-    toList() {
-      this.$router.push({ name: "bookings" });
-    },
-    goBack() {
-      if (this.cameFromList) {
-        this.$router.back();
-      } else {
-        this.$router.push({ name: "bookings" });
-      }
     },
   },
   metaInfo() {

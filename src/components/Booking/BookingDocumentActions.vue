@@ -126,10 +126,8 @@
 </template>
 
 <script>
-import { mapActions } from "vuex";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
-import ToastService from "@/services/ToastService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import BookingDocuments from "@/components/Booking/BookingDocuments.vue";
 import GroupBookingCreateReceipt from "@/components/Booking/GroupBookingCreateReceipt.vue";
@@ -143,10 +141,7 @@ import {
   groupBookingStatus,
   isRejectedOrCancelled,
 } from "@/utils/bookingStatus";
-import {
-  getApiErrorMessage,
-  shouldRefetch,
-} from "@/services/api/apiErrorMessage";
+import documentProduction from "@/mixins/documentProduction";
 
 /**
  * The Dokumente block of a Buchungsseite with its producing actions beside
@@ -155,9 +150,9 @@ import {
  * only while every member is Bestätigt, with the single / aggregated choice
  * -, the "Rechnung" menu over the invoice provider, and the cancellation
  * receipt's "Neu ausstellen" at Abgelehnt / Storniert for `booking.reprint`.
- * The triggering button shows `loading`, an error stays as an alert inside
- * its group until a retry succeeds, a success toasts and asks the page to
- * `reload`.
+ * The feedback is `documentProduction`'s: the triggering button shows
+ * `loading`, an error stays as an alert inside its group until a retry
+ * succeeds, a success toasts and asks the page to `reload`.
  */
 export default {
   name: "BookingDocumentActions",
@@ -166,6 +161,7 @@ export default {
     GroupBookingCreateReceipt,
     GroupBookingCreateInvoice,
   },
+  mixins: [documentProduction],
   props: {
     booking: {
       type: Object,
@@ -247,8 +243,6 @@ export default {
     },
   },
   methods: {
-    ...mapActions({ addToast: "toasts/add" }),
-
     createReceipt() {
       if (this.canCreateGroupReceipt) {
         this.openAggregatedReceipt = true;
@@ -333,44 +327,13 @@ export default {
     },
 
     /**
-     * One producing action end to end: the call, the consistency check's
-     * 200 `{ success: false, errors }` (the first error's code picks the
-     * message), the thrown error (read centrally, reloaded when the screen
-     * is stale), and the events. An open aggregated-choice dialog closes as
-     * the call starts, so the answer lands in the group's alert, which stays
-     * until a retry succeeds.
+     * An open aggregated-choice dialog closes as the call starts, so the
+     * answer lands in the group's alert.
      */
-    async produce(group, { call, successKey, errorKey, errorMessage }) {
-      this.busy[group] = true;
+    produce(group, spec) {
       this.openAggregatedReceipt = false;
       this.openAggregatedInvoice = false;
-      try {
-        const response = await call();
-        if (response && response.success === false) {
-          this.errors[group] = errorMessage(response.errors?.[0]?.code);
-          await this.addToast(ToastService.createToast(errorKey, "error"));
-          return;
-        }
-        this.errors[group] = null;
-        await this.addToast(ToastService.createToast(successKey, "success"));
-        this.$emit("reload");
-      } catch (error) {
-        const message = getApiErrorMessage(
-          error,
-          this.$t(`${errorKey}.message`)
-        );
-        this.errors[group] = message;
-        await this.addToast({
-          title: this.$t(`${errorKey}.title`),
-          message,
-          type: "error",
-        });
-        if (shouldRefetch(error)) {
-          this.$emit("reload");
-        }
-      } finally {
-        this.busy[group] = false;
-      }
+      return this.produceDocument(group, spec);
     },
   },
 };

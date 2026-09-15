@@ -1,7 +1,7 @@
 <template>
   <div class="booking-documents">
     <div
-      v-for="group in groups"
+      v-for="group in shownGroups"
       :key="group.key"
       class="booking-documents__group"
       :class="`booking-documents__group--${group.key}`"
@@ -66,6 +66,7 @@ import FormatService from "@/services/FormatService";
  * one and a download icon per row. The producing action of a group goes into
  * its `<group>-action` slot, an error under its list into `<group>-footer`;
  * the block itself only lists and emits `download` with the group and item.
+ * `groups` narrows the block to some of the four, in the glossary's order.
  */
 const GROUP_KEYS = ["receipts", "invoices", "cancellations", "attachments"];
 const TYPE_OF_GROUP = {
@@ -82,18 +83,25 @@ export default {
       type: Array,
       default: () => [],
     },
+    /** The group keys to list; all four by default. */
+    groups: {
+      type: Array,
+      default: () => GROUP_KEYS,
+    },
   },
   computed: {
-    groups() {
+    shownGroups() {
       const items = Array.isArray(this.attachments) ? this.attachments : [];
-      return GROUP_KEYS.map((key) => ({
-        key,
-        items: items.filter((item) =>
-          key === "attachments"
-            ? !TYPED.includes(item?.type)
-            : item?.type === TYPE_OF_GROUP[key]
-        ),
-      }));
+      return GROUP_KEYS.filter((key) => this.groups.includes(key)).map(
+        (key) => ({
+          key,
+          items: items.filter((item) =>
+            key === "attachments"
+              ? !TYPED.includes(item?.type)
+              : item?.type === TYPE_OF_GROUP[key]
+          ),
+        })
+      );
     },
   },
   methods: {

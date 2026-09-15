@@ -51,6 +51,20 @@ describe("BookingDocuments", () => {
     });
   });
 
+  it("lists only the groups named in `groups`, in the glossary's order", () => {
+    const wrapper = mountComponent(BookingDocuments, {
+      propsData: {
+        attachments: [AGB, RECEIPT, INVOICE, CANCELLATION],
+        groups: ["cancellations", "invoices"],
+      },
+    });
+
+    const headings = groups(wrapper).wrappers.map((group) =>
+      group.find(".booking-documents__heading").text()
+    );
+    expect(headings).toEqual(["Rechnungen (1)", "Stornobelege (1)"]);
+  });
+
   it("names each document and emits `download` with its group and the item", async () => {
     const wrapper = mountComponent(BookingDocuments, {
       propsData: { attachments: [RECEIPT, INVOICE] },
