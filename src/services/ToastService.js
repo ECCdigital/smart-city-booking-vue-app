@@ -1,10 +1,10 @@
 import i18n from "../language/index";
 
 export default {
-  createToast(key, type, timeout = 5000) {
+  createToast(key, type, timeout = 5000, params) {
     return {
-      title: i18n.t(`${key}.title`),
-      message: i18n.t(`${key}.message`),
+      title: i18n.t(`${key}.title`, params),
+      message: i18n.t(`${key}.message`, params),
       type: type,
       timeout: timeout,
     };

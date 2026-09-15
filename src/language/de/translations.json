@@ -676,6 +676,12 @@
         "title": "Aktion nicht möglich",
         "message": "Diese Aktion ist im aktuellen Zustand der Buchung nicht möglich."
       }
+    },
+    "page": {
+      "tenant-switched": {
+        "title": "Mandant gewechselt",
+        "message": "Mandant zu „{name}“ gewechselt."
+      }
     }
   },
   "group-booking": {
