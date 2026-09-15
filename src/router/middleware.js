@@ -1,4 +1,5 @@
 import { requiresAuth } from "./middlewares/auth";
+import { selectTenantFromQuery } from "./middlewares/tenantFromQuery";
 import { checkGroupBooking } from "./middlewares/groupBooking";
 import {
   checkInterface,
@@ -14,9 +15,14 @@ import { finalAuthRedirect } from "./middlewares/finalAuth";
  * `requireTenant` has established a tenant and `finalAuthRedirect` has
  * confirmed the session. Moved earlier, it would turn users away whose tenant
  * or permissions are not loaded yet.
+ *
+ * `selectTenantFromQuery` sits directly after `requiresAuth`: a Buchungslink's
+ * `?tenant=` must be the current tenant before `requireTenant` and
+ * `requireInterfaceAccess` pass judgement.
  */
 export const middlewares = [
   requiresAuth,
+  selectTenantFromQuery,
   checkGroupBooking,
   checkInterface,
   requireTenant,
