@@ -1,3 +1,5 @@
+import i18n from "@/language/index";
+
 /**
  * Collects checkout-context custom field definitions from all bookable items.
  * Mirrors backend CustomFieldService.filterCheckoutDefinitions on merged bookable fields.
@@ -30,10 +32,7 @@ export function resolveBookingCustomFieldDefinitions(
   const fromItems = resolveBookingCheckoutCustomFields(bookableItems);
   const seen = new Set(fromItems.map((f) => f.id));
   const extra = (tenantFieldDefinitions || []).filter(
-    (f) =>
-      f?.id &&
-      !seen.has(f.id) &&
-      f?.usageOptions?.context === "checkout"
+    (f) => f?.id && !seen.has(f.id) && f?.usageOptions?.context === "checkout"
   );
   return [...fromItems, ...extra];
 }
@@ -90,4 +89,41 @@ export function validateRequiredCustomFields(definitions = [], values = []) {
   }
 
   return missing;
+}
+
+/**
+ * A booking's custom fields joined with their stored values, filled ones
+ * only - `false` and `0` count as filled, `null` and "" do not. What the
+ * Buchungsseite lists under "Benutzerdefinierte Felder".
+ */
+export function filledCustomFields(booking) {
+  const definitions = booking?.customFieldDefinitions || [];
+  const values = booking?.customFieldValues || [];
+  return definitions
+    .map((definition) => {
+      const stored = values.find((v) => v.fieldId === definition.id);
+      return { ...definition, rawValue: stored != null ? stored.value : null };
+    })
+    .filter(({ rawValue }) => {
+      if (rawValue === false || rawValue === 0) return true;
+      return rawValue != null && rawValue !== "";
+    });
+}
+
+/** The stored value of a filled custom field as the admin reads it. */
+export function formatCustomFieldValue(field) {
+  const value = field.rawValue;
+  if (field.inputType === "boolean") {
+    return i18n.t(
+      value ? "booking.page.custom-fields.yes" : "booking.page.custom-fields.no"
+    );
+  }
+  if (field.inputType === "select") {
+    const option = (field.options || []).find((o) => o.value === value);
+    return option?.caption ?? String(value);
+  }
+  if (field.inputType === "numeric") {
+    return Intl.NumberFormat("de-DE").format(value);
+  }
+  return String(value);
 }

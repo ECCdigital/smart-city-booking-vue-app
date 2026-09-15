@@ -681,6 +681,116 @@
       "tenant-switched": {
         "title": "Mandant gewechselt",
         "message": "Mandant zu „{name}“ gewechselt."
+      },
+      "title": "Buchung #{id}",
+      "back": "Zurück zu Buchungen",
+      "tenant": "Mandant: {name}",
+      "series-chip": "Teil der Serie #{id}",
+      "edit": "Bearbeiten",
+      "copy-link": "Link kopieren",
+      "link-copied": "Link kopiert",
+      "to-list": "Zur Buchungsübersicht",
+      "retry": "Erneut versuchen",
+      "non-member": {
+        "headline": "Kein Zugriff auf diesen Mandanten",
+        "sentence": "Diese Buchung gehört zu einem Mandanten, dem Sie nicht angehören."
+      },
+      "not-found": {
+        "headline": "Buchung nicht gefunden",
+        "sentence": "Diese Buchung existiert nicht mehr."
+      },
+      "error": {
+        "headline": "Buchung konnte nicht geladen werden"
+      },
+      "strip": {
+        "period": "Zeitraum",
+        "customer": "Kunde",
+        "price": "Preis / Zahlungsstatus"
+      },
+      "objects": {
+        "title": "Buchungsobjekte",
+        "object": "Objekt",
+        "type": "Art",
+        "amount": "Anzahl",
+        "unit-price": "Einzelpreis"
+      },
+      "customer": {
+        "title": "Kunde",
+        "name": "Name",
+        "company": "Firma",
+        "mail": "E-Mail",
+        "phone": "Telefon",
+        "street": "Straße",
+        "zip-code": "Postleitzahl",
+        "location": "Stadt"
+      },
+      "custom-fields": {
+        "title": "Benutzerdefinierte Felder",
+        "yes": "Ja",
+        "no": "Nein"
+      },
+      "comments": {
+        "title": "Bemerkungen",
+        "customer": "Bemerkung",
+        "internal": "Interne Bemerkung"
+      },
+      "payment": {
+        "title": "Zahlung",
+        "total": "Gesamtpreis",
+        "status": "Zahlungsstatus",
+        "method": "Zahlungsart",
+        "provider": "Anbieter",
+        "unknown": "Unbekannt",
+        "methods": {
+          "CASH": "Bar",
+          "TRANSFER": "Überweisung",
+          "CREDIT_CARD": "Kreditkarte",
+          "DEBIT_CARD": "EC-Karte",
+          "PAYPAL": "PayPal",
+          "OTHER": "Sonstiges",
+          "GIROPAY": "Giropay",
+          "APPLE_PAY": "Apple Pay",
+          "GOOGLE_PAY": "Google Pay",
+          "EPS": "EPS",
+          "IDEAL": "iDEAL",
+          "MAESTRO": "Maestro",
+          "PAYDIRECT": "paydirekt",
+          "SOFORT": "SOFORT-Überweisung",
+          "BLUECODE": "Bluecode"
+        },
+        "providers": {
+          "giroCockpit": "GiroCockpit (Online bezahlen)",
+          "pmPayment": "pmPayment (Online bezahlen)",
+          "invoice": "Rechnung",
+          "manual": "Manuelle Zahlung"
+        }
+      },
+      "documents": {
+        "title": "Dokumente",
+        "receipts": "Belege",
+        "invoices": "Rechnungen",
+        "cancellations": "Stornobelege",
+        "attachments": "Anhänge",
+        "none": "keine",
+        "issued-at": "Ausgestellt am {date}",
+        "accepted": "Gelesen und akzeptiert",
+        "not-accepted": "Nicht akzeptiert",
+        "download": "Herunterladen",
+        "download-progress": "Stelle Dokument bereit...",
+        "download-error": {
+          "title": "Fehler beim Herunterladen",
+          "message": "Das Dokument konnte nicht heruntergeladen werden."
+        }
+      },
+      "details": {
+        "title": "Details",
+        "number": "Nummer",
+        "created": "Angefragt am",
+        "cancellation-policy": "Storno-Regel",
+        "user-cancellable": "Selbststornierung erlaubt",
+        "admin-only": "Nur durch Administratoren",
+        "series": "Serie",
+        "no-series": "keine"
       }
     }
   },

@@ -21,6 +21,7 @@ import AccessPoints from "@/views/Management/AccessPoints.vue";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
 import Bookings from "@/views/Bookings.vue";
 import BookingEditPage from "@/views/BookingEditPage.vue";
+import BookingPage from "@/views/BookingPage.vue";
 import Settings from "@/views/Settings";
 import Coupons from "@/views/Coupons.vue";
 import Instances from "@/views/Management/Instances.vue";
@@ -214,6 +215,17 @@ const routes = [
       title: "Buchung bearbeiten",
       requiresAuth: true,
       interfaceName: "bookings",
+    },
+  },
+  {
+    path: "/bookings/:bookingId",
+    name: "booking-details",
+    component: BookingPage,
+    meta: {
+      title: "Buchung",
+      requiresAuth: true,
+      interfaceName: "bookings",
+      tenantFromQuery: true,
     },
   },
   {

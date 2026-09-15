@@ -114,4 +114,31 @@ describe("BookingPermissionService", () => {
       expect(BookingPermissionService.allowRead(own)).toBe(false);
     });
   });
+  /**
+   * `allowReadAny` is the Reichweite of CONTEXT.md: *any* for the instance
+   * owner, the tenant owner and `manageBookings.readAny`, *own* for every
+   * other member. It decides only how a 404 on the Buchungsseite is worded.
+   */
+  describe("allowReadAny", () => {
+    it("lets the instance owner and the tenant owner through", () => {
+      signIn({ instanceOwner: true });
+      expect(BookingPermissionService.allowReadAny()).toBe(true);
+
+      signIn({ tenants: [membership({}, { isOwner: true })] });
+      expect(BookingPermissionService.allowReadAny()).toBe(true);
+    });
+
+    it("lets readAny through, a member without it not", () => {
+      signIn({ tenants: [membership({ readAny: true })] });
+      expect(BookingPermissionService.allowReadAny()).toBe(true);
+
+      signIn({ tenants: [membership({ updateAny: true })] });
+      expect(BookingPermissionService.allowReadAny()).toBe(false);
+    });
+
+    it("returns false without a membership for the current tenant", () => {
+      signIn({ tenants: [membership({ readAny: true }, { tenantId: "x" })] });
+      expect(BookingPermissionService.allowReadAny()).toBe(false);
+    });
+  });
 });

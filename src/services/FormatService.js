@@ -42,6 +42,18 @@ export default {
       createDateTimeObject(date)
     );
   },
+  /**
+   * Date and time in one, "15.11.23, 00:13" - the admin's stamp on a booking.
+   * Takes a timestamp, an ISO string or a Date; unlike `date()` it does not
+   * read a bare "HH:MM", so it needs no lodash.
+   */
+  dateTime(date, locale = "de-DE") {
+    if (!date) return "";
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(date instanceof Date ? date : new Date(date));
+  },
   time(time, timeStyle = "short", locale = "de-DE") {
     if (!time) return "";
     return new Intl.DateTimeFormat(locale, { timeStyle }).format(
