@@ -167,32 +167,13 @@
       @transitioned="onTransitioned"
       @failed="onTransitionFailed"
     />
-    <v-dialog v-model="openBookingDialog" max-width="800px">
-      <BookingDetails
-        :booking="selectedBooking"
-        :group-booking="selectedGroupBooking"
-        @update="updateBooking"
-        @close="onCloseBookingDialog"
-        @download-ical="onDownloadIcal"
-      ></BookingDetails>
-    </v-dialog>
-    <v-dialog v-model="openGroupBookingDialog" max-width="1200px">
-      <div style="overflow: hidden">
-        <GroupBookingDetails
-          :group-booking="selectedGroupBooking"
-          @close="closeDialog('groupBooking')"
-          @update="updateGroupBookingView"
-          @download-ical="onDownloadGroupBookingIcal"
-        ></GroupBookingDetails>
-      </div>
-    </v-dialog>
     <GroupBookingDeleteConformationDialog
       v-if="selectedBooking.id"
       :booking-id="selectedBooking.id"
       :open="openDeleteGroupBookingDialog"
       :single-delete-disabled="isSelectedBookingHardDeleteBlocked"
       :group-delete-disabled="isSelectedGroupHardDeleteBlocked"
-      @close="closeDialog('deleteGroupBooking')"
+      @close="openDeleteGroupBookingDialog = false"
       @delete-single-booking="deleteBooking"
       @delete-group-booking="deleteGroupBooking"
     />
@@ -208,13 +189,11 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteConformationDialog.vue";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
-import BookingDetails from "@/components/Booking/BookingDetails.vue";
 import BookingOverviewCalendar from "@/components/Booking/BookingOverviewCalendar.vue";
 import BookingTable from "@/components/Booking/BookingTable.vue";
 import BookingKanban from "@/components/Booking/BookingKanban.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
-import GroupBookingDetails from "@/components/Booking/GroupBookingDetails.vue";
 import GroupBookingDeleteConformationDialog from "@/components/Booking/GroupBookingDeleteConformationDialog.vue";
 import ToastService from "@/services/ToastService";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
@@ -233,10 +212,8 @@ export default {
     BookingExportButton,
     ProcessingIndicator,
     GroupBookingDeleteConformationDialog,
-    GroupBookingDetails,
     BookingTable,
     BookingOverviewCalendar,
-    BookingDetails,
     BookingDeleteConformationDialog,
     BookingTransitions,
     AdminLayout,
@@ -274,11 +251,9 @@ export default {
         { text: "", value: "controls", sortable: false },
       ],
       openDeleteDialog: false,
-      openGroupBookingDialog: false,
       openDeleteGroupBookingDialog: false,
       selectedBooking: {},
       selectedGroupBooking: {},
-      openBookingDialog: false,
       currentView: "list",
       workflow: {},
     };
@@ -402,40 +377,6 @@ export default {
       }
       return bookings;
     },
-    async onDownloadGroupBookingIcal(bookingIds) {
-      const operationId = ProcessingService.showSnackbar(
-        "Termine werden heruntergeladen..."
-      );
-      try {
-        const response = await ApiBookingService.downloadGroupBookingIcal(
-          bookingIds
-        );
-
-        const blob = new Blob([response.data], {
-          type: "text/calendar;charset=utf-8",
-        });
-        const url = window.URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute(
-          "download",
-          `serienbuchung-${this.selectedGroupBooking.id}.ics`
-        );
-        document.body.appendChild(link);
-        link.click();
-
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } catch (error) {
-        await this.addToast(
-          ToastService.createToast("booking.ical.error", "error")
-        );
-      } finally {
-        ProcessingService.hide(operationId);
-      }
-    },
-
     /**
      * A menu raised a transition (spec E3): the module runs it against the
      * booking and, for a series member, its series and members.
@@ -513,25 +454,6 @@ export default {
           console.log(error);
         });
     },
-    async closeDialog(type) {
-      switch (type) {
-        case "delete":
-          this.openDeleteDialog = false;
-          break;
-        case "booking":
-          this.openBookingDialog = false;
-          break;
-        case "groupBooking":
-          await this.fetchGroupBookings();
-          this.openGroupBookingDialog = false;
-          break;
-        case "deleteGroupBooking":
-          this.openDeleteGroupBookingDialog = false;
-          break;
-        default:
-          break;
-      }
-    },
     async deleteBooking(bookingId) {
       const booking = this.api.bookings.find((item) => item.id === bookingId);
       if (!allowsAction(booking, "delete")) {
@@ -580,17 +502,17 @@ export default {
         await this.stopLoading("delete-booking");
       }
     },
+    /** "Details" leads to the Buchungsseite; `?tenant=` completes the Buchungslink. */
     onOpenBooking(bookingId) {
-      this.selectedBooking = Object.assign(
-        {},
-        this.api.bookings.find((booking) => booking.id === bookingId)
-      );
-      this.selectedGroupBooking = this.groupBookingOf(bookingId);
-      this.openBookingDialog = true;
+      this.$router.push({
+        name: "booking-details",
+        params: { bookingId },
+        query: { tenant: this.tenantId },
+      });
     },
     /**
      * The series a booking belongs to, with its members populated, so that
-     * the drawer can act on a member with its series (spec E3); `null` for
+     * `BookingTransitions` can act on a member with its series (spec E3); `null` for
      * a single booking.
      */
     groupBookingOf(bookingId) {
@@ -608,12 +530,13 @@ export default {
           .filter(Boolean),
       };
     },
+    /** "Gruppenbuchung" leads to the Serienbuchungsseite, with `?tenant=` as above. */
     onOpenGroupBooking(groupBookingId) {
-      const groupBooking = this.api.groupBookings.find(
-        (groupBooking) => groupBooking.id === groupBookingId
-      );
-      this.selectedGroupBooking = this.withMembers(groupBooking);
-      this.openGroupBookingDialog = true;
+      this.$router.push({
+        name: "group-booking-details",
+        params: { groupBookingId },
+        query: { tenant: this.tenantId },
+      });
     },
     onOpenEditBooking(bookingId) {
       this.$router.push({
@@ -641,43 +564,6 @@ export default {
       this.fetchBookings();
       this.fetchGroupBookings();
       this.openDeleteDialog = false;
-    },
-    onCloseBookingDialog() {
-      this.openBookingDialog = false;
-    },
-    /**
-     * The drawer asks for a reload after a transition, a reprint or a
-     * refused call that says the screen is stale (spec E5). A booking that
-     * is gone by then closes the drawer instead of showing an empty one.
-     */
-    async updateBooking(bookingId) {
-      await this.fetchBookings();
-      await this.fetchGroupBookings();
-      const booking = this.api.bookings.find((item) => item.id === bookingId);
-      if (!booking) {
-        this.openBookingDialog = false;
-        return;
-      }
-      this.selectedBooking = Object.assign({}, booking);
-      this.selectedGroupBooking = this.groupBookingOf(bookingId);
-    },
-    /** The series drawer's reload; a series gone by then closes the drawer, as `updateBooking` does. */
-    async updateGroupBookingView() {
-      const groupBookingId = this.selectedGroupBooking?.id;
-      if (!groupBookingId) return;
-
-      await this.fetchBookings();
-      await this.fetchGroupBookings();
-
-      const groupBooking = this.api.groupBookings.find(
-        (gb) => gb.id === groupBookingId
-      );
-      if (!groupBooking) {
-        this.openGroupBookingDialog = false;
-        return;
-      }
-
-      this.selectedGroupBooking = this.withMembers(groupBooking);
     },
     initializeFuse() {
       const options = {

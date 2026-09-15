@@ -94,8 +94,8 @@ export default {
     },
     /**
      * What a read of the accesses depends on: the booking, and its state -
-     * a booking released in the drawer is reloaded by `BookingDetails` under
-     * the same id, and only a confirmed booking has accesses to show. One key
+     * the Buchungsseite reloads a booking it released under the same id, and
+     * only a confirmed booking has accesses to show. One key
      * rather than two watchers, so a swap of the shown booking reads once.
      */
     accessSource() {
