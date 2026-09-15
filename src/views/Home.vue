@@ -196,21 +196,7 @@ import TenantCreate from "@/components/Tenant/TenantCreate.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import PendingTenantInvitations from "@/components/Tenant/PendingTenantInvitations.vue";
 import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
-
-function isSafeInternalRedirect(redirect, router) {
-  if (typeof redirect !== "string" || redirect.length < 2) {
-    return false;
-  }
-  if (!redirect.startsWith("/") || redirect.startsWith("//")) {
-    return false;
-  }
-  if (redirect.includes("\\")) {
-    return false;
-  }
-
-  const resolved = router.resolve(redirect);
-  return resolved.route.matched.length > 0;
-}
+import { isSafeInternalRedirect } from "@/utils/safeRedirect";
 
 export default {
   name: "HomeView",

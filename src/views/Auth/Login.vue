@@ -50,6 +50,7 @@ import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
 import LoginCard from "@/components/Auth/LoginCard.vue";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { isBffAuthMode } from "@/services/auth/authMode";
+import { isSafeInternalRedirect } from "@/utils/safeRedirect";
 
 export default {
   components: {
@@ -95,9 +96,10 @@ export default {
       updateNextUrl: "authStore/setNextUrl",
     }),
     signedIn() {
-      if (this.nextUrl) {
-        this.$router.push(this.nextUrl);
-        this.updateNextUrl(null);
+      const next = this.nextUrl;
+      this.updateNextUrl(null);
+      if (isSafeInternalRedirect(next, this.$router)) {
+        this.$router.push(next);
       } else {
         this.$router.push({ name: "dashboard" });
       }

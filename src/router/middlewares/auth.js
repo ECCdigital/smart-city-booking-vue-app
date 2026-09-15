@@ -16,11 +16,11 @@ export async function requiresAuth({ to, next }) {
       ToastService.createToast("session.expired", "error")
     );
     if (isBffAuthMode()) {
-      await endAdminSession({ redirect: true });
+      await endAdminSession({ redirect: true, next: to.fullPath });
       next(false);
       return;
     }
     await store.dispatch("user/delete");
-    next({ name: "login", query: { redirectUrl: to.name } });
+    next({ name: "login", query: { next: to.fullPath } });
   }
 }
