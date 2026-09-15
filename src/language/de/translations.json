@@ -499,7 +499,8 @@
         "rejected": "Ablehnungsgrund",
         "cancelled": "Stornierungsgrund",
         "required": "Begründung ist erforderlich"
-      }
+      },
+      "back-to-booking": "Zurück zur Buchung"
     },
     "copyId": {
       "success": {
@@ -676,6 +677,137 @@
         "title": "Aktion nicht möglich",
         "message": "Diese Aktion ist im aktuellen Zustand der Buchung nicht möglich."
       }
+    },
+    "page": {
+      "tenant-switched": {
+        "title": "Mandant gewechselt",
+        "message": "Mandant zu „{name}“ gewechselt."
+      },
+      "title": "Buchung #{id}",
+      "back": "Zurück zu Buchungen",
+      "tenant": "Mandant: {name}",
+      "series-chip": "Teil der Serie #{id}",
+      "edit": "Bearbeiten",
+      "copy-link": "Link kopieren",
+      "link-copied": "Link kopiert",
+      "to-list": "Zur Buchungsübersicht",
+      "retry": "Erneut versuchen",
+      "non-member": {
+        "headline": "Kein Zugriff auf diesen Mandanten",
+        "sentence": "Diese Buchung gehört zu einem Mandanten, dem Sie nicht angehören."
+      },
+      "not-found": {
+        "headline": "Buchung nicht gefunden",
+        "sentence": "Diese Buchung existiert nicht mehr."
+      },
+      "error": {
+        "headline": "Buchung konnte nicht geladen werden"
+      },
+      "strip": {
+        "period": "Zeitraum",
+        "download-ical": "Termin herunterladen",
+        "customer": "Kunde",
+        "price": "Preis / Zahlungsstatus"
+      },
+      "objects": {
+        "title": "Buchungsobjekte",
+        "object": "Objekt",
+        "type": "Art",
+        "amount": "Anzahl",
+        "unit-price": "Einzelpreis"
+      },
+      "customer": {
+        "title": "Kunde",
+        "name": "Name",
+        "company": "Firma",
+        "mail": "E-Mail",
+        "phone": "Telefon",
+        "street": "Straße",
+        "zip-code": "Postleitzahl",
+        "location": "Stadt"
+      },
+      "custom-fields": {
+        "title": "Benutzerdefinierte Felder",
+        "yes": "Ja",
+        "no": "Nein"
+      },
+      "comments": {
+        "title": "Bemerkungen",
+        "customer": "Bemerkung",
+        "internal": "Interne Bemerkung"
+      },
+      "payment": {
+        "title": "Zahlung",
+        "total": "Gesamtpreis",
+        "status": "Zahlungsstatus",
+        "method": "Zahlungsart",
+        "provider": "Anbieter",
+        "unknown": "Unbekannt",
+        "link": "Zahlungslink",
+        "link-pending": "Die Zahlung steht noch aus.",
+        "link-copy": "Link kopieren",
+        "link-copied": "Kopiert",
+        "link-open": "Link öffnen",
+        "link-single": "Nur diese Buchung",
+        "link-series": "Gesamte Serie ({count} Buchungen)",
+        "methods": {
+          "CASH": "Bar",
+          "TRANSFER": "Überweisung",
+          "CREDIT_CARD": "Kreditkarte",
+          "DEBIT_CARD": "EC-Karte",
+          "PAYPAL": "PayPal",
+          "OTHER": "Sonstiges",
+          "GIROPAY": "Giropay",
+          "APPLE_PAY": "Apple Pay",
+          "GOOGLE_PAY": "Google Pay",
+          "EPS": "EPS",
+          "IDEAL": "iDEAL",
+          "MAESTRO": "Maestro",
+          "PAYDIRECT": "paydirekt",
+          "SOFORT": "SOFORT-Überweisung",
+          "BLUECODE": "Bluecode"
+        },
+        "providers": {
+          "giroCockpit": "GiroCockpit (Online bezahlen)",
+          "pmPayment": "pmPayment (Online bezahlen)",
+          "invoice": "Rechnung",
+          "manual": "Manuelle Zahlung"
+        }
+      },
+      "documents": {
+        "title": "Dokumente",
+        "receipts": "Belege",
+        "invoices": "Rechnungen",
+        "cancellations": "Stornobelege",
+        "attachments": "Anhänge",
+        "none": "keine",
+        "issued-at": "Ausgestellt am {date}",
+        "accepted": "Gelesen und akzeptiert",
+        "not-accepted": "Nicht akzeptiert",
+        "download": "Herunterladen",
+        "create-receipt": "Beleg erstellen",
+        "invoice-menu": "Rechnung",
+        "invoice-send": "Erstellen & versenden",
+        "invoice-only": "Nur erstellen",
+        "invoice-resend": "Erneut erstellen & versenden",
+        "invoice-recreate": "Erneut nur erstellen",
+        "reprint": "Neu ausstellen",
+        "download-progress": "Stelle Dokument bereit...",
+        "download-error": {
+          "title": "Fehler beim Herunterladen",
+          "message": "Das Dokument konnte nicht heruntergeladen werden."
+        }
+      },
+      "details": {
+        "title": "Details",
+        "number": "Nummer",
+        "created": "Angefragt am",
+        "cancellation-policy": "Storno-Regel",
+        "user-cancellable": "Selbststornierung erlaubt",
+        "admin-only": "Nur durch Administratoren",
+        "series": "Serie",
+        "no-series": "keine"
+      }
     }
   },
   "group-booking": {
@@ -794,6 +926,71 @@
       "not-allowed": {
         "title": "Aktion nicht möglich",
         "message": "Diese Aktion ist im aktuellen Zustand der Serie nicht möglich."
+      }
+    },
+    "page": {
+      "title": "Serienbuchung #{id}",
+      "non-member": {
+        "headline": "Kein Zugriff auf diesen Mandanten",
+        "sentence": "Diese Serienbuchung gehört zu einem Mandanten, dem Sie nicht angehören."
+      },
+      "not-found": {
+        "headline": "Serienbuchung nicht gefunden",
+        "sentence": "Diese Serienbuchung existiert nicht mehr."
+      },
+      "error": {
+        "headline": "Serienbuchung konnte nicht geladen werden"
+      },
+      "strip": {
+        "period": "Zeitraum",
+        "dates": "{count} Termine",
+        "download-ical": "Termine aller Buchungen herunterladen",
+        "customer": "Kunde",
+        "price": "Preis / Zahlungsstatus"
+      },
+      "members": {
+        "title": "Einzelbuchungen",
+        "number": "Nr.",
+        "period": "Zeitraum",
+        "object": "Objekt",
+        "state": "Zustand",
+        "price": "Preis",
+        "open": "Buchung öffnen"
+      },
+      "comments": {
+        "title": "Bemerkungen",
+        "internal": "Interne Bemerkung",
+        "none": "Kein Kommentar vorhanden",
+        "placeholder": "Kommentar eingeben...",
+        "edit": "Bearbeiten",
+        "save": "Speichern",
+        "cancel": "Abbrechen"
+      },
+      "payment": {
+        "title": "Zahlung",
+        "total": "Gesamtpreis",
+        "status": "Zahlungsstatus",
+        "method": "Zahlungsart",
+        "aggregated-invoice": "Sammelrechnung",
+        "aggregated-invoice-none": "Noch nicht erstellt",
+        "aggregated-invoice-issued": "Erstellt",
+        "not-invoice": "Keine Rechnungszahlung",
+        "mixed": "Unterschiedlich"
+      },
+      "documents": {
+        "title": "Dokumente",
+        "invoice-menu": "Sammelrechnung",
+        "invoice-send": "Erstellen & versenden",
+        "invoice-only": "Nur erstellen",
+        "invoice-resend": "Erneut erstellen & versenden",
+        "invoice-recreate": "Erneut nur erstellen",
+        "reprint": "Neu ausstellen"
+      },
+      "details": {
+        "title": "Details",
+        "number": "Nummer",
+        "created": "Erstellt am",
+        "count": "Anzahl Buchungen"
       }
     }
   },

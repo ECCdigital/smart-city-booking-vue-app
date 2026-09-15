@@ -7,7 +7,7 @@ class BookingPermissionService {
   }
 
   static isInstanceOwner() {
-    return user.state.data.permissions.instanceOwner
+    return user.state.data.permissions.instanceOwner;
   }
 
   static allowCreate() {
@@ -17,7 +17,7 @@ class BookingPermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return permissions.manageBookings.create;
   }
@@ -29,7 +29,7 @@ class BookingPermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return (
       permissions.manageBookings.updateAny ||
@@ -57,7 +57,12 @@ class BookingPermissionService {
     );
   }
 
-  static allowAuditExport() {
+  /**
+   * The Reichweite of CONTEXT.md: *any* for the instance owner, the tenant
+   * owner and `manageBookings.readAny` at the current tenant, *own* for every
+   * other member. The Buchungsseite words a 404 by it.
+   */
+  static allowReadAny() {
     if (BookingPermissionService.isInstanceOwner()) return true;
     const tenantId = store.getters["tenants/currentTenantId"];
     const permissions = user.state.data.permissions.tenants.find(
@@ -69,6 +74,10 @@ class BookingPermissionService {
     return !!permissions.manageBookings?.readAny;
   }
 
+  static allowAuditExport() {
+    return BookingPermissionService.allowReadAny();
+  }
+
   static allowDelete(booking) {
     if (BookingPermissionService.isInstanceOwner()) return true;
     const tenantId = store.getters["tenants/currentTenantId"];
@@ -76,7 +85,7 @@ class BookingPermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return (
       permissions.manageBookings.deleteAny ||

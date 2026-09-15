@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   collectGroupCancellationReceipts,
   collectGroupInvoices,
+  collectGroupReceipts,
 } from "@/utils/groupBookingInvoices";
 
 /**
@@ -49,6 +50,58 @@ describe("collectGroupCancellationReceipts", () => {
     expect(collectGroupCancellationReceipts(members)).toHaveLength(1);
     expect(collectGroupInvoices(members)).toEqual([
       { ...invoice, bookingId: "bk-1" },
+    ]);
+  });
+});
+
+describe("collectGroupReceipts", () => {
+  const aggregated = {
+    type: "receipt",
+    title: "beleg-serie.pdf",
+    timeCreated: 1_700_000_000_000,
+  };
+
+  it("lists the aggregated receipt once and a member's own beside it, newest first", () => {
+    const own = {
+      type: "receipt",
+      title: "beleg-bk-2.pdf",
+      timeCreated: 1_700_000_100_000,
+    };
+    const receipts = collectGroupReceipts([
+      { id: "bk-1", attachments: [aggregated] },
+      { id: "bk-2", attachments: [aggregated, own] },
+    ]);
+
+    expect(receipts.map((r) => [r.title, r.bookingId])).toEqual([
+      ["beleg-bk-2.pdf", "bk-2"],
+      ["beleg-serie.pdf", "bk-1"],
+    ]);
+  });
+
+  it("lists an untitled receipt of each member, none swallowed by the other", () => {
+    const receipts = collectGroupReceipts([
+      { id: "bk-1", attachments: [{ type: "receipt", timeCreated: 1 }] },
+      { id: "bk-2", attachments: [{ type: "receipt", timeCreated: 2 }] },
+    ]);
+
+    expect(receipts.map((r) => r.bookingId)).toEqual(["bk-2", "bk-1"]);
+  });
+
+  it("leaves invoices and cancellation receipts to their own lists", () => {
+    const members = [
+      {
+        id: "bk-1",
+        attachments: [
+          aggregated,
+          { type: "invoice", name: "re-1.pdf" },
+          { type: "cancellation", title: "storno.pdf" },
+        ],
+      },
+      null,
+    ];
+
+    expect(collectGroupReceipts(members).map((r) => r.title)).toEqual([
+      "beleg-serie.pdf",
     ]);
   });
 });

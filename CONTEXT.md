@@ -33,3 +33,29 @@ _Avoid_: style, span, mark (TipTap's word, not the domain's)
 
 **Paragraph alignment**:
 A per-paragraph override of the Block's alignment inside rich text.
+
+### Bookings
+
+**Buchungslink** (admin: „Link kopieren“):
+The URL of a booking page or group booking page that one admin hands to another. It names the booking and the tenant it belongs to, so the recipient lands on the same page in the same tenant; a recipient who is not a member of that tenant sees an explanation on the page, never a redirect.
+_Avoid_: deep link (the browser mechanism, not the thing shared), Zahlungslink (that is the customer-facing payment URL, a different link)
+
+**Dokumente** (admin: „Dokumente“):
+The files that belong to a booking or group booking, in four groups: Belege (receipts), Rechnungen (invoices), Stornobelege (cancellation receipts) and Anhänge (other attachments). The actions that produce a document belong to its group.
+_Avoid_: Anhänge for the whole set (that is only the fourth group)
+
+**Buchungsseite** (admin: „Buchung #…“):
+The page at `/bookings/:bookingId?tenant=…` that shows one booking and every action on it. Replaces the former details dialog; one surface per booking.
+_Avoid_: Buchungsdetails (the dialog's title, retired), Drawer
+
+**Serienbuchungsseite** (admin: „Serienbuchung #…“):
+The page at `/group-bookings/:groupBookingId?tenant=…` that shows one series with its members. Replaces the former group booking dialog.
+_Avoid_: Gruppenbuchungsseite (the code says group booking, the screen says Serienbuchung)
+
+**Mitglied** (of a tenant):
+An admin whose permissions list the tenant, or an instance owner for whom the tenant appears in the loaded tenant list. The one fact about access the client can know without asking the server; decides the non-member state of a Buchungsseite.
+_Avoid_: berechtigt (that is Reichweite, a different question)
+
+**Reichweite**:
+How far an admin's read on bookings reaches at the current tenant: *any* (instance owner, tenant owner, `manageBookings.readAny`) or *own* (every other member). Decides only how a 404 is worded on a Buchungsseite, since the backend answers 404 alike for gone and out of reach.
+_Avoid_: Rolle

@@ -118,11 +118,12 @@ async function mountBookings({
       },
     },
   });
+  const push = vi.fn(() => Promise.resolve());
   const wrapper = mountComponent(Bookings, {
     store,
     mocks: {
       $route: { query: {} },
-      $router: { replace: vi.fn(() => Promise.resolve()) },
+      $router: { push, replace: vi.fn(() => Promise.resolve()) },
     },
   });
   await flushPromises();
@@ -132,6 +133,7 @@ async function mountBookings({
   return {
     wrapper,
     store,
+    push,
     /** How often list and group list were reloaded since mounting. */
     reloads: () => ({
       list: ApiBookingService.getBookings.mock.calls.length - listLoads,
@@ -431,6 +433,51 @@ describe("Bookings", () => {
       await chooseType(wrapper, "Einzel");
 
       expect(await filterMenuIsOpen(wrapper)).toBe(true);
+    });
+  });
+
+  /**
+   * The openers lead to the Buchungsseite and the Serienbuchungsseite (spec
+   * "Openers and the retired dialogs"): every push carries `?tenant=` so the
+   * address bar always shows the complete Buchungslink.
+   */
+  describe("the openers", () => {
+    it("opens the Buchungsseite with the tenant from Details ansehen", async () => {
+      const { wrapper, push } = await mountBookings({});
+
+      await clickRowMenuEntry(wrapper, "Details ansehen");
+
+      expect(push).toHaveBeenCalledWith({
+        name: "booking-details",
+        params: { bookingId: "bk-1" },
+        query: { tenant: "tenant-1" },
+      });
+    });
+
+    it("opens the Serienbuchungsseite with the tenant from the series chip", async () => {
+      const { wrapper, push } = await mountBookings({
+        groupBookings: [{ id: "grp-1", bookingIds: ["bk-1"] }],
+      });
+
+      await wrapper
+        .findAll("td .v-chip")
+        .wrappers.find((chip) => chip.text().trim() === "grp-1")
+        .trigger("click");
+      await wrapper.vm.$nextTick();
+
+      expect(push).toHaveBeenCalledWith({
+        name: "group-booking-details",
+        params: { groupBookingId: "grp-1" },
+        query: { tenant: "tenant-1" },
+      });
+    });
+
+    it("renders no details dialog", async () => {
+      const { wrapper } = await mountBookings({});
+
+      await clickRowMenuEntry(wrapper, "Details ansehen");
+
+      expect(document.querySelector(".v-dialog--active")).toBeNull();
     });
   });
 

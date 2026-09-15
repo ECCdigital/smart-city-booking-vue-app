@@ -55,3 +55,11 @@ export function collectGroupCancellationReceipts(bookings = []) {
     (attachment) => attachment.title ?? attachment
   );
 }
+
+export function collectGroupReceipts(bookings = []) {
+  return collectGroupAttachments(
+    bookings,
+    "receipt",
+    (attachment) => attachment.title ?? attachment
+  );
+}

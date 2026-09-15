@@ -86,11 +86,29 @@ export function broadcastSessionEnded() {
 }
 
 /**
+ * `?next=` for the login redirect so the user lands back where they were
+ * going. A caller inside a navigation guard names the target itself (the
+ * address bar still shows the route being left); otherwise the current
+ * location stands, with the router publicPath stripped because `Login.vue`
+ * pushes the value onto the router, which speaks app paths. The app root
+ * carries nothing: login falls back to the dashboard anyway.
+ * @param {string} [next] app path incl. query
+ */
+function loginReturnQuery(next) {
+  const target =
+    next ||
+    `${stripBasePath(window.location.pathname)}${window.location.search || ""}`;
+  if (!target || target === "/") return "";
+  return `?next=${encodeURIComponent(target)}`;
+}
+
+/**
  * Clear client auth state and hard-redirect to login when needed.
  * Redirect is synchronous so bootstrap cannot keep mounting the SPA.
- * @param {{ redirect?: boolean }} [options]
+ * @param {{ redirect?: boolean, next?: string }} [options] `next`: the app
+ *   path (incl. query) to return to after login; defaults to the current one
  */
-export async function endAdminSession({ redirect = true } = {}) {
+export async function endAdminSession({ redirect = true, next } = {}) {
   if (endingSession) return;
   endingSession = true;
 
@@ -106,7 +124,7 @@ export async function endAdminSession({ redirect = true } = {}) {
     // Redirect first — do not wait on dynamic imports / store cleanup
     if (redirect && typeof window !== "undefined" && !isPublicAuthPath()) {
       const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
-      window.location.replace(`${base}/login`);
+      window.location.replace(`${base}/login${loginReturnQuery(next)}`);
     }
 
     broadcastSessionEnded();

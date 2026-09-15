@@ -1,5 +1,18 @@
 <template>
-  <AdminLayout scroll-body>
+  <AdminLayout scroll-body :title="pageTitle" class="booking-edit-page">
+    <template #page-header>
+      <div class="booking-page__toolbar d-flex align-center flex-wrap mt-1">
+        <v-btn text small class="booking-edit-page__back px-0" @click="goBack">
+          <v-icon left small>mdi-arrow-left</v-icon>
+          {{ backLabel }}
+        </v-btn>
+        <span class="mx-2 grey--text">·</span>
+        <span class="text-body-2 grey--text text--darken-2">
+          {{ $t("booking.page.tenant", { name: tenantName }) }}
+        </span>
+      </div>
+    </template>
+
     <v-skeleton-loader v-if="loading" type="article" />
 
     <template v-else-if="ready">
@@ -14,7 +27,7 @@
         :group-booking="groupBooking"
         @saved="onSaved"
         @reload="reloadBooking"
-        @cancel="goBack"
+        @cancel="leave"
       />
     </template>
   </AdminLayout>
@@ -30,6 +43,7 @@ import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import { createEmptyBooking } from "@/utils/bookingForm";
+import { bookingPageRoute } from "@/utils/bookingPageRoutes";
 import { mapGetters } from "vuex";
 
 export default {
@@ -49,7 +63,17 @@ export default {
   computed: {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
+      currentTenant: "tenants/currentTenant",
     }),
+    tenantName() {
+      return this.currentTenant?.name || this.tenantId;
+    },
+    /** Editing leads back to the booking's page; creating, to the list. */
+    backLabel() {
+      return this.isCreate
+        ? this.$t("booking.page.back")
+        : this.$t("booking.edit.back-to-booking");
+    },
     isCreate() {
       return this.$route.name === "booking-create";
     },
@@ -79,8 +103,20 @@ export default {
     goBack() {
       this.$router.push({ name: "bookings" });
     },
+    /**
+     * Leaving on purpose - "Zurück", "Abbrechen", a save - returns to the
+     * booking's page; a booking that failed to load still leaves for the
+     * list through `goBack`.
+     */
+    leave() {
+      if (this.isCreate) {
+        this.goBack();
+        return;
+      }
+      this.$router.push(bookingPageRoute(this.bookingId, this.tenantId));
+    },
     onSaved() {
-      this.goBack();
+      this.leave();
     },
     /**
      * Refetch the booking after a transition the backend refused with 409 or
@@ -179,11 +215,7 @@ export default {
 </script>
 
 <style scoped>
-.booking-edit-back {
-  min-width: 0 !important;
-  height: auto !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+.booking-edit-page__back {
   letter-spacing: normal;
   text-transform: none;
 }
