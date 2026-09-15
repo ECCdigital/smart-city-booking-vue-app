@@ -1,5 +1,5 @@
 <template>
-  <AdminLayout scroll-body :title="pageTitle">
+  <AdminLayout scroll-body :title="pageTitle" class="booking-page">
     <template #page-header>
       <BookingPageToolbar
         :state="state"
@@ -70,301 +70,274 @@
     />
 
     <div v-else-if="state === 'ready'" class="booking-page__body">
-      <BookingStatusPath
-        class="mb-4"
-        :status="booking.status"
-        :path="path"
-        :actions="actions"
-        @action="transition"
-      >
-        <template v-if="path.end && path.end.reason" #reason>
-          <div class="text-caption font-weight-bold error--text">
-            {{ $t(`booking.edit.reason.${path.end.status}`) }}
-          </div>
-          <div class="text-body-2">{{ path.end.reason }}</div>
-        </template>
-      </BookingStatusPath>
+      <!-- Main column -->
+      <div class="booking-page__main">
+        <BookingStatusPath
+          class="mb-4"
+          :status="booking.status"
+          :path="path"
+          :actions="actions"
+          @action="transition"
+        >
+          <template v-if="path.end && path.end.reason" #reason>
+            <div class="text-caption font-weight-bold error--text">
+              {{ $t(`booking.edit.reason.${path.end.status}`) }}
+            </div>
+            <div class="text-body-2">{{ path.end.reason }}</div>
+          </template>
+        </BookingStatusPath>
 
-      <v-card outlined class="booking-page__strip mb-4">
-        <v-row no-gutters>
-          <v-col cols="12" md="4" class="booking-page__fact pa-4">
-            <div class="d-flex align-center justify-space-between">
-              <div class="booking-page__fact-label text-overline">
-                <v-icon x-small class="mr-1">mdi-calendar-range</v-icon>
-                {{ $t("booking.page.strip.period") }}
-              </div>
-              <v-btn
-                v-if="hasCalendarEntry"
-                icon
-                x-small
-                class="booking-page__ical"
-                :title="$t('booking.page.strip.download-ical')"
-                @click="downloadIcal"
+        <v-card
+          v-if="objects.length > 0"
+          outlined
+          class="booking-page__objects"
+        >
+          <v-card-text>
+            <div class="booking-caption">
+              {{ $t("booking.page.objects.title") }}
+            </div>
+            <div class="booking-rows">
+              <div
+                v-for="(item, index) in objects"
+                :key="index"
+                class="booking-row booking-page__object"
               >
-                <v-icon small>mdi-calendar-export</v-icon>
-              </v-btn>
+                <div class="booking-row__main">
+                  <div class="booking-row__title">
+                    {{ item._bookableUsed?.title || "–" }}
+                  </div>
+                  <div class="booking-row__subtitle">
+                    {{ objectType(item) }}
+                  </div>
+                </div>
+                <div class="booking-row__aside">
+                  <span class="text--secondary">{{ item.amount }} ×</span>
+                  <span>{{ formatCurrency(item.userGrossPriceEur) }}</span>
+                </div>
+              </div>
             </div>
-            <div class="text-subtitle-1 font-weight-bold">{{ period }}</div>
-          </v-col>
-          <v-col cols="12" md="4" class="booking-page__fact pa-4">
-            <div class="booking-page__fact-label text-overline">
-              <v-icon x-small class="mr-1">mdi-account-outline</v-icon>
-              {{ $t("booking.page.strip.customer") }}
-            </div>
-            <div class="text-subtitle-1 font-weight-bold">
-              {{ booking.name || "–" }}
-            </div>
-            <div v-if="booking.mail" class="text-body-2 grey--text">
-              {{ booking.mail }}
-            </div>
-          </v-col>
-          <v-col cols="12" md="4" class="booking-page__fact pa-4">
-            <div class="booking-page__fact-label text-overline">
-              <v-icon x-small class="mr-1">mdi-currency-eur</v-icon>
-              {{ $t("booking.page.strip.price") }}
-            </div>
-            <div class="text-subtitle-1 font-weight-bold">
-              {{ formatCurrency(booking.priceEur) }}
-            </div>
-            <div class="text-body-2 grey--text">{{ paymentStatus }}</div>
-          </v-col>
-        </v-row>
-      </v-card>
+          </v-card-text>
+        </v-card>
 
-      <v-row>
-        <v-col cols="12" lg="8">
-          <v-card
-            v-if="objects.length > 0"
-            outlined
-            class="booking-page__objects mb-4"
-          >
-            <div class="booking-page__block-title">
-              <v-icon small class="mr-2">mdi-package-variant</v-icon>
-              {{ $t("booking.page.objects.title") }} ({{ objects.length }})
-            </div>
-            <v-simple-table dense>
-              <thead>
-                <tr>
-                  <th>{{ $t("booking.page.objects.object") }}</th>
-                  <th>{{ $t("booking.page.objects.type") }}</th>
-                  <th class="text-right">
-                    {{ $t("booking.page.objects.amount") }}
-                  </th>
-                  <th class="text-right">
-                    {{ $t("booking.page.objects.unit-price") }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(item, index) in objects" :key="index">
-                  <td>{{ item._bookableUsed?.title || "–" }}</td>
-                  <td>
-                    <BookableTypeChip
-                      v-if="item._bookableUsed?.type"
-                      :type="item._bookableUsed.type"
-                    />
-                  </td>
-                  <td class="text-right">{{ item.amount }}</td>
-                  <td class="text-right">
-                    {{ formatCurrency(item.userGrossPriceEur) }}
-                  </td>
-                </tr>
-              </tbody>
-            </v-simple-table>
-          </v-card>
+        <BookingAccessPoints :booking="booking" />
 
-          <BookingAccessPoints :booking="booking" class="mb-4" />
-
-          <v-card
-            v-if="customerFields.length > 0"
-            outlined
-            class="booking-page__customer mb-4"
-          >
-            <div class="booking-page__block-title">
-              <v-icon small class="mr-2">mdi-account-outline</v-icon>
+        <v-card
+          v-if="customerFields.length > 0"
+          outlined
+          class="booking-page__customer"
+        >
+          <v-card-text>
+            <div class="booking-caption">
               {{ $t("booking.page.customer.title") }}
             </div>
-            <div class="booking-page__grid pa-4">
+            <div class="booking-facts booking-facts--grid">
               <div
                 v-for="field in customerFields"
                 :key="field.key"
-                class="booking-page__kv"
+                class="booking-fact"
               >
-                <div class="text-caption grey--text">
+                <span class="booking-fact__label">
                   {{ $t(`booking.page.customer.${field.key}`) }}
-                </div>
-                <div class="text-body-2">{{ field.value }}</div>
+                </span>
+                <span class="booking-fact__value">{{ field.value }}</span>
               </div>
             </div>
-          </v-card>
+          </v-card-text>
+        </v-card>
 
-          <v-card
-            v-if="customFields.length > 0"
-            outlined
-            class="booking-page__custom-fields mb-4"
-          >
-            <div class="booking-page__block-title">
-              <v-icon small class="mr-2">mdi-form-textbox</v-icon>
+        <v-card
+          v-if="customFields.length > 0"
+          outlined
+          class="booking-page__custom-fields"
+        >
+          <v-card-text>
+            <div class="booking-caption">
               {{ $t("booking.page.custom-fields.title") }}
             </div>
-            <div class="booking-page__grid pa-4">
+            <div class="booking-facts booking-facts--grid">
               <div
                 v-for="field in customFields"
                 :key="field.id"
-                class="booking-page__kv"
+                class="booking-fact"
               >
-                <div class="text-caption grey--text">{{ field.caption }}</div>
-                <div class="text-body-2">
+                <span class="booking-fact__label">{{ field.caption }}</span>
+                <span class="booking-fact__value">
                   {{ formatCustomFieldValue(field) }}
-                </div>
+                </span>
               </div>
             </div>
-          </v-card>
+          </v-card-text>
+        </v-card>
 
-          <v-card
-            v-if="comments.length > 0"
-            outlined
-            class="booking-page__comments mb-4"
-          >
-            <div class="booking-page__block-title">
-              <v-icon small class="mr-2">mdi-comment-text-outline</v-icon>
+        <v-card
+          v-if="comments.length > 0"
+          outlined
+          class="booking-page__comments"
+        >
+          <v-card-text>
+            <div class="booking-caption">
               {{ $t("booking.page.comments.title") }}
             </div>
-            <div class="pa-4">
-              <div
-                v-for="comment in comments"
-                :key="comment.key"
-                class="booking-page__comment mb-3"
-              >
-                <div class="text-caption grey--text">
-                  {{ $t(`booking.page.comments.${comment.key}`) }}
-                </div>
-                <div class="text-body-2 booking-page__comment-text">
-                  {{ comment.value }}
-                </div>
+            <div
+              v-for="(comment, index) in comments"
+              :key="comment.key"
+              class="booking-page__comment"
+              :class="{ 'mt-3': index > 0 }"
+            >
+              <div class="booking-page__comment-label">
+                {{ $t(`booking.page.comments.${comment.key}`) }}
+              </div>
+              <div class="text-body-2 booking-page__comment-text">
+                {{ comment.value }}
               </div>
             </div>
-          </v-card>
-        </v-col>
+          </v-card-text>
+        </v-card>
+      </div>
 
-        <v-col cols="12" lg="4">
-          <v-card outlined class="booking-page__payment mb-4">
-            <div class="booking-page__block-title">
-              <v-icon small class="mr-2">mdi-cash-multiple</v-icon>
+      <!-- Detail panel -->
+      <v-card outlined class="booking-page__panel">
+        <v-card-text>
+          <div class="booking-page__strip">
+            <div class="text-h6 text-break booking-page__name">
+              {{ booking.name || "–" }}
+            </div>
+            <div v-if="booking.mail" class="text-body-2 text--secondary">
+              {{ booking.mail }}
+            </div>
+            <div class="booking-facts mt-3">
+              <div class="booking-fact booking-page__period">
+                <span class="booking-fact__label booking-page__fact-label">
+                  {{ $t("booking.page.strip.period") }}
+                </span>
+                <span class="booking-fact__value booking-fact__value--strong">
+                  {{ period }}
+                </span>
+                <v-btn
+                  v-if="hasCalendarEntry"
+                  icon
+                  x-small
+                  class="booking-page__ical"
+                  :title="$t('booking.page.strip.download-ical')"
+                  @click="downloadIcal"
+                >
+                  <v-icon small>mdi-calendar-export</v-icon>
+                </v-btn>
+              </div>
+            </div>
+          </div>
+
+          <div class="booking-page__payment">
+            <div class="booking-caption booking-caption--spaced">
               {{ $t("booking.page.payment.title") }}
             </div>
-            <div class="pa-4">
-              <div class="booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+            <div class="booking-facts">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("booking.page.payment.total") }}
-                </div>
-                <div class="text-body-1 font-weight-bold">
+                </span>
+                <span class="booking-fact__value booking-fact__value--strong">
                   {{ formatCurrency(booking.priceEur) }}
-                </div>
+                </span>
               </div>
-              <div class="booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("booking.page.payment.status") }}
-                </div>
-                <div class="text-body-2">{{ paymentStatus }}</div>
+                </span>
+                <span class="booking-fact__value">{{ paymentStatus }}</span>
               </div>
-              <div class="booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("booking.page.payment.method") }}
-                </div>
-                <div class="text-body-2">
+                </span>
+                <span class="booking-fact__value">
                   {{ booking.paymentMethod ? paymentMethod : "–" }}
-                </div>
+                </span>
               </div>
-              <div class="booking-page__kv">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("booking.page.payment.provider") }}
-                </div>
-                <div class="text-body-2">
+                </span>
+                <span class="booking-fact__value">
                   {{ booking.paymentProvider ? paymentProvider : "–" }}
-                </div>
+                </span>
               </div>
-              <BookingPaymentLink
-                class="mt-3"
-                :booking="booking"
-                :group-booking="groupBooking"
-              />
-              <CancellationRefundAudit
-                v-if="cancellationRefundAudit"
-                class="mt-3"
-                :audit="cancellationRefundAudit"
-              />
             </div>
-          </v-card>
+            <BookingPaymentLink
+              class="mt-3"
+              :booking="booking"
+              :group-booking="groupBooking"
+            />
+            <CancellationRefundAudit
+              v-if="cancellationRefundAudit"
+              class="mt-3"
+              :audit="cancellationRefundAudit"
+            />
+          </div>
 
-          <v-card outlined class="booking-page__documents mb-4">
-            <div class="booking-page__block-title">
-              <v-icon small class="mr-2"
-                >mdi-file-document-multiple-outline</v-icon
-              >
+          <div class="booking-page__documents">
+            <div class="booking-caption booking-caption--spaced">
               {{ $t("booking.page.documents.title") }}
             </div>
             <BookingDocumentActions
-              class="pa-4"
               :booking="booking"
               :group-booking="groupBooking"
               @download="downloadDocument"
               @reload="reload"
             />
-          </v-card>
+          </div>
 
-          <v-card outlined class="booking-page__details mb-4">
-            <div class="booking-page__block-title">
-              <v-icon small class="mr-2">mdi-information-outline</v-icon>
+          <div class="booking-page__details">
+            <div class="booking-caption booking-caption--spaced">
               {{ $t("booking.page.details.title") }}
             </div>
-            <div class="pa-4">
-              <div class="booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+            <div class="booking-facts">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("booking.page.details.number") }}
-                </div>
-                <div class="text-body-2">{{ booking.id }}</div>
+                </span>
+                <span class="booking-fact__value">{{ booking.id }}</span>
               </div>
-              <div class="booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("booking.page.details.created") }}
-                </div>
-                <div class="text-body-2">
+                </span>
+                <span class="booking-fact__value">
                   {{
                     booking.timeCreated
                       ? formatDateTime(booking.timeCreated)
                       : "–"
                   }}
-                </div>
+                </span>
               </div>
-              <div class="booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("booking.page.details.cancellation-policy") }}
-                </div>
-                <div class="text-body-2">
+                </span>
+                <span class="booking-fact__value">
                   {{
                     userCancellable
                       ? $t("booking.page.details.user-cancellable")
                       : $t("booking.page.details.admin-only")
                   }}
-                </div>
+                </span>
               </div>
-              <div class="booking-page__kv">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("booking.page.details.series") }}
-                </div>
-                <div class="text-body-2">
+                </span>
+                <span class="booking-fact__value">
                   {{
                     groupBooking
                       ? `#${groupBooking.id}`
                       : $t("booking.page.details.no-series")
                   }}
-                </div>
+                </span>
               </div>
             </div>
-          </v-card>
-        </v-col>
-      </v-row>
+          </div>
+        </v-card-text>
+      </v-card>
     </div>
 
     <BookingTransitions
@@ -385,7 +358,6 @@ import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import BookingPaymentLink from "@/components/Booking/BookingPaymentLink.vue";
 import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
-import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import bookingPageShell from "@/mixins/bookingPageShell";
@@ -396,6 +368,7 @@ import {
   formatCustomFieldValue,
 } from "@/utils/bookingCustomFields";
 import { openFileUrl } from "@/utils/fileDownload";
+import { getTypeText } from "@/utils/bookables";
 import {
   paymentMethodLabel,
   paymentProviderLabel,
@@ -421,7 +394,6 @@ export default {
   name: "BookingPage",
   components: {
     AdminLayout,
-    BookableTypeChip,
     BookingAccessPoints,
     BookingDocumentActions,
     BookingPageEmptyState,
@@ -581,6 +553,10 @@ export default {
       );
     },
     formatCustomFieldValue,
+    /** The row's subtitle: the object's kind in words, or nothing. */
+    objectType(item) {
+      return getTypeText(item._bookableUsed?.type) || "–";
+    },
     /**
      * One download per Dokumente group: receipts, invoices and cancellation
      * receipts come as a Blob over the booking's routes, an attachment is
@@ -609,25 +585,69 @@ export default {
 </script>
 
 <style scoped>
-.booking-page__block-title {
+/* Two columns as the media library draws them: the booking in the wide
+   column, its facts in a sticky panel beside it. */
+.booking-page__body {
   display: flex;
-  align-items: center;
-  padding: 10px 16px;
-  font-weight: 600;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  align-items: flex-start;
+  gap: 16px;
 }
 
-.booking-page__fact + .booking-page__fact {
-  border-left: 1px solid rgba(0, 0, 0, 0.12);
+.booking-page__main {
+  flex: 1;
+  min-width: 0;
 }
 
-.booking-page__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px 24px;
+.booking-page__main > .v-card,
+.booking-page__main > .section-card {
+  margin-bottom: 16px !important;
+}
+
+.booking-page__panel {
+  width: 380px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  margin-bottom: 16px;
+}
+
+.booking-page__name {
+  line-height: 1.3;
+}
+
+.booking-page__period .booking-page__ical {
+  flex: none;
+  margin: -4px -4px -4px 0;
+  align-self: center;
+}
+
+.booking-page__comment-label {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+  margin-bottom: 2px;
+}
+
+.theme--dark .booking-page__comment-label {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .booking-page__comment-text {
   white-space: pre-wrap;
+}
+
+@media (max-width: 1264px) {
+  .booking-page__panel {
+    width: 320px;
+  }
+}
+
+@media (max-width: 959px) {
+  .booking-page__body {
+    flex-direction: column;
+  }
+  .booking-page__panel {
+    width: 100%;
+    position: static;
+  }
 }
 </style>

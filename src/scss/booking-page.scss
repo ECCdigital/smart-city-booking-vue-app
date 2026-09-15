@@ -1,0 +1,207 @@
+// Surfaces of the booking pages (BookingPage, GroupBookingPage,
+// BookingEditPage), in the vocabulary of the media library: 8px outlined
+// cards without shadows, small-caps section captions, label/value facts and
+// hairline rows instead of tables.
+//
+// The app-wide $card-border-radius (25px !important, see variables.scss) is
+// toned down here the same way media-library.scss does it; the !important is
+// what it takes to out-specify the Vuetify rule. Everything else is plain
+// classes the three pages share.
+
+.booking-page,
+.group-booking-page,
+.booking-edit-page {
+  --booking-surface-radius: 8px;
+  --booking-caption-color: rgba(0, 0, 0, 0.45);
+  --booking-label-color: rgba(0, 0, 0, 0.6);
+  --booking-value-color: rgba(0, 0, 0, 0.87);
+  --booking-rule-color: rgba(0, 0, 0, 0.06);
+  --booking-border-color: rgba(0, 0, 0, 0.12);
+
+  &.theme--dark,
+  .theme--dark & {
+    --booking-caption-color: rgba(255, 255, 255, 0.55);
+    --booking-label-color: rgba(255, 255, 255, 0.7);
+    --booking-value-color: rgba(255, 255, 255, 0.87);
+    --booking-rule-color: rgba(255, 255, 255, 0.12);
+    --booking-border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .v-card,
+  .v-sheet.booking-status-path {
+    border-radius: var(--booking-surface-radius) !important;
+  }
+
+  // The access-points card brings its own elevation; on these pages every
+  // surface is outlined and flat.
+  .v-card.elevation-2 {
+    box-shadow: none !important;
+  }
+}
+
+// A section caption: the same small caps the media library's detail panel
+// and filter column carry.
+.booking-caption {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--booking-caption-color);
+  margin-bottom: 8px;
+}
+
+.booking-caption--spaced {
+  margin-top: 20px;
+}
+
+// Facts: label left, value right, one line each.
+.booking-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+}
+
+.booking-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+
+.booking-fact__label {
+  flex: none;
+  color: var(--booking-label-color);
+}
+
+.booking-fact__value {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  color: var(--booking-value-color);
+}
+
+.booking-fact__value--strong {
+  font-weight: 600;
+}
+
+// A two-column fact grid for the wide column.
+.booking-facts--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 5px 32px;
+}
+
+// Rows: a borderless list separated by hairlines, as the media library's
+// size variants are.
+.booking-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.booking-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--booking-rule-color);
+}
+
+.booking-row:last-child {
+  border-bottom: 0;
+}
+
+.booking-row__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.booking-row__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--booking-value-color);
+  line-height: 1.4;
+}
+
+.booking-row__subtitle {
+  font-size: 12px;
+  color: var(--booking-label-color);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.booking-row__aside {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--booking-value-color);
+  white-space: nowrap;
+}
+
+// The editor: BaseSection and the summary are shared with the other editors
+// of the app, so their look is changed for this page alone.
+.booking-edit-page {
+  .base-section.v-card {
+    background-color: #fff !important;
+    border: 1px solid var(--booking-border-color);
+    margin-bottom: 16px;
+
+    > .v-card__title {
+      padding: 14px 16px 0;
+    }
+
+    > .v-card__title .v-icon {
+      display: none;
+    }
+
+    > .v-card__title .text-h6 {
+      font-size: 11px !important;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1.4;
+      color: var(--booking-caption-color);
+    }
+
+    > .v-card__title + .v-divider {
+      display: none;
+    }
+
+    > .v-card__text {
+      padding: 12px 16px 16px;
+    }
+  }
+
+  &.theme--dark .base-section.v-card,
+  .theme--dark & .base-section.v-card {
+    background-color: #1e1e1e !important;
+  }
+
+  .booking-summary {
+    top: 0;
+    padding: 16px;
+    border: 1px solid var(--booking-border-color);
+    border-radius: var(--booking-surface-radius);
+    background-color: #fff;
+
+    > .text-subtitle-2 {
+      font-size: 11px !important;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1.4;
+      color: var(--booking-caption-color);
+    }
+  }
+
+  &.theme--dark .booking-summary,
+  .theme--dark & .booking-summary {
+    background-color: #1e1e1e;
+  }
+}

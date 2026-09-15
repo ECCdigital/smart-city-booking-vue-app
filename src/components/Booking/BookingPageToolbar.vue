@@ -13,10 +13,10 @@
     <template v-if="state !== 'loading'">
       <slot name="actions" />
       <v-btn
-        outlined
+        text
         small
         class="booking-page__copy"
-        :color="linkCopied ? 'success' : undefined"
+        :color="linkCopied ? 'success' : 'primary'"
         @click="$emit('copy-link')"
       >
         <v-icon left small>

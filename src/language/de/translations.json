@@ -499,7 +499,8 @@
         "rejected": "Ablehnungsgrund",
         "cancelled": "Stornierungsgrund",
         "required": "Begründung ist erforderlich"
-      }
+      },
+      "back-to-booking": "Zurück zur Buchung"
     },
     "copyId": {
       "success": {

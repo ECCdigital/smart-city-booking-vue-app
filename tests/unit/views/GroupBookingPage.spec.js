@@ -613,13 +613,14 @@ describe("GroupBookingPage", () => {
       const labels = wrapper
         .findAll(".group-booking-page__fact-label")
         .wrappers.map((label) => label.text());
-      expect(labels).toEqual(["Zeitraum", "Kunde", "Preis / Zahlungsstatus"]);
+      expect(labels).toEqual(["Zeitraum"]);
       const strip = wrapper.find(".group-booking-page__strip").text();
       expect(strip).toContain("10.03.26, 10:00 – 12.03.26, 12:00");
       expect(strip).toContain("3 Termine");
       expect(strip).toContain("erika@example.org");
-      expect(strip).toMatch(/75,00\s€/);
-      expect(strip).toContain("Ja");
+      const payment = wrapper.find(".group-booking-page__payment").text();
+      expect(payment).toMatch(/75,00\s€/);
+      expect(payment).toContain("Ja");
     });
 
     it("reads the range off date strings as well", async () => {

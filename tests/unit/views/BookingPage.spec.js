@@ -458,25 +458,26 @@ describe("BookingPage", () => {
   });
 
   describe("the body", () => {
-    it("shows exactly Zeitraum, Kunde and Preis / Zahlungsstatus in the strip", async () => {
+    it("heads the panel with the customer and the Zeitraum", async () => {
       const { wrapper } = mountPage();
       await settle(wrapper);
 
       const labels = wrapper
         .findAll(".booking-page__fact-label")
         .wrappers.map((label) => label.text());
-      expect(labels).toEqual(["Zeitraum", "Kunde", "Preis / Zahlungsstatus"]);
+      expect(labels).toEqual(["Zeitraum"]);
       const strip = wrapper.find(".booking-page__strip").text();
+      expect(strip).toContain("Erika Muster");
       expect(strip).toContain("erika@example.org");
-      expect(strip).toMatch(/25,00\s€/);
-      expect(strip).toContain("Nein");
+      expect(strip).toContain("Zeitraum");
+      expect(strip).toMatch(/\d{2}\.\d{2}\.\d{2}, \d{2}:\d{2} –/);
     });
 
     it("lists the objects with type, amount and unit price", async () => {
       const { wrapper } = mountPage();
       await settle(wrapper);
 
-      const row = wrapper.find(".booking-page__objects tbody tr").text();
+      const row = wrapper.find(".booking-page__object").text();
       expect(row).toContain("Raum 1");
       expect(row).toContain("2");
       expect(row).toMatch(/12,50\s€/);
@@ -535,6 +536,7 @@ describe("BookingPage", () => {
 
       const payment = wrapper.find(".booking-page__payment").text();
       expect(payment).toMatch(/25,00\s€/);
+      expect(payment).toContain("Nein");
       expect(payment).toContain("Bar");
       expect(payment).toContain("Manuelle Zahlung");
 

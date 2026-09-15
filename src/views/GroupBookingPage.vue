@@ -1,5 +1,5 @@
 <template>
-  <AdminLayout scroll-body :title="pageTitle">
+  <AdminLayout scroll-body :title="pageTitle" class="group-booking-page">
     <template #page-header>
       <BookingPageToolbar
         :state="state"
@@ -44,208 +44,145 @@
     />
 
     <div v-else-if="state === 'ready'" class="group-booking-page__body">
-      <BookingStatusPath
-        class="mb-4"
-        :label="$t('group-booking.status.title')"
-        :status="seriesStatus"
-        :path="seriesPath"
-        :actions="seriesActions"
-        :action-label="seriesActionLabel"
-        :hint="mixedHint"
-        @action="transitionSeries"
-      >
-        <template v-if="mixed" #default>
-          <div class="series-status-counts text-body-2">
-            <template v-for="(entry, index) in counts">
-              <span
-                v-if="index > 0"
-                :key="`${entry.status}-dot`"
-                class="mx-2 text--disabled"
-                >·</span
-              >
-              <span
-                :key="entry.status"
-                class="series-status-count font-weight-medium"
-                :class="`${entry.color}--text`"
-                >{{
-                  $t("group-booking.status.count", {
-                    count: entry.count,
-                    state: entry.label,
-                  })
-                }}</span
-              >
-            </template>
-          </div>
-        </template>
-        <template
-          v-if="seriesPath && seriesPath.end && seriesPath.end.reason"
-          #reason
+      <!-- Main column -->
+      <div class="group-booking-page__main">
+        <BookingStatusPath
+          class="mb-4"
+          :label="$t('group-booking.status.title')"
+          :status="seriesStatus"
+          :path="seriesPath"
+          :actions="seriesActions"
+          :action-label="seriesActionLabel"
+          :hint="mixedHint"
+          @action="transitionSeries"
         >
-          <div class="text-caption font-weight-bold error--text">
-            {{ $t(`booking.edit.reason.${seriesPath.end.status}`) }}
-          </div>
-          <div class="text-body-2">{{ seriesPath.end.reason }}</div>
-        </template>
-      </BookingStatusPath>
-
-      <v-card outlined class="group-booking-page__strip mb-4">
-        <v-row no-gutters>
-          <v-col cols="12" md="4" class="group-booking-page__fact pa-4">
-            <div class="d-flex align-center justify-space-between">
-              <div class="group-booking-page__fact-label text-overline">
-                <v-icon x-small class="mr-1">mdi-calendar-range</v-icon>
-                {{ $t("group-booking.page.strip.period") }}
-              </div>
-              <v-btn
-                v-if="members.length > 0"
-                icon
-                x-small
-                class="group-booking-page__ical"
-                :title="$t('group-booking.page.strip.download-ical')"
-                @click="downloadIcal"
-              >
-                <v-icon small>mdi-calendar-export</v-icon>
-              </v-btn>
-            </div>
-            <div class="text-subtitle-1 font-weight-bold">{{ period }}</div>
-            <div class="text-body-2 grey--text">
-              {{
-                $t("group-booking.page.strip.dates", { count: members.length })
-              }}
-            </div>
-          </v-col>
-          <v-col cols="12" md="4" class="group-booking-page__fact pa-4">
-            <div class="group-booking-page__fact-label text-overline">
-              <v-icon x-small class="mr-1">mdi-account-outline</v-icon>
-              {{ $t("group-booking.page.strip.customer") }}
-            </div>
-            <div class="text-subtitle-1 font-weight-bold">
-              {{ customer.name || "–" }}
-            </div>
-            <div v-if="customer.mail" class="text-body-2 grey--text">
-              {{ customer.mail }}
-            </div>
-          </v-col>
-          <v-col cols="12" md="4" class="group-booking-page__fact pa-4">
-            <div class="group-booking-page__fact-label text-overline">
-              <v-icon x-small class="mr-1">mdi-currency-eur</v-icon>
-              {{ $t("group-booking.page.strip.price") }}
-            </div>
-            <div class="text-subtitle-1 font-weight-bold">
-              {{ formatCurrency(totalPriceEur) }}
-            </div>
-            <div class="text-body-2 grey--text">{{ paymentStatus }}</div>
-          </v-col>
-        </v-row>
-      </v-card>
-
-      <v-row>
-        <v-col cols="12" lg="8">
-          <v-card outlined class="group-booking-page__members mb-4">
-            <div class="group-booking-page__block-title">
-              <v-icon small class="mr-2">mdi-format-list-bulleted</v-icon>
-              {{ $t("group-booking.page.members.title") }} ({{
-                members.length
-              }})
-            </div>
-            <v-simple-table dense>
-              <thead>
-                <tr>
-                  <th>{{ $t("group-booking.page.members.number") }}</th>
-                  <th>{{ $t("group-booking.page.members.period") }}</th>
-                  <th>{{ $t("group-booking.page.members.object") }}</th>
-                  <th>{{ $t("group-booking.page.members.state") }}</th>
-                  <th class="text-right">
-                    {{ $t("group-booking.page.members.price") }}
-                  </th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="item in members"
-                  :key="item.id"
-                  class="group-booking-page__member"
+          <template v-if="mixed" #default>
+            <div class="series-status-counts text-body-2">
+              <template v-for="(entry, index) in counts">
+                <span
+                  v-if="index > 0"
+                  :key="`${entry.status}-dot`"
+                  class="mx-2 text--disabled"
+                  >·</span
                 >
-                  <td>
+                <span
+                  :key="entry.status"
+                  class="series-status-count font-weight-medium"
+                  :class="`${entry.color}--text`"
+                  >{{
+                    $t("group-booking.status.count", {
+                      count: entry.count,
+                      state: entry.label,
+                    })
+                  }}</span
+                >
+              </template>
+            </div>
+          </template>
+          <template
+            v-if="seriesPath && seriesPath.end && seriesPath.end.reason"
+            #reason
+          >
+            <div class="text-caption font-weight-bold error--text">
+              {{ $t(`booking.edit.reason.${seriesPath.end.status}`) }}
+            </div>
+            <div class="text-body-2">{{ seriesPath.end.reason }}</div>
+          </template>
+        </BookingStatusPath>
+
+        <v-card outlined class="group-booking-page__members">
+          <v-card-text>
+            <div class="booking-caption">
+              {{ $t("group-booking.page.members.title") }}
+            </div>
+            <div class="booking-rows">
+              <div
+                v-for="item in members"
+                :key="item.id"
+                class="booking-row group-booking-page__member"
+              >
+                <v-avatar
+                  :color="statusColor(item.status)"
+                  size="28"
+                  class="group-booking-page__member-avatar"
+                >
+                  <v-icon dark size="15">{{ statusIcon(item.status) }}</v-icon>
+                </v-avatar>
+                <div class="booking-row__main">
+                  <div class="booking-row__title d-flex align-center">
                     <a
-                      class="group-booking-page__member-link font-weight-medium"
+                      class="group-booking-page__member-link"
                       :title="$t('group-booking.page.members.open')"
                       @click.prevent="toMember(item.id)"
                     >
                       {{ item.id }}
                     </a>
-                  </td>
-                  <td class="text-no-wrap">{{ periodOf(item) }}</td>
-                  <td>{{ objectsOf(item) }}</td>
-                  <td class="text-no-wrap">
-                    <v-chip
-                      x-small
-                      :color="statusColor(item.status)"
-                      text-color="white"
+                    <span
+                      class="group-booking-page__member-state ml-2"
+                      :class="`${statusColor(item.status)}--text`"
                     >
-                      <v-icon left x-small>{{
-                        statusIcon(item.status)
-                      }}</v-icon>
                       {{ statusLabel(item.status) }}
-                    </v-chip>
+                    </span>
                     <v-chip
                       v-if="isFree(item)"
                       x-small
+                      label
                       :color="freeChip.color"
                       :text-color="freeChip.textColor"
-                      class="ml-1"
+                      class="ml-2"
                     >
                       {{ freeChip.label }}
                     </v-chip>
-                  </td>
-                  <td class="text-right text-no-wrap">
-                    {{ formatCurrency(item.priceEur) }}
-                  </td>
-                  <td class="text-right">
-                    <v-menu v-if="memberActions(item).length > 0" offset-y left>
-                      <template #activator="{ on, attrs }">
-                        <v-btn
-                          icon
-                          x-small
-                          class="group-booking-page__member-menu"
-                          v-bind="attrs"
-                          v-on="on"
-                        >
-                          <v-icon small>mdi-dots-vertical</v-icon>
-                        </v-btn>
-                      </template>
-                      <v-list dense>
-                        <v-list-item
-                          v-for="action in memberActions(item)"
-                          :key="action"
-                          link
-                          class="group-booking-page__member-action"
-                          @click="transitionMember(action, item.id)"
-                        >
-                          <v-list-item-icon>
-                            <v-icon small :color="actionColor(action)">
-                              {{ actionIcon(action) }}
-                            </v-icon>
-                          </v-list-item-icon>
-                          <v-list-item-title>
-                            {{ actionLabel(action, item.status) }}
-                          </v-list-item-title>
-                        </v-list-item>
-                      </v-list>
-                    </v-menu>
-                  </td>
-                </tr>
-              </tbody>
-            </v-simple-table>
-          </v-card>
+                  </div>
+                  <div class="booking-row__subtitle">
+                    {{ periodOf(item) }} · {{ objectsOf(item) }}
+                  </div>
+                </div>
+                <div class="booking-row__aside">
+                  <span>{{ formatCurrency(item.priceEur) }}</span>
+                  <v-menu v-if="memberActions(item).length > 0" offset-y left>
+                    <template #activator="{ on, attrs }">
+                      <v-btn
+                        icon
+                        small
+                        class="group-booking-page__member-menu"
+                        v-bind="attrs"
+                        v-on="on"
+                      >
+                        <v-icon small>mdi-dots-vertical</v-icon>
+                      </v-btn>
+                    </template>
+                    <v-list dense>
+                      <v-list-item
+                        v-for="action in memberActions(item)"
+                        :key="action"
+                        link
+                        class="group-booking-page__member-action"
+                        @click="transitionMember(action, item.id)"
+                      >
+                        <v-list-item-icon>
+                          <v-icon small :color="actionColor(action)">
+                            {{ actionIcon(action) }}
+                          </v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>
+                          {{ actionLabel(action, item.status) }}
+                        </v-list-item-title>
+                      </v-list-item>
+                    </v-list>
+                  </v-menu>
+                </div>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
 
-          <v-card outlined class="group-booking-page__comments mb-4">
-            <div class="group-booking-page__block-title justify-space-between">
-              <span>
-                <v-icon small class="mr-2">mdi-comment-text-outline</v-icon>
-                {{ $t("group-booking.page.comments.title") }}
-              </span>
+        <v-card outlined class="group-booking-page__comments">
+          <v-card-text>
+            <div class="d-flex align-center justify-space-between">
+              <div class="booking-caption mb-0">
+                {{ $t("group-booking.page.comments.internal") }}
+              </div>
               <v-btn
                 v-if="canEditComment && !editingComment"
                 icon
@@ -257,142 +194,176 @@
                 <v-icon small>mdi-pencil</v-icon>
               </v-btn>
             </div>
-            <div class="pa-4">
-              <div class="text-caption grey--text">
-                {{ $t("group-booking.page.comments.internal") }}
+            <template v-if="!editingComment">
+              <div
+                v-if="groupBooking.internalComments"
+                class="text-body-2 group-booking-page__comment-text mt-2"
+              >
+                {{ groupBooking.internalComments }}
               </div>
-              <template v-if="!editingComment">
-                <div
-                  v-if="groupBooking.internalComments"
-                  class="text-body-2 group-booking-page__comment-text"
+              <div v-else class="text-body-2 text--secondary font-italic mt-2">
+                {{ $t("group-booking.page.comments.none") }}
+              </div>
+            </template>
+            <template v-else>
+              <v-textarea
+                v-model="editedComment"
+                outlined
+                dense
+                rows="3"
+                auto-grow
+                :placeholder="$t('group-booking.page.comments.placeholder')"
+                hide-details="auto"
+                class="mt-3"
+              />
+              <div class="d-flex justify-end mt-3">
+                <v-btn
+                  small
+                  text
+                  class="mr-2"
+                  :disabled="savingComment"
+                  @click="cancelEditingComment"
                 >
-                  {{ groupBooking.internalComments }}
-                </div>
-                <div v-else class="text-body-2 grey--text font-italic">
-                  {{ $t("group-booking.page.comments.none") }}
-                </div>
-              </template>
-              <template v-else>
-                <v-textarea
-                  v-model="editedComment"
-                  outlined
-                  dense
-                  rows="3"
-                  auto-grow
-                  :placeholder="$t('group-booking.page.comments.placeholder')"
-                  hide-details="auto"
-                  class="mt-1"
-                />
-                <div class="d-flex justify-end mt-3">
-                  <v-btn
-                    small
-                    text
-                    class="mr-2"
-                    :disabled="savingComment"
-                    @click="cancelEditingComment"
-                  >
-                    {{ $t("group-booking.page.comments.cancel") }}
-                  </v-btn>
-                  <v-btn
-                    small
-                    color="primary"
-                    depressed
-                    :loading="savingComment"
-                    @click="saveComment"
-                  >
-                    {{ $t("group-booking.page.comments.save") }}
-                  </v-btn>
-                </div>
-              </template>
-            </div>
-          </v-card>
-        </v-col>
+                  {{ $t("group-booking.page.comments.cancel") }}
+                </v-btn>
+                <v-btn
+                  small
+                  color="primary"
+                  depressed
+                  :loading="savingComment"
+                  @click="saveComment"
+                >
+                  {{ $t("group-booking.page.comments.save") }}
+                </v-btn>
+              </div>
+            </template>
+          </v-card-text>
+        </v-card>
+      </div>
 
-        <v-col cols="12" lg="4">
-          <v-card outlined class="group-booking-page__payment mb-4">
-            <div class="group-booking-page__block-title">
-              <v-icon small class="mr-2">mdi-cash-multiple</v-icon>
+      <!-- Detail panel -->
+      <v-card outlined class="group-booking-page__panel">
+        <v-card-text>
+          <div class="group-booking-page__strip">
+            <div class="text-h6 text-break group-booking-page__name">
+              {{ customer.name || "–" }}
+            </div>
+            <div v-if="customer.mail" class="text-body-2 text--secondary">
+              {{ customer.mail }}
+            </div>
+            <div class="booking-facts mt-3">
+              <div class="booking-fact group-booking-page__period">
+                <span
+                  class="booking-fact__label group-booking-page__fact-label"
+                >
+                  {{ $t("group-booking.page.strip.period") }}
+                </span>
+                <span class="booking-fact__value booking-fact__value--strong">
+                  {{ period }}
+                </span>
+                <v-btn
+                  v-if="members.length > 0"
+                  icon
+                  x-small
+                  class="group-booking-page__ical"
+                  :title="$t('group-booking.page.strip.download-ical')"
+                  @click="downloadIcal"
+                >
+                  <v-icon small>mdi-calendar-export</v-icon>
+                </v-btn>
+              </div>
+              <div
+                class="group-booking-page__dates text-caption text--secondary"
+              >
+                {{
+                  $t("group-booking.page.strip.dates", {
+                    count: members.length,
+                  })
+                }}
+              </div>
+            </div>
+          </div>
+
+          <div class="group-booking-page__payment">
+            <div class="booking-caption booking-caption--spaced">
               {{ $t("group-booking.page.payment.title") }}
             </div>
-            <div class="pa-4">
-              <div class="group-booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+            <div class="booking-facts">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("group-booking.page.payment.total") }}
-                </div>
-                <div class="text-body-1 font-weight-bold">
+                </span>
+                <span class="booking-fact__value booking-fact__value--strong">
                   {{ formatCurrency(totalPriceEur) }}
-                </div>
+                </span>
               </div>
-              <div class="group-booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("group-booking.page.payment.status") }}
-                </div>
-                <div class="text-body-2">{{ paymentStatus }}</div>
+                </span>
+                <span class="booking-fact__value">{{ paymentStatus }}</span>
               </div>
-              <div class="group-booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("group-booking.page.payment.method") }}
-                </div>
-                <div class="text-body-2">{{ paymentMethod }}</div>
+                </span>
+                <span class="booking-fact__value">{{ paymentMethod }}</span>
               </div>
-              <div class="group-booking-page__kv">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("group-booking.page.payment.aggregated-invoice") }}
-                </div>
-                <div class="text-body-2">{{ aggregatedInvoiceState }}</div>
+                </span>
+                <span class="booking-fact__value">
+                  {{ aggregatedInvoiceState }}
+                </span>
               </div>
             </div>
-          </v-card>
+          </div>
 
-          <v-card outlined class="group-booking-page__documents mb-4">
-            <div class="group-booking-page__block-title">
-              <v-icon small class="mr-2"
-                >mdi-file-document-multiple-outline</v-icon
-              >
+          <div class="group-booking-page__documents">
+            <div class="booking-caption booking-caption--spaced">
               {{ $t("group-booking.page.documents.title") }}
             </div>
             <GroupBookingDocumentActions
-              class="pa-4"
               :group-booking="groupBooking"
               @download="downloadDocument"
               @reload="reload"
             />
-          </v-card>
+          </div>
 
-          <v-card outlined class="group-booking-page__details mb-4">
-            <div class="group-booking-page__block-title">
-              <v-icon small class="mr-2">mdi-information-outline</v-icon>
+          <div class="group-booking-page__details">
+            <div class="booking-caption booking-caption--spaced">
               {{ $t("group-booking.page.details.title") }}
             </div>
-            <div class="pa-4">
-              <div class="group-booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+            <div class="booking-facts">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("group-booking.page.details.number") }}
-                </div>
-                <div class="text-body-2">{{ groupBooking.id }}</div>
+                </span>
+                <span class="booking-fact__value">{{ groupBooking.id }}</span>
               </div>
-              <div class="group-booking-page__kv mb-3">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("group-booking.page.details.created") }}
-                </div>
-                <div class="text-body-2">
+                </span>
+                <span class="booking-fact__value">
                   {{
                     groupBooking.timeCreated
                       ? formatDateTime(groupBooking.timeCreated)
                       : "–"
                   }}
-                </div>
+                </span>
               </div>
-              <div class="group-booking-page__kv">
-                <div class="text-caption grey--text">
+              <div class="booking-fact">
+                <span class="booking-fact__label">
                   {{ $t("group-booking.page.details.count") }}
-                </div>
-                <div class="text-body-2">{{ members.length }}</div>
+                </span>
+                <span class="booking-fact__value">{{ members.length }}</span>
               </div>
             </div>
-          </v-card>
-        </v-col>
-      </v-row>
+          </div>
+        </v-card-text>
+      </v-card>
     </div>
 
     <BookingTransitions
@@ -721,23 +692,80 @@ export default {
 </script>
 
 <style scoped>
-.group-booking-page__block-title {
+/* Two columns as the media library draws them: the series in the wide
+   column, its facts in a sticky panel beside it. */
+.group-booking-page__body {
   display: flex;
-  align-items: center;
-  padding: 10px 16px;
-  font-weight: 600;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  align-items: flex-start;
+  gap: 16px;
 }
 
-.group-booking-page__fact + .group-booking-page__fact {
-  border-left: 1px solid rgba(0, 0, 0, 0.12);
+.group-booking-page__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.group-booking-page__main > .v-card {
+  margin-bottom: 16px;
+}
+
+.group-booking-page__panel {
+  width: 380px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  margin-bottom: 16px;
+}
+
+.group-booking-page__name {
+  line-height: 1.3;
+}
+
+.group-booking-page__period .group-booking-page__ical {
+  flex: none;
+  margin: -4px -4px -4px 0;
+  align-self: center;
+}
+
+.group-booking-page__dates {
+  text-align: right;
+  margin-top: -2px;
+}
+
+.group-booking-page__member-avatar {
+  flex: none;
 }
 
 .group-booking-page__member-link {
   cursor: pointer;
 }
 
+.group-booking-page__member-state {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.group-booking-page__member .booking-row__aside .v-btn {
+  margin-right: -6px;
+}
+
 .group-booking-page__comment-text {
   white-space: pre-wrap;
+}
+
+@media (max-width: 1264px) {
+  .group-booking-page__panel {
+    width: 320px;
+  }
+}
+
+@media (max-width: 959px) {
+  .group-booking-page__body {
+    flex-direction: column;
+  }
+  .group-booking-page__panel {
+    width: 100%;
+    position: static;
+  }
 }
 </style>

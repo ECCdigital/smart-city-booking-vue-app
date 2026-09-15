@@ -87,9 +87,15 @@ export default {
   overflow: hidden;
 }
 
+/* The header reserves the same right edge as the scrolling body below it -
+   its 12px padding and the scrollbar gutter - so right-aligned actions end
+   where the body's content ends. */
 .admin-page__header {
   flex-shrink: 0;
   padding-bottom: 12px;
+  padding-right: 12px;
+  overflow-y: hidden;
+  scrollbar-gutter: stable;
 }
 
 .admin-page__body--scroll {
