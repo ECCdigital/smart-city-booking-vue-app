@@ -441,6 +441,43 @@ describe("Bookings", () => {
    * "Openers and the retired dialogs"): every push carries `?tenant=` so the
    * address bar always shows the complete Buchungslink.
    */
+  /**
+   * The search term survives a detour to a booking's page or the editor and
+   * back: it lives in `sessionStorage`, per tab; clearing the field forgets it.
+   */
+  describe("the search term", () => {
+    beforeEach(() => {
+      window.sessionStorage.clear();
+    });
+
+    it("is remembered while the list is left and restored on return", async () => {
+      const first = await mountBookings({});
+
+      await first.wrapper.find(".search-field input").setValue("Erika");
+      await first.wrapper.vm.$nextTick();
+      first.wrapper.destroy();
+
+      const second = await mountBookings({});
+
+      expect(second.wrapper.find(".search-field input").element.value).toBe(
+        "Erika"
+      );
+    });
+
+    it("is forgotten once the field is cleared", async () => {
+      const first = await mountBookings({});
+
+      await first.wrapper.find(".search-field input").setValue("Erika");
+      await first.wrapper.find(".search-field input").setValue("");
+      await first.wrapper.vm.$nextTick();
+      first.wrapper.destroy();
+
+      const second = await mountBookings({});
+
+      expect(second.wrapper.find(".search-field input").element.value).toBe("");
+    });
+  });
+
   describe("the openers", () => {
     it("opens the Buchungsseite with the tenant from Details ansehen", async () => {
       const { wrapper, push } = await mountBookings({});

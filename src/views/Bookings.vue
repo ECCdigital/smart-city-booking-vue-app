@@ -211,6 +211,33 @@ import {
   transitionTarget,
 } from "@/utils/bookingStatus";
 
+/**
+ * The search term survives a detour to a booking's page or the editor and
+ * back to the list: it is kept in `sessionStorage`, so it is per tab and gone
+ * with it. The filters stay plain component state (spec E11, N1).
+ */
+const SEARCH_TERM_STORAGE_KEY = "bookings.searchTerm";
+
+function readStoredSearchTerm() {
+  try {
+    return window.sessionStorage.getItem(SEARCH_TERM_STORAGE_KEY) || "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function storeSearchTerm(searchTerm) {
+  try {
+    if (searchTerm) {
+      window.sessionStorage.setItem(SEARCH_TERM_STORAGE_KEY, searchTerm);
+    } else {
+      window.sessionStorage.removeItem(SEARCH_TERM_STORAGE_KEY);
+    }
+  } catch (error) {
+    // Storage may be unavailable (privacy mode); the search still works.
+  }
+}
+
 export default {
   components: {
     BookingFilterCard,
@@ -229,7 +256,7 @@ export default {
       showBacklog: false,
       fuse: null,
       value: "",
-      searchTerm: "",
+      searchTerm: readStoredSearchTerm(),
       bookingTypeFilter: "all",
       // The list's status filter (spec E11, N1): nothing selected means no
       // filter; plain component state - nothing persists it.
@@ -301,6 +328,11 @@ export default {
       let bookings = this.mappedBookings || [];
 
       if (this.searchTerm) {
+        // A restored term can be there before the bookings - and the index -
+        // are; nothing matches until they arrive.
+        if (!this.fuse) {
+          return [];
+        }
         const terms = this.searchTerm.trim().split(/\s+/);
         const searchQuery = {
           $and: terms.map((term) => ({
@@ -354,6 +386,9 @@ export default {
     tenantId() {
       this.fetchBookings();
       this.fetchGroupBookings();
+    },
+    searchTerm(searchTerm) {
+      storeSearchTerm(searchTerm);
     },
     currentView(newView) {
       this.$router.replace({ query: { view: newView } }).catch((err) => {
