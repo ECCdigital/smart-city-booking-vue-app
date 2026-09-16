@@ -25,6 +25,24 @@
         />
       </v-col>
     </v-row>
+
+    <v-row>
+      <v-col cols="12">
+        <v-text-field
+          v-model="local.copyright"
+          background-color="accent"
+          filled
+          dense
+          label="Copyright"
+          hint="Nur der Rechteinhaber, z.B. »Stadt Musterstadt« — Jahr und ©-Zeichen ergänzt die Seite selbst."
+          persistent-hint
+          counter="200"
+          maxlength="200"
+          :error-messages="copyrightApiErrors"
+          @input="onCopyrightInput"
+        />
+      </v-col>
+    </v-row>
   </BaseSection>
 </template>
 
@@ -44,6 +62,14 @@ import {
 // without credentials.
 const PUBLIC_ONLY_REASON =
   "Rechtsdokumente werden öffentlich verlinkt — interne Medien sind hier nicht wählbar.";
+
+// The backend's refusals of the Copyright-Vermerk (shared contract of the
+// instance-copyright spec), as the message shown under the field.
+const COPYRIGHT_API_MESSAGES = Object.freeze({
+  max_length: "Höchstens 200 Zeichen.",
+  invalid_format: "Darf keinen Zeilenumbruch enthalten.",
+  invalid_type_string: "Muss ein Text sein.",
+});
 
 const LEGAL_FIELDS = Object.freeze([
   {
@@ -75,6 +101,7 @@ export default {
       legalFields: LEGAL_FIELDS,
       mediaScope: MEDIA_SCOPE.INSTANCE,
       publicOnlyReason: PUBLIC_ONLY_REASON,
+      copyrightApiErrors: [],
     };
   },
   watch: {
@@ -99,6 +126,10 @@ export default {
         };
       });
 
+      // An instance stored before the field existed carries none; `""` is the
+      // one way the contract says "no rights holder", so the form binds to it.
+      next.copyright = typeof next.copyright === "string" ? next.copyright : "";
+
       return next;
     },
     referenceOf(key) {
@@ -116,13 +147,40 @@ export default {
       };
       this.emitUpdate();
     },
+    /**
+     * The rights holder as typed. An emptied field sends `""` — the backend
+     * refuses `null`, and `""` is what reads back for "none is set".
+     */
+    onCopyrightInput(value) {
+      this.local.copyright = typeof value === "string" ? value : "";
+      this.copyrightApiErrors = [];
+      this.emitUpdate();
+    },
     emitUpdate() {
       this.$emit("update:instance", { ...this.local });
     },
+    /**
+     * The backend's answer to the tab save, as `details[].field` JSON paths.
+     * Only `copyright` belongs to a field of this tab; the rest stays with
+     * the toast.
+     */
+    showApiErrors(details) {
+      this.copyrightApiErrors = (details || [])
+        .filter((detail) => detail && detail.field === "copyright")
+        .map(
+          (detail) =>
+            COPYRIGHT_API_MESSAGES[detail.code] ||
+            detail.message ||
+            "Ungültiger Wert"
+        );
+    },
     validate() {
+      this.copyrightApiErrors = [];
       return true;
     },
-    resetValidation() {},
+    resetValidation() {
+      this.copyrightApiErrors = [];
+    },
   },
 };
 </script>
