@@ -144,37 +144,33 @@
   white-space: nowrap;
 }
 
-// The editor: BaseSection and the summary are shared with the other editors
-// of the app, so their look is changed for this page alone.
+// The editor: BaseSection is shared with the other editors of the app, so it
+// is made a section card (section-card.scss) for this page alone - its title
+// row is the header strip, its divider the hairline. The summary beside it
+// is a section card of its own.
 .booking-edit-page {
   .base-section.v-card {
+    @include section-card-surface;
+    // BaseSection unsets its background with an !important of its own.
     background-color: #fff !important;
     border: 1px solid var(--booking-border-color);
     margin-bottom: 16px;
 
     > .v-card__title {
-      padding: 14px 16px 0;
+      @include section-card-header;
     }
 
-    > .v-card__title .v-icon {
-      display: none;
-    }
-
-    > .v-card__title .text-h6 {
-      font-size: 11px !important;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      line-height: 1.4;
-      color: var(--booking-caption-color);
+    > .v-card__title > .d-flex {
+      flex: 1 1 auto;
+      min-width: 0;
     }
 
     > .v-card__title + .v-divider {
-      display: none;
+      border-color: var(--booking-rule-color);
     }
 
     > .v-card__text {
-      padding: 12px 16px 16px;
+      padding: 16px;
     }
   }
 
@@ -185,23 +181,5 @@
 
   .booking-summary {
     top: 0;
-    padding: 16px;
-    border: 1px solid var(--booking-border-color);
-    border-radius: var(--booking-surface-radius);
-    background-color: #fff;
-
-    > .text-subtitle-2 {
-      font-size: 11px !important;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      line-height: 1.4;
-      color: var(--booking-caption-color);
-    }
-  }
-
-  &.theme--dark .booking-summary,
-  .theme--dark & .booking-summary {
-    background-color: #1e1e1e;
   }
 }

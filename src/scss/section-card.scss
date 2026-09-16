@@ -1,0 +1,113 @@
+// The section card: the one surface the sectioned editors and pages share -
+// the bookable editor's tabs, the booking and series pages, the booking
+// editor, the coupon editor and the access-point and cancellation cards.
+//
+// A section card is an 8px outlined card without a shadow, as the media
+// library draws its surfaces, headed by a strip that names the section: the
+// icon in the theme's primary, the title at 15px semibold in sentence case,
+// on a faint neutral tint, closed by a hairline. The strip is what the
+// bookable editor's cards already had; it is toned from a bold 20px heading
+// on a gradient to the media library's scale, and made the header of every
+// booking surface too, where the sections used to be captioned only.
+//
+// The markup is Vuetify's own: `.v-card.section-card > .v-card__title
+// .section-header + .v-divider + .v-card__text`. `BaseSection` renders the
+// same parts under its own class names, so booking-page.scss applies the two
+// mixins to it there; the mixins are the single definition.
+
+@mixin section-card-surface {
+  border-radius: var(--section-card-radius, 8px) !important;
+  box-shadow: none !important;
+  background-color: #fff;
+
+  .theme--dark & {
+    background-color: #1e1e1e;
+  }
+}
+
+@mixin section-card-header {
+  // The utilities on the markup (`pa-4`, `text-h6`, `font-weight-bold`) carry
+  // !important themselves, so the strip's own values have to as well.
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 52px;
+  padding: 14px 16px !important;
+  background-color: var(--section-header-tint, rgba(0, 0, 0, 0.03));
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  letter-spacing: normal !important;
+  word-break: normal;
+
+  .theme--dark & {
+    --section-header-tint: rgba(255, 255, 255, 0.05);
+  }
+
+  .text-h6 {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    letter-spacing: normal !important;
+  }
+
+  > .v-icon,
+  > div > .v-icon:first-child,
+  > .d-flex > .v-icon:first-child {
+    color: var(--v-primary-base);
+    font-size: 20px;
+    margin-right: 10px !important;
+  }
+}
+
+.v-card.section-card {
+  @include section-card-surface;
+
+  > .section-header,
+  .section-header.v-card__title {
+    @include section-card-header;
+  }
+
+  // A stacked header: the identity over the period, as the panel of the
+  // booking and series pages heads itself. It outranks the row layout above.
+  > .section-header.section-header--stacked {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  // The hairline under the strip is the divider the markup already carries.
+  > .section-header + .v-divider {
+    border-color: var(--section-header-rule, rgba(0, 0, 0, 0.08));
+  }
+
+  .theme--dark & > .section-header + .v-divider {
+    --section-header-rule: rgba(255, 255, 255, 0.1);
+  }
+}
+
+// A header that carries two lines - a name over a mail address, as the
+// booking page's panel does - instead of a single title.
+.section-header__text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.section-header__title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.section-header__subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgba(0, 0, 0, 0.6);
+  overflow-wrap: anywhere;
+}
+
+.theme--dark .section-header__subtitle {
+  color: rgba(255, 255, 255, 0.7);
+}

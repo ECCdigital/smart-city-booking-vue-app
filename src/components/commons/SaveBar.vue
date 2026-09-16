@@ -144,8 +144,10 @@ export default {
       }"
     >
       <div class="d-flex align-center">
-        <v-icon color="primary" class="mr-2">mdi-content-save</v-icon>
-        <span class="mr-4">Änderungen speichern</span>
+        <v-icon color="primary" class="save-bar-icon mr-2"
+          >mdi-content-save</v-icon
+        >
+        <span class="save-bar-label mr-4">Änderungen speichern</span>
         <v-spacer />
         <v-btn
           v-if="showCancel"
@@ -210,5 +212,21 @@ export default {
 
 .save-bar-btn--primary {
   padding: 0 20px !important;
+}
+
+/* On a phone the bar drops its icon and label and tightens the buttons, so
+   both stay inside the bar. Last in the file: the paddings above carry
+   !important too, and Vuetify's own icon and size rules tie on specificity. */
+@media (max-width: 599px) {
+  .save-bar-label,
+  .save-bar-icon {
+    display: none !important;
+  }
+
+  .save-bar-btn,
+  .save-bar-btn--primary {
+    padding: 0 8px !important;
+    font-size: 13px !important;
+  }
 }
 </style>

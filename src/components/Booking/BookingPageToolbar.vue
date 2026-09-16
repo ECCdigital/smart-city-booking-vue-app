@@ -1,16 +1,17 @@
 <template>
-  <div class="booking-page__toolbar d-flex align-center flex-wrap mt-1">
-    <v-btn text small class="booking-page__back px-0" @click="$emit('back')">
-      <v-icon left small>mdi-arrow-left</v-icon>
-      {{ $t("booking.page.back") }}
-    </v-btn>
-    <span class="mx-2 grey--text">·</span>
-    <span class="booking-page__tenant text-body-2 grey--text text--darken-2">
-      {{ $t("booking.page.tenant", { name: tenantName }) }}
-    </span>
-    <slot />
-    <v-spacer />
-    <template v-if="state !== 'loading'">
+  <div class="booking-page__toolbar mt-1">
+    <div class="booking-page__toolbar-meta">
+      <v-btn text small class="booking-page__back px-0" @click="$emit('back')">
+        <v-icon left small>mdi-arrow-left</v-icon>
+        {{ $t("booking.page.back") }}
+      </v-btn>
+      <span class="booking-page__toolbar-dot grey--text">·</span>
+      <span class="booking-page__tenant text-body-2 grey--text text--darken-2">
+        {{ $t("booking.page.tenant", { name: tenantName }) }}
+      </span>
+      <slot />
+    </div>
+    <div v-if="state !== 'loading'" class="booking-page__toolbar-actions">
       <slot name="actions" />
       <v-btn
         text
@@ -28,7 +29,7 @@
             : $t("booking.page.copy-link")
         }}
       </v-btn>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -49,3 +50,43 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* Two groups: what the page is about on the left, what can be done on the
+   right. On a phone the groups stack, the middle dots go, and the actions
+   form a row of their own under the meta. */
+.booking-page__toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.booking-page__toolbar-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.booking-page__toolbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+@media (max-width: 599px) {
+  .booking-page__toolbar :deep(.booking-page__toolbar-dot) {
+    display: none;
+  }
+
+  .booking-page__toolbar-actions {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 2px;
+  }
+}
+</style>

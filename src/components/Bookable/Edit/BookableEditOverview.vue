@@ -6,54 +6,62 @@
         : 'bookable-overview-band'
     "
   >
-    <template v-if="variant === 'sidebar'">
-      <div class="text-subtitle-2 mb-3">Übersicht</div>
-      <component
-        :is="isTraitNavigable(trait) ? 'button' : 'div'"
-        v-for="trait in traits"
-        :key="trait.key"
-        :type="isTraitNavigable(trait) ? 'button' : undefined"
-        class="overview-row"
-        :class="{
-          'overview-row--block': isLongTrait(trait),
-          'overview-row--static': !isTraitNavigable(trait),
-          'overview-row--expert': isExpertTraitHint(trait),
-        }"
-        @click="onTraitActivate(trait)"
-      >
-        <div class="overview-row__head">
-          <v-icon x-small class="mr-2 flex-shrink-0">{{ trait.icon }}</v-icon>
-          <span class="overview-row__label text--secondary">{{
-            trait.label
-          }}</span>
-          <span
-            v-if="isExpertTraitHint(trait)"
-            class="overview-row__expert-badge"
-          >
-            {{ $t("bookable.edit.expertMode.traitBadge") }}
-          </span>
-        </div>
-        <span class="overview-row__value" :title="trait.value">
-          {{ trait.value }}
-        </span>
-        <v-btn
-          v-if="trait.openRoute"
-          icon
-          x-small
-          class="overview-row__external flex-shrink-0"
-          :title="$t('bookable.edit.openEvent')"
-          @click.stop="openTraitRoute(trait)"
+    <!-- The sidebar is a section card, as the booking page's panel and the
+         booking editor's summary are. -->
+    <v-card v-if="variant === 'sidebar'" outlined class="section-card">
+      <v-card-title class="section-header">
+        <v-icon>mdi-clipboard-text-outline</v-icon>
+        <span>Übersicht</span>
+      </v-card-title>
+      <v-divider />
+      <v-card-text class="bookable-overview-sidebar__body">
+        <component
+          :is="isTraitNavigable(trait) ? 'button' : 'div'"
+          v-for="trait in traits"
+          :key="trait.key"
+          :type="isTraitNavigable(trait) ? 'button' : undefined"
+          class="overview-row"
+          :class="{
+            'overview-row--block': isLongTrait(trait),
+            'overview-row--static': !isTraitNavigable(trait),
+            'overview-row--expert': isExpertTraitHint(trait),
+          }"
+          @click="onTraitActivate(trait)"
         >
-          <v-icon x-small>mdi-open-in-new</v-icon>
-        </v-btn>
-      </component>
-      <div
-        v-if="showTitlesForbidden"
-        class="overview-row overview-row--static text-caption text--secondary"
-      >
-        {{ $t("bookable.edit.overview.titlesForbidden") }}
-      </div>
-    </template>
+          <div class="overview-row__head">
+            <v-icon x-small class="mr-2 flex-shrink-0">{{ trait.icon }}</v-icon>
+            <span class="overview-row__label text--secondary">{{
+              trait.label
+            }}</span>
+            <span
+              v-if="isExpertTraitHint(trait)"
+              class="overview-row__expert-badge"
+            >
+              {{ $t("bookable.edit.expertMode.traitBadge") }}
+            </span>
+          </div>
+          <span class="overview-row__value" :title="trait.value">
+            {{ trait.value }}
+          </span>
+          <v-btn
+            v-if="trait.openRoute"
+            icon
+            x-small
+            class="overview-row__external flex-shrink-0"
+            :title="$t('bookable.edit.openEvent')"
+            @click.stop="openTraitRoute(trait)"
+          >
+            <v-icon x-small>mdi-open-in-new</v-icon>
+          </v-btn>
+        </component>
+        <div
+          v-if="showTitlesForbidden"
+          class="overview-row overview-row--static text-caption text--secondary"
+        >
+          {{ $t("bookable.edit.overview.titlesForbidden") }}
+        </div>
+      </v-card-text>
+    </v-card>
 
     <template v-else>
       <div class="d-flex flex-wrap overview-band-chips">
@@ -321,25 +329,10 @@ export default {
 </script>
 
 <style scoped>
-.bookable-overview-sidebar {
-  padding: 4px 0 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.theme--dark .bookable-overview-sidebar {
-  border-top-color: rgba(255, 255, 255, 0.12);
-}
-
-@media (min-width: 1264px) {
-  .bookable-overview-sidebar {
-    border-top: none;
-    padding-left: 16px;
-    border-left: 1px solid rgba(0, 0, 0, 0.08);
-  }
-
-  .theme--dark .bookable-overview-sidebar {
-    border-left-color: rgba(255, 255, 255, 0.12);
-  }
+/* The rows carry 4px of their own, so the card's text lines up with its
+   header at 16px. */
+.bookable-overview-sidebar__body {
+  padding: 10px 12px 12px;
 }
 
 .overview-row {

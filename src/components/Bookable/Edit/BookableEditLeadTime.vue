@@ -272,7 +272,6 @@ export default {
     <v-card
       id="be-section-bookingType-lead-time"
       class="mt-4 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -577,7 +576,6 @@ export default {
       v-if="showBuffer"
       id="be-section-bookingType-buffer"
       class="mt-4 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -706,26 +704,6 @@ export default {
 </template>
 
 <style scoped>
-.section-card {
-  border-radius: 8px !important;
-}
-
-.section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.02) 0%,
-    rgba(0, 0, 0, 0.01) 100%
-  );
-}
-
-.theme--dark .section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
-}
-
 .service-hours-item {
   cursor: pointer;
   transition: all 0.2s ease;

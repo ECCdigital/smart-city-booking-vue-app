@@ -90,11 +90,13 @@
           </template>
         </BookingStatusPath>
 
-        <v-card outlined class="group-booking-page__members">
+        <v-card outlined class="group-booking-page__members section-card">
+          <v-card-title class="section-header">
+            <v-icon>mdi-calendar-multiple</v-icon>
+            <span>{{ $t("group-booking.page.members.title") }}</span>
+          </v-card-title>
+          <v-divider />
           <v-card-text>
-            <div class="booking-caption">
-              {{ $t("group-booking.page.members.title") }}
-            </div>
             <div class="booking-rows">
               <div
                 v-for="item in members"
@@ -177,31 +179,32 @@
           </v-card-text>
         </v-card>
 
-        <v-card outlined class="group-booking-page__comments">
+        <v-card outlined class="group-booking-page__comments section-card">
+          <v-card-title class="section-header">
+            <v-icon>mdi-comment-text-outline</v-icon>
+            <span>{{ $t("group-booking.page.comments.internal") }}</span>
+            <v-spacer />
+            <v-btn
+              v-if="canEditComment && !editingComment"
+              icon
+              small
+              class="group-booking-page__comment-edit"
+              :title="$t('group-booking.page.comments.edit')"
+              @click="startEditingComment"
+            >
+              <v-icon small>mdi-pencil</v-icon>
+            </v-btn>
+          </v-card-title>
+          <v-divider />
           <v-card-text>
-            <div class="d-flex align-center justify-space-between">
-              <div class="booking-caption mb-0">
-                {{ $t("group-booking.page.comments.internal") }}
-              </div>
-              <v-btn
-                v-if="canEditComment && !editingComment"
-                icon
-                x-small
-                class="group-booking-page__comment-edit"
-                :title="$t('group-booking.page.comments.edit')"
-                @click="startEditingComment"
-              >
-                <v-icon small>mdi-pencil</v-icon>
-              </v-btn>
-            </div>
             <template v-if="!editingComment">
               <div
                 v-if="groupBooking.internalComments"
-                class="text-body-2 group-booking-page__comment-text mt-2"
+                class="text-body-2 group-booking-page__comment-text"
               >
                 {{ groupBooking.internalComments }}
               </div>
-              <div v-else class="text-body-2 text--secondary font-italic mt-2">
+              <div v-else class="text-body-2 text--secondary font-italic">
                 {{ $t("group-booking.page.comments.none") }}
               </div>
             </template>
@@ -214,7 +217,6 @@
                 auto-grow
                 :placeholder="$t('group-booking.page.comments.placeholder')"
                 hide-details="auto"
-                class="mt-3"
               />
               <div class="d-flex justify-end mt-3">
                 <v-btn
@@ -242,50 +244,54 @@
       </div>
 
       <!-- Detail panel -->
-      <v-card outlined class="group-booking-page__panel">
-        <v-card-text>
-          <div class="group-booking-page__strip">
-            <div class="text-h6 text-break group-booking-page__name">
-              {{ customer.name || "–" }}
-            </div>
-            <div v-if="customer.mail" class="text-body-2 text--secondary">
-              {{ customer.mail }}
-            </div>
-            <div class="booking-facts mt-3">
-              <div class="booking-fact group-booking-page__period">
-                <span
-                  class="booking-fact__label group-booking-page__fact-label"
-                >
-                  {{ $t("group-booking.page.strip.period") }}
-                </span>
-                <span class="booking-fact__value booking-fact__value--strong">
-                  {{ period }}
-                </span>
-                <v-btn
-                  v-if="members.length > 0"
-                  icon
-                  x-small
-                  class="group-booking-page__ical"
-                  :title="$t('group-booking.page.strip.download-ical')"
-                  @click="downloadIcal"
-                >
-                  <v-icon small>mdi-calendar-export</v-icon>
-                </v-btn>
+      <v-card outlined class="group-booking-page__panel section-card">
+        <!-- The panel's header: who booked, and when - the strip. -->
+        <v-card-title
+          class="section-header section-header--stacked group-booking-page__strip"
+        >
+          <div class="group-booking-page__identity">
+            <v-icon>mdi-account-outline</v-icon>
+            <div class="section-header__text">
+              <div class="section-header__title group-booking-page__name">
+                {{ customer.name || "–" }}
               </div>
-              <div
-                class="group-booking-page__dates text-caption text--secondary"
-              >
-                {{
-                  $t("group-booking.page.strip.dates", {
-                    count: members.length,
-                  })
-                }}
+              <div v-if="customer.mail" class="section-header__subtitle">
+                {{ customer.mail }}
               </div>
             </div>
           </div>
-
+          <div class="booking-facts group-booking-page__strip-facts">
+            <div class="booking-fact group-booking-page__period">
+              <span class="booking-fact__label group-booking-page__fact-label">
+                {{ $t("group-booking.page.strip.period") }}
+              </span>
+              <span class="booking-fact__value booking-fact__value--strong">
+                {{ period }}
+              </span>
+              <v-btn
+                v-if="members.length > 0"
+                icon
+                x-small
+                class="group-booking-page__ical"
+                :title="$t('group-booking.page.strip.download-ical')"
+                @click="downloadIcal"
+              >
+                <v-icon small>mdi-calendar-export</v-icon>
+              </v-btn>
+            </div>
+            <div class="group-booking-page__dates text-caption text--secondary">
+              {{
+                $t("group-booking.page.strip.dates", {
+                  count: members.length,
+                })
+              }}
+            </div>
+          </div>
+        </v-card-title>
+        <v-divider />
+        <v-card-text>
           <div class="group-booking-page__payment">
-            <div class="booking-caption booking-caption--spaced">
+            <div class="booking-caption">
               {{ $t("group-booking.page.payment.title") }}
             </div>
             <div class="booking-facts">
@@ -717,8 +723,17 @@ export default {
   margin-bottom: 16px;
 }
 
-.group-booking-page__name {
-  line-height: 1.3;
+/* The strip stacks the identity over the period, and its facts keep the
+   weight of facts rather than the header's. */
+.group-booking-page__identity {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.group-booking-page__strip-facts {
+  margin-top: 12px;
+  font-weight: 400;
 }
 
 .group-booking-page__period .group-booking-page__ical {
@@ -762,6 +777,7 @@ export default {
 @media (max-width: 959px) {
   .group-booking-page__body {
     flex-direction: column;
+    align-items: stretch;
   }
   .group-booking-page__panel {
     width: 100%;

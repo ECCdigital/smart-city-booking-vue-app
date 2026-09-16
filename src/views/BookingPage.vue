@@ -9,7 +9,7 @@
         @copy-link="copyLink"
       >
         <template v-if="state === 'ready' && groupBooking">
-          <span class="mx-2 grey--text">·</span>
+          <span class="booking-page__toolbar-dot mx-2 grey--text">·</span>
           <v-chip
             small
             outlined
@@ -90,12 +90,14 @@
         <v-card
           v-if="objects.length > 0"
           outlined
-          class="booking-page__objects"
+          class="booking-page__objects section-card"
         >
+          <v-card-title class="section-header">
+            <v-icon>mdi-cube-outline</v-icon>
+            <span>{{ $t("booking.page.objects.title") }}</span>
+          </v-card-title>
+          <v-divider />
           <v-card-text>
-            <div class="booking-caption">
-              {{ $t("booking.page.objects.title") }}
-            </div>
             <div class="booking-rows">
               <div
                 v-for="(item, index) in objects"
@@ -124,12 +126,14 @@
         <v-card
           v-if="customerFields.length > 0"
           outlined
-          class="booking-page__customer"
+          class="booking-page__customer section-card"
         >
+          <v-card-title class="section-header">
+            <v-icon>mdi-account-outline</v-icon>
+            <span>{{ $t("booking.page.customer.title") }}</span>
+          </v-card-title>
+          <v-divider />
           <v-card-text>
-            <div class="booking-caption">
-              {{ $t("booking.page.customer.title") }}
-            </div>
             <div class="booking-facts booking-facts--grid">
               <div
                 v-for="field in customerFields"
@@ -148,12 +152,14 @@
         <v-card
           v-if="customFields.length > 0"
           outlined
-          class="booking-page__custom-fields"
+          class="booking-page__custom-fields section-card"
         >
+          <v-card-title class="section-header">
+            <v-icon>mdi-form-textbox</v-icon>
+            <span>{{ $t("booking.page.custom-fields.title") }}</span>
+          </v-card-title>
+          <v-divider />
           <v-card-text>
-            <div class="booking-caption">
-              {{ $t("booking.page.custom-fields.title") }}
-            </div>
             <div class="booking-facts booking-facts--grid">
               <div
                 v-for="field in customFields"
@@ -172,12 +178,14 @@
         <v-card
           v-if="comments.length > 0"
           outlined
-          class="booking-page__comments"
+          class="booking-page__comments section-card"
         >
+          <v-card-title class="section-header">
+            <v-icon>mdi-comment-text-outline</v-icon>
+            <span>{{ $t("booking.page.comments.title") }}</span>
+          </v-card-title>
+          <v-divider />
           <v-card-text>
-            <div class="booking-caption">
-              {{ $t("booking.page.comments.title") }}
-            </div>
             <div
               v-for="(comment, index) in comments"
               :key="comment.key"
@@ -196,39 +204,47 @@
       </div>
 
       <!-- Detail panel -->
-      <v-card outlined class="booking-page__panel">
-        <v-card-text>
-          <div class="booking-page__strip">
-            <div class="text-h6 text-break booking-page__name">
-              {{ booking.name || "–" }}
-            </div>
-            <div v-if="booking.mail" class="text-body-2 text--secondary">
-              {{ booking.mail }}
-            </div>
-            <div class="booking-facts mt-3">
-              <div class="booking-fact booking-page__period">
-                <span class="booking-fact__label booking-page__fact-label">
-                  {{ $t("booking.page.strip.period") }}
-                </span>
-                <span class="booking-fact__value booking-fact__value--strong">
-                  {{ period }}
-                </span>
-                <v-btn
-                  v-if="hasCalendarEntry"
-                  icon
-                  x-small
-                  class="booking-page__ical"
-                  :title="$t('booking.page.strip.download-ical')"
-                  @click="downloadIcal"
-                >
-                  <v-icon small>mdi-calendar-export</v-icon>
-                </v-btn>
+      <v-card outlined class="booking-page__panel section-card">
+        <!-- The panel's header: who booked, and when - the strip. -->
+        <v-card-title
+          class="section-header section-header--stacked booking-page__strip"
+        >
+          <div class="booking-page__identity">
+            <v-icon>mdi-account-outline</v-icon>
+            <div class="section-header__text">
+              <div class="section-header__title booking-page__name">
+                {{ booking.name || "–" }}
+              </div>
+              <div v-if="booking.mail" class="section-header__subtitle">
+                {{ booking.mail }}
               </div>
             </div>
           </div>
-
+          <div class="booking-facts booking-page__strip-facts">
+            <div class="booking-fact booking-page__period">
+              <span class="booking-fact__label booking-page__fact-label">
+                {{ $t("booking.page.strip.period") }}
+              </span>
+              <span class="booking-fact__value booking-fact__value--strong">
+                {{ period }}
+              </span>
+              <v-btn
+                v-if="hasCalendarEntry"
+                icon
+                x-small
+                class="booking-page__ical"
+                :title="$t('booking.page.strip.download-ical')"
+                @click="downloadIcal"
+              >
+                <v-icon small>mdi-calendar-export</v-icon>
+              </v-btn>
+            </div>
+          </div>
+        </v-card-title>
+        <v-divider />
+        <v-card-text>
           <div class="booking-page__payment">
-            <div class="booking-caption booking-caption--spaced">
+            <div class="booking-caption">
               {{ $t("booking.page.payment.title") }}
             </div>
             <div class="booking-facts">
@@ -611,8 +627,17 @@ export default {
   margin-bottom: 16px;
 }
 
-.booking-page__name {
-  line-height: 1.3;
+/* The strip stacks the identity over the period, and its facts keep the
+   weight of facts rather than the header's. */
+.booking-page__identity {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.booking-page__strip-facts {
+  margin-top: 12px;
+  font-weight: 400;
 }
 
 .booking-page__period .booking-page__ical {
@@ -644,6 +669,7 @@ export default {
 @media (max-width: 959px) {
   .booking-page__body {
     flex-direction: column;
+    align-items: stretch;
   }
   .booking-page__panel {
     width: 100%;

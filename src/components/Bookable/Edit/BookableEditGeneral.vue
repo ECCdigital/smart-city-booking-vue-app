@@ -117,12 +117,7 @@ export default {
   <v-form ref="form" v-model="valid">
     <BaseSection title="Allgemein" icon="mdi-information-outline" />
 
-    <v-card
-      id="be-section-general-info"
-      class="mb-6 section-card"
-      elevation="2"
-      outlined
-    >
+    <v-card id="be-section-general-info" class="mb-6 section-card" outlined>
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-information-outline</v-icon>
         <span class="text-h6 font-weight-bold">Allgemeine Informationen</span>
@@ -178,12 +173,7 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card
-      id="be-section-general-images"
-      class="mb-6 section-card"
-      elevation="2"
-      outlined
-    >
+    <v-card id="be-section-general-images" class="mb-6 section-card" outlined>
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-image-multiple-outline</v-icon>
         <span class="text-h6 font-weight-bold">Bilder</span>
@@ -220,7 +210,6 @@ export default {
     <v-card
       id="be-section-general-booker-info"
       class="mb-6 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -268,7 +257,6 @@ export default {
       v-if="expertMode"
       id="be-section-general-tags"
       class="mb-6 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -313,24 +301,3 @@ export default {
     </v-card>
   </v-form>
 </template>
-
-<style scoped>
-.section-card {
-  border-radius: 8px !important;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
-}
-.section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.02) 0%,
-    rgba(0, 0, 0, 0.01) 100%
-  );
-}
-.theme--dark .section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
-}
-</style>

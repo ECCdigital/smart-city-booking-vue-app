@@ -139,7 +139,6 @@ export default {
     <v-card
       id="be-section-permissions-login"
       class="mb-6 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -164,7 +163,6 @@ export default {
     <v-card
       id="be-section-permissions-access"
       class="mb-6 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -221,7 +219,6 @@ export default {
     <v-card
       id="be-section-permissions-group-booking"
       class="mb-6 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -315,7 +312,6 @@ export default {
       v-if="expertMode"
       id="be-section-permissions-cancellation"
       class="mb-6 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -338,24 +334,3 @@ export default {
     </v-card>
   </v-form>
 </template>
-
-<style scoped>
-.section-card {
-  border-radius: 8px !important;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
-}
-.section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.02) 0%,
-    rgba(0, 0, 0, 0.01) 100%
-  );
-}
-.theme--dark .section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
-}
-</style>

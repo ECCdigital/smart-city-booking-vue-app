@@ -72,12 +72,16 @@
               v-for="t in visibleTabs"
               :key="t.key"
               class="bookable-edit-nav__group"
-              :class="{ 'bookable-edit-nav__group--active': activeTabKey === t.key }"
+              :class="{
+                'bookable-edit-nav__group--active': activeTabKey === t.key,
+              }"
             >
               <button
                 type="button"
                 class="bookable-edit-nav__tab"
-                :class="{ 'bookable-edit-nav__tab--active': activeTabKey === t.key }"
+                :class="{
+                  'bookable-edit-nav__tab--active': activeTabKey === t.key,
+                }"
                 @click="goToTab(t.key)"
               >
                 <v-icon small class="bookable-edit-nav__tab-icon">
@@ -177,9 +181,7 @@
       :anchor-el="
         $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
       "
-      :scroll-root="
-        $refs.editorScroll && ($refs.editorScroll.$el || $refs.editorScroll)
-      "
+      :scroll-root="scrollRoot"
       @submit="createOrUpdate"
       @cancel="onRestoreChanges"
       show-restore
@@ -265,6 +267,7 @@ export default {
   },
   data() {
     return {
+      scrollRoot: null,
       isLoading: false,
       inProgress: false,
       validRoot: true,
@@ -716,27 +719,24 @@ export default {
     },
   },
   mounted() {
+    this.scrollRoot = this.$el.closest(".admin-page__body--scroll");
     this.resolveTabFromQuery();
   },
 };
 </script>
 
 <style scoped>
+/* The page scrolls as one, as the booking editor does: the scrollbar sits at
+   the right edge of the page body, and the navigation and the overview stick
+   to the top while the sections pass by. */
 .page-content {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
 }
 
 .page-content__form {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
 }
 
 .page-content__top {
@@ -781,16 +781,16 @@ export default {
 
 .page-content__main {
   display: flex;
-  flex: 1;
-  min-height: 0;
+  align-items: flex-start;
   gap: 16px;
-  overflow: hidden;
 }
 
 .page-content__nav {
   flex: 0 0 auto;
-  min-height: 0;
-  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 64px);
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -974,11 +974,6 @@ export default {
 .page-content__editor {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-  padding-right: 4px;
   padding-bottom: calc(
     56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
       /* extra spacing */
@@ -990,9 +985,11 @@ export default {
 }
 
 .page-content__overview {
-  flex: 0 0 280px;
+  flex: 0 0 300px;
   max-width: 320px;
-  min-height: 0;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 64px);
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -1000,10 +997,13 @@ export default {
 @media (max-width: 959px) {
   .page-content__main {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .page-content__nav {
     flex: 0 0 auto;
+    position: static;
+    max-height: none;
     overflow-y: hidden;
   }
 
