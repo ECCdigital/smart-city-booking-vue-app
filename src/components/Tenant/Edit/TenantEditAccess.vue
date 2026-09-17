@@ -3,6 +3,7 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import AppPanel from "@/components/AppPanel.vue";
 import AccessAuditExport from "@/components/Tenant/Edit/AccessAuditExport.vue";
 import AccessAppCustomerServiceFields from "@/components/Tenant/Edit/AccessAppCustomerServiceFields.vue";
+import { emptyCustomerService } from "@/utilities/access-apps";
 import SaltoIqActivationSection from "@/components/Tenant/Edit/SaltoIqActivation/SaltoIqActivationSection.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import { SALTO_KS_COMING_SOON } from "@/utilities/coming-soon";
@@ -80,7 +81,7 @@ export default {
       }
       if (!cloned.nuki.customerService) {
         // Stored before the contact existed: read as an empty contact.
-        cloned.nuki.customerService = { name: "", email: "", phone: "" };
+        cloned.nuki.customerService = emptyCustomerService();
       }
       if (!cloned["salto-ks"]) {
         cloned["salto-ks"] = {

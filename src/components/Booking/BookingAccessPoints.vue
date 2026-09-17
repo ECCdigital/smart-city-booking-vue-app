@@ -21,6 +21,7 @@ import {
   accessStateChip,
   hasAccessWindow,
   hasCapability,
+  isAfterAccessWindow,
   isBeforeAccessWindow,
   isRemotelyOperable,
   isWithinAccessWindow,
@@ -322,12 +323,12 @@ export default {
     },
     accessWindowHint(entry) {
       if (!hasAccessWindow(entry)) return "";
-      if (this.now < entry.accessFrom) {
+      if (isBeforeAccessWindow(entry, this.now)) {
         return this.$t("accessPoint.booking.window.before", {
           time: this.formatDateTime(entry.accessFrom),
         });
       }
-      if (this.now > entry.accessTo) {
+      if (isAfterAccessWindow(entry, this.now)) {
         return this.$t("accessPoint.booking.window.after", {
           time: this.formatDateTime(entry.accessTo),
         });
@@ -342,8 +343,7 @@ export default {
      * speaks of are dead for everyone else.
      */
     accessWindowOverrideHint(entry) {
-      if (!this.canControl || !hasAccessWindow(entry)) return "";
-      if (this.now <= entry.accessTo) return "";
+      if (!this.canControl || !isAfterAccessWindow(entry, this.now)) return "";
       return this.$t("accessPoint.booking.window.afterOverride");
     },
     formatDateTime(value) {

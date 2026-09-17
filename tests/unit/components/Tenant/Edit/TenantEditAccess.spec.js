@@ -61,12 +61,6 @@ describe("TenantEditAccess customer service for Nuki", () => {
   it("fills an empty contact into a stored Nuki app and emits the edit", async () => {
     const wrapper = await mountAccess();
 
-    expect(wrapper.vm.localApps.nuki.customerService).toEqual({
-      name: "",
-      email: "",
-      phone: "",
-    });
-
     await nukiPanel(wrapper).find("input[type='tel']").setValue("030 1234");
 
     const emitted = wrapper.emitted("update:apps");

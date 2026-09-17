@@ -184,6 +184,19 @@ export function isBeforeAccessWindow(entry, now) {
 }
 
 /**
+ * Whether the entry's window has ended: the span the Admin Override applies
+ * to. An entry without a window is never after one.
+ *
+ * @param {Object} entry One entry of the projection
+ * @param {number} now The moment to judge by, in milliseconds
+ * @returns {boolean} Whether now lies after the window
+ */
+export function isAfterAccessWindow(entry, now) {
+  if (!hasAccessWindow(entry)) return false;
+  return now > entry.accessTo;
+}
+
+/**
  * Why the open button of this entry is dead, in the backend's own reason
  * vocabulary - or `null` where nothing stands in the way.
  *

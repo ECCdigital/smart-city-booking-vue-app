@@ -2,6 +2,7 @@
 import BaseSection from "@/components/commons/BaseSection.vue";
 import AppPanel from "@/components/AppPanel.vue";
 import AccessAppCustomerServiceFields from "@/components/Tenant/Edit/AccessAppCustomerServiceFields.vue";
+import { emptyCustomerService } from "@/utilities/access-apps";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 
 export default {
@@ -59,7 +60,7 @@ export default {
     cloneApps(apps) {
       const cloned = JSON.parse(JSON.stringify(apps));
       if (cloned.ifbs && !cloned.ifbs.customerService) {
-        cloned.ifbs.customerService = { name: "", email: "", phone: "" };
+        cloned.ifbs.customerService = emptyCustomerService();
       }
       return cloned;
     },

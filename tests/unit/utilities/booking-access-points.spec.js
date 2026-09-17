@@ -6,6 +6,7 @@ import {
   accessState,
   accessStateChip,
   hasCapability,
+  isAfterAccessWindow,
   isBeforeAccessWindow,
   isRemotelyOperable,
   openBlockOf,
@@ -196,6 +197,34 @@ describe("isBeforeAccessWindow", () => {
       isBeforeAccessWindow(operable({ accessFrom: null, accessTo: null }), NOW)
     ).toBe(false);
     expect(isBeforeAccessWindow(undefined, NOW)).toBe(false);
+  });
+});
+
+describe("isAfterAccessWindow", () => {
+  it("is true once the window has ended", () => {
+    expect(
+      isAfterAccessWindow(
+        operable({ accessFrom: NOW - 2 * HOUR, accessTo: NOW - HOUR }),
+        NOW
+      )
+    ).toBe(true);
+  });
+
+  it("is false inside and before the window", () => {
+    expect(isAfterAccessWindow(operable(), NOW)).toBe(false);
+    expect(
+      isAfterAccessWindow(
+        operable({ accessFrom: NOW + HOUR, accessTo: NOW + 2 * HOUR }),
+        NOW
+      )
+    ).toBe(false);
+  });
+
+  it("is false where the entry declares no window", () => {
+    expect(
+      isAfterAccessWindow(operable({ accessFrom: null, accessTo: null }), NOW)
+    ).toBe(false);
+    expect(isAfterAccessWindow(undefined, NOW)).toBe(false);
   });
 });
 
