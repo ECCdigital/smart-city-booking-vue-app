@@ -333,6 +333,65 @@ describe("getApiErrorMessage", () => {
     });
   });
 
+  /**
+   * Saving an access point makes the backend ask the provider (Nuki lists its
+   * locks to check the mode); when the provider refuses the token it answers
+   * 502, when it does not answer at all 503, both with `params.provider`. The
+   * coded sentence names the provider and, on a 503, says that nothing was
+   * saved. The generic entry of each status is reached without a code - a
+   * bare gateway 502 or a maintenance 503 on any screen - so it names neither
+   * a provider nor a save.
+   */
+  describe("on a 502 response", () => {
+    it("names the provider that rejected the access", () => {
+      const error = lifecycleError(502, "access_provider_rejected", {
+        provider: "nuki",
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "nuki hat den Zugriff abgelehnt. Bitte die Anwendung des Mandanten prüfen."
+      );
+    });
+
+    it("falls back to the generic bad-gateway sentence on an unknown code", () => {
+      expect(
+        getApiErrorMessage(lifecycleError(502, "some_new_code"), FALLBACK)
+      ).toBe(
+        "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen."
+      );
+    });
+
+    it("uses the same generic sentence without a body", () => {
+      expect(getApiErrorMessage({ response: { status: 502 } }, FALLBACK)).toBe(
+        "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen."
+      );
+    });
+  });
+
+  describe("on a 503 response", () => {
+    it("names the provider that is unreachable and says nothing was saved", () => {
+      const error = lifecycleError(503, "access_provider_unreachable", {
+        provider: "nuki",
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "nuki ist gerade nicht erreichbar. Die Einstellung wurde nicht gespeichert. Bitte später erneut versuchen."
+      );
+    });
+
+    it("falls back to the generic unavailable sentence on an unknown code", () => {
+      expect(
+        getApiErrorMessage(lifecycleError(503, "some_new_code"), FALLBACK)
+      ).toBe(
+        "Ein angebundener Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen."
+      );
+    });
+
+    it("uses the same generic sentence without a body", () => {
+      expect(getApiErrorMessage({ response: { status: 503 } }, FALLBACK)).toBe(
+        "Ein angebundener Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen."
+      );
+    });
+  });
+
   describe("on any other status", () => {
     it("ignores a 404 and a 500 body", () => {
       expect(

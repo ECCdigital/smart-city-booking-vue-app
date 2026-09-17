@@ -37,6 +37,20 @@ const NOT_FOUND_CODE_PREFIX = "errors.not-found-codes";
 const BAD_REQUEST_CODE_PREFIX = "errors.bad-request-codes";
 
 /**
+ * Saving an access point makes the backend ask the provider (Nuki lists its
+ * locks to check the mode). A provider that refuses the tenant's token
+ * answers 502 `access_provider_rejected`, one that does not answer at all 503
+ * `access_provider_unreachable`, both with `params.provider`. An unknown code
+ * and a body without one read as the generic entry of the status - which a
+ * bare gateway 502 or a maintenance 503 reaches on any screen, so it names
+ * neither a provider nor a save.
+ */
+const BAD_GATEWAY_CODE_PREFIX = "errors.bad-gateway-codes";
+const GENERIC_BAD_GATEWAY_KEY = `${BAD_GATEWAY_CODE_PREFIX}.bad_gateway`;
+const UNAVAILABLE_CODE_PREFIX = "errors.unavailable-codes";
+const GENERIC_UNAVAILABLE_KEY = `${UNAVAILABLE_CODE_PREFIX}.unavailable`;
+
+/**
  * The status the Admin BFF answers a failed CSRF check with (`bff/src/csrf.js`).
  * It is not a backend `ForbiddenError`: the request never reached the backend,
  * and the user is not lacking a permission - the browser sent a mutating
@@ -194,7 +208,8 @@ export function shouldRefetch(error) {
  * plain-text body (e.g. the server-side PDF template validation of
  * `PUT /api/tenants`) returns that text, a 403 the message translated over
  * `code`, a 409 the conflict translated over `code`, a 419 the hint that the
- * session is no longer fresh; anything else returns the fallback.
+ * session is no longer fresh, a 502 and a 503 the provider failure translated
+ * over `code`; anything else returns the fallback.
  */
 export function getApiErrorMessage(error, fallback) {
   if (error?.response?.status === 400) {
@@ -226,6 +241,18 @@ export function getApiErrorMessage(error, fallback) {
   // reason, so the body is not read.
   if (error?.response?.status === CSRF_FAILED_STATUS) {
     return i18n.t(SESSION_EXPIRED_KEY);
+  }
+  if (error?.response?.status === 502) {
+    return (
+      getCodedMessage(error.response.data, 502, BAD_GATEWAY_CODE_PREFIX) ??
+      i18n.t(GENERIC_BAD_GATEWAY_KEY)
+    );
+  }
+  if (error?.response?.status === 503) {
+    return (
+      getCodedMessage(error.response.data, 503, UNAVAILABLE_CODE_PREFIX) ??
+      i18n.t(GENERIC_UNAVAILABLE_KEY)
+    );
   }
   return fallback;
 }

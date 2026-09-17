@@ -108,6 +108,14 @@
       "invalid_status": "In diesem Zustand kann keine Buchung angelegt werden.",
       "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum."
     },
+    "bad-gateway-codes": {
+      "bad_gateway": "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.",
+      "access_provider_rejected": "{provider} hat den Zugriff abgelehnt. Bitte die Anwendung des Mandanten prüfen."
+    },
+    "unavailable-codes": {
+      "unavailable": "Ein angebundener Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.",
+      "access_provider_unreachable": "{provider} ist gerade nicht erreichbar. Die Einstellung wurde nicht gespeichert. Bitte später erneut versuchen."
+    },
     "interface-forbidden": {
       "title": "Kein Zugriff auf diesen Bereich",
       "message": "Für diesen Bereich fehlt Ihnen die Berechtigung im aktuellen Mandanten."
@@ -1428,7 +1436,8 @@
           "enum": "Unzulässiger Wert",
           "validate": "Unzulässiger Wert",
           "type_array": "Es wird eine Liste erwartet",
-          "type_string": "Es wird ein Text erwartet"
+          "type_string": "Es wird ein Text erwartet",
+          "unsupported_mode": "Dieses Schloss unterstützt den gewählten Modus nicht."
         },
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },
