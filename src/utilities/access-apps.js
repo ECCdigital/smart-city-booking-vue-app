@@ -39,6 +39,16 @@ export function findTenantApp(applications, id) {
   return stored;
 }
 
+/**
+ * The Provider Support Contact an access application starts with: every
+ * field present and empty, so the form binds and the backend stores `null`
+ * for nothing entered. Shared by the defaults and by the panels that read a
+ * stored app without one.
+ */
+export function emptyCustomerService() {
+  return { name: "", email: "", phone: "" };
+}
+
 export function createLockAndAccessAppDefaults() {
   return {
     pareva: {
@@ -60,11 +70,7 @@ export function createLockAndAccessAppDefaults() {
       apiKeyID: "",
       apiKey: "",
       active: false,
-      customerService: {
-        name: "",
-        email: "",
-        phone: "",
-      },
+      customerService: emptyCustomerService(),
     },
     nuki: {
       type: "access",
@@ -73,6 +79,7 @@ export function createLockAndAccessAppDefaults() {
       apiToken: "",
       apiBaseUrl: "https://api.nuki.io",
       active: false,
+      customerService: emptyCustomerService(),
     },
     "salto-ks": {
       type: "access",

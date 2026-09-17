@@ -169,6 +169,34 @@ export function isWithinAccessWindow(entry, now) {
 }
 
 /**
+ * Whether the entry's window has not started yet. This is the gate of the
+ * Admin Override: closing and reading a lock is allowed after the window,
+ * never before it - a lock standing open before a booking starts is not this
+ * booking's business. An entry without a window is never before one.
+ *
+ * @param {Object} entry One entry of the projection
+ * @param {number} now The moment to judge by, in milliseconds
+ * @returns {boolean} Whether now lies before the window
+ */
+export function isBeforeAccessWindow(entry, now) {
+  if (!hasAccessWindow(entry)) return false;
+  return now < entry.accessFrom;
+}
+
+/**
+ * Whether the entry's window has ended: the span the Admin Override applies
+ * to. An entry without a window is never after one.
+ *
+ * @param {Object} entry One entry of the projection
+ * @param {number} now The moment to judge by, in milliseconds
+ * @returns {boolean} Whether now lies after the window
+ */
+export function isAfterAccessWindow(entry, now) {
+  if (!hasAccessWindow(entry)) return false;
+  return now > entry.accessTo;
+}
+
+/**
  * Why the open button of this entry is dead, in the backend's own reason
  * vocabulary - or `null` where nothing stands in the way.
  *

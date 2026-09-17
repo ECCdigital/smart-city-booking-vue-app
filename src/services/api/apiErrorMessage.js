@@ -159,6 +159,20 @@ export function isOutOfReach(error) {
 }
 
 /**
+ * Whether an access command was refused because the lock is still carrying
+ * out its previous command. The backend answers a real HTTP 423 with
+ * `code: "lock_busy"` (`LockBusyError`); either half alone is enough, so a
+ * bare 423 and a body naming the code both read as busy. It is a state of the
+ * lock, not a denial: the caller shows it and lets the person try again.
+ */
+export function isLockBusyError(error) {
+  return (
+    error?.response?.status === 423 ||
+    error?.response?.data?.code === "lock_busy"
+  );
+}
+
+/**
  * The refetch rule of spec E5: after every 409 and 404 the host reloads the
  * booking (form, detail) or the list (list, calendar, kanban), so that the
  * screen shows the server's state instead of the one the transition was

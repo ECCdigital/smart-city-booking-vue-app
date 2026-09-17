@@ -1,6 +1,10 @@
 <script>
 import ApiAccessService from "@/services/api/ApiAccessService";
-import { isForbiddenError, isOutOfReach } from "@/services/api/apiErrorMessage";
+import {
+  isForbiddenError,
+  isLockBusyError,
+  isOutOfReach,
+} from "@/services/api/apiErrorMessage";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
@@ -17,6 +21,8 @@ import {
   accessStateChip,
   hasAccessWindow,
   hasCapability,
+  isAfterAccessWindow,
+  isBeforeAccessWindow,
   isRemotelyOperable,
   isWithinAccessWindow,
   openBlockOf,
@@ -56,6 +62,8 @@ const CLOSE_CONFIRM_DELAY_MS = 1500;
 const DENIED_NO_PERMISSION = "accessPoint.booking.denied.noPermission";
 const DENIED_NOT_IN_BOOKING = "accessPoint.booking.denied.notInBooking";
 const DENIED_NOT_OPERABLE = "accessPoint.booking.denied.notOperable";
+/** The lock is still busy with its previous command (HTTP 423, `lock_busy`). */
+const LOCK_BUSY = "accessPoint.booking.lockBusy";
 
 /**
  * The accesses of one booking: the doors it opens and the compartments a
@@ -176,6 +184,10 @@ export default {
     /**
      * Why the status button is dead, or null while it is not. Blocked with
      * its reason rather than hidden, for the reason the open button is.
+     *
+     * Reading the status is part of the Admin Override: it stays possible
+     * after the window and is only fenced off before it, so the window end
+     * is no reason here.
      */
     statusBlockReason(entry) {
       if (!this.canControl) {
@@ -184,7 +196,24 @@ export default {
       if (!this.canQueryStatus(entry)) {
         return this.$t("accessPoint.booking.blocked.noStatus");
       }
-      return null;
+      return this.beforeWindowReason(entry);
+    },
+    /**
+     * Why the close button is dead, or null while it is not. Closing is the
+     * other half of the Admin Override: allowed inside and after the window,
+     * never before it.
+     */
+    closeBlockReason(entry) {
+      if (!this.canControl) {
+        return this.$t("accessPoint.booking.blocked.forbidden");
+      }
+      return this.beforeWindowReason(entry);
+    },
+    /** The "before" hint of the window while it has not started, else null. */
+    beforeWindowReason(entry) {
+      return isBeforeAccessWindow(entry, this.now)
+        ? this.accessWindowHint(entry)
+        : null;
     },
     /**
      * Why the open button is dead, or null while it is not. The button stays
@@ -266,6 +295,11 @@ export default {
      * into. A 403 the middleware sent carries a `ForbiddenError` body and is
      * a denial whatever the route is, so it is answered before the reading.
      *
+     * A busy lock (HTTP 423, `lock_busy`) is answered before either reading:
+     * it is a state of the lock, not a decision of the platform, and the
+     * person only has to wait a moment and try again. No cooldown and no
+     * retry here.
+     *
      * @param {Error} error The rejected call
      * @param {Object} reading
      * @param {string} reading.forbiddenKey What the route's own 403 means
@@ -273,6 +307,9 @@ export default {
      * @returns {string} The message to show at the access point
      */
     resolveAccessError(error, { forbiddenKey, fallbackKey }) {
+      if (isLockBusyError(error)) {
+        return this.$t(LOCK_BUSY);
+      }
       if (!isForbiddenError(error)) {
         return this.$t(fallbackKey);
       }
@@ -286,12 +323,12 @@ export default {
     },
     accessWindowHint(entry) {
       if (!hasAccessWindow(entry)) return "";
-      if (this.now < entry.accessFrom) {
+      if (isBeforeAccessWindow(entry, this.now)) {
         return this.$t("accessPoint.booking.window.before", {
           time: this.formatDateTime(entry.accessFrom),
         });
       }
-      if (this.now > entry.accessTo) {
+      if (isAfterAccessWindow(entry, this.now)) {
         return this.$t("accessPoint.booking.window.after", {
           time: this.formatDateTime(entry.accessTo),
         });
@@ -299,6 +336,15 @@ export default {
       return this.$t("accessPoint.booking.window.until", {
         time: this.formatDateTime(entry.accessTo),
       });
+    },
+    /**
+     * What the Admin Override still allows once the window has ended - said
+     * only to someone who may control the booking, since the buttons it
+     * speaks of are dead for everyone else.
+     */
+    accessWindowOverrideHint(entry) {
+      if (!this.canControl || !isAfterAccessWindow(entry, this.now)) return "";
+      return this.$t("accessPoint.booking.window.afterOverride");
     },
     formatDateTime(value) {
       if (!value) return "";
@@ -515,7 +561,7 @@ export default {
       }
     },
     async close(entry) {
-      if (!this.canControl) return;
+      if (this.closeBlockReason(entry)) return;
       const id = entry.id;
       this.$set(this.actionLoading, id + "_close", true);
       this.$set(this.errors, id, null);
@@ -879,7 +925,12 @@ export default {
                       : "mdi-clock-alert-outline"
                   }}
                 </v-icon>
-                <span>{{ accessWindowHint(entry) }}</span>
+                <span>
+                  {{ accessWindowHint(entry) }}
+                  <template v-if="accessWindowOverrideHint(entry)">
+                    {{ accessWindowOverrideHint(entry) }}
+                  </template>
+                </span>
               </div>
             </div>
           </div>
@@ -923,10 +974,10 @@ export default {
                 small
                 outlined
                 color="warning"
+                data-test="access-close"
+                :title="closeBlockReason(entry) || ''"
                 :loading="actionLoading[entry.id + '_close']"
-                :disabled="
-                  !canControl || !isWithinAccessWindow(entry) || isBusy(entry)
-                "
+                :disabled="Boolean(closeBlockReason(entry)) || isBusy(entry)"
                 @click="close(entry)"
               >
                 <v-icon left small>mdi-lock</v-icon>
@@ -937,6 +988,7 @@ export default {
                 small
                 outlined
                 color="primary"
+                data-test="access-unlatch"
                 :loading="actionLoading[entry.id + '_unlatch']"
                 :disabled="Boolean(openBlockReason(entry)) || isBusy(entry)"
                 :title="openBlockReason(entry) || ''"

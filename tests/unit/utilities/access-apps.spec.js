@@ -35,6 +35,23 @@ describe("lock and access app defaults", () => {
       active: false,
     });
   });
+
+  /**
+   * The storefront shows the provider's customer service below the open
+   * button of a door. The backend keeps `customerService` on every access
+   * application, but the admin form only writes it for the providers whose
+   * defaults carry it - iFBS and Nuki. Pareva and Salto KS deliberately stay
+   * without one.
+   */
+  it("gives iFBS and Nuki an empty customer service, the others none", () => {
+    const defaults = createLockAndAccessAppDefaults();
+    const empty = { name: "", email: "", phone: "" };
+
+    expect(defaults.ifbs.customerService).toEqual(empty);
+    expect(defaults.nuki.customerService).toEqual(empty);
+    expect(defaults.pareva).not.toHaveProperty("customerService");
+    expect(defaults["salto-ks"]).not.toHaveProperty("customerService");
+  });
 });
 
 /**

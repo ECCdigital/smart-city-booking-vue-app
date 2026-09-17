@@ -1488,6 +1488,15 @@
       "permissionsNote": "Den umfassenden Scope „Geräte verwalten“ (smartlock) bewusst NICHT vergeben (Least Privilege). Das Backend liest Geräte nur, legt sie aber nicht an und ändert keine Gerätekonfiguration.",
       "testConnection": "Verbindung testen",
       "connectionSuccess": "Verbindung erfolgreich!",
+      "customerService": {
+        "title": "Kundenservice",
+        "hint": "Diese Kontaktdaten werden dem Kunden angezeigt, sofern angegeben. Alle Felder sind optional.",
+        "name": "Name / Ansprechpartner",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "invalidEmail": "Muss eine gültige Email-Adresse sein.",
+        "invalidPhone": "Muss eine gültige Telefonnummer sein."
+      },
       "salto": {
         "providerTitle": "Salto KS – Cloud-Schließanlage",
         "providerDescription": "Mit Salto KS verwalten Sie Türen cloudbasiert. Buchende erhalten während ihres Buchungszeitraums automatisch eine zeitlich begrenzte Zutrittsberechtigung und einen PIN-Code.",
@@ -1725,8 +1734,9 @@
       "denied": {
         "noPermission": "Ihnen fehlt die Berechtigung, diesen Zugangspunkt aus dieser Buchung zu bedienen.",
         "notInBooking": "Dieser Zugangspunkt gehört nicht mehr zu dieser Buchung. Bitte laden Sie die Zugänge neu.",
-        "notOperable": "Dieser Zugangspunkt lässt sich aus dieser Buchung derzeit nicht bedienen – etwa weil das Zeitfenster abgelaufen ist, die Berechtigung fehlt oder widerrufen wurde, oder die Buchung noch offen ist."
+        "notOperable": "Dieser Zugangspunkt lässt sich aus dieser Buchung derzeit nicht bedienen – die Buchung ist noch offen, unbezahlt oder abgelehnt, oder die Berechtigung fehlt oder wurde widerrufen."
       },
+      "lockBusy": "Das Schloss ist noch mit dem vorherigen Befehl beschäftigt. Bitte kurz warten und erneut versuchen.",
       "status": {
         "waitingClose": "Warte auf Schließen…",
         "waitingOpen": "Warte auf Bestätigung…",
@@ -1740,6 +1750,7 @@
       "window": {
         "before": "Zugang ab {time} möglich.",
         "after": "Zugangszeitraum bis {time} abgelaufen.",
+        "afterOverride": "Schließen und Statusabfrage sind weiterhin möglich.",
         "until": "Zugang bis {time} möglich.",
         "outside": "Außerhalb des erlaubten Zeitfensters. {hint}"
       }
