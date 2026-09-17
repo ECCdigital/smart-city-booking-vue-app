@@ -13,21 +13,45 @@
       hide-details
       filled
       class="raw-html-textarea"
+      ref="htmlField"
       @input="onChange"
-    />
+    >
+      <template #append>
+        <MailVariablePicker
+          :variables="variables"
+          :tenant="tenant"
+          field="html"
+          icon
+          @insert="insertVariable"
+        />
+      </template>
+    </v-textarea>
+    <div class="text-caption grey--text mt-1">
+      Bedingungen (<code v-pre>{{#if}}</code
+      >) nicht zwischen <code>&lt;table&gt;</code>-Tags setzen.
+    </div>
   </div>
 </template>
 
 <script>
+import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import { insertIntoField } from "@/components/Mail/fieldInsert.js";
+
 export default {
   name: "RawHtmlBlock",
+  components: { MailVariablePicker },
   props: {
     block: { type: Object, required: true },
+    variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     selected: { type: Boolean, default: false },
   },
   methods: {
     onChange(v) {
       this.$emit("update", { ...this.block, html: v });
+    },
+    insertVariable(expr) {
+      insertIntoField(this.$refs.htmlField, expr, this.onChange);
     },
   },
 };

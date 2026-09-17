@@ -36,7 +36,17 @@
               :counter="MAX_SUBJECT_LENGTH"
               :error-messages="subjectErrors"
               :placeholder="snippet.defaultSubject"
+              ref="subjectField"
             >
+              <template #append>
+                <MailVariablePicker
+                  :variables="variables"
+                  :tenant="tenant"
+                  field="subject"
+                  icon
+                  @insert="insertSubjectVariable"
+                />
+              </template>
               <template #append-outer>
                 <v-btn
                   small
@@ -296,6 +306,8 @@
 
 <script>
 import CombinedSnippetBlockEditor from "./BlockEditor/CombinedSnippetBlockEditor.vue";
+import MailVariablePicker from "./MailVariablePicker.vue";
+import { insertIntoField } from "./fieldInsert.js";
 import { renderBlocksToHtml } from "./BlockEditor/render/renderBlocksToHtml.js";
 import {
   extractBlockMetadata,
@@ -312,7 +324,7 @@ import { buildSnippetPreviewExtrasHtml, sampleBookingPeriod } from "./snippetPre
 
 export default {
   name: "SnippetEditorDialog",
-  components: { CombinedSnippetBlockEditor },
+  components: { CombinedSnippetBlockEditor, MailVariablePicker },
   props: {
     open: { type: Boolean, default: false },
     snippetKey: { type: String, default: "" },
@@ -454,6 +466,11 @@ export default {
     },
   },
   methods: {
+    insertSubjectVariable(expr) {
+      insertIntoField(this.$refs.subjectField, expr, (v) => {
+        this.subjectValue = v;
+      });
+    },
     loadSectionFromHtml(incoming, { allowEmptyVisual = false } = {}) {
       if (!incoming) {
         return {

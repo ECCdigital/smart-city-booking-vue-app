@@ -122,8 +122,19 @@
           outlined
           hide-details
           class="mb-2"
+          ref="srcField"
           @input="(v) => onUpdate('src', v)"
-        />
+        >
+          <template #append>
+            <MailVariablePicker
+              :variables="variables"
+              :tenant="tenant"
+              field="url"
+              icon
+              @insert="(expr) => insertVariable('srcField', 'src', expr)"
+            />
+          </template>
+        </v-text-field>
         <v-alert
           v-if="selectedBlock.src && selectedBlock.src.startsWith('http://')"
           type="warning"
@@ -140,8 +151,19 @@
           outlined
           hide-details
           class="mb-2"
+          ref="altField"
           @input="(v) => onUpdate('alt', v)"
-        />
+        >
+          <template #append>
+            <MailVariablePicker
+              :variables="variables"
+              :tenant="tenant"
+              field="line"
+              icon
+              @insert="(expr) => insertVariable('altField', 'alt', expr)"
+            />
+          </template>
+        </v-text-field>
         <v-text-field
           label="Breite (px)"
           type="number"
@@ -169,8 +191,19 @@
           dense
           outlined
           hide-details
+          ref="linkField"
           @input="(v) => onUpdate('link', v)"
-        />
+        >
+          <template #append>
+            <MailVariablePicker
+              :variables="variables"
+              :tenant="tenant"
+              field="url"
+              icon
+              @insert="(expr) => insertVariable('linkField', 'link', expr)"
+            />
+          </template>
+        </v-text-field>
       </div>
 
       <!-- Button -->
@@ -182,8 +215,19 @@
           outlined
           hide-details
           class="mb-2"
+          ref="labelField"
           @input="(v) => onUpdate('label', v)"
-        />
+        >
+          <template #append>
+            <MailVariablePicker
+              :variables="variables"
+              :tenant="tenant"
+              field="line"
+              icon
+              @insert="(expr) => insertVariable('labelField', 'label', expr)"
+            />
+          </template>
+        </v-text-field>
         <v-text-field
           label="Link-Ziel"
           :value="selectedBlock.href || ''"
@@ -192,8 +236,19 @@
           outlined
           hide-details
           class="mb-2"
+          ref="hrefField"
           @input="(v) => onUpdate('href', v)"
-        />
+        >
+          <template #append>
+            <MailVariablePicker
+              :variables="variables"
+              :tenant="tenant"
+              field="url"
+              icon
+              @insert="(expr) => insertVariable('hrefField', 'href', expr)"
+            />
+          </template>
+        </v-text-field>
         <v-btn
           small
           text
@@ -361,8 +416,19 @@
           dense
           outlined
           hide-details
+          ref="titleField"
           @input="(v) => onUpdate('title', v)"
-        />
+        >
+          <template #append>
+            <MailVariablePicker
+              :variables="variables"
+              :tenant="tenant"
+              field="line"
+              icon
+              @insert="(expr) => insertVariable('titleField', 'title', expr)"
+            />
+          </template>
+        </v-text-field>
       </div>
 
       <!-- Quote -->
@@ -374,8 +440,19 @@
           outlined
           hide-details
           class="mb-2"
+          ref="citeField"
           @input="(v) => onUpdate('cite', v)"
-        />
+        >
+          <template #append>
+            <MailVariablePicker
+              :variables="variables"
+              :tenant="tenant"
+              field="line"
+              icon
+              @insert="(expr) => insertVariable('citeField', 'cite', expr)"
+            />
+          </template>
+        </v-text-field>
         <v-select
           :items="alignOptions"
           label="Ausrichtung"
@@ -402,6 +479,7 @@
     <MailtoLinkDialog
       :open="mailtoDialogOpen"
       :variables="variables"
+      :tenant="tenant"
       :initial-href="mailtoDialogHref"
       :show-link-text="false"
       @close="mailtoDialogOpen = false"
@@ -413,6 +491,8 @@
 <script>
 import { BLOCK_PALETTE } from "./blockFactory.js";
 import MailtoLinkDialog from "./MailtoLinkDialog.vue";
+import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import { insertIntoField } from "@/components/Mail/fieldInsert.js";
 import { SUPPORT_EMAIL_MAILTO } from "@/components/Mail/templateVariables.js";
 import {
   FONT_SIZE_OPTIONS,
@@ -421,10 +501,11 @@ import {
 
 export default {
   name: "BlockPropertiesPanel",
-  components: { MailtoLinkDialog },
+  components: { MailtoLinkDialog, MailVariablePicker },
   props: {
     selectedBlock: { type: Object, default: null },
     variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
   },
   data: () => ({
     mailtoDialogOpen: false,
@@ -468,6 +549,9 @@ export default {
     },
     onApplyMailto({ href }) {
       this.onUpdate("href", href);
+    },
+    insertVariable(refName, key, expr) {
+      insertIntoField(this.$refs[refName], expr, (v) => this.onUpdate(key, v));
     },
   },
 };

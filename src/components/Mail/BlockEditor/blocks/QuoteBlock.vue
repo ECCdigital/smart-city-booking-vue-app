@@ -10,17 +10,34 @@
       flat
       solo
       background-color="transparent"
+      ref="textField"
       @input="onText"
-    />
+    >
+      <template #append>
+        <MailVariablePicker
+          :variables="variables"
+          :tenant="tenant"
+          field="line"
+          icon
+          @insert="insertVariable"
+        />
+      </template>
+    </v-textarea>
     <footer v-if="block.cite" class="mt-1 text-caption">— {{ block.cite }}</footer>
   </blockquote>
 </template>
 
 <script>
+import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import { insertIntoField } from "@/components/Mail/fieldInsert.js";
+
 export default {
   name: "QuoteBlock",
+  components: { MailVariablePicker },
   props: {
     block: { type: Object, required: true },
+    variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     selected: { type: Boolean, default: false },
   },
   computed: {
@@ -35,6 +52,9 @@ export default {
   methods: {
     onText(v) {
       this.$emit("update", { ...this.block, text: v });
+    },
+    insertVariable(expr) {
+      insertIntoField(this.$refs.textField, expr, this.onText);
     },
   },
 };

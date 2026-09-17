@@ -2,8 +2,15 @@
   <v-menu offset-y content-class="mail-variable-picker-content">
     <template #activator="{ on, attrs }">
       <slot name="activator" :on="on" :attrs="attrs">
-        <v-btn x-small v-bind="attrs" v-on="on" title="Variable einfügen">
-          <v-icon x-small>mdi-code-tags</v-icon>
+        <v-btn
+          x-small
+          :icon="icon"
+          class="mail-variable-picker-activator"
+          v-bind="attrs"
+          v-on="on"
+          title="Variable einfügen"
+        >
+          <v-icon :small="icon" :x-small="!icon">mdi-code-tags</v-icon>
         </v-btn>
       </slot>
     </template>
@@ -45,7 +52,8 @@ import {
  * filters the (already snippet-filtered) catalog by the field's kind, builds
  * the expression and emits `insert(expr, entry)`; how the field inserts it
  * is the field's business. `tenant` is the live tenant for the conditional-variable
- * warnings that come with `requires`.
+ * warnings that come with `requires`. `icon` renders the default activator as
+ * an icon button, the shape for the append slot of a text field.
  */
 export default {
   name: "MailVariablePicker",
@@ -57,6 +65,7 @@ export default {
       validator: (v) => ["url", "line", "text", "html", "subject"].includes(v),
     },
     tenant: { type: Object, default: () => ({}) },
+    icon: { type: Boolean, default: false },
   },
   computed: {
     loadable() {

@@ -9,16 +9,33 @@
       solo
       background-color="transparent"
       :style="headingStyle"
+      ref="textField"
       @input="onTextChange"
-    />
+    >
+      <template #append>
+        <MailVariablePicker
+          :variables="variables"
+          :tenant="tenant"
+          field="line"
+          icon
+          @insert="insertVariable"
+        />
+      </template>
+    </v-text-field>
   </div>
 </template>
 
 <script>
+import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import { insertIntoField } from "@/components/Mail/fieldInsert.js";
+
 export default {
   name: "HeadingBlock",
+  components: { MailVariablePicker },
   props: {
     block: { type: Object, required: true },
+    variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     selected: { type: Boolean, default: false },
   },
   computed: {
@@ -36,6 +53,9 @@ export default {
   methods: {
     onTextChange(val) {
       this.$emit("update", { ...this.block, text: val });
+    },
+    insertVariable(expr) {
+      insertIntoField(this.$refs.textField, expr, this.onTextChange);
     },
   },
 };

@@ -10,9 +10,17 @@
           solo
           background-color="transparent"
           placeholder="Listenpunkt…"
+          ref="itemFields"
           @input="(v) => onItem(idx, v)"
         >
           <template v-slot:append>
+            <MailVariablePicker
+              :variables="variables"
+              :tenant="tenant"
+              field="line"
+              icon
+              @insert="(expr) => insertVariable(idx, expr)"
+            />
             <v-btn icon x-small @click.stop="removeItem(idx)">
               <v-icon x-small>mdi-close</v-icon>
             </v-btn>
@@ -28,10 +36,16 @@
 </template>
 
 <script>
+import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import { insertIntoField } from "@/components/Mail/fieldInsert.js";
+
 export default {
   name: "ListBlock",
+  components: { MailVariablePicker },
   props: {
     block: { type: Object, required: true },
+    variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     selected: { type: Boolean, default: false },
   },
   methods: {
@@ -39,6 +53,10 @@ export default {
       const items = [...(this.block.items || [])];
       items[idx] = val;
       this.$emit("update", { ...this.block, items });
+    },
+    insertVariable(idx, expr) {
+      const fields = this.$refs.itemFields || [];
+      insertIntoField(fields[idx], expr, (v) => this.onItem(idx, v));
     },
     addItem() {
       const items = [...(this.block.items || []), ""];
