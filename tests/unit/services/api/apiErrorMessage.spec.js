@@ -4,6 +4,7 @@ import { lifecycleError } from "@tests/unit/support/api";
 import {
   getApiErrorMessage,
   isForbiddenError,
+  isLockBusyError,
   isOutOfReach,
   shouldRefetch,
   unpackBlobErrorBody,
@@ -517,6 +518,40 @@ describe("isOutOfReach", () => {
   it("does not read an error without a response as out of reach", () => {
     expect(isOutOfReach(new Error("Network Error"))).toBe(false);
     expect(isOutOfReach(undefined)).toBe(false);
+  });
+});
+
+/**
+ * Lock Busy: the lock is still carrying out its previous command. The backend
+ * answers a real HTTP 423 with `code: "lock_busy"`; either half alone is
+ * enough, so a bare 423 and a body naming the code on another status both
+ * read as busy.
+ */
+describe("isLockBusyError", () => {
+  it("reads a 423 without a body as busy", () => {
+    expect(isLockBusyError({ response: { status: 423 } })).toBe(true);
+  });
+
+  it("reads a body naming lock_busy as busy whatever the status", () => {
+    expect(
+      isLockBusyError({
+        response: { status: 500, data: { code: "lock_busy" } },
+      })
+    ).toBe(true);
+  });
+
+  it("does not read any other error as busy", () => {
+    expect(isLockBusyError({ response: { status: 403 } })).toBe(false);
+    expect(
+      isLockBusyError({
+        response: { status: 500, data: { code: "forbidden" } },
+      })
+    ).toBe(false);
+  });
+
+  it("does not read an error without a response as busy", () => {
+    expect(isLockBusyError(new Error("Network Error"))).toBe(false);
+    expect(isLockBusyError(undefined)).toBe(false);
   });
 });
 

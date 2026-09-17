@@ -38,6 +38,24 @@ export function lifecycleError(status, code, params = {}) {
 }
 
 /**
+ * An axios error carrying the `LockBusyError` body: the lock is still busy
+ * with its previous command, answered as a real HTTP 423.
+ */
+export function lockBusyError(action = "open") {
+  const error = new Error("Request failed with status code 423");
+  error.response = {
+    status: 423,
+    data: {
+      error: "LockBusyError",
+      code: "lock_busy",
+      statusCode: 423,
+      params: { provider: "nuki", action },
+    },
+  };
+  return error;
+}
+
+/**
  * An axios error carrying the 4.3.x `ValidationError` body — a `400` whose
  * `details[]` name the faults, each with a JSON path into the request body.
  */
