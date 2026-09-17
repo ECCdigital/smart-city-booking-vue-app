@@ -3,40 +3,6 @@ import {
   formatNegativeCurrency as pdfFormatNegativeCurrency,
 } from "@/components/PDF/pdfHandlebarsRuntime.js";
 
-export const SNIPPET_VARIABLES = [
-  {
-    name: "tenantName",
-    placeholder: "{{tenantName}}",
-    label: "Mandant",
-    description: "Anzeigename des Mandanten",
-  },
-  {
-    name: "supportEmail",
-    placeholder: "{{supportEmail}}",
-    label: "Support-E-Mail",
-    description: "Support-E-Mail des Mandanten",
-  },
-  {
-    name: "customerName",
-    placeholder: "{{customerName}}",
-    label: "Kundenname",
-    description: "Name des buchenden Kunden",
-  },
-  {
-    name: "currentDate",
-    placeholder: "{{currentDate}}",
-    label: "Aktuelles Datum",
-    description: "Aktuelles Datum",
-  },
-  {
-    name: "customerContact",
-    placeholder: "{{{customerContact}}}",
-    label: "Kundenkontakt",
-    description:
-      "Kontaktdaten des Kunden (HTML, mehrzeilig: Name, Firma, E-Mail, Telefon, Adresse)",
-  },
-];
-
 /** Mailto href using the supportEmail Handlebars variable (for editor links). */
 export const SUPPORT_EMAIL_MAILTO = "mailto:{{supportEmail}}";
 
@@ -51,52 +17,6 @@ export function mailtoAddressFromHref(href) {
   if (/^mailto:/i.test(raw)) return raw.replace(/^mailto:/i, "");
   return raw;
 }
-
-export const BOOKING_CANCEL_SNIPPET_VARIABLES = [
-  {
-    name: "hasRefundPreview",
-    placeholder: "{{#if hasRefundPreview}}...{{/if}}",
-    label: "Erstattung vorhanden",
-    description:
-      "Wahr, wenn die Buchung einen Erstattungsbetrag größer 0 € hat",
-  },
-  {
-    name: "refundAmountEur",
-    placeholder: "{{priceFormatted refundAmountEur}}",
-    label: "Erstattungsbetrag",
-    description: "Erstattungsbetrag als Zahl (mit Helper priceFormatted)",
-  },
-  {
-    name: "cancellationFeeEur",
-    placeholder: "{{priceFormatted cancellationFeeEur}}",
-    label: "Einbehalt",
-    description: "Einbehaltener Betrag (Stornogebühr) als Zahl",
-  },
-  {
-    name: "originalAmountEur",
-    placeholder: "{{priceFormatted originalAmountEur}}",
-    label: "Ursprungsbetrag",
-    description: "Ursprungsbetrag der Buchung als Zahl",
-  },
-  {
-    name: "refundPercentage",
-    placeholder: "{{refundPercentage}}",
-    label: "Erstattungsprozent",
-    description: "Angewandter Erstattungsprozentsatz (0–100)",
-  },
-  {
-    name: "hasCancellationFee",
-    placeholder: "{{#if hasCancellationFee}}...{{/if}}",
-    label: "Einbehalt vorhanden",
-    description: "Wahr, wenn ein Einbehalt größer 0 € anfällt",
-  },
-  {
-    name: "daysBeforeStart",
-    placeholder: "{{daysBeforeStart}}",
-    label: "Tage bis Beginn",
-    description: "Kalendertage bis zum Buchungsbeginn zum Berechnungszeitpunkt",
-  },
-];
 
 export const GENERIC_MAIL_VARIABLES = [
   {
@@ -797,20 +717,6 @@ const PDF_SAMPLE_BOOKINGS_NEGATIVE = [
 ];
 
 export const SAMPLE_DATA = {
-  snippet: {
-    tenantName: "Beispiel-Mandant",
-    supportEmail: "support@beispiel.de",
-    customerName: "Max Mustermann",
-    currentDate: new Date().toLocaleDateString("de-DE"),
-    customerContact: SAMPLE_CUSTOMER_CONTACT,
-    hasRefundPreview: true,
-    originalAmountEur: 120,
-    refundAmountEur: 60,
-    cancellationFeeEur: 60,
-    refundPercentage: 50,
-    daysBeforeStart: 10,
-    hasCancellationFee: true,
-  },
   genericMail: {
     content:
       "<p>Dies ist der Inhalt der E-Mail. Er wird im Mail-Layout angezeigt.</p>",
@@ -896,8 +802,6 @@ export const SAMPLE_DATA = {
 
 export function getVariablesForContext(context) {
   switch (context) {
-  case "snippet":
-    return SNIPPET_VARIABLES;
   case "genericMail":
     return GENERIC_MAIL_VARIABLES;
   case "receipt":

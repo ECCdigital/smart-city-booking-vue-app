@@ -83,40 +83,12 @@
           </v-list-item>
         </v-list>
       </v-menu>
-      <v-menu
-        offset-y
-        v-if="variables.length"
-        content-class="variable-menu-content"
-      >
-        <template v-slot:activator="{ on, attrs }">
-          <v-btn x-small v-bind="attrs" v-on="on" title="Variable einfügen">
-            <v-icon x-small>mdi-code-tags</v-icon>
-          </v-btn>
-        </template>
-        <v-list
-          dense
-          class="variable-menu"
-          style="max-height: 320px; overflow-y: auto; background: #fff;"
-        >
-          <v-list-item
-            v-for="v in variables"
-            :key="v.name"
-            @click="insertVariable(v)"
-          >
-            <v-list-item-content>
-              <v-list-item-title>
-                {{ v.label || v.name }}
-              </v-list-item-title>
-              <v-list-item-subtitle>
-                <code class="variable-placeholder">{{ v.placeholder }}</code>
-                <span v-if="v.description" class="ml-1 grey--text">
-                  – {{ v.description }}
-                </span>
-              </v-list-item-subtitle>
-            </v-list-item-content>
-          </v-list-item>
-        </v-list>
-      </v-menu>
+      <MailVariablePicker
+        :variables="variables"
+        :tenant="tenant"
+        field="text"
+        @insert="insertVariable"
+      />
     </div>
     <editor-content
       :editor="editor"
@@ -151,15 +123,17 @@ import ListItem from "@tiptap/extension-list-item";
 import Placeholder from "@tiptap/extension-placeholder";
 import VariableMark from "@/components/Mail/BlockEditor/extensions/VariableMark.js";
 import MailtoLinkDialog from "@/components/Mail/BlockEditor/MailtoLinkDialog.vue";
+import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
 import { SUPPORT_EMAIL_MAILTO } from "@/components/Mail/templateVariables.js";
 import { resolveFontSizePx } from "@/components/Mail/BlockEditor/render/fontSize.js";
 
 export default {
   name: "TextBlock",
-  components: { EditorContent, MailtoLinkDialog },
+  components: { EditorContent, MailtoLinkDialog, MailVariablePicker },
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     selected: { type: Boolean, default: false },
   },
   data: () => ({
@@ -214,32 +188,29 @@ export default {
     },
   },
   methods: {
-    insertVariable(v) {
-      const placeholder = v.placeholder || "";
-      const simpleMatch = placeholder.match(/^\{\{\{?\s*([\w.]+)\s*\}?\}\}$/);
+    /** Inserts the picked expression as a chip (VariableMark). */
+    insertVariable(expr, entry) {
+      const label = entry.label || entry.name;
+      const simpleMatch = expr.match(/^\{\{\{?\s*([\w.]+)\s*\}?\}\}$/);
       if (simpleMatch) {
-        const triple = placeholder.startsWith("{{{");
         this.editor.commands.insertMailVariable(simpleMatch[1], {
-          triple,
-          label: v.label || v.name,
+          triple: expr.startsWith("{{{"),
+          label,
         });
         return;
       }
-      if (/^\{\{[#^]/.test(placeholder.trim())) {
+      if (/^\{\{[#^]/.test(expr.trim())) {
         this.editor
           .chain()
           .focus()
           .insertContent([
-            { type: "text", text: placeholder },
+            { type: "text", text: expr },
             { type: "text", text: " " },
           ])
           .run();
         return;
       }
-      this.editor.commands.insertMailVariable(v.name, {
-        label: v.label || v.name,
-        expr: placeholder,
-      });
+      this.editor.commands.insertMailVariable(entry.name, { label, expr });
     },
     onPromptLink() {
       const previous = this.editor.getAttributes("link").href || "https://";
@@ -377,20 +348,5 @@ export default {
   float: left;
   height: 0;
   pointer-events: none;
-}
-.variable-menu .variable-placeholder {
-  font-family: "Courier New", monospace;
-  font-size: 11px;
-  background: #f5f5f5;
-  padding: 1px 6px;
-  border-radius: 3px;
-  color: #c2185b;
-}
-.variable-menu {
-  background: #fff !important;
-  border-radius: 4px;
-}
-.variable-menu >>> .v-list-item {
-  background: #fff;
 }
 </style>

@@ -307,11 +307,7 @@ import {
   MAX_SNIPPET_SIZE_BYTES,
   MAX_SUBJECT_LENGTH,
 } from "./snippetCatalog.js";
-import {
-  SNIPPET_VARIABLES,
-  BOOKING_CANCEL_SNIPPET_VARIABLES,
-  SAMPLE_DATA,
-} from "./templateVariables.js";
+import { filterVariablesForSnippet } from "./mailVariableCatalog.js";
 import { buildSnippetPreviewExtrasHtml, sampleBookingPeriod } from "./snippetPreviewExtras.js";
 
 export default {
@@ -328,6 +324,10 @@ export default {
     tenantName: { type: String, default: "" },
     showSupportFooter: { type: Boolean, default: true },
     bookingPeriodFormat: { type: String, default: "default" },
+    /** The backend's variable catalog (`templateVariables`); no local fallback. */
+    templateVariables: { type: Array, default: () => [] },
+    /** The tenant as edited right now, for the conditional-variable warnings. */
+    tenant: { type: Object, default: () => ({}) },
   },
   data() {
     return {
@@ -361,13 +361,14 @@ export default {
       return getSnippetCatalogEntry(this.snippetKey);
     },
     variables() {
-      if (this.snippetKey === "booking-cancel") {
-        return [...SNIPPET_VARIABLES, ...BOOKING_CANCEL_SNIPPET_VARIABLES];
-      }
-      return SNIPPET_VARIABLES;
+      return filterVariablesForSnippet(this.templateVariables, this.snippetKey);
     },
+    /** Sample values come from the catalog; the preview is always filled. */
     sampleData() {
-      const base = SAMPLE_DATA.snippet || {};
+      const base = {};
+      this.variables.forEach((v) => {
+        if (v.sample !== undefined) base[v.name] = v.sample;
+      });
       return {
         ...base,
         tenantName:
