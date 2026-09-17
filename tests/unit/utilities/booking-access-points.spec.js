@@ -6,6 +6,7 @@ import {
   accessState,
   accessStateChip,
   hasCapability,
+  isBeforeAccessWindow,
   isRemotelyOperable,
   openBlockOf,
   openProgressOf,
@@ -164,6 +165,37 @@ describe("hasCapability", () => {
       false
     );
     expect(hasCapability(undefined, "getStatus")).toBe(false);
+  });
+});
+
+describe("isBeforeAccessWindow", () => {
+  it("is true while the window has not started", () => {
+    expect(
+      isBeforeAccessWindow(
+        operable({ accessFrom: NOW + HOUR, accessTo: NOW + 2 * HOUR }),
+        NOW
+      )
+    ).toBe(true);
+  });
+
+  it("is false inside the window", () => {
+    expect(isBeforeAccessWindow(operable(), NOW)).toBe(false);
+  });
+
+  it("is false once the window has ended", () => {
+    expect(
+      isBeforeAccessWindow(
+        operable({ accessFrom: NOW - 2 * HOUR, accessTo: NOW - HOUR }),
+        NOW
+      )
+    ).toBe(false);
+  });
+
+  it("is false where the entry declares no window", () => {
+    expect(
+      isBeforeAccessWindow(operable({ accessFrom: null, accessTo: null }), NOW)
+    ).toBe(false);
+    expect(isBeforeAccessWindow(undefined, NOW)).toBe(false);
   });
 });
 

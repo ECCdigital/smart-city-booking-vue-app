@@ -7,6 +7,7 @@ import { mountComponent } from "@tests/unit/support/mount";
 import {
   flushPromises,
   forbiddenError,
+  lockBusyError,
   serverError,
 } from "@tests/unit/support/api";
 
@@ -116,6 +117,10 @@ function openButton(tile) {
 
 function statusButton(tile) {
   return tile.find("[data-test='access-status']");
+}
+
+function closeButton(tile) {
+  return tile.find("[data-test='access-close']");
 }
 
 function errorText(tile) {
@@ -352,6 +357,54 @@ describe("BookingAccessPoints", () => {
     });
   });
 
+  /**
+   * Lock Busy: the lock is still carrying out its previous command. The admin
+   * shows it as the dismissible tile alert like every other command error -
+   * no cooldown, no retry - and reads it before the route's 403 reading, so
+   * it is never mistaken for a denial or a generic send error.
+   */
+  describe("a lock that is still busy", () => {
+    const BUSY = "noch mit dem vorherigen Befehl beschäftigt";
+
+    it("says so on open instead of a generic send error", async () => {
+      ApiAccessService.open.mockRejectedValue(lockBusyError("open"));
+
+      const wrapper = await mountList({ entries: [door()] });
+      await openButton(tiles(wrapper).at(0)).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(errorText(tiles(wrapper).at(0))).toContain(BUSY);
+      expect(ApiAccessService.open).toHaveBeenCalledTimes(1);
+    });
+
+    it("says so on unlatch", async () => {
+      ApiAccessService.unlatch.mockRejectedValue(lockBusyError("unlatch"));
+
+      const wrapper = await mountList({ entries: [door()] });
+      await tiles(wrapper)
+        .at(0)
+        .find("[data-test='access-unlatch']")
+        .trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(errorText(tiles(wrapper).at(0))).toContain(BUSY);
+    });
+
+    it("says so on close, and reads a bare 423 the same way", async () => {
+      ApiAccessService.close.mockRejectedValue(serverError(423));
+
+      const wrapper = await mountList({ entries: [door()] });
+      await closeButton(tiles(wrapper).at(0)).trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(errorText(tiles(wrapper).at(0))).toContain(BUSY);
+      expect(ApiAccessService.close).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("confirming a started open", () => {
     beforeEach(() => {
       ApiAccessService.open.mockResolvedValue({
@@ -471,6 +524,63 @@ describe("BookingAccessPoints", () => {
       expect(compartmentTile.attributes("title")).toContain("keinen Status");
       expect(statusButton(tiles(wrapper).at(1)).attributes("disabled")).toBe(
         undefined
+      );
+    });
+
+    it("leaves close and status alive after the window, though open is blocked", async () => {
+      const wrapper = await mountList({
+        entries: [
+          door({
+            accessFrom: BOOKING.timeBegin - 3 * HOUR,
+            accessTo: BOOKING.timeBegin - HOUR,
+          }),
+        ],
+      });
+
+      const tile = tiles(wrapper).at(0);
+      expect(closeButton(tile).attributes("disabled")).toBeFalsy();
+      expect(statusButton(tile).attributes("disabled")).toBeFalsy();
+      expect(openButton(tile).attributes("disabled")).toBeTruthy();
+      expect(tile.find(".access-point-tile__window").text()).toContain(
+        "Schließen und Statusabfrage sind weiterhin möglich."
+      );
+    });
+
+    it("blocks close and status before the window and names the start", async () => {
+      const wrapper = await mountList({
+        entries: [
+          door({
+            accessFrom: BOOKING.timeEnd + HOUR,
+            accessTo: BOOKING.timeEnd + 2 * HOUR,
+          }),
+        ],
+      });
+
+      const tile = tiles(wrapper).at(0);
+      expect(closeButton(tile).attributes("disabled")).toBeTruthy();
+      expect(statusButton(tile).attributes("disabled")).toBeTruthy();
+      expect(statusButton(tile).attributes("title")).toContain("Zugang ab");
+      expect(tile.find(".access-point-tile__window").text()).not.toContain(
+        "weiterhin möglich"
+      );
+    });
+
+    it("does not promise close and status after the window to someone who may not control", async () => {
+      BookingPermissionService.allowUpdate.mockReturnValue(false);
+
+      const wrapper = await mountList({
+        entries: [
+          door({
+            accessFrom: BOOKING.timeBegin - 3 * HOUR,
+            accessTo: BOOKING.timeBegin - HOUR,
+          }),
+        ],
+      });
+
+      const tile = tiles(wrapper).at(0);
+      expect(closeButton(tile).attributes("disabled")).toBeTruthy();
+      expect(tile.find(".access-point-tile__window").text()).not.toContain(
+        "weiterhin möglich"
       );
     });
 
