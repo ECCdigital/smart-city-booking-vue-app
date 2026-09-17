@@ -32,6 +32,7 @@
 </template>
 
 <script>
+import { VTextarea, VTextField } from "vuetify/lib";
 import MailVariablePicker from "./MailVariablePicker.vue";
 import ConditionalVariableAlert from "./ConditionalVariableAlert.vue";
 import { insertIntoField } from "./fieldInsert.js";
@@ -45,7 +46,14 @@ import { insertIntoField } from "./fieldInsert.js";
  */
 export default {
   name: "MailVariableTextField",
-  components: { ConditionalVariableAlert, MailVariablePicker },
+  // Registered explicitly: the app loads Vuetify a-la-carte and the loader
+  // only auto-registers literal tags, not the dynamic `:is` below.
+  components: {
+    ConditionalVariableAlert,
+    MailVariablePicker,
+    VTextarea,
+    VTextField,
+  },
   inheritAttrs: false,
   props: {
     value: { type: String, default: "" },

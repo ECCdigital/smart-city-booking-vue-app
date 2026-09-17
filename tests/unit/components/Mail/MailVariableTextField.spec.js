@@ -20,6 +20,15 @@ const CATALOG = [
 ];
 
 describe("MailVariableTextField", () => {
+  it("registers the Vuetify field components it renders through `:is`", () => {
+    // The app loads Vuetify a-la-carte: vuetify-loader only auto-registers
+    // literal tags, so a dynamic `:is` needs explicit registration or the
+    // field renders as an unknown element. The test setup registers all of
+    // Vuetify globally and cannot see that difference, hence this pin.
+    expect(MailVariableTextField.components.VTextField).toBeDefined();
+    expect(MailVariableTextField.components.VTextarea).toBeDefined();
+  });
+
   it("renders the field with its label and the picker icon in the append slot", () => {
     const wrapper = mountComponent(MailVariableTextField, {
       propsData: { value: "", field: "line", variables: CATALOG },
