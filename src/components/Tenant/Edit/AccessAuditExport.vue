@@ -43,6 +43,7 @@ export default {
       return [
         "open",
         "close",
+        // Retired route; kept so the rows it wrote can still be found.
         "unlatch",
         "scan",
         "provision",

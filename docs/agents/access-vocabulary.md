@@ -76,7 +76,7 @@ Do not reach for `booking.lockerInfo` or `booking.accessInfo` in this screen, an
 
 ## `capabilities` free the buttons
 
-`capabilities` is the list of provider actions the projection offers a client: `open`, `close`, `getStatus`. A button is offered only where its capability is declared — Pareva declares none, and `mode` alone is not enough (opening also needs `remote` or `both`). `unlatch` is not among the projected capabilities, because the lock decides behind `open` whether it pulls its latch; the „Tür öffnen“ button therefore stands on `close`, the nearest declared signal of a lock that takes mechanical commands.
+`capabilities` is the list of provider actions the projection offers a client: `open`, `close`, `getStatus`. A button is offered only where its capability is declared — Pareva declares none, and `mode` alone is not enough (opening also needs `remote` or `both`). There is no `unlatch` capability and no „Tür öffnen“ button any more: „Öffnen“ runs the open action configured at the access point, and the lock decides behind `open` what it does with its latch.
 
 A button that cannot be used stays visible and disabled, with its reason on the element. The reasons are the backend's own vocabulary, mirrored in `src/utilities/access-blocking-reasons.js`; `locker_not_ready` is gone from it because the backend dropped it from its enum.
 

@@ -47,8 +47,8 @@ const CLOSE_CONFIRM_DELAY_MS = 1500;
 
 /**
  * The readings of a 403 at an access route, which is why `resolveAccessError`
- * has no default. `open` and `unlatch` refuse with 403 only where the access
- * point does not belong to the booking at all (`AccessService._resolve`),
+ * has no default. `open` refuses with 403 only where the access point does
+ * not belong to the booking at all (`AccessService._resolve`),
  * while `close`, `/status` and `/open-status` refuse whenever `canOperate`
  * says no - an expired window, a missing or withdrawn grant, an unpaid
  * booking. Reading every 403 as "outside the time window", as this screen
@@ -162,16 +162,6 @@ export default {
         isRemotelyOperable(entry) &&
         hasCapability(entry, ACCESS_CAPABILITY.CLOSE)
       );
-    },
-    /**
-     * Whether pulling the latch is offered. `unlatch` is deliberately not
-     * among the projected capabilities - the lock decides behind `open`
-     * whether it pulls its latch - so `close` stands in for it as the nearest
-     * declared signal of a lock that takes mechanical commands at all. A
-     * compartment has no latch to pull whatever its system declares.
-     */
-    canUnlatch(entry) {
-      return !isLockerAccessPoint(entry) && this.canClose(entry);
     },
     /**
      * Whether the lock can be asked how it stands. iFBS knows nothing about a
@@ -508,7 +498,7 @@ export default {
           return;
         }
 
-        await this.confirmOpen(entry, "open", responseData.data?.openProcessId);
+        await this.confirmOpen(entry, responseData.data?.openProcessId);
       } catch (error) {
         this.$set(
           this.errors,
@@ -520,44 +510,6 @@ export default {
         );
       } finally {
         this.$set(this.actionLoading, id + "_open", false);
-      }
-    },
-    async unlatch(entry) {
-      if (!this.canControl) return;
-      const id = entry.id;
-      this.$set(this.actionLoading, id + "_unlatch", true);
-      this.$set(this.errors, id, null);
-      this.$set(this.statuses, id, null);
-
-      try {
-        const response = await ApiAccessService.unlatch(
-          this.booking.id,
-          id,
-          this.booking.tenantId
-        );
-        const responseData = response.data || {};
-
-        if (responseData.success === false) {
-          this.$set(this.errors, id, this.formatOpenRefusal(responseData.data));
-          return;
-        }
-
-        await this.confirmOpen(
-          entry,
-          "unlatch",
-          responseData.data?.openProcessId
-        );
-      } catch (error) {
-        this.$set(
-          this.errors,
-          id,
-          this.resolveAccessError(error, {
-            forbiddenKey: DENIED_NOT_IN_BOOKING,
-            fallbackKey: "accessPoint.unlatch.sendError.message",
-          })
-        );
-      } finally {
-        this.$set(this.actionLoading, id + "_unlatch", false);
       }
     },
     async close(entry) {
@@ -616,12 +568,11 @@ export default {
      * says the box has not confirmed. They end in different messages.
      *
      * @param {Object} entry The entry that was opened
-     * @param {"open"|"unlatch"} action Which command was sent
      * @param {string|null} openProcessId The process the answer named
      */
-    async confirmOpen(entry, action, openProcessId) {
+    async confirmOpen(entry, openProcessId) {
       const id = entry.id;
-      const successKey = `accessPoint.${action}.success`;
+      const successKey = "accessPoint.open.success";
 
       if (!openProcessId) {
         // Made here, not received: the answer only said that it opened, and
@@ -670,11 +621,7 @@ export default {
               : null;
         }
 
-        this.$set(
-          this.errors,
-          id,
-          this.unconfirmedMessage(entry, action, unanswered)
-        );
+        this.$set(this.errors, id, this.unconfirmedMessage(entry, unanswered));
       } catch (error) {
         this.$set(
           this.errors,
@@ -694,14 +641,13 @@ export default {
      * without one, and the plain timeout where every poll answered "not yet".
      *
      * @param {Object} entry The entry that was opened
-     * @param {"open"|"unlatch"} action Which command was sent
      * @param {{errorCode: string|number|null}|null} unanswered The last poll,
      *   where it could not tell - null where it answered "not yet"
      * @returns {string} The message to show at the access point
      */
-    unconfirmedMessage(entry, action, unanswered) {
+    unconfirmedMessage(entry, unanswered) {
       if (!unanswered) {
-        return this.$t(`accessPoint.${action}.timeout.message`);
+        return this.$t("accessPoint.open.timeout.message");
       }
       return unanswered.errorCode
         ? this.providerErrorMessage(entry, unanswered.errorCode)
@@ -982,20 +928,6 @@ export default {
               >
                 <v-icon left small>mdi-lock</v-icon>
                 {{ $t("accessPoint.booking.close") }}
-              </v-btn>
-              <v-btn
-                v-if="canUnlatch(entry)"
-                small
-                outlined
-                color="primary"
-                data-test="access-unlatch"
-                :loading="actionLoading[entry.id + '_unlatch']"
-                :disabled="Boolean(openBlockReason(entry)) || isBusy(entry)"
-                :title="openBlockReason(entry) || ''"
-                @click="unlatch(entry)"
-              >
-                <v-icon left small>mdi-door-open</v-icon>
-                {{ $t("accessPoint.booking.unlatch") }}
               </v-btn>
               <v-btn
                 small
