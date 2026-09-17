@@ -4,8 +4,9 @@
       <v-icon x-small color="warning" class="mr-1">mdi-alert</v-icon>
       <span class="text-caption warning--text">Experten-Block (Roh-HTML)</span>
     </div>
-    <v-textarea
-      :value="block.html"
+    <MailVariableTextField
+      :value="block.html || ''"
+      multiline
       placeholder="<p>HTML hier…</p>"
       rows="3"
       auto-grow
@@ -13,16 +14,29 @@
       hide-details
       filled
       class="raw-html-textarea"
+      field="html"
+      :variables="variables"
+      :tenant="tenant"
       @input="onChange"
-    />
+    >
+      <div class="text-caption grey--text mt-1">
+        Bedingungen (<code v-pre>{{#if}}</code
+        >) nicht zwischen <code>&lt;table&gt;</code>-Tags setzen.
+      </div>
+    </MailVariableTextField>
   </div>
 </template>
 
 <script>
+import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
+
 export default {
   name: "RawHtmlBlock",
+  components: { MailVariableTextField },
   props: {
     block: { type: Object, required: true },
+    variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     selected: { type: Boolean, default: false },
   },
   methods: {

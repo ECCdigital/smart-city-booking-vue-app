@@ -53,6 +53,7 @@
                 :key="row.id"
                 :block="row"
                 :variables="variables"
+                :tenant="tenant"
                 :selected="activeZone === 'intro' && selectedId === row.id"
                 :selected-block-id="
                   activeZone === 'intro' ? selectedChildId : ''
@@ -122,6 +123,7 @@
                 :key="row.id"
                 :block="row"
                 :variables="variables"
+                :tenant="tenant"
                 :selected="activeZone === 'after' && selectedId === row.id"
                 :selected-block-id="
                   activeZone === 'after' ? selectedChildId : ''
@@ -141,6 +143,7 @@
         <BlockPropertiesPanel
           :selected-block="selectedBlock"
           :variables="variables"
+          :tenant="tenant"
           @update="onUpdateSelected"
         />
       </v-col>
@@ -182,6 +185,7 @@ export default {
     introBlocks: { type: Array, default: () => [] },
     afterBlocks: { type: Array, default: () => [] },
     variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     snippetKey: { type: String, default: "" },
     showSupportFooter: { type: Boolean, default: true },
     bookingPeriodFormat: { type: String, default: "default" },

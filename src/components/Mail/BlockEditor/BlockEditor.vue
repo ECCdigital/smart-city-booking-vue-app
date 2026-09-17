@@ -30,6 +30,7 @@
               :key="row.id"
               :block="row"
               :variables="variables"
+              :tenant="tenant"
               :selected="selectedId === row.id"
               :selected-block-id="selectedChildId"
               @select="onSelect(row.id, '')"
@@ -45,6 +46,7 @@
         <BlockPropertiesPanel
           :selected-block="selectedBlock"
           :variables="variables"
+          :tenant="tenant"
           @update="onUpdateSelected"
         />
       </v-col>
@@ -81,6 +83,7 @@ export default {
   props: {
     value: { type: Array, default: () => [] },
     variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
   },
   data() {
     return {

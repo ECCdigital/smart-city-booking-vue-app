@@ -26,7 +26,7 @@
 
         <v-card-text class="pa-3">
           <div class="subject-field-wrapper mb-4">
-            <v-text-field
+            <MailVariableTextField
               v-model="subjectValue"
               label="Betreff der Mail (optional)"
               :hint="subjectFieldHint"
@@ -36,6 +36,9 @@
               :counter="MAX_SUBJECT_LENGTH"
               :error-messages="subjectErrors"
               :placeholder="snippet.defaultSubject"
+              field="subject"
+              :variables="variables"
+              :tenant="tenant"
             >
               <template #append-outer>
                 <v-btn
@@ -48,7 +51,7 @@
                   Standard
                 </v-btn>
               </template>
-            </v-text-field>
+            </MailVariableTextField>
           </div>
 
           <v-divider class="mb-3" />
@@ -136,6 +139,7 @@
                   :intro-blocks.sync="blocks"
                   :after-blocks.sync="afterBlocks"
                   :variables="variables"
+                  :tenant="tenant"
                   :snippet-key="snippetKey"
                   :show-support-footer="showSupportFooter"
                   :booking-period-format="bookingPeriodFormat"
@@ -161,6 +165,15 @@
                     inset
                     class="mt-0"
                     label="Mit E-Mail-Layout"
+                  />
+                  <v-switch
+                    v-if="canPreviewAggregated"
+                    v-model="previewAggregated"
+                    dense
+                    hide-details
+                    inset
+                    class="mt-0 ml-4"
+                    label="Als Sammelmitteilung"
                   />
                 </v-toolbar>
                 <v-card-text class="pa-0">
@@ -296,6 +309,7 @@
 
 <script>
 import CombinedSnippetBlockEditor from "./BlockEditor/CombinedSnippetBlockEditor.vue";
+import MailVariableTextField from "./MailVariableTextField.vue";
 import { renderBlocksToHtml } from "./BlockEditor/render/renderBlocksToHtml.js";
 import {
   extractBlockMetadata,
@@ -308,15 +322,18 @@ import {
   MAX_SUBJECT_LENGTH,
 } from "./snippetCatalog.js";
 import {
-  SNIPPET_VARIABLES,
-  BOOKING_CANCEL_SNIPPET_VARIABLES,
-  SAMPLE_DATA,
-} from "./templateVariables.js";
+  filterVariablesForSnippet,
+  hasAggregatedSample,
+  sampleValuesFor,
+} from "./mailVariableCatalog.js";
 import { buildSnippetPreviewExtrasHtml, sampleBookingPeriod } from "./snippetPreviewExtras.js";
 
 export default {
   name: "SnippetEditorDialog",
-  components: { CombinedSnippetBlockEditor },
+  components: {
+    CombinedSnippetBlockEditor,
+    MailVariableTextField,
+  },
   props: {
     open: { type: Boolean, default: false },
     snippetKey: { type: String, default: "" },
@@ -328,6 +345,10 @@ export default {
     tenantName: { type: String, default: "" },
     showSupportFooter: { type: Boolean, default: true },
     bookingPeriodFormat: { type: String, default: "default" },
+    /** The backend's variable catalog (`templateVariables`); no local fallback. */
+    templateVariables: { type: Array, default: () => [] },
+    /** The tenant as edited right now, for the conditional-variable warnings. */
+    tenant: { type: Object, default: () => ({}) },
   },
   data() {
     return {
@@ -344,6 +365,7 @@ export default {
       previewKey: 0,
       handlebarsLib: null,
       useLayoutInPreview: true,
+      previewAggregated: false,
       confirmLoadDefaultOpen: false,
       MAX_SUBJECT_LENGTH,
     };
@@ -361,13 +383,17 @@ export default {
       return getSnippetCatalogEntry(this.snippetKey);
     },
     variables() {
-      if (this.snippetKey === "booking-cancel") {
-        return [...SNIPPET_VARIABLES, ...BOOKING_CANCEL_SNIPPET_VARIABLES];
-      }
-      return SNIPPET_VARIABLES;
+      return filterVariablesForSnippet(this.templateVariables, this.snippetKey);
     },
+    canPreviewAggregated() {
+      return hasAggregatedSample(this.variables);
+    },
+    /** Sample values come from the catalog; the preview is always filled. */
     sampleData() {
-      const base = SAMPLE_DATA.snippet || {};
+      const base = sampleValuesFor(
+        this.variables,
+        this.canPreviewAggregated && this.previewAggregated
+      );
       return {
         ...base,
         tenantName:
@@ -640,6 +666,17 @@ export default {
             return currencyFormatter.format(value);
           });
         }
+        // Mirrors the backend helper: scalars are encoded, everything else
+        // (null, undefined, objects, the options object without an argument)
+        // renders as ""; a plain string, so `{{ }}` still HTML-escapes it.
+        if (!hb.helpers.urlEncode) {
+          hb.registerHelper("urlEncode", (value) => {
+            if (typeof value !== "string" && typeof value !== "number") {
+              return "";
+            }
+            return encodeURIComponent(String(value));
+          });
+        }
         this.handlebarsLib = hb;
       } catch (e) {
         this.handlebarsLib = null;
@@ -771,6 +808,7 @@ export default {
         this.afterExpertHtml,
         this.subjectValue,
         this.useLayoutInPreview,
+        this.previewAggregated,
         this.layoutTemplate,
         this.showSupportFooter,
         this.bookingPeriodFormat,
