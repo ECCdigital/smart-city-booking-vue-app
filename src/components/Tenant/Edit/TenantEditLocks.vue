@@ -1,11 +1,12 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import AppPanel from "@/components/AppPanel.vue";
+import AccessAppCustomerServiceFields from "@/components/Tenant/Edit/AccessAppCustomerServiceFields.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 
 export default {
   name: "TenantEditLocks",
-  components: { AppPanel, BaseSection },
+  components: { AccessAppCustomerServiceFields, AppPanel, BaseSection },
   props: {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
@@ -28,18 +29,6 @@ export default {
       },
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
-        mail: [
-          (v) =>
-            !v ||
-            /.+@.+\..+/.test(v) ||
-            "Muss eine gültige Email-Adresse sein.",
-        ],
-        phone: [
-          (v) =>
-            !v ||
-            /^[+\d][\d\s\-/()]{3,}$/.test(v) ||
-            "Muss eine gültige Telefonnummer sein.",
-        ],
         paymentPurposeSuffix: [
           (v) => !v || v.length <= 12 || "Maximal 12 Zeichen erlaubt.",
         ],
@@ -449,53 +438,10 @@ export default {
             </v-row>
 
             <!-- Kundenservice -->
-            <div class="section-title mt-6 mb-2">
-              <v-icon small left>mdi-face-agent</v-icon>
-              <span class="font-weight-medium">Kundenservice</span>
-            </div>
-            <v-alert type="info" text dense class="mb-3">
-              Diese Kontaktdaten werden dem Kunden angezeigt, sofern angegeben.
-              Alle Felder sind optional.
-            </v-alert>
-            <v-row dense>
-              <v-col cols="12" md="4">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Name / Ansprechpartner"
-                  prepend-inner-icon="mdi-account"
-                  v-model="localApps.ifbs.customerService.name"
-                  @input="emitApps()"
-                />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  label="E-Mail"
-                  prepend-inner-icon="mdi-email-outline"
-                  type="email"
-                  :rules="validationRules.mail"
-                  v-model="localApps.ifbs.customerService.email"
-                  @input="emitApps()"
-                />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Telefon"
-                  prepend-inner-icon="mdi-phone-outline"
-                  type="tel"
-                  :rules="validationRules.phone"
-                  v-model="localApps.ifbs.customerService.phone"
-                  @input="emitApps()"
-                />
-              </v-col>
-            </v-row>
+            <AccessAppCustomerServiceFields
+              v-model="localApps.ifbs.customerService"
+              @input="emitApps()"
+            />
 
             <!-- Testergebnis -->
             <v-row v-if="testResults.ifbs" dense>

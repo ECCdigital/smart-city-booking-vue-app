@@ -73,6 +73,11 @@ export function createLockAndAccessAppDefaults() {
       apiToken: "",
       apiBaseUrl: "https://api.nuki.io",
       active: false,
+      customerService: {
+        name: "",
+        email: "",
+        phone: "",
+      },
     },
     "salto-ks": {
       type: "access",
