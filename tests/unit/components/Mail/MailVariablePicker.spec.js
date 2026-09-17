@@ -112,6 +112,22 @@ describe("MailVariablePicker", () => {
     expect(wrapper.emitted("insert")).toBeUndefined();
   });
 
+  it("a loadable catalog with nothing for the field says so in one disabled row", async () => {
+    const wrapper = await openPicker({
+      variables: [CATALOG[2]],
+      field: "url",
+      tenant: {},
+    });
+    expect(menuItems()).toHaveLength(1);
+    expect(menuItems()[0].textContent.trim()).toBe(
+      "Keine Variablen für dieses Feld"
+    );
+    expect(menuItems()[0].classList).toContain("v-list-item--disabled");
+    menuItems()[0].click();
+    await wrapper.vm.$nextTick();
+    expect(wrapper.emitted("insert")).toBeUndefined();
+  });
+
   it("an unloadable catalog (entry without kind) is treated like an empty one", async () => {
     const wrapper = await openPicker({
       variables: [{ name: "tenantName", description: "Mandant" }],

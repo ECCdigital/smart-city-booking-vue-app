@@ -15,7 +15,7 @@
           <code>{{ supportEmailExample }}</code>.
         </div>
 
-        <v-text-field
+        <MailVariableTextField
           ref="addressField"
           v-model="address"
           label="E-Mail-Adresse / Empfänger"
@@ -24,22 +24,10 @@
           dense
           hide-details="auto"
           class="mb-2"
-          @keydown.enter.prevent="onApply"
-        >
-          <template #append>
-            <MailVariablePicker
-              :variables="variables"
-              :tenant="tenant"
-              field="url"
-              icon
-              @insert="insertVariable"
-            />
-          </template>
-        </v-text-field>
-        <ConditionalVariableAlert
-          :value="address"
+          field="url"
           :variables="variables"
           :tenant="tenant"
+          @keydown.enter.prevent="onApply"
         />
 
         <div v-if="presetVariables.length" class="mb-3">
@@ -48,7 +36,7 @@
             :key="'preset-' + v.name"
             small
             class="mr-1 mb-1"
-            @click="address = variableToken(v)"
+            @click="address = '{{' + v.name + '}}'"
           >
             <v-icon left x-small>mdi-email-outline</v-icon>
             {{ v.label || v.name }}
@@ -87,17 +75,15 @@ import {
   toMailtoHref,
   mailtoAddressFromHref,
 } from "@/components/Mail/templateVariables.js";
-import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
-import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
+import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
 import {
   filterVariablesForField,
   isCatalogLoadable,
 } from "@/components/Mail/mailVariableCatalog.js";
-import { insertIntoField } from "@/components/Mail/fieldInsert.js";
 
 export default {
   name: "MailtoLinkDialog",
-  components: { ConditionalVariableAlert, MailVariablePicker },
+  components: { MailVariableTextField },
   props: {
     open: { type: Boolean, default: false },
     variables: { type: Array, default: () => [] },
@@ -140,14 +126,6 @@ export default {
     },
   },
   methods: {
-    variableToken(v) {
-      return v ? `{{${v.name}}}` : "";
-    },
-    insertVariable(expr) {
-      insertIntoField(this.$refs.addressField, expr, (v) => {
-        this.address = v;
-      });
-    },
     onDialogInput(v) {
       if (!v) this.close();
     },

@@ -39,8 +39,12 @@ describe("MailtoLinkDialog", () => {
     ]);
     items[0].click();
     await wrapper.vm.$nextTick();
-    expect(wrapper.vm.address).toBe("{{urlEncode customerName}}");
-    expect(wrapper.vm.previewHref).toBe("mailto:{{urlEncode customerName}}");
+    expect(wrapper.find("input").element.value).toBe(
+      "{{urlEncode customerName}}"
+    );
+    expect(wrapper.find(".mailto-preview").text()).toBe(
+      "mailto:{{urlEncode customerName}}"
+    );
   });
 
   it("a chip sets the address to the plain variable", async () => {
@@ -50,6 +54,18 @@ describe("MailtoLinkDialog", () => {
     await wrapper.vm.$nextTick();
     document.querySelector(".v-chip").click();
     await wrapper.vm.$nextTick();
-    expect(wrapper.vm.address).toBe("{{supportEmail}}");
+    expect(wrapper.find("input").element.value).toBe("{{supportEmail}}");
+    expect(wrapper.find(".mailto-preview").text()).toBe(
+      "mailto:{{supportEmail}}"
+    );
+
+    const apply = wrapper
+      .findAll("button")
+      .wrappers.find((b) => b.text() === "Übernehmen");
+    await apply.trigger("click");
+    expect(wrapper.emitted("apply")[0][0]).toEqual({
+      href: "mailto:{{supportEmail}}",
+      linkText: "kontaktieren",
+    });
   });
 });

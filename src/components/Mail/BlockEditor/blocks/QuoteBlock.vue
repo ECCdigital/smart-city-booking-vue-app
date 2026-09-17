@@ -1,7 +1,8 @@
 <template>
   <blockquote class="quote-block" :class="{ selected }" :style="quoteStyle">
-    <v-textarea
-      :value="block.text"
+    <MailVariableTextField
+      :value="block.text || ''"
+      multiline
       placeholder="Zitat…"
       rows="2"
       auto-grow
@@ -10,36 +11,21 @@
       flat
       solo
       background-color="transparent"
-      ref="textField"
-      @input="onText"
-    >
-      <template #append>
-        <MailVariablePicker
-          :variables="variables"
-          :tenant="tenant"
-          field="line"
-          icon
-          @insert="insertVariable"
-        />
-      </template>
-    </v-textarea>
-    <ConditionalVariableAlert
-      :value="block.text || ''"
+      field="line"
       :variables="variables"
       :tenant="tenant"
+      @input="onText"
     />
     <footer v-if="block.cite" class="mt-1 text-caption">— {{ block.cite }}</footer>
   </blockquote>
 </template>
 
 <script>
-import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
-import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
-import { insertIntoField } from "@/components/Mail/fieldInsert.js";
+import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
 
 export default {
   name: "QuoteBlock",
-  components: { ConditionalVariableAlert, MailVariablePicker },
+  components: { MailVariableTextField },
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },
@@ -58,9 +44,6 @@ export default {
   methods: {
     onText(v) {
       this.$emit("update", { ...this.block, text: v });
-    },
-    insertVariable(expr) {
-      insertIntoField(this.$refs.textField, expr, this.onText);
     },
   },
 };

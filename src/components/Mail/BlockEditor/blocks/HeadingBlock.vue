@@ -1,43 +1,28 @@
 <template>
   <div class="heading-block" :class="{ selected }">
-    <v-text-field
-      :value="block.text"
+    <MailVariableTextField
+      :value="block.text || ''"
       placeholder="Überschrift…"
       dense
       hide-details
       flat
       solo
       background-color="transparent"
-      :style="headingStyle"
-      ref="textField"
-      @input="onTextChange"
-    >
-      <template #append>
-        <MailVariablePicker
-          :variables="variables"
-          :tenant="tenant"
-          field="line"
-          icon
-          @insert="insertVariable"
-        />
-      </template>
-    </v-text-field>
-    <ConditionalVariableAlert
-      :value="block.text || ''"
+      :field-style="headingStyle"
+      field="line"
       :variables="variables"
       :tenant="tenant"
+      @input="onTextChange"
     />
   </div>
 </template>
 
 <script>
-import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
-import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
-import { insertIntoField } from "@/components/Mail/fieldInsert.js";
+import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
 
 export default {
   name: "HeadingBlock",
-  components: { ConditionalVariableAlert, MailVariablePicker },
+  components: { MailVariableTextField },
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },
@@ -59,9 +44,6 @@ export default {
   methods: {
     onTextChange(val) {
       this.$emit("update", { ...this.block, text: val });
-    },
-    insertVariable(expr) {
-      insertIntoField(this.$refs.textField, expr, this.onTextChange);
     },
   },
 };

@@ -22,6 +22,11 @@
           </v-list-item-title>
         </v-list-item-content>
       </v-list-item>
+      <v-list-item v-else-if="!entries.length" disabled>
+        <v-list-item-content>
+          <v-list-item-title>Keine Variablen für dieses Feld</v-list-item-title>
+        </v-list-item-content>
+      </v-list-item>
       <v-list-item
         v-for="entry in entries"
         v-else

@@ -2,35 +2,25 @@
   <div class="list-block" :class="{ selected }">
     <component :is="block.ordered ? 'ol' : 'ul'" class="list-items">
       <li v-for="(item, idx) in block.items || []" :key="idx">
-        <v-text-field
-          :value="item"
+        <MailVariableTextField
+          :value="item || ''"
           dense
           hide-details
           flat
           solo
           background-color="transparent"
           placeholder="Listenpunkt…"
-          ref="itemFields"
+          field="line"
+          :variables="variables"
+          :tenant="tenant"
           @input="(v) => onItem(idx, v)"
         >
-          <template v-slot:append>
-            <MailVariablePicker
-              :variables="variables"
-              :tenant="tenant"
-              field="line"
-              icon
-              @insert="(expr) => insertVariable(idx, expr)"
-            />
+          <template #append>
             <v-btn icon x-small @click.stop="removeItem(idx)">
               <v-icon x-small>mdi-close</v-icon>
             </v-btn>
           </template>
-        </v-text-field>
-        <ConditionalVariableAlert
-          :value="item || ''"
-          :variables="variables"
-          :tenant="tenant"
-        />
+        </MailVariableTextField>
       </li>
     </component>
     <v-btn x-small text color="primary" @click="addItem">
@@ -41,13 +31,11 @@
 </template>
 
 <script>
-import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
-import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
-import { insertIntoField } from "@/components/Mail/fieldInsert.js";
+import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
 
 export default {
   name: "ListBlock",
-  components: { ConditionalVariableAlert, MailVariablePicker },
+  components: { MailVariableTextField },
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },
@@ -59,10 +47,6 @@ export default {
       const items = [...(this.block.items || [])];
       items[idx] = val;
       this.$emit("update", { ...this.block, items });
-    },
-    insertVariable(idx, expr) {
-      const fields = this.$refs.itemFields || [];
-      insertIntoField(fields[idx], expr, (v) => this.onItem(idx, v));
     },
     addItem() {
       const items = [...(this.block.items || []), ""];

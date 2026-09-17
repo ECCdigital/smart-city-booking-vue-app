@@ -4,8 +4,9 @@
       <v-icon x-small color="warning" class="mr-1">mdi-alert</v-icon>
       <span class="text-caption warning--text">Experten-Block (Roh-HTML)</span>
     </div>
-    <v-textarea
-      :value="block.html"
+    <MailVariableTextField
+      :value="block.html || ''"
+      multiline
       placeholder="<p>HTML hier…</p>"
       rows="3"
       auto-grow
@@ -13,40 +14,25 @@
       hide-details
       filled
       class="raw-html-textarea"
-      ref="htmlField"
-      @input="onChange"
-    >
-      <template #append>
-        <MailVariablePicker
-          :variables="variables"
-          :tenant="tenant"
-          field="html"
-          icon
-          @insert="insertVariable"
-        />
-      </template>
-    </v-textarea>
-    <ConditionalVariableAlert
-      :value="block.html || ''"
+      field="html"
       :variables="variables"
       :tenant="tenant"
-      class="mt-2"
-    />
-    <div class="text-caption grey--text mt-1">
-      Bedingungen (<code v-pre>{{#if}}</code
-      >) nicht zwischen <code>&lt;table&gt;</code>-Tags setzen.
-    </div>
+      @input="onChange"
+    >
+      <div class="text-caption grey--text mt-1">
+        Bedingungen (<code v-pre>{{#if}}</code
+        >) nicht zwischen <code>&lt;table&gt;</code>-Tags setzen.
+      </div>
+    </MailVariableTextField>
   </div>
 </template>
 
 <script>
-import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
-import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
-import { insertIntoField } from "@/components/Mail/fieldInsert.js";
+import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
 
 export default {
   name: "RawHtmlBlock",
-  components: { ConditionalVariableAlert, MailVariablePicker },
+  components: { MailVariableTextField },
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },
@@ -56,9 +42,6 @@ export default {
   methods: {
     onChange(v) {
       this.$emit("update", { ...this.block, html: v });
-    },
-    insertVariable(expr) {
-      insertIntoField(this.$refs.htmlField, expr, this.onChange);
     },
   },
 };

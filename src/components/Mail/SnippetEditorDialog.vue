@@ -26,7 +26,7 @@
 
         <v-card-text class="pa-3">
           <div class="subject-field-wrapper mb-4">
-            <v-text-field
+            <MailVariableTextField
               v-model="subjectValue"
               label="Betreff der Mail (optional)"
               :hint="subjectFieldHint"
@@ -36,17 +36,10 @@
               :counter="MAX_SUBJECT_LENGTH"
               :error-messages="subjectErrors"
               :placeholder="snippet.defaultSubject"
-              ref="subjectField"
+              field="subject"
+              :variables="variables"
+              :tenant="tenant"
             >
-              <template #append>
-                <MailVariablePicker
-                  :variables="variables"
-                  :tenant="tenant"
-                  field="subject"
-                  icon
-                  @insert="insertSubjectVariable"
-                />
-              </template>
               <template #append-outer>
                 <v-btn
                   small
@@ -58,12 +51,7 @@
                   Standard
                 </v-btn>
               </template>
-            </v-text-field>
-            <ConditionalVariableAlert
-              :value="subjectValue"
-              :variables="variables"
-              :tenant="tenant"
-            />
+            </MailVariableTextField>
           </div>
 
           <v-divider class="mb-3" />
@@ -321,9 +309,7 @@
 
 <script>
 import CombinedSnippetBlockEditor from "./BlockEditor/CombinedSnippetBlockEditor.vue";
-import MailVariablePicker from "./MailVariablePicker.vue";
-import ConditionalVariableAlert from "./ConditionalVariableAlert.vue";
-import { insertIntoField } from "./fieldInsert.js";
+import MailVariableTextField from "./MailVariableTextField.vue";
 import { renderBlocksToHtml } from "./BlockEditor/render/renderBlocksToHtml.js";
 import {
   extractBlockMetadata,
@@ -346,8 +332,7 @@ export default {
   name: "SnippetEditorDialog",
   components: {
     CombinedSnippetBlockEditor,
-    ConditionalVariableAlert,
-    MailVariablePicker,
+    MailVariableTextField,
   },
   props: {
     open: { type: Boolean, default: false },
@@ -494,11 +479,6 @@ export default {
     },
   },
   methods: {
-    insertSubjectVariable(expr) {
-      insertIntoField(this.$refs.subjectField, expr, (v) => {
-        this.subjectValue = v;
-      });
-    },
     loadSectionFromHtml(incoming, { allowEmptyVisual = false } = {}) {
       if (!incoming) {
         return {
