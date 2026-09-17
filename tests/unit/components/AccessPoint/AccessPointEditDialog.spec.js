@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises, lifecycleError } from "@tests/unit/support/api";
+import {
+  flushPromises,
+  lifecycleError,
+  validationError,
+} from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiAccessAppsService", () => ({
   default: { getAccessPoints: vi.fn() },
@@ -339,6 +343,388 @@ describe("AccessPointEditDialog", () => {
       expect(dialogText(wrapper)).toContain("Zugangspunkt bearbeiten");
       expect(wrapper.find(".create-mode-toggle").exists()).toBe(false);
       expect(wrapper.find(".provider-picker").exists()).toBe(false);
+    });
+  });
+
+  /**
+   * A Nuki door carries an Öffnungsart: which action Nuki performs when the
+   * door is opened. It is a Nuki matter - no other provider is asked what to
+   * send - and a door matter: a compartment of a locker system has no latch
+   * to pull.
+   */
+  describe("the Öffnungsart of a Nuki door", () => {
+    function openActionSelect(wrapper) {
+      return wrapper.findComponent({ ref: "openActionSelect" });
+    }
+
+    it("offers the five Öffnungsarten with their explanations", async () => {
+      const wrapper = await mountDialog({ accessPoint: DOOR });
+
+      expect(labels(wrapper)).toContain("Öffnungsart");
+      const items = openActionSelect(wrapper).props("items");
+      expect(items.map((item) => item.value)).toEqual([
+        "auto",
+        "unlock",
+        "unlatch",
+        "lock_n_go",
+        "lock_n_go_unlatch",
+      ]);
+      expect(items.map((item) => item.text)).toEqual([
+        "Automatisch",
+        "Aufschließen",
+        "Falle ziehen",
+        "Lock'n'Go",
+        "Lock'n'Go mit Falle ziehen",
+      ]);
+      expect(items[3].description).toBe(
+        "Aufschließen, kurz warten, wieder abschließen. Für Türen, die von sich aus zufallen."
+      );
+      expect(dialogText(wrapper)).toContain(
+        "Welche Aktion Nuki beim Öffnen ausführt. Die Wartezeit von Lock'n'Go wird in der Nuki-App eingestellt."
+      );
+    });
+
+    it("says at the JSON field that the Öffnungsart is set above", async () => {
+      const wrapper = await mountDialog({ accessPoint: DOOR });
+      await wrapper.find(".v-expansion-panel-header").trigger("click");
+      await flushPromises();
+
+      expect(dialogText(wrapper)).toContain(
+        "Die Öffnungsart wird oben eingestellt."
+      );
+    });
+
+    it("carries no Öffnungsart for a door of another provider", async () => {
+      const wrapper = await mountDialog({
+        accessPoint: { ...DOOR, provider: "salto-ks" },
+      });
+
+      expect(labels(wrapper)).not.toContain("Öffnungsart");
+
+      await wrapper.find(".v-expansion-panel-header").trigger("click");
+      await flushPromises();
+      expect(dialogText(wrapper)).not.toContain(
+        "Die Öffnungsart wird oben eingestellt."
+      );
+    });
+
+    it("carries no Öffnungsart for a locker system", async () => {
+      const wrapper = await mountDialog({ accessPoint: LOCKER });
+
+      expect(labels(wrapper)).not.toContain("Öffnungsart");
+    });
+
+    /**
+     * The field owns `config.openAction`: it is taken out of the JSON text on
+     * load, so the same key is not edited in two places, and merged back on
+     * save with the field's answer winning.
+     */
+    describe("owns the key in the advanced configuration", () => {
+      async function saveDoor(wrapper) {
+        await wrapper.find(".save-access-point").trigger("click");
+        await flushPromises();
+        return ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+      }
+
+      async function configField(wrapper) {
+        await wrapper.find(".v-expansion-panel-header").trigger("click");
+        await flushPromises();
+        return wrapper.find(".config-field textarea");
+      }
+
+      beforeEach(() => {
+        ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+      });
+
+      it("takes the stored Öffnungsart out of the JSON text", async () => {
+        const wrapper = await mountDialog({
+          accessPoint: {
+            ...DOOR,
+            config: { openAction: "unlatch", tolerance: 5 },
+          },
+        });
+
+        expect(openActionSelect(wrapper).props("value")).toBe("unlatch");
+        const text = (await configField(wrapper)).element.value;
+        expect(text).toContain("tolerance");
+        expect(text).not.toContain("openAction");
+      });
+
+      it("shows Automatisch for a door without the key", async () => {
+        const wrapper = await mountDialog({ accessPoint: DOOR });
+
+        expect(openActionSelect(wrapper).props("value")).toBe("auto");
+      });
+
+      it("merges the chosen Öffnungsart back into the configuration", async () => {
+        const wrapper = await mountDialog({
+          accessPoint: { ...DOOR, config: { tolerance: 5 } },
+        });
+        openActionSelect(wrapper).vm.$emit("input", "lock_n_go");
+        await wrapper.vm.$nextTick();
+
+        expect((await saveDoor(wrapper)).config).toEqual({
+          tolerance: 5,
+          openAction: "lock_n_go",
+        });
+      });
+
+      it("wins over an openAction typed into the JSON text", async () => {
+        const wrapper = await mountDialog({ accessPoint: DOOR });
+        const field = await configField(wrapper);
+        await field.setValue(JSON.stringify({ openAction: "unlatch" }));
+        openActionSelect(wrapper).vm.$emit("input", "unlock");
+        await wrapper.vm.$nextTick();
+
+        expect((await saveDoor(wrapper)).config).toEqual({
+          openAction: "unlock",
+        });
+      });
+
+      /**
+       * "Automatisch" is the missing key, not a value: an untouched existing
+       * door must not gain one, so that saving it produces no diff in
+       * `config` - and a door that had one loses it when it is set back.
+       */
+      it("writes no key for Automatisch", async () => {
+        const wrapper = await mountDialog({ accessPoint: DOOR });
+
+        expect((await saveDoor(wrapper)).config).toEqual({});
+      });
+
+      it("leaves the stored Öffnungsart alone when nothing is touched", async () => {
+        const wrapper = await mountDialog({
+          accessPoint: { ...DOOR, config: { openAction: "unlatch" } },
+        });
+
+        expect((await saveDoor(wrapper)).config).toEqual({
+          openAction: "unlatch",
+        });
+      });
+
+      it("drops the key when Automatisch is chosen again", async () => {
+        const wrapper = await mountDialog({
+          accessPoint: { ...DOOR, config: { openAction: "unlatch" } },
+        });
+        openActionSelect(wrapper).vm.$emit("input", "auto");
+        await wrapper.vm.$nextTick();
+
+        expect((await saveDoor(wrapper)).config).toEqual({});
+      });
+
+      /**
+       * The Öffnungsart belongs to a Nuki door; a door moved to another
+       * provider carries none, so the key goes with the provider.
+       */
+      it("drops the key when the provider is moved away from nuki", async () => {
+        const wrapper = await mountDialog({
+          accessPoint: { ...DOOR, config: { openAction: "unlatch" } },
+        });
+        const providerInput = wrapper.find(".provider-field input");
+        providerInput.setValue("salto-ks");
+        await providerInput.trigger("keydown.enter");
+        await wrapper.vm.$nextTick();
+
+        expect(labels(wrapper)).not.toContain("Öffnungsart");
+        expect((await saveDoor(wrapper)).config).toEqual({});
+      });
+    });
+
+    /**
+     * Which Öffnungsarten a lock can carry out is the backend's word: the
+     * listing carries `supportedOpenActions` per lock, and the dialog greys
+     * out what is not in it. Only the backend decides - a listing without the
+     * field greys out nothing, and the save is refused there, not here.
+     */
+    describe("greys out what the device cannot do", () => {
+      const SMART_LOCK = {
+        id: "lock-1",
+        externalId: "lock-1",
+        label: "Haupteingang",
+        provider: "nuki",
+        supportedOpenActions: [
+          "auto",
+          "unlock",
+          "unlatch",
+          "lock_n_go",
+          "lock_n_go_unlatch",
+        ],
+      };
+      const BOX = {
+        id: "box-2",
+        externalId: "box-2",
+        label: "Nuki Box",
+        provider: "nuki",
+        supportedOpenActions: ["auto", "unlock"],
+      };
+
+      async function takeOver(wrapper, externalId) {
+        wrapper
+          .findComponent({ ref: "lockSelect" })
+          .vm.$emit("input", externalId);
+        await wrapper.vm.$nextTick();
+        await wrapper.find(".apply-lock").trigger("click");
+        await wrapper.vm.$nextTick();
+      }
+
+      function disabledOptions(wrapper) {
+        return openActionSelect(wrapper)
+          .props("items")
+          .filter((item) => item.disabled)
+          .map((item) => item.value);
+      }
+
+      it("greys out the Öffnungsarten the picked lock does not list", async () => {
+        ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [BOX] });
+        const wrapper = await mountDialog();
+        await takeOver(wrapper, "box-2");
+
+        expect(disabledOptions(wrapper)).toEqual([
+          "unlatch",
+          "lock_n_go",
+          "lock_n_go_unlatch",
+        ]);
+        const items = openActionSelect(wrapper).props("items");
+        expect(items[2].description).toBe(
+          "Für diesen Gerätetyp nicht verfügbar"
+        );
+        expect(items[1].description).toBe(
+          "Riegel zurück, Tür bleibt zu. Zum Öffnen muss die Klinke gedrückt werden."
+        );
+      });
+
+      /**
+       * An older backend lists its locks without the field. The dialog then
+       * greys out nothing and lets the backend refuse what it must.
+       */
+      it("greys out nothing when the listing carries no Öffnungsarten", async () => {
+        ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+          data: [{ ...SMART_LOCK, supportedOpenActions: undefined }],
+        });
+        const wrapper = await mountDialog();
+        await takeOver(wrapper, "lock-1");
+
+        expect(disabledOptions(wrapper)).toEqual([]);
+        expect(dialogText(wrapper)).not.toContain(
+          "Dieses Schloss unterstützt die gewählte Öffnungsart nicht."
+        );
+      });
+
+      /**
+       * Swapping the device behind a door keeps the Öffnungsart it was set
+       * to. It stays chosen and visible - greyed out, with a word under the
+       * field - rather than being silently reset to something else.
+       */
+      it("keeps a chosen Öffnungsart the new lock cannot do", async () => {
+        ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+          data: [SMART_LOCK, BOX],
+        });
+        const wrapper = await mountDialog();
+        await takeOver(wrapper, "lock-1");
+        openActionSelect(wrapper).vm.$emit("input", "unlatch");
+        await wrapper.vm.$nextTick();
+        expect(dialogText(wrapper)).not.toContain(
+          "Dieses Schloss unterstützt die gewählte Öffnungsart nicht."
+        );
+
+        await takeOver(wrapper, "box-2");
+
+        expect(openActionSelect(wrapper).props("value")).toBe("unlatch");
+        expect(disabledOptions(wrapper)).toContain("unlatch");
+        expect(dialogText(wrapper)).toContain(
+          "Dieses Schloss unterstützt die gewählte Öffnungsart nicht."
+        );
+      });
+    });
+
+    /**
+     * The backend has the last word on the Öffnungsart, and it says which
+     * field it refused: a fault of `config.openAction` belongs at the select,
+     * not in the alert under the form, so the admin sees where to fix it.
+     */
+    describe("when the backend refuses the Öffnungsart", () => {
+      async function saveAndFail(details) {
+        ApiAccessPointService.storeAccessPoint.mockRejectedValue(
+          validationError(details)
+        );
+        const wrapper = await mountDialog({ accessPoint: DOOR });
+        await wrapper.find(".save-access-point").trigger("click");
+        await flushPromises();
+        await wrapper.vm.$nextTick();
+        return wrapper;
+      }
+
+      it("puts an Öffnungsart the lock cannot do at the field", async () => {
+        const wrapper = await saveAndFail([
+          {
+            field: "config.openAction",
+            code: "unsupported_open_action",
+            params: {
+              openAction: "lock_n_go",
+              deviceType: 1,
+              supportedOpenActions: ["auto", "unlock"],
+            },
+          },
+        ]);
+
+        expect(openActionSelect(wrapper).props("errorMessages")).toBe(
+          "Die Öffnungsart „Lock'n'Go“ unterstützt dieses Schloss nicht. Möglich sind: Automatisch, Aufschließen."
+        );
+        expect(dialogText(wrapper)).toContain(
+          "Die Öffnungsart „Lock'n'Go“ unterstützt dieses Schloss nicht."
+        );
+        expect(wrapper.findAll(".v-alert").length).toBe(0);
+        expect(wrapper.emitted("saved")).toBeUndefined();
+      });
+
+      it("puts an Öffnungsart outside the vocabulary at the field", async () => {
+        const wrapper = await saveAndFail([
+          { field: "config.openAction", code: "unknown_open_action" },
+        ]);
+
+        expect(openActionSelect(wrapper).props("errorMessages")).toBe(
+          "Öffnungsart: Unzulässiger Wert"
+        );
+      });
+
+      it("leaves the faults of other fields in the alert", async () => {
+        const wrapper = await saveAndFail([
+          { field: "mode", code: "unsupported_mode" },
+        ]);
+
+        expect(openActionSelect(wrapper).props("errorMessages")).toBe("");
+        expect(wrapper.find(".v-alert").text()).toContain(
+          "Modus: Dieses Schloss unterstützt den gewählten Modus nicht."
+        );
+      });
+
+      it("clears the field error once another Öffnungsart is chosen", async () => {
+        const wrapper = await saveAndFail([
+          { field: "config.openAction", code: "unknown_open_action" },
+        ]);
+
+        openActionSelect(wrapper).vm.$emit("change", "unlock");
+        await wrapper.vm.$nextTick();
+
+        expect(openActionSelect(wrapper).props("errorMessages")).toBe("");
+      });
+    });
+
+    /**
+     * While creating, the field appears as soon as the provider is nuki -
+     * taken over from the listing or typed in by hand.
+     */
+    it("appears while creating as soon as the provider is nuki", async () => {
+      const wrapper = await mountDialog({ providers: [] });
+      expect(labels(wrapper)).not.toContain("Öffnungsart");
+
+      const providerInput = wrapper.find(".provider-field input");
+      providerInput.setValue("nuki");
+      await providerInput.trigger("keydown.enter");
+      await wrapper.vm.$nextTick();
+      await wrapper.vm.$nextTick();
+
+      expect(labels(wrapper)).toContain("Öffnungsart");
     });
   });
 

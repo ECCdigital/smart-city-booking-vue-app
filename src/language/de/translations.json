@@ -1323,6 +1323,23 @@
         "remote": "Der Buchende öffnet per Knopfdruck in der App – ohne PIN-Eingabe.",
         "both": "Beides möglich: PIN-Code am Schloss oder Öffnen per App."
       },
+      "openActions": {
+        "auto": "Automatisch",
+        "unlock": "Aufschließen",
+        "unlatch": "Falle ziehen",
+        "lock_n_go": "Lock'n'Go",
+        "lock_n_go_unlatch": "Lock'n'Go mit Falle ziehen"
+      },
+      "openActionHints": {
+        "auto": "Nach Gerätetyp: Falle ziehen, wo eine Falle vorhanden ist, sonst aufschließen.",
+        "unlock": "Riegel zurück, Tür bleibt zu. Zum Öffnen muss die Klinke gedrückt werden.",
+        "unlatch": "Aufschließen und Falle ziehen: Die Tür lässt sich aufdrücken.",
+        "lock_n_go": "Aufschließen, kurz warten, wieder abschließen. Für Türen, die von sich aus zufallen.",
+        "lock_n_go_unlatch": "Wie Lock'n'Go, zusätzlich mit gezogener Falle."
+      },
+      "openActionHint": "Welche Aktion Nuki beim Öffnen ausführt. Die Wartezeit von Lock'n'Go wird in der Nuki-App eingestellt.",
+      "openActionUnsupported": "Für diesen Gerätetyp nicht verfügbar",
+      "openActionMismatch": "Dieses Schloss unterstützt die gewählte Öffnungsart nicht.",
       "fields": {
         "label": "Bezeichnung",
         "type": "Typ",
@@ -1331,7 +1348,9 @@
         "externalIdHint": "Ändern Sie diese ID, um das Schloss auszutauschen, ohne den QR-Code neu zu drucken.",
         "providerLocationId": "Standort-ID beim Anbieter",
         "mode": "Modus",
-        "config": "Konfiguration",
+        "config": {
+          "openAction": "Öffnungsart"
+        },
         "location": "Standort",
         "validationRules": "Validierungsregeln",
         "typeHint": "Der Typ ergibt sich aus dem Anbieter und ist nicht wählbar.",
@@ -1376,6 +1395,7 @@
         "title": "Erweiterte Konfiguration",
         "label": "Anbieter-Konfiguration (JSON)",
         "hint": "Anbieterspezifische Zusatzangaben. Leer lassen, wenn nicht benötigt.",
+        "hintOpenAction": "Die Öffnungsart wird oben eingestellt.",
         "invalid": "Kein gültiges JSON.",
         "notObject": "Die Konfiguration muss ein JSON-Objekt sein."
       },
@@ -1437,8 +1457,11 @@
           "validate": "Unzulässiger Wert",
           "type_array": "Es wird eine Liste erwartet",
           "type_string": "Es wird ein Text erwartet",
-          "unsupported_mode": "Dieses Schloss unterstützt den gewählten Modus nicht."
+          "unsupported_mode": "Dieses Schloss unterstützt den gewählten Modus nicht.",
+          "unknown_open_action": "Unzulässiger Wert"
         },
+        "unsupportedOpenAction": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht. Möglich sind: {supportedOpenActions}.",
+        "unsupportedOpenActionWithoutList": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht.",
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },
       "toasts": {
