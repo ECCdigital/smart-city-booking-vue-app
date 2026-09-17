@@ -37,6 +37,27 @@ export function filterVariablesForSnippet(variables, snippetKey) {
   );
 }
 
+/** Whether any entry carries `sampleAggregated` (`""` is a valid sample). */
+export function hasAggregatedSample(variables) {
+  return (variables || []).some((v) => v.sampleAggregated !== undefined);
+}
+
+/**
+ * Sample values for the preview: `sampleAggregated` where present when an
+ * aggregated notice is previewed, else `sample`; entries without one are left out.
+ */
+export function sampleValuesFor(variables, aggregated) {
+  const values = {};
+  (variables || []).forEach((v) => {
+    const value =
+      aggregated && v.sampleAggregated !== undefined
+        ? v.sampleAggregated
+        : v.sample;
+    if (value !== undefined) values[v.name] = value;
+  });
+  return values;
+}
+
 /** Entries whose `kind` a field of the given kind offers, in catalog order. */
 export function filterVariablesForField(variables, field) {
   const kinds = FIELD_KINDS[field] || [];

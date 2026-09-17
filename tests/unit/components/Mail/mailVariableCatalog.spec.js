@@ -3,7 +3,9 @@ import {
   expressionForField,
   filterVariablesForField,
   filterVariablesForSnippet,
+  hasAggregatedSample,
   isCatalogLoadable,
+  sampleValuesFor,
 } from "@/components/Mail/mailVariableCatalog.js";
 
 function entry(name, kind, extra = {}) {
@@ -190,5 +192,56 @@ describe("isCatalogLoadable", () => {
     expect(isCatalogLoadable(undefined)).toBe(false);
     expect(isCatalogLoadable(null)).toBe(false);
     expect(isCatalogLoadable({ tenantName: {} })).toBe(false);
+  });
+});
+
+describe("sampleValuesFor", () => {
+  const variables = [
+    entry("customerName", "text", { sample: "Erika Mustermann" }),
+    entry("bookingId", "text", { sample: "BK-1001", sampleAggregated: "" }),
+    entry("groupBookingId", "text", { sample: "", sampleAggregated: "GB-7" }),
+    entry("isAggregated", "flag", {
+      sample: false,
+      sampleAggregated: true,
+    }),
+    { name: "noSample", kind: "text" },
+  ];
+
+  it("off takes sample and skips entries without one", () => {
+    expect(sampleValuesFor(variables, false)).toEqual({
+      customerName: "Erika Mustermann",
+      bookingId: "BK-1001",
+      groupBookingId: "",
+      isAggregated: false,
+    });
+  });
+
+  it("on takes sampleAggregated where present, else sample", () => {
+    expect(sampleValuesFor(variables, true)).toEqual({
+      customerName: "Erika Mustermann",
+      bookingId: "",
+      groupBookingId: "GB-7",
+      isAggregated: true,
+    });
+  });
+
+  it("tolerates a missing list", () => {
+    expect(sampleValuesFor(undefined, true)).toEqual({});
+  });
+});
+
+describe("hasAggregatedSample", () => {
+  it("is true when at least one entry carries sampleAggregated, even empty", () => {
+    expect(
+      hasAggregatedSample([
+        entry("customerName", "text"),
+        entry("bookingId", "text", { sampleAggregated: "" }),
+      ])
+    ).toBe(true);
+  });
+
+  it("is false without any sampleAggregated or without a list", () => {
+    expect(hasAggregatedSample([entry("customerName", "text")])).toBe(false);
+    expect(hasAggregatedSample(undefined)).toBe(false);
   });
 });

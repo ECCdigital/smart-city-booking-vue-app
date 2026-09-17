@@ -172,6 +172,15 @@
                     class="mt-0"
                     label="Mit E-Mail-Layout"
                   />
+                  <v-switch
+                    v-if="canPreviewAggregated"
+                    v-model="previewAggregated"
+                    dense
+                    hide-details
+                    inset
+                    class="mt-0 ml-4"
+                    label="Als Sammelmitteilung"
+                  />
                 </v-toolbar>
                 <v-card-text class="pa-0">
                   <iframe
@@ -319,7 +328,11 @@ import {
   MAX_SNIPPET_SIZE_BYTES,
   MAX_SUBJECT_LENGTH,
 } from "./snippetCatalog.js";
-import { filterVariablesForSnippet } from "./mailVariableCatalog.js";
+import {
+  filterVariablesForSnippet,
+  hasAggregatedSample,
+  sampleValuesFor,
+} from "./mailVariableCatalog.js";
 import { buildSnippetPreviewExtrasHtml, sampleBookingPeriod } from "./snippetPreviewExtras.js";
 
 export default {
@@ -356,6 +369,7 @@ export default {
       previewKey: 0,
       handlebarsLib: null,
       useLayoutInPreview: true,
+      previewAggregated: false,
       confirmLoadDefaultOpen: false,
       MAX_SUBJECT_LENGTH,
     };
@@ -375,12 +389,15 @@ export default {
     variables() {
       return filterVariablesForSnippet(this.templateVariables, this.snippetKey);
     },
+    canPreviewAggregated() {
+      return hasAggregatedSample(this.variables);
+    },
     /** Sample values come from the catalog; the preview is always filled. */
     sampleData() {
-      const base = {};
-      this.variables.forEach((v) => {
-        if (v.sample !== undefined) base[v.name] = v.sample;
-      });
+      const base = sampleValuesFor(
+        this.variables,
+        this.canPreviewAggregated && this.previewAggregated
+      );
       return {
         ...base,
         tenantName:
@@ -658,6 +675,17 @@ export default {
             return currencyFormatter.format(value);
           });
         }
+        // Mirrors the backend helper: scalars are encoded, everything else
+        // (null, undefined, objects, the options object without an argument)
+        // renders as ""; a plain string, so `{{ }}` still HTML-escapes it.
+        if (!hb.helpers.urlEncode) {
+          hb.registerHelper("urlEncode", (value) => {
+            if (typeof value !== "string" && typeof value !== "number") {
+              return "";
+            }
+            return encodeURIComponent(String(value));
+          });
+        }
         this.handlebarsLib = hb;
       } catch (e) {
         this.handlebarsLib = null;
@@ -789,6 +817,7 @@ export default {
         this.afterExpertHtml,
         this.subjectValue,
         this.useLayoutInPreview,
+        this.previewAggregated,
         this.layoutTemplate,
         this.showSupportFooter,
         this.bookingPeriodFormat,
