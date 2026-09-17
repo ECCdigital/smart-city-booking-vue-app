@@ -34,6 +34,19 @@
             <code class="mail-variable-picker__expr">{{ entry.expr }}</code>
             <span class="ml-1 grey--text">{{ entry.description }}</span>
           </v-list-item-subtitle>
+          <v-list-item-subtitle
+            v-if="entry.requirement"
+            class="mail-variable-picker__requires"
+            :class="levelClass(entry.requirement)"
+          >
+            <v-icon x-small :color="levelColor(entry.requirement)" class="mr-1">
+              {{ entry.requirement.icon }}
+            </v-icon>
+            <strong v-if="entry.requirement.lead">{{
+              entry.requirement.lead
+            }}</strong
+            >{{ requirementRest(entry.requirement) }}
+          </v-list-item-subtitle>
         </v-list-item-content>
       </v-list-item>
     </v-list>
@@ -45,6 +58,7 @@ import {
   expressionForField,
   filterVariablesForField,
   isCatalogLoadable,
+  requirementFor,
 } from "./mailVariableCatalog.js";
 
 /**
@@ -76,7 +90,22 @@ export default {
       return filterVariablesForField(this.variables, this.field).map((v) => ({
         ...v,
         expr: expressionForField(v, this.field),
+        requirement: requirementFor(v, this.tenant),
       }));
+    },
+  },
+  methods: {
+    levelColor(requirement) {
+      return requirement.level === "warning" ? "warning" : "grey darken-1";
+    },
+    levelClass(requirement) {
+      return requirement.level === "warning"
+        ? "warning--text text--darken-2"
+        : "grey--text";
+    },
+    /** The sentence after the bold lead. */
+    requirementRest(requirement) {
+      return requirement.text.slice(requirement.lead.length);
     },
   },
 };
@@ -95,5 +124,9 @@ export default {
   padding: 1px 6px;
   border-radius: 3px;
   color: #c2185b;
+}
+.mail-variable-picker__requires {
+  white-space: normal;
+  font-size: 11px;
 }
 </style>

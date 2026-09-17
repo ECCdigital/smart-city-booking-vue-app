@@ -26,6 +26,11 @@
             </v-btn>
           </template>
         </v-text-field>
+        <ConditionalVariableAlert
+          :value="item || ''"
+          :variables="variables"
+          :tenant="tenant"
+        />
       </li>
     </component>
     <v-btn x-small text color="primary" @click="addItem">
@@ -37,11 +42,12 @@
 
 <script>
 import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
 import { insertIntoField } from "@/components/Mail/fieldInsert.js";
 
 export default {
   name: "ListBlock",
-  components: { MailVariablePicker },
+  components: { ConditionalVariableAlert, MailVariablePicker },
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },

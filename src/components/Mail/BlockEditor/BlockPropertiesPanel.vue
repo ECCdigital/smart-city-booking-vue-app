@@ -135,6 +135,11 @@
             />
           </template>
         </v-text-field>
+        <ConditionalVariableAlert
+          :value="selectedBlock.src || ''"
+          :variables="variables"
+          :tenant="tenant"
+        />
         <v-alert
           v-if="selectedBlock.src && selectedBlock.src.startsWith('http://')"
           type="warning"
@@ -164,6 +169,11 @@
             />
           </template>
         </v-text-field>
+        <ConditionalVariableAlert
+          :value="selectedBlock.alt || ''"
+          :variables="variables"
+          :tenant="tenant"
+        />
         <v-text-field
           label="Breite (px)"
           type="number"
@@ -204,6 +214,11 @@
             />
           </template>
         </v-text-field>
+        <ConditionalVariableAlert
+          :value="selectedBlock.link || ''"
+          :variables="variables"
+          :tenant="tenant"
+        />
       </div>
 
       <!-- Button -->
@@ -228,6 +243,11 @@
             />
           </template>
         </v-text-field>
+        <ConditionalVariableAlert
+          :value="selectedBlock.label || ''"
+          :variables="variables"
+          :tenant="tenant"
+        />
         <v-text-field
           label="Link-Ziel"
           :value="selectedBlock.href || ''"
@@ -249,6 +269,11 @@
             />
           </template>
         </v-text-field>
+        <ConditionalVariableAlert
+          :value="selectedBlock.href || ''"
+          :variables="variables"
+          :tenant="tenant"
+        />
         <v-btn
           small
           text
@@ -429,6 +454,11 @@
             />
           </template>
         </v-text-field>
+        <ConditionalVariableAlert
+          :value="selectedBlock.title || ''"
+          :variables="variables"
+          :tenant="tenant"
+        />
       </div>
 
       <!-- Quote -->
@@ -453,6 +483,11 @@
             />
           </template>
         </v-text-field>
+        <ConditionalVariableAlert
+          :value="selectedBlock.cite || ''"
+          :variables="variables"
+          :tenant="tenant"
+        />
         <v-select
           :items="alignOptions"
           label="Ausrichtung"
@@ -492,6 +527,7 @@
 import { BLOCK_PALETTE } from "./blockFactory.js";
 import MailtoLinkDialog from "./MailtoLinkDialog.vue";
 import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
 import { insertIntoField } from "@/components/Mail/fieldInsert.js";
 import { SUPPORT_EMAIL_MAILTO } from "@/components/Mail/templateVariables.js";
 import {
@@ -501,7 +537,7 @@ import {
 
 export default {
   name: "BlockPropertiesPanel",
-  components: { MailtoLinkDialog, MailVariablePicker },
+  components: { ConditionalVariableAlert, MailtoLinkDialog, MailVariablePicker },
   props: {
     selectedBlock: { type: Object, default: null },
     variables: { type: Array, default: () => [] },

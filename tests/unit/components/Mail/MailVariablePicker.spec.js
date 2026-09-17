@@ -16,6 +16,13 @@ const CATALOG = [
     description: "Öffentliche Status-Seite der Buchung",
     kind: "url",
     sample: "https://example.test/booking/status/t1?id=BK-1",
+    requires: {
+      text: "leer, wenn die öffentliche Status-Seite deaktiviert ist",
+      tenantSetting: {
+        key: "enablePublicStatusView",
+        label: "Öffentliche Status-Seite",
+      },
+    },
   },
   {
     name: "customerContact",
@@ -118,5 +125,46 @@ describe("MailVariablePicker", () => {
     for (const item of menuItems()) item.click();
     await wrapper.vm.$nextTick();
     expect(wrapper.emitted("insert")).toBeUndefined();
+  });
+
+  it("a conditional entry shows icon and text per level and follows the live tenant", async () => {
+    const wrapper = await openPicker({
+      variables: CATALOG,
+      field: "url",
+      tenant: { enablePublicStatusView: false },
+    });
+    const row = () =>
+      menuItems().find((el) =>
+        el.textContent.includes("Link zur Status-Seite")
+      );
+    const requirement = () =>
+      row().querySelector(".mail-variable-picker__requires");
+
+    expect(requirement().querySelector(".v-icon").classList).toContain(
+      "mdi-alert-outline"
+    );
+    expect(requirement().querySelector(".v-icon").classList).toContain(
+      "warning--text"
+    );
+    expect(requirement().querySelector("strong").textContent).toBe(
+      "Öffentliche Status-Seite"
+    );
+    expect(requirement().textContent.replace(/\s+/g, " ").trim()).toBe(
+      "Öffentliche Status-Seite ist in den Mandanten-Einstellungen deaktiviert – Link zur Status-Seite bleibt leer."
+    );
+    expect(
+      menuItems()
+        .find((el) => el.textContent.includes("Kundenname"))
+        .querySelector(".mail-variable-picker__requires")
+    ).toBeNull();
+
+    await wrapper.setProps({ tenant: { enablePublicStatusView: true } });
+    await wrapper.vm.$nextTick();
+    expect(requirement().querySelector(".v-icon").classList).toContain(
+      "mdi-information-outline"
+    );
+    expect(requirement().textContent.trim()).toBe(
+      "leer, wenn die öffentliche Status-Seite deaktiviert ist"
+    );
   });
 });

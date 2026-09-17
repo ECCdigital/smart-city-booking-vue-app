@@ -23,17 +23,23 @@
         />
       </template>
     </v-textarea>
+    <ConditionalVariableAlert
+      :value="block.text || ''"
+      :variables="variables"
+      :tenant="tenant"
+    />
     <footer v-if="block.cite" class="mt-1 text-caption">— {{ block.cite }}</footer>
   </blockquote>
 </template>
 
 <script>
 import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
 import { insertIntoField } from "@/components/Mail/fieldInsert.js";
 
 export default {
   name: "QuoteBlock",
-  components: { MailVariablePicker },
+  components: { ConditionalVariableAlert, MailVariablePicker },
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },

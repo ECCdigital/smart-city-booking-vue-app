@@ -36,6 +36,11 @@
             />
           </template>
         </v-text-field>
+        <ConditionalVariableAlert
+          :value="address"
+          :variables="variables"
+          :tenant="tenant"
+        />
 
         <div v-if="presetVariables.length" class="mb-3">
           <v-chip
@@ -83,6 +88,7 @@ import {
   mailtoAddressFromHref,
 } from "@/components/Mail/templateVariables.js";
 import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
 import {
   filterVariablesForField,
   isCatalogLoadable,
@@ -91,7 +97,7 @@ import { insertIntoField } from "@/components/Mail/fieldInsert.js";
 
 export default {
   name: "MailtoLinkDialog",
-  components: { MailVariablePicker },
+  components: { ConditionalVariableAlert, MailVariablePicker },
   props: {
     open: { type: Boolean, default: false },
     variables: { type: Array, default: () => [] },

@@ -26,6 +26,12 @@
         />
       </template>
     </v-textarea>
+    <ConditionalVariableAlert
+      :value="block.html || ''"
+      :variables="variables"
+      :tenant="tenant"
+      class="mt-2"
+    />
     <div class="text-caption grey--text mt-1">
       Bedingungen (<code v-pre>{{#if}}</code
       >) nicht zwischen <code>&lt;table&gt;</code>-Tags setzen.
@@ -35,11 +41,12 @@
 
 <script>
 import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
 import { insertIntoField } from "@/components/Mail/fieldInsert.js";
 
 export default {
   name: "RawHtmlBlock",
-  components: { MailVariablePicker },
+  components: { ConditionalVariableAlert, MailVariablePicker },
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },

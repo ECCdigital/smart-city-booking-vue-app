@@ -9,6 +9,13 @@ const CATALOG = [
     label: "Status-Link",
     kind: "url",
     description: "",
+    requires: {
+      text: "leer, wenn die öffentliche Status-Seite deaktiviert ist",
+      tenantSetting: {
+        key: "enablePublicStatusView",
+        label: "Öffentliche Status-Seite",
+      },
+    },
   },
   {
     name: "customerContact",
@@ -78,5 +85,29 @@ describe("BlockPropertiesPanel variable picker", () => {
         block.type
       ).toBe(count);
     }
+  });
+
+  it("warns under a field whose value names a conditional variable in warning level, and follows the live tenant", async () => {
+    const wrapper = mountComponent(BlockPropertiesPanel, {
+      propsData: {
+        selectedBlock: {
+          id: "b1",
+          type: "button",
+          href: "{{bookingStatusUrl}}",
+          label: "{{customerName}}",
+        },
+        variables: CATALOG,
+        tenant: { enablePublicStatusView: false },
+      },
+    });
+    const alerts = () => wrapper.findAll(".mail-variable-alert").wrappers;
+    expect(alerts()).toHaveLength(1);
+    expect(alerts()[0].classes()).toContain("warning--text");
+    expect(alerts()[0].text().replace(/\s+/g, " ")).toContain(
+      "Öffentliche Status-Seite ist in den Mandanten-Einstellungen deaktiviert – Status-Link bleibt leer."
+    );
+
+    await wrapper.setProps({ tenant: { enablePublicStatusView: true } });
+    expect(alerts()).toHaveLength(0);
   });
 });

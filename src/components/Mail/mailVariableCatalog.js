@@ -83,3 +83,52 @@ export function expressionForField(variable, field) {
     return variable.expr || plain;
   }
 }
+
+/**
+ * What a conditional variable (`requires`) needs, judged against the tenant as
+ * edited right now. `null` without `requires`; otherwise `level` "warning"
+ * (the tenant flag is off, or there is no flag to check) or "info" (the flag
+ * is on). `lead` is the part of `text` a renderer may set in bold: the
+ * setting's label when the sentence names it, else empty.
+ */
+export function requirementFor(variable, tenant) {
+  const requires = variable && variable.requires;
+  if (!requires) return null;
+  const setting = requires.tenantSetting;
+  if (setting && (tenant || {})[setting.key]) {
+    return {
+      level: "info",
+      icon: "mdi-information-outline",
+      lead: "",
+      text: requires.text,
+    };
+  }
+  const lead = setting ? setting.label : "";
+  const text = setting
+    ? `${lead} ist in den Mandanten-Einstellungen deaktiviert – ${variable.label} bleibt leer.`
+    : requires.text;
+  return { level: "warning", icon: "mdi-alert-outline", lead, text };
+}
+
+/** Warning-level entries of the catalog, as `{ variable, text }`. */
+export function warningVariables(variables, tenant) {
+  return (variables || []).reduce((list, variable) => {
+    const requirement = requirementFor(variable, tenant);
+    if (requirement && requirement.level === "warning") {
+      list.push({ variable, text: requirement.text });
+    }
+    return list;
+  }, []);
+}
+
+/**
+ * Warning-level variables a field value refers to inside any `{{ … }}`
+ * (the name as a whole word, so `{{#if x}}` counts and `{{xY}}` does not).
+ */
+export function warningsInValue(value, variables, tenant) {
+  const text = String(value || "");
+  if (!text.includes("{{")) return [];
+  return warningVariables(variables, tenant).filter(({ variable }) =>
+    new RegExp(`\\{\\{[^}]*\\b${variable.name}\\b[^}]*\\}\\}`).test(text)
+  );
+}

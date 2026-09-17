@@ -99,6 +99,7 @@
     <MailtoLinkDialog
       :open="mailtoDialogOpen"
       :variables="variables"
+      :tenant="tenant"
       :initial-href="mailtoInitialHref"
       :initial-link-text="mailtoInitialLinkText"
       :show-link-text="mailtoNeedsLinkText"
@@ -126,6 +127,7 @@ import MailtoLinkDialog from "@/components/Mail/BlockEditor/MailtoLinkDialog.vue
 import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
 import { SUPPORT_EMAIL_MAILTO } from "@/components/Mail/templateVariables.js";
 import { resolveFontSizePx } from "@/components/Mail/BlockEditor/render/fontSize.js";
+import { warningVariables } from "@/components/Mail/mailVariableCatalog.js";
 
 export default {
   name: "TextBlock",
@@ -148,6 +150,14 @@ export default {
       return {
         fontSize: `${resolveFontSizePx(this.block.fontSize)}px`,
       };
+    },
+    /** Warning text per conditional variable in warning level, for the chips. */
+    chipWarnings() {
+      const byName = {};
+      warningVariables(this.variables, this.tenant).forEach(({ variable, text }) => {
+        byName[variable.name] = text;
+      });
+      return byName;
     },
   },
   mounted() {
@@ -176,11 +186,15 @@ export default {
         this.$emit("update", { ...this.block, html: this.editor.getHTML() });
       },
     });
+    this.applyChipWarnings();
   },
   beforeDestroy() {
     if (this.editor) this.editor.destroy();
   },
   watch: {
+    chipWarnings() {
+      this.applyChipWarnings();
+    },
     "block.html"(newVal) {
       if (!this.editor) return;
       if (this.editor.getHTML() === newVal) return;
@@ -188,6 +202,13 @@ export default {
     },
   },
   methods: {
+    applyChipWarnings() {
+      if (!this.editor) return;
+      const warnings = this.chipWarnings;
+      this.editor.commands.setMailVariableWarnings(
+        (name) => warnings[name] || ""
+      );
+    },
     /** Inserts the picked expression as a chip (VariableMark). */
     insertVariable(expr, entry) {
       const label = entry.label || entry.name;
@@ -328,6 +349,10 @@ export default {
   font-family: inherit;
   white-space: nowrap;
   vertical-align: baseline;
+}
+.text-block-content >>> .mail-variable-chip--warning {
+  background: var(--v-warning-lighten4);
+  color: var(--v-warning-darken3);
 }
 .text-block-content >>> .mail-variable-chip::after {
   content: "";

@@ -22,16 +22,22 @@
         />
       </template>
     </v-text-field>
+    <ConditionalVariableAlert
+      :value="block.text || ''"
+      :variables="variables"
+      :tenant="tenant"
+    />
   </div>
 </template>
 
 <script>
 import MailVariablePicker from "@/components/Mail/MailVariablePicker.vue";
+import ConditionalVariableAlert from "@/components/Mail/ConditionalVariableAlert.vue";
 import { insertIntoField } from "@/components/Mail/fieldInsert.js";
 
 export default {
   name: "HeadingBlock",
-  components: { MailVariablePicker },
+  components: { ConditionalVariableAlert, MailVariablePicker },
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },

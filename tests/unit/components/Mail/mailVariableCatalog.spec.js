@@ -5,7 +5,9 @@ import {
   filterVariablesForSnippet,
   hasAggregatedSample,
   isCatalogLoadable,
+  requirementFor,
   sampleValuesFor,
+  warningsInValue,
 } from "@/components/Mail/mailVariableCatalog.js";
 
 function entry(name, kind, extra = {}) {
@@ -243,5 +245,87 @@ describe("hasAggregatedSample", () => {
   it("is false without any sampleAggregated or without a list", () => {
     expect(hasAggregatedSample([entry("customerName", "text")])).toBe(false);
     expect(hasAggregatedSample(undefined)).toBe(false);
+  });
+});
+
+describe("requirementFor", () => {
+  const statusUrl = entry("bookingStatusUrl", "url", {
+    label: "Link zur Status-Seite",
+    requires: {
+      text: "leer, wenn die öffentliche Status-Seite deaktiviert ist",
+      tenantSetting: {
+        key: "enablePublicStatusView",
+        label: "Öffentliche Status-Seite",
+      },
+    },
+  });
+  const cancelUrl = entry("cancellationUrl", "url", {
+    requires: { text: "leer, wenn die Buchung nicht stornierbar ist" },
+  });
+
+  it("no requires: nothing", () => {
+    expect(requirementFor(entry("customerName", "text"), {})).toBeNull();
+  });
+
+  it("tenant flag off: warning with the sentence from the spec, lead on the setting label", () => {
+    expect(
+      requirementFor(statusUrl, { enablePublicStatusView: false })
+    ).toEqual({
+      level: "warning",
+      icon: "mdi-alert-outline",
+      lead: "Öffentliche Status-Seite",
+      text: "Öffentliche Status-Seite ist in den Mandanten-Einstellungen deaktiviert – Link zur Status-Seite bleibt leer.",
+    });
+    expect(requirementFor(statusUrl, undefined).level).toBe("warning");
+  });
+
+  it("tenant flag on: info with requires.text", () => {
+    expect(requirementFor(statusUrl, { enablePublicStatusView: true })).toEqual(
+      {
+        level: "info",
+        icon: "mdi-information-outline",
+        lead: "",
+        text: "leer, wenn die öffentliche Status-Seite deaktiviert ist",
+      }
+    );
+  });
+
+  it("requires without tenantSetting: warning with requires.text", () => {
+    expect(requirementFor(cancelUrl, { enablePublicStatusView: true })).toEqual(
+      {
+        level: "warning",
+        icon: "mdi-alert-outline",
+        lead: "",
+        text: "leer, wenn die Buchung nicht stornierbar ist",
+      }
+    );
+  });
+
+  describe("warningsInValue", () => {
+    const vars = [entry("customerName", "text"), statusUrl, cancelUrl];
+
+    it("finds warning-level variables referenced inside any {{ … }}", () => {
+      const found = warningsInValue(
+        "{{bookingStatusUrl}} {{#if cancellationUrl}}x{{/if}} {{customerName}}",
+        vars,
+        {}
+      );
+      expect(found.map((w) => w.variable.name)).toEqual([
+        "bookingStatusUrl",
+        "cancellationUrl",
+      ]);
+      expect(found[0].text).toContain("Öffentliche Status-Seite");
+    });
+
+    it("matches the name as a whole word only and skips info-level entries", () => {
+      expect(warningsInValue("{{bookingStatusUrlX}}", vars, {})).toEqual([]);
+      expect(
+        warningsInValue("{{bookingStatusUrl}}", vars, {
+          enablePublicStatusView: true,
+        })
+      ).toEqual([]);
+      expect(warningsInValue("", vars, {})).toEqual([]);
+      expect(warningsInValue(null, vars, {})).toEqual([]);
+    });
   });
 });

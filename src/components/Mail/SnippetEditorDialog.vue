@@ -59,6 +59,11 @@
                 </v-btn>
               </template>
             </v-text-field>
+            <ConditionalVariableAlert
+              :value="subjectValue"
+              :variables="variables"
+              :tenant="tenant"
+            />
           </div>
 
           <v-divider class="mb-3" />
@@ -146,6 +151,7 @@
                   :intro-blocks.sync="blocks"
                   :after-blocks.sync="afterBlocks"
                   :variables="variables"
+                  :tenant="tenant"
                   :snippet-key="snippetKey"
                   :show-support-footer="showSupportFooter"
                   :booking-period-format="bookingPeriodFormat"
@@ -316,6 +322,7 @@
 <script>
 import CombinedSnippetBlockEditor from "./BlockEditor/CombinedSnippetBlockEditor.vue";
 import MailVariablePicker from "./MailVariablePicker.vue";
+import ConditionalVariableAlert from "./ConditionalVariableAlert.vue";
 import { insertIntoField } from "./fieldInsert.js";
 import { renderBlocksToHtml } from "./BlockEditor/render/renderBlocksToHtml.js";
 import {
@@ -337,7 +344,11 @@ import { buildSnippetPreviewExtrasHtml, sampleBookingPeriod } from "./snippetPre
 
 export default {
   name: "SnippetEditorDialog",
-  components: { CombinedSnippetBlockEditor, MailVariablePicker },
+  components: {
+    CombinedSnippetBlockEditor,
+    ConditionalVariableAlert,
+    MailVariablePicker,
+  },
   props: {
     open: { type: Boolean, default: false },
     snippetKey: { type: String, default: "" },
