@@ -4,15 +4,20 @@ import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 const FIELD_LABEL_PREFIX = "accessPoint.management.fields";
 const RULE_LABEL_PREFIX = "accessPoint.management.ruleTypes";
 const CODE_LABEL_PREFIX = "accessPoint.management.errors.codes";
+const OPEN_ACTION_LABEL_PREFIX = "accessPoint.management.openActions";
 
 /**
  * Translate a value the API named - a field, a rule type, a validation code.
  * Unknown values fall back to the raw value: a name the admin can quote is
- * better than an empty spot.
+ * better than an empty spot. A key that resolves to a group of keys rather
+ * than a sentence - `fields.config`, which holds the name of `config.openAction` -
+ * counts as unknown for the same reason.
  */
 function translateOrRaw(prefix, value) {
   const key = `${prefix}.${value}`;
-  return i18n.te(key) ? i18n.t(key) : value;
+  if (!i18n.te(key)) return value;
+  const translated = i18n.t(key);
+  return typeof translated === "string" ? translated : value;
 }
 
 /**
@@ -44,6 +49,39 @@ function formatUnknownAccessPoint(detail) {
   });
 }
 
+/**
+ * The Öffnungsart was saved against a lock that cannot carry it out - a device
+ * swapped behind a door that keeps its configuration. The raw payload names
+ * the codes only, so the message translates both what was asked for and what
+ * the lock can do; the list is there to pick from, not to act on.
+ */
+function formatUnsupportedOpenAction(detail) {
+  const supported = Array.isArray(detail.params?.supportedOpenActions)
+    ? detail.params.supportedOpenActions
+    : [];
+
+  const openAction = translateOrRaw(
+    OPEN_ACTION_LABEL_PREFIX,
+    detail.params?.openAction
+  );
+
+  // A backend that names no alternative - it always knows at least
+  // "Automatisch" - leaves the sentence at what it does say.
+  if (supported.length === 0) {
+    return i18n.t(
+      "accessPoint.management.errors.unsupportedOpenActionWithoutList",
+      { openAction }
+    );
+  }
+
+  return i18n.t("accessPoint.management.errors.unsupportedOpenAction", {
+    openAction,
+    supportedOpenActions: supported
+      .map((value) => translateOrRaw(OPEN_ACTION_LABEL_PREFIX, value))
+      .join(", "),
+  });
+}
+
 function formatDetail(detail) {
   if (detail.code === "precondition_failed") {
     return formatPrecondition(detail);
@@ -53,10 +91,19 @@ function formatDetail(detail) {
     return formatUnknownAccessPoint(detail);
   }
 
+  if (detail.code === "unsupported_open_action") {
+    return formatUnsupportedOpenAction(detail);
+  }
+
   return i18n.t("accessPoint.management.errors.fieldInvalid", {
     field: translateOrRaw(FIELD_LABEL_PREFIX, detail.field),
     reason: translateOrRaw(CODE_LABEL_PREFIX, detail.code),
   });
+}
+
+/** Every fault of a detail list as one sentence. */
+function formatDetails(details) {
+  return details.map((detail) => formatDetail(detail)).join(" ");
 }
 
 /**
@@ -79,7 +126,7 @@ export function formatAccessPointErrorMessage(
   const details = response?.data?.details;
 
   if (Array.isArray(details) && details.length > 0) {
-    return details.map((detail) => formatDetail(detail)).join(" ");
+    return formatDetails(details);
   }
 
   // Since 4.3.x a record outside the caller's reach answers 404 instead of
@@ -128,4 +175,39 @@ export function formatAccessPointErrorMessage(
   }
 
   return i18n.t(fallbackKey);
+}
+
+/**
+ * A failed save, split between one field and the rest of the form. A bad
+ * request names the field it refused, and a form that edits that field in a
+ * control of its own shows the fault there rather than in the alert below it -
+ * while everything else, another field or a provider that did not answer,
+ * stays one sentence for that alert.
+ *
+ * @param {Object} error The rejected axios error
+ * @param {string} field The JSON path of the field with a control of its own,
+ *   as the API names it (e.g. "config.openAction")
+ * @param {Object} [options] Passed on for errors without a detail list
+ * @returns {{fieldMessage: string, message: string}} What to show at the field
+ *   and what to show in the alert; either may be empty
+ */
+export function splitAccessPointFieldError(error, field, options) {
+  const response = error?.response;
+  const details =
+    response?.status === 400 && Array.isArray(response.data?.details)
+      ? response.data.details
+      : [];
+  const atField = details.filter((detail) => detail.field === field);
+  const elsewhere = details.filter((detail) => detail.field !== field);
+
+  if (elsewhere.length === 0 && atField.length > 0) {
+    return { fieldMessage: formatDetails(atField), message: "" };
+  }
+  return {
+    fieldMessage: formatDetails(atField),
+    message:
+      elsewhere.length > 0
+        ? formatDetails(elsewhere)
+        : formatAccessPointErrorMessage(error, options),
+  };
 }

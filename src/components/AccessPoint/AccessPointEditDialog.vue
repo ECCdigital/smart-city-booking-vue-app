@@ -3,7 +3,10 @@ import { mapGetters } from "vuex";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import AddressLookup from "@/components/commons/AddressLookup.vue";
-import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
+import {
+  formatAccessPointErrorMessage,
+  splitAccessPointFieldError,
+} from "@/utilities/access-point-errors";
 import {
   accessPointLabel,
   accessPointTypeLabel,
@@ -19,6 +22,25 @@ import {
 import { isComingSoonAccessPointMode } from "@/utilities/coming-soon";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
+
+/**
+ * The Öffnungsart of a Nuki access point: which action Nuki performs when the
+ * door is opened. `auto` is the missing key - the per-device choice the
+ * provider has always made - and the vocabulary is the provider's, which is
+ * why only nuki is asked for one. Which of them a given lock can carry out is
+ * the backend's word (`supportedOpenActions` of the listing); this dialog
+ * keeps no device table of its own.
+ */
+const NUKI_PROVIDER = "nuki";
+const AUTO_OPEN_ACTION = "auto";
+const OPEN_ACTIONS = [
+  AUTO_OPEN_ACTION,
+  "unlock",
+  "unlatch",
+  "lock_n_go",
+  "lock_n_go_unlatch",
+];
+const OPEN_ACTION_FIELD = "config.openAction";
 
 // The two ways into a new access point: taken over from what the provider
 // lists, or entered by hand.
@@ -62,6 +84,11 @@ export default {
       // Switching hides and shows the listing and touches nothing entered.
       mode: PROVIDER_MODE,
       form: emptyForm(),
+      // The Öffnungsart owns `config.openAction`, so it lives beside the
+      // JSON text rather than in it: taken out of the text on load, merged
+      // back in on save.
+      openAction: AUTO_OPEN_ACTION,
+      openActionError: "",
       configText: "{}",
       configError: "",
       qrScanRequired: true,
@@ -190,6 +217,54 @@ export default {
         };
       });
     },
+    // Only Nuki knows an Öffnungsart, and only a door has one: the provider
+    // decides what `open` sends, and a compartment of a locker system has no
+    // latch to pull. While creating, the field follows the provider the
+    // moment it is taken over or typed in.
+    showOpenAction() {
+      return (
+        this.form.provider === NUKI_PROVIDER && this.form.type === DOOR_TYPE
+      );
+    },
+    // What the picked lock can carry out, as the listing reports it. A
+    // listing without the field - an older backend - says nothing, and
+    // nothing is greyed out then: the backend refuses what it must when the
+    // access point is saved.
+    supportedOpenActions() {
+      const supported = this.matchingLock?.supportedOpenActions;
+      return Array.isArray(supported) && supported.length > 0
+        ? supported
+        : null;
+    },
+    openActionOptions() {
+      return OPEN_ACTIONS.map((value) => {
+        const unsupported = this.isUnsupportedOpenAction(value);
+        return {
+          value,
+          text: this.$t(`accessPoint.management.openActions.${value}`),
+          description: unsupported
+            ? this.$t("accessPoint.management.openActionUnsupported")
+            : this.$t(`accessPoint.management.openActionHints.${value}`),
+          disabled: unsupported,
+        };
+      });
+    },
+    // Swapping the device behind a door keeps the Öffnungsart it was set to,
+    // so the field says what the listing thinks of it instead of the sentence
+    // about what Nuki does - the mismatch is the news here.
+    openActionHint() {
+      return this.isUnsupportedOpenAction(this.openAction)
+        ? this.$t("accessPoint.management.openActionMismatch")
+        : this.$t("accessPoint.management.openActionHint");
+    },
+    // The JSON field says where the Öffnungsart is edited, but only where
+    // there is one to edit.
+    configHint() {
+      const hint = this.$t("accessPoint.management.config.hint");
+      return this.showOpenAction
+        ? `${hint} ${this.$t("accessPoint.management.config.hintOpenAction")}`
+        : hint;
+    },
     // The picker offers only what can be taken over: providers that list
     // access points. Pareva is not among them - its listing names size
     // codes, not the products a Pareva Anlage stands for.
@@ -286,11 +361,28 @@ export default {
       this.form.type = defaults.type;
       if (defaults.mode) this.form.mode = defaults.mode;
     },
+    // True where the lock lists its Öffnungsarten and this one is not among
+    // them - a listing that says nothing leaves every option alone.
+    isUnsupportedOpenAction(openAction) {
+      const supported = this.supportedOpenActions;
+      return !!supported && !supported.includes(openAction);
+    },
     reset() {
       const source = this.accessPoint;
       this.form = source ? { ...emptyForm(), ...source } : emptyForm();
       this.form.providerLocationId = this.form.providerLocationId || "";
-      this.configText = JSON.stringify(source?.config || {}, null, 2);
+      const { openAction, ...config } = source?.config || {};
+      // A stored value outside the five - written into the JSON text past an
+      // older backend - is kept and saved back unchanged, rather than being
+      // read as "Automatisch", which would change the door behind the admin's
+      // back. The select has no option for it and shows empty; refusing it is
+      // the backend's word, not this dialog's.
+      this.openAction =
+        typeof openAction === "string" && openAction
+          ? openAction
+          : AUTO_OPEN_ACTION;
+      this.openActionError = "";
+      this.configText = JSON.stringify(config, null, 2);
       this.configError = "";
       this.saveError = "";
       this.prefillHint = "";
@@ -422,10 +514,26 @@ export default {
       this.qrScanRequired = value;
       this.validationRulesTouched = true;
     },
+    /**
+     * The field's answer, merged into what the JSON text holds: an
+     * `openAction` typed there is overwritten, and "Automatisch" writes no key
+     * at all - a missing key is what the provider reads as "decide by device",
+     * so an untouched door produces no diff in `config`. An access point that
+     * carries no Öffnungsart - another provider, a locker system - loses the
+     * key with it.
+     */
+    withOpenAction(config) {
+      const merged = { ...config };
+      delete merged.openAction;
+      if (!this.showOpenAction || this.openAction === AUTO_OPEN_ACTION) {
+        return merged;
+      }
+      return { ...merged, openAction: this.openAction };
+    },
     parseConfig() {
       const text = (this.configText || "").trim();
       if (!text) {
-        this.form.config = {};
+        this.form.config = this.withOpenAction({});
         return true;
       }
       try {
@@ -438,7 +546,7 @@ export default {
           this.configError = this.$t("accessPoint.management.config.notObject");
           return false;
         }
-        this.form.config = parsed;
+        this.form.config = this.withOpenAction(parsed);
         this.configError = "";
         return true;
       } catch (e) {
@@ -498,6 +606,7 @@ export default {
 
       this.saving = true;
       this.saveError = "";
+      this.openActionError = "";
 
       try {
         const response = await ApiAccessPointService.storeAccessPoint(
@@ -506,12 +615,21 @@ export default {
         );
         this.$emit("saved", response.data);
       } catch (error) {
-        this.saveError = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.errors.saveFailed",
-        });
+        this.applySaveError(error);
       } finally {
         this.saving = false;
       }
+    },
+    // The Öffnungsart's own faults belong at the select; everything else -
+    // another field, a provider that did not answer - in the alert below.
+    applySaveError(error) {
+      const { fieldMessage, message } = splitAccessPointFieldError(
+        error,
+        OPEN_ACTION_FIELD,
+        { fallbackKey: "accessPoint.management.errors.saveFailed" }
+      );
+      this.openActionError = fieldMessage;
+      this.saveError = message;
     },
     close() {
       this.$emit("close");
@@ -757,6 +875,33 @@ export default {
                 </template>
               </v-select>
             </v-col>
+            <v-col v-if="showOpenAction" cols="12" md="6">
+              <v-select
+                ref="openActionSelect"
+                v-model="openAction"
+                :items="openActionOptions"
+                :label="$t('accessPoint.management.fields.config.openAction')"
+                background-color="accent"
+                filled
+                dense
+                :hint="openActionHint"
+                persistent-hint
+                :error-messages="openActionError"
+                @change="openActionError = ''"
+              >
+                <template v-slot:item="{ item }">
+                  <v-list-item-content>
+                    <v-list-item-title>{{ item.text }}</v-list-item-title>
+                    <v-list-item-subtitle
+                      class="text-wrap"
+                      style="white-space: normal"
+                    >
+                      {{ item.description }}
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                </template>
+              </v-select>
+            </v-col>
           </v-row>
 
           <!-- Mode, QR rules and address describe a door; a locker system has
@@ -844,9 +989,10 @@ export default {
               </v-expansion-panel-header>
               <v-expansion-panel-content class="mt-3">
                 <v-textarea
+                  class="config-field"
                   v-model="configText"
                   :label="$t('accessPoint.management.config.label')"
-                  :hint="$t('accessPoint.management.config.hint')"
+                  :hint="configHint"
                   persistent-hint
                   background-color="accent"
                   filled
