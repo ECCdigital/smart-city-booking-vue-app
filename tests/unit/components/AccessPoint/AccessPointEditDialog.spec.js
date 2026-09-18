@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises } from "@tests/unit/support/api";
+import { flushPromises, lifecycleError } from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiAccessAppsService", () => ({
   default: { getAccessPoints: vi.fn() },
@@ -403,6 +403,44 @@ describe("AccessPointEditDialog", () => {
       providerLocationId: null,
       mode: "remote",
       validationRules: [],
+    });
+  });
+
+  /**
+   * Saving makes the backend ask the provider. When the provider does not
+   * answer (503) or refuses the tenant's token (502), the dialog stays open
+   * and its alert names the provider instead of the generic save failure.
+   */
+  describe("when the provider fails while saving", () => {
+    async function saveDoor(error) {
+      ApiAccessPointService.storeAccessPoint.mockRejectedValue(error);
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [] });
+      const wrapper = await mountDialog({ accessPoint: DOOR });
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+      return wrapper;
+    }
+
+    it("shows the unreachable provider in the save alert", async () => {
+      const wrapper = await saveDoor(
+        lifecycleError(503, "access_provider_unreachable", {
+          provider: "nuki",
+        })
+      );
+      expect(dialogText(wrapper)).toContain(
+        "nuki ist gerade nicht erreichbar. Die Einstellung wurde nicht gespeichert. Bitte später erneut versuchen."
+      );
+      expect(wrapper.emitted("saved")).toBeUndefined();
+    });
+
+    it("shows the rejecting provider in the save alert", async () => {
+      const wrapper = await saveDoor(
+        lifecycleError(502, "access_provider_rejected", { provider: "nuki" })
+      );
+      expect(dialogText(wrapper)).toContain(
+        "nuki hat den Zugriff abgelehnt. Bitte die Anwendung des Mandanten prüfen."
+      );
     });
   });
 

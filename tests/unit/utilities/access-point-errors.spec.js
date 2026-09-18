@@ -22,6 +22,31 @@ function apiError(status, data) {
  * may claim neither.
  */
 describe("formatAccessPointErrorMessage", () => {
+  describe("on a 400 detail list", () => {
+    /**
+     * The mode check of the PUT: a lock that cannot be put into the requested
+     * mode answers a 400 detail on `mode`, read through the `fieldInvalid`
+     * form like every other detail.
+     */
+    it("says a lock does not support the chosen mode", () => {
+      const error = apiError(400, {
+        error: "ValidationError",
+        message: "validation_failed",
+        statusCode: 400,
+        details: [
+          {
+            field: "mode",
+            code: "unsupported_mode",
+            params: { mode: "remote", supportedModes: ["local"] },
+          },
+        ],
+      });
+      expect(formatAccessPointErrorMessage(error)).toBe(
+        "Modus: Dieses Schloss unterstützt den gewählten Modus nicht."
+      );
+    });
+  });
+
   describe("on a 404 response", () => {
     it("stays neutral between a deleted and an out-of-reach record", () => {
       expect(formatAccessPointErrorMessage(apiError(404, {}))).toBe(
