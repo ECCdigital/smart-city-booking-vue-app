@@ -1640,7 +1640,7 @@
       "actions": {
         "open": "Öffnen",
         "close": "Schließen",
-        "unlatch": "Entriegeln",
+        "unlatch": "Tür öffnen (veraltete Route)",
         "scan": "QR-Scan",
         "provision": "Provisionierung",
         "revoke": "Entzug",
@@ -1719,9 +1719,8 @@
       "process": "Vorgang:",
       "checkStatus": "Status prüfen",
       "close": "Schließen",
-      "open": "Aufschließen",
+      "open": "Öffnen",
       "openCompartment": "Fach öffnen",
-      "unlatch": "Tür öffnen",
       "state": {
         "held": "Vorgemerkt",
         "granted": "Erteilt",
@@ -1796,20 +1795,6 @@
       "timeout": {
         "title": "Bestätigung ausstehend",
         "message": "Der Zugangspunkt hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
-      },
-      "sendError": {
-        "title": "Befehl fehlgeschlagen",
-        "message": "Fehler beim Senden des Öffnen-Befehls. Bitte erneut versuchen."
-      }
-    },
-    "unlatch": {
-      "success": {
-        "title": "Tür geöffnet",
-        "message": "Die Tür wurde geöffnet."
-      },
-      "timeout": {
-        "title": "Bestätigung ausstehend",
-        "message": "Die Tür hat den Öffnen-Befehl noch nicht bestätigt. Bitte Status erneut prüfen."
       },
       "sendError": {
         "title": "Befehl fehlgeschlagen",

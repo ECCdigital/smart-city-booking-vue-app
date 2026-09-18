@@ -99,8 +99,8 @@ export function accessEntriesOf(responseBody) {
 /**
  * The provider actions the projection offers a client, one button each
  * (`access-point-projection.js`, `UI_CAPABILITIES`). Everything else a
- * provider declares is management business. `unlatch` is deliberately not
- * among them: pulling the latch is decided behind `open`, per lock.
+ * provider declares is management business. There is no `unlatch`: what the
+ * door does on `open` is the open action configured at the access point.
  */
 export const ACCESS_CAPABILITY = Object.freeze({
   OPEN: "open",

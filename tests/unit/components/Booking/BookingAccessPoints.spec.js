@@ -16,7 +16,6 @@ vi.mock("@/services/api/ApiAccessService", () => ({
     getAccessPoints: vi.fn(),
     open: vi.fn(),
     close: vi.fn(),
-    unlatch: vi.fn(),
     getStatus: vi.fn(),
     getOpenStatus: vi.fn(),
   },
@@ -210,6 +209,19 @@ describe("BookingAccessPoints", () => {
   });
 
   describe("opening", () => {
+    /**
+     * The open button runs the open action configured at the access point,
+     * so it reads "Öffnen" and there is no separate "Tür öffnen" button beside
+     * it: the lock decides behind `open` whether it pulls its latch.
+     */
+    it("offers one open button on a door, reading „Öffnen“, and no unlatch button", async () => {
+      const wrapper = await mountList({ entries: [door()] });
+      const tile = tiles(wrapper).at(0);
+
+      expect(openButton(tile).text()).toBe("Öffnen");
+      expect(tile.find("[data-test='access-unlatch']").exists()).toBe(false);
+    });
+
     it("addresses the open call with the id of the projection, unsplit", async () => {
       ApiAccessService.open.mockResolvedValue({
         data: { success: true, data: {} },
@@ -376,20 +388,6 @@ describe("BookingAccessPoints", () => {
 
       expect(errorText(tiles(wrapper).at(0))).toContain(BUSY);
       expect(ApiAccessService.open).toHaveBeenCalledTimes(1);
-    });
-
-    it("says so on unlatch", async () => {
-      ApiAccessService.unlatch.mockRejectedValue(lockBusyError("unlatch"));
-
-      const wrapper = await mountList({ entries: [door()] });
-      await tiles(wrapper)
-        .at(0)
-        .find("[data-test='access-unlatch']")
-        .trigger("click");
-      await flushPromises();
-      await wrapper.vm.$nextTick();
-
-      expect(errorText(tiles(wrapper).at(0))).toContain(BUSY);
     });
 
     it("says so on close, and reads a bare 423 the same way", async () => {

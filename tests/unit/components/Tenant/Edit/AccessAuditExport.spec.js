@@ -66,4 +66,30 @@ describe("AccessAuditExport", () => {
     const toast = await exportWith(new Error("Network Error"));
     expect(toast.title).toBe(i18n.t("accessPoint.audit.error.failed.title"));
   });
+
+  /**
+   * The unlatch route is gone, but the rows it wrote are not: the action
+   * filter keeps the option so old rows can still be found, and names it as
+   * the retired route it was.
+   */
+  it("still offers the retired unlatch action in the filter, named as such", async () => {
+    const wrapper = mountComponent(AccessAuditExport, {
+      store: store(),
+      propsData: { tenant: "t1" },
+    });
+
+    const actionSelect = wrapper
+      .findAll(".v-select")
+      .wrappers.find((select) =>
+        select.text().includes(i18n.t("accessPoint.audit.action"))
+      );
+    await actionSelect.find(".v-input__slot").trigger("click");
+    await wrapper.vm.$nextTick();
+
+    const items = Array.from(
+      document.querySelectorAll(".v-menu__content .v-list-item__title")
+    ).map((item) => item.textContent.trim());
+    expect(items).toContain("Tür öffnen (veraltete Route)");
+    expect(items).not.toContain("Entriegeln");
+  });
 });
