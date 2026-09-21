@@ -100,11 +100,13 @@
       "not_cancelled": "Die Buchung ist nicht storniert.",
       "supervision_notification_already_sent": "Die Mitteilung wurde bereits gesendet.",
       "supervision_notification_dispatch_in_progress": "Die Mitteilung wird gerade versendet. Bitte kurz warten und die Liste aktualisieren.",
-      "diverging-bookings": "Betroffene Buchungen: {ids}"
+      "diverging-bookings": "Betroffene Buchungen: {ids}",
+      "supervision_level_changed": "Die Aufsichtsstufe wurde inzwischen geändert. Bitte prüfen Sie den aktuellen Stand und versuchen Sie es erneut."
     },
     "not-found-codes": {
       "booking_not_found": "Die Buchung existiert nicht mehr.",
-      "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden."
+      "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden.",
+      "tenant_not_found": "Der Mandant existiert nicht mehr."
     },
     "bad-request-codes": {
       "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
@@ -2218,6 +2220,83 @@
         "sent": "Die Mitteilung wurde gesendet.",
         "failed-again": "Der Versand ist erneut fehlgeschlagen: {error}",
         "request-failed": "Die Mitteilung konnte nicht erneut gesendet werden."
+      }
+    },
+    "level": {
+      "column": "Aufsichtsstufe",
+      "filter": {
+        "label": "Aufsichtsstufe",
+        "all": "Alle Stufen"
+      },
+      "change": {
+        "action": "Aufsichtsstufe ändern",
+        "title": "Aufsichtsstufe ändern",
+        "current": "Aktuelle Stufe:",
+        "target": "Neue Stufe",
+        "reason": "Begründung (optional)",
+        "reason-hint": "Die Begründung steht in der Aufsichtshistorie und in der Mitteilung an die Tenant-Owner.",
+        "consequence": {
+          "free": "Die Angebote des Mandanten sind ohne Prüfung öffentlich erreichbar. Gespeicherte Prüfstatus bleiben erhalten, haben aber keine Wirkung.",
+          "supervised": "Angebote brauchen eine Freigabe – für öffentliche Listen und für den Direktlink. Bestehende Angebote werden nicht automatisch freigegeben; ohne Freigabe sind sie sofort nicht mehr öffentlich erreichbar.",
+          "blocked": "Die Angebote des Mandanten erscheinen nicht mehr öffentlich, neue Selbstbuchungen sind nicht möglich. Bestehende Buchungen bleiben unberührt, die Verwaltung bleibt nutzbar."
+        },
+        "submit": "Stufe ändern",
+        "cancel": "Abbrechen",
+        "success": {
+          "title": "Aufsichtsstufe geändert",
+          "message": "„{tenant}“ ist jetzt {level}."
+        },
+        "failed": "Die Aufsichtsstufe konnte nicht geändert werden."
+      }
+    },
+    "review-status": {
+      "none": "kein Prüfstatus",
+      "pending": "ausstehend",
+      "approved": "freigegeben",
+      "rejected": "abgelehnt"
+    },
+    "history": {
+      "title": "Aufsichtshistorie",
+      "tab": "Aufsichtshistorie",
+      "open": "Aufsichtshistorie",
+      "open-instance": "Aufsichtshistorie der Instanz",
+      "hint": "Die Historie ist unveränderlich. Neueste Einträge zuerst.",
+      "empty": "Noch keine Einträge.",
+      "load-failed": "Die Aufsichtshistorie konnte nicht geladen werden.",
+      "reload": "Erneut laden",
+      "close": "Schließen",
+      "rows-per-page": "Einträge pro Seite",
+      "columns": {
+        "time": "Zeitpunkt",
+        "tenant": "Mandant",
+        "event": "Ereignis",
+        "actor": "Durch",
+        "change": "Änderung",
+        "offer": "Angebot",
+        "reason": "Begründung"
+      },
+      "filters": {
+        "tenant": "Mandant",
+        "offer-type": "Angebotsart",
+        "offer-id": "Angebots-ID"
+      },
+      "offer-types": {
+        "bookable": "Buchungsobjekt",
+        "event": "Event"
+      },
+      "actor": {
+        "system": "System",
+        "migration": "Migration"
+      },
+      "events": {
+        "tenant-created": "Mandant angelegt",
+        "tenant-levelInitialized": "Aufsichtsstufe übernommen",
+        "tenant-levelChanged": "Aufsichtsstufe geändert",
+        "review-submitted": "Zur Prüfung eingereicht",
+        "review-approved": "Freigegeben",
+        "review-rejected": "Abgelehnt",
+        "review-withdrawn": "Freigabe zurückgezogen",
+        "unknown": "Ereignis"
       }
     }
   },

@@ -146,6 +146,7 @@ import TenantEditVerificationChallenges from "@/components/Tenant/Edit/TenantEdi
 import TenantEditCatalog from "@/components/Tenant/Edit/TenantEditCatalog.vue";
 import TenantEditLegal from "@/components/Tenant/Edit/TenantEditLegal.vue";
 import TenantEditReadiness from "@/components/Tenant/Edit/TenantEditReadiness.vue";
+import TenantEditSupervision from "@/components/Tenant/Edit/TenantEditSupervision.vue";
 
 import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
 import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
@@ -186,6 +187,7 @@ export default {
     TenantEditBookables,
     TenantEditLegal,
     TenantEditReadiness,
+    TenantEditSupervision,
   },
   mixins: [unsavedChangesGuard],
   data() {
@@ -264,6 +266,13 @@ export default {
           icon: "mdi-clipboard-check-outline",
           comp: "TenantEditReadiness",
           permission: "readiness",
+        },
+        {
+          key: "supervision",
+          label: this.$t("supervision.history.tab"),
+          icon: "mdi-history",
+          comp: "TenantEditSupervision",
+          permission: "supervisionHistory",
         },
       ],
       instanceCustomFields: [],
@@ -401,6 +410,9 @@ export default {
       }
       if (tab.permission === "readiness") {
         return TenantPermissionService.allowReadiness();
+      }
+      if (tab.permission === "supervisionHistory") {
+        return TenantPermissionService.allowSupervisionHistory();
       }
       return true;
     },

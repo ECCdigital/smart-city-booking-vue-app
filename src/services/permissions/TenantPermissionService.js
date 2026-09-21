@@ -72,6 +72,35 @@ class TenantPermissionService {
   }
 
   /**
+   * The supervision level (glossary "Aufsichtsstufe") is the instance
+   * owner's alone - the backend's `tenant.supervise` is
+   * `{ any: "instanceOwner" }`.
+   */
+  static allowSupervise() {
+    return TenantPermissionService.isInstanceOwner() === true;
+  }
+
+  /**
+   * The supervision history of a tenant is for its owner and for the
+   * instance owner - the backend's `tenant.supervisionHistory` is
+   * `{ own: "tenantOwner", any: "instanceOwner" }`.
+   */
+  static allowSupervisionHistory(
+    tenantId = store.getters["tenants/currentTenantId"]
+  ) {
+    if (TenantPermissionService.isInstanceOwner()) return true;
+    return TenantPermissionService.isTenantOwner(tenantId);
+  }
+
+  /**
+   * The instance-wide history - the backend's `instance.supervisionHistory`
+   * is `{ any: "instanceOwner" }`.
+   */
+  static allowInstanceSupervisionHistory() {
+    return TenantPermissionService.isInstanceOwner() === true;
+  }
+
+  /**
    * Deleting a tenant belongs to its owner and to the instance owner, exactly
    * like editing it.
    *

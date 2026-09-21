@@ -9,17 +9,15 @@
  * again on every run.
  */
 
+import { SUPERVISION_LEVELS } from "@/utils/supervision";
+
 /**
  * The wizard's route (`tenant-onboarding`) as the return target (backend:
  * `nextUrl`) a verification mail or an SSO sign-in leads back to.
  */
 export const ONBOARDING_PATH = "/onboarding";
 
-export const SUPERVISION_LEVELS = Object.freeze({
-  FREE: "free",
-  SUPERVISED: "supervised",
-  BLOCKED: "blocked",
-});
+export { SUPERVISION_LEVELS };
 
 export const WIZARD_STEPS = Object.freeze([
   "tenant",

@@ -243,6 +243,60 @@ describe("TenantPermissionService", () => {
     });
   });
 
+  describe("allowSupervise", () => {
+    it("lets the instance owner change the supervision level", () => {
+      signIn({ instanceOwner: true });
+      expect(TenantPermissionService.allowSupervise()).toBe(true);
+    });
+
+    it("keeps the level change from a tenant owner", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowSupervise()).toBe(false);
+    });
+  });
+
+  describe("allowSupervisionHistory", () => {
+    it("lets the instance owner read the history of any tenant", () => {
+      signIn({ instanceOwner: true, tenants: [] });
+      expect(
+        TenantPermissionService.allowSupervisionHistory("other-tenant")
+      ).toBe(true);
+    });
+
+    it("lets the owner of the tenant read its history", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowSupervisionHistory()).toBe(true);
+    });
+
+    it("keeps it from members who do not own the tenant", () => {
+      signIn({ tenants: [membership({ isOwner: false })] });
+      expect(TenantPermissionService.allowSupervisionHistory(TENANT_ID)).toBe(
+        false
+      );
+    });
+
+    it("keeps a foreign tenant's history from another tenant's owner", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(
+        TenantPermissionService.allowSupervisionHistory("other-tenant")
+      ).toBe(false);
+    });
+  });
+
+  describe("allowInstanceSupervisionHistory", () => {
+    it("is the instance owner's alone", () => {
+      signIn({ instanceOwner: true });
+      expect(TenantPermissionService.allowInstanceSupervisionHistory()).toBe(
+        true
+      );
+
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowInstanceSupervisionHistory()).toBe(
+        false
+      );
+    });
+  });
+
   it("re-reads the current tenant on every call", () => {
     signIn({
       tenants: [
