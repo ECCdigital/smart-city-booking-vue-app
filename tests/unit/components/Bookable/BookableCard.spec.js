@@ -35,10 +35,16 @@ const EXTERNAL_PRICES = [
   { priceEur: 2.5, unit: "service-fee", external: true },
 ];
 
-function store() {
+function store(supervisionLevel = null) {
   return new Vuex.Store({
     modules: {
-      tenants: { namespaced: true, getters: { currentTenantId: () => "t1" } },
+      tenants: {
+        namespaced: true,
+        getters: {
+          currentTenantId: () => "t1",
+          currentSupervisionLevel: () => supervisionLevel,
+        },
+      },
       instance: { namespaced: true, getters: { instance: () => ({}) } },
       toasts: { namespaced: true, actions: { add: () => {} } },
     },
@@ -69,6 +75,7 @@ function item(overrides = {}) {
 async function mountCard({
   prices = EXTERNAL_PRICES,
   pricesError = null,
+  supervisionLevel = null,
   ...overrides
 } = {}) {
   ApiBookablesService.getBookablePrices.mockReset();
@@ -79,7 +86,7 @@ async function mountCard({
   }
 
   const wrapper = mountComponent(BookableCard, {
-    store: store(),
+    store: store(supervisionLevel),
     propsData: { item: item(overrides) },
   });
   await flushPromises();
@@ -158,5 +165,36 @@ describe("BookableCard - the provider's prices", () => {
 
     expect(ApiBookablesService.getBookablePrices).toHaveBeenCalled();
     expect(wrapper.findAll(".external-price-row").length).toBeGreaterThan(0);
+  });
+
+  describe("review badge", () => {
+    const badge = (wrapper) => wrapper.find("[data-test='review-badge']");
+
+    it.each([
+      ["pending", "Prüfung ausstehend"],
+      ["rejected", "Abgelehnt"],
+      ["approved", "Freigegeben"],
+    ])("names a %s review under supervision", async (status, label) => {
+      const wrapper = await mountCard({
+        supervisionLevel: "supervised",
+        review: { status },
+      });
+
+      expect(badge(wrapper).text()).toBe(label);
+    });
+
+    it("stays quiet for a free tenant and for a bookable nobody submitted", async () => {
+      const free = await mountCard({
+        supervisionLevel: "free",
+        review: { status: "pending" },
+      });
+      expect(badge(free).exists()).toBe(false);
+
+      const unsubmitted = await mountCard({
+        supervisionLevel: "supervised",
+        review: { status: null },
+      });
+      expect(badge(unsubmitted).exists()).toBe(false);
+    });
   });
 });

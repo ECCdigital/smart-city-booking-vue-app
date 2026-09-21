@@ -73,6 +73,9 @@ export default {
 
   async mounted() {
     await this.fetchTenants();
+    // A selection restored from the local storage never went through
+    // `tenants/select`, which loads the level otherwise.
+    this.$store.dispatch("tenants/loadSupervisionLevel");
   },
 };
 </script>

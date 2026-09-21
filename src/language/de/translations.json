@@ -2078,6 +2078,47 @@
       }
     }
   },
+  "supervision": {
+    "review": {
+      "title": "Prüfstatus",
+      "status": {
+        "none": "Nicht eingereicht",
+        "pending": "Prüfung ausstehend",
+        "approved": "Freigegeben",
+        "rejected": "Abgelehnt"
+      },
+      "submitted-at": "Eingereicht am {time}",
+      "decided-at": "Entschieden am {time}",
+      "reason": "Begründung: {reason}",
+      "effect": {
+        "free-listed": "Der Prüfstatus ist ohne Wirkung: Das Angebot ist gelistet und buchbar.",
+        "free-unlisted": "Der Prüfstatus ist ohne Wirkung: Das Angebot ist per Direktlink buchbar, aber nicht gelistet.",
+        "listed": "Das Angebot ist gelistet und buchbar.",
+        "direct-link-only": "Das Angebot ist per Direktlink buchbar, aber nicht gelistet.",
+        "not-reachable": "Ohne Freigabe ist das Angebot weder gelistet noch per Direktlink buchbar.",
+        "blocked": "Der Mandant ist gesperrt: Das Angebot ist weder gelistet noch per Direktlink buchbar."
+      },
+      "wish-hint": {
+        "supervised": "Ihr Mandant ist beaufsichtigt: Der Veröffentlichungswunsch allein veröffentlicht nichts, das Angebot braucht zusätzlich eine Freigabe.",
+        "blocked": "Ihr Mandant ist gesperrt: Der Veröffentlichungswunsch wird vorgemerkt, veröffentlicht aber nichts."
+      },
+      "unsaved": "Speichern Sie das Angebot, um es zur Prüfung einzureichen.",
+      "actions": {
+        "submit": "Zur Prüfung einreichen",
+        "resubmit": "Erneut einreichen",
+        "approve": "Freigeben",
+        "reject": "Ablehnen",
+        "withdraw": "Freigabe zurückziehen"
+      },
+      "dialog": {
+        "reason-label": "Begründung (optional)",
+        "reason-hint": "Der Tenant-Owner sieht die Begründung.",
+        "cancel": "Abbrechen"
+      },
+      "conflict": "Die Aktion passt nicht mehr zum aktuellen Prüfstatus – er wurde inzwischen geändert. Der Status wurde neu geladen.",
+      "failed": "Die Aktion konnte nicht ausgeführt werden."
+    }
+  },
   "richtext": {
     "group": {
       "character": "Zeichen",

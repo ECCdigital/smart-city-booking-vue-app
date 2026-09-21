@@ -210,6 +210,39 @@ describe("TenantPermissionService", () => {
     });
   });
 
+  // Backend: `reviewSubmit: { own: "tenantOwner", any: "instanceOwner" }`,
+  // `reviewDecide: { any: "instanceOwner" }` - for bookables and events alike.
+  describe("reviewViewer", () => {
+    it("names the owner of the tenant as the one who submits", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.reviewViewer(TENANT_ID)).toEqual({
+        tenantOwner: true,
+        instanceOwner: false,
+      });
+    });
+
+    it("names the instance owner as the one who decides", () => {
+      signIn({ instanceOwner: true });
+      expect(TenantPermissionService.reviewViewer(TENANT_ID)).toEqual({
+        tenantOwner: false,
+        instanceOwner: true,
+      });
+    });
+
+    it("names a member without ownership, and another tenant's owner, as neither", () => {
+      signIn({ tenants: [membership({ isOwner: false })] });
+      expect(TenantPermissionService.reviewViewer(TENANT_ID)).toEqual({
+        tenantOwner: false,
+        instanceOwner: false,
+      });
+
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(
+        TenantPermissionService.reviewViewer("other-tenant").tenantOwner
+      ).toBe(false);
+    });
+  });
+
   it("re-reads the current tenant on every call", () => {
     signIn({
       tenants: [

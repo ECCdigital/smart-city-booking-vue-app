@@ -235,6 +235,11 @@ import {
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 
+// What the unsaved-changes snapshot leaves out. The review (glossary
+// "Prüfstatus") is the backend's alone and changes through its own actions,
+// never through a save - a submission must not read as an unsaved edit.
+const SNAPSHOT_IGNORED = ["customFields", "review"];
+
 export default {
   name: "BookableEdit",
   components: {
@@ -412,7 +417,7 @@ export default {
       ) {
         return false;
       }
-      const bookableClean = _.omit(this.bookable, ["customFields"]);
+      const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
       return (
         JSON.stringify({
           bookable: bookableClean,
@@ -457,7 +462,7 @@ export default {
         }
 
         // Match init(): snapshot the normalized bookable, not raw response.data
-        const bookableClean = _.omit(this.bookable, ["customFields"]);
+        const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
 
         this.originalSnapshot = JSON.stringify({
           bookable: bookableClean,
@@ -519,7 +524,7 @@ export default {
       }
 
       this.$nextTick(() => {
-        const bookableClean = _.omit(this.bookable, ["customFields"]);
+        const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
         this.originalSnapshot = JSON.stringify({
           bookable: bookableClean,
         });

@@ -1,4 +1,5 @@
 import PersistenceService from "@/services/PersistenceService";
+import ApiTenantService from "@/services/api/ApiTenantService";
 const namespaced = true;
 
 const state = {
@@ -6,7 +7,24 @@ const state = {
   tenants: PersistenceService.getFromLocalStorage("tenants") || null,
   currentTenantId:
     PersistenceService.getFromLocalStorage("currentTenantId") || null,
+  // The supervision level (glossary "Aufsichtsstufe") of one tenant, with
+  // the tenant it belongs to. Never persisted: the instance owner changes it.
+  supervision: { tenantId: null, level: null },
 };
+
+/**
+ * `GET /api/tenants/:tenant` is for the tenant's owner and the instance
+ * owner. Read off the permissions payload here, because
+ * `TenantPermissionService` imports the store.
+ */
+function mayReadTenant(rootState, tenantId) {
+  const permissions = rootState.user?.data?.permissions;
+  if (!permissions) return false;
+  if (permissions.instanceOwner === true) return true;
+  return (permissions.tenants || []).some(
+    (p) => p.tenantId === tenantId && p.isOwner === true
+  );
+}
 
 const mutations = {
   UPDATE(state, tenant) {
@@ -17,6 +35,7 @@ const mutations = {
     state.data = null;
     state.tenants = null;
     state.currentTenantId = null;
+    state.supervision = { tenantId: null, level: null };
     PersistenceService.removeFromLocalStorage("tenant");
     PersistenceService.removeFromLocalStorage("tenants");
     PersistenceService.removeFromLocalStorage("currentTenantId");
@@ -32,6 +51,9 @@ const mutations = {
     } else {
       PersistenceService.removeFromLocalStorage("currentTenantId");
     }
+  },
+  SET_SUPERVISION_LEVEL(state, { tenantId, level }) {
+    state.supervision = { tenantId, level: level || null };
   },
   REPLACE(state, tenant) {
     const index = state.tenants.findIndex((t) => t.id === tenant.id);
@@ -51,20 +73,46 @@ const actions = {
   setTenants({ commit }, tenants) {
     commit("SET_TENANTS", tenants);
   },
-  select({ commit }, tenant) {
+  select({ commit, dispatch }, tenant) {
     commit("SELECT", tenant);
+    // Not awaited: the selection must not wait for the level.
+    dispatch("loadSupervisionLevel");
+  },
+  /**
+   * The store's tenant list is the public projection, which carries no
+   * `supervisionLevel`; the level comes with the admin DTO of the one
+   * tenant. It stays unknown for a viewer who may not read that.
+   */
+  async loadSupervisionLevel({ commit, state, rootState }) {
+    const tenantId = state.currentTenantId;
+    if (!tenantId || !mayReadTenant(rootState, tenantId)) return;
+    let level = null;
+    try {
+      level = (await ApiTenantService.getTenant(tenantId)).data
+        ?.supervisionLevel;
+    } catch (error) {
+      // Unknown stays unknown; the review then shows without its effect.
+    }
+    // An answer for a tenant that is no longer selected is dropped.
+    if (state.currentTenantId === tenantId) {
+      commit("SET_SUPERVISION_LEVEL", { tenantId, level });
+    }
   },
   replace({ commit }, tenant) {
     commit("REPLACE", tenant);
   },
   reset({ commit }) {
     commit("DELETE");
-  }
+  },
 };
 
 const getters = {
   tenants: (state) => state.tenants || [],
   currentTenantId: (state) => state.currentTenantId,
+  currentSupervisionLevel: (state) =>
+    state.supervision.tenantId === state.currentTenantId
+      ? state.supervision.level
+      : null,
   currentTenant: (state) => {
     return state.tenants?.find((t) => t.id === state.currentTenantId);
   },
