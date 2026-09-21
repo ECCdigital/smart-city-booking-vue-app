@@ -84,6 +84,13 @@ Instance (global deployment config, loaded at bootstrap)
 - Bookable types are the existing four (`room`, `event-location`, `resource`, `ticket`); `event-location` is the value both this app and the backend entity use — the `location` in the backend's Mongoose enum is not enforced and nothing is converted
 - Events stay in the regular administration
 
+## Review queue (tenant supervision)
+
+`/instance/pruefliste` (`src/views/Management/InstanceReviewQueue.vue`, instance owners, Navbar „System“) lists the pending offers of all supervised tenants from `GET api/instances/review-queue` (`ApiReviewQueueService`).
+
+- Pagination and order are the backend's (longest waiting first): the table sends `page`/`pageSize`/`tenantId`/`offerType`, never sorts, and a filter change starts at page 1. Nothing is cached — entering the view or „Aktualisieren“ asks again; overlapping loads keep the answer asked for last
+- The queue lists and links only; the review actions live in the offer editors. `src/utils/reviewQueueLink.js` turns a row into the editor's router location (the backend's `adminPath` names the per-type bookable editor, `/events/edit` for events) and follows nothing else. The path carries no tenant, so the view selects the row's `tenantId` (`tenants/select`) before routing
+
 ## Key patterns
 
 | Layer | Pattern | Example |
