@@ -9,11 +9,9 @@
  * again on every run.
  */
 
-export const SUPERVISION_LEVELS = Object.freeze({
-  FREE: "free",
-  SUPERVISED: "supervised",
-  BLOCKED: "blocked",
-});
+import { SUPERVISION_LEVELS } from "@/utils/supervision";
+
+export { SUPERVISION_LEVELS };
 
 export const WIZARD_STEPS = Object.freeze([
   "tenant",

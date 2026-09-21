@@ -1,9 +1,30 @@
 import ApiClient from "./ApiClientService";
 import { legalDocumentsForSave } from "@/utils/tenantLegalDocuments";
 
+/**
+ * A tenant as it is written: without the fields the supervision owns. The
+ * level changes through `ApiSupervisionService.setTenantLevel` alone; a loaded
+ * tenant carries it, and a write must not hand it back.
+ */
+function tenantForSave(tenant) {
+  if (!tenant || typeof tenant !== "object") return tenant;
+  // eslint-disable-next-line no-unused-vars
+  const { supervisionLevel, supervisionChangedAt, ...written } = tenant;
+  return legalDocumentsForSave(written);
+}
+
 export default {
-  getTenants(publicTenants = false) {
-    return ApiClient.get(`api/tenants?publicTenants=${publicTenants}`);
+  /**
+   * `supervisionLevel` narrows the list to the tenants at that level (a
+   * tenant without a stored level counts as `free`).
+   */
+  getTenants(publicTenants = false, { supervisionLevel } = {}) {
+    const levelFilter = supervisionLevel
+      ? `&supervisionLevel=${encodeURIComponent(supervisionLevel)}`
+      : "";
+    return ApiClient.get(
+      `api/tenants?publicTenants=${publicTenants}${levelFilter}`
+    );
   },
   /**
    * Writes a tenant. The legal documents are normalised here rather than at
@@ -13,10 +34,10 @@ export default {
    * the media spec).
    */
   submitTenant(tenant) {
-    return ApiClient.put("api/tenants", legalDocumentsForSave(tenant));
+    return ApiClient.put("api/tenants", tenantForSave(tenant));
   },
   createTenant(tenant) {
-    return ApiClient.post("api/tenants", legalDocumentsForSave(tenant));
+    return ApiClient.post("api/tenants", tenantForSave(tenant));
   },
   deleteTenant(tenant) {
     return ApiClient.delete(`api/tenants/${tenant.id}`);
