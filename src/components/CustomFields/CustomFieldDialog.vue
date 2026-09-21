@@ -40,10 +40,9 @@
                 filled
                 dense
               >
-                <template v-slot:item="{ item}">
+                <template v-slot:item="{ item }">
                   <div class="d-flex align-center my-1">
-
-                   <v-icon left small color="primary">
+                    <v-icon left small color="primary">
                       {{
                         {
                           string: "mdi-format-paragraph",
@@ -56,7 +55,7 @@
                       }}
                     </v-icon>
                     <div class="mx-1">
-                      {{item.text}}
+                      {{ item.text }}
                       <div class="caption">{{ item.description }}</div>
                     </div>
                   </div>
@@ -74,8 +73,8 @@
             </v-col>
           </v-row>
 
-          <!-- Options for select type -->
-          <template v-if="local.inputType === 'select'">
+          <!-- Options for select and multiselect types -->
+          <template v-if="hasOptions">
             <v-divider class="my-3" />
             <div class="text-subtitle-2 mb-2">Auswahloptionen</div>
 
@@ -334,6 +333,11 @@ const makeEmptyField = () => ({
   },
 });
 
+const OPTIONS_INPUT_TYPES = ["select", "multiselect"];
+
+const isOptionsInputType = (inputType) =>
+  OPTIONS_INPUT_TYPES.includes(inputType);
+
 const slugifyOptionValue = (caption) => {
   if (!caption) return "";
 
@@ -385,11 +389,31 @@ export default {
       isInitializing: false,
       inputTypes: [
         { text: "Zahl", value: "numeric", description: "Einfache Zahlenwerte" },
-        { text: "Text (einzeilig)", value: "string", description: "Kurze Schlagworte oder Zahlenbereiche" },
-        { text: "Text (mehrzeilig)", value: "text", description: "Längere Beschreibungen" },
-        //{ text: "Auswahl (mehrfach)", value: "multiselect", description: "Auswahl mehrerer von mehreren vorgegebenen Optionen" },
-        { text: "Auswahl (einfach)", value: "select", description: "Auswahl einer von mehreren vorgegebenen Optionen" },
-        { text: "Ja / Nein", value: "boolean", description: "Einzelne Ja-Nein-Auswahloption"  },
+        {
+          text: "Text (einzeilig)",
+          value: "string",
+          description: "Kurze Schlagworte oder Zahlenbereiche",
+        },
+        {
+          text: "Text (mehrzeilig)",
+          value: "text",
+          description: "Längere Beschreibungen",
+        },
+        {
+          text: "Auswahl (mehrfach)",
+          value: "multiselect",
+          description: "Auswahl mehrerer von mehreren vorgegebenen Optionen",
+        },
+        {
+          text: "Auswahl (einfach)",
+          value: "select",
+          description: "Auswahl einer von mehreren vorgegebenen Optionen",
+        },
+        {
+          text: "Ja / Nein",
+          value: "boolean",
+          description: "Einzelne Ja-Nein-Auswahloption",
+        },
       ],
       contextOptions: [
         {
@@ -420,9 +444,7 @@ export default {
           const duplicates = this.local.options.filter(
             (opt, i) => i !== index && opt.caption.trim() === v.trim()
           );
-          return (
-            duplicates.length === 0 || "Diese Option existiert bereits"
-          );
+          return duplicates.length === 0 || "Diese Option existiert bereits";
         },
         uniqueOptionValue: (index) => (v) => {
           if (!v) return true;
@@ -430,7 +452,8 @@ export default {
             (opt, i) => i !== index && opt.value === v
           );
           return (
-            duplicates.length === 0 || "Jeder technische Wert darf nur einmal vorkommen"
+            duplicates.length === 0 ||
+            "Jeder technische Wert darf nur einmal vorkommen"
           );
         },
       },
@@ -440,9 +463,12 @@ export default {
     isEdit() {
       return this.field !== null;
     },
+    hasOptions() {
+      return isOptionsInputType(this.local.inputType);
+    },
     canSave() {
       if (!this.valid) return false;
-      if (this.local.inputType !== "select") return true;
+      if (!this.hasOptions) return true;
 
       return (
         this.local.options.length > 0 &&
@@ -455,10 +481,27 @@ export default {
     },
     detailDisplayPositions() {
       const all = [
-        { text: "Nicht anzeigen", value: "none", description: "Feld erscheint nicht in der Detailansicht" },
-        { text: "Label (über Beschreibung)", value: "badge", description: "Als Label oberhalb des Beschreibungstexts" },
-        { text: "Unterhalb der Beschreibung", value: "belowDescription", description: "Direkt unter dem Beschreibungstext" },
-        { text: "Weitere Informationen", value: "moreInfo", description: "In einem separaten Info-Bereich rechts unterhalb der Preisinformation" },
+        {
+          text: "Nicht anzeigen",
+          value: "none",
+          description: "Feld erscheint nicht in der Detailansicht",
+        },
+        {
+          text: "Label (über Beschreibung)",
+          value: "badge",
+          description: "Als Label oberhalb des Beschreibungstexts",
+        },
+        {
+          text: "Unterhalb der Beschreibung",
+          value: "belowDescription",
+          description: "Direkt unter dem Beschreibungstext",
+        },
+        {
+          text: "Weitere Informationen",
+          value: "moreInfo",
+          description:
+            "In einem separaten Info-Bereich rechts unterhalb der Preisinformation",
+        },
       ];
 
       if (this.local.inputType === "text") {
@@ -495,10 +538,11 @@ export default {
       if (type === "boolean") {
         return all.filter((f) => f.value === "checkbox");
       }
-      if (type === "string" || type === "text") {
+      if (type === "string" || type === "text" || type === "multiselect") {
         return all.filter((f) => f.value === "select");
       }
-      if (type === "select" || type === "numeric") return all.filter((f) => f.value !== "checkbox");
+      if (type === "select" || type === "numeric")
+        return all.filter((f) => f.value !== "checkbox");
       return all;
     },
   },
@@ -517,8 +561,7 @@ export default {
         this.local.options = (this.local.options || []).map((opt) => ({
           ...opt,
           valueOverridden:
-            !!opt.value &&
-            opt.value !== slugifyOptionValue(opt.caption),
+            !!opt.value && opt.value !== slugifyOptionValue(opt.caption),
         }));
         this.showTechnicalValues = this.local.options.some(
           (opt) => opt.valueOverridden
@@ -534,7 +577,7 @@ export default {
       }
     },
     "local.inputType"(v) {
-      if (v !== "select") {
+      if (!isOptionsInputType(v)) {
         this.local.options = [];
         this.showTechnicalValues = false;
       } else if (!this.local.options.length) {
@@ -554,7 +597,9 @@ export default {
 
       const allowedPositions = this.detailDisplayPositions.map((p) => p.value);
       if (
-        !allowedPositions.includes(this.local.usageOptions.detailDisplayPosition)
+        !allowedPositions.includes(
+          this.local.usageOptions.detailDisplayPosition
+        )
       ) {
         this.local.usageOptions.detailDisplayPosition = "none";
       }
@@ -605,7 +650,8 @@ export default {
       const option = this.local.options[index];
       if (!option || option.valueOverridden) return;
 
-      const baseValue = slugifyOptionValue(option.caption) || `option-${index + 1}`;
+      const baseValue =
+        slugifyOptionValue(option.caption) || `option-${index + 1}`;
       option.value = makeUniqueOptionValue(
         baseValue,
         this.local.options,
@@ -629,13 +675,19 @@ export default {
         string: "select",
         text: "select",
         select: "select",
+        multiselect: "select",
         numeric: "range",
       };
       return defaults[inputType] || "select";
     },
     getDefaultDetailDisplayPosition(inputType) {
       if (inputType === "text") return "belowDescription";
-      if (inputType === "boolean" || inputType === "select") return "badge";
+      if (
+        inputType === "boolean" ||
+        inputType === "select" ||
+        inputType === "multiselect"
+      )
+        return "badge";
       if (inputType === "numeric") return "belowDescription";
       return "belowDescription";
     },
@@ -724,7 +776,7 @@ export default {
       return u;
     },
     save() {
-      if (this.local.inputType === "select") {
+      if (isOptionsInputType(this.local.inputType)) {
         if (!this.showTechnicalValues) {
           this.syncAllOptionValues();
         }
@@ -767,15 +819,33 @@ export default {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.custom-field-dialog >>> .custom-field-dialog-form .v-input__control > .v-input__slot,
-.custom-field-dialog >>> .custom-field-preview .v-input__control > .v-input__slot {
+.custom-field-dialog
+  >>> .custom-field-dialog-form
+  .v-input__control
+  > .v-input__slot,
+.custom-field-dialog
+  >>> .custom-field-preview
+  .v-input__control
+  > .v-input__slot {
   border-radius: 4px !important;
 }
 
-.custom-field-dialog >>> .custom-field-dialog-form .v-input__control > .v-input__slot::before,
-.custom-field-dialog >>> .custom-field-dialog-form .v-input__control > .v-input__slot::after,
-.custom-field-dialog >>> .custom-field-preview .v-input__control > .v-input__slot::before,
-.custom-field-dialog >>> .custom-field-preview .v-input__control > .v-input__slot::after {
+.custom-field-dialog
+  >>> .custom-field-dialog-form
+  .v-input__control
+  > .v-input__slot::before,
+.custom-field-dialog
+  >>> .custom-field-dialog-form
+  .v-input__control
+  > .v-input__slot::after,
+.custom-field-dialog
+  >>> .custom-field-preview
+  .v-input__control
+  > .v-input__slot::before,
+.custom-field-dialog
+  >>> .custom-field-preview
+  .v-input__control
+  > .v-input__slot::after {
   border-radius: 4px !important;
 }
 </style>

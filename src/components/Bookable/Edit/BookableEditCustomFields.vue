@@ -452,12 +452,22 @@ export default {
                         />
 
                         <v-select
-                          v-else-if="field.inputType === 'select'"
-                          :value="field.currentValue"
+                          v-else-if="
+                            field.inputType === 'select' ||
+                            field.inputType === 'multiselect'
+                          "
+                          :value="
+                            field.inputType === 'multiselect'
+                              ? field.currentValue || []
+                              : field.currentValue
+                          "
                           :items="field.options || []"
                           item-text="caption"
                           item-value="value"
                           :placeholder="field.placeholder || 'Auswählen…'"
+                          :multiple="field.inputType === 'multiselect'"
+                          :chips="field.inputType === 'multiselect'"
+                          :deletable-chips="field.inputType === 'multiselect'"
                           background-color="accent"
                           filled
                           dense
@@ -651,12 +661,22 @@ export default {
                     />
 
                     <v-select
-                      v-else-if="field.inputType === 'select'"
-                      :value="field.currentValue"
+                      v-else-if="
+                        field.inputType === 'select' ||
+                        field.inputType === 'multiselect'
+                      "
+                      :value="
+                        field.inputType === 'multiselect'
+                          ? field.currentValue || []
+                          : field.currentValue
+                      "
                       :items="field.options || []"
                       item-text="caption"
                       item-value="value"
                       :placeholder="field.placeholder || 'Auswählen…'"
+                      :multiple="field.inputType === 'multiselect'"
+                      :chips="field.inputType === 'multiselect'"
+                      :deletable-chips="field.inputType === 'multiselect'"
                       background-color="accent"
                       filled
                       dense
