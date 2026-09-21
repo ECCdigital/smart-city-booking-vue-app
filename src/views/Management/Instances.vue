@@ -402,18 +402,19 @@ export default {
     },
     /**
      * A 400 `ValidationError` names its fields as JSON paths in
-     * `details[].field`; a tab that knows how to show them inline gets them.
+     * `details[].field`, a 400 `BadRequestError` (the Startstufe) its one
+     * field in `params.field`; a tab that knows how to show them inline gets
+     * them in the first shape.
      */
     showApiErrors(error) {
       const data = error?.response?.data;
       const child = this.$refs.activeChild;
-      if (
-        data?.error === "ValidationError" &&
-        Array.isArray(data.details) &&
-        child &&
-        typeof child.showApiErrors === "function"
-      ) {
+      if (!child || typeof child.showApiErrors !== "function") return;
+
+      if (data?.error === "ValidationError" && Array.isArray(data.details)) {
         child.showApiErrors(data.details);
+      } else if (data?.error === "BadRequestError" && data.params?.field) {
+        child.showApiErrors([{ field: data.params.field, code: data.code }]);
       }
     },
     async submitChanges() {

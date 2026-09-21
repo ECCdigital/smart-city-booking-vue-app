@@ -297,6 +297,22 @@
       }
     }
   },
+  "instance": {
+    "edit": {
+      "tenants": {
+        "initialLevel": {
+          "title": "Startstufe selbst angelegter Mandanten",
+          "levels": {
+            "free": "Angebote werden ohne Prüfung veröffentlicht.",
+            "supervised": "Angebote werden erst nach Ihrer Freigabe öffentlich.",
+            "blocked": "Angebote bleiben öffentlich verborgen, bis Sie die Aufsichtsstufe ändern."
+          },
+          "hint": "Die Startstufe gilt für jede Selbst-Anlage – über die Freigabeliste ebenso wie bei der offenen Anlage. Mandanten, die ein Instanz-Owner anlegt, beginnen immer frei. Eine Änderung wirkt nur auf neue Mandanten; bestehende Mandanten behalten ihre Aufsichtsstufe. Stufen werden ausschließlich manuell geändert.",
+          "invalid": "Die Startstufe muss frei, beaufsichtigt oder gesperrt sein."
+        }
+      }
+    }
+  },
   "tenant": {
     "catalog": {
       "unavailable": "Für diesen Mandanten wurde kein Katalog gefunden. Entweder ist noch keiner angelegt, oder der vorhandene Katalog ist für Sie nicht zugänglich. Unten steht deshalb ein leerer Katalog – wenn Sie ihn speichern, kann ein bestehender Katalog überschrieben werden."

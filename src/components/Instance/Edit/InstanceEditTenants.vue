@@ -1,5 +1,19 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
+import {
+  SUPERVISION_LEVELS,
+  completionVariant,
+} from "@/utils/tenantOnboarding";
+
+const INITIAL_LEVEL_FIELD = "tenantInitialSupervisionLevel";
+
+/** An instance from before the field starts its tenants free. */
+function withInitialLevel(instance) {
+  return {
+    ...instance,
+    [INITIAL_LEVEL_FIELD]: completionVariant(instance[INITIAL_LEVEL_FIELD]),
+  };
+}
 
 export default {
   name: "InstanceEditTenants",
@@ -10,14 +24,16 @@ export default {
   },
   data() {
     return {
-      local: { ...this.instance },
+      local: withInitialLevel(this.instance),
       selectedUserToCreateTenant: null,
+      supervisionLevels: Object.values(SUPERVISION_LEVELS),
+      initialLevelApiErrors: [],
     };
   },
   watch: {
     instance: {
       handler(n) {
-        this.local = { ...n };
+        this.local = withInitialLevel(n);
       },
       deep: true,
     },
@@ -25,6 +41,26 @@ export default {
   methods: {
     emitUpdate() {
       this.$emit("update:instance", { ...this.local });
+    },
+    onInitialLevelChange() {
+      this.initialLevelApiErrors = [];
+      this.emitUpdate();
+    },
+    /**
+     * Called by the view with the fields a refused save names. Only the
+     * Startstufe belongs to a field of this tab.
+     */
+    showApiErrors(details) {
+      this.initialLevelApiErrors = (details || [])
+        .filter((detail) => detail && detail.field === INITIAL_LEVEL_FIELD)
+        .map(() => this.$t("instance.edit.tenants.initialLevel.invalid"));
+    },
+    validate() {
+      this.initialLevelApiErrors = [];
+      return true;
+    },
+    resetValidation() {
+      this.initialLevelApiErrors = [];
     },
     addUser() {
       this.local.allowedUsersToCreateTenant.push(
@@ -71,6 +107,38 @@ export default {
     >
       Jeder Benutzer der Plattform ist berechtigt, Mandanten zu erstellen.
     </v-alert>
+
+    <div class="mt-6" data-test="initial-level">
+      <h3 class="mb-1">
+        {{ $t("instance.edit.tenants.initialLevel.title") }}
+      </h3>
+      <v-radio-group
+        v-model="local.tenantInitialSupervisionLevel"
+        :error-messages="initialLevelApiErrors"
+        :hide-details="!initialLevelApiErrors.length"
+        class="mt-0"
+        @change="onInitialLevelChange"
+      >
+        <v-radio
+          v-for="level in supervisionLevels"
+          :key="level"
+          :value="level"
+          color="primary"
+        >
+          <template #label>
+            <div>
+              <div>{{ $t(`tenant.onboarding.level.names.${level}`) }}</div>
+              <div class="text-caption">
+                {{ $t(`instance.edit.tenants.initialLevel.levels.${level}`) }}
+              </div>
+            </div>
+          </template>
+        </v-radio>
+      </v-radio-group>
+      <div class="text-body-2 mt-2" data-test="initial-level-hint">
+        {{ $t("instance.edit.tenants.initialLevel.hint") }}
+      </div>
+    </div>
 
     <v-divider class="my-6" />
 

@@ -8,6 +8,7 @@
         <v-divider class="mx-9 mb-5" />
         <v-card-text>
           <v-container>
+            <OnboardingSupervisionNotice :level="initialLevel" />
             <v-form ref="form" v-model="valid">
               <h3>Allgemeine Informationen</h3>
               <v-progress-linear
@@ -107,11 +108,15 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiInstanceService from "@/services/api/ApiInstanceService";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
+import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
 import { mapGetters } from "vuex";
 import Tenant from "@/entities/tenant";
 
 export default {
   name: "TenantCreate",
+  components: { OnboardingSupervisionNotice },
   props: {
     open: {
       type: Boolean,
@@ -141,6 +146,7 @@ export default {
         ],
       },
       tenant: {},
+      initialLevel: null,
     };
   },
   computed: {
@@ -157,6 +163,7 @@ export default {
     open(val) {
       if (val) {
         this.tenant = new Tenant({});
+        this.loadInitialLevel();
         this.$nextTick(() => {
           this.$refs.form.resetValidation();
         });
@@ -166,6 +173,21 @@ export default {
   methods: {
     closeDialog() {
       this.$emit("close");
+    },
+    /**
+     * A self-created tenant starts at the instance's Startstufe, so the
+     * dialog announces it before the creation. The instance owner's tenant
+     * always starts free, and an unreadable level must not block the form.
+     */
+    async loadInitialLevel() {
+      this.initialLevel = null;
+      if (TenantPermissionService.isInstanceOwner()) return;
+      try {
+        const instance = await ApiInstanceService.getPublicInstance();
+        this.initialLevel = instance?.tenantInitialSupervisionLevel || null;
+      } catch (e) {
+        this.initialLevel = null;
+      }
     },
     async submitChanges() {
       if (this.$refs.form.validate()) {
