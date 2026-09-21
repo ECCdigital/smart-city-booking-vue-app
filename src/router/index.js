@@ -28,6 +28,7 @@ import Coupons from "@/views/Coupons.vue";
 import Instances from "@/views/Management/Instances.vue";
 import InstanceUsers from "@/views/Management/InstanceUsers.vue";
 import InstanceTenants from "@/views/Management/InstanceTenants.vue";
+import SupervisionNotifications from "@/views/Management/SupervisionNotifications.vue";
 import RuleEngineRules from "@/views/Management/RuleEngineRules.vue";
 import RuleEngineEdit from "@/views/Management/RuleEngineEdit.vue";
 import RuleEngineExecutions from "@/views/Management/RuleEngineExecutions.vue";
@@ -96,6 +97,16 @@ const routes = [
     component: InstanceTenants,
     meta: {
       title: "Mandanten",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    path: "/instance/aufsichtsmitteilungen",
+    name: "supervision-notifications",
+    component: SupervisionNotifications,
+    meta: {
+      title: "Aufsichtsmitteilungen",
       requiresAuth: true,
       interfaceName: "instance",
     },

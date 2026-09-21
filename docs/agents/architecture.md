@@ -84,6 +84,15 @@ Instance (global deployment config, loaded at bootstrap)
 - Bookable types are the existing four (`room`, `event-location`, `resource`, `ticket`); `event-location` is the value both this app and the backend entity use — the `location` in the backend's Mongoose enum is not enforced and nothing is converted
 - Events stay in the regular administration
 
+## Supervision notices (instance owner)
+
+`/instance/aufsichtsmitteilungen` (`src/views/Management/SupervisionNotifications.vue`, „System“ → „Aufsichtsmitteilungen“) shows the backend's outbox of supervision mails (`ApiSupervisionNotificationService`: `GET api/instances/supervision/notifications?status=&page=&pageSize=`, `POST …/:id/retry`).
+
+- Server-paginated, opens on `status=failed`; the status filter shows the rest. Overlapping loads keep the answer asked for last
+- „Erneut senden“ exists on `failed` rows only and sends the missing mails again — it never repeats the decision or writes history. The button is disabled while its retry runs; the list reloads after every retry, a refused one included
+- A row carries no list of intended recipients, only `deliveries` (who already has the mail) — the column reads „Zugestellt an“. The occasion's `payload` differs by `type`; `src/utils/supervisionNotifications.js` is the one place that reads it
+- `lastError` is shown as the backend sends it (secrets are masked there). The refusals of a retry (`409 supervision_notification_already_sent` / `…_dispatch_in_progress`, `404 supervision_notification_not_found`) are entries of the central reader's code tables
+
 ## Key patterns
 
 | Layer | Pattern | Example |

@@ -98,10 +98,13 @@
       "invalid_transition": "Die Buchung ist inzwischen in einem anderen Zustand ({status}).",
       "invalid_transition-unknown-status": "Die Buchung ist inzwischen in einem anderen Zustand.",
       "not_cancelled": "Die Buchung ist nicht storniert.",
+      "supervision_notification_already_sent": "Die Mitteilung wurde bereits gesendet.",
+      "supervision_notification_dispatch_in_progress": "Die Mitteilung wird gerade versendet. Bitte kurz warten und die Liste aktualisieren.",
       "diverging-bookings": "Betroffene Buchungen: {ids}"
     },
     "not-found-codes": {
-      "booking_not_found": "Die Buchung existiert nicht mehr."
+      "booking_not_found": "Die Buchung existiert nicht mehr.",
+      "supervision_notification_not_found": "Die Mitteilung wurde nicht gefunden."
     },
     "bad-request-codes": {
       "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
@@ -2115,6 +2118,51 @@
       "apply": "Übernehmen",
       "remove": "Link entfernen",
       "cancel": "Abbrechen"
+    }
+  },
+  "supervision": {
+    "notifications": {
+      "hint": "Mitteilungen der Mandanten-Aufsicht an die zuständigen Owner. „Erneut senden“ verschickt nur die E-Mail noch einmal – an alle, die sie noch nicht erhalten haben. Entscheidung und Verlauf bleiben unverändert.",
+      "reload": "Aktualisieren",
+      "load-failed": "Die Aufsichtsmitteilungen konnten nicht geladen werden.",
+      "empty": "Keine Mitteilungen",
+      "empty-failed": "Keine fehlgeschlagenen Mitteilungen",
+      "filter": {
+        "status": "Status",
+        "all": "Alle"
+      },
+      "columns": {
+        "created-at": "Zeitpunkt",
+        "type": "Anlass",
+        "tenant": "Mandant",
+        "offers": "Angebote",
+        "deliveries": "Zugestellt an",
+        "status": "Status",
+        "attempts": "Versuche",
+        "last-error": "Fehler"
+      },
+      "types": {
+        "tenant-selfCreated": "Selbst-Anlage",
+        "review-queueEntered": "Eintritt in die Prüfliste",
+        "tenant-levelChanged": "Stufenwechsel",
+        "review-decided": "Prüfentscheidung"
+      },
+      "statuses": {
+        "pending": "ausstehend",
+        "sent": "gesendet",
+        "failed": "fehlgeschlagen"
+      },
+      "details": {
+        "deliveries": "Bereits zugestellt",
+        "no-deliveries": "Noch niemandem zugestellt.",
+        "sent-at": "Vollständig gesendet am {time}"
+      },
+      "retry": {
+        "action": "Erneut senden",
+        "sent": "Die Mitteilung wurde gesendet.",
+        "failed-again": "Der Versand ist erneut fehlgeschlagen: {error}",
+        "request-failed": "Die Mitteilung konnte nicht erneut gesendet werden."
+      }
     }
   }
 }
