@@ -64,7 +64,11 @@ const defaultState = {
   isPublic: false,
 }
 const state = {
-  form: JSON.parse(JSON.stringify(defaultState))
+  form: JSON.parse(JSON.stringify(defaultState)),
+  // The review (glossary "Prüfstatus") of the loaded event. It is the
+  // backend's alone and changes through its own operations, so it lives next
+  // to the form: never saved with it, never an unsaved change of it.
+  review: null,
 };
 
 const mutations = {
@@ -94,10 +98,16 @@ const mutations = {
     state.form.schedules = state.form.schedules.filter(schedule => schedule.id !== id);
   },
   RESTORE(state, payload) {
-    state.form = payload;
+    const { review = null, ...form } = payload;
+    state.form = form;
+    state.review = review;
+  },
+  SET_REVIEW(state, review) {
+    state.review = review || null;
   },
   CLEAR(state) {
     state.form = JSON.parse(JSON.stringify(defaultState));
+    state.review = null;
   },
   UPDATE_SCHEDULES_FOR_DAY(state, payload) {
     // add schedules to the day
@@ -117,6 +127,9 @@ const actions = {
   },
   restoreFromApi({ commit }, payload) {
     commit("RESTORE", payload);
+  },
+  setReview({ commit }, review) {
+    commit("SET_REVIEW", review);
   },
   addSpeaker({ commit }, payload) {
     commit("UPDATE_SPEAKER", payload);
@@ -152,6 +165,7 @@ const actions = {
 
 const getters = {
   form: (state) => state.form,
+  review: (state) => state.review,
   speakers: (state) => state.form.eventOrganizer.speakers,
   priceCategories: (state) => state.form.attendees.priceCategories,
   schedules: (state) => state.form.schedules,

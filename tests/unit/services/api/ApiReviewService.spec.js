@@ -75,6 +75,30 @@ describe("ApiReviewService", () => {
     expect(review).toEqual(REVIEW);
   });
 
+  it("submits an event for review on the event's own route", async () => {
+    ApiClient.post.mockResolvedValue({
+      data: { offerType: "event", offerId: "e-1", review: REVIEW },
+    });
+
+    const review = await ApiReviewService.submit("t-1", "event", "e-1");
+
+    expect(ApiClient.post).toHaveBeenCalledWith(
+      "api/t-1/events/e-1/review/submissions"
+    );
+    expect(review).toEqual(REVIEW);
+  });
+
+  it("reads the current review of an event from the event's admin DTO", async () => {
+    ApiClient.get.mockResolvedValue({
+      data: { id: "e-1", information: { name: "Konzert" }, review: REVIEW },
+    });
+
+    const review = await ApiReviewService.getReview("t-1", "event", "e-1");
+
+    expect(ApiClient.get).toHaveBeenCalledWith("api/t-1/events/e-1");
+    expect(review).toEqual(REVIEW);
+  });
+
   it("refuses an offer type the backend does not know", async () => {
     await expect(ApiReviewService.submit("t-1", "ticket", "x")).rejects.toThrow(
       /offer type/
