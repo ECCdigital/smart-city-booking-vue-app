@@ -303,6 +303,12 @@ export default {
             interfaceName: "instance",
           },
           {
+            title: "Aufsichtsmitteilungen",
+            link: "supervision-notifications",
+            icon: "mdi-email-alert-outline",
+            interfaceName: "instance",
+          },
+          {
             title: "Benutzer",
             link: "instance-users",
             icon: "mdi-account-group-outline",

@@ -38,6 +38,7 @@ One class per backend resource area:
 | `ApiBookingService` | Bookings CRUD, status changes |
 | `ApiBookablesService` | Bookable resources |
 | `ApiTenantService` | Tenant configuration |
+| `ApiSupervisionNotificationService` | Outbox of the supervision mails: list, retry (instance owner) |
 | `ApiEventService` | Events |
 | `ApiCheckoutService` | Checkout flow |
 | `ApiGroupBookingService` | Group/series bookings |

@@ -91,6 +91,15 @@ Instance (global deployment config, loaded at bootstrap)
 - Pagination and order are the backend's (longest waiting first): the table sends `page`/`pageSize`/`tenantId`/`offerType`, never sorts, and a filter change starts at page 1. Nothing is cached — entering the view or „Aktualisieren“ asks again; overlapping loads keep the answer asked for last
 - The queue lists and links only; the review actions live in the offer editors. `src/utils/reviewQueueLink.js` turns a row into the editor's router location (the backend's `adminPath` names the per-type bookable editor, `/events/edit` for events) and follows nothing else. The path carries no tenant, so the view selects the row's `tenantId` (`tenants/select`) before routing
 
+## Supervision notices (instance owner)
+
+`/instance/aufsichtsmitteilungen` (`src/views/Management/SupervisionNotifications.vue`, „System“ → „Aufsichtsmitteilungen“) shows the backend's outbox of supervision mails (`ApiSupervisionNotificationService`: `GET api/instances/supervision/notifications?status=&page=&pageSize=`, `POST …/:id/retry`).
+
+- Server-paginated, opens on `status=failed`; the status filter shows the rest. Overlapping loads keep the answer asked for last
+- „Erneut senden“ exists on `failed` rows only and sends the missing mails again — it never repeats the decision or writes history. The button is disabled while its retry runs; the list reloads after every retry, a refused one included
+- A row carries no list of intended recipients, only `deliveries` (who already has the mail) — the column reads „Zugestellt an“. The occasion's `payload` differs by `type`; `src/utils/supervisionNotifications.js` is the one place that reads it
+- `lastError` is shown as the backend sends it (secrets are masked there). The refusals of a retry (`409 supervision_notification_already_sent` / `…_dispatch_in_progress`, `404 supervision_notification_not_found`) are entries of the central reader's code tables
+
 ## Key patterns
 
 | Layer | Pattern | Example |
