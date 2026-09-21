@@ -275,6 +275,39 @@ export function tenantCreationError(error) {
   return { key: "generic" };
 }
 
+const ERROR_KEYS = "tenant.onboarding.errors";
+
+/**
+ * The i18n message of a `tenantCreationError`, shared by the wizard and the
+ * classic creation dialog. A hit limit without a usable wait says "later".
+ */
+export function creationErrorMessage(error) {
+  if (!error) return null;
+  if (error.key === "rate-limited" && !error.wait) {
+    return { key: `${ERROR_KEYS}.rate-limited-unknown`, params: {} };
+  }
+  return { key: `${ERROR_KEYS}.${error.key}`, params: { wait: error.wait } };
+}
+
+/** The i18n key below the field a `400` named; `null` for every other field. */
+export function creationFieldErrorKey(error, field) {
+  if (error?.key !== "field" || error.field !== field) return null;
+  return field === "mail"
+    ? `${ERROR_KEYS}.mail-invalid`
+    : "tenant.onboarding.offer.errors.required";
+}
+
+/**
+ * The contact a creation form starts with (spec §9): the account's name and
+ * mail - the user id is the account mail. It stays editable.
+ */
+export function contactPrefill(user) {
+  return {
+    contactName: [user?.firstName, user?.lastName].filter(Boolean).join(" "),
+    mail: user?.id || "",
+  };
+}
+
 /**
  * The way back from an existing tenant form the wizard opened: the query
  * names the step and the bookable of the run. `null` outside a wizard run.

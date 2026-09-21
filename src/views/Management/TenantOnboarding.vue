@@ -113,6 +113,7 @@ import {
   SUPERVISION_LEVELS,
   WIZARD_STEPS,
   applyOfferForm,
+  contactPrefill,
   findCreatedTenant,
   startStep,
   storedChoices,
@@ -164,11 +165,7 @@ export default {
       return storedChoices(this.bookable).priceChoice === "paid";
     },
     contactPrefill() {
-      const user = this.user || {};
-      return {
-        contactName: [user.firstName, user.lastName].filter(Boolean).join(" "),
-        mail: user.id || "",
-      };
+      return contactPrefill(this.user);
     },
     stepEntries() {
       const done = {

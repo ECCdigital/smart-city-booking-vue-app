@@ -106,7 +106,11 @@
 </template>
 
 <script>
-import { isFormallyValidMail } from "@/utils/tenantOnboarding";
+import {
+  creationErrorMessage,
+  creationFieldErrorKey,
+  isFormallyValidMail,
+} from "@/utils/tenantOnboarding";
 
 /**
  * Step 1: the shortened creation - name, contact person and a formally valid
@@ -150,23 +154,14 @@ export default {
       return !!this.tenant;
     },
     errorText() {
-      if (!this.error) return "";
-      if (this.error.key === "rate-limited" && !this.error.wait) {
-        return this.$t("tenant.onboarding.errors.rate-limited-unknown");
-      }
-      return this.$t(`tenant.onboarding.errors.${this.error.key}`, {
-        wait: this.error.wait,
-      });
+      const message = creationErrorMessage(this.error);
+      return message ? this.$t(message.key, message.params) : "";
     },
   },
   methods: {
     fieldError(field) {
-      if (this.error?.key !== "field" || this.error.field !== field) return [];
-      return [
-        field === "mail"
-          ? this.$t("tenant.onboarding.errors.mail-invalid")
-          : this.$t("tenant.onboarding.offer.errors.required"),
-      ];
+      const key = creationFieldErrorKey(this.error, field);
+      return key ? [this.$t(key)] : [];
     },
     submit() {
       if (this.created) {
