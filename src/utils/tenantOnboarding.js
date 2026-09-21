@@ -9,6 +9,8 @@
  * again on every run.
  */
 
+import { rateLimitOf } from "@/utils/rateLimit";
+
 /**
  * The wizard's route (`tenant-onboarding`) as the return target (backend:
  * `nextUrl`) a verification mail or an SSO sign-in leads back to.
@@ -236,19 +238,6 @@ export function findCreatedTenant(before, after, name) {
   );
 }
 
-/** The wait a `Retry-After` of seconds asks for, in German. */
-export function retryAfterText(seconds) {
-  const total = Number(seconds);
-  if (!Number.isFinite(total) || total <= 0) return "";
-
-  const minutes = Math.ceil(total / 60);
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return [hours ? `${hours} Std.` : "", rest ? `${rest} Min.` : ""]
-    .filter(Boolean)
-    .join(" ");
-}
-
 /**
  * What a refused `POST api/tenants` means for the wizard (spec §6.3): the
  * i18n key below `tenant.onboarding.errors`, the wait of a hit limit and the
@@ -258,12 +247,8 @@ export function tenantCreationError(error) {
   const status = error?.response?.status;
   const data = error?.response?.data || {};
 
-  if (status === 429) {
-    const seconds =
-      Number(error.response.headers?.["retry-after"]) ||
-      data.params?.retryAfterSeconds;
-    return { key: "rate-limited", wait: retryAfterText(seconds) };
-  }
+  const limit = rateLimitOf(error);
+  if (limit) return { key: "rate-limited", wait: limit.wait };
   if (status === 403 && data.code === "email_verification_required") {
     return {
       key:

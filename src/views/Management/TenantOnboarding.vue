@@ -37,6 +37,7 @@
             :in-progress="inProgress"
             :error="tenantError"
             :verification-mail="verificationMail"
+            :verification-limit="verificationLimit"
             @submit="createTenant"
             @resend-verification="resendVerification"
             @sso-login="ssoLogin"
@@ -124,6 +125,7 @@ import {
   storedChoices,
   tenantCreationError,
 } from "@/utils/tenantOnboarding";
+import { rateLimitOf } from "@/utils/rateLimit";
 import {
   confirmChoices,
   hasConfirmedChoices,
@@ -157,6 +159,7 @@ export default {
       choicesConfirmed: false,
       tenantError: null,
       verificationMail: null,
+      verificationLimit: null,
       offerSaveFailed: false,
       completeFailed: false,
     };
@@ -223,11 +226,13 @@ export default {
      */
     async resendVerification() {
       this.verificationMail = "sending";
+      this.verificationLimit = null;
       try {
         await ApiAuthService.resendVerification(this.user.id, ONBOARDING_PATH);
         this.verificationMail = "sent";
       } catch (error) {
         console.error(error);
+        this.verificationLimit = rateLimitOf(error);
         this.verificationMail = "failed";
       }
     },

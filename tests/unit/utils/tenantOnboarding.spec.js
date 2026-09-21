@@ -11,7 +11,6 @@ import {
   isFormallyValidMail,
   offerFormFromBookable,
   onboardingReturnRoute,
-  retryAfterText,
   showsSupervisionNotice,
   startStep,
   storedChoices,
@@ -307,19 +306,6 @@ describe("findCreatedTenant", () => {
 
   it("answers null when the list shows no new tenant of that name", () => {
     expect(findCreatedTenant([], [{ id: "a", name: "X" }], "Y")).toBeNull();
-  });
-});
-
-describe("retryAfterText", () => {
-  it("names hours and minutes until the next attempt", () => {
-    expect(retryAfterText(2 * 3600 + 5 * 60)).toBe("2 Std. 5 Min.");
-    expect(retryAfterText(90)).toBe("2 Min.");
-    expect(retryAfterText(3600)).toBe("1 Std.");
-  });
-
-  it("answers an empty text without a usable value", () => {
-    expect(retryAfterText(undefined)).toBe("");
-    expect(retryAfterText("abc")).toBe("");
   });
 });
 
