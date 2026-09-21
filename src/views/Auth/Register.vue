@@ -179,6 +179,7 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import ContactInformation from "@/components/ContactInformation.vue";
 import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
 import { isSafeInternalRedirect } from "@/utils/safeRedirect";
+import { rateLimitMessage, rateLimitOf } from "@/utils/rateLimit";
 
 export default {
   computed: {
@@ -354,12 +355,13 @@ export default {
             }
           })
           .catch((error) => {
-            const status = error.response?.status;
-            if (status === 401) {
+            const limit = rateLimitOf(error);
+            if (limit) {
+              const { key, params } = rateLimitMessage(limit);
               this.addToast(
-                ToastService.createToast("register.error.wrong-email", "error")
+                ToastService.createToast(key, "error", 10000, params)
               );
-            } else if (status === 400) {
+            } else if (error.response?.status === 400) {
               this.addToast(
                 ToastService.createToast(
                   "register.error.information-missing",

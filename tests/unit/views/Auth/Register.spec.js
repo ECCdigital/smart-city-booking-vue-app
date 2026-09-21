@@ -16,6 +16,9 @@ vi.mock("@/components/ContactInformation.vue", () => ({
 import ApiAuthService from "@/services/api/ApiAuthService";
 import Register from "@/views/Auth/Register.vue";
 
+const addToast = vi.fn();
+const push = vi.fn(async () => {});
+
 /** The router knows every path except the ones listed. */
 function mountRegister(next, unmatched = [], stored = null) {
   const store = new Vuex.Store({
@@ -34,7 +37,7 @@ function mountRegister(next, unmatched = [], stored = null) {
           setNextUrl: ({ commit }, value) => commit("SET_NEXT_URL", value),
         },
       },
-      toasts: { namespaced: true, actions: { add: vi.fn() } },
+      toasts: { namespaced: true, actions: { add: addToast } },
     },
   });
 
@@ -43,7 +46,7 @@ function mountRegister(next, unmatched = [], stored = null) {
     stubs: { RouterLink: true },
     mocks: {
       $router: {
-        push: vi.fn(async () => {}),
+        push,
         resolve: (path) => ({
           route: { matched: unmatched.includes(path) ? [] : [{}] },
         }),
@@ -72,8 +75,18 @@ const loginButton = (wrapper) =>
     .filter((button) => button.text() === "Konto vorhanden?")
     .at(0);
 
+/** The toast the view showed last. */
+const lastToast = () => addToast.mock.calls.at(-1)[1];
+
+const refused = (status, data = {}, headers = {}) => ({
+  response: { status, data, headers },
+});
+
 beforeEach(() => {
-  ApiAuthService.register.mockClear();
+  ApiAuthService.register.mockReset();
+  ApiAuthService.register.mockResolvedValue({ status: 201 });
+  addToast.mockClear();
+  push.mockClear();
 });
 
 describe("Register — the return target of the signup", () => {
@@ -127,5 +140,68 @@ describe("Register — back to the login", () => {
     await flushPromises();
 
     expect(loginButton(wrapper).props("to")).toEqual({ name: "login" });
+  });
+});
+
+describe("Register — account-neutral answers", () => {
+  it("promises a mail only for an address that is not registered yet", async () => {
+    const wrapper = mountRegister();
+
+    await register(wrapper);
+
+    expect(push).toHaveBeenCalledWith("/welcome/");
+    expect(lastToast().type).toBe("success");
+    expect(lastToast().message).toContain(
+      "Falls die Adresse noch nicht registriert ist"
+    );
+  });
+
+  it("tells nothing about the address when a signup is refused", async () => {
+    const messages = [];
+    for (const status of [401, 409, 500]) {
+      ApiAuthService.register.mockRejectedValueOnce(refused(status));
+      await register(mountRegister());
+      messages.push(lastToast().message);
+    }
+
+    expect(new Set(messages).size).toBe(1);
+    expect(messages[0]).toContain("Registrierung fehlgeschlagen");
+    expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe("Register — the signup limit", () => {
+  it("names the wait of the Retry-After header", async () => {
+    ApiAuthService.register.mockRejectedValue(
+      refused(429, {}, { "retry-after": "1800" })
+    );
+
+    await register(mountRegister());
+
+    expect(lastToast().type).toBe("error");
+    expect(lastToast().message).toContain("in 30 Min. möglich");
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("names the wait of the envelope when the header is missing", async () => {
+    ApiAuthService.register.mockRejectedValue(
+      refused(429, {
+        code: "too_many_requests",
+        params: { retryAfterSeconds: 120 },
+      })
+    );
+
+    await register(mountRegister());
+
+    expect(lastToast().message).toContain("in 2 Min. möglich");
+  });
+
+  it("asks to try later when the answer names no wait", async () => {
+    ApiAuthService.register.mockRejectedValue(refused(429));
+
+    await register(mountRegister());
+
+    expect(lastToast().message).toContain("später erneut");
+    expect(lastToast().message).not.toContain("{wait}");
   });
 });

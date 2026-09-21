@@ -49,7 +49,7 @@
       dense
       data-test="verification-failed"
     >
-      {{ $t("tenant.onboarding.verification.failed") }}
+      {{ verificationFailedText }}
     </v-alert>
 
     <v-text-field
@@ -153,6 +153,7 @@ import {
   creationFieldErrorKey,
   isFormallyValidMail,
 } from "@/utils/tenantOnboarding";
+import { rateLimitMessage } from "@/utils/rateLimit";
 
 /**
  * Step 1: the shortened creation - name, contact person and a formally valid
@@ -167,6 +168,8 @@ export default {
     error: { type: Object, default: null },
     /** The renewed verification mail: `null`, `sending`, `sent` or `failed`. */
     verificationMail: { type: String, default: null },
+    /** The hit limit (`rateLimitOf`) a refused verification mail named. */
+    verificationLimit: { type: Object, default: null },
   },
   data() {
     const source = this.tenant || this.prefill;
@@ -206,6 +209,13 @@ export default {
       if (this.error?.key === "verification-mail") return "mail";
       if (this.error?.key === "verification-identity-provider") return "sso";
       return null;
+    },
+    verificationFailedText() {
+      if (!this.verificationLimit) {
+        return this.$t("tenant.onboarding.verification.failed");
+      }
+      const { key, params } = rateLimitMessage(this.verificationLimit);
+      return this.$t(`${key}.message`, params);
     },
     errorText() {
       const message = creationErrorMessage(this.error);

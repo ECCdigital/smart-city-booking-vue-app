@@ -297,7 +297,37 @@ describe("TenantOnboarding — the way to the missing verification proof", () =>
     await flushPromises();
 
     expect(find(wrapper, "verification-sent").exists()).toBe(false);
-    expect(find(wrapper, "verification-failed").exists()).toBe(true);
+    expect(find(wrapper, "verification-failed").text()).toContain(
+      "konnte nicht angefordert werden"
+    );
+  });
+
+  it("names the wait when the verification mails hit their limit", async () => {
+    ApiAuthService.resendVerification.mockRejectedValue({
+      response: { status: 429, data: {}, headers: { "retry-after": "600" } },
+    });
+    const wrapper = await refusedCreation({ method: "email", provider: null });
+
+    await find(wrapper, "verification-resend").trigger("click");
+    await flushPromises();
+
+    expect(find(wrapper, "verification-failed").text()).toContain(
+      "in 10 Min. möglich"
+    );
+  });
+
+  it("asks to try later when the limit names no wait", async () => {
+    ApiAuthService.resendVerification.mockRejectedValue({
+      response: { status: 429, data: {}, headers: {} },
+    });
+    const wrapper = await refusedCreation({ method: "email", provider: null });
+
+    await find(wrapper, "verification-resend").trigger("click");
+    await flushPromises();
+
+    const text = find(wrapper, "verification-failed").text();
+    expect(text).toContain("zu viele Versuche");
+    expect(text).toContain("später erneut");
   });
 
   it("leads an SSO account to a new sign-in at its identity provider, and back here", async () => {

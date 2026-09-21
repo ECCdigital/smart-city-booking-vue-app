@@ -11,6 +11,24 @@
       "message": "Sie haben sich erfolgreich abgemeldet."
     }
   },
+  "auth": {
+    "rate-limit": {
+      "wait": {
+        "title": "Zu viele Versuche",
+        "message": "Es gab zu viele Versuche in kurzer Zeit. Ein neuer Versuch ist in {wait} möglich."
+      },
+      "unknown": {
+        "title": "Zu viele Versuche",
+        "message": "Es gab zu viele Versuche in kurzer Zeit. Bitte versuchen Sie es später erneut."
+      }
+    },
+    "verification": {
+      "required": "Ihr Nutzerkonto ist noch nicht bestätigt. Bitte öffnen Sie den Link in der Bestätigungs-E-Mail.",
+      "resend": "Bestätigungs-E-Mail erneut senden",
+      "sent": "Falls Ihr Nutzerkonto noch nicht bestätigt ist, haben wir Ihnen eine neue Bestätigungs-E-Mail gesendet.",
+      "failed": "Die Bestätigungs-E-Mail konnte nicht angefordert werden. Bitte versuchen Sie es später erneut."
+    }
+  },
   "login": {
     "success": {
       "default": {
@@ -32,18 +50,14 @@
   "register": {
     "success": {
       "default": {
-        "title": "Registrierung angemeldet",
-        "message": "Sie haben Sich erfolgreich registriert"
+        "title": "Registrierung abgeschickt",
+        "message": "Falls die Adresse noch nicht registriert ist, haben wir Ihnen eine Bestätigungs-E-Mail gesendet."
       }
     },
     "error": {
       "default": {
         "title": "Registrierung fehlgeschlagen",
         "message": "Leider ist die Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut."
-      },
-      "wrong-email": {
-        "title": "Falsche E-Mail/Passwort",
-        "message": "Leider stimmt mit der E-Mail etwas nicht. Bitte versuchen Sie es erneut."
       },
       "information-missing": {
         "title": "Fehlende Angaben",

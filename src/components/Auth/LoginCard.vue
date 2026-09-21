@@ -44,6 +44,40 @@
           Passwort vergessen?
         </router-link>
       </div>
+
+      <v-alert
+        v-if="unverifiedId"
+        type="info"
+        text
+        dense
+        class="text-left mt-4 mb-0"
+        data-test="verification-required"
+      >
+        <div v-if="verificationMail === 'sent'" data-test="verification-sent">
+          {{ $t("auth.verification.sent") }}
+        </div>
+        <template v-else>
+          <div>{{ $t("auth.verification.required") }}</div>
+          <v-btn
+            small
+            outlined
+            color="primary"
+            class="mt-2"
+            :loading="verificationMail === 'sending'"
+            data-test="verification-resend"
+            @click="resendVerification"
+          >
+            {{ $t("auth.verification.resend") }}
+          </v-btn>
+          <div
+            v-if="verificationError"
+            class="error--text mt-2"
+            data-test="verification-failed"
+          >
+            {{ verificationError }}
+          </div>
+        </template>
+      </v-alert>
     </v-card-text>
 
     <v-card-actions class="px-4">
@@ -96,6 +130,12 @@
 import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { mapActions } from "vuex";
+import { rateLimitMessage, rateLimitOf } from "@/utils/rateLimit";
+
+/** The backend's login refusal of an account without e-mail verification. */
+const isNotVerified = (error) =>
+  error.response?.status === 403 &&
+  error.response.data?.message === "User is not verified";
 
 export default {
   name: "LoginCard",
@@ -119,6 +159,11 @@ export default {
       password: "",
       showPassword: false,
       isLoading: false,
+      /** The address the login refused as unverified; offers the resend. */
+      unverifiedId: null,
+      /** The renewed verification mail: `null`, `sending`, `sent` or `failed`. */
+      verificationMail: null,
+      verificationError: "",
       rules: {
         required: (value) => !!value || "Erforderlich.",
         email: (value) => {
@@ -140,6 +185,13 @@ export default {
         ? { name: "register", query: { next } }
         : { name: "register" };
     },
+    /** Where the login leads: the page that asked for it, or its checkout. */
+    returnTarget() {
+      if (this.$route.query.next) return this.$route.query.next;
+      return this.$route.fullPath.includes("checkout")
+        ? this.$route.fullPath
+        : undefined;
+    },
   },
 
   methods: {
@@ -153,6 +205,9 @@ export default {
       if (!this.$refs.loginForm.validate()) return;
 
       this.isLoading = true;
+      this.unverifiedId = null;
+      this.verificationMail = null;
+      this.verificationError = "";
       try {
         const { user, permissions } = await ApiAuthService.login(
           this.id,
@@ -166,7 +221,9 @@ export default {
         this.password = "";
         this.$emit("success");
       } catch (error) {
-        if (error.response?.status === 401) {
+        if (isNotVerified(error)) {
+          this.unverifiedId = this.id;
+        } else if (error.response?.status === 401) {
           await this.addToast(
             ToastService.createToast("login.error.wrong-email", "error")
           );
@@ -177,6 +234,31 @@ export default {
         }
       } finally {
         this.isLoading = false;
+      }
+    },
+
+    /**
+     * The verification mail again, account-neutral like the backend's answer;
+     * its link leads back to where this login leads.
+     */
+    async resendVerification() {
+      this.verificationMail = "sending";
+      this.verificationError = "";
+      try {
+        await ApiAuthService.resendVerification(
+          this.unverifiedId,
+          this.returnTarget
+        );
+        this.verificationMail = "sent";
+      } catch (error) {
+        const limit = rateLimitOf(error);
+        if (limit) {
+          const { key, params } = rateLimitMessage(limit);
+          this.verificationError = this.$t(`${key}.message`, params);
+        } else {
+          this.verificationError = this.$t("auth.verification.failed");
+        }
+        this.verificationMail = "failed";
       }
     },
 
