@@ -1,0 +1,137 @@
+// Custom properties on :root, overridden under .theme--dark, so a scoped
+// <style> reads them without importing anything: `var(--scb-text-muted)`.
+// Breakpoints cannot be custom properties (media queries do not read them),
+// so they are Sass variables, available to any file that @uses this one.
+//
+// The theme colours themselves (primary, warning, ...) stay Vuetify's
+// `--v-*-base`; the tokens below only add the tints the pages lay over them.
+// `rgba(var(--v-primary-base), .08)` is not valid CSS - `--v-primary-base`
+// is a hex - which is why the selection tints are color-mix() here.
+
+// Breakpoints (Vuetify's own edges, as the three pages use them).
+$scb-bp-xs: 599px; // below: the bookable editor's meta row wraps
+$scb-bp-sm: 959px; // below: the side panels drop under the main column
+$scb-bp-md: 1264px; // below: the booking page's panel narrows
+
+:root {
+  // --- Shape ---------------------------------------------------------------
+  --scb-radius-surface: 8px; // cards, dialogs, panels, tables
+  --scb-radius-control: 4px; // rows, nav items, the id-copy chip
+  --scb-radius-badge: 3px; // the "Experte" badge
+  --scb-radius-pill: 16px; // the section sub-navigation links
+
+  // --- Surfaces -------------------------------------------------------------
+  --scb-surface: #fff;
+  --scb-surface-border: rgba(0, 0, 0, 0.12); // outlined cards, tables, panels
+  --scb-surface-tint: rgba(0, 0, 0, 0.03); // section header strip, item hover
+  --scb-surface-tint-faint: rgba(0, 0, 0, 0.02); // expansion-panel header
+  --scb-surface-raised: var(--v-accent-base, #f5f5f5); // status / price tiles
+
+  // --- Rules (hairlines) ----------------------------------------------------
+  --scb-rule: rgba(0, 0, 0, 0.06); // between rows and facts
+  --scb-rule-strong: rgba(0, 0, 0, 0.08); // under a header strip or sub-nav
+
+  // --- Interaction ----------------------------------------------------------
+  --scb-hover-tint: rgba(0, 0, 0, 0.04); // nav tab, overview row
+  --scb-hover-tint-strong: rgba(0, 0, 0, 0.06); // id-copy chip, sub-nav link
+  --scb-selected-tint: color-mix(
+    in srgb,
+    var(--v-primary-base) 8%,
+    transparent
+  );
+  --scb-selected-tint-strong: color-mix(
+    in srgb,
+    var(--v-primary-base) 12%,
+    transparent
+  );
+  --scb-selected-tint-faint: color-mix(
+    in srgb,
+    var(--v-primary-base) 5%,
+    transparent
+  );
+  --scb-warning-tint: rgba(251, 140, 0, 0.12); // the "Experte" badge
+
+  // --- Text -----------------------------------------------------------------
+  --scb-text: rgba(0, 0, 0, 0.87); // values, row titles
+  --scb-text-muted: rgba(0, 0, 0, 0.6); // labels, subtitles, nav sections
+  --scb-text-caption: rgba(0, 0, 0, 0.45); // small-caps captions
+  --scb-text-hover: rgba(0, 0, 0, 0.87); // a muted item under the pointer
+
+  // --- Type scale -----------------------------------------------------------
+  --scb-font-size-caption: 11px; // small-caps captions
+  --scb-font-size-xs: 12px; // subtitles, fact labels, overview labels
+  --scb-font-size-sm: 13px; // facts, rows, nav sections, overview values
+  --scb-font-size-md: 14px; // nav tabs
+  --scb-font-size-header: 15px; // the section header strip
+  --scb-font-weight-medium: 500;
+  --scb-font-weight-semibold: 600;
+  --scb-letter-spacing-caption: 0.08em;
+  --scb-line-height-tight: 1.3;
+  --scb-line-height-base: 1.4;
+
+  // --- Spacing --------------------------------------------------------------
+  --scb-space-1: 4px;
+  --scb-space-2: 8px;
+  --scb-space-3: 12px;
+  --scb-space-4: 16px;
+  --scb-space-5: 20px;
+  --scb-space-6: 24px;
+  --scb-gap-columns: var(--scb-space-4); // between a page's columns
+  --scb-gap-cards: var(--scb-space-4); // between stacked section cards
+  --scb-section-header-padding: 14px 16px;
+  --scb-section-body-padding: var(--scb-space-4);
+
+  // --- Sizes ----------------------------------------------------------------
+  --scb-section-header-height: 52px;
+  --scb-row-height: 44px; // hairline rows, expansion-panel headers
+  --scb-nav-item-height: 40px;
+  --scb-icon-size-header: 20px;
+  --scb-app-bar-height: 64px; // what a sticky column subtracts from 100vh
+  --scb-panel-width: 380px; // the booking page's detail panel
+  --scb-panel-width-narrow: 320px; // ... below $scb-bp-md
+  --scb-overview-width: 300px; // the bookable editor's overview
+  --scb-overview-width-max: 320px;
+  --scb-nav-width-min: 196px; // the bookable editor's section nav
+  --scb-nav-width-max: 228px;
+  --scb-save-bar-clearance: calc(
+    56px + 12px + 12px + 16px
+  ); // under the SaveBar
+
+  // --- Motion ---------------------------------------------------------------
+  --scb-motion-fast: 0.15s ease; // hover tints
+  --scb-motion-base: 0.2s ease; // selection, lift
+}
+
+.theme--dark {
+  --scb-surface: #1e1e1e;
+  --scb-surface-border: rgba(255, 255, 255, 0.12);
+  --scb-surface-tint: rgba(255, 255, 255, 0.05);
+  --scb-surface-tint-faint: rgba(255, 255, 255, 0.03);
+  --scb-surface-raised: rgba(255, 255, 255, 0.05);
+
+  --scb-rule: rgba(255, 255, 255, 0.12);
+  --scb-rule-strong: rgba(255, 255, 255, 0.1);
+
+  --scb-hover-tint: rgba(255, 255, 255, 0.06);
+  --scb-hover-tint-strong: rgba(255, 255, 255, 0.08);
+  --scb-selected-tint: color-mix(
+    in srgb,
+    var(--v-primary-base) 12%,
+    transparent
+  );
+  --scb-selected-tint-strong: color-mix(
+    in srgb,
+    var(--v-primary-base) 16%,
+    transparent
+  );
+  --scb-selected-tint-faint: color-mix(
+    in srgb,
+    var(--v-primary-base) 10%,
+    transparent
+  );
+
+  --scb-text: rgba(255, 255, 255, 0.87);
+  --scb-text-muted: rgba(255, 255, 255, 0.7);
+  --scb-text-caption: rgba(255, 255, 255, 0.55);
+  --scb-text-hover: rgba(255, 255, 255, 0.92);
+}

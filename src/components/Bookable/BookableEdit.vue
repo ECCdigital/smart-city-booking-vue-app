@@ -747,7 +747,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 16px;
+  gap: var(--scb-space-2) var(--scb-space-4);
   min-width: 0;
 }
 
@@ -769,7 +769,7 @@ export default {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  gap: 8px;
+  gap: var(--scb-space-2);
 }
 
 .bookable-id-text {
@@ -782,21 +782,21 @@ export default {
 .page-content__main {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: var(--scb-gap-columns);
 }
 
 .page-content__nav {
   flex: 0 0 auto;
   position: sticky;
   top: 0;
-  max-height: calc(100vh - 64px);
+  max-height: calc(100vh - var(--scb-app-bar-height));
   overflow-x: hidden;
   overflow-y: auto;
 }
 
 .bookable-edit-nav {
-  min-width: 196px;
-  max-width: 228px;
+  min-width: var(--scb-nav-width-min);
+  max-width: var(--scb-nav-width-max);
   padding: 2px 0;
 }
 
@@ -805,41 +805,37 @@ export default {
 }
 
 .bookable-edit-nav__group--active {
-  margin-bottom: 8px;
+  margin-bottom: var(--scb-space-2);
 }
 
 .bookable-edit-nav__tab {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 40px;
+  min-height: var(--scb-nav-item-height);
   margin: 0;
-  padding: 8px 12px 8px 10px;
+  padding: var(--scb-space-2) var(--scb-space-3) var(--scb-space-2) 10px;
   border: 0;
   border-left: 3px solid transparent;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--scb-radius-control) var(--scb-radius-control) 0;
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease,
-    border-color 0.15s ease;
+  transition: background-color var(--scb-motion-fast),
+    color var(--scb-motion-fast), border-color var(--scb-motion-fast);
 }
 
 .bookable-edit-nav__tab:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.theme--dark .bookable-edit-nav__tab:hover {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--scb-hover-tint);
 }
 
 .bookable-edit-nav__tab--active {
   color: var(--v-primary-base);
   border-left-color: var(--v-primary-base);
-  background-color: rgba(var(--v-primary-base), 0.08);
-  font-weight: 500;
+  background-color: var(--scb-selected-tint);
+  font-weight: var(--scb-font-weight-medium);
 }
 
 .bookable-edit-nav__tab--active .bookable-edit-nav__tab-icon {
@@ -855,7 +851,7 @@ export default {
 .bookable-edit-nav__tab-label {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 0.875rem;
+  font-size: var(--scb-font-size-md);
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
@@ -867,49 +863,37 @@ export default {
   flex-direction: column;
   gap: 1px;
   margin: 2px 0 0 22px;
-  padding: 2px 0 2px 12px;
-  border-left: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.theme--dark .bookable-edit-nav__sections {
-  border-left-color: rgba(255, 255, 255, 0.16);
+  padding: 2px 0 2px var(--scb-space-3);
+  border-left: 1px solid var(--scb-surface-border);
 }
 
 .bookable-edit-nav__section {
   display: block;
   width: 100%;
   margin: 0;
-  padding: 5px 8px;
+  padding: 5px var(--scb-space-2);
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--scb-radius-control);
   background: transparent;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--scb-text-muted);
   font: inherit;
-  font-size: 0.8125rem;
-  line-height: 1.3;
+  font-size: var(--scb-font-size-sm);
+  line-height: var(--scb-line-height-tight);
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.theme--dark .bookable-edit-nav__section {
-  color: rgba(255, 255, 255, 0.7);
+  transition: background-color var(--scb-motion-fast),
+    color var(--scb-motion-fast);
 }
 
 .bookable-edit-nav__section:hover {
-  color: rgba(0, 0, 0, 0.87);
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.theme--dark .bookable-edit-nav__section:hover {
-  color: rgba(255, 255, 255, 0.92);
-  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--scb-text-hover);
+  background-color: var(--scb-hover-tint);
 }
 
 .bookable-edit-nav__section--active {
   color: var(--v-primary-base);
-  font-weight: 500;
-  background-color: rgba(var(--v-primary-base), 0.08);
+  font-weight: var(--scb-font-weight-medium);
+  background-color: var(--scb-selected-tint);
 }
 
 .theme--dark .bookable-edit-nav__section--active {
@@ -919,16 +903,12 @@ export default {
 .bookable-edit-nav__subnav {
   display: flex;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: var(--scb-space-1);
   margin: 0;
-  padding: 6px 4px 8px;
+  padding: 6px var(--scb-space-1) var(--scb-space-2);
   overflow-x: auto;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--scb-rule-strong);
   scrollbar-width: thin;
-}
-
-.theme--dark .bookable-edit-nav__subnav {
-  border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 .bookable-edit-nav__sublink {
@@ -936,35 +916,27 @@ export default {
   margin: 0;
   padding: 6px 10px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--scb-radius-pill);
   background: transparent;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--scb-text-muted);
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: var(--scb-font-size-sm);
   line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.theme--dark .bookable-edit-nav__sublink {
-  color: rgba(255, 255, 255, 0.7);
+  transition: background-color var(--scb-motion-fast),
+    color var(--scb-motion-fast);
 }
 
 .bookable-edit-nav__sublink:hover {
-  color: rgba(0, 0, 0, 0.87);
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.theme--dark .bookable-edit-nav__sublink:hover {
-  color: rgba(255, 255, 255, 0.92);
-  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--scb-text-hover);
+  background-color: var(--scb-hover-tint-strong);
 }
 
 .bookable-edit-nav__sublink--active {
   color: var(--v-primary-base);
-  font-weight: 500;
-  background-color: rgba(var(--v-primary-base), 0.12);
+  font-weight: var(--scb-font-weight-medium);
+  background-color: var(--scb-selected-tint-strong);
 }
 
 .theme--dark .bookable-edit-nav__sublink--active {
@@ -974,26 +946,24 @@ export default {
 .page-content__editor {
   flex: 1 1 auto;
   min-width: 0;
-  padding-bottom: calc(
-    56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
-      /* extra spacing */
-  );
+  padding-bottom: var(--scb-save-bar-clearance);
 }
 
 .page-content__editor >>> [id^="be-section-"] {
-  scroll-margin-top: 16px;
+  scroll-margin-top: var(--scb-space-4);
 }
 
 .page-content__overview {
-  flex: 0 0 300px;
-  max-width: 320px;
+  flex: 0 0 var(--scb-overview-width);
+  max-width: var(--scb-overview-width-max);
   position: sticky;
   top: 0;
-  max-height: calc(100vh - 64px);
+  max-height: calc(100vh - var(--scb-app-bar-height));
   overflow-x: hidden;
   overflow-y: auto;
 }
 
+/* $scb-bp-sm / $scb-bp-xs of tokens.scss; a scoped style cannot read them. */
 @media (max-width: 959px) {
   .page-content__main {
     flex-direction: column;
@@ -1033,7 +1003,7 @@ export default {
 
   .page-content__meta-title {
     flex: 1 1 100%;
-    font-weight: 500;
+    font-weight: var(--scb-font-weight-medium);
   }
 
   .bookable-id-copy {
@@ -1056,18 +1026,15 @@ export default {
   max-width: min(100%, 280px);
   min-width: 0;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--scb-radius-control);
   padding: 2px 6px;
   margin: -2px -6px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color var(--scb-motion-base),
+    color var(--scb-motion-base);
 }
 
 .bookable-id-copy:hover {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: var(--scb-hover-tint-strong);
   color: var(--v-primary-base);
-}
-
-.theme--dark .bookable-id-copy:hover {
-  background-color: rgba(255, 255, 255, 0.08);
 }
 </style>

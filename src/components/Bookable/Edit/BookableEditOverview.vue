@@ -332,23 +332,23 @@ export default {
 /* The rows carry 4px of their own, so the card's text lines up with its
    header at 16px. */
 .bookable-overview-sidebar__body {
-  padding: 10px 12px 12px;
+  padding: 10px var(--scb-space-3) var(--scb-space-3);
 }
 
 .overview-row {
   display: flex;
   align-items: flex-start;
   width: 100%;
-  padding: 6px 4px;
+  padding: 6px var(--scb-space-1);
   margin: 0 0 2px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--scb-radius-control);
   background: transparent;
   text-align: left;
   cursor: pointer;
   font: inherit;
   color: inherit;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--scb-motion-fast);
 }
 
 .overview-row--block {
@@ -356,11 +356,7 @@ export default {
 }
 
 .overview-row:not(.overview-row--static):hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.theme--dark .overview-row:not(.overview-row--static):hover {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--scb-hover-tint);
 }
 
 .overview-row--static {
@@ -376,7 +372,7 @@ export default {
   align-items: center;
   flex: 0 0 42%;
   min-width: 0;
-  padding-right: 8px;
+  padding-right: var(--scb-space-2);
   flex-wrap: wrap;
 }
 
@@ -388,8 +384,8 @@ export default {
 }
 
 .overview-row__label {
-  font-size: 0.75rem;
-  line-height: 1.3;
+  font-size: var(--scb-font-size-xs);
+  line-height: var(--scb-line-height-tight);
 }
 
 .overview-row__expert-badge,
@@ -397,21 +393,21 @@ export default {
 .overview-band-detail__expert-badge {
   margin-left: 6px;
   padding: 0 5px;
-  border-radius: 3px;
+  border-radius: var(--scb-radius-badge);
   font-size: 0.625rem;
-  font-weight: 600;
+  font-weight: var(--scb-font-weight-semibold);
   letter-spacing: 0.02em;
-  line-height: 1.4;
+  line-height: var(--scb-line-height-base);
   text-transform: uppercase;
   color: var(--v-warning-base);
-  background-color: rgba(251, 140, 0, 0.12);
+  background-color: var(--scb-warning-tint);
   white-space: nowrap;
 }
 
 .overview-row__value {
   flex: 1 1 auto;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: var(--scb-font-size-sm);
+  font-weight: var(--scb-font-weight-medium);
   line-height: 1.35;
   min-width: 0;
   white-space: normal;
@@ -429,7 +425,7 @@ export default {
 }
 
 .bookable-overview-band {
-  margin-bottom: 12px;
+  margin-bottom: var(--scb-space-3);
 }
 
 .overview-band-chips {
@@ -452,29 +448,21 @@ export default {
 .overview-band-detail {
   display: block;
   width: 100%;
-  margin-top: 8px;
-  padding: 6px 8px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 4px;
+  margin-top: var(--scb-space-2);
+  padding: 6px var(--scb-space-2);
+  border: 1px solid var(--scb-surface-border);
+  border-radius: var(--scb-radius-control);
   background: transparent;
   text-align: left;
   cursor: pointer;
   font: inherit;
-  font-size: 0.8125rem;
-  line-height: 1.4;
+  font-size: var(--scb-font-size-sm);
+  line-height: var(--scb-line-height-base);
   color: inherit;
 }
 
-.theme--dark .overview-band-detail {
-  border-color: rgba(255, 255, 255, 0.16);
-}
-
 .overview-band-detail:not(.overview-band-detail--static):hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.theme--dark .overview-band-detail:not(.overview-band-detail--static):hover {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--scb-hover-tint);
 }
 
 .overview-band-detail--static {

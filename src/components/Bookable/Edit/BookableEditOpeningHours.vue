@@ -821,16 +821,16 @@ export default {
 .opening-hours-item,
 .special-hours-item {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--scb-motion-base);
 }
 
 .theme--dark .opening-hours-item,
 .theme--dark .special-hours-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--scb-surface-tint);
 }
 
 .opening-hours-card,
 .special-hours-card {
-  border-radius: 8px !important;
+  border-radius: var(--scb-radius-surface) !important;
 }
 </style>

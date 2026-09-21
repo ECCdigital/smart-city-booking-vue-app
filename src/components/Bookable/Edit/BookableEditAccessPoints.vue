@@ -478,14 +478,10 @@ export default {
 .section-title {
   display: flex;
   align-items: center;
-  font-size: 0.95rem;
-  color: rgba(0, 0, 0, 0.7);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  padding-bottom: 4px;
-}
-.theme--dark .section-title {
-  color: rgba(255, 255, 255, 0.8);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+  font-size: var(--scb-font-size-header);
+  color: var(--scb-text-muted);
+  border-bottom: 1px solid var(--scb-rule-strong);
+  padding-bottom: var(--scb-space-1);
 }
 /* The picker menu is attached to this element (`attach` on the v-menu), so it
    has to be the positioned ancestor its absolute offsets are measured from. */
@@ -493,10 +489,7 @@ export default {
   position: relative;
 }
 .assignment-table {
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
-}
-.theme--dark .assignment-table {
-  border-color: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--scb-surface-border);
+  border-radius: var(--scb-radius-surface);
 }
 </style>

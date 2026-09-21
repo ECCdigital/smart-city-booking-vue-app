@@ -61,7 +61,8 @@ export default {
     },
     hasServiceHours() {
       return (
-        Array.isArray(this.model.serviceHours) && this.model.serviceHours.length > 0
+        Array.isArray(this.model.serviceHours) &&
+        this.model.serviceHours.length > 0
       );
     },
     leadTimeEnabled() {
@@ -161,7 +162,9 @@ export default {
         return true;
       }
       const minutes = Number(value);
-      return Number.isFinite(minutes) && minutes >= 0 && Number.isInteger(minutes);
+      return (
+        Number.isFinite(minutes) && minutes >= 0 && Number.isInteger(minutes)
+      );
     },
     bufferPresetActive(field, minutes) {
       const current = Number(this.model[field]) || 0;
@@ -306,9 +309,9 @@ export default {
             <v-icon class="mr-2" color="info" small>
               mdi-information-outline
             </v-icon>
-            Die Vorbereitungszeit muss vollständig innerhalb der
-            Servicezeiten liegen – z. B. Freitag 18:00 → Montag 08:00 ist mit
-            2 Std. Vorbereitung nicht möglich.
+            Die Vorbereitungszeit muss vollständig innerhalb der Servicezeiten
+            liegen – z. B. Freitag 18:00 → Montag 08:00 ist mit 2 Std.
+            Vorbereitung nicht möglich.
           </v-alert>
 
           <div class="text-subtitle-2 mb-2">Vorbereitungszeit</div>
@@ -341,8 +344,15 @@ export default {
                 @input="emitUpdate"
               />
             </v-col>
-            <v-col cols="12" sm="6" md="8" class="d-flex align-center flex-wrap">
-              <span class="text-caption text--secondary mr-2">Schnellauswahl:</span>
+            <v-col
+              cols="12"
+              sm="6"
+              md="8"
+              class="d-flex align-center flex-wrap"
+            >
+              <span class="text-caption text--secondary mr-2"
+                >Schnellauswahl:</span
+              >
               <v-chip
                 v-for="preset in presets"
                 :key="preset.value"
@@ -410,11 +420,7 @@ export default {
 
                   <v-list-item-action>
                     <div class="d-flex align-center">
-                      <v-btn
-                        icon
-                        small
-                        @click.stop="removeServiceHours(index)"
-                      >
+                      <v-btn icon small @click.stop="removeServiceHours(index)">
                         <v-icon small>mdi-delete-outline</v-icon>
                       </v-btn>
                       <v-btn icon small>
@@ -632,7 +638,9 @@ export default {
                 @input="setBufferMinutes('bufferTimeBeforeMinutes', $event)"
               />
               <div class="d-flex flex-wrap mt-2">
-                <span class="text-caption text--secondary mr-2">Schnellauswahl:</span>
+                <span class="text-caption text--secondary mr-2"
+                  >Schnellauswahl:</span
+                >
                 <v-chip
                   v-for="preset in bufferPresets"
                   :key="`before-${preset.value}`"
@@ -646,7 +654,9 @@ export default {
                   :outlined="
                     !bufferPresetActive('bufferTimeBeforeMinutes', preset.value)
                   "
-                  @click="applyBufferPreset('bufferTimeBeforeMinutes', preset.value)"
+                  @click="
+                    applyBufferPreset('bufferTimeBeforeMinutes', preset.value)
+                  "
                 >
                   {{ preset.label }}
                 </v-chip>
@@ -676,7 +686,9 @@ export default {
                 @input="setBufferMinutes('bufferTimeAfterMinutes', $event)"
               />
               <div class="d-flex flex-wrap mt-2">
-                <span class="text-caption text--secondary mr-2">Schnellauswahl:</span>
+                <span class="text-caption text--secondary mr-2"
+                  >Schnellauswahl:</span
+                >
                 <v-chip
                   v-for="preset in bufferPresets"
                   :key="`after-${preset.value}`"
@@ -690,7 +702,9 @@ export default {
                   :outlined="
                     !bufferPresetActive('bufferTimeAfterMinutes', preset.value)
                   "
-                  @click="applyBufferPreset('bufferTimeAfterMinutes', preset.value)"
+                  @click="
+                    applyBufferPreset('bufferTimeAfterMinutes', preset.value)
+                  "
                 >
                   {{ preset.label }}
                 </v-chip>
@@ -706,14 +720,14 @@ export default {
 <style scoped>
 .service-hours-item {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--scb-motion-base);
 }
 
 .theme--dark .service-hours-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--scb-surface-tint);
 }
 
 .service-hours-card {
-  border-radius: 8px !important;
+  border-radius: var(--scb-radius-surface) !important;
 }
 </style>
