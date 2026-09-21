@@ -17,6 +17,9 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const formData = { ...store.state.events.form };
     formData.tenantId = t;
+    // The review (glossary "Prüfstatus") is written by its own operations
+    // alone (`ApiReviewService`); a save never carries it.
+    delete formData.review;
     return ApiClient.put(`api/${t}/events?withTickets=${addTickets}`, formData);
   },
   deleteEvent(id, tenant) {
@@ -33,6 +36,8 @@ export default {
 
           delete event.id;
           delete event._id;
+          // A copy is a new offer: it starts without the original's review.
+          delete event.review;
 
           event.information.name = `${event.information.name} (Kopie)`;
 
