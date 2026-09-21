@@ -6,17 +6,17 @@
  * `review` and `isPublic`.
  */
 
-import { SUPERVISION_LEVELS as LEVELS } from "@/utils/tenantOnboarding";
+import {
+  REVIEW_STATUS,
+  SUPERVISION_LEVELS as LEVELS,
+  reviewStatusColor,
+} from "@/utils/supervision";
+
+export { REVIEW_STATUS };
 
 export const OFFER_TYPES = Object.freeze({
   BOOKABLE: "bookable",
   EVENT: "event",
-});
-
-export const REVIEW_STATUS = Object.freeze({
-  PENDING: "pending",
-  APPROVED: "approved",
-  REJECTED: "rejected",
 });
 
 /**
@@ -29,12 +29,6 @@ export const REVIEW_ACTIONS = Object.freeze({
   APPROVE: "approve",
   REJECT: "reject",
   WITHDRAW: "withdraw",
-});
-
-const STATUS_COLORS = Object.freeze({
-  [REVIEW_STATUS.PENDING]: "warning",
-  [REVIEW_STATUS.APPROVED]: "success",
-  [REVIEW_STATUS.REJECTED]: "error",
 });
 
 /** A missing review or an unknown status is "no review status yet". */
@@ -53,7 +47,7 @@ export function reviewStatusView(review) {
   return {
     status,
     labelKey: `supervision.review.status.${status || "none"}`,
-    color: STATUS_COLORS[status] || "grey",
+    color: reviewStatusColor(status),
   };
 }
 
