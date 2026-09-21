@@ -182,10 +182,13 @@ describe("InstanceReviewQueue", () => {
     });
   });
 
-  it("offers the tenants of the instance as a filter", async () => {
+  it("offers the supervised tenants of the instance as a filter", async () => {
     const wrapper = await mountView();
 
-    expect(ApiTenantService.getTenants).toHaveBeenCalledWith(true);
+    // Only a supervised tenant's offers wait for a review.
+    expect(ApiTenantService.getTenants).toHaveBeenCalledWith(true, {
+      supervisionLevel: "supervised",
+    });
     expect(
       wrapper
         .findComponent({ ref: "tenantFilter" })

@@ -119,6 +119,7 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import ToastService from "@/services/ToastService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import { reviewQueueLocation } from "@/utils/reviewQueueLink";
+import { SUPERVISION_LEVELS } from "@/utils/supervision";
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -225,8 +226,14 @@ export default {
     },
     async fetchTenants() {
       try {
-        // Names only: the public projection, as Navbar and Dashboard read it.
-        this.tenants = (await ApiTenantService.getTenants(true)).data || [];
+        // Names only: the public projection, as Navbar and Dashboard read
+        // it - of the supervised tenants, the only ones with a queue.
+        this.tenants =
+          (
+            await ApiTenantService.getTenants(true, {
+              supervisionLevel: SUPERVISION_LEVELS.SUPERVISED,
+            })
+          ).data || [];
       } catch (error) {
         console.error(error);
       }

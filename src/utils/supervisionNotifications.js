@@ -7,6 +7,15 @@
 /** The delivery statuses of a row, as the backend names them. */
 export const NOTIFICATION_STATUSES = ["failed", "pending", "sent"];
 
+/**
+ * Whether the row can be sent again: everything that did not go out. A
+ * `pending` row may be one whose send never completed; the backend refuses
+ * the retry of a row it is dispatching right now (409).
+ */
+export function isRetryableNotification(row) {
+  return row?.status === "failed" || row?.status === "pending";
+}
+
 /** The occasion types this UI has a German label for. */
 export const NOTIFICATION_TYPES = [
   "tenant.selfCreated",

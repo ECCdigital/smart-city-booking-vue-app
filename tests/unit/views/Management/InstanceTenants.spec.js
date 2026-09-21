@@ -282,5 +282,47 @@ describe("InstanceTenants", () => {
       });
       expect(ApiSupervisionService.getTenantHistory).not.toHaveBeenCalled();
     });
+
+    it("names every tenant in the instance-wide history while the list is filtered", async () => {
+      instanceOwner = true;
+      ApiTenantService.getTenants.mockImplementation((_public, filter) =>
+        Promise.resolve({
+          data: filter?.supervisionLevel ? [TENANTS[0]] : TENANTS,
+        })
+      );
+      ApiSupervisionService.getInstanceHistory.mockResolvedValue({
+        items: [
+          {
+            id: "h-1",
+            tenantId: "t-2",
+            eventType: "level_changed",
+            occurredAt: "2026-09-21T08:30:00.000Z",
+            actor: { type: "system" },
+            from: "free",
+            to: "supervised",
+          },
+        ],
+        total: 1,
+        page: 1,
+        pageSize: 25,
+      });
+      const wrapper = await mountView();
+      wrapper
+        .findComponent({ ref: "levelFilter" })
+        .vm.$emit("input", "blocked");
+      await flushPromises();
+      expect(rowTexts(wrapper)).toHaveLength(1);
+
+      await wrapper
+        .find("[data-test='open-instance-history']")
+        .trigger("click");
+      await flushPromises();
+
+      expect(
+        document.querySelector("[data-test='history-row']").textContent
+      ).toContain("Makerspace");
+      // The table stays on the filtered list.
+      expect(wrapper.text()).not.toContain("Makerspace");
+    });
   });
 });

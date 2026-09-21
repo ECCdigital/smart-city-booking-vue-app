@@ -91,7 +91,7 @@
         </template>
         <template #[`item.actions`]="{ item }">
           <v-btn
-            v-if="item.status === 'failed'"
+            v-if="isRetryable(item)"
             small
             text
             color="primary"
@@ -149,6 +149,7 @@ import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import {
   NOTIFICATION_STATUSES,
   NOTIFICATION_TYPES,
+  isRetryableNotification,
   notificationOfferTitles,
   notificationTenantName,
 } from "@/utils/supervisionNotifications";
@@ -252,6 +253,7 @@ export default {
         if (run === this.latestRun) this.loading = false;
       }
     },
+    isRetryable: isRetryableNotification,
     isRetrying(item) {
       return this.retrying[item.id] === true;
     },

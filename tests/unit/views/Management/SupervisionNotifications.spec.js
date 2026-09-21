@@ -150,6 +150,19 @@ describe("SupervisionNotifications", () => {
     expect(retryButton(wrapper, "n-2").exists()).toBe(false);
   });
 
+  it("offers the retry on a pending row whose send never completed", async () => {
+    api.getNotifications.mockResolvedValue(
+      page([{ ...FAILED_ROW, id: "n-3", status: "pending", lastError: null }])
+    );
+    api.retry.mockResolvedValue({ ...SENT_ROW, id: "n-3" });
+
+    const wrapper = await mountView();
+    await retryButton(wrapper, "n-3").trigger("click");
+    await flushPromises();
+
+    expect(api.retry).toHaveBeenCalledWith("n-3");
+  });
+
   it("tells that a retry sends the mail only", async () => {
     const wrapper = await mountView();
 

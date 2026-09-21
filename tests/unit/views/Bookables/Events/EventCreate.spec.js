@@ -215,6 +215,21 @@ describe("EventCreate", () => {
     expect(wrapper.findAll("[data-test^='review-action-']").length).toBe(0);
   });
 
+  // The backend assigns a new event's id and answers the create without a
+  // body. The editor never has to show the review of a just-created event:
+  // its only save is the pager's „Absenden“, which leaves for the event list.
+  it("saves a new event through the pager only, never from the sidebar", async () => {
+    const { wrapper, store } = await mountEditor({ event: null });
+
+    await store.dispatch("events/updateForm", {
+      field: "isPublic",
+      value: true,
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Änderungen übernehmen");
+  });
+
   it("forgets the review of the last event when a new one is started", async () => {
     const first = await mountEditor({
       event: storedEvent({ review: { status: "approved" } }),

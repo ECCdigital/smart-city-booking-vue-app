@@ -164,7 +164,7 @@
     <SupervisionHistoryDialog
       :open="openHistoryDialog"
       :tenant="historyTenant"
-      :tenants="api.tenants"
+      :tenants="api.allTenants"
       @close="openHistoryDialog = false"
     />
     <DeleteConformationDialog
@@ -224,6 +224,9 @@ export default {
       search: "",
       api: {
         tenants: [],
+        // Unfiltered: the instance-wide history names every tenant, whatever
+        // level the table is narrowed to.
+        allTenants: [],
       },
       headers: [
         {
@@ -303,6 +306,7 @@ export default {
       })
         .then((response) => {
           this.api.tenants = response.data;
+          if (!this.levelFilter) this.api.allTenants = response.data;
         })
         .finally(() => {
           this.stopLoading("fetch-tenants");
