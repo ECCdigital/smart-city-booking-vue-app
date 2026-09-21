@@ -679,7 +679,7 @@ export default {
 
 <style scoped>
 .section-card {
-  border-radius: 8px !important;
+  border-radius: var(--scb-radius-surface) !important;
 }
 
 .custom-fields-tabs >>> .v-tab {
@@ -688,34 +688,22 @@ export default {
 }
 
 .values-panels >>> .v-expansion-panel {
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
-  border-radius: 8px !important;
+  border: 1px solid var(--scb-surface-border) !important;
+  border-radius: var(--scb-radius-surface) !important;
   overflow: hidden;
 }
 
-.theme--dark .values-panels >>> .v-expansion-panel {
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-
 .origin-header {
-  min-height: 44px !important;
-  background: rgba(0, 0, 0, 0.02);
-}
-
-.theme--dark .origin-header {
-  background: rgba(255, 255, 255, 0.03);
+  min-height: var(--scb-row-height) !important;
+  background: var(--scb-surface-tint-faint);
 }
 
 .field-row--border {
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.theme--dark .field-row--border {
-  border-top-color: rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--scb-rule-strong);
 }
 
 .field-row-label {
-  line-height: 1.3;
+  line-height: var(--scb-line-height-tight);
 }
 
 .field-row-input >>> .v-input {

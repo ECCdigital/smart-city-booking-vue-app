@@ -12,6 +12,7 @@ docs/agents/
   architecture.md         ← project layout & data flow
   coding-standards.md     ← style & patterns
   components.md           ← Vue component & view conventions
+  design-tokens.md        ← --scb-* custom properties in src/scss/tokens.scss: shape, surfaces, text, type, spacing, motion
   api-services.md         ← API client layer
   web-integration.md      ← JS web interface (BookingManager)
   testing.md              ← Vitest setup, layout & conventions

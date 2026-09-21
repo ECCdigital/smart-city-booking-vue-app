@@ -107,12 +107,9 @@ export default {
 
 <style scoped>
 .status-indicator {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  background-color: var(--v-accent-base, #f5f5f5) !important;
-}
-
-.theme--dark .status-indicator {
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  transition: transform var(--scb-motion-base),
+    box-shadow var(--scb-motion-base);
+  background-color: var(--scb-surface-raised) !important;
 }
 
 .status-switch-wrap {

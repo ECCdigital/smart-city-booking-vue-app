@@ -167,7 +167,7 @@ export default {
         <div class="text-subtitle-2 mb-3 grey--text">Verfügbare Felder:</div>
         <v-list class="py-0">
           <v-list-item
-            v-for="(field) in availableFields"
+            v-for="field in availableFields"
             :key="field.id"
             @click="toggleField(field.id)"
             class="field-item rounded mb-2"
@@ -217,11 +217,7 @@ export default {
       </v-card-text>
     </v-card>
 
-    <v-card
-      id="be-section-additional-notes"
-      class="mb-6 section-card"
-      outlined
-    >
+    <v-card id="be-section-additional-notes" class="mb-6 section-card" outlined>
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-information-variant</v-icon>
         <span class="text-h6 font-weight-bold">Buchungshinweise</span>
@@ -237,24 +233,16 @@ export default {
 <style scoped>
 .field-item {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--scb-motion-base);
   border: 2px solid transparent;
 }
 
 .field-item:hover {
-  background-color: rgba(0, 0, 0, 0.03);
-}
-
-.theme--dark .field-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--scb-surface-tint);
 }
 
 .field-item--selected {
   border-color: var(--v-primary-base);
-  background-color: rgba(var(--v-primary-base), 0.05);
-}
-
-.theme--dark .field-item--selected {
-  background-color: rgba(var(--v-primary-base), 0.1);
+  background-color: var(--scb-selected-tint-faint);
 }
 </style>

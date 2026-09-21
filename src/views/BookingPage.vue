@@ -606,7 +606,7 @@ export default {
 .booking-page__body {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: var(--scb-gap-columns);
 }
 
 .booking-page__main {
@@ -616,15 +616,15 @@ export default {
 
 .booking-page__main > .v-card,
 .booking-page__main > .section-card {
-  margin-bottom: 16px !important;
+  margin-bottom: var(--scb-gap-cards) !important;
 }
 
 .booking-page__panel {
-  width: 380px;
+  width: var(--scb-panel-width);
   flex: none;
   position: sticky;
   top: 0;
-  margin-bottom: 16px;
+  margin-bottom: var(--scb-gap-cards);
 }
 
 /* The strip stacks the identity over the period, and its facts keep the
@@ -636,7 +636,7 @@ export default {
 }
 
 .booking-page__strip-facts {
-  margin-top: 12px;
+  margin-top: var(--scb-space-3);
   font-weight: 400;
 }
 
@@ -647,22 +647,19 @@ export default {
 }
 
 .booking-page__comment-label {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.6);
+  font-size: var(--scb-font-size-xs);
+  color: var(--scb-text-muted);
   margin-bottom: 2px;
-}
-
-.theme--dark .booking-page__comment-label {
-  color: rgba(255, 255, 255, 0.7);
 }
 
 .booking-page__comment-text {
   white-space: pre-wrap;
 }
 
+/* $scb-bp-md / $scb-bp-sm of tokens.scss; a scoped style cannot read them. */
 @media (max-width: 1264px) {
   .booking-page__panel {
-    width: 320px;
+    width: var(--scb-panel-width-narrow);
   }
 }
 

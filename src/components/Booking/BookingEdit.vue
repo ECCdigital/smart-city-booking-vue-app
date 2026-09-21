@@ -77,190 +77,183 @@
 
             <v-divider v-if="bookableItems.length" class="my-4" />
 
-            <v-list v-if="bookableItems.length" dense class="bookable-list py-0">
-                  <template v-for="(bookableItem, index) in bookableItems">
-                    <v-list-item :key="bookableItem.bookableId" class="px-0">
-                      <v-list-item-content class="py-2">
-                        <v-list-item-title class="font-weight-bold">
-                          {{ bookableItem._bookableUsed?.title }}
-                        </v-list-item-title>
-                        <v-list-item-subtitle class="mb-2">
-                          <BookableTypeChip
-                            :type="bookableItem._bookableUsed?.type"
-                          />
-                        </v-list-item-subtitle>
-                        <v-list-item-subtitle>
-                          <template
-                            v-if="hasExternalPrices(bookableItem._bookableUsed)"
-                          >
-                            <v-progress-circular
-                              v-if="
-                                externalPricesLoading[bookableItem.bookableId]
-                              "
-                              indeterminate
-                              size="20"
-                              width="2"
-                              color="primary"
-                              class="my-2"
-                            />
+            <v-list
+              v-if="bookableItems.length"
+              dense
+              class="bookable-list py-0"
+            >
+              <template v-for="(bookableItem, index) in bookableItems">
+                <v-list-item :key="bookableItem.bookableId" class="px-0">
+                  <v-list-item-content class="py-2">
+                    <v-list-item-title class="font-weight-bold">
+                      {{ bookableItem._bookableUsed?.title }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle class="mb-2">
+                      <BookableTypeChip
+                        :type="bookableItem._bookableUsed?.type"
+                      />
+                    </v-list-item-subtitle>
+                    <v-list-item-subtitle>
+                      <template
+                        v-if="hasExternalPrices(bookableItem._bookableUsed)"
+                      >
+                        <v-progress-circular
+                          v-if="externalPricesLoading[bookableItem.bookableId]"
+                          indeterminate
+                          size="20"
+                          width="2"
+                          color="primary"
+                          class="my-2"
+                        />
 
+                        <template
+                          v-else-if="getExternalPrices(bookableItem.bookableId)"
+                        >
+                          <div class="d-flex align-center mb-2">
+                            <v-icon x-small class="mr-1" color="info">
+                              mdi-information-outline
+                            </v-icon>
+                            <span class="caption info--text font-weight-medium">
+                              Externe Preise
+                            </span>
+                          </div>
 
-
-                            <template
-                              v-else-if="
-                                getExternalPrices(bookableItem.bookableId)
-                              "
+                          <v-row dense>
+                            <v-col
+                              v-for="price in getExternalPrices(
+                                bookableItem.bookableId
+                              )"
+                              :key="price.unit"
+                              cols="12"
+                              sm="6"
+                              md="4"
                             >
-                              <div class="d-flex align-center mb-2">
-                                <v-icon x-small class="mr-1" color="info">
-                                  mdi-information-outline
-                                </v-icon>
-                                <span
-                                  class="caption info--text font-weight-medium"
-                                >
-                                  Externe Preise
-                                </span>
-                              </div>
-
-                              <v-row dense>
-                                <v-col
-                                  v-for="price in getExternalPrices(
-                                    bookableItem.bookableId
-                                  )"
-                                  :key="price.unit"
-                                  cols="12"
-                                  sm="6"
-                                  md="4"
-                                >
-                                  <v-text-field
-                                    :value="price.priceEur"
-                                    @input="
-                                      updateExternalPrice(
-                                        bookableItem.bookableId,
-                                        price.unit,
-                                        $event
-                                      )
-                                    "
-                                    filled
-                                    dense
-                                    prefix="€"
-                                    :suffix="getUnitLabel(price.unit)"
-                                    background-color="accent"
-                                    hide-details
-                                    type="number"
-                                    :label="getUnitLabel(price.unit)"
-                                  ></v-text-field>
-                                </v-col>
-                              </v-row>
-
-                              <div class="d-flex align-center justify-end mt-2">
-                                <v-btn
-                                  icon
-                                  x-small
-                                  @click="decreaseAmount(bookableItem)"
-                                >
-                                  <v-icon>mdi-minus</v-icon>
-                                </v-btn>
-                                <div class="px-3 font-weight-bold">
-                                  {{ bookableItem.amount }}
-                                </div>
-                                <v-btn
-                                  icon
-                                  x-small
-                                  @click="increaseAmount(bookableItem)"
-                                >
-                                  <v-icon>mdi-plus</v-icon>
-                                </v-btn>
-                              </div>
-                            </template>
-
-                            <div v-else class="caption grey--text my-2">
-                              Keine externen Preise verfügbar
-                            </div>
-                          </template>
-
-                          <v-row v-else dense class="align-center">
-                            <v-col cols="12" sm="5">
                               <v-text-field
-                                :value="
-                                  getPriceCategory(
-                                    bookableItem.bookableId,
-                                    'priceEur'
-                                  )
-                                "
+                                :value="price.priceEur"
                                 @input="
-                                  updatePriceCategory(
+                                  updateExternalPrice(
                                     bookableItem.bookableId,
+                                    price.unit,
                                     $event
                                   )
                                 "
                                 filled
                                 dense
                                 prefix="€"
+                                :suffix="getUnitLabel(price.unit)"
                                 background-color="accent"
                                 hide-details
-                                :suffix="
-                                  isTimeRelated(
-                                    bookableItem._bookableUsed,
-                                    getPriceCategory(
-                                      bookableItem.bookableId,
-                                      'fixedPrice'
-                                    )
-                                  )
-                                "
-                                label="Preis (netto, überschreibbar)"
                                 type="number"
+                                :label="getUnitLabel(price.unit)"
                               ></v-text-field>
                             </v-col>
-                            <v-col cols="12" sm="4">
-                              <v-checkbox
-                                dense
-                                :input-value="
-                                  getPriceCategory(
-                                    bookableItem.bookableId,
-                                    'fixedPrice'
-                                  )
-                                "
-                                @change="
-                                  updateFixedPrice(
-                                    bookableItem.bookableId,
-                                    $event
-                                  )
-                                "
-                                label="Pauschalpreis"
-                                hide-details
-                              ></v-checkbox>
-                            </v-col>
-                            <v-col cols="12" sm="3">
-                              <div class="d-flex align-center justify-end">
-                                <v-btn
-                                  icon
-                                  x-small
-                                  @click="decreaseAmount(bookableItem)"
-                                >
-                                  <v-icon>mdi-minus</v-icon>
-                                </v-btn>
-                                <div class="px-3 font-weight-bold">
-                                  {{ bookableItem.amount }}
-                                </div>
-                                <v-btn
-                                  icon
-                                  x-small
-                                  @click="increaseAmount(bookableItem)"
-                                >
-                                  <v-icon>mdi-plus</v-icon>
-                                </v-btn>
-                              </div>
-                            </v-col>
                           </v-row>
-                        </v-list-item-subtitle>
-                      </v-list-item-content>
-                    </v-list-item>
-                    <v-divider
-                      v-if="index < bookableItems.length - 1"
-                      :key="`divider-${index}`"
-                    />
-                  </template>
+
+                          <div class="d-flex align-center justify-end mt-2">
+                            <v-btn
+                              icon
+                              x-small
+                              @click="decreaseAmount(bookableItem)"
+                            >
+                              <v-icon>mdi-minus</v-icon>
+                            </v-btn>
+                            <div class="px-3 font-weight-bold">
+                              {{ bookableItem.amount }}
+                            </div>
+                            <v-btn
+                              icon
+                              x-small
+                              @click="increaseAmount(bookableItem)"
+                            >
+                              <v-icon>mdi-plus</v-icon>
+                            </v-btn>
+                          </div>
+                        </template>
+
+                        <div v-else class="caption grey--text my-2">
+                          Keine externen Preise verfügbar
+                        </div>
+                      </template>
+
+                      <v-row v-else dense class="align-center">
+                        <v-col cols="12" sm="5">
+                          <v-text-field
+                            :value="
+                              getPriceCategory(
+                                bookableItem.bookableId,
+                                'priceEur'
+                              )
+                            "
+                            @input="
+                              updatePriceCategory(
+                                bookableItem.bookableId,
+                                $event
+                              )
+                            "
+                            filled
+                            dense
+                            prefix="€"
+                            background-color="accent"
+                            hide-details
+                            :suffix="
+                              isTimeRelated(
+                                bookableItem._bookableUsed,
+                                getPriceCategory(
+                                  bookableItem.bookableId,
+                                  'fixedPrice'
+                                )
+                              )
+                            "
+                            label="Preis (netto, überschreibbar)"
+                            type="number"
+                          ></v-text-field>
+                        </v-col>
+                        <v-col cols="12" sm="4">
+                          <v-checkbox
+                            dense
+                            :input-value="
+                              getPriceCategory(
+                                bookableItem.bookableId,
+                                'fixedPrice'
+                              )
+                            "
+                            @change="
+                              updateFixedPrice(bookableItem.bookableId, $event)
+                            "
+                            label="Pauschalpreis"
+                            hide-details
+                          ></v-checkbox>
+                        </v-col>
+                        <v-col cols="12" sm="3">
+                          <div class="d-flex align-center justify-end">
+                            <v-btn
+                              icon
+                              x-small
+                              @click="decreaseAmount(bookableItem)"
+                            >
+                              <v-icon>mdi-minus</v-icon>
+                            </v-btn>
+                            <div class="px-3 font-weight-bold">
+                              {{ bookableItem.amount }}
+                            </div>
+                            <v-btn
+                              icon
+                              x-small
+                              @click="increaseAmount(bookableItem)"
+                            >
+                              <v-icon>mdi-plus</v-icon>
+                            </v-btn>
+                          </div>
+                        </v-col>
+                      </v-row>
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                </v-list-item>
+                <v-divider
+                  v-if="index < bookableItems.length - 1"
+                  :key="`divider-${index}`"
+                />
+              </template>
             </v-list>
             <div v-else class="caption text--secondary py-2 mt-2">
               Keine Buchungsobjekte – mindestens ein Objekt erforderlich
@@ -295,193 +288,177 @@
               </v-btn>
             </div>
             <v-row dense>
-                  <v-col cols="12" md="3">
-                    <v-dialog
-                      ref="dateFromDialog"
-                      v-model="dateFromModal"
-                      :return-value.sync="dateFrom"
-                      persistent
-                      width="290px"
+              <v-col cols="12" md="3">
+                <v-dialog
+                  ref="dateFromDialog"
+                  v-model="dateFromModal"
+                  :return-value.sync="dateFrom"
+                  persistent
+                  width="290px"
+                >
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-text-field
+                      v-model="dateFrom"
+                      label="Datum"
+                      prepend-icon="mdi-calendar"
+                      background-color="accent"
+                      filled
+                      dense
+                      readonly
+                      hide-details
+                      v-bind="attrs"
+                      v-on="on"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    v-model="dateFrom"
+                    scrollable
+                    locale="de"
+                    :first-day-of-week="1"
+                  >
+                    <v-spacer></v-spacer>
+                    <v-btn text color="primary" @click="dateFromModal = false">
+                      Abbrechen
+                    </v-btn>
+                    <v-btn
+                      text
+                      color="primary"
+                      @click="$refs.dateFromDialog.save(dateFrom)"
                     >
-                      <template v-slot:activator="{ on, attrs }">
-                        <v-text-field
-                          v-model="dateFrom"
-                          label="Datum"
-                          prepend-icon="mdi-calendar"
-                          background-color="accent"
-                          filled
-                          dense
-                          readonly
-                          hide-details
-                          v-bind="attrs"
-                          v-on="on"
-                        ></v-text-field>
-                      </template>
-                      <v-date-picker
-                        v-model="dateFrom"
-                        scrollable
-                        locale="de"
-                        :first-day-of-week="1"
-                      >
-                        <v-spacer></v-spacer>
-                        <v-btn
-                          text
-                          color="primary"
-                          @click="dateFromModal = false"
-                        >
-                          Abbrechen
-                        </v-btn>
-                        <v-btn
-                          text
-                          color="primary"
-                          @click="$refs.dateFromDialog.save(dateFrom)"
-                        >
-                          Speichern
-                        </v-btn>
-                      </v-date-picker>
-                    </v-dialog>
+                      Speichern
+                    </v-btn>
+                  </v-date-picker>
+                </v-dialog>
               </v-col>
               <v-col cols="12" md="3">
-                    <v-dialog
-                      ref="timeFromDialog"
-                      v-model="timeFromModal"
-                      :return-value.sync="timeFrom"
-                      persistent
-                      width="290px"
+                <v-dialog
+                  ref="timeFromDialog"
+                  v-model="timeFromModal"
+                  :return-value.sync="timeFrom"
+                  persistent
+                  width="290px"
+                >
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-text-field
+                      v-model="timeFrom"
+                      label="Uhrzeit"
+                      prepend-icon="mdi-clock-time-four-outline"
+                      background-color="accent"
+                      filled
+                      dense
+                      readonly
+                      hide-details
+                      v-bind="attrs"
+                      v-on="on"
+                    ></v-text-field>
+                  </template>
+                  <v-time-picker
+                    v-if="timeFrom"
+                    v-model="timeFrom"
+                    full-width
+                    format="24hr"
+                  >
+                    <v-spacer></v-spacer>
+                    <v-btn text color="primary" @click="timeFromModal = false">
+                      Abbrechen
+                    </v-btn>
+                    <v-btn
+                      text
+                      color="primary"
+                      @click="$refs.timeFromDialog.save(timeFrom)"
                     >
-                      <template v-slot:activator="{ on, attrs }">
-                        <v-text-field
-                          v-model="timeFrom"
-                          label="Uhrzeit"
-                          prepend-icon="mdi-clock-time-four-outline"
-                          background-color="accent"
-                          filled
-                          dense
-                          readonly
-                          hide-details
-                          v-bind="attrs"
-                          v-on="on"
-                        ></v-text-field>
-                      </template>
-                      <v-time-picker
-                        v-if="timeFrom"
-                        v-model="timeFrom"
-                        full-width
-                        format="24hr"
-                      >
-                        <v-spacer></v-spacer>
-                        <v-btn
-                          text
-                          color="primary"
-                          @click="timeFromModal = false"
-                        >
-                          Abbrechen
-                        </v-btn>
-                        <v-btn
-                          text
-                          color="primary"
-                          @click="$refs.timeFromDialog.save(timeFrom)"
-                        >
-                          Speichern
-                        </v-btn>
-                      </v-time-picker>
-                    </v-dialog>
-                  </v-col>
-                </v-row>
+                      Speichern
+                    </v-btn>
+                  </v-time-picker>
+                </v-dialog>
+              </v-col>
+            </v-row>
 
             <v-row dense class="mt-2">
               <v-col cols="12" md="3">
-                    <v-dialog
-                      ref="dateToDialog"
-                      v-model="dateToModal"
-                      :return-value.sync="dateTo"
-                      persistent
-                      width="290px"
+                <v-dialog
+                  ref="dateToDialog"
+                  v-model="dateToModal"
+                  :return-value.sync="dateTo"
+                  persistent
+                  width="290px"
+                >
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-text-field
+                      v-model="dateTo"
+                      label="Datum"
+                      prepend-icon="mdi-calendar"
+                      background-color="accent"
+                      filled
+                      dense
+                      readonly
+                      hide-details
+                      v-bind="attrs"
+                      v-on="on"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    v-model="dateTo"
+                    scrollable
+                    locale="de"
+                    :first-day-of-week="1"
+                  >
+                    <v-spacer></v-spacer>
+                    <v-btn text color="primary" @click="dateToModal = false">
+                      Abbrechen
+                    </v-btn>
+                    <v-btn
+                      text
+                      color="primary"
+                      @click="$refs.dateToDialog.save(dateTo)"
                     >
-                      <template v-slot:activator="{ on, attrs }">
-                        <v-text-field
-                          v-model="dateTo"
-                          label="Datum"
-                          prepend-icon="mdi-calendar"
-                          background-color="accent"
-                          filled
-                          dense
-                          readonly
-                          hide-details
-                          v-bind="attrs"
-                          v-on="on"
-                        ></v-text-field>
-                      </template>
-                      <v-date-picker
-                        v-model="dateTo"
-                        scrollable
-                        locale="de"
-                        :first-day-of-week="1"
-                      >
-                        <v-spacer></v-spacer>
-                        <v-btn
-                          text
-                          color="primary"
-                          @click="dateToModal = false"
-                        >
-                          Abbrechen
-                        </v-btn>
-                        <v-btn
-                          text
-                          color="primary"
-                          @click="$refs.dateToDialog.save(dateTo)"
-                        >
-                          Speichern
-                        </v-btn>
-                      </v-date-picker>
-                    </v-dialog>
+                      Speichern
+                    </v-btn>
+                  </v-date-picker>
+                </v-dialog>
               </v-col>
               <v-col cols="12" md="3">
-                    <v-dialog
-                      ref="timeToDialog"
-                      v-model="timeToModal"
-                      :return-value.sync="timeTo"
-                      persistent
-                      width="290px"
+                <v-dialog
+                  ref="timeToDialog"
+                  v-model="timeToModal"
+                  :return-value.sync="timeTo"
+                  persistent
+                  width="290px"
+                >
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-text-field
+                      v-model="timeTo"
+                      label="Uhrzeit"
+                      prepend-icon="mdi-clock-time-four-outline"
+                      background-color="accent"
+                      filled
+                      dense
+                      readonly
+                      hide-details
+                      v-bind="attrs"
+                      v-on="on"
+                    ></v-text-field>
+                  </template>
+                  <v-time-picker
+                    v-if="timeTo"
+                    v-model="timeTo"
+                    full-width
+                    format="24hr"
+                  >
+                    <v-spacer></v-spacer>
+                    <v-btn text color="primary" @click="timeToModal = false">
+                      Abbrechen
+                    </v-btn>
+                    <v-btn
+                      text
+                      color="primary"
+                      @click="$refs.timeToDialog.save(timeTo)"
                     >
-                      <template v-slot:activator="{ on, attrs }">
-                        <v-text-field
-                          v-model="timeTo"
-                          label="Uhrzeit"
-                          prepend-icon="mdi-clock-time-four-outline"
-                          background-color="accent"
-                          filled
-                          dense
-                          readonly
-                          hide-details
-                          v-bind="attrs"
-                          v-on="on"
-                        ></v-text-field>
-                      </template>
-                      <v-time-picker
-                        v-if="timeTo"
-                        v-model="timeTo"
-                        full-width
-                        format="24hr"
-                      >
-                        <v-spacer></v-spacer>
-                        <v-btn
-                          text
-                          color="primary"
-                          @click="timeToModal = false"
-                        >
-                          Abbrechen
-                        </v-btn>
-                        <v-btn
-                          text
-                          color="primary"
-                          @click="$refs.timeToDialog.save(timeTo)"
-                        >
-                          Speichern
-                        </v-btn>
-                      </v-time-picker>
-                    </v-dialog>
-                  </v-col>
+                      Speichern
+                    </v-btn>
+                  </v-time-picker>
+                </v-dialog>
+              </v-col>
             </v-row>
 
             <template v-if="showOccupancyCalendar">
@@ -517,302 +494,310 @@
           </BaseSection>
 
           <BookingCustomFieldsSection
-                  v-if="editableCustomFields.length"
-                  :fields="editableCustomFields"
-                  :values="selectedBooking.customFieldValues || []"
-                  @update:values="onCustomFieldUpdate"
-                />
+            v-if="editableCustomFields.length"
+            :fields="editableCustomFields"
+            :values="selectedBooking.customFieldValues || []"
+            @update:values="onCustomFieldUpdate"
+          />
 
           <BaseSection title="Kundendaten" icon="mdi-account-outline">
             <v-row dense>
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      background-color="accent"
-                      filled
-                      dense
-                      hide-details
-                      label="Name *"
-                      required
-                      v-model="selectedBooking.name"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      background-color="accent"
-                      filled
-                      dense
-                      hide-details
-                      label="Firma"
-                      v-model="selectedBooking.company"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      background-color="accent"
-                      filled
-                      dense
-                      required
-                      :rules="validationRules.mail"
-                      v-model="selectedBooking.mail"
-                    >
-                      <template #label>
-                        E-Mail <span class="error--text">*</span>
-                      </template>
-                    </v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      background-color="accent"
-                      filled
-                      dense
-                      hide-details
-                      label="Telefon"
-                      v-model="selectedBooking.phone"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12">
-                    <v-text-field
-                      background-color="accent"
-                      filled
-                      dense
-                      hide-details
-                      label="Straße, Hausnummer *"
-                      v-model="selectedBooking.street"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="4">
-                    <v-text-field
-                      background-color="accent"
-                      filled
-                      dense
-                      hide-details
-                      label="PLZ *"
-                      required
-                      v-model="selectedBooking.zipCode"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="8">
-                    <v-text-field
-                      background-color="accent"
-                      filled
-                      dense
-                      hide-details
-                      label="Ort *"
-                      required
-                      v-model="selectedBooking.location"
-                    ></v-text-field>
-                  </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  hide-details
+                  label="Name *"
+                  required
+                  v-model="selectedBooking.name"
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  hide-details
+                  label="Firma"
+                  v-model="selectedBooking.company"
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  required
+                  :rules="validationRules.mail"
+                  v-model="selectedBooking.mail"
+                >
+                  <template #label>
+                    E-Mail <span class="error--text">*</span>
+                  </template>
+                </v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  hide-details
+                  label="Telefon"
+                  v-model="selectedBooking.phone"
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  hide-details
+                  label="Straße, Hausnummer *"
+                  v-model="selectedBooking.street"
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="4">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  hide-details
+                  label="PLZ *"
+                  required
+                  v-model="selectedBooking.zipCode"
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="8">
+                <v-text-field
+                  background-color="accent"
+                  filled
+                  dense
+                  hide-details
+                  label="Ort *"
+                  required
+                  v-model="selectedBooking.location"
+                ></v-text-field>
+              </v-col>
             </v-row>
           </BaseSection>
 
           <BaseSection title="Admin-Optionen" icon="mdi-cog-outline">
-                      <v-row v-if="selectedBooking._populated && workflow.active" dense>
-                        <v-col cols="12">
-                          <v-select
-                            :items="[...workflow.states, { name: 'Archiv', id: 'archive' }]"
-                            v-model="selectedBooking._populated.workflowStatus"
-                            label="Workflow Status"
-                            item-text="name"
-                            item-value="id"
-                            filled
-                            dense
-                            background-color="accent"
-                          />
-                        </v-col>
-                      </v-row>
+            <v-row v-if="selectedBooking._populated && workflow.active" dense>
+              <v-col cols="12">
+                <v-select
+                  :items="[
+                    ...workflow.states,
+                    { name: 'Archiv', id: 'archive' },
+                  ]"
+                  v-model="selectedBooking._populated.workflowStatus"
+                  label="Workflow Status"
+                  item-text="name"
+                  item-value="id"
+                  filled
+                  dense
+                  background-color="accent"
+                />
+              </v-col>
+            </v-row>
 
-                      <v-switch
-                        v-model="userCancellable"
-                        label="Benutzer darf selbst stornieren"
-                        dense
-                        class="mt-2"
-                      />
+            <v-switch
+              v-model="userCancellable"
+              label="Benutzer darf selbst stornieren"
+              dense
+              class="mt-2"
+            />
 
-                      <v-divider class="my-4" />
+            <v-divider class="my-4" />
 
-                      <v-row dense>
-                        <v-col cols="12" sm="6">
-                          <v-select
-                            :items="activePaymentApps"
-                            v-model="selectedBooking.paymentProvider"
-                            item-text="title"
-                            item-value="id"
-                            filled
-                            dense
-                            background-color="accent"
-                            :rules="paymentProviderRules"
-                          >
-                            <template #label>
-                              Zahlungsanbieter
-                              <span v-if="hasPayableItems" class="error--text">*</span>
-                            </template>
-                          </v-select>
-                        </v-col>
-                        <v-col v-if="!isCreateMode" cols="12" sm="6">
-                          <v-select
-                            :items="paymentMethod"
-                            v-model="selectedBooking.paymentMethod"
-                            label="Bezahlt mit"
-                            item-text="title"
-                            item-value="type"
-                            filled
-                            dense
-                            background-color="accent"
-                            hide-details
-                          />
-                        </v-col>
-                      </v-row>
+            <v-row dense>
+              <v-col cols="12" sm="6">
+                <v-select
+                  :items="activePaymentApps"
+                  v-model="selectedBooking.paymentProvider"
+                  item-text="title"
+                  item-value="id"
+                  filled
+                  dense
+                  background-color="accent"
+                  :rules="paymentProviderRules"
+                >
+                  <template #label>
+                    Zahlungsanbieter
+                    <span v-if="hasPayableItems" class="error--text">*</span>
+                  </template>
+                </v-select>
+              </v-col>
+              <v-col v-if="!isCreateMode" cols="12" sm="6">
+                <v-select
+                  :items="paymentMethod"
+                  v-model="selectedBooking.paymentMethod"
+                  label="Bezahlt mit"
+                  item-text="title"
+                  item-value="type"
+                  filled
+                  dense
+                  background-color="accent"
+                  hide-details
+                />
+              </v-col>
+            </v-row>
 
-                      <v-row v-if="!isCreateMode" dense class="mt-2">
-                        <v-col cols="12" sm="6">
-                          <v-dialog
-                            v-model="paymentDateModal"
-                            :disabled="!paymentEditable"
-                            width="290px"
-                          >
-                            <template v-slot:activator="{ on, attrs }">
-                              <v-text-field
-                                :value="paymentDate ? paymentDateOf(paymentDate).toLocaleDateString('de-DE') : ''"
-                                label="Bezahldatum"
-                                prepend-icon="mdi-calendar"
-                                background-color="accent"
-                                filled
-                                dense
-                                readonly
-                                :disabled="!paymentEditable"
-                                v-bind="attrs"
-                                v-on="on"
-                                hide-details
-                              />
-                            </template>
-                            <v-date-picker
-                              v-model="paymentDate"
-                              locale="de-DE"
-                              :first-day-of-week="1"
-                              @input="paymentDateModal = false"
-                            />
-                          </v-dialog>
-                        </v-col>
-                        <v-col cols="12" sm="6">
-                          <v-dialog
-                            v-model="paymentTimeModal"
-                            :disabled="!paymentEditable"
-                            width="290px"
-                          >
-                            <template v-slot:activator="{ on, attrs }">
-                              <v-text-field
-                                v-model="paymentTime"
-                                label="Bezahluhrzeit"
-                                prepend-icon="mdi-clock-outline"
-                                background-color="accent"
-                                filled
-                                dense
-                                readonly
-                                :disabled="!paymentEditable"
-                                v-bind="attrs"
-                                v-on="on"
-                                hide-details
-                              />
-                            </template>
-                            <v-time-picker
-                              v-if="paymentTimeModal"
-                              v-model="paymentTime"
-                              format="24hr"
-                              full-width
-                              @click:minute="paymentTimeModal = false"
-                            />
-                          </v-dialog>
-                        </v-col>
-                      </v-row>
+            <v-row v-if="!isCreateMode" dense class="mt-2">
+              <v-col cols="12" sm="6">
+                <v-dialog
+                  v-model="paymentDateModal"
+                  :disabled="!paymentEditable"
+                  width="290px"
+                >
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-text-field
+                      :value="
+                        paymentDate
+                          ? paymentDateOf(paymentDate).toLocaleDateString(
+                              'de-DE'
+                            )
+                          : ''
+                      "
+                      label="Bezahldatum"
+                      prepend-icon="mdi-calendar"
+                      background-color="accent"
+                      filled
+                      dense
+                      readonly
+                      :disabled="!paymentEditable"
+                      v-bind="attrs"
+                      v-on="on"
+                      hide-details
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="paymentDate"
+                    locale="de-DE"
+                    :first-day-of-week="1"
+                    @input="paymentDateModal = false"
+                  />
+                </v-dialog>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-dialog
+                  v-model="paymentTimeModal"
+                  :disabled="!paymentEditable"
+                  width="290px"
+                >
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-text-field
+                      v-model="paymentTime"
+                      label="Bezahluhrzeit"
+                      prepend-icon="mdi-clock-outline"
+                      background-color="accent"
+                      filled
+                      dense
+                      readonly
+                      :disabled="!paymentEditable"
+                      v-bind="attrs"
+                      v-on="on"
+                      hide-details
+                    />
+                  </template>
+                  <v-time-picker
+                    v-if="paymentTimeModal"
+                    v-model="paymentTime"
+                    format="24hr"
+                    full-width
+                    @click:minute="paymentTimeModal = false"
+                  />
+                </v-dialog>
+              </v-col>
+            </v-row>
 
-                      <v-row
-                        v-if="paymentEditable"
-                        dense
-                        class="mt-1"
-                      >
-                        <v-col cols="12">
-                          <div
-                            v-if="paymentDate || paymentTime"
-                            class="d-flex align-center flex-wrap"
-                          >
-                            <v-chip
-                              v-if="formattedPaymentDateTime"
-                              small
-                              color="primary"
-                              outlined
-                              class="mr-2 mb-1"
-                            >
-                              <v-icon small left>mdi-calendar-clock</v-icon>
-                              {{ formattedPaymentDateTime }}
-                            </v-chip>
-                            <v-btn
-                              x-small
-                              text
-                              color="primary"
-                              class="mb-1"
-                              @click="setPaymentNow"
-                            >
-                              <v-icon small left>mdi-clock-fast</v-icon>
-                              Jetzt
-                            </v-btn>
-                            <v-btn
-                              x-small
-                              text
-                              color="error"
-                              class="mb-1"
-                              @click="clearPaymentDateTime"
-                            >
-                              <v-icon small left>mdi-close</v-icon>
-                              Löschen
-                            </v-btn>
-                          </div>
-                          <v-btn
-                            v-else
-                            x-small
-                            text
-                            color="primary"
-                            @click="setPaymentNow"
-                          >
-                            <v-icon small left>mdi-clock-fast</v-icon>
-                            Aktuelles Datum/Uhrzeit verwenden
-                          </v-btn>
-                        </v-col>
-                      </v-row>
+            <v-row v-if="paymentEditable" dense class="mt-1">
+              <v-col cols="12">
+                <div
+                  v-if="paymentDate || paymentTime"
+                  class="d-flex align-center flex-wrap"
+                >
+                  <v-chip
+                    v-if="formattedPaymentDateTime"
+                    small
+                    color="primary"
+                    outlined
+                    class="mr-2 mb-1"
+                  >
+                    <v-icon small left>mdi-calendar-clock</v-icon>
+                    {{ formattedPaymentDateTime }}
+                  </v-chip>
+                  <v-btn
+                    x-small
+                    text
+                    color="primary"
+                    class="mb-1"
+                    @click="setPaymentNow"
+                  >
+                    <v-icon small left>mdi-clock-fast</v-icon>
+                    Jetzt
+                  </v-btn>
+                  <v-btn
+                    x-small
+                    text
+                    color="error"
+                    class="mb-1"
+                    @click="clearPaymentDateTime"
+                  >
+                    <v-icon small left>mdi-close</v-icon>
+                    Löschen
+                  </v-btn>
+                </div>
+                <v-btn
+                  v-else
+                  x-small
+                  text
+                  color="primary"
+                  @click="setPaymentNow"
+                >
+                  <v-icon small left>mdi-clock-fast</v-icon>
+                  Aktuelles Datum/Uhrzeit verwenden
+                </v-btn>
+              </v-col>
+            </v-row>
 
-                      <v-row dense class="mt-4">
-                        <v-col cols="12">
-                          <v-textarea
-                            v-model="selectedBooking.comment"
-                            label="Bemerkung"
-                            filled
-                            dense
-                            background-color="accent"
-                            rows="2"
-                            hide-details
-                          />
-                        </v-col>
-                        <v-col cols="12">
-                          <v-textarea
-                            v-model="selectedBooking.internalComments"
-                            label="Interne Bemerkung"
-                            filled
-                            dense
-                            background-color="accent"
-                            rows="2"
-                            hide-details
-                          />
-                        </v-col>
-                        <v-col v-if="groupBooking && Object.keys(groupBooking).length" cols="12">
-                          <v-textarea
-                            v-model="selectedGroupBooking.internalComments"
-                            label="Interne Bemerkung der Serie"
-                            filled
-                            dense
-                            background-color="accent"
-                            rows="2"
-                            hide-details
-                          />
-                        </v-col>
+            <v-row dense class="mt-4">
+              <v-col cols="12">
+                <v-textarea
+                  v-model="selectedBooking.comment"
+                  label="Bemerkung"
+                  filled
+                  dense
+                  background-color="accent"
+                  rows="2"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-textarea
+                  v-model="selectedBooking.internalComments"
+                  label="Interne Bemerkung"
+                  filled
+                  dense
+                  background-color="accent"
+                  rows="2"
+                  hide-details
+                />
+              </v-col>
+              <v-col
+                v-if="groupBooking && Object.keys(groupBooking).length"
+                cols="12"
+              >
+                <v-textarea
+                  v-model="selectedGroupBooking.internalComments"
+                  label="Interne Bemerkung der Serie"
+                  filled
+                  dense
+                  background-color="accent"
+                  rows="2"
+                  hide-details
+                />
+              </v-col>
             </v-row>
           </BaseSection>
         </v-col>
@@ -1451,7 +1436,9 @@ export default {
     },
     syncCustomFieldDefinitions() {
       if (!this.isCreateMode) return;
-      const definitions = resolveBookingCheckoutCustomFields(this.bookableItems);
+      const definitions = resolveBookingCheckoutCustomFields(
+        this.bookableItems
+      );
       this.$set(this.selectedBooking, "customFieldDefinitions", definitions);
     },
     scheduleItemValidation() {
@@ -1990,7 +1977,6 @@ export default {
     },
 
     async fetchExternalPricesForItem(bookableId) {
-
       console.log(
         `Fetching external prices for bookableId ${bookableId}...`,
         this.externalPricesMap[bookableId],
@@ -2110,7 +2096,7 @@ export default {
 
 <style scoped lang="scss">
 .page-content {
-  padding-bottom: calc(56px + 12px + 12px + 16px);
+  padding-bottom: var(--scb-save-bar-clearance);
 }
 
 .bookable-list {
@@ -2122,8 +2108,8 @@ export default {
 }
 
 .bookable-list >>> .v-list-item__title {
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: var(--scb-font-size-header);
+  font-weight: var(--scb-font-weight-medium);
 }
 
 .booking-id-copy {

@@ -1352,25 +1352,21 @@ export default {
 <style scoped>
 .price-category-item {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--scb-motion-base);
 }
 
 .theme--dark .price-category-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--scb-surface-tint);
 }
 
 .price-card {
-  border-radius: 8px !important;
+  border-radius: var(--scb-radius-surface) !important;
 }
 
 .ifbs-price-tile {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  background-color: var(--v-accent-base, #f5f5f5) !important;
-}
-
-.theme--dark .ifbs-price-tile {
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  transition: transform var(--scb-motion-base),
+    box-shadow var(--scb-motion-base);
+  border: 1px solid var(--scb-rule-strong) !important;
+  background-color: var(--scb-surface-raised) !important;
 }
 </style>

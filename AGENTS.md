@@ -73,6 +73,7 @@ Details: [docs/agents/coding-standards.md](docs/agents/coding-standards.md)
 | Access vocabulary (Anlage, Fach, Grant, Reichweite) | [docs/agents/access-vocabulary.md](docs/agents/access-vocabulary.md) |
 | Booking status vocabulary (Angefragt … Storniert, the verbs, the headline over the path, `status` not flags) | [docs/agents/booking-status-vocabulary.md](docs/agents/booking-status-vocabulary.md) |
 | Vue components & views | [docs/agents/components.md](docs/agents/components.md) |
+| Design tokens (`--scb-*` custom properties, `src/scss/tokens.scss`) | [docs/agents/design-tokens.md](docs/agents/design-tokens.md) |
 | API services | [docs/agents/api-services.md](docs/agents/api-services.md) |
 | JS web interface (embed) | [docs/agents/web-integration.md](docs/agents/web-integration.md) |
 | Issue tracker (local markdown under `.scratch/`) | [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md) |

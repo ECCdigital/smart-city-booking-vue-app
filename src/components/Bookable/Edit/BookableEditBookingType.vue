@@ -89,30 +89,30 @@ export default {
         this.model.isLongRange = false;
 
         switch (value) {
-        case "schedule":
-          this.model.isScheduleRelated = true;
-          break;
-        case "timePeriod":
-          this.model.isTimePeriodRelated = true;
-          break;
-        case "blockPeriod":
-          this.model.isBlockPeriodRelated = true;
-          if (!Array.isArray(this.model.blockPeriods)) {
-            this.model.blockPeriods = [];
-          }
-          // Permissions tab may be unmounted (keep-alive); disable here on type change.
-          if (this.model.groupBooking?.enabled) {
-            this.model.groupBooking.enabled = false;
-          }
-          break;
-        case "week":
-          this.model.longRangeOptions = { type: "week" };
-          this.model.isLongRange = true;
-          break;
-        case "month":
-          this.model.longRangeOptions = { type: "month" };
-          this.model.isLongRange = true;
-          break;
+          case "schedule":
+            this.model.isScheduleRelated = true;
+            break;
+          case "timePeriod":
+            this.model.isTimePeriodRelated = true;
+            break;
+          case "blockPeriod":
+            this.model.isBlockPeriodRelated = true;
+            if (!Array.isArray(this.model.blockPeriods)) {
+              this.model.blockPeriods = [];
+            }
+            // Permissions tab may be unmounted (keep-alive); disable here on type change.
+            if (this.model.groupBooking?.enabled) {
+              this.model.groupBooking.enabled = false;
+            }
+            break;
+          case "week":
+            this.model.longRangeOptions = { type: "week" };
+            this.model.isLongRange = true;
+            break;
+          case "month":
+            this.model.longRangeOptions = { type: "month" };
+            this.model.isLongRange = true;
+            break;
         }
       },
     },
@@ -1029,14 +1029,14 @@ export default {
 <style scoped>
 .time-period-item {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--scb-motion-base);
 }
 
 .theme--dark .time-period-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--scb-surface-tint);
 }
 
 .time-period-card {
-  border-radius: 8px !important;
+  border-radius: var(--scb-radius-surface) !important;
 }
 </style>

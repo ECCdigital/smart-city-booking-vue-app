@@ -1,7 +1,8 @@
 // Surfaces of the booking pages (BookingPage, GroupBookingPage,
-// BookingEditPage), in the vocabulary of the media library: 8px outlined
-// cards without shadows, small-caps section captions, label/value facts and
-// hairline rows instead of tables.
+// BookingEditPage), in the vocabulary of the media library: outlined cards
+// without shadows, small-caps section captions, label/value facts and
+// hairline rows instead of tables. Every colour and size is a token from
+// tokens.scss.
 //
 // The app-wide $card-border-radius (25px !important, see variables.scss) is
 // toned down here the same way media-library.scss does it; the !important is
@@ -11,25 +12,9 @@
 .booking-page,
 .group-booking-page,
 .booking-edit-page {
-  --booking-surface-radius: 8px;
-  --booking-caption-color: rgba(0, 0, 0, 0.45);
-  --booking-label-color: rgba(0, 0, 0, 0.6);
-  --booking-value-color: rgba(0, 0, 0, 0.87);
-  --booking-rule-color: rgba(0, 0, 0, 0.06);
-  --booking-border-color: rgba(0, 0, 0, 0.12);
-
-  &.theme--dark,
-  .theme--dark & {
-    --booking-caption-color: rgba(255, 255, 255, 0.55);
-    --booking-label-color: rgba(255, 255, 255, 0.7);
-    --booking-value-color: rgba(255, 255, 255, 0.87);
-    --booking-rule-color: rgba(255, 255, 255, 0.12);
-    --booking-border-color: rgba(255, 255, 255, 0.12);
-  }
-
   .v-card,
   .v-sheet.booking-status-path {
-    border-radius: var(--booking-surface-radius) !important;
+    border-radius: var(--scb-radius-surface) !important;
   }
 
   // The access-points card brings its own elevation; on these pages every
@@ -42,16 +27,16 @@
 // A section caption: the same small caps the media library's detail panel
 // and filter column carry.
 .booking-caption {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: var(--scb-font-size-caption);
+  font-weight: var(--scb-font-weight-semibold);
+  letter-spacing: var(--scb-letter-spacing-caption);
   text-transform: uppercase;
-  color: var(--booking-caption-color);
-  margin-bottom: 8px;
+  color: var(--scb-text-caption);
+  margin-bottom: var(--scb-space-2);
 }
 
 .booking-caption--spaced {
-  margin-top: 20px;
+  margin-top: var(--scb-space-5);
 }
 
 // Facts: label left, value right, one line each.
@@ -59,31 +44,31 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  font-size: 13px;
+  font-size: var(--scb-font-size-sm);
 }
 
 .booking-fact {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--scb-space-4);
   min-width: 0;
 }
 
 .booking-fact__label {
   flex: none;
-  color: var(--booking-label-color);
+  color: var(--scb-text-muted);
 }
 
 .booking-fact__value {
   min-width: 0;
   text-align: right;
   overflow-wrap: anywhere;
-  color: var(--booking-value-color);
+  color: var(--scb-text);
 }
 
 .booking-fact__value--strong {
-  font-weight: 600;
+  font-weight: var(--scb-font-weight-semibold);
 }
 
 // A two-column fact grid for the wide column.
@@ -103,10 +88,10 @@
 .booking-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 44px;
+  gap: var(--scb-space-3);
+  min-height: var(--scb-row-height);
   padding: 6px 0;
-  border-bottom: 1px solid var(--booking-rule-color);
+  border-bottom: 1px solid var(--scb-rule);
 }
 
 .booking-row:last-child {
@@ -119,16 +104,16 @@
 }
 
 .booking-row__title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--booking-value-color);
-  line-height: 1.4;
+  font-size: var(--scb-font-size-sm);
+  font-weight: var(--scb-font-weight-semibold);
+  color: var(--scb-text);
+  line-height: var(--scb-line-height-base);
 }
 
 .booking-row__subtitle {
-  font-size: 12px;
-  color: var(--booking-label-color);
-  line-height: 1.4;
+  font-size: var(--scb-font-size-xs);
+  color: var(--scb-text-muted);
+  line-height: var(--scb-line-height-base);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -138,9 +123,9 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--booking-value-color);
+  gap: var(--scb-space-1);
+  font-size: var(--scb-font-size-sm);
+  color: var(--scb-text);
   white-space: nowrap;
 }
 
@@ -152,9 +137,9 @@
   .base-section.v-card {
     @include section-card-surface;
     // BaseSection unsets its background with an !important of its own.
-    background-color: #fff !important;
-    border: 1px solid var(--booking-border-color);
-    margin-bottom: 16px;
+    background-color: var(--scb-surface) !important;
+    border: 1px solid var(--scb-surface-border);
+    margin-bottom: var(--scb-gap-cards);
 
     > .v-card__title {
       @include section-card-header;
@@ -166,17 +151,12 @@
     }
 
     > .v-card__title + .v-divider {
-      border-color: var(--booking-rule-color);
+      border-color: var(--scb-rule);
     }
 
     > .v-card__text {
-      padding: 16px;
+      padding: var(--scb-section-body-padding);
     }
-  }
-
-  &.theme--dark .base-section.v-card,
-  .theme--dark & .base-section.v-card {
-    background-color: #1e1e1e !important;
   }
 
   .booking-summary {

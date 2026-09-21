@@ -132,6 +132,6 @@ export default {
 <style scoped>
 .booking-summary {
   position: sticky;
-  top: 12px;
+  top: var(--scb-space-3);
 }
 </style>
