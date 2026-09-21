@@ -8,10 +8,22 @@ const api = vi.hoisted(() => ({
   ssoLogin: vi.fn(async () => ({ user: {}, permissions: {} })),
   startSsoLogin: vi.fn(),
 }));
+const mode = vi.hoisted(() => ({ bff: true }));
+/** keycloak-js after the identity provider has answered (direct transport). */
+const keycloak = vi.hoisted(() => ({
+  setConfig: vi.fn(),
+  login: vi.fn(async () => {}),
+  getValidToken: vi.fn(async () => "kc-token"),
+  isAuthenticated: true,
+  tokenParsed: { email: "a@b.de", given_name: "A", family_name: "B" },
+}));
+
+/** The BFF has led back from the identity provider; the user is known. */
+const CONFIRM_STEP = { flow: "confirm", ticket: "ticket-1" };
 
 vi.mock("@/services/api/ApiAuthService", () => ({ default: api }));
-vi.mock("@/services/auth/authMode", () => ({ isBffAuthMode: () => true }));
-vi.mock("@/services/KeycloakService", () => ({ default: {} }));
+vi.mock("@/services/auth/authMode", () => ({ isBffAuthMode: () => mode.bff }));
+vi.mock("@/services/KeycloakService", () => ({ default: keycloak }));
 
 import KeycloakCard from "@/components/Auth/KeycloakCard.vue";
 
@@ -23,7 +35,7 @@ let setNextUrl;
  * Mounts the card on the BFF confirm step (the IdP has answered, the user is
  * known). The router knows every path except the ones listed.
  */
-function mountCard(unmatched = []) {
+function mountCard(unmatched = [], query = CONFIRM_STEP) {
   const store = new Vuex.Store({
     modules: {
       instance: {
@@ -54,7 +66,7 @@ function mountCard(unmatched = []) {
           route: { matched: unmatched.includes(path) ? [] : [{}] },
         }),
       },
-      $route: { query: { flow: "confirm", ticket: "ticket-1" } },
+      $route: { query },
     },
   });
 }
@@ -76,6 +88,61 @@ beforeEach(() => {
   push = vi.fn();
   nextUrl = null;
   setNextUrl = vi.fn();
+  mode.bff = true;
+  api.startSsoLogin.mockClear();
+  api.ssoLogin.mockClear();
+});
+
+describe("KeycloakCard — the return target on the way to the identity provider", () => {
+  it("hands the page that asked for the login to the BFF", async () => {
+    nextUrl = "/onboarding";
+    mountCard([], {});
+    await flushPromises();
+
+    expect(api.startSsoLogin).toHaveBeenCalledWith("/onboarding");
+  });
+
+  it("hands the BFF no off-site target", async () => {
+    nextUrl = "https://evil.example/";
+    mountCard([], {});
+    await flushPromises();
+
+    expect(api.startSsoLogin).toHaveBeenCalledTimes(1);
+    expect(api.startSsoLogin).not.toHaveBeenCalledWith("https://evil.example/");
+  });
+
+  it("hands the BFF no path the router does not know", async () => {
+    nextUrl = "/nowhere";
+    mountCard(["/nowhere"], {});
+    await flushPromises();
+
+    expect(api.startSsoLogin).toHaveBeenCalledTimes(1);
+    expect(api.startSsoLogin).not.toHaveBeenCalledWith("/nowhere");
+  });
+});
+
+describe("KeycloakCard — where sign-in leads on the direct transport", () => {
+  it("returns to the page that asked for the login", async () => {
+    mode.bff = false;
+    nextUrl = "/onboarding";
+    const wrapper = mountCard([], {});
+
+    await click(wrapper, "Anmelden");
+
+    expect(api.ssoLogin).toHaveBeenCalledWith("kc-token");
+    expect(push).toHaveBeenCalledWith("/onboarding");
+    expect(setNextUrl).toHaveBeenLastCalledWith(null);
+  });
+
+  it("refuses an off-site target and opens the dashboard instead", async () => {
+    mode.bff = false;
+    nextUrl = "https://evil.example/";
+    const wrapper = mountCard([], {});
+
+    await click(wrapper, "Anmelden");
+
+    expect(push).toHaveBeenCalledWith({ name: "dashboard" });
+  });
 });
 
 describe("KeycloakCard — where sign-in leads", () => {

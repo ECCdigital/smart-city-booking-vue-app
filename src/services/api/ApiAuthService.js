@@ -123,6 +123,15 @@ export default {
     return ApiClient.post("auth/signup", body);
   },
 
+  /**
+   * Requests the verification mail of an unverified account again. The answer
+   * is account-neutral (`202`); `nextUrl` is the return target the mail's
+   * link carries to `/email/verify`.
+   */
+  resendVerification(id, nextUrl) {
+    return ApiClient.post("auth/resend-verification", { id, nextUrl });
+  },
+
   async ssoRegister(token, legalAcceptance, ticket) {
     if (!ApiClient.supportsClientSideKeycloak()) {
       const result = await ApiClient.transport.registerSso(

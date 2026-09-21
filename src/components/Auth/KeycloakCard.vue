@@ -125,7 +125,7 @@ export default {
 
       this.loading = true;
       const redirect =
-        this.nextUrl ||
+        (isSafeInternalRedirect(this.nextUrl, this.$router) && this.nextUrl) ||
         (() => {
           const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
           return base ? `${base}/` : "/";

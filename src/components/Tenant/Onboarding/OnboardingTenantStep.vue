@@ -8,6 +8,48 @@
     </v-alert>
     <v-alert v-if="errorText" type="error" text dense data-test="tenant-error">
       {{ errorText }}
+      <div v-if="verificationWay" class="mt-2">
+        <v-btn
+          v-if="verificationWay === 'mail'"
+          small
+          outlined
+          color="error"
+          :loading="verificationMail === 'sending'"
+          :disabled="verificationMail === 'sent'"
+          data-test="verification-resend"
+          @click="$emit('resend-verification')"
+        >
+          {{ $t("tenant.onboarding.verification.resend") }}
+        </v-btn>
+        <v-btn
+          v-else
+          small
+          outlined
+          color="error"
+          data-test="verification-sso"
+          @click="$emit('sso-login')"
+        >
+          {{ $t("tenant.onboarding.verification.sso-login") }}
+        </v-btn>
+      </div>
+    </v-alert>
+    <v-alert
+      v-if="verificationWay === 'mail' && verificationMail === 'sent'"
+      type="success"
+      text
+      dense
+      data-test="verification-sent"
+    >
+      {{ $t("tenant.onboarding.verification.sent") }}
+    </v-alert>
+    <v-alert
+      v-if="verificationWay === 'mail' && verificationMail === 'failed'"
+      type="error"
+      text
+      dense
+      data-test="verification-failed"
+    >
+      {{ $t("tenant.onboarding.verification.failed") }}
     </v-alert>
 
     <v-text-field
@@ -123,6 +165,8 @@ export default {
     prefill: { type: Object, default: () => ({}) },
     inProgress: { type: Boolean, default: false },
     error: { type: Object, default: null },
+    /** The renewed verification mail: `null`, `sending`, `sent` or `failed`. */
+    verificationMail: { type: String, default: null },
   },
   data() {
     const source = this.tenant || this.prefill;
@@ -152,6 +196,16 @@ export default {
   computed: {
     created() {
       return !!this.tenant;
+    },
+    /**
+     * The way to the missing verification proof the refusal names: the
+     * verification mail of a local account, or a new sign-in at the identity
+     * provider, which is where an SSO account gains its proof.
+     */
+    verificationWay() {
+      if (this.error?.key === "verification-mail") return "mail";
+      if (this.error?.key === "verification-identity-provider") return "sso";
+      return null;
     },
     errorText() {
       const message = creationErrorMessage(this.error);

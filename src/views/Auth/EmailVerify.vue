@@ -22,6 +22,8 @@
 </template>
 
 <script>
+import { isSafeInternalRedirect } from "@/utils/safeRedirect";
+
 export default {
   name: "EmailVerify",
   components: {},
@@ -39,7 +41,11 @@ export default {
   },
   methods: {
     login() {
-      this.$router.push({ name: "login", query: { next: this.nextUrl } });
+      this.$router.push(
+        isSafeInternalRedirect(this.nextUrl, this.$router)
+          ? { name: "login", query: { next: this.nextUrl } }
+          : { name: "login" }
+      );
     },
   },
   mounted() {

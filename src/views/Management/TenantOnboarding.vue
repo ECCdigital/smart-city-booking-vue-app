@@ -36,7 +36,10 @@
             :prefill="contactPrefill"
             :in-progress="inProgress"
             :error="tenantError"
+            :verification-mail="verificationMail"
             @submit="createTenant"
+            @resend-verification="resendVerification"
+            @sso-login="ssoLogin"
             @continue="goTo('offer')"
             @exit="exit"
           />
@@ -101,6 +104,7 @@ import AdminLayout from "@/layouts/Admin";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
+import ApiAuthService from "@/services/api/ApiAuthService";
 import Bookable from "@/entities/bookable";
 import Tenant from "@/entities/tenant";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
@@ -110,6 +114,7 @@ import OnboardingOfferStep from "@/components/Tenant/Onboarding/OnboardingOfferS
 import OnboardingSetupLinks from "@/components/Tenant/Onboarding/OnboardingSetupLinks.vue";
 import OnboardingOverviewStep from "@/components/Tenant/Onboarding/OnboardingOverviewStep.vue";
 import {
+  ONBOARDING_PATH,
   SUPERVISION_LEVELS,
   WIZARD_STEPS,
   applyOfferForm,
@@ -151,6 +156,7 @@ export default {
       initialLevel: null,
       choicesConfirmed: false,
       tenantError: null,
+      verificationMail: null,
       offerSaveFailed: false,
       completeFailed: false,
     };
@@ -209,7 +215,30 @@ export default {
     ...mapActions({
       selectTenant: "tenants/select",
       setTenants: "tenants/setTenants",
+      setNextUrl: "authStore/setNextUrl",
     }),
+    /**
+     * A local account without verification proof: its verification mail
+     * again, whose link leads back to this setup after the login.
+     */
+    async resendVerification() {
+      this.verificationMail = "sending";
+      try {
+        await ApiAuthService.resendVerification(this.user.id, ONBOARDING_PATH);
+        this.verificationMail = "sent";
+      } catch (error) {
+        console.error(error);
+        this.verificationMail = "failed";
+      }
+    },
+    /**
+     * An SSO account gains its proof at a sign-in through its identity
+     * provider; the SSO login returns to this setup.
+     */
+    async ssoLogin() {
+      await this.setNextUrl(ONBOARDING_PATH);
+      this.$router.push({ name: "sso" });
+    },
     /**
      * The instance owner's tenants always start free; every other creation
      * starts at the instance's initial level (supervision spec §2).
@@ -261,6 +290,7 @@ export default {
     async createTenant(form) {
       this.inProgress = true;
       this.tenantError = null;
+      this.verificationMail = null;
       try {
         const before = (await ApiTenantService.getTenants(true)).data;
         await ApiTenantService.createTenant(new Tenant(form));
