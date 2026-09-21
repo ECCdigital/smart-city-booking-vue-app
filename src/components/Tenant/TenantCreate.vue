@@ -16,6 +16,15 @@
                 color="primary"
               ></v-progress-linear>
               <v-divider class="mb-5"></v-divider>
+              <v-alert
+                v-if="errorText"
+                type="error"
+                text
+                dense
+                data-test="tenant-create-error"
+              >
+                {{ errorText }}
+              </v-alert>
               <v-row>
                 <v-col>
                   <v-text-field
@@ -24,7 +33,9 @@
                     dense
                     label="Name"
                     :rules="validationRules.required"
+                    :error-messages="fieldError('name')"
                     v-model="tenant.name"
+                    data-test="tenant-create-name"
                   ></v-text-field>
                 </v-col>
               </v-row>
@@ -36,7 +47,9 @@
                     dense
                     label="Kontakt Person"
                     :rules="validationRules.required"
+                    :error-messages="fieldError('contactName')"
                     v-model="tenant.contactName"
+                    data-test="tenant-create-contact-name"
                   ></v-text-field>
                 </v-col>
                 <v-col>
@@ -58,7 +71,9 @@
                     label="E-Mail Adresse"
                     type="mail"
                     :rules="validationRules.mail"
+                    :error-messages="fieldError('mail')"
                     v-model="tenant.mail"
+                    data-test="tenant-create-mail"
                   ></v-text-field>
                 </v-col>
                 <v-col>
@@ -93,6 +108,7 @@
             color="primary"
             @click="submitChanges"
             :loading="inProgress"
+            data-test="tenant-create-submit"
           >
             Speichern
           </v-btn>
@@ -109,6 +125,13 @@
 import ApiTenantService from "@/services/api/ApiTenantService";
 import { mapGetters } from "vuex";
 import Tenant from "@/entities/tenant";
+import {
+  contactPrefill,
+  creationErrorMessage,
+  creationFieldErrorKey,
+  isFormallyValidMail,
+  tenantCreationError,
+} from "@/utils/tenantOnboarding";
 
 export default {
   name: "TenantCreate",
@@ -124,11 +147,14 @@ export default {
       valid: false,
       originTenantId: null,
       inProgress: false,
+      error: null,
       validationRules: {
-        required: [(v) => !!v || "Pflichtfeld"],
+        required: [(v) => !!(v && v.trim()) || "Pflichtfeld"],
         mail: [
           (v) => !!v || "Pflichtfeld",
-          (v) => /.+@.+\..+/.test(v) || "Muss gültige Email-Adresse sein.",
+          (v) =>
+            isFormallyValidMail(v) ||
+            this.$t("tenant.onboarding.errors.mail-invalid"),
         ],
         paymentPurposeSuffix: [
           (v) => !v || v.length <= 12 || "Maximal 12 Zeichen erlaubt.",
@@ -146,7 +172,12 @@ export default {
   computed: {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
+      user: "user/getUser",
     }),
+    errorText() {
+      const message = creationErrorMessage(this.error);
+      return message ? this.$t(message.key, message.params) : "";
+    },
     openDialog: {
       get() {
         return this.open;
@@ -156,7 +187,9 @@ export default {
   watch: {
     open(val) {
       if (val) {
-        this.tenant = new Tenant({});
+        // The contact starts as the account's and stays editable (spec §9).
+        this.tenant = new Tenant(contactPrefill(this.user));
+        this.error = null;
         this.$nextTick(() => {
           this.$refs.form.resetValidation();
         });
@@ -167,9 +200,14 @@ export default {
     closeDialog() {
       this.$emit("close");
     },
+    fieldError(field) {
+      const key = creationFieldErrorKey(this.error, field);
+      return key ? [this.$t(key)] : [];
+    },
     async submitChanges() {
       if (this.$refs.form.validate()) {
         this.inProgress = true;
+        this.error = null;
 
         try {
           await ApiTenantService.createTenant(this.tenant);
@@ -177,6 +215,8 @@ export default {
           this.closeDialog();
         } catch (e) {
           this.inProgress = false;
+          // Limit, unproven account mail, tenant maximum or a named field.
+          this.error = tenantCreationError(e);
         }
       } else {
         //reset validation after 4 seconds

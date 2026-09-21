@@ -3,8 +3,12 @@ import Bookable from "@/entities/bookable";
 import {
   applyOfferForm,
   completionVariant,
+  contactPrefill,
+  creationErrorMessage,
+  creationFieldErrorKey,
   emptyOfferForm,
   findCreatedTenant,
+  isFormallyValidMail,
   offerFormFromBookable,
   onboardingReturnRoute,
   retryAfterText,
@@ -368,6 +372,75 @@ describe("tenantCreationError", () => {
     expect(tenantCreationError(refused(403, { code: "forbidden" })).key).toBe(
       "generic"
     );
+  });
+});
+
+describe("creationErrorMessage", () => {
+  it("names the wait of a hit limit, or says later without one", () => {
+    expect(
+      creationErrorMessage({ key: "rate-limited", wait: "2 Min." })
+    ).toEqual({
+      key: "tenant.onboarding.errors.rate-limited",
+      params: { wait: "2 Min." },
+    });
+    expect(creationErrorMessage({ key: "rate-limited", wait: "" }).key).toBe(
+      "tenant.onboarding.errors.rate-limited-unknown"
+    );
+  });
+
+  it("answers nothing without an error", () => {
+    expect(creationErrorMessage(null)).toBeNull();
+  });
+});
+
+describe("creationFieldErrorKey", () => {
+  it("marks only the field the backend named", () => {
+    const error = { key: "field", field: "mail" };
+    expect(creationFieldErrorKey(error, "mail")).toBe(
+      "tenant.onboarding.errors.mail-invalid"
+    );
+    expect(creationFieldErrorKey(error, "name")).toBeNull();
+    expect(
+      creationFieldErrorKey(
+        { key: "field", field: "contactName" },
+        "contactName"
+      )
+    ).toBe("tenant.onboarding.offer.errors.required");
+    expect(creationFieldErrorKey({ key: "generic" }, "mail")).toBeNull();
+  });
+});
+
+describe("isFormallyValidMail", () => {
+  it("accepts what the backend accepts, surrounding whitespace included", () => {
+    expect(isFormallyValidMail("erika@example.org")).toBe(true);
+    expect(isFormallyValidMail(" erika@example.org ")).toBe(true);
+  });
+
+  it("refuses an empty, incomplete or spaced address", () => {
+    [
+      "",
+      null,
+      undefined,
+      "erika",
+      "erika@example",
+      "e rika@example.org",
+    ].forEach((value) => expect(isFormallyValidMail(value)).toBe(false));
+  });
+});
+
+describe("contactPrefill", () => {
+  it("takes contact person and mail from the user account", () => {
+    expect(
+      contactPrefill({
+        id: "erika@example.org",
+        firstName: "Erika",
+        lastName: "Muster",
+      })
+    ).toEqual({ contactName: "Erika Muster", mail: "erika@example.org" });
+  });
+
+  it("stays empty without an account", () => {
+    expect(contactPrefill(null)).toEqual({ contactName: "", mail: "" });
   });
 });
 

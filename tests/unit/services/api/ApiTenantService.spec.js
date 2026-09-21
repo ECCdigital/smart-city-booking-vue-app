@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/services/api/ApiClientService", () => ({
-  default: { get: vi.fn() },
+  default: { get: vi.fn(), post: vi.fn() },
 }));
 
 import ApiClient from "@/services/api/ApiClientService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import Tenant from "@/entities/tenant";
 
 describe("ApiTenantService", () => {
   beforeEach(() => {
     ApiClient.get.mockReset();
+    ApiClient.post.mockReset();
   });
 
   it("reads the readiness check of the named tenant", async () => {
@@ -19,5 +21,36 @@ describe("ApiTenantService", () => {
 
     expect(ApiClient.get).toHaveBeenCalledWith("api/tenants/t-1/readiness");
     expect(readiness).toEqual({ criteria: [] });
+  });
+
+  it("creates a tenant without the fields the server decides", async () => {
+    ApiClient.post.mockResolvedValue({ status: 201 });
+
+    await ApiTenantService.createTenant(
+      new Tenant({
+        name: "Turnhalle e. V.",
+        contactName: "Erika Muster",
+        mail: "erika@example.org",
+        ownerUserIds: ["someone@example.org"],
+        supervisionLevel: "free",
+        supervisionChangedAt: "2026-01-01T00:00:00.000Z",
+        review: { status: "approved" },
+      })
+    );
+
+    const [path, body] = ApiClient.post.mock.calls[0];
+    expect(path).toBe("api/tenants");
+    expect(body).toMatchObject({
+      name: "Turnhalle e. V.",
+      contactName: "Erika Muster",
+      mail: "erika@example.org",
+    });
+    [
+      "ownerUserIds",
+      "users",
+      "supervisionLevel",
+      "supervisionChangedAt",
+      "review",
+    ].forEach((field) => expect(body).not.toHaveProperty(field));
   });
 });

@@ -1,6 +1,24 @@
 import ApiClient from "./ApiClientService";
 import { legalDocumentsForSave } from "@/utils/tenantLegalDocuments";
 
+/**
+ * What the server decides at a creation (supervision spec §6.1): the creator
+ * becomes the owner, the level is the instance's. A form never sends them.
+ */
+const SERVER_DECIDED_ON_CREATE = [
+  "ownerUserIds",
+  "users",
+  "supervisionLevel",
+  "supervisionChangedAt",
+  "review",
+];
+
+function tenantForCreate(tenant) {
+  const payload = { ...legalDocumentsForSave(tenant) };
+  SERVER_DECIDED_ON_CREATE.forEach((field) => delete payload[field]);
+  return payload;
+}
+
 export default {
   getTenants(publicTenants = false) {
     return ApiClient.get(`api/tenants?publicTenants=${publicTenants}`);
@@ -16,7 +34,7 @@ export default {
     return ApiClient.put("api/tenants", legalDocumentsForSave(tenant));
   },
   createTenant(tenant) {
-    return ApiClient.post("api/tenants", legalDocumentsForSave(tenant));
+    return ApiClient.post("api/tenants", tenantForCreate(tenant));
   },
   deleteTenant(tenant) {
     return ApiClient.delete(`api/tenants/${tenant.id}`);
