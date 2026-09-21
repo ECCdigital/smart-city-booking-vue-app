@@ -2116,5 +2116,41 @@
       "remove": "Link entfernen",
       "cancel": "Abbrechen"
     }
+  },
+  "supervision": {
+    "queue": {
+      "title": "Prüfliste",
+      "hint": "Angebote beaufsichtigter Mandanten, die auf eine Entscheidung warten – das am längsten wartende zuerst. Geprüft wird im jeweiligen Angebot.",
+      "reload": "Aktualisieren",
+      "loading": "Prüfliste wird geladen...",
+      "empty": "Keine Angebote warten auf Prüfung",
+      "load-failed": "Die Prüfliste konnte nicht geladen werden.",
+      "per-page": "Angebote pro Seite",
+      "open": "Zum Angebot",
+      "filters": {
+        "tenant": "Mandant",
+        "offer-type": "Angebotsart"
+      },
+      "columns": {
+        "tenant": "Mandant",
+        "offer-type": "Angebotsart",
+        "title": "Titel",
+        "submitted-at": "Eingereicht",
+        "is-public": "Veröffentlichungswunsch"
+      },
+      "offer-types": {
+        "bookable": "Buchungsobjekt",
+        "event": "Veranstaltung"
+      },
+      "is-public": {
+        "yes": "Ja",
+        "no": "Nein"
+      },
+      "waiting": {
+        "minutes": "wartet seit einer Minute | wartet seit {n} Minuten",
+        "hours": "wartet seit einer Stunde | wartet seit {n} Stunden",
+        "days": "wartet seit einem Tag | wartet seit {n} Tagen"
+      }
+    }
   }
 }

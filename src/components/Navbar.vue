@@ -297,6 +297,12 @@ export default {
             interfaceName: "instance",
           },
           {
+            title: "Prüfliste",
+            link: "instance-review-queue",
+            icon: "mdi-clipboard-list-outline",
+            interfaceName: "instance",
+          },
+          {
             title: "Benutzer",
             link: "instance-users",
             icon: "mdi-account-group-outline",
