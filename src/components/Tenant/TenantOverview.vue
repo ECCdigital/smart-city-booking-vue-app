@@ -145,6 +145,7 @@ import TenantEditWorkflow from "@/components/Tenant/Edit/TenantEditWorkflow.vue"
 import TenantEditVerificationChallenges from "@/components/Tenant/Edit/TenantEditVerificationChallenges.vue";
 import TenantEditCatalog from "@/components/Tenant/Edit/TenantEditCatalog.vue";
 import TenantEditLegal from "@/components/Tenant/Edit/TenantEditLegal.vue";
+import TenantEditReadiness from "@/components/Tenant/Edit/TenantEditReadiness.vue";
 
 import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
 import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
@@ -184,6 +185,7 @@ export default {
     TenantEditCatalog,
     TenantEditBookables,
     TenantEditLegal,
+    TenantEditReadiness,
   },
   mixins: [unsavedChangesGuard],
   data() {
@@ -255,6 +257,13 @@ export default {
           label: "Rechtliches",
           icon: "mdi-scale-balance",
           comp: "TenantEditLegal",
+        },
+        {
+          key: "readiness",
+          label: this.$t("tenant.readiness.tab"),
+          icon: "mdi-clipboard-check-outline",
+          comp: "TenantEditReadiness",
+          permission: "readiness",
         },
       ],
       instanceCustomFields: [],
@@ -389,6 +398,9 @@ export default {
       if (!tab.permission) return true;
       if (tab.permission === "updateTenant") {
         return TenantPermissionService.allowUpdate();
+      }
+      if (tab.permission === "readiness") {
+        return TenantPermissionService.allowReadiness();
       }
       return true;
     },

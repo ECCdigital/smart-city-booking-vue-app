@@ -56,6 +56,19 @@
                     </v-list-item-icon>
                     <v-list-item-title>Mandanten bearbeiten</v-list-item-title>
                   </v-list-item>
+                  <v-list-item
+                    v-if="allowReadiness(item.id)"
+                    link
+                    data-test="open-readiness"
+                    @click="onOpenReadiness(item.id)"
+                  >
+                    <v-list-item-icon>
+                      <v-icon>mdi-clipboard-check-outline</v-icon>
+                    </v-list-item-icon>
+                    <v-list-item-title>{{
+                      $t("tenant.readiness.open")
+                    }}</v-list-item-title>
+                  </v-list-item>
                   <v-list-item link @click="onSelectTenant(item.id)">
                     <v-list-item-icon>
                       <v-icon>mdi-eye</v-icon>
@@ -83,6 +96,11 @@
       :tenant-id="selectedTenant.id"
       @close="onCloseDialog"
     ></TenantEditDialog>
+    <TenantReadinessDialog
+      :open="openReadinessDialog"
+      :tenant="selectedTenant"
+      @close="openReadinessDialog = false"
+    />
     <DeleteConformationDialog
       :open="openDeleteDialog"
       :toDelete="selectedTenant"
@@ -112,6 +130,8 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import DeleteConformationDialog from "@/components/Tenant/tenantDeleteConformationDialog";
 import TenantEditDialog from "@/components/Tenant/TenantEditDialog.vue";
 import TenantCreate from "@/components/Tenant/TenantCreate.vue";
+import TenantReadinessDialog from "@/components/Tenant/TenantReadinessDialog.vue";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 
 export default {
   components: {
@@ -119,6 +139,7 @@ export default {
     DeleteConformationDialog,
     AdminLayout,
     TenantEditDialog,
+    TenantReadinessDialog,
   },
   data() {
     return {
@@ -142,6 +163,7 @@ export default {
       ],
       openEditDialog: false,
       openDeleteDialog: false,
+      openReadinessDialog: false,
       selectedTenant: {},
       tenantCountCheck: true,
       openCreateDialog: false,
@@ -199,6 +221,16 @@ export default {
       this.fetchTenants();
       this.openDeleteDialog = false;
       await this.getTenantCountCheck();
+    },
+    allowReadiness(tenantId) {
+      return TenantPermissionService.allowReadiness(tenantId);
+    },
+    onOpenReadiness(tenantId) {
+      this.selectedTenant = Object.assign(
+        {},
+        this.api.tenants.find((tenant) => tenant.id === tenantId)
+      );
+      this.openReadinessDialog = true;
     },
     onOpenCreateTenant() {
       this.openCreateDialog = true;

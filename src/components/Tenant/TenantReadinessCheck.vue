@@ -1,12 +1,33 @@
 <template>
   <div data-test="readiness-check">
-    <h3 class="text-h6 mb-1">{{ $t("tenant.onboarding.readiness.title") }}</h3>
+    <h3 class="text-h6 mb-1">{{ $t("tenant.readiness.title") }}</h3>
     <p class="text-body-2 text--secondary">
-      {{ $t("tenant.onboarding.readiness.hint") }}
+      {{ $t("tenant.readiness.hint") }}
     </p>
+    <div class="d-flex align-center flex-wrap mb-2">
+      <span
+        v-if="checkedAt"
+        class="text-caption text--secondary"
+        data-test="readiness-checked-at"
+      >
+        {{ $t("tenant.readiness.checked-at", { time: checkedAtLabel }) }}
+      </span>
+      <v-spacer />
+      <v-btn
+        small
+        text
+        color="primary"
+        :disabled="loading"
+        data-test="readiness-reload"
+        @click="load"
+      >
+        <v-icon left small>mdi-refresh</v-icon>
+        {{ $t("tenant.readiness.reload") }}
+      </v-btn>
+    </div>
     <v-progress-linear v-if="loading" indeterminate color="primary" />
     <v-alert v-else-if="failed" type="warning" text dense>
-      {{ $t("tenant.onboarding.readiness.load-failed") }}
+      {{ $t("tenant.readiness.load-failed") }}
     </v-alert>
     <v-list v-else dense class="pa-0">
       <v-list-item
@@ -23,10 +44,13 @@
               ({{ criterion.offers.map((offer) => offer.title).join(", ") }})
             </span>
           </v-list-item-subtitle>
+          <v-list-item-subtitle v-if="criterion.transport">
+            {{ $t(`tenant.readiness.transport.${criterion.transport}`) }}
+          </v-list-item-subtitle>
         </v-list-item-content>
         <v-list-item-action>
           <v-chip small label :color="stateColor(criterion.state)" outlined>
-            {{ $t(`tenant.onboarding.readiness.states.${criterion.state}`) }}
+            {{ $t(`tenant.readiness.states.${criterion.state}`) }}
           </v-chip>
         </v-list-item-action>
       </v-list-item>
@@ -47,27 +71,46 @@ export default {
     tenantId: { type: String, required: true },
   },
   data() {
-    return { loading: false, failed: false, criteria: [] };
+    return { loading: false, failed: false, checkedAt: null, criteria: [] };
+  },
+  computed: {
+    checkedAtLabel() {
+      return new Date(this.checkedAt).toLocaleString("de-DE", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    },
   },
   watch: {
     tenantId: { immediate: true, handler: "load" },
   },
   methods: {
     async load() {
+      // Loads overlap (tenant switch, reload, tab shown again): the last wins.
+      const tenantId = this.tenantId;
+      const run = (this.latestRun = {});
       this.loading = true;
       this.failed = false;
       try {
-        const readiness = await ApiTenantService.getReadiness(this.tenantId);
+        const readiness = await ApiTenantService.getReadiness(tenantId);
+        if (run !== this.latestRun) return;
+        this.checkedAt = readiness?.checkedAt || null;
         this.criteria = readiness?.criteria || [];
       } catch (error) {
         console.error(error);
+        if (run !== this.latestRun) return;
         this.failed = true;
+        this.checkedAt = null;
+        this.criteria = [];
       } finally {
-        this.loading = false;
+        if (run === this.latestRun) this.loading = false;
       }
     },
     criterionLabel(criterion) {
-      const key = `tenant.onboarding.readiness.criteria.${criterion.key}`;
+      const key = `tenant.readiness.criteria.${criterion.key}`;
       return this.$te(key) ? this.$t(key) : criterion.key;
     },
     stateColor(state) {

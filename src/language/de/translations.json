@@ -388,6 +388,33 @@
         "other": "Sonstiges Dokument"
       }
     },
+    "readiness": {
+      "title": "Bereitschafts-Check",
+      "hint": "Offene Punkte sind Hinweise. Sie verhindern weder das Einreichen noch die Veröffentlichung.",
+      "load-failed": "Der Bereitschafts-Check konnte nicht geladen werden.",
+      "checked-at": "Stand: {time}",
+      "reload": "Erneut prüfen",
+      "open": "Bereitschafts-Check",
+      "tab": "Bereitschaft",
+      "close": "Schließen",
+      "transport": {
+        "tenant": "Versand über die Mail-Konfiguration des Mandanten",
+        "instance": "Versand über die Instanz"
+      },
+      "criteria": {
+        "contact": "Kontakt",
+        "legal": "Rechtstexte",
+        "offers": "Angebote",
+        "schedule": "Zeiten",
+        "payment": "Zahlung",
+        "mail": "Mail"
+      },
+      "states": {
+        "fulfilled": "Erfüllt",
+        "missing": "Offen",
+        "not_required": "Nicht erforderlich"
+      }
+    },
     "onboarding": {
       "title": "Angebote bereitstellen",
       "intro": "Legen Sie Ihren Mandanten an und richten Sie Ihr erstes Buchungsobjekt ein. Sie können jederzeit unterbrechen – gespeicherte Angaben bleiben erhalten.",
@@ -536,24 +563,6 @@
             "title": "Veröffentlichung vorgemerkt",
             "text": "Ihr Veröffentlichungswunsch ist vorgemerkt. Der Mandant bleibt gesperrt; Sie können die Einrichtung fortsetzen."
           }
-        }
-      },
-      "readiness": {
-        "title": "Bereitschafts-Check",
-        "hint": "Offene Punkte sind Hinweise. Sie verhindern weder das Einreichen noch die Veröffentlichung.",
-        "load-failed": "Der Bereitschafts-Check konnte nicht geladen werden.",
-        "criteria": {
-          "contact": "Kontakt",
-          "legal": "Rechtstexte",
-          "offers": "Angebote",
-          "schedule": "Zeiten",
-          "payment": "Zahlung",
-          "mail": "Mail"
-        },
-        "states": {
-          "fulfilled": "Erfüllt",
-          "missing": "Offen",
-          "not_required": "Nicht erforderlich"
         }
       },
       "errors": {

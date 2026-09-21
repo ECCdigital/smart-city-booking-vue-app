@@ -47,6 +47,17 @@ class TenantPermissionService {
   }
 
   /**
+   * The readiness check (glossary "Bereitschafts-Check") of a tenant is for
+   * its owner and for the instance owner - the backend's `tenant.readiness`
+   * is `{ own: "tenantOwner", any: "instanceOwner" }`. The tenant argument
+   * scopes the lookup, because the instance tenant list asks for any tenant.
+   */
+  static allowReadiness(tenantId = store.getters["tenants/currentTenantId"]) {
+    if (TenantPermissionService.isInstanceOwner()) return true;
+    return TenantPermissionService.isTenantOwner(tenantId);
+  }
+
+  /**
    * Deleting a tenant belongs to its owner and to the instance owner, exactly
    * like editing it.
    *

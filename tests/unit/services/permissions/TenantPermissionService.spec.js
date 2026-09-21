@@ -177,6 +177,39 @@ describe("TenantPermissionService", () => {
     });
   });
 
+  describe("allowReadiness", () => {
+    it("lets the instance owner see the check of any tenant", () => {
+      signIn({ instanceOwner: true, tenants: [] });
+      expect(TenantPermissionService.allowReadiness("other-tenant")).toBe(true);
+    });
+
+    it("lets the owner of that tenant see it", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowReadiness(TENANT_ID)).toBe(true);
+    });
+
+    it("keeps it from members who do not own the tenant", () => {
+      signIn({
+        tenants: [
+          membership({ isOwner: false, manageUsers: { updateAny: true } }),
+        ],
+      });
+      expect(TenantPermissionService.allowReadiness(TENANT_ID)).toBe(false);
+    });
+
+    it("keeps the check of a foreign tenant from another tenant's owner", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowReadiness("other-tenant")).toBe(
+        false
+      );
+    });
+
+    it("falls back to the current tenant when none is passed", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowReadiness()).toBe(true);
+    });
+  });
+
   it("re-reads the current tenant on every call", () => {
     signIn({
       tenants: [
