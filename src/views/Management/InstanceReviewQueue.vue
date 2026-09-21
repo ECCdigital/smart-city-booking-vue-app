@@ -117,9 +117,14 @@ import AdminLayout from "@/layouts/Admin.vue";
 import ApiReviewQueueService from "@/services/api/ApiReviewQueueService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ToastService from "@/services/ToastService";
-import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+import FormatService from "@/services/FormatService";
+import pagedLoad from "@/mixins/pagedLoad";
 import { reviewQueueLocation } from "@/utils/reviewQueueLink";
-import { SUPERVISION_LEVELS } from "@/utils/supervision";
+import {
+  OFFER_TYPE_VALUES,
+  SUPERVISION_LEVELS,
+  offerTypeLabelKey,
+} from "@/utils/supervision";
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -135,12 +140,9 @@ const whole = (duration, unit) => Math.floor(duration / unit);
 export default {
   name: "InstanceReviewQueue",
   components: { AdminLayout },
+  mixins: [pagedLoad],
   data() {
     return {
-      loading: false,
-      errorMessage: null,
-      items: [],
-      total: 0,
       page: 1,
       pageSize: 25,
       pageSizes: [10, 25, 50, 100],
@@ -170,7 +172,7 @@ export default {
       ];
     },
     offerTypes() {
-      return ["bookable", "event"].map((value) => ({
+      return OFFER_TYPE_VALUES.map((value) => ({
         value,
         text: this.offerTypeLabel(value),
       }));
@@ -191,38 +193,24 @@ export default {
   },
   methods: {
     ...mapActions({ selectTenant: "tenants/select", addToast: "toasts/add" }),
-    async load() {
-      // Loads overlap (filter, page, reload): the one asked for last wins.
-      const run = (this.latestRun = {});
-      this.loading = true;
-      try {
+    load() {
+      return this.loadPaged(async () => {
         const queue = await ApiReviewQueueService.getReviewQueue({
           page: this.page,
           pageSize: this.pageSize,
           tenantId: this.filters.tenantId || null,
           offerType: this.filters.offerType || null,
         });
-        if (run !== this.latestRun) return;
-        this.errorMessage = null;
-        this.items = (queue?.items || []).map((row) => ({
-          ...row,
-          key: `${row.offerType}:${row.tenantId}:${row.offerId}`,
-          tenant: row.tenantName || row.tenantId,
-          location: reviewQueueLocation(row),
-        }));
-        this.total = queue?.total || 0;
-      } catch (error) {
-        console.error(error);
-        if (run !== this.latestRun) return;
-        this.items = [];
-        this.total = 0;
-        this.errorMessage = getApiErrorMessage(
-          error,
-          this.$t("supervision.queue.load-failed")
-        );
-      } finally {
-        if (run === this.latestRun) this.loading = false;
-      }
+        return {
+          items: (queue?.items || []).map((row) => ({
+            ...row,
+            key: `${row.offerType}:${row.tenantId}:${row.offerId}`,
+            tenant: row.tenantName || row.tenantId,
+            location: reviewQueueLocation(row),
+          })),
+          total: queue?.total,
+        };
+      }, "supervision.queue.load-failed");
     },
     async fetchTenants() {
       try {
@@ -265,18 +253,10 @@ export default {
       this.$router.push(item.location);
     },
     offerTypeLabel(offerType) {
-      const key = `supervision.queue.offer-types.${offerType}`;
-      return this.$te(key) ? this.$t(key) : offerType;
+      const key = offerTypeLabelKey(offerType);
+      return key ? this.$t(key) : offerType;
     },
-    dateTime(value) {
-      return new Date(value).toLocaleString("de-DE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    },
+    dateTime: (value) => FormatService.dateTime(value),
     waiting(submittedAt) {
       const waited = Math.max(0, Date.now() - new Date(submittedAt).getTime());
       if (waited >= DAY) {

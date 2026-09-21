@@ -110,15 +110,17 @@
 
 <script>
 import ApiSupervisionService from "@/services/api/ApiSupervisionService";
-import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+import FormatService from "@/services/FormatService";
+import pagedLoad from "@/mixins/pagedLoad";
 import {
+  OFFER_TYPE_VALUES,
   historyActorLabelKey,
   historyEventLabelKey,
   historyStateLabelKey,
+  offerTypeLabelKey,
 } from "@/utils/supervision";
 
 const PAGE_SIZE = 25;
-const OFFER_TYPES = ["bookable", "event"];
 
 /**
  * The supervision history (glossary "Aufsichtshistorie"): immutable, newest
@@ -129,6 +131,7 @@ const OFFER_TYPES = ["bookable", "event"];
  */
 export default {
   name: "SupervisionHistoryList",
+  mixins: [pagedLoad],
   props: {
     tenantId: { type: String, default: null },
     // Asked for by name: a tenant id that is still missing must never widen
@@ -139,10 +142,6 @@ export default {
   },
   data() {
     return {
-      loading: false,
-      errorMessage: "",
-      items: [],
-      total: 0,
       page: 1,
       filters: { tenantId: null, offerType: null, offerId: null },
     };
@@ -152,9 +151,9 @@ export default {
       return Math.ceil(this.total / PAGE_SIZE);
     },
     offerTypeItems() {
-      return OFFER_TYPES.map((value) => ({
+      return OFFER_TYPE_VALUES.map((value) => ({
         value,
-        text: this.$t(`supervision.history.offer-types.${value}`),
+        text: this.$t(offerTypeLabelKey(value)),
       }));
     },
   },
@@ -168,35 +167,19 @@ export default {
     },
   },
   methods: {
-    async load() {
+    load() {
       if (!this.instanceWide && !this.tenantId) return;
-      // Loads overlap (filter, page, reload): the last one asked for wins.
-      const run = (this.latestRun = {});
       const params = { page: this.page, pageSize: PAGE_SIZE };
       Object.entries(this.filters).forEach(([name, value]) => {
         if (value) params[name] = value;
       });
-      this.loading = true;
-      this.errorMessage = "";
-      try {
-        const result = this.instanceWide
-          ? await ApiSupervisionService.getInstanceHistory(params)
-          : await ApiSupervisionService.getTenantHistory(this.tenantId, params);
-        if (run !== this.latestRun) return;
-        this.items = result?.items || [];
-        this.total = result?.total || 0;
-      } catch (error) {
-        console.error(error);
-        if (run !== this.latestRun) return;
-        this.items = [];
-        this.total = 0;
-        this.errorMessage = getApiErrorMessage(
-          error,
-          this.$t("supervision.history.load-failed")
-        );
-      } finally {
-        if (run === this.latestRun) this.loading = false;
-      }
+      return this.loadPaged(
+        () =>
+          this.instanceWide
+            ? ApiSupervisionService.getInstanceHistory(params)
+            : ApiSupervisionService.getTenantHistory(this.tenantId, params),
+        "supervision.history.load-failed"
+      );
     },
     onFilter(name, value) {
       const next = typeof value === "string" ? value.trim() : value;
@@ -209,15 +192,7 @@ export default {
       this.load();
     },
     eventLabelKey: historyEventLabelKey,
-    timeLabel(occurredAt) {
-      return new Date(occurredAt).toLocaleString("de-DE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    },
+    timeLabel: (occurredAt) => FormatService.dateTime(occurredAt),
     tenantLabel(tenantId) {
       return (
         this.tenants.find((tenant) => tenant.id === tenantId)?.name || tenantId
@@ -239,8 +214,8 @@ export default {
     // The history row carries the offer's type and id, no title.
     offerLabel(row) {
       if (!row.offerType && !row.offerId) return "";
-      const typeKey = `supervision.history.offer-types.${row.offerType}`;
-      const type = this.$te(typeKey) ? this.$t(typeKey) : row.offerType;
+      const typeKey = offerTypeLabelKey(row.offerType);
+      const type = typeKey ? this.$t(typeKey) : row.offerType;
       return [type, row.offerId].filter(Boolean).join(" ");
     },
   },

@@ -255,7 +255,7 @@ import MediaReferenceList from "@/components/Media/MediaReferenceList.vue";
 import { getTypeText } from "@/utils/bookables";
 import {
   OFFER_PRICE_TYPES,
-  OFFER_TYPES,
+  OFFER_BOOKABLE_TYPES,
   OFFER_WEEKDAYS,
   emptyOfferForm,
   offerFormFromBookable,
@@ -290,7 +290,7 @@ export default {
       return this.bookable ? storedChoices(this.bookable) : null;
     },
     typeItems() {
-      return OFFER_TYPES.map((type) => ({
+      return OFFER_BOOKABLE_TYPES.map((type) => ({
         value: type,
         text: getTypeText(type),
       }));

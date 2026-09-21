@@ -54,7 +54,8 @@ import ApiEventService from "@/services/api/ApiEventService";
 import ApiReviewService from "@/services/api/ApiReviewService";
 import ToastService from "@/services/ToastService";
 import OfferReviewPanel from "@/components/Supervision/OfferReviewPanel.vue";
-import { OFFER_TYPES, publicationWishHintKey } from "@/utils/offerReview";
+import { publicationWishHintKey } from "@/utils/offerReview";
+import { OFFER_TYPES } from "@/utils/supervision";
 
 setInteractionMode("eager");
 

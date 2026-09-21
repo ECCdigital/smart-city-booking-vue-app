@@ -9,15 +9,9 @@
 import {
   REVIEW_STATUS,
   SUPERVISION_LEVELS as LEVELS,
+  knownReviewStatus,
   reviewStatusColor,
 } from "@/utils/supervision";
-
-export { REVIEW_STATUS };
-
-export const OFFER_TYPES = Object.freeze({
-  BOOKABLE: "bookable",
-  EVENT: "event",
-});
 
 /**
  * What the panel offers. `resubmit` is the backend's submission of a rejected
@@ -32,10 +26,7 @@ export const REVIEW_ACTIONS = Object.freeze({
 });
 
 /** A missing review or an unknown status is "no review status yet". */
-function statusOf(review) {
-  const status = review?.status;
-  return Object.values(REVIEW_STATUS).includes(status) ? status : null;
-}
+const statusOf = (review) => knownReviewStatus(review?.status);
 
 /** An unknown level (not loaded, or not readable by the viewer) is `null`. */
 function levelOf(level) {

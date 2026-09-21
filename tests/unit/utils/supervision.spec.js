@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import i18n from "@/language/index";
 import {
+  OFFER_TYPES,
   REVIEW_STATUS,
   SUPERVISION_LEVELS,
   SUPERVISION_LEVEL_VALUES,
@@ -8,8 +9,10 @@ import {
   historyActorLabelKey,
   historyEventLabelKey,
   historyStateLabelKey,
+  knownReviewStatus,
   levelColor,
   levelLabelKey,
+  offerTypeLabelKey,
   reviewStatusColor,
   reviewStatusLabelKey,
   selectableLevels,
@@ -135,5 +138,29 @@ describe("supervision history", () => {
       SUPERVISED: "supervised",
       BLOCKED: "blocked",
     });
+  });
+});
+
+describe("offer types", () => {
+  it("labels the two offer types in German", () => {
+    expect(i18n.t(offerTypeLabelKey(OFFER_TYPES.BOOKABLE))).toBe(
+      "Buchungsobjekt"
+    );
+    expect(i18n.t(offerTypeLabelKey(OFFER_TYPES.EVENT))).toBe("Veranstaltung");
+  });
+
+  it("has no label key for a type it does not know", () => {
+    expect(offerTypeLabelKey("ticket")).toBeNull();
+    expect(offerTypeLabelKey(undefined)).toBeNull();
+  });
+});
+
+describe("knownReviewStatus", () => {
+  it("reads a missing or unknown status as none", () => {
+    expect(knownReviewStatus("pending")).toBe("pending");
+    expect(knownReviewStatus("approved")).toBe("approved");
+    expect(knownReviewStatus("rejected")).toBe("rejected");
+    expect(knownReviewStatus("draft")).toBeNull();
+    expect(knownReviewStatus(undefined)).toBeNull();
   });
 });

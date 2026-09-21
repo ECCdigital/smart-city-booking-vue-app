@@ -124,7 +124,7 @@ describe("InstanceReviewQueue", () => {
     expect(room).toContain("Sportverein");
     expect(room).toContain("Buchungsobjekt");
     expect(room).toContain("Turnhalle");
-    expect(room).toContain("18.09.2026");
+    expect(room).toContain("18.09.26");
     expect(room).toContain("wartet seit 3 Tagen");
     expect(room).toContain("Ja");
   });

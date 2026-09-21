@@ -23,6 +23,21 @@ export const REVIEW_STATUS = Object.freeze({
   REJECTED: "rejected",
 });
 
+/** What is reviewed: the two kinds of offer, as the backend names them. */
+export const OFFER_TYPES = Object.freeze({
+  BOOKABLE: "bookable",
+  EVENT: "event",
+});
+
+export const OFFER_TYPE_VALUES = Object.freeze(Object.values(OFFER_TYPES));
+
+/** `null` for a type without a label: the caller shows the raw value. */
+export function offerTypeLabelKey(offerType) {
+  return OFFER_TYPE_VALUES.includes(offerType)
+    ? `supervision.offer-types.${offerType}`
+    : null;
+}
+
 const knownLevel = (level) =>
   SUPERVISION_LEVEL_VALUES.includes(level) ? level : SUPERVISION_LEVELS.FREE;
 
@@ -57,10 +72,16 @@ export function selectableLevels(currentLevel) {
 
 const REVIEW_STATUS_VALUES = Object.values(REVIEW_STATUS);
 
+/** A missing or unknown status is "no review status yet": `null`. */
+export function knownReviewStatus(status) {
+  return REVIEW_STATUS_VALUES.includes(status) ? status : null;
+}
+
+// Two wordings on purpose: `supervision.review-status.*` names a state inside
+// a sentence (the history's "ausstehend → freigegeben"), while
+// `supervision.review.status.*` is the headline of chip and review panel.
 export function reviewStatusLabelKey(status) {
-  return `supervision.review-status.${
-    REVIEW_STATUS_VALUES.includes(status) ? status : "none"
-  }`;
+  return `supervision.review-status.${knownReviewStatus(status) || "none"}`;
 }
 
 const REVIEW_STATUS_COLORS = Object.freeze({

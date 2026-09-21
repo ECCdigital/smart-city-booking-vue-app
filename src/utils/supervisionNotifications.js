@@ -7,6 +7,17 @@
 /** The delivery statuses of a row, as the backend names them. */
 export const NOTIFICATION_STATUSES = ["failed", "pending", "sent"];
 
+const NOTIFICATION_STATUS_COLORS = Object.freeze({
+  failed: "error",
+  pending: "grey",
+  sent: "success",
+});
+
+/** The chip colour of a delivery status; an unknown one stays grey. */
+export function notificationStatusColor(status) {
+  return NOTIFICATION_STATUS_COLORS[status] || "grey";
+}
+
 /**
  * Whether the row can be sent again: everything that did not go out. A
  * `pending` row may be one whose send never completed; the backend refuses

@@ -4,6 +4,7 @@ import {
   SUPERVISION_LEVELS,
   completionVariant,
 } from "@/utils/tenantOnboarding";
+import { levelLabelKey } from "@/utils/supervision";
 
 const INITIAL_LEVEL_FIELD = "tenantInitialSupervisionLevel";
 
@@ -39,6 +40,7 @@ export default {
     },
   },
   methods: {
+    levelLabelKey,
     emitUpdate() {
       this.$emit("update:instance", { ...this.local });
     },
@@ -127,7 +129,7 @@ export default {
         >
           <template #label>
             <div>
-              <div>{{ $t(`tenant.onboarding.level.names.${level}`) }}</div>
+              <div>{{ $t(levelLabelKey(level)) }}</div>
               <div class="text-caption">
                 {{ $t(`instance.edit.tenants.initialLevel.levels.${level}`) }}
               </div>

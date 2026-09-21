@@ -1,9 +1,10 @@
 import ApiClient from "./ApiClientService";
+import { OFFER_TYPES } from "@/utils/supervision";
 
 /** The path segment of each offer type (the backend's `OFFER_TYPES`). */
 const OFFER_PATHS = Object.freeze({
-  bookable: "bookables",
-  event: "events",
+  [OFFER_TYPES.BOOKABLE]: "bookables",
+  [OFFER_TYPES.EVENT]: "events",
 });
 
 function offerPath(tenantId, offerType, offerId) {

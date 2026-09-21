@@ -28,7 +28,7 @@ export const WIZARD_STEPS = Object.freeze([
 ]);
 
 /** The existing bookable types; the wizard introduces none. */
-export const OFFER_TYPES = Object.freeze([
+export const OFFER_BOOKABLE_TYPES = Object.freeze([
   "room",
   "event-location",
   "resource",
@@ -149,7 +149,7 @@ export function offerFormFromBookable(bookable) {
 export function validateOfferForm(form) {
   const errors = {};
 
-  if (!OFFER_TYPES.includes(form.type)) errors.type = "required";
+  if (!OFFER_BOOKABLE_TYPES.includes(form.type)) errors.type = "required";
   if (!form.title || !form.title.trim()) errors.title = "required";
 
   const amount = toNumber(form.amount);

@@ -120,17 +120,11 @@
       >
         {{ item.information?.name }}
       </h3>
-      <v-chip
-        v-if="reviewBadge"
-        x-small
-        label
-        outlined
+      <ReviewStatusChip
         class="mt-1"
-        :color="reviewBadge.color"
-        data-test="review-badge"
-      >
-        {{ $t(reviewBadge.labelKey) }}
-      </v-chip>
+        :review="item.review"
+        :supervision-level="supervisionLevel"
+      />
     </div>
 
     <v-divider></v-divider>
@@ -278,10 +272,10 @@ import ApiExportService from "@/services/api/ApiExportService";
 import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import { mapGetters } from "vuex";
-import { reviewBadge } from "@/utils/offerReview";
+import ReviewStatusChip from "@/components/Supervision/ReviewStatusChip.vue";
 
 export default {
-  components: { MediaReferenceImage, PlaceholderPattern },
+  components: { MediaReferenceImage, PlaceholderPattern, ReviewStatusChip },
   props: {
     fromRoute: String,
     item: {
@@ -301,14 +295,6 @@ export default {
     ...mapGetters({
       supervisionLevel: "tenants/currentSupervisionLevel",
     }),
-    /**
-     * The review status (glossary "Prüfstatus") where it matters: under a
-     * supervised or blocked tenant, for an event that is over as well. A
-     * free tenant's cards stay quiet.
-     */
-    reviewBadge() {
-      return reviewBadge(this.item.review, this.supervisionLevel);
-    },
     teaserImage() {
       return this.item.information?.teaserImage || null;
     },

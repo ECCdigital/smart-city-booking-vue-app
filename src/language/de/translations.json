@@ -2120,6 +2120,10 @@
     }
   },
   "supervision": {
+    "offer-types": {
+      "bookable": "Buchungsobjekt",
+      "event": "Veranstaltung"
+    },
     "review": {
       "title": "Prüfstatus",
       "status": {
@@ -2178,10 +2182,6 @@
         "title": "Titel",
         "submitted-at": "Eingereicht",
         "is-public": "Veröffentlichungswunsch"
-      },
-      "offer-types": {
-        "bookable": "Buchungsobjekt",
-        "event": "Veranstaltung"
       },
       "is-public": {
         "yes": "Ja",
@@ -2293,10 +2293,6 @@
         "tenant": "Mandant",
         "offer-type": "Angebotsart",
         "offer-id": "Angebots-ID"
-      },
-      "offer-types": {
-        "bookable": "Buchungsobjekt",
-        "event": "Event"
       },
       "actor": {
         "system": "System",

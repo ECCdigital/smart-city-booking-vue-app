@@ -37,13 +37,13 @@
       </v-card>
 
       <v-alert
-        v-if="loadError"
+        v-if="errorMessage"
         type="warning"
         text
         dense
         data-test="notifications-load-error"
       >
-        {{ loadError }}
+        {{ errorMessage }}
       </v-alert>
 
       <v-data-table
@@ -146,11 +146,14 @@ import { mapActions } from "vuex";
 import AdminLayout from "@/layouts/Admin.vue";
 import ApiSupervisionNotificationService from "@/services/api/ApiSupervisionNotificationService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
+import FormatService from "@/services/FormatService";
+import pagedLoad from "@/mixins/pagedLoad";
 import {
   NOTIFICATION_STATUSES,
   NOTIFICATION_TYPES,
   isRetryableNotification,
   notificationOfferTitles,
+  notificationStatusColor,
   notificationTenantName,
 } from "@/utils/supervisionNotifications";
 
@@ -163,13 +166,10 @@ import {
 export default {
   name: "SupervisionNotifications",
   components: { AdminLayout },
+  mixins: [pagedLoad],
   data() {
     return {
       status: "failed",
-      items: [],
-      total: 0,
-      loading: false,
-      loadError: null,
       retrying: {},
       options: { page: 1, itemsPerPage: 50 },
     };
@@ -224,34 +224,16 @@ export default {
         this.load();
       }
     },
-    async load() {
-      // Loads overlap (filter, paging, reload after a retry): the last wins.
-      const run = (this.latestRun = {});
-      this.loading = true;
-      this.loadError = null;
-      try {
-        const result = await ApiSupervisionNotificationService.getNotifications(
-          {
+    load() {
+      return this.loadPaged(
+        () =>
+          ApiSupervisionNotificationService.getNotifications({
             status: this.status,
             page: this.options.page,
             pageSize: this.options.itemsPerPage,
-          }
-        );
-        if (run !== this.latestRun) return;
-        this.items = result?.items || [];
-        this.total = result?.total || 0;
-      } catch (error) {
-        console.error(error);
-        if (run !== this.latestRun) return;
-        this.items = [];
-        this.total = 0;
-        this.loadError = getApiErrorMessage(
-          error,
-          this.$t("supervision.notifications.load-failed")
-        );
-      } finally {
-        if (run === this.latestRun) this.loading = false;
-      }
+          }),
+        "supervision.notifications.load-failed"
+      );
     },
     isRetryable: isRetryableNotification,
     isRetrying(item) {
@@ -302,25 +284,13 @@ export default {
         ? this.$t(`supervision.notifications.statuses.${status}`)
         : status;
     },
-    statusColor(status) {
-      if (status === "sent") return "success";
-      return status === "failed" ? "error" : "grey";
-    },
+    statusColor: notificationStatusColor,
     tenantName: notificationTenantName,
     offerTitles: notificationOfferTitles,
     deliveredTo(item) {
       return [...new Set((item.deliveries || []).map(({ to }) => to))];
     },
-    formatDate(value) {
-      if (!value) return "—";
-      return new Date(value).toLocaleString("de-DE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    },
+    formatDate: (value) => FormatService.dateTime(value) || "—",
   },
 };
 </script>

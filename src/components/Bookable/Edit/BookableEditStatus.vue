@@ -1,7 +1,8 @@
 <script>
 import { mapGetters } from "vuex";
 import OfferReviewPanel from "@/components/Supervision/OfferReviewPanel.vue";
-import { OFFER_TYPES, publicationWishHintKey } from "@/utils/offerReview";
+import { publicationWishHintKey } from "@/utils/offerReview";
+import { OFFER_TYPES } from "@/utils/supervision";
 
 export default {
   name: "BookableEditStatus",

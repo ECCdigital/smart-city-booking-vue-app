@@ -88,7 +88,7 @@ describe("SupervisionHistoryList", () => {
     expect(ApiSupervisionService.getInstanceHistory).not.toHaveBeenCalled();
 
     const [levelChange] = rowTexts(wrapper);
-    expect(levelChange).toContain("21.09.2026");
+    expect(levelChange).toContain("21.09.26");
     expect(levelChange).toContain("Aufsichtsstufe geändert");
     expect(levelChange).toContain("owner@example.org");
     expect(levelChange).toContain("frei → gesperrt");
