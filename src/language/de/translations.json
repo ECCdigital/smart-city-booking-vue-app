@@ -387,6 +387,186 @@
         "rightOfWithdrawal": "Widerrufsbelehrung",
         "other": "Sonstiges Dokument"
       }
+    },
+    "onboarding": {
+      "title": "Angebote bereitstellen",
+      "intro": "Legen Sie Ihren Mandanten an und richten Sie Ihr erstes Buchungsobjekt ein. Sie können jederzeit unterbrechen – gespeicherte Angaben bleiben erhalten.",
+      "open": "Angebote bereitstellen",
+      "resume": "Einrichtung fortsetzen",
+      "exit": "Zur Verwaltung",
+      "back-to-wizard": "Zurück zur Einrichtung",
+      "return-banner": "Sie bearbeiten diese Angaben im Rahmen der geführten Einrichtung. Speichern Sie Ihre Änderungen, bevor Sie zurückkehren.",
+      "load-failed": "Die Einrichtung konnte nicht geladen werden.",
+      "steps": {
+        "tenant": {
+          "label": "Mandant",
+          "hint-open": "Name und Kontakt",
+          "hint-done": "angelegt"
+        },
+        "offer": {
+          "label": "Buchungsobjekt",
+          "hint-open": "Angebot und Buchung",
+          "hint-done": "Entwurf vorhanden"
+        },
+        "setup": {
+          "label": "Einrichtung",
+          "hint-open": "optional",
+          "hint-done": "optional"
+        },
+        "overview": {
+          "label": "Übersicht",
+          "hint-open": "prüfen und abschließen",
+          "hint-done": "Wunsch gespeichert"
+        }
+      },
+      "level": {
+        "badge": "Aufsichtsstufe: {level}",
+        "names": {
+          "free": "frei",
+          "supervised": "beaufsichtigt",
+          "blocked": "gesperrt"
+        },
+        "supervised": "Ihre Angebote werden vor der Veröffentlichung durch den Instanz-Owner geprüft.",
+        "blocked": "Sie können alles vorbereiten. Ihre Angebote bleiben öffentlich verborgen, bis der Instanz-Owner die Aufsichtsstufe ändert."
+      },
+      "tenant": {
+        "title": "Wie heißt Ihr Mandant?",
+        "intro": "Zum Beispiel Ihr Verein, Ihre Organisation oder Ihr eigener Angebotsbereich.",
+        "name": "Mandantenname",
+        "contact-name": "Kontaktperson",
+        "mail": "E-Mail-Adresse",
+        "prefill-hint": "Kontaktperson und E-Mail sind aus Ihrem Nutzerkonto vorbelegt. Sie können beide ändern.",
+        "optional": "Weitere Kontaktangaben (optional)",
+        "phone": "Telefonnummer",
+        "website": "Website",
+        "location": "Anschrift",
+        "created-hint": "Der Mandant ist angelegt. Kontaktangaben ändern Sie in den Mandanten-Einstellungen.",
+        "submit": "Mandant anlegen",
+        "continue": "Weiter"
+      },
+      "offer": {
+        "title": "Ihr erstes Buchungsobjekt",
+        "intro": "Typ und Titel beschreiben Ihr Angebot. Wählen Sie anschließend bewusst Preis und Verfügbarkeit.",
+        "type": "Typ",
+        "name": "Titel",
+        "description": "Beschreibung (optional)",
+        "image": "Bild (optional)",
+        "booking": "Buchung",
+        "amount": "Verfügbare Anzahl",
+        "amount-hint": "Anzahl gleichzeitig buchbarer Einheiten, keine Personenkapazität. Ein einzelner Raum entspricht einer Einheit.",
+        "confirmation": "Bestätigung",
+        "confirmation-manual": "Durch die Verwaltung",
+        "confirmation-auto": "Automatisch",
+        "schedule": "Buchungsart",
+        "schedule-period": "Für einen Zeitraum",
+        "schedule-none": "Ohne Zeitraum",
+        "price-legend": "Preis ausdrücklich wählen",
+        "price-free": "Kostenlos",
+        "price-paid": "Kostenpflichtig",
+        "price": "Preis in Euro",
+        "price-type": "Abrechnung",
+        "price-types": {
+          "per-hour": "Pro Stunde",
+          "per-day": "Pro Tag",
+          "per-item": "Pro Buchung / Einheit"
+        },
+        "price-hint": "Weitere Preisregeln und Steuerangaben ergänzen Sie im Preisformular des Buchungsobjekts.",
+        "payment-hint": "Für kostenpflichtige Buchungen über die Plattform benötigen Sie einen eingerichteten Zahlungsweg. Sie können ihn im nächsten Schritt oder später einrichten.",
+        "availability-legend": "Verfügbarkeit ausdrücklich wählen",
+        "availability-always": "Keine zeitlichen Einschränkungen",
+        "availability-hours": "Öffnungszeiten festlegen",
+        "availability-hint": "Ohne Einschränkungen grundsätzlich auch nachts und am Wochenende; bestehende Buchungen werden weiterhin berücksichtigt.",
+        "hours-hint": "Vereinfachtes Wochenmuster. Weitere Zeiten ergänzen Sie im Buchungsobjekt.",
+        "start-time": "Von",
+        "end-time": "Bis",
+        "stored": "Gespeichert: {value}. Bitte erneut bestätigen.",
+        "unsaved-hint": "„Zur Verwaltung“ verlässt diesen Schritt. Noch nicht gespeicherte Eingaben werden dabei nicht übernommen.",
+        "submit": "Entwurf speichern und weiter",
+        "save-failed": "Das Buchungsobjekt konnte nicht gespeichert werden.",
+        "errors": {
+          "required": "Pflichtfeld",
+          "choice-required": "Bitte ausdrücklich wählen.",
+          "price-required": "Bitte einen Preis größer als 0 eingeben.",
+          "amount-invalid": "Bitte eine ganze Zahl ab 1 eingeben.",
+          "opening-hours-invalid": "Bitte Tage und eine gültige Öffnungszeit wählen."
+        }
+      },
+      "setup": {
+        "title": "Weitere Einrichtung",
+        "intro": "Sie können diese Angaben jetzt ergänzen oder später in der Verwaltung bearbeiten.",
+        "legal": "Rechtstexte",
+        "legal-hint": "Optional. Fehlende Rechtstexte erzeugen keinen offenen Punkt im Bereitschafts-Check.",
+        "legal-action": "Rechtstexte bearbeiten",
+        "payment": "Zahlung",
+        "payment-hint": "Für kostenpflichtige Plattform-Buchungen erforderlich. Die Einrichtung kann später erfolgen.",
+        "payment-not-required": "Für das kostenlose Angebot ist kein Zahlungsweg erforderlich.",
+        "payment-action": "Zahlung einrichten",
+        "defaults": "Mail- und PDF-Vorlagen sowie Erstattungsregeln verwenden die bestehenden Vorgaben. Sie sind in der Verwaltung änderbar.",
+        "continue": "Zur Übersicht"
+      },
+      "overview": {
+        "title": "Bereit für den nächsten Schritt",
+        "summary": {
+          "offer": "Buchungsobjekt",
+          "price": "Preis",
+          "booking": "Buchung",
+          "units": "{amount} verfügbare Einheit(en)",
+          "confirmation": "Bestätigung",
+          "availability": "Verfügbarkeit"
+        },
+        "supplement": "Bei Bedarf ergänzen",
+        "confirm-choices": "Bitte Preis und Verfügbarkeit für diesen Durchlauf am Buchungsobjekt bestätigen. Gespeicherte Werte bleiben erhalten.",
+        "edit-offer": "Buchungsobjekt bearbeiten",
+        "complete-failed": "Der Abschluss konnte nicht gespeichert werden.",
+        "action": {
+          "free": "Veröffentlichen",
+          "supervised": "Zur Prüfung einreichen",
+          "blocked": "Veröffentlichung vormerken"
+        },
+        "done": {
+          "free": {
+            "title": "Veröffentlicht",
+            "text": ""
+          },
+          "supervised": {
+            "title": "Zur Prüfung eingereicht",
+            "text": "Ihr Angebot wartet auf Prüfung. Bis zur Freigabe ist es öffentlich nicht sichtbar. Sie können es in der Verwaltung weiter bearbeiten."
+          },
+          "blocked": {
+            "title": "Veröffentlichung vorgemerkt",
+            "text": "Ihr Veröffentlichungswunsch ist vorgemerkt. Der Mandant bleibt gesperrt; Sie können die Einrichtung fortsetzen."
+          }
+        }
+      },
+      "readiness": {
+        "title": "Bereitschafts-Check",
+        "hint": "Offene Punkte sind Hinweise. Sie verhindern weder das Einreichen noch die Veröffentlichung.",
+        "load-failed": "Der Bereitschafts-Check konnte nicht geladen werden.",
+        "criteria": {
+          "contact": "Kontakt",
+          "legal": "Rechtstexte",
+          "offers": "Angebote",
+          "schedule": "Zeiten",
+          "payment": "Zahlung",
+          "mail": "Mail"
+        },
+        "states": {
+          "fulfilled": "Erfüllt",
+          "missing": "Offen",
+          "not_required": "Nicht erforderlich"
+        }
+      },
+      "errors": {
+        "generic": "Der Mandant konnte nicht angelegt werden.",
+        "rate-limited": "Sie haben in den letzten 24 Stunden bereits die zulässige Anzahl an Mandanten angelegt. Ein neuer Versuch ist in {wait} möglich.",
+        "rate-limited-unknown": "Sie haben in den letzten 24 Stunden bereits die zulässige Anzahl an Mandanten angelegt. Bitte versuchen Sie es später erneut.",
+        "verification-mail": "Bitte bestätigen Sie zuerst die E-Mail-Adresse Ihres Nutzerkontos über den Link in der Bestätigungs-E-Mail. Danach können Sie den Mandanten anlegen.",
+        "verification-identity-provider": "Ihr Anmeldedienst hat Ihre E-Mail-Adresse nicht als bestätigt gemeldet. Bitte bestätigen Sie die Adresse bei Ihrem Anmeldedienst und melden Sie sich erneut an.",
+        "max-tenants": "Die maximale Anzahl an Mandanten dieser Instanz ist erreicht.",
+        "field": "Bitte prüfen Sie Ihre Angaben.",
+        "mail-invalid": "Muss gültige E-Mail-Adresse sein.",
+        "not-found": "Der angelegte Mandant konnte nicht geladen werden. Sie finden ihn unter „Meine Mandanten“."
+      }
     }
   },
   "password": {

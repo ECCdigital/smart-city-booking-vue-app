@@ -93,6 +93,13 @@ export default {
     );
     return response.data;
   },
+  /**
+   * The readiness check (glossary "Bereitschafts-Check"): computed by the
+   * backend on every call, information only - never a gate.
+   */
+  async getReadiness(tenantId) {
+    return (await ApiClient.get(`api/tenants/${tenantId}/readiness`)).data;
+  },
   async tenantCountCheck() {
     return (await ApiClient.get("api/tenants/count/check")).data;
   },

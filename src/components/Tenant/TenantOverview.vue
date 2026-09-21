@@ -3,6 +3,22 @@
     <v-form ref="rootForm" v-model="validRoot">
       <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
+      <v-alert
+        v-if="onboardingReturnRoute"
+        type="info"
+        text
+        dense
+        data-test="onboarding-return"
+      >
+        <div class="d-flex align-center flex-wrap">
+          <span>{{ $t("tenant.onboarding.return-banner") }}</span>
+          <v-spacer />
+          <v-btn small color="primary" :to="onboardingReturnRoute">
+            {{ $t("tenant.onboarding.back-to-wizard") }}
+          </v-btn>
+        </div>
+      </v-alert>
+
       <div class="d-flex align-center mb-2">
         <div>
           <div class="text--secondary">
@@ -142,6 +158,7 @@ import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vu
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
 import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
+import { onboardingReturnRoute } from "@/utils/tenantOnboarding";
 import {
   createLockAndAccessAppDefaults,
   findTenantApp,
@@ -332,6 +349,10 @@ export default {
     },
     visibleTabs() {
       return this.tabs.filter((tab) => this.isTabVisible(tab));
+    },
+    // Opened from the guided setup: the way back to the step it came from.
+    onboardingReturnRoute() {
+      return onboardingReturnRoute(this.$route.query, this.tenant?.id);
     },
     currentComponent() {
       return this.visibleTabs[this.activeTab]?.comp || "TenantEditGeneral";

@@ -6,6 +6,9 @@ import { flushPromises } from "@tests/unit/support/api";
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenants: vi.fn(async () => ({ data: [] })) },
 }));
+vi.mock("@/services/permissions/TenantPermissionService", () => ({
+  default: { isTenantOwner: (tenantId) => ownedTenantIds.includes(tenantId) },
+}));
 vi.mock("@/layouts/Admin", () => ({
   default: {
     name: "AdminLayout",
@@ -20,9 +23,6 @@ vi.mock("@/components/Tenant/PendingApprovals.vue", () => ({
 vi.mock("@/components/Tenant/PendingTenantInvitations.vue", () => ({
   default: { name: "PendingTenantInvitations", render: () => null },
 }));
-vi.mock("@/components/Tenant/TenantCreate.vue", () => ({
-  default: { name: "TenantCreate", props: ["open"], render: () => null },
-}));
 
 import Home from "@/views/Home.vue";
 
@@ -34,6 +34,7 @@ let push;
 let selected;
 
 let redirect;
+let ownedTenantIds;
 
 function mountHome() {
   const store = new Vuex.Store({
@@ -75,6 +76,7 @@ beforeEach(() => {
   push = vi.fn();
   selected = null;
   redirect = null;
+  ownedTenantIds = [];
 });
 
 describe("Home — picking a tenant", () => {
@@ -119,5 +121,28 @@ describe("Home — picking a tenant", () => {
     await flushPromises();
 
     expect(push).toHaveBeenCalledWith({ name: "bookings" });
+  });
+});
+
+describe("Home — guided setup", () => {
+  it("offers to resume the setup on a tenant the user owns", async () => {
+    ownedTenantIds = ["tenant-a"];
+    const wrapper = mountHome();
+
+    await wrapper.find("[data-test='resume-onboarding']").trigger("click");
+
+    expect(push).toHaveBeenCalledWith({
+      name: "tenant-onboarding",
+      query: { tenant: "tenant-a" },
+    });
+    expect(selected).toBeNull();
+  });
+
+  it("offers no setup on a tenant of someone else", () => {
+    const wrapper = mountHome();
+
+    expect(wrapper.find("[data-test='resume-onboarding']").exists()).toBe(
+      false
+    );
   });
 });

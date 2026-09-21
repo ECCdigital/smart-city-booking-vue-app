@@ -58,6 +58,18 @@ const routes = [
     },
   },
   {
+    path: "/onboarding",
+    name: "tenant-onboarding",
+    component: lazyLoad("Management/TenantOnboarding"),
+    meta: {
+      title: "Angebote bereitstellen",
+      requiresAuth: true,
+      interfaceName: "dashboard",
+      public: true,
+      tenantFromQuery: true,
+    },
+  },
+  {
     path: "/dataDashboard",
     name: "dataDashboard",
     component: Dashboard,

@@ -144,6 +144,21 @@
               }}
             </v-btn>
           </v-card-actions>
+          <v-card-actions
+            v-if="isTenantOwner(tenant.id)"
+            class="px-3 pt-0 pb-3 justify-center"
+          >
+            <v-btn
+              small
+              text
+              block
+              color="primary"
+              @click.stop="resumeOnboarding(tenant.id)"
+              data-test="resume-onboarding"
+            >
+              {{ $t("tenant.onboarding.resume") }}
+            </v-btn>
+          </v-card-actions>
         </v-card>
       </v-col>
     </v-row>
@@ -184,32 +199,28 @@
       <v-icon>mdi-plus</v-icon>
       Mandanten anlegen
     </v-btn>
-
-    <TenantCreate :open="openCreateDialog" @close="onCloseCreateDialog" />
   </AdminLayout>
 </template>
 
 <script>
 import AdminLayout from "@/layouts/Admin";
 import { mapActions, mapGetters } from "vuex";
-import TenantCreate from "@/components/Tenant/TenantCreate.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import PendingTenantInvitations from "@/components/Tenant/PendingTenantInvitations.vue";
 import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
 import { isSafeInternalRedirect } from "@/utils/safeRedirect";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 
 export default {
   name: "HomeView",
   components: {
     PendingApprovals: PendingApprovals,
     PendingTenantInvitations,
-    TenantCreate,
     AdminLayout,
   },
   data() {
     return {
       loading: false,
-      openCreateDialog: false,
       search: "",
     };
   },
@@ -268,12 +279,19 @@ export default {
       }
       await this.$router.push({ name: "bookings" });
     },
+    // Self-creation runs through the guided setup; the instance owner
+    // keeps the short dialog beside it on the instance's tenant list.
     onOpenCreateTenant() {
-      this.openCreateDialog = true;
+      this.$router.push({ name: "tenant-onboarding" });
     },
-    async onCloseCreateDialog() {
-      this.openCreateDialog = false;
-      await this.fetchTenants();
+    isTenantOwner(tenantId) {
+      return TenantPermissionService.isTenantOwner(tenantId);
+    },
+    resumeOnboarding(tenantId) {
+      this.$router.push({
+        name: "tenant-onboarding",
+        query: { tenant: tenantId },
+      });
     },
     getTenantInitials(name) {
       if (!name) return "??";

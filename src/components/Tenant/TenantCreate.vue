@@ -35,6 +35,7 @@
                     filled
                     dense
                     label="Kontakt Person"
+                    :rules="validationRules.required"
                     v-model="tenant.contactName"
                   ></v-text-field>
                 </v-col>
@@ -56,6 +57,7 @@
                     dense
                     label="E-Mail Adresse"
                     type="mail"
+                    :rules="validationRules.mail"
                     v-model="tenant.mail"
                   ></v-text-field>
                 </v-col>

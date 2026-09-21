@@ -73,6 +73,17 @@ Instance (global deployment config, loaded at bootstrap)
 - Permission services check `user.state.data.permissions.tenants` for the active tenant
 - Cross-tenant data access in the UI is a security bug
 
+## Guided setup (tenant onboarding)
+
+`/onboarding` (`src/views/Management/TenantOnboarding.vue`) leads from the shortened tenant creation to the first bookable: tenant → bookable → optional legal texts/payment → overview with the readiness check.
+
+- Form rules, the mapping onto a `Bookable` and the reading of creation errors are pure functions in `src/utils/tenantOnboarding.js`; the view only wires them to the API services
+- No stored wizard progress: every step saves through the regular API, `?tenant=` resumes from current data, and price and availability are asked again. The confirmation of a running session lives in memory only (`src/utils/tenantOnboardingRun.js`), so it survives the detour to `/tenant?tab=legal|payments` (which shows a way back via `onboardingStep`) but no reload
+- The closing action only stores the publication wish (`isPublic`); its wording follows `tenant.supervisionLevel` (`free` / `supervised` / `blocked`), the backend submits a first wish for review on its own. `free` shows no supervision texts
+- The readiness check (`TenantReadinessCheck.vue`, `GET api/tenants/:tenant/readiness`) is information, never a gate
+- Bookable types are the existing four (`room`, `event-location`, `resource`, `ticket`); `event-location` is the value both this app and the backend entity use — the `location` in the backend's Mongoose enum is not enforced and nothing is converted
+- Events stay in the regular administration
+
 ## Key patterns
 
 | Layer | Pattern | Example |
