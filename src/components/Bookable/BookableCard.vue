@@ -176,6 +176,17 @@
         <v-icon x-small class="mr-1">mdi-calendar-star</v-icon>
         {{ item._populated?.event?.information?.name || "Unbekannt" }}
       </p>
+      <v-chip
+        v-if="reviewBadge"
+        x-small
+        label
+        outlined
+        class="mt-1"
+        :color="reviewBadge.color"
+        data-test="review-badge"
+      >
+        {{ $t(reviewBadge.labelKey) }}
+      </v-chip>
     </div>
 
     <v-divider></v-divider>
@@ -362,6 +373,7 @@ import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import externalPrices from "@/mixins/externalPrices";
 import { handlesCapability } from "@/utils/bookableExternalProviders";
+import { reviewBadge } from "@/utils/offerReview";
 
 export default {
   components: { MediaReferenceImage, PlaceholderPattern },
@@ -384,7 +396,15 @@ export default {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
       instance: "instance/instance",
+      supervisionLevel: "tenants/currentSupervisionLevel",
     }),
+    /**
+     * The review status (glossary "Prüfstatus") where it matters: under a
+     * supervised or blocked tenant. A free tenant's cards stay quiet.
+     */
+    reviewBadge() {
+      return reviewBadge(this.item.review, this.supervisionLevel);
+    },
     isDark() {
       return this.$vuetify?.theme?.dark || false;
     },

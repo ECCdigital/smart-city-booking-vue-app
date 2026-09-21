@@ -2103,46 +2103,46 @@
       }
     }
   },
-  "richtext": {
-    "group": {
-      "character": "Zeichen",
-      "paragraph": "Absatz"
-    },
-    "align": {
-      "left": "Links",
-      "center": "Zentriert",
-      "right": "Rechts"
-    },
-    "color": {
-      "label": "Farbe",
-      "default": "Standard",
-      "primary": "Primärfarbe",
-      "secondary": "Sekundärfarbe",
-      "white": "Weiß",
-      "custom": "Eigene Farbe…",
-      "inherit": "Farbe übernehmen"
-    },
-    "size": {
-      "label": "Schriftgröße",
-      "xs": "Sehr klein",
-      "sm": "Klein",
-      "md": "Normal",
-      "lg": "Groß",
-      "xl": "Sehr groß",
-      "2xl": "Riesig"
-    },
-    "link": {
-      "button": "Link einfügen",
-      "title": "Link",
-      "address": "Adresse",
-      "hint": "http://, https:// oder mailto:",
-      "invalid": "Nur Adressen mit http://, https:// oder mailto: sind erlaubt.",
-      "apply": "Übernehmen",
-      "remove": "Link entfernen",
-      "cancel": "Abbrechen"
-    }
-  },
   "supervision": {
+    "review": {
+      "title": "Prüfstatus",
+      "status": {
+        "none": "Nicht eingereicht",
+        "pending": "Prüfung ausstehend",
+        "approved": "Freigegeben",
+        "rejected": "Abgelehnt"
+      },
+      "submitted-at": "Eingereicht am {time}",
+      "decided-at": "Entschieden am {time}",
+      "reason": "Begründung: {reason}",
+      "effect": {
+        "free-listed": "Der Prüfstatus ist ohne Wirkung: Das Angebot ist gelistet und buchbar.",
+        "free-unlisted": "Der Prüfstatus ist ohne Wirkung: Das Angebot ist per Direktlink buchbar, aber nicht gelistet.",
+        "listed": "Das Angebot ist gelistet und buchbar.",
+        "direct-link-only": "Das Angebot ist per Direktlink buchbar, aber nicht gelistet.",
+        "not-reachable": "Ohne Freigabe ist das Angebot weder gelistet noch per Direktlink buchbar.",
+        "blocked": "Der Mandant ist gesperrt: Das Angebot ist weder gelistet noch per Direktlink buchbar."
+      },
+      "wish-hint": {
+        "supervised": "Ihr Mandant ist beaufsichtigt: Der Veröffentlichungswunsch allein veröffentlicht nichts, das Angebot braucht zusätzlich eine Freigabe.",
+        "blocked": "Ihr Mandant ist gesperrt: Der Veröffentlichungswunsch wird vorgemerkt, veröffentlicht aber nichts."
+      },
+      "unsaved": "Speichern Sie das Angebot, um es zur Prüfung einzureichen.",
+      "actions": {
+        "submit": "Zur Prüfung einreichen",
+        "resubmit": "Erneut einreichen",
+        "approve": "Freigeben",
+        "reject": "Ablehnen",
+        "withdraw": "Freigabe zurückziehen"
+      },
+      "dialog": {
+        "reason-label": "Begründung (optional)",
+        "reason-hint": "Der Tenant-Owner sieht die Begründung.",
+        "cancel": "Abbrechen"
+      },
+      "conflict": "Die Aktion passt nicht mehr zum aktuellen Prüfstatus – er wurde inzwischen geändert. Der Status wurde neu geladen.",
+      "failed": "Die Aktion konnte nicht ausgeführt werden."
+    },
     "queue": {
       "title": "Prüfliste",
       "hint": "Angebote beaufsichtigter Mandanten, die auf eine Entscheidung warten – das am längsten wartende zuerst. Geprüft wird im jeweiligen Angebot.",
@@ -2219,6 +2219,45 @@
         "failed-again": "Der Versand ist erneut fehlgeschlagen: {error}",
         "request-failed": "Die Mitteilung konnte nicht erneut gesendet werden."
       }
+    }
+  },
+  "richtext": {
+    "group": {
+      "character": "Zeichen",
+      "paragraph": "Absatz"
+    },
+    "align": {
+      "left": "Links",
+      "center": "Zentriert",
+      "right": "Rechts"
+    },
+    "color": {
+      "label": "Farbe",
+      "default": "Standard",
+      "primary": "Primärfarbe",
+      "secondary": "Sekundärfarbe",
+      "white": "Weiß",
+      "custom": "Eigene Farbe…",
+      "inherit": "Farbe übernehmen"
+    },
+    "size": {
+      "label": "Schriftgröße",
+      "xs": "Sehr klein",
+      "sm": "Klein",
+      "md": "Normal",
+      "lg": "Groß",
+      "xl": "Sehr groß",
+      "2xl": "Riesig"
+    },
+    "link": {
+      "button": "Link einfügen",
+      "title": "Link",
+      "address": "Adresse",
+      "hint": "http://, https:// oder mailto:",
+      "invalid": "Nur Adressen mit http://, https:// oder mailto: sind erlaubt.",
+      "apply": "Übernehmen",
+      "remove": "Link entfernen",
+      "cancel": "Abbrechen"
     }
   }
 }

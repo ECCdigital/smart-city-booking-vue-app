@@ -58,6 +58,20 @@ class TenantPermissionService {
   }
 
   /**
+   * Who looks at the review of an offer (glossary "Prüfstatus") of the
+   * tenant. The backend's `reviewSubmit` is `{ own: "tenantOwner", any:
+   * "instanceOwner" }` and `reviewDecide` is `{ any: "instanceOwner" }`, for
+   * bookables and events alike; `src/utils/offerReview.js` turns the two
+   * roles into the actions offered.
+   */
+  static reviewViewer(tenantId = store.getters["tenants/currentTenantId"]) {
+    return {
+      tenantOwner: TenantPermissionService.isTenantOwner(tenantId),
+      instanceOwner: TenantPermissionService.isInstanceOwner() === true,
+    };
+  }
+
+  /**
    * Deleting a tenant belongs to its owner and to the instance owner, exactly
    * like editing it.
    *
