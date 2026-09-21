@@ -64,6 +64,7 @@ const routes = [
     meta: {
       title: "Angebote bereitstellen",
       requiresAuth: true,
+      publicEntry: true,
       interfaceName: "dashboard",
       public: true,
       tenantFromQuery: true,

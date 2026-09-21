@@ -565,6 +565,12 @@
           }
         }
       },
+      "verification": {
+        "resend": "Bestätigungs-E-Mail erneut senden",
+        "sent": "Falls Ihr Nutzerkonto noch nicht bestätigt ist, haben wir Ihnen eine neue Bestätigungs-E-Mail gesendet. Der Link darin führt Sie nach der Anmeldung hierher zurück.",
+        "failed": "Die Bestätigungs-E-Mail konnte nicht angefordert werden. Bitte versuchen Sie es später erneut.",
+        "sso-login": "Erneut über den Anmeldedienst anmelden"
+      },
       "errors": {
         "generic": "Der Mandant konnte nicht angelegt werden.",
         "rate-limited": "Sie haben in den letzten 24 Stunden bereits die zulässige Anzahl an Mandanten angelegt. Ein neuer Versuch ist in {wait} möglich.",

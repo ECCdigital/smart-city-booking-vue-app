@@ -47,7 +47,7 @@
     </v-card-text>
 
     <v-card-actions class="px-4">
-      <v-btn :to="{ name: 'register' }" target="_blank" outlined>
+      <v-btn :to="registerRoute" target="_blank" outlined>
         Konto erstellen
       </v-btn>
       <v-spacer />
@@ -132,6 +132,13 @@ export default {
   computed: {
     hasAlternativeMethods() {
       return this.ssoActive || this.cardMethods.length > 0;
+    },
+    /** The registration opens in a new tab: the return target travels along. */
+    registerRoute() {
+      const next = this.$route.query.next;
+      return next
+        ? { name: "register", query: { next } }
+        : { name: "register" };
     },
   },
 

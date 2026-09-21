@@ -9,6 +9,12 @@
  * again on every run.
  */
 
+/**
+ * The wizard's route (`tenant-onboarding`) as the return target (backend:
+ * `nextUrl`) a verification mail or an SSO sign-in leads back to.
+ */
+export const ONBOARDING_PATH = "/onboarding";
+
 export const SUPERVISION_LEVELS = Object.freeze({
   FREE: "free",
   SUPERVISED: "supervised",
