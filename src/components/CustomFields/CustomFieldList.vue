@@ -259,7 +259,11 @@
               </div>
 
               <div
-                v-if="field.inputType === 'select' && field.options.length"
+                v-if="
+                  (field.inputType === 'select' ||
+                    field.inputType === 'multiselect') &&
+                  field.options.length
+                "
                 class="mb-2"
               >
                 <span class="text-caption text--secondary">Optionen:</span>
@@ -446,6 +450,7 @@ export default {
         string: "blue-grey",
         text: "blue-grey darken-1",
         select: "indigo",
+        multiselect: "indigo",
         numeric: "teal",
         boolean: "orange",
       };
