@@ -8,7 +8,6 @@
         })
       }}
     </div>
-    <div>{{ $t("supervision.declined-tenant.own-bookings") }}</div>
   </div>
 </template>
 
