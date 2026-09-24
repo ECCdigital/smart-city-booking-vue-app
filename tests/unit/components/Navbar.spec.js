@@ -70,6 +70,7 @@ async function mountNavbar() {
         getters: {
           getUser: () => ({ firstName: "Ina" }),
           isAuthorized: () => () => true,
+          declinedMembership: () => () => null,
         },
         actions: { delete: vi.fn() },
       },
