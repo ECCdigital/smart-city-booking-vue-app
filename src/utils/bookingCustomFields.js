@@ -85,6 +85,8 @@ export function validateRequiredCustomFields(definitions = [], values = []) {
     const val = getCustomFieldValue(values, field.id);
     if (val === null || val === undefined || val === "") {
       missing.push(field);
+    } else if (Array.isArray(val) && val.length === 0) {
+      missing.push(field);
     }
   }
 
@@ -106,6 +108,7 @@ export function filledCustomFields(booking) {
     })
     .filter(({ rawValue }) => {
       if (rawValue === false || rawValue === 0) return true;
+      if (Array.isArray(rawValue)) return rawValue.length > 0;
       return rawValue != null && rawValue !== "";
     });
 }
@@ -121,6 +124,15 @@ export function formatCustomFieldValue(field) {
   if (field.inputType === "select") {
     const option = (field.options || []).find((o) => o.value === value);
     return option?.caption ?? String(value);
+  }
+  if (field.inputType === "multiselect") {
+    const values = Array.isArray(value) ? value : [value];
+    return values
+      .map((item) => {
+        const option = (field.options || []).find((o) => o.value === item);
+        return option?.caption ?? String(item);
+      })
+      .join(", ");
   }
   if (field.inputType === "numeric") {
     return Intl.NumberFormat("de-DE").format(value);

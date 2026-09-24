@@ -57,6 +57,21 @@ describe("filledCustomFields", () => {
     ]);
   });
 
+  it("keeps a filled multiselect and drops an empty one", () => {
+    const booking = {
+      customFieldDefinitions: [
+        definition("gear", "multiselect"),
+        definition("empty", "multiselect"),
+      ],
+      customFieldValues: [
+        { fieldId: "gear", value: ["wifi"] },
+        { fieldId: "empty", value: [] },
+      ],
+    };
+
+    expect(filledCustomFields(booking).map((f) => f.id)).toEqual(["gear"]);
+  });
+
   it("lists nothing for a booking without definitions or values", () => {
     expect(filledCustomFields({})).toEqual([]);
     expect(filledCustomFields(null)).toEqual([]);
@@ -90,6 +105,27 @@ describe("formatCustomFieldValue", () => {
     expect(
       formatCustomFieldValue({ inputType: "select", rawValue: "xl" })
     ).toBe("xl");
+  });
+
+  it("reads a multiselect as a comma-separated list of captions", () => {
+    const options = [
+      { value: "wifi", caption: "WLAN" },
+      { value: "beamer", caption: "Beamer" },
+    ];
+    expect(
+      formatCustomFieldValue({
+        inputType: "multiselect",
+        options,
+        rawValue: ["wifi", "beamer"],
+      })
+    ).toBe("WLAN, Beamer");
+    expect(
+      formatCustomFieldValue({
+        inputType: "multiselect",
+        options,
+        rawValue: ["wifi", "gone"],
+      })
+    ).toBe("WLAN, gone");
   });
 
   it("reads a number in German notation", () => {
