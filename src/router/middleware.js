@@ -1,5 +1,6 @@
 import { requiresAuth } from "./middlewares/auth";
 import { selectTenantFromQuery } from "./middlewares/tenantFromQuery";
+import { rejectDeclinedTenant } from "./middlewares/declinedTenant";
 import { checkGroupBooking } from "./middlewares/groupBooking";
 import {
   checkInterface,
@@ -19,10 +20,15 @@ import { finalAuthRedirect } from "./middlewares/finalAuth";
  * `selectTenantFromQuery` sits directly after `requiresAuth`: a Buchungslink's
  * `?tenant=` must be the current tenant before `requireTenant` and
  * `requireInterfaceAccess` pass judgement.
+ *
+ * `rejectDeclinedTenant` follows it: with the permissions just refreshed it
+ * drops a declined current tenant - restored or just switched to - before any
+ * gate judges it or any page asks the API about it.
  */
 export const middlewares = [
   requiresAuth,
   selectTenantFromQuery,
+  rejectDeclinedTenant,
   checkGroupBooking,
   checkInterface,
   requireTenant,

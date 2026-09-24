@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { flushPromises } from "@tests/unit/support/api";
 
 const storeDouble = vi.hoisted(() => ({
   authorizedInterfaces: [],
@@ -6,6 +7,7 @@ const storeDouble = vi.hoisted(() => ({
   loggedIn: true,
   currentTenantId: "tenant-a",
   memberOf: [],
+  declinedIds: [],
   tenants: [],
   dispatch: vi.fn(),
 }));
@@ -49,6 +51,12 @@ vi.mock("@/store", () => ({
       get "user/isLoggedIn"() {
         return storeDouble.loggedIn;
       },
+      get "user/declinedMembership"() {
+        return (tenantId) =>
+          storeDouble.declinedIds.includes(tenantId)
+            ? { tenantId, supervisionLevel: "declined" }
+            : null;
+      },
       get "tenants/currentTenantId"() {
         return storeDouble.currentTenantId;
       },
@@ -69,12 +77,21 @@ const { selectTenantFromQuery } = await import(
 const { requireInterfaceAccess } = await import(
   "@/router/middlewares/interface"
 );
+const { rejectDeclinedTenant } = await import(
+  "@/router/middlewares/declinedTenant"
+);
 
-/** Runs a navigation through the real pipeline and reports how it ended. */
+/**
+ * Runs a navigation through the real pipeline and reports how it ended. A
+ * middleware does not await the rest of the chain, so the pending promises
+ * settle before the verdict is read.
+ */
 function navigateTo(meta, query = {}) {
   const next = vi.fn();
   const to = { meta, query, fullPath: "/coupons" };
-  return pipeline({ to, from: {}, next }, middlewares, 0)().then(() => next);
+  return pipeline({ to, from: {}, next }, middlewares, 0)()
+    .then(flushPromises)
+    .then(() => next);
 }
 
 const COUPONS = { requiresAuth: true, interfaceName: "coupons" };
@@ -85,6 +102,7 @@ beforeEach(() => {
   storeDouble.loggedIn = true;
   storeDouble.currentTenantId = "tenant-a";
   storeDouble.memberOf = [];
+  storeDouble.declinedIds = [];
   storeDouble.tenants = [];
   storeDouble.dispatch = vi.fn();
 });
@@ -101,6 +119,24 @@ describe("router middleware pipeline", () => {
     expect(middlewares.indexOf(selectTenantFromQuery)).toBe(
       middlewares.indexOf(requiresAuth) + 1
     );
+  });
+
+  it("drops a declined tenant once the permissions are fresh and before any tenant gate", () => {
+    const check = middlewares.indexOf(rejectDeclinedTenant);
+
+    expect(check).toBe(middlewares.indexOf(selectTenantFromQuery) + 1);
+    expect(check).toBeLessThan(middlewares.indexOf(requireTenant));
+    expect(check).toBeLessThan(middlewares.indexOf(requireInterfaceAccess));
+  });
+
+  it("leads from a restored declined tenant to the tenant overview, without asking for another tenant", async () => {
+    storeDouble.declinedIds = ["tenant-a"];
+    storeDouble.authorizedInterfaces = ["coupons"];
+
+    const next = await navigateTo(COUPONS);
+
+    expect(next).toHaveBeenCalledWith({ name: "dashboard" });
+    expect(storeDouble.currentTenantId).toBeNull();
   });
 
   it("lets the tenant middleware see the tenant a Buchungslink switched to", async () => {

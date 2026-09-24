@@ -1,6 +1,7 @@
 import axios from "axios";
 import { createAuthTransport } from "../auth/createAuthTransport";
 import { getAuthMode } from "../auth/authMode";
+import { handleTenantDeclined } from "./tenantDeclined";
 
 class ApiClientService {
   constructor() {
@@ -26,7 +27,12 @@ class ApiClientService {
 
     this.client.interceptors.response.use(
       (response) => response,
-      (error) => this.transport.onResponseError(error)
+      (error) => {
+        // Above the transport, so both auth modes share it; not awaited, the
+        // caller gets its error as before.
+        handleTenantDeclined(error);
+        return this.transport.onResponseError(error);
+      }
     );
   }
 

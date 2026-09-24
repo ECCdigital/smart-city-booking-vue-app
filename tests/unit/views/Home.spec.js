@@ -53,6 +53,9 @@ let selected;
 let redirect;
 let ownedTenantIds;
 let memberTenantIds;
+// The supervision the sign-in names per membership (`permissions.tenants[]`).
+let memberships;
+let instanceOwner;
 // The readiness answer per tenant; the default is a tenant without offers.
 let readiness;
 
@@ -83,6 +86,16 @@ function mountHome() {
           // Mirrors the real getter: denied only where the reach is known.
           isDenied: () => (ifce) =>
             permissionsLoaded && !authorizedInterfaces.includes(ifce),
+          supervisionLevelOf: () => (tenantId) =>
+            memberships.find((m) => m.tenantId === tenantId)
+              ?.supervisionLevel ?? null,
+          declinedMembership: () => (tenantId) =>
+            (!instanceOwner &&
+              memberships.find(
+                (m) =>
+                  m.tenantId === tenantId && m.supervisionLevel === "declined"
+              )) ||
+            null,
         },
       },
     },
@@ -107,6 +120,8 @@ beforeEach(() => {
   memberTenantIds = ["tenant-a"];
   readiness = () => readinessWithOffers("missing");
   tenants = [TENANT_A];
+  memberships = [];
+  instanceOwner = false;
   window.localStorage.removeItem(VIEW_STORAGE_KEY);
 });
 
@@ -320,5 +335,130 @@ describe("Home — mine and the rest", () => {
     );
     const others = wrapper.find("[data-test='tenant-group-others']");
     expect(others.find(".tenant-home__group-head").exists()).toBe(true);
+  });
+});
+
+describe("Home — a tenant waiting for its approval", () => {
+  beforeEach(() => {
+    memberships = [{ tenantId: "tenant-a", supervisionLevel: "pending" }];
+  });
+
+  it("marks the card „Freigabe ausstehend“ and keeps it open", async () => {
+    const wrapper = mountHome();
+
+    const chip = wrapper.find(".tenant-card [data-test='supervision-level']");
+    expect(chip.text()).toBe("Freigabe ausstehend");
+    expect(chip.classes()).toContain("warning--text");
+
+    await wrapper.find(".tenant-card").trigger("click");
+    await flushPromises();
+    expect(selected).toBe("tenant-a");
+  });
+
+  it("marks the row of the list as well", async () => {
+    const wrapper = mountHome();
+    await wrapper.find("[data-test='view-list']").trigger("click");
+
+    expect(
+      wrapper
+        .find("[data-test='tenant-row'] [data-test='supervision-level']")
+        .text()
+    ).toBe("Freigabe ausstehend");
+  });
+
+  it("marks no tenant whose level is free or unknown", () => {
+    memberships = [{ tenantId: "tenant-a", supervisionLevel: "free" }];
+    const wrapper = mountHome();
+
+    expect(wrapper.find("[data-test='supervision-level']").exists()).toBe(
+      false
+    );
+  });
+});
+
+describe("Home — a declined tenant", () => {
+  const DECLINED = {
+    tenantId: "tenant-a",
+    supervisionLevel: "declined",
+    supervisionChangedAt: "2026-09-24T10:00:00.000Z",
+    supervisionReason: "Kein Impressum",
+  };
+
+  beforeEach(() => {
+    memberships = [DECLINED];
+    ownedTenantIds = ["tenant-a"];
+  });
+
+  it("names level, time and reason and where the own bookings are", () => {
+    const wrapper = mountHome();
+
+    const card = wrapper.find(".tenant-card");
+    expect(card.find("[data-test='supervision-level']").text()).toBe(
+      "abgewiesen"
+    );
+    const declined = card.find("[data-test='declined-tenant']");
+    expect(declined.text()).toContain("Vom Betreiber abgewiesen am 24.09.26");
+    expect(declined.find("[data-test='declined-reason']").text()).toBe(
+      "Begründung: „Kein Impressum“"
+    );
+    expect(declined.text()).toContain(
+      "Deine eigenen Buchungen findest du weiter unter „Meine Buchungen“."
+    );
+  });
+
+  it("writes no reason line when the change came without one", () => {
+    memberships = [{ ...DECLINED, supervisionReason: null }];
+    const wrapper = mountHome();
+
+    const declined = wrapper.find("[data-test='declined-tenant']");
+    expect(declined.exists()).toBe(true);
+    expect(declined.find("[data-test='declined-reason']").exists()).toBe(false);
+  });
+
+  it("cannot be opened, neither by its button nor by the card", async () => {
+    const wrapper = mountHome();
+
+    const open = wrapper.find(".tenant-card__select");
+    expect(open.attributes("disabled")).toBe("disabled");
+    await wrapper.find(".tenant-card").trigger("click");
+    await flushPromises();
+
+    expect(selected).toBeNull();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("cannot be opened from the list either", async () => {
+    const wrapper = mountHome();
+    await wrapper.find("[data-test='view-list']").trigger("click");
+
+    const row = wrapper.find("[data-test='tenant-row']");
+    expect(row.attributes("aria-disabled")).toBe("true");
+    expect(row.find("[data-test='declined-tenant']").exists()).toBe(true);
+    await row.trigger("click");
+    await flushPromises();
+
+    expect(selected).toBeNull();
+  });
+
+  it("offers no setup and asks no readiness of it", async () => {
+    const asked = vi.fn(() => readinessWithOffers("missing"));
+    readiness = asked;
+    const wrapper = mountHome();
+    await flushPromises();
+
+    expect(wrapper.find("[data-test='resume-onboarding']").exists()).toBe(
+      false
+    );
+    expect(asked).not.toHaveBeenCalled();
+  });
+
+  it("stays open to an instance owner", async () => {
+    instanceOwner = true;
+    const wrapper = mountHome();
+
+    expect(wrapper.find("[data-test='declined-tenant']").exists()).toBe(false);
+    await wrapper.find(".tenant-card").trigger("click");
+    await flushPromises();
+    expect(selected).toBe("tenant-a");
   });
 });

@@ -105,7 +105,8 @@
     "session-expired": "Ihre Sitzung ist nicht mehr aktuell. Bitte laden Sie die Seite neu und versuchen Sie es erneut.",
     "forbidden-codes": {
       "forbidden": "Sie haben keine Berechtigung für diese Aktion.",
-      "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden."
+      "booking_user_cancellation_disabled": "Diese Buchung kann nicht vom Buchenden storniert werden.",
+      "tenant_declined": "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
     },
     "conflict-codes": {
       "conflict": "Der Vorgang ist in diesem Zustand nicht möglich.",
@@ -2231,6 +2232,20 @@
     "next": "Nächste Seite"
   },
   "supervision": {
+    "pending-banner": {
+      "title": "Freigabe ausstehend.",
+      "text": "Der Betreiber prüft den Mandanten ‚{name}‘. Du kannst Angebote vollständig vorbereiten; öffentlich wird nichts, bis der Betreiber freigegeben hat. Du erhältst eine Mail."
+    },
+    "declined-tenant": {
+      "declined": "Vom Betreiber abgewiesen.",
+      "declined-at": "Vom Betreiber abgewiesen am {date}.",
+      "reason": "Begründung: „{reason}“",
+      "own-bookings": "Deine eigenen Buchungen findest du weiter unter „Meine Buchungen“.",
+      "toast": {
+        "title": "Mandant abgewiesen",
+        "message": "Der Mandant ‚{name}‘ wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
+      }
+    },
     "offer-types": {
       "bookable": "Buchungsobjekt",
       "event": "Veranstaltung"

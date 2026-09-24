@@ -90,7 +90,7 @@
             prepend-inner-icon="mdi-home-account"
             background-color="accent"
             v-model="currentTenant"
-            :items="tenants"
+            :items="tenantItems"
             item-text="name"
             item-value="id"
             hide-details
@@ -99,6 +99,14 @@
             <template v-slot:prepend-item>
               <v-list-item class="my-2"> Mandant auswählen: </v-list-item>
               <v-divider></v-divider>
+            </template>
+            <template v-slot:item="{ item }">
+              <v-list-item-content>
+                <v-list-item-title>{{ item.name }}</v-list-item-title>
+              </v-list-item-content>
+              <v-list-item-action v-if="item.disabled">
+                <SupervisionLevelChip :level="item.supervisionLevel" x-small />
+              </v-list-item-action>
             </template>
           </v-select>
 
@@ -153,6 +161,7 @@ import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiClientService from "@/services/api/ApiClientService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import NotificationDisplay from "@/components/NotificationDisplay";
+import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
 import keycloakService from "@/services/KeycloakService";
 import { isBffAuthMode } from "@/services/auth/authMode";
 import { version as appVersion } from "../../package.json";
@@ -334,6 +343,7 @@ export default {
   }),
   components: {
     NotificationDisplay,
+    SupervisionLevelChip,
   },
   methods: {
     ...mapActions({
@@ -390,7 +400,11 @@ export default {
     fetchTenants() {
       ApiTenantService.getTenants(true).then((response) => {
         this.tenants = response.data;
-        if (!this.currentTenant && this.tenants.length === 1) {
+        if (
+          !this.currentTenant &&
+          this.tenants.length === 1 &&
+          !this.declinedMembership(this.tenants[0].id)
+        ) {
           this.currentTenant = this.tenants[0].id;
         }
       });
@@ -401,7 +415,22 @@ export default {
       user: "user/getUser",
       isAuthorized: "user/isAuthorized",
       getCurrentTenant: "tenants/currentTenantId",
+      declinedMembership: "user/declinedMembership",
     }),
+    // A declined tenant stays in the list, greyed out and not selectable
+    // (glossary „abgewiesen“); the instance owner keeps every tenant.
+    tenantItems() {
+      return this.tenants.map((tenant) => {
+        const declined = this.declinedMembership(tenant.id);
+        return declined
+          ? {
+              ...tenant,
+              disabled: true,
+              supervisionLevel: declined.supervisionLevel,
+            }
+          : tenant;
+      });
+    },
     currentTenant: {
       get: function () {
         return this.getCurrentTenant;
