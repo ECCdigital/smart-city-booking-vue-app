@@ -53,3 +53,17 @@ export function notificationOfferTitles(row) {
 export function notificationTenantName(row) {
   return row?.payload?.tenantName || row?.tenantId || "";
 }
+
+/** The translation key of an occasion type's German label, or null. */
+export function notificationTypeLabelKey(type) {
+  return NOTIFICATION_TYPES.includes(type)
+    ? `supervision.notifications.types.${type.replace(".", "-")}`
+    : null;
+}
+
+/** The translation key of a delivery status's German label, or null. */
+export function notificationStatusLabelKey(status) {
+  return NOTIFICATION_STATUSES.includes(status)
+    ? `supervision.notifications.statuses.${status}`
+    : null;
+}

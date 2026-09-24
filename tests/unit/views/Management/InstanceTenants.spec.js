@@ -9,8 +9,13 @@ let instanceOwner = false;
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: {
     getTenants: vi.fn(),
-    tenantCountCheck: vi.fn(),
     getReadiness: vi.fn(),
+  },
+}));
+vi.mock("@/services/api/ApiCatalogService", () => ({
+  default: {
+    getCatalog: vi.fn(),
+    updateCatalog: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiSupervisionService", () => ({
@@ -26,6 +31,7 @@ vi.mock("@/services/permissions/TenantPermissionService", () => ({
     allowSupervise: () => instanceOwner,
     allowSupervisionHistory: () => instanceOwner,
     allowInstanceSupervisionHistory: () => instanceOwner,
+    allowCatalogExposure: () => instanceOwner,
   },
 }));
 vi.mock("@/layouts/Admin.vue", () => ({
@@ -38,16 +44,33 @@ vi.mock("@/layouts/Admin.vue", () => ({
 }));
 
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiCatalogService from "@/services/api/ApiCatalogService";
 import ApiSupervisionService from "@/services/api/ApiSupervisionService";
 import InstanceTenants from "@/views/Management/InstanceTenants.vue";
 
 const TENANTS = [
-  { id: "t-1", name: "Sportverein", supervisionLevel: "blocked" },
+  {
+    id: "t-1",
+    name: "Sportverein",
+    contactName: "Sabine Sport",
+    mail: "sabine@sportverein.example",
+    location: "Musterstadt",
+    supervisionLevel: "blocked",
+  },
   // From before the supervision: no stored level.
-  { id: "t-2", name: "Makerspace" },
+  { id: "t-2", name: "Makerspace", mail: "hallo@makerspace.example" },
 ];
 
+const CATALOG = {
+  type: "instance",
+  name: "Marktplatz",
+  excludedTenantIds: ["t-1"],
+  heroLayout: { version: 1, blocks: [] },
+};
+
 const addToast = vi.fn();
+const selectTenant = vi.fn();
+const push = vi.fn();
 
 async function mountView() {
   const store = new Vuex.Store({
@@ -61,14 +84,14 @@ async function mountView() {
         namespaced: true,
         getters: { allowToCreateTenants: () => false },
       },
-      tenants: { namespaced: true, actions: { select: vi.fn() } },
+      tenants: { namespaced: true, actions: { select: selectTenant } },
       toasts: { namespaced: true, actions: { add: addToast } },
     },
   });
   const wrapper = mountComponent(InstanceTenants, {
     store,
+    mocks: { $router: { push } },
     stubs: {
-      TenantEditDialog: true,
       TenantCreate: true,
       DeleteConformationDialog: true,
     },
@@ -77,19 +100,22 @@ async function mountView() {
   return wrapper;
 }
 
-async function openMenuOf(wrapper, index) {
-  await wrapper.findAll("tbody tr").at(index).find("button").trigger("click");
+const rows = (wrapper) => wrapper.findAll("[data-test='tenant-row']");
+const rowTexts = (wrapper) =>
+  rows(wrapper).wrappers.map((row) => row.text().replace(/\s+/g, " "));
+const panel = (wrapper) => wrapper.find("[data-test='tenant-panel']");
+const panelAction = (wrapper, name) =>
+  panel(wrapper).find(`[data-test='${name}']`);
+
+/** Selects the row at `index` (the list is sorted by name). */
+async function selectRow(wrapper, index) {
+  await rows(wrapper).at(index).trigger("click");
   await flushPromises();
 }
 
-const readinessItems = () =>
-  document.querySelectorAll("[data-test='open-readiness']");
-
-const menuItem = (name) => document.querySelector(`[data-test='${name}']`);
-const rowTexts = (wrapper) =>
-  wrapper
-    .findAll("tbody tr")
-    .wrappers.map((row) => row.text().replace(/\s+/g, " "));
+/** The catalog switch of the selected tenant, in the panel. */
+const catalogSwitch = (wrapper) =>
+  panel(wrapper).find("input[data-test='catalog-switch']");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -108,23 +134,77 @@ beforeEach(() => {
     pageSize: 25,
   });
   ApiTenantService.getTenants.mockResolvedValue({ data: TENANTS });
-  ApiTenantService.tenantCountCheck.mockResolvedValue(true);
   ApiTenantService.getReadiness.mockResolvedValue({
     checkedAt: "2026-09-21T08:30:00.000Z",
     criteria: [
       { key: "offers", state: "missing", hint: "Kein Angebot.", offers: [] },
     ],
   });
+  ApiCatalogService.getCatalog.mockResolvedValue({
+    data: JSON.parse(JSON.stringify(CATALOG)),
+  });
+  ApiCatalogService.updateCatalog.mockResolvedValue({ data: {} });
 });
 
 describe("InstanceTenants", () => {
-  it("opens the readiness check of the tenant chosen in the list", async () => {
+  it("lists the tenants by name with their contact facts", async () => {
+    const wrapper = await mountView();
+
+    const [makerspace, sportverein] = rowTexts(wrapper);
+    expect(makerspace).toContain("Makerspace");
+    expect(makerspace).toContain("Keine Kontaktperson");
+    expect(sportverein).toContain("Sabine Sport");
+    expect(sportverein).toContain("Musterstadt");
+    expect(wrapper.find("[data-test='tenant-count']").text()).toBe(
+      "2 Mandanten"
+    );
+  });
+
+  it("narrows the list to what the search matches", async () => {
+    const wrapper = await mountView();
+
+    await wrapper.find("input[data-test='tenant-search']").setValue("sport");
+    await flushPromises();
+
+    expect(rowTexts(wrapper)).toHaveLength(1);
+    expect(rowTexts(wrapper)[0]).toContain("Sportverein");
+  });
+
+  it("shows the selected tenant's facts and actions in the panel", async () => {
+    const wrapper = await mountView();
+    expect(wrapper.find("[data-test='tenant-panel-none']").exists()).toBe(true);
+
+    await selectRow(wrapper, 1);
+
+    const text = panel(wrapper).text();
+    expect(text).toContain("Sportverein");
+    expect(text).toContain("sabine@sportverein.example");
+    expect(text).toContain("Musterstadt");
+    expect(rows(wrapper).at(1).classes()).toContain("tenant-row--selected");
+    expect(panelAction(wrapper, "open-edit").exists()).toBe(true);
+    expect(panelAction(wrapper, "open-delete").exists()).toBe(true);
+  });
+
+  it("opens the tenant page of the selected tenant for editing", async () => {
+    const wrapper = await mountView();
+
+    await selectRow(wrapper, 0);
+    await panelAction(wrapper, "open-edit").trigger("click");
+    await flushPromises();
+
+    expect(selectTenant).toHaveBeenCalledWith(expect.anything(), "t-2");
+    expect(push).toHaveBeenCalledWith({ name: "tenant" });
+    expect(addToast.mock.calls[0][1].message).toContain("Makerspace");
+    expect(panelAction(wrapper, "switch-tenant").exists()).toBe(false);
+  });
+
+  it("opens the readiness check of the selected tenant", async () => {
     const wrapper = await mountView();
     expect(ApiTenantService.getReadiness).not.toHaveBeenCalled();
 
     // Sorted by name: Makerspace (t-2) comes first.
-    await openMenuOf(wrapper, 0);
-    readinessItems()[0].click();
+    await selectRow(wrapper, 0);
+    await panelAction(wrapper, "open-readiness").trigger("click");
     await flushPromises();
 
     expect(ApiTenantService.getReadiness).toHaveBeenCalledWith("t-2");
@@ -137,26 +217,129 @@ describe("InstanceTenants", () => {
     readable = [];
     const wrapper = await mountView();
 
-    await openMenuOf(wrapper, 0);
+    await selectRow(wrapper, 0);
 
-    expect(readinessItems()).toHaveLength(0);
+    expect(panelAction(wrapper, "open-readiness").exists()).toBe(false);
   });
 
-  describe("supervision", () => {
-    it("shows the instance owner the level of every tenant, free where none is stored", async () => {
+  describe("catalog", () => {
+    it("badges the tenants the catalog leaves out and switches the selected one", async () => {
       instanceOwner = true;
       const wrapper = await mountView();
 
-      expect(wrapper.find("thead").text()).toContain("Aufsichtsstufe");
+      expect(ApiCatalogService.getCatalog).toHaveBeenCalledTimes(1);
+      // Makerspace is in the catalog and carries no badge; the Sportverein
+      // is excluded.
+      const badges = (index) =>
+        rows(wrapper).at(index).findAll("[data-test='catalog-badge']");
+      expect(badges(0)).toHaveLength(0);
+      expect(badges(1)).toHaveLength(1);
+      expect(rowTexts(wrapper)[1]).toContain("Nicht im Katalog");
+
+      await selectRow(wrapper, 0);
+      expect(catalogSwitch(wrapper).element.checked).toBe(true);
+      await selectRow(wrapper, 1);
+      expect(catalogSwitch(wrapper).element.checked).toBe(false);
+    });
+
+    it("keeps badge and switch from everyone else and reads no catalog", async () => {
+      const wrapper = await mountView();
+
+      expect(ApiCatalogService.getCatalog).not.toHaveBeenCalled();
+      expect(wrapper.find("[data-test='catalog-badge']").exists()).toBe(false);
+      await selectRow(wrapper, 1);
+      expect(wrapper.find("[data-test='catalog-switch']").exists()).toBe(false);
+    });
+
+    it("takes a tenant out of the catalog without carrying the hero layout", async () => {
+      instanceOwner = true;
+      const wrapper = await mountView();
+      await selectRow(wrapper, 0);
+
+      await catalogSwitch(wrapper).setChecked(false);
+      await flushPromises();
+
+      // Read anew right before the write, then written without the layout.
+      expect(ApiCatalogService.getCatalog).toHaveBeenCalledTimes(2);
+      expect(ApiCatalogService.updateCatalog).toHaveBeenCalledWith({
+        type: "instance",
+        name: "Marktplatz",
+        excludedTenantIds: ["t-1", "t-2"],
+      });
+      expect(catalogSwitch(wrapper).element.checked).toBe(false);
+      expect(
+        rows(wrapper).at(0).find("[data-test='catalog-badge']").exists()
+      ).toBe(true);
+      expect(addToast.mock.calls[0][1].message).toBe(
+        "„Makerspace“ erscheint nicht mehr im Katalog."
+      );
+    });
+
+    it("puts a tenant back into the catalog", async () => {
+      instanceOwner = true;
+      const wrapper = await mountView();
+      await selectRow(wrapper, 1);
+
+      await catalogSwitch(wrapper).setChecked(true);
+      await flushPromises();
+
+      expect(ApiCatalogService.updateCatalog).toHaveBeenCalledWith({
+        type: "instance",
+        name: "Marktplatz",
+        excludedTenantIds: [],
+      });
+      expect(
+        rows(wrapper).at(1).find("[data-test='catalog-badge']").exists()
+      ).toBe(false);
+      expect(addToast.mock.calls[0][1].message).toBe(
+        "„Sportverein“ erscheint jetzt im Katalog."
+      );
+    });
+
+    it("flips the switch back and says so when the save fails", async () => {
+      instanceOwner = true;
+      ApiCatalogService.updateCatalog.mockRejectedValue(new Error("500"));
+      const wrapper = await mountView();
+      await selectRow(wrapper, 0);
+
+      await catalogSwitch(wrapper).setChecked(false);
+      await flushPromises();
+
+      expect(catalogSwitch(wrapper).element.checked).toBe(true);
+      expect(addToast.mock.calls[0][1].type).toBe("error");
+      expect(addToast.mock.calls[0][1].message).toContain("Makerspace");
+    });
+
+    it("hides the switch and says why when the catalog cannot be read", async () => {
+      instanceOwner = true;
+      ApiCatalogService.getCatalog.mockRejectedValue(new Error("403"));
+      const wrapper = await mountView();
+
+      expect(wrapper.find("[data-test='catalog-unavailable']").exists()).toBe(
+        true
+      );
+      await selectRow(wrapper, 0);
+      expect(wrapper.find("[data-test='catalog-switch']").exists()).toBe(false);
+    });
+  });
+
+  describe("supervision", () => {
+    it("badges the instance owner's supervised and blocked tenants, never the free ones", async () => {
+      instanceOwner = true;
+      const wrapper = await mountView();
+
       const [makerspace, sportverein] = rowTexts(wrapper);
-      expect(makerspace).toContain("frei");
+      expect(makerspace).not.toContain("frei");
       expect(sportverein).toContain("gesperrt");
+      // The panel names the level of every tenant, the free one included.
+      await selectRow(wrapper, 0);
+      expect(panel(wrapper).text()).toContain("frei");
     });
 
     it("keeps level, filter and supervision actions from everyone else", async () => {
       const wrapper = await mountView();
 
-      expect(wrapper.find("thead").text()).not.toContain("Aufsichtsstufe");
+      expect(wrapper.text()).not.toContain("gesperrt");
       expect(wrapper.findComponent({ ref: "levelFilter" }).exists()).toBe(
         false
       );
@@ -164,9 +347,11 @@ describe("InstanceTenants", () => {
         false
       );
 
-      await openMenuOf(wrapper, 0);
-      expect(menuItem("open-level-change")).toBeNull();
-      expect(menuItem("open-supervision-history")).toBeNull();
+      await selectRow(wrapper, 0);
+      expect(panelAction(wrapper, "open-level-change").exists()).toBe(false);
+      expect(panelAction(wrapper, "open-supervision-history").exists()).toBe(
+        false
+      );
     });
 
     it("filters the list by level on the server", async () => {
@@ -186,7 +371,7 @@ describe("InstanceTenants", () => {
       });
     });
 
-    it("changes the level of the chosen tenant and shows the effective level", async () => {
+    it("changes the level of the selected tenant and shows the effective level", async () => {
       instanceOwner = true;
       ApiSupervisionService.setTenantLevel.mockResolvedValue({
         supervisionLevel: "supervised",
@@ -195,8 +380,8 @@ describe("InstanceTenants", () => {
       const wrapper = await mountView();
 
       // Sorted by name: Makerspace (t-2) comes first.
-      await openMenuOf(wrapper, 0);
-      menuItem("open-level-change").click();
+      await selectRow(wrapper, 0);
+      await panelAction(wrapper, "open-level-change").trigger("click");
       await flushPromises();
       document
         .querySelector("input[data-test='level-option-supervised']")
@@ -210,6 +395,7 @@ describe("InstanceTenants", () => {
         reason: null,
       });
       expect(rowTexts(wrapper)[0]).toContain("beaufsichtigt");
+      expect(panel(wrapper).text()).toContain("beaufsichtigt");
       expect(addToast.mock.calls[0][1].message).toBe(
         "„Makerspace“ ist jetzt beaufsichtigt."
       );
@@ -230,8 +416,8 @@ describe("InstanceTenants", () => {
         data: [TENANTS[0], { ...TENANTS[1], supervisionLevel: "blocked" }],
       });
 
-      await openMenuOf(wrapper, 0);
-      menuItem("open-level-change").click();
+      await selectRow(wrapper, 0);
+      await panelAction(wrapper, "open-level-change").trigger("click");
       await flushPromises();
       document.querySelector("input[data-test='level-option-blocked']").click();
       await flushPromises();
@@ -249,12 +435,12 @@ describe("InstanceTenants", () => {
       ).toBe(true);
     });
 
-    it("opens the supervision history of the chosen tenant", async () => {
+    it("opens the supervision history of the selected tenant", async () => {
       instanceOwner = true;
       const wrapper = await mountView();
 
-      await openMenuOf(wrapper, 0);
-      menuItem("open-supervision-history").click();
+      await selectRow(wrapper, 0);
+      await panelAction(wrapper, "open-supervision-history").trigger("click");
       await flushPromises();
 
       expect(ApiSupervisionService.getTenantHistory).toHaveBeenCalledWith(
@@ -319,10 +505,10 @@ describe("InstanceTenants", () => {
       await flushPromises();
 
       expect(
-        document.querySelector("[data-test='history-row']").textContent
+        document.querySelector("[data-test='list-row']").textContent
       ).toContain("Makerspace");
-      // The table stays on the filtered list.
-      expect(wrapper.text()).not.toContain("Makerspace");
+      // The list stays filtered.
+      expect(rowTexts(wrapper).join(" ")).not.toContain("Makerspace");
     });
   });
 });

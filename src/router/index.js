@@ -29,7 +29,6 @@ import Instances from "@/views/Management/Instances.vue";
 import InstanceUsers from "@/views/Management/InstanceUsers.vue";
 import InstanceTenants from "@/views/Management/InstanceTenants.vue";
 import InstanceReviewQueue from "@/views/Management/InstanceReviewQueue.vue";
-import SupervisionNotifications from "@/views/Management/SupervisionNotifications.vue";
 import RuleEngineRules from "@/views/Management/RuleEngineRules.vue";
 import RuleEngineEdit from "@/views/Management/RuleEngineEdit.vue";
 import RuleEngineExecutions from "@/views/Management/RuleEngineExecutions.vue";
@@ -104,7 +103,7 @@ const routes = [
     },
   },
   {
-    path: "/instance/pruefliste",
+    path: "/instance/review-queue",
     name: "instance-review-queue",
     component: InstanceReviewQueue,
     meta: {
@@ -114,14 +113,10 @@ const routes = [
     },
   },
   {
+    // The outbox used to be a page of its own; it lives in the review queue's
+    // panel now, and the old address leads there.
     path: "/instance/aufsichtsmitteilungen",
-    name: "supervision-notifications",
-    component: SupervisionNotifications,
-    meta: {
-      title: "Aufsichtsmitteilungen",
-      requiresAuth: true,
-      interfaceName: "instance",
-    },
+    redirect: { name: "instance-review-queue" },
   },
   {
     path: "/instance/benutzer",

@@ -94,8 +94,12 @@ describe("validateOfferForm", () => {
     ).toEqual({});
   });
 
-  it("requires at least one available unit", () => {
-    expect(validateOfferForm(filledForm({ amount: 0 })).amount).toBe(
+  it("takes 0 as the unlimited amount and refuses anything below", () => {
+    expect(validateOfferForm(filledForm({ amount: 0 }))).toEqual({});
+    expect(validateOfferForm(filledForm({ amount: -1 })).amount).toBe(
+      "amount-invalid"
+    );
+    expect(validateOfferForm(filledForm({ amount: 1.5 })).amount).toBe(
       "amount-invalid"
     );
   });
@@ -152,6 +156,21 @@ describe("applyOfferForm", () => {
       { weekdays: [1, 2], startTime: "09:00", endTime: "18:00" },
       { weekdays: [6], startTime: "10:00", endTime: "12:00" },
     ]);
+  });
+
+  it("drops stored opening hours when the offer becomes unrestricted", () => {
+    const stored = new Bookable({
+      isOpeningHoursRelated: true,
+      openingHours: [{ weekdays: [1], startTime: "08:00", endTime: "10:00" }],
+    });
+
+    const bookable = applyOfferForm(
+      stored,
+      filledForm({ availability: "always" })
+    );
+
+    expect(bookable.isOpeningHoursRelated).toBe(false);
+    expect(bookable.openingHours).toEqual([]);
   });
 
   it("keeps what the wizard does not ask for and leaves the source untouched", () => {
@@ -234,16 +253,20 @@ describe("offerFormFromBookable", () => {
     });
   });
 
-  it("asks for price and availability again: stored values prove no deliberate choice", () => {
+  it("shows the stored price and availability as the selected choices", () => {
     const form = offerFormFromBookable(stored);
 
-    expect(form.priceChoice).toBeNull();
-    expect(form.availability).toBeNull();
+    expect(form.priceChoice).toBe("paid");
+    expect(form.availability).toBe("hours");
+    expect(offerFormFromBookable(new Bookable())).toMatchObject({
+      priceChoice: "free",
+      availability: "always",
+    });
   });
 });
 
 describe("storedChoices", () => {
-  it("names what is stored, for the hint beside the renewed choice", () => {
+  it("reads the choices a bookable stores", () => {
     expect(
       storedChoices(
         new Bookable({

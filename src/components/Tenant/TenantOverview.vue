@@ -19,6 +19,18 @@
         </div>
       </v-alert>
 
+      <v-alert
+        v-if="editsForeignTenant"
+        type="info"
+        text
+        dense
+        data-test="foreign-tenant-banner"
+      >
+        {{
+          $t("tenant.list.edit-banner", { name: tenant?.name || tenant?.id })
+        }}
+      </v-alert>
+
       <div class="d-flex align-center mb-2">
         <div>
           <div class="text--secondary">
@@ -369,6 +381,16 @@ export default {
       return this.tabs.filter((tab) => this.isTabVisible(tab));
     },
     // Opened from the guided setup: the way back to the step it came from.
+    /**
+     * The instance owner editing a tenant that is not one of their own: the
+     * page says so, since it looks the same as the owner's own tenant page.
+     */
+    editsForeignTenant() {
+      return (
+        TenantPermissionService.isInstanceOwner() === true &&
+        !TenantPermissionService.isTenantOwner(this.tenantId)
+      );
+    },
     onboardingReturnRoute() {
       return onboardingReturnRoute(this.$route.query, this.tenant?.id);
     },

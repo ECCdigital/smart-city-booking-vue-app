@@ -10,6 +10,9 @@ vi.mock("@/services/api/ApiTenantService", () => ({
 vi.mock("@/services/api/ApiInstanceService", () => ({
   default: { getPublicInstance: vi.fn().mockResolvedValue({}) },
 }));
+vi.mock("@/services/api/ApiAuthService", () => ({
+  default: { resendVerification: vi.fn() },
+}));
 vi.mock("@/services/permissions/TenantPermissionService", () => ({
   default: { isInstanceOwner: () => true },
 }));
@@ -40,10 +43,10 @@ async function openDialog() {
 }
 
 const find = (wrapper, name) => wrapper.find(`[data-test="${name}"]`);
-const input = (wrapper, name) => find(wrapper, name).find("input");
+const input = (wrapper, name) => wrapper.find(`input[data-test="${name}"]`);
 
 async function save(wrapper) {
-  await find(wrapper, "tenant-create-submit").trigger("click");
+  await find(wrapper, "tenant-submit").trigger("click");
   await flushPromises();
 }
 
@@ -60,17 +63,15 @@ describe("TenantCreate — required contact", () => {
   it("prefills the contact from the user account and keeps it editable", async () => {
     const wrapper = await openDialog();
 
-    expect(input(wrapper, "tenant-create-contact-name").element.value).toBe(
+    expect(input(wrapper, "tenant-contact-name").element.value).toBe(
       "Alex Beispiel"
     );
-    expect(input(wrapper, "tenant-create-mail").element.value).toBe(
+    expect(input(wrapper, "tenant-mail").element.value).toBe(
       "alex@example.org"
     );
 
-    await input(wrapper, "tenant-create-name").setValue("Verein");
-    await input(wrapper, "tenant-create-mail").setValue(
-      "kontakt@verein.example"
-    );
+    await input(wrapper, "tenant-name").setValue("Verein");
+    await input(wrapper, "tenant-mail").setValue("kontakt@verein.example");
     await save(wrapper);
 
     expect(ApiTenantService.createTenant).toHaveBeenCalledWith(
@@ -84,14 +85,14 @@ describe("TenantCreate — required contact", () => {
   });
 
   it.each([
-    ["tenant-create-name", "   "],
-    ["tenant-create-contact-name", ""],
-    ["tenant-create-mail", ""],
-    ["tenant-create-mail", "alex@example"],
-    ["tenant-create-mail", "a lex@example.org"],
+    ["tenant-name", "   "],
+    ["tenant-contact-name", ""],
+    ["tenant-mail", ""],
+    ["tenant-mail", "alex@example"],
+    ["tenant-mail", "a lex@example.org"],
   ])("creates nothing with %s set to '%s'", async (field, value) => {
     const wrapper = await openDialog();
-    await input(wrapper, "tenant-create-name").setValue("Verein");
+    await input(wrapper, "tenant-name").setValue("Verein");
     await input(wrapper, field).setValue(value);
 
     await save(wrapper);
@@ -101,7 +102,7 @@ describe("TenantCreate — required contact", () => {
 
   it("starts empty again when it is reopened", async () => {
     const wrapper = await openDialog();
-    await input(wrapper, "tenant-create-name").setValue("Verein");
+    await input(wrapper, "tenant-name").setValue("Verein");
     ApiTenantService.createTenant.mockRejectedValue(refused(500));
     await save(wrapper);
 
@@ -109,8 +110,8 @@ describe("TenantCreate — required contact", () => {
     await wrapper.setProps({ open: true });
     await flushPromises();
 
-    expect(input(wrapper, "tenant-create-name").element.value).toBe("");
-    expect(find(wrapper, "tenant-create-error").exists()).toBe(false);
+    expect(input(wrapper, "tenant-name").element.value).toBe("");
+    expect(find(wrapper, "tenant-error").exists()).toBe(false);
   });
 });
 
@@ -122,7 +123,7 @@ describe("TenantCreate — a refused creation", () => {
   async function refuse(error) {
     ApiTenantService.createTenant.mockRejectedValue(error);
     const wrapper = await openDialog();
-    await input(wrapper, "tenant-create-name").setValue("Verein");
+    await input(wrapper, "tenant-name").setValue("Verein");
     await save(wrapper);
     return wrapper;
   }
@@ -132,7 +133,7 @@ describe("TenantCreate — a refused creation", () => {
       refused(429, { code: "too_many_requests" }, { "retry-after": "7200" })
     );
 
-    expect(find(wrapper, "tenant-create-error").text()).toContain("2 Std.");
+    expect(find(wrapper, "tenant-error").text()).toContain("2 Std.");
     expect(wrapper.emitted("close")).toBeUndefined();
   });
 
@@ -144,7 +145,7 @@ describe("TenantCreate — a refused creation", () => {
       })
     );
 
-    expect(find(wrapper, "tenant-create-error").text()).toContain(
+    expect(find(wrapper, "tenant-error").text()).toContain(
       "Bestätigungs-E-Mail"
     );
   });
@@ -152,9 +153,7 @@ describe("TenantCreate — a refused creation", () => {
   it("says so when the instance's tenant maximum is reached", async () => {
     const wrapper = await refuse(refused(409, { code: "max_tenants_reached" }));
 
-    expect(find(wrapper, "tenant-create-error").text()).toContain(
-      "maximale Anzahl"
-    );
+    expect(find(wrapper, "tenant-error").text()).toContain("maximale Anzahl");
   });
 
   it("marks the field the backend named", async () => {
@@ -162,7 +161,7 @@ describe("TenantCreate — a refused creation", () => {
       refused(400, { code: "invalid_mail", params: { field: "mail" } })
     );
 
-    expect(find(wrapper, "tenant-create-error").text()).toContain("Angaben");
+    expect(find(wrapper, "tenant-error").text()).toContain("Angaben");
     // The dialog content is detached into the `data-app` container.
     expect(document.body.textContent).toContain(
       "Muss gültige E-Mail-Adresse sein."

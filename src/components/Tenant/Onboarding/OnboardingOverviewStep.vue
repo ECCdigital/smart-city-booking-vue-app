@@ -1,79 +1,103 @@
 <template>
   <div data-test="overview-step">
-    <template v-if="done">
-      <h2 class="text-h5 mb-3" data-test="overview-done-title">
-        {{ $t(`tenant.onboarding.overview.done.${variant}.title`) }}
-      </h2>
-      <v-alert
-        v-if="variant !== 'free'"
-        type="success"
-        text
-        dense
-        data-test="overview-done-text"
-      >
-        {{ $t(`tenant.onboarding.overview.done.${variant}.text`) }}
-      </v-alert>
-    </template>
-    <h2 v-else class="text-h5 mb-1">
-      {{ $t("tenant.onboarding.overview.title") }}
-    </h2>
-    <p class="text--secondary">{{ bookable.title }} · {{ tenant.name }}</p>
-
-    <v-simple-table dense class="mb-6">
-      <tbody>
-        <tr v-for="row in summary" :key="row.label">
-          <td class="text--secondary" style="width: 160px">{{ row.label }}</td>
-          <td>{{ row.value }}</td>
-        </tr>
-      </tbody>
-    </v-simple-table>
-
-    <TenantReadinessCheck ref="readiness" :tenant-id="tenant.id" />
-
-    <h3 class="text-h6 mt-6">
-      {{ $t("tenant.onboarding.overview.supplement") }}
-    </h3>
-    <OnboardingSetupLinks
-      :paid="paid"
-      return-step="overview"
-      :bookable-id="bookable.id"
-    />
-
-    <v-alert
-      v-if="!done && !choicesConfirmed"
-      type="warning"
-      text
-      dense
-      class="mt-4"
-      data-test="overview-confirm-choices"
+    <!-- Done: the closing action's result reads as a state, like a booking's. -->
+    <v-sheet
+      v-if="done"
+      outlined
+      class="overview-done"
+      data-test="overview-done"
     >
-      {{ $t("tenant.onboarding.overview.confirm-choices") }}
-    </v-alert>
-    <v-alert v-if="completeFailed" type="error" text dense class="mt-4">
+      <v-avatar color="success" size="32" class="mr-3">
+        <v-icon dark small>mdi-check</v-icon>
+      </v-avatar>
+      <div class="overview-done__text">
+        <div
+          class="overview-done__title success--text"
+          data-test="overview-done-title"
+        >
+          {{ $t(`tenant.onboarding.overview.done.${variant}.title`) }}
+        </div>
+        <div
+          v-if="variant !== 'free'"
+          class="overview-done__hint"
+          data-test="overview-done-text"
+        >
+          {{ $t(`tenant.onboarding.overview.done.${variant}.text`) }}
+        </div>
+      </div>
+    </v-sheet>
+
+    <v-card outlined class="section-card onboarding-step__card">
+      <v-card-title class="section-header">
+        <v-icon>mdi-clipboard-check-outline</v-icon>
+        <span>{{ $t("tenant.readiness.title") }}</span>
+      </v-card-title>
+      <v-divider />
+      <v-card-text>
+        <p class="onboarding-step__lead">
+          {{ $t("tenant.readiness.hint") }}
+        </p>
+        <TenantReadinessCheck
+          ref="readiness"
+          :tenant-id="tenant.id"
+          hide-title
+        />
+      </v-card-text>
+    </v-card>
+
+    <v-card outlined class="section-card onboarding-step__card">
+      <v-card-title class="section-header">
+        <v-icon>mdi-tune-variant</v-icon>
+        <span>{{ $t("tenant.onboarding.overview.supplement") }}</span>
+      </v-card-title>
+      <v-divider />
+      <v-card-text>
+        <OnboardingSetupLinks
+          :paid="paid"
+          return-step="overview"
+          :bookable-id="bookable.id"
+        />
+      </v-card-text>
+    </v-card>
+
+    <v-alert v-if="completeFailed" type="error" text dense>
       {{ $t("tenant.onboarding.overview.complete-failed") }}
     </v-alert>
 
-    <div class="d-flex flex-wrap mt-6" style="gap: 12px">
-      <v-btn
-        v-if="!done"
-        color="primary"
-        :disabled="!choicesConfirmed"
-        :loading="inProgress"
-        @click="$emit('complete')"
-        data-test="overview-complete"
-      >
-        {{ $t(`tenant.onboarding.overview.action.${variant}`) }}
+    <div class="onboarding-actions">
+      <v-btn v-if="!done" text @click="$emit('back')" data-test="overview-back">
+        <v-icon left small>mdi-arrow-left</v-icon>
+        {{ $t("tenant.onboarding.back") }}
       </v-btn>
-      <v-btn outlined @click="$emit('edit-offer')" data-test="overview-edit">
-        {{ $t("tenant.onboarding.overview.edit-offer") }}
-      </v-btn>
-      <v-btn
-        :outlined="!done"
-        :color="done ? 'primary' : undefined"
-        @click="$emit('exit')"
-      >
-        {{ $t("tenant.onboarding.exit") }}
-      </v-btn>
+      <div class="overview-actions__right">
+        <v-btn
+          v-if="!done"
+          text
+          @click="$emit('edit-offer')"
+          data-test="overview-edit"
+        >
+          {{ $t("tenant.onboarding.overview.edit-offer") }}
+        </v-btn>
+        <v-btn
+          v-if="!done"
+          color="primary"
+          depressed
+          :loading="inProgress"
+          @click="$emit('complete')"
+          data-test="overview-complete"
+        >
+          {{ $t(`tenant.onboarding.overview.action.${variant}`) }}
+        </v-btn>
+        <v-btn
+          v-else
+          color="primary"
+          depressed
+          @click="$emit('exit')"
+          data-test="overview-exit"
+        >
+          {{ $t("tenant.onboarding.exit") }}
+        </v-btn>
+      </div>
     </div>
   </div>
 </template>
@@ -81,18 +105,14 @@
 <script>
 import TenantReadinessCheck from "@/components/Tenant/TenantReadinessCheck.vue";
 import OnboardingSetupLinks from "@/components/Tenant/Onboarding/OnboardingSetupLinks.vue";
-import { getTypeText } from "@/utils/bookables";
-import {
-  OFFER_WEEKDAYS,
-  completionVariant,
-  storedChoices,
-} from "@/utils/tenantOnboarding";
+import { completionVariant, storedChoices } from "@/utils/tenantOnboarding";
 
 /**
- * Step 4: summary, the non-binding readiness check and the closing action,
- * which reads by supervision level (supervision spec §9): free publishes,
- * supervised submits for review, blocked notes the publication wish. A stored
- * publication wish is the done state.
+ * Step 4: the non-binding readiness check, the optional supplements and the
+ * closing action, which reads by supervision level (supervision spec §9):
+ * free publishes, supervised submits for review, blocked notes the
+ * publication wish. A stored publication wish is the done state. The
+ * summary of what was saved is the wizard's panel, beside every step.
  */
 export default {
   name: "OnboardingOverviewStep",
@@ -100,7 +120,6 @@ export default {
   props: {
     tenant: { type: Object, required: true },
     bookable: { type: Object, required: true },
-    choicesConfirmed: { type: Boolean, default: false },
     inProgress: { type: Boolean, default: false },
     completeFailed: { type: Boolean, default: false },
   },
@@ -114,58 +133,6 @@ export default {
     paid() {
       return storedChoices(this.bookable).priceChoice === "paid";
     },
-    summary() {
-      const t = (key, params) => this.$t(`tenant.onboarding.${key}`, params);
-      const bookable = this.bookable;
-      const hours = bookable.openingHours?.[0];
-      const price = Number(bookable.priceCategories?.[0]?.priceEur) || 0;
-
-      return [
-        {
-          label: t("overview.summary.offer"),
-          value: `${bookable.title} (${getTypeText(bookable.type)})`,
-        },
-        {
-          label: t("overview.summary.price"),
-          value: this.paid
-            ? `${price.toLocaleString("de-DE", {
-                minimumFractionDigits: 2,
-              })} € · ${
-                this.$te(
-                  `tenant.onboarding.offer.price-types.${bookable.priceType}`
-                )
-                  ? t(`offer.price-types.${bookable.priceType}`)
-                  : bookable.priceType
-              }`
-            : t("offer.price-free"),
-        },
-        {
-          label: t("overview.summary.booking"),
-          value: `${
-            bookable.isScheduleRelated
-              ? t("offer.schedule-period")
-              : t("offer.schedule-none")
-          }, ${t("overview.summary.units", { amount: bookable.amount })}`,
-        },
-        {
-          label: t("overview.summary.confirmation"),
-          value: bookable.autoCommitBooking
-            ? t("offer.confirmation-auto")
-            : t("offer.confirmation-manual"),
-        },
-        {
-          label: t("overview.summary.availability"),
-          value:
-            bookable.isOpeningHoursRelated && hours
-              ? `${(hours.weekdays || [])
-                  .map(
-                    (id) => OFFER_WEEKDAYS.find((day) => day.id === id)?.short
-                  )
-                  .join(", ")} · ${hours.startTime}–${hours.endTime}`
-              : t("offer.availability-always"),
-        },
-      ];
-    },
   },
   methods: {
     reloadReadiness() {
@@ -174,3 +141,32 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.overview-done {
+  display: flex;
+  align-items: center;
+  padding: var(--scb-space-3) var(--scb-space-4);
+  margin-bottom: var(--scb-gap-cards);
+  border-radius: var(--scb-radius-surface) !important;
+}
+
+.overview-done__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: var(--scb-line-height-tight);
+}
+
+.overview-done__hint {
+  margin-top: 2px;
+  font-size: var(--scb-font-size-sm);
+  color: var(--scb-text-muted);
+}
+
+.overview-actions__right {
+  display: flex;
+  align-items: center;
+  gap: var(--scb-space-2);
+  margin-left: auto;
+}
+</style>

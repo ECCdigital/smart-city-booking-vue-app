@@ -1,101 +1,114 @@
 <template>
-  <AdminLayout>
-    <p class="text--secondary">{{ $t("tenant.onboarding.intro") }}</p>
-    <v-progress-linear v-if="loading" indeterminate color="primary" />
+  <AdminLayout scroll-body class="onboarding-page">
+    <template #page-header>
+      <div class="onboarding-page__toolbar">
+        <v-btn
+          text
+          small
+          class="onboarding-page__exit px-0"
+          data-test="exit"
+          @click="exit"
+        >
+          <v-icon left small>mdi-arrow-left</v-icon>
+          {{ $t("tenant.onboarding.exit") }}
+        </v-btn>
+        <template v-if="tenant">
+          <span class="onboarding-page__dot grey--text">·</span>
+          <span class="text-body-2 grey--text text--darken-2">
+            {{ $t("booking.page.tenant", { name: tenant.name }) }}
+          </span>
+        </template>
+      </div>
+    </template>
+
+    <v-skeleton-loader v-if="loading" type="article, list-item-three-line" />
     <v-alert v-else-if="loadFailed" type="error" text data-test="load-failed">
       {{ $t("tenant.onboarding.load-failed") }}
     </v-alert>
-    <v-row v-else>
-      <v-col cols="12" md="3">
-        <v-list dense nav class="pa-0" data-test="wizard-steps">
-          <v-list-item
-            v-for="(entry, index) in stepEntries"
-            :key="entry.step"
-            :disabled="!entry.reachable"
-            :input-value="entry.step === step"
-            color="primary"
-            @click="goTo(entry.step)"
-            :data-test="`wizard-step-${entry.step}`"
-          >
-            <v-list-item-content>
-              <v-list-item-title>
-                {{ index + 1 }}. {{ entry.label }}
-              </v-list-item-title>
-              <v-list-item-subtitle>{{ entry.hint }}</v-list-item-subtitle>
-            </v-list-item-content>
-          </v-list-item>
-        </v-list>
-      </v-col>
-      <v-col cols="12" md="9">
-        <v-card outlined class="pa-6">
-          <OnboardingSupervisionNotice :level="level" />
 
-          <OnboardingTenantStep
-            v-if="step === 'tenant'"
-            :tenant="tenant"
-            :prefill="contactPrefill"
-            :in-progress="inProgress"
-            :error="tenantError"
-            :verification-mail="verificationMail"
-            :verification-limit="verificationLimit"
-            @submit="createTenant"
-            @resend-verification="resendVerification"
-            @sso-login="ssoLogin"
-            @continue="goTo('offer')"
-            @exit="exit"
-          />
-          <OnboardingOfferStep
-            v-else-if="step === 'offer'"
-            :key="bookable ? bookable.id : 'new'"
-            :bookable="bookable"
-            :in-progress="inProgress"
-            :save-failed="offerSaveFailed"
-            @submit="saveOffer"
-            @exit="exit"
-          />
-          <div v-else-if="step === 'setup'" data-test="setup-step">
-            <h2 class="text-h5 mb-1">
-              {{ $t("tenant.onboarding.setup.title") }}
-            </h2>
-            <p class="text--secondary">
-              {{ $t("tenant.onboarding.setup.intro") }}
-            </p>
-            <OnboardingSetupLinks
-              :paid="paid"
-              return-step="setup"
-              :bookable-id="bookable.id"
-            />
-            <v-alert type="info" text dense class="mt-4">
-              {{ $t("tenant.onboarding.setup.defaults") }}
-            </v-alert>
-            <div class="d-flex flex-wrap mt-6" style="gap: 12px">
-              <v-btn
-                color="primary"
-                @click="goTo('overview')"
-                data-test="setup-continue"
-              >
-                {{ $t("tenant.onboarding.setup.continue") }}
-              </v-btn>
-              <v-btn outlined @click="exit">
-                {{ $t("tenant.onboarding.exit") }}
-              </v-btn>
-            </div>
+    <div v-else class="onboarding-page__body">
+      <div class="onboarding-page__main">
+        <OnboardingPath :entries="stepEntries" :value="step" @input="goTo" />
+
+        <OnboardingTenantStep
+          v-if="step === 'tenant'"
+          :tenant="tenant"
+          :prefill="contactPrefill"
+          :in-progress="inProgress"
+          :error="tenantError"
+          :verification-mail="verificationMail"
+          :verification-limit="verificationLimit"
+          @submit="createTenant"
+          @resend-verification="resendVerification"
+          @sso-login="ssoLogin"
+          @continue="goTo('offer')"
+        />
+        <OnboardingOfferStep
+          v-else-if="step === 'offer'"
+          :key="bookable ? bookable.id : 'new'"
+          :bookable="bookable"
+          :in-progress="inProgress"
+          :save-failed="offerSaveFailed"
+          @submit="saveOffer"
+          @back="goTo('tenant')"
+        />
+        <div v-else-if="step === 'setup'" data-test="setup-step">
+          <v-card outlined class="section-card onboarding-page__card">
+            <v-card-title class="section-header">
+              <v-icon>mdi-tune-variant</v-icon>
+              <span>{{ $t("tenant.onboarding.setup.title") }}</span>
+            </v-card-title>
+            <v-divider />
+            <v-card-text>
+              <p class="onboarding-page__lead">
+                {{ $t("tenant.onboarding.setup.intro") }}
+              </p>
+              <OnboardingSetupLinks
+                :paid="paid"
+                return-step="setup"
+                :bookable-id="bookable.id"
+              />
+              <p class="onboarding-page__fine mb-0">
+                {{ $t("tenant.onboarding.setup.defaults") }}
+              </p>
+            </v-card-text>
+          </v-card>
+          <div class="onboarding-actions">
+            <v-btn text @click="goTo('offer')" data-test="setup-back">
+              <v-icon left small>mdi-arrow-left</v-icon>
+              {{ $t("tenant.onboarding.back") }}
+            </v-btn>
+            <v-btn
+              color="primary"
+              depressed
+              @click="goTo('overview')"
+              data-test="setup-continue"
+            >
+              {{ $t("tenant.onboarding.setup.continue") }}
+            </v-btn>
           </div>
-          <OnboardingOverviewStep
-            v-else
-            ref="overview"
-            :tenant="tenant"
-            :bookable="bookable"
-            :choices-confirmed="choicesConfirmed"
-            :in-progress="inProgress"
-            :complete-failed="completeFailed"
-            @complete="complete"
-            @edit-offer="goTo('offer')"
-            @exit="exit"
-          />
-        </v-card>
-      </v-col>
-    </v-row>
+        </div>
+        <OnboardingOverviewStep
+          v-else
+          ref="overview"
+          :tenant="tenant"
+          :bookable="bookable"
+          :in-progress="inProgress"
+          :complete-failed="completeFailed"
+          @complete="complete"
+          @edit-offer="goTo('offer')"
+          @back="goTo('setup')"
+          @exit="exit"
+        />
+      </div>
+
+      <OnboardingPanel
+        class="onboarding-page__panel"
+        :tenant="tenant"
+        :bookable="bookable"
+        :level="level"
+      />
+    </div>
   </AdminLayout>
 </template>
 
@@ -109,7 +122,8 @@ import ApiAuthService from "@/services/api/ApiAuthService";
 import Bookable from "@/entities/bookable";
 import Tenant from "@/entities/tenant";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
-import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
+import OnboardingPath from "@/components/Tenant/Onboarding/OnboardingPath.vue";
+import OnboardingPanel from "@/components/Tenant/Onboarding/OnboardingPanel.vue";
 import OnboardingTenantStep from "@/components/Tenant/Onboarding/OnboardingTenantStep.vue";
 import OnboardingOfferStep from "@/components/Tenant/Onboarding/OnboardingOfferStep.vue";
 import OnboardingSetupLinks from "@/components/Tenant/Onboarding/OnboardingSetupLinks.vue";
@@ -126,22 +140,22 @@ import {
   tenantCreationError,
 } from "@/utils/tenantOnboarding";
 import { rateLimitOf } from "@/utils/rateLimit";
-import {
-  confirmChoices,
-  hasConfirmedChoices,
-  resetConfirmedChoices,
-} from "@/utils/tenantOnboardingRun";
 
 /**
  * The guided setup: tenant, first bookable, optional setup, overview. Every
  * step saves through the regular API, so leaving keeps what was saved, and a
  * resume (`?tenant=`) loads the current data.
+ *
+ * Drawn as the booking page is: the progress as a headline over its path,
+ * the step's form in section cards, and beside it a sticky panel with the
+ * facts the run has saved so far.
  */
 export default {
   name: "TenantOnboarding",
   components: {
     AdminLayout,
-    OnboardingSupervisionNotice,
+    OnboardingPath,
+    OnboardingPanel,
     OnboardingTenantStep,
     OnboardingOfferStep,
     OnboardingSetupLinks,
@@ -156,7 +170,6 @@ export default {
       tenant: null,
       bookable: null,
       initialLevel: null,
-      choicesConfirmed: false,
       tenantError: null,
       verificationMail: null,
       verificationLimit: null,
@@ -176,6 +189,7 @@ export default {
     contactPrefill() {
       return contactPrefill(this.user);
     },
+    /** The path's segments: what each step holds, and whether it can be opened. */
     stepEntries() {
       const done = {
         tenant: !!this.tenant,
@@ -192,6 +206,8 @@ export default {
       return WIZARD_STEPS.map((step) => ({
         step,
         reachable: reachable[step],
+        state:
+          step === this.step ? "current" : done[step] ? "done" : "upcoming",
         label: this.$t(`tenant.onboarding.steps.${step}.label`),
         hint: this.$t(
           `tenant.onboarding.steps.${step}.hint-${done[step] ? "done" : "open"}`
@@ -274,22 +290,17 @@ export default {
         null;
 
       // Back from the legal or payment form: the run continues where it
-      // left. Any other entry resumes at the bookable, where price and
-      // availability are confirmed again.
+      // left. Any other entry resumes at the bookable.
       const returnStep = this.$route.query.step;
       const returning =
-        this.bookable &&
-        hasConfirmedChoices(this.bookable.id) &&
-        ["setup", "overview"].includes(returnStep);
-      this.choicesConfirmed = !!returning;
+        this.bookable && ["setup", "overview"].includes(returnStep);
       this.step = returning ? returnStep : startStep({ tenant: this.tenant });
     },
     goTo(step) {
       this.step = step;
-      window.scrollTo(0, 0);
+      this.$el.querySelector(".admin-page__body--scroll")?.scrollTo(0, 0);
     },
     exit() {
-      resetConfirmedChoices();
       this.$router.push({ name: "dashboard" });
     },
     async createTenant(form) {
@@ -329,8 +340,6 @@ export default {
           this.tenant.id
         );
         this.bookable = response.data;
-        confirmChoices(this.bookable.id);
-        this.choicesConfirmed = true;
         this.goTo("setup");
       } catch (error) {
         console.error(error);
@@ -345,7 +354,6 @@ export default {
      * §6.1); a missing payment setup does not stand in the way.
      */
     async complete() {
-      if (!this.choicesConfirmed) return;
       this.inProgress = true;
       this.completeFailed = false;
       try {
@@ -365,3 +373,106 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.onboarding-page__toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+
+/* Two columns as the booking page draws them: the steps in the wide
+   column, the run's facts in a sticky panel beside them. */
+.onboarding-page__body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--scb-gap-columns);
+}
+
+.onboarding-page__main {
+  flex: 1;
+  min-width: 0;
+  max-width: 880px;
+}
+
+.onboarding-page__panel {
+  width: var(--scb-panel-width);
+  flex: none;
+  position: sticky;
+  top: 0;
+  margin-bottom: var(--scb-gap-cards);
+}
+
+.onboarding-page__card {
+  margin-bottom: var(--scb-gap-cards);
+}
+
+.onboarding-page__lead {
+  font-size: var(--scb-font-size-md);
+  color: var(--scb-text-muted);
+}
+
+.onboarding-page__fine {
+  margin-top: var(--scb-space-4);
+  font-size: var(--scb-font-size-xs);
+  color: var(--scb-text-caption);
+}
+
+/* $scb-bp-md / $scb-bp-sm / $scb-bp-xs of tokens.scss. */
+@media (max-width: 1264px) {
+  .onboarding-page__panel {
+    width: var(--scb-panel-width-narrow);
+  }
+}
+
+@media (max-width: 959px) {
+  .onboarding-page__body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .onboarding-page__panel {
+    width: 100%;
+    position: static;
+  }
+}
+
+@media (max-width: 599px) {
+  .onboarding-page__dot {
+    display: none;
+  }
+}
+</style>
+
+<style>
+/* The step footers and the sectioned forms the step components share; the
+   selectors are the wizard's own, so the sheet is plain (not scoped). */
+.onboarding-page .onboarding-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--scb-space-3);
+  margin: var(--scb-space-2) 0 var(--scb-gap-cards);
+}
+
+.onboarding-page .onboarding-actions > :only-child {
+  margin-left: auto;
+}
+
+.onboarding-page .onboarding-actions__note {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: var(--scb-font-size-xs);
+  color: var(--scb-text-caption);
+}
+
+.onboarding-page .section-card .v-card__text {
+  padding: var(--scb-section-body-padding);
+}
+
+.onboarding-page .section-card .v-card__text > p:last-child {
+  margin-bottom: 0;
+}
+</style>

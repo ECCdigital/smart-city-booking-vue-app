@@ -209,20 +209,19 @@ describe("OfferReviewPanel", () => {
     expect(find(wrapper, "review-panel").exists()).toBe(false);
   });
 
-  it("shows a free tenant's owner an existing status without explaining supervision", () => {
+  it("hides a status left over on a free tenant's offer", () => {
     const wrapper = mountPanel({
       supervisionLevel: "free",
       review: review({ status: "pending", submittedAt: SUBMITTED_AT }),
     });
 
-    expect(find(wrapper, "review-status").text()).toBe("Prüfung ausstehend");
-    expect(find(wrapper, "review-effect").exists()).toBe(false);
+    expect(find(wrapper, "review-panel").exists()).toBe(false);
   });
 
-  it("tells the instance owner that the status of a free tenant has no effect", () => {
+  it("stays quiet for the instance owner of a free tenant too", () => {
     signInAs({ instanceOwner: true });
     const wrapper = mountPanel({ supervisionLevel: "free", isPublic: true });
 
-    expect(find(wrapper, "review-effect").text()).toContain("ohne Wirkung");
+    expect(find(wrapper, "review-panel").exists()).toBe(false);
   });
 });

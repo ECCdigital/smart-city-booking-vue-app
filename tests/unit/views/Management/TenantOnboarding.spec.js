@@ -27,7 +27,7 @@ vi.mock("@/layouts/Admin", () => ({
   default: {
     name: "AdminLayout",
     render(h) {
-      return h("div", this.$slots.default);
+      return h("div", [this.$slots["page-header"], this.$slots.default]);
     },
   },
 }));
@@ -45,10 +45,6 @@ import ApiAuthService from "@/services/api/ApiAuthService";
 import Bookable from "@/entities/bookable";
 import TenantOnboarding from "@/views/Management/TenantOnboarding.vue";
 import OnboardingOfferStep from "@/components/Tenant/Onboarding/OnboardingOfferStep.vue";
-import {
-  confirmChoices,
-  resetConfirmedChoices,
-} from "@/utils/tenantOnboardingRun";
 
 const READINESS = {
   checkedAt: "2026-09-21T08:00:00.000Z",
@@ -142,7 +138,6 @@ async function fillOffer(wrapper, values) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  resetConfirmedChoices();
   window.scrollTo = vi.fn();
   instanceOwner = false;
   push = vi.fn();
@@ -552,13 +547,13 @@ describe("TenantOnboarding — leaving and resuming", () => {
     const wrapper = mountWizard({ tenant: "t-1" });
     await flushPromises();
 
-    await wrapper.findComponent(OnboardingOfferStep).vm.$emit("exit");
+    await find(wrapper, "exit").trigger("click");
 
     expect(push).toHaveBeenCalledWith({ name: "dashboard" });
     expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
   });
 
-  it("resumes with the current data and asks for price and availability again", async () => {
+  it("resumes with the current data, price and availability as stored", async () => {
     ApiBookablesService.getBookables.mockResolvedValue({
       data: [
         storedBookable({
@@ -573,13 +568,27 @@ describe("TenantOnboarding — leaving and resuming", () => {
     const step = wrapper.findComponent(OnboardingOfferStep);
     expect(step.vm.form.title).toBe("Saal (bearbeitet)");
     expect(step.vm.form.price).toBe(15);
-    expect(step.vm.form.priceChoice).toBeNull();
-    expect(step.vm.form.availability).toBeNull();
-    expect(step.text()).toContain("Gespeichert: Kostenpflichtig");
+    expect(step.vm.form.priceChoice).toBe("paid");
+    expect(step.vm.form.availability).toBe("always");
+  });
 
+  it("saves an unlimited amount as 0", async () => {
+    const wrapper = mountWizard({ tenant: "t-1" });
+    await flushPromises();
+    await fillOffer(wrapper, {
+      type: "room",
+      title: "Saal",
+      priceChoice: "free",
+      availability: "always",
+    });
+
+    await find(wrapper, "offer-amount-toggle-unlimited").trigger("click");
+    expect(find(wrapper, "offer-amount-unlimited").exists()).toBe(true);
     await find(wrapper, "offer-step").trigger("submit");
     await flushPromises();
-    expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
+
+    const saved = ApiBookablesService.createOrUpdateBookable.mock.calls[0][0];
+    expect(saved.amount).toBe(0);
   });
 
   it("leaves the tickets of an event to the regular administration", async () => {
@@ -597,27 +606,10 @@ describe("TenantOnboarding — leaving and resuming", () => {
     );
   });
 
-  it("does not close a resumed run before the choices are confirmed", async () => {
+  it("returns from the legal or payment form to the step it left", async () => {
     ApiBookablesService.getBookables.mockResolvedValue({
       data: [storedBookable()],
     });
-    const wrapper = mountWizard({ tenant: "t-1" });
-    await flushPromises();
-
-    await find(wrapper, "wizard-step-overview").trigger("click");
-    await flushPromises();
-
-    expect(find(wrapper, "overview-confirm-choices").exists()).toBe(true);
-    expect(find(wrapper, "overview-complete").attributes("disabled")).toBe(
-      "disabled"
-    );
-  });
-
-  it("returns from the legal or payment form to the step it left, choices still confirmed", async () => {
-    ApiBookablesService.getBookables.mockResolvedValue({
-      data: [storedBookable()],
-    });
-    confirmChoices("b-1");
 
     const wrapper = mountWizard({
       tenant: "t-1",
@@ -627,19 +619,17 @@ describe("TenantOnboarding — leaving and resuming", () => {
     await flushPromises();
 
     expect(find(wrapper, "overview-step").exists()).toBe(true);
-    expect(find(wrapper, "overview-confirm-choices").exists()).toBe(false);
+    expect(find(wrapper, "overview-complete").attributes("disabled")).toBe(
+      undefined
+    );
   });
 
-  it("treats a return address without a running session as a resume", async () => {
+  it("resumes at the bookable when no return step is named", async () => {
     ApiBookablesService.getBookables.mockResolvedValue({
       data: [storedBookable()],
     });
 
-    const wrapper = mountWizard({
-      tenant: "t-1",
-      bookable: "b-1",
-      step: "overview",
-    });
+    const wrapper = mountWizard({ tenant: "t-1", bookable: "b-1" });
     await flushPromises();
 
     expect(find(wrapper, "offer-step").exists()).toBe(true);

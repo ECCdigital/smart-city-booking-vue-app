@@ -1,9 +1,11 @@
 <template>
   <div data-test="readiness-check">
-    <h3 class="text-h6 mb-1">{{ $t("tenant.readiness.title") }}</h3>
-    <p class="text-body-2 text--secondary">
-      {{ $t("tenant.readiness.hint") }}
-    </p>
+    <template v-if="!hideTitle">
+      <h3 class="text-h6 mb-1">{{ $t("tenant.readiness.title") }}</h3>
+      <p class="text-body-2 text--secondary">
+        {{ $t("tenant.readiness.hint") }}
+      </p>
+    </template>
     <div class="d-flex align-center flex-wrap mb-2">
       <span
         v-if="checkedAt"
@@ -69,6 +71,8 @@ export default {
   name: "TenantReadinessCheck",
   props: {
     tenantId: { type: String, required: true },
+    /** Without its own heading, for a host that names the section itself. */
+    hideTitle: { type: Boolean, default: false },
   },
   data() {
     return { loading: false, failed: false, checkedAt: null, criteria: [] };

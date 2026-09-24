@@ -1,5 +1,12 @@
 <template>
-  <v-chip small label outlined :color="color" data-test="supervision-level">
+  <v-chip
+    :small="!xSmall"
+    :x-small="xSmall"
+    label
+    outlined
+    :color="color"
+    data-test="supervision-level"
+  >
     {{ $t(labelKey) }}
   </v-chip>
 </template>
@@ -12,6 +19,8 @@ export default {
   name: "SupervisionLevelChip",
   props: {
     level: { type: String, default: null },
+    /** The badge beside a name in a list row, a size down from the chip. */
+    xSmall: { type: Boolean, default: false },
   },
   computed: {
     color() {

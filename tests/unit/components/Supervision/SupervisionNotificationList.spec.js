@@ -10,17 +10,9 @@ import {
 vi.mock("@/services/api/ApiSupervisionNotificationService", () => ({
   default: { getNotifications: vi.fn(), retry: vi.fn() },
 }));
-vi.mock("@/layouts/Admin.vue", () => ({
-  default: {
-    name: "AdminLayout",
-    render(h) {
-      return h("div", this.$slots.default);
-    },
-  },
-}));
 
 import ApiSupervisionNotificationService from "@/services/api/ApiSupervisionNotificationService";
-import SupervisionNotifications from "@/views/Management/SupervisionNotifications.vue";
+import SupervisionNotificationList from "@/components/Supervision/SupervisionNotificationList.vue";
 
 const FAILED_ROW = {
   id: "n-1",
@@ -63,6 +55,7 @@ const SENT_ROW = {
 };
 
 const api = ApiSupervisionNotificationService;
+const firstRow = (wrapper) => wrapper.find("[data-test^='notification-row-']");
 const retryButton = (wrapper, id = "n-1") =>
   wrapper.find(`[data-test='notification-retry-${id}']`);
 const lastToast = () => addToast.mock.calls.at(-1)[1];
@@ -90,7 +83,7 @@ async function mountView() {
       toasts: { namespaced: true, actions: { add: addToast } },
     },
   });
-  const wrapper = mountComponent(SupervisionNotifications, { store });
+  const wrapper = mountComponent(SupervisionNotificationList, { store });
   await flushPromises();
   return wrapper;
 }
@@ -102,20 +95,21 @@ beforeEach(() => {
   );
 });
 
-describe("SupervisionNotifications", () => {
+describe("SupervisionNotificationList", () => {
   it("opens on the notices that did not go out", async () => {
     const wrapper = await mountView();
 
     expect(
       ApiSupervisionNotificationService.getNotifications
     ).toHaveBeenLastCalledWith({ status: "failed", page: 1, pageSize: 50 });
-    const row = wrapper.find("tbody tr").text();
+    const row = firstRow(wrapper).text();
     expect(row).toContain("Eintritt in die Prüfliste");
     expect(row).toContain("Sportverein");
     expect(row).toContain("Turnhalle, Sommerfest");
     expect(row).toContain("owner@example.org");
     expect(row).toContain("fehlgeschlagen");
     expect(row).toContain("mail_disabled");
+    expect(row).toContain("2 Versuche");
   });
 
   it("says so when nothing failed", async () => {
@@ -138,7 +132,7 @@ describe("SupervisionNotifications", () => {
       page: 1,
       pageSize: 50,
     });
-    expect(wrapper.find("tbody tr").text()).toContain("gesendet");
+    expect(firstRow(wrapper).text()).toContain("gesendet");
   });
 
   it("offers no retry on a row that went out", async () => {
@@ -259,6 +253,6 @@ describe("SupervisionNotifications", () => {
     first.resolve(page([]));
     await flushPromises();
 
-    expect(wrapper.find("tbody tr").text()).toContain("gesendet");
+    expect(firstRow(wrapper).text()).toContain("gesendet");
   });
 });

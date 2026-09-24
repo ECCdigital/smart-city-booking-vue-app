@@ -64,7 +64,7 @@ async function mountList(propsData) {
 
 const rowTexts = (wrapper) =>
   wrapper
-    .findAll("[data-test='history-row']")
+    .findAll("[data-test='list-row']")
     .wrappers.map((row) => row.text().replace(/\s+/g, " "));
 
 beforeEach(() => {
@@ -89,6 +89,7 @@ describe("SupervisionHistoryList", () => {
 
     const [levelChange] = rowTexts(wrapper);
     expect(levelChange).toContain("21.09.26");
+    expect(levelChange).toContain("14:00");
     expect(levelChange).toContain("Aufsichtsstufe geändert");
     expect(levelChange).toContain("owner@example.org");
     expect(levelChange).toContain("frei → gesperrt");
@@ -163,12 +164,13 @@ describe("SupervisionHistoryList", () => {
     );
     const wrapper = await mountList({ tenantId: "t-1" });
 
-    wrapper.findComponent({ name: "v-pagination" }).vm.$emit("input", 3);
+    expect(wrapper.text()).toContain("1–25 von 60");
+    await wrapper.find("[data-test='list-next']").trigger("click");
     await flushPromises();
 
     expect(ApiSupervisionService.getTenantHistory).toHaveBeenLastCalledWith(
       "t-1",
-      { page: 3, pageSize: 25 }
+      { page: 2, pageSize: 25 }
     );
   });
 

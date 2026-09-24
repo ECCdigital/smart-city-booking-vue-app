@@ -21,6 +21,18 @@ class TenantPermissionService {
   }
 
   /**
+   * Membership of one tenant: the permissions payload lists a membership
+   * for every tenant the user belongs to, owner or not. An instance owner
+   * sees every tenant, but is a member of only these - "Meine Mandanten"
+   * on the tenant overview draws the line here.
+   */
+  static isTenantMember(tenantId) {
+    return (user.state.data?.permissions?.tenants || []).some(
+      (p) => p.tenantId === tenantId
+    );
+  }
+
+  /**
    * Ownership of one tenant, read from the membership the permissions payload
    * carries. Update and delete ask the identical question, so they share this.
    */
@@ -77,6 +89,15 @@ class TenantPermissionService {
    * `{ any: "instanceOwner" }`.
    */
   static allowSupervise() {
+    return TenantPermissionService.isInstanceOwner() === true;
+  }
+
+  /**
+   * Whether a tenant is played out in the instance's catalog is an instance
+   * setting (`PUT /api/catalog`), so only the instance owner changes it - the
+   * Portal tab of the instance settings is gated the same way.
+   */
+  static allowCatalogExposure() {
     return TenantPermissionService.isInstanceOwner() === true;
   }
 

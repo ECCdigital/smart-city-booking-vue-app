@@ -69,6 +69,24 @@ describe("TenantPermissionService", () => {
     });
   });
 
+  describe("isTenantMember", () => {
+    it("is true for a tenant the payload lists a membership for, owner or not", () => {
+      signIn({ tenants: [membership({ isOwner: false })] });
+
+      expect(TenantPermissionService.isTenantMember(TENANT_ID)).toBe(true);
+    });
+
+    it("is false for a tenant without membership, even for the instance owner", () => {
+      signIn({ instanceOwner: true, tenants: [] });
+
+      expect(TenantPermissionService.isTenantMember(TENANT_ID)).toBe(false);
+    });
+
+    it("is false while nobody is signed in", () => {
+      expect(TenantPermissionService.isTenantMember(TENANT_ID)).toBe(false);
+    });
+  });
+
   describe("allowCreate", () => {
     it("lets the instance owner through", () => {
       signIn({ instanceOwner: true, allowCreateTenant: false });

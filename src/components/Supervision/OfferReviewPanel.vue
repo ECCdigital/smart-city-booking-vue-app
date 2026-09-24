@@ -120,7 +120,6 @@ import {
   reviewEffectKey,
   reviewStatusView,
   showsReview,
-  showsReviewEffect,
 } from "@/utils/offerReview";
 
 /** The decisions that ask for a reason first. */
@@ -166,7 +165,6 @@ export default {
       return reviewActions(this.review, this.viewer);
     },
     effectKey() {
-      if (!showsReviewEffect(this.supervisionLevel, this.viewer)) return null;
       return reviewEffectKey(
         { review: this.review, isPublic: this.isPublic },
         this.supervisionLevel

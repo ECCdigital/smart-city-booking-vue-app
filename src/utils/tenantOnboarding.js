@@ -4,9 +4,9 @@
  * supervision level (glossary "Aufsichtsstufe") changes about the closing
  * step. Pure, so the wizard view only wires it to the API.
  *
- * The wizard stores no progress: it is resumed from the current data, and
- * stored values prove no deliberate choice - price and availability are asked
- * again on every run.
+ * The wizard stores no progress: it is resumed from the current data, price
+ * and availability included - what the bookable stores is what the form
+ * shows, so a saved opening-hours pattern is the selected tile on return.
  */
 
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
@@ -74,10 +74,7 @@ export function showsSupervisionNotice(level) {
   return completionVariant(level) !== SUPERVISION_LEVELS.FREE;
 }
 
-/**
- * Resuming always passes the bookable step, where price and availability are
- * confirmed again.
- */
+/** Resuming always passes the bookable step, where the draft is checked. */
 export function startStep({ tenant }) {
   return tenant ? "offer" : "tenant";
 }
@@ -125,9 +122,12 @@ export function offerFormFromBookable(bookable) {
   const form = emptyOfferForm();
   const hours = bookable.openingHours?.[0];
   const price = priceOf(bookable.priceCategories?.[0]);
+  const stored = storedChoices(bookable);
 
   return {
     ...form,
+    priceChoice: stored.priceChoice,
+    availability: stored.availability,
     type: bookable.type || "",
     title: bookable.title || "",
     description: bookable.description || "",
@@ -152,8 +152,9 @@ export function validateOfferForm(form) {
   if (!OFFER_BOOKABLE_TYPES.includes(form.type)) errors.type = "required";
   if (!form.title || !form.title.trim()) errors.title = "required";
 
+  // `0` is the unlimited amount, as the bookable editor reads it.
   const amount = toNumber(form.amount);
-  if (!Number.isInteger(amount) || amount < 1) errors.amount = "amount-invalid";
+  if (!Number.isInteger(amount) || amount < 0) errors.amount = "amount-invalid";
 
   if (form.priceChoice !== "free" && form.priceChoice !== "paid") {
     errors.priceChoice = "choice-required";
@@ -178,9 +179,9 @@ export function validateOfferForm(form) {
 
 /**
  * The bookable with the form applied, as a plain copy. What the wizard does
- * not ask for - publication wish, further opening hours rows, the further
- * price categories of a paid offer - stays as stored. A free offer is free in
- * every category.
+ * not ask for - publication wish, the further price categories of a paid
+ * offer - stays as stored. A free offer is free in every category, and an
+ * unrestricted one keeps no opening hours: the tile says what is stored.
  */
 export function applyOfferForm(bookable, form) {
   const next = JSON.parse(JSON.stringify(bookable));
@@ -216,6 +217,8 @@ export function applyOfferForm(bookable, form) {
       },
       ...(next.openingHours || []).slice(1),
     ];
+  } else {
+    next.openingHours = [];
   }
 
   return next;

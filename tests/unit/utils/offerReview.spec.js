@@ -6,7 +6,6 @@ import {
   reviewEffectKey,
   reviewStatusView,
   showsReview,
-  showsReviewEffect,
 } from "@/utils/offerReview";
 
 const TENANT_OWNER = { tenantOwner: true, instanceOwner: false };
@@ -72,8 +71,6 @@ describe("reviewEffectKey", () => {
   const STATUSES = [null, "pending", "approved", "rejected"];
   const rows = [];
   for (const status of STATUSES) {
-    rows.push(["free", status, false, "free-unlisted"]);
-    rows.push(["free", status, true, "free-listed"]);
     rows.push(["blocked", status, false, "blocked"]);
     rows.push(["blocked", status, true, "blocked"]);
   }
@@ -93,6 +90,12 @@ describe("reviewEffectKey", () => {
     }
   );
 
+  it("names no effect for a free tenant", () => {
+    expect(
+      reviewEffectKey({ review: review("approved"), isPublic: true }, "free")
+    ).toBe(null);
+  });
+
   it("names no effect while the level is unknown", () => {
     expect(reviewEffectKey({ review: review("approved") }, undefined)).toBe(
       null
@@ -102,33 +105,22 @@ describe("reviewEffectKey", () => {
 });
 
 describe("showsReview", () => {
-  it("stays quiet for the tenant owner of a free tenant without a review status", () => {
+  it("shows nothing for a free tenant - no status, no viewer changes that", () => {
     expect(showsReview(review(null), "free", TENANT_OWNER)).toBe(false);
-    expect(showsReview(review(null), undefined, TENANT_OWNER)).toBe(false);
+    expect(showsReview(review("rejected"), "free", TENANT_OWNER)).toBe(false);
+    expect(showsReview(review(null), "free", INSTANCE_OWNER)).toBe(false);
+    expect(showsReview(review("pending"), "free", INSTANCE_OWNER)).toBe(false);
   });
 
-  it("shows an existing status under every level", () => {
-    expect(showsReview(review("rejected"), "free", TENANT_OWNER)).toBe(true);
-    expect(showsReview(review("pending"), undefined, MANAGER)).toBe(true);
-  });
-
-  it("always shows under supervision and to the instance owner", () => {
+  it("always shows under supervision", () => {
     expect(showsReview(review(null), "supervised", TENANT_OWNER)).toBe(true);
     expect(showsReview(review(null), "blocked", TENANT_OWNER)).toBe(true);
-    expect(showsReview(review(null), "free", INSTANCE_OWNER)).toBe(true);
-  });
-});
-
-describe("showsReviewEffect", () => {
-  it("explains nothing to the owner of a free tenant, and nothing without a level", () => {
-    expect(showsReviewEffect("free", TENANT_OWNER)).toBe(false);
-    expect(showsReviewEffect(undefined, INSTANCE_OWNER)).toBe(false);
   });
 
-  it("explains under supervision, and to the instance owner under free", () => {
-    expect(showsReviewEffect("supervised", TENANT_OWNER)).toBe(true);
-    expect(showsReviewEffect("blocked", MANAGER)).toBe(true);
-    expect(showsReviewEffect("free", INSTANCE_OWNER)).toBe(true);
+  it("shows only what is certain while the level is unknown", () => {
+    expect(showsReview(review(null), undefined, TENANT_OWNER)).toBe(false);
+    expect(showsReview(review("pending"), undefined, MANAGER)).toBe(true);
+    expect(showsReview(review(null), undefined, INSTANCE_OWNER)).toBe(true);
   });
 });
 

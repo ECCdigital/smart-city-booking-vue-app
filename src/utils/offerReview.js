@@ -74,11 +74,12 @@ export function isSubmission(action) {
 
 /**
  * What the status means for the public right now - the supervision gate of
- * spec §5.1, row by row. `null` while the tenant's level is unknown.
+ * spec §5.1, row by row. `null` while the tenant's level is unknown, and for
+ * a free tenant, whose offers show no review.
  */
 export function reviewEffectKey({ review, isPublic } = {}, supervisionLevel) {
   const level = levelOf(supervisionLevel);
-  if (!level) return null;
+  if (!level || level === LEVELS.FREE) return null;
   return `supervision.review.effect.${effectOf(
     level,
     statusOf(review),
@@ -88,26 +89,20 @@ export function reviewEffectKey({ review, isPublic } = {}, supervisionLevel) {
 
 function effectOf(level, status, isPublic) {
   if (level === LEVELS.BLOCKED) return "blocked";
-  if (level === LEVELS.FREE) return isPublic ? "free-listed" : "free-unlisted";
   if (status !== REVIEW_STATUS.APPROVED) return "not-reachable";
   return isPublic ? "listed" : "direct-link-only";
 }
 
 /**
- * Free tenants get no supervision explanations (spec §9): their owner sees
- * the review only once there is a status. The instance owner always does.
+ * A free tenant is not supervised, so its offers show no review at all (spec
+ * §9) - not even a status left over from a supervised time, which has no
+ * effect there. While the level is unknown, only what is certain shows: an
+ * existing status, or the instance owner's panel.
  */
 export function showsReview(review, supervisionLevel, { instanceOwner } = {}) {
-  if (instanceOwner || statusOf(review) !== null) return true;
   const level = levelOf(supervisionLevel);
-  return level !== null && level !== LEVELS.FREE;
-}
-
-/** The effect line is such an explanation: free shows it to the instance owner only. */
-export function showsReviewEffect(supervisionLevel, { instanceOwner } = {}) {
-  const level = levelOf(supervisionLevel);
-  if (!level) return false;
-  return level !== LEVELS.FREE || instanceOwner === true;
+  if (level === LEVELS.FREE) return false;
+  return level !== null || instanceOwner === true || statusOf(review) !== null;
 }
 
 /** The badge of an offer in a list: a status that matters, else `null`. */

@@ -9,6 +9,9 @@ vi.mock("@/services/api/ApiTenantService", () => ({
 vi.mock("@/services/api/ApiInstanceService", () => ({
   default: { getPublicInstance: vi.fn() },
 }));
+vi.mock("@/services/api/ApiAuthService", () => ({
+  default: { resendVerification: vi.fn() },
+}));
 vi.mock("@/services/permissions/TenantPermissionService", () => ({
   default: { isInstanceOwner: () => instanceOwner },
 }));

@@ -333,6 +333,31 @@
     }
   },
   "tenant": {
+    "home": {
+      "section": "Meine Mandanten",
+      "count": "Kein Mandant | Ein Mandant | {n} Mandanten",
+      "hint": "Wählen Sie einen Mandanten aus, um fortzufahren.",
+      "group": {
+        "mine": "Meine Mandanten",
+        "mine-hint": "Mandanten, in denen Sie Mitglied sind.",
+        "others": "Weitere Mandanten",
+        "others-hint": "Mandanten der Instanz ohne Ihre Mitgliedschaft.",
+        "count": "Kein Mandant | Ein Mandant | {n} Mandanten"
+      },
+      "search": "Mandant suchen",
+      "view": {
+        "label": "Ansicht",
+        "grid": "Kacheln",
+        "list": "Liste"
+      },
+      "active": "Aktiver Mandant",
+      "select": "Auswählen",
+      "create": "Mandanten anlegen",
+      "create-first": "Ersten Mandanten anlegen",
+      "empty": "Keine Mandanten gefunden",
+      "empty-search": "Kein Mandant passt zur Suche.",
+      "empty-none": "Sie haben noch keine Mandanten."
+    },
     "catalog": {
       "unavailable": "Für diesen Mandanten wurde kein Katalog gefunden. Entweder ist noch keiner angelegt, oder der vorhandene Katalog ist für Sie nicht zugänglich. Unten steht deshalb ein leerer Katalog – wenn Sie ihn speichern, kann ein bestehender Katalog überschrieben werden."
     },
@@ -452,7 +477,6 @@
     },
     "onboarding": {
       "title": "Angebote bereitstellen",
-      "intro": "Legen Sie Ihren Mandanten an und richten Sie Ihr erstes Buchungsobjekt ein. Sie können jederzeit unterbrechen – gespeicherte Angaben bleiben erhalten.",
       "open": "Angebote bereitstellen",
       "resume": "Einrichtung fortsetzen",
       "exit": "Zur Verwaltung",
@@ -489,11 +513,12 @@
           "blocked": "gesperrt"
         },
         "supervised": "Ihre Angebote werden vor der Veröffentlichung durch den Instanz-Owner geprüft.",
-        "blocked": "Sie können alles vorbereiten. Ihre Angebote bleiben öffentlich verborgen, bis der Instanz-Owner die Aufsichtsstufe ändert."
+        "blocked": "Sie können alles vorbereiten. Ihre Angebote bleiben öffentlich verborgen, bis der Instanz-Owner die Aufsichtsstufe ändert.",
+        "label": "Aufsichtsstufe"
       },
       "tenant": {
-        "title": "Wie heißt Ihr Mandant?",
-        "intro": "Zum Beispiel Ihr Verein, Ihre Organisation oder Ihr eigener Angebotsbereich.",
+        "title": "Ihr Mandant",
+        "intro": "Der Mandant ist Ihr eigener Bereich auf der Plattform – zum Beispiel Ihr Verein, Ihre Organisation oder Ihre Einrichtung. Er trägt Ihre Angebote und Buchungen.",
         "name": "Mandantenname",
         "contact-name": "Kontaktperson",
         "mail": "E-Mail-Adresse",
@@ -504,25 +529,23 @@
         "location": "Anschrift",
         "created-hint": "Der Mandant ist angelegt. Kontaktangaben ändern Sie in den Mandanten-Einstellungen.",
         "submit": "Mandant anlegen",
-        "continue": "Weiter"
+        "continue": "Weiter",
+        "contact": "Kontakt",
+        "cancel": "Abbrechen"
       },
       "offer": {
-        "title": "Ihr erstes Buchungsobjekt",
-        "intro": "Typ und Titel beschreiben Ihr Angebot. Wählen Sie anschließend bewusst Preis und Verfügbarkeit.",
+        "intro": "Ein Buchungsobjekt ist, was gebucht werden kann – ein Raum, ein Gerät, ein Ticket. Typ und Titel sehen Buchende zuerst.",
         "type": "Typ",
         "name": "Titel",
         "description": "Beschreibung (optional)",
         "image": "Bild (optional)",
         "booking": "Buchung",
-        "amount": "Verfügbare Anzahl",
-        "amount-hint": "Anzahl gleichzeitig buchbarer Einheiten, keine Personenkapazität. Ein einzelner Raum entspricht einer Einheit.",
+        "amount": "Wie viele davon gibt es?",
+        "amount-hint": "Die Anzahl, die gleichzeitig gebucht werden kann. Ein einzelner Raum ist 1 – auch wenn 20 Personen hineinpassen. Fünf gleiche Geräte sind 5.",
         "confirmation": "Bestätigung",
-        "confirmation-manual": "Durch die Verwaltung",
-        "confirmation-auto": "Automatisch",
-        "schedule": "Buchungsart",
-        "schedule-period": "Für einen Zeitraum",
-        "schedule-none": "Ohne Zeitraum",
-        "price-legend": "Preis ausdrücklich wählen",
+        "confirmation-manual": "Sie geben jede Buchung frei",
+        "confirmation-auto": "Buchungen sind sofort verbindlich",
+        "price-legend": "Preis",
         "price-free": "Kostenlos",
         "price-paid": "Kostenpflichtig",
         "price": "Preis in Euro",
@@ -534,24 +557,34 @@
         },
         "price-hint": "Weitere Preisregeln und Steuerangaben ergänzen Sie im Preisformular des Buchungsobjekts.",
         "payment-hint": "Für kostenpflichtige Buchungen über die Plattform benötigen Sie einen eingerichteten Zahlungsweg. Sie können ihn im nächsten Schritt oder später einrichten.",
-        "availability-legend": "Verfügbarkeit ausdrücklich wählen",
+        "availability-legend": "Verfügbarkeit",
         "availability-always": "Keine zeitlichen Einschränkungen",
         "availability-hours": "Öffnungszeiten festlegen",
-        "availability-hint": "Ohne Einschränkungen grundsätzlich auch nachts und am Wochenende; bestehende Buchungen werden weiterhin berücksichtigt.",
         "hours-hint": "Vereinfachtes Wochenmuster. Weitere Zeiten ergänzen Sie im Buchungsobjekt.",
         "start-time": "Von",
         "end-time": "Bis",
-        "stored": "Gespeichert: {value}. Bitte erneut bestätigen.",
-        "unsaved-hint": "„Zur Verwaltung“ verlässt diesen Schritt. Noch nicht gespeicherte Eingaben werden dabei nicht übernommen.",
+        "unsaved-hint": "„Zur Verwaltung“ verlässt diesen Schritt. Noch nicht gespeicherte Eingaben gehen dabei verloren.",
         "submit": "Entwurf speichern und weiter",
         "save-failed": "Das Buchungsobjekt konnte nicht gespeichert werden.",
         "errors": {
           "required": "Pflichtfeld",
           "choice-required": "Bitte ausdrücklich wählen.",
           "price-required": "Bitte einen Preis größer als 0 eingeben.",
-          "amount-invalid": "Bitte eine ganze Zahl ab 1 eingeben.",
+          "amount-invalid": "Bitte eine ganze Zahl eingeben; 0 heißt unbegrenzt.",
           "opening-hours-invalid": "Bitte Tage und eine gültige Öffnungszeit wählen."
-        }
+        },
+        "section-offer": "Angebot",
+        "price-free-hint": "Buchungen kosten nichts. Ein Zahlungsweg ist nicht nötig.",
+        "price-paid-hint": "Sie legen einen Preis fest. Bezahlt wird über die Plattform.",
+        "availability-always-hint": "Rund um die Uhr, auch nachts und am Wochenende. Bestehende Buchungen werden berücksichtigt.",
+        "availability-hours-hint": "Nur an bestimmten Wochentagen und Uhrzeiten.",
+        "amount-less": "Eins weniger",
+        "amount-more": "Eins mehr",
+        "confirmation-hint": "Was passiert, wenn jemand dieses Objekt bucht?",
+        "confirmation-manual-hint": "Eine Buchung ist erst angefragt. Sie prüfen sie in der Verwaltung und bestätigen – vorher ist nichts verbindlich.",
+        "confirmation-auto-hint": "Wer bucht, hat gebucht. Sie werden benachrichtigt, müssen aber nichts freigeben.",
+        "amount-unlimited": "Unbegrenzt – es gibt keine feste Anzahl",
+        "amount-limit": "Feste Anzahl festlegen"
       },
       "setup": {
         "title": "Weitere Einrichtung",
@@ -567,17 +600,15 @@
         "continue": "Zur Übersicht"
       },
       "overview": {
-        "title": "Bereit für den nächsten Schritt",
         "summary": {
           "offer": "Buchungsobjekt",
           "price": "Preis",
-          "booking": "Buchung",
-          "units": "{amount} verfügbare Einheit(en)",
           "confirmation": "Bestätigung",
-          "availability": "Verfügbarkeit"
+          "availability": "Verfügbarkeit",
+          "amount": "Anzahl",
+          "unlimited": "Unbegrenzt"
         },
         "supplement": "Bei Bedarf ergänzen",
-        "confirm-choices": "Bitte Preis und Verfügbarkeit für diesen Durchlauf am Buchungsobjekt bestätigen. Gespeicherte Werte bleiben erhalten.",
         "edit-offer": "Buchungsobjekt bearbeiten",
         "complete-failed": "Der Abschluss konnte nicht gespeichert werden.",
         "action": {
@@ -616,6 +647,72 @@
         "field": "Bitte prüfen Sie Ihre Angaben.",
         "mail-invalid": "Muss gültige E-Mail-Adresse sein.",
         "not-found": "Der angelegte Mandant konnte nicht geladen werden. Sie finden ihn unter „Meine Mandanten“."
+      },
+      "back": "Zurück",
+      "path": {
+        "count": "Schritt {index} von {total}"
+      },
+      "panel": {
+        "title": "Ihre Einrichtung",
+        "pending": "Schritt {index} – noch nicht angelegt.",
+        "supervision": "Aufsicht",
+        "note": "Sie können jederzeit unterbrechen – gespeicherte Angaben bleiben erhalten. „Einrichtung fortsetzen“ unter „Meine Mandanten“ führt hierher zurück."
+      }
+    },
+    "list": {
+      "section": "Mandanten",
+      "count": "Kein Mandant | Ein Mandant | {n} Mandanten",
+      "hint": "Alle Mandanten der Instanz. Eine Zeile zeigt Kontakt, Aufsicht und Aktionen des Mandanten im Panel daneben.",
+      "hint-catalog": "Dort schalten Sie auch, ob der Mandant im Katalog des Portals erscheint.",
+      "search": "Mandant suchen",
+      "reload": "Aktualisieren",
+      "loading": "Mandanten werden geladen...",
+      "empty": "Noch keine Mandanten",
+      "empty-search": "Kein Mandant passt zur Suche.",
+      "per-page": "Mandanten pro Seite",
+      "page-text": "{0}–{1} von {2}",
+      "create": "Mandanten anlegen",
+      "no-contact": "Keine Kontaktperson",
+      "catalog": {
+        "label": "Im Katalog",
+        "hint": "Erscheint mit seinen Angeboten im Katalog des Portals.",
+        "unavailable": "Der Katalog der Instanz konnte nicht geladen werden. Ob ein Mandant im Katalog erscheint, lässt sich deshalb gerade nicht ändern.",
+        "shown": {
+          "title": "Im Katalog",
+          "message": "„{tenant}“ erscheint jetzt im Katalog."
+        },
+        "hidden": {
+          "title": "Nicht im Katalog",
+          "message": "„{tenant}“ erscheint nicht mehr im Katalog."
+        },
+        "failed": {
+          "title": "Nicht gespeichert",
+          "message": "Ob „{tenant}“ im Katalog erscheint, konnte nicht gespeichert werden."
+        },
+        "excluded": "Nicht im Katalog"
+      },
+      "panel": {
+        "title": "Mandant",
+        "none": "Wählen Sie einen Mandanten aus der Liste. Hier stehen dann Kontakt, Aufsichtsstufe und die Aktionen zu ihm.",
+        "contact": "Kontakt",
+        "contact-person": "Kontaktperson",
+        "mail": "E-Mail",
+        "phone": "Telefon",
+        "location": "Adresse",
+        "id": "ID",
+        "supervision": "Aufsicht",
+        "level": "Stufe",
+        "level-since": "Geändert am",
+        "actions": "Aktionen",
+        "edit": "Mandanten bearbeiten",
+        "delete": "Mandanten löschen",
+        "catalog": "Katalog",
+        "edit-hint": "Öffnet die Mandantenseite für diesen Mandanten."
+      },
+      "edit-banner": "Sie bearbeiten „{name}“ mit Instanz-Owner-Rechten. Sie sind kein Owner dieses Mandanten.",
+      "create-dialog": {
+        "title": "Neuer Mandant",
+        "intro": "Name, Kontaktperson und E-Mail genügen. Alles Weitere lässt sich später in den Mandanten-Einstellungen ergänzen."
       }
     }
   },
@@ -2119,6 +2216,13 @@
       }
     }
   },
+  "list": {
+    "retry": "Erneut laden",
+    "range": "{from}–{to} von {total}",
+    "page": "Seite {page} von {pages}",
+    "previous": "Vorherige Seite",
+    "next": "Nächste Seite"
+  },
   "supervision": {
     "offer-types": {
       "bookable": "Buchungsobjekt",
@@ -2136,8 +2240,6 @@
       "decided-at": "Entschieden am {time}",
       "reason": "Begründung: {reason}",
       "effect": {
-        "free-listed": "Der Prüfstatus ist ohne Wirkung: Das Angebot ist gelistet und buchbar.",
-        "free-unlisted": "Der Prüfstatus ist ohne Wirkung: Das Angebot ist per Direktlink buchbar, aber nicht gelistet.",
         "listed": "Das Angebot ist gelistet und buchbar.",
         "direct-link-only": "Das Angebot ist per Direktlink buchbar, aber nicht gelistet.",
         "not-reachable": "Ohne Freigabe ist das Angebot weder gelistet noch per Direktlink buchbar.",
@@ -2165,7 +2267,7 @@
     },
     "queue": {
       "title": "Prüfliste",
-      "hint": "Angebote beaufsichtigter Mandanten, die auf eine Entscheidung warten – das am längsten wartende zuerst. Geprüft wird im jeweiligen Angebot.",
+      "hint": "Angebote beaufsichtigter Mandanten, die auf eine Entscheidung warten – das am längsten wartende zuerst. Freigeben oder ablehnen lässt sich direkt hier, „Zum Angebot“ öffnet es zur genaueren Prüfung.",
       "reload": "Aktualisieren",
       "loading": "Prüfliste wird geladen...",
       "empty": "Keine Angebote warten auf Prüfung",
@@ -2176,22 +2278,18 @@
         "tenant": "Mandant",
         "offer-type": "Angebotsart"
       },
-      "columns": {
-        "tenant": "Mandant",
-        "offer-type": "Angebotsart",
-        "title": "Titel",
-        "submitted-at": "Eingereicht",
-        "is-public": "Veröffentlichungswunsch"
-      },
-      "is-public": {
-        "yes": "Ja",
-        "no": "Nein"
-      },
       "waiting": {
         "minutes": "wartet seit einer Minute | wartet seit {n} Minuten",
         "hours": "wartet seit einer Stunde | wartet seit {n} Stunden",
         "days": "wartet seit einem Tag | wartet seit {n} Tagen"
-      }
+      },
+      "section": "Wartende Angebote",
+      "count": "Kein Angebot | Ein Angebot | {n} Angebote",
+      "wish": {
+        "yes": "Veröffentlichung gewünscht",
+        "no": "Kein Veröffentlichungswunsch"
+      },
+      "page-text": "{0}–{1} von {2}"
     },
     "notifications": {
       "hint": "Mitteilungen der Mandanten-Aufsicht an die zuständigen Owner. „Erneut senden“ verschickt nur die E-Mail noch einmal – an alle, die sie noch nicht erhalten haben. Entscheidung und Verlauf bleiben unverändert.",
@@ -2202,16 +2300,6 @@
       "filter": {
         "status": "Status",
         "all": "Alle"
-      },
-      "columns": {
-        "created-at": "Zeitpunkt",
-        "type": "Anlass",
-        "tenant": "Mandant",
-        "offers": "Angebote",
-        "deliveries": "Zugestellt an",
-        "status": "Status",
-        "attempts": "Versuche",
-        "last-error": "Fehler"
       },
       "types": {
         "tenant-selfCreated": "Selbst-Anlage",
@@ -2234,7 +2322,23 @@
         "sent": "Die Mitteilung wurde gesendet.",
         "failed-again": "Der Versand ist erneut fehlgeschlagen: {error}",
         "request-failed": "Die Mitteilung konnte nicht erneut gesendet werden."
-      }
+      },
+      "title": "Aufsichtsmitteilungen",
+      "close": "Schließen",
+      "per-page": "Mitteilungen pro Seite",
+      "loading": "Mitteilungen werden geladen...",
+      "row": {
+        "attempts": "Noch kein Versuch | Ein Versuch | {n} Versuche",
+        "delivered-to": "Zugestellt an {to}"
+      },
+      "panel": {
+        "failed": "Nicht zugestellt",
+        "none-failed": "Alle Mitteilungen sind zugestellt.",
+        "more": "und eine weitere | und {n} weitere",
+        "open": "Alle Mitteilungen",
+        "note": "„Erneut senden“ verschickt nur die E-Mail noch einmal – an alle, die sie noch nicht erhalten haben. Entscheidung und Verlauf bleiben unverändert."
+      },
+      "page-text": "{0}–{1} von {2}"
     },
     "level": {
       "column": "Aufsichtsstufe",
