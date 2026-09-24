@@ -41,6 +41,7 @@ beforeEach(() => {
   ApiSupervisionService.setTenantLevel.mockResolvedValue({
     supervisionLevel: "pending",
     supervisionChangedAt: "2026-09-21T08:30:00.000Z",
+    supervisionReason: "Missbrauch gemeldet",
   });
 });
 
@@ -79,6 +80,35 @@ describe("SupervisionLevelDialog", () => {
     expect(levelOption("supervised")).not.toBeNull();
     expect(levelOption("pending")).not.toBeNull();
     expect(levelOption("declined")).toBeNull();
+  });
+
+  it("takes a decline back: asks for the level the tenant returns to", async () => {
+    ApiSupervisionService.setTenantLevel.mockResolvedValue({
+      supervisionLevel: "supervised",
+      supervisionChangedAt: "2026-09-24T10:00:00.000Z",
+      supervisionReason: "Impressum nachgereicht",
+    });
+    const wrapper = await mountDialog({
+      tenant: { ...TENANT, supervisionLevel: "declined" },
+    });
+
+    expect(activeDialogText()).toContain("Abweisung zurücknehmen");
+    expect(activeDialogText()).not.toContain("Aufsichtsstufe ändern");
+    expect(activeDialogText()).toContain("Der Mandant erhält die Stufe");
+    await choose("supervised");
+    await typeReason(wrapper, "Impressum nachgereicht");
+    submitButton().click();
+    await flushPromises();
+
+    expect(submitButton().textContent.trim()).toBe("Abweisung zurücknehmen");
+    expect(ApiSupervisionService.setTenantLevel).toHaveBeenCalledWith("t-7", {
+      level: "supervised",
+      reason: "Impressum nachgereicht",
+    });
+    expect(wrapper.emitted("changed")[0][0]).toMatchObject({
+      supervisionLevel: "supervised",
+      supervisionReason: "Impressum nachgereicht",
+    });
   });
 
   it("changes nothing before a level is chosen", async () => {
@@ -127,6 +157,7 @@ describe("SupervisionLevelDialog", () => {
           tenantId: "t-7",
           supervisionLevel: "pending",
           supervisionChangedAt: "2026-09-21T08:30:00.000Z",
+          supervisionReason: "Missbrauch gemeldet",
         },
       ],
     ]);

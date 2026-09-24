@@ -710,6 +710,8 @@
         "supervision": "Aufsicht",
         "level": "Stufe",
         "level-since": "Geändert am",
+        "reason": "Begründung",
+        "no-reason": "keine Begründung",
         "actions": "Aktionen",
         "edit": "Mandanten bearbeiten",
         "delete": "Mandanten löschen",
@@ -2375,6 +2377,28 @@
         },
         "failed": "Die Aufsichtsstufe konnte nicht geändert werden."
       }
+    },
+    "decline": {
+      "action": "Mandanten abweisen",
+      "title": "Mandanten abweisen",
+      "lead": "Ab sofort gilt:",
+      "consequences": {
+        "public": "Nichts vom Mandanten ist öffentlich sichtbar.",
+        "access": "Tenant-Owner und Mitglieder verlieren jeden Verwaltungszugriff auf den Mandanten.",
+        "bookings": "Bestehende Buchungen bleiben für Kunden nutzbar (Belege, Status, Zugang).",
+        "reversible": "Sie können die Abweisung jederzeit zurücknehmen."
+      },
+      "bookings": "Offene Buchungen des Mandanten",
+      "reason": "Begründung (optional, empfohlen)",
+      "reason-hint": "Die Tenant-Owner sehen die Begründung per Mail und beim Anmelden.",
+      "submit": "Mandanten abweisen",
+      "failed": "Der Mandant konnte nicht abgewiesen werden."
+    },
+    "reinstate": {
+      "action": "Abweisung zurücknehmen",
+      "title": "Abweisung zurücknehmen",
+      "target": "Der Mandant erhält die Stufe",
+      "submit": "Abweisung zurücknehmen"
     },
     "review-status": {
       "none": "kein Prüfstatus",

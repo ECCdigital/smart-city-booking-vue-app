@@ -225,6 +225,23 @@
                     {{ dateTime(selected.supervisionChangedAt) }}
                   </span>
                 </div>
+                <!-- The reason of the latest change; for a declined tenant
+                     it is why. -->
+                <div
+                  v-if="selectedDeclined"
+                  class="booking-fact"
+                  data-test="level-reason"
+                >
+                  <span class="booking-fact__label">
+                    {{ $t("tenant.list.panel.reason") }}
+                  </span>
+                  <span class="booking-fact__value">
+                    {{
+                      selected.supervisionReason ||
+                      $t("tenant.list.panel.no-reason")
+                    }}
+                  </span>
+                </div>
               </div>
             </template>
 
@@ -288,9 +305,12 @@
                   {{ $t("tenant.readiness.open") }}
                 </v-list-item-title>
               </v-list-item>
+              <!-- A declined tenant changes its level only by taking the
+                   decline back, further down. -->
               <v-list-item
                 v-if="allowSupervise"
                 link
+                :disabled="selectedDeclined"
                 data-test="open-level-change"
                 @click="openLevelDialog = true"
               >
@@ -314,6 +334,38 @@
                   {{ $t("supervision.history.open") }}
                 </v-list-item-title>
               </v-list-item>
+              <template v-if="allowSupervise">
+                <v-list-item
+                  v-if="selectedDeclined"
+                  link
+                  data-test="open-reinstate"
+                  @click="openLevelDialog = true"
+                >
+                  <v-list-item-icon>
+                    <v-icon small color="success">
+                      mdi-account-reactivate-outline
+                    </v-icon>
+                  </v-list-item-icon>
+                  <v-list-item-title class="success--text">
+                    {{ $t("supervision.reinstate.action") }}
+                  </v-list-item-title>
+                </v-list-item>
+                <v-list-item
+                  v-else
+                  link
+                  data-test="open-decline"
+                  @click="openDeclineDialog = true"
+                >
+                  <v-list-item-icon>
+                    <v-icon small color="error">
+                      mdi-account-cancel-outline
+                    </v-icon>
+                  </v-list-item-icon>
+                  <v-list-item-title class="error--text">
+                    {{ $t("supervision.decline.action") }}
+                  </v-list-item-title>
+                </v-list-item>
+              </template>
               <v-list-item
                 link
                 class="instance-tenants__delete"
@@ -358,6 +410,13 @@
       @stale="onLevelStale"
       @close="openLevelDialog = false"
     />
+    <TenantDeclineDialog
+      :open="openDeclineDialog"
+      :tenant="selected || {}"
+      @declined="onLevelChanged"
+      @stale="onLevelStale"
+      @close="openDeclineDialog = false"
+    />
     <SupervisionHistoryDialog
       :open="openHistoryDialog"
       :tenant="historyTenant"
@@ -384,6 +443,7 @@ import TenantReadinessDialog from "@/components/Tenant/TenantReadinessDialog.vue
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
 import SupervisionLevelDialog from "@/components/Supervision/SupervisionLevelDialog.vue";
+import TenantDeclineDialog from "@/components/Supervision/TenantDeclineDialog.vue";
 import SupervisionHistoryDialog from "@/components/Supervision/SupervisionHistoryDialog.vue";
 import ToastService from "@/services/ToastService";
 import FormatService from "@/services/FormatService";
@@ -438,6 +498,7 @@ export default {
     TenantReadinessDialog,
     SupervisionLevelChip,
     SupervisionLevelDialog,
+    TenantDeclineDialog,
     SupervisionHistoryDialog,
   },
   data() {
@@ -464,6 +525,7 @@ export default {
       openDeleteDialog: false,
       openReadinessDialog: false,
       openLevelDialog: false,
+      openDeclineDialog: false,
       openHistoryDialog: false,
       // `null` while the dialog shows the instance-wide history.
       historyTenant: null,
@@ -512,6 +574,12 @@ export default {
     selected() {
       return (
         this.api.tenants.find((tenant) => tenant.id === this.selectedId) || null
+      );
+    },
+    selectedDeclined() {
+      return (
+        !!this.selected &&
+        effectiveLevel(this.selected) === SUPERVISION_LEVELS.DECLINED
       );
     },
     contactFacts() {
@@ -670,15 +738,22 @@ export default {
       this.page = 1;
       this.fetchTenants();
     },
-    // The answer of the change is the effective level: the row shows it
-    // without waiting for a reload. Under a filter the row may no longer
-    // belong to the list, so the list is read again.
-    onLevelChanged({ tenantId, supervisionLevel, supervisionChangedAt }) {
+    // The answer of a change or decline is the effective level: the row
+    // shows it without waiting for the reload that reads panel and list
+    // again (under a filter the row may no longer belong to the list).
+    onLevelChanged({
+      tenantId,
+      supervisionLevel,
+      supervisionChangedAt,
+      supervisionReason,
+    }) {
       this.openLevelDialog = false;
+      this.openDeclineDialog = false;
       const tenant = this.api.tenants.find((t) => t.id === tenantId);
       if (tenant) {
         this.$set(tenant, "supervisionLevel", supervisionLevel);
         this.$set(tenant, "supervisionChangedAt", supervisionChangedAt);
+        this.$set(tenant, "supervisionReason", supervisionReason);
         const level = effectiveLevel(tenant);
         const levelKey = levelLabelKey(level);
         this.addToast(
@@ -693,7 +768,7 @@ export default {
           )
         );
       }
-      if (this.levelFilter) this.fetchTenants();
+      this.fetchTenants();
     },
     // A 409 or 404 of the change: the list is read again, and the open
     // dialog follows the tenant as the list holds it now. A tenant that is
