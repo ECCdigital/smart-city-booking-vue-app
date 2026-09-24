@@ -421,12 +421,12 @@ export default {
     // (glossary „abgewiesen“); the instance owner keeps every tenant.
     tenantItems() {
       return this.tenants.map((tenant) => {
-        const declined = this.declinedMembership(tenant.id);
-        return declined
+        const membership = this.declinedMembership(tenant.id);
+        return membership
           ? {
               ...tenant,
               disabled: true,
-              supervisionLevel: declined.supervisionLevel,
+              supervisionLevel: membership.supervisionLevel,
             }
           : tenant;
       });

@@ -4,9 +4,9 @@ import { routeRequiresTenant } from "./requireTenant";
 
 /**
  * The start check of a declined tenant (glossary „abgewiesen“): a current
- * tenant restored from the local storage - or switched to by a link - whose
- * membership the fresh permissions name declined is dropped before any page
- * asks the API about it, with the same toast as the `403 tenant_declined`
+ * tenant restored from the local storage whose membership the fresh
+ * permissions name declined is dropped before any page asks the API about
+ * it, with the same toast as the `403 tenant_declined`
  * fallback. A tenant page leads to „Meine Mandanten“, a page of no tenant
  * stays. The instance owner keeps every tenant (`user/declinedMembership`).
  */

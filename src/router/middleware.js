@@ -22,8 +22,8 @@ import { finalAuthRedirect } from "./middlewares/finalAuth";
  * `requireInterfaceAccess` pass judgement.
  *
  * `rejectDeclinedTenant` follows it: with the permissions just refreshed it
- * drops a declined current tenant - restored or just switched to - before any
- * gate judges it or any page asks the API about it.
+ * drops a restored current tenant that has been declined meanwhile, before
+ * any gate judges it or any page asks the API about it.
  */
 export const middlewares = [
   requiresAuth,

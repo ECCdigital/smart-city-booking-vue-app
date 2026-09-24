@@ -434,6 +434,8 @@ describe("Home — a declined tenant", () => {
     const row = wrapper.find("[data-test='tenant-row']");
     expect(row.attributes("aria-disabled")).toBe("true");
     expect(row.find("[data-test='declined-tenant']").exists()).toBe(true);
+    // No chevron promising that it opens.
+    expect(row.find(".tenant-row__chevron").exists()).toBe(false);
     await row.trigger("click");
     await flushPromises();
 

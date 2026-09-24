@@ -124,6 +124,18 @@ describe("handleTenantDeclined", () => {
     expect(dispatched("toasts/add")[0][1].message).toContain("‚tenant-b‘");
   });
 
+  it("reads the refusal of a download, whose body arrives as a Blob", async () => {
+    const error = tenantDeclined();
+    error.response.data = new Blob([JSON.stringify(error.response.data)], {
+      type: "application/json",
+    });
+
+    await handleTenantDeclined(error);
+
+    expect(storeDouble.currentTenantId).toBeNull();
+    expect(routerDouble.push).toHaveBeenCalledWith({ name: "dashboard" });
+  });
+
   it("stays on „Meine Mandanten“ when it is already there", async () => {
     routerDouble.currentRoute = { name: "dashboard" };
 
@@ -134,6 +146,7 @@ describe("handleTenantDeclined", () => {
   });
 
   it("leads away even when the permissions cannot be reloaded", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     ApiAuthService.me.mockRejectedValue(serverError());
 
     await handleTenantDeclined(tenantDeclined());
@@ -141,6 +154,18 @@ describe("handleTenantDeclined", () => {
     expect(dispatched("user/update")).toEqual([]);
     expect(dispatched("toasts/add")).toHaveLength(1);
     expect(routerDouble.push).toHaveBeenCalledWith({ name: "dashboard" });
+  });
+
+  it("never rejects - it runs unawaited beside the caller's own error", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    storeDouble.dispatch = vi.fn((action) => {
+      if (action === "toasts/add") throw new Error("toaster gone");
+    });
+
+    await expect(handleTenantDeclined(tenantDeclined())).resolves.toBe(
+      undefined
+    );
+    expect(logged).toHaveBeenCalled();
   });
 
   it("acts once for a page whose requests are refused together", async () => {

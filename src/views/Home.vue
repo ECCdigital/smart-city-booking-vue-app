@@ -159,7 +159,11 @@
               >
                 {{ $t("tenant.onboarding.resume") }}
               </v-btn>
-              <v-icon small class="tenant-row__chevron">
+              <v-icon
+                v-if="!declinedMembership(tenant.id)"
+                small
+                class="tenant-row__chevron"
+              >
                 mdi-chevron-right
               </v-icon>
             </div>
