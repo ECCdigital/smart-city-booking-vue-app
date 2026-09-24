@@ -550,7 +550,7 @@ export default {
 /* The registers are the header's title: the kind pair's switch, folded into
    the strip's line as the reload is. */
 .review-queue__registers {
-  margin: -4px 0;
+  margin: calc(-1 * var(--scb-space-1)) 0;
 }
 
 .review-queue__registers .review-queue__type {
@@ -561,7 +561,7 @@ export default {
 .review-queue__register-count {
   margin-left: var(--scb-space-2);
   min-width: 20px;
-  padding: 0 6px;
+  padding: 0 var(--scb-space-2);
   border-radius: var(--scb-radius-pill);
   background: var(--scb-hover-tint-strong);
   font-size: var(--scb-font-size-xs);

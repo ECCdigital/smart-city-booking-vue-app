@@ -250,7 +250,9 @@ export default {
           }),
         "supervision.tenant-approval-queue.load-failed"
       );
-      this.$emit("count", this.errorMessage ? null : this.total);
+      // An answer overtaken by a later load leaves the register loading.
+      const known = !this.loading && !this.errorMessage;
+      this.$emit("count", known ? this.total : null);
     },
     /**
      * The page reads both registers anew: this one for the tenant that
