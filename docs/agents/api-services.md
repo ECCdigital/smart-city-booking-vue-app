@@ -24,6 +24,7 @@ Backend REST API  or  Admin BFF → Backend
 - Direct: base URL `VUE_APP_SERVER_BASE_URL`, Bearer from `localStorage` / Keycloak
 - BFF: base URL `VUE_APP_BFF_BASE_URL` (default `/admin/api`), `withCredentials`, HttpOnly cookies
 - Handles 401 refresh via the active transport
+- Hands every failed request to `tenantDeclined.js` above the transport (both modes): a `403 tenant_declined` about the current tenant clears the selection, reloads the permissions, toasts and leads to „Meine Mandanten“; the caller still gets the error. The router's `rejectDeclinedTenant` applies the same rule to a declined selection before a page renders
 - Exposes `get`, `post`, `put`, `patch`, `delete` wrappers
 
 Do not create additional axios instances. Auth transport code lives in `src/services/auth/`.

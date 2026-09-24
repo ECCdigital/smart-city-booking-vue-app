@@ -128,3 +128,84 @@ describe("user/isAuthorized", () => {
     expect(isAuthorized({ data: { user: {} } })("coupons")).toBe(false);
   });
 });
+
+/**
+ * Every sign-in answer names the supervision of each tenant of the user in
+ * `permissions.tenants[]`, so the UI marks a waiting or declined tenant
+ * before its first request.
+ */
+describe("user/supervisionLevelOf", () => {
+  const state = {
+    data: {
+      permissions: {
+        tenants: [
+          { tenantId: "tenant-a", supervisionLevel: "pending" },
+          { tenantId: "tenant-b" },
+        ],
+      },
+    },
+  };
+
+  function levelOf(someState, tenantId) {
+    return user.getters.supervisionLevelOf(someState)(tenantId);
+  }
+
+  it("reads the level of a tenant from its membership", () => {
+    expect(levelOf(state, "tenant-a")).toBe("pending");
+  });
+
+  it("knows no level without a membership, without the field or before the permissions", () => {
+    expect(levelOf(state, "tenant-x")).toBeNull();
+    expect(levelOf(state, "tenant-b")).toBeNull();
+    expect(levelOf({ data: null }, "tenant-a")).toBeNull();
+  });
+});
+
+/**
+ * A declined tenant (glossary „abgewiesen“) is closed to its own people; the
+ * instance owner keeps every tenant.
+ */
+describe("user/declinedMembership", () => {
+  const declined = {
+    tenantId: "tenant-a",
+    supervisionLevel: "declined",
+    supervisionChangedAt: "2026-09-24T10:00:00.000Z",
+    supervisionReason: "Kein Impressum",
+  };
+
+  function declinedMembership(permissions, tenantId) {
+    return user.getters.declinedMembership({ data: { permissions } })(tenantId);
+  }
+
+  it("names the membership of a declined tenant, with time and reason", () => {
+    expect(declinedMembership({ tenants: [declined] }, "tenant-a")).toEqual(
+      declined
+    );
+  });
+
+  it("leaves every other level and a tenant without membership open", () => {
+    const permissions = {
+      tenants: [
+        { tenantId: "tenant-a", supervisionLevel: "pending" },
+        { tenantId: "tenant-b", supervisionLevel: "free" },
+        { tenantId: "tenant-c" },
+      ],
+    };
+
+    for (const tenantId of ["tenant-a", "tenant-b", "tenant-c", "tenant-x"]) {
+      expect(declinedMembership(permissions, tenantId)).toBeNull();
+    }
+  });
+
+  it("closes nothing to an instance owner", () => {
+    const permissions = { instanceOwner: true, tenants: [declined] };
+
+    expect(declinedMembership(permissions, "tenant-a")).toBeNull();
+  });
+
+  it("closes nothing while the permissions are not loaded", () => {
+    expect(
+      user.getters.declinedMembership({ data: null })("tenant-a")
+    ).toBeNull();
+  });
+});

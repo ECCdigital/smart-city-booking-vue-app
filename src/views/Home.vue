@@ -96,10 +96,14 @@
             v-for="tenant in group.tenants"
             :key="tenant.id"
             class="booking-row tenant-row"
-            :class="{ 'tenant-row--active': tenant.id === currentTenant }"
+            :class="{
+              'tenant-row--active': tenant.id === currentTenant,
+              'tenant-row--declined': !!declinedMembership(tenant.id),
+            }"
             role="button"
             tabindex="0"
             :aria-pressed="tenant.id === currentTenant ? 'true' : 'false'"
+            :aria-disabled="declinedMembership(tenant.id) ? 'true' : 'false'"
             data-test="tenant-row"
             @click="selectTenant(tenant.id)"
             @keydown.enter.prevent="selectTenant(tenant.id)"
@@ -128,10 +132,20 @@
                 >
                   {{ $t("tenant.home.active") }}
                 </v-chip>
+                <SupervisionLevelChip
+                  v-if="markedLevel(tenant.id)"
+                  :level="markedLevel(tenant.id)"
+                  x-small
+                  class="tenant-row__badge"
+                />
               </div>
               <div class="booking-row__subtitle">
                 {{ rowSubtitle(tenant) }}
               </div>
+              <DeclinedTenantNotice
+                v-if="declinedMembership(tenant.id)"
+                :membership="declinedMembership(tenant.id)"
+              />
             </div>
             <div class="booking-row__aside">
               <v-btn
@@ -145,7 +159,11 @@
               >
                 {{ $t("tenant.onboarding.resume") }}
               </v-btn>
-              <v-icon small class="tenant-row__chevron">
+              <v-icon
+                v-if="!declinedMembership(tenant.id)"
+                small
+                class="tenant-row__chevron"
+              >
                 mdi-chevron-right
               </v-icon>
             </div>
@@ -171,11 +189,15 @@
                 'fill-height',
                 'd-flex',
                 'flex-column',
-                { 'tenant-card--active': tenant.id === currentTenant },
+                {
+                  'tenant-card--active': tenant.id === currentTenant,
+                  'tenant-card--declined': !!declinedMembership(tenant.id),
+                },
               ]"
               role="button"
               tabindex="0"
               :aria-pressed="tenant.id === currentTenant ? 'true' : 'false'"
+              :aria-disabled="declinedMembership(tenant.id) ? 'true' : 'false'"
               @click="selectTenant(tenant.id)"
               @keydown.enter.prevent="selectTenant(tenant.id)"
               @keydown.space.prevent="selectTenant(tenant.id)"
@@ -194,11 +216,21 @@
                 <div v-if="tenant.contactName" class="tenant-card__contact">
                   {{ tenant.contactName }}
                 </div>
+                <SupervisionLevelChip
+                  v-if="markedLevel(tenant.id)"
+                  :level="markedLevel(tenant.id)"
+                  x-small
+                  class="tenant-card__level"
+                />
               </div>
 
               <v-divider></v-divider>
 
               <v-card-text class="flex-grow-1 tenant-card__facts">
+                <DeclinedTenantNotice
+                  v-if="declinedMembership(tenant.id)"
+                  :membership="declinedMembership(tenant.id)"
+                />
                 <div v-if="tenant.location" class="tenant-card__fact">
                   <v-icon small class="tenant-card__fact-icon">
                     mdi-map-marker
@@ -241,6 +273,7 @@
                   block
                   :color="tenant.id === currentTenant ? 'primary' : undefined"
                   :outlined="tenant.id !== currentTenant"
+                  :disabled="!!declinedMembership(tenant.id)"
                   class="tenant-card__select"
                   @click.stop="selectTenant(tenant.id)"
                 >
@@ -329,8 +362,15 @@ import { mapActions, mapGetters } from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import PendingTenantInvitations from "@/components/Tenant/PendingTenantInvitations.vue";
 import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
+import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
+import DeclinedTenantNotice from "@/components/Supervision/DeclinedTenantNotice.vue";
 import { isSafeInternalRedirect } from "@/utils/safeRedirect";
+import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
+
+// The levels a card is marked with: the two that keep the tenant out of
+// public view. Free and supervised are the ordinary state.
+const MARKED_LEVELS = [SUPERVISION_LEVELS.PENDING, SUPERVISION_LEVELS.DECLINED];
 
 // The chosen view outlives the page: the browser keeps it, per device.
 const VIEW_STORAGE_KEY = "scb.tenant-home.view";
@@ -359,6 +399,8 @@ export default {
     PendingApprovals: PendingApprovals,
     PendingTenantInvitations,
     AdminLayout,
+    SupervisionLevelChip,
+    DeclinedTenantNotice,
   },
   data() {
     return {
@@ -376,6 +418,10 @@ export default {
       currentTenant: "tenants/currentTenantId",
       allowCreate: "user/allowToCreateTenants",
       isDenied: "user/isDenied",
+      supervisionLevelOf: "user/supervisionLevelOf",
+      // A declined tenant cannot be opened by its own people (glossary
+      // „abgewiesen“); the instance owner is never handed one here.
+      declinedMembership: "user/declinedMembership",
     }),
     // The line between the groups: a membership in the permissions payload.
     // An instance owner is handed every tenant and is a member of few; for
@@ -430,6 +476,7 @@ export default {
       }
     },
     async selectTenant(tenantId) {
+      if (this.declinedMembership(tenantId)) return;
       await this.select(tenantId);
       const redirect = this.$route.query.redirect;
       if (isSafeInternalRedirect(redirect, this.$router)) {
@@ -458,15 +505,19 @@ export default {
      * The wizard stores no progress; its done state is a stored publication
      * wish, which the readiness check's "offers" criterion reports. Until
      * that answer is in, or when it is refused, the setup stays offered.
+     * A declined tenant has no setup left, and no readiness to ask.
      */
     offersSetup(tenantId) {
       return (
-        this.isTenantOwner(tenantId) && !this.setUpTenantIds.includes(tenantId)
+        this.isTenantOwner(tenantId) &&
+        !this.declinedMembership(tenantId) &&
+        !this.setUpTenantIds.includes(tenantId)
       );
     },
     async loadSetupState() {
-      const owned = this.tenants.filter((tenant) =>
-        this.isTenantOwner(tenant.id)
+      const owned = this.tenants.filter(
+        (tenant) =>
+          this.isTenantOwner(tenant.id) && !this.declinedMembership(tenant.id)
       );
       const states = await Promise.all(
         owned.map(async (tenant) => {
@@ -486,6 +537,10 @@ export default {
     },
     isTenantMember(tenantId) {
       return TenantPermissionService.isTenantMember(tenantId);
+    },
+    markedLevel(tenantId) {
+      const level = this.supervisionLevelOf(tenantId);
+      return MARKED_LEVELS.includes(level) ? level : null;
     },
     resumeOnboarding(tenantId) {
       this.$router.push({
@@ -754,6 +809,32 @@ export default {
   font-size: var(--scb-font-size-xs);
   color: var(--scb-text-muted);
   line-height: var(--scb-line-height-base);
+}
+
+.tenant-card__level {
+  margin-top: var(--scb-space-2);
+}
+
+/* --- Declined ----------------------------------------------------------- */
+
+/* A declined tenant cannot be opened: greyed out, without the pointer and
+   the hover of a button. */
+.tenant-card--declined,
+.tenant-row--declined {
+  cursor: default;
+}
+
+.tenant-card--declined:hover {
+  border-color: var(--scb-surface-border);
+}
+
+.tenant-row--declined:hover {
+  background-color: transparent;
+}
+
+.tenant-card--declined .tenant-card__name,
+.tenant-row--declined .booking-row__title {
+  color: var(--scb-text-muted);
 }
 
 .tenant-card__facts {
