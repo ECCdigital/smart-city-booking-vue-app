@@ -11,21 +11,21 @@
       </v-card-subtitle>
       <v-divider class="mx-9 mb-5" />
       <v-card-text>
-        <p class="tenant-decline__lead">
+        <p class="mb-1">
           {{ $t("supervision.decline.lead") }}
         </p>
-        <ul class="tenant-decline__consequences">
+        <ul class="mb-2">
           <li v-for="consequence in consequences" :key="consequence">
             {{ $t(`supervision.decline.consequences.${consequence}`) }}
           </li>
         </ul>
-        <div v-if="tenant.id" class="tenant-decline__bookings">
+        <!-- The link sits under the list, flush with its text. -->
+        <div v-if="tenant.id" class="mb-4 ml-n2">
           <TenantBookingsLink :tenant="tenant">
             {{ $t("supervision.decline.bookings") }}
           </TenantBookingsLink>
         </div>
         <v-textarea
-          ref="reason"
           v-model="reason"
           :label="$t('supervision.decline.reason')"
           :hint="$t('supervision.decline.reason-hint')"
@@ -80,7 +80,7 @@ export default {
   components: { TenantBookingsLink },
   props: {
     open: { type: Boolean, default: false },
-    /** At least `{ id, name, supervisionLevel }`. */
+    /** `id` and `name` are read; the approval queue hands in its level too. */
     tenant: { type: Object, default: () => ({}) },
   },
   data() {
@@ -132,18 +132,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.tenant-decline__lead {
-  margin-bottom: var(--scb-space-1);
-}
-
-.tenant-decline__consequences {
-  margin-bottom: var(--scb-space-2);
-}
-
-/* The link sits under the list, flush with its text. */
-.tenant-decline__bookings {
-  margin: 0 0 var(--scb-space-4) calc(-1 * var(--scb-space-2));
-}
-</style>

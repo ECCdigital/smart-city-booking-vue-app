@@ -44,8 +44,11 @@ const activeDialogText = () => rawDialogText().replace(/\s+/g, " ");
 const submitButton = () =>
   document.querySelector("[data-test='decline-submit']");
 
-async function typeReason(wrapper, text) {
-  wrapper.findComponent({ ref: "reason" }).vm.$emit("input", text);
+const reasonField = () => document.querySelector(".v-dialog--active textarea");
+
+async function typeReason(text) {
+  reasonField().value = text;
+  reasonField().dispatchEvent(new Event("input"));
   await flushPromises();
 }
 
@@ -107,7 +110,7 @@ describe("TenantDeclineDialog", () => {
   it("declines the tenant with the reason and hands the answer on", async () => {
     const wrapper = await mountDialog();
 
-    await typeReason(wrapper, "  Kein Impressum ");
+    await typeReason("  Kein Impressum ");
     await submit();
 
     expect(ApiSupervisionService.setTenantLevel).toHaveBeenCalledWith("t-7", {
@@ -134,7 +137,7 @@ describe("TenantDeclineDialog", () => {
     });
     const wrapper = await mountDialog();
 
-    await typeReason(wrapper, "   ");
+    await typeReason("   ");
     await submit();
 
     expect(ApiSupervisionService.setTenantLevel).toHaveBeenCalledWith("t-7", {
@@ -202,14 +205,14 @@ describe("TenantDeclineDialog", () => {
   it("starts empty again each time it opens", async () => {
     ApiSupervisionService.setTenantLevel.mockRejectedValue(new Error("500"));
     const wrapper = await mountDialog();
-    await typeReason(wrapper, "Kein Impressum");
+    await typeReason("Kein Impressum");
     await submit();
 
     await wrapper.setProps({ open: false });
     await wrapper.setProps({ open: true });
     await flushPromises();
 
-    expect(wrapper.findComponent({ ref: "reason" }).props("value")).toBe("");
+    expect(reasonField().value).toBe("");
     expect(activeDialogText()).not.toContain("nicht abgewiesen werden");
   });
 });

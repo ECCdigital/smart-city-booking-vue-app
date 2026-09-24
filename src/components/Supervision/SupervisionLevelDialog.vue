@@ -2,7 +2,7 @@
   <v-dialog :value="open" max-width="600px" @click:outside="$emit('close')">
     <v-card data-test="level-dialog">
       <v-card-title class="mx-3">
-        <span class="text-h5">{{ text("title") }}</span>
+        <span class="text-h5">{{ $t(modeText.title) }}</span>
       </v-card-title>
       <v-card-subtitle class="mx-3">
         {{ tenant.name || tenant.id }}
@@ -15,7 +15,7 @@
         </div>
         <v-radio-group
           v-model="level"
-          :label="text('target')"
+          :label="$t(modeText.target)"
           class="mt-0"
           hide-details
         >
@@ -63,7 +63,7 @@
           data-test="level-submit"
           @click="submit"
         >
-          {{ text("submit") }}
+          {{ $t(modeText.submit) }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -83,6 +83,19 @@ import {
   levelLabelKey,
   selectableLevels,
 } from "@/utils/supervision";
+
+const MODE_TEXT = Object.freeze({
+  change: {
+    title: "supervision.level.change.title",
+    target: "supervision.level.change.target",
+    submit: "supervision.level.change.submit",
+  },
+  reinstate: {
+    title: "supervision.reinstate.title",
+    target: "supervision.reinstate.target",
+    submit: "supervision.reinstate.submit",
+  },
+});
 
 /**
  * The instance owner's explicit level change (glossary "Aufsichtsstufe"):
@@ -110,8 +123,11 @@ export default {
     options() {
       return selectableLevels(this.currentLevel);
     },
-    reinstating() {
-      return this.currentLevel === SUPERVISION_LEVELS.DECLINED;
+    // Title, question and button name what the change does.
+    modeText() {
+      return this.currentLevel === SUPERVISION_LEVELS.DECLINED
+        ? MODE_TEXT.reinstate
+        : MODE_TEXT.change;
     },
   },
   watch: {
@@ -126,13 +142,6 @@ export default {
   },
   methods: {
     levelLabelKey,
-    // Title, question and button name what the change does.
-    text(key) {
-      const namespace = this.reinstating
-        ? "supervision.reinstate"
-        : "supervision.level.change";
-      return this.$t(`${namespace}.${key}`);
-    },
     reset() {
       this.level = null;
       this.reason = "";
