@@ -688,10 +688,11 @@ describe("InstanceReviewQueue", () => {
     it("opens the tenant's bookings in the tenant of the row", async () => {
       const wrapper = await mountView();
 
-      await tenantRows(wrapper)
+      const link = tenantRows(wrapper)
         .at(0)
-        .find("[data-test='tenant-queue-bookings']")
-        .trigger("click");
+        .find("[data-test='tenant-bookings-link']");
+      expect(link.text()).toBe("Buchungen des Mandanten");
+      await link.trigger("click");
       await flushPromises();
 
       expect(selectTenant).toHaveBeenCalledWith(expect.anything(), "t-3");

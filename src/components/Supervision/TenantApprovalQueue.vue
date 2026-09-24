@@ -65,27 +65,23 @@
               >
                 {{ origin(row.lastChange) }}
               </div>
+              <!-- Flush with the facts: the buttons' own padding is pulled
+                   into the row's left edge. -->
               <div class="tenant-queue__links">
-                <v-btn
-                  text
-                  x-small
-                  color="primary"
-                  class="tenant-queue__link px-0"
-                  data-test="tenant-queue-bookings"
-                  @click="openBookings(row)"
+                <TenantBookingsLink
+                  :tenant="{ id: row.tenantId, name: row.tenantName }"
                 >
-                  <v-icon left x-small>mdi-book-outline</v-icon>
                   {{ $t("supervision.tenant-approval-queue.bookings") }}
-                </v-btn>
+                </TenantBookingsLink>
                 <v-btn
                   text
-                  x-small
+                  small
                   color="primary"
-                  class="tenant-queue__link px-0"
+                  class="tenant-queue__link"
                   data-test="tenant-queue-history"
                   @click="openHistory(row)"
                 >
-                  <v-icon left x-small>mdi-history</v-icon>
+                  <v-icon left small>mdi-history</v-icon>
                   {{ $t("supervision.history.open") }}
                 </v-btn>
               </div>
@@ -196,6 +192,7 @@ import FormatService from "@/services/FormatService";
 import ToastService from "@/services/ToastService";
 import pagedLoad from "@/mixins/pagedLoad";
 import SupervisionHistoryDialog from "@/components/Supervision/SupervisionHistoryDialog.vue";
+import TenantBookingsLink from "@/components/Supervision/TenantBookingsLink.vue";
 import TenantDeclineDialog from "@/components/Supervision/TenantDeclineDialog.vue";
 import {
   SUPERVISION_LEVELS,
@@ -219,7 +216,11 @@ const NEW_TENANT_EVENTS = ["tenant.created", "tenant.levelInitialized"];
  */
 export default {
   name: "TenantApprovalQueue",
-  components: { SupervisionHistoryDialog, TenantDeclineDialog },
+  components: {
+    SupervisionHistoryDialog,
+    TenantBookingsLink,
+    TenantDeclineDialog,
+  },
   mixins: [pagedLoad],
   data() {
     return {
@@ -283,17 +284,6 @@ export default {
         this.deciding = false;
       }
       this.refresh();
-    },
-    /**
-     * The booking list works in the current tenant: the page switches to the
-     * row's tenant before it opens the list, as it does for an offer.
-     */
-    openBookings(row) {
-      this.$emit("open", {
-        tenantId: row.tenantId,
-        tenant: row.tenantName || row.tenantId,
-        location: { name: "bookings" },
-      });
     },
     openHistory(row) {
       this.historyTenant = { id: row.tenantId, name: row.tenantName };
@@ -406,12 +396,11 @@ export default {
 .tenant-queue__links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 var(--scb-space-3);
-  margin-top: 2px;
+  margin: 2px 0 0 calc(-1 * var(--scb-space-3));
 }
 
 .tenant-queue__link {
-  text-transform: none;
+  text-transform: none !important;
   letter-spacing: normal;
 }
 

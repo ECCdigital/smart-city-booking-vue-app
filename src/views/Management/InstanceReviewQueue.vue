@@ -206,7 +206,6 @@
               ref="tenantQueue"
               @count="tenantCount = $event"
               @changed="load"
-              @open="open"
             />
           </v-card-text>
         </v-card>
