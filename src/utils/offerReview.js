@@ -7,6 +7,7 @@
  */
 
 import {
+  PUBLIC_SUPERVISION_LEVELS,
   REVIEW_STATUS,
   SUPERVISION_LEVELS as LEVELS,
   knownReviewStatus,
@@ -87,8 +88,9 @@ export function reviewEffectKey({ review, isPublic } = {}, supervisionLevel) {
   )}`;
 }
 
+// A tenant without a public projection (pending, declined) names its level.
 function effectOf(level, status, isPublic) {
-  if (level === LEVELS.BLOCKED) return "blocked";
+  if (!PUBLIC_SUPERVISION_LEVELS.includes(level)) return level;
   if (status !== REVIEW_STATUS.APPROVED) return "not-reachable";
   return isPublic ? "listed" : "direct-link-only";
 }

@@ -23,10 +23,10 @@ describe("ApiTenantService", () => {
   });
 
   it("narrows the tenant list to one supervision level", () => {
-    ApiTenantService.getTenants(false, { supervisionLevel: "blocked" });
+    ApiTenantService.getTenants(false, { supervisionLevel: "pending" });
 
     expect(ApiClient.get).toHaveBeenCalledWith(
-      "api/tenants?publicTenants=false&supervisionLevel=blocked"
+      "api/tenants?publicTenants=false&supervisionLevel=pending"
     );
   });
 
@@ -34,7 +34,7 @@ describe("ApiTenantService", () => {
     const tenant = {
       id: "t-1",
       name: "Sportverein",
-      supervisionLevel: "blocked",
+      supervisionLevel: "pending",
       supervisionChangedAt: "2026-09-21T08:30:00.000Z",
     };
 

@@ -5,16 +5,37 @@
  * the keys.
  */
 
-/** The supervision level of a tenant (glossary "Aufsichtsstufe"). */
+/**
+ * The supervision level of a tenant (glossary "Aufsichtsstufe"): `pending`
+ * is "Freigabe ausstehend", `declined` is "abgewiesen". `PENDING` shares its
+ * value with `REVIEW_STATUS.PENDING` on purpose, as in the backend.
+ */
 export const SUPERVISION_LEVELS = Object.freeze({
   FREE: "free",
   SUPERVISED: "supervised",
-  BLOCKED: "blocked",
+  PENDING: "pending",
+  DECLINED: "declined",
 });
 
 export const SUPERVISION_LEVEL_VALUES = Object.freeze(
   Object.values(SUPERVISION_LEVELS)
 );
+
+/** The levels a self-created tenant may start at (glossary "Startstufe"). */
+export const INITIAL_SUPERVISION_LEVELS = Object.freeze([
+  SUPERVISION_LEVELS.FREE,
+  SUPERVISION_LEVELS.SUPERVISED,
+  SUPERVISION_LEVELS.PENDING,
+]);
+
+/**
+ * The levels with a public projection: a positive list, as in the backend,
+ * so a level added later is not public until it is named here.
+ */
+export const PUBLIC_SUPERVISION_LEVELS = Object.freeze([
+  SUPERVISION_LEVELS.FREE,
+  SUPERVISION_LEVELS.SUPERVISED,
+]);
 
 /** The review status of an offer (glossary "Prüfstatus"); `null` is none yet. */
 export const REVIEW_STATUS = Object.freeze({
@@ -38,36 +59,55 @@ export function offerTypeLabelKey(offerType) {
     : null;
 }
 
-const knownLevel = (level) =>
-  SUPERVISION_LEVEL_VALUES.includes(level) ? level : SUPERVISION_LEVELS.FREE;
+// Only a missing level is free; an unknown one is passed on as it is.
+const levelOrFree = (level) => level ?? SUPERVISION_LEVELS.FREE;
+
+// The level as one of the four, or `null` for one the UI does not know.
+function knownLevel(level) {
+  const effective = levelOrFree(level);
+  return SUPERVISION_LEVEL_VALUES.includes(effective) ? effective : null;
+}
 
 /**
  * The effective level of a tenant: a tenant from before the supervision
- * stores none and is free - the backend reads it the same way.
+ * stores none and is free - the backend reads it the same way. A stored
+ * level the UI does not know stays what it is, never free.
  */
 export function effectiveLevel(tenant) {
-  return knownLevel(tenant?.supervisionLevel);
+  return levelOrFree(tenant?.supervisionLevel);
 }
 
-// The level names came with the guided setup; they are reused, not repeated.
+/**
+ * The level names came with the guided setup; they are reused, not
+ * repeated. `null` for a level without a name: the caller shows the raw
+ * value.
+ */
 export function levelLabelKey(level) {
-  return `tenant.onboarding.level.names.${knownLevel(level)}`;
+  const known = knownLevel(level);
+  return known ? `tenant.onboarding.level.names.${known}` : null;
 }
 
 const LEVEL_COLORS = Object.freeze({
   free: "success",
   supervised: "warning",
-  blocked: "error",
+  pending: "warning",
+  declined: "error",
 });
 
 export function levelColor(level) {
-  return LEVEL_COLORS[knownLevel(level)];
+  const known = knownLevel(level);
+  return known ? LEVEL_COLORS[known] : "grey";
 }
 
-/** The levels a change may lead to: every one but the effective. */
+/**
+ * The levels a change may lead to: every one but the effective. `declined`
+ * is never one of them - a tenant is declined through its own action.
+ */
 export function selectableLevels(currentLevel) {
-  const current = knownLevel(currentLevel);
-  return SUPERVISION_LEVEL_VALUES.filter((level) => level !== current);
+  const current = levelOrFree(currentLevel);
+  return SUPERVISION_LEVEL_VALUES.filter(
+    (level) => level !== current && level !== SUPERVISION_LEVELS.DECLINED
+  );
 }
 
 const REVIEW_STATUS_VALUES = Object.values(REVIEW_STATUS);
@@ -115,7 +155,7 @@ export function historyEventLabelKey(eventType) {
 /**
  * The label of a row's old or new state: a level for the tenant's events, a
  * review status for an offer's. `null` where a tenant event names no level
- * (a creation has no old one).
+ * (a creation has no old one) or one without a label.
  */
 export function historyStateLabelKey(eventType, state) {
   if (String(eventType).startsWith("review.")) {

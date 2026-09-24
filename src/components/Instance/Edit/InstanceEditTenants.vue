@@ -1,18 +1,23 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import {
+  INITIAL_SUPERVISION_LEVELS,
   SUPERVISION_LEVELS,
-  completionVariant,
-} from "@/utils/tenantOnboarding";
-import { levelLabelKey } from "@/utils/supervision";
+  levelLabelKey,
+} from "@/utils/supervision";
 
 const INITIAL_LEVEL_FIELD = "tenantInitialSupervisionLevel";
 
-/** An instance from before the field starts its tenants free. */
+/**
+ * An instance from before the field starts its tenants free. A stored level
+ * this tab does not offer stays as it is: no choice shows, and a save lets
+ * the backend refuse it at the field instead of silently writing free.
+ */
 function withInitialLevel(instance) {
   return {
     ...instance,
-    [INITIAL_LEVEL_FIELD]: completionVariant(instance[INITIAL_LEVEL_FIELD]),
+    [INITIAL_LEVEL_FIELD]:
+      instance[INITIAL_LEVEL_FIELD] ?? SUPERVISION_LEVELS.FREE,
   };
 }
 
@@ -27,7 +32,7 @@ export default {
     return {
       local: withInitialLevel(this.instance),
       selectedUserToCreateTenant: null,
-      supervisionLevels: Object.values(SUPERVISION_LEVELS),
+      supervisionLevels: INITIAL_SUPERVISION_LEVELS,
       initialLevelApiErrors: [],
     };
   },

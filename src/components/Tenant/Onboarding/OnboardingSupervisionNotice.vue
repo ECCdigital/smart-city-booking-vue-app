@@ -36,8 +36,16 @@ import {
   showsSupervisionNotice,
 } from "@/utils/tenantOnboarding";
 
+// The notice's own palette, not the level chip's: to the tenant owner being
+// supervised is a hint (info), where the instance's list flags it (warning).
+const NOTICE_COLORS = Object.freeze({
+  supervised: "info",
+  pending: "warning",
+  declined: "error",
+});
+
 /**
- * Level and hint accompany the wizard for supervised and blocked; free gets
+ * Level and hint accompany the wizard for every level but free, which gets
  * no supervision explanation in the onboarding (supervision spec §9). As a
  * badge over an alert in the tenant settings; `compact`, as a fact with a
  * line under it, in the wizard's panel.
@@ -56,7 +64,7 @@ export default {
       return showsSupervisionNotice(this.level);
     },
     color() {
-      return this.variant === "blocked" ? "warning" : "info";
+      return NOTICE_COLORS[this.variant];
     },
   },
 };

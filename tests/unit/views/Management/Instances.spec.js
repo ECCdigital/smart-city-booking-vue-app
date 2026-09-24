@@ -93,7 +93,7 @@ describe("Instances start level", () => {
           params: {
             field: "tenantInitialSupervisionLevel",
             level: "open",
-            allowed: ["free", "supervised", "blocked"],
+            allowed: ["free", "supervised", "pending"],
           },
         },
       },

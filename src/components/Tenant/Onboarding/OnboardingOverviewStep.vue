@@ -110,8 +110,8 @@ import { completionVariant, storedChoices } from "@/utils/tenantOnboarding";
 /**
  * Step 4: the non-binding readiness check, the optional supplements and the
  * closing action, which reads by supervision level (supervision spec §9):
- * free publishes, supervised submits for review, blocked notes the
- * publication wish. A stored publication wish is the done state. The
+ * free publishes, supervised submits for review, pending and declined note
+ * the publication wish. A stored publication wish is the done state. The
  * summary of what was saved is the wizard's panel, beside every step.
  */
 export default {

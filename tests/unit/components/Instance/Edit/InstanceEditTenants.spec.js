@@ -31,17 +31,19 @@ async function settle(wrapper) {
 }
 
 describe("InstanceEditTenants Startstufe", () => {
-  it("offers the three levels and explains what the start level touches", () => {
+  it("offers the three start levels, never declined, and explains what the start level touches", () => {
     const wrapper = mountTab();
     const group = levelGroup(wrapper);
 
     expect(
       group.findAll("input[type=radio]").wrappers.map((i) => i.element.value)
-    ).toEqual(["free", "supervised", "blocked"]);
+    ).toEqual(["free", "supervised", "pending"]);
     expect(group.text()).toContain("Startstufe");
     expect(group.text()).toContain("frei");
     expect(group.text()).toContain("beaufsichtigt");
-    expect(group.text()).toContain("gesperrt");
+    expect(group.text()).toContain("Freigabe ausstehend");
+    expect(group.text()).toContain("bis Sie sie freigeben");
+    expect(group.text()).not.toContain("abgewiesen");
 
     const hint = wrapper.find("[data-test='initial-level-hint']").text();
     expect(hint).toContain("Freigabeliste");
@@ -58,10 +60,25 @@ describe("InstanceEditTenants Startstufe", () => {
 
   it("shows the stored start level", () => {
     const wrapper = mountTab({
-      instance: instance({ tenantInitialSupervisionLevel: "blocked" }),
+      instance: instance({ tenantInitialSupervisionLevel: "pending" }),
     });
 
-    expect(checkedLevel(wrapper)).toBe("blocked");
+    expect(checkedLevel(wrapper)).toBe("pending");
+  });
+
+  it("never reads a stored start level it does not know as frei", async () => {
+    const wrapper = mountTab({
+      instance: instance({ tenantInitialSupervisionLevel: "locked" }),
+    });
+
+    expect(checkedLevel(wrapper)).toBeUndefined();
+
+    // Any other change of the tab hands the stored level on untouched.
+    await wrapper.find("input[role='switch']").trigger("click");
+    await settle(wrapper);
+
+    const emitted = wrapper.emitted("update:instance");
+    expect(emitted.at(-1)[0].tenantInitialSupervisionLevel).toBe("locked");
   });
 
   it("emits the chosen start level with the instance", async () => {
@@ -89,10 +106,10 @@ describe("InstanceEditTenants Startstufe", () => {
     const messages = levelGroup(wrapper).findAll(".v-messages__message");
     expect(messages.length).toBe(1);
     expect(messages.at(0).text()).toBe(
-      "Die Startstufe muss frei, beaufsichtigt oder gesperrt sein."
+      "Als Startstufe sind nur frei, beaufsichtigt oder Freigabe ausstehend zulässig."
     );
 
-    await levelGroup(wrapper).find("input[value=blocked]").trigger("click");
+    await levelGroup(wrapper).find("input[value=pending]").trigger("click");
     await settle(wrapper);
 
     expect(levelGroup(wrapper).find(".v-messages__message").exists()).toBe(

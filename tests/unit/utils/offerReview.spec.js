@@ -70,9 +70,12 @@ describe("reviewActions", () => {
 describe("reviewEffectKey", () => {
   const STATUSES = [null, "pending", "approved", "rejected"];
   const rows = [];
-  for (const status of STATUSES) {
-    rows.push(["blocked", status, false, "blocked"]);
-    rows.push(["blocked", status, true, "blocked"]);
+  // Nothing of a pending or declined tenant is public, whatever the status.
+  for (const level of ["pending", "declined"]) {
+    for (const status of STATUSES) {
+      rows.push([level, status, false, level]);
+      rows.push([level, status, true, level]);
+    }
   }
   for (const status of [null, "pending", "rejected"]) {
     rows.push(["supervised", status, false, "not-reachable"]);
@@ -114,7 +117,8 @@ describe("showsReview", () => {
 
   it("always shows under supervision", () => {
     expect(showsReview(review(null), "supervised", TENANT_OWNER)).toBe(true);
-    expect(showsReview(review(null), "blocked", TENANT_OWNER)).toBe(true);
+    expect(showsReview(review(null), "pending", TENANT_OWNER)).toBe(true);
+    expect(showsReview(review(null), "declined", INSTANCE_OWNER)).toBe(true);
   });
 
   it("shows only what is certain while the level is unknown", () => {
@@ -125,7 +129,7 @@ describe("showsReview", () => {
 });
 
 describe("reviewBadge", () => {
-  it.each(["supervised", "blocked"])(
+  it.each(["supervised", "pending", "declined"])(
     "names the status of a submitted offer under %s",
     (level) => {
       expect(reviewBadge(review("pending"), level).color).toBe("warning");
@@ -142,12 +146,15 @@ describe("reviewBadge", () => {
 });
 
 describe("publicationWishHintKey", () => {
-  it("warns that the wish alone does not publish under supervised and blocked", () => {
+  it("warns that the wish alone does not publish under every level but free", () => {
     expect(publicationWishHintKey("supervised")).toBe(
       "supervision.review.wish-hint.supervised"
     );
-    expect(publicationWishHintKey("blocked")).toBe(
-      "supervision.review.wish-hint.blocked"
+    expect(publicationWishHintKey("pending")).toBe(
+      "supervision.review.wish-hint.pending"
+    );
+    expect(publicationWishHintKey("declined")).toBe(
+      "supervision.review.wish-hint.declined"
     );
   });
 

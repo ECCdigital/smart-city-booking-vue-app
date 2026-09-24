@@ -1,6 +1,6 @@
 <template>
   <div v-if="tenant && tenant.id">
-    <!-- Supervised and blocked name the level; free shows nothing special. -->
+    <!-- Every level but free names itself; free shows nothing special. -->
     <OnboardingSupervisionNotice :level="tenant.supervisionLevel" />
     <h3 class="text-h6 mb-2">{{ $t("supervision.history.title") }}</h3>
     <SupervisionHistoryList ref="history" :tenant-id="tenant.id" />

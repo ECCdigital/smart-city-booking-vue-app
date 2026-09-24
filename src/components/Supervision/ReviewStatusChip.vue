@@ -16,8 +16,8 @@ import { reviewBadge } from "@/utils/offerReview";
 
 /**
  * The review status (glossary "Prüfstatus") of an offer in a list, where it
- * matters: under a supervised or blocked tenant, for an event that is over as
- * well. A free tenant's cards stay quiet.
+ * matters: under every level but free, for an event that is over as well. A
+ * free tenant's cards stay quiet.
  */
 export default {
   name: "ReviewStatusChip",

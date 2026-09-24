@@ -55,7 +55,7 @@ const TENANTS = [
     contactName: "Sabine Sport",
     mail: "sabine@sportverein.example",
     location: "Musterstadt",
-    supervisionLevel: "blocked",
+    supervisionLevel: "pending",
   },
   // From before the supervision: no stored level.
   { id: "t-2", name: "Makerspace", mail: "hallo@makerspace.example" },
@@ -324,22 +324,75 @@ describe("InstanceTenants", () => {
   });
 
   describe("supervision", () => {
-    it("badges the instance owner's supervised and blocked tenants, never the free ones", async () => {
+    it("badges the instance owner's tenants that are not free, never the free ones", async () => {
       instanceOwner = true;
       const wrapper = await mountView();
 
       const [makerspace, sportverein] = rowTexts(wrapper);
       expect(makerspace).not.toContain("frei");
-      expect(sportverein).toContain("gesperrt");
+      expect(sportverein).toContain("Freigabe ausstehend");
       // The panel names the level of every tenant, the free one included.
       await selectRow(wrapper, 0);
       expect(panel(wrapper).text()).toContain("frei");
     });
 
+    it("badges a pending tenant in warning and a declined one in error", async () => {
+      instanceOwner = true;
+      ApiTenantService.getTenants.mockResolvedValue({
+        data: [
+          { id: "t-3", name: "Chor", supervisionLevel: "declined" },
+          { id: "t-4", name: "Dojo", supervisionLevel: "pending" },
+        ],
+      });
+      const wrapper = await mountView();
+
+      const [chor, dojo] = rows(wrapper).wrappers.map((row) =>
+        row.find("[data-test='supervision-level']")
+      );
+      expect(chor.text()).toBe("abgewiesen");
+      expect(chor.classes()).toContain("error--text");
+      expect(dojo.text()).toBe("Freigabe ausstehend");
+      expect(dojo.classes()).toContain("warning--text");
+    });
+
+    it("shows a level it does not know as stored, in a neutral chip", async () => {
+      instanceOwner = true;
+      ApiTenantService.getTenants.mockResolvedValue({
+        data: [{ id: "t-3", name: "Chor", supervisionLevel: "locked" }],
+      });
+      const wrapper = await mountView();
+
+      const badge = rows(wrapper).at(0).find("[data-test='supervision-level']");
+      expect(badge.text()).toBe("locked");
+      expect(badge.classes()).toContain("grey--text");
+    });
+
+    it("filters by each of the four levels", async () => {
+      instanceOwner = true;
+      const wrapper = await mountView();
+
+      await wrapper
+        .findComponent({ ref: "levelFilter" })
+        .find(".v-input__slot")
+        .trigger("click");
+      await flushPromises();
+
+      const options = Array.from(
+        document.querySelectorAll(".menuable__content__active .v-list-item")
+      ).map((item) => item.textContent.trim());
+      expect(options).toEqual([
+        "Alle Stufen",
+        "frei",
+        "beaufsichtigt",
+        "Freigabe ausstehend",
+        "abgewiesen",
+      ]);
+    });
+
     it("keeps level, filter and supervision actions from everyone else", async () => {
       const wrapper = await mountView();
 
-      expect(wrapper.text()).not.toContain("gesperrt");
+      expect(wrapper.text()).not.toContain("Freigabe ausstehend");
       expect(wrapper.findComponent({ ref: "levelFilter" }).exists()).toBe(
         false
       );
@@ -363,11 +416,11 @@ describe("InstanceTenants", () => {
 
       wrapper
         .findComponent({ ref: "levelFilter" })
-        .vm.$emit("input", "blocked");
+        .vm.$emit("input", "declined");
       await flushPromises();
 
       expect(ApiTenantService.getTenants).toHaveBeenLastCalledWith(false, {
-        supervisionLevel: "blocked",
+        supervisionLevel: "declined",
       });
     });
 
@@ -401,6 +454,27 @@ describe("InstanceTenants", () => {
       );
     });
 
+    it("names an effective level it does not know as stored in the toast", async () => {
+      instanceOwner = true;
+      ApiSupervisionService.setTenantLevel.mockResolvedValue({
+        supervisionLevel: "locked",
+        supervisionChangedAt: "2026-09-21T08:30:00.000Z",
+      });
+      const wrapper = await mountView();
+
+      await selectRow(wrapper, 0);
+      await panelAction(wrapper, "open-level-change").trigger("click");
+      await flushPromises();
+      document.querySelector("input[data-test='level-option-pending']").click();
+      await flushPromises();
+      document.querySelector("[data-test='level-submit']").click();
+      await flushPromises();
+
+      expect(addToast.mock.calls[0][1].message).toBe(
+        "„Makerspace“ ist jetzt locked."
+      );
+    });
+
     it("reloads list and dialog when the level moved underneath the dialog", async () => {
       instanceOwner = true;
       ApiSupervisionService.setTenantLevel.mockRejectedValue({
@@ -411,24 +485,24 @@ describe("InstanceTenants", () => {
       });
       const wrapper = await mountView();
       ApiTenantService.getTenants.mockClear();
-      // Someone else blocked the Makerspace in the meantime.
+      // Someone else set the Makerspace to pending in the meantime.
       ApiTenantService.getTenants.mockResolvedValue({
-        data: [TENANTS[0], { ...TENANTS[1], supervisionLevel: "blocked" }],
+        data: [TENANTS[0], { ...TENANTS[1], supervisionLevel: "pending" }],
       });
 
       await selectRow(wrapper, 0);
       await panelAction(wrapper, "open-level-change").trigger("click");
       await flushPromises();
-      document.querySelector("input[data-test='level-option-blocked']").click();
+      document.querySelector("input[data-test='level-option-pending']").click();
       await flushPromises();
       document.querySelector("[data-test='level-submit']").click();
       await flushPromises();
 
       expect(ApiTenantService.getTenants).toHaveBeenCalledTimes(1);
-      expect(rowTexts(wrapper)[0]).toContain("gesperrt");
+      expect(rowTexts(wrapper)[0]).toContain("Freigabe ausstehend");
       // The dialog follows: the level now effective is no longer on offer.
       expect(
-        document.querySelector("input[data-test='level-option-blocked']")
+        document.querySelector("input[data-test='level-option-pending']")
       ).toBeNull();
       expect(
         document.querySelector("[data-test='level-submit']").disabled
@@ -495,7 +569,7 @@ describe("InstanceTenants", () => {
       const wrapper = await mountView();
       wrapper
         .findComponent({ ref: "levelFilter" })
-        .vm.$emit("input", "blocked");
+        .vm.$emit("input", "pending");
       await flushPromises();
       expect(rowTexts(wrapper)).toHaveLength(1);
 
