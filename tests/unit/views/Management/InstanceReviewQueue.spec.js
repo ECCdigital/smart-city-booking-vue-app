@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import Vue from "vue";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import {
@@ -167,9 +168,12 @@ let addToast;
 let push;
 let replace;
 let query;
+let route;
 let currentTenantId;
 
 async function mountView() {
+  // Reactive, so that a spec can move the route under the mounted view.
+  route = Vue.observable({ query });
   const store = new Vuex.Store({
     modules: {
       tenants: {
@@ -182,7 +186,7 @@ async function mountView() {
   });
   const wrapper = mountComponent(InstanceReviewQueue, {
     store,
-    mocks: { $router: { push, replace }, $route: { query } },
+    mocks: { $router: { push, replace }, $route: route },
   });
   await flushPromises();
   return wrapper;
@@ -557,6 +561,48 @@ describe("InstanceReviewQueue", () => {
       const wrapper = await mountView();
 
       expect(register(wrapper, "offers").classes()).toContain("v-btn--active");
+    });
+
+    it("hides a register's counter while the register loads", async () => {
+      const wrapper = await mountView();
+      const offers = deferred();
+      const tenants = deferred();
+      ApiReviewQueueService.getReviewQueue.mockReturnValueOnce(offers.promise);
+      ApiTenantApprovalQueueService.getTenantApprovalQueue.mockReturnValueOnce(
+        tenants.promise
+      );
+
+      await wrapper.find("[data-test='review-queue-reload']").trigger("click");
+      await flushPromises();
+      expect(counter(wrapper, "offers").exists()).toBe(false);
+      expect(counter(wrapper, "tenants").exists()).toBe(false);
+
+      offers.resolve(pageOf([ROOM]));
+      tenants.resolve(pageOf([NEW_TENANT]));
+      await flushPromises();
+      expect(counter(wrapper, "offers").text()).toBe("1");
+      expect(counter(wrapper, "tenants").text()).toBe("1");
+    });
+
+    it("leaves ?tab= out for the offers, where the page opens", async () => {
+      query = { page: "x", tab: "tenants" };
+      const wrapper = await mountView();
+
+      await openRegister(wrapper, "offers");
+
+      expect(replace).toHaveBeenCalledWith({ query: { page: "x" } });
+    });
+
+    it("follows the route when it drops ?tab=, as the Navbar entry does", async () => {
+      query = { tab: "tenants" };
+      const wrapper = await mountView();
+
+      route.query = {};
+      await flushPromises();
+
+      expect(register(wrapper, "offers").classes()).toContain("v-btn--active");
+      expect(rows(wrapper).at(0).isVisible()).toBe(true);
+      expect(replace).not.toHaveBeenCalled();
     });
   });
 

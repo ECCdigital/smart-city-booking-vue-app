@@ -50,7 +50,7 @@
             </v-btn>
           </v-card-title>
           <v-divider />
-          <v-card-text v-show="register === registerKeys.OFFERS">
+          <v-card-text v-show="register === registerNames.OFFERS">
             <p class="review-queue__lead">
               {{ $t("supervision.queue.hint") }}
             </p>
@@ -201,7 +201,7 @@
               </template>
             </v-data-iterator>
           </v-card-text>
-          <v-card-text v-show="register === registerKeys.TENANTS">
+          <v-card-text v-show="register === registerNames.TENANTS">
             <TenantApprovalQueue
               ref="tenantQueue"
               @count="tenantCount = $event"
@@ -282,7 +282,8 @@ const DECISIONS = [REVIEW_ACTIONS.APPROVE, REVIEW_ACTIONS.REJECT];
 
 /**
  * The registers of the page, as `?tab=` names them: the offers waiting for a
- * review and the tenants waiting for their approval.
+ * review - where the page opens, so their name is left out of the address -
+ * and the tenants waiting for their approval.
  */
 const REGISTERS = Object.freeze({ OFFERS: "offers", TENANTS: "tenants" });
 const REGISTER_VALUES = Object.values(REGISTERS);
@@ -324,7 +325,7 @@ export default {
       rejectDialog: false,
       rejecting: null,
       reasonInput: "",
-      registerKeys: REGISTERS,
+      registerNames: REGISTERS,
       register: REGISTERS.OFFERS,
       tenantCount: null,
     };
@@ -356,9 +357,22 @@ export default {
     },
   },
   watch: {
+    // The page opens at the offers, and `?tab=` names the other register:
+    // the register follows the route - the Navbar entry drops `?tab=` - and
+    // the route follows the register.
+    "$route.query.tab": {
+      immediate: true,
+      handler(tab) {
+        this.register = REGISTER_VALUES.includes(tab) ? tab : REGISTERS.OFFERS;
+      },
+    },
     register(register) {
-      if (this.$route.query.tab === register) return;
-      this.$router.replace({ query: { ...this.$route.query, tab: register } });
+      const { tab, ...query } = this.$route.query;
+      const wanted = register === REGISTERS.OFFERS ? undefined : register;
+      if (tab === wanted) return;
+      this.$router.replace({
+        query: wanted ? { ...query, tab: wanted } : query,
+      });
     },
     filters: {
       deep: true,
@@ -369,10 +383,6 @@ export default {
     },
   },
   created() {
-    // The page opens at the offers; `?tab=` brings back the other register.
-    if (REGISTER_VALUES.includes(this.$route.query.tab)) {
-      this.register = this.$route.query.tab;
-    }
     this.load();
     this.fetchTenants();
   },

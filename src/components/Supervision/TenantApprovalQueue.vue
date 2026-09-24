@@ -24,7 +24,8 @@
     >
       {{ errorMessage }}
     </v-alert>
-    <!-- As the offers' register: the backend orders and cuts the queue. -->
+    <!-- The offers' register's rows, not AppList, so both registers read
+         alike; as there, the backend orders and cuts the queue. -->
     <v-data-iterator
       v-else
       :items="items"
@@ -68,9 +69,7 @@
               <!-- Flush with the facts: the buttons' own padding is pulled
                    into the row's left edge. -->
               <div class="tenant-queue__links">
-                <TenantBookingsLink
-                  :tenant="{ id: row.tenantId, name: row.tenantName }"
-                >
+                <TenantBookingsLink :tenant="tenantOf(row)">
                   {{ $t("supervision.tenant-approval-queue.bookings") }}
                 </TenantBookingsLink>
                 <v-btn
@@ -209,8 +208,8 @@ const NEW_TENANT_EVENTS = ["tenant.created", "tenant.levelInitialized"];
  * register of the review queue. A row is approved right here, through the
  * level change of the tenant and without a reason.
  *
- * It tells the page its counter with `count` after every load - `null` when
- * the load failed - and with `changed` that a level changed, by a decision
+ * It tells the page its counter with `count` - `null` while it loads and
+ * when the load failed - and with `changed` that a level changed, by a decision
  * here or, as a 409 says, by someone else: a supervised tenant's pending
  * offers enter the offers' register, which the page then reads anew.
  */
@@ -242,6 +241,7 @@ export default {
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
     async load() {
+      this.$emit("count", null);
       await this.loadPaged(
         () =>
           ApiTenantApprovalQueueService.getTenantApprovalQueue({
@@ -272,7 +272,7 @@ export default {
           row.tenantId,
           { level }
         );
-        this.announce(row, answer?.supervisionLevel || level);
+        this.announce(this.tenantOf(row), answer?.supervisionLevel || level);
       } catch (error) {
         console.error(error);
         this.decisionError = getApiErrorMessage(
@@ -285,16 +285,19 @@ export default {
       }
       this.refresh();
     },
+    /** The row's tenant as the dialogs and the bookings link take it. */
+    tenantOf(row) {
+      return { id: row.tenantId, name: row.tenantName };
+    },
     openHistory(row) {
-      this.historyTenant = { id: row.tenantId, name: row.tenantName };
+      this.historyTenant = this.tenantOf(row);
       this.historyOpen = true;
     },
     /** The decline has a dialog of its own, which sends the change itself. */
     startDecline(row) {
       this.decisionError = "";
       this.declining = {
-        id: row.tenantId,
-        name: row.tenantName,
+        ...this.tenantOf(row),
         supervisionLevel: SUPERVISION_LEVELS.PENDING,
       };
       this.declineOpen = true;
@@ -302,24 +305,25 @@ export default {
     onDeclined({ supervisionLevel }) {
       this.declineOpen = false;
       this.announce(
-        { tenantId: this.declining.id, tenantName: this.declining.name },
+        this.declining,
         supervisionLevel || SUPERVISION_LEVELS.DECLINED
       );
       this.refresh();
     },
-    announce(row, level) {
-      const key = levelLabelKey(level);
+    announce(tenant, level) {
       this.addToast(
         ToastService.createToast(
           "supervision.level.change.success",
           "success",
           5000,
-          {
-            tenant: row.tenantName || row.tenantId,
-            level: key ? this.$t(key) : level,
-          }
+          { tenant: tenant.name || tenant.id, level: this.levelName(level) }
         )
       );
+    },
+    /** A level the UI does not know is named as it is stored. */
+    levelName(level) {
+      const key = levelLabelKey(level);
+      return key ? this.$t(key) : level;
     },
     onOptions({ page, itemsPerPage }) {
       if (page === this.page && itemsPerPage === this.pageSize) return;
@@ -354,8 +358,7 @@ export default {
         return this.$t("supervision.tenant-approval-queue.origin.created");
       }
       if (eventType !== "tenant.levelChanged") return null;
-      const key = levelLabelKey(lastChange.from);
-      const level = key ? this.$t(key) : lastChange.from;
+      const level = this.levelName(lastChange.from);
       if (!lastChange.reason) {
         return this.$t("supervision.tenant-approval-queue.origin.reset", {
           level,

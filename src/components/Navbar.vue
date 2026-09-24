@@ -312,7 +312,7 @@ export default {
             link: "instance-review-queue",
             icon: "mdi-clipboard-list-outline",
             interfaceName: "instance",
-            badge: "reviewQueue",
+            badge: "waiting",
           },
           {
             title: "Benutzer",
@@ -344,7 +344,7 @@ export default {
     //currentTenant: "",
     tenants: [],
     // The counters beside an entry, by the entry's `badge`; 0 shows none.
-    badges: { reviewQueue: 0 },
+    badges: { waiting: 0 },
   }),
   components: {
     NotificationDisplay,
@@ -410,14 +410,17 @@ export default {
       });
     },
     /**
-     * One entry for both registers of the Prüfliste: its badge is the sum
-     * of their counters, each read as a page of one. Both queues are the
-     * instance owner's; a register that cannot be read adds nothing. The
-     * permissions are read off the store, as `isAuthorized` does: the
-     * permission services import the user module, which the drawer is
-     * loaded before.
+     * What waits for the instance owner's decision - the offers and the
+     * tenants, the two registers of the Prüfliste: the entry's badge is the
+     * sum of their counters, each read as a page of one. A register that
+     * cannot be read adds nothing.
+     *
+     * The permissions are read off the store, as `isAuthorized` does. A
+     * permission service would import the user module before the store, and
+     * the user module imports the store: loaded that way from the drawer,
+     * the store is built without its user module.
      */
-    async fetchReviewQueueCount() {
+    async fetchWaitingCount() {
       const permissions = this.$store.state.user.data?.permissions;
       if (permissions?.instanceOwner !== true) return;
       const firstOfOne = { page: 1, pageSize: 1 };
@@ -425,7 +428,7 @@ export default {
         ApiReviewQueueService.getReviewQueue(firstOfOne),
         ApiTenantApprovalQueueService.getTenantApprovalQueue(firstOfOne),
       ]);
-      this.badges.reviewQueue = answers.reduce((sum, answer) => {
+      this.badges.waiting = answers.reduce((sum, answer) => {
         if (answer.status === "rejected") {
           console.error(answer.reason);
           return sum;
@@ -478,7 +481,7 @@ export default {
   async mounted() {
     this.drawer = !this.$vuetify.breakpoint.mdAndDown;
     this.fetchTenants();
-    this.fetchReviewQueueCount();
+    this.fetchWaitingCount();
   },
 };
 </script>
