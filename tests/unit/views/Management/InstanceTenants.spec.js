@@ -113,6 +113,14 @@ async function selectRow(wrapper, index) {
   await flushPromises();
 }
 
+/** Types into the field of the open dialog that `selector` names. */
+async function typeInDialog(selector, text) {
+  const field = document.querySelector(`.v-dialog--active ${selector}`);
+  field.value = text;
+  field.dispatchEvent(new Event("input"));
+  await flushPromises();
+}
+
 /** The catalog switch of the selected tenant, in the panel. */
 const catalogSwitch = (wrapper) =>
   panel(wrapper).find("input[data-test='catalog-switch']");
@@ -133,7 +141,11 @@ beforeEach(() => {
     page: 1,
     pageSize: 25,
   });
-  ApiTenantService.getTenants.mockResolvedValue({ data: TENANTS });
+  // A copy per read: a change the page makes to its rows must not leak into
+  // what the server answers next.
+  ApiTenantService.getTenants.mockImplementation(() =>
+    Promise.resolve({ data: JSON.parse(JSON.stringify(TENANTS)) })
+  );
   ApiTenantService.getReadiness.mockResolvedValue({
     checkedAt: "2026-09-21T08:30:00.000Z",
     criteria: [
@@ -402,6 +414,8 @@ describe("InstanceTenants", () => {
 
       await selectRow(wrapper, 0);
       expect(panelAction(wrapper, "open-level-change").exists()).toBe(false);
+      expect(panelAction(wrapper, "open-decline").exists()).toBe(false);
+      expect(panelAction(wrapper, "open-reinstate").exists()).toBe(false);
       expect(panelAction(wrapper, "open-supervision-history").exists()).toBe(
         false
       );
@@ -431,6 +445,9 @@ describe("InstanceTenants", () => {
         supervisionChangedAt: "2026-09-21T08:30:00.000Z",
       });
       const wrapper = await mountView();
+      // The reload that follows the change has not answered yet.
+      ApiTenantService.getTenants.mockClear();
+      ApiTenantService.getTenants.mockReturnValue(new Promise(() => {}));
 
       // Sorted by name: Makerspace (t-2) comes first.
       await selectRow(wrapper, 0);
@@ -447,6 +464,7 @@ describe("InstanceTenants", () => {
         level: "supervised",
         reason: null,
       });
+      expect(ApiTenantService.getTenants).toHaveBeenCalledTimes(1);
       expect(rowTexts(wrapper)[0]).toContain("beaufsichtigt");
       expect(panel(wrapper).text()).toContain("beaufsichtigt");
       expect(addToast.mock.calls[0][1].message).toBe(
@@ -507,6 +525,169 @@ describe("InstanceTenants", () => {
       expect(
         document.querySelector("[data-test='level-submit']").disabled
       ).toBe(true);
+    });
+
+    it("declines the selected tenant through its own red action", async () => {
+      instanceOwner = true;
+      ApiSupervisionService.setTenantLevel.mockResolvedValue({
+        supervisionLevel: "declined",
+        supervisionChangedAt: "2026-09-24T10:00:00.000Z",
+        supervisionReason: "Kein Impressum",
+      });
+      const wrapper = await mountView();
+      // Sorted by name: the Sportverein (t-1, pending) comes second.
+      await selectRow(wrapper, 1);
+      expect(panelAction(wrapper, "open-reinstate").exists()).toBe(false);
+      const decline = panelAction(wrapper, "open-decline");
+      expect(decline.text()).toBe("Mandanten abweisen");
+      expect(decline.find(".error--text").exists()).toBe(true);
+      ApiTenantService.getTenants.mockClear();
+      ApiTenantService.getTenants.mockResolvedValue({
+        data: [
+          {
+            ...TENANTS[0],
+            supervisionLevel: "declined",
+            supervisionChangedAt: "2026-09-24T10:00:00.000Z",
+            supervisionReason: "Kein Impressum",
+          },
+          TENANTS[1],
+        ],
+      });
+
+      await decline.trigger("click");
+      await flushPromises();
+      await typeInDialog("textarea", "Kein Impressum");
+      document.querySelector("[data-test='decline-submit']").click();
+      await flushPromises();
+
+      expect(ApiSupervisionService.setTenantLevel).toHaveBeenCalledWith("t-1", {
+        level: "declined",
+        reason: "Kein Impressum",
+      });
+      expect(document.querySelector(".v-dialog--active")).toBeNull();
+      // Panel and list are read again.
+      expect(ApiTenantService.getTenants).toHaveBeenCalledTimes(1);
+      expect(rowTexts(wrapper)[1]).toContain("abgewiesen");
+      expect(addToast.mock.calls[0][1].message).toBe(
+        "„Sportverein“ ist jetzt abgewiesen."
+      );
+    });
+
+    it("reloads the list when the level moved underneath the decline", async () => {
+      instanceOwner = true;
+      ApiSupervisionService.setTenantLevel.mockRejectedValue({
+        response: {
+          status: 409,
+          data: { code: "supervision_level_changed", statusCode: 409 },
+        },
+      });
+      const wrapper = await mountView();
+      ApiTenantService.getTenants.mockClear();
+      // Someone else declined the Sportverein in the meantime.
+      ApiTenantService.getTenants.mockResolvedValue({
+        data: [{ ...TENANTS[0], supervisionLevel: "declined" }, TENANTS[1]],
+      });
+
+      await selectRow(wrapper, 1);
+      await panelAction(wrapper, "open-decline").trigger("click");
+      await flushPromises();
+      document.querySelector("[data-test='decline-submit']").click();
+      await flushPromises();
+
+      expect(ApiTenantService.getTenants).toHaveBeenCalledTimes(1);
+      expect(
+        document.querySelector("[data-test='decline-dialog']").textContent
+      ).toContain("Die Aufsichtsstufe wurde inzwischen geändert.");
+      expect(rowTexts(wrapper)[1]).toContain("abgewiesen");
+      expect(panelAction(wrapper, "open-reinstate").exists()).toBe(true);
+    });
+
+    it("shows a declined tenant's level, time and reason in the panel", async () => {
+      instanceOwner = true;
+      ApiTenantService.getTenants.mockResolvedValue({
+        data: [
+          {
+            id: "t-3",
+            name: "Chor",
+            supervisionLevel: "declined",
+            supervisionChangedAt: "2026-09-24T10:00:00.000Z",
+            supervisionReason: "Kein Impressum",
+          },
+          {
+            id: "t-4",
+            name: "Dojo",
+            supervisionLevel: "declined",
+            supervisionChangedAt: "2026-09-24T10:00:00.000Z",
+            supervisionReason: null,
+          },
+        ],
+      });
+      const wrapper = await mountView();
+
+      await selectRow(wrapper, 0);
+      const reason = () => panel(wrapper).find("[data-test='level-reason']");
+      expect(panel(wrapper).text()).toContain("abgewiesen");
+      expect(panel(wrapper).text()).toContain("Geändert am");
+      expect(reason().text().replace(/\s+/g, " ")).toBe(
+        "Begründung Kein Impressum"
+      );
+
+      await selectRow(wrapper, 1);
+      expect(reason().text().replace(/\s+/g, " ")).toBe(
+        "Begründung keine Begründung"
+      );
+    });
+
+    it("names no reason in the panel of a tenant that is not declined", async () => {
+      instanceOwner = true;
+      ApiTenantService.getTenants.mockResolvedValue({
+        data: [{ ...TENANTS[0], supervisionReason: "Neu angelegt" }],
+      });
+      const wrapper = await mountView();
+
+      await selectRow(wrapper, 0);
+
+      expect(panel(wrapper).find("[data-test='level-reason']").exists()).toBe(
+        false
+      );
+    });
+
+    it("takes a decline back instead of offering it again", async () => {
+      instanceOwner = true;
+      ApiTenantService.getTenants.mockResolvedValue({
+        data: [{ id: "t-3", name: "Chor", supervisionLevel: "declined" }],
+      });
+      ApiSupervisionService.setTenantLevel.mockResolvedValue({
+        supervisionLevel: "supervised",
+        supervisionChangedAt: "2026-09-24T11:00:00.000Z",
+        supervisionReason: null,
+      });
+      const wrapper = await mountView();
+      await selectRow(wrapper, 0);
+
+      expect(panelAction(wrapper, "open-decline").exists()).toBe(false);
+      expect(panelAction(wrapper, "open-level-change").classes()).toContain(
+        "v-list-item--disabled"
+      );
+      const reinstate = panelAction(wrapper, "open-reinstate");
+      expect(reinstate.text()).toBe("Abweisung zurücknehmen");
+
+      await reinstate.trigger("click");
+      await flushPromises();
+      expect(
+        document.querySelector("[data-test='level-dialog']").textContent
+      ).toContain("Der Mandant erhält die Stufe");
+      document
+        .querySelector("input[data-test='level-option-supervised']")
+        .click();
+      await flushPromises();
+      document.querySelector("[data-test='level-submit']").click();
+      await flushPromises();
+
+      expect(ApiSupervisionService.setTenantLevel).toHaveBeenCalledWith("t-3", {
+        level: "supervised",
+        reason: null,
+      });
     });
 
     it("opens the supervision history of the selected tenant", async () => {
