@@ -89,6 +89,24 @@ describe("OfferReviewPanel", () => {
     );
   });
 
+  it.each([
+    ["pending", "Der Mandant wartet auf die Freigabe durch den Betreiber"],
+    ["declined", "Der Mandant ist abgewiesen"],
+  ])(
+    "says under a %s tenant that not even an approved offer is reachable",
+    (supervisionLevel, reason) => {
+      const wrapper = mountPanel({
+        supervisionLevel,
+        review: review({ status: "approved" }),
+        isPublic: true,
+      });
+
+      const effect = find(wrapper, "review-effect").text();
+      expect(effect).toContain(reason);
+      expect(effect).toContain("weder gelistet noch per Direktlink buchbar");
+    }
+  );
+
   it("lets the tenant owner submit without a publication wish and hands the new review up", async () => {
     const pending = review({ status: "pending", submittedAt: SUBMITTED_AT });
     ApiReviewService.submit.mockResolvedValue(pending);

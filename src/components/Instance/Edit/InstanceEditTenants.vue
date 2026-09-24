@@ -1,10 +1,7 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
-import {
-  SUPERVISION_LEVELS,
-  completionVariant,
-} from "@/utils/tenantOnboarding";
-import { levelLabelKey } from "@/utils/supervision";
+import { completionVariant } from "@/utils/tenantOnboarding";
+import { INITIAL_SUPERVISION_LEVELS, levelLabelKey } from "@/utils/supervision";
 
 const INITIAL_LEVEL_FIELD = "tenantInitialSupervisionLevel";
 
@@ -27,7 +24,7 @@ export default {
     return {
       local: withInitialLevel(this.instance),
       selectedUserToCreateTenant: null,
-      supervisionLevels: Object.values(SUPERVISION_LEVELS),
+      supervisionLevels: INITIAL_SUPERVISION_LEVELS,
       initialLevelApiErrors: [],
     };
   },

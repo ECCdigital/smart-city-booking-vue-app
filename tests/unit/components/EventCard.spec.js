@@ -66,8 +66,9 @@ const badge = (wrapper) => wrapper.find("[data-test='review-badge']");
 describe("EventCard review badge", () => {
   it.each([
     ["supervised", "pending", "Prüfung ausstehend"],
-    ["blocked", "approved", "Freigegeben"],
+    ["pending", "approved", "Freigegeben"],
     ["supervised", "rejected", "Abgelehnt"],
+    ["declined", "rejected", "Abgelehnt"],
   ])(
     "names the review status under a %s tenant (%s)",
     async (supervisionLevel, status, label) => {

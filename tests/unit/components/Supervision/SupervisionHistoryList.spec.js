@@ -17,8 +17,8 @@ const LEVEL_CHANGE = {
   eventType: "tenant.levelChanged",
   occurredAt: "2026-09-21T12:00:00.000Z",
   actor: { type: "user", userId: "owner@example.org" },
-  from: "free",
-  to: "blocked",
+  from: "pending",
+  to: "declined",
   reason: "Missbrauch gemeldet",
   origin: "api",
 };
@@ -92,8 +92,17 @@ describe("SupervisionHistoryList", () => {
     expect(levelChange).toContain("14:00");
     expect(levelChange).toContain("Aufsichtsstufe geändert");
     expect(levelChange).toContain("owner@example.org");
-    expect(levelChange).toContain("frei → gesperrt");
+    expect(levelChange).toContain("Freigabe ausstehend → abgewiesen");
     expect(levelChange).toContain("Missbrauch gemeldet");
+  });
+
+  it("names a level it does not know as stored, never as free", async () => {
+    ApiSupervisionService.getTenantHistory.mockResolvedValue(
+      page([{ ...LEVEL_CHANGE, from: "supervised", to: "locked" }])
+    );
+    const wrapper = await mountList({ tenantId: "t-1" });
+
+    expect(rowTexts(wrapper)[0]).toContain("beaufsichtigt → locked");
   });
 
   it("names the offer and its review statuses on a review row", async () => {

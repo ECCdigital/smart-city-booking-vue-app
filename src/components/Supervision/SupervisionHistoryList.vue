@@ -230,11 +230,11 @@ export default {
       return key ? this.$t(key) : row.actor.userId;
     },
     // A first state (creation, migration, first submission of a level event)
-    // has no old one to name.
+    // has no old one to name; a level without a label shows as stored.
     changeStates(row) {
       const label = (state) => {
         const key = historyStateLabelKey(row.eventType, state);
-        return key ? this.$t(key) : "";
+        return key ? this.$t(key) : state || "";
       };
       return { from: label(row.from), to: label(row.to) };
     },

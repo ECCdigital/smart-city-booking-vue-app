@@ -296,7 +296,8 @@ describe("supervision levels", () => {
   it("names the closing action per level", () => {
     expect(completionVariant("free")).toBe("free");
     expect(completionVariant("supervised")).toBe("supervised");
-    expect(completionVariant("blocked")).toBe("blocked");
+    expect(completionVariant("pending")).toBe("pending");
+    expect(completionVariant("declined")).toBe("declined");
   });
 
   it("reads a missing or unknown level as free, the default of the backend", () => {
@@ -304,11 +305,12 @@ describe("supervision levels", () => {
     expect(completionVariant("whatever")).toBe("free");
   });
 
-  it("explains the supervision for supervised and blocked only", () => {
+  it("explains the supervision for every level but free", () => {
     expect(showsSupervisionNotice("free")).toBe(false);
     expect(showsSupervisionNotice(undefined)).toBe(false);
     expect(showsSupervisionNotice("supervised")).toBe(true);
-    expect(showsSupervisionNotice("blocked")).toBe(true);
+    expect(showsSupervisionNotice("pending")).toBe(true);
+    expect(showsSupervisionNotice("declined")).toBe(true);
   });
 });
 

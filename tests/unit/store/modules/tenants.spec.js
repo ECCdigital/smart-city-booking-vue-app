@@ -63,7 +63,7 @@ describe("tenants/currentSupervisionLevel", () => {
 
   it("answers for the selected tenant only", async () => {
     ApiTenantService.getTenant.mockResolvedValue({
-      data: { id: "t-1", supervisionLevel: "blocked" },
+      data: { id: "t-1", supervisionLevel: "pending" },
     });
     const store = createStore();
     await store.dispatch("tenants/loadSupervisionLevel");

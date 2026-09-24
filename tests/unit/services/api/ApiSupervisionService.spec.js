@@ -17,18 +17,18 @@ describe("ApiSupervisionService", () => {
 
   it("sets the level of the named tenant and answers the effective level", async () => {
     const answer = {
-      supervisionLevel: "blocked",
+      supervisionLevel: "pending",
       supervisionChangedAt: "2026-09-21T08:30:00.000Z",
     };
     ApiClient.put.mockResolvedValue({ data: answer });
 
     const result = await ApiSupervisionService.setTenantLevel("t-1", {
-      level: "blocked",
+      level: "pending",
       reason: "Missbrauch",
     });
 
     expect(ApiClient.put).toHaveBeenCalledWith("api/tenants/t-1/supervision", {
-      level: "blocked",
+      level: "pending",
       reason: "Missbrauch",
     });
     expect(result).toEqual(answer);

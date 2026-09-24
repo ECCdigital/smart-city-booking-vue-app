@@ -324,10 +324,10 @@
           "levels": {
             "free": "Angebote werden ohne Prüfung veröffentlicht.",
             "supervised": "Angebote werden erst nach Ihrer Freigabe öffentlich.",
-            "blocked": "Angebote bleiben öffentlich verborgen, bis Sie die Aufsichtsstufe ändern."
+            "pending": "Neue Mandanten können alles vorbereiten; öffentlich wird nichts, bis Sie sie freigeben."
           },
           "hint": "Die Startstufe gilt für jede Selbst-Anlage – über die Freigabeliste ebenso wie bei der offenen Anlage. Mandanten, die ein Instanz-Owner anlegt, beginnen immer frei. Eine Änderung wirkt nur auf neue Mandanten; bestehende Mandanten behalten ihre Aufsichtsstufe. Stufen werden ausschließlich manuell geändert.",
-          "invalid": "Die Startstufe muss frei, beaufsichtigt oder gesperrt sein."
+          "invalid": "Als Startstufe sind nur frei, beaufsichtigt oder Freigabe ausstehend zulässig."
         }
       }
     }
@@ -510,10 +510,12 @@
         "names": {
           "free": "frei",
           "supervised": "beaufsichtigt",
-          "blocked": "gesperrt"
+          "pending": "Freigabe ausstehend",
+          "declined": "abgewiesen"
         },
         "supervised": "Ihre Angebote werden vor der Veröffentlichung durch den Instanz-Owner geprüft.",
-        "blocked": "Sie können alles vorbereiten. Ihre Angebote bleiben öffentlich verborgen, bis der Instanz-Owner die Aufsichtsstufe ändert.",
+        "pending": "Ihr Mandant wartet auf die Freigabe durch den Betreiber. Sie können bereits alles vorbereiten; Ihre Angebote werden erst nach der Freigabe öffentlich sichtbar und buchbar.",
+        "declined": "Der Mandant wurde vom Betreiber abgewiesen: Nichts ist öffentlich, und Tenant-Owner und Mitglieder haben keinen Verwaltungszugriff mehr. Bestehende Buchungen bleiben für ihre Kunden nutzbar.",
         "label": "Aufsichtsstufe"
       },
       "tenant": {
@@ -614,7 +616,8 @@
         "action": {
           "free": "Veröffentlichen",
           "supervised": "Zur Prüfung einreichen",
-          "blocked": "Veröffentlichung vormerken"
+          "pending": "Veröffentlichung vormerken",
+          "declined": "Veröffentlichung vormerken"
         },
         "done": {
           "free": {
@@ -625,9 +628,13 @@
             "title": "Zur Prüfung eingereicht",
             "text": "Ihr Angebot wartet auf Prüfung. Bis zur Freigabe ist es öffentlich nicht sichtbar. Sie können es in der Verwaltung weiter bearbeiten."
           },
-          "blocked": {
+          "pending": {
             "title": "Veröffentlichung vorgemerkt",
-            "text": "Ihr Veröffentlichungswunsch ist vorgemerkt. Der Mandant bleibt gesperrt; Sie können die Einrichtung fortsetzen."
+            "text": "Ihr Veröffentlichungswunsch ist vorgemerkt. Der Mandant wartet auf die Freigabe durch den Betreiber; Sie können die Einrichtung fortsetzen."
+          },
+          "declined": {
+            "title": "Veröffentlichung vorgemerkt",
+            "text": "Der Veröffentlichungswunsch ist vorgemerkt. Der Mandant ist abgewiesen; solange das so bleibt, wird nichts veröffentlicht."
           }
         }
       },
@@ -2243,11 +2250,13 @@
         "listed": "Das Angebot ist gelistet und buchbar.",
         "direct-link-only": "Das Angebot ist per Direktlink buchbar, aber nicht gelistet.",
         "not-reachable": "Ohne Freigabe ist das Angebot weder gelistet noch per Direktlink buchbar.",
-        "blocked": "Der Mandant ist gesperrt: Das Angebot ist weder gelistet noch per Direktlink buchbar."
+        "pending": "Der Mandant wartet auf die Freigabe durch den Betreiber: Das Angebot ist weder gelistet noch per Direktlink buchbar.",
+        "declined": "Der Mandant ist abgewiesen: Das Angebot ist weder gelistet noch per Direktlink buchbar."
       },
       "wish-hint": {
         "supervised": "Ihr Mandant ist beaufsichtigt: Der Veröffentlichungswunsch allein veröffentlicht nichts, das Angebot braucht zusätzlich eine Freigabe.",
-        "blocked": "Ihr Mandant ist gesperrt: Der Veröffentlichungswunsch wird vorgemerkt, veröffentlicht aber nichts."
+        "pending": "Ihr Mandant wartet auf die Freigabe durch den Betreiber: Der Veröffentlichungswunsch wird vorgemerkt, veröffentlicht aber erst nach der Freigabe.",
+        "declined": "Der Mandant ist abgewiesen: Der Veröffentlichungswunsch wird vorgemerkt, veröffentlicht aber nichts."
       },
       "unsaved": "Speichern Sie das Angebot, um es zur Prüfung einzureichen.",
       "actions": {
@@ -2356,7 +2365,7 @@
         "consequence": {
           "free": "Die Angebote des Mandanten sind ohne Prüfung öffentlich erreichbar. Gespeicherte Prüfstatus bleiben erhalten, haben aber keine Wirkung.",
           "supervised": "Angebote brauchen eine Freigabe – für öffentliche Listen und für den Direktlink. Bestehende Angebote werden nicht automatisch freigegeben; ohne Freigabe sind sie sofort nicht mehr öffentlich erreichbar.",
-          "blocked": "Die Angebote des Mandanten erscheinen nicht mehr öffentlich, neue Selbstbuchungen sind nicht möglich. Bestehende Buchungen bleiben unberührt, die Verwaltung bleibt nutzbar."
+          "pending": "Der Mandant wartet auf Ihre Freigabe: Seine Angebote erscheinen nicht öffentlich, auch nicht per Direktlink, neue Selbstbuchungen sind nicht möglich. Die Tenant-Owner können weiter alles vorbereiten; bestehende Buchungen bleiben unberührt."
         },
         "submit": "Stufe ändern",
         "cancel": "Abbrechen",

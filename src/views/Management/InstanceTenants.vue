@@ -679,6 +679,8 @@ export default {
       if (tenant) {
         this.$set(tenant, "supervisionLevel", supervisionLevel);
         this.$set(tenant, "supervisionChangedAt", supervisionChangedAt);
+        const level = effectiveLevel(tenant);
+        const levelKey = levelLabelKey(level);
         this.addToast(
           ToastService.createToast(
             "supervision.level.change.success",
@@ -686,7 +688,7 @@ export default {
             5000,
             {
               tenant: tenant.name || tenant.id,
-              level: this.$t(levelLabelKey(effectiveLevel(tenant))),
+              level: levelKey ? this.$t(levelKey) : level,
             }
           )
         );

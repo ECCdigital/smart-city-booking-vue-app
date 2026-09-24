@@ -366,7 +366,7 @@ describe("TenantOnboarding — supervision level before the creation", () => {
 
   it.each([
     ["supervised", "beaufsichtigt"],
-    ["blocked", "gesperrt"],
+    ["pending", "Freigabe ausstehend"],
   ])("announces the initial level %s", async (level, name) => {
     ApiInstanceService.getPublicInstance.mockResolvedValue({
       tenantInitialSupervisionLevel: level,
@@ -380,7 +380,7 @@ describe("TenantOnboarding — supervision level before the creation", () => {
   it("starts the instance owner's tenant free, whatever the initial level", async () => {
     instanceOwner = true;
     ApiInstanceService.getPublicInstance.mockResolvedValue({
-      tenantInitialSupervisionLevel: "blocked",
+      tenantInitialSupervisionLevel: "pending",
     });
     const wrapper = mountWizard();
     await flushPromises();
@@ -484,7 +484,8 @@ describe("TenantOnboarding — closing by supervision level", () => {
   it.each([
     ["free", "Veröffentlichen", "Veröffentlicht"],
     ["supervised", "Zur Prüfung einreichen", "Zur Prüfung eingereicht"],
-    ["blocked", "Veröffentlichung vormerken", "Veröffentlichung vorgemerkt"],
+    ["pending", "Veröffentlichung vormerken", "Veröffentlichung vorgemerkt"],
+    ["declined", "Veröffentlichung vormerken", "Veröffentlichung vorgemerkt"],
   ])(
     "%s: „%s“ stores the publication wish",
     async (level, action, doneTitle) => {
@@ -502,6 +503,21 @@ describe("TenantOnboarding — closing by supervision level", () => {
     }
   );
 
+  it.each([
+    ["pending", "wartet auf die Freigabe durch den Betreiber"],
+    ["declined", "abgewiesen"],
+  ])(
+    "%s: the done state says why nothing is published yet",
+    async (level, text) => {
+      const wrapper = await reachOverview(level);
+
+      await find(wrapper, "overview-complete").trigger("click");
+      await flushPromises();
+
+      expect(find(wrapper, "overview-done-text").text()).toContain(text);
+    }
+  );
+
   it("free: neither level nor approval texts, before or after publishing", async () => {
     const wrapper = await reachOverview("free");
     expect(find(wrapper, "supervision-notice").exists()).toBe(false);
@@ -513,7 +529,7 @@ describe("TenantOnboarding — closing by supervision level", () => {
     expect(find(wrapper, "overview-done-text").exists()).toBe(false);
   });
 
-  it.each(["supervised", "blocked"])(
+  it.each(["supervised", "pending", "declined"])(
     "%s: the level accompanies the wizard",
     async (level) => {
       const wrapper = await reachOverview(level);

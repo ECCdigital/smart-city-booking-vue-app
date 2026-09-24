@@ -7,14 +7,17 @@
     :color="color"
     data-test="supervision-level"
   >
-    {{ $t(labelKey) }}
+    {{ label }}
   </v-chip>
 </template>
 
 <script>
 import { levelColor, levelLabelKey } from "@/utils/supervision";
 
-/** The supervision level of a tenant; a missing level reads as free. */
+/**
+ * The supervision level of a tenant; a missing level reads as free, one
+ * without a name shows as stored.
+ */
 export default {
   name: "SupervisionLevelChip",
   props: {
@@ -26,8 +29,9 @@ export default {
     color() {
       return levelColor(this.level);
     },
-    labelKey() {
-      return levelLabelKey(this.level);
+    label() {
+      const key = levelLabelKey(this.level);
+      return key ? this.$t(key) : this.level;
     },
   },
 };

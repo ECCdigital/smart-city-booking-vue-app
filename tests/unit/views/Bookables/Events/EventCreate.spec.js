@@ -241,7 +241,11 @@ describe("EventCreate", () => {
 
   it.each([
     ["supervised", "braucht zusätzlich eine Freigabe"],
-    ["blocked", "veröffentlicht aber nichts"],
+    [
+      "pending",
+      "Freigabe durch den Betreiber: Der Veröffentlichungswunsch wird vorgemerkt, veröffentlicht aber erst nach der Freigabe",
+    ],
+    ["declined", "abgewiesen: Der Veröffentlichungswunsch wird vorgemerkt"],
   ])(
     "says under %s that the publication wish alone does not publish",
     async (supervisionLevel, text) => {

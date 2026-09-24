@@ -39,7 +39,7 @@ async function typeReason(wrapper, text) {
 beforeEach(() => {
   vi.clearAllMocks();
   ApiSupervisionService.setTenantLevel.mockResolvedValue({
-    supervisionLevel: "blocked",
+    supervisionLevel: "pending",
     supervisionChangedAt: "2026-09-21T08:30:00.000Z",
   });
 });
@@ -52,7 +52,8 @@ describe("SupervisionLevelDialog", () => {
     expect(activeDialogText()).toContain("Aktuelle Stufe: frei");
     expect(levelOption("free")).toBeNull();
     expect(levelOption("supervised")).not.toBeNull();
-    expect(levelOption("blocked")).not.toBeNull();
+    expect(levelOption("pending")).not.toBeNull();
+    expect(levelOption("declined")).toBeNull();
   });
 
   it("reads a tenant without a stored level as free", async () => {
@@ -62,12 +63,22 @@ describe("SupervisionLevelDialog", () => {
     expect(levelOption("free")).toBeNull();
   });
 
-  it("offers every direction: a blocked tenant may become free or supervised", async () => {
-    await mountDialog({ tenant: { ...TENANT, supervisionLevel: "blocked" } });
+  it("offers every direction: a pending tenant may become free or supervised", async () => {
+    await mountDialog({ tenant: { ...TENANT, supervisionLevel: "pending" } });
 
     expect(levelOption("free")).not.toBeNull();
     expect(levelOption("supervised")).not.toBeNull();
-    expect(levelOption("blocked")).toBeNull();
+    expect(levelOption("pending")).toBeNull();
+  });
+
+  it("names a declined tenant's level and offers the three others, never declined", async () => {
+    await mountDialog({ tenant: { ...TENANT, supervisionLevel: "declined" } });
+
+    expect(activeDialogText()).toContain("Aktuelle Stufe: abgewiesen");
+    expect(levelOption("free")).not.toBeNull();
+    expect(levelOption("supervised")).not.toBeNull();
+    expect(levelOption("pending")).not.toBeNull();
+    expect(levelOption("declined")).toBeNull();
   });
 
   it("changes nothing before a level is chosen", async () => {
@@ -79,18 +90,19 @@ describe("SupervisionLevelDialog", () => {
   it("says what the chosen level means", async () => {
     await mountDialog();
 
-    await choose("blocked");
-    expect(activeDialogText()).toContain("Bestehende Buchungen bleiben");
-    expect(activeDialogText()).toContain("die Verwaltung bleibt nutzbar");
+    await choose("pending");
+    expect(activeDialogText()).toContain("wartet auf Ihre Freigabe");
+    expect(activeDialogText()).toContain("können weiter alles vorbereiten");
+    expect(activeDialogText()).toContain("bestehende Buchungen bleiben");
 
     await choose("supervised");
     expect(activeDialogText()).toContain("für den Direktlink");
     expect(activeDialogText()).toContain("nicht automatisch freigegeben");
-    expect(activeDialogText()).not.toContain("Bestehende Buchungen bleiben");
+    expect(activeDialogText()).not.toContain("wartet auf Ihre Freigabe");
   });
 
   it("says that a stored review status has no effect for a free tenant", async () => {
-    await mountDialog({ tenant: { ...TENANT, supervisionLevel: "blocked" } });
+    await mountDialog({ tenant: { ...TENANT, supervisionLevel: "pending" } });
 
     await choose("free");
 
@@ -100,20 +112,20 @@ describe("SupervisionLevelDialog", () => {
   it("sends level and reason and hands the effective level on", async () => {
     const wrapper = await mountDialog();
 
-    await choose("blocked");
+    await choose("pending");
     await typeReason(wrapper, "  Missbrauch gemeldet ");
     submitButton().click();
     await flushPromises();
 
     expect(ApiSupervisionService.setTenantLevel).toHaveBeenCalledWith("t-7", {
-      level: "blocked",
+      level: "pending",
       reason: "Missbrauch gemeldet",
     });
     expect(wrapper.emitted("changed")).toEqual([
       [
         {
           tenantId: "t-7",
-          supervisionLevel: "blocked",
+          supervisionLevel: "pending",
           supervisionChangedAt: "2026-09-21T08:30:00.000Z",
         },
       ],
@@ -142,7 +154,7 @@ describe("SupervisionLevelDialog", () => {
     });
     const wrapper = await mountDialog();
 
-    await choose("blocked");
+    await choose("pending");
     submitButton().click();
     await flushPromises();
 
@@ -159,7 +171,7 @@ describe("SupervisionLevelDialog", () => {
     });
     const wrapper = await mountDialog();
 
-    await choose("blocked");
+    await choose("pending");
     submitButton().click();
     await flushPromises();
 
@@ -178,7 +190,7 @@ describe("SupervisionLevelDialog", () => {
     });
     await mountDialog();
 
-    await choose("blocked");
+    await choose("pending");
     submitButton().click();
     await flushPromises();
 
@@ -187,7 +199,7 @@ describe("SupervisionLevelDialog", () => {
 
   it("starts empty again each time it opens", async () => {
     const wrapper = await mountDialog();
-    await choose("blocked");
+    await choose("pending");
     await typeReason(wrapper, "Missbrauch");
 
     await wrapper.setProps({ open: false });

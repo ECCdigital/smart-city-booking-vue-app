@@ -85,8 +85,9 @@ import {
 
 /**
  * The instance owner's explicit level change (glossary "Aufsichtsstufe"):
- * every level in every direction, with an optional reason. The level the
- * tenant already has is not offered - setting it is a no-op on the backend.
+ * free, supervised and pending in every direction, with an optional reason;
+ * declined is never a target here. The level the tenant already has is not
+ * offered - setting it is a no-op on the backend.
  * The level travels through its own route, never with a tenant write.
  */
 export default {

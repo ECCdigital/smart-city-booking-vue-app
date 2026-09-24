@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import i18n from "@/language/index";
 import {
+  INITIAL_SUPERVISION_LEVELS,
   OFFER_TYPES,
+  PUBLIC_SUPERVISION_LEVELS,
   REVIEW_STATUS,
   SUPERVISION_LEVELS,
   SUPERVISION_LEVEL_VALUES,
@@ -19,34 +21,84 @@ import {
 } from "@/utils/supervision";
 
 describe("supervision levels", () => {
-  it("names the three levels of the backend", () => {
-    expect(SUPERVISION_LEVEL_VALUES).toEqual(["free", "supervised", "blocked"]);
+  it("names the four levels of the backend", () => {
+    expect(SUPERVISION_LEVEL_VALUES).toEqual([
+      "free",
+      "supervised",
+      "pending",
+      "declined",
+    ]);
   });
 
-  it("reads a tenant without a stored or with an unknown level as free", () => {
-    expect(effectiveLevel({ supervisionLevel: "blocked" })).toBe("blocked");
+  it("starts a self-created tenant at any level but declined", () => {
+    expect(INITIAL_SUPERVISION_LEVELS).toEqual([
+      "free",
+      "supervised",
+      "pending",
+    ]);
+  });
+
+  it("projects only a free or supervised tenant to the public", () => {
+    expect(PUBLIC_SUPERVISION_LEVELS).toEqual(["free", "supervised"]);
+  });
+
+  it("reads a tenant without a stored level as free", () => {
+    expect(effectiveLevel({ supervisionLevel: "pending" })).toBe("pending");
+    expect(effectiveLevel({ supervisionLevel: "declined" })).toBe("declined");
     expect(effectiveLevel({})).toBe("free");
+    expect(effectiveLevel({ supervisionLevel: null })).toBe("free");
     expect(effectiveLevel(null)).toBe("free");
-    expect(effectiveLevel({ supervisionLevel: "locked" })).toBe("free");
+  });
+
+  it("never reads an unknown stored level as free", () => {
+    expect(effectiveLevel({ supervisionLevel: "locked" })).toBe("locked");
   });
 
   it("labels every level in German", () => {
     expect(i18n.t(levelLabelKey("free"))).toBe("frei");
     expect(i18n.t(levelLabelKey("supervised"))).toBe("beaufsichtigt");
-    expect(i18n.t(levelLabelKey("blocked"))).toBe("gesperrt");
+    expect(i18n.t(levelLabelKey("pending"))).toBe("Freigabe ausstehend");
+    expect(i18n.t(levelLabelKey("declined"))).toBe("abgewiesen");
     expect(i18n.t(levelLabelKey(undefined))).toBe("frei");
+  });
+
+  it("has no label key for a level it does not know: the caller shows the raw value", () => {
+    expect(levelLabelKey("locked")).toBeNull();
   });
 
   it("colours the chip by level", () => {
     expect(levelColor("free")).toBe("success");
     expect(levelColor("supervised")).toBe("warning");
-    expect(levelColor("blocked")).toBe("error");
+    expect(levelColor("pending")).toBe("warning");
+    expect(levelColor("declined")).toBe("error");
     expect(levelColor(undefined)).toBe("success");
   });
 
+  it("colours a level it does not know neutrally", () => {
+    expect(levelColor("locked")).toBe("grey");
+    expect(levelColor("constructor")).toBe("grey");
+  });
+
   it("offers every level but the effective one for a change", () => {
-    expect(selectableLevels("supervised")).toEqual(["free", "blocked"]);
-    expect(selectableLevels(undefined)).toEqual(["supervised", "blocked"]);
+    expect(selectableLevels("supervised")).toEqual(["free", "pending"]);
+    expect(selectableLevels(undefined)).toEqual(["supervised", "pending"]);
+  });
+
+  it("never offers declined as the target of a change", () => {
+    expect(selectableLevels("pending")).toEqual(["free", "supervised"]);
+    expect(selectableLevels("declined")).toEqual([
+      "free",
+      "supervised",
+      "pending",
+    ]);
+  });
+
+  it("offers every regular level while the effective one is unknown", () => {
+    expect(selectableLevels("locked")).toEqual([
+      "free",
+      "supervised",
+      "pending",
+    ]);
   });
 });
 
@@ -136,7 +188,8 @@ describe("supervision history", () => {
     expect(SUPERVISION_LEVELS).toEqual({
       FREE: "free",
       SUPERVISED: "supervised",
-      BLOCKED: "blocked",
+      PENDING: "pending",
+      DECLINED: "declined",
     });
   });
 });

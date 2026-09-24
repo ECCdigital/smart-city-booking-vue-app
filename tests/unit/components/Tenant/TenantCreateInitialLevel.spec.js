@@ -54,7 +54,7 @@ beforeEach(() => {
 describe("TenantCreate — start level before the self-creation", () => {
   it.each([
     ["supervised", "beaufsichtigt"],
-    ["blocked", "gesperrt"],
+    ["pending", "Freigabe ausstehend"],
   ])("announces the start level %s", async (level, name) => {
     ApiInstanceService.getPublicInstance.mockResolvedValue({
       tenantInitialSupervisionLevel: level,
@@ -74,7 +74,7 @@ describe("TenantCreate — start level before the self-creation", () => {
   it("tells the instance owner nothing: the tenant starts free", async () => {
     instanceOwner = true;
     ApiInstanceService.getPublicInstance.mockResolvedValue({
-      tenantInitialSupervisionLevel: "blocked",
+      tenantInitialSupervisionLevel: "pending",
     });
 
     await openDialog();

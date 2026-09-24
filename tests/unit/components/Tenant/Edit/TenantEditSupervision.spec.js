@@ -68,12 +68,23 @@ describe("TenantEditSupervision", () => {
     expect(notice.text()).toContain("vor der Veröffentlichung");
   });
 
-  it("tells the owner of a blocked tenant its level", async () => {
-    const wrapper = await mountTab({ id: "t-1", supervisionLevel: "blocked" });
+  it("tells the owner of a pending tenant that the operator approves it, as a warning", async () => {
+    const wrapper = await mountTab({ id: "t-1", supervisionLevel: "pending" });
 
-    expect(wrapper.find("[data-test='supervision-notice']").text()).toContain(
-      "Aufsichtsstufe: gesperrt"
-    );
+    const notice = wrapper.find("[data-test='supervision-notice']");
+    expect(notice.text()).toContain("Aufsichtsstufe: Freigabe ausstehend");
+    expect(notice.text()).toContain("Freigabe durch den Betreiber");
+    expect(notice.text()).toContain("Sie können bereits alles vorbereiten");
+    expect(notice.find(".v-alert").classes()).toContain("warning--text");
+  });
+
+  it("names a declined tenant's level and what it takes away, as an error", async () => {
+    const wrapper = await mountTab({ id: "t-1", supervisionLevel: "declined" });
+
+    const notice = wrapper.find("[data-test='supervision-notice']");
+    expect(notice.text()).toContain("Aufsichtsstufe: abgewiesen");
+    expect(notice.text()).toContain("keinen Verwaltungszugriff mehr");
+    expect(notice.find(".v-alert").classes()).toContain("error--text");
   });
 
   it("shows nothing special for a free tenant", async () => {
