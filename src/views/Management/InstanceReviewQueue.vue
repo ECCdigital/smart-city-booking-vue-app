@@ -5,14 +5,37 @@
         <v-card outlined class="section-card review-queue__card">
           <v-card-title class="section-header">
             <v-icon>mdi-clipboard-list-outline</v-icon>
-            <span>{{ $t("supervision.queue.section") }}</span>
-            <span
-              v-if="!loading && !errorMessage"
-              class="review-queue__count"
-              data-test="review-queue-count"
+            <!-- Two registers, drawn as the kind pair below: a joined pair
+                 of buttons, one of them always on, each with its counter. -->
+            <v-btn-toggle
+              v-model="register"
+              mandatory
+              dense
+              color="primary"
+              class="review-queue__types review-queue__registers"
+              :aria-label="
+                $t('supervision.tenant-approval-queue.registers.label')
+              "
             >
-              {{ $tc("supervision.queue.count", total) }}
-            </span>
+              <v-btn
+                v-for="item in registers"
+                :key="item.value"
+                :value="item.value"
+                small
+                class="review-queue__type"
+                :data-test="`review-queue-register-${item.value}`"
+              >
+                <v-icon left small>{{ item.icon }}</v-icon>
+                {{ item.text }}
+                <span
+                  v-if="item.count !== null"
+                  class="review-queue__register-count"
+                  :data-test="`review-queue-count-${item.value}`"
+                >
+                  {{ item.count }}
+                </span>
+              </v-btn>
+            </v-btn-toggle>
             <v-btn
               icon
               small
@@ -21,13 +44,13 @@
               :aria-label="$t('supervision.queue.reload')"
               :disabled="loading"
               data-test="review-queue-reload"
-              @click="load"
+              @click="reload"
             >
               <v-icon small>mdi-refresh</v-icon>
             </v-btn>
           </v-card-title>
           <v-divider />
-          <v-card-text>
+          <v-card-text v-show="register === registerNames.OFFERS">
             <p class="review-queue__lead">
               {{ $t("supervision.queue.hint") }}
             </p>
@@ -178,6 +201,13 @@
               </template>
             </v-data-iterator>
           </v-card-text>
+          <v-card-text v-show="register === registerNames.TENANTS">
+            <TenantApprovalQueue
+              ref="tenantQueue"
+              @count="tenantCount = $event"
+              @changed="load"
+            />
+          </v-card-text>
         </v-card>
       </div>
 
@@ -231,6 +261,7 @@
 import { mapActions, mapGetters } from "vuex";
 import AdminLayout from "@/layouts/Admin.vue";
 import SupervisionNoticePanel from "@/components/Supervision/SupervisionNoticePanel.vue";
+import TenantApprovalQueue from "@/components/Supervision/TenantApprovalQueue.vue";
 import ApiReviewQueueService from "@/services/api/ApiReviewQueueService";
 import ApiReviewService from "@/services/api/ApiReviewService";
 import ApiTenantService from "@/services/api/ApiTenantService";
@@ -243,20 +274,24 @@ import {
   OFFER_TYPE_VALUES,
   SUPERVISION_LEVELS,
   offerTypeLabelKey,
+  waitingTime,
 } from "@/utils/supervision";
 
 /** Every row of the queue is pending: these are the decisions it is open to. */
 const DECISIONS = [REVIEW_ACTIONS.APPROVE, REVIEW_ACTIONS.REJECT];
 
+/**
+ * The registers of the page, as `?tab=` names them: the offers waiting for a
+ * review - where the page opens, so their name is left out of the address -
+ * and the tenants waiting for their approval.
+ */
+const REGISTERS = Object.freeze({ OFFERS: "offers", TENANTS: "tenants" });
+const REGISTER_VALUES = Object.values(REGISTERS);
+
 const OFFER_TYPE_ICONS = {
   bookable: "mdi-cube-outline",
   event: "mdi-calendar",
 };
-
-const MINUTE = 60 * 1000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-const whole = (duration, unit) => Math.floor(duration / unit);
 
 /**
  * The active review queue (glossary "Aktive Prüfliste"): the pending offers
@@ -265,13 +300,17 @@ const whole = (duration, unit) => Math.floor(duration / unit);
  * backend computes the queue on read, so every entry of the view and every
  * decision loads it anew.
  *
+ * The page has a second register, the tenants waiting for their approval
+ * (`TenantApprovalQueue`, glossary "Freigabeliste der Mandanten"); the card's
+ * header switches between the two and counts both.
+ *
  * Drawn as the guided setup is: a section card of hairline rows, the waiting
  * time as each row's leading fact, and beside it the panel of the supervision
  * notices that did not go out.
  */
 export default {
   name: "InstanceReviewQueue",
-  components: { AdminLayout, SupervisionNoticePanel },
+  components: { AdminLayout, SupervisionNoticePanel, TenantApprovalQueue },
   mixins: [pagedLoad],
   data() {
     return {
@@ -286,10 +325,29 @@ export default {
       rejectDialog: false,
       rejecting: null,
       reasonInput: "",
+      registerNames: REGISTERS,
+      register: REGISTERS.OFFERS,
+      tenantCount: null,
     };
   },
   computed: {
     ...mapGetters({ currentTenantId: "tenants/currentTenantId" }),
+    registers() {
+      return [
+        {
+          value: REGISTERS.OFFERS,
+          text: this.$t("supervision.tenant-approval-queue.registers.offers"),
+          icon: "mdi-cube-outline",
+          count: this.loading || this.errorMessage ? null : this.total,
+        },
+        {
+          value: REGISTERS.TENANTS,
+          text: this.$t("supervision.tenant-approval-queue.registers.tenants"),
+          icon: "mdi-domain",
+          count: this.tenantCount,
+        },
+      ];
+    },
     offerTypes() {
       return OFFER_TYPE_VALUES.map((value) => ({
         value,
@@ -299,6 +357,23 @@ export default {
     },
   },
   watch: {
+    // The page opens at the offers, and `?tab=` names the other register:
+    // the register follows the route - the Navbar entry drops `?tab=` - and
+    // the route follows the register.
+    "$route.query.tab": {
+      immediate: true,
+      handler(tab) {
+        this.register = REGISTER_VALUES.includes(tab) ? tab : REGISTERS.OFFERS;
+      },
+    },
+    register(register) {
+      const { tab, ...query } = this.$route.query;
+      const wanted = register === REGISTERS.OFFERS ? undefined : register;
+      if (tab === wanted) return;
+      this.$router.replace({
+        query: wanted ? { ...query, tab: wanted } : query,
+      });
+    },
     filters: {
       deep: true,
       handler() {
@@ -313,6 +388,11 @@ export default {
   },
   methods: {
     ...mapActions({ selectTenant: "tenants/select", addToast: "toasts/add" }),
+    /** Both counters sit in the header: the reload reads both registers. */
+    reload() {
+      this.load();
+      this.$refs.tenantQueue.load();
+    },
     load() {
       return this.loadPaged(async () => {
         const queue = await ApiReviewQueueService.getReviewQueue({
@@ -428,17 +508,8 @@ export default {
     },
     dateTime: (value) => FormatService.dateTime(value),
     waiting(submittedAt) {
-      const waited = Math.max(0, Date.now() - new Date(submittedAt).getTime());
-      if (waited >= DAY) {
-        return this.$tc("supervision.queue.waiting.days", whole(waited, DAY));
-      }
-      if (waited >= HOUR) {
-        return this.$tc("supervision.queue.waiting.hours", whole(waited, HOUR));
-      }
-      return this.$tc(
-        "supervision.queue.waiting.minutes",
-        Math.max(1, whole(waited, MINUTE))
-      );
+      const { key, count } = waitingTime(submittedAt);
+      return this.$tc(key, count);
     },
   },
 };
@@ -470,18 +541,33 @@ export default {
   margin-bottom: var(--scb-gap-cards);
 }
 
-.review-queue__count {
-  margin-left: auto;
-  margin-right: var(--scb-space-1);
-  font-size: var(--scb-font-size-sm);
-  font-weight: 400;
-  color: var(--scb-text-muted);
-}
-
 /* The reload sits in the header strip without adding to its height: the
    button's 28px are folded into the strip's own line. */
 .review-queue__reload {
-  margin: -6px -4px -6px 0;
+  margin: -6px -4px -6px auto;
+}
+
+/* The registers are the header's title: the kind pair's switch, folded into
+   the strip's line as the reload is. */
+.review-queue__registers {
+  margin: calc(-1 * var(--scb-space-1)) 0;
+}
+
+.review-queue__registers .review-queue__type {
+  height: 32px !important;
+}
+
+/* A register's counter: a quiet number beside its name. */
+.review-queue__register-count {
+  margin-left: var(--scb-space-2);
+  min-width: 20px;
+  padding: 0 var(--scb-space-2);
+  border-radius: var(--scb-radius-pill);
+  background: var(--scb-hover-tint-strong);
+  font-size: var(--scb-font-size-xs);
+  font-weight: var(--scb-font-weight-semibold);
+  line-height: 18px;
+  color: var(--scb-text);
 }
 
 .review-queue__lead {

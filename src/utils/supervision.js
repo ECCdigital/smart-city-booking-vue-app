@@ -110,6 +110,33 @@ export function selectableLevels(currentLevel) {
   );
 }
 
+const MINUTE = 60 * 1000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+const whole = (duration, unit) => Math.floor(duration / unit);
+
+/**
+ * How long an entry of a queue has waited, in words: the plural key under
+ * `supervision.queue.waiting` and its count - whole days from one day on,
+ * whole hours from one hour on, else at least one minute.
+ */
+export function waitingTime(since, now = Date.now()) {
+  const waited = Math.max(0, now - new Date(since).getTime());
+  if (waited >= DAY) {
+    return { key: "supervision.queue.waiting.days", count: whole(waited, DAY) };
+  }
+  if (waited >= HOUR) {
+    return {
+      key: "supervision.queue.waiting.hours",
+      count: whole(waited, HOUR),
+    };
+  }
+  return {
+    key: "supervision.queue.waiting.minutes",
+    count: Math.max(1, whole(waited, MINUTE)),
+  };
+}
+
 const REVIEW_STATUS_VALUES = Object.values(REVIEW_STATUS);
 
 /** A missing or unknown status is "no review status yet": `null`. */

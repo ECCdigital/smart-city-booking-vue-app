@@ -18,6 +18,7 @@ import {
   reviewStatusColor,
   reviewStatusLabelKey,
   selectableLevels,
+  waitingTime,
 } from "@/utils/supervision";
 
 describe("supervision levels", () => {
@@ -215,5 +216,30 @@ describe("knownReviewStatus", () => {
     expect(knownReviewStatus("rejected")).toBe("rejected");
     expect(knownReviewStatus("draft")).toBeNull();
     expect(knownReviewStatus(undefined)).toBeNull();
+  });
+});
+
+describe("waitingTime", () => {
+  const NOW = new Date("2026-09-21T10:00:00.000Z").getTime();
+  const waited = (since) => {
+    const { key, count } = waitingTime(since, NOW);
+    return i18n.tc(key, count);
+  };
+
+  it("counts whole days from one day on", () => {
+    expect(waited("2026-09-16T09:00:00.000Z")).toBe("wartet seit 5 Tagen");
+    expect(waited("2026-09-20T10:00:00.000Z")).toBe("wartet seit einem Tag");
+  });
+
+  it("counts whole hours below a day", () => {
+    expect(waited("2026-09-20T10:00:01.000Z")).toBe("wartet seit 23 Stunden");
+    expect(waited("2026-09-21T09:00:00.000Z")).toBe("wartet seit einer Stunde");
+  });
+
+  it("counts at least one minute below an hour", () => {
+    expect(waited("2026-09-21T09:15:00.000Z")).toBe("wartet seit 45 Minuten");
+    expect(waited("2026-09-21T09:59:50.000Z")).toBe("wartet seit einer Minute");
+    // A clock running behind the server's never makes the wait negative.
+    expect(waited("2026-09-21T10:05:00.000Z")).toBe("wartet seit einer Minute");
   });
 });

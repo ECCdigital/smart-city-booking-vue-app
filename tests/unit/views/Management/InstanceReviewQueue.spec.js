@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import Vue from "vue";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
@@ -16,6 +17,12 @@ vi.mock("@/services/api/ApiTenantService", () => ({
 vi.mock("@/services/api/ApiSupervisionNotificationService", () => ({
   default: { getNotifications: vi.fn(), retry: vi.fn() },
 }));
+vi.mock("@/services/api/ApiTenantApprovalQueueService", () => ({
+  default: { getTenantApprovalQueue: vi.fn() },
+}));
+vi.mock("@/services/api/ApiSupervisionService", () => ({
+  default: { setTenantLevel: vi.fn() },
+}));
 vi.mock("@/layouts/Admin.vue", () => ({
   default: {
     name: "AdminLayout",
@@ -29,6 +36,8 @@ import ApiReviewQueueService from "@/services/api/ApiReviewQueueService";
 import ApiReviewService from "@/services/api/ApiReviewService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiSupervisionNotificationService from "@/services/api/ApiSupervisionNotificationService";
+import ApiTenantApprovalQueueService from "@/services/api/ApiTenantApprovalQueueService";
+import ApiSupervisionService from "@/services/api/ApiSupervisionService";
 import InstanceReviewQueue from "@/views/Management/InstanceReviewQueue.vue";
 
 const ROOM = {
@@ -50,6 +59,68 @@ const EVENT = {
   submittedAt: "2026-09-21T09:00:00.000Z",
   isPublic: false,
   adminPath: "/events/edit?id=e-1",
+};
+
+const NEW_TENANT = {
+  tenantId: "t-3",
+  tenantName: "SV Blau-Weiß",
+  waitingSince: "2026-09-16T09:00:00.000Z",
+  contact: {
+    contactName: "Petra Lehmann",
+    mail: "vorstand@sv-blau-weiss.de",
+    phone: "0176 1234567",
+    website: null,
+    location: "Musterstadt",
+  },
+  owners: [
+    {
+      userId: "petra@sv-blau-weiss.de",
+      displayName: "Petra Lehmann",
+      mail: "petra@sv-blau-weiss.de",
+    },
+  ],
+  offerCount: 4,
+  lastChange: {
+    eventType: "tenant.created",
+    occurredAt: "2026-09-16T09:00:00.000Z",
+    actor: { type: "user", userId: "petra@sv-blau-weiss.de" },
+    from: null,
+    to: "pending",
+    reason: null,
+  },
+};
+const RESET_TENANT = {
+  tenantId: "t-4",
+  tenantName: "Makerspace Nord",
+  waitingSince: "2026-09-21T09:15:00.000Z",
+  contact: {
+    contactName: null,
+    mail: "hallo@makerspace-nord.de",
+    phone: null,
+    website: null,
+    location: null,
+  },
+  owners: [
+    {
+      userId: "jonas@makerspace-nord.de",
+      displayName: "Jonas Weber",
+      mail: "jonas@makerspace-nord.de",
+    },
+    {
+      userId: "aylin@makerspace-nord.de",
+      displayName: null,
+      mail: "aylin@makerspace-nord.de",
+    },
+  ],
+  offerCount: 1,
+  lastChange: {
+    eventType: "tenant.levelChanged",
+    occurredAt: "2026-09-21T09:15:00.000Z",
+    actor: { type: "user", userId: "owner@stadt.de" },
+    from: "supervised",
+    to: "pending",
+    reason: "Impressum fehlt",
+  },
 };
 
 const FAILED_NOTICE = {
@@ -80,9 +151,14 @@ function deferred() {
 let selectTenant;
 let addToast;
 let push;
+let replace;
+let query;
+let route;
 let currentTenantId;
 
 async function mountView() {
+  // Reactive, so that a spec can move the route under the mounted view.
+  route = Vue.observable({ query });
   const store = new Vuex.Store({
     modules: {
       tenants: {
@@ -95,7 +171,7 @@ async function mountView() {
   });
   const wrapper = mountComponent(InstanceReviewQueue, {
     store,
-    mocks: { $router: { push } },
+    mocks: { $router: { push, replace }, $route: route },
   });
   await flushPromises();
   return wrapper;
@@ -109,6 +185,16 @@ const setFilter = async (wrapper, name, value) => {
   wrapper.findComponent({ ref: name }).vm.$emit("input", value);
   await flushPromises();
 };
+const register = (wrapper, key) =>
+  wrapper.find(`[data-test='review-queue-register-${key}']`);
+const counter = (wrapper, key) =>
+  wrapper.find(`[data-test='review-queue-count-${key}']`);
+const openRegister = async (wrapper, key) => {
+  await register(wrapper, key).trigger("click");
+  await flushPromises();
+};
+const tenantRows = (wrapper) =>
+  wrapper.findAll("[data-test='tenant-queue-row']");
 /** The kind filter is a pair of buttons: a click picks one. */
 const pickType = async (wrapper, value) => {
   await wrapper
@@ -124,6 +210,8 @@ beforeEach(() => {
   selectTenant = vi.fn();
   addToast = vi.fn();
   push = vi.fn();
+  replace = vi.fn();
+  query = {};
   currentTenantId = "t-9";
   ApiTenantService.getTenants.mockResolvedValue({
     data: [
@@ -134,6 +222,9 @@ beforeEach(() => {
   ApiReviewQueueService.getReviewQueue.mockResolvedValue(pageOf([ROOM, EVENT]));
   ApiReviewService.decide.mockResolvedValue({ status: "approved" });
   notices.getNotifications.mockResolvedValue(pageOf([]));
+  ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
+    pageOf([NEW_TENANT, RESET_TENANT], 3)
+  );
 });
 
 afterEach(() => {
@@ -158,9 +249,7 @@ describe("InstanceReviewQueue", () => {
     expect(room).toContain("18.09.26");
     expect(room).toContain("wartet seit 3 Tagen");
     expect(room).toContain("Veröffentlichung gewünscht");
-    expect(wrapper.find("[data-test='review-queue-count']").text()).toBe(
-      "2 Angebote"
-    );
+    expect(counter(wrapper, "offers").text()).toBe("2");
   });
 
   it("names an offer without a title by its id", async () => {
@@ -253,6 +342,10 @@ describe("InstanceReviewQueue", () => {
 
     expect(ApiReviewQueueService.getReviewQueue).toHaveBeenCalledTimes(2);
     expect(rows(wrapper)).toHaveLength(1);
+    // Both counters sit in the header: both registers are read anew.
+    expect(
+      ApiTenantApprovalQueueService.getTenantApprovalQueue
+    ).toHaveBeenCalledTimes(2);
   });
 
   it("says so when nothing waits", async () => {
@@ -412,6 +505,123 @@ describe("InstanceReviewQueue", () => {
       wrapper.find("[data-test='review-queue-decision-error']").text()
     ).toContain("konnte nicht ausgeführt werden");
   });
+  describe("the registers", () => {
+    it("opens at the offers and counts both registers", async () => {
+      const wrapper = await mountView();
+
+      expect(register(wrapper, "offers").classes()).toContain("v-btn--active");
+      expect(counter(wrapper, "offers").text()).toBe("2");
+      expect(counter(wrapper, "tenants").text()).toBe("3");
+      expect(
+        ApiTenantApprovalQueueService.getTenantApprovalQueue
+      ).toHaveBeenCalledWith({ page: 1, pageSize: 25 });
+      expect(rows(wrapper).at(0).isVisible()).toBe(true);
+      expect(tenantRows(wrapper).at(0).isVisible()).toBe(false);
+    });
+
+    it("keeps the register it switches to in ?tab=", async () => {
+      query = { page: "x" };
+      const wrapper = await mountView();
+
+      await openRegister(wrapper, "tenants");
+
+      expect(replace).toHaveBeenCalledWith({
+        query: { page: "x", tab: "tenants" },
+      });
+      expect(tenantRows(wrapper).at(0).isVisible()).toBe(true);
+      expect(rows(wrapper).at(0).isVisible()).toBe(false);
+    });
+
+    it("opens the register ?tab= names", async () => {
+      query = { tab: "tenants" };
+      const wrapper = await mountView();
+
+      expect(register(wrapper, "tenants").classes()).toContain("v-btn--active");
+      expect(tenantRows(wrapper).at(0).isVisible()).toBe(true);
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it("opens at the offers for a register it does not know", async () => {
+      query = { tab: "unknown" };
+      const wrapper = await mountView();
+
+      expect(register(wrapper, "offers").classes()).toContain("v-btn--active");
+    });
+
+    it("hides a register's counter while the register loads", async () => {
+      const wrapper = await mountView();
+      const offers = deferred();
+      const tenants = deferred();
+      ApiReviewQueueService.getReviewQueue.mockReturnValueOnce(offers.promise);
+      ApiTenantApprovalQueueService.getTenantApprovalQueue.mockReturnValueOnce(
+        tenants.promise
+      );
+
+      await wrapper.find("[data-test='review-queue-reload']").trigger("click");
+      await flushPromises();
+      expect(counter(wrapper, "offers").exists()).toBe(false);
+      expect(counter(wrapper, "tenants").exists()).toBe(false);
+
+      offers.resolve(pageOf([ROOM]));
+      tenants.resolve(pageOf([NEW_TENANT]));
+      await flushPromises();
+      expect(counter(wrapper, "offers").text()).toBe("1");
+      expect(counter(wrapper, "tenants").text()).toBe("1");
+    });
+
+    it("leaves ?tab= out for the offers, where the page opens", async () => {
+      query = { page: "x", tab: "tenants" };
+      const wrapper = await mountView();
+
+      await openRegister(wrapper, "offers");
+
+      expect(replace).toHaveBeenCalledWith({ query: { page: "x" } });
+    });
+
+    it("follows the route when it drops ?tab=, as the Navbar entry does", async () => {
+      query = { tab: "tenants" };
+      const wrapper = await mountView();
+
+      route.query = {};
+      await flushPromises();
+
+      expect(register(wrapper, "offers").classes()).toContain("v-btn--active");
+      expect(rows(wrapper).at(0).isVisible()).toBe(true);
+      expect(replace).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the tenants register", () => {
+    it("reads the offers register anew when a tenant's level changes", async () => {
+      ApiSupervisionService.setTenantLevel.mockResolvedValue({
+        supervisionLevel: "supervised",
+        supervisionChangedAt: "2026-09-21T10:00:00.000Z",
+        supervisionReason: null,
+      });
+      query = { tab: "tenants" };
+      const wrapper = await mountView();
+      ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
+        pageOf([RESET_TENANT])
+      );
+      // A supervised tenant's pending offers enter the offers' register.
+      ApiReviewQueueService.getReviewQueue.mockResolvedValue(
+        pageOf([ROOM, EVENT], 5)
+      );
+
+      await tenantRows(wrapper)
+        .at(0)
+        .find("[data-test='tenant-queue-approve']")
+        .trigger("click");
+      await flushPromises();
+
+      expect(ApiSupervisionService.setTenantLevel).toHaveBeenCalledWith("t-3", {
+        level: "supervised",
+      });
+      expect(counter(wrapper, "tenants").text()).toBe("1");
+      expect(counter(wrapper, "offers").text()).toBe("5");
+    });
+  });
+
   describe("the notices beside it", () => {
     it("says so when every notice went out", async () => {
       const wrapper = await mountView();
