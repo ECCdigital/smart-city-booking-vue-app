@@ -132,6 +132,15 @@
                   >{{ item.title }}</v-list-item-title
                 >
               </v-list-item-content>
+              <v-list-item-action v-if="badges[item.badge]" class="my-0">
+                <v-chip
+                  x-small
+                  label
+                  color="warning"
+                  :data-test="`nav-badge-${item.link}`"
+                  >{{ badges[item.badge] }}</v-chip
+                >
+              </v-list-item-action>
             </v-list-item>
             <v-divider class="mt-2 mb-2"></v-divider>
           </div>
@@ -152,6 +161,8 @@ import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiClientService from "@/services/api/ApiClientService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiReviewQueueService from "@/services/api/ApiReviewQueueService";
+import ApiTenantApprovalQueueService from "@/services/api/ApiTenantApprovalQueueService";
 import NotificationDisplay from "@/components/NotificationDisplay";
 import keycloakService from "@/services/KeycloakService";
 import { isBffAuthMode } from "@/services/auth/authMode";
@@ -301,6 +312,7 @@ export default {
             link: "instance-review-queue",
             icon: "mdi-clipboard-list-outline",
             interfaceName: "instance",
+            badge: "reviewQueue",
           },
           {
             title: "Benutzer",
@@ -331,6 +343,8 @@ export default {
     ],
     //currentTenant: "",
     tenants: [],
+    // The counters beside an entry, by the entry's `badge`; 0 shows none.
+    badges: { reviewQueue: 0 },
   }),
   components: {
     NotificationDisplay,
@@ -395,6 +409,30 @@ export default {
         }
       });
     },
+    /**
+     * One entry for both registers of the Prüfliste: its badge is the sum
+     * of their counters, each read as a page of one. Both queues are the
+     * instance owner's; a register that cannot be read adds nothing. The
+     * permissions are read off the store, as `isAuthorized` does: the
+     * permission services import the user module, which the drawer is
+     * loaded before.
+     */
+    async fetchReviewQueueCount() {
+      const permissions = this.$store.state.user.data?.permissions;
+      if (permissions?.instanceOwner !== true) return;
+      const firstOfOne = { page: 1, pageSize: 1 };
+      const answers = await Promise.allSettled([
+        ApiReviewQueueService.getReviewQueue(firstOfOne),
+        ApiTenantApprovalQueueService.getTenantApprovalQueue(firstOfOne),
+      ]);
+      this.badges.reviewQueue = answers.reduce((sum, answer) => {
+        if (answer.status === "rejected") {
+          console.error(answer.reason);
+          return sum;
+        }
+        return sum + (answer.value?.total || 0);
+      }, 0);
+    },
   },
   computed: {
     ...mapGetters({
@@ -440,6 +478,7 @@ export default {
   async mounted() {
     this.drawer = !this.$vuetify.breakpoint.mdAndDown;
     this.fetchTenants();
+    this.fetchReviewQueueCount();
   },
 };
 </script>

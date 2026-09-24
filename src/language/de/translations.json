@@ -2292,13 +2292,35 @@
         "hours": "wartet seit einer Stunde | wartet seit {n} Stunden",
         "days": "wartet seit einem Tag | wartet seit {n} Tagen"
       },
-      "section": "Wartende Angebote",
-      "count": "Kein Angebot | Ein Angebot | {n} Angebote",
       "wish": {
         "yes": "Veröffentlichung gewünscht",
         "no": "Kein Veröffentlichungswunsch"
       },
       "page-text": "{0}–{1} von {2}"
+    },
+    "tenant-approval-queue": {
+      "hint": "Mandanten mit der Stufe „Freigabe ausstehend“ – der am längsten wartende zuerst. „Freigeben“ macht einen Mandanten beaufsichtigt, der Pfeil daneben frei; eine Begründung nimmt der Stufendialog auf der Seite „Mandanten“ auf.",
+      "loading": "Mandanten werden geladen...",
+      "empty": "Keine Mandanten warten auf Freigabe",
+      "per-page": "Mandanten pro Seite",
+      "registers": {
+        "label": "Register der Prüfliste",
+        "offers": "Angebote",
+        "tenants": "Mandanten"
+      },
+      "load-failed": "Die wartenden Mandanten konnten nicht geladen werden.",
+      "no-owner": "kein Owner",
+      "offers": "keine Angebote | ein Angebot | {n} Angebote",
+      "approve": "Freigeben",
+      "approve-more": "Weitere Art der Freigabe",
+      "approve-free": "als frei freigeben",
+      "decline": "Abweisen",
+      "bookings": "Buchungen des Mandanten",
+      "origin": {
+        "created": "neu angelegt",
+        "reset": "zurückgesetzt aus ‚{level}‘",
+        "reset-reason": "zurückgesetzt aus ‚{level}‘ – ‚{reason}‘"
+      }
     },
     "notifications": {
       "hint": "Mitteilungen der Mandanten-Aufsicht an die zuständigen Owner. „Erneut senden“ verschickt nur die E-Mail noch einmal – an alle, die sie noch nicht erhalten haben. Entscheidung und Verlauf bleiben unverändert.",

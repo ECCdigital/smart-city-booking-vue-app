@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises } from "@tests/unit/support/api";
+import {
+  flushPromises,
+  lifecycleError,
+  serverError,
+} from "@tests/unit/support/api";
 import { activeDialog, dialogButton } from "@tests/unit/support/dialog";
 
 vi.mock("@/services/api/ApiReviewQueueService", () => ({
@@ -16,6 +20,23 @@ vi.mock("@/services/api/ApiTenantService", () => ({
 vi.mock("@/services/api/ApiSupervisionNotificationService", () => ({
   default: { getNotifications: vi.fn(), retry: vi.fn() },
 }));
+vi.mock("@/services/api/ApiTenantApprovalQueueService", () => ({
+  default: { getTenantApprovalQueue: vi.fn() },
+}));
+vi.mock("@/services/api/ApiSupervisionService", () => ({
+  default: { setTenantLevel: vi.fn(), getTenantHistory: vi.fn() },
+}));
+// The decline dialog is ticket 03's: the queue is tested against its
+// interface only (`open`, `tenant`, `declined`, `stale`, `close`).
+vi.mock("@/components/Supervision/TenantDeclineDialog.vue", () => ({
+  default: {
+    name: "TenantDeclineDialog",
+    props: { open: Boolean, tenant: Object },
+    render(h) {
+      return h("div");
+    },
+  },
+}));
 vi.mock("@/layouts/Admin.vue", () => ({
   default: {
     name: "AdminLayout",
@@ -29,6 +50,8 @@ import ApiReviewQueueService from "@/services/api/ApiReviewQueueService";
 import ApiReviewService from "@/services/api/ApiReviewService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiSupervisionNotificationService from "@/services/api/ApiSupervisionNotificationService";
+import ApiTenantApprovalQueueService from "@/services/api/ApiTenantApprovalQueueService";
+import ApiSupervisionService from "@/services/api/ApiSupervisionService";
 import InstanceReviewQueue from "@/views/Management/InstanceReviewQueue.vue";
 
 const ROOM = {
@@ -50,6 +73,68 @@ const EVENT = {
   submittedAt: "2026-09-21T09:00:00.000Z",
   isPublic: false,
   adminPath: "/events/edit?id=e-1",
+};
+
+const NEW_TENANT = {
+  tenantId: "t-3",
+  tenantName: "SV Blau-Weiß",
+  waitingSince: "2026-09-16T09:00:00.000Z",
+  contact: {
+    contactName: "Petra Lehmann",
+    mail: "vorstand@sv-blau-weiss.de",
+    phone: "0176 1234567",
+    website: null,
+    location: "Musterstadt",
+  },
+  owners: [
+    {
+      userId: "petra@sv-blau-weiss.de",
+      displayName: "Petra Lehmann",
+      mail: "petra@sv-blau-weiss.de",
+    },
+  ],
+  offerCount: 4,
+  lastChange: {
+    eventType: "tenant.created",
+    occurredAt: "2026-09-16T09:00:00.000Z",
+    actor: { type: "user", userId: "petra@sv-blau-weiss.de" },
+    from: null,
+    to: "pending",
+    reason: null,
+  },
+};
+const RESET_TENANT = {
+  tenantId: "t-4",
+  tenantName: "Makerspace Nord",
+  waitingSince: "2026-09-21T09:15:00.000Z",
+  contact: {
+    contactName: null,
+    mail: "hallo@makerspace-nord.de",
+    phone: null,
+    website: null,
+    location: null,
+  },
+  owners: [
+    {
+      userId: "jonas@makerspace-nord.de",
+      displayName: "Jonas Weber",
+      mail: "jonas@makerspace-nord.de",
+    },
+    {
+      userId: "aylin@makerspace-nord.de",
+      displayName: null,
+      mail: "aylin@makerspace-nord.de",
+    },
+  ],
+  offerCount: 1,
+  lastChange: {
+    eventType: "tenant.levelChanged",
+    occurredAt: "2026-09-21T09:15:00.000Z",
+    actor: { type: "user", userId: "owner@stadt.de" },
+    from: "supervised",
+    to: "pending",
+    reason: "Impressum fehlt",
+  },
 };
 
 const FAILED_NOTICE = {
@@ -80,6 +165,8 @@ function deferred() {
 let selectTenant;
 let addToast;
 let push;
+let replace;
+let query;
 let currentTenantId;
 
 async function mountView() {
@@ -95,7 +182,7 @@ async function mountView() {
   });
   const wrapper = mountComponent(InstanceReviewQueue, {
     store,
-    mocks: { $router: { push } },
+    mocks: { $router: { push, replace }, $route: { query } },
   });
   await flushPromises();
   return wrapper;
@@ -109,6 +196,16 @@ const setFilter = async (wrapper, name, value) => {
   wrapper.findComponent({ ref: name }).vm.$emit("input", value);
   await flushPromises();
 };
+const register = (wrapper, key) =>
+  wrapper.find(`[data-test='review-queue-register-${key}']`);
+const counter = (wrapper, key) =>
+  wrapper.find(`[data-test='review-queue-count-${key}']`);
+const openRegister = async (wrapper, key) => {
+  await register(wrapper, key).trigger("click");
+  await flushPromises();
+};
+const tenantRows = (wrapper) =>
+  wrapper.findAll("[data-test='tenant-queue-row']");
 /** The kind filter is a pair of buttons: a click picks one. */
 const pickType = async (wrapper, value) => {
   await wrapper
@@ -124,6 +221,8 @@ beforeEach(() => {
   selectTenant = vi.fn();
   addToast = vi.fn();
   push = vi.fn();
+  replace = vi.fn();
+  query = {};
   currentTenantId = "t-9";
   ApiTenantService.getTenants.mockResolvedValue({
     data: [
@@ -134,6 +233,9 @@ beforeEach(() => {
   ApiReviewQueueService.getReviewQueue.mockResolvedValue(pageOf([ROOM, EVENT]));
   ApiReviewService.decide.mockResolvedValue({ status: "approved" });
   notices.getNotifications.mockResolvedValue(pageOf([]));
+  ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
+    pageOf([NEW_TENANT, RESET_TENANT], 3)
+  );
 });
 
 afterEach(() => {
@@ -158,9 +260,7 @@ describe("InstanceReviewQueue", () => {
     expect(room).toContain("18.09.26");
     expect(room).toContain("wartet seit 3 Tagen");
     expect(room).toContain("Veröffentlichung gewünscht");
-    expect(wrapper.find("[data-test='review-queue-count']").text()).toBe(
-      "2 Angebote"
-    );
+    expect(counter(wrapper, "offers").text()).toBe("2");
   });
 
   it("names an offer without a title by its id", async () => {
@@ -253,6 +353,10 @@ describe("InstanceReviewQueue", () => {
 
     expect(ApiReviewQueueService.getReviewQueue).toHaveBeenCalledTimes(2);
     expect(rows(wrapper)).toHaveLength(1);
+    // Both counters sit in the header: both registers are read anew.
+    expect(
+      ApiTenantApprovalQueueService.getTenantApprovalQueue
+    ).toHaveBeenCalledTimes(2);
   });
 
   it("says so when nothing waits", async () => {
@@ -412,6 +516,416 @@ describe("InstanceReviewQueue", () => {
       wrapper.find("[data-test='review-queue-decision-error']").text()
     ).toContain("konnte nicht ausgeführt werden");
   });
+  describe("the registers", () => {
+    it("opens at the offers and counts both registers", async () => {
+      const wrapper = await mountView();
+
+      expect(register(wrapper, "offers").classes()).toContain("v-btn--active");
+      expect(counter(wrapper, "offers").text()).toBe("2");
+      expect(counter(wrapper, "tenants").text()).toBe("3");
+      expect(
+        ApiTenantApprovalQueueService.getTenantApprovalQueue
+      ).toHaveBeenCalledWith({ page: 1, pageSize: 25 });
+      expect(rows(wrapper).at(0).isVisible()).toBe(true);
+      expect(tenantRows(wrapper).at(0).isVisible()).toBe(false);
+    });
+
+    it("keeps the register it switches to in ?tab=", async () => {
+      query = { page: "x" };
+      const wrapper = await mountView();
+
+      await openRegister(wrapper, "tenants");
+
+      expect(replace).toHaveBeenCalledWith({
+        query: { page: "x", tab: "tenants" },
+      });
+      expect(tenantRows(wrapper).at(0).isVisible()).toBe(true);
+      expect(rows(wrapper).at(0).isVisible()).toBe(false);
+    });
+
+    it("opens the register ?tab= names", async () => {
+      query = { tab: "tenants" };
+      const wrapper = await mountView();
+
+      expect(register(wrapper, "tenants").classes()).toContain("v-btn--active");
+      expect(tenantRows(wrapper).at(0).isVisible()).toBe(true);
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it("opens at the offers for a register it does not know", async () => {
+      query = { tab: "unknown" };
+      const wrapper = await mountView();
+
+      expect(register(wrapper, "offers").classes()).toContain("v-btn--active");
+    });
+  });
+
+  describe("the tenants register", () => {
+    const facts = (row) => row.find("[data-test='tenant-queue-facts']").text();
+    const origin = (row) =>
+      row.find("[data-test='tenant-queue-origin']").text();
+
+    beforeEach(() => {
+      query = { tab: "tenants" };
+    });
+
+    it("draws a new tenant with contact, owners, offers and its wait", async () => {
+      const wrapper = await mountView();
+
+      const row = tenantRows(wrapper).at(0);
+      expect(row.find(".booking-row__title").text()).toBe("SV Blau-Weiß");
+      expect(facts(row)).toBe(
+        "Petra Lehmann · vorstand@sv-blau-weiss.de · Musterstadt · Petra Lehmann · 4 Angebote"
+      );
+      expect(origin(row)).toBe("neu angelegt");
+      expect(row.text()).toContain("wartet seit 5 Tagen");
+      expect(row.text()).toContain("16.09.26");
+    });
+
+    it("names a reset with the level it came from and its reason", async () => {
+      const wrapper = await mountView();
+
+      const row = tenantRows(wrapper).at(1);
+      expect(facts(row)).toBe(
+        "hallo@makerspace-nord.de · Jonas Weber, aylin@makerspace-nord.de · ein Angebot"
+      );
+      expect(origin(row)).toBe(
+        "zurückgesetzt aus ‚beaufsichtigt‘ – ‚Impressum fehlt‘"
+      );
+      expect(row.text()).toContain("wartet seit 45 Minuten");
+    });
+
+    it("names a reset without a reason by its level alone", async () => {
+      ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
+        pageOf([
+          {
+            ...RESET_TENANT,
+            lastChange: { ...RESET_TENANT.lastChange, reason: null },
+          },
+        ])
+      );
+      const wrapper = await mountView();
+
+      expect(origin(tenantRows(wrapper).at(0))).toBe(
+        "zurückgesetzt aus ‚beaufsichtigt‘"
+      );
+    });
+
+    it("reads an adopted start level as new", async () => {
+      ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
+        pageOf([
+          {
+            ...NEW_TENANT,
+            lastChange: {
+              ...NEW_TENANT.lastChange,
+              eventType: "tenant.levelInitialized",
+            },
+          },
+        ])
+      );
+      const wrapper = await mountView();
+
+      expect(origin(tenantRows(wrapper).at(0))).toBe("neu angelegt");
+    });
+
+    it("says so when a tenant has no owner and no offers", async () => {
+      ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
+        pageOf([{ ...NEW_TENANT, owners: [], offerCount: 0, lastChange: null }])
+      );
+      const wrapper = await mountView();
+
+      const row = tenantRows(wrapper).at(0);
+      expect(facts(row)).toBe(
+        "Petra Lehmann · vorstand@sv-blau-weiss.de · Musterstadt · kein Owner · keine Angebote"
+      );
+      expect(row.find("[data-test='tenant-queue-origin']").exists()).toBe(
+        false
+      );
+    });
+
+    it("says so when no tenant waits", async () => {
+      ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
+        pageOf([])
+      );
+      const wrapper = await mountView();
+
+      expect(wrapper.text()).toContain("Keine Mandanten warten auf Freigabe");
+      expect(counter(wrapper, "tenants").text()).toBe("0");
+    });
+
+    it("names a failed load and shows no counter", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      ApiTenantApprovalQueueService.getTenantApprovalQueue.mockRejectedValue({
+        response: { status: 500, data: {} },
+      });
+      const wrapper = await mountView();
+
+      expect(wrapper.find("[data-test='tenant-queue-error']").text()).toBe(
+        "Die wartenden Mandanten konnten nicht geladen werden."
+      );
+      expect(wrapper.text()).not.toContain(
+        "Keine Mandanten warten auf Freigabe"
+      );
+      expect(counter(wrapper, "tenants").exists()).toBe(false);
+    });
+
+    it("asks the backend for the page the footer turns to", async () => {
+      ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
+        pageOf([NEW_TENANT, RESET_TENANT], 60)
+      );
+      const wrapper = await mountView();
+
+      await wrapper
+        .find(".tenant-queue .v-data-footer__icons-after button")
+        .trigger("click");
+      await flushPromises();
+
+      expect(
+        ApiTenantApprovalQueueService.getTenantApprovalQueue
+      ).toHaveBeenLastCalledWith({ page: 2, pageSize: 25 });
+    });
+
+    it("opens the tenant's bookings in the tenant of the row", async () => {
+      const wrapper = await mountView();
+
+      await tenantRows(wrapper)
+        .at(0)
+        .find("[data-test='tenant-queue-bookings']")
+        .trigger("click");
+      await flushPromises();
+
+      expect(selectTenant).toHaveBeenCalledWith(expect.anything(), "t-3");
+      expect(push).toHaveBeenCalledWith({ name: "bookings" });
+      expect(selectTenant.mock.invocationCallOrder[0]).toBeLessThan(
+        push.mock.invocationCallOrder[0]
+      );
+      expect(addToast.mock.calls.at(-1)[1].message).toBe(
+        "Mandant zu „SV Blau-Weiß“ gewechselt."
+      );
+    });
+
+    it("opens the tenant's supervision history", async () => {
+      ApiSupervisionService.getTenantHistory.mockResolvedValue(pageOf([]));
+      const wrapper = await mountView();
+
+      await tenantRows(wrapper)
+        .at(1)
+        .find("[data-test='tenant-queue-history']")
+        .trigger("click");
+      await flushPromises();
+
+      expect(ApiSupervisionService.getTenantHistory).toHaveBeenCalledWith(
+        "t-4",
+        expect.objectContaining({ page: 1 })
+      );
+      expect(activeDialog().textContent).toContain("Makerspace Nord");
+
+      dialogButton("Schließen").click();
+      await flushPromises();
+      expect(activeDialog()).toBeNull();
+    });
+
+    describe("the decision", () => {
+      const approve = async (wrapper, index) => {
+        await tenantRows(wrapper)
+          .at(index)
+          .find("[data-test='tenant-queue-approve']")
+          .trigger("click");
+        await flushPromises();
+      };
+
+      beforeEach(() => {
+        ApiSupervisionService.setTenantLevel.mockResolvedValue({
+          supervisionLevel: "supervised",
+          supervisionChangedAt: "2026-09-21T10:00:00.000Z",
+          supervisionReason: null,
+        });
+      });
+
+      it("approves a tenant as supervised and reads both registers anew", async () => {
+        const wrapper = await mountView();
+        ApiTenantApprovalQueueService.getTenantApprovalQueue.mockResolvedValue(
+          pageOf([RESET_TENANT])
+        );
+        // A supervised tenant's pending offers enter the offers' register.
+        ApiReviewQueueService.getReviewQueue.mockResolvedValue(
+          pageOf([ROOM, EVENT], 5)
+        );
+
+        await approve(wrapper, 0);
+
+        expect(ApiSupervisionService.setTenantLevel).toHaveBeenCalledWith(
+          "t-3",
+          { level: "supervised" }
+        );
+        expect(tenantRows(wrapper)).toHaveLength(1);
+        expect(counter(wrapper, "tenants").text()).toBe("1");
+        expect(counter(wrapper, "offers").text()).toBe("5");
+        expect(addToast.mock.calls.at(-1)[1]).toMatchObject({
+          message: "„SV Blau-Weiß“ ist jetzt beaufsichtigt.",
+          type: "success",
+        });
+      });
+
+      it("approves a tenant as free from the split button's menu", async () => {
+        ApiSupervisionService.setTenantLevel.mockResolvedValue({
+          supervisionLevel: "free",
+          supervisionChangedAt: "2026-09-21T10:00:00.000Z",
+          supervisionReason: null,
+        });
+        const wrapper = await mountView();
+
+        await tenantRows(wrapper)
+          .at(1)
+          .find("[data-test='tenant-queue-approve-more']")
+          .trigger("click");
+        await flushPromises();
+        const entry = document.querySelector(
+          ".menuable__content__active [data-test='tenant-queue-approve-free']"
+        );
+        expect(entry.textContent.trim()).toBe("als frei freigeben");
+        entry.click();
+        await flushPromises();
+
+        expect(ApiSupervisionService.setTenantLevel).toHaveBeenCalledWith(
+          "t-4",
+          { level: "free" }
+        );
+        expect(addToast.mock.calls.at(-1)[1].message).toBe(
+          "„Makerspace Nord“ ist jetzt frei."
+        );
+        expect(
+          ApiTenantApprovalQueueService.getTenantApprovalQueue
+        ).toHaveBeenCalledTimes(2);
+      });
+
+      it("names a level someone else changed meanwhile and reloads", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        ApiSupervisionService.setTenantLevel.mockRejectedValue(
+          lifecycleError(409, "supervision_level_changed", {
+            tenantId: "t-3",
+            expected: "pending",
+          })
+        );
+        const wrapper = await mountView();
+
+        await approve(wrapper, 0);
+
+        expect(
+          wrapper.find("[data-test='tenant-queue-decision-error']").text()
+        ).toContain("Die Aufsichtsstufe wurde inzwischen geändert.");
+        expect(
+          ApiTenantApprovalQueueService.getTenantApprovalQueue
+        ).toHaveBeenCalledTimes(2);
+        expect(ApiReviewQueueService.getReviewQueue).toHaveBeenCalledTimes(2);
+        expect(addToast).not.toHaveBeenCalled();
+      });
+
+      it("names a tenant that is gone and reloads", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        ApiSupervisionService.setTenantLevel.mockRejectedValue(
+          lifecycleError(404, "tenant_not_found", { id: "t-3" })
+        );
+        const wrapper = await mountView();
+
+        await approve(wrapper, 0);
+
+        expect(
+          wrapper.find("[data-test='tenant-queue-decision-error']").text()
+        ).toBe("Der Mandant existiert nicht mehr.");
+        expect(
+          ApiTenantApprovalQueueService.getTenantApprovalQueue
+        ).toHaveBeenCalledTimes(2);
+      });
+
+      it("names a failed decision and leaves the list as it is", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        ApiSupervisionService.setTenantLevel.mockRejectedValue(serverError());
+        const wrapper = await mountView();
+
+        await approve(wrapper, 0);
+
+        expect(
+          wrapper.find("[data-test='tenant-queue-decision-error']").text()
+        ).toBe("Die Aufsichtsstufe konnte nicht geändert werden.");
+        expect(
+          ApiTenantApprovalQueueService.getTenantApprovalQueue
+        ).toHaveBeenCalledTimes(1);
+        expect(tenantRows(wrapper)).toHaveLength(2);
+      });
+    });
+
+    describe("the decline", () => {
+      const declineDialog = (wrapper) =>
+        wrapper.findComponent({ name: "TenantDeclineDialog" });
+      const startDecline = async (wrapper, index) => {
+        await tenantRows(wrapper)
+          .at(index)
+          .find("[data-test='tenant-queue-decline']")
+          .trigger("click");
+        await flushPromises();
+      };
+
+      it("opens the decline dialog with the row's tenant", async () => {
+        const wrapper = await mountView();
+
+        expect(declineDialog(wrapper).props("open")).toBe(false);
+        await startDecline(wrapper, 1);
+
+        expect(declineDialog(wrapper).props()).toEqual({
+          open: true,
+          tenant: {
+            id: "t-4",
+            name: "Makerspace Nord",
+            supervisionLevel: "pending",
+          },
+        });
+        expect(ApiSupervisionService.setTenantLevel).not.toHaveBeenCalled();
+
+        declineDialog(wrapper).vm.$emit("close");
+        await flushPromises();
+        expect(declineDialog(wrapper).props("open")).toBe(false);
+      });
+
+      it("reads both registers anew once the tenant is declined", async () => {
+        const wrapper = await mountView();
+        await startDecline(wrapper, 1);
+
+        declineDialog(wrapper).vm.$emit("declined", {
+          tenantId: "t-4",
+          supervisionLevel: "declined",
+          supervisionChangedAt: "2026-09-21T10:00:00.000Z",
+          supervisionReason: "Kein Impressum",
+        });
+        await flushPromises();
+
+        expect(declineDialog(wrapper).props("open")).toBe(false);
+        expect(
+          ApiTenantApprovalQueueService.getTenantApprovalQueue
+        ).toHaveBeenCalledTimes(2);
+        expect(ApiReviewQueueService.getReviewQueue).toHaveBeenCalledTimes(2);
+        expect(addToast.mock.calls.at(-1)[1].message).toBe(
+          "„Makerspace Nord“ ist jetzt abgewiesen."
+        );
+      });
+
+      it("reads both registers anew when the dialog finds the tenant changed", async () => {
+        const wrapper = await mountView();
+        await startDecline(wrapper, 0);
+
+        declineDialog(wrapper).vm.$emit("stale");
+        await flushPromises();
+
+        expect(
+          ApiTenantApprovalQueueService.getTenantApprovalQueue
+        ).toHaveBeenCalledTimes(2);
+        expect(ApiReviewQueueService.getReviewQueue).toHaveBeenCalledTimes(2);
+        // The dialog says what happened; it stays open until closed.
+        expect(declineDialog(wrapper).props("open")).toBe(true);
+      });
+    });
+  });
+
   describe("the notices beside it", () => {
     it("says so when every notice went out", async () => {
       const wrapper = await mountView();
