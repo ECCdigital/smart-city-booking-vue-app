@@ -7,9 +7,10 @@ import ApiClient from "./ApiClientService";
  */
 export default {
   /**
-   * Sets the level of a tenant (instance owner only). Answers the effective
-   * level: `{ supervisionLevel, supervisionChangedAt }`. Setting the level
-   * that is already effective is a no-op on the backend.
+   * Sets the level of a tenant (instance owner only); `declined` is the
+   * decline. Answers the effective level: `{ supervisionLevel,
+   * supervisionChangedAt, supervisionReason }`. Setting the level that is
+   * already effective is a no-op on the backend.
    */
   async setTenantLevel(tenantId, { level, reason }) {
     return (

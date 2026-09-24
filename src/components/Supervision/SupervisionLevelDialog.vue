@@ -2,7 +2,7 @@
   <v-dialog :value="open" max-width="600px" @click:outside="$emit('close')">
     <v-card data-test="level-dialog">
       <v-card-title class="mx-3">
-        <span class="text-h5">{{ $t("supervision.level.change.title") }}</span>
+        <span class="text-h5">{{ text("title") }}</span>
       </v-card-title>
       <v-card-subtitle class="mx-3">
         {{ tenant.name || tenant.id }}
@@ -15,7 +15,7 @@
         </div>
         <v-radio-group
           v-model="level"
-          :label="$t('supervision.level.change.target')"
+          :label="text('target')"
           class="mt-0"
           hide-details
         >
@@ -63,7 +63,7 @@
           data-test="level-submit"
           @click="submit"
         >
-          {{ $t("supervision.level.change.submit") }}
+          {{ text("submit") }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -78,6 +78,7 @@ import {
 } from "@/services/api/apiErrorMessage";
 import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
 import {
+  SUPERVISION_LEVELS,
   effectiveLevel,
   levelLabelKey,
   selectableLevels,
@@ -87,7 +88,9 @@ import {
  * The instance owner's explicit level change (glossary "Aufsichtsstufe"):
  * free, supervised and pending in every direction, with an optional reason;
  * declined is never a target here. The level the tenant already has is not
- * offered - setting it is a no-op on the backend.
+ * offered - setting it is a no-op on the backend. For a declined tenant the
+ * same dialog takes the decline back ("Abweisung zurücknehmen"): it asks
+ * which of the three regular levels the tenant returns to.
  * The level travels through its own route, never with a tenant write.
  */
 export default {
@@ -107,6 +110,9 @@ export default {
     options() {
       return selectableLevels(this.currentLevel);
     },
+    reinstating() {
+      return this.currentLevel === SUPERVISION_LEVELS.DECLINED;
+    },
   },
   watch: {
     open(isOpen) {
@@ -120,6 +126,13 @@ export default {
   },
   methods: {
     levelLabelKey,
+    // Title, question and button name what the change does.
+    text(key) {
+      const namespace = this.reinstating
+        ? "supervision.reinstate"
+        : "supervision.level.change";
+      return this.$t(`${namespace}.${key}`);
+    },
     reset() {
       this.level = null;
       this.reason = "";
@@ -139,6 +152,7 @@ export default {
           tenantId: this.tenant.id,
           supervisionLevel: answer.supervisionLevel,
           supervisionChangedAt: answer.supervisionChangedAt,
+          supervisionReason: answer.supervisionReason,
         });
       } catch (error) {
         console.error(error);
