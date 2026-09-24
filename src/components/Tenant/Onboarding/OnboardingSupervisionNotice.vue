@@ -36,7 +36,8 @@ import {
   showsSupervisionNotice,
 } from "@/utils/tenantOnboarding";
 
-// Supervised informs; waiting for the approval warns; declined is an error.
+// The notice's own palette, not the level chip's: to the tenant owner being
+// supervised is a hint (info), where the instance's list flags it (warning).
 const NOTICE_COLORS = Object.freeze({
   supervised: "info",
   pending: "warning",

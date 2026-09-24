@@ -62,6 +62,12 @@ export function offerTypeLabelKey(offerType) {
 // Only a missing level is free; an unknown one is passed on as it is.
 const levelOrFree = (level) => level ?? SUPERVISION_LEVELS.FREE;
 
+// The level as one of the four, or `null` for one the UI does not know.
+function knownLevel(level) {
+  const effective = levelOrFree(level);
+  return SUPERVISION_LEVEL_VALUES.includes(effective) ? effective : null;
+}
+
 /**
  * The effective level of a tenant: a tenant from before the supervision
  * stores none and is free - the backend reads it the same way. A stored
@@ -77,10 +83,8 @@ export function effectiveLevel(tenant) {
  * value.
  */
 export function levelLabelKey(level) {
-  const effective = levelOrFree(level);
-  return SUPERVISION_LEVEL_VALUES.includes(effective)
-    ? `tenant.onboarding.level.names.${effective}`
-    : null;
+  const known = knownLevel(level);
+  return known ? `tenant.onboarding.level.names.${known}` : null;
 }
 
 const LEVEL_COLORS = Object.freeze({
@@ -91,10 +95,8 @@ const LEVEL_COLORS = Object.freeze({
 });
 
 export function levelColor(level) {
-  const effective = levelOrFree(level);
-  return SUPERVISION_LEVEL_VALUES.includes(effective)
-    ? LEVEL_COLORS[effective]
-    : "grey";
+  const known = knownLevel(level);
+  return known ? LEVEL_COLORS[known] : "grey";
 }
 
 /**

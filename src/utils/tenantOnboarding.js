@@ -61,7 +61,10 @@ export function isFormallyValidMail(value) {
 
 /**
  * A missing or unknown level reads as free - the backend's default, and what
- * a backend without the supervision answers.
+ * a backend without the supervision answers. Wording only: the closing
+ * action stores the publication wish whatever the level, and the backend
+ * decides what becomes public. Where a level is shown or chosen, read it
+ * through `@/utils/supervision`, which never takes an unknown level for free.
  */
 export function completionVariant(level) {
   return Object.values(SUPERVISION_LEVELS).includes(level)

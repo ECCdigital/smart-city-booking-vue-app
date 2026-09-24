@@ -87,7 +87,7 @@ describe("BookableEditStatus", () => {
     ["supervised", "braucht zusätzlich eine Freigabe"],
     [
       "pending",
-      "Freigabe durch den Betreiber: Der Veröffentlichungswunsch wird vorgemerkt, veröffentlicht aber erst nach der Freigabe",
+      "Der Veröffentlichungswunsch wird vorgemerkt; bis zur Freigabe durch den Betreiber wird nichts öffentlich",
     ],
     ["declined", "abgewiesen: Der Veröffentlichungswunsch wird vorgemerkt"],
   ])(

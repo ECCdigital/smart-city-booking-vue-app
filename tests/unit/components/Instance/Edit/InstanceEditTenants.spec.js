@@ -66,6 +66,21 @@ describe("InstanceEditTenants Startstufe", () => {
     expect(checkedLevel(wrapper)).toBe("pending");
   });
 
+  it("never reads a stored start level it does not know as frei", async () => {
+    const wrapper = mountTab({
+      instance: instance({ tenantInitialSupervisionLevel: "locked" }),
+    });
+
+    expect(checkedLevel(wrapper)).toBeUndefined();
+
+    // Any other change of the tab hands the stored level on untouched.
+    await wrapper.find("input[role='switch']").trigger("click");
+    await settle(wrapper);
+
+    const emitted = wrapper.emitted("update:instance");
+    expect(emitted.at(-1)[0].tenantInitialSupervisionLevel).toBe("locked");
+  });
+
   it("emits the chosen start level with the instance", async () => {
     const wrapper = mountTab();
 

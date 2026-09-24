@@ -2255,7 +2255,7 @@
       },
       "wish-hint": {
         "supervised": "Ihr Mandant ist beaufsichtigt: Der Veröffentlichungswunsch allein veröffentlicht nichts, das Angebot braucht zusätzlich eine Freigabe.",
-        "pending": "Ihr Mandant wartet auf die Freigabe durch den Betreiber: Der Veröffentlichungswunsch wird vorgemerkt, veröffentlicht aber erst nach der Freigabe.",
+        "pending": "Ihr Mandant wartet auf die Freigabe: Der Veröffentlichungswunsch wird vorgemerkt; bis zur Freigabe durch den Betreiber wird nichts öffentlich.",
         "declined": "Der Mandant ist abgewiesen: Der Veröffentlichungswunsch wird vorgemerkt, veröffentlicht aber nichts."
       },
       "unsaved": "Speichern Sie das Angebot, um es zur Prüfung einzureichen.",

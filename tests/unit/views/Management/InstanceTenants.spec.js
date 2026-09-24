@@ -371,15 +371,21 @@ describe("InstanceTenants", () => {
       instanceOwner = true;
       const wrapper = await mountView();
 
-      const items = wrapper
+      await wrapper
         .findComponent({ ref: "levelFilter" })
-        .props("items");
-      expect(items.map(({ value, text }) => [value, text])).toEqual([
-        [null, "Alle Stufen"],
-        ["free", "frei"],
-        ["supervised", "beaufsichtigt"],
-        ["pending", "Freigabe ausstehend"],
-        ["declined", "abgewiesen"],
+        .find(".v-input__slot")
+        .trigger("click");
+      await flushPromises();
+
+      const options = Array.from(
+        document.querySelectorAll(".menuable__content__active .v-list-item")
+      ).map((item) => item.textContent.trim());
+      expect(options).toEqual([
+        "Alle Stufen",
+        "frei",
+        "beaufsichtigt",
+        "Freigabe ausstehend",
+        "abgewiesen",
       ]);
     });
 
