@@ -1,5 +1,8 @@
-import user from "@/store/modules/user";
+// The store first: `user.js` imports the store back, and the admin layout's
+// band may be the first to load this service - the other way round the store
+// would be built before `user.js` is.
 import store from "@/store";
+import user from "@/store/modules/user";
 
 class TenantPermissionService {
   static isInstanceOwner() {

@@ -1,20 +1,16 @@
 import store from "@/store";
 import ToastService from "@/services/ToastService";
 import { isTenantMember } from "@/utils/tenantMembership";
-
-function tenantName(tenantId) {
-  const tenant = store.getters["tenants/tenants"].find(
-    (t) => t.id === tenantId
-  );
-  return tenant?.name || tenantId;
-}
+import { tenantName } from "@/utils/tenantName";
 
 /**
  * Lands a pasted Buchungslink in the tenant it names before any page mounts:
  * on routes flagged `meta.tenantFromQuery`, a `?tenant=` of which the user is
  * a Mitglied becomes the current tenant, so that `requireTenant` and
  * `requireInterfaceAccess` judge the target tenant. Anyone else continues
- * unchanged and the page shows its non-member state. Never redirects.
+ * unchanged and the page shows its non-member state - so does a member of a
+ * declined tenant (glossary „abgewiesen“), whose management is closed.
+ * Never redirects.
  */
 export async function selectTenantFromQuery({ to, next }) {
   if (!to.meta.tenantFromQuery) {
@@ -26,7 +22,10 @@ export async function selectTenantFromQuery({ to, next }) {
     return next();
   }
 
-  if (!isTenantMember(tenantId)) {
+  if (
+    !isTenantMember(tenantId) ||
+    store.getters["user/declinedMembership"](tenantId)
+  ) {
     return next();
   }
 
@@ -39,7 +38,7 @@ export async function selectTenantFromQuery({ to, next }) {
     await store.dispatch(
       "toasts/add",
       ToastService.createToast("booking.page.tenant-switched", "info", 5000, {
-        name: tenantName(tenantId),
+        name: tenantName(store.getters["tenants/tenants"], tenantId),
       })
     );
   }
