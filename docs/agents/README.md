@@ -18,7 +18,8 @@ docs/agents/
   testing.md              ← Vitest setup, layout & conventions
   access-vocabulary.md    ← doors, locker systems, grants: German UI terms ↔ code
   booking-status-vocabulary.md ← the five booking states, the action verbs, the headline over the path, "read status, never a flag"
-  issue-tracker.md        ← where issues live: local markdown under .scratch/<feature>/issues/
+  issue-tracker.md        ← where issues live: GitHub ECC, Produkt-Repo (tickets in ECCdigital/tickets)
+  domain.md               ← how skills consume CONTEXT.md and docs/adr/
 docs/
   shared-session-deploy.md                   ← shared-origin Admin + Storefront deploy
 .cursor/rules/
