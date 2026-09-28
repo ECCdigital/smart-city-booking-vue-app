@@ -61,6 +61,10 @@ export default {
       (item) => item.date !== null
     );
 
+    // A bookable without an id is created (`POST`), one with an id updated.
+    if (!formData.id) {
+      return ApiClient.post(`api/${t}/bookables`, formData);
+    }
     return ApiClient.put(`api/${t}/bookables`, formData);
   },
   deleteBookable(bookableId) {
@@ -83,7 +87,7 @@ export default {
           bookable.title = `${bookable.title} (Kopie)`;
 
           if (bookable) {
-            ApiClient.put(
+            ApiClient.post(
               `api/${store.getters["tenants/currentTenantId"]}/bookables`,
               bookable
             )

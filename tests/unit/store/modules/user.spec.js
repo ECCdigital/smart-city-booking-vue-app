@@ -128,3 +128,65 @@ describe("user/isAuthorized", () => {
     expect(isAuthorized({ data: { user: {} } })("coupons")).toBe(false);
   });
 });
+
+/**
+ * Every sign-in path lands in `user/update`, so a stored current tenant the
+ * user is no Mitglied of any more is replaced there, before any tenant-scoped
+ * read answers 403 to it.
+ */
+describe("user/update", () => {
+  function run(payload) {
+    const commit = vi.fn();
+    const dispatch = vi.fn();
+    const rootGetters = { "tenants/currentTenantId": currentTenant.id };
+    return user.actions
+      .update({ commit, dispatch, rootGetters }, payload)
+      .then(() => ({ commit, dispatch }));
+  }
+
+  it("stores the user and keeps a current tenant the permissions list", async () => {
+    const payload = {
+      user: { id: "u1" },
+      permissions: { tenants: [{ tenantId: "tenant-a" }] },
+    };
+
+    const { commit, dispatch } = await run(payload);
+
+    expect(commit).toHaveBeenCalledWith("UPDATE", payload);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("switches to a tenant of the memberships when the current one is stale", async () => {
+    currentTenant.id = "tenant-gone";
+
+    const { dispatch } = await run({
+      user: { id: "u1" },
+      permissions: { tenants: [{ tenantId: "tenant-b" }] },
+    });
+
+    expect(dispatch).toHaveBeenCalledWith("tenants/select", "tenant-b", {
+      root: true,
+    });
+  });
+
+  it("clears a stale current tenant when no membership is left", async () => {
+    currentTenant.id = "tenant-gone";
+
+    const { dispatch } = await run({
+      user: { id: "u1" },
+      permissions: { tenants: [] },
+    });
+
+    expect(dispatch).toHaveBeenCalledWith("tenants/select", null, {
+      root: true,
+    });
+  });
+
+  it("leaves the tenant alone while the payload carries no permissions", async () => {
+    currentTenant.id = "tenant-gone";
+
+    const { dispatch } = await run({ user: { id: "u1" } });
+
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+});
