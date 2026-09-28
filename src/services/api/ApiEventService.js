@@ -17,6 +17,13 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const formData = { ...store.state.events.form };
     formData.tenantId = t;
+    // An event without an id is created (`POST`), one with an id updated.
+    if (!formData.id) {
+      return ApiClient.post(
+        `api/${t}/events?withTickets=${addTickets}`,
+        formData
+      );
+    }
     return ApiClient.put(`api/${t}/events?withTickets=${addTickets}`, formData);
   },
   deleteEvent(id, tenant) {
@@ -37,7 +44,7 @@ export default {
           event.information.name = `${event.information.name} (Kopie)`;
 
           if (event) {
-            ApiClient.put(
+            ApiClient.post(
               `api/${store.getters["tenants/currentTenantId"]}/events`,
               event
             )

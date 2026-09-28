@@ -1780,9 +1780,9 @@ export default {
           return;
         }
 
-        // The create PUT carries the chosen initial state as `status` and no
-        // flag (spec E10).
-        await ApiBookingService.storeBooking(
+        // The create POST carries the chosen initial state as `status` and
+        // no flag (spec E10).
+        await ApiBookingService.createBooking(
           toCreatePayload(
             this.selectedBooking,
             this.initialState,
@@ -1811,7 +1811,7 @@ export default {
         this.inProgress = true;
         // The update PUT carries content only (spec E1.1): no flag, no
         // `status` - the state is moved by the transitions, never by a save.
-        await ApiBookingService.storeBooking(
+        await ApiBookingService.updateBooking(
           toUpdatePayload(this.selectedBooking)
         )
           .then(async () => {

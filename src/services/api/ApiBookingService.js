@@ -35,7 +35,15 @@ export default {
       `api/${t}/bookables/${bookableId}/bookings?related=${irb}&parent=${ipb}&public=${po}`
     );
   },
-  storeBooking(booking) {
+  /** A manual booking of the administration (`POST`). */
+  createBooking(booking) {
+    const cleansedBooking = Object.assign(new Object(), booking);
+    return ApiClient.post(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings`,
+      cleansedBooking
+    );
+  },
+  updateBooking(booking) {
     const cleansedBooking = Object.assign(new Object(), booking);
     return ApiClient.put(
       `api/${store.getters["tenants/currentTenantId"]}/bookings`,
