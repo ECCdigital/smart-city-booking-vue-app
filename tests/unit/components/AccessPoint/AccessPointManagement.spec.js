@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises, forbiddenError } from "@tests/unit/support/api";
+import {
+  openFilterCard,
+  pickFilterOption,
+  typeSearch,
+} from "@tests/unit/support/search";
 
 vi.mock("@/services/api/ApiAccessPointService", () => ({
   default: { getAccessPoints: vi.fn(), deleteAccessPoint: vi.fn() },
@@ -245,7 +250,7 @@ describe("AccessPointManagement", () => {
       expect(row.text()).toContain("Kapazität");
     });
 
-    it("filters the table down to one type", async () => {
+    it("filters the table down to one type behind the funnel", async () => {
       ApiAccessPointService.getAccessPoints.mockResolvedValue({
         data: [DOOR, LOCKER],
       });
@@ -253,16 +258,32 @@ describe("AccessPointManagement", () => {
       const wrapper = await mountManagement();
       expect(rows(wrapper)).toHaveLength(2);
 
-      await wrapper.find(".type-filter-locker").trigger("click");
+      await openFilterCard(wrapper);
+      await pickFilterOption("Anlagen");
       expect(rows(wrapper)).toHaveLength(1);
       expect(rows(wrapper).at(0).text()).toContain("Fahrradboxen Bahnhof");
 
-      await wrapper.find(".type-filter-door").trigger("click");
+      await pickFilterOption("Türen");
       expect(rows(wrapper)).toHaveLength(1);
       expect(rows(wrapper).at(0).text()).toContain("Haupteingang");
 
-      await wrapper.find(".type-filter-all").trigger("click");
+      await pickFilterOption("Alle");
       expect(rows(wrapper)).toHaveLength(2);
+    });
+
+    it("narrows the table to what the search matches", async () => {
+      ApiAccessPointService.getAccessPoints.mockResolvedValue({
+        data: [DOOR, LOCKER],
+      });
+      const wrapper = await mountManagement();
+
+      await typeSearch(
+        wrapper.find("input[data-test='access-point-search']"),
+        "Bahnhof"
+      );
+
+      expect(rows(wrapper)).toHaveLength(1);
+      expect(rows(wrapper).at(0).text()).toContain("Fahrradboxen Bahnhof");
     });
   });
 

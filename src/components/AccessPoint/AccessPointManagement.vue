@@ -7,6 +7,7 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import ToastService from "@/services/ToastService";
 import BaseSection from "@/components/commons/BaseSection.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
 import AccessPointEditDialog from "@/components/AccessPoint/AccessPointEditDialog.vue";
 import AccessPointDeleteDialog from "@/components/AccessPoint/AccessPointDeleteDialog.vue";
 import AccessPointRotateDialog from "@/components/AccessPoint/AccessPointRotateDialog.vue";
@@ -23,7 +24,7 @@ import {
 } from "@/utilities/access-points";
 import { bookingsWithLiveAccess } from "@/utilities/access-grants";
 
-// The values of the type filter over the table: both kinds, or one of them.
+// The values of the type filter behind the funnel: both kinds, or one.
 const TYPE_FILTER = { all: "all", door: DOOR_TYPE, locker: LOCKER_TYPE };
 
 export default {
@@ -33,11 +34,12 @@ export default {
     AccessPointEditDialog,
     AccessPointDeleteDialog,
     AccessPointRotateDialog,
+    SearchBar,
   },
   data() {
     return {
       search: "",
-      // "all" | "door" | "locker" - the three buttons over the table
+      // "all" | "door" | "locker" - the type behind the search funnel
       typeFilter: TYPE_FILTER.all,
       loading: false,
       loadError: "",
@@ -145,8 +147,32 @@ export default {
       }
       return this.items;
     },
-    typeFilters() {
-      return TYPE_FILTER;
+    /** The type behind the funnel: all, doors or lockers. */
+    filterSections() {
+      return [
+        {
+          key: "type",
+          label: this.$t("accessPoint.management.table.typeFilter"),
+          multiple: false,
+          segmented: true,
+          empty: TYPE_FILTER.all,
+          selected: this.typeFilter,
+          options: [
+            {
+              value: TYPE_FILTER.all,
+              label: this.$t("accessPoint.management.table.filterAll"),
+            },
+            {
+              value: TYPE_FILTER.door,
+              label: this.$t("accessPoint.management.table.filterDoors"),
+            },
+            {
+              value: TYPE_FILTER.locker,
+              label: this.$t("accessPoint.management.table.filterLockers"),
+            },
+          ],
+        },
+      ];
     },
     // "Not assigned" is a statement about the bookables; it may only be made
     // when they were actually readable.
@@ -377,30 +403,13 @@ export default {
       {{ $t("accessPoint.management.hints.assignmentForbidden") }}
     </v-alert>
 
-    <div class="d-flex flex-wrap align-center mb-4">
-      <v-text-field
-        v-model="search"
-        :label="$t('accessPoint.management.search')"
-        append-icon="mdi-magnify"
-        background-color="accent"
-        filled
-        dense
-        clearable
-        hide-details
-        class="flex-grow-1 mr-4"
-      />
-      <v-btn-toggle v-model="typeFilter" mandatory dense class="type-filter">
-        <v-btn small :value="typeFilters.all" class="type-filter-all">
-          {{ $t("accessPoint.management.table.filterAll") }}
-        </v-btn>
-        <v-btn small :value="typeFilters.door" class="type-filter-door">
-          {{ $t("accessPoint.management.table.filterDoors") }}
-        </v-btn>
-        <v-btn small :value="typeFilters.locker" class="type-filter-locker">
-          {{ $t("accessPoint.management.table.filterLockers") }}
-        </v-btn>
-      </v-btn-toggle>
-    </div>
+    <SearchBar
+      v-model="search"
+      :fields="$t('accessPoint.management.search')"
+      :filters="filterSections"
+      data-test="access-point-search"
+      @filter="(key, type) => (typeFilter = type)"
+    />
 
     <v-data-table
       :headers="headers"

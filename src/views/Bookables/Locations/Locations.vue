@@ -21,7 +21,7 @@
         <Search
           :items="api.locations"
           v-model="searchResults"
-          placeholder="Veranstaltungsort suchen…"
+          :fields="$t('bookable.list.search-location')"
           :keys="searchKeys"
           filter-key="tags"
           :filter-options="api.tags"

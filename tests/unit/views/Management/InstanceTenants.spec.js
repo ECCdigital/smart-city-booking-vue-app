@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
+import {
+  filterOptionLabels,
+  openFilterCard,
+  pickFilterOption,
+  typeSearch,
+} from "@tests/unit/support/search";
 
 let readable = [];
 let instanceOwner = false;
@@ -175,7 +181,7 @@ describe("InstanceTenants", () => {
   it("narrows the list to what the search matches", async () => {
     const wrapper = await mountView();
 
-    await wrapper.find("input[data-test='tenant-search']").setValue("sport");
+    await typeSearch(wrapper.find("input[data-test='tenant-search']"), "sport");
     await flushPromises();
 
     expect(rowTexts(wrapper)).toHaveLength(1);
@@ -383,17 +389,9 @@ describe("InstanceTenants", () => {
       instanceOwner = true;
       const wrapper = await mountView();
 
-      await wrapper
-        .findComponent({ ref: "levelFilter" })
-        .find(".v-input__slot")
-        .trigger("click");
-      await flushPromises();
+      await openFilterCard(wrapper);
 
-      const options = Array.from(
-        document.querySelectorAll(".menuable__content__active .v-list-item")
-      ).map((item) => item.textContent.trim());
-      expect(options).toEqual([
-        "Alle Stufen",
+      expect(filterOptionLabels()).toEqual([
         "frei",
         "beaufsichtigt",
         "Freigabe ausstehend",
@@ -405,9 +403,7 @@ describe("InstanceTenants", () => {
       const wrapper = await mountView();
 
       expect(wrapper.text()).not.toContain("Freigabe ausstehend");
-      expect(wrapper.findComponent({ ref: "levelFilter" }).exists()).toBe(
-        false
-      );
+      expect(wrapper.find("[data-test='search-filter']").exists()).toBe(false);
       expect(wrapper.find("[data-test='open-instance-history']").exists()).toBe(
         false
       );
@@ -428,9 +424,8 @@ describe("InstanceTenants", () => {
         supervisionLevel: null,
       });
 
-      wrapper
-        .findComponent({ ref: "levelFilter" })
-        .vm.$emit("input", "declined");
+      await openFilterCard(wrapper);
+      await pickFilterOption("abgewiesen");
       await flushPromises();
 
       expect(ApiTenantService.getTenants).toHaveBeenLastCalledWith(false, {
@@ -748,9 +743,8 @@ describe("InstanceTenants", () => {
         pageSize: 25,
       });
       const wrapper = await mountView();
-      wrapper
-        .findComponent({ ref: "levelFilter" })
-        .vm.$emit("input", "pending");
+      await openFilterCard(wrapper);
+      await pickFilterOption("Freigabe ausstehend");
       await flushPromises();
       expect(rowTexts(wrapper)).toHaveLength(1);
 

@@ -31,39 +31,22 @@
         @drop.prevent="onDrop"
       >
         <template v-if="tab === 'library'">
-          <div class="d-flex align-center flex-wrap mb-3" style="gap: 8px">
-            <v-text-field
-              v-model="searchInput"
-              label="Suchen (Titel, Dateiname, Alt-Text) …"
-              prepend-inner-icon="mdi-magnify"
-              dense
-              solo
-              flat
-              clearable
-              hide-details
-              background-color="accent"
-              style="min-width: 220px"
-            />
-            <v-select
-              v-if="knownTags.length > 0"
-              v-model="filters.tag"
-              :items="tagItems"
-              label="Tag"
-              dense
-              solo
-              flat
-              clearable
-              hide-details
-              background-color="accent"
-              style="max-width: 180px"
-              @change="reload"
-            />
-            <v-chip v-if="kind" small label>{{ kindLabel }}</v-chip>
-            <v-chip v-if="publicOnly" small label color="warning" outlined>
-              <v-icon x-small left>mdi-lock-outline</v-icon>
-              intern = nicht wählbar
-            </v-chip>
-          </div>
+          <!-- The search band (SearchBar) with the tag behind the funnel;
+               what the picker takes in the row beneath it. -->
+          <SearchBar
+            v-model="searchInput"
+            :fields="$t('media.search')"
+            :filters="filterSections"
+            @filter="onFilter"
+          >
+            <template v-if="kind || publicOnly" #actions>
+              <v-chip v-if="kind" small label>{{ kindLabel }}</v-chip>
+              <v-chip v-if="publicOnly" small label color="warning" outlined>
+                <v-icon x-small left>mdi-lock-outline</v-icon>
+                intern = nicht wählbar
+              </v-chip>
+            </template>
+          </SearchBar>
 
           <v-skeleton-loader
             v-if="loading && items.length === 0"
@@ -215,6 +198,7 @@ import MediaPermissionService from "@/services/permissions/MediaPermissionServic
 import MediaResolveService from "@/services/MediaResolveService";
 import FormatService from "@/services/FormatService";
 import MediaImage from "@/components/Media/MediaImage.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
 import { mediaUploadErrorMessage } from "@/utils/mediaUploadError";
 import {
   externalReferenceOf,
@@ -240,7 +224,7 @@ const PAGE_SIZE = 24;
  */
 export default {
   name: "MediaPickerDialog",
-  components: { MediaImage },
+  components: { MediaImage, SearchBar },
   props: {
     value: { type: Boolean, default: false },
     scope: { type: String, default: MEDIA_SCOPE.TENANT },
@@ -274,7 +258,6 @@ export default {
       selected: [],
       filters: { tag: null },
       searchInput: "",
-      searchDebounce: null,
       knownTags: [],
       fetchRequestId: 0,
       dragOver: false,
@@ -298,8 +281,22 @@ export default {
       if (this.kind === "document") return "application/pdf";
       return undefined;
     },
-    tagItems() {
-      return this.knownTags.map((tag) => ({ text: tag, value: tag }));
+    /** The tag behind the funnel, once the listing has shown one. */
+    filterSections() {
+      if (this.knownTags.length === 0) return null;
+      return [
+        {
+          key: "tag",
+          label: this.$t("filter.tags"),
+          multiple: false,
+          selected: this.filters.tag,
+          options: this.knownTags.map((tag) => ({
+            value: tag,
+            label: tag,
+            icon: "mdi-tag-outline",
+          })),
+        },
+      ];
     },
     externalUrlValid() {
       return isValidExternalUrl(this.externalUrl);
@@ -324,12 +321,8 @@ export default {
       this.fetchMedia();
     },
     searchInput() {
-      clearTimeout(this.searchDebounce);
-      this.searchDebounce = setTimeout(() => this.reload(), 300);
+      this.reload();
     },
-  },
-  beforeDestroy() {
-    clearTimeout(this.searchDebounce);
   },
   methods: {
     formatBytes(bytes) {
@@ -337,6 +330,10 @@ export default {
     },
     close() {
       this.$emit("input", false);
+    },
+    onFilter(key, tag) {
+      this.filters.tag = tag;
+      this.reload();
     },
     reload() {
       this.page = 1;

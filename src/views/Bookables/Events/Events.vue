@@ -14,7 +14,7 @@
         <Search
           :items="api.events"
           v-model="searchResults"
-          placeholder="Veranstaltung suchen…"
+          :fields="$t('event.list.search')"
           :keys="searchKeys"
           filter-key="information.tags"
           :filter-options="api.tags"

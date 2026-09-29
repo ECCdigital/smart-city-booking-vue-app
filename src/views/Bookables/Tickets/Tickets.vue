@@ -21,7 +21,7 @@
         <Search
           :items="api.tickets"
           v-model="searchResults"
-          placeholder="Ticket suchen…"
+          :fields="$t('bookable.list.search')"
           :keys="searchKeys"
           filter-key="tags"
           :filter-options="api.tags"

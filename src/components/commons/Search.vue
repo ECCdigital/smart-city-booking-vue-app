@@ -1,125 +1,64 @@
 <template>
-  <div>
-    <v-row no-gutters>
-      <v-col>
-        <v-text-field
-          v-model="searchQuery"
-          :label="placeholder"
-          solo
-          clearable
-          class="search-field"
-          append-icon="mdi-magnify"
-          hide-details
-          @click:clear="clearAll"
+  <!-- The search band (SearchBar) over a list of bookables or coupons: the
+       tags behind the funnel, sorting in the row beneath. Searching, the tag
+       filter and sorting stay here; the bar only draws them. -->
+  <SearchBar
+    v-model="searchQuery"
+    :fields="fields"
+    :filters="filterSections"
+    @filter="(key, tags) => (selectedFilters = tags)"
+  >
+    <template v-if="sortable" #actions>
+      <v-chip-group
+        v-model="sortBy"
+        :mandatory="false"
+        active-class="secondary--text"
+        class="sort-chips"
+      >
+        <v-chip
+          v-for="opt in sortOptions"
+          :key="opt.value"
+          :value="opt.value"
+          small
+          outlined
+          class="mr-1 mb-1"
         >
-          <template v-slot:prepend-inner>
-            <v-menu bottom left v-if="showFilters">
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn icon v-bind="attrs" v-on="on">
-                  <v-icon>mdi-filter-variant</v-icon>
-                </v-btn>
-              </template>
-
-              <v-list v-if="filterOptions.length" dense>
-                <v-list-item
-                  dense
-                  v-for="(opt, i) in filterOptions"
-                  :key="i"
-                  @click="toggleFilter(opt)"
-                >
-                  <v-list-item-action>
-                    <v-checkbox
-                      :input-value="selectedFilters.includes(opt)"
-                      @change.prevent
-                    />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ opt }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-              <v-list v-else dense>
-                <v-list-item disabled>Keine Filter verfügbar</v-list-item>
-              </v-list>
-            </v-menu>
-          </template>
-
-          <template v-slot:append>
-            <v-chip-group
-              v-if="selectedFilters.length"
-              column
-              class="filter-field mr-2"
-            >
-              <v-chip
-                v-for="(f, idx) in selectedFilters"
-                :key="idx"
-                close
-                @click:close="removeFilter(f)"
-                color="primary"
-                small
-                class="ma-1"
-              >
-                {{ f }}
-              </v-chip>
-            </v-chip-group>
-
-            <v-icon>mdi-magnify</v-icon>
-          </template>
-        </v-text-field>
-      </v-col>
-    </v-row>
-    <v-row v-if="sortable" no-gutters>
-      <v-col>
-        <div class="mt-2 d-flex align-center flex-wrap">
-          <v-chip-group
-            v-model="sortBy"
-            :mandatory="false"
-            active-class="secondary--text"
-            class="sort-chips"
-          >
-            <v-chip
-              v-for="opt in sortOptions"
-              :key="opt.value"
-              :value="opt.value"
-              small
-              outlined
-              class="mr-1 mb-1"
-            >
-              {{ opt.text }}
-            </v-chip>
-          </v-chip-group>
-          <v-btn-toggle
-            v-model="sortDir"
-            class="ml-2 sort-buttons"
-            active-class="secondary--text"
-            mandatory
-            dense
-          >
-            <v-btn small value="asc">
-              <v-icon small>mdi-arrow-up</v-icon>
-            </v-btn>
-            <v-btn small value="desc">
-              <v-icon small>mdi-arrow-down</v-icon>
-            </v-btn>
-          </v-btn-toggle>
-          <v-btn v-if="sortBy" small text class="ml-2" @click="sortBy = null">
-            Zurücksetzen
-          </v-btn>
-        </div>
-      </v-col>
-    </v-row>
-  </div>
+          {{ opt.text }}
+        </v-chip>
+      </v-chip-group>
+      <v-btn-toggle
+        v-model="sortDir"
+        class="sort-buttons"
+        active-class="secondary--text"
+        mandatory
+        dense
+      >
+        <v-btn small value="asc">
+          <v-icon small>mdi-arrow-up</v-icon>
+        </v-btn>
+        <v-btn small value="desc">
+          <v-icon small>mdi-arrow-down</v-icon>
+        </v-btn>
+      </v-btn-toggle>
+      <v-btn v-if="sortBy" small text @click="sortBy = null">
+        Zurücksetzen
+      </v-btn>
+    </template>
+  </SearchBar>
 </template>
 
 <script>
 import Fuse from "fuse.js";
+import SearchBar from "@/components/commons/SearchBar.vue";
 
 export default {
   name: "Search",
+  components: { SearchBar },
   props: {
     items: { type: Array, required: true },
     keys: { type: Array, default: () => [] },
-    placeholder: { type: String, default: "Suche…" },
+    /** What `keys` search, as the placeholder names it: "Titel oder ID". */
+    fields: { type: String, required: true },
     fuseOptions: { type: Object, default: () => ({}) },
     value: { type: Array, default: () => [] },
     filterKey: { type: String, default: "" },
@@ -145,6 +84,24 @@ export default {
       sortDir: "asc",
     };
   },
+  computed: {
+    /** The tags behind the funnel; no funnel with `showFilters` off. */
+    filterSections() {
+      if (!this.showFilters) return null;
+      return [
+        {
+          key: "tags",
+          label: this.$t("filter.tags"),
+          selected: this.selectedFilters,
+          options: this.filterOptions.map((tag) => ({
+            value: tag,
+            label: tag,
+            icon: "mdi-tag-outline",
+          })),
+        },
+      ];
+    },
+  },
   watch: {
     items: { handler: "_initFuse", immediate: true },
     keys: { handler: "_initFuse", deep: true },
@@ -154,17 +111,6 @@ export default {
     sortDir: "performSearch",
   },
   methods: {
-    clearAll() {
-      this.searchQuery = "";
-      this.selectedFilters = [];
-      this.performSearch();
-    },
-    toggleFilter(opt) {
-      const idx = this.selectedFilters.indexOf(opt);
-      idx >= 0
-        ? this.selectedFilters.splice(idx, 1)
-        : this.selectedFilters.push(opt);
-    },
     getNestedValue(obj, path) {
       return path.split(".").reduce((acc, key) => acc?.[key], obj);
     },
@@ -258,19 +204,11 @@ export default {
       this.searchResults = result;
       this.$emit("input", result);
     },
-    removeFilter(filter) {
-      const idx = this.selectedFilters.indexOf(filter);
-      if (idx >= 0) this.selectedFilters.splice(idx, 1);
-    },
   },
 };
 </script>
 
 <style scoped>
-.search-field {
-  border-radius: 15px;
-}
-
 .sort-buttons {
   border-radius: 8px;
 }

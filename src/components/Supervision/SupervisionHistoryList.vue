@@ -14,60 +14,33 @@
     @update:page="onPage"
     @retry="load"
   >
+    <!-- The search band (SearchBar) for the offer id, tenant and offer
+         type behind the funnel; the reload in the row beneath it. -->
     <template #toolbar>
-      <v-select
-        v-if="instanceWide"
-        ref="tenantFilter"
-        :value="filters.tenantId"
-        :items="tenants"
-        item-text="name"
-        item-value="id"
-        :label="$t('supervision.history.filters.tenant')"
-        dense
-        outlined
-        hide-details
-        clearable
-        class="supervision-history__filter"
-        data-test="history-filter-tenant"
-        @input="onFilter('tenantId', $event)"
-      />
-      <v-select
-        ref="offerTypeFilter"
-        :value="filters.offerType"
-        :items="offerTypeItems"
-        :label="$t('supervision.history.filters.offer-type')"
-        dense
-        outlined
-        hide-details
-        clearable
-        class="supervision-history__filter"
-        data-test="history-filter-offer-type"
-        @input="onFilter('offerType', $event)"
-      />
-      <v-text-field
-        :value="filters.offerId"
-        :label="$t('supervision.history.filters.offer-id')"
-        dense
-        outlined
-        hide-details
-        clearable
-        class="supervision-history__filter"
-        data-test="history-filter-offer-id"
-        @change="onFilter('offerId', $event)"
-        @click:clear="onFilter('offerId', null)"
-      />
-      <v-spacer />
-      <v-btn
-        small
-        text
-        color="primary"
-        :disabled="loading"
-        data-test="history-reload"
-        @click="load"
+      <SearchBar
+        :value="filters.offerId || ''"
+        :fields="$t('supervision.history.filters.offer-id')"
+        :filters="filterSections"
+        class="supervision-history__search"
+        data-test="history-search"
+        @input="onFilter('offerId', $event)"
+        @filter="onCardFilter"
       >
-        <v-icon left small>mdi-refresh</v-icon>
-        {{ $t("supervision.history.reload") }}
-      </v-btn>
+        <template #actions>
+          <v-spacer />
+          <v-btn
+            small
+            text
+            color="primary"
+            :disabled="loading"
+            data-test="history-reload"
+            @click="load"
+          >
+            <v-icon left small>mdi-refresh</v-icon>
+            {{ $t("supervision.history.reload") }}
+          </v-btn>
+        </template>
+      </SearchBar>
     </template>
 
     <!-- The moment as a stamp: the day over the time of day, cut from the
@@ -117,10 +90,12 @@
 
 <script>
 import AppList from "@/components/commons/AppList.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
 import ApiSupervisionService from "@/services/api/ApiSupervisionService";
 import FormatService from "@/services/FormatService";
 import pagedLoad from "@/mixins/pagedLoad";
 import {
+  OFFER_TYPE_ICONS,
   OFFER_TYPE_VALUES,
   historyActorLabelKey,
   historyEventLabelKey,
@@ -129,6 +104,9 @@ import {
 } from "@/utils/supervision";
 
 const PAGE_SIZE = 25;
+
+/** The offer type switch's „Alle“: no offer type filter. */
+const ALL_OFFER_TYPES = "all";
 
 /**
  * The supervision history (glossary "Aufsichtshistorie"): immutable, newest
@@ -139,7 +117,7 @@ const PAGE_SIZE = 25;
  */
 export default {
   name: "SupervisionHistoryList",
-  components: { AppList },
+  components: { AppList, SearchBar },
   mixins: [pagedLoad],
   props: {
     tenantId: { type: String, default: null },
@@ -174,11 +152,44 @@ export default {
       }
       return columns;
     },
-    offerTypeItems() {
-      return OFFER_TYPE_VALUES.map((value) => ({
-        value,
-        text: this.$t(offerTypeLabelKey(value)),
-      }));
+    /**
+     * The offer type as a switch, as the booking list's type, and below it
+     * the tenant (instance-wide only); the server filters.
+     */
+    filterSections() {
+      const offerType = {
+        key: "offerType",
+        label: this.$t("supervision.history.filters.offer-type"),
+        multiple: false,
+        segmented: true,
+        empty: ALL_OFFER_TYPES,
+        selected: this.filters.offerType || ALL_OFFER_TYPES,
+        options: [
+          {
+            value: ALL_OFFER_TYPES,
+            label: this.$t("supervision.history.filters.all-offer-types"),
+            icon: "mdi-view-grid-outline",
+          },
+          ...OFFER_TYPE_VALUES.map((value) => ({
+            value,
+            label: this.$t(offerTypeLabelKey(value)),
+            icon: OFFER_TYPE_ICONS[value],
+          })),
+        ],
+      };
+      if (!this.instanceWide) return [offerType];
+      const tenant = {
+        key: "tenantId",
+        label: this.$t("supervision.history.filters.tenant"),
+        multiple: false,
+        selected: this.filters.tenantId,
+        options: this.tenants.map((tenant) => ({
+          value: tenant.id,
+          label: tenant.name,
+          icon: "mdi-domain",
+        })),
+      };
+      return [offerType, tenant];
     },
   },
   watch: {
@@ -210,6 +221,9 @@ export default {
       this.filters[name] = next || null;
       this.page = 1;
       this.load();
+    },
+    onCardFilter(key, selection) {
+      this.onFilter(key, selection === ALL_OFFER_TYPES ? null : selection);
     },
     onPage(page) {
       this.page = page;
@@ -250,8 +264,9 @@ export default {
 </script>
 
 <style scoped>
-.supervision-history__filter {
-  max-width: 220px;
+.supervision-history__search {
+  flex: 1 1 100%;
+  margin-bottom: 0;
 }
 
 .supervision-history__stamp {

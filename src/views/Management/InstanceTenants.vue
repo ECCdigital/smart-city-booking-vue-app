@@ -46,44 +46,29 @@
                 {{ $t("tenant.list.hint-catalog") }}
               </template>
             </p>
-            <div class="instance-tenants__filters">
-              <v-text-field
-                v-model="search"
-                :label="$t('tenant.list.search')"
-                append-icon="mdi-magnify"
-                dense
-                outlined
-                clearable
-                hide-details
-                class="instance-tenants__search"
-                data-test="tenant-search"
-              />
-              <v-select
-                v-if="allowSupervise"
-                ref="levelFilter"
-                :value="levelFilter"
-                :items="levelFilterItems"
-                :label="$t('supervision.level.filter.label')"
-                dense
-                outlined
-                hide-details
-                class="instance-tenants__filter"
-                @input="onFilterLevel"
-              />
-              <v-spacer />
-              <v-btn
-                v-if="allowInstanceHistory"
-                text
-                small
-                color="primary"
-                class="instance-tenants__history"
-                data-test="open-instance-history"
-                @click="onOpenHistory(null)"
-              >
-                <v-icon left small>mdi-history</v-icon>
-                {{ $t("supervision.history.open-instance") }}
-              </v-btn>
-            </div>
+            <!-- The search band (SearchBar) with the level filter behind
+                 the funnel; the instance-wide history beneath it. -->
+            <SearchBar
+              v-model="search"
+              :fields="$t('tenant.list.search')"
+              :filters="filterSections"
+              data-test="tenant-search"
+              @filter="onFilter"
+            >
+              <template v-if="allowInstanceHistory" #actions>
+                <v-btn
+                  text
+                  small
+                  color="primary"
+                  class="instance-tenants__history"
+                  data-test="open-instance-history"
+                  @click="onOpenHistory(null)"
+                >
+                  <v-icon left small>mdi-history</v-icon>
+                  {{ $t("supervision.history.open-instance") }}
+                </v-btn>
+              </template>
+            </SearchBar>
             <v-alert
               v-if="catalogState === 'failed'"
               type="warning"
@@ -445,6 +430,7 @@ import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.
 import SupervisionLevelDialog from "@/components/Supervision/SupervisionLevelDialog.vue";
 import TenantDeclineDialog from "@/components/Supervision/TenantDeclineDialog.vue";
 import SupervisionHistoryDialog from "@/components/Supervision/SupervisionHistoryDialog.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
 import ToastService from "@/services/ToastService";
 import FormatService from "@/services/FormatService";
 import {
@@ -500,6 +486,7 @@ export default {
     SupervisionLevelDialog,
     TenantDeclineDialog,
     SupervisionHistoryDialog,
+    SearchBar,
   },
   data() {
     return {
@@ -552,13 +539,20 @@ export default {
     showCatalog() {
       return this.allowCatalog && this.catalogState === "ready";
     },
-    levelFilterItems() {
+    /** The level filter, for an instance owner only; the server filters. */
+    filterSections() {
+      if (!this.allowSupervise) return null;
       return [
-        { value: null, text: this.$t("supervision.level.filter.all") },
-        ...SUPERVISION_LEVEL_VALUES.map((value) => ({
-          value,
-          text: this.$t(levelLabelKey(value)),
-        })),
+        {
+          key: "level",
+          label: this.$t("supervision.level.filter.label"),
+          multiple: false,
+          selected: this.levelFilter,
+          options: SUPERVISION_LEVEL_VALUES.map((value) => ({
+            value,
+            label: this.$t(levelLabelKey(value)),
+          })),
+        },
       ];
     },
     filteredTenants() {
@@ -733,7 +727,7 @@ export default {
     allowSupervisionHistory(tenantId) {
       return TenantPermissionService.allowSupervisionHistory(tenantId);
     },
-    onFilterLevel(level) {
+    onFilter(key, level) {
       this.levelFilter = level || null;
       this.page = 1;
       this.fetchTenants();
@@ -838,23 +832,6 @@ export default {
 .instance-tenants__lead {
   font-size: var(--scb-font-size-md);
   color: var(--scb-text-muted);
-}
-
-.instance-tenants__filters {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--scb-space-2) var(--scb-space-4);
-  margin-bottom: var(--scb-space-3);
-}
-
-.instance-tenants__search {
-  flex: 1 1 240px;
-  max-width: 360px;
-}
-
-.instance-tenants__filter {
-  flex: 0 1 200px;
 }
 
 .instance-tenants__history {
@@ -1006,12 +983,6 @@ export default {
   .instance-tenants__panel {
     width: 100%;
     position: static;
-  }
-}
-
-@media (max-width: 599px) {
-  .instance-tenants__search {
-    max-width: none;
   }
 }
 </style>

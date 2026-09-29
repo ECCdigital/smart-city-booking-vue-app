@@ -52,6 +52,12 @@ export const OFFER_TYPES = Object.freeze({
 
 export const OFFER_TYPE_VALUES = Object.freeze(Object.values(OFFER_TYPES));
 
+/** The icon of each kind of offer, wherever a list names or filters it. */
+export const OFFER_TYPE_ICONS = Object.freeze({
+  [OFFER_TYPES.BOOKABLE]: "mdi-cube-outline",
+  [OFFER_TYPES.EVENT]: "mdi-calendar",
+});
+
 /** `null` for a type without a label: the caller shows the raw value. */
 export function offerTypeLabelKey(offerType) {
   return OFFER_TYPE_VALUES.includes(offerType)

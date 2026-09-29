@@ -271,6 +271,7 @@ import pagedLoad from "@/mixins/pagedLoad";
 import { REVIEW_ACTIONS } from "@/utils/offerReview";
 import { reviewQueueLocation } from "@/utils/reviewQueueLink";
 import {
+  OFFER_TYPE_ICONS,
   OFFER_TYPE_VALUES,
   SUPERVISION_LEVELS,
   offerTypeLabelKey,
@@ -287,11 +288,6 @@ const DECISIONS = [REVIEW_ACTIONS.APPROVE, REVIEW_ACTIONS.REJECT];
  */
 const REGISTERS = Object.freeze({ OFFERS: "offers", TENANTS: "tenants" });
 const REGISTER_VALUES = Object.values(REGISTERS);
-
-const OFFER_TYPE_ICONS = {
-  bookable: "mdi-cube-outline",
-  event: "mdi-calendar",
-};
 
 /**
  * The active review queue (glossary "Aktive Prüfliste"): the pending offers

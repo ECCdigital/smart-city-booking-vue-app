@@ -12,7 +12,7 @@
         <Search
           :items="api.coupons"
           v-model="searchResults"
-          placeholder="Rabatt suchen…"
+          :fields="$t('coupon.list.search')"
           :keys="searchKeys"
           :show-filters="false"
         ></Search>

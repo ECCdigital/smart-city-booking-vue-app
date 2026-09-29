@@ -1,44 +1,34 @@
-// The list toolbar: the search on the left, the view switch and the
-// actions on the right - „Meine Mandanten“ and the booking list, and any
-// list that gets a search next. One look for every search bar of the app:
-// a dense outlined field on the control radius with the magnifier at its
-// end, no shadow, no pill; the segmented view switch beside it shares the
-// height and the outline. Every value is a token from tokens.scss.
+// The search bar of every list (`SearchBar` in src/components/commons,
+// ECCdigital/tickets#54): a band of its own directly under the page title,
+// over the whole width of the content, and beneath it one row for the view
+// switch, sorting and actions. The band is 48px tall on the surface radius
+// with a hairline in the card border colour - darker under the pointer,
+// primary in focus - the filter funnel in front (pages with filters only)
+// and the magnifier at the end. Every value is a token from tokens.scss.
 //
-// Markup:
-//   <div class="scb-toolbar">
-//     <v-text-field class="scb-search" dense outlined clearable hide-details
-//                   append-icon="mdi-magnify" />
-//     <v-spacer />
-//     <v-btn-toggle class="scb-views" mandatory dense color="primary">
-//       <v-btn class="scb-view" small value="…">…</v-btn>
-//     </v-btn-toggle>
+// Markup, as SearchBar draws it:
+//   <div class="scb-search-bar">
+//     <v-text-field class="scb-search" outlined hide-details … />
+//     <div class="scb-toolbar">            <!-- the `actions` slot -->
+//       <v-btn-toggle class="scb-views" mandatory dense color="primary">
+//         <v-btn class="scb-view" small value="…">…</v-btn>
+//       </v-btn-toggle>
+//     </div>
 //   </div>
-// A filter trigger goes into the field's `prepend-inner` slot as an icon
-// button; the field makes room for it.
 
-.scb-toolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--scb-space-2) var(--scb-space-4);
+.scb-search-bar {
   margin-bottom: var(--scb-space-5);
 }
 
-// --- The search field --------------------------------------------------------
-
-.scb-search {
-  flex: 1 1 240px;
-  max-width: 360px;
-}
+// --- The search band ---------------------------------------------------------
 
 // Vuetify draws the outline as a fieldset in currentColor; the tokens set
-// the rest colour and the hover, the focus keeps Vuetify's primary ring.
+// the rest colour and the hover, the focus is primary.
 .v-text-field.scb-search {
   > .v-input__control > .v-input__slot {
-    border-radius: var(--scb-radius-control);
+    min-height: var(--scb-search-height) !important;
+    border-radius: var(--scb-radius-surface);
     background: var(--scb-surface);
-    transition: border-color var(--scb-motion-fast);
   }
 
   fieldset {
@@ -50,28 +40,76 @@
     border-color: var(--scb-text-muted);
   }
 
-  .v-label {
+  // In focus the outline takes Vuetify's colour again: the primary.
+  &.v-input--is-focused fieldset {
+    border-color: currentColor;
+  }
+
+  input {
+    font-size: var(--scb-font-size-md);
+  }
+
+  input::placeholder {
     color: var(--scb-text-muted);
   }
 
-  // The magnifier and the clear cross are hints, not actions: muted at rest.
-  .v-input__icon .v-icon {
-    color: var(--scb-text-caption);
+  // The funnel in front, the cross and the magnifier at the end sit on the
+  // middle of the band, not on Vuetify's label line.
+  .v-input__prepend-inner,
+  .v-input__append-inner {
+    margin-top: 0 !important;
+    align-self: center;
   }
 
-  // A filter trigger in front of the text: the icon button is 36px tall in
-  // a 40px field, so it needs no top margin, only a little air to the text.
   .v-input__prepend-inner {
-    margin-top: 0;
-    align-self: center;
-    margin-right: var(--scb-space-1);
+    margin-right: var(--scb-space-2);
+  }
+
+  .v-input__append-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--scb-space-1);
   }
 }
 
-// --- The view switch ---------------------------------------------------------
+// The magnifier and the cross are hints, not actions: muted.
+.scb-search__magnifier.v-icon,
+.scb-search__clear .v-icon {
+  color: var(--scb-text-caption);
+}
 
-// A segmented switch with one outline, the height of the dense search
-// beside it; the active segment is tinted primary.
+// The funnel tinted primary while a filter restricts; the tint rides on the
+// button's own overlay (Vuetify's `::before` is `currentColor`).
+.scb-search__filter--active {
+  color: var(--v-primary-base) !important;
+
+  &::before {
+    opacity: 0.12;
+  }
+}
+
+// The menu around the filter card (detached to the app root).
+.scb-filter-menu {
+  border-radius: var(--scb-radius-popover) !important;
+  overflow: hidden;
+  box-shadow: var(--scb-shadow-popover) !important;
+
+  .v-card {
+    border-radius: var(--scb-radius-popover) !important;
+  }
+}
+
+// --- The row beneath: view switch, sorting, actions ----------------------------
+
+.scb-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--scb-space-2) var(--scb-space-4);
+  margin-top: var(--scb-space-3);
+}
+
+// A segmented switch with one outline; the active segment is tinted primary.
 .scb-views {
   border: 1px solid var(--scb-surface-border);
   border-radius: var(--scb-radius-control) !important;
@@ -96,11 +134,4 @@
 
 .scb-view.v-btn--active {
   background: var(--scb-selected-tint) !important;
-}
-
-// $scb-bp-xs: the search takes the row, the switch drops beneath it.
-@media (max-width: 599px) {
-  .scb-search {
-    max-width: none;
-  }
 }

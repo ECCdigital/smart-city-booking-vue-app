@@ -2,83 +2,12 @@
   <AdminLayout>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <v-text-field
+        <SearchBar
           v-model="search"
-          label="Benutzer suchen..."
-          append-icon="mdi-magnify"
-          solo
-          clearable
-          style="border-radius: 15px"
-        >
-          <template v-slot:prepend-inner>
-            <v-menu bottom left>
-              <template v-slot:activator="{ on, attrs }">
-                <v-badge :value="hasActiveFilters" color="primary" dot overlap>
-                  <v-btn icon v-bind="attrs" v-on="on">
-                    <v-icon>mdi-filter-variant</v-icon>
-                  </v-btn>
-                </v-badge>
-              </template>
-
-              <v-list dense>
-                <v-subheader>Status</v-subheader>
-                <v-list-item dense @click="verifiedFilter = !verifiedFilter">
-                  <v-list-item-action>
-                    <v-checkbox :input-value="verifiedFilter" @change.prevent />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>Nur verifiziert</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-
-                <v-list-item dense @click="suspendedFilter = !suspendedFilter">
-                  <v-list-item-action>
-                    <v-checkbox
-                      :input-value="suspendedFilter"
-                      @change.prevent
-                    />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>Nur suspendiert</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-
-              <v-list dense>
-                <v-subheader>Mandant</v-subheader>
-
-                <v-list-item dense @click="noTenantFilter = !noTenantFilter">
-                  <v-list-item-action>
-                    <v-checkbox :input-value="noTenantFilter" @change.prevent />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title
-                      >Ohne Mandantenzuordnung</v-list-item-title
-                    >
-                  </v-list-item-content>
-                </v-list-item>
-                <v-divider />
-
-                <v-list-item
-                  dense
-                  v-for="(tenant, i) in api.tenants"
-                  :key="i"
-                  @click="toggleTenantFilter(tenant.id)"
-                >
-                  <v-list-item-action>
-                    <v-checkbox
-                      :input-value="tenantFilter.includes(tenant.id)"
-                      @change.prevent
-                    />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ tenant.name }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-          </template>
-        </v-text-field>
+          :fields="$t('user.list.search')"
+          :filters="filterSections"
+          @filter="onFilter"
+        />
 
         <!-- Stats -->
         <v-row class="mb-3">
@@ -316,12 +245,17 @@ import UserDeleteConformationDialog from "@/components/User/userDeleteConformati
 import UserPermissionService from "@/services/permissions/UserPermissionService";
 import ApiMembershipService from "@/services/api/ApiMembershipService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import SearchBar from "@/components/commons/SearchBar.vue";
+
+/** The option "Ohne Mandantenzuordnung" among the tenants of the filter. */
+const NO_TENANT = "__no-tenant__";
 
 export default {
   components: {
     UserDeleteConformationDialog,
     AdminLayout,
     UserEdit,
+    SearchBar,
   },
   data() {
     return {
@@ -351,13 +285,49 @@ export default {
     UserPermissionService() {
       return UserPermissionService;
     },
-    hasActiveFilters() {
-      return (
-        this.verifiedFilter ||
-        this.suspendedFilter ||
-        this.noTenantFilter ||
-        this.tenantFilter.length > 0
-      );
+    /** Status and tenant behind the funnel of the search. */
+    filterSections() {
+      return [
+        {
+          key: "status",
+          label: "Status",
+          selected: [
+            ...(this.verifiedFilter ? ["verified"] : []),
+            ...(this.suspendedFilter ? ["suspended"] : []),
+          ],
+          options: [
+            {
+              value: "verified",
+              label: "Nur verifiziert",
+              icon: "mdi-check-circle",
+              color: "green",
+            },
+            {
+              value: "suspended",
+              label: "Nur suspendiert",
+              icon: "mdi-alert-circle",
+              color: "orange",
+            },
+          ],
+        },
+        {
+          key: "tenant",
+          label: "Mandant",
+          selected: this.noTenantFilter ? [NO_TENANT] : this.tenantFilter,
+          options: [
+            {
+              value: NO_TENANT,
+              label: "Ohne Mandantenzuordnung",
+              icon: "mdi-domain-off",
+            },
+            ...this.api.tenants.map((tenant) => ({
+              value: tenant.id,
+              label: tenant.name,
+              icon: "mdi-domain",
+            })),
+          ],
+        },
+      ];
     },
     filteredUsers() {
       let filtered = this.api.users;
@@ -463,14 +433,20 @@ export default {
       }
     },
 
-    toggleTenantFilter(tenantId) {
-      if (this.noTenantFilter) this.noTenantFilter = false;
-
-      const index = this.tenantFilter.indexOf(tenantId);
-      if (index > -1) {
-        this.tenantFilter.splice(index, 1);
-      } else {
-        this.tenantFilter.push(tenantId);
+    onFilter(key, selection) {
+      if (key === "status") {
+        this.verifiedFilter = selection.includes("verified");
+        this.suspendedFilter = selection.includes("suspended");
+      }
+      if (key === "tenant") {
+        // "Ohne Mandantenzuordnung" and a tenant exclude each other: the
+        // newer pick wins (the watcher empties the tenants).
+        if (selection.includes(NO_TENANT) && !this.noTenantFilter) {
+          this.noTenantFilter = true;
+        } else {
+          this.noTenantFilter = false;
+          this.tenantFilter = selection.filter((value) => value !== NO_TENANT);
+        }
       }
     },
 

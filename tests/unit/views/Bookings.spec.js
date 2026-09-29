@@ -9,6 +9,11 @@ import {
 import i18n from "@/language/index";
 import toasts from "@/store/modules/toasts";
 import { BOOKING_STATUS } from "@/utils/bookingStatus";
+import {
+  filterCard,
+  openFilterCard,
+  typeSearch,
+} from "@tests/unit/support/search";
 
 vi.mock("@/store", () => ({
   default: { getters: { "tenants/currentTenantId": "tenant-1" } },
@@ -150,21 +155,11 @@ function bookingIdsOf(wrapper, componentName) {
     .map((item) => item.id);
 }
 
-/** The filter card behind the funnel, once the menu is open (it detaches into `data-app`). */
-function filterCard() {
-  return document.querySelector(".v-menu__content .booking-filter-card");
-}
-
-/** Opens the filter card behind the funnel beside the search field. */
-async function openFilterCard(wrapper) {
-  await wrapper.find(".booking-filter-trigger").trigger("click");
-  await wrapper.vm.$nextTick();
-  return filterCard();
-}
-
 /** The number on the funnel's badge, or `null` while nothing is restricted. */
 function funnelBadge(wrapper) {
-  const badge = wrapper.find(".booking-filter-trigger-badge .v-badge__badge");
+  const badge = wrapper.find(
+    "[data-test='search-filter-badge'] .v-badge__badge"
+  );
   return badge.exists() && badge.isVisible() ? badge.text().trim() : null;
 }
 
@@ -178,12 +173,12 @@ async function clickInCard(wrapper, selector, label) {
 
 /** Clicks the status row with `label` in the open card, toggling it. */
 function toggleStatus(wrapper, label) {
-  return clickInCard(wrapper, ".booking-filter-row", label);
+  return clickInCard(wrapper, "[data-test='filter-row']", label);
 }
 
 /** Clicks the segment with `label` (Alle / Einzel / Serie) in the open card. */
 function chooseType(wrapper, label) {
-  return clickInCard(wrapper, ".booking-filter-types .v-btn", label);
+  return clickInCard(wrapper, "[data-test='filter-segment']", label);
 }
 
 /** Clicks the button with `label` in the open card (the resets). */
@@ -194,14 +189,16 @@ function clickCardButton(wrapper, label) {
 /** The state words whose row the open card shows as selected. */
 function selectedStatusLabels() {
   return Array.from(
-    filterCard().querySelectorAll(".booking-filter-row[aria-pressed='true']")
+    filterCard().querySelectorAll(
+      "[data-test='filter-row'][aria-pressed='true']"
+    )
   ).map((el) => el.textContent.trim());
 }
 
 /** The segment (Alle / Einzel / Serie) the open card shows as chosen. */
 function selectedType() {
   return filterCard()
-    .querySelector(".booking-filter-types .v-btn--active")
+    .querySelector("[data-test='filter-segment'].v-btn--active")
     .textContent.trim();
 }
 
@@ -446,35 +443,46 @@ describe("Bookings", () => {
    * back: it lives in `sessionStorage`, per tab; clearing the field forgets it.
    */
   describe("the search term", () => {
+    const SEARCH = "input[data-test='booking-search']";
+
     beforeEach(() => {
       window.sessionStorage.clear();
+    });
+
+    it("narrows the table to what it matches once the user stops typing", async () => {
+      const { wrapper } = await mountBookings({
+        bookings: [
+          booking({ id: "bk-erika", name: "Erika Muster" }),
+          booking({ id: "bk-max", name: "Max Mustermann" }),
+        ],
+      });
+
+      await typeSearch(wrapper.find(SEARCH), "Erika");
+
+      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual(["bk-erika"]);
     });
 
     it("is remembered while the list is left and restored on return", async () => {
       const first = await mountBookings({});
 
-      await first.wrapper.find(".search-field input").setValue("Erika");
-      await first.wrapper.vm.$nextTick();
+      await typeSearch(first.wrapper.find(SEARCH), "Erika");
       first.wrapper.destroy();
 
       const second = await mountBookings({});
 
-      expect(second.wrapper.find(".search-field input").element.value).toBe(
-        "Erika"
-      );
+      expect(second.wrapper.find(SEARCH).element.value).toBe("Erika");
     });
 
     it("is forgotten once the field is cleared", async () => {
       const first = await mountBookings({});
 
-      await first.wrapper.find(".search-field input").setValue("Erika");
-      await first.wrapper.find(".search-field input").setValue("");
-      await first.wrapper.vm.$nextTick();
+      await typeSearch(first.wrapper.find(SEARCH), "Erika");
+      await typeSearch(first.wrapper.find(SEARCH), "");
       first.wrapper.destroy();
 
       const second = await mountBookings({});
 
-      expect(second.wrapper.find(".search-field input").element.value).toBe("");
+      expect(second.wrapper.find(SEARCH).element.value).toBe("");
     });
   });
 

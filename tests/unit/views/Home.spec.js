@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
+import { typeSearch } from "@tests/unit/support/search";
 
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: {
@@ -291,7 +292,7 @@ describe("Home — grid or list", () => {
   it("names the search miss inside the card", async () => {
     const wrapper = mountHome();
 
-    await wrapper.find("[data-test='tenant-search']").setValue("xyz");
+    await typeSearch(wrapper.find("input[data-test='tenant-search']"), "xyz");
 
     expect(wrapper.find("[data-test='tenant-empty']").text()).toContain(
       "Kein Mandant passt zur Suche."
@@ -328,7 +329,10 @@ describe("Home — mine and the rest", () => {
     tenants = [TENANT_B, TENANT_A];
     const wrapper = mountHome();
 
-    await wrapper.find("[data-test='tenant-search']").setValue("Beispiel");
+    await typeSearch(
+      wrapper.find("input[data-test='tenant-search']"),
+      "Beispiel"
+    );
 
     expect(wrapper.find("[data-test='tenant-group-mine']").exists()).toBe(
       false

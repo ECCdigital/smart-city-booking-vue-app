@@ -56,6 +56,13 @@
 
     <!-- List column -->
     <div class="media-library__list">
+      <!-- The search band (SearchBar); the facets beside it filter. -->
+      <SearchBar
+        :value="filters.q"
+        :fields="$t('media.search')"
+        @input="onSearch"
+      />
+
       <!-- Permanent dropzone -->
       <div
         v-if="allowCreate"
@@ -136,17 +143,6 @@
         </v-list>
       </v-card>
 
-      <v-text-field
-        v-model="searchInput"
-        label="Suchen (Titel, Dateiname, Alt-Text) …"
-        prepend-inner-icon="mdi-magnify"
-        dense
-        solo
-        clearable
-        hide-details
-        class="mb-3"
-      />
-
       <v-card outlined>
         <v-skeleton-loader
           v-if="loading && items.length === 0"
@@ -221,6 +217,7 @@ import ToastService from "@/services/ToastService";
 import MediaPermissionService from "@/services/permissions/MediaPermissionService";
 import MediaDetailPanel from "@/components/Media/MediaDetailPanel.vue";
 import MediaImage from "@/components/Media/MediaImage.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
 import {
   MEDIA_ALLOWED_TYPES_LABEL,
   mediaUploadErrorMessage,
@@ -230,7 +227,7 @@ const PAGE_SIZE = 25;
 
 export default {
   name: "MediaLibrary",
-  components: { MediaDetailPanel, MediaImage },
+  components: { MediaDetailPanel, MediaImage, SearchBar },
   props: {
     scope: { type: String, required: true },
   },
@@ -247,8 +244,6 @@ export default {
         tag: null,
         q: "",
       },
-      searchInput: "",
-      searchDebounce: null,
       // The listing has no tag index; the facet collects every tag the
       // responses have shown so far.
       knownTags: [],
@@ -297,20 +292,9 @@ export default {
     page() {
       this.fetchMedia();
     },
-    searchInput(value) {
-      clearTimeout(this.searchDebounce);
-      this.searchDebounce = setTimeout(() => {
-        this.filters.q = value || "";
-        this.page = 1;
-        this.fetchMedia();
-      }, 300);
-    },
   },
   created() {
     this.fetchMedia();
-  },
-  beforeDestroy() {
-    clearTimeout(this.searchDebounce);
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
@@ -319,6 +303,11 @@ export default {
     },
     formatDate(value) {
       return value ? FormatService.date(value, "medium") : "—";
+    },
+    onSearch(q) {
+      this.filters.q = q;
+      this.page = 1;
+      this.fetchMedia();
     },
     resetAndFetch() {
       this.items = [];
