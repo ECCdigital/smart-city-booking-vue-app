@@ -2,24 +2,19 @@
   <AdminLayout>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <v-text-field
+        <!-- PROTOTYPE (ECCdigital/tickets#54): search via SearchBarPrototype. -->
+        <SearchBarPrototype
           v-model="search"
-          label="Mitglied suchen..."
-          append-icon="mdi-magnify"
-          solo
-          clearable
-          style="border-radius: 15px"
+          placeholder="Mitglied suchen…"
+          fields-hint="Name oder ID"
+          :filter-count="
+            statusFilter.length + roleFilter.length + (ownerOnly ? 1 : 0)
+          "
+          :result-count="filteredMembers.length"
+          :total-count="members.length"
         >
-          <template v-slot:prepend-inner>
-            <v-menu bottom left>
-              <template v-slot:activator="{ on, attrs }">
-                <v-badge :value="hasActiveFilters" color="primary" dot overlap>
-                  <v-btn icon v-bind="attrs" v-on="on">
-                    <v-icon>mdi-filter-variant</v-icon>
-                  </v-btn>
-                </v-badge>
-              </template>
-
+          <template #filter>
+            <div>
               <v-list dense>
                 <v-subheader>Status</v-subheader>
                 <v-list-item
@@ -89,9 +84,9 @@
                   </v-list-item-content>
                 </v-list-item>
               </v-list>
-            </v-menu>
+            </div>
           </template>
-        </v-text-field>
+        </SearchBarPrototype>
 
         <!-- Stats -->
         <v-row class="mb-3">
@@ -407,6 +402,7 @@
 
 <script>
 import AdminLayout from "@/layouts/Admin.vue";
+import SearchBarPrototype from "@/components/commons/prototype/SearchBarPrototype.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
@@ -418,6 +414,7 @@ import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.
 
 export default {
   components: {
+    SearchBarPrototype,
     TenantUserDetailDialog,
     TenantInviteUserDialog,
     AdminLayout,

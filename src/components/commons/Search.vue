@@ -1,76 +1,53 @@
 <template>
-  <div>
-    <v-row no-gutters>
-      <v-col>
-        <v-text-field
-          v-model="searchQuery"
-          :label="placeholder"
-          solo
-          clearable
-          class="search-field"
-          append-icon="mdi-magnify"
-          hide-details
-          @click:clear="clearAll"
+  <!-- PROTOTYPE (ECCdigital/tickets#54): the field renders through
+       SearchBarPrototype; search, filter and sort logic unchanged. -->
+  <SearchBarPrototype
+    v-model="searchQuery"
+    :placeholder="placeholder"
+    :fields-hint="fieldsHint"
+    :filter-count="selectedFilters.length"
+    :result-count="searchResults.length"
+    :total-count="items.length"
+    @clear="clearAll"
+  >
+    <template v-if="showFilters" #filter>
+      <v-list v-if="filterOptions.length" dense>
+        <v-list-item
+          dense
+          v-for="(opt, i) in filterOptions"
+          :key="i"
+          @click="toggleFilter(opt)"
         >
-          <template v-slot:prepend-inner>
-            <v-menu bottom left v-if="showFilters">
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn icon v-bind="attrs" v-on="on">
-                  <v-icon>mdi-filter-variant</v-icon>
-                </v-btn>
-              </template>
+          <v-list-item-action>
+            <v-checkbox
+              :input-value="selectedFilters.includes(opt)"
+              @change.prevent
+            />
+          </v-list-item-action>
+          <v-list-item-content>
+            <v-list-item-title>{{ opt }}</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+      </v-list>
+      <v-list v-else dense>
+        <v-list-item disabled>Keine Filter verfügbar</v-list-item>
+      </v-list>
+    </template>
 
-              <v-list v-if="filterOptions.length" dense>
-                <v-list-item
-                  dense
-                  v-for="(opt, i) in filterOptions"
-                  :key="i"
-                  @click="toggleFilter(opt)"
-                >
-                  <v-list-item-action>
-                    <v-checkbox
-                      :input-value="selectedFilters.includes(opt)"
-                      @change.prevent
-                    />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ opt }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-              <v-list v-else dense>
-                <v-list-item disabled>Keine Filter verfügbar</v-list-item>
-              </v-list>
-            </v-menu>
-          </template>
-
-          <template v-slot:append>
-            <v-chip-group
-              v-if="selectedFilters.length"
-              column
-              class="filter-field mr-2"
-            >
-              <v-chip
-                v-for="(f, idx) in selectedFilters"
-                :key="idx"
-                close
-                @click:close="removeFilter(f)"
-                color="primary"
-                small
-                class="ma-1"
-              >
-                {{ f }}
-              </v-chip>
-            </v-chip-group>
-
-            <v-icon>mdi-magnify</v-icon>
-          </template>
-        </v-text-field>
-      </v-col>
-    </v-row>
-    <v-row v-if="sortable" no-gutters>
-      <v-col>
-        <div class="mt-2 d-flex align-center flex-wrap">
+    <template v-if="sortable || selectedFilters.length" #actions>
+      <div class="d-flex align-center flex-wrap">
+        <v-chip
+          v-for="(f, idx) in selectedFilters"
+          :key="`f-${idx}`"
+          close
+          @click:close="removeFilter(f)"
+          color="primary"
+          small
+          class="mr-1"
+        >
+          {{ f }}
+        </v-chip>
+        <template v-if="sortable">
           <v-chip-group
             v-model="sortBy"
             :mandatory="false"
@@ -105,17 +82,29 @@
           <v-btn v-if="sortBy" small text class="ml-2" @click="sortBy = null">
             Zurücksetzen
           </v-btn>
-        </div>
-      </v-col>
-    </v-row>
-  </div>
+        </template>
+      </div>
+    </template>
+  </SearchBarPrototype>
 </template>
 
 <script>
 import Fuse from "fuse.js";
+import SearchBarPrototype from "./prototype/SearchBarPrototype.vue";
+
+// PROTOTYPE (#54): the searched keys as the placeholder of variant B names them.
+const KEY_LABELS = {
+  id: "ID",
+  title: "Titel",
+  location: "Ort",
+  description: "Beschreibung",
+  "information.name": "Name",
+  "eventOrganizer.name": "Veranstalter",
+};
 
 export default {
   name: "Search",
+  components: { SearchBarPrototype },
   props: {
     items: { type: Array, required: true },
     keys: { type: Array, default: () => [] },
@@ -144,6 +133,13 @@ export default {
       sortBy: null,
       sortDir: "asc",
     };
+  },
+  computed: {
+    fieldsHint() {
+      const labels = this.keys.map((k) => KEY_LABELS[k] || k);
+      if (labels.length < 2) return labels.join("");
+      return `${labels.slice(0, -1).join(", ")} oder ${labels.at(-1)}`;
+    },
   },
   watch: {
     items: { handler: "_initFuse", immediate: true },
@@ -224,26 +220,26 @@ export default {
               ? valA === valB
                 ? 0
                 : valA
-                  ? 1
-                  : -1
+                ? 1
+                : -1
               : valA === valB
-                ? 0
-                : valA
-                  ? -1
-                  : 1;
+              ? 0
+              : valA
+              ? -1
+              : 1;
           }
           const dateA =
             valA instanceof Date
               ? valA
               : typeof valA === "string" && !isNaN(Date.parse(valA))
-                ? new Date(valA)
-                : null;
+              ? new Date(valA)
+              : null;
           const dateB =
             valB instanceof Date
               ? valB
               : typeof valB === "string" && !isNaN(Date.parse(valB))
-                ? new Date(valB)
-                : null;
+              ? new Date(valB)
+              : null;
           if (dateA && dateB) {
             return this.sortDir === "asc" ? dateA - dateB : dateB - dateA;
           }
@@ -267,10 +263,6 @@ export default {
 </script>
 
 <style scoped>
-.search-field {
-  border-radius: 15px;
-}
-
 .sort-buttons {
   border-radius: 8px;
 }
