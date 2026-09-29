@@ -3,6 +3,8 @@ import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
 import {
   filterOptionLabels,
+  filterSectionLabels,
+  filterSegmentLabels,
   openFilterCard,
   pickFilterOption,
   typeSearch,
@@ -164,12 +166,43 @@ describe("SupervisionHistoryList", () => {
     });
   });
 
+  it("puts the offer type as a switch above the tenants", async () => {
+    const wrapper = await mountList({
+      instanceWide: true,
+      tenants: [{ id: "t-2", name: "Makerspace" }],
+    });
+
+    await openFilterCard(wrapper);
+
+    expect(filterSectionLabels()).toEqual(["Angebotsart", "Mandant"]);
+    expect(filterSegmentLabels()).toEqual([
+      "Alle",
+      "Buchungsobjekt",
+      "Veranstaltung",
+    ]);
+    expect(filterOptionLabels()).toEqual(["Makerspace"]);
+  });
+
+  it("lifts the offer type again with „Alle“", async () => {
+    const wrapper = await mountList({ tenantId: "t-1" });
+
+    await openFilterCard(wrapper);
+    await pickFilterOption("Veranstaltung");
+    await pickFilterOption("Alle");
+    await flushPromises();
+
+    expect(ApiSupervisionService.getTenantHistory).toHaveBeenLastCalledWith(
+      "t-1",
+      { page: 1, pageSize: 25 }
+    );
+  });
+
   it("offers no tenant filter within one tenant's history", async () => {
     const wrapper = await mountList({ tenantId: "t-1" });
 
     await openFilterCard(wrapper);
 
-    expect(filterOptionLabels()).toEqual(["Buchungsobjekt", "Veranstaltung"]);
+    expect(filterSectionLabels()).toEqual(["Angebotsart"]);
   });
 
   it("searches the offer id on the server once the user stops typing", async () => {

@@ -26,7 +26,7 @@
     <template v-for="section in sections">
       <v-divider :key="`divider-${section.key}`" />
       <div :key="`label-${section.key}`" class="scb-filter-card__section-label">
-        <span>{{ section.label }}</span>
+        <span data-test="filter-section-label">{{ section.label }}</span>
         <button
           v-if="restricts(section)"
           type="button"
@@ -229,12 +229,15 @@ export default {
   padding: var(--scb-space-1) var(--scb-space-4) var(--scb-space-3);
 }
 
+// The segments share the width by their labels; a switch whose labels do
+// not fit 340px widens the card (the menu allows up to 420px).
 .scb-filter-segments {
   display: flex;
   width: 100%;
 
   .scb-filter-segments__segment {
-    flex: 1;
+    flex: 1 1 auto;
+    padding: 0 var(--scb-space-2);
     text-transform: none;
     letter-spacing: 0;
   }

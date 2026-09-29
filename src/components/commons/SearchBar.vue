@@ -21,7 +21,7 @@
           offset-y
           nudge-bottom="8"
           min-width="340"
-          max-width="340"
+          max-width="420"
           :close-on-content-click="false"
           content-class="scb-filter-menu"
         >

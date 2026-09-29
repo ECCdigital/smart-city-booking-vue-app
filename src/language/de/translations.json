@@ -2473,7 +2473,8 @@
       "filters": {
         "tenant": "Mandant",
         "offer-type": "Angebotsart",
-        "offer-id": "Angebots-ID"
+        "offer-id": "Angebots-ID",
+        "all-offer-types": "Alle"
       },
       "actor": {
         "system": "System",

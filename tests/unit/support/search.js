@@ -32,11 +32,26 @@ export async function openFilterCard(wrapper) {
   return filterCard();
 }
 
+/** The texts of the open filter card's elements matching `selector`. */
+function cardTexts(selector) {
+  return Array.from(filterCard().querySelectorAll(selector)).map((element) =>
+    element.textContent.trim()
+  );
+}
+
+/** The labels of the open filter card's sections, top to bottom. */
+export function filterSectionLabels() {
+  return cardTexts("[data-test='filter-section-label']");
+}
+
 /** The labels of the open filter card's option rows, top to bottom. */
 export function filterOptionLabels() {
-  return Array.from(
-    filterCard().querySelectorAll("[data-test='filter-row']")
-  ).map((row) => row.textContent.trim());
+  return cardTexts("[data-test='filter-row']");
+}
+
+/** The labels of the open filter card's segments, left to right. */
+export function filterSegmentLabels() {
+  return cardTexts("[data-test='filter-segment']");
 }
 
 /** Clicks the option row or segment labelled `label` in the open card. */

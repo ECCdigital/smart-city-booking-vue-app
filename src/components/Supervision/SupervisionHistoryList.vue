@@ -24,7 +24,7 @@
         class="supervision-history__search"
         data-test="history-search"
         @input="onFilter('offerId', $event)"
-        @filter="onFilter"
+        @filter="onCardFilter"
       >
         <template #actions>
           <v-spacer />
@@ -105,6 +105,9 @@ import {
 
 const PAGE_SIZE = 25;
 
+/** The offer type switch's „Alle“: no offer type filter. */
+const ALL_OFFER_TYPES = "all";
+
 /**
  * The supervision history (glossary "Aufsichtshistorie"): immutable, newest
  * first, paged and filtered on the server, drawn as the shared list. With a
@@ -149,18 +152,30 @@ export default {
       }
       return columns;
     },
-    /** The tenant (instance-wide only) and the offer type; the server filters. */
+    /**
+     * The offer type as a switch, as the booking list's type, and below it
+     * the tenant (instance-wide only); the server filters.
+     */
     filterSections() {
       const offerType = {
         key: "offerType",
         label: this.$t("supervision.history.filters.offer-type"),
         multiple: false,
-        selected: this.filters.offerType,
-        options: OFFER_TYPE_VALUES.map((value) => ({
-          value,
-          label: this.$t(offerTypeLabelKey(value)),
-          icon: OFFER_TYPE_ICONS[value],
-        })),
+        segmented: true,
+        empty: ALL_OFFER_TYPES,
+        selected: this.filters.offerType || ALL_OFFER_TYPES,
+        options: [
+          {
+            value: ALL_OFFER_TYPES,
+            label: this.$t("supervision.history.filters.all-offer-types"),
+            icon: "mdi-view-grid-outline",
+          },
+          ...OFFER_TYPE_VALUES.map((value) => ({
+            value,
+            label: this.$t(offerTypeLabelKey(value)),
+            icon: OFFER_TYPE_ICONS[value],
+          })),
+        ],
       };
       if (!this.instanceWide) return [offerType];
       const tenant = {
@@ -174,7 +189,7 @@ export default {
           icon: "mdi-domain",
         })),
       };
-      return [tenant, offerType];
+      return [offerType, tenant];
     },
   },
   watch: {
@@ -206,6 +221,9 @@ export default {
       this.filters[name] = next || null;
       this.page = 1;
       this.load();
+    },
+    onCardFilter(key, selection) {
+      this.onFilter(key, selection === ALL_OFFER_TYPES ? null : selection);
     },
     onPage(page) {
       this.page = page;
