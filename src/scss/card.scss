@@ -1,0 +1,73 @@
+// The interactive card: a surface that opens or selects something as a
+// whole - the bookable cards of the offer lists and the tenant cards of
+// „Meine Mandanten“. Unlike the flat section card it sits slightly raised,
+// lifts under the pointer and, when selected, carries a primary ring and
+// glow instead of the grey shadow.
+//
+// Markup: `<v-card class="scb-card">`, plus `scb-card--selected` for the
+// chosen one and `scb-card--static` for a card that cannot be opened (no
+// pointer, no lift). Do not add Vuetify's `hover` prop or an `elevation` -
+// the card owns its shadow. Every value is a token from tokens.scss.
+
+// Vuetify's elevation and outline rules carry !important or a longer
+// selector, so the card's own values have to be !important as well.
+.v-card.scb-card {
+  // Borderless - the shadow carries the edge, and the selected ring is a
+  // box-shadow too, so selecting a card never shifts the layout.
+  border: none !important;
+  border-radius: var(--scb-radius-surface) !important;
+  box-shadow: var(--scb-shadow-card) !important;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--scb-motion-lift),
+    box-shadow var(--scb-motion-lift), border-color var(--scb-motion-fast),
+    background-color var(--scb-motion-fast);
+
+  // Only a real pointer lifts the card; on touch a tap would leave it
+  // hanging in the hover state.
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(var(--scb-card-lift));
+      box-shadow: var(--scb-shadow-card-hover) !important;
+    }
+  }
+
+  // The press settles the card back down, so the click is felt.
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--v-primary-base);
+    outline-offset: 2px;
+  }
+}
+
+.v-card.scb-card--selected {
+  box-shadow: var(--scb-glow-selected) !important;
+
+  @media (hover: hover) {
+    &:hover {
+      box-shadow: var(--scb-glow-selected-hover) !important;
+    }
+  }
+}
+
+.v-card.scb-card--static {
+  cursor: default;
+
+  &:hover,
+  &:active {
+    transform: none;
+    box-shadow: var(--scb-shadow-card) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v-card.scb-card,
+  .v-card.scb-card:hover {
+    transform: none;
+    transition: box-shadow var(--scb-motion-fast),
+      border-color var(--scb-motion-fast);
+  }
+}

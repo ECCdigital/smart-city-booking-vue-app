@@ -15,8 +15,8 @@
 
     <p class="tenant-home__lead">{{ $t("tenant.home.hint") }}</p>
 
-    <!-- The toolbar: search left, the view switch right. -->
-    <div class="tenant-home__toolbar">
+    <!-- The toolbar (toolbar.scss): search left, the view switch right. -->
+    <div class="scb-toolbar">
       <v-text-field
         v-model="search"
         :label="$t('tenant.home.search')"
@@ -25,7 +25,7 @@
         outlined
         clearable
         hide-details
-        class="tenant-home__search"
+        class="scb-search"
         data-test="tenant-search"
       ></v-text-field>
       <v-spacer />
@@ -36,24 +36,14 @@
         mandatory
         dense
         color="primary"
-        class="tenant-home__views"
+        class="scb-views"
         :aria-label="$t('tenant.home.view.label')"
       >
-        <v-btn
-          value="grid"
-          small
-          class="tenant-home__view"
-          data-test="view-grid"
-        >
+        <v-btn value="grid" small class="scb-view" data-test="view-grid">
           <v-icon left small>mdi-view-grid-outline</v-icon>
           {{ $t("tenant.home.view.grid") }}
         </v-btn>
-        <v-btn
-          value="list"
-          small
-          class="tenant-home__view"
-          data-test="view-list"
-        >
+        <v-btn value="list" small class="scb-view" data-test="view-list">
           <v-icon left small>mdi-format-list-bulleted</v-icon>
           {{ $t("tenant.home.view.list") }}
         </v-btn>
@@ -183,15 +173,17 @@
             xl="2"
           >
             <v-card
-              outlined
               :class="[
                 'tenant-card',
+                'scb-card',
                 'fill-height',
                 'd-flex',
                 'flex-column',
                 {
                   'tenant-card--active': tenant.id === currentTenant,
+                  'scb-card--selected': tenant.id === currentTenant,
                   'tenant-card--declined': !!declinedMembership(tenant.id),
+                  'scb-card--static': !!declinedMembership(tenant.id),
                 },
               ]"
               role="button"
@@ -602,47 +594,6 @@ export default {
   font-weight: var(--scb-font-weight-semibold);
 }
 
-.tenant-home__toolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--scb-space-2) var(--scb-space-4);
-  margin-bottom: var(--scb-space-5);
-}
-
-.tenant-home__search {
-  flex: 1 1 240px;
-  max-width: 360px;
-}
-
-/* The view pair: a segmented switch with one outline, the height of the
-   dense search beside it; the active segment is tinted primary. */
-.tenant-home__views {
-  border: 1px solid var(--scb-surface-border);
-  border-radius: var(--scb-radius-control) !important;
-  overflow: hidden;
-  background: var(--scb-surface);
-}
-
-.tenant-home__view {
-  height: 38px !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  padding: 0 var(--scb-space-4) !important;
-  text-transform: none;
-  letter-spacing: normal;
-  font-size: var(--scb-font-size-md);
-  background: transparent !important;
-}
-
-.tenant-home__view + .tenant-home__view {
-  border-left: 1px solid var(--scb-surface-border) !important;
-}
-
-.tenant-home__view.v-btn--active {
-  background: var(--scb-selected-tint) !important;
-}
-
 /* --- The groups --------------------------------------------------------- */
 
 .tenant-home__group + .tenant-home__group {
@@ -749,37 +700,13 @@ export default {
 
 /* --- The grid ----------------------------------------------------------- */
 
-.tenant-card {
-  border-radius: var(--scb-radius-surface) !important;
-  box-shadow: none !important;
-  cursor: pointer;
-  transition: border-color var(--scb-motion-fast),
-    background-color var(--scb-motion-fast);
-}
-
-.tenant-card:hover {
-  border-color: var(--scb-text-caption);
-}
-
-.tenant-card:focus-visible {
-  outline: 2px solid var(--v-primary-base);
-  outline-offset: 2px;
-}
-
-.tenant-card--active,
-.tenant-card--active:hover {
-  border-color: var(--v-primary-base);
-  background-color: var(--scb-selected-tint-faint);
-}
+/* Surface, lift and the selected glow come from card.scss (`scb-card`);
+   the glow alone marks the active card, its surface stays as the others. */
 
 .tenant-card__header {
   padding: var(--scb-space-5) var(--scb-space-4) var(--scb-space-4);
   text-align: center;
   background-color: var(--scb-surface-tint-faint);
-}
-
-.tenant-card--active .tenant-card__header {
-  background-color: transparent;
 }
 
 .tenant-card__avatar {
@@ -822,10 +749,6 @@ export default {
 .tenant-card--declined,
 .tenant-row--declined {
   cursor: default;
-}
-
-.tenant-card--declined:hover {
-  border-color: var(--scb-surface-border);
 }
 
 .tenant-row--declined:hover {
@@ -897,12 +820,5 @@ export default {
   margin: var(--scb-space-1) 0 var(--scb-space-4);
   font-size: var(--scb-font-size-sm);
   color: var(--scb-text-muted);
-}
-
-/* $scb-bp-xs of tokens.scss: the search takes the row. */
-@media (max-width: 599px) {
-  .tenant-home__search {
-    max-width: none;
-  }
 }
 </style>

@@ -1,101 +1,100 @@
 <template>
   <AdminLayout>
     <div class="page-header">
-      <div class="d-flex align-center mb-3 justify-space-between">
+      <!-- The toolbar (toolbar.scss): search with the filter in front on
+           the left, the view switch and the actions on the right. -->
+      <div class="scb-toolbar">
+        <v-text-field
+          v-model="searchTerm"
+          label="Buchung suchen..."
+          append-icon="mdi-magnify"
+          dense
+          outlined
+          clearable
+          hide-details
+          class="scb-search search-field"
+        >
+          <template v-slot:prepend-inner>
+            <v-menu
+              bottom
+              right
+              offset-y
+              nudge-bottom="8"
+              min-width="340"
+              max-width="340"
+              :close-on-content-click="false"
+              content-class="booking-filter-menu"
+            >
+              <template v-slot:activator="{ on, attrs }">
+                <v-badge
+                  :value="activeFilterCount > 0"
+                  :content="activeFilterCount"
+                  color="primary"
+                  overlap
+                  class="booking-filter-trigger-badge"
+                >
+                  <v-btn
+                    icon
+                    small
+                    v-bind="attrs"
+                    v-on="on"
+                    class="booking-filter-trigger"
+                    :class="{
+                      'booking-filter-trigger--active': activeFilterCount > 0,
+                    }"
+                    @click.stop
+                  >
+                    <v-icon>mdi-filter-variant</v-icon>
+                  </v-btn>
+                </v-badge>
+              </template>
+
+              <BookingFilterCard
+                :booking-type-filter.sync="bookingTypeFilter"
+                :status-filter.sync="statusFilter"
+                :active-count="activeFilterCount"
+                @reset="resetFilters"
+              />
+            </v-menu>
+          </template>
+        </v-text-field>
+        <v-spacer />
         <v-btn-toggle
           v-model="currentView"
           mandatory
-          rounded
-          active-class="active-button"
+          dense
+          color="primary"
+          class="scb-views"
         >
-          <v-btn value="list">
-            <v-icon left> mdi-list-box-outline </v-icon>
+          <v-btn value="list" small class="scb-view">
+            <v-icon left small> mdi-list-box-outline </v-icon>
             Liste
           </v-btn>
-          <v-btn value="calendar">
-            <v-icon left> mdi-calendar-blank-outline </v-icon>
+          <v-btn value="calendar" small class="scb-view">
+            <v-icon left small> mdi-calendar-blank-outline </v-icon>
             Kalender
           </v-btn>
-          <v-btn v-if="workflow.active" value="kanban">
-            <v-icon left> mdi-table-column </v-icon>
+          <v-btn v-if="workflow.active" value="kanban" small class="scb-view">
+            <v-icon left small> mdi-table-column </v-icon>
             Kanban
           </v-btn>
         </v-btn-toggle>
-
-        <div>
-          <v-tooltip v-if="currentView === 'kanban'" bottom>
-            <template v-slot:activator="{ on }">
-              <v-btn
-                v-on="on"
-                icon
-                small
-                class="ml-2"
-                :class="{ 'active-button': showBacklog }"
-                @click="showBacklog = !showBacklog"
-              >
-                <v-icon>mdi-tray-full</v-icon>
-              </v-btn>
-            </template>
-            <span>Backlog ein-/ausblenden</span>
-          </v-tooltip>
-          <BookingExportButton
-            class="ml-auto"
-            :bookings="filteredBookings"
-            :tenant="tenantId"
-          />
-        </div>
+        <v-tooltip v-if="currentView === 'kanban'" bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn
+              v-on="on"
+              icon
+              small
+              :class="{ 'active-button': showBacklog }"
+              @click="showBacklog = !showBacklog"
+            >
+              <v-icon>mdi-tray-full</v-icon>
+            </v-btn>
+          </template>
+          <span>Backlog ein-/ausblenden</span>
+        </v-tooltip>
+        <BookingExportButton :bookings="filteredBookings" :tenant="tenantId" />
       </div>
-      <v-text-field
-        v-model="searchTerm"
-        label="Buchung suchen..."
-        append-icon="mdi-magnify"
-        solo
-        clearable
-        class="search-field"
-      >
-        <template v-slot:prepend-inner>
-          <v-menu
-            bottom
-            right
-            offset-y
-            nudge-bottom="8"
-            min-width="340"
-            max-width="340"
-            :close-on-content-click="false"
-            content-class="booking-filter-menu"
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-badge
-                :value="activeFilterCount > 0"
-                :content="activeFilterCount"
-                color="primary"
-                overlap
-                class="booking-filter-trigger-badge"
-              >
-                <v-btn
-                  icon
-                  v-bind="attrs"
-                  v-on="on"
-                  class="booking-filter-trigger"
-                  :class="{
-                    'booking-filter-trigger--active': activeFilterCount > 0,
-                  }"
-                  @click.stop
-                >
-                  <v-icon>mdi-filter-variant</v-icon>
-                </v-btn>
-              </v-badge>
-            </template>
-
-            <BookingFilterCard
-              :booking-type-filter.sync="bookingTypeFilter"
-              :status-filter.sync="statusFilter"
-              :active-count="activeFilterCount"
-              @reset="resetFilters"
-            />
-          </v-menu>
-        </template>
-      </v-text-field>
     </div>
 
     <div class="page-content">
@@ -675,10 +674,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.search-field {
-  border-radius: 15px;
-}
-
 /* The tint rides on the button's own overlay: Vuetify's `::before` is `currentColor`. */
 .booking-filter-trigger--active {
   color: var(--v-primary-base) !important;

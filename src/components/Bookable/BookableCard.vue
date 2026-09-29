@@ -2,13 +2,13 @@
   <v-card
     :class="[
       'bookable-card',
+      'scb-card',
       'fill-height',
       'd-flex',
       'flex-column',
       { 'bookable-card--unavailable': !item.isBookable || !item.isPublic },
     ]"
     @click="navigateToEdit"
-    hover
   >
     <div class="bookable-card-header position-relative">
       <div class="menu-container">
@@ -560,22 +560,11 @@ export default {
   width: 100%;
   height: 200px;
   overflow: hidden;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
 }
 
 .bookable-card {
   max-width: 400px;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
-  cursor: pointer;
   position: relative;
-  border-radius: 12px !important;
-  overflow: hidden;
-}
-
-.bookable-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
 }
 
 .bookable-card--unavailable {
@@ -613,13 +602,13 @@ export default {
 }
 
 .bookable-image {
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-  transition: transform 0.3s ease;
+  transition: transform var(--scb-motion-lift);
 }
 
-.bookable-card:hover .bookable-image {
-  transform: scale(1.02);
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .bookable-card:hover .bookable-image {
+    transform: scale(1.02);
+  }
 }
 
 .status-badges {
