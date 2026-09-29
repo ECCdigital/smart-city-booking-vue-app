@@ -144,7 +144,7 @@
         </form>
       </v-card-text>
       <v-card-actions class="px-10 pb-5">
-        <v-btn to="/login" outlined>Konto vorhanden?</v-btn>
+        <v-btn :to="loginRoute" outlined>Konto vorhanden?</v-btn>
         <v-spacer></v-spacer>
         <v-btn color="primary" elevation="0" @click="register" type="submit">
           Registrieren
@@ -178,6 +178,8 @@ import { mapActions, mapGetters } from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ContactInformation from "@/components/ContactInformation.vue";
 import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
+import { isSafeInternalRedirect } from "@/utils/safeRedirect";
+import { rateLimitMessage, rateLimitOf } from "@/utils/rateLimit";
 
 export default {
   computed: {
@@ -218,6 +220,21 @@ export default {
       add("legalNotice", "Impressum");
       add("termsAndConditions", "AGB");
       return links;
+    },
+    /**
+     * The return target (backend: `nextUrl`) the verification mail carries
+     * back to the login; only a safe in-app path leaves this page.
+     */
+    returnTarget() {
+      return isSafeInternalRedirect(this.nextUrl, this.$router)
+        ? this.nextUrl
+        : null;
+    },
+    /** The login clears a target it is not handed, so it travels along. */
+    loginRoute() {
+      return this.returnTarget
+        ? { name: "login", query: { next: this.returnTarget } }
+        : { name: "login" };
     },
     invitationParams() {
       const url = this.nextUrl;
@@ -320,7 +337,7 @@ export default {
           this.lastName,
           this.company,
           this.password,
-          this.nextUrl,
+          this.returnTarget,
           this.buildLegalAcceptance(),
           invitationToken,
           invitationTenantId
@@ -338,12 +355,13 @@ export default {
             }
           })
           .catch((error) => {
-            const status = error.response?.status;
-            if (status === 401) {
+            const limit = rateLimitOf(error);
+            if (limit) {
+              const { key, params } = rateLimitMessage(limit);
               this.addToast(
-                ToastService.createToast("register.error.wrong-email", "error")
+                ToastService.createToast(key, "error", 10000, params)
               );
-            } else if (status === 400) {
+            } else if (error.response?.status === 400) {
               this.addToast(
                 ToastService.createToast(
                   "register.error.information-missing",

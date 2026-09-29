@@ -49,6 +49,18 @@ describe("ApiBookablesService", () => {
     expect(body.accessPointDetails.accessPointIds).toEqual(["ap-1"]);
   });
 
+  // The review (glossary "Prüfstatus") changes through its own operations
+  // alone (`ApiReviewService`); the backend strips it from a store body.
+  it("does not send the review when storing", async () => {
+    await ApiBookablesService.createOrUpdateBookable(
+      bookable({ isPublic: true, review: { status: "approved" } })
+    );
+
+    const [, body] = global.ApiClient.put.mock.calls[0];
+    expect(body).not.toHaveProperty("review");
+    expect(body.isPublic).toBe(true);
+  });
+
   it("leaves the caller's bookable untouched", async () => {
     const original = bookable({ lockerDetails: { active: true, units: [] } });
 

@@ -66,3 +66,56 @@ describe("Instances save payloads", () => {
     expect(data.catalog).not.toHaveProperty("hero");
   });
 });
+
+describe("Instances start level", () => {
+  it("sends the start level with the instance", () => {
+    const context = {
+      instance: { id: "i1", tenantInitialSupervisionLevel: "supervised" },
+    };
+
+    const payload = Instances.methods.instancePayload.call(context);
+
+    expect(payload.tenantInitialSupervisionLevel).toBe("supervised");
+  });
+
+  it("hands a refused start level to the open tab as its field", () => {
+    const showApiErrors = vi.fn();
+    const context = { $refs: { activeChild: { showApiErrors } } };
+
+    // The backend's `BadRequestError` envelope, not a `ValidationError`.
+    Instances.methods.showApiErrors.call(context, {
+      response: {
+        status: 400,
+        data: {
+          error: "BadRequestError",
+          code: "invalid_supervision_level",
+          statusCode: 400,
+          params: {
+            field: "tenantInitialSupervisionLevel",
+            level: "open",
+            allowed: ["free", "supervised", "pending"],
+          },
+        },
+      },
+    });
+
+    expect(showApiErrors).toHaveBeenCalledWith([
+      {
+        field: "tenantInitialSupervisionLevel",
+        code: "invalid_supervision_level",
+      },
+    ]);
+  });
+
+  it("still hands the fields of a ValidationError to the open tab", () => {
+    const showApiErrors = vi.fn();
+    const context = { $refs: { activeChild: { showApiErrors } } };
+    const details = [{ field: "copyright", code: "too_long" }];
+
+    Instances.methods.showApiErrors.call(context, {
+      response: { status: 400, data: { error: "ValidationError", details } },
+    });
+
+    expect(showApiErrors).toHaveBeenCalledWith(details);
+  });
+});

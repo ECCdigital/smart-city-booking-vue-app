@@ -13,9 +13,17 @@ Components are grouped by domain under `src/components/`:
 | `Mail/` | Mail templates, block editor |
 | `PDF/` | PDF template editor and preview |
 | `Auth/` | Login cards, Keycloak |
-| `commons/` | Shared UI (SaveBar, toasts, selectors) |
+| `commons/` | Shared UI (SaveBar, toasts, selectors, `AppList`) |
 | `Checkout/` | Checkout calendar and shared checkout UI |
 | `Coupon/`, `Role/`, `User/`, `Files/`, … | Other domain areas |
+
+## Shared list
+
+`src/components/commons/AppList.vue` is the one list surface: hairline rows on a grid of named columns, in the vocabulary of the section card and the booking page. New lists use it instead of `v-simple-table` / `v-data-table`, and existing tables move onto it one at a time (the supervision history was first).
+
+- The caller owns the data and hands in `items`, `loading`, `errorMessage`, and the server page (`page`, `pageSize`, `total`); the list asks for another page with `update:page` and another try with `retry`.
+- `columns` is `[{ key, label, width, align }]`; `width` is a grid track (`"76px"`, `"minmax(160px, 1.5fr)"`). A `cell.<key>` scoped slot draws a cell, the `toolbar` slot holds filters and the reload.
+- Below 959px the grid folds into stacked rows with the column name before each cell.
 
 Views in `src/views/` are route-level pages. They compose components and handle page-level data loading.
 

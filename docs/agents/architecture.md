@@ -73,6 +73,35 @@ Instance (global deployment config, loaded at bootstrap)
 - Permission services check `user.state.data.permissions.tenants` for the active tenant
 - Cross-tenant data access in the UI is a security bug
 
+## Guided setup (tenant onboarding)
+
+`/onboarding` (`src/views/Management/TenantOnboarding.vue`) leads from the shortened tenant creation to the first bookable: tenant → bookable → optional legal texts/payment → overview with the readiness check.
+
+- Drawn as the booking page is (`docs/agents/design-tokens.md`): `Onboarding/OnboardingPath.vue` is the headline over the segmented path (reachable steps are tabs, `input` reports the step), the step components render section cards, `Onboarding/OnboardingPanel.vue` is the sticky facts panel beside every step, and `Onboarding/OnboardingChoiceTiles.vue` is the radio group behind the two deliberate choices. The steps emit `submit` / `back`; „Zur Verwaltung“ is the view's toolbar
+- Form rules, the mapping onto a `Bookable` and the reading of creation errors are pure functions in `src/utils/tenantOnboarding.js`; the view only wires them to the API services
+- No stored wizard progress: every step saves through the regular API, `?tenant=` resumes from current data — price and availability included, the stored values are the selected tiles. The detour to `/tenant?tab=legal|payments` (which shows a way back via `onboardingStep`) returns to the step it left; any other entry resumes at the bookable. `amount: 0` is the unlimited amount, as the bookable editor reads it
+- The closing action only stores the publication wish (`isPublic`); its wording follows `tenant.supervisionLevel` (`free` / `supervised` / `pending` / `declined`), the backend submits a first wish for review on its own. `free` shows no supervision texts
+- The readiness check (`TenantReadinessCheck.vue`, `GET api/tenants/:tenant/readiness`) is information, never a gate. Both owner levels see the same answer (`TenantPermissionService.allowReadiness`): the wizard overview, the tab „Bereitschaft“ of the tenant settings (`Edit/TenantEditReadiness.vue`) and `TenantReadinessDialog.vue` in the instance's tenant list. Nothing is cached — every opening asks the backend again
+- Bookable types are the existing four (`room`, `event-location`, `resource`, `ticket`); `event-location` is the value both this app and the backend entity use — the `location` in the backend's Mongoose enum is not enforced and nothing is converted
+- Events stay in the regular administration
+
+## Review queue (tenant supervision)
+
+`/instance/review-queue` (`src/views/Management/InstanceReviewQueue.vue`, instance owners, Navbar „System“) lists the pending offers of all supervised tenants from `GET api/instances/review-queue` (`ApiReviewQueueService`). It is drawn as the guided setup is — a section card of hairline rows (`v-data-iterator`, not a table) with the waiting time as each row's leading fact, and beside it the sticky panel of the supervision notices (below).
+
+- Pagination and order are the backend's (longest waiting first): the table sends `page`/`pageSize`/`tenantId`/`offerType`, never sorts, and a filter change starts at page 1. Nothing is cached — entering the view or „Aktualisieren“ asks again; overlapping loads keep the answer asked for last
+- A row is decided in place: „Freigeben“ and „Ablehnen“ (the latter asks for an optional reason) call `ApiReviewService.decide` and reload the queue; a 409 names the conflict and reloads as well. The offer editors carry the same actions for a closer look. `src/utils/reviewQueueLink.js` turns a row into the editor's router location (the backend's `adminPath` names the per-type bookable editor, `/events/edit` for events) and follows nothing else. The path carries no tenant, so the view selects the row's `tenantId` (`tenants/select`) before routing
+- A second register „Mandanten“ (`?tab=tenants`; the page opens at „Angebote“) is `TenantApprovalQueue` (`src/components/Supervision/`): the tenants at „Freigabe ausstehend“ from `GET api/instances/tenant-approval-queue` (`ApiTenantApprovalQueueService`, `page`/`pageSize` only), drawn with the same rows as the offers — not `AppList` — so both registers read alike. „Freigeben“ is `ApiSupervisionService.setTenantLevel` with `supervised` (or `free` from its menu), „Abweisen“ opens `TenantDeclineDialog`; a decision reloads both registers, since a supervised tenant's pending offers enter the offers' register. The Navbar's „Prüfliste“ shows the sum of both `total`s (two reads with `pageSize=1`) for instance owners
+
+## Supervision notices (instance owner)
+
+The outbox of supervision mails has no page of its own: `SupervisionNoticePanel` beside the review queue names the notices that did not go out (the first five, with their retry, and a count of the rest) and opens the whole outbox as `SupervisionNotificationList` in a dialog (`src/components/Supervision/`). `/instance/aufsichtsmitteilungen` redirects to the queue. Both read the backend's outbox (`ApiSupervisionNotificationService`: `GET api/instances/supervision/notifications?status=&page=&pageSize=`, `POST …/:id/retry`).
+
+- Server-paginated, opens on `status=failed`; the status filter shows the rest. Overlapping loads keep the answer asked for last
+- „Erneut senden“ (`src/mixins/notificationRetry.js`, shared by panel and list) exists on `failed` and `pending` rows and sends the missing mails again — it never repeats the decision or writes history. The button is disabled while its retry runs; the list reloads after every retry, a refused one included, and the panel reads itself anew when the dialog closes
+- A row carries no list of intended recipients, only `deliveries` (who already has the mail) — the column reads „Zugestellt an“. The occasion's `payload` differs by `type`; `src/utils/supervisionNotifications.js` is the one place that reads it
+- `lastError` is shown as the backend sends it (secrets are masked there). The refusals of a retry (`409 supervision_notification_already_sent` / `…_dispatch_in_progress`, `404 supervision_notification_not_found`) are entries of the central reader's code tables
+
 ## Key patterns
 
 | Layer | Pattern | Example |

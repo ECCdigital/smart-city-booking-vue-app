@@ -176,6 +176,11 @@
         <v-icon x-small class="mr-1">mdi-calendar-star</v-icon>
         {{ item._populated?.event?.information?.name || "Unbekannt" }}
       </p>
+      <ReviewStatusChip
+        class="mt-1"
+        :review="item.review"
+        :supervision-level="supervisionLevel"
+      />
     </div>
 
     <v-divider></v-divider>
@@ -362,9 +367,10 @@ import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import externalPrices from "@/mixins/externalPrices";
 import { handlesCapability } from "@/utils/bookableExternalProviders";
+import ReviewStatusChip from "@/components/Supervision/ReviewStatusChip.vue";
 
 export default {
-  components: { MediaReferenceImage, PlaceholderPattern },
+  components: { MediaReferenceImage, PlaceholderPattern, ReviewStatusChip },
   mixins: [externalPrices],
   props: {
     editRoute: String,
@@ -384,6 +390,7 @@ export default {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
       instance: "instance/instance",
+      supervisionLevel: "tenants/currentSupervisionLevel",
     }),
     isDark() {
       return this.$vuetify?.theme?.dark || false;

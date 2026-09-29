@@ -90,7 +90,7 @@
             prepend-inner-icon="mdi-home-account"
             background-color="accent"
             v-model="currentTenant"
-            :items="tenants"
+            :items="tenantItems"
             item-text="name"
             item-value="id"
             hide-details
@@ -99,6 +99,14 @@
             <template v-slot:prepend-item>
               <v-list-item class="my-2"> Mandant auswählen: </v-list-item>
               <v-divider></v-divider>
+            </template>
+            <template v-slot:item="{ item }">
+              <v-list-item-content>
+                <v-list-item-title>{{ item.name }}</v-list-item-title>
+              </v-list-item-content>
+              <v-list-item-action v-if="item.disabled">
+                <SupervisionLevelChip :level="item.supervisionLevel" x-small />
+              </v-list-item-action>
             </template>
           </v-select>
 
@@ -132,6 +140,15 @@
                   >{{ item.title }}</v-list-item-title
                 >
               </v-list-item-content>
+              <v-list-item-action v-if="badges[item.badge]" class="my-0">
+                <v-chip
+                  x-small
+                  label
+                  color="warning"
+                  :data-test="`nav-badge-${item.link}`"
+                  >{{ badges[item.badge] }}</v-chip
+                >
+              </v-list-item-action>
             </v-list-item>
             <v-divider class="mt-2 mb-2"></v-divider>
           </div>
@@ -152,7 +169,10 @@ import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiClientService from "@/services/api/ApiClientService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiReviewQueueService from "@/services/api/ApiReviewQueueService";
+import ApiTenantApprovalQueueService from "@/services/api/ApiTenantApprovalQueueService";
 import NotificationDisplay from "@/components/NotificationDisplay";
+import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
 import keycloakService from "@/services/KeycloakService";
 import { isBffAuthMode } from "@/services/auth/authMode";
 import { version as appVersion } from "../../package.json";
@@ -297,6 +317,13 @@ export default {
             interfaceName: "instance",
           },
           {
+            title: "Prüfliste",
+            link: "instance-review-queue",
+            icon: "mdi-clipboard-list-outline",
+            interfaceName: "instance",
+            badge: "waiting",
+          },
+          {
             title: "Benutzer",
             link: "instance-users",
             icon: "mdi-account-group-outline",
@@ -325,9 +352,12 @@ export default {
     ],
     //currentTenant: "",
     tenants: [],
+    // The counters beside an entry, by the entry's `badge`; 0 shows none.
+    badges: { waiting: 0 },
   }),
   components: {
     NotificationDisplay,
+    SupervisionLevelChip,
   },
   methods: {
     ...mapActions({
@@ -384,10 +414,41 @@ export default {
     fetchTenants() {
       ApiTenantService.getTenants(true).then((response) => {
         this.tenants = response.data;
-        if (!this.currentTenant && this.tenants.length === 1) {
+        if (
+          !this.currentTenant &&
+          this.tenants.length === 1 &&
+          !this.declinedMembership(this.tenants[0].id)
+        ) {
           this.currentTenant = this.tenants[0].id;
         }
       });
+    },
+    /**
+     * What waits for the instance owner's decision - the offers and the
+     * tenants, the two registers of the Prüfliste: the entry's badge is the
+     * sum of their counters, each read as a page of one. A register that
+     * cannot be read adds nothing.
+     *
+     * The permissions are read off the store, as `isAuthorized` does. A
+     * permission service would import the user module before the store, and
+     * the user module imports the store: loaded that way from the drawer,
+     * the store is built without its user module.
+     */
+    async fetchWaitingCount() {
+      const permissions = this.$store.state.user.data?.permissions;
+      if (permissions?.instanceOwner !== true) return;
+      const firstOfOne = { page: 1, pageSize: 1 };
+      const answers = await Promise.allSettled([
+        ApiReviewQueueService.getReviewQueue(firstOfOne),
+        ApiTenantApprovalQueueService.getTenantApprovalQueue(firstOfOne),
+      ]);
+      this.badges.waiting = answers.reduce((sum, answer) => {
+        if (answer.status === "rejected") {
+          console.error(answer.reason);
+          return sum;
+        }
+        return sum + (answer.value?.total || 0);
+      }, 0);
     },
   },
   computed: {
@@ -395,7 +456,22 @@ export default {
       user: "user/getUser",
       isAuthorized: "user/isAuthorized",
       getCurrentTenant: "tenants/currentTenantId",
+      declinedMembership: "user/declinedMembership",
     }),
+    // A declined tenant stays in the list, greyed out and not selectable
+    // (glossary „abgewiesen“); the instance owner keeps every tenant.
+    tenantItems() {
+      return this.tenants.map((tenant) => {
+        const membership = this.declinedMembership(tenant.id);
+        return membership
+          ? {
+              ...tenant,
+              disabled: true,
+              supervisionLevel: membership.supervisionLevel,
+            }
+          : tenant;
+      });
+    },
     currentTenant: {
       get: function () {
         return this.getCurrentTenant;
@@ -434,6 +510,7 @@ export default {
   async mounted() {
     this.drawer = !this.$vuetify.breakpoint.mdAndDown;
     this.fetchTenants();
+    this.fetchWaitingCount();
   },
 };
 </script>

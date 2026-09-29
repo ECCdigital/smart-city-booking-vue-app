@@ -10,6 +10,7 @@ const storeDouble = vi.hoisted(() => ({
     { id: "tenant-b", name: "Stadt B" },
   ],
   currentTenantId: "tenant-a",
+  declinedIds: [],
   dispatch: vi.fn(),
 }));
 
@@ -25,6 +26,12 @@ vi.mock("@/store", () => ({
       },
       get "tenants/currentTenantId"() {
         return storeDouble.currentTenantId;
+      },
+      get "user/declinedMembership"() {
+        return (tenantId) =>
+          storeDouble.declinedIds.includes(tenantId)
+            ? { tenantId, supervisionLevel: "declined" }
+            : null;
       },
     },
   },
@@ -51,6 +58,7 @@ beforeEach(() => {
     { id: "tenant-b", name: "Stadt B" },
   ];
   storeDouble.currentTenantId = "tenant-a";
+  storeDouble.declinedIds = [];
   storeDouble.dispatch = vi.fn();
 });
 
@@ -90,6 +98,17 @@ describe("selectTenantFromQuery", () => {
 
         expect(next).toHaveBeenCalledWith();
       }
+      expect(storeDouble.dispatch).not.toHaveBeenCalled();
+    });
+
+    it("keeps the current tenant when the link names a declined one", async () => {
+      storeDouble.declinedIds = ["tenant-b"];
+      const next = vi.fn();
+
+      await selectTenantFromQuery({ to: bookingLink("tenant-b"), next });
+
+      expect(next).toHaveBeenCalledWith();
+      expect(storeDouble.currentTenantId).toBe("tenant-a");
       expect(storeDouble.dispatch).not.toHaveBeenCalled();
     });
 

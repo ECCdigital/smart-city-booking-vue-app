@@ -9,6 +9,7 @@
           <h1 v-if="eventId">Veranstaltung bearbeiten</h1>
           <h1 v-else>Veranstaltung erstellen</h1>
         </div>
+        <SupervisionPendingBanner />
         <v-row>
           <v-col>
             <slot/>
@@ -25,8 +26,12 @@
 </template>
 <script>
 import {mapActions} from "vuex";
+import SupervisionPendingBanner from "@/components/Supervision/SupervisionPendingBanner.vue";
 
+// The event editor's layout: a page of the current tenant, so it carries the
+// band of a waiting tenant as the admin layout does.
 export default {
+  components: { SupervisionPendingBanner },
   methods: {
     ...mapActions({
       clearForm: "events/clearForm",

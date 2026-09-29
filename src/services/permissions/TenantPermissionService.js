@@ -1,5 +1,8 @@
-import user from "@/store/modules/user";
+// The store first: `user.js` imports the store back, and the admin layout's
+// band may be the first to load this service - the other way round the store
+// would be built before `user.js` is.
 import store from "@/store";
+import user from "@/store/modules/user";
 
 class TenantPermissionService {
   static isInstanceOwner() {
@@ -18,6 +21,18 @@ class TenantPermissionService {
   static allowCreate() {
     if (TenantPermissionService.isInstanceOwner()) return true;
     return user.state.data.permissions.allowCreateTenant === true;
+  }
+
+  /**
+   * Membership of one tenant: the permissions payload lists a membership
+   * for every tenant the user belongs to, owner or not. An instance owner
+   * sees every tenant, but is a member of only these - "Meine Mandanten"
+   * on the tenant overview draws the line here.
+   */
+  static isTenantMember(tenantId) {
+    return (user.state.data?.permissions?.tenants || []).some(
+      (p) => p.tenantId === tenantId
+    );
   }
 
   /**
@@ -44,6 +59,69 @@ class TenantPermissionService {
     return TenantPermissionService.isTenantOwner(
       store.getters["tenants/currentTenantId"]
     );
+  }
+
+  /**
+   * The readiness check (glossary "Bereitschafts-Check") of a tenant is for
+   * its owner and for the instance owner - the backend's `tenant.readiness`
+   * is `{ own: "tenantOwner", any: "instanceOwner" }`. The tenant argument
+   * scopes the lookup, because the instance tenant list asks for any tenant.
+   */
+  static allowReadiness(tenantId = store.getters["tenants/currentTenantId"]) {
+    if (TenantPermissionService.isInstanceOwner()) return true;
+    return TenantPermissionService.isTenantOwner(tenantId);
+  }
+
+  /**
+   * Who looks at the review of an offer (glossary "Prüfstatus") of the
+   * tenant. The backend's `reviewSubmit` is `{ own: "tenantOwner", any:
+   * "instanceOwner" }` and `reviewDecide` is `{ any: "instanceOwner" }`, for
+   * bookables and events alike; `src/utils/offerReview.js` turns the two
+   * roles into the actions offered.
+   */
+  static reviewViewer(tenantId = store.getters["tenants/currentTenantId"]) {
+    return {
+      tenantOwner: TenantPermissionService.isTenantOwner(tenantId),
+      instanceOwner: TenantPermissionService.isInstanceOwner() === true,
+    };
+  }
+
+  /**
+   * The supervision level (glossary "Aufsichtsstufe") is the instance
+   * owner's alone - the backend's `tenant.supervise` is
+   * `{ any: "instanceOwner" }`.
+   */
+  static allowSupervise() {
+    return TenantPermissionService.isInstanceOwner() === true;
+  }
+
+  /**
+   * Whether a tenant is played out in the instance's catalog is an instance
+   * setting (`PUT /api/catalog`), so only the instance owner changes it - the
+   * Portal tab of the instance settings is gated the same way.
+   */
+  static allowCatalogExposure() {
+    return TenantPermissionService.isInstanceOwner() === true;
+  }
+
+  /**
+   * The supervision history of a tenant is for its owner and for the
+   * instance owner - the backend's `tenant.supervisionHistory` is
+   * `{ own: "tenantOwner", any: "instanceOwner" }`.
+   */
+  static allowSupervisionHistory(
+    tenantId = store.getters["tenants/currentTenantId"]
+  ) {
+    if (TenantPermissionService.isInstanceOwner()) return true;
+    return TenantPermissionService.isTenantOwner(tenantId);
+  }
+
+  /**
+   * The instance-wide history - the backend's `instance.supervisionHistory`
+   * is `{ any: "instanceOwner" }`.
+   */
+  static allowInstanceSupervisionHistory() {
+    return TenantPermissionService.isInstanceOwner() === true;
   }
 
   /**

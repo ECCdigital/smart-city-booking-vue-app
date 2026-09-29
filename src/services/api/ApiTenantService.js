@@ -1,9 +1,48 @@
 import ApiClient from "./ApiClientService";
 import { legalDocumentsForSave } from "@/utils/tenantLegalDocuments";
 
+/**
+ * What the server decides at a creation (supervision spec §6.1): the creator
+ * becomes the owner, the level is the instance's. A form never sends them.
+ */
+const SERVER_DECIDED_ON_CREATE = [
+  "ownerUserIds",
+  "users",
+  "supervisionLevel",
+  "supervisionChangedAt",
+  "review",
+];
+
+function tenantForCreate(tenant) {
+  const payload = { ...legalDocumentsForSave(tenant) };
+  SERVER_DECIDED_ON_CREATE.forEach((field) => delete payload[field]);
+  return payload;
+}
+
+/**
+ * A tenant as it is written: without the fields the supervision owns. The
+ * level changes through `ApiSupervisionService.setTenantLevel` alone; a loaded
+ * tenant carries it, and a write must not hand it back.
+ */
+function tenantForSave(tenant) {
+  if (!tenant || typeof tenant !== "object") return tenant;
+  // eslint-disable-next-line no-unused-vars
+  const { supervisionLevel, supervisionChangedAt, ...written } = tenant;
+  return legalDocumentsForSave(written);
+}
+
 export default {
-  getTenants(publicTenants = false) {
-    return ApiClient.get(`api/tenants?publicTenants=${publicTenants}`);
+  /**
+   * `supervisionLevel` narrows the list to the tenants at that level (a
+   * tenant without a stored level counts as `free`).
+   */
+  getTenants(publicTenants = false, { supervisionLevel } = {}) {
+    const levelFilter = supervisionLevel
+      ? `&supervisionLevel=${encodeURIComponent(supervisionLevel)}`
+      : "";
+    return ApiClient.get(
+      `api/tenants?publicTenants=${publicTenants}${levelFilter}`
+    );
   },
   /**
    * Writes a tenant. The legal documents are normalised here rather than at
@@ -13,10 +52,10 @@ export default {
    * the media spec).
    */
   submitTenant(tenant) {
-    return ApiClient.put("api/tenants", legalDocumentsForSave(tenant));
+    return ApiClient.put("api/tenants", tenantForSave(tenant));
   },
   createTenant(tenant) {
-    return ApiClient.post("api/tenants", legalDocumentsForSave(tenant));
+    return ApiClient.post("api/tenants", tenantForCreate(tenant));
   },
   deleteTenant(tenant) {
     return ApiClient.delete(`api/tenants/${tenant.id}`);
@@ -92,6 +131,13 @@ export default {
       { userId, roles }
     );
     return response.data;
+  },
+  /**
+   * The readiness check (glossary "Bereitschafts-Check"): computed by the
+   * backend on every call, information only - never a gate.
+   */
+  async getReadiness(tenantId) {
+    return (await ApiClient.get(`api/tenants/${tenantId}/readiness`)).data;
   },
   async tenantCountCheck() {
     return (await ApiClient.get("api/tenants/count/check")).data;

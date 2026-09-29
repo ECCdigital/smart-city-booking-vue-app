@@ -205,6 +205,18 @@ describe("getApiErrorMessage", () => {
         "Diese Buchung kann nicht vom Buchenden storniert werden."
       );
     });
+
+    it("names the management gate of a declined tenant", () => {
+      const error = lifecycleError(403, "tenant_declined", {
+        tenantId: "tenant-b",
+        supervisionLevel: "declined",
+        supervisionChangedAt: "2026-09-24T10:00:00.000Z",
+        supervisionReason: null,
+      });
+      expect(getApiErrorMessage(error, FALLBACK)).toBe(
+        "Dieser Mandant wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."
+      );
+    });
   });
 
   /**

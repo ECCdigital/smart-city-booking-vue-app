@@ -156,6 +156,16 @@ export function isForbiddenError(error) {
 }
 
 /**
+ * Whether a 403 names `code`, read as the messages read it: a body whose
+ * `statusCode` contradicts the status names none.
+ */
+export function isForbiddenCode(error, code) {
+  return (
+    isForbiddenError(error) && getErrorCode(error.response.data, 403) === code
+  );
+}
+
+/**
  * Whether an error says the record is outside the caller's reach. Since 4.3.x
  * a record the caller may not see answers 404 rather than 403, so that its
  * existence stays hidden - which turns the two statuses into one question

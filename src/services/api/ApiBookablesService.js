@@ -31,6 +31,10 @@ export default {
     // sending it would claim a write permission that does not exist.
     delete formData.lockerDetails;
 
+    // The review (glossary "Prüfstatus") is written by its own operations
+    // alone (`ApiReviewService`); a save never carries it.
+    delete formData.review;
+
     // Retired: nothing is distributed over the locker systems any more, a
     // booking gets one compartment per booked unit at each of them. A map a
     // bookable saved before that is dropped here so an old state does not
