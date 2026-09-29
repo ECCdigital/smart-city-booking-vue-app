@@ -18,6 +18,7 @@ describe("ApiBookingService", () => {
       post: vi
         .fn()
         .mockResolvedValue({ data: { success: true, data: null, errors: [] } }),
+      put: vi.fn().mockResolvedValue({ data: {} }),
     };
   });
 
@@ -48,5 +49,18 @@ describe("ApiBookingService", () => {
       {}
     );
     expect(data).toEqual({ success: true, data: reprinted, errors: [] });
+  });
+
+  it("creates a manual booking over POST and updates one over PUT", async () => {
+    await ApiBookingService.createBooking({ name: "Neu" });
+    await ApiBookingService.updateBooking({ id: "bk-1", name: "Alt" });
+
+    expect(global.ApiClient.post).toHaveBeenCalledWith("api/t1/bookings", {
+      name: "Neu",
+    });
+    expect(global.ApiClient.put).toHaveBeenCalledWith("api/t1/bookings", {
+      id: "bk-1",
+      name: "Alt",
+    });
   });
 });

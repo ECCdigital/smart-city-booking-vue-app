@@ -787,8 +787,11 @@ export default {
       return texts[status] || status;
     },
 
+    // The projection `{ id, name, tenantId }` of `?public=true` is all the
+    // view reads; it is open to every Mitglied, where the full list needs
+    // `manageRoles.readAny`, which a user manager need not hold.
     async fetchRoles() {
-      const response = await ApiRolesService.getTenantRoles(this.tenantId);
+      const response = await ApiRolesService.getTenantRoles(true);
       this.api.roles = response.data;
     },
 

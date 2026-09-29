@@ -10,7 +10,8 @@ vi.mock("@/store", () => ({
 vi.mock("@/services/api/ApiBookingService", () => ({
   default: {
     getBooking: vi.fn(),
-    storeBooking: vi.fn(),
+    createBooking: vi.fn(),
+    updateBooking: vi.fn(),
     commitBooking: vi.fn(),
     payBooking: vi.fn(),
     rejectBooking: vi.fn(),
@@ -164,8 +165,18 @@ async function submit(wrapper) {
   await wrapper.vm.$nextTick();
 }
 
+/** The two savers: a create is a POST, an update a PUT. */
+function savers() {
+  return [ApiBookingService.createBooking, ApiBookingService.updateBooking];
+}
+function saveAnswers(value) {
+  savers().forEach((saver) => saver.mockResolvedValue(value));
+}
+function saveFails(error) {
+  savers().forEach((saver) => saver.mockRejectedValue(error));
+}
 function putBody() {
-  return ApiBookingService.storeBooking.mock.calls[0][0];
+  return savers().find((saver) => saver.mock.calls.length).mock.calls[0][0];
 }
 
 /**
@@ -257,7 +268,7 @@ describe("BookingEdit", () => {
       await reinstate(wrapper);
 
       expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1");
-      expect(ApiBookingService.storeBooking).not.toHaveBeenCalled();
+      savers().forEach((saver) => expect(saver).not.toHaveBeenCalled());
       expect(wrapper.emitted("reload")).toHaveLength(1);
       expect(wrapper.emitted("saved")).toBeUndefined();
       expect(inlineError(wrapper).exists()).toBe(false);
@@ -329,7 +340,7 @@ describe("BookingEdit", () => {
           isRejected: false,
         }),
       });
-      ApiBookingService.storeBooking.mockResolvedValue({ data: {} });
+      saveAnswers({ data: {} });
       await nameInput(wrapper).setValue("Max Muster");
 
       await submit(wrapper);
@@ -345,7 +356,7 @@ describe("BookingEdit", () => {
       const { wrapper } = await mountEdit({
         booking: booking({ status: "cancelled", rejectionReason: "Alt" }),
       });
-      ApiBookingService.storeBooking.mockResolvedValue({ data: {} });
+      saveAnswers({ data: {} });
 
       await reasonInput(wrapper).setValue("Zu spät");
       await wrapper.vm.$nextTick();
@@ -369,7 +380,7 @@ describe("BookingEdit", () => {
           paymentProvider: "invoice",
         }),
       });
-      ApiBookingService.storeBooking.mockResolvedValue({ data: {} });
+      saveAnswers({ data: {} });
       wrapper
         .findComponent({ name: "BookingEditStatus" })
         .vm.$emit("update:initial-state", {
@@ -399,7 +410,7 @@ describe("BookingEdit", () => {
           paymentProvider: "invoice",
         }),
       });
-      ApiBookingService.storeBooking.mockResolvedValue({ data: {} });
+      saveAnswers({ data: {} });
 
       await submit(wrapper);
 
@@ -414,7 +425,7 @@ describe("BookingEdit", () => {
           paymentProvider: "invoice",
         }),
       });
-      ApiBookingService.storeBooking.mockRejectedValue(
+      saveFails(
         lifecycleError(400, "missing_payment_details", {
           status: "confirmed",
           missing: ["paymentMethod"],
@@ -432,7 +443,7 @@ describe("BookingEdit", () => {
 
     it("shows the conflict inline and asks for a reload on a 409", async () => {
       const { wrapper } = await mountEdit();
-      ApiBookingService.storeBooking.mockRejectedValue(
+      saveFails(
         lifecycleError(409, "invalid_transition", { status: "cancelled" })
       );
 
@@ -445,7 +456,7 @@ describe("BookingEdit", () => {
 
     it("names a refused status change inline without a reload on a 400", async () => {
       const { wrapper } = await mountEdit();
-      ApiBookingService.storeBooking.mockRejectedValue(
+      saveFails(
         lifecycleError(400, "invalid_status_change", {
           status: "confirmed",
           requested: "requested",

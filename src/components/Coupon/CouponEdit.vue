@@ -391,6 +391,9 @@ export default {
       validTimeFromModal: false,
       validToModal: false,
       inProgress: false,
+      // Whether the dialog opened on a new coupon: the id is the typed
+      // discount code, so it cannot tell a creation from an update.
+      creating: false,
       validDateFrom: null,
       validDateTo: null,
       validTimeFrom: null,
@@ -449,7 +452,10 @@ export default {
 
         this.selectedCoupon.tenantId = this.tenantId;
 
-        await ApiCouponService.submitCoupon(undefined, this.selectedCoupon)
+        const store = this.creating
+          ? ApiCouponService.createCoupon
+          : ApiCouponService.submitCoupon;
+        await store(undefined, this.selectedCoupon)
           .then((response) => {
             this.inProgress = false;
             this.$emit("close");
@@ -505,6 +511,11 @@ export default {
     },
   },
   watch: {
+    open(value) {
+      if (value) {
+        this.creating = !this.coupon.id;
+      }
+    },
     coupon: {
       handler() {
         if (this.coupon.validFrom) {

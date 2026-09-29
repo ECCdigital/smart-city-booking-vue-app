@@ -28,7 +28,11 @@ function bookable(overrides = {}) {
  */
 describe("ApiBookablesService", () => {
   beforeEach(() => {
-    global.ApiClient = { put: vi.fn().mockResolvedValue({ data: {} }) };
+    global.ApiClient = {
+      put: vi.fn().mockResolvedValue({ data: {} }),
+      post: vi.fn().mockResolvedValue({ data: {} }),
+      get: vi.fn(),
+    };
   });
 
   afterEach(() => {
@@ -98,5 +102,46 @@ describe("ApiBookablesService", () => {
 
     const [, body] = global.ApiClient.put.mock.calls[0];
     expect(body.accessPointDetails).toBeUndefined();
+  });
+
+  /**
+   * Since ticket 12 of the backend's authorization map, creating is a POST
+   * with the entry `create`, and the PUT carries `update` alone: a body
+   * without an id no longer creates there.
+   */
+  it("creates a bookable without an id over POST", async () => {
+    await ApiBookablesService.createOrUpdateBookable(
+      bookable({ id: undefined })
+    );
+
+    expect(global.ApiClient.post).toHaveBeenCalledWith(
+      "api/t1/bookables",
+      expect.objectContaining({ title: "Raum" })
+    );
+    expect(global.ApiClient.put).not.toHaveBeenCalled();
+  });
+
+  it("updates a bookable with an id over PUT", async () => {
+    await ApiBookablesService.createOrUpdateBookable(bookable());
+
+    expect(global.ApiClient.put).toHaveBeenCalledWith(
+      "api/t1/bookables",
+      expect.objectContaining({ id: "b1" })
+    );
+    expect(global.ApiClient.post).not.toHaveBeenCalled();
+  });
+
+  it("duplicates over POST, without the id of the original", async () => {
+    global.ApiClient.get.mockResolvedValue({
+      data: { id: "b1", _id: "x", title: "Raum", lockerDetails: {} },
+    });
+
+    await ApiBookablesService.duplicateBookable("b1");
+
+    expect(global.ApiClient.get).toHaveBeenCalledWith("api/t1/bookables/b1");
+    const [path, body] = global.ApiClient.post.mock.calls[0];
+    expect(path).toBe("api/t1/bookables");
+    expect(body).toEqual({ title: "Raum (Kopie)" });
+    expect(global.ApiClient.put).not.toHaveBeenCalled();
   });
 });

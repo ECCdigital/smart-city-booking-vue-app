@@ -14,9 +14,13 @@ export default {
       withCredentials: true,
     });
   },
+  // A role without an id is created (`POST`), one with an id updated.
   submitRole(role) {
     const t = store.getters["tenants/currentTenantId"];
 
+    if (!role.id) {
+      return ApiClient.post(`api/${t}/roles`, role);
+    }
     return ApiClient.put(`api/${t}/roles`, role);
   },
   deleteRole(role) {

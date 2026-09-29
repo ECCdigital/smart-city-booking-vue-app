@@ -1,6 +1,7 @@
 import store from "@/store";
 import PersistenceService from "@/services/PersistenceService";
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
+import { tenantToHold } from "@/utils/tenantMembership";
 
 const namespaced = true;
 
@@ -27,8 +28,16 @@ const mutations = {
 };
 
 const actions = {
-  update({ commit }, user) {
+  // Every sign-in path (login, SSO, shared session, `/me`) lands here, so
+  // this is where a stale current tenant is replaced by one the user is
+  // still a Mitglied of.
+  async update({ commit, dispatch, rootGetters }, user) {
     commit("UPDATE", user);
+    const currentTenantId = rootGetters["tenants/currentTenantId"];
+    const tenantId = tenantToHold(currentTenantId, user?.permissions);
+    if (tenantId !== currentTenantId) {
+      await dispatch("tenants/select", tenantId, { root: true });
+    }
   },
   delete({ commit }) {
     commit("DELETE");
