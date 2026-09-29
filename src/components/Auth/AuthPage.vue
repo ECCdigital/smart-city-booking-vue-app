@@ -16,8 +16,17 @@ export default {
   props: {
     active: {
       type: String,
-      required: true,
-      validator: (value) => ["login", "register"].includes(value),
+      default: null,
+      validator: (value) =>
+        value === null || ["login", "register"].includes(value),
+    },
+    title: {
+      type: String,
+      default: "",
+    },
+    icon: {
+      type: String,
+      default: "",
     },
   },
 
@@ -70,7 +79,12 @@ export default {
     <img :src="appLogo" alt="" class="auth-page__logo" />
 
     <v-card outlined class="section-card auth-page__card mx-auto">
+      <div v-if="title" class="v-card__title section-header auth-page__title">
+        <v-icon v-if="icon">{{ icon }}</v-icon>
+        <span>{{ title }}</span>
+      </div>
       <nav
+        v-else
         class="v-card__title section-header auth-page__nav"
         aria-label="Anmelden oder Registrieren"
       >
@@ -194,6 +208,7 @@ export default {
 }
 
 .auth-page__legal {
+  margin-top: var(--scb-space-5);
   display: flex;
   align-items: center;
   justify-content: center;

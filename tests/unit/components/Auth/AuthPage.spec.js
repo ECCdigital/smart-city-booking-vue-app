@@ -5,7 +5,7 @@ import { mountComponent } from "@tests/unit/support/mount";
 
 import AuthPage from "@/components/Auth/AuthPage.vue";
 
-function mountAuthPage(active, instance = {}) {
+function mountAuthPage(active, instance = {}, propsData = {}) {
   const store = new Vuex.Store({
     modules: {
       instance: { namespaced: true, getters: { instance: () => instance } },
@@ -14,7 +14,7 @@ function mountAuthPage(active, instance = {}) {
 
   return mountComponent(AuthPage, {
     store,
-    propsData: { active },
+    propsData: { active, ...propsData },
     stubs: { RouterLink: RouterLinkStub },
     slots: { default: "<p data-test='form'>Formular</p>" },
   });
@@ -33,6 +33,19 @@ describe("AuthPage — the switch between the two pages", () => {
     expect(pills.at(1).classes()).toContain("auth-page__pill--active");
     expect(pills.at(1).attributes("aria-current")).toBe("page");
     expect(pills.at(0).attributes("aria-current")).toBeUndefined();
+  });
+
+  it("heads a page of its own with its title instead of the switch", () => {
+    const wrapper = mountAuthPage(
+      null,
+      {},
+      { title: "Passwort zurücksetzen", icon: "mdi-lock-reset" }
+    );
+
+    expect(wrapper.findAllComponents(RouterLinkStub)).toHaveLength(0);
+    expect(wrapper.find(".auth-page__title").text()).toBe(
+      "Passwort zurücksetzen"
+    );
   });
 
   it("renders the page's form inside the card", () => {
