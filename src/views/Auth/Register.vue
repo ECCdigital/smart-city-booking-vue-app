@@ -1,182 +1,149 @@
 <template>
-  <v-container class="text-center">
-    <v-card outlined max-width="500" class="mx-auto mt-sm-10">
-      <v-card-text class="text-center pa-10">
-        <v-img :src="appLogo" max-width="200" class="mx-auto" />
+  <AuthPage active="register">
+    <v-form ref="form" class="register-form" @submit.prevent="register">
+      <div class="register-form__row">
+        <v-text-field
+          background-color="accent"
+          filled
+          dense
+          hide-details="auto"
+          label="Vorname"
+          v-model="firstName"
+          :rules="firstNameRules"
+          name="firstName"
+          autocomplete="given-name"
+        ></v-text-field>
+        <v-text-field
+          background-color="accent"
+          filled
+          dense
+          hide-details="auto"
+          label="Nachname"
+          v-model="lastName"
+          :rules="lastNameRules"
+          name="lastName"
+          autocomplete="family-name"
+        ></v-text-field>
+      </div>
+      <v-text-field
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="Organisation (optional)"
+        class="mt-4"
+        v-model="company"
+        name="company"
+        autocomplete="organization"
+      ></v-text-field>
+      <v-text-field
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="E-Mail-Adresse"
+        class="mt-4"
+        v-model="id"
+        :rules="emailRules"
+        name="email"
+        type="email"
+        autocomplete="email"
+      ></v-text-field>
+      <div class="register-form__row mt-4">
+        <v-text-field
+          background-color="accent"
+          filled
+          dense
+          hide-details="auto"
+          label="Passwort"
+          hint="Mindestens 8 Zeichen."
+          persistent-hint
+          v-model="password"
+          :type="showPassword ? 'text' : 'password'"
+          :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+          @click:append="showPassword = !showPassword"
+          :rules="passwordRules"
+          name="new-password"
+          id="new-password"
+          autocomplete="new-password"
+        ></v-text-field>
+        <v-text-field
+          background-color="accent"
+          filled
+          dense
+          hide-details="auto"
+          label="Passwort wiederholen"
+          v-model="passwordRepeat"
+          :type="showPassword ? 'text' : 'password'"
+          :rules="passwordCheckRule"
+          name="confirm-password"
+          id="confirm-password"
+          autocomplete="new-password"
+        ></v-text-field>
+      </div>
 
-        <h2 class="mt-8 mb-2">Registrieren</h2>
-        <p class="subtitle-2 mb-10">Erstellen Sie einen Account.</p>
-
-        <form @submit.prevent="register" action="/register" method="post">
-          <v-form ref="form">
-            <div class="d-flex flex-row">
-              <v-text-field
-                outlined
-                hide-details
-                label="Vorname"
-                placeholder="John"
-                prepend-inner-icon="mdi-account"
-                class="mb-5 mr-2"
-                v-model="firstName"
-                :rules="firstNameRules"
-                name="firstName"
-                autocomplete="given-name"
-              ></v-text-field>
-              <v-text-field
-                outlined
-                hide-details
-                label="Nachname"
-                placeholder="Doe"
-                prepend-inner-icon="mdi-account"
-                class="mb-5"
-                v-model="lastName"
-                :rules="lastNameRules"
-                name="lastName"
-                autocomplete="family-name"
-              ></v-text-field>
-            </div>
-            <v-text-field
-              outlined
-              hide-details
-              label="Firma"
-              placeholder="Company"
-              prepend-inner-icon="mdi-home"
-              class="mb-5"
-              v-model="company"
-              name="company"
-              autocomplete="organization"
-            ></v-text-field>
-            <v-text-field
-              outlined
-              label="Email Adresse"
-              placeholder="jemand@domain.de"
-              prepend-inner-icon="mdi-email"
-              hide-details
-              class="mb-5"
-              v-model="id"
-              :rules="emailRules"
-              name="email"
-              type="email"
-              autocomplete="email"
-            ></v-text-field>
-            <div class="d-flex flex-row">
-              <v-text-field
-                outlined
-                label="Passwort"
-                placeholder="Ihr Passwort"
-                prepend-inner-icon="mdi-key"
-                class="mr-2"
-                v-model="password"
-                :type="showPassword ? 'text' : 'password'"
-                :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                @click:append="showPassword = !showPassword"
-                :rules="passwordRules"
-                validate-on="lazy input"
-                name="new-password"
-                id="new-password"
-                autocomplete="new-password"
-              ></v-text-field>
-              <v-text-field
-                outlined
-                label="Passwort wiederholen"
-                placeholder="Ihr Passwort"
-                prepend-inner-icon="mdi-key"
-                v-model="passwordRepeat"
-                :type="showPassword ? 'text' : 'password'"
-                :rules="passwordCheckRule"
-                name="confirm-password"
-                id="confirm-password"
-                autocomplete="new-password"
-              ></v-text-field>
-            </div>
-
-            <ContactInformation />
-
-            <div
-              v-if="requiresDataProtection || requiresTerms"
-              class="mt-2 text-left"
-            >
-              <v-checkbox
-                v-if="requiresDataProtection"
-                v-model="acceptedDataProtection"
-                :rules="dataProtectionAcceptRules"
-                hide-details="auto"
-                class="mt-0"
+      <div
+        v-if="requiresDataProtection || requiresTerms"
+        class="register-form__consent mt-4"
+      >
+        <v-checkbox
+          v-if="requiresDataProtection"
+          v-model="acceptedDataProtection"
+          :rules="dataProtectionAcceptRules"
+          hide-details="auto"
+          dense
+          class="mt-0 pt-0"
+        >
+          <template v-slot:label>
+            <span>
+              Ich habe die
+              <a
+                :href="dataProtectionHref"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+                >Datenschutzerklärung</a
               >
-                <template v-slot:label>
-                  <span>
-                    Ich habe die
-                    <a
-                      :href="dataProtectionHref"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      @click.stop
-                      >Datenschutzerklärung</a
-                    >
-                    gelesen und akzeptiere sie.
-                  </span>
-                </template>
-              </v-checkbox>
-              <v-checkbox
-                v-if="requiresTerms"
-                v-model="acceptedTerms"
-                :rules="termsAcceptRules"
-                hide-details="auto"
-                class="mt-0"
-              >
-                <template v-slot:label>
-                  <span>
-                    Ich akzeptiere die
-                    <a
-                      :href="termsHref"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      @click.stop
-                      >Allgemeinen Geschäftsbedingungen</a
-                    >.
-                  </span>
-                </template>
-              </v-checkbox>
-            </div>
+              gelesen und stimme ihr zu.
+            </span>
+          </template>
+        </v-checkbox>
+        <v-checkbox
+          v-if="requiresTerms"
+          v-model="acceptedTerms"
+          :rules="termsAcceptRules"
+          hide-details="auto"
+          dense
+          class="mt-0 pt-0"
+          :class="{ 'mt-2': requiresDataProtection }"
+        >
+          <template v-slot:label>
+            <span>
+              Ich akzeptiere die
+              <a
+                :href="termsHref"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+                >Allgemeinen Geschäftsbedingungen</a
+              >.
+            </span>
+          </template>
+        </v-checkbox>
+      </div>
 
-            <input type="submit" style="display: none" />
-          </v-form>
-        </form>
-      </v-card-text>
-      <v-card-actions class="px-10 pb-5">
-        <v-btn to="/login" outlined>Konto vorhanden?</v-btn>
-        <v-spacer></v-spacer>
-        <v-btn color="primary" elevation="0" @click="register" type="submit">
-          Registrieren
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-
-    <v-card
-      v-if="legalLinks.length"
-      elevation="0"
-      max-width="500"
-      class="mx-auto mt-2"
-    >
-      <v-card-text class="text-right pa-0">
-        <template v-for="(doc, i) in legalLinks">
-          <span :key="doc.key">
-            <a :href="doc.url" target="_blank" rel="noopener noreferrer">{{
-              doc.label
-            }}</a>
-            <span v-if="i < legalLinks.length - 1"> | </span>
-          </span>
-        </template>
-      </v-card-text>
-    </v-card>
-  </v-container>
+      <v-btn type="submit" color="primary" block elevation="0" class="mt-4">
+        Registrieren
+      </v-btn>
+    </v-form>
+  </AuthPage>
 </template>
 <script>
 import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { mapActions, mapGetters } from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
-import ContactInformation from "@/components/ContactInformation.vue";
+import AuthPage from "@/components/Auth/AuthPage.vue";
 import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
 
 export default {
@@ -185,11 +152,6 @@ export default {
       instance: "instance/instance",
       nextUrl: "authStore/nextUrl",
     }),
-    appLogo() {
-      return process.env.BASE_URL && process.env.BASE_URL.trim()
-        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
-        : "/app-logo.png";
-    },
     dataProtection() {
       return this.instance?.dataProtection || {};
     },
@@ -208,17 +170,6 @@ export default {
     termsHref() {
       return legalDocumentHref(this.termsAndConditions.url);
     },
-    legalLinks() {
-      const links = [];
-      const add = (key, label) => {
-        const url = legalDocumentHref(this.instance?.[key]?.url);
-        if (url) links.push({ key, label, url });
-      };
-      add("dataProtection", "Datenschutz");
-      add("legalNotice", "Impressum");
-      add("termsAndConditions", "AGB");
-      return links;
-    },
     invitationParams() {
       const url = this.nextUrl;
       if (!url) return { token: null, tenantId: null };
@@ -236,7 +187,7 @@ export default {
       return { token, tenantId };
     },
   },
-  components: { ContactInformation },
+  components: { AuthPage },
   data() {
     return {
       id: "",
@@ -252,9 +203,7 @@ export default {
       dataProtectionAcceptRules: [
         (v) => v === true || "Bitte stimmen Sie der Datenschutzerklärung zu",
       ],
-      termsAcceptRules: [
-        (v) => v === true || "Bitte stimmen Sie den AGB zu",
-      ],
+      termsAcceptRules: [(v) => v === true || "Bitte stimmen Sie den AGB zu"],
       tenants: [],
       tenantRules: [(v) => !!v || "Mandant ist erforderlich"],
       firstNameRules: [(v) => !!v || "Vorname ist erforderlich"],
@@ -366,3 +315,37 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.register-form {
+  padding: var(--scb-section-body-padding);
+  padding-top: var(--scb-space-5);
+}
+
+.register-form__row {
+  display: flex;
+  gap: var(--scb-space-4);
+}
+
+.register-form__row > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The consents sit right before the action, on the faint selection tint,
+   so they are read as part of the form and not as small print. */
+.register-form__consent {
+  padding: 14px var(--scb-space-3);
+  border: 1px solid var(--scb-surface-border);
+  border-radius: var(--scb-radius-control);
+  background-color: var(--scb-selected-tint-faint);
+}
+
+/* $scb-bp-xs of tokens.scss; a scoped style cannot read it. */
+@media (max-width: 599px) {
+  .register-form__row {
+    flex-direction: column;
+    gap: var(--scb-space-4);
+  }
+}
+</style>

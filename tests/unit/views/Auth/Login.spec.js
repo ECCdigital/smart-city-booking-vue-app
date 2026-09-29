@@ -10,8 +10,13 @@ vi.mock("@/services/api/ApiAuthService", () => ({
   },
 }));
 vi.mock("@/services/auth/authMode", () => ({ isBffAuthMode: () => false }));
-vi.mock("@/components/ContactInformation.vue", () => ({
-  default: { name: "ContactInformation", render: () => null },
+vi.mock("@/components/Auth/AuthPage.vue", () => ({
+  default: {
+    name: "AuthPage",
+    render(h) {
+      return h("div", this.$slots.default);
+    },
+  },
 }));
 vi.mock("@/components/Auth/LoginCard.vue", () => ({
   default: {

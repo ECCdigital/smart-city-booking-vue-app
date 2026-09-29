@@ -1,95 +1,100 @@
 <template>
-  <v-card flat max-width="500">
-    <v-card-text class="text-center">
-      <v-form ref="loginForm" @keydown.enter="signin">
-        <v-text-field
-          outlined
-          hide-details
-          label="Email Adresse"
-          placeholder="jemand@domain.de"
-          class="mb-5"
-          v-model="id"
-          :rules="[rules.required]"
-          prepend-inner-icon="mdi-email"
-          autocomplete="email"
-          id="email"
-          name="email"
-          type="email"
-          @keydown.enter="signin"
-        />
-        <v-text-field
-          outlined
-          hide-details
-          label="Passwort"
-          placeholder="Ihr Passwort"
-          v-model="password"
-          :type="showPassword ? 'text' : 'password'"
-          :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-          @click:append="showPassword = !showPassword"
-          :rules="[rules.required]"
-          prepend-inner-icon="mdi-lock"
-          autocomplete="current-password"
-          id="password"
-          name="password"
-          @keydown.enter="signin"
-        />
-      </v-form>
-      <div class="text-left mt-2">
+  <div class="login-card">
+    <v-form ref="loginForm" @submit.prevent="signin">
+      <v-text-field
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="E-Mail-Adresse"
+        class="mb-4"
+        v-model="id"
+        :rules="[rules.required]"
+        autocomplete="email"
+        id="email"
+        name="email"
+        type="email"
+      />
+      <v-text-field
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="Passwort"
+        v-model="password"
+        :type="showPassword ? 'text' : 'password'"
+        :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+        @click:append="showPassword = !showPassword"
+        :rules="[rules.required]"
+        autocomplete="current-password"
+        id="password"
+        name="password"
+      />
+      <div class="d-flex justify-end mt-2 mb-4">
         <router-link
           :to="{ name: 'password-reset' }"
-          class="forgot-link"
+          class="login-card__link"
           rel="noopener"
           target="_blank"
         >
           Passwort vergessen?
         </router-link>
       </div>
-    </v-card-text>
-
-    <v-card-actions class="px-4">
-      <v-btn :to="{ name: 'register' }" target="_blank" outlined>
-        Konto erstellen
-      </v-btn>
-      <v-spacer />
-      <v-btn color="primary" elevation="0" @click="signin" :loading="isLoading">
+      <v-btn
+        type="submit"
+        color="primary"
+        block
+        elevation="0"
+        :loading="isLoading"
+      >
         Anmelden
       </v-btn>
-    </v-card-actions>
+    </v-form>
 
     <!-- ═══════ Alternative Methoden ═══════ -->
     <template v-if="hasAlternativeMethods">
-      <v-card-text class="px-4 pb-0">
-        <v-row no-gutters align="center">
-          <v-col><v-divider /></v-col>
-          <v-col cols="auto" class="mx-2">
-            <span class="text--secondary text-caption">oder</span>
-          </v-col>
-          <v-col><v-divider /></v-col>
-        </v-row>
-      </v-card-text>
+      <div class="login-card__or my-4">
+        <v-divider />
+        <span class="text-caption text--secondary mx-3">oder</span>
+        <v-divider />
+      </div>
 
-      <v-card-actions class="px-4 pt-2" style="gap: 8px">
-        <v-row>
-          <v-col cols="12">
-            <v-btn v-if="ssoActive" block outlined elevation="0" @click="sso">
-              <v-img
-                src="@/assets/keycloak.svg"
-                max-width="80"
-                class="mr-2"
-                alt="Keycloak"
-              /> </v-btn
-          ></v-col>
-
-          <v-col v-for="method in cardMethods" :key="method.id" cols="12"
-            ><v-btn block outlined elevation="0" @click="goToCardLogin(method)">
-              <v-icon left>mdi-card-account-details</v-icon>
-              Mit {{ method.label }} anmelden
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-card-actions>
+      <v-btn
+        v-if="ssoActive"
+        block
+        outlined
+        elevation="0"
+        class="mb-3"
+        @click="sso"
+      >
+        <v-icon left>mdi-domain</v-icon>
+        Über Single Sign-on anmelden
+      </v-btn>
+      <v-btn
+        v-for="method in cardMethods"
+        :key="method.id"
+        block
+        outlined
+        elevation="0"
+        class="mb-3"
+        @click="goToCardLogin(method)"
+      >
+        <v-icon left>mdi-card-account-details</v-icon>
+        Mit {{ method.label }} anmelden
+      </v-btn>
     </template>
-  </v-card>
+
+    <p v-if="!hideRegisterLink" class="login-card__register mt-4 mb-0">
+      <span class="text--secondary">Noch nicht registriert?</span>
+      <router-link
+        :to="{ name: 'register' }"
+        class="login-card__link login-card__link--strong"
+        target="_blank"
+      >
+        Registrieren
+      </router-link>
+    </p>
+  </div>
 </template>
 
 <script>
@@ -110,6 +115,10 @@ export default {
     cardMethods: {
       type: Array,
       default: () => [],
+    },
+    hideRegisterLink: {
+      type: Boolean,
+      default: false,
     },
   },
 
@@ -194,7 +203,27 @@ export default {
 </script>
 
 <style scoped>
-.forgot-link {
-  font-size: 0.85rem;
+.login-card {
+  padding: var(--scb-section-body-padding);
+  padding-top: var(--scb-space-5);
+}
+
+.login-card__link {
+  font-size: var(--scb-font-size-sm);
+  text-decoration: none;
+}
+
+.login-card__link--strong {
+  font-weight: var(--scb-font-weight-medium);
+}
+
+.login-card__or {
+  display: flex;
+  align-items: center;
+}
+
+.login-card__register {
+  text-align: center;
+  font-size: var(--scb-font-size-md);
 }
 </style>
