@@ -342,7 +342,6 @@
     "home": {
       "section": "Meine Mandanten",
       "count": "Kein Mandant | Ein Mandant | {n} Mandanten",
-      "hint": "Wählen Sie einen Mandanten aus, um fortzufahren.",
       "group": {
         "mine": "Meine Mandanten",
         "mine-hint": "Mandanten, in denen Sie Mitglied sind.",

@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
+import {
+  filterOptionLabels,
+  openFilterCard,
+  pickFilterOption,
+  typeSearch,
+} from "@tests/unit/support/search";
 
 vi.mock("@/services/api/ApiSupervisionService", () => ({
   default: { getTenantHistory: vi.fn(), getInstanceHistory: vi.fn() },
@@ -145,10 +151,9 @@ describe("SupervisionHistoryList", () => {
       tenants: [{ id: "t-2", name: "Makerspace" }],
     });
 
-    wrapper.findComponent({ ref: "tenantFilter" }).vm.$emit("input", "t-2");
-    wrapper
-      .findComponent({ ref: "offerTypeFilter" })
-      .vm.$emit("input", "event");
+    await openFilterCard(wrapper);
+    await pickFilterOption("Makerspace");
+    await pickFilterOption("Veranstaltung");
     await flushPromises();
 
     expect(ApiSupervisionService.getInstanceHistory).toHaveBeenLastCalledWith({
@@ -162,8 +167,20 @@ describe("SupervisionHistoryList", () => {
   it("offers no tenant filter within one tenant's history", async () => {
     const wrapper = await mountList({ tenantId: "t-1" });
 
-    expect(wrapper.find("[data-test='history-filter-tenant']").exists()).toBe(
-      false
+    await openFilterCard(wrapper);
+
+    expect(filterOptionLabels()).toEqual(["Buchungsobjekt", "Veranstaltung"]);
+  });
+
+  it("searches the offer id on the server once the user stops typing", async () => {
+    const wrapper = await mountList({ tenantId: "t-1" });
+
+    await typeSearch(wrapper.find("input[data-test='history-search']"), "b-7");
+    await flushPromises();
+
+    expect(ApiSupervisionService.getTenantHistory).toHaveBeenLastCalledWith(
+      "t-1",
+      { page: 1, pageSize: 25, offerId: "b-7" }
     );
   });
 

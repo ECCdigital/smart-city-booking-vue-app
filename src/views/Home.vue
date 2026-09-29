@@ -13,8 +13,6 @@
       @invitation:rejected="fetchTenants"
     />
 
-    <p class="tenant-home__lead">{{ $t("tenant.home.hint") }}</p>
-
     <!-- The search band (SearchBar), the view switch beneath it. -->
     <SearchBar
       v-model="search"
@@ -574,12 +572,6 @@ export default {
 </script>
 
 <style scoped>
-.tenant-home__lead {
-  margin-bottom: var(--scb-space-3);
-  font-size: var(--scb-font-size-md);
-  color: var(--scb-text-muted);
-}
-
 /* The app's buttons capitalise every word (!important, variables.scss);
    the labels here are sentences, so the override needs the same weight. */
 .tenant-home__create,
