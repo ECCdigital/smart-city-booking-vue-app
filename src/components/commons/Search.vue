@@ -11,42 +11,17 @@
     @clear="clearAll"
   >
     <template v-if="showFilters" #filter>
-      <v-list v-if="filterOptions.length" dense>
-        <v-list-item
-          dense
-          v-for="(opt, i) in filterOptions"
-          :key="i"
-          @click="toggleFilter(opt)"
-        >
-          <v-list-item-action>
-            <v-checkbox
-              :input-value="selectedFilters.includes(opt)"
-              @change.prevent
-            />
-          </v-list-item-action>
-          <v-list-item-content>
-            <v-list-item-title>{{ opt }}</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
-      <v-list v-else dense>
-        <v-list-item disabled>Keine Filter verfügbar</v-list-item>
-      </v-list>
+      <FilterCardPrototype
+        :sections="filterSections"
+        :active-count="selectedFilters.length"
+        @toggle="(key, opt) => toggleFilter(opt)"
+        @reset-section="selectedFilters = []"
+        @reset="selectedFilters = []"
+      />
     </template>
 
-    <template v-if="sortable || selectedFilters.length" #actions>
+    <template v-if="sortable" #actions>
       <div class="d-flex align-center flex-wrap">
-        <v-chip
-          v-for="(f, idx) in selectedFilters"
-          :key="`f-${idx}`"
-          close
-          @click:close="removeFilter(f)"
-          color="primary"
-          small
-          class="mr-1"
-        >
-          {{ f }}
-        </v-chip>
         <template v-if="sortable">
           <v-chip-group
             v-model="sortBy"
@@ -91,6 +66,7 @@
 <script>
 import Fuse from "fuse.js";
 import SearchBarPrototype from "./prototype/SearchBarPrototype.vue";
+import FilterCardPrototype from "./prototype/FilterCardPrototype.vue";
 
 // PROTOTYPE (#54): the searched keys as the placeholder of variant B names them.
 const KEY_LABELS = {
@@ -104,7 +80,7 @@ const KEY_LABELS = {
 
 export default {
   name: "Search",
-  components: { SearchBarPrototype },
+  components: { SearchBarPrototype, FilterCardPrototype },
   props: {
     items: { type: Array, required: true },
     keys: { type: Array, default: () => [] },
@@ -135,6 +111,20 @@ export default {
     };
   },
   computed: {
+    filterSections() {
+      return [
+        {
+          key: "tags",
+          label: "Tags",
+          selected: this.selectedFilters,
+          options: this.filterOptions.map((opt) => ({
+            value: opt,
+            label: opt,
+            icon: "mdi-tag-outline",
+          })),
+        },
+      ];
+    },
     fieldsHint() {
       const labels = this.keys.map((k) => KEY_LABELS[k] || k);
       if (labels.length < 2) return labels.join("");

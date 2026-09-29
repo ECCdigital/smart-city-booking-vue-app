@@ -14,77 +14,19 @@
           :total-count="members.length"
         >
           <template #filter>
-            <div>
-              <v-list dense>
-                <v-subheader>Status</v-subheader>
-                <v-list-item
-                  dense
-                  v-for="(opt, i) in statusOptions"
-                  :key="i"
-                  @click="
-                    {
-                      const index = statusFilter.indexOf(opt.value);
-                      if (index > -1) {
-                        statusFilter.splice(index, 1);
-                      } else {
-                        statusFilter.push(opt.value);
-                      }
-                    }
-                  "
-                >
-                  <v-list-item-action>
-                    <v-checkbox
-                      :input-value="statusFilter.includes(opt.value)"
-                      @change.prevent
-                    />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ opt.text }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-
-              <v-list dense>
-                <v-subheader>Besitzer</v-subheader>
-                <v-list-item @click="ownerOnly = !ownerOnly">
-                  <v-list-item-action>
-                    <v-checkbox :input-value="ownerOnly" @change.prevent />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>Nur Besitzer anzeigen</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-
-              <v-list dense>
-                <v-subheader>Rolle</v-subheader>
-                <v-list-item
-                  dense
-                  v-for="(opt, i) in api.roles"
-                  :key="i"
-                  @click="
-                    {
-                      const index = roleFilter.indexOf(opt.id);
-                      if (index > -1) {
-                        roleFilter.splice(index, 1);
-                      } else {
-                        roleFilter.push(opt.id);
-                      }
-                    }
-                  "
-                >
-                  <v-list-item-action>
-                    <v-checkbox
-                      :input-value="roleFilter.includes(opt.id)"
-                      @change.prevent
-                    />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ opt.name }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-            </div>
+            <FilterCardPrototype
+              :sections="protoFilterSections"
+              :active-count="
+                statusFilter.length + roleFilter.length + (ownerOnly ? 1 : 0)
+              "
+              @toggle="protoToggleFilter"
+              @reset-section="protoResetFilter"
+              @reset="
+                statusFilter = [];
+                roleFilter = [];
+                ownerOnly = false;
+              "
+            />
           </template>
         </SearchBarPrototype>
 
@@ -403,6 +345,7 @@
 <script>
 import AdminLayout from "@/layouts/Admin.vue";
 import SearchBarPrototype from "@/components/commons/prototype/SearchBarPrototype.vue";
+import FilterCardPrototype from "@/components/commons/prototype/FilterCardPrototype.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
@@ -415,6 +358,7 @@ import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.
 export default {
   components: {
     SearchBarPrototype,
+    FilterCardPrototype,
     TenantUserDetailDialog,
     TenantInviteUserDialog,
     AdminLayout,
@@ -454,6 +398,51 @@ export default {
       loading: "loading/isLoading",
       tenantId: "tenants/currentTenantId",
     }),
+    // PROTOTYPE (#54): the filters as sections of the filter card.
+    protoFilterSections() {
+      const statusIcons = {
+        pending: ["mdi-clock-outline", "orange"],
+        active: ["mdi-check-circle-outline", "green"],
+        suspended: ["mdi-cancel", "red"],
+        rejected: ["mdi-close-circle-outline", "grey"],
+      };
+      return [
+        {
+          key: "status",
+          label: "Status",
+          selected: this.statusFilter,
+          options: this.statusOptions.map((opt) => ({
+            value: opt.value,
+            label: opt.text,
+            icon: statusIcons[opt.value]?.[0],
+            color: statusIcons[opt.value]?.[1],
+          })),
+        },
+        {
+          key: "owner",
+          label: "Besitzer",
+          selected: this.ownerOnly ? ["owner"] : [],
+          options: [
+            {
+              value: "owner",
+              label: "Nur Besitzer anzeigen",
+              icon: "mdi-crown",
+              color: "amber",
+            },
+          ],
+        },
+        {
+          key: "role",
+          label: "Rolle",
+          selected: this.roleFilter,
+          options: this.api.roles.map((role) => ({
+            value: role.id,
+            label: role.name,
+            icon: "mdi-shield-account-outline",
+          })),
+        },
+      ];
+    },
     members() {
       return this.api.users.map((user) => {
         const details = this.api.userDetails.find(
@@ -530,6 +519,20 @@ export default {
     },
   },
   methods: {
+    protoToggleFilter(key, value) {
+      if (key === "owner") {
+        this.ownerOnly = !this.ownerOnly;
+        return;
+      }
+      const list = key === "status" ? this.statusFilter : this.roleFilter;
+      const index = list.indexOf(value);
+      index > -1 ? list.splice(index, 1) : list.push(value);
+    },
+    protoResetFilter(key) {
+      if (key === "owner") this.ownerOnly = false;
+      if (key === "status") this.statusFilter = [];
+      if (key === "role") this.roleFilter = [];
+    },
     ...mapActions({
       startLoading: "loading/start",
       stopLoading: "loading/stop",

@@ -1,134 +1,81 @@
 <template>
   <!--
-    PROTOTYPE (ECCdigital/tickets#54), throwaway. Three variants of the one
-    search bar of the admin UI, switchable via ?variant= on the real list
-    pages (the six pages of Search.vue, Buchungen, Mitglieder):
+    PROTOTYPE (ECCdigital/tickets#54), throwaway. Round 2: variant B
+    (Suchband) won round 1 (A Werkzeugleiste and C Titelzeile are in commit
+    227b072). The filter opens the card of the booking list everywhere; the
+    two variants differ only in the trigger:
 
-      A Werkzeugleiste  compact field in a toolbar row under the title
-      B Suchband        full-width band above the list, actions beneath
-      C Titelzeile      small field in the title row, right-aligned
+      B   Filter hinten  the magnifier in front, "Filter · n" at the end
+      B2  Filter vorne   the funnel with its badge in front, as on Buchungen,
+                         the magnifier at the end
 
-    All three behave the same: filter while typing after 300 ms, a cross as
-    soon as there is text, the cross empties the field at once.
+    Both behave the same: filter while typing after 300 ms, a cross as soon
+    as there is text, the cross empties the field at once.
   -->
-  <div class="proto-search">
-    <!-- A: Werkzeugleiste --------------------------------------------- -->
-    <div v-if="variant === 'A'" class="scb-toolbar proto-search-a">
-      <v-text-field
-        :value="raw"
-        :placeholder="placeholder"
-        append-icon="mdi-magnify"
-        dense
-        outlined
-        clearable
-        hide-details
-        class="scb-search"
-        @input="onInput"
-        @click:clear="onClear"
-      >
-        <template v-if="hasFilter" #prepend-inner>
-          <v-menu v-bind="menuProps">
-            <template #activator="{ on, attrs }">
-              <v-badge
-                :value="filterCount > 0"
-                :content="filterCount"
-                color="primary"
-                overlap
-              >
-                <v-btn icon small v-bind="attrs" v-on="on">
-                  <v-icon>mdi-filter-variant</v-icon>
-                </v-btn>
-              </v-badge>
-            </template>
-            <slot name="filter" />
-          </v-menu>
-        </template>
-      </v-text-field>
-      <v-spacer />
-      <slot name="actions" />
-    </div>
-
-    <!-- B: Suchband ---------------------------------------------------- -->
-    <div v-else-if="variant === 'B'" class="proto-search-b">
-      <v-text-field
-        :value="raw"
-        :placeholder="placeholderFields"
-        prepend-inner-icon="mdi-magnify"
-        outlined
-        clearable
-        hide-details
-        class="proto-search-b__field"
-        @input="onInput"
-        @click:clear="onClear"
-      >
-        <template v-if="hasFilter" #append>
-          <v-divider vertical class="proto-search-b__divider" />
-          <v-menu v-bind="menuProps" left>
-            <template #activator="{ on, attrs }">
+  <div class="proto-search-b">
+    <v-text-field
+      :value="raw"
+      :placeholder="placeholderFields"
+      :prepend-inner-icon="variant === 'B' ? 'mdi-magnify' : undefined"
+      :append-icon="variant === 'B2' ? 'mdi-magnify' : undefined"
+      outlined
+      clearable
+      hide-details
+      class="proto-search-b__field"
+      @input="onInput"
+      @click:clear="onClear"
+    >
+      <!-- B2: the funnel in front, as on Buchungen -->
+      <template v-if="hasFilter && variant === 'B2'" #prepend-inner>
+        <v-menu v-bind="menuProps">
+          <template #activator="{ on, attrs }">
+            <v-badge
+              :value="filterCount > 0"
+              :content="filterCount"
+              color="primary"
+              overlap
+            >
               <v-btn
-                text
+                icon
                 small
-                class="proto-search-b__filter"
-                :color="filterCount ? 'primary' : undefined"
+                class="proto-search-b__funnel"
+                :class="{ 'proto-search-b__funnel--active': filterCount > 0 }"
                 v-bind="attrs"
                 v-on="on"
+                @click.stop
               >
-                <v-icon left small>mdi-filter-variant</v-icon>
-                Filter<template v-if="filterCount">
-                  · {{ filterCount }}</template
-                >
+                <v-icon>mdi-filter-variant</v-icon>
               </v-btn>
-            </template>
-            <slot name="filter" />
-          </v-menu>
-        </template>
-      </v-text-field>
-      <div v-if="$scopedSlots.actions" class="proto-search-b__below">
-        <slot name="actions" />
-      </div>
-    </div>
+            </v-badge>
+          </template>
+          <slot name="filter" />
+        </v-menu>
+      </template>
 
-    <!-- C: Titelzeile -------------------------------------------------- -->
-    <template v-else>
-      <!-- The anchor stays put; its one child moves into the page's title
-           row (see mountInTitle) and is taken out again on leaving C. -->
-      <div class="proto-search-c__anchor">
-        <div ref="titleBar" class="proto-search-c">
-          <v-menu v-if="hasFilter" v-bind="menuProps" left>
-            <template #activator="{ on, attrs }">
-              <v-badge
-                :value="filterCount > 0"
-                :content="filterCount"
-                color="primary"
-                overlap
-              >
-                <v-btn icon v-bind="attrs" v-on="on">
-                  <v-icon>mdi-filter-variant</v-icon>
-                </v-btn>
-              </v-badge>
-            </template>
-            <slot name="filter" />
-          </v-menu>
-          <v-text-field
-            :value="raw"
-            placeholder="Suchen"
-            prepend-inner-icon="mdi-magnify"
-            solo
-            flat
-            dense
-            clearable
-            hide-details
-            class="proto-search-c__field"
-            @input="onInput"
-            @click:clear="onClear"
-          />
-        </div>
-      </div>
-      <div v-if="$scopedSlots.actions" class="scb-toolbar proto-search-c__row">
-        <v-spacer />
-        <slot name="actions" />
-      </div>
-    </template>
+      <!-- B: "Filter · n" at the end -->
+      <template v-if="hasFilter && variant === 'B'" #append>
+        <v-divider vertical class="proto-search-b__divider" />
+        <v-menu v-bind="menuProps" left>
+          <template #activator="{ on, attrs }">
+            <v-btn
+              text
+              small
+              class="proto-search-b__filter"
+              :color="filterCount ? 'primary' : undefined"
+              v-bind="attrs"
+              v-on="on"
+            >
+              <v-icon left small>mdi-filter-variant</v-icon>
+              Filter<template v-if="filterCount"> · {{ filterCount }}</template>
+            </v-btn>
+          </template>
+          <slot name="filter" />
+        </v-menu>
+      </template>
+    </v-text-field>
+    <div v-if="$scopedSlots.actions" class="proto-search-b__below">
+      <slot name="actions" />
+    </div>
 
     <PrototypeSwitcher
       :variants="variants"
@@ -149,9 +96,8 @@ import PrototypeSwitcher from "./PrototypeSwitcher.vue";
 const DEBOUNCE_MS = 300;
 
 const VARIANTS = {
-  A: "Werkzeugleiste",
-  B: "Suchband",
-  C: "Titelzeile",
+  B: "Suchband, Filter hinten",
+  B2: "Suchband, Filter vorne wie Buchungen",
 };
 
 export default {
@@ -160,15 +106,15 @@ export default {
   props: {
     // The committed (debounced) query; v-model.
     value: { type: String, default: "" },
-    // A: "<Objekt> suchen…"
+    // Fallback when there is no fieldsHint: "<Objekt> suchen…"
     placeholder: { type: String, default: "Suchen…" },
-    // B: "Suchen nach <fields> …", e.g. "Titel oder ID"
+    // "Suchen nach <fields> …", e.g. "Titel oder ID"
     fieldsHint: { type: String, default: "" },
     filterCount: { type: Number, default: 0 },
     resultCount: { type: Number, default: null },
     totalCount: { type: Number, default: null },
-    menuWidth: { type: Number, default: 300 },
-    menuContentClass: { type: String, default: "" },
+    menuWidth: { type: Number, default: 340 },
+    menuContentClass: { type: String, default: "proto-filter-menu" },
   },
   data() {
     return {
@@ -180,7 +126,7 @@ export default {
   computed: {
     variant() {
       const v = this.$route.query.variant;
-      return VARIANTS[v] ? v : "A";
+      return VARIANTS[v] ? v : "B";
     },
     hasFilter() {
       return !!this.$scopedSlots.filter;
@@ -206,19 +152,9 @@ export default {
     value(v) {
       if (!this.timer) this.raw = v || "";
     },
-    variant: {
-      handler(v) {
-        this.unmountFromTitle();
-        if (v === "C") this.$nextTick(this.mountInTitle);
-      },
-    },
-  },
-  mounted() {
-    if (this.variant === "C") this.mountInTitle();
   },
   beforeDestroy() {
     clearTimeout(this.timer);
-    this.unmountFromTitle();
   },
   methods: {
     onInput(v) {
@@ -236,35 +172,13 @@ export default {
       this.$emit("input", "");
       this.$emit("clear");
     },
-    // Variant C: wrap the page's <h1> and the bar in one flex row.
-    mountInTitle() {
-      const page = this.$el.closest(".admin-page");
-      const h1 = page && page.querySelector("h1");
-      const bar = this.$refs.titleBar;
-      if (!h1 || !bar || this._titleRow) return;
-      const row = document.createElement("div");
-      row.className = "proto-title-row";
-      h1.parentNode.insertBefore(row, h1);
-      row.appendChild(h1);
-      row.appendChild(bar);
-      this._titleRow = { row, h1 };
-    },
-    unmountFromTitle() {
-      if (!this._titleRow) return;
-      const { row, h1 } = this._titleRow;
-      row.parentNode.insertBefore(h1, row);
-      row.remove();
-      this._titleRow = null;
-    },
   },
 };
 </script>
 
 <style lang="scss">
-// Not scoped: variant C lives outside this component's element, and the
-// Vuetify internals need no ::v-deep. Every class is prototype-prefixed.
-
-// --- B: Suchband -------------------------------------------------------------
+// Not scoped: the Vuetify internals and the menu (detached to the app root)
+// need no ::v-deep. Every class is prototype-prefixed.
 
 .proto-search-b {
   margin-bottom: var(--scb-space-5);
@@ -304,6 +218,15 @@ export default {
   }
 }
 
+// B2: the funnel tinted primary while a filter restricts, as on Buchungen.
+.proto-search-b__funnel--active {
+  color: var(--v-primary-base) !important;
+
+  &::before {
+    opacity: 0.12;
+  }
+}
+
 .proto-search-b__divider {
   align-self: stretch;
   margin: var(--scb-space-2) var(--scb-space-2) var(--scb-space-2)
@@ -324,53 +247,14 @@ export default {
   margin-top: var(--scb-space-3);
 }
 
-// --- C: Titelzeile -----------------------------------------------------------
+// The menu around the card, as .booking-filter-menu on Buchungen.
+.proto-filter-menu {
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14) !important;
 
-.proto-title-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--scb-space-2) var(--scb-space-4);
-  margin-bottom: var(--scb-space-4);
-
-  > h1 {
-    flex: 1 1 auto;
-    margin-bottom: 0 !important;
-  }
-}
-
-.proto-search-c {
-  display: flex;
-  align-items: center;
-  gap: var(--scb-space-1);
-  flex: 0 1 300px;
-}
-
-.v-text-field.proto-search-c__field {
-  > .v-input__control > .v-input__slot {
-    border-radius: var(--scb-radius-pill) !important;
-    background: var(--scb-surface-tint) !important;
-    transition: background var(--scb-motion-fast);
-  }
-
-  &:hover > .v-input__control > .v-input__slot {
-    background: var(--scb-hover-tint-strong) !important;
-  }
-
-  &.v-input--is-focused > .v-input__control > .v-input__slot {
-    background: var(--scb-surface) !important;
-    box-shadow: 0 0 0 1px var(--v-primary-base) !important;
-  }
-
-  .v-input__icon .v-icon {
-    color: var(--scb-text-caption);
-  }
-}
-
-// $scb-bp-xs: the title row stacks, the field takes the width.
-@media (max-width: 599px) {
-  .proto-search-c {
-    flex-basis: 100%;
+  .v-card {
+    border-radius: 14px !important;
   }
 }
 </style>
