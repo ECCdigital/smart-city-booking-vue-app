@@ -1,5 +1,5 @@
 <template>
-  <AuthPage active="login">
+  <AuthPage active="login" :next="$route.query.next">
     <div
       v-if="checkingSharedSession"
       class="d-flex flex-column align-center py-8"

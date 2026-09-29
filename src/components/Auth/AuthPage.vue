@@ -28,6 +28,12 @@ export default {
       type: String,
       default: "",
     },
+    // The return target the switch hands on: the other page clears a
+    // target it is not handed, so it travels along as `?next=`.
+    next: {
+      type: String,
+      default: null,
+    },
   },
 
   computed: {
@@ -48,7 +54,12 @@ export default {
           icon: "mdi-account-plus-outline",
           label: "Registrieren",
         },
-      ];
+      ].map((tab) => ({
+        ...tab,
+        to: this.next
+          ? { name: tab.route, query: { next: this.next } }
+          : { name: tab.route },
+      }));
     },
     appLogo() {
       return process.env.BASE_URL && process.env.BASE_URL.trim()
@@ -91,7 +102,7 @@ export default {
         <router-link
           v-for="tab in tabs"
           :key="tab.key"
-          :to="{ name: tab.route }"
+          :to="tab.to"
           class="auth-page__pill"
           :class="{ 'auth-page__pill--active': tab.key === active }"
           :aria-current="tab.key === active ? 'page' : null"

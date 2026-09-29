@@ -11,6 +11,26 @@
         hide-details
         v-model="isPublic"
       ></v-switch>
+      <div class="event-review">
+        <p
+          v-if="publicationWishHint"
+          class="text-caption text--secondary mt-2 mb-0"
+          data-test="publication-wish-hint"
+        >
+          <v-icon small class="mr-1">mdi-information-outline</v-icon>
+          {{ $t(publicationWishHint) }}
+        </p>
+        <OfferReviewPanel
+          class="mt-4"
+          :tenant-id="form.tenantId || tenantId"
+          :offer-type="offerType"
+          :offer-id="form.id"
+          :review="review"
+          :is-public="isPublic === true"
+          :supervision-level="supervisionLevel"
+          @update:review="setReview"
+        />
+      </div>
       <v-btn
         v-if="formHasChanged"
         class="mt-10"
@@ -31,7 +51,11 @@ import { required, email, max } from "vee-validate/dist/rules";
 import { extend, setInteractionMode } from "vee-validate";
 import { mapActions, mapGetters } from "vuex";
 import ApiEventService from "@/services/api/ApiEventService";
+import ApiReviewService from "@/services/api/ApiReviewService";
 import ToastService from "@/services/ToastService";
+import OfferReviewPanel from "@/components/Supervision/OfferReviewPanel.vue";
+import { publicationWishHintKey } from "@/utils/offerReview";
+import { OFFER_TYPES } from "@/utils/supervision";
 
 setInteractionMode("eager");
 
@@ -55,6 +79,7 @@ export default {
   components: {
     FormLayout,
     MultiStepper,
+    OfferReviewPanel,
   },
 
   data() {
@@ -84,14 +109,21 @@ export default {
       ],
       formHasChanged: false,
       allowPublic: true,
+      offerType: OFFER_TYPES.EVENT,
     };
   },
 
   computed: {
     ...mapGetters({
       form: "events/form",
+      review: "events/review",
       isLoading: "loading/isLoading",
+      tenantId: "tenants/currentTenantId",
+      supervisionLevel: "tenants/currentSupervisionLevel",
     }),
+    publicationWishHint() {
+      return publicationWishHintKey(this.supervisionLevel);
+    },
     name() {
       return this.data;
     },
@@ -124,6 +156,7 @@ export default {
       stopLoading: "loading/stop",
       restoreFromApi: "events/restoreFromApi",
       updateValue: "events/updateForm",
+      setReview: "events/setReview",
       addToast: "toasts/add",
     }),
     goBack() {
@@ -159,7 +192,7 @@ export default {
     },
     submitForm() {
       ApiEventService.addEvent()
-        .then(() => {})
+        .then(() => this.refreshReview())
         .finally(() => {
           this.formHasChanged = false;
           this.addToast(ToastService.createToast("event.update.success", "success"));
@@ -168,6 +201,25 @@ export default {
           this.addToast(ToastService.createToast("errors.something-wrong", "error"));
           console.log(error);
         });
+    },
+    /**
+     * A save can move the review - the first publication wish submits the
+     * event - but answers no body, so the status is read again. A failed
+     * read leaves the save a success and the old status in place.
+     */
+    async refreshReview() {
+      if (!this.form.id) return;
+      try {
+        this.setReview(
+          await ApiReviewService.getReview(
+            this.form.tenantId || this.tenantId,
+            this.offerType,
+            this.form.id
+          )
+        );
+      } catch (error) {
+        // The status stays as shown until the event is loaded again.
+      }
     },
     async allowSetPublic() {
       const eventCountCheck = await ApiEventService.publicEventCountCheck();
@@ -181,3 +233,10 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* The sidebar column sizes to its content; the review texts must not widen it. */
+.event-review {
+  max-width: 280px;
+}
+</style>

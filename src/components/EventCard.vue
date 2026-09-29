@@ -120,6 +120,11 @@
       >
         {{ item.information?.name }}
       </h3>
+      <ReviewStatusChip
+        class="mt-1"
+        :review="item.review"
+        :supervision-level="supervisionLevel"
+      />
     </div>
 
     <v-divider></v-divider>
@@ -266,9 +271,11 @@ import BookablePermissionService from "@/services/permissions/BookablePermission
 import ApiExportService from "@/services/api/ApiExportService";
 import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
+import { mapGetters } from "vuex";
+import ReviewStatusChip from "@/components/Supervision/ReviewStatusChip.vue";
 
 export default {
-  components: { MediaReferenceImage, PlaceholderPattern },
+  components: { MediaReferenceImage, PlaceholderPattern, ReviewStatusChip },
   props: {
     fromRoute: String,
     item: {
@@ -285,6 +292,9 @@ export default {
     };
   },
   computed: {
+    ...mapGetters({
+      supervisionLevel: "tenants/currentSupervisionLevel",
+    }),
     teaserImage() {
       return this.item.information?.teaserImage || null;
     },

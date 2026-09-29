@@ -69,6 +69,24 @@ describe("TenantPermissionService", () => {
     });
   });
 
+  describe("isTenantMember", () => {
+    it("is true for a tenant the payload lists a membership for, owner or not", () => {
+      signIn({ tenants: [membership({ isOwner: false })] });
+
+      expect(TenantPermissionService.isTenantMember(TENANT_ID)).toBe(true);
+    });
+
+    it("is false for a tenant without membership, even for the instance owner", () => {
+      signIn({ instanceOwner: true, tenants: [] });
+
+      expect(TenantPermissionService.isTenantMember(TENANT_ID)).toBe(false);
+    });
+
+    it("is false while nobody is signed in", () => {
+      expect(TenantPermissionService.isTenantMember(TENANT_ID)).toBe(false);
+    });
+  });
+
   describe("allowCreate", () => {
     it("lets the instance owner through", () => {
       signIn({ instanceOwner: true, allowCreateTenant: false });
@@ -172,6 +190,126 @@ describe("TenantPermissionService", () => {
     it("returns false without a membership for that tenant", () => {
       signIn({ tenants: [membership({ tenantId: "other-tenant" })] });
       expect(TenantPermissionService.allowDelete({ id: TENANT_ID })).toBe(
+        false
+      );
+    });
+  });
+
+  describe("allowReadiness", () => {
+    it("lets the instance owner see the check of any tenant", () => {
+      signIn({ instanceOwner: true, tenants: [] });
+      expect(TenantPermissionService.allowReadiness("other-tenant")).toBe(true);
+    });
+
+    it("lets the owner of that tenant see it", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowReadiness(TENANT_ID)).toBe(true);
+    });
+
+    it("keeps it from members who do not own the tenant", () => {
+      signIn({
+        tenants: [
+          membership({ isOwner: false, manageUsers: { updateAny: true } }),
+        ],
+      });
+      expect(TenantPermissionService.allowReadiness(TENANT_ID)).toBe(false);
+    });
+
+    it("keeps the check of a foreign tenant from another tenant's owner", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowReadiness("other-tenant")).toBe(
+        false
+      );
+    });
+
+    it("falls back to the current tenant when none is passed", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowReadiness()).toBe(true);
+    });
+  });
+
+  // Backend: `reviewSubmit: { own: "tenantOwner", any: "instanceOwner" }`,
+  // `reviewDecide: { any: "instanceOwner" }` - for bookables and events alike.
+  describe("reviewViewer", () => {
+    it("names the owner of the tenant as the one who submits", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.reviewViewer(TENANT_ID)).toEqual({
+        tenantOwner: true,
+        instanceOwner: false,
+      });
+    });
+
+    it("names the instance owner as the one who decides", () => {
+      signIn({ instanceOwner: true });
+      expect(TenantPermissionService.reviewViewer(TENANT_ID)).toEqual({
+        tenantOwner: false,
+        instanceOwner: true,
+      });
+    });
+
+    it("names a member without ownership, and another tenant's owner, as neither", () => {
+      signIn({ tenants: [membership({ isOwner: false })] });
+      expect(TenantPermissionService.reviewViewer(TENANT_ID)).toEqual({
+        tenantOwner: false,
+        instanceOwner: false,
+      });
+
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(
+        TenantPermissionService.reviewViewer("other-tenant").tenantOwner
+      ).toBe(false);
+    });
+  });
+
+  describe("allowSupervise", () => {
+    it("lets the instance owner change the supervision level", () => {
+      signIn({ instanceOwner: true });
+      expect(TenantPermissionService.allowSupervise()).toBe(true);
+    });
+
+    it("keeps the level change from a tenant owner", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowSupervise()).toBe(false);
+    });
+  });
+
+  describe("allowSupervisionHistory", () => {
+    it("lets the instance owner read the history of any tenant", () => {
+      signIn({ instanceOwner: true, tenants: [] });
+      expect(
+        TenantPermissionService.allowSupervisionHistory("other-tenant")
+      ).toBe(true);
+    });
+
+    it("lets the owner of the tenant read its history", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowSupervisionHistory()).toBe(true);
+    });
+
+    it("keeps it from members who do not own the tenant", () => {
+      signIn({ tenants: [membership({ isOwner: false })] });
+      expect(TenantPermissionService.allowSupervisionHistory(TENANT_ID)).toBe(
+        false
+      );
+    });
+
+    it("keeps a foreign tenant's history from another tenant's owner", () => {
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(
+        TenantPermissionService.allowSupervisionHistory("other-tenant")
+      ).toBe(false);
+    });
+  });
+
+  describe("allowInstanceSupervisionHistory", () => {
+    it("is the instance owner's alone", () => {
+      signIn({ instanceOwner: true });
+      expect(TenantPermissionService.allowInstanceSupervisionHistory()).toBe(
+        true
+      );
+
+      signIn({ tenants: [membership({ isOwner: true })] });
+      expect(TenantPermissionService.allowInstanceSupervisionHistory()).toBe(
         false
       );
     });

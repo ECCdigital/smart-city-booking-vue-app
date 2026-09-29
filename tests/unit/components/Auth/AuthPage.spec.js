@@ -35,6 +35,20 @@ describe("AuthPage — the switch between the two pages", () => {
     expect(pills.at(0).attributes("aria-current")).toBeUndefined();
   });
 
+  it("hands the return target on to both pages", () => {
+    const wrapper = mountAuthPage("login", {}, { next: "/onboarding" });
+
+    const pills = wrapper.findAllComponents(RouterLinkStub);
+    expect(pills.at(0).props("to")).toEqual({
+      name: "login",
+      query: { next: "/onboarding" },
+    });
+    expect(pills.at(1).props("to")).toEqual({
+      name: "register",
+      query: { next: "/onboarding" },
+    });
+  });
+
   it("heads a page of its own with its title instead of the switch", () => {
     const wrapper = mountAuthPage(
       null,

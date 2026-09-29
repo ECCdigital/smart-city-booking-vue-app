@@ -16,7 +16,9 @@ const ApiEventService = (await import("@/services/api/ApiEventService"))
 
 /**
  * Creating is a POST since ticket 12 of the backend's authorization map;
- * the PUT carries `update` alone.
+ * the PUT carries `update` alone. The review (glossary "Prüfstatus") changes
+ * through its own operations alone (`ApiReviewService`); the backend strips
+ * it from a store body.
  */
 describe("ApiEventService", () => {
   beforeEach(() => {
@@ -56,6 +58,35 @@ describe("ApiEventService", () => {
     expect(global.ApiClient.post).not.toHaveBeenCalled();
   });
 
+  it("does not send the review when storing the event form", async () => {
+    storeDouble.form = {
+      id: "e-1",
+      isPublic: true,
+      information: { name: "Konzert" },
+      review: { status: "approved" },
+    };
+
+    await ApiEventService.addEvent();
+
+    const [path, body] = global.ApiClient.put.mock.calls[0];
+    expect(path).toBe("api/t1/events?withTickets=false");
+    expect(body).not.toHaveProperty("review");
+    expect(body).toMatchObject({ id: "e-1", isPublic: true, tenantId: "t1" });
+    expect(storeDouble.form).toHaveProperty("review");
+  });
+
+  it("does not send the review when creating an event", async () => {
+    storeDouble.form = {
+      information: { name: "Neu" },
+      review: { status: "pending" },
+    };
+
+    await ApiEventService.addEvent();
+
+    const [, body] = global.ApiClient.post.mock.calls[0];
+    expect(body).not.toHaveProperty("review");
+  });
+
   it("duplicates over POST, without the id of the original", async () => {
     global.ApiClient.get.mockResolvedValue({
       data: { id: "e1", _id: "x", information: { name: "Fest" } },
@@ -68,5 +99,22 @@ describe("ApiEventService", () => {
       information: { name: "Fest (Kopie)" },
     });
     expect(global.ApiClient.put).not.toHaveBeenCalled();
+  });
+
+  it("duplicates an event without its review", async () => {
+    global.ApiClient.get.mockResolvedValue({
+      data: {
+        id: "e-1",
+        isPublic: true,
+        information: { name: "Konzert" },
+        review: { status: "approved" },
+      },
+    });
+
+    await ApiEventService.duplicateEvent("e-1");
+
+    const [, body] = global.ApiClient.post.mock.calls[0];
+    expect(body).not.toHaveProperty("review");
+    expect(body.information.name).toBe("Konzert (Kopie)");
   });
 });

@@ -1,8 +1,16 @@
 import store from "@/store";
 import PersistenceService from "@/services/PersistenceService";
+import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import { tenantToHold } from "@/utils/tenantMembership";
 
 const namespaced = true;
+
+function membership(state, tenantId) {
+  return (
+    state.data?.permissions?.tenants?.find((p) => p.tenantId === tenantId) ||
+    null
+  );
+}
 
 const state = {
   data: PersistenceService.getFromLocalStorage("user") || null,
@@ -60,6 +68,23 @@ const getters = {
       return adIfces.adminInterfaces.includes(ifce);
     }
     return false;
+  },
+  // The supervision level of a tenant as the sign-in names it per membership
+  // (`permissions.tenants[]`); `null` where it names none.
+  supervisionLevelOf: (state) => (tenantId) =>
+    membership(state, tenantId)?.supervisionLevel ?? null,
+  /**
+   * The membership - level, time and reason included - of a declined tenant
+   * (glossary „abgewiesen“), whose management is closed to its own people.
+   * `null` for every other tenant and for an instance owner, who keeps them
+   * all.
+   */
+  declinedMembership: (state) => (tenantId) => {
+    if (state.data?.permissions?.instanceOwner) return null;
+    const entry = membership(state, tenantId);
+    return entry?.supervisionLevel === SUPERVISION_LEVELS.DECLINED
+      ? entry
+      : null;
   },
   allowToCreateTenants: (state) => {
     if (state.data && state.data.permissions) {

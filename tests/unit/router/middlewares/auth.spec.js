@@ -75,3 +75,47 @@ describe("requiresAuth", () => {
     expect(next).toHaveBeenCalledWith(false);
   });
 });
+
+describe("requiresAuth — the public entry „Angebote bereitstellen“", () => {
+  /** The link the storefront points to, opened by a signed-out visitor. */
+  const ONBOARDING = {
+    name: "tenant-onboarding",
+    fullPath: "/onboarding",
+    meta: { requiresAuth: true, publicEntry: true },
+  };
+
+  beforeEach(() => {
+    doubles.me = vi.fn(async () => {
+      throw new Error("401");
+    });
+  });
+
+  it("leads a signed-out visitor to the login, keeping the setup as target", async () => {
+    const next = vi.fn();
+
+    await requiresAuth({ to: ONBOARDING, next });
+
+    expect(next).toHaveBeenCalledWith({
+      name: "login",
+      query: { next: "/onboarding" },
+    });
+  });
+
+  it("does not tell a visitor who never signed in that a session expired", async () => {
+    await requiresAuth({ to: ONBOARDING, next: vi.fn() });
+
+    expect(doubles.dispatch).not.toHaveBeenCalledWith(
+      "toasts/add",
+      expect.anything()
+    );
+  });
+
+  it("still tells it on every other page", async () => {
+    await requiresAuth({ to: BOOKING_LINK, next: vi.fn() });
+
+    expect(doubles.dispatch).toHaveBeenCalledWith(
+      "toasts/add",
+      expect.objectContaining({ type: "error" })
+    );
+  });
+});

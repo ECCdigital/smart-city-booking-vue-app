@@ -3,6 +3,34 @@
     <v-form ref="rootForm" v-model="validRoot">
       <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
+      <v-alert
+        v-if="onboardingReturnRoute"
+        type="info"
+        text
+        dense
+        data-test="onboarding-return"
+      >
+        <div class="d-flex align-center flex-wrap">
+          <span>{{ $t("tenant.onboarding.return-banner") }}</span>
+          <v-spacer />
+          <v-btn small color="primary" :to="onboardingReturnRoute">
+            {{ $t("tenant.onboarding.back-to-wizard") }}
+          </v-btn>
+        </div>
+      </v-alert>
+
+      <v-alert
+        v-if="editsForeignTenant"
+        type="info"
+        text
+        dense
+        data-test="foreign-tenant-banner"
+      >
+        {{
+          $t("tenant.list.edit-banner", { name: tenant?.name || tenant?.id })
+        }}
+      </v-alert>
+
       <div class="d-flex align-center mb-2">
         <div>
           <div class="text--secondary">
@@ -129,6 +157,8 @@ import TenantEditWorkflow from "@/components/Tenant/Edit/TenantEditWorkflow.vue"
 import TenantEditVerificationChallenges from "@/components/Tenant/Edit/TenantEditVerificationChallenges.vue";
 import TenantEditCatalog from "@/components/Tenant/Edit/TenantEditCatalog.vue";
 import TenantEditLegal from "@/components/Tenant/Edit/TenantEditLegal.vue";
+import TenantEditReadiness from "@/components/Tenant/Edit/TenantEditReadiness.vue";
+import TenantEditSupervision from "@/components/Tenant/Edit/TenantEditSupervision.vue";
 
 import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
 import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
@@ -142,6 +172,7 @@ import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vu
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
 import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
+import { onboardingReturnRoute } from "@/utils/tenantOnboarding";
 import {
   createLockAndAccessAppDefaults,
   findTenantApp,
@@ -167,6 +198,8 @@ export default {
     TenantEditCatalog,
     TenantEditBookables,
     TenantEditLegal,
+    TenantEditReadiness,
+    TenantEditSupervision,
   },
   mixins: [unsavedChangesGuard],
   data() {
@@ -238,6 +271,20 @@ export default {
           label: "Rechtliches",
           icon: "mdi-scale-balance",
           comp: "TenantEditLegal",
+        },
+        {
+          key: "readiness",
+          label: this.$t("tenant.readiness.tab"),
+          icon: "mdi-clipboard-check-outline",
+          comp: "TenantEditReadiness",
+          permission: "readiness",
+        },
+        {
+          key: "supervision",
+          label: this.$t("supervision.history.tab"),
+          icon: "mdi-history",
+          comp: "TenantEditSupervision",
+          permission: "supervisionHistory",
         },
       ],
       instanceCustomFields: [],
@@ -333,6 +380,20 @@ export default {
     visibleTabs() {
       return this.tabs.filter((tab) => this.isTabVisible(tab));
     },
+    // Opened from the guided setup: the way back to the step it came from.
+    /**
+     * The instance owner editing a tenant that is not one of their own: the
+     * page says so, since it looks the same as the owner's own tenant page.
+     */
+    editsForeignTenant() {
+      return (
+        TenantPermissionService.isInstanceOwner() === true &&
+        !TenantPermissionService.isTenantOwner(this.tenantId)
+      );
+    },
+    onboardingReturnRoute() {
+      return onboardingReturnRoute(this.$route.query, this.tenant?.id);
+    },
     currentComponent() {
       return this.visibleTabs[this.activeTab]?.comp || "TenantEditGeneral";
     },
@@ -368,6 +429,12 @@ export default {
       if (!tab.permission) return true;
       if (tab.permission === "updateTenant") {
         return TenantPermissionService.allowUpdate();
+      }
+      if (tab.permission === "readiness") {
+        return TenantPermissionService.allowReadiness();
+      }
+      if (tab.permission === "supervisionHistory") {
+        return TenantPermissionService.allowSupervisionHistory();
       }
       return true;
     },

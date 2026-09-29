@@ -19,9 +19,14 @@ const { requireRequestOrigin, spaPath } = require("../publicUrl");
 
 const router = express.Router();
 
-function sendBackendError(res, status, data, fallbackMessage) {
+/** `response` (optional) hands on the `Retry-After` of a hit time limit. */
+function sendBackendError(res, status, data, fallbackMessage, response) {
   const message =
     (data && (data.message || data.statusMessage)) || fallbackMessage;
+  const retryAfter = response?.headers?.get("retry-after");
+  if (retryAfter) {
+    res.set("Retry-After", retryAfter);
+  }
   return res.status(status || 500).json({
     success: false,
     message,
@@ -128,7 +133,7 @@ router.post("/login", async (req, res) => {
  */
 router.post("/signup", async (req, res) => {
   try {
-    const { status, data, ok } = await backendFetch("/auth/signup", {
+    const { status, data, ok, response } = await backendFetch("/auth/signup", {
       method: "POST",
       body: req.body || {},
     });
@@ -146,12 +151,42 @@ router.post("/signup", async (req, res) => {
     }
 
     if (!ok) {
-      return sendBackendError(res, status, data, "Signup failed");
+      return sendBackendError(res, status, data, "Signup failed", response);
     }
 
     return res.sendStatus(status || 201);
   } catch (error) {
     return sendCaughtError(res, error, "Signup failed");
+  }
+});
+
+/**
+ * The verification mail again. BFF-owned for the same body-consumed reason as
+ * /signup; the backend's account-neutral `202` and its `429` pass through.
+ */
+router.post("/resend-verification", async (req, res) => {
+  try {
+    const { status, data, ok, response } = await backendFetch(
+      "/auth/resend-verification",
+      { method: "POST", body: req.body || {} }
+    );
+
+    if (!ok) {
+      return sendBackendError(
+        res,
+        status,
+        data,
+        "Verification mail request failed",
+        response
+      );
+    }
+
+    if (data !== null && data !== undefined) {
+      return res.status(status || 202).json(data);
+    }
+    return res.sendStatus(status || 202);
+  } catch (error) {
+    return sendCaughtError(res, error, "Verification mail request failed");
   }
 });
 
