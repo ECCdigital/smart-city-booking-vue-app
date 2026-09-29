@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
+import { RouterLinkStub } from "@vue/test-utils";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
 
@@ -23,7 +24,7 @@ function mountCard(query = {}, fullPath = "/login") {
 
   return mountComponent(LoginCard, {
     store,
-    stubs: { RouterLink: true },
+    stubs: { RouterLink: RouterLinkStub },
     mocks: {
       $router: { push: vi.fn() },
       $route: { query, fullPath },
@@ -31,17 +32,17 @@ function mountCard(query = {}, fullPath = "/login") {
   });
 }
 
-const registerButton = (wrapper) =>
+const registerLink = (wrapper) =>
   wrapper
-    .findAllComponents({ name: "v-btn" })
-    .filter((button) => button.text() === "Konto erstellen")
+    .findAllComponents(RouterLinkStub)
+    .filter((link) => link.text() === "Registrieren")
     .at(0);
 
 describe("LoginCard — the way to the registration", () => {
   it("hands the page that asked for the login on to the registration", () => {
     const wrapper = mountCard({ next: "/onboarding" });
 
-    expect(registerButton(wrapper).props("to")).toEqual({
+    expect(registerLink(wrapper).props("to")).toEqual({
       name: "register",
       query: { next: "/onboarding" },
     });
@@ -50,7 +51,7 @@ describe("LoginCard — the way to the registration", () => {
   it("opens the plain registration when nothing asked for the login", () => {
     const wrapper = mountCard();
 
-    expect(registerButton(wrapper).props("to")).toEqual({ name: "register" });
+    expect(registerLink(wrapper).props("to")).toEqual({ name: "register" });
   });
 });
 

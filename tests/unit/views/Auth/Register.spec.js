@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
+import { RouterLinkStub } from "@vue/test-utils";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
 
@@ -43,7 +44,7 @@ function mountRegister(next, unmatched = [], stored = null) {
 
   return mountComponent(Register, {
     store,
-    stubs: { RouterLink: true },
+    stubs: { RouterLink: RouterLinkStub },
     mocks: {
       $router: {
         push,
@@ -69,10 +70,10 @@ async function register(wrapper) {
 /** The return target `ApiAuthService.register` was handed. */
 const sentTarget = () => ApiAuthService.register.mock.calls[0][6];
 
-const loginButton = (wrapper) =>
+const loginLink = (wrapper) =>
   wrapper
-    .findAllComponents({ name: "v-btn" })
-    .filter((button) => button.text() === "Konto vorhanden?")
+    .findAllComponents(RouterLinkStub)
+    .filter((link) => link.text() === "Anmelden")
     .at(0);
 
 /** The toast the view showed last. */
@@ -129,7 +130,7 @@ describe("Register — back to the login", () => {
     const wrapper = mountRegister("/onboarding");
     await flushPromises();
 
-    expect(loginButton(wrapper).props("to")).toEqual({
+    expect(loginLink(wrapper).props("to")).toEqual({
       name: "login",
       query: { next: "/onboarding" },
     });
@@ -139,7 +140,7 @@ describe("Register — back to the login", () => {
     const wrapper = mountRegister();
     await flushPromises();
 
-    expect(loginButton(wrapper).props("to")).toEqual({ name: "login" });
+    expect(loginLink(wrapper).props("to")).toEqual({ name: "login" });
   });
 });
 
