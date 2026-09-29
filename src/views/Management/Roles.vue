@@ -2,14 +2,7 @@
   <AdminLayout>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <v-text-field
-          v-model="search"
-          label="Rolle suchen..."
-          append-icon="mdi-magnify"
-          solo
-          clearable
-          class="search-field"
-        ></v-text-field>
+        <SearchBar v-model="search" :fields="$t('role.list.search')" />
         <div
           v-if="loading"
           class="elevation-2"
@@ -131,12 +124,14 @@ import RoleDeleteConformationDialog from "@/components/Role/roleDeleteConformati
 import { Role, RolePermission, adminInterfaceOptions } from "@/entities/role";
 import i18n from "../../language/index";
 import RolePermissionService from "@/services/permissions/RolePermissionService";
+import SearchBar from "@/components/commons/SearchBar.vue";
 
 export default {
   components: {
     RoleDeleteConformationDialog,
     AdminLayout,
     RoleEdit,
+    SearchBar,
   },
   data() {
     return {
@@ -262,9 +257,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.search-field {
-  border-radius: 15px;
-}
-</style>

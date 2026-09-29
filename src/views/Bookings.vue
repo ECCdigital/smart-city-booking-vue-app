@@ -1,100 +1,57 @@
 <template>
   <AdminLayout>
     <div class="page-header">
-      <!-- The toolbar (toolbar.scss): search with the filter in front on
-           the left, the view switch and the actions on the right. -->
-      <div class="scb-toolbar">
-        <v-text-field
-          v-model="searchTerm"
-          label="Buchung suchen..."
-          append-icon="mdi-magnify"
-          dense
-          outlined
-          clearable
-          hide-details
-          class="scb-search search-field"
-        >
-          <template v-slot:prepend-inner>
-            <v-menu
-              bottom
-              right
-              offset-y
-              nudge-bottom="8"
-              min-width="340"
-              max-width="340"
-              :close-on-content-click="false"
-              content-class="booking-filter-menu"
-            >
-              <template v-slot:activator="{ on, attrs }">
-                <v-badge
-                  :value="activeFilterCount > 0"
-                  :content="activeFilterCount"
-                  color="primary"
-                  overlap
-                  class="booking-filter-trigger-badge"
-                >
-                  <v-btn
-                    icon
-                    small
-                    v-bind="attrs"
-                    v-on="on"
-                    class="booking-filter-trigger"
-                    :class="{
-                      'booking-filter-trigger--active': activeFilterCount > 0,
-                    }"
-                    @click.stop
-                  >
-                    <v-icon>mdi-filter-variant</v-icon>
-                  </v-btn>
-                </v-badge>
-              </template>
-
-              <BookingFilterCard
-                :booking-type-filter.sync="bookingTypeFilter"
-                :status-filter.sync="statusFilter"
-                :active-count="activeFilterCount"
-                @reset="resetFilters"
-              />
-            </v-menu>
-          </template>
-        </v-text-field>
-        <v-spacer />
-        <v-btn-toggle
-          v-model="currentView"
-          mandatory
-          dense
-          color="primary"
-          class="scb-views"
-        >
-          <v-btn value="list" small class="scb-view">
-            <v-icon left small> mdi-list-box-outline </v-icon>
-            Liste
-          </v-btn>
-          <v-btn value="calendar" small class="scb-view">
-            <v-icon left small> mdi-calendar-blank-outline </v-icon>
-            Kalender
-          </v-btn>
-          <v-btn v-if="workflow.active" value="kanban" small class="scb-view">
-            <v-icon left small> mdi-table-column </v-icon>
-            Kanban
-          </v-btn>
-        </v-btn-toggle>
-        <v-tooltip v-if="currentView === 'kanban'" bottom>
-          <template v-slot:activator="{ on }">
-            <v-btn
-              v-on="on"
-              icon
-              small
-              :class="{ 'active-button': showBacklog }"
-              @click="showBacklog = !showBacklog"
-            >
-              <v-icon>mdi-tray-full</v-icon>
+      <!-- The search band (SearchBar) with the filter in front; the view
+           switch, backlog and export in the row beneath it. -->
+      <SearchBar
+        v-model="searchTerm"
+        :fields="$t('booking.search')"
+        :filters="filterSections"
+        data-test="booking-search"
+        @filter="onFilter"
+      >
+        <template #actions>
+          <v-btn-toggle
+            v-model="currentView"
+            mandatory
+            dense
+            color="primary"
+            class="scb-views"
+          >
+            <v-btn value="list" small class="scb-view">
+              <v-icon left small> mdi-list-box-outline </v-icon>
+              Liste
             </v-btn>
-          </template>
-          <span>Backlog ein-/ausblenden</span>
-        </v-tooltip>
-        <BookingExportButton :bookings="filteredBookings" :tenant="tenantId" />
-      </div>
+            <v-btn value="calendar" small class="scb-view">
+              <v-icon left small> mdi-calendar-blank-outline </v-icon>
+              Kalender
+            </v-btn>
+            <v-btn v-if="workflow.active" value="kanban" small class="scb-view">
+              <v-icon left small> mdi-table-column </v-icon>
+              Kanban
+            </v-btn>
+          </v-btn-toggle>
+          <v-spacer />
+          <v-tooltip v-if="currentView === 'kanban'" bottom>
+            <template v-slot:activator="{ on }">
+              <v-btn
+                v-on="on"
+                icon
+                small
+                :class="{ 'active-button': showBacklog }"
+                @click="showBacklog = !showBacklog"
+              >
+                <v-icon>mdi-tray-full</v-icon>
+              </v-btn>
+            </template>
+            <span>Backlog ein-/ausblenden</span>
+          </v-tooltip>
+          <BookingExportButton
+            :bookings="filteredBookings"
+            :tenant="tenantId"
+          />
+        </template>
+      </SearchBar>
     </div>
 
     <div class="page-content">
@@ -198,15 +155,19 @@ import ToastService from "@/services/ToastService";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
-import BookingFilterCard from "@/components/Booking/BookingFilterCard.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
 import { saveBlob } from "@/utils/fileDownload";
 import {
   bookingPageRoute,
   groupBookingPageRoute,
 } from "@/utils/bookingPageRoutes";
 import {
+  BOOKING_STATUS,
   allowsAction,
   filterBookingsByStatus,
+  statusColor,
+  statusIcon,
+  statusLabel,
   transitionTarget,
 } from "@/utils/bookingStatus";
 
@@ -239,7 +200,7 @@ function storeSearchTerm(searchTerm) {
 
 export default {
   components: {
-    BookingFilterCard,
+    SearchBar,
     BookingExportButton,
     ProcessingIndicator,
     GroupBookingDeleteConformationDialog,
@@ -297,11 +258,50 @@ export default {
     BookingPermissionService() {
       return BookingPermissionService;
     },
-    /** One restriction for a type other than "all", one per selected state. */
-    activeFilterCount() {
-      return (
-        (this.bookingTypeFilter !== "all" ? 1 : 0) + this.statusFilter.length
-      );
+    /**
+     * The filter card behind the funnel (spec N1): the booking type as a
+     * segment switch, the five states as a checkbox list. One restriction for
+     * a type other than "all", one per selected state.
+     */
+    filterSections() {
+      return [
+        {
+          key: "type",
+          label: this.$t("booking.filter.type"),
+          multiple: false,
+          segmented: true,
+          empty: "all",
+          selected: this.bookingTypeFilter,
+          options: [
+            {
+              value: "all",
+              label: this.$t("booking.filter.typeAll"),
+              icon: "mdi-view-grid-outline",
+            },
+            {
+              value: "single",
+              label: this.$t("booking.filter.typeSingle"),
+              icon: "mdi-calendar-check-outline",
+            },
+            {
+              value: "series",
+              label: this.$t("booking.filter.typeSeries"),
+              icon: "mdi-calendar-multiple",
+            },
+          ],
+        },
+        {
+          key: "status",
+          label: this.$t("booking.filter.status"),
+          selected: this.statusFilter,
+          options: Object.values(BOOKING_STATUS).map((status) => ({
+            value: status,
+            label: statusLabel(status),
+            color: statusColor(status),
+            icon: statusIcon(status),
+          })),
+        },
+      ];
     },
     isSelectedBookingHardDeleteBlocked() {
       return !allowsAction(this.selectedBooking, "delete");
@@ -403,9 +403,9 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
-    resetFilters() {
-      this.bookingTypeFilter = "all";
-      this.statusFilter = [];
+    onFilter(key, selection) {
+      if (key === "type") this.bookingTypeFilter = selection;
+      if (key === "status") this.statusFilter = selection;
     },
     applyBookingTypeFilter(bookings) {
       if (this.bookingTypeFilter === "single") {
@@ -674,15 +674,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-/* The tint rides on the button's own overlay: Vuetify's `::before` is `currentColor`. */
-.booking-filter-trigger--active {
-  color: var(--v-primary-base) !important;
-
-  &::before {
-    opacity: 0.12;
-  }
-}
-
 ::v-deep .active-button {
   color: black !important;
   background-color: var(--v-secondary-base) !important;
@@ -711,17 +702,5 @@ body {
 
 .page-footer {
   flex: 0 0 auto;
-}
-</style>
-
-<style lang="scss">
-.booking-filter-menu {
-  border-radius: 14px !important;
-  overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14) !important;
-
-  .v-card {
-    border-radius: 14px !important;
-  }
 }
 </style>

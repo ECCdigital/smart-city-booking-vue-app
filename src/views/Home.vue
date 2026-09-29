@@ -15,40 +15,34 @@
 
     <p class="tenant-home__lead">{{ $t("tenant.home.hint") }}</p>
 
-    <!-- The toolbar (toolbar.scss): search left, the view switch right. -->
-    <div class="scb-toolbar">
-      <v-text-field
-        v-model="search"
-        :label="$t('tenant.home.search')"
-        append-icon="mdi-magnify"
-        dense
-        outlined
-        clearable
-        hide-details
-        class="scb-search"
-        data-test="tenant-search"
-      ></v-text-field>
-      <v-spacer />
-      <!-- Two views only, so the switch is a joined pair of buttons; one
-           of them is always on. -->
-      <v-btn-toggle
-        v-model="view"
-        mandatory
-        dense
-        color="primary"
-        class="scb-views"
-        :aria-label="$t('tenant.home.view.label')"
-      >
-        <v-btn value="grid" small class="scb-view" data-test="view-grid">
-          <v-icon left small>mdi-view-grid-outline</v-icon>
-          {{ $t("tenant.home.view.grid") }}
-        </v-btn>
-        <v-btn value="list" small class="scb-view" data-test="view-list">
-          <v-icon left small>mdi-format-list-bulleted</v-icon>
-          {{ $t("tenant.home.view.list") }}
-        </v-btn>
-      </v-btn-toggle>
-    </div>
+    <!-- The search band (SearchBar), the view switch beneath it. -->
+    <SearchBar
+      v-model="search"
+      :fields="$t('tenant.home.search')"
+      data-test="tenant-search"
+    >
+      <template #actions>
+        <!-- Two views only, so the switch is a joined pair of buttons; one
+             of them is always on. -->
+        <v-btn-toggle
+          v-model="view"
+          mandatory
+          dense
+          color="primary"
+          class="scb-views"
+          :aria-label="$t('tenant.home.view.label')"
+        >
+          <v-btn value="grid" small class="scb-view" data-test="view-grid">
+            <v-icon left small>mdi-view-grid-outline</v-icon>
+            {{ $t("tenant.home.view.grid") }}
+          </v-btn>
+          <v-btn value="list" small class="scb-view" data-test="view-list">
+            <v-icon left small>mdi-format-list-bulleted</v-icon>
+            {{ $t("tenant.home.view.list") }}
+          </v-btn>
+        </v-btn-toggle>
+      </template>
+    </SearchBar>
 
     <!-- The tenants in groups: the ones the user is a member of, then the
          rest of the instance, which only an instance owner sees. With no
@@ -356,6 +350,7 @@ import PendingTenantInvitations from "@/components/Tenant/PendingTenantInvitatio
 import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
 import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
 import DeclinedTenantNotice from "@/components/Supervision/DeclinedTenantNotice.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
 import { isSafeInternalRedirect } from "@/utils/safeRedirect";
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
@@ -393,6 +388,7 @@ export default {
     AdminLayout,
     SupervisionLevelChip,
     DeclinedTenantNotice,
+    SearchBar,
   },
   data() {
     return {

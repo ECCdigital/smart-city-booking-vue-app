@@ -2,96 +2,12 @@
   <AdminLayout>
     <v-row gutters align="stretch" class="mb-16">
       <v-col cols="12" class="mx-xs-auto d-flex flex-column" height="100%">
-        <v-text-field
+        <SearchBar
           v-model="search"
-          label="Mitglied suchen..."
-          append-icon="mdi-magnify"
-          solo
-          clearable
-          style="border-radius: 15px"
-        >
-          <template v-slot:prepend-inner>
-            <v-menu bottom left>
-              <template v-slot:activator="{ on, attrs }">
-                <v-badge :value="hasActiveFilters" color="primary" dot overlap>
-                  <v-btn icon v-bind="attrs" v-on="on">
-                    <v-icon>mdi-filter-variant</v-icon>
-                  </v-btn>
-                </v-badge>
-              </template>
-
-              <v-list dense>
-                <v-subheader>Status</v-subheader>
-                <v-list-item
-                  dense
-                  v-for="(opt, i) in statusOptions"
-                  :key="i"
-                  @click="
-                    {
-                      const index = statusFilter.indexOf(opt.value);
-                      if (index > -1) {
-                        statusFilter.splice(index, 1);
-                      } else {
-                        statusFilter.push(opt.value);
-                      }
-                    }
-                  "
-                >
-                  <v-list-item-action>
-                    <v-checkbox
-                      :input-value="statusFilter.includes(opt.value)"
-                      @change.prevent
-                    />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ opt.text }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-
-              <v-list dense>
-                <v-subheader>Besitzer</v-subheader>
-                <v-list-item @click="ownerOnly = !ownerOnly">
-                  <v-list-item-action>
-                    <v-checkbox :input-value="ownerOnly" @change.prevent />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>Nur Besitzer anzeigen</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-
-              <v-list dense>
-                <v-subheader>Rolle</v-subheader>
-                <v-list-item
-                  dense
-                  v-for="(opt, i) in api.roles"
-                  :key="i"
-                  @click="
-                    {
-                      const index = roleFilter.indexOf(opt.id);
-                      if (index > -1) {
-                        roleFilter.splice(index, 1);
-                      } else {
-                        roleFilter.push(opt.id);
-                      }
-                    }
-                  "
-                >
-                  <v-list-item-action>
-                    <v-checkbox
-                      :input-value="roleFilter.includes(opt.id)"
-                      @change.prevent
-                    />
-                  </v-list-item-action>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ opt.name }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-          </template>
-        </v-text-field>
+          :fields="$t('tenant.users.search')"
+          :filters="filterSections"
+          @filter="onFilter"
+        />
 
         <!-- Stats -->
         <v-row class="mb-3">
@@ -415,12 +331,14 @@ import ToastService from "@/services/ToastService";
 import TenantInviteUserDialog from "@/components/Tenant/TenantInviteUserDialog.vue";
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
 
 export default {
   components: {
     TenantUserDetailDialog,
     TenantInviteUserDialog,
     AdminLayout,
+    SearchBar,
   },
   data() {
     return {
@@ -445,10 +363,30 @@ export default {
         challenges: [],
       },
       statusOptions: [
-        { text: "Ausstehend", value: "pending" },
-        { text: "Aktiv", value: "active" },
-        { text: "Gesperrt", value: "suspended" },
-        { text: "Abgelehnt", value: "rejected" },
+        {
+          label: "Ausstehend",
+          value: "pending",
+          icon: "mdi-clock-outline",
+          color: "orange",
+        },
+        {
+          label: "Aktiv",
+          value: "active",
+          icon: "mdi-check-circle-outline",
+          color: "green",
+        },
+        {
+          label: "Gesperrt",
+          value: "suspended",
+          icon: "mdi-cancel",
+          color: "red",
+        },
+        {
+          label: "Abgelehnt",
+          value: "rejected",
+          icon: "mdi-close-circle-outline",
+          color: "grey",
+        },
       ],
     };
   },
@@ -514,12 +452,39 @@ export default {
       return this.filteredMembers.slice(start, end);
     },
 
-    hasActiveFilters() {
-      return (
-        this.statusFilter.length > 0 ||
-        this.roleFilter.length > 0 ||
-        this.ownerOnly
-      );
+    /** Status, owner and role behind the funnel of the search. */
+    filterSections() {
+      return [
+        {
+          key: "status",
+          label: "Status",
+          selected: this.statusFilter,
+          options: this.statusOptions,
+        },
+        {
+          key: "owner",
+          label: "Besitzer",
+          selected: this.ownerOnly ? ["owner"] : [],
+          options: [
+            {
+              value: "owner",
+              label: "Nur Besitzer anzeigen",
+              icon: "mdi-crown",
+              color: "amber",
+            },
+          ],
+        },
+        {
+          key: "role",
+          label: "Rolle",
+          selected: this.roleFilter,
+          options: this.api.roles.map((role) => ({
+            value: role.id,
+            label: role.name,
+            icon: "mdi-shield-account-outline",
+          })),
+        },
+      ];
     },
   },
   watch: {
@@ -538,6 +503,11 @@ export default {
       stopLoading: "loading/stop",
       addToast: "toasts/add",
     }),
+    onFilter(key, selection) {
+      if (key === "status") this.statusFilter = selection;
+      if (key === "owner") this.ownerOnly = selection.length > 0;
+      if (key === "role") this.roleFilter = selection;
+    },
 
     openUserDetail(user) {
       this.selectedUser = user;

@@ -25,6 +25,18 @@ Components are grouped by domain under `src/components/`:
 - `columns` is `[{ key, label, width, align }]`; `width` is a grid track (`"76px"`, `"minmax(160px, 1.5fr)"`). A `cell.<key>` scoped slot draws a cell, the `toolbar` slot holds filters and the reload.
 - Below 959px the grid folds into stacked rows with the column name before each cell.
 
+## Shared search bar
+
+`src/components/commons/SearchBar.vue` is the one search of every list (ECCdigital/tickets#54). A page does not draw a `v-text-field` for searching.
+
+- `v-model` is the query, handed on 300 ms after the last keystroke; the cross and an emptied field hand on `""` at once. What the page searches stays the page's business.
+- `fields` names what the page searches, for the placeholder „Suchen nach <fields> …“ — a translation key, e.g. `$t('bookable.list.search')`.
+- `filters` are the sections of the filter card behind the funnel (`FilterCard.vue`, shape in `src/utils/filterSections.js`: multiple choice as rows, single choice as rows or `segmented`); a change comes back as `filter(key, selection)`. No `filters`, no funnel.
+- The `actions` slot is the row beneath the band: view switch, sorting, actions.
+- Attributes such as `data-test` land on the input. Specs type through `typeSearch()` and open the card through `openFilterCard()` from `tests/unit/support/search.js`.
+
+`Search.vue` wraps it for the bookable and coupon lists (Fuse search over `keys`, tags, sorting).
+
 Views in `src/views/` are route-level pages. They compose components and handle page-level data loading.
 
 ## Component template

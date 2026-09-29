@@ -19,6 +19,7 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-radius-control: 4px; // rows, nav items, the id-copy chip
   --scb-radius-badge: 3px; // the "Experte" badge
   --scb-radius-pill: 16px; // the section sub-navigation links
+  --scb-radius-popover: 14px; // the filter card behind the search funnel
 
   // --- Surfaces -------------------------------------------------------------
   --scb-surface: #fff;
@@ -85,6 +86,7 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-section-header-height: 52px;
   --scb-row-height: 44px; // hairline rows, expansion-panel headers
   --scb-nav-item-height: 40px;
+  --scb-search-height: 48px; // the search band of every list (toolbar.scss)
   --scb-icon-size-header: 20px;
   --scb-app-bar-height: 64px; // what a sticky column subtracts from 100vh
   --scb-panel-width: 380px; // the booking page's detail panel
@@ -110,6 +112,8 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.06),
     0 10px 24px rgba(0, 0, 0, 0.11);
   --scb-card-lift: -3px;
+  // A menu over the page: the filter card behind the search funnel.
+  --scb-shadow-popover: 0 12px 40px rgba(0, 0, 0, 0.14);
   // The selected card: a primary ring plus a primary glow in place of the
   // grey ambient shadow - a close halo and a wide, faint one that fades out.
   --scb-glow-selected: 0 0 0 1px var(--v-primary-base),
@@ -154,6 +158,7 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-text-hover: rgba(255, 255, 255, 0.92);
 
   --scb-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --scb-shadow-popover: 0 12px 40px rgba(0, 0, 0, 0.5);
   --scb-shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.35),
     0 12px 28px rgba(0, 0, 0, 0.45);
   --scb-glow-selected: 0 0 0 1px var(--v-primary-base),

@@ -273,7 +273,9 @@
       "notSaved": "Die Preise des Anbieters erscheinen, sobald das Buchungsobjekt gespeichert ist."
     },
     "list": {
-      "forbidden": "Sie haben keinen Zugriff auf Buchungsobjekte."
+      "forbidden": "Sie haben keinen Zugriff auf Buchungsobjekte.",
+      "search": "Titel oder ID",
+      "search-location": "Titel, ID oder Ort"
     },
     "select": {
       "forbidden": "Keine Auswahl möglich – Sie haben keinen Zugriff auf Buchungsobjekte."
@@ -315,6 +317,9 @@
         "title": "Fehler beim Generieren",
         "message": "Leider ist ein Fehler beim Generieren des iCal-Dateien aufgetreten. Bitte versuchen Sie es erneut."
       }
+    },
+    "list": {
+      "search": "Name, ID oder Veranstalter"
     }
   },
   "instance": {
@@ -345,7 +350,7 @@
         "others-hint": "Mandanten der Instanz ohne Ihre Mitgliedschaft.",
         "count": "Kein Mandant | Ein Mandant | {n} Mandanten"
       },
-      "search": "Mandant suchen",
+      "search": "Name, Ansprechperson, Ort oder Mail",
       "view": {
         "label": "Ansicht",
         "grid": "Kacheln",
@@ -672,7 +677,7 @@
       "count": "Kein Mandant | Ein Mandant | {n} Mandanten",
       "hint": "Alle Mandanten der Instanz. Eine Zeile zeigt Kontakt, Aufsicht und Aktionen des Mandanten im Panel daneben.",
       "hint-catalog": "Dort schalten Sie auch, ob der Mandant im Katalog des Portals erscheint.",
-      "search": "Mandant suchen",
+      "search": "Name, Ansprechperson, Mail, Ort, Telefon oder ID",
       "reload": "Aktualisieren",
       "loading": "Mandanten werden geladen...",
       "empty": "Noch keine Mandanten",
@@ -724,6 +729,9 @@
         "title": "Neuer Mandant",
         "intro": "Name, Kontaktperson und E-Mail genügen. Alles Weitere lässt sich später in den Mandanten-Einstellungen ergänzen."
       }
+    },
+    "users": {
+      "search": "Name oder ID"
     }
   },
   "password": {
@@ -948,16 +956,11 @@
       "paidShort": "bezahlt"
     },
     "filter": {
-      "title": "Filter",
-      "none": "Keine Einschränkung",
-      "active": "1 Einschränkung aktiv | {n} Einschränkungen aktiv",
       "type": "Buchungstyp",
       "typeAll": "Alle",
       "typeSingle": "Einzel",
       "typeSeries": "Serie",
-      "status": "Status",
-      "reset": "zurücksetzen",
-      "resetAll": "Alle zurücksetzen"
+      "status": "Status"
     },
     "action": {
       "confirm": "Freigeben",
@@ -1153,7 +1156,8 @@
         "series": "Serie",
         "no-series": "keine"
       }
-    }
+    },
+    "search": "Name, Mail, Nummer oder Objekt"
   },
   "group-booking": {
     "create": {
@@ -1499,6 +1503,9 @@
         "title": "Fehler beim Bearbeiten",
         "message": "Ihr Profil konnte nicht aktualisiert werden."
       }
+    },
+    "list": {
+      "search": "Name oder ID"
     }
   },
   "coupon": {
@@ -1533,7 +1540,8 @@
       }
     },
     "list": {
-      "forbidden": "Sie haben keinen Zugriff auf Rabattcodes."
+      "forbidden": "Sie haben keinen Zugriff auf Rabattcodes.",
+      "search": "Rabattcode oder Beschreibung"
     }
   },
   "permissions": {
@@ -1593,7 +1601,8 @@
     "copySuccessIntern": {
       "title": "URL kopiert",
       "message": "Die Medien-URL wurde in die Zwischenablage kopiert. Das Medium ist intern — der Link ist nur mit Anmeldung aufrufbar."
-    }
+    },
+    "search": "Titel, Dateiname oder Alt-Text"
   },
   "receipt": {
     "create": {
@@ -1623,7 +1632,7 @@
       "hint": "Türen und Schließfachanlagen dieses Mandanten. Ein Zugangspunkt wird hier einmal angelegt und kann anschließend in beliebig vielen Buchungsobjekten verwendet werden.",
       "edit": "Bearbeiten",
       "reload": "Neu laden",
-      "search": "Zugangspunkt suchen...",
+      "search": "Bezeichnung, Anbieter, Typ, Herkunft oder Zuordnung",
       "save": "Speichern",
       "cancel": "Abbrechen",
       "close": "Schließen",
@@ -2391,8 +2400,7 @@
     "level": {
       "column": "Aufsichtsstufe",
       "filter": {
-        "label": "Aufsichtsstufe",
-        "all": "Alle Stufen"
+        "label": "Aufsichtsstufe"
       },
       "change": {
         "action": "Aufsichtsstufe ändern",
@@ -2521,6 +2529,29 @@
       "apply": "Übernehmen",
       "remove": "Link entfernen",
       "cancel": "Abbrechen"
+    }
+  },
+  "search": {
+    "placeholder": "Suchen nach {fields} …",
+    "clear": "Suche leeren"
+  },
+  "filter": {
+    "title": "Filter",
+    "none": "Keine Einschränkung",
+    "active": "1 Einschränkung aktiv | {n} Einschränkungen aktiv",
+    "reset": "zurücksetzen",
+    "resetAll": "Alle zurücksetzen",
+    "empty": "Keine Einträge",
+    "tags": "Tags"
+  },
+  "role": {
+    "list": {
+      "search": "Name"
+    }
+  },
+  "rule": {
+    "list": {
+      "search": "Name, Beschreibung oder Ressource"
     }
   }
 }

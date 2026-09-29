@@ -21,7 +21,7 @@
         <Search
           :items="api.resources"
           v-model="searchResults"
-          placeholder="Objekt suchen…"
+          :fields="$t('bookable.list.search')"
           :keys="searchKeys"
           filter-key="tags"
           :filter-options="api.tags"

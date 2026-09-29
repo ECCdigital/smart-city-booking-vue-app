@@ -1,17 +1,20 @@
 <template>
   <AdminLayout>
     <div class="page-content">
-      <div class="d-flex align-center flex-wrap mb-4">
-        <v-spacer />
-        <v-btn outlined class="mr-2" :to="{ name: 'rule-executions' }">
-          <v-icon left>mdi-history</v-icon>
-          Historie
-        </v-btn>
-        <v-btn color="primary" :to="{ name: 'rule-create' }">
-          <v-icon left>mdi-plus</v-icon>
-          Regel anlegen
-        </v-btn>
-      </div>
+      <!-- The search band (SearchBar), the actions in the row beneath it. -->
+      <SearchBar v-model="search" :fields="$t('rule.list.search')">
+        <template #actions>
+          <v-spacer />
+          <v-btn outlined :to="{ name: 'rule-executions' }">
+            <v-icon left>mdi-history</v-icon>
+            Historie
+          </v-btn>
+          <v-btn color="primary" :to="{ name: 'rule-create' }">
+            <v-icon left>mdi-plus</v-icon>
+            Regel anlegen
+          </v-btn>
+        </template>
+      </SearchBar>
 
       <v-alert
         v-if="engineEnabled === false"
@@ -36,15 +39,6 @@
       >
         Regeln führen zeitgesteuerte Aktionen (Cronjobs) gegen Datenobjekte aus.
       </v-alert>
-
-      <v-text-field
-        v-model="search"
-        label="Regel suchen..."
-        append-icon="mdi-magnify"
-        solo
-        clearable
-        style="border-radius: 15px"
-      />
 
       <v-progress-linear v-if="loading" indeterminate color="primary" />
 
@@ -175,10 +169,11 @@ import Fuse from "fuse.js";
 import ApiRuleEngineService from "@/services/api/ApiRuleEngineService";
 import RuleStatusBadge from "@/components/Instance/RuleEngine/RuleStatusBadge.vue";
 import RuleDeleteDialog from "@/components/Instance/RuleEngine/RuleDeleteDialog.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
 
 export default {
   name: "RuleEngineRules",
-  components: { AdminLayout, RuleStatusBadge, RuleDeleteDialog },
+  components: { AdminLayout, RuleStatusBadge, RuleDeleteDialog, SearchBar },
   data() {
     return {
       rules: [],
