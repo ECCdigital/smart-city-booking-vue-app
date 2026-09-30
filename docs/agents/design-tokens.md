@@ -30,7 +30,7 @@ The admin UI's visual vocabulary lives in `src/scss/tokens.scss` as CSS custom p
 
 -   `src/scss/section-card.scss` — the section card and its header strip (every sectioned editor and the booking pages)
 -   `src/scss/card.scss` — the interactive card `scb-card` (`--selected`, `--static`): bookable cards and the tenant cards of „Meine Mandanten“
--   `src/scss/toolbar.scss` — the search band `scb-search` that `SearchBar` draws on every list, the filter menu `scb-filter-menu`, and the row beneath the band `scb-toolbar` with the view switch `scb-views` / `scb-view`. A new search uses `SearchBar`, not a `v-text-field` of its own
+-   `src/scss/toolbar.scss` — the search band `scb-search` that `SearchBar` draws on every list, the filter menu `scb-filter-menu`, and the row beneath the band `scb-toolbar` with `ToolbarRow`'s `scb-toolbar-row` (views, sorting, further actions). A new search uses `SearchBar`, not a `v-text-field` of its own
 -   `src/scss/booking-page.scss` — captions, facts and rows of the booking pages; the booking editor's `BaseSection`
 -   `src/views/BookingPage.vue`, `src/components/Booking/BookingEdit.vue`, `BookingEditSummary.vue`
 -   `src/components/Bookable/BookableEdit.vue` (section nav, overview column, id chip) and `src/components/Bookable/Edit/*.vue`

@@ -368,10 +368,12 @@ export default {
 </script>
 
 <template>
+  <!-- mb-16: room beneath the list for the floating creation. -->
   <BaseSection
     :title="$t('accessPoint.management.title')"
     icon="mdi-door-closed-lock"
     :hint="$t('accessPoint.management.hint')"
+    class="mb-16"
   >
     <template v-slot:actions>
       <v-btn
@@ -383,15 +385,22 @@ export default {
       >
         <v-icon>mdi-refresh</v-icon>
       </v-btn>
-      <v-btn
-        class="create-access-point ml-2"
-        color="primary"
-        @click="openCreate"
-      >
-        <v-icon left>mdi-plus</v-icon>
-        {{ $t("accessPoint.management.create") }}
-      </v-btn>
     </template>
+
+    <!-- The creation floats bottom right, as it does on every main page. -->
+    <v-btn
+      class="create-access-point"
+      color="primary"
+      fixed
+      large
+      bottom
+      right
+      rounded
+      @click="openCreate"
+    >
+      <v-icon>mdi-plus</v-icon>
+      {{ $t("accessPoint.management.create") }}
+    </v-btn>
 
     <v-alert v-if="loadError" color="error" text dense class="mb-4">
       <v-icon left>mdi-alert-circle</v-icon>

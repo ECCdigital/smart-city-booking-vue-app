@@ -20,25 +20,7 @@
       data-test="tenant-search"
     >
       <template #actions>
-        <!-- Two views only, so the switch is a joined pair of buttons; one
-             of them is always on. -->
-        <v-btn-toggle
-          v-model="view"
-          mandatory
-          dense
-          color="primary"
-          class="scb-views"
-          :aria-label="$t('tenant.home.view.label')"
-        >
-          <v-btn value="grid" small class="scb-view" data-test="view-grid">
-            <v-icon left small>mdi-view-grid-outline</v-icon>
-            {{ $t("tenant.home.view.grid") }}
-          </v-btn>
-          <v-btn value="list" small class="scb-view" data-test="view-list">
-            <v-icon left small>mdi-format-list-bulleted</v-icon>
-            {{ $t("tenant.home.view.list") }}
-          </v-btn>
-        </v-btn-toggle>
+        <ToolbarRow :views="views" :view.sync="view" />
       </template>
     </SearchBar>
 
@@ -349,6 +331,7 @@ import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
 import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
 import DeclinedTenantNotice from "@/components/Supervision/DeclinedTenantNotice.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRow from "@/components/commons/ToolbarRow.vue";
 import { isSafeInternalRedirect } from "@/utils/safeRedirect";
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
@@ -387,6 +370,7 @@ export default {
     SupervisionLevelChip,
     DeclinedTenantNotice,
     SearchBar,
+    ToolbarRow,
   },
   data() {
     return {
@@ -409,6 +393,21 @@ export default {
       // „abgewiesen“); the instance owner is never handed one here.
       declinedMembership: "user/declinedMembership",
     }),
+    /** The two views in the row beneath the search: cards or rows. */
+    views() {
+      return [
+        {
+          value: "grid",
+          label: this.$t("tenant.home.view.grid"),
+          icon: "mdi-view-grid-outline",
+        },
+        {
+          value: "list",
+          label: this.$t("tenant.home.view.list"),
+          icon: "mdi-format-list-bulleted",
+        },
+      ];
+    },
     // The line between the groups: a membership in the permissions payload.
     // An instance owner is handed every tenant and is a member of few; for
     // everybody else the rest is empty and the groups stay unnamed.

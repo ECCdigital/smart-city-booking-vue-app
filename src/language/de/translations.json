@@ -351,7 +351,6 @@
       },
       "search": "Name, Ansprechperson, Ort oder Mail",
       "view": {
-        "label": "Ansicht",
         "grid": "Kacheln",
         "list": "Liste"
       },
@@ -1156,7 +1155,16 @@
         "no-series": "keine"
       }
     },
-    "search": "Name, Mail, Nummer oder Objekt"
+    "search": "Name, Mail, Nummer oder Objekt",
+    "view": {
+      "list": "Liste",
+      "calendar": "Kalender",
+      "kanban": "Kanban"
+    },
+    "backlog": {
+      "label": "Backlog",
+      "toggle": "Backlog ein-/ausblenden"
+    }
   },
   "group-booking": {
     "create": {
@@ -2534,6 +2542,17 @@
   "search": {
     "placeholder": "Suchen nach {fields} …",
     "clear": "Suche leeren"
+  },
+  "toolbar": {
+    "views": "Ansicht",
+    "sort": {
+      "caption": "Sortieren",
+      "by": "Nach {field} sortieren",
+      "turn": "Richtung umkehren",
+      "reset": "Sortierung zurücksetzen",
+      "asc": "aufsteigend",
+      "desc": "absteigend"
+    }
   },
   "filter": {
     "title": "Filter",
