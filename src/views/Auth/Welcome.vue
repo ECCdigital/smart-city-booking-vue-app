@@ -1,33 +1,38 @@
 <template>
-  <div>
-    <v-container class="pt-15 text-center">
-      <v-icon size="75" class="mb-5" color="primary">mdi-email</v-icon>
-      <h1>Herzlich willkommen!</h1>
-      <p class="lead">Vielen Dank für Ihre Registrierung. Falls die Adresse noch nicht registriert ist, haben wir Ihnen eine E-Mail gesendet, um Ihre Registrierung abzuschließen.</p>
+  <AuthPage title="Herzlich willkommen!" icon="mdi-email-outline">
+    <div class="scb-form">
+      <p class="scb-form__note mb-0">
+        Vielen Dank für Ihre Registrierung. Falls die Adresse noch nicht
+        registriert ist, haben wir Ihnen eine E-Mail gesendet, um Ihre
+        Registrierung abzuschließen.
+      </p>
       <v-btn
-        text
         color="primary"
-        class="mt-3"
+        block
+        elevation="0"
+        class="scb-form__submit mt-4"
         @click="login"
       >
-      Zum Login
+        Zum Login
       </v-btn>
-    </v-container>
-  </div>
+    </div>
+  </AuthPage>
 </template>
 
 <script>
+import AuthPage from "@/components/Auth/AuthPage.vue";
 
 export default {
   name: "Welcome",
+  components: { AuthPage },
 
   props: {
-    tenantId: String
+    tenantId: String,
   },
 
   data() {
     return {
-      websiteLink: ""
+      websiteLink: "",
     };
   },
 
@@ -36,9 +41,5 @@ export default {
       this.$router.push("/login");
     },
   },
-}
+};
 </script>
-
-<style scoped>
-
-</style>

@@ -1,65 +1,35 @@
 <template>
-  <v-container class="text-center">
-    <v-card outlined max-width="500" class="mx-auto mt-sm-10">
-      <v-card-text class="pa-8">
-        <v-img :src="appLogo" max-width="200" class="mx-auto mb-6" />
+  <AuthPage :title="title" :icon="iconName">
+    <div class="scb-form">
+      <v-alert :type="alertType" text dense class="mb-0">
+        {{ message }}
+      </v-alert>
+      <p v-if="hint" class="scb-form__note mt-4 mb-0">{{ hint }}</p>
+      <v-alert v-if="showRawReason" type="info" text dense class="mt-4 mb-0">
+        <div class="caption"><strong>Fehler-Code:</strong> {{ reason }}</div>
+      </v-alert>
 
-        <v-icon :color="iconColor" size="72" class="mb-4">
-          {{ iconName }}
-        </v-icon>
-
-        <h2 class="mb-3">{{ title }}</h2>
-
-        <p class="subtitle-2 mb-2">
-          {{ message }}
-        </p>
-
-        <p v-if="hint" class="body-2 text--secondary mb-6">
-          {{ hint }}
-        </p>
-
-        <v-alert
-          v-if="showRawReason"
-          type="info"
-          text
-          dense
-          class="text-left mt-4 mb-4"
-        >
-          <div class="caption"><strong>Fehler-Code:</strong> {{ reason }}</div>
-        </v-alert>
-
-        <div class="d-flex justify-center flex-wrap" style="gap: 8px">
-          <v-btn outlined :to="{ name: 'login' }">
-            <v-icon left>mdi-arrow-left</v-icon>
-            Zurück zur Anmeldung
-          </v-btn>
-
-          <v-btn v-if="canRetry" color="primary" elevation="0" @click="retry">
-            <v-icon left>mdi-refresh</v-icon>
-            Erneut versuchen
-          </v-btn>
-        </div>
-      </v-card-text>
-
-      <v-card-text class="text-center">
-        <ContactInformation class="px-6" />
-      </v-card-text>
-    </v-card>
-
-    <v-card elevation="0" max-width="500" class="mx-auto mt-2">
-      <v-card-text class="text-right pa-0">
-        <router-link to="/datenschutz">Datenschutz</router-link>
-        |
-        <router-link to="/nutzungsbedingungen">
-          Nutzungsbedingungen
+      <v-btn
+        v-if="canRetry"
+        color="primary"
+        block
+        elevation="0"
+        class="scb-form__submit mt-4"
+        @click="retry"
+      >
+        Erneut versuchen
+      </v-btn>
+      <p class="scb-form__switch mt-4 mb-0">
+        <router-link :to="{ name: 'login' }" class="scb-form__link">
+          Zurück zur Anmeldung
         </router-link>
-      </v-card-text>
-    </v-card>
-  </v-container>
+      </p>
+    </div>
+  </AuthPage>
 </template>
 
 <script>
-import ContactInformation from "@/components/ContactInformation.vue";
+import AuthPage from "@/components/Auth/AuthPage.vue";
 
 /**
  * Reason → UI mapping.
@@ -128,7 +98,7 @@ const DEFAULT_MAPPING = {
 
 export default {
   name: "CardLinkFailed",
-  components: { ContactInformation },
+  components: { AuthPage },
 
   computed: {
     reason() {
@@ -149,7 +119,8 @@ export default {
     iconName() {
       return this.mapping.icon;
     },
-    iconColor() {
+    /** The message as `error`, or `warning` for a used or expired link. */
+    alertType() {
       return this.mapping.color;
     },
     canRetry() {
@@ -159,11 +130,6 @@ export default {
       // Show raw reason code only if we couldn't map it —
       // helps support diagnose unexpected errors.
       return !!this.reason && !REASON_MAP[this.reason];
-    },
-    appLogo() {
-      return process.env.BASE_URL && process.env.BASE_URL.trim()
-        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
-        : "/app-logo.png";
     },
   },
 

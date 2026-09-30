@@ -1,7 +1,7 @@
 <template>
   <AuthPage title="Registrieren" icon="mdi-account-plus-outline">
-    <v-form ref="form" class="register-form" @submit.prevent="register">
-      <div class="register-form__row">
+    <v-form ref="form" class="scb-form" @submit.prevent="register">
+      <div class="scb-form__row">
         <v-text-field
           background-color="accent"
           filled
@@ -49,7 +49,7 @@
         type="email"
         autocomplete="email"
       ></v-text-field>
-      <div class="register-form__row mt-4">
+      <div class="scb-form__row mt-4">
         <v-text-field
           background-color="accent"
           filled
@@ -84,7 +84,7 @@
 
       <div
         v-if="requiresDataProtection || requiresTerms"
-        class="register-form__consent mt-4"
+        class="scb-form__consent mt-4"
       >
         <v-checkbox
           v-if="requiresDataProtection"
@@ -132,12 +132,18 @@
         </v-checkbox>
       </div>
 
-      <v-btn type="submit" color="primary" block elevation="0" class="mt-4">
+      <v-btn
+        type="submit"
+        color="primary"
+        block
+        elevation="0"
+        class="scb-form__submit mt-4"
+      >
         Registrieren
       </v-btn>
-      <p class="register-form__login mt-4 mb-0">
+      <p class="scb-form__switch mt-4 mb-0">
         <span class="text--secondary">Haben Sie bereits ein Konto?</span>
-        <router-link :to="loginRoute" class="register-form__link">
+        <router-link :to="loginRoute" class="scb-form__link">
           Anmelden
         </router-link>
       </p>
@@ -339,46 +345,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.register-form {
-  padding: var(--scb-section-body-padding);
-  padding-top: var(--scb-space-5);
-}
-
-.register-form__row {
-  display: flex;
-  gap: var(--scb-space-4);
-}
-
-.register-form__row > * {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.register-form__login {
-  text-align: center;
-  font-size: var(--scb-font-size-md);
-}
-
-.register-form__link {
-  text-decoration: none;
-}
-
-/* The consents sit right before the action, on the faint selection tint,
-   so they are read as part of the form and not as small print. */
-.register-form__consent {
-  padding: 14px var(--scb-space-3);
-  border: 1px solid var(--scb-surface-border);
-  border-radius: var(--scb-radius-control);
-  background-color: var(--scb-selected-tint-faint);
-}
-
-/* $scb-bp-xs of tokens.scss; a scoped style cannot read it. */
-@media (max-width: 599px) {
-  .register-form__row {
-    flex-direction: column;
-    gap: var(--scb-space-4);
-  }
-}
-</style>

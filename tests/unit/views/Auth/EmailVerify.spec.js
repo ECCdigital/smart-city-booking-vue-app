@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 
 import EmailVerify from "@/views/Auth/EmailVerify.vue";
@@ -7,7 +8,14 @@ let push;
 
 /** The router knows every path except the ones listed. */
 function mountVerify(next, unmatched = []) {
+  const store = new Vuex.Store({
+    modules: {
+      instance: { namespaced: true, getters: { instance: () => ({}) } },
+    },
+  });
+
   return mountComponent(EmailVerify, {
+    store,
     mocks: {
       $router: {
         push,

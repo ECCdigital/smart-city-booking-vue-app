@@ -81,12 +81,15 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-gap-cards: var(--scb-space-4); // between stacked section cards
   --scb-section-header-padding: 14px 16px;
   --scb-section-body-padding: var(--scb-space-4);
+  // The body of a form card (form-card.scss): a little more room under the strip.
+  --scb-form-padding: var(--scb-space-5) var(--scb-space-4) var(--scb-space-4);
 
   // --- Sizes ----------------------------------------------------------------
   --scb-section-header-height: 52px;
   --scb-row-height: 44px; // hairline rows, expansion-panel headers
   --scb-nav-item-height: 40px;
   --scb-search-height: 48px; // the search band of every list (toolbar.scss)
+  --scb-form-width: 520px; // a form card on a page of its own (AuthPage)
   --scb-icon-size-header: 20px;
   --scb-app-bar-height: 64px; // what a sticky column subtracts from 100vh
   --scb-panel-width: 380px; // the booking page's detail panel

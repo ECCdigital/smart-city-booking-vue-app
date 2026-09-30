@@ -1,0 +1,96 @@
+// The form card: a section card whose body is a form, or a message with its
+// one action - the pages in `AuthPage` (login, registration, password reset,
+// SSO and card login, the invitation and the confirmations) and the login
+// the checkout embeds.
+//
+// Markup: the section card with its header strip (section-card.scss), and
+// `scb-form` on the body - a `v-form`, or a `div` for a message:
+//
+//   <v-card outlined class="section-card">
+//     <h1 class="v-card__title section-header">…</h1>
+//     <v-divider />
+//     <v-form class="scb-form">…</v-form>
+//   </v-card>
+//
+// Parts:
+//   .scb-form__note     a muted sentence: what the form does, or the message
+//   .scb-form__row      two fields side by side, stacked below $scb-bp-xs
+//   .scb-form__consent  the consents right before the action
+//   .scb-form__submit   the one action, `<v-btn color="primary" block
+//                       elevation="0">`; a second one is `outlined`
+//   .scb-form__switch   the sentence with a link under the action - the way
+//                       to another page („Noch kein Konto? Hier registrieren“)
+//   .scb-form__link     a link in the form; also a `<button>` for a way back
+//                       that has to decide where it leads
+//
+// The fields are Vuetify's own props, not CSS: `filled dense
+// background-color="accent" hide-details="auto"`, 16px apart (`mt-4`).
+//
+// Every value is a token from tokens.scss.
+
+.scb-form {
+  padding: var(--scb-form-padding);
+
+  // The buttons read in sentence case, as they are written, not in the
+  // app-wide capitals of `$btn-text-transform` (variables.scss); the
+  // selector outweighs Vuetify's `.v-btn`.
+  .v-btn {
+    text-transform: none !important;
+    letter-spacing: normal;
+  }
+
+  // A message or an error reads at the note's scale, not Vuetify's 16px.
+  .v-alert {
+    font-size: var(--scb-font-size-sm);
+    line-height: var(--scb-line-height-base);
+  }
+}
+
+.scb-form__note {
+  font-size: var(--scb-font-size-sm);
+  line-height: var(--scb-line-height-base);
+  color: var(--scb-text-muted);
+}
+
+.scb-form__row {
+  display: flex;
+  gap: var(--scb-space-4);
+
+  > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  @media (max-width: $scb-bp-xs) {
+    flex-direction: column;
+  }
+}
+
+// On the faint selection tint, so the consents are read as part of the form
+// and not as small print.
+.scb-form__consent {
+  padding: 14px var(--scb-space-3);
+  border: 1px solid var(--scb-surface-border);
+  border-radius: var(--scb-radius-control);
+  background-color: var(--scb-selected-tint-faint);
+}
+
+.scb-form__switch {
+  text-align: center;
+  font-size: var(--scb-font-size-md);
+}
+
+.scb-form__link {
+  font-weight: var(--scb-font-weight-medium);
+  text-decoration: none;
+}
+
+button.scb-form__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: var(--scb-font-weight-medium);
+  color: var(--v-anchor-base);
+  cursor: pointer;
+}
