@@ -3,13 +3,16 @@
     :value="value"
     max-width="900"
     scrollable
+    :fullscreen="phone"
     content-class="media-dialog"
     @input="$emit('input', $event)"
   >
     <v-card>
-      <v-card-title class="d-flex align-center">
+      <v-card-title class="d-flex align-center flex-nowrap">
         <v-icon color="primary" class="mr-2">mdi-image-multiple-outline</v-icon>
-        <span class="text-h6">{{ title }}</span>
+        <span :class="phone ? 'text-subtitle-1 text-truncate' : 'text-h6'">
+          {{ title }}
+        </span>
         <v-spacer />
         <v-btn icon @click="close">
           <v-icon>mdi-close</v-icon>
@@ -53,7 +56,13 @@
             type="image"
           />
 
-          <div v-else-if="items.length > 0" class="media-picker__grid">
+          <!-- On a phone the grid of the media library: two columns of
+               square thumbnails. -->
+          <div
+            v-else-if="items.length > 0"
+            class="media-picker__grid"
+            :class="{ 'media-picker__grid--phone': phone }"
+          >
             <div
               v-for="item in items"
               :key="item.id"
@@ -65,13 +74,15 @@
               :title="tileTooltip(item)"
               @click="toggle(item)"
             >
-              <MediaImage
-                :media="item"
-                :scope="scope"
-                size="sm"
-                lazy-size="thumb"
-                :height="120"
-              />
+              <div class="media-picker__thumb">
+                <MediaImage
+                  :media="item"
+                  :scope="scope"
+                  size="sm"
+                  lazy-size="thumb"
+                  :height="phone ? '100%' : 120"
+                />
+              </div>
               <div class="media-picker__badges">
                 <v-chip
                   v-if="item.visibility === 'intern'"
@@ -123,7 +134,34 @@
             {{ uploadError }}
           </v-alert>
 
+          <!-- On a phone nobody drops files: a button opens the gallery, the
+               camera or the files. -->
+          <div v-if="phone" class="media-picker__phone-upload">
+            <v-btn
+              block
+              x-large
+              depressed
+              color="primary"
+              :loading="uploading"
+              data-test="picker-upload"
+              @click="uploadSheet = true"
+            >
+              <v-icon left>mdi-cloud-upload-outline</v-icon>
+              Dateien hochladen
+            </v-btn>
+            <p class="text--secondary mt-3 mb-0">
+              Sie landen als öffentliches Medium in der Mediathek und sind
+              direkt ausgewählt. Interne Medien lädt die Mediathek selbst hoch.
+            </p>
+            <MediaUploadSheet
+              v-model="uploadSheet"
+              :accept="acceptAttribute"
+              :hint="uploadHint"
+              @pick="uploadFiles"
+            />
+          </div>
           <div
+            v-else
             class="media-picker__dropzone media-picker__dropzone--tall"
             :class="{ 'media-picker__dropzone--active': dragOver }"
           >
@@ -198,8 +236,12 @@ import MediaPermissionService from "@/services/permissions/MediaPermissionServic
 import MediaResolveService from "@/services/MediaResolveService";
 import FormatService from "@/services/FormatService";
 import MediaImage from "@/components/Media/MediaImage.vue";
+import MediaUploadSheet from "@/components/Media/MediaUploadSheet.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
-import { mediaUploadErrorMessage } from "@/utils/mediaUploadError";
+import {
+  MEDIA_ALLOWED_TYPES_LABEL,
+  mediaUploadErrorMessage,
+} from "@/utils/mediaUploadError";
 import {
   externalReferenceOf,
   isValidExternalUrl,
@@ -224,7 +266,7 @@ const PAGE_SIZE = 24;
  */
 export default {
   name: "MediaPickerDialog",
-  components: { MediaImage, SearchBar },
+  components: { MediaImage, MediaUploadSheet, SearchBar },
   props: {
     value: { type: Boolean, default: false },
     scope: { type: String, default: MEDIA_SCOPE.TENANT },
@@ -263,10 +305,15 @@ export default {
       dragOver: false,
       uploading: false,
       uploadError: null,
+      uploadSheet: false,
       externalUrl: "",
     };
   },
   computed: {
+    // A phone held upright (ECCdigital/tickets#58).
+    phone() {
+      return this.$vuetify.breakpoint.xsOnly;
+    },
     pageCount() {
       return Math.ceil(this.total / PAGE_SIZE) || 1;
     },
@@ -275,6 +322,12 @@ export default {
     },
     kindLabel() {
       return this.kind === "document" ? "Nur Dokumente" : "Nur Bilder";
+    },
+    uploadHint() {
+      const images = `${MEDIA_ALLOWED_TYPES_LABEL} bis 15 MB`;
+      if (this.kind === "image") return images;
+      if (this.kind === "document") return "PDF bis 50 MB";
+      return `${images} · PDF bis 50 MB`;
     },
     acceptAttribute() {
       if (this.kind === "image") return "image/*";
@@ -520,10 +573,28 @@ export default {
   gap: 4px;
 }
 
-.media-picker__check {
+/* Vuetify's `.v-icon.v-icon` outranks a single class and pinned the check to
+   `position: relative`. The light disc keeps it readable on dark images. */
+.media-picker__tile .media-picker__check {
   position: absolute;
   top: 6px;
   right: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.media-picker__grid--phone {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.media-picker__grid--phone .media-picker__thumb {
+  aspect-ratio: 1;
+}
+
+.media-picker__phone-upload {
+  padding: var(--scb-space-6) var(--scb-space-1);
+  text-align: center;
 }
 
 .media-picker__meta {

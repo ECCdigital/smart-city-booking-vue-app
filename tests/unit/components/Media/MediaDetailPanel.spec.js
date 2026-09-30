@@ -90,11 +90,15 @@ function usageConflict(entries) {
   return error;
 }
 
-async function mountPanel({ scope = MEDIA_SCOPE.TENANT, usage = [] } = {}) {
+async function mountPanel({
+  scope = MEDIA_SCOPE.TENANT,
+  usage = [],
+  mode = "panel",
+} = {}) {
   ApiMediaService.getMediaUsage.mockResolvedValue({ data: usage });
   const wrapper = mountComponent(MediaDetailPanel, {
     store: store(),
-    propsData: { media: medium(), scope },
+    propsData: { media: medium(), scope, mode },
     stubs: { MediaImage: true, RouterLink },
   });
   await flushPromises();
@@ -272,5 +276,70 @@ describe("MediaDetailPanel visibility downgrade refused", () => {
 
     expect(addToast).toHaveBeenCalled();
     expect(addToast.mock.calls[0][1].type).toBe("error");
+  });
+});
+
+describe("MediaDetailPanel on a phone", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    MediaPermissionService.allowUpdate.mockReturnValue(true);
+    MediaPermissionService.allowDelete.mockReturnValue(true);
+    MediaPermissionService.isInstanceOwner.mockReturnValue(true);
+  });
+
+  it("shows the medium large with Bearbeiten and Löschen beneath it", async () => {
+    const wrapper = await mountPanel({ mode: "preview" });
+
+    expect(wrapper.text()).toContain("Titelbild");
+    expect(wrapper.text()).toContain("2048 B");
+    expect(wrapper.text()).toContain("öffentlich");
+    expect(buttonByLabel(wrapper, "Bearbeiten")).toBeDefined();
+    expect(buttonByLabel(wrapper, "Löschen")).toBeDefined();
+    expect(wrapper.text()).not.toContain("Metadaten");
+  });
+
+  it("asks for the edit step through Bearbeiten", async () => {
+    const wrapper = await mountPanel({ mode: "preview" });
+
+    await buttonByLabel(wrapper, "Bearbeiten").trigger("click");
+
+    expect(wrapper.emitted("edit")).toHaveLength(1);
+  });
+
+  it("offers Details instead where the medium may not be changed", async () => {
+    MediaPermissionService.allowUpdate.mockReturnValue(false);
+
+    const wrapper = await mountPanel({ mode: "preview" });
+
+    expect(buttonByLabel(wrapper, "Bearbeiten")).toBeUndefined();
+    expect(buttonByLabel(wrapper, "Details")).toBeDefined();
+  });
+
+  it("deletes from the large view after asking", async () => {
+    const wrapper = await mountPanel({ mode: "preview" });
+    ApiMediaService.deleteMedia.mockResolvedValueOnce({});
+
+    await buttonByLabel(wrapper, "Löschen").trigger("click");
+    await settle(wrapper);
+    expect(activeDialogText()).toContain("Endgültig löschen?");
+    dialogButton("Endgültig löschen").click();
+    await settle(wrapper);
+
+    expect(ApiMediaService.deleteMedia).toHaveBeenCalledWith("tenant", "m1");
+    expect(wrapper.emitted("deleted")).toEqual([["m1"]]);
+  });
+
+  it("edits without repeating the image the large view just showed", async () => {
+    const wrapper = await mountPanel({ mode: "edit" });
+
+    expect(wrapper.text()).toContain("Metadaten");
+    expect(fieldByLabel(wrapper, "Titel")).toBeDefined();
+    expect(wrapper.findAllComponents({ name: "MediaImage" })).toHaveLength(0);
+  });
+
+  it("keeps the image in the column beside the list", async () => {
+    const wrapper = await mountPanel();
+
+    expect(wrapper.findAllComponents({ name: "MediaImage" })).toHaveLength(1);
   });
 });

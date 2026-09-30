@@ -1,5 +1,121 @@
 <template>
-  <div class="media-library">
+  <!-- A phone held upright (ECCdigital/tickets#58): the same library as a
+       grid of large thumbnails, the filters behind the search funnel, the
+       upload in thumb reach at the bottom and a medium in a sheet from below.
+       A phone on its side is wide enough for the columns below. -->
+  <div v-if="phone" class="media-phone">
+    <SearchBar
+      :value="filters.q"
+      :fields="$t('media.search')"
+      :filters="filterSections"
+      @input="onSearch"
+      @filter="onFilter"
+    />
+
+    <v-skeleton-loader v-if="loading && items.length === 0" type="image@2" />
+    <div v-else-if="items.length > 0" class="media-phone__grid">
+      <button
+        v-for="item in items"
+        :key="item.id"
+        type="button"
+        class="media-phone__tile"
+        data-test="media-tile"
+        @click="viewedId = item.id"
+      >
+        <div class="media-phone__thumb">
+          <MediaImage
+            :media="item"
+            :scope="scope"
+            size="sm"
+            lazy-size="thumb"
+            height="100%"
+            icon-size="48"
+          />
+          <span
+            v-if="item.visibility === 'intern'"
+            class="media-phone__intern"
+            title="intern"
+          >
+            <v-icon small color="warning">mdi-lock-outline</v-icon>
+          </span>
+        </div>
+        <div class="media-phone__name text-truncate">
+          {{ item.title || item.originalFileName }}
+        </div>
+        <div class="media-phone__size">{{ formatBytes(item.size) }}</div>
+      </button>
+    </div>
+    <div v-else class="pa-8 text-center text--secondary font-italic">
+      Keine Medien für diesen Filter.
+    </div>
+
+    <v-pagination
+      v-if="pageCount > 1"
+      v-model="page"
+      :length="pageCount"
+      total-visible="5"
+      class="mt-3"
+    />
+
+    <template v-if="allowCreate">
+      <v-sheet elevation="8" class="media-phone__bar">
+        <MediaUploadQueue
+          :entries="uploadQueue"
+          class="media-phone__queue"
+          @dismiss="dismissUpload"
+        />
+        <v-btn
+          block
+          x-large
+          depressed
+          color="primary"
+          data-test="media-upload"
+          @click="uploadSheet = true"
+        >
+          <v-icon left>mdi-cloud-upload-outline</v-icon>
+          Dateien hochladen
+        </v-btn>
+      </v-sheet>
+      <MediaUploadSheet
+        v-model="uploadSheet"
+        :visibility.sync="uploadVisibility"
+        @pick="enqueueFiles"
+      />
+    </template>
+
+    <v-bottom-sheet
+      :value="!!viewedMedia"
+      scrollable
+      :fullscreen="editing"
+      content-class="media-dialog"
+      @input="(open) => !open && closeView()"
+    >
+      <v-card
+        v-if="viewedMedia"
+        class="media-phone__sheet"
+        :class="{ 'media-phone__sheet--full': editing }"
+      >
+        <v-toolbar v-if="editing" flat dense class="flex-grow-0">
+          <v-btn icon aria-label="Zurück zum Bild" @click="editing = false">
+            <v-icon>mdi-chevron-down</v-icon>
+          </v-btn>
+          <v-toolbar-title>Bearbeiten</v-toolbar-title>
+        </v-toolbar>
+        <v-card-text class="pa-0">
+          <MediaDetailPanel
+            :media="viewedMedia"
+            :scope="scope"
+            :mode="editing ? 'edit' : 'preview'"
+            @edit="editing = true"
+            @updated="onMediaUpdated"
+            @deleted="onMediaDeleted"
+          />
+        </v-card-text>
+      </v-card>
+    </v-bottom-sheet>
+  </div>
+
+  <div v-else class="media-library">
     <!-- Facets -->
     <nav class="media-library__facets" aria-label="Filter">
       <div class="media-facets__group">
@@ -106,42 +222,11 @@
         />
       </div>
 
-      <!-- Upload queue -->
-      <v-card v-if="uploadQueue.length > 0" outlined class="mb-3">
-        <v-list dense>
-          <v-list-item v-for="(entry, index) in uploadQueue" :key="index">
-            <v-list-item-icon class="mr-3">
-              <v-icon v-if="entry.status === 'error'" color="error">
-                mdi-alert-circle-outline
-              </v-icon>
-              <v-icon v-else-if="entry.status === 'done'" color="success">
-                mdi-check-circle-outline
-              </v-icon>
-              <v-icon v-else>mdi-progress-upload</v-icon>
-            </v-list-item-icon>
-            <v-list-item-content>
-              <v-list-item-title>{{ entry.file.name }}</v-list-item-title>
-              <v-list-item-subtitle
-                :class="{ 'error--text': entry.status === 'error' }"
-              >
-                {{ entry.message }}
-              </v-list-item-subtitle>
-              <v-progress-linear
-                v-if="entry.status === 'uploading'"
-                :value="entry.progress"
-                height="4"
-                rounded
-                class="mt-1"
-              />
-            </v-list-item-content>
-            <v-list-item-action v-if="entry.status === 'error'">
-              <v-btn icon small @click="dismissUpload(index)">
-                <v-icon small>mdi-close</v-icon>
-              </v-btn>
-            </v-list-item-action>
-          </v-list-item>
-        </v-list>
-      </v-card>
+      <MediaUploadQueue
+        :entries="uploadQueue"
+        class="mb-3"
+        @dismiss="dismissUpload"
+      />
 
       <v-card outlined>
         <v-skeleton-loader
@@ -217,6 +302,8 @@ import ToastService from "@/services/ToastService";
 import MediaPermissionService from "@/services/permissions/MediaPermissionService";
 import MediaDetailPanel from "@/components/Media/MediaDetailPanel.vue";
 import MediaImage from "@/components/Media/MediaImage.vue";
+import MediaUploadQueue from "@/components/Media/MediaUploadQueue.vue";
+import MediaUploadSheet from "@/components/Media/MediaUploadSheet.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
 import {
   MEDIA_ALLOWED_TYPES_LABEL,
@@ -225,9 +312,18 @@ import {
 
 const PAGE_SIZE = 25;
 
+// The segment of the phone's type filter that restricts nothing.
+const KIND_ALL = "all";
+
 export default {
   name: "MediaLibrary",
-  components: { MediaDetailPanel, MediaImage, SearchBar },
+  components: {
+    MediaDetailPanel,
+    MediaImage,
+    MediaUploadQueue,
+    MediaUploadSheet,
+    SearchBar,
+  },
   props: {
     scope: { type: String, required: true },
   },
@@ -266,12 +362,65 @@ export default {
       uploading: false,
       dragOver: false,
       fetchRequestId: 0,
+      // The phone's sheets: the medium shown large, whether it is being
+      // edited, and the upload.
+      viewedId: null,
+      editing: false,
+      uploadSheet: false,
     };
   },
   computed: {
     ...mapGetters({ tenantId: "tenants/currentTenantId" }),
+    phone() {
+      return this.$vuetify.breakpoint.xsOnly;
+    },
     selectedMedia() {
       return this.items.find((item) => item.id === this.selectedId) || null;
+    },
+    viewedMedia() {
+      return this.items.find((item) => item.id === this.viewedId) || null;
+    },
+    // The facets of the wide layout, as sections of the funnel's filter card.
+    filterSections() {
+      const sections = [
+        {
+          key: "kind",
+          label: "Typ",
+          multiple: false,
+          segmented: true,
+          empty: KIND_ALL,
+          selected: this.filters.kind || KIND_ALL,
+          options: [
+            { value: KIND_ALL, label: "Alle" },
+            { value: "image", label: "Bilder" },
+            { value: "document", label: "Dokumente" },
+          ],
+        },
+        {
+          key: "visibility",
+          label: "Sichtbarkeit",
+          multiple: false,
+          selected: this.filters.visibility,
+          options: [
+            { value: "public", label: "öffentlich", icon: "mdi-earth" },
+            { value: "intern", label: "intern", icon: "mdi-lock-outline" },
+          ],
+        },
+      ];
+      if (this.knownTags.length > 0) {
+        sections.push({
+          key: "tag",
+          label: this.$t("filter.tags"),
+          multiple: false,
+          selected: this.filters.tag,
+          options: this.knownTags.map((tag) => ({
+            value: tag,
+            label: tag,
+            icon: "mdi-tag-outline",
+          })),
+        });
+      }
+      return sections;
     },
     pageCount() {
       return Math.ceil(this.total / PAGE_SIZE) || 1;
@@ -328,9 +477,21 @@ export default {
       this.fetchMedia();
     },
     toggleTag(tag) {
-      this.filters.tag = this.filters.tag === tag ? null : tag;
+      this.setTag(this.filters.tag === tag ? null : tag);
+    },
+    setTag(tag) {
+      this.filters.tag = tag;
       this.page = 1;
       this.fetchMedia();
+    },
+    onFilter(key, selection) {
+      if (key === "kind") {
+        this.setKind(selection === KIND_ALL ? null : selection);
+      } else if (key === "visibility") {
+        this.setVisibility(selection);
+      } else if (key === "tag") {
+        this.setTag(selection);
+      }
     },
     async fetchMedia() {
       // Rapid filter changes race their responses; only the latest one may
@@ -449,7 +610,12 @@ export default {
     },
     onMediaDeleted() {
       this.selectedId = null;
+      this.closeView();
       this.fetchMedia();
+    },
+    closeView() {
+      this.viewedId = null;
+      this.editing = false;
     },
   },
 };
@@ -593,6 +759,86 @@ export default {
 .media-library__dropzone-visibility {
   max-width: 160px;
   flex: none;
+}
+
+.media-phone {
+  /* Clears the upload bar, which stays fixed over the end of the grid. */
+  padding-bottom: 96px;
+}
+
+.media-phone__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--scb-space-4) 10px;
+}
+
+.media-phone__tile {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.media-phone__tile:focus-visible {
+  outline: 2px solid var(--v-primary-base);
+  outline-offset: 2px;
+}
+
+.media-phone__thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--scb-radius-surface);
+  overflow: hidden;
+}
+
+/* Sits on the image, so it carries its own light backing in both themes. */
+.media-phone__intern {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  padding: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.media-phone__name {
+  margin-top: 6px;
+  font-size: var(--scb-font-size-sm);
+  font-weight: var(--scb-font-weight-medium);
+}
+
+.media-phone__size {
+  font-size: var(--scb-font-size-xs);
+  color: var(--scb-text-muted);
+}
+
+.media-phone__bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  padding: 10px var(--scb-space-3) calc(10px + env(safe-area-inset-bottom));
+}
+
+.media-phone__queue {
+  max-height: 40vh;
+  overflow-y: auto;
+  margin-bottom: var(--scb-space-2);
+}
+
+.media-phone__sheet {
+  border-radius: var(--scb-radius-popover) var(--scb-radius-popover) 0 0 !important;
+}
+
+.media-phone__sheet--full {
+  border-radius: 0 !important;
 }
 
 @media (max-width: 1264px) {
