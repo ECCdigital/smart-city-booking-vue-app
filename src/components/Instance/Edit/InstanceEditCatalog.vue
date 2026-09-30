@@ -17,19 +17,6 @@
           @input="onNameInput"
         />
       </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col cols="12" md="6">
-        <v-switch
-          v-model="local.publicOffersEnabled"
-          color="primary"
-          label="Öffentliche Buchungsangebote anzeigen"
-          hint="Wenn deaktiviert, sehen Besucher beim Aufruf der Portal-URL nur ihren persönlichen Bereich (Profil und Buchungen)."
-          persistent-hint
-          @change="emitUpdate"
-        />
-      </v-col>
       <v-col cols="12" md="6">
         <v-text-field
           ref="portalUrlField"
@@ -47,6 +34,19 @@
 
     <v-row>
       <v-col cols="12" md="6">
+        <v-switch
+          v-model="local.publicOffersEnabled"
+          color="primary"
+          label="Öffentliche Buchungsangebote anzeigen"
+          hint="Wenn deaktiviert, sehen Besucher beim Aufruf der Portal-URL nur ihren persönlichen Bereich (Profil und Buchungen)."
+          persistent-hint
+          @change="emitUpdate"
+        />
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <v-col cols="12" md="6">
         <v-select
           v-model="localCatalog.visibility"
           :items="visibilityOptions"
@@ -57,9 +57,6 @@
           @change="emitCatalog"
         ></v-select>
       </v-col>
-    </v-row>
-
-    <v-row>
       <v-col cols="12" md="6">
         <v-select
           v-model="localCatalog.excludedTenantIds"
