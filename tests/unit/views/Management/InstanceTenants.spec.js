@@ -11,6 +11,7 @@ import {
 
 let readable = [];
 let instanceOwner = false;
+let allowCreate = false;
 
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: {
@@ -88,7 +89,7 @@ async function mountView() {
       },
       user: {
         namespaced: true,
-        getters: { allowToCreateTenants: () => false },
+        getters: { allowToCreateTenants: () => allowCreate },
       },
       tenants: { namespaced: true, actions: { select: selectTenant } },
       toasts: { namespaced: true, actions: { add: addToast } },
@@ -135,6 +136,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   readable = ["t-1", "t-2"];
   instanceOwner = false;
+  allowCreate = false;
   ApiSupervisionService.getTenantHistory.mockResolvedValue({
     items: [],
     total: 0,
@@ -238,6 +240,47 @@ describe("InstanceTenants", () => {
     await selectRow(wrapper, 0);
 
     expect(panelAction(wrapper, "open-readiness").exists()).toBe(false);
+  });
+
+  /**
+   * „Mandanten anlegen“ floats bottom right as on every main page
+   * (ECCdigital/tickets#57); it left the card's header, where it sat before.
+   */
+  describe("the creation", () => {
+    it("floats bottom right, not in the card's header", async () => {
+      allowCreate = true;
+      const wrapper = await mountView();
+
+      const create = wrapper.find("[data-test='open-create']");
+      expect(create.text()).toBe("Mandanten anlegen");
+      expect(create.classes()).toEqual(
+        expect.arrayContaining([
+          "v-btn--fixed",
+          "v-btn--bottom",
+          "v-btn--right",
+        ])
+      );
+      expect(
+        wrapper.find(".section-header [data-test='open-create']").exists()
+      ).toBe(false);
+    });
+
+    it("opens the creation dialog", async () => {
+      allowCreate = true;
+      const wrapper = await mountView();
+
+      await wrapper.find("[data-test='open-create']").trigger("click");
+
+      expect(
+        wrapper.findComponent({ name: "TenantCreate" }).props("open")
+      ).toBe(true);
+    });
+
+    it("is not offered to whom may not create tenants", async () => {
+      const wrapper = await mountView();
+
+      expect(wrapper.find("[data-test='open-create']").exists()).toBe(false);
+    });
   });
 
   describe("catalog", () => {

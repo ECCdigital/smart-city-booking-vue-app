@@ -1,48 +1,25 @@
 <template>
   <!-- The search band (SearchBar) over a list of bookables or coupons: the
-       tags behind the funnel, sorting in the row beneath. Searching, the tag
-       filter and sorting stay here; the bar only draws them. -->
+       tags behind the funnel, sorting in the row beneath (ToolbarRow).
+       Searching, the tag filter and sorting stay here; bar and row only draw
+       them. -->
   <SearchBar
     v-model="searchQuery"
     :fields="fields"
     :filters="filterSections"
     @filter="(key, tags) => (selectedFilters = tags)"
   >
-    <template v-if="sortable" #actions>
-      <v-chip-group
-        v-model="sortBy"
-        :mandatory="false"
-        active-class="secondary--text"
-        class="sort-chips"
+    <template v-if="sortable || $slots.actions" #actions>
+      <ToolbarRow
+        :sort-options="sortable ? sortOptions : null"
+        :sort-by.sync="sortBy"
+        :sort-dir.sync="sortDir"
       >
-        <v-chip
-          v-for="opt in sortOptions"
-          :key="opt.value"
-          :value="opt.value"
-          small
-          outlined
-          class="mr-1 mb-1"
-        >
-          {{ opt.text }}
-        </v-chip>
-      </v-chip-group>
-      <v-btn-toggle
-        v-model="sortDir"
-        class="sort-buttons"
-        active-class="secondary--text"
-        mandatory
-        dense
-      >
-        <v-btn small value="asc">
-          <v-icon small>mdi-arrow-up</v-icon>
-        </v-btn>
-        <v-btn small value="desc">
-          <v-icon small>mdi-arrow-down</v-icon>
-        </v-btn>
-      </v-btn-toggle>
-      <v-btn v-if="sortBy" small text @click="sortBy = null">
-        Zurücksetzen
-      </v-btn>
+        <!-- The page's further actions, right of the sorting. -->
+        <template v-if="$slots.actions" #actions>
+          <slot name="actions" />
+        </template>
+      </ToolbarRow>
     </template>
   </SearchBar>
 </template>
@@ -50,10 +27,11 @@
 <script>
 import Fuse from "fuse.js";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRow from "@/components/commons/ToolbarRow.vue";
 
 export default {
   name: "Search",
-  components: { SearchBar },
+  components: { SearchBar, ToolbarRow },
   props: {
     items: { type: Array, required: true },
     keys: { type: Array, default: () => [] },
@@ -207,13 +185,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.sort-buttons {
-  border-radius: 8px;
-}
-
-.sort-chips {
-  min-height: 32px;
-}
-</style>

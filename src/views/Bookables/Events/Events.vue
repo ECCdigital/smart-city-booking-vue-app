@@ -26,7 +26,43 @@
             { text: 'Kostenfrei', value: 'attendees.free' },
             { text: 'Max. Teilnehmer', value: 'attendees.maxAttendees' },
           ]"
-        ></Search>
+        >
+          <template #actions>
+            <v-menu offset-y left>
+              <template v-slot:activator="{ on, attrs }">
+                <ToolbarAction
+                  icon="mdi-download"
+                  menu
+                  :disabled="api.events.length === 0"
+                  v-bind="attrs"
+                  v-on="on"
+                >
+                  Exportieren
+                </ToolbarAction>
+              </template>
+              <v-list dense>
+                <v-list-item @click="downloadAllEventsIcal">
+                  <v-list-item-icon>
+                    <v-icon small>mdi-download</v-icon>
+                  </v-list-item-icon>
+                  <v-list-item-content>
+                    <v-list-item-title>
+                      Alle Termine als .ics herunterladen
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+                <v-list-item @click="showFeedUrlDialog">
+                  <v-list-item-icon>
+                    <v-icon small>mdi-rss</v-icon>
+                  </v-list-item-icon>
+                  <v-list-item-content>
+                    <v-list-item-title> iCal-Feed abonnieren </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+          </template>
+        </Search>
       </v-col>
     </v-row>
     <v-row no-gutters class="mt-3">
@@ -39,47 +75,6 @@
         <v-chip color="grey lighten-2" small>
           Gesamt: {{ totalEventsCount }}
         </v-chip>
-      </v-col>
-      <v-spacer />
-      <v-col cols="auto">
-        <v-menu offset-y left>
-          <template v-slot:activator="{ on, attrs }">
-            <v-tooltip bottom>
-              <template v-slot:activator="{ on: tooltipOn, attrs: tooltipAttrs }">
-                <v-btn
-                  icon
-                  small
-                  v-bind="{ ...attrs, ...tooltipAttrs }"
-                  v-on="{ ...on, ...tooltipOn }"
-                  :disabled="api.events.length === 0"
-                >
-                  <v-icon>mdi-dots-vertical</v-icon>
-                </v-btn>
-              </template>
-              <span>iCal exportieren</span>
-            </v-tooltip>
-          </template>
-          <v-list dense>
-            <v-list-item @click="downloadAllEventsIcal">
-              <v-list-item-icon>
-                <v-icon small>mdi-download</v-icon>
-              </v-list-item-icon>
-              <v-list-item-content>
-                <v-list-item-title>
-                  Alle Termine als .ics herunterladen
-                </v-list-item-title>
-              </v-list-item-content>
-            </v-list-item>
-            <v-list-item @click="showFeedUrlDialog">
-              <v-list-item-icon>
-                <v-icon small>mdi-rss</v-icon>
-              </v-list-item-icon>
-              <v-list-item-content>
-                <v-list-item-title> iCal-Feed abonnieren </v-list-item-title>
-              </v-list-item-content>
-            </v-list-item>
-          </v-list>
-        </v-menu>
       </v-col>
     </v-row>
     <v-row gutters align="stretch" class="mt-1">
@@ -189,10 +184,12 @@ import ToastService from "@/services/ToastService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { slice } from "lodash";
 import Search from "@/components/commons/Search.vue";
+import ToolbarAction from "@/components/commons/ToolbarAction.vue";
 
 export default {
   components: {
     Search,
+    ToolbarAction,
     AdminLayout,
     EventCard,
   },

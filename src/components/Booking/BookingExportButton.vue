@@ -6,9 +6,11 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import ProcessingService from "@/services/ProcessingService";
 import ToastService from "@/services/ToastService";
 import { paymentLabel, statusExportValue } from "@/utils/bookingStatus";
+import ToolbarAction from "@/components/commons/ToolbarAction.vue";
 
 export default {
   name: "BookingExportButton",
+  components: { ToolbarAction },
   props: {
     bookings: {
       type: Array,
@@ -267,23 +269,18 @@ export default {
 </script>
 
 <template>
+  <!-- A further action in the row beneath the search band. -->
   <v-menu offset-y left>
     <template v-slot:activator="{ on, attrs }">
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on: tooltipOn, attrs: tooltipAttrs }">
-          <v-btn
-            icon
-            small
-            class="ml-2"
-            v-bind="{ ...attrs, ...tooltipAttrs }"
-            v-on="{ ...on, ...tooltipOn }"
-            :disabled="bookings.length === 0"
-          >
-            <v-icon>mdi-dots-vertical</v-icon>
-          </v-btn>
-        </template>
-        <span>Exportieren</span>
-      </v-tooltip>
+      <ToolbarAction
+        icon="mdi-download"
+        menu
+        :disabled="bookings.length === 0"
+        v-bind="attrs"
+        v-on="on"
+      >
+        Exportieren
+      </ToolbarAction>
     </template>
     <v-list dense>
       <v-list-item :disabled="bookings.length === 0" @click="exportBookings">

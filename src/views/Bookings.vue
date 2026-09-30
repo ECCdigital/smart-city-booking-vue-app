@@ -11,45 +11,23 @@
         @filter="onFilter"
       >
         <template #actions>
-          <v-btn-toggle
-            v-model="currentView"
-            mandatory
-            dense
-            color="primary"
-            class="scb-views"
-          >
-            <v-btn value="list" small class="scb-view">
-              <v-icon left small> mdi-list-box-outline </v-icon>
-              Liste
-            </v-btn>
-            <v-btn value="calendar" small class="scb-view">
-              <v-icon left small> mdi-calendar-blank-outline </v-icon>
-              Kalender
-            </v-btn>
-            <v-btn v-if="workflow.active" value="kanban" small class="scb-view">
-              <v-icon left small> mdi-table-column </v-icon>
-              Kanban
-            </v-btn>
-          </v-btn-toggle>
-          <v-spacer />
-          <v-tooltip v-if="currentView === 'kanban'" bottom>
-            <template v-slot:activator="{ on }">
-              <v-btn
-                v-on="on"
-                icon
-                small
-                :class="{ 'active-button': showBacklog }"
+          <ToolbarRow :views="views" :view.sync="currentView">
+            <template #actions>
+              <ToolbarAction
+                v-if="currentView === 'kanban'"
+                icon="mdi-tray-full"
+                :active="showBacklog"
+                :title="$t('booking.backlog.toggle')"
                 @click="showBacklog = !showBacklog"
               >
-                <v-icon>mdi-tray-full</v-icon>
-              </v-btn>
+                {{ $t("booking.backlog.label") }}
+              </ToolbarAction>
+              <BookingExportButton
+                :bookings="filteredBookings"
+                :tenant="tenantId"
+              />
             </template>
-            <span>Backlog ein-/ausblenden</span>
-          </v-tooltip>
-          <BookingExportButton
-            :bookings="filteredBookings"
-            :tenant="tenantId"
-          />
+          </ToolbarRow>
         </template>
       </SearchBar>
     </div>
@@ -156,6 +134,8 @@ import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRow from "@/components/commons/ToolbarRow.vue";
+import ToolbarAction from "@/components/commons/ToolbarAction.vue";
 import { saveBlob } from "@/utils/fileDownload";
 import {
   bookingPageRoute,
@@ -201,6 +181,8 @@ function storeSearchTerm(searchTerm) {
 export default {
   components: {
     SearchBar,
+    ToolbarRow,
+    ToolbarAction,
     BookingExportButton,
     ProcessingIndicator,
     GroupBookingDeleteConformationDialog,
@@ -257,6 +239,29 @@ export default {
     }),
     BookingPermissionService() {
       return BookingPermissionService;
+    },
+    /** The views in the row beneath the search; the kanban with a workflow. */
+    views() {
+      const views = [
+        {
+          value: "list",
+          label: this.$t("booking.view.list"),
+          icon: "mdi-list-box-outline",
+        },
+        {
+          value: "calendar",
+          label: this.$t("booking.view.calendar"),
+          icon: "mdi-calendar-blank-outline",
+        },
+      ];
+      if (this.workflow.active) {
+        views.push({
+          value: "kanban",
+          label: this.$t("booking.view.kanban"),
+          icon: "mdi-table-column",
+        });
+      }
+      return views;
     },
     /**
      * The filter card behind the funnel (spec N1): the booking type as a
