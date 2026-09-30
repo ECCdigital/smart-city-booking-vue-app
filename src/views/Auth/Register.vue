@@ -1,5 +1,5 @@
 <template>
-  <AuthPage active="register" :next="returnTarget">
+  <AuthPage title="Registrieren" icon="mdi-account-plus-outline">
     <v-form ref="form" class="register-form" @submit.prevent="register">
       <div class="register-form__row">
         <v-text-field
@@ -135,6 +135,12 @@
       <v-btn type="submit" color="primary" block elevation="0" class="mt-4">
         Registrieren
       </v-btn>
+      <p class="register-form__login mt-4 mb-0">
+        <span class="text--secondary">Haben Sie bereits ein Konto?</span>
+        <router-link :to="loginRoute" class="register-form__link">
+          Anmelden
+        </router-link>
+      </p>
     </v-form>
   </AuthPage>
 </template>
@@ -180,6 +186,12 @@ export default {
       return isSafeInternalRedirect(this.nextUrl, this.$router)
         ? this.nextUrl
         : null;
+    },
+    /** The way back to the login: the return target travels along. */
+    loginRoute() {
+      return this.returnTarget
+        ? { name: "login", query: { next: this.returnTarget } }
+        : { name: "login" };
     },
     invitationParams() {
       const url = this.nextUrl;
@@ -342,6 +354,15 @@ export default {
 .register-form__row > * {
   flex: 1 1 0;
   min-width: 0;
+}
+
+.register-form__login {
+  text-align: center;
+  font-size: var(--scb-font-size-md);
+}
+
+.register-form__link {
+  text-decoration: none;
 }
 
 /* The consents sit right before the action, on the faint selection tint,

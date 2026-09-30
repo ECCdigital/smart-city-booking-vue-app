@@ -49,6 +49,16 @@
       >
         Anmelden
       </v-btn>
+      <p class="login-card__register mt-4 mb-0">
+        <span class="text--secondary">Noch kein Konto?</span>
+        <router-link
+          :to="registerRoute"
+          class="login-card__link"
+          :target="registerInNewTab ? '_blank' : null"
+        >
+          Hier registrieren
+        </router-link>
+      </p>
       <v-alert
         v-if="unverifiedId"
         type="info"
@@ -116,17 +126,6 @@
         Mit {{ method.label }} anmelden
       </v-btn>
     </template>
-
-    <p v-if="!hideRegisterLink" class="login-card__register mt-4 mb-0">
-      <span class="text--secondary">Noch nicht registriert?</span>
-      <router-link
-        :to="registerRoute"
-        class="login-card__link login-card__link--strong"
-        target="_blank"
-      >
-        Registrieren
-      </router-link>
-    </p>
   </div>
 </template>
 
@@ -155,9 +154,13 @@ export default {
       type: Array,
       default: () => [],
     },
-    hideRegisterLink: {
+    /**
+     * The checkout embeds the card and must keep its own page, so its
+     * registration link opens a new tab; the login page navigates in place.
+     */
+    registerInNewTab: {
       type: Boolean,
-      default: false,
+      default: true,
     },
   },
 
@@ -186,7 +189,6 @@ export default {
     hasAlternativeMethods() {
       return this.ssoActive || this.cardMethods.length > 0;
     },
-    /** The registration opens in a new tab: the return target travels along. */
     registerRoute() {
       const next = this.$route.query.next;
       return next
@@ -297,12 +299,7 @@ export default {
 }
 
 .login-card__link {
-  font-size: var(--scb-font-size-sm);
   text-decoration: none;
-}
-
-.login-card__link--strong {
-  font-weight: var(--scb-font-weight-medium);
 }
 
 .login-card__or {

@@ -35,7 +35,7 @@ function mountCard(query = {}, fullPath = "/login") {
 const registerLink = (wrapper) =>
   wrapper
     .findAllComponents(RouterLinkStub)
-    .filter((link) => link.text() === "Registrieren")
+    .filter((link) => link.text() === "Hier registrieren")
     .at(0);
 
 describe("LoginCard — the way to the registration", () => {

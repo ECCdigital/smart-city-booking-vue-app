@@ -1,5 +1,5 @@
 <template>
-  <AuthPage active="login" :next="$route.query.next">
+  <AuthPage title="Anmelden" icon="mdi-login-variant">
     <div
       v-if="checkingSharedSession"
       class="d-flex flex-column align-center py-8"
@@ -14,7 +14,7 @@
       v-else
       :sso-active="ssoActive"
       :card-methods="cardMethods"
-      hide-register-link
+      :register-in-new-tab="false"
       @success="signedIn"
     />
   </AuthPage>
