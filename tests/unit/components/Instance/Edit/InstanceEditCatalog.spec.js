@@ -190,6 +190,66 @@ describe("InstanceEditCatalog Portal-URL", () => {
   });
 });
 
+describe("InstanceEditCatalog Theme colours", () => {
+  it("asks to check both colours on light and dark surfaces", () => {
+    const wrapper = mountTab();
+    expect(wrapper.find(".theme-contrast-hint").text()).toContain(
+      "sowohl auf hellen als auch auf dunklen Flächen (Light-Mode und Dark-Mode)"
+    );
+  });
+
+  it("previews one primary and one secondary icon on a light and a dark tile", () => {
+    const base = instance();
+    const wrapper = mountTab({
+      instance: {
+        ...base,
+        branding: {
+          ...base.branding,
+          theme: { colors: { primary: "#ff0000", secondary: "#00ff00" } },
+        },
+      },
+    });
+
+    const tiles = wrapper.findAll(".theme-preview__tile");
+    expect(tiles.length).toBe(2);
+    expect(tiles.at(0).attributes("data-surface")).toBe("light");
+    expect(tiles.at(0).text()).toContain("Helle Fläche (Light-Mode)");
+    expect(tiles.at(1).attributes("data-surface")).toBe("dark");
+    expect(tiles.at(1).text()).toContain("Dunkle Fläche (Dark-Mode)");
+
+    for (let index = 0; index < 2; index += 1) {
+      const icons = tiles.at(index).findAll(".theme-preview__icon");
+      expect(icons.length).toBe(2);
+      expect(icons.at(0).attributes("data-role")).toBe("primary");
+      expect(icons.at(0).attributes("style")).toContain("rgb(255, 0, 0)");
+      expect(icons.at(1).attributes("data-role")).toBe("secondary");
+      expect(icons.at(1).attributes("style")).toContain("rgb(0, 255, 0)");
+    }
+  });
+
+  it("follows the colour while it is typed", async () => {
+    const wrapper = mountTab();
+    const primary = wrapper.find(".theme-preview__icon[data-role='primary']");
+    expect(primary.attributes("style") || "").not.toContain("rgb(18, 52, 86)");
+
+    await wrapper.setData({
+      local: {
+        ...wrapper.vm.local,
+        branding: {
+          ...wrapper.vm.local.branding,
+          theme: { colors: { primary: "#123456", secondary: "" } },
+        },
+      },
+    });
+
+    expect(
+      wrapper
+        .find(".theme-preview__icon[data-role='primary']")
+        .attributes("style")
+    ).toContain("rgb(18, 52, 86)");
+  });
+});
+
 describe("InstanceEditCatalog Kopfbereich entry card", () => {
   it("no longer offers the two old text fields", () => {
     const wrapper = mountTab();

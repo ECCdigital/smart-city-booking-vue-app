@@ -174,6 +174,36 @@
           </v-text-field>
         </v-col>
       </v-row>
+      <!-- Same grid as the two colour fields, so each tile sits flush with
+           the field above it. -->
+      <v-row class="theme-preview">
+        <v-col
+          v-for="surface in previewSurfaces"
+          :key="surface.key"
+          cols="12"
+          md="6"
+        >
+          <div
+            class="theme-preview__tile"
+            :class="`theme-preview__tile--${surface.key}`"
+            :data-surface="surface.key"
+          >
+            <span class="theme-preview__label">{{ surface.label }}</span>
+            <div class="theme-preview__icons">
+              <v-icon
+                v-for="icon in previewIcons"
+                :key="icon.role"
+                :color="icon.color"
+                :title="icon.title"
+                :data-role="icon.role"
+                class="theme-preview__icon"
+              >
+                {{ icon.name }}
+              </v-icon>
+            </div>
+          </div>
+        </v-col>
+      </v-row>
     </SubSection>
 
     <SubSection
@@ -296,6 +326,13 @@ const BACKGROUND_LABELS = Object.freeze({
   image: "Bild",
 });
 
+// The two surfaces the portal paints the theme colours on. Their colours are
+// fixed on purpose: a light tile stays light while the admin UI runs dark.
+const PREVIEW_SURFACES = Object.freeze([
+  { key: "light", label: "Helle Fläche (Light-Mode)" },
+  { key: "dark", label: "Dunkle Fläche (Dark-Mode)" },
+]);
+
 /**
  * Whether `value` is an absolute http(s) address. The Live Preview of the
  * Hero Editor needs the origin of the Portal-URL, which a bare host or a
@@ -346,9 +383,32 @@ export default {
       ],
       mediaScope: MEDIA_SCOPE.INSTANCE,
       publicOnlyReason: PUBLIC_ONLY_REASON,
+      previewSurfaces: PREVIEW_SURFACES,
     };
   },
   computed: {
+    /**
+     * One icon per theme colour, drawn on each preview tile. An empty colour
+     * leaves the icon in the tile's own text colour, so the tile never breaks
+     * while the user is still typing.
+     */
+    previewIcons() {
+      const colors = this.local.branding.theme.colors;
+      return [
+        {
+          role: "primary",
+          name: "mdi-calendar-check",
+          title: "Primärfarbe",
+          color: colors.primary || undefined,
+        },
+        {
+          role: "secondary",
+          name: "mdi-map-marker",
+          title: "Sekundärfarbe",
+          color: colors.secondary || undefined,
+        },
+      ];
+    },
     logo: {
       get() {
         return this.brandingImage("logo");
@@ -518,5 +578,42 @@ export default {
 <style scoped>
 .hero-entry-card {
   gap: 12px;
+}
+
+.theme-preview__tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--scb-space-4);
+  padding: var(--scb-space-3) var(--scb-space-4);
+  border-radius: var(--scb-radius-surface);
+  border: 1px solid var(--scb-surface-border);
+}
+
+/* Literal colours on purpose: the tiles mimic the portal's light and dark
+   surfaces and must not follow the admin UI's own theme. */
+.theme-preview__tile--light {
+  background: #fff;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.theme-preview__tile--dark {
+  background: #1e1e1e;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.theme-preview__label {
+  font-size: var(--scb-font-size-xs);
+}
+
+.theme-preview__icons {
+  display: flex;
+  gap: var(--scb-space-3);
+}
+
+/* Beats Vuetify's `.theme--light.v-icon` so an icon without a colour takes
+   the tile's text colour, not the admin theme's. */
+.theme-preview__tile .theme-preview__icon {
+  color: inherit;
 }
 </style>
