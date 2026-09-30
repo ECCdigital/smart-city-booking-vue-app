@@ -1,6 +1,7 @@
 <template>
   <AdminLayout scroll-body class="instance-tenants">
-    <div class="instance-tenants__body">
+    <!-- pb-16: room beneath list and panel for the floating creation. -->
+    <div class="instance-tenants__body pb-16">
       <div class="instance-tenants__main">
         <v-card outlined class="section-card instance-tenants__card">
           <v-card-title class="section-header">
@@ -13,18 +14,6 @@
             >
               {{ $tc("tenant.list.count", api.tenants.length) }}
             </span>
-            <v-btn
-              v-if="allowCreate"
-              small
-              depressed
-              color="primary"
-              class="instance-tenants__create"
-              data-test="open-create"
-              @click="onOpenCreateTenant"
-            >
-              <v-icon left small>mdi-plus</v-icon>
-              {{ $t("tenant.list.create") }}
-            </v-btn>
             <v-btn
               icon
               small
@@ -56,17 +45,17 @@
               @filter="onFilter"
             >
               <template v-if="allowInstanceHistory" #actions>
-                <v-btn
-                  text
-                  small
-                  color="primary"
-                  class="instance-tenants__history"
-                  data-test="open-instance-history"
-                  @click="onOpenHistory(null)"
-                >
-                  <v-icon left small>mdi-history</v-icon>
-                  {{ $t("supervision.history.open-instance") }}
-                </v-btn>
+                <ToolbarRow>
+                  <template #actions>
+                    <ToolbarAction
+                      icon="mdi-history"
+                      data-test="open-instance-history"
+                      @click="onOpenHistory(null)"
+                    >
+                      {{ $t("supervision.history.open-instance") }}
+                    </ToolbarAction>
+                  </template>
+                </ToolbarRow>
               </template>
             </SearchBar>
             <v-alert
@@ -414,6 +403,22 @@
       @close="onCloseDeleteDialog"
     />
     <TenantCreate :open="openCreateDialog" @close="onCloseCreateDialog" />
+
+    <!-- The creation floats bottom right, as it does on every main page. -->
+    <v-btn
+      v-if="allowCreate"
+      color="primary"
+      fixed
+      large
+      bottom
+      right
+      rounded
+      data-test="open-create"
+      @click="onOpenCreateTenant"
+    >
+      <v-icon>mdi-plus</v-icon>
+      {{ $t("tenant.list.create") }}
+    </v-btn>
   </AdminLayout>
 </template>
 
@@ -431,6 +436,8 @@ import SupervisionLevelDialog from "@/components/Supervision/SupervisionLevelDia
 import TenantDeclineDialog from "@/components/Supervision/TenantDeclineDialog.vue";
 import SupervisionHistoryDialog from "@/components/Supervision/SupervisionHistoryDialog.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRow from "@/components/commons/ToolbarRow.vue";
+import ToolbarAction from "@/components/commons/ToolbarAction.vue";
 import ToastService from "@/services/ToastService";
 import FormatService from "@/services/FormatService";
 import {
@@ -487,6 +494,8 @@ export default {
     TenantDeclineDialog,
     SupervisionHistoryDialog,
     SearchBar,
+    ToolbarRow,
+    ToolbarAction,
   },
   data() {
     return {
@@ -815,15 +824,6 @@ export default {
   color: var(--scb-text-muted);
 }
 
-/* The app's buttons capitalise every word (!important, variables.scss);
-   the labels here are sentences, so the override needs the same weight. */
-.instance-tenants__create {
-  margin-left: var(--scb-space-2);
-  text-transform: none !important;
-  letter-spacing: normal;
-  font-weight: var(--scb-font-weight-semibold);
-}
-
 /* The reload sits in the header strip without adding to its height. */
 .instance-tenants__reload {
   margin: -6px -4px -6px 0;
@@ -832,11 +832,6 @@ export default {
 .instance-tenants__lead {
   font-size: var(--scb-font-size-md);
   color: var(--scb-text-muted);
-}
-
-.instance-tenants__history {
-  text-transform: none !important;
-  letter-spacing: normal;
 }
 
 /* A row is a button: it selects the tenant for the panel. The selected one

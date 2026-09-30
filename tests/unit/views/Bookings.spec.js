@@ -223,11 +223,11 @@ function resetButtons() {
     .filter((text) => /zurücksetzen/i.test(text));
 }
 
-/** Switches the view through the toggle in the page header. */
+/** Switches the view through its tab in the row beneath the search. */
 async function switchView(wrapper, label) {
   wrapper
-    .findAll(".v-btn-toggle .v-btn")
-    .wrappers.find((btn) => btn.text().trim() === label)
+    .findAll("[data-test^='view-']")
+    .wrappers.find((tab) => tab.text().trim() === label)
     .trigger("click");
   await flushPromises();
   await wrapper.vm.$nextTick();

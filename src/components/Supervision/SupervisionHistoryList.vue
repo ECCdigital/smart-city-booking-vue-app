@@ -27,18 +27,18 @@
         @filter="onCardFilter"
       >
         <template #actions>
-          <v-spacer />
-          <v-btn
-            small
-            text
-            color="primary"
-            :disabled="loading"
-            data-test="history-reload"
-            @click="load"
-          >
-            <v-icon left small>mdi-refresh</v-icon>
-            {{ $t("supervision.history.reload") }}
-          </v-btn>
+          <ToolbarRow>
+            <template #actions>
+              <ToolbarAction
+                icon="mdi-refresh"
+                :disabled="loading"
+                data-test="history-reload"
+                @click="load"
+              >
+                {{ $t("supervision.history.reload") }}
+              </ToolbarAction>
+            </template>
+          </ToolbarRow>
         </template>
       </SearchBar>
     </template>
@@ -91,6 +91,8 @@
 <script>
 import AppList from "@/components/commons/AppList.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRow from "@/components/commons/ToolbarRow.vue";
+import ToolbarAction from "@/components/commons/ToolbarAction.vue";
 import ApiSupervisionService from "@/services/api/ApiSupervisionService";
 import FormatService from "@/services/FormatService";
 import pagedLoad from "@/mixins/pagedLoad";
@@ -117,7 +119,7 @@ const ALL_OFFER_TYPES = "all";
  */
 export default {
   name: "SupervisionHistoryList",
-  components: { AppList, SearchBar },
+  components: { AppList, SearchBar, ToolbarRow, ToolbarAction },
   mixins: [pagedLoad],
   props: {
     tenantId: { type: String, default: null },

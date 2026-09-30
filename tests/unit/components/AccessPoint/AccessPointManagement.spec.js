@@ -308,6 +308,25 @@ describe("AccessPointManagement", () => {
       expect(dialog.props("open")).toBe(true);
       expect(dialog.props("accessPoint")).toBe(null);
     });
+
+    // ECCdigital/tickets#57: the creation floats as on every main page.
+    it("floats bottom right, not in the section's header", async () => {
+      ApiAccessPointService.getAccessPoints.mockResolvedValue({ data: [] });
+
+      const wrapper = await mountManagement();
+
+      const button = wrapper.find(".create-access-point");
+      expect(button.classes()).toEqual(
+        expect.arrayContaining([
+          "v-btn--fixed",
+          "v-btn--bottom",
+          "v-btn--right",
+        ])
+      );
+      expect(wrapper.find(".v-card__title .create-access-point").exists()).toBe(
+        false
+      );
+    });
   });
 
   /**

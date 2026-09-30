@@ -32,10 +32,10 @@ Components are grouped by domain under `src/components/`:
 - `v-model` is the query, handed on 300 ms after the last keystroke; the cross and an emptied field hand on `""` at once. What the page searches stays the page's business.
 - `fields` names what the page searches, for the placeholder „Suchen nach <fields> …“ — a translation key, e.g. `$t('bookable.list.search')`.
 - `filters` are the sections of the filter card behind the funnel (`FilterCard.vue`, shape in `src/utils/filterSections.js`: multiple choice as rows, single choice as rows or `segmented`); a change comes back as `filter(key, selection)`. No `filters`, no funnel.
-- The `actions` slot is the row beneath the band: view switch, sorting, actions.
+- The `actions` slot is the row beneath the band. A page puts `ToolbarRow` there (ECCdigital/tickets#57): `views` (`[{ value, label, icon }]`, `:view.sync`) as tabs on the left, `sortOptions` (`[{ text, value }]`, `:sort-by.sync`, `:sort-dir.sync`) and its own `actions` slot on the right, each in its fixed place. A further action is a `ToolbarAction` (icon, label, `active` for a switch, `menu` for a menu opener); the creation is no action of the row but the floating button bottom right. A page with nothing for the row leaves the slot out.
 - Attributes such as `data-test` land on the input. Specs type through `typeSearch()` and open the card through `openFilterCard()` from `tests/unit/support/search.js`.
 
-`Search.vue` wraps it for the bookable and coupon lists (Fuse search over `keys`, tags, sorting).
+`Search.vue` wraps it for the bookable and coupon lists (Fuse search over `keys`, tags, sorting); its `actions` slot goes on into the row's (the events' iCal export).
 
 Views in `src/views/` are route-level pages. They compose components and handle page-level data loading.
 

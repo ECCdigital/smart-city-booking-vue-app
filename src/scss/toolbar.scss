@@ -6,13 +6,21 @@
 // primary in focus - the filter funnel in front (pages with filters only)
 // and the magnifier at the end. Every value is a token from tokens.scss.
 //
-// Markup, as SearchBar draws it:
+// Markup, as SearchBar, ToolbarRow and ToolbarAction draw it:
 //   <div class="scb-search-bar">
 //     <v-text-field class="scb-search" outlined hide-details … />
 //     <div class="scb-toolbar">            <!-- the `actions` slot -->
-//       <v-btn-toggle class="scb-views" mandatory dense color="primary">
-//         <v-btn class="scb-view" small value="…">…</v-btn>
-//       </v-btn-toggle>
+//       <div class="scb-toolbar-row">
+//         <div class="scb-toolbar-row__start">
+//           <div class="scb-toolbar-row__views">
+//             <button class="scb-toolbar-row__view">…</button>
+//         <div class="scb-toolbar-row__end">
+//           <div class="scb-toolbar-row__sort">
+//             <span class="scb-toolbar-row__caption">Sortieren</span>
+//             <button class="scb-toolbar-row__field">…</button>
+//             <button class="scb-toolbar-row__reset">…</button>
+//           <div class="scb-toolbar-row__actions">
+//             <v-btn class="scb-toolbar-row__action" text small>…</v-btn>
 //     </div>
 //   </div>
 
@@ -109,29 +117,176 @@
   margin-top: var(--scb-space-3);
 }
 
-// A segmented switch with one outline; the active segment is tinted primary.
-.scb-views {
-  border: 1px solid var(--scb-surface-border);
-  border-radius: var(--scb-radius-control) !important;
-  overflow: hidden;
-  background: var(--scb-surface);
+// ToolbarRow (ECCdigital/tickets#57, „Register“): the row stands on a
+// hairline and heads the content beneath it, over the whole width. The views
+// left as tabs, the active one underlined in primary on the hairline;
+// sorting and the further actions right. A place a page has nothing for
+// stays empty, the others keep theirs.
+.scb-toolbar-row {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 0 var(--scb-space-4);
+  min-height: var(--scb-row-height);
+  border-bottom: 1px solid var(--scb-rule-strong);
 }
 
-.scb-view {
-  height: 38px !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  padding: 0 var(--scb-space-4) !important;
-  text-transform: none;
-  letter-spacing: normal;
+.scb-toolbar-row__start,
+.scb-toolbar-row__views {
+  display: flex;
+  align-items: stretch;
+}
+
+.scb-toolbar-row__view {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--scb-space-2);
+  padding: 0 var(--scb-space-3);
+  // The underline lies on the hairline, not above it.
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
   font-size: var(--scb-font-size-md);
-  background: transparent !important;
+  font-weight: var(--scb-font-weight-medium);
+  color: var(--scb-text-muted);
+  transition: color var(--scb-motion-fast), border-color var(--scb-motion-fast);
+
+  .v-icon {
+    color: inherit;
+  }
+
+  &:hover {
+    color: var(--scb-text-hover);
+  }
+
+  &--active,
+  &--active:hover {
+    color: var(--v-primary-base);
+    border-bottom-color: var(--v-primary-base);
+  }
 }
 
-.scb-view + .scb-view {
-  border-left: 1px solid var(--scb-surface-border) !important;
+.scb-toolbar-row__end {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--scb-space-2) var(--scb-space-5);
+  margin-left: auto;
+  padding: var(--scb-space-1) 0;
 }
 
-.scb-view.v-btn--active {
-  background: var(--scb-selected-tint) !important;
+// Sorting spelled out: „SORTIEREN Titel · Erstellt · …“, the active field
+// bold on a tint with its direction in primary.
+.scb-toolbar-row__sort {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--scb-space-1);
+}
+
+.scb-toolbar-row__caption {
+  margin-right: var(--scb-space-1);
+  font-size: var(--scb-font-size-caption);
+  font-weight: var(--scb-font-weight-semibold);
+  letter-spacing: var(--scb-letter-spacing-caption);
+  text-transform: uppercase;
+  color: var(--scb-text-caption);
+}
+
+.scb-toolbar-row__field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--scb-space-1);
+  padding: var(--scb-space-1) var(--scb-space-2);
+  border-radius: var(--scb-radius-control);
+  font-size: var(--scb-font-size-sm);
+  line-height: var(--scb-line-height-base);
+  color: var(--scb-text-muted);
+  transition: background-color var(--scb-motion-fast),
+    color var(--scb-motion-fast);
+
+  &:hover {
+    background: var(--scb-hover-tint);
+    color: var(--scb-text-hover);
+  }
+
+  &--active,
+  &--active:hover {
+    background: var(--scb-surface-tint);
+    color: var(--scb-text);
+    font-weight: var(--scb-font-weight-semibold);
+  }
+
+  &--active .v-icon {
+    color: var(--v-primary-base);
+  }
+}
+
+.scb-toolbar-row__reset {
+  display: inline-flex;
+  padding: var(--scb-space-1);
+  border-radius: var(--scb-radius-control);
+  transition: background-color var(--scb-motion-fast);
+
+  .v-icon {
+    color: var(--scb-text-caption);
+  }
+
+  &:hover {
+    background: var(--scb-hover-tint);
+  }
+}
+
+.scb-toolbar-row__view,
+.scb-toolbar-row__field,
+.scb-toolbar-row__reset {
+  &:focus-visible {
+    outline: 2px solid var(--v-primary-base);
+    outline-offset: -2px;
+  }
+}
+
+// The further actions: text buttons with icon and label, muted until the
+// pointer comes. The app's buttons capitalise every word (!important,
+// variables.scss); these labels are words as written, so the override needs
+// the same weight.
+.scb-toolbar-row__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--scb-space-1);
+}
+
+// The selectors carry `.v-size--small` so padding and colour outweigh
+// Vuetify's `.v-btn:not(.v-btn--round).v-size--small` and `.theme--light.v-btn`.
+.scb-toolbar-row__actions .v-btn.v-size--small.scb-toolbar-row__action {
+  padding: 0 var(--scb-space-2);
+  text-transform: none !important;
+  letter-spacing: normal;
+  font-size: var(--scb-font-size-sm);
+  font-weight: var(--scb-font-weight-medium);
+
+  &:not(.v-btn--disabled) {
+    color: var(--scb-text-muted);
+  }
+
+  &:not(.v-btn--disabled):hover {
+    color: var(--scb-text-hover);
+  }
+
+  .v-icon {
+    color: inherit;
+  }
+}
+
+// A switch the action toggles, while on (the backlog of the kanban); it
+// stays primary under the pointer. Same weight as the rules above, later.
+.scb-toolbar-row__actions
+  .v-btn.v-size--small.scb-toolbar-row__action--active:not(.v-btn--disabled) {
+  background-color: var(--scb-selected-tint) !important;
+
+  &,
+  &:hover {
+    color: var(--v-primary-base);
+  }
 }
