@@ -1,13 +1,57 @@
 <template>
-  <v-card class="d-flex flex-column media-detail">
+  <v-card class="d-flex flex-column media-detail" :flat="mode !== 'panel'">
     <MediaImage
+      v-if="mode === 'panel'"
       :media="media"
       :scope="scope"
       size="md"
       height="220"
       :key="media.id"
     />
-    <v-card-text>
+
+    <!-- The large view on a phone: the image, what it is, and the two
+         actions beneath it. -->
+    <template v-if="mode === 'preview'">
+      <div class="media-detail__stage">
+        <MediaImage
+          :media="media"
+          :scope="scope"
+          size="md"
+          lazy-size="sm"
+          height="100%"
+          contain
+          icon-size="96"
+          :key="media.id"
+        />
+      </div>
+      <v-card-text class="pb-2">
+        <div class="text-subtitle-1 text-break font-weight-medium">
+          {{ displayTitle }}
+        </div>
+        <div class="text--secondary">
+          {{ formatBytes(media.size) }} · {{ formatDate(media.createdAt) }} ·
+          {{ media.visibility === "public" ? "öffentlich" : "intern" }}
+        </div>
+      </v-card-text>
+      <div class="media-detail__actions">
+        <v-btn x-large depressed color="primary" @click="$emit('edit')">
+          <v-icon left>mdi-pencil-outline</v-icon>
+          {{ allowUpdate ? "Bearbeiten" : "Details" }}
+        </v-btn>
+        <v-btn
+          x-large
+          outlined
+          color="error"
+          :disabled="!allowDelete"
+          @click="confirmDialog = true"
+        >
+          <v-icon left>mdi-delete-outline</v-icon>
+          Löschen
+        </v-btn>
+      </div>
+    </template>
+
+    <v-card-text v-else>
       <div class="text-h6 text-break mb-2">{{ displayTitle }}</div>
       <div class="d-flex flex-wrap mb-3" style="gap: 6px">
         <v-chip
@@ -284,6 +328,14 @@ export default {
   props: {
     media: { type: Object, required: true },
     scope: { type: String, required: true },
+    // `panel` is the column beside the list; a phone shows the medium in two
+    // steps instead: `preview` (image, Bearbeiten, Löschen, which raises
+    // `edit`) and `edit` (the panel without the image it just showed).
+    mode: {
+      type: String,
+      default: "panel",
+      validator: (value) => ["panel", "preview", "edit"].includes(value),
+    },
   },
   data() {
     return {
@@ -532,6 +584,22 @@ export default {
   --variant-size-color: rgba(255, 255, 255, 0.87);
   --variant-rule-color: rgba(255, 255, 255, 0.12);
   --variant-copy-color: rgba(255, 255, 255, 0.7);
+}
+
+.media-detail__stage {
+  height: 42vh;
+  margin: var(--scb-space-4) var(--scb-space-4) 0;
+  border-radius: var(--scb-radius-surface);
+  overflow: hidden;
+  background: var(--scb-surface-tint);
+}
+
+.media-detail__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--scb-space-3);
+  padding: var(--scb-space-2) var(--scb-space-4)
+    calc(var(--scb-space-4) + env(safe-area-inset-bottom));
 }
 
 .media-detail__facts {
