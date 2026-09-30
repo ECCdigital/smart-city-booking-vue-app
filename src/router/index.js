@@ -34,6 +34,7 @@ import RuleEngineEdit from "@/views/Management/RuleEngineEdit.vue";
 import RuleEngineExecutions from "@/views/Management/RuleEngineExecutions.vue";
 import { middlewares, pipeline } from "./middleware";
 import Dashboard from "@/views/Dashboard.vue";
+import { carryVariant } from "@/components/commons/prototype-57/variant";
 
 Vue.use(VueRouter);
 
@@ -667,6 +668,8 @@ router.beforeEach((to, from, next) => {
   const first = pipeline(context, middlewares, 0);
   return first();
 });
+// PROTOTYPE (#57): keeps ?variant= while clicking from page to page.
+carryVariant(router);
 router.afterEach((to) => {
   Vue.nextTick(() => {
     document.title =

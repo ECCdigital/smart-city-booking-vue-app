@@ -20,9 +20,19 @@
       data-test="tenant-search"
     >
       <template #actions>
+        <!-- PROTOTYPE (#57): the row in variant A, B or C. -->
+        <ToolbarRowPrototype
+          v-if="rowVariant"
+          :variant="rowVariant"
+          :views="protoViews"
+          :view="view"
+          :primary="protoPrimary"
+          @view="view = $event"
+        />
         <!-- Two views only, so the switch is a joined pair of buttons; one
              of them is always on. -->
         <v-btn-toggle
+          v-else
           v-model="view"
           mandatory
           dense
@@ -323,7 +333,7 @@
 
     <!-- The creation floats bottom right, as it does on every main page. -->
     <v-btn
-      v-if="allowCreate && filteredTenants.length > 0"
+      v-if="allowCreate && filteredTenants.length > 0 && !primaryInRow"
       color="primary"
       fixed
       large
@@ -349,6 +359,8 @@ import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
 import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
 import DeclinedTenantNotice from "@/components/Supervision/DeclinedTenantNotice.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRowPrototype from "@/components/commons/prototype-57/ToolbarRowPrototype.vue";
+import { rowVariantMixin } from "@/components/commons/prototype-57/variant";
 import { isSafeInternalRedirect } from "@/utils/safeRedirect";
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
@@ -380,7 +392,9 @@ function storeView(view) {
 
 export default {
   name: "HomeView",
+  mixins: [rowVariantMixin],
   components: {
+    ToolbarRowPrototype,
     PendingApprovals: PendingApprovals,
     PendingTenantInvitations,
     AdminLayout,
@@ -409,6 +423,28 @@ export default {
       // „abgewiesen“); the instance owner is never handed one here.
       declinedMembership: "user/declinedMembership",
     }),
+    // PROTOTYPE (#57): the page's row as the prototype variants take it.
+    protoViews() {
+      return [
+        {
+          value: "grid",
+          label: this.$t("tenant.home.view.grid"),
+          icon: "mdi-view-grid-outline",
+        },
+        {
+          value: "list",
+          label: this.$t("tenant.home.view.list"),
+          icon: "mdi-format-list-bulleted",
+        },
+      ];
+    },
+    protoPrimary() {
+      if (!this.allowCreate) return null;
+      return {
+        label: this.$t("tenant.home.create"),
+        onClick: () => this.onOpenCreateTenant(),
+      };
+    },
     // The line between the groups: a membership in the permissions payload.
     // An instance owner is handed every tenant and is a member of few; for
     // everybody else the rest is empty and the groups stay unnamed.

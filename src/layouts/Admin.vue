@@ -22,12 +22,16 @@
         <slot />
       </div>
     </v-container>
+    <!-- PROTOTYPE (#57): the variant switcher, never in production. -->
+    <PrototypeSwitcher v-if="prototypeEnabled" />
   </div>
 </template>
 
 <script>
 import Navbar from "@/components/Navbar";
 import SupervisionPendingBanner from "@/components/Supervision/SupervisionPendingBanner.vue";
+import PrototypeSwitcher from "@/components/commons/prototype-57/PrototypeSwitcher.vue";
+import { prototypeEnabled } from "@/components/commons/prototype-57/variant";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import { mapActions } from "vuex";
 import { routeRequiresTenant } from "@/router/middlewares/requireTenant";
@@ -42,8 +46,10 @@ export default {
   components: {
     Navbar,
     SupervisionPendingBanner,
+    PrototypeSwitcher,
   },
   computed: {
+    prototypeEnabled: () => prototypeEnabled,
     pageTitle() {
       return this.title || this.$route.meta.title;
     },

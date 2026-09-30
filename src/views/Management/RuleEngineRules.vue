@@ -4,12 +4,30 @@
       <!-- The search band (SearchBar), the actions in the row beneath it. -->
       <SearchBar v-model="search" :fields="$t('rule.list.search')">
         <template #actions>
-          <v-spacer />
-          <v-btn outlined :to="{ name: 'rule-executions' }">
+          <!-- PROTOTYPE (#57): the row in variant A, B or C. -->
+          <ToolbarRowPrototype
+            v-if="rowVariant"
+            :variant="rowVariant"
+            :actions="[
+              {
+                key: 'history',
+                label: 'Historie',
+                icon: 'mdi-history',
+                to: { name: 'rule-executions' },
+              },
+            ]"
+            :primary="{ label: 'Regel anlegen', to: { name: 'rule-create' } }"
+          />
+          <v-spacer v-if="!rowVariant" />
+          <v-btn v-if="!rowVariant" outlined :to="{ name: 'rule-executions' }">
             <v-icon left>mdi-history</v-icon>
             Historie
           </v-btn>
-          <v-btn color="primary" :to="{ name: 'rule-create' }">
+          <v-btn
+            v-if="!rowVariant"
+            color="primary"
+            :to="{ name: 'rule-create' }"
+          >
             <v-icon left>mdi-plus</v-icon>
             Regel anlegen
           </v-btn>
@@ -26,7 +44,8 @@
       >
         Die automatische Ausführung ist auf dem Server deaktiviert
         (<code>RULE_ENGINE_ENABLED=false</code>). Regeln werden derzeit
-        <strong>nicht</strong> nach Zeitplan ausgeführt. Testen ist weiterhin möglich.
+        <strong>nicht</strong> nach Zeitplan ausgeführt. Testen ist weiterhin
+        möglich.
       </v-alert>
 
       <v-alert
@@ -152,6 +171,20 @@
       </v-data-table>
     </div>
 
+    <!-- PROTOTYPE (#57) C: the creation floats bottom right, as elsewhere. -->
+    <v-btn
+      v-if="rowVariant === 'C'"
+      color="primary"
+      fixed
+      large
+      bottom
+      right
+      rounded
+      :to="{ name: 'rule-create' }"
+    >
+      <v-icon>mdi-plus</v-icon> Regel anlegen
+    </v-btn>
+
     <RuleDeleteDialog
       :open="deleteDialog"
       :to-delete="selectedRule"
@@ -170,10 +203,19 @@ import ApiRuleEngineService from "@/services/api/ApiRuleEngineService";
 import RuleStatusBadge from "@/components/Instance/RuleEngine/RuleStatusBadge.vue";
 import RuleDeleteDialog from "@/components/Instance/RuleEngine/RuleDeleteDialog.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRowPrototype from "@/components/commons/prototype-57/ToolbarRowPrototype.vue";
+import { rowVariantMixin } from "@/components/commons/prototype-57/variant";
 
 export default {
   name: "RuleEngineRules",
-  components: { AdminLayout, RuleStatusBadge, RuleDeleteDialog, SearchBar },
+  mixins: [rowVariantMixin],
+  components: {
+    AdminLayout,
+    RuleStatusBadge,
+    RuleDeleteDialog,
+    SearchBar,
+    ToolbarRowPrototype,
+  },
   data() {
     return {
       rules: [],

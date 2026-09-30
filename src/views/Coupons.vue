@@ -14,6 +14,7 @@
           v-model="searchResults"
           :fields="$t('coupon.list.search')"
           :keys="searchKeys"
+          :primary="protoPrimary"
           :show-filters="false"
         ></Search>
       </v-col>
@@ -110,6 +111,7 @@
       </v-col>
     </v-row>
     <v-btn
+      v-if="!primaryInRow"
       color="primary"
       fixed
       large
@@ -144,9 +146,11 @@ import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import CouponDeleteConformationDialog from "@/components/Coupon/CouponDeleteConformationDialog.vue";
 import CouponPermissionService from "@/services/permissions/CouponPermissionService";
 import Search from "@/components/commons/Search.vue";
+import { rowVariantMixin } from "@/components/commons/prototype-57/variant";
 
 export default {
   name: "Coupons",
+  mixins: [rowVariantMixin],
   components: {
     Search,
     CouponDeleteConformationDialog,
@@ -199,6 +203,14 @@ export default {
     };
   },
   computed: {
+    // PROTOTYPE (#57): the creation, in the row beneath the search.
+    protoPrimary() {
+      return {
+        label: "Rabatt erstellen",
+        onClick: () => this.onOpenCreateCoupon(),
+        disabled: !CouponPermissionService.allowCreate(),
+      };
+    },
     ...mapGetters({
       loading: "loading/isLoading",
       tenantId: "tenants/currentTenantId",

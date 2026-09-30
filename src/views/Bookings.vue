@@ -11,45 +11,69 @@
         @filter="onFilter"
       >
         <template #actions>
-          <v-btn-toggle
-            v-model="currentView"
-            mandatory
-            dense
-            color="primary"
-            class="scb-views"
-          >
-            <v-btn value="list" small class="scb-view">
-              <v-icon left small> mdi-list-box-outline </v-icon>
-              Liste
-            </v-btn>
-            <v-btn value="calendar" small class="scb-view">
-              <v-icon left small> mdi-calendar-blank-outline </v-icon>
-              Kalender
-            </v-btn>
-            <v-btn v-if="workflow.active" value="kanban" small class="scb-view">
-              <v-icon left small> mdi-table-column </v-icon>
-              Kanban
-            </v-btn>
-          </v-btn-toggle>
-          <v-spacer />
-          <v-tooltip v-if="currentView === 'kanban'" bottom>
-            <template v-slot:activator="{ on }">
-              <v-btn
-                v-on="on"
-                icon
-                small
-                :class="{ 'active-button': showBacklog }"
-                @click="showBacklog = !showBacklog"
-              >
-                <v-icon>mdi-tray-full</v-icon>
-              </v-btn>
-            </template>
-            <span>Backlog ein-/ausblenden</span>
-          </v-tooltip>
-          <BookingExportButton
-            :bookings="filteredBookings"
-            :tenant="tenantId"
+          <!-- PROTOTYPE (#57): the row in variant A, B or C. -->
+          <ToolbarRowPrototype
+            v-if="rowVariant"
+            :variant="rowVariant"
+            :views="protoViews"
+            :view="currentView"
+            :actions="protoActions"
+            :primary="protoPrimary"
+            @view="currentView = $event"
           />
+          <div v-if="rowVariant" style="display: none">
+            <BookingExportButton
+              ref="protoExport"
+              :bookings="filteredBookings"
+              :tenant="tenantId"
+            />
+          </div>
+          <template v-else>
+            <v-btn-toggle
+              v-model="currentView"
+              mandatory
+              dense
+              color="primary"
+              class="scb-views"
+            >
+              <v-btn value="list" small class="scb-view">
+                <v-icon left small> mdi-list-box-outline </v-icon>
+                Liste
+              </v-btn>
+              <v-btn value="calendar" small class="scb-view">
+                <v-icon left small> mdi-calendar-blank-outline </v-icon>
+                Kalender
+              </v-btn>
+              <v-btn
+                v-if="workflow.active"
+                value="kanban"
+                small
+                class="scb-view"
+              >
+                <v-icon left small> mdi-table-column </v-icon>
+                Kanban
+              </v-btn>
+            </v-btn-toggle>
+            <v-spacer />
+            <v-tooltip v-if="currentView === 'kanban'" bottom>
+              <template v-slot:activator="{ on }">
+                <v-btn
+                  v-on="on"
+                  icon
+                  small
+                  :class="{ 'active-button': showBacklog }"
+                  @click="showBacklog = !showBacklog"
+                >
+                  <v-icon>mdi-tray-full</v-icon>
+                </v-btn>
+              </template>
+              <span>Backlog ein-/ausblenden</span>
+            </v-tooltip>
+            <BookingExportButton
+              :bookings="filteredBookings"
+              :tenant="tenantId"
+            />
+          </template>
         </template>
       </SearchBar>
     </div>
@@ -100,6 +124,7 @@
     </div>
 
     <v-btn
+      v-if="!primaryInRow"
       color="primary"
       fixed
       large
@@ -156,6 +181,8 @@ import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRowPrototype from "@/components/commons/prototype-57/ToolbarRowPrototype.vue";
+import { rowVariantMixin } from "@/components/commons/prototype-57/variant";
 import { saveBlob } from "@/utils/fileDownload";
 import {
   bookingPageRoute,
@@ -199,7 +226,9 @@ function storeSearchTerm(searchTerm) {
 }
 
 export default {
+  mixins: [rowVariantMixin],
   components: {
+    ToolbarRowPrototype,
     SearchBar,
     BookingExportButton,
     ProcessingIndicator,
@@ -251,6 +280,61 @@ export default {
     };
   },
   computed: {
+    // PROTOTYPE (#57): the page's row as the prototype variants take it.
+    protoViews() {
+      return [
+        { value: "list", label: "Liste", icon: "mdi-list-box-outline" },
+        {
+          value: "calendar",
+          label: "Kalender",
+          icon: "mdi-calendar-blank-outline",
+        },
+        ...(this.workflow.active
+          ? [{ value: "kanban", label: "Kanban", icon: "mdi-table-column" }]
+          : []),
+      ];
+    },
+    protoActions() {
+      const exporter = () => this.$refs.protoExport;
+      return [
+        ...(this.currentView === "kanban"
+          ? [
+            {
+              key: "backlog",
+              label: "Backlog",
+              icon: "mdi-tray-full",
+              active: this.showBacklog,
+              onClick: () => (this.showBacklog = !this.showBacklog),
+            },
+          ]
+          : []),
+        {
+          key: "export",
+          label: "Exportieren",
+          icon: "mdi-download",
+          disabled: this.filteredBookings.length === 0,
+          menu: [
+            {
+              label: "Als Excel exportieren",
+              icon: "mdi-microsoft-excel",
+              onClick: () => exporter().exportBookings(),
+            },
+            {
+              label: "Als iCal exportieren",
+              icon: "mdi-calendar-export",
+              onClick: () => exporter().exportIcal(),
+            },
+          ],
+        },
+      ];
+    },
+    protoPrimary() {
+      return {
+        label: "Buchung erstellen",
+        to: { name: "booking-create" },
+        disabled: !BookingPermissionService.allowCreate(),
+      };
+    },
     ...mapGetters({
       loading: "loading/isLoading",
       tenantId: "tenants/currentTenantId",
@@ -390,11 +474,13 @@ export default {
       storeSearchTerm(searchTerm);
     },
     currentView(newView) {
-      this.$router.replace({ query: { view: newView } }).catch((err) => {
-        if (err.name !== "NavigationDuplicated") {
-          throw err;
-        }
-      });
+      this.$router
+        .replace({ query: { ...this.$route.query, view: newView } })
+        .catch((err) => {
+          if (err.name !== "NavigationDuplicated") {
+            throw err;
+          }
+        });
     },
   },
   methods: {

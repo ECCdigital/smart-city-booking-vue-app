@@ -8,7 +8,20 @@
     :filters="filterSections"
     @filter="(key, tags) => (selectedFilters = tags)"
   >
-    <template v-if="sortable" #actions>
+    <!-- PROTOTYPE (#57): the row in variant A, B or C; none when it would
+         be empty (C on a list without sorting). -->
+    <template v-if="rowVariant && (sortable || primaryInRow)" #actions>
+      <ToolbarRowPrototype
+        :variant="rowVariant"
+        :sort="
+          sortable ? { options: sortOptions, by: sortBy, dir: sortDir } : null
+        "
+        :primary="primary"
+        @sort-by="sortBy = $event"
+        @sort-dir="sortDir = $event"
+      />
+    </template>
+    <template v-else-if="sortable" #actions>
       <v-chip-group
         v-model="sortBy"
         :mandatory="false"
@@ -50,11 +63,16 @@
 <script>
 import Fuse from "fuse.js";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRowPrototype from "@/components/commons/prototype-57/ToolbarRowPrototype.vue";
+import { rowVariantMixin } from "@/components/commons/prototype-57/variant";
 
 export default {
   name: "Search",
-  components: { SearchBar },
+  mixins: [rowVariantMixin],
+  components: { SearchBar, ToolbarRowPrototype },
   props: {
+    /** PROTOTYPE (#57): the page's primary action for the row. */
+    primary: { type: Object, default: null },
     items: { type: Array, required: true },
     keys: { type: Array, default: () => [] },
     /** What `keys` search, as the placeholder names it: "Titel oder ID". */

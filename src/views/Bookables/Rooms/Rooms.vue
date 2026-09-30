@@ -25,6 +25,7 @@
           :keys="searchKeys"
           filter-key="tags"
           :filter-options="api.tags"
+          :primary="protoPrimary"
           :sortable="true"
           :sort-options="[
             { text: 'Titel', value: 'title' },
@@ -60,6 +61,7 @@
     </v-row>
     <v-fab-transition>
       <v-btn
+        v-if="!primaryInRow"
         color="primary"
         fixed
         large
@@ -89,8 +91,10 @@ import ApiTagsService from "@/services/api/ApiTagsService";
 import ToastService from "@/services/ToastService";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import Search from "@/components/commons/Search.vue";
+import { rowVariantMixin } from "@/components/commons/prototype-57/variant";
 
 export default {
+  mixins: [rowVariantMixin],
   components: {
     Search,
     AdminLayout,
@@ -114,6 +118,17 @@ export default {
       loading: "loading/isLoading",
       tenantId: "tenants/currentTenantId",
     }),
+    // PROTOTYPE (#57): the creation, in the row beneath the search.
+    protoPrimary() {
+      return {
+        label: "Raum erstellen",
+        to: {
+          name: "room-edit",
+          query: { fromRoute: this.$router.currentRoute.name },
+        },
+        disabled: this.createDisabled,
+      };
+    },
     createDisabled() {
       return !this.BookablePermissionService.allowCreate();
     },
