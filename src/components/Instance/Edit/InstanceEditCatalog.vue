@@ -82,25 +82,28 @@
     </v-row>
 
     <SubSection
-      class="mt-4"
+      class="mt-7"
       title="Theme"
       icon="mdi-palette"
       description="Passen Sie das Erscheinungsbild Ihres Portals an, indem Sie ein benutzerdefiniertes Theme aktivieren und die Primär- und Sekundärfarben festlegen."
       no-margin
     >
-      <v-row>
+      <v-row class="theme-switch-row">
         <v-col cols="12" md="6">
           <v-switch
             v-model="local.branding.active"
             color="primary"
             label="Benutzerdefiniertes Theme"
-            class="mt-2"
+            class="mt-0"
+            hide-details
             @change="emitUpdate"
           ></v-switch>
         </v-col>
       </v-row>
 
-      <v-row>
+      <!-- The colour fields carry neither hint nor rules, so their message
+           area is hidden and the preview tiles sit right beneath them. -->
+      <v-row class="theme-fields-row">
         <v-col cols="12" md="6">
           <v-text-field
             v-model="local.branding.theme.colors.primary"
@@ -108,6 +111,7 @@
             background-color="accent"
             filled
             dense
+            hide-details
             @input="emitUpdate"
           >
             <template v-slot:append>
@@ -144,6 +148,7 @@
             background-color="accent"
             filled
             dense
+            hide-details
             @input="emitUpdate"
           >
             <template v-slot:append>
@@ -174,6 +179,7 @@
           </v-text-field>
         </v-col>
       </v-row>
+
       <!-- Same grid as the two colour fields, so each tile sits flush with
            the field above it. -->
       <v-row class="theme-preview">
@@ -207,7 +213,7 @@
     </SubSection>
 
     <SubSection
-      class="mt-4"
+      class="mt-7"
       title="Logo & Favicon"
       icon="mdi-image-area"
       description="Wählen Sie Logo und Favicon aus der Mediathek der Instanz. Beide werden allen Besuchern des Portals ausgeliefert, daher sind nur öffentliche Medien wählbar."
@@ -578,6 +584,21 @@ export default {
 <style scoped>
 .hero-entry-card {
   gap: 12px;
+}
+
+/* Tighten the vertical rhythm of the theme block: the rows keep their
+   horizontal gutters, only the space between switch, fields and tiles shrinks. */
+.theme-switch-row > .col {
+  padding-bottom: 0;
+}
+
+.theme-fields-row > .col {
+  padding-top: var(--scb-space-2);
+  padding-bottom: var(--scb-space-1);
+}
+
+.theme-preview > .col {
+  padding-top: var(--scb-space-1);
 }
 
 .theme-preview__tile {
