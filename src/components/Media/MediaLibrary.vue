@@ -1,5 +1,16 @@
 <template>
-  <div class="media-library">
+  <!-- PROTOTYPE (ECCdigital/tickets#58): phone variants, switchable via
+       ?variant=A|B|C; never in production builds. -->
+  <div v-if="phonePrototype" class="media-proto media-dialog">
+    <MediaMobilePrototypeA v-if="protoVariant === 'A'" :lib="self" />
+    <MediaMobilePrototypeB v-else-if="protoVariant === 'B'" :lib="self" />
+    <MediaMobilePrototypeC v-else :lib="self" />
+    <PrototypeSwitcher
+      :variants="['A', 'B', 'C']"
+      :names="{ A: 'Seite', B: 'Daumenzone', C: 'Lightbox' }"
+    />
+  </div>
+  <div v-else class="media-library">
     <!-- Facets -->
     <nav class="media-library__facets" aria-label="Filter">
       <div class="media-facets__group">
@@ -218,6 +229,10 @@ import MediaPermissionService from "@/services/permissions/MediaPermissionServic
 import MediaDetailPanel from "@/components/Media/MediaDetailPanel.vue";
 import MediaImage from "@/components/Media/MediaImage.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import PrototypeSwitcher from "@/components/commons/PrototypeSwitcher.vue";
+import MediaMobilePrototypeA from "@/components/Media/prototype/MediaMobilePrototypeA.vue";
+import MediaMobilePrototypeB from "@/components/Media/prototype/MediaMobilePrototypeB.vue";
+import MediaMobilePrototypeC from "@/components/Media/prototype/MediaMobilePrototypeC.vue";
 import {
   MEDIA_ALLOWED_TYPES_LABEL,
   mediaUploadErrorMessage,
@@ -227,7 +242,15 @@ const PAGE_SIZE = 25;
 
 export default {
   name: "MediaLibrary",
-  components: { MediaDetailPanel, MediaImage, SearchBar },
+  components: {
+    MediaDetailPanel,
+    MediaImage,
+    SearchBar,
+    PrototypeSwitcher,
+    MediaMobilePrototypeA,
+    MediaMobilePrototypeB,
+    MediaMobilePrototypeC,
+  },
   props: {
     scope: { type: String, required: true },
   },
@@ -270,6 +293,20 @@ export default {
   },
   computed: {
     ...mapGetters({ tenantId: "tenants/currentTenantId" }),
+    // PROTOTYPE (ECCdigital/tickets#58)
+    phonePrototype() {
+      return (
+        process.env.NODE_ENV !== "production" &&
+        this.$vuetify.breakpoint.xsOnly
+      );
+    },
+    protoVariant() {
+      const variant = this.$route.query.variant;
+      return ["A", "B", "C"].includes(variant) ? variant : "A";
+    },
+    self() {
+      return this;
+    },
     selectedMedia() {
       return this.items.find((item) => item.id === this.selectedId) || null;
     },

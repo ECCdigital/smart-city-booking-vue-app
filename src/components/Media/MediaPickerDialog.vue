@@ -3,13 +3,19 @@
     :value="value"
     max-width="900"
     scrollable
+    :fullscreen="phonePrototype"
     content-class="media-dialog"
     @input="$emit('input', $event)"
   >
     <v-card>
-      <v-card-title class="d-flex align-center">
+      <v-card-title class="d-flex align-center flex-nowrap">
         <v-icon color="primary" class="mr-2">mdi-image-multiple-outline</v-icon>
-        <span class="text-h6">{{ title }}</span>
+        <span
+          :class="
+            phonePrototype ? 'text-subtitle-1 text-truncate' : 'text-h6'
+          "
+          >{{ title }}</span
+        >
         <v-spacer />
         <v-btn icon @click="close">
           <v-icon>mdi-close</v-icon>
@@ -53,7 +59,13 @@
             type="image"
           />
 
-          <div v-else-if="items.length > 0" class="media-picker__grid">
+          <!-- PROTOTYPE (ECCdigital/tickets#58): two columns of square tiles
+               on the phone, the same grid as the media library there. -->
+          <div
+            v-else-if="items.length > 0"
+            class="media-picker__grid"
+            :class="{ 'media-picker__grid--phone': phonePrototype }"
+          >
             <div
               v-for="item in items"
               :key="item.id"
@@ -65,13 +77,15 @@
               :title="tileTooltip(item)"
               @click="toggle(item)"
             >
-              <MediaImage
-                :media="item"
-                :scope="scope"
-                size="sm"
-                lazy-size="thumb"
-                :height="120"
-              />
+              <div class="media-picker__thumb">
+                <MediaImage
+                  :media="item"
+                  :scope="scope"
+                  size="sm"
+                  lazy-size="thumb"
+                  :height="phonePrototype ? '100%' : 120"
+                />
+              </div>
               <div class="media-picker__badges">
                 <v-chip
                   v-if="item.visibility === 'intern'"
@@ -123,7 +137,35 @@
             {{ uploadError }}
           </v-alert>
 
+          <!-- PROTOTYPE (ECCdigital/tickets#58): on the phone a big button
+               instead of the dropzone. -->
+          <div v-if="phonePrototype" class="media-picker__phone-upload">
+            <v-btn
+              block
+              x-large
+              depressed
+              color="primary"
+              :loading="uploading"
+              @click="$refs.fileInput.click()"
+            >
+              <v-icon left>mdi-cloud-upload-outline</v-icon>
+              Dateien hochladen
+            </v-btn>
+            <p class="text--secondary mt-3 mb-0">
+              Aus der Galerie, mit der Kamera oder als Datei — landet als
+              öffentliches Medium in der Mediathek und ist direkt ausgewählt.
+            </p>
+            <input
+              ref="fileInput"
+              type="file"
+              multiple
+              hidden
+              :accept="acceptAttribute"
+              @change="onFilePick"
+            />
+          </div>
           <div
+            v-else
             class="media-picker__dropzone media-picker__dropzone--tall"
             :class="{ 'media-picker__dropzone--active': dragOver }"
           >
@@ -267,6 +309,13 @@ export default {
     };
   },
   computed: {
+    // PROTOTYPE (ECCdigital/tickets#58)
+    phonePrototype() {
+      return (
+        process.env.NODE_ENV !== "production" &&
+        this.$vuetify.breakpoint.xsOnly
+      );
+    },
     pageCount() {
       return Math.ceil(this.total / PAGE_SIZE) || 1;
     },
@@ -485,6 +534,21 @@ export default {
   gap: 12px;
 }
 
+/* PROTOTYPE (ECCdigital/tickets#58) */
+.media-picker__grid--phone {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.media-picker__grid--phone .media-picker__thumb {
+  aspect-ratio: 1;
+}
+
+.media-picker__phone-upload {
+  padding: 24px 4px;
+  text-align: center;
+}
+
 .media-picker__tile {
   position: relative;
   border: 1px solid rgba(0, 0, 0, 0.12);
@@ -520,7 +584,9 @@ export default {
   gap: 4px;
 }
 
-.media-picker__check {
+/* Vuetify's `.v-icon.v-icon` outranks a single class and pins the icon to
+   `position: relative`. */
+.media-picker__tile .media-picker__check {
   position: absolute;
   top: 6px;
   right: 6px;
