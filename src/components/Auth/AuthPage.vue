@@ -10,29 +10,25 @@ const LEGAL_DOCUMENTS = Object.freeze([
   { key: "termsAndConditions", label: "AGB" },
 ]);
 
+/**
+ * The shell of the login, registration and password reset pages: the logo
+ * over one section card headed by the page's title, the page's form in the
+ * default slot, and the provider with the legal documents under the card.
+ * The way to the other pages is a sentence with a link under the form's own
+ * button, never a second button beside it; the pages hand the return target
+ * (`?next=`) on through that link themselves.
+ */
 export default {
   name: "AuthPage",
 
   props: {
-    active: {
-      type: String,
-      default: null,
-      validator: (value) =>
-        value === null || ["login", "register"].includes(value),
-    },
     title: {
       type: String,
-      default: "",
+      required: true,
     },
     icon: {
       type: String,
       default: "",
-    },
-    // The return target the switch hands on: the other page clears a
-    // target it is not handed, so it travels along as `?next=`.
-    next: {
-      type: String,
-      default: null,
     },
   },
 
@@ -40,27 +36,6 @@ export default {
     ...mapGetters({
       instance: "instance/instance",
     }),
-    tabs() {
-      return [
-        {
-          key: "login",
-          route: "login",
-          icon: "mdi-login-variant",
-          label: "Anmelden",
-        },
-        {
-          key: "register",
-          route: "register",
-          icon: "mdi-account-plus-outline",
-          label: "Registrieren",
-        },
-      ].map((tab) => ({
-        ...tab,
-        to: this.next
-          ? { name: tab.route, query: { next: this.next } }
-          : { name: tab.route },
-      }));
-    },
     appLogo() {
       return process.env.BASE_URL && process.env.BASE_URL.trim()
         ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
@@ -90,27 +65,10 @@ export default {
     <img :src="appLogo" alt="" class="auth-page__logo" />
 
     <v-card outlined class="section-card auth-page__card mx-auto">
-      <div v-if="title" class="v-card__title section-header auth-page__title">
+      <h1 class="v-card__title section-header auth-page__title">
         <v-icon v-if="icon">{{ icon }}</v-icon>
         <span>{{ title }}</span>
-      </div>
-      <nav
-        v-else
-        class="v-card__title section-header auth-page__nav"
-        aria-label="Anmelden oder Registrieren"
-      >
-        <router-link
-          v-for="tab in tabs"
-          :key="tab.key"
-          :to="tab.to"
-          class="auth-page__pill"
-          :class="{ 'auth-page__pill--active': tab.key === active }"
-          :aria-current="tab.key === active ? 'page' : null"
-        >
-          <v-icon small class="auth-page__pill-icon">{{ tab.icon }}</v-icon>
-          {{ tab.label }}
-        </router-link>
-      </nav>
+      </h1>
       <v-divider />
       <slot />
     </v-card>
@@ -168,42 +126,9 @@ export default {
   max-width: 520px;
 }
 
-.auth-page__nav {
-  padding: 10px var(--scb-space-3) !important;
-  gap: var(--scb-space-1);
-}
-
-.auth-page__pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--scb-space-2);
-  padding: 7px 14px;
-  border-radius: var(--scb-radius-pill);
-  color: var(--scb-text-muted);
-  font-size: var(--scb-font-size-md);
-  font-weight: var(--scb-font-weight-medium);
-  line-height: 1.2;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background-color var(--scb-motion-fast),
-    color var(--scb-motion-fast);
-}
-
-.auth-page__pill:hover,
-.auth-page__pill:focus-visible {
-  color: var(--scb-text-hover);
-  background-color: var(--scb-hover-tint-strong);
-}
-
-.auth-page__pill--active,
-.auth-page__pill--active:hover,
-.auth-page__pill--active:focus-visible {
-  color: var(--v-primary-base);
-  background-color: var(--scb-selected-tint-strong);
-}
-
-.auth-page__pill-icon {
-  color: inherit !important;
+/* The strip is the page's heading; it keeps the strip's scale, not h1's. */
+.auth-page__title {
+  margin: 0;
 }
 
 .auth-page__footer {
