@@ -191,7 +191,7 @@ describe("KeycloakCard — where the back button leads", () => {
     nextUrl = "/bookings/abc?tenant=t";
     const wrapper = mountCard();
 
-    await click(wrapper, "zurück");
+    await click(wrapper, "Zurück");
 
     expect(push).toHaveBeenCalledWith("/bookings/abc?tenant=t");
     expect(setNextUrl).toHaveBeenLastCalledWith(null);
@@ -200,7 +200,7 @@ describe("KeycloakCard — where the back button leads", () => {
   it("goes back to the login when nothing asked for it", async () => {
     const wrapper = mountCard();
 
-    await click(wrapper, "zurück");
+    await click(wrapper, "Zurück");
 
     expect(push).toHaveBeenCalledWith({ name: "login" });
   });
@@ -209,7 +209,7 @@ describe("KeycloakCard — where the back button leads", () => {
     nextUrl = "//evil.example/";
     const wrapper = mountCard();
 
-    await click(wrapper, "zurück");
+    await click(wrapper, "Zurück");
 
     expect(push).toHaveBeenCalledWith({ name: "login" });
     expect(push).not.toHaveBeenCalledWith("//evil.example/");

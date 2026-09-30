@@ -1,5 +1,5 @@
 <template>
-  <div class="login-card">
+  <div class="scb-form">
     <v-form ref="loginForm" @submit.prevent="signin">
       <v-text-field
         background-color="accent"
@@ -33,7 +33,7 @@
       <div class="d-flex justify-end mt-2 mb-4">
         <router-link
           :to="{ name: 'password-reset' }"
-          class="login-card__link"
+          class="scb-form__link"
           rel="noopener"
           target="_blank"
         >
@@ -45,15 +45,16 @@
         color="primary"
         block
         elevation="0"
+        class="scb-form__submit"
         :loading="isLoading"
       >
         Anmelden
       </v-btn>
-      <p class="login-card__register mt-4 mb-0">
+      <p class="scb-form__switch mt-4 mb-0">
         <span class="text--secondary">Noch kein Konto?</span>
         <router-link
           :to="registerRoute"
-          class="login-card__link"
+          class="scb-form__link"
           :target="registerInNewTab ? '_blank' : null"
         >
           Hier registrieren
@@ -293,22 +294,8 @@ export default {
 </script>
 
 <style scoped>
-.login-card {
-  padding: var(--scb-section-body-padding);
-  padding-top: var(--scb-space-5);
-}
-
-.login-card__link {
-  text-decoration: none;
-}
-
 .login-card__or {
   display: flex;
   align-items: center;
-}
-
-.login-card__register {
-  text-align: center;
-  font-size: var(--scb-font-size-md);
 }
 </style>

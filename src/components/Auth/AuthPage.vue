@@ -11,9 +11,10 @@ const LEGAL_DOCUMENTS = Object.freeze([
 ]);
 
 /**
- * The shell of the login, registration and password reset pages: the logo
- * over one section card headed by the page's title, the page's form in the
- * default slot, and the provider with the legal documents under the card.
+ * The shell of the login, registration and password reset pages and of the
+ * other pages a visitor meets before the app: the logo over one form card
+ * headed by the page's title, the page's `scb-form` in the default slot
+ * (form-card.scss), and the provider with the legal documents under the card.
  * The way to the other pages is a sentence with a link under the form's own
  * button, never a second button beside it; the pages hand the return target
  * (`?next=`) on through that link themselves.
@@ -123,7 +124,7 @@ export default {
 }
 
 .auth-page__card {
-  max-width: 520px;
+  max-width: var(--scb-form-width);
 }
 
 /* The strip is the page's heading; it keeps the strip's scale, not h1's. */
@@ -132,7 +133,7 @@ export default {
 }
 
 .auth-page__footer {
-  max-width: 520px;
+  max-width: var(--scb-form-width);
   margin-top: var(--scb-space-5);
   text-align: center;
   font-size: var(--scb-font-size-xs);

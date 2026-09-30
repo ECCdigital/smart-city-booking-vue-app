@@ -1,194 +1,132 @@
 <template>
-  <v-container class="invite-page d-flex align-center justify-center">
-    <v-card
-      class="pa-8 rounded-xl elevation-6 invite-card"
-      style="overflow: hidden; width: 100%; min-width: 350px; max-width: 750px"
-    >
-      <v-card-text class="text-center px-6 px-sm-10">
-        <v-img
-          :src="appLogo"
-          max-width="120"
-          contain
-          alt="App Logo"
-          class="mb-6 mx-auto"
+  <AuthPage title="Einladung" icon="mdi-account-multiple-plus-outline">
+    <div class="scb-form">
+      <template v-if="!isLoggedIn">
+        <p class="scb-form__note mb-0">
+          Um die Einladung anzunehmen, bitte zuerst anmelden oder ein Konto
+          erstellen.
+        </p>
+        <v-btn
+          color="primary"
+          block
+          elevation="0"
+          class="scb-form__submit mt-4"
+          :to="{ name: 'login', query: { next: currentPath } }"
+        >
+          Anmelden
+        </v-btn>
+        <p class="scb-form__switch mt-4 mb-0">
+          <span class="text--secondary">Noch kein Konto?</span>
+          <router-link
+            :to="{ name: 'register', query: { next: currentPath } }"
+            class="scb-form__link"
+          >
+            Konto erstellen
+          </router-link>
+        </p>
+      </template>
+
+      <div v-else-if="isVerifying" class="d-flex flex-column align-center py-4">
+        <v-progress-circular
+          indeterminate
+          color="primary"
+          size="40"
+          width="3"
         />
+        <span class="scb-form__note mt-3">Einladung wird überprüft…</span>
+      </div>
 
-        <h2 class="mb-1 font-weight-bold">Einladung</h2>
+      <template v-else-if="pendingApproval">
+        <p class="scb-form__note mb-0">
+          Ihre Einladung wurde angenommen und wartet auf die Genehmigung durch
+          einen Administrator.
+        </p>
+        <v-btn
+          color="primary"
+          block
+          elevation="0"
+          class="scb-form__submit mt-4"
+          :to="{ name: 'dashboard' }"
+        >
+          Fortfahren
+        </v-btn>
+      </template>
 
-        <div class="subtitle-2 text--secondary mb-6">
-          Beitreten und sofort loslegen
-        </div>
+      <template v-else-if="isAccepted">
+        <p class="scb-form__note mb-0">Einladung erfolgreich angenommen.</p>
+        <v-btn
+          color="primary"
+          block
+          elevation="0"
+          class="scb-form__submit mt-4"
+          :to="{ name: 'dashboard' }"
+        >
+          Fortfahren
+        </v-btn>
+      </template>
 
-        <div v-if="!isLoggedIn">
-          <v-alert
-            type="info"
-            dense
-            text
-            border="left"
-            colored-border
-            class="mb-6"
-          >
-            Um die Einladung anzunehmen, bitte zuerst anmelden oder ein Konto
-            erstellen.
-          </v-alert>
-
-          <v-row dense>
-            <v-col cols="12" sm="6">
-              <v-btn
-                color="primary"
-                elevation="2"
-                large
-                block
-                class="mt-2"
-                :to="{ name: 'login', query: { next: currentPath } }"
-                aria-label="Zur Anmeldung"
-              >
-                <v-icon left>mdi-login</v-icon>
-                Anmelden
-              </v-btn>
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-btn
-                color="secondary"
-                elevation="2"
-                outlined
-                large
-                block
-                class="mt-2"
-                :to="{ name: 'register', query: { next: currentPath } }"
-                aria-label="Zur Registrierung"
-              >
-                <v-icon left>mdi-account-plus</v-icon>
-                Konto erstellen
-              </v-btn>
-            </v-col>
-          </v-row>
-        </div>
-
-        <div v-else-if="isVerifying">
-          <v-progress-circular
-            indeterminate
-            size="40"
-            color="primary"
-          ></v-progress-circular>
-          <p class="mt-4">Einladung wird überprüft...</p>
-        </div>
-
-        <div v-else-if="pendingApproval">
-          <v-alert type="info" border="left" elevation="2" colored-border>
-            Ihre Einladung wurde angenommen und wartet auf die Genehmigung durch
-            einen Administrator.
+      <template v-else-if="isVerified">
+        <template v-if="verificationError">
+          <v-alert type="error" text dense class="mb-0">
+            {{ verificationError }}
           </v-alert>
           <v-btn
+            v-if="errorCode === 403"
             color="primary"
-            elevation="2"
             block
-            large
-            class="mt-6"
-            :to="{ name: 'dashboard' }"
+            elevation="0"
+            class="scb-form__submit mt-4"
+            @click="onChangeUser"
           >
-            <v-icon left>mdi-arrow-right</v-icon>
-            Fortfahren
+            Mit anderem Benutzer anmelden
           </v-btn>
-        </div>
+        </template>
 
-        <div v-else-if="isAccepted">
-          <v-alert type="success" border="left" elevation="2" colored-border>
-            Einladung erfolgreich angenommen
-          </v-alert>
+        <template v-else>
+          <p class="scb-form__note mb-0">
+            Sie wurden eingeladen, dem Mandanten
+            <strong>{{ tenantName }}</strong> beizutreten. Möchten Sie die
+            Einladung annehmen oder ablehnen?
+          </p>
           <v-btn
             color="primary"
-            elevation="2"
             block
-            large
-            class="mt-6"
-            :to="{ name: 'dashboard' }"
+            elevation="0"
+            class="scb-form__submit mt-4"
+            :loading="isAccepting"
+            :disabled="isRejecting"
+            @click="acceptInvitation"
           >
-            <v-icon left>mdi-arrow-right</v-icon>
-            Fortfahren
+            Einladung annehmen
           </v-btn>
-        </div>
-
-        <div v-else-if="isVerified">
-          <div v-if="verificationError">
-            <v-alert type="error" text colored-border border="left"  class="mb-4">
-              {{ verificationError }}
-            </v-alert>
-            <v-btn
-              v-if="errorCode === 403"
-              color="primary"
-              elevation="2"
-              block
-              large
-              class="mt-6"
-              @click="onChangeUser"
-              aria-label="Mit anderem Benutzer anmelden"
-            >
-              <v-icon left>mdi-login</v-icon>
-              Mit anderem Benutzer anmelden
-            </v-btn>
-          </div>
-
-          <div v-else>
-            <p class="mb-6">
-              Sie wurden eingeladen dem Mandanten
-              <strong>{{ tenantName }}</strong> beizutreten.
-              <br />
-              Möchten Sie die Einladung annehmen oder ablehnen?
-            </p>
-          </div>
-
-          <v-row v-if="!verificationError" dense>
-            <v-col cols="6">
-              <v-btn
-                color="success"
-                elevation="2"
-                block
-                large
-                @click="acceptInvitation"
-                :loading="isAccepting"
-                :disabled="isRejecting"
-                aria-label="Einladung annehmen"
-              >
-                <v-icon left>mdi-check</v-icon>
-                Einladung annehmen
-              </v-btn>
-            </v-col>
-            <v-col cols="6">
-              <v-btn
-                color="error"
-                elevation="2"
-                block
-                large
-                @click="rejectInvitation"
-                :loading="isRejecting"
-                :disabled="isAccepting"
-                aria-label="Einladung ablehnen"
-              >
-                <v-icon left>mdi-close</v-icon>
-                Einladung ablehnen
-              </v-btn>
-            </v-col>
-          </v-row>
-        </div>
-
-        <v-divider class="my-8"></v-divider>
-        <ContactInformation class="mt-4" />
-      </v-card-text>
-    </v-card>
-  </v-container>
+          <v-btn
+            color="error"
+            outlined
+            block
+            elevation="0"
+            class="mt-3"
+            :loading="isRejecting"
+            :disabled="isAccepting"
+            @click="rejectInvitation"
+          >
+            Einladung ablehnen
+          </v-btn>
+        </template>
+      </template>
+    </div>
+  </AuthPage>
 </template>
 
 <script>
 import { mapActions, mapGetters } from "vuex";
-import ContactInformation from "@/components/ContactInformation.vue";
+import AuthPage from "@/components/Auth/AuthPage.vue";
 import ToastService from "@/services/ToastService";
 import ApiInvitationService from "@/services/api/ApiInvitationService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 
 export default {
   components: {
-    ContactInformation,
+    AuthPage,
   },
   data() {
     return {
@@ -227,11 +165,6 @@ export default {
     },
     currentPath() {
       return this.$route.fullPath;
-    },
-    appLogo() {
-      return process.env.BASE_URL && process.env.BASE_URL.trim()
-        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
-        : "/app-logo.png";
     },
   },
   methods: {
@@ -277,7 +210,10 @@ export default {
     async acceptInvitation() {
       this.isAccepting = true;
       try {
-        const response = await ApiInvitationService.acceptInvitation(this.tenantId, this.token);
+        const response = await ApiInvitationService.acceptInvitation(
+          this.tenantId,
+          this.token
+        );
         this.isAccepted = true;
         this.pendingApproval = response.data?.pendingApproval || false;
         await this.addToast(
@@ -336,24 +272,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.invite-page {
-  min-height: 100vh;
-  padding: 24px;
-}
-
-.invite-card {
-  backdrop-filter: saturate(1.1) blur(2px);
-}
-
-@media (max-width: 600px) {
-  .invite-card {
-    padding: 20px !important;
-  }
-}
-
-.text--secondary {
-  opacity: 0.85;
-}
-</style>

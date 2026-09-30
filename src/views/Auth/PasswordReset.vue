@@ -4,10 +4,10 @@
       ref="form"
       v-model="valid"
       lazy-validation
-      class="reset-form"
+      class="scb-form"
       @submit.prevent="resetPassword"
     >
-      <p class="reset-form__note mb-4">
+      <p class="scb-form__note mb-4">
         Sie erhalten eine E-Mail mit einem Link, über den Sie das neue Passwort
         bestätigen können.
       </p>
@@ -23,7 +23,7 @@
         type="email"
         autocomplete="email"
       ></v-text-field>
-      <div class="reset-form__row mt-4">
+      <div class="scb-form__row mt-4">
         <v-text-field
           background-color="accent"
           filled
@@ -57,13 +57,13 @@
         color="primary"
         block
         elevation="0"
-        class="reset-form__submit mt-4"
+        class="scb-form__submit mt-4"
       >
         Passwort zurücksetzen
       </v-btn>
 
-      <p class="reset-form__back mt-4 mb-0">
-        <router-link :to="{ name: 'login' }" class="reset-form__link">
+      <p class="scb-form__switch mt-4 mb-0">
+        <router-link :to="{ name: 'login' }" class="scb-form__link">
           Zurück zur Anmeldung
         </router-link>
       </p>
@@ -136,48 +136,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.reset-form {
-  padding: var(--scb-section-body-padding);
-  padding-top: var(--scb-space-5);
-}
-
-.reset-form__note {
-  font-size: var(--scb-font-size-sm);
-  line-height: var(--scb-line-height-base);
-  color: var(--scb-text-muted);
-}
-
-.reset-form__row {
-  display: flex;
-  gap: var(--scb-space-4);
-}
-
-.reset-form__row > * {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.reset-form__submit {
-  text-transform: none;
-}
-
-.reset-form__back {
-  text-align: center;
-  font-size: var(--scb-font-size-md);
-}
-
-.reset-form__link {
-  font-weight: var(--scb-font-weight-medium);
-  text-decoration: none;
-}
-
-/* $scb-bp-xs of tokens.scss; a scoped style cannot read it. */
-@media (max-width: 599px) {
-  .reset-form__row {
-    flex-direction: column;
-    gap: var(--scb-space-4);
-  }
-}
-</style>
