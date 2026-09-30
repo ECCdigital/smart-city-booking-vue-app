@@ -57,9 +57,9 @@ const PDF_STRUCTURED_VARIABLES = [
     name: "coupon",
     placeholder:
       "{{#if coupon}}{{coupon.description}}: {{coupon.discountLabel}}{{/if}}",
-    label: "Gutschein (strukturiert)",
+    label: "Rabattcode (strukturiert)",
     description:
-      "Gutschein mit description und discountLabel – null, wenn kein Gutschein eingelöst wurde",
+      "Rabattcode mit description und discountLabel – null, wenn kein Rabattcode eingelöst wurde",
   },
 ];
 
@@ -162,7 +162,7 @@ const PDF_BOOKING_ITEMS_TABLE_PARTIAL = (tableClass) => ({
   placeholder: `{{> pdfBookingItemsTable tableClass="${tableClass}" items=items coupon=coupon totals=totals tableMeta=tableMeta}}`,
   label: "Partial: Positionstabelle",
   description:
-    "Zentrale Positionstabelle inkl. Gutschein-Zeile und Summenblock (Alternative zur Legacy-Tabelle). tableMeta steuert sichtbare Buchungsfelder.",
+    "Zentrale Positionstabelle inkl. Rabattcode-Zeile und Summenblock (Alternative zur Legacy-Tabelle). tableMeta steuert sichtbare Buchungsfelder.",
   category: "partial",
 });
 

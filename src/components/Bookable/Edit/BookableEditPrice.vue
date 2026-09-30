@@ -361,10 +361,10 @@
                   <template v-slot:label>
                     <div>
                       <div class="font-weight-medium">
-                        Gutscheine aktivieren
+                        Rabattcodes aktivieren
                       </div>
                       <div class="text-caption text--secondary">
-                        Ermöglicht die Verwendung von Gutscheinen
+                        Ermöglicht die Einlösung von Rabattcodes
                       </div>
                     </div>
                   </template>
