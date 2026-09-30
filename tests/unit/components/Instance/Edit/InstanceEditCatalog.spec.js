@@ -191,11 +191,18 @@ describe("InstanceEditCatalog Portal-URL", () => {
 });
 
 describe("InstanceEditCatalog Theme colours", () => {
-  it("asks to check both colours on light and dark surfaces", () => {
+  it("asks above the colour fields to keep both colours visible on light and dark backgrounds", () => {
     const wrapper = mountTab();
-    expect(wrapper.find(".theme-contrast-hint").text()).toContain(
-      "sowohl auf hellen als auch auf dunklen Flächen (Light-Mode und Dark-Mode)"
+    const hint = wrapper.find(".theme-contrast-hint");
+    expect(hint.text()).toContain(
+      "sowohl auf hellen als auch auf dunklen Hintergründen gut sichtbar"
     );
+
+    // The hint precedes the fields in the document, so it reads before them.
+    const hintIndex = wrapper.html().indexOf("theme-contrast-hint");
+    const fieldIndex = wrapper.html().indexOf("Primärfarbe");
+    expect(hintIndex).toBeGreaterThan(-1);
+    expect(hintIndex).toBeLessThan(fieldIndex);
   });
 
   it("previews one primary and one secondary icon on a light and a dark tile", () => {

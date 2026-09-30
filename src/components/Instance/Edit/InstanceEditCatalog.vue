@@ -98,6 +98,21 @@
         </v-col>
       </v-row>
 
+      <v-row class="theme-hint-row mt-3">
+        <v-col cols="12">
+          <div class="d-flex align-start theme-contrast-hint">
+            <v-icon small color="grey" class="mr-2 theme-contrast-hint__icon">
+              mdi-information-outline
+            </v-icon>
+            <span class="text--secondary text-body-2">
+              Achten Sie darauf, dass beide Farben sowohl auf hellen als auch
+              auf dunklen Hintergründen gut sichtbar sind. Die Vorschau unter
+              den Feldern zeigt beide Fälle.
+            </span>
+          </div>
+        </v-col>
+      </v-row>
+
       <!-- The colour fields carry neither hint nor rules, so their message
            area is hidden and the preview tiles sit right beneath them. -->
       <v-row class="theme-fields-row">
@@ -587,6 +602,15 @@ export default {
    horizontal gutters, only the space between switch, fields and tiles shrinks. */
 .theme-switch-row > .col {
   padding-bottom: 0;
+}
+
+.theme-hint-row > .col {
+  padding-top: var(--scb-space-2);
+  padding-bottom: 0;
+}
+
+.theme-contrast-hint__icon {
+  margin-top: 2px;
 }
 
 .theme-fields-row > .col {
