@@ -426,6 +426,11 @@ export default {
         child.showApiErrors([{ field: data.params.field, code: data.code }]);
       }
     },
+    /** Tells the open tab that its values are saved, if it wants to know. */
+    notifySaved() {
+      const child = this.$refs.activeChild;
+      if (child && typeof child.onSaved === "function") child.onSaved();
+    },
     async submitChanges() {
       const ok = await this.validateActiveChild();
       if (!ok) return;
@@ -438,6 +443,7 @@ export default {
           instance: this.instance,
           catalog: this.catalog,
         });
+        this.notifySaved();
         await this.addToast({
           message: "Instanz erfolgreich aktualisiert",
           type: "success",
