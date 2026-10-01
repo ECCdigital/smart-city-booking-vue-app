@@ -411,6 +411,20 @@
             "bffPostLogoutRedirectUri": "‹Rücksprungadresse des BFF nach der Abmeldung›",
             "bffSwitchUserRedirectUri": "‹Rücksprungadresse des BFF für „Benutzer wechseln“›"
           }
+        },
+        "text": {
+          "menu": "Als Text",
+          "copyGuide": "Anleitung kopieren",
+          "copied": {
+            "title": "Kopiert",
+            "message": "Die Anleitung liegt als Text in der Zwischenablage."
+          },
+          "title": "Keycloak-Realm für Biletado einrichten",
+          "instance": "Instanz",
+          "serverUrl": "Keycloak-URL",
+          "realm": "Realm",
+          "hints": "Hinweise",
+          "warning": "Achtung: {text}"
         }
       },
       "cards": {

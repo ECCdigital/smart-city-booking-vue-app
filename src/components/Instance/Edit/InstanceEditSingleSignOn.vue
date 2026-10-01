@@ -1,6 +1,10 @@
 <template>
   <BaseSection :title="$t('instance.edit.sso.title')" icon="mdi-shield-lock">
-    <SsoStatusCard :guide="guide" :saved="saved" />
+    <SsoStatusCard :guide="guide" :saved="saved">
+      <template #actions>
+        <RealmGuideTextMenu :guide="guide" />
+      </template>
+    </SsoStatusCard>
 
     <v-expansion-panels
       v-model="connectionPanel"
@@ -38,6 +42,7 @@
 import BaseSection from "@/components/commons/BaseSection.vue";
 import InstanceEditKeycloak from "@/components/Instance/Edit/InstanceEditKeycloak.vue";
 import RealmGuideChecklist from "@/components/Instance/Edit/RealmGuideChecklist.vue";
+import RealmGuideTextMenu from "@/components/Instance/Edit/RealmGuideTextMenu.vue";
 import SsoStatusCard from "@/components/Instance/Edit/SsoStatusCard.vue";
 import { getAuthMode } from "@/services/auth/authMode";
 import { directRedirects } from "@/services/auth/directRedirects";
@@ -49,6 +54,7 @@ export default {
     BaseSection,
     InstanceEditKeycloak,
     RealmGuideChecklist,
+    RealmGuideTextMenu,
     SsoStatusCard,
   },
   props: {
