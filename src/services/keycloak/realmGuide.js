@@ -30,6 +30,18 @@ export const KEYCLOAK_VERSIONS = Object.freeze({
   recommended: "26.8.x",
 });
 
+/** What a note of the Anleitung says. */
+export function noteText(note) {
+  return i18n.t(`instance.edit.sso.guide.notes.${note.id}`, note.params);
+}
+
+/** The name of a setting: Keycloak's own, or a label of Biletado's. */
+export function settingName(setting) {
+  return (
+    setting.name || i18n.t(`instance.edit.sso.guide.labels.${setting.label}`)
+  );
+}
+
 /** The fields of the Web-Client that take the entries of an Adresse. */
 export const ADDRESS_FIELDS = Object.freeze([
   { id: "redirectUris", name: "Valid redirect URIs" },

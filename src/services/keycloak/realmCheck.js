@@ -171,6 +171,11 @@ export function statusCounts(steps) {
   })).filter(({ count }) => count > 0);
 }
 
+/** A count of the status card and the text: „2 erfüllt“. */
+export function countLabel({ status, count }) {
+  return i18n.t(`${CHECK}.count`, { count, status: statusLabel(status) });
+}
+
 /** The time of the check as it reads in the status card: „14:03:12“. */
 export function checkTime(checkedAt) {
   return new Date(checkedAt).toLocaleTimeString("de-DE");
@@ -271,13 +276,20 @@ export function partLabel(rowId, part) {
   return PROBE_ROWS.includes(rowId) && i18n.te(key) ? i18n.t(key) : part.label;
 }
 
-/** How a state looks: the icon and the Vuetify colour of its badge. */
-export const CHECK_LOOK = Object.freeze({
+const CHECK_LOOK = Object.freeze({
   ok: { icon: "mdi-check", color: "success" },
   fail: { icon: "mdi-close", color: "error" },
   na: { icon: "mdi-help", color: "grey" },
   info: { icon: "mdi-information-variant", color: "info" },
 });
+
+/**
+ * How a state looks: the icon and the Vuetify colour of its badge; an
+ * unknown state looks like „nicht prüfbar“.
+ */
+export function checkLook(status) {
+  return CHECK_LOOK[status] || CHECK_LOOK.na;
+}
 
 /**
  * What the status card says when „Realm prüfen“ got no result: the stored

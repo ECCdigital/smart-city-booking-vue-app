@@ -61,7 +61,7 @@
 
 <script>
 import {
-  CHECK_LOOK,
+  checkLook,
   hasParts,
   partLabel,
   reasonSentence,
@@ -81,9 +81,7 @@ export default {
     rows: { type: Array, required: true },
   },
   methods: {
-    look(status) {
-      return CHECK_LOOK[status] || CHECK_LOOK.na;
-    },
+    look: checkLook,
     statusText(status) {
       return statusLabel(status);
     },

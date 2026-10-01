@@ -154,7 +154,8 @@
 <script>
 import RealmCheckRows from "@/components/Instance/Edit/RealmCheckRows.vue";
 import RealmGuideValue from "@/components/Instance/Edit/RealmGuideValue.vue";
-import { CHECK_LOOK, statusLabel } from "@/services/keycloak/realmCheck";
+import { checkLook, statusLabel } from "@/services/keycloak/realmCheck";
+import { noteText, settingName } from "@/services/keycloak/realmGuide";
 
 /**
  * One step of the checklist: what to set in Keycloak, with the values. After
@@ -171,7 +172,7 @@ export default {
   },
   computed: {
     look() {
-      return CHECK_LOOK[this.result.status] || CHECK_LOOK.na;
+      return checkLook(this.result.status);
     },
     stateLabel() {
       return statusLabel(this.result.status);
@@ -184,18 +185,10 @@ export default {
     },
   },
   methods: {
-    /** Keycloak's own name, or a label of Biletado's. */
-    settingName(setting) {
-      return (
-        setting.name ||
-        this.$t(`instance.edit.sso.guide.labels.${setting.label}`)
-      );
-    },
+    settingName,
+    noteText,
     appName(app) {
       return this.$t(`instance.edit.sso.guide.apps.${app}`);
-    },
-    noteText(note) {
-      return this.$t(`instance.edit.sso.guide.notes.${note.id}`, note.params);
     },
   },
 };

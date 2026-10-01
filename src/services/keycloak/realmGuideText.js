@@ -1,6 +1,11 @@
-import { KEYCLOAK_VERSIONS } from "@/services/keycloak/realmGuide";
+import {
+  KEYCLOAK_VERSIONS,
+  noteText,
+  settingName,
+} from "@/services/keycloak/realmGuide";
 import {
   checkMoment,
+  countLabel,
   hasParts,
   partLabel,
   reasonSentence,
@@ -26,7 +31,6 @@ import {
 
 const GUIDE = "instance.edit.sso.guide";
 const TEXT = "instance.edit.sso.text";
-const CHECK = "instance.edit.sso.check";
 
 /** Indents of what a step says, of the entries of a list and of parts. */
 const STEP = "   ";
@@ -35,11 +39,7 @@ const PART = "    ";
 
 /** When the realm was checked and how many results came out per state. */
 function checkedLine(result, steps, t) {
-  const counts = statusCounts(steps)
-    .map(({ status, count }) =>
-      t(`${CHECK}.count`, { count, status: statusLabel(status) })
-    )
-    .join(", ");
+  const counts = statusCounts(steps).map(countLabel).join(", ");
   return t(`${TEXT}.checked`, {
     moment: checkMoment(result.checkedAt),
     counts,
@@ -102,17 +102,8 @@ function indent(lines, by) {
   return lines.map((line) => `${by}${line}`);
 }
 
-function noteText(note, t) {
-  return t(`${GUIDE}.notes.${note.id}`, note.params);
-}
-
-/** Keycloak's own name, or a label of Biletado's. */
-function settingName(setting, t) {
-  return setting.name || t(`${GUIDE}.labels.${setting.label}`);
-}
-
-function settingLine(setting, t) {
-  return `${settingName(setting, t)}: ${setting.value.text}`;
+function settingLine(setting) {
+  return `${settingName(setting)}: ${setting.value.text}`;
 }
 
 /** A Rücksprungadresse; the one for „Benutzer wechseln“ says so. */
@@ -143,7 +134,7 @@ function sectionLines(section, t) {
   return [
     ...section.addresses.flatMap((address) => addressLines(address, t)),
     ...(section.addresses.length ? [] : [t(`${GUIDE}.apps.${section.app}`)]),
-    ...section.notes.map((note) => noteText(note, t)),
+    ...section.notes.map(noteText),
   ];
 }
 
@@ -171,12 +162,12 @@ function stepLines(step, t, stepResult) {
       [
         ...resultLines(stepResult, t),
         ...warnings.map((note) =>
-          t(`${TEXT}.warning`, { text: noteText(note, t) })
+          t(`${TEXT}.warning`, { text: noteText(note) })
         ),
         ...roleLines(step.roles, t),
-        ...step.settings.map((setting) => settingLine(setting, t)),
+        ...step.settings.map(settingLine),
         ...(step.sections || []).flatMap((section) => sectionLines(section, t)),
-        ...infos.map((note) => noteText(note, t)),
+        ...infos.map(noteText),
       ],
       STEP
     ),

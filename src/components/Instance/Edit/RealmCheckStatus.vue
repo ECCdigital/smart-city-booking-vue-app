@@ -24,15 +24,15 @@
       data-test="sso-check-summary"
     >
       <v-chip
-        v-for="{ status, count } in counts"
-        :key="status"
+        v-for="count in counts"
+        :key="count.status"
         small
         label
-        :color="color(status)"
+        :color="color(count.status)"
         text-color="white"
         data-test="sso-check-count"
       >
-        {{ countText(status, count) }}
+        {{ countLabel(count) }}
       </v-chip>
       <span class="realm-check-status__time">
         {{ $t("instance.edit.sso.check.checkedAt", { time }) }}
@@ -43,11 +43,11 @@
 
 <script>
 import {
-  CHECK_LOOK,
+  checkLook,
   checkTime,
+  countLabel,
   resultSteps,
   statusCounts,
-  statusLabel,
 } from "@/services/keycloak/realmCheck";
 
 /**
@@ -75,14 +75,9 @@ export default {
   },
   methods: {
     color(status) {
-      return CHECK_LOOK[status].color;
+      return checkLook(status).color;
     },
-    countText(status, count) {
-      return this.$t("instance.edit.sso.check.count", {
-        count,
-        status: statusLabel(status),
-      });
-    },
+    countLabel,
   },
 };
 </script>
