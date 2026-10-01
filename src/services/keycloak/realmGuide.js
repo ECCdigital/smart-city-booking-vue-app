@@ -19,6 +19,9 @@ import i18n from "@/language/index";
  * `params`), `hints.<id>`, `apps.<app>`.
  *
  * The model never carries the Client Secret, only whether it is missing.
+ *
+ * The Anleitung is the one source for Keycloak settings. A new requirement on
+ * the realm changes more than this file: see docs/agents/keycloak-realm.md.
  */
 
 /** Keycloak versions the Anleitung is written for. */
@@ -37,6 +40,8 @@ export const ADDRESS_FIELDS = Object.freeze([
 /**
  * The SSO routes of the Storefront, fixed in smart-city-booking-store-front:
  * the callback after sign-in and the sign-in „Benutzer wechseln“ returns to.
+ * The backend's live check knows the sign-in too; when they change, see
+ * docs/agents/keycloak-realm.md.
  */
 export const STOREFRONT_SSO_PATHS = Object.freeze({
   callback: "/api/auth/sso/callback",
