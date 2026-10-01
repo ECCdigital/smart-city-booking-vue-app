@@ -77,6 +77,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   SSO sign-in over the BFF with a return target (e.g. `/dashboard`) stays in the admin UI: the BFF SSO start is handed the target with the router base (`/admin/dashboard`), so „Anmelden“ no longer leads to the storefront's 404
 -   Media picker: the check on a picked tile sits top right on a light disc again, readable on dark images; Vuetify's `.v-icon.v-icon` had pinned it into the flow
 -   „Einrichtung fortsetzen“ on „Meine Mandanten“ is gone for an own tenant whose setup is done — at least one offer with the publication wish, as the readiness check (`GET /api/tenants/:tenant/readiness`, criterion `offers`) reports it; while the answer is out or refused, the setup stays offered
 -   Prüfstatus: the bookable and event editors show no review panel for a free tenant — not to the instance owner and not for a status left over from a supervised time, which has no effect there
