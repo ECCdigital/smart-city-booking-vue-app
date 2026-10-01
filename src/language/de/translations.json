@@ -381,6 +381,7 @@
             "storefrontWithoutPortalUrl": "Ohne Portal-URL keine Werte für die Storefront.",
             "storefrontReachable": "Die Storefront muss unter der Portal-URL erreichbar sein und sie als eigene Adresse kennen.",
             "setPortalUrl": "Die Portal-URL ist leer. Setzen Sie sie im Tab „Portal“.",
+            "fixPortalUrl": "Die Portal-URL ist keine vollständige Adresse mit http:// oder https://. Korrigieren Sie sie im Tab „Portal“.",
             "roleMappingReplacesRoles": "Die Rollenzuordnung greift nur bei der SSO-Anmeldung. Dabei entfernt sie auch von Hand vergebene Rollen.",
             "createClientRoles": "Legen Sie diese Keycloak-Rollen als Client-Rollen am Web-Client {webClient} an und weisen Sie sie den Personen zu.",
             "noKeycloakRoles": "Die Rollenzuordnung nennt noch keine Keycloak-Rolle. Tragen Sie sie unter „Verbindung zu Keycloak“ ein.",
@@ -390,7 +391,8 @@
             "bffUnavailable": "Der BFF hat seine Adressen nicht genannt, die Liste ist vielleicht unvollständig. Die Anleitung nennt nur die Adresse, unter der Sie gerade arbeiten, und ihre Rücksprungadressen als Platzhalter: Nur der BFF kennt seine Pfade.",
             "allowlistEmpty": "Die Allowlist des BFF ist leer, er nimmt jede Adresse an. Die Anleitung nennt deshalb nur die Adresse, unter der Sie gerade arbeiten.",
             "ownAddressNotListed": "Die Adresse, unter der Sie gerade arbeiten ({origin}), fehlt in der Allowlist des BFF. Die SSO-Anmeldung von hier scheitert, bis sie dort eingetragen ist.",
-            "portalUrlMissing": "Die Portal-URL ist leer. Setzen Sie sie im Tab „Portal“, dann nennt die Anleitung auch die Rücksprungadressen der Storefront."
+            "portalUrlMissing": "Die Portal-URL ist leer. Setzen Sie sie im Tab „Portal“, dann nennt die Anleitung auch die Rücksprungadressen der Storefront.",
+            "portalUrlInvalid": "Die Portal-URL ist keine vollständige Adresse mit http:// oder https://. Korrigieren Sie sie im Tab „Portal“, dann nennt die Anleitung auch die Rücksprungadressen der Storefront."
           },
           "labels": {
             "portalUrl": "Portal-URL",
@@ -526,7 +528,7 @@
             "storefront_origin_mismatch": "Die Storefront meldet sich mit {actual} an, erwartet ist {expected}: Die Portal-URL oder die Storefront ist falsch eingestellt.",
             "storefront_path_mismatch": "Die Storefront meldet sich mit {actual} an, erwartet ist {expected}. Die Adresse stimmt, der Pfad nicht: ein Fehler in Biletado, nicht im Realm.",
             "storefront_not_redirecting": "Die Storefront leitet nicht zur Anmeldung an diesen Realm weiter (HTTP {httpStatus}), etwa weil sie Keycloak noch nicht kennt.",
-            "portal_url_missing": "Nicht prüfbar, die Portal-URL ist leer."
+            "portal_url_missing": "Nicht prüfbar, die Portal-URL ist leer oder keine vollständige Adresse mit http:// oder https://."
           },
           "rowReasons": {
             "3": {

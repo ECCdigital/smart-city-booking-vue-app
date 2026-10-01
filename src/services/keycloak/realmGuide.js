@@ -292,9 +292,14 @@ function rolesStep({ webClient }, roleMapping) {
   };
 }
 
+/**
+ * Without a Storefront Adresse the Portal-URL is either empty or set but no
+ * absolute http(s) URL; the notes say which.
+ */
 function portalStep(portalUrl, storefront) {
   if (!storefront) {
-    return { key: "portal", notes: [{ id: "setPortalUrl", type: "info" }] };
+    const id = trimmed(portalUrl) ? "fixPortalUrl" : "setPortalUrl";
+    return { key: "portal", notes: [{ id, type: "info" }] };
   }
   return {
     key: "portal",
@@ -383,9 +388,12 @@ export function buildRealmGuide({ keycloakApp, portalUrl, mode, admin }) {
   }));
 
   // Hints above the checklist; every other note sits in its step.
+  const portalHint = trimmed(portalUrl)
+    ? "portalUrlInvalid"
+    : "portalUrlMissing";
   const hints = [
     ...adminHints(admin),
-    ...(storefront ? [] : [{ id: "portalUrlMissing", type: "warning" }]),
+    ...(storefront ? [] : [{ id: portalHint, type: "warning" }]),
   ];
 
   return {

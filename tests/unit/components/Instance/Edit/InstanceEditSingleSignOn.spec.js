@@ -646,6 +646,28 @@ describe("InstanceEditSingleSignOn Portal-URL", () => {
     expect(values(portal)).toEqual([]);
     expect(portal.text()).toContain("Tab „Portal“");
   });
+
+  it("asks to correct a Portal-URL that is no full Adresse, instead of calling it empty, and shows no values for the Storefront", async () => {
+    const wrapper = mountTab({
+      instance: instance({ portalUrl: "portal.example.de/start" }),
+    });
+
+    expect(hints(wrapper)).toEqual([
+      "Die Portal-URL ist keine vollständige Adresse mit http:// oder https://. Korrigieren Sie sie im Tab „Portal“, dann nennt die Anleitung auch die Rücksprungadressen der Storefront.",
+    ]);
+
+    const step = await openStep(wrapper, ADDRESSES);
+    expect(addresses(step).map((address) => address.app)).toEqual(["Admin UI"]);
+    expect(step.text()).not.toContain("/api/auth/sso/");
+    expect(step.text()).not.toContain("ist leer");
+
+    const portal = await openStep(wrapper, "Portal-URL prüfen");
+    expect(values(portal)).toEqual([]);
+    expect(portal.text()).toContain(
+      "Die Portal-URL ist keine vollständige Adresse mit http:// oder https://. Korrigieren Sie sie im Tab „Portal“."
+    );
+    expect(portal.text()).not.toContain("ist leer");
+  });
 });
 
 describe("InstanceEditSingleSignOn Rücksprungadressen in BFF mode without an answer of the BFF", () => {
@@ -2203,7 +2225,12 @@ describe("InstanceEditSingleSignOn „Realm prüfen“ result for „Portal-URL 
       { httpStatus: 302, location: "https://other.example.de/realms/x" },
       ["HTTP 302", "https://other.example.de/realms/x"],
     ],
-    ["portal_url_missing", "na", undefined, ["Portal-URL ist leer"]],
+    [
+      "portal_url_missing",
+      "na",
+      undefined,
+      ["Portal-URL ist leer oder keine vollständige Adresse"],
+    ],
   ])(
     "reads %s as its state with the reason",
     async (reason, status, details, says) => {
