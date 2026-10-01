@@ -175,6 +175,7 @@ import NotificationDisplay from "@/components/NotificationDisplay";
 import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
 import keycloakService from "@/services/KeycloakService";
 import { isBffAuthMode } from "@/services/auth/authMode";
+import { directRedirects } from "@/services/auth/directRedirects";
 import { version as appVersion } from "../../package.json";
 
 export default {
@@ -377,12 +378,9 @@ export default {
         this.resetStores();
         await this.deleteUser();
 
-        const base = process.env.BASE_URL?.trim()
-          ? process.env.BASE_URL.replace(/\/$/, "")
-          : "";
-        const redirectUri = `${window.location.origin}${base}/`;
-
-        await keycloakService.logout(redirectUri);
+        await keycloakService.logout(
+          directRedirects(window.location.origin).logout
+        );
       } else {
         ApiAuthService.logout()
           .then((result) => {

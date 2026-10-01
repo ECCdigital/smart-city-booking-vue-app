@@ -13,6 +13,7 @@ const mode = vi.hoisted(() => ({ bff: true }));
 const keycloak = vi.hoisted(() => ({
   setConfig: vi.fn(),
   login: vi.fn(async () => {}),
+  logout: vi.fn(async () => {}),
   getValidToken: vi.fn(async () => "kc-token"),
   isAuthenticated: true,
   tokenParsed: { email: "a@b.de", given_name: "A", family_name: "B" },
@@ -96,6 +97,8 @@ beforeEach(() => {
   mode.bff = true;
   api.startSsoLogin.mockClear();
   api.ssoLogin.mockClear();
+  keycloak.login.mockClear();
+  keycloak.logout.mockClear();
 });
 
 afterEach(() => {
@@ -173,6 +176,37 @@ describe("KeycloakCard — where sign-in leads on the direct transport", () => {
     await click(wrapper, "Anmelden");
 
     expect(push).toHaveBeenCalledWith({ name: "dashboard" });
+  });
+});
+
+describe("KeycloakCard — the Rücksprungadressen on the direct transport", () => {
+  /** The card is opened again with whatever the address bar carries. */
+  function openedAt(href) {
+    vi.stubGlobal("location", { origin: "https://booking.example.de", href });
+  }
+
+  it("signs in to the SSO sign-in page, never to the current address", async () => {
+    mode.bff = false;
+    openedAt("https://booking.example.de/admin/login/sso?code=c&state=s");
+    mountCard([], {});
+    await flushPromises();
+
+    expect(keycloak.login).toHaveBeenCalledWith(
+      "https://booking.example.de/admin/login/sso"
+    );
+  });
+
+  it("switches the user over the SSO sign-in page, never the current address", async () => {
+    mode.bff = false;
+    openedAt("https://booking.example.de/admin/login/sso?code=c&state=s");
+    const wrapper = mountCard([], {});
+
+    await click(wrapper, "Benutzer wechseln");
+
+    expect(keycloak.logout).toHaveBeenCalledTimes(1);
+    expect(keycloak.logout).toHaveBeenCalledWith(
+      "https://booking.example.de/admin/login/sso"
+    );
   });
 });
 
