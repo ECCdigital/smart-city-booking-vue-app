@@ -417,16 +417,131 @@
         "text": {
           "menu": "Als Text",
           "copyGuide": "Anleitung kopieren",
+          "copyGuideWithResult": "Anleitung mit Ergebnis kopieren",
           "copied": {
             "title": "Kopiert",
             "message": "Die Anleitung liegt als Text in der Zwischenablage."
           },
+          "copiedWithResult": {
+            "title": "Kopiert",
+            "message": "Die Anleitung mit dem Ergebnis der Prüfung liegt als Text in der Zwischenablage."
+          },
+          "checked": "Realm geprüft am {moment}: {counts}",
+          "result": "Ergebnis: {status}",
           "title": "Keycloak-Realm für Biletado einrichten",
           "instance": "Instanz",
           "serverUrl": "Keycloak-URL",
           "realm": "Realm",
           "hints": "Hinweise",
           "warning": "Achtung: {text}"
+        },
+        "check": {
+          "action": "Realm prüfen",
+          "lock": {
+            "missing": "Für „Realm prüfen“ fehlen noch {values}. Tragen Sie die Werte unter „Verbindung zu Keycloak“ ein und speichern Sie.",
+            "unsaved": "Speichern Sie zuerst: „Realm prüfen“ liest nur die gespeicherten Werte."
+          },
+          "values": {
+            "serverUrl": "Keycloak-URL",
+            "realm": "Realm",
+            "webClient": "Web-Client",
+            "apiClient": "API-Client",
+            "clientSecret": "Client Secret"
+          },
+          "list": "{rest} und {last}",
+          "count": "{count} {status}",
+          "errors": {
+            "settingsMissing": "Für „Realm prüfen“ fehlen in der gespeicherten Instanz noch {values}. Tragen Sie die Werte unter „Verbindung zu Keycloak“ ein und speichern Sie.",
+            "validation": "Das Backend hat die Anfrage zu „Realm prüfen“ abgelehnt ({fields}).",
+            "failed": "„Realm prüfen“ ist fehlgeschlagen. Bitte versuchen Sie es erneut."
+          },
+          "checkedAt": "geprüft um {time}",
+          "status": {
+            "ok": "erfüllt",
+            "fail": "nicht erfüllt",
+            "na": "nicht prüfbar",
+            "info": "Information"
+          },
+          "rows": {
+            "1": "Realm und Issuer",
+            "2": "Web-Client: vorhanden, public, Standard flow",
+            "3": "PKCE S256 erzwungen",
+            "4": "Valid redirect URIs",
+            "5": "Valid post logout redirect URIs",
+            "6": "Web origins",
+            "7": "API-Client darf Tokens prüfen",
+            "8": "Audience im Token",
+            "9": "Client-Rollen im Token",
+            "10": "Portal-URL und Storefront",
+            "addressesUnknown": "Rücksprungadressen des Admin UI"
+          },
+          "parts": {
+            "token": "Client und Client authentication",
+            "authorize": "Standard flow",
+            "without_challenge": "Anmeldung ohne PKCE",
+            "plain": "Anmeldung mit PKCE plain"
+          },
+          "reasons": {
+            "unexpected_response": "Unerwartete Antwort mit HTTP {httpStatus}, deshalb kein Urteil.",
+            "timeout": "Keine Antwort von {url} innerhalb von 5 Sekunden.",
+            "unreachable": "{url} ist nicht erreichbar ({code}).",
+            "issuer_matches": "Der Realm antwortet mit dem Issuer {issuer}.",
+            "realm_not_found": "Keycloak kennt den Realm nicht (HTTP {httpStatus} unter {url}): Keycloak-URL oder Realm stimmen nicht.",
+            "issuer_mismatch": "Der Realm nennt den Issuer {actual}, erwartet ist {expected}: Die Keycloak-URL passt nicht zum Hostname von Keycloak oder zur Frontend URL des Realms.",
+            "addresses_unknown": "Der BFF hat die Rücksprungadressen für {origin} nicht genannt, deshalb sind sie nicht geprüft.",
+            "realm_unavailable": "Nicht prüfbar, solange Realm und Issuer nicht stimmen (Schritt „Realm anlegen“).",
+            "client_public": "Der Web-Client existiert und ist public.",
+            "client_unknown_or_disabled": "Keycloak kennt den Web-Client nicht, oder er ist deaktiviert.",
+            "client_authentication_on": "Client authentication ist an, der Web-Client muss aber public sein.",
+            "standard_flow_on": "Standard flow ist an.",
+            "standard_flow_off": "Standard flow ist aus.",
+            "no_redirect_uri_accepted": "Nicht prüfbar, weil Keycloak keine Rücksprungadresse unter Valid redirect URIs annimmt.",
+            "web_client_invalid": "Nicht prüfbar, solange der Web-Client fehlt, deaktiviert oder nicht public ist.",
+            "pkce_required": "Keycloak verlangt PKCE.",
+            "pkce_optional": "Keycloak lässt die Anmeldung ohne PKCE zu: PKCE Method ist nicht gesetzt.",
+            "pkce_plain_rejected": "Keycloak lehnt PKCE plain ab.",
+            "pkce_plain_accepted": "Keycloak nimmt PKCE plain an: PKCE Method ist plain oder nicht gesetzt, richtig ist S256.",
+            "redirect_uri_accepted": "Keycloak nimmt die Rücksprungadresse an, mit http:// nicht.",
+            "redirect_uri_rejected": "Keycloak lehnt die Rücksprungadresse ab (HTTP {httpStatus}): Sie fehlt unter Valid redirect URIs oder weicht ab, etwa durch einen Schrägstrich am Ende.",
+            "http_accepted": "Keycloak nimmt die Rücksprungadresse auch mit http:// an ({uri}): Ein Eintrag mit http:// oder * ist zu weit.",
+            "post_logout_redirect_accepted": "Keycloak leitet nach der Abmeldung hierhin zurück.",
+            "post_logout_redirect_rejected": "Keycloak lehnt die Rücksprungadresse nach der Abmeldung ab (HTTP {httpStatus}): Sie fehlt unter Valid post logout redirect URIs, oder dem Eintrag für „Benutzer wechseln“ fehlt das * am Ende.",
+            "origin_allowed": "Keycloak erlaubt Anfragen von dieser Adresse.",
+            "origin_not_allowed": "Keycloak lehnt Anfragen von dieser Adresse ab (HTTP {httpStatus}): Sie fehlt unter Web origins.",
+            "introspection_allowed": "Der API-Client darf mit seinem Client Secret Tokens prüfen.",
+            "api_client_secret_wrong": "Keycloak lehnt das Client Secret ab: Es stimmt nicht mit dem des API-Clients überein.",
+            "api_client_unknown_or_disabled": "Keycloak kennt den API-Client nicht, oder er ist deaktiviert.",
+            "introspection_unauthorized": "Keycloak lehnt den API-Client ab (HTTP {httpStatus}): Das Client Secret ist falsch, oder der API-Client ist unbekannt oder deaktiviert.",
+            "api_client_public": "Der API-Client ist public (HTTP {httpStatus}): Client authentication muss an sein.",
+            "audience_present": "Ihr Token nennt den API-Client als Audience ({aud}).",
+            "audience_missing": "Ihr Token nennt nur {aud} als Audience, nicht den API-Client: Der Audience-Mapper im Scope des Web-Clients fehlt oder nennt einen anderen Client.",
+            "audience_missing_none": "Ihr Token nennt keine Audience: Der Audience-Mapper im Scope des Web-Clients fehlt.",
+            "sso_login_required": "Nicht prüfbar, Sie sind nicht per SSO angemeldet. Melden Sie sich per SSO an und prüfen Sie erneut.",
+            "token_other_client": "Nicht prüfbar, Ihr Token stammt nicht vom Web-Client, sondern von {azp}. Melden Sie sich per SSO über den Web-Client an.",
+            "token_inactive": "Ihr Token nennt den API-Client als Audience ({aud}), Keycloak meldet es aber als ungültig. Melden Sie sich neu an und prüfen Sie erneut.",
+            "api_client_invalid": "Nicht prüfbar, solange der API-Client nicht stimmt (Schritt „API-Client anlegen“).",
+            "client_roles": "Ihr Token trägt die Client-Rollen {roles}.",
+            "client_roles_none": "Ihr Token trägt keine Client-Rollen des Web-Clients: Ihnen ist keine zugewiesen, oder der Mapper für Client-Rollen oder der Client scope „roles“ fehlt.",
+            "storefront_redirect_matches": "Die Storefront meldet sich mit der erwarteten Rücksprungadresse {actual} an.",
+            "storefront_origin_mismatch": "Die Storefront meldet sich mit {actual} an, erwartet ist {expected}: Die Portal-URL oder die Storefront ist falsch eingestellt.",
+            "storefront_path_mismatch": "Die Storefront meldet sich mit {actual} an, erwartet ist {expected}. Die Adresse stimmt, der Pfad nicht: ein Fehler in Biletado, nicht im Realm.",
+            "storefront_not_redirecting": "Die Storefront leitet nicht zur Anmeldung an diesen Realm weiter (HTTP {httpStatus}), etwa weil sie Keycloak noch nicht kennt.",
+            "portal_url_missing": "Nicht prüfbar, die Portal-URL ist leer."
+          },
+          "rowReasons": {
+            "3": {
+              "standard_flow_off": "Nicht prüfbar, solange Standard flow aus ist."
+            },
+            "8": {
+              "sso_login_required": "Nicht prüfbar, Sie sind nicht per SSO angemeldet. Melden Sie sich per SSO an und prüfen Sie erneut. Scheitert die SSO-Anmeldung, fehlt wahrscheinlich der Audience-Mapper."
+            }
+          },
+          "extras": {
+            "httpStatus": "Antwort: HTTP {httpStatus}.",
+            "error": "Fehlercode: {error}.",
+            "location": "Weiterleitung an {location}."
+          },
+          "unknownReason": "Das Backend meldet „{reason}“, dazu kennt das Admin UI keinen Satz."
         }
       },
       "cards": {

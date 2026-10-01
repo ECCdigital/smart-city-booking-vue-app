@@ -26,6 +26,7 @@
         v-for="step in guide.steps"
         :key="step.key"
         :step="step"
+        :result="results[step.key] || null"
       />
     </v-expansion-panels>
   </div>
@@ -36,13 +37,16 @@ import RealmGuideStep from "@/components/Instance/Edit/RealmGuideStep.vue";
 
 /**
  * The Anleitung: the steps to set up the realm, in the order of the setup.
- * Open while values are missing, folded once SSO is set up.
+ * Open while values are missing, folded once SSO is set up. After „Realm
+ * prüfen“ the steps that are „nicht erfüllt“ or „nicht prüfbar“ open.
  */
 export default {
   name: "RealmGuideChecklist",
   components: { RealmGuideStep },
   props: {
     guide: { type: Object, required: true },
+    /** The result of the check per step key, see `resultSteps`. */
+    results: { type: Object, default: () => ({}) },
   },
   data() {
     return {
@@ -68,6 +72,14 @@ export default {
       handler(complete) {
         if (!complete) this.openKeys = this.guide.steps.map((s) => s.key);
       },
+    },
+    // A new result opens exactly the steps that need a look.
+    results(results) {
+      const keys = Object.keys(results);
+      if (!keys.length) return;
+      this.openKeys = keys.filter((key) =>
+        ["fail", "na"].includes(results[key].status)
+      );
     },
   },
 };

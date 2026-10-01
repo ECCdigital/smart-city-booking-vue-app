@@ -13,8 +13,11 @@
           {{ $t("instance.edit.sso.text.copyGuide") }}
         </v-list-item-title>
       </v-list-item>
-      <!-- „Anleitung mit Ergebnis kopieren“ (ECCdigital/tickets#97) hands
-           the result of „Realm prüfen“ on: `copy({ result })`. -->
+      <v-list-item :disabled="!result" @click="copy({ result })">
+        <v-list-item-title>
+          {{ $t("instance.edit.sso.text.copyGuideWithResult") }}
+        </v-list-item-title>
+      </v-list-item>
     </v-list>
   </v-menu>
 </template>
@@ -26,12 +29,15 @@ import { guideAsText } from "@/services/keycloak/realmGuideText";
 
 /**
  * The menu „Als Text“ of the status card: the Anleitung as plain text into
- * the clipboard, for the customer's IT. Never with the Client Secret.
+ * the clipboard, for the customer's IT, after „Realm prüfen“ also with its
+ * result. Never with the Client Secret.
  */
 export default {
   name: "RealmGuideTextMenu",
   props: {
     guide: { type: Object, required: true },
+    /** The result of „Realm prüfen“, `{ checkedAt, rows }`, or `null`. */
+    result: { type: Object, default: null },
   },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
@@ -52,7 +58,12 @@ export default {
         return;
       }
       await this.addToast(
-        ToastService.createToast("instance.edit.sso.text.copied", "success")
+        ToastService.createToast(
+          options.result
+            ? "instance.edit.sso.text.copiedWithResult"
+            : "instance.edit.sso.text.copied",
+          "success"
+        )
       );
     },
   },

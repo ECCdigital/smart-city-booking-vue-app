@@ -2,19 +2,40 @@
   <v-expansion-panel class="realm-guide-step" data-test="guide-step">
     <v-expansion-panel-header class="realm-guide-step__header">
       <div class="realm-guide-step__heading">
-        <!-- The number; after „Realm prüfen“ the state of the step
-             (ECCdigital/tickets#97). -->
-        <span class="realm-guide-step__number" data-test="guide-step-number">
+        <!-- The number; after „Realm prüfen“ the worst state of the step's
+             results. -->
+        <v-avatar
+          v-if="result"
+          size="26"
+          :color="look.color"
+          class="realm-guide-step__badge"
+        >
+          <v-icon small dark>{{ look.icon }}</v-icon>
+        </v-avatar>
+        <span
+          v-else
+          class="realm-guide-step__number"
+          data-test="guide-step-number"
+        >
           {{ step.number }}
         </span>
         <div>
           <div class="realm-guide-step__title" data-test="guide-step-title">
             {{ $t(`instance.edit.sso.guide.steps.${step.key}.title`) }}
           </div>
+          <div
+            v-if="result"
+            class="realm-guide-step__state"
+            data-test="guide-step-state"
+          >
+            {{ stateLabel }}
+          </div>
         </div>
       </div>
     </v-expansion-panel-header>
     <v-expansion-panel-content>
+      <RealmCheckRows v-if="result" :rows="result.rows" />
+
       <v-alert
         v-for="note in warnings"
         :key="note.id"
@@ -131,16 +152,30 @@
 </template>
 
 <script>
+import RealmCheckRows from "@/components/Instance/Edit/RealmCheckRows.vue";
 import RealmGuideValue from "@/components/Instance/Edit/RealmGuideValue.vue";
+import { CHECK_LOOK, statusLabel } from "@/services/keycloak/realmCheck";
 
-/** One step of the checklist: what to set in Keycloak, with the values. */
+/**
+ * One step of the checklist: what to set in Keycloak, with the values. After
+ * „Realm prüfen“ the step shows the worst state of its results instead of
+ * its number, and the results on top.
+ */
 export default {
   name: "RealmGuideStep",
-  components: { RealmGuideValue },
+  components: { RealmCheckRows, RealmGuideValue },
   props: {
     step: { type: Object, required: true },
+    /** The step's result of the check, `{ status, rows }`, or `null`. */
+    result: { type: Object, default: null },
   },
   computed: {
+    look() {
+      return CHECK_LOOK[this.result.status] || CHECK_LOOK.na;
+    },
+    stateLabel() {
+      return statusLabel(this.result.status);
+    },
     warnings() {
       return this.step.notes.filter((note) => note.type === "warning");
     },
@@ -192,10 +227,20 @@ export default {
   color: var(--scb-text);
 }
 
+.realm-guide-step__badge {
+  flex: 0 0 auto;
+}
+
 .realm-guide-step__title {
   font-size: var(--scb-font-size-md);
   font-weight: var(--scb-font-weight-medium);
   color: var(--scb-text);
+}
+
+.realm-guide-step__state {
+  margin-top: 2px;
+  font-size: var(--scb-font-size-xs);
+  color: var(--scb-text-muted);
 }
 
 .realm-guide-step__settings {

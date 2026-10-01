@@ -1,4 +1,14 @@
 import { KEYCLOAK_VERSIONS } from "@/services/keycloak/realmGuide";
+import {
+  checkMoment,
+  hasParts,
+  partLabel,
+  reasonSentence,
+  resultSteps,
+  rowTitle,
+  statusCounts,
+  statusLabel,
+} from "@/services/keycloak/realmCheck";
 
 /**
  * The Anleitung as plain text, for the menu „Als Text“ of the tab
@@ -10,16 +20,33 @@ import { KEYCLOAK_VERSIONS } from "@/services/keycloak/realmGuide";
  * never say different things. Only the frame of the text is its own, under
  * `instance.edit.sso.text.*`. Placeholders of missing values read as in the
  * checklist; the guide never carries the Client Secret, so the text cannot.
+ * With the result of „Realm prüfen“ the text says per step what the check
+ * found, in the sentences the checklist shows (`realmCheck`).
  */
 
 const GUIDE = "instance.edit.sso.guide";
 const TEXT = "instance.edit.sso.text";
+const CHECK = "instance.edit.sso.check";
 
-/** Indents of what a step says and of the entries of a list. */
+/** Indents of what a step says, of the entries of a list and of parts. */
 const STEP = "   ";
 const LIST = "  ";
+const PART = "    ";
 
-function header(guide, t, { instance }) {
+/** When the realm was checked and how many results came out per state. */
+function checkedLine(result, steps, t) {
+  const counts = statusCounts(steps)
+    .map(({ status, count }) =>
+      t(`${CHECK}.count`, { count, status: statusLabel(status) })
+    )
+    .join(", ");
+  return t(`${TEXT}.checked`, {
+    moment: checkMoment(result.checkedAt),
+    counts,
+  });
+}
+
+function header(guide, t, { instance, result }, steps) {
   const { serverUrl, realm, issuer } = guide.values;
   return [
     t(`${TEXT}.title`),
@@ -32,6 +59,34 @@ function header(guide, t, { instance }) {
     `${t(`${TEXT}.serverUrl`)}: ${serverUrl.text}`,
     `${t(`${TEXT}.realm`)}: ${realm.text}`,
     `${t("instance.edit.sso.status.issuer")}: ${issuer.text}`,
+    ...(result ? [checkedLine(result, steps, t)] : []),
+  ];
+}
+
+/** A result: as a whole, or per part on lines of their own. */
+function rowLines(row) {
+  const head = `- ${rowTitle(row)}: ${statusLabel(row.status)}`;
+  if (!hasParts(row)) return [`${head}. ${reasonSentence(row.id, row)}`];
+  return [
+    head,
+    ...indent(
+      row.parts.map(
+        (part) =>
+          `${partLabel(row.id, part)}: ${statusLabel(
+            part.status
+          )}. ${reasonSentence(row.id, part)}`
+      ),
+      PART
+    ),
+  ];
+}
+
+/** The step's state after the check and its results, or nothing. */
+function resultLines(stepResult, t) {
+  if (!stepResult) return [];
+  return [
+    t(`${TEXT}.result`, { status: statusLabel(stepResult.status) }),
+    ...stepResult.rows.flatMap(rowLines),
   ];
 }
 
@@ -104,16 +159,17 @@ function roleLines(roles, t) {
 }
 
 /**
- * A step in the order of the checklist: warnings first, then the roles, the
- * settings, the Adressen and the other notes.
+ * A step in the order of the checklist: the result of the check, warnings,
+ * then the roles, the settings, the Adressen and the other notes.
  */
-function stepLines(step, t) {
+function stepLines(step, t, stepResult) {
   const warnings = step.notes.filter((note) => note.type === "warning");
   const infos = step.notes.filter((note) => note.type !== "warning");
   return [
     `${step.number}. ${t(`${GUIDE}.steps.${step.key}.title`)}`,
     ...indent(
       [
+        ...resultLines(stepResult, t),
         ...warnings.map((note) =>
           t(`${TEXT}.warning`, { text: noteText(note, t) })
         ),
@@ -133,17 +189,18 @@ function stepLines(step, t) {
  * @param {object} [options]
  * @param {string} [options.instance] names the instance in the header, e.g.
  *   the Adresse of the Admin UI the text was copied from
+ * @param {object} [options.result] the result of „Realm prüfen“
+ *   (`{ checkedAt, rows }`, see `checkResult`) for „Anleitung mit Ergebnis
+ *   kopieren“: the time of the check and the counts in the header, the state
+ *   and the reasons of its results in each step
  * @returns {string} the text, lines separated by `\n`
- *
- * „Anleitung mit Ergebnis kopieren“ (ECCdigital/tickets#97) hands the result
- * of „Realm prüfen“ on as a further option, `{ result }`: the time of the
- * check in the header, the state and reason of each result in its step.
  */
 export function guideAsText(guide, t, options = {}) {
+  const steps = options.result ? resultSteps(options.result) : {};
   const blocks = [
-    header(guide, t, options),
+    header(guide, t, options, steps),
     ...(guide.hints.length ? [hintLines(guide.hints, t)] : []),
-    ...guide.steps.map((step) => stepLines(step, t)),
+    ...guide.steps.map((step) => stepLines(step, t, steps[step.key])),
   ];
   return blocks.map((lines) => lines.join("\n")).join("\n\n");
 }
