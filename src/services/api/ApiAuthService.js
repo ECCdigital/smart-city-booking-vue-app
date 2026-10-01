@@ -40,6 +40,18 @@ export default {
     throw new Error("startSilentSso is only available in BFF auth mode");
   },
 
+  /**
+   * The BFF's Adressen with the Rücksprungadressen it hands to Keycloak
+   * (`GET <BFF>/auth/sso/addresses`): `{ allowlist: "active" | "empty",
+   * addresses: [{ origin, redirectUris, postLogoutRedirectUris }] }`.
+   */
+  async getSsoAddresses() {
+    if (!ApiClient.supportsClientSideKeycloak()) {
+      return ApiClient.transport.getSsoAddresses();
+    }
+    throw new Error("getSsoAddresses is only available in BFF auth mode");
+  },
+
   getPendingSsoUser(ticket) {
     return ApiClient.transport.getPendingSsoUser(ticket);
   },

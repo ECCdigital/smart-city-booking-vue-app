@@ -39,6 +39,7 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import InstanceEditKeycloak from "@/components/Instance/Edit/InstanceEditKeycloak.vue";
 import RealmGuideChecklist from "@/components/Instance/Edit/RealmGuideChecklist.vue";
 import SsoStatusCard from "@/components/Instance/Edit/SsoStatusCard.vue";
+import ApiAuthService from "@/services/api/ApiAuthService";
 import { getAuthMode } from "@/services/auth/authMode";
 import { directRedirects } from "@/services/auth/directRedirects";
 import { buildRealmGuide } from "@/services/keycloak/realmGuide";
@@ -62,6 +63,10 @@ export default {
       connectionPanel: undefined,
       /** Saved while this tab was open; sign-in still runs on the old values. */
       saved: false,
+      /** BFF mode: the BFF's answer naming its Adressen, once it arrived. */
+      bffAddresses: null,
+      /** BFF mode: the BFF did not answer. */
+      bffFailed: false,
     };
   },
   computed: {
@@ -74,17 +79,20 @@ export default {
       return getAuthMode();
     },
     /**
-     * The Admin UI's side of the Anleitung: its own Adresse and the
+     * The Admin UI's side of the Anleitung: its Adressen and their
      * Rücksprungadressen. In direct mode they come from the function the
-     * sign-in uses; in BFF mode only the BFF knows its paths, and until it
-     * names them (`GET <BFF>/auth/sso/addresses`, ECCdigital/tickets#95) the
-     * Anleitung shows them as placeholders.
+     * sign-in uses; in BFF mode only the BFF knows its paths and names them
+     * per Adresse of its allowlist (`GET <BFF>/auth/sso/addresses`).
      */
     admin() {
       const origin = window.location.origin;
       if (this.mode === "bff") {
+        if (this.bffAddresses) {
+          const { allowlist, addresses } = this.bffAddresses;
+          return { source: "bff", origin, allowlist, addresses };
+        }
         return {
-          source: "bff-unavailable",
+          source: this.bffFailed ? "bff-unavailable" : "bff-loading",
           addresses: [{ origin, placeholder: true }],
         };
       }
@@ -112,6 +120,9 @@ export default {
       },
     },
   },
+  created() {
+    if (this.mode === "bff") this.loadBffAddresses();
+  },
   // The view keeps the tab alive; the hint is about this visit only.
   deactivated() {
     this.saved = false;
@@ -120,6 +131,18 @@ export default {
     /** Called by the view after a successful save. */
     onSaved() {
       this.saved = true;
+    },
+    /**
+     * An error, a timeout or a 401 the refresh does not cure all leave the
+     * Anleitung with the own Adresse as placeholder and the hint that the list
+     * may be incomplete.
+     */
+    async loadBffAddresses() {
+      try {
+        this.bffAddresses = await ApiAuthService.getSsoAddresses();
+      } catch {
+        this.bffFailed = true;
+      }
     },
   },
 };
