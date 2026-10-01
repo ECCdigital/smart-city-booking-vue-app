@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
+import { flushPromises, serverError } from "@tests/unit/support/api";
 
 const auth = vi.hoisted(() => ({ mode: "direct" }));
 
@@ -7,15 +8,42 @@ vi.mock("@/services/auth/authMode", () => ({
   getAuthMode: () => auth.mode,
   isBffAuthMode: () => auth.mode === "bff",
 }));
+vi.mock("@/services/api/ApiAuthService", () => ({
+  default: { getSsoAddresses: vi.fn() },
+}));
 
+import ApiAuthService from "@/services/api/ApiAuthService";
 import InstanceEditSingleSignOn from "@/components/Instance/Edit/InstanceEditSingleSignOn.vue";
 
 /** The Adresse the Admin UI runs under in the test browser. */
 const ORIGIN = window.location.origin;
 
+/** A further Adresse of the Admin UI in the allowlist of the BFF. */
+const SECOND = "https://booking.example.de";
+
+/**
+ * The BFF's answer (`GET <BFF>/auth/sso/addresses`) for an allowlist of the
+ * given Adressen, with the Rücksprungadressen it builds under `/admin`.
+ */
+function bffAnswer(origins, allowlist = "active") {
+  return {
+    allowlist,
+    addresses: origins.map((origin) => ({
+      origin,
+      redirectUris: [`${origin}/admin/api/auth/sso/callback`],
+      postLogoutRedirectUris: [
+        `${origin}/admin/login`,
+        `${origin}/admin/api/auth/sso/login*`,
+      ],
+    })),
+  };
+}
+
 beforeEach(() => {
   auth.mode = "direct";
   vi.stubEnv("BASE_URL", "/admin/");
+  ApiAuthService.getSsoAddresses.mockReset();
+  ApiAuthService.getSsoAddresses.mockResolvedValue(bffAnswer([ORIGIN]));
 });
 
 afterEach(() => {
@@ -477,6 +505,14 @@ function addresses(step) {
   });
 }
 
+/** Mounts the tab and lets the BFF's answer arrive. */
+async function mountAnswered(propsData = {}) {
+  const wrapper = mountTab(propsData);
+  await flushPromises();
+  await settle(wrapper);
+  return wrapper;
+}
+
 describe("InstanceEditSingleSignOn Rücksprungadressen in direct mode", () => {
   it("lists the Admin UI's entries from the sign-in and the Storefront's from the Portal-URL", async () => {
     const wrapper = mountTab();
@@ -527,6 +563,12 @@ describe("InstanceEditSingleSignOn Rücksprungadressen in direct mode", () => {
     ]);
     expect(entries.some((entry) => entry.includes("+"))).toBe(false);
     expect(values(step).every((value) => value.copy)).toBe(true);
+  });
+
+  it("does not ask the BFF for its Adressen", async () => {
+    await mountAnswered();
+
+    expect(ApiAuthService.getSsoAddresses).not.toHaveBeenCalled();
   });
 
   it("says that every further domain of the Admin UI needs the same entries", async () => {
@@ -594,20 +636,21 @@ describe("InstanceEditSingleSignOn Portal-URL", () => {
   });
 });
 
-describe("InstanceEditSingleSignOn Rücksprungadressen in BFF mode without the BFF's Adressen", () => {
+describe("InstanceEditSingleSignOn Rücksprungadressen in BFF mode without an answer of the BFF", () => {
   beforeEach(() => {
     auth.mode = "bff";
+    ApiAuthService.getSsoAddresses.mockRejectedValue(serverError(502));
   });
 
-  it("says above the checklist that the list may be incomplete", () => {
-    const wrapper = mountTab();
+  it("says above the checklist that the list may be incomplete", async () => {
+    const wrapper = await mountAnswered();
 
     expect(hints(wrapper)).toHaveLength(1);
     expect(hints(wrapper)[0]).toContain("vielleicht unvollständig");
   });
 
   it("names the own Adresse with its Rücksprungadressen as placeholders", async () => {
-    const wrapper = mountTab();
+    const wrapper = await mountAnswered();
 
     const step = await openStep(wrapper, ADDRESSES);
     const [adminUi, storefront] = addresses(step);
@@ -635,6 +678,117 @@ describe("InstanceEditSingleSignOn Rücksprungadressen in BFF mode without the B
     expect(adminValues.filter((value) => value.copy)).toEqual([
       { text: ORIGIN, copy: true },
     ]);
+  });
+});
+
+describe("InstanceEditSingleSignOn Rücksprungadressen in BFF mode with the BFF's Adressen", () => {
+  beforeEach(() => {
+    auth.mode = "bff";
+  });
+
+  it("lists every Adresse of the allowlist with the Rücksprungadressen the BFF names", async () => {
+    ApiAuthService.getSsoAddresses.mockResolvedValue(
+      bffAnswer([ORIGIN, SECOND])
+    );
+    const wrapper = await mountAnswered();
+
+    const step = await openStep(wrapper, ADDRESSES);
+
+    expect(addresses(step)).toEqual([
+      {
+        app: "Admin UI",
+        fields: {
+          "Valid redirect URIs": [`${ORIGIN}/admin/api/auth/sso/callback`],
+          "Valid post logout redirect URIs": [
+            `${ORIGIN}/admin/login`,
+            `${ORIGIN}/admin/api/auth/sso/login*`,
+          ],
+          "Web origins": [ORIGIN],
+        },
+      },
+      {
+        app: "Admin UI",
+        fields: {
+          "Valid redirect URIs": [
+            "https://booking.example.de/admin/api/auth/sso/callback",
+          ],
+          "Valid post logout redirect URIs": [
+            "https://booking.example.de/admin/login",
+            "https://booking.example.de/admin/api/auth/sso/login*",
+          ],
+          "Web origins": ["https://booking.example.de"],
+        },
+      },
+      {
+        app: "Storefront",
+        fields: {
+          "Valid redirect URIs": [
+            "https://portal.example.de/api/auth/sso/callback",
+          ],
+          "Valid post logout redirect URIs": [
+            "https://portal.example.de/api/auth/sso/login*",
+          ],
+          "Web origins": ["https://portal.example.de"],
+        },
+      },
+    ]);
+    expect(values(step).every((value) => value.copy)).toBe(true);
+    expect(hints(wrapper)).toEqual([]);
+    expect(ApiAuthService.getSsoAddresses).toHaveBeenCalledTimes(1);
+  });
+
+  it("says above the checklist that the BFF accepts every Adresse with an empty allowlist, and names only the own one", async () => {
+    ApiAuthService.getSsoAddresses.mockResolvedValue(
+      bffAnswer([ORIGIN], "empty")
+    );
+    const wrapper = await mountAnswered();
+
+    expect(hints(wrapper)).toHaveLength(1);
+    expect(hints(wrapper)[0]).toContain("Allowlist des BFF ist leer");
+    expect(hints(wrapper)[0]).toContain("jede Adresse an");
+
+    const step = await openStep(wrapper, ADDRESSES);
+    const [adminUi, ...others] = addresses(step);
+    expect(adminUi.fields).toEqual({
+      "Valid redirect URIs": [`${ORIGIN}/admin/api/auth/sso/callback`],
+      "Valid post logout redirect URIs": [
+        `${ORIGIN}/admin/login`,
+        `${ORIGIN}/admin/api/auth/sso/login*`,
+      ],
+      "Web origins": [ORIGIN],
+    });
+    expect(others.map((address) => address.app)).toEqual(["Storefront"]);
+  });
+
+  it("names the own Adresse with placeholders and no hint while the answer is on its way", async () => {
+    ApiAuthService.getSsoAddresses.mockReturnValue(new Promise(() => {}));
+    const wrapper = await mountAnswered();
+
+    expect(hints(wrapper)).toEqual([]);
+    const step = await openStep(wrapper, ADDRESSES);
+    expect(addresses(step)[0].fields).toEqual({
+      "Valid redirect URIs": ["‹Rücksprungadresse des BFF nach der Anmeldung›"],
+      "Valid post logout redirect URIs": [
+        "‹Rücksprungadresse des BFF nach der Abmeldung›",
+        "‹Rücksprungadresse des BFF für „Benutzer wechseln“›",
+      ],
+      "Web origins": [ORIGIN],
+    });
+  });
+
+  it("warns above the checklist that SSO sign-in fails here when the own Adresse is missing from the allowlist", async () => {
+    ApiAuthService.getSsoAddresses.mockResolvedValue(bffAnswer([SECOND]));
+    const wrapper = await mountAnswered();
+
+    expect(hints(wrapper)).toHaveLength(1);
+    expect(hints(wrapper)[0]).toContain(ORIGIN);
+    expect(hints(wrapper)[0]).toContain("fehlt in der Allowlist des BFF");
+    expect(hints(wrapper)[0]).toContain("SSO-Anmeldung von hier scheitert");
+
+    const step = await openStep(wrapper, ADDRESSES);
+    expect(
+      addresses(step).map((address) => address.fields["Web origins"])
+    ).toEqual([["https://booking.example.de"], ["https://portal.example.de"]]);
   });
 });
 

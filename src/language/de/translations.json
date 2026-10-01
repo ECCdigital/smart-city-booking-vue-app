@@ -388,6 +388,8 @@
           },
           "hints": {
             "bffUnavailable": "Der BFF hat seine Adressen nicht genannt, die Liste ist vielleicht unvollständig. Die Anleitung nennt nur die Adresse, unter der Sie gerade arbeiten, und ihre Rücksprungadressen als Platzhalter: Nur der BFF kennt seine Pfade.",
+            "allowlistEmpty": "Die Allowlist des BFF ist leer, er nimmt jede Adresse an. Die Anleitung nennt deshalb nur die Adresse, unter der Sie gerade arbeiten.",
+            "ownAddressNotListed": "Die Adresse, unter der Sie gerade arbeiten ({origin}), fehlt in der Allowlist des BFF. Die SSO-Anmeldung von hier scheitert, bis sie dort eingetragen ist.",
             "portalUrlMissing": "Die Portal-URL ist leer. Setzen Sie sie im Tab „Portal“, dann nennt die Anleitung auch die Rücksprungadressen der Storefront."
           },
           "labels": {

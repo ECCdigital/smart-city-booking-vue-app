@@ -45,15 +45,28 @@ export const STOREFRONT_SSO_PATHS = Object.freeze({
 
 /**
  * Per source of the Admin UI's Adressen (`admin.source`): the notes in the
- * step „Rücksprungadressen und Web Origins eintragen“ and the hints above the
- * checklist (those about the allowlist of the BFF).
+ * step „Rücksprungadressen und Web Origins eintragen“.
  */
 const ADMIN_NOTES = {
   direct: [{ id: "otherDomains", type: "info" }],
 };
-const ADMIN_HINTS = {
-  "bff-unavailable": [{ id: "bffUnavailable", type: "warning" }],
-};
+
+/** The hints above the checklist about the allowlist of the BFF. */
+function adminHints(admin) {
+  if (admin?.source === "bff-unavailable") {
+    return [{ id: "bffUnavailable", type: "warning" }];
+  }
+  if (admin?.source !== "bff") return [];
+  if (admin.allowlist === "empty") {
+    return [{ id: "allowlistEmpty", type: "info" }];
+  }
+  const ownListed = (admin.addresses || []).some(
+    (address) => address.origin === admin.origin
+  );
+  if (ownListed) return [];
+  const params = { origin: admin.origin };
+  return [{ id: "ownAddressNotListed", type: "warning", params }];
+}
 
 const ON = "On";
 const OFF = "Off";
@@ -300,8 +313,11 @@ function portalStep(portalUrl, storefront) {
  * @param {object} input.admin the Admin UI's side:
  *   `{ source, addresses: [{ origin, redirectUris, postLogoutRedirectUris }] }`,
  *   an Adresse as `{ origin, placeholder: true }` when its Rücksprungadressen
- *   are unknown. Sources: `direct` (from `directRedirects`),
- *   `bff-unavailable` (the BFF did not name its Adressen).
+ *   are unknown. Sources: `direct` (from `directRedirects`); `bff`, the
+ *   BFF's answer as it came (`GET <BFF>/auth/sso/addresses`, with
+ *   `allowlist: "active" | "empty"`) plus `origin`, the own Adresse;
+ *   `bff-loading` (the answer is on its way, no hint) and `bff-unavailable`
+ *   (the BFF did not answer), both with the own Adresse as placeholder.
  * @returns {{
  *   mode: string,
  *   values: { serverUrl, realm, issuer, webClient, apiClient },
@@ -363,7 +379,7 @@ export function buildRealmGuide({ keycloakApp, portalUrl, mode, admin }) {
 
   // Hints above the checklist; every other note sits in its step.
   const hints = [
-    ...(ADMIN_HINTS[admin?.source] || []),
+    ...adminHints(admin),
     ...(storefront ? [] : [{ id: "portalUrlMissing", type: "warning" }]),
   ];
 
