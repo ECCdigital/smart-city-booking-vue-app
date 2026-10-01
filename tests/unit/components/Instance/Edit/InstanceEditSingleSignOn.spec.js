@@ -1475,6 +1475,32 @@ describe("InstanceEditSingleSignOn „Realm prüfen“ lock", () => {
     expect(lockReason(wrapper)).toContain("Speichern Sie zuerst");
     expect(lockReason(wrapper)).toContain("gespeicherten Werte");
   });
+
+  it("is locked in BFF mode until the BFF has named its Adressen, so none is left out of the check", async () => {
+    auth.mode = "bff";
+    let answer;
+    ApiAuthService.getSsoAddresses.mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve;
+      })
+    );
+    const wrapper = await mountAnswered();
+
+    expect(isDisabled(checkButton(wrapper))).toBe(true);
+    expect(lockReason(wrapper)).toBe(
+      "Die Adressen des BFF werden noch geladen."
+    );
+    await checkButton(wrapper).trigger("click");
+    await flushPromises();
+    expect(ApiInstanceService.checkKeycloakRealm).not.toHaveBeenCalled();
+
+    answer(bffAnswer([ORIGIN]));
+    await flushPromises();
+    await settle(wrapper);
+
+    expect(isDisabled(checkButton(wrapper))).toBe(false);
+    expect(lockReason(wrapper)).toBeNull();
+  });
 });
 
 /** The entry of the body for an Adresse the BFF names, see `bffAnswer`. */
@@ -2096,6 +2122,15 @@ describe("InstanceEditSingleSignOn „Realm prüfen“ result for Audience and C
 
   it.each([
     ["token_other_client", { azp: "admin-cli" }, ["admin-cli"]],
+    [
+      "token_other_realm",
+      { iss: "https://sso.example.de/realms/alt" },
+      [
+        "https://sso.example.de/realms/alt",
+        "gespeicherten Realm",
+        "neu per SSO an",
+      ],
+    ],
     ["token_inactive", { aud: ["biletado-api"] }, ["biletado-api", "neu an"]],
     ["api_client_invalid", undefined, ["API-Client"]],
   ])("shows nicht prüfbar for %s", async (reason, details, says) => {
@@ -2600,6 +2635,29 @@ describe("InstanceEditSingleSignOn Anleitung mit Ergebnis als Text", () => {
     );
   });
 
+  it("counts and copies only the results of steps the Anleitung shows", async () => {
+    // Row 9 belongs to „Client-Rollen zuordnen“, absent while the role
+    // mapping is off.
+    const wrapper = await checkedWithToasts([
+      REALM_OK,
+      {
+        id: 9,
+        status: "info",
+        reason: "client_roles",
+        details: { roles: ["biletado-admin"] },
+      },
+    ]);
+
+    expect(counts(wrapper)).toEqual(["1 erfüllt"]);
+
+    await copyAsText(wrapper, "Anleitung mit Ergebnis kopieren");
+    const text = writeText.mock.calls[0][0];
+    expect(text).toContain(
+      "Realm geprüft am 01.10.2026, 14:03:12: 1 erfüllt\n"
+    );
+    expect(text).not.toContain("Client-Rollen im Token");
+  });
+
   it("never contains the Client Secret", async () => {
     const wrapper = await checkedWithToasts(ROWS, {
       instance: instance({
@@ -2632,5 +2690,19 @@ describe("InstanceEditSingleSignOn „Realm prüfen“ result after an edit", ()
     expect(lockReason(wrapper)).toContain("Speichern Sie zuerst");
     expect(counts(wrapper)).toEqual(["1 erfüllt"]);
     expect(stepState(stepTitled(wrapper, "Realm anlegen"))).toBe("erfüllt");
+  });
+
+  it("drops the result once the changed values are saved, because it is about the old ones", async () => {
+    const wrapper = await checked([REALM_OK]);
+    await wrapper.setProps({ hasUnsavedChanges: true });
+
+    // What the view does after a successful save.
+    wrapper.vm.onSaved();
+    await wrapper.setProps({ hasUnsavedChanges: false });
+    await settle(wrapper);
+
+    expect(summary(wrapper)).toBeNull();
+    expect(stepState(stepTitled(wrapper, "Realm anlegen"))).toBeNull();
+    expect(lockReason(wrapper)).toBeNull();
   });
 });

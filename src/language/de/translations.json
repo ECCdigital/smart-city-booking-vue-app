@@ -441,7 +441,8 @@
           "action": "Realm prüfen",
           "lock": {
             "missing": "Für „Realm prüfen“ fehlen noch {values}. Tragen Sie die Werte unter „Verbindung zu Keycloak“ ein und speichern Sie.",
-            "unsaved": "Speichern Sie zuerst: „Realm prüfen“ liest nur die gespeicherten Werte."
+            "unsaved": "Speichern Sie zuerst: „Realm prüfen“ liest nur die gespeicherten Werte.",
+            "bffLoading": "Die Adressen des BFF werden noch geladen."
           },
           "values": {
             "serverUrl": "Keycloak-URL",
@@ -520,6 +521,7 @@
             "audience_missing_none": "Ihr Token nennt keine Audience: Der Audience-Mapper im Scope des Web-Clients fehlt.",
             "sso_login_required": "Nicht prüfbar, Sie sind nicht per SSO angemeldet. Melden Sie sich per SSO an und prüfen Sie erneut.",
             "token_other_client": "Nicht prüfbar, Ihr Token stammt nicht vom Web-Client, sondern von {azp}. Melden Sie sich per SSO über den Web-Client an.",
+            "token_other_realm": "Nicht prüfbar: Ihr Token stammt von {iss}, nicht vom gespeicherten Realm. Melden Sie sich neu per SSO an und prüfen Sie erneut.",
             "token_inactive": "Ihr Token nennt den API-Client als Audience ({aud}), Keycloak meldet es aber als ungültig. Melden Sie sich neu an und prüfen Sie erneut.",
             "api_client_invalid": "Nicht prüfbar, solange der API-Client nicht stimmt (Schritt „API-Client anlegen“).",
             "client_roles": "Ihr Token trägt die Client-Rollen {roles}.",

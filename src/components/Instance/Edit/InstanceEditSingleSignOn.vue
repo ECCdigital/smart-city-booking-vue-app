@@ -104,7 +104,8 @@ export default {
       bffFailed: false,
       /**
        * The result of „Realm prüfen“ (`checkResult`: the backend's rows plus
-       * the Adressen nobody could check) until the tab is left.
+       * the Adressen nobody could check) until the tab is left or the form
+       * is saved.
        */
       result: null,
       /** „Realm prüfen“ is on its way. */
@@ -149,7 +150,9 @@ export default {
     },
     /**
      * Why „Realm prüfen“ is locked, or `null`. The backend checks the saved
-     * values, so they must all be there and the form must be saved.
+     * values, so they must all be there and the form must be saved. In BFF
+     * mode the BFF must have answered first; otherwise its Adressen would go
+     * unchecked as if it had not named them.
      */
     checkLock() {
       if (!this.guide.complete) {
@@ -159,6 +162,9 @@ export default {
       }
       if (this.hasUnsavedChanges) {
         return this.$t("instance.edit.sso.check.lock.unsaved");
+      }
+      if (this.admin.source === "bff-loading") {
+        return this.$t("instance.edit.sso.check.lock.bffLoading");
       }
       return null;
     },
@@ -189,18 +195,26 @@ export default {
     if (this.mode === "bff") this.loadBffAddresses();
   },
   // The view keeps the tab alive; the hint and the result of the check are
-  // about this visit only. A check still on its way is dropped.
+  // about this visit only.
   deactivated() {
     this.saved = false;
-    this.result = null;
-    this.checkFailure = null;
-    this.checking = false;
-    this.checkRun += 1;
+    this.dropCheck();
   },
   methods: {
-    /** Called by the view after a successful save. */
+    /**
+     * Called by the view after a successful save. The result of the check is
+     * about the values before, so it goes.
+     */
     onSaved() {
       this.saved = true;
+      this.dropCheck();
+    },
+    /** Forgets the result of the check; a check still on its way is dropped. */
+    dropCheck() {
+      this.result = null;
+      this.checkFailure = null;
+      this.checking = false;
+      this.checkRun += 1;
     },
     /**
      * „Realm prüfen“: the backend checks the saved realm with the

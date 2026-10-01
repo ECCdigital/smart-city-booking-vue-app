@@ -94,21 +94,26 @@ export function valueNames(keys) {
 export const ADDRESSES_UNKNOWN = "addressesUnknown";
 
 /**
- * The answer of the check as the tab keeps it: the backend's rows plus,
- * per Adresse of the Anleitung that was not sent, a row of the Admin UI's
- * own, `nicht prüfbar` with reason `addresses_unknown`.
+ * The answer of the check as the tab keeps it: the backend's rows for the
+ * steps the Anleitung shows, so steps, counts and text agree, plus, per
+ * Adresse of the Anleitung that was not sent, a row of the Admin UI's own,
+ * `nicht prüfbar` with reason `addresses_unknown`.
  *
  * @param {object} guide the Anleitung the body was built from
  * @param {{ checkedAt: string, rows: object[] }} answer the backend's answer
  */
 export function checkResult(guide, answer) {
+  const shown = guide.steps.flatMap((step) => STEP_ROWS[step.key] || []);
+  const rows = ((answer && answer.rows) || []).filter((row) =>
+    shown.includes(row.id)
+  );
   const unknown = guide.addresses.filter(isPlaceholder).map((address) => ({
     id: ADDRESSES_UNKNOWN,
     status: "na",
     reason: "addresses_unknown",
     details: { origin: address.origin.text },
   }));
-  return { ...answer, rows: [...((answer && answer.rows) || []), ...unknown] };
+  return { ...answer, rows: [...rows, ...unknown] };
 }
 
 /** The states of a result, worst first. */
