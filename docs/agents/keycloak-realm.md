@@ -2,7 +2,7 @@
 
 The Anleitung in the tab „Instanz verwalten → Single Sign-On“ is the only place that says how a Keycloak realm is set up for Biletado. The setup docs (backend `docs/deployment.md`, `bff/README.md`, `docs/shared-session-deploy.md`) and the backend's log warning about the Audience mapper point to the tab instead of keeping a version of their own. **Do not write Keycloak settings anywhere else**: change the guide, and walk the list below for what has to follow.
 
-Older version branches have no tab and keep their own docs (`version/4.3.x`: ECCdigital/tickets#89).
+Older version branches without the tab keep their own docs.
 
 ## Where the guide and the check live
 
