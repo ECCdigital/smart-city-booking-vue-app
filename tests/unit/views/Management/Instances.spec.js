@@ -1,6 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
+import Vuex from "vuex";
+import { mountComponent } from "@tests/unit/support/mount";
+import { flushPromises } from "@tests/unit/support/api";
 import Instances from "@/views/Management/Instances.vue";
+import ApiInstanceService from "@/services/api/ApiInstanceService";
+import ApiCatalogService from "@/services/api/ApiCatalogService";
+import ApiRolesService from "@/services/api/ApiRolesService";
+import ApiUsersService from "@/services/api/ApiUsersService";
+import ApiTenantService from "@/services/api/ApiTenantService";
 
+vi.mock("@/layouts/Admin.vue", () => ({
+  default: {
+    name: "AdminLayout",
+    render(h) {
+      return h("div", this.$slots.default);
+    },
+  },
+}));
 vi.mock("@/services/api/ApiInstanceService", () => ({
   default: { getInstance: vi.fn(), updateInstance: vi.fn() },
 }));
@@ -117,5 +133,113 @@ describe("Instances start level", () => {
     });
 
     expect(showApiErrors).toHaveBeenCalledWith(details);
+  });
+});
+
+async function mountView(query = {}) {
+  ApiInstanceService.getInstance.mockResolvedValue({
+    id: "i1",
+    applications: [],
+  });
+  ApiCatalogService.getCatalog.mockResolvedValue({ data: {} });
+  ApiUsersService.getUsers.mockResolvedValue([]);
+  ApiRolesService.getRoles.mockResolvedValue({ data: [] });
+  ApiTenantService.getTenants.mockResolvedValue({ data: [] });
+
+  const replace = vi.fn();
+  const store = new Vuex.Store({
+    modules: { toasts: { namespaced: true, actions: { add: vi.fn() } } },
+  });
+  const wrapper = mountComponent(Instances, {
+    store,
+    mocks: {
+      $route: { query },
+      $router: { replace, beforeEach: () => () => {} },
+    },
+  });
+  await flushPromises();
+  await wrapper.vm.$nextTick();
+  return { wrapper, replace };
+}
+
+const tabLabels = (wrapper) =>
+  wrapper.findAll(".v-tab").wrappers.map((tab) => tab.text());
+const activeTab = (wrapper) => wrapper.find(".v-tab--active").text();
+const fieldLabels = (wrapper) =>
+  wrapper.findAll(".v-text-field label").wrappers.map((label) => label.text());
+
+describe("Instances tabs", () => {
+  it("offers „Single Sign-On“ and „Karten“ instead of „Authentifizierung“", async () => {
+    const { wrapper } = await mountView();
+
+    const labels = tabLabels(wrapper);
+    expect(labels).toContain("Single Sign-On");
+    expect(labels).toContain("Karten");
+    expect(labels).not.toContain("Authentifizierung");
+  });
+
+  it("opens „Single Sign-On“ for an old link with ?tab=auth", async () => {
+    const { wrapper, replace } = await mountView({ tab: "auth" });
+
+    expect(activeTab(wrapper)).toBe("Single Sign-On");
+    expect(fieldLabels(wrapper)).toContain("Keycloak-URL");
+    expect(replace).toHaveBeenLastCalledWith({ query: { tab: "sso" } });
+  });
+});
+
+describe("Instances save in „Single Sign-On“", () => {
+  const savedHint = (wrapper) => wrapper.find("[data-test='sso-saved']");
+
+  async function changeRealmAndSave(wrapper) {
+    const realm = wrapper
+      .findAll(".v-text-field")
+      .wrappers.find((f) => f.find("label").text() === "Realm");
+    await realm.find("input").setValue("biletado");
+    await wrapper.vm.$nextTick();
+    await wrapper.find(".save-bar-btn--primary").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+  }
+
+  it("says after saving that sign-in runs on the old values for up to a minute", async () => {
+    ApiInstanceService.updateInstance.mockResolvedValue({});
+    ApiCatalogService.updateCatalog.mockResolvedValue({});
+    const { wrapper } = await mountView({ tab: "sso" });
+
+    expect(savedHint(wrapper).exists()).toBe(false);
+
+    await changeRealmAndSave(wrapper);
+
+    expect(ApiInstanceService.updateInstance).toHaveBeenCalled();
+    expect(savedHint(wrapper).text()).toContain(
+      "bis zu einer Minute noch mit den alten Werten"
+    );
+  });
+
+  it("drops the hint when the tab is left", async () => {
+    ApiInstanceService.updateInstance.mockResolvedValue({});
+    ApiCatalogService.updateCatalog.mockResolvedValue({});
+    const { wrapper } = await mountView({ tab: "sso" });
+    await changeRealmAndSave(wrapper);
+
+    const tab = (label) =>
+      wrapper.findAll(".v-tab").wrappers.find((t) => t.text() === label);
+    await tab("Karten").trigger("click");
+    await wrapper.vm.$nextTick();
+    await tab("Single Sign-On").trigger("click");
+    await wrapper.vm.$nextTick();
+
+    expect(activeTab(wrapper)).toBe("Single Sign-On");
+    expect(savedHint(wrapper).exists()).toBe(false);
+  });
+
+  it("says nothing of the kind when saving fails", async () => {
+    ApiInstanceService.updateInstance.mockRejectedValue(new Error("down"));
+    const { wrapper } = await mountView({ tab: "sso" });
+
+    await changeRealmAndSave(wrapper);
+
+    expect(ApiInstanceService.updateInstance).toHaveBeenCalled();
+    expect(savedHint(wrapper).exists()).toBe(false);
   });
 });

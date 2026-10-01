@@ -2,6 +2,7 @@
 import keycloakService from "@/services/KeycloakService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { isBffAuthMode } from "@/services/auth/authMode";
+import { directRedirects } from "@/services/auth/directRedirects";
 import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
 import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
@@ -82,7 +83,9 @@ export default {
       try {
         keycloakService.setConfig(this.ssoConfig);
 
-        await keycloakService.login();
+        await keycloakService.login(
+          directRedirects(window.location.origin).login
+        );
 
         if (keycloakService.isAuthenticated) {
           this.setState(this.possibleStates.KC_AUTH_SUCCESS);
@@ -261,7 +264,9 @@ export default {
         ApiAuthService.changeSsoUser(window.location.href, this.ssoTicket());
         return;
       }
-      await keycloakService.logout(window.location.href);
+      await keycloakService.logout(
+        directRedirects(window.location.origin).switchUser
+      );
     },
     back() {
       const next = this.consumeNextUrl();

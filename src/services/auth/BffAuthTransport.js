@@ -7,6 +7,9 @@ import {
 
 const SESSION_MARKER_KEY = "bffAuthSession";
 
+/** How long the tab „Single Sign-On“ waits for the BFF's Adressen. */
+const SSO_ADDRESSES_TIMEOUT_MS = 10000;
+
 function readAuthTypeCookie() {
   const match = document.cookie.match(/(?:^|; )auth-type=([^;]*)/);
   return match ? decodeURIComponent(match[1]) : null;
@@ -103,11 +106,12 @@ class BffAuthTransport {
     const isAuthRoute = (name) =>
       url.includes(`auth/${name}`) || url.endsWith(`/${name}`);
 
-    // Login / SSO / logout / card manage their own UX
+    // Login / SSO / logout / card manage their own UX. The BFF's Adressen
+    // need a session like any other call, and the BFF does not refresh it.
     if (
       isAuthRoute("login") ||
       isAuthRoute("logout") ||
-      url.includes("auth/sso/") ||
+      (url.includes("auth/sso/") && !url.includes("auth/sso/addresses")) ||
       url.includes("auth/card/")
     ) {
       return Promise.reject(error);
@@ -232,6 +236,23 @@ class BffAuthTransport {
 
   _ssoTicketParams(ticket) {
     return ticket ? { ticket } : {};
+  }
+
+  /**
+   * The BFF's Adressen with their Rücksprungadressen. A 401 is refreshed in
+   * `onResponseError`; an answer without `addresses` (the SPA's index.html
+   * behind a misconfigured proxy) counts as no answer.
+   */
+  async getSsoAddresses() {
+    const response = await this.client.get("auth/sso/addresses", {
+      timeout: SSO_ADDRESSES_TIMEOUT_MS,
+    });
+    if (!Array.isArray(response.data?.addresses)) {
+      const error = new Error("The BFF did not name its Adressen");
+      error.response = response;
+      throw error;
+    }
+    return response.data;
   }
 
   async getPendingSsoUser(ticket) {

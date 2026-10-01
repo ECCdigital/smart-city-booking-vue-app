@@ -102,15 +102,40 @@ function requireRequestOrigin(req) {
   throw err;
 }
 
-/** External BFF base, e.g. http://localhost:8080/api */
-function getBffPublicBase(req) {
-  const origin = requireRequestOrigin(req);
+/** External BFF base under an Adresse (origin), e.g. http://localhost:8080/api */
+function getBffPublicBase(origin) {
   const prefix = bffPublicPath.replace(/\/$/, "");
   return `${origin}${prefix}`;
 }
 
-function getSsoCallbackUri(req) {
-  return `${getBffPublicBase(req)}/auth/sso/callback`;
+/** Rücksprungadresse after sign-in: the BFF's OIDC callback. */
+function getSsoCallbackUri(origin) {
+  return `${getBffPublicBase(origin)}/auth/sso/callback`;
+}
+
+/** BFF SSO sign-in; „Benutzer wechseln“ returns here with a query. */
+function getSsoLoginUri(origin) {
+  return `${getBffPublicBase(origin)}/auth/sso/login`;
+}
+
+/** Rücksprungadresse after sign-out: the Admin UI sign-in page, no query. */
+function getPostLogoutRedirectUri(origin) {
+  return `${origin}${spaPath("/login")}`;
+}
+
+/**
+ * The Rücksprungadressen the BFF hands to Keycloak under one Adresse. The
+ * switch-user one carries a query, so Keycloak lists it with a trailing `*`.
+ */
+function getRedirectUris(origin) {
+  return {
+    origin,
+    redirectUris: [getSsoCallbackUri(origin)],
+    postLogoutRedirectUris: [
+      getPostLogoutRedirectUri(origin),
+      `${getSsoLoginUri(origin)}*`,
+    ],
+  };
 }
 
 /** Admin SPA path prefix, e.g. "" or "/admin" */
@@ -130,5 +155,8 @@ module.exports = {
   requireRequestOrigin,
   getBffPublicBase,
   getSsoCallbackUri,
+  getSsoLoginUri,
+  getPostLogoutRedirectUri,
+  getRedirectUris,
   spaPath,
 };

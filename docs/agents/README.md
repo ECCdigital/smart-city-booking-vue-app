@@ -18,6 +18,7 @@ docs/agents/
   testing.md              ← Vitest setup, layout & conventions
   access-vocabulary.md    ← doors, locker systems, grants: German UI terms ↔ code
   booking-status-vocabulary.md ← the five booking states, the action verbs, the headline over the path, "read status, never a flag"
+  keycloak-realm.md       ← the guide in the tab „Single Sign-On“ as the one source for Keycloak settings; what follows a new requirement on the realm or changed SSO paths
   issue-tracker.md        ← where issues live: GitHub ECC, Produkt-Repo (tickets in ECCdigital/tickets)
   domain.md               ← how skills consume CONTEXT.md and docs/adr/
 docs/

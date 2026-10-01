@@ -1,5 +1,9 @@
 const express = require("express");
-const { backendFetch, BackendUnreachableError } = require("../backend");
+const {
+  backendFetch,
+  BackendUnreachableError,
+  sendCaughtError,
+} = require("../backend");
 const {
   setSessionCookies,
   setKeycloakSessionCookies,
@@ -15,7 +19,10 @@ const {
   revokeKeycloakSession,
   buildBrowserLogoutUrl,
 } = require("../keycloak");
-const { requireRequestOrigin, spaPath } = require("../publicUrl");
+const {
+  requireRequestOrigin,
+  getPostLogoutRedirectUri,
+} = require("../publicUrl");
 
 const router = express.Router();
 
@@ -32,17 +39,6 @@ function sendBackendError(res, status, data, fallbackMessage, response) {
     message,
     ...(typeof data === "object" && data !== null ? { data } : {}),
   });
-}
-
-function sendCaughtError(res, error, fallbackMessage) {
-  if (error instanceof BackendUnreachableError) {
-    return res.status(502).json({
-      success: false,
-      message: error.message,
-    });
-  }
-  console.error(fallbackMessage, error);
-  return res.status(500).json({ success: false, message: fallbackMessage });
 }
 
 async function refreshLocalTokens(res, refreshToken) {
@@ -326,7 +322,9 @@ router.post("/logout", async (req, res) => {
   if (wasKeycloak && browserLogout) {
     try {
       // Prefer registered URI without query (Keycloak post_logout_redirect_uri)
-      const postLogoutRedirectUri = `${requireRequestOrigin(req)}${spaPath("/login")}`;
+      const postLogoutRedirectUri = getPostLogoutRedirectUri(
+        requireRequestOrigin(req)
+      );
       idpLogoutUrl = await buildBrowserLogoutUrl({
         postLogoutRedirectUri,
       });

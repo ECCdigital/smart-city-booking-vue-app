@@ -1,4 +1,5 @@
 import Keycloak from "keycloak-js";
+import { directRedirects } from "./auth/directRedirects";
 
 const TOKEN_STORAGE_KEY = "kcTokens";
 
@@ -117,10 +118,11 @@ class KeycloakService {
     try {
       const authenticated = await this._keycloak.init({
         onLoad: "check-sso",
-        silentCheckSsoRedirectUri:
-          window.location.origin +
-          (process.env.BASE_URL || "/") +
-          "silent-check-sso.html",
+        silentCheckSsoRedirectUri: directRedirects(window.location.origin)
+          .silentCheck,
+        // Without third-party cookies keycloak-js would fall back to a full
+        // redirect to the current address, which the realm does not list.
+        silentCheckSsoFallback: false,
         checkLoginIframe: false,
         pkceMethod: "S256",
         enableLogging: process.env.NODE_ENV === "development",
@@ -146,7 +148,12 @@ class KeycloakService {
     }
   }
 
-  async login() {
+  /**
+   * @param {string} redirectUri Rücksprungadresse after sign-in, set
+   *   explicitly: keycloak-js would otherwise hand over the current address,
+   *   query included
+   */
+  async login(redirectUri) {
     if (!this._keycloak) {
       throw new Error("Keycloak not configured");
     }
@@ -154,6 +161,7 @@ class KeycloakService {
     if (!this._initialized) {
       const authenticated = await this._keycloak.init({
         onLoad: "login-required",
+        redirectUri,
         checkLoginIframe: false,
         pkceMethod: "S256",
       });
@@ -167,7 +175,7 @@ class KeycloakService {
       return authenticated;
     }
 
-    await this._keycloak.login();
+    await this._keycloak.login({ redirectUri });
     return this._keycloak.authenticated;
   }
 

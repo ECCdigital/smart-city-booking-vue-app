@@ -59,3 +59,13 @@ _Avoid_: berechtigt (that is Reichweite, a different question)
 **Reichweite**:
 How far an admin's read on bookings reaches at the current tenant: *any* (instance owner, tenant owner, `manageBookings.readAny`) or *own* (every other member). Decides only how a 404 is worded on a Buchungsseite, since the backend answers 404 alike for gone and out of reach.
 _Avoid_: Rolle
+
+### SSO
+
+**Adresse**:
+The origin (scheme, host and port) under which a Biletado app is reachable, such as `https://booking.guben.de`. The Admin UI of an instance can have several, the Storefront has one.
+_Avoid_: Domain (has no scheme), URL (also covers paths)
+
+**Rücksprungadresse**:
+A complete URL under an Adresse that Biletado hands to Keycloak to come back to, after sign-in or after sign-out. Keycloak accepts only the ones its client lists.
+_Avoid_: Callback (names only the one after sign-in)
