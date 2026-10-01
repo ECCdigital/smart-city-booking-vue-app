@@ -62,6 +62,10 @@ vi.mock("@/layouts/Admin.vue", () => ({
 
 Drive the real DOM (`trigger("click")`, `setValue(…)`) instead of calling component methods, so the spec breaks when the markup stops matching the behaviour.
 
+## BFF specs
+
+`tests/unit/bff/` tests the Admin BFF over HTTP in the node environment (`// @vitest-environment node`): `startBff(env)` from `tests/unit/support/bff.js` starts a stub backend and a fresh BFF on free ports, and the spec calls it with `fetch`. The harness loads Express and cookie-parser from `bff/node_modules`, so run `npm run bff:install` first.
+
 ## Characterisation tests
 
 The specs that exist today pin **current** behaviour ahead of the 4.3.x API migration, including behaviour that is arguably wrong (`allowCreate` returning `undefined` rather than `false`). They are a baseline, not an endorsement. When a ticket deliberately changes one of these behaviours, change the spec in the same commit and say so in the changelog — `bookingPaymentStatus.spec.js` became `bookingStatus.spec.js` that way when the list moved from the flags to `booking.status`.

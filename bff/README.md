@@ -28,6 +28,7 @@ BFF listens at the process root. Reverse proxy should expose it as `/admin/api` 
 | `POST` | `/auth/sso/register`     | Register + login from pending SSO                                |
 | `POST` | `/auth/sso/logout`       | Keycloak logout + clear cookies                                  |
 | `GET`  | `/auth/sso/change-user`  | IdP logout then restart SSO                                      |
+| `GET`  | `/auth/sso/addresses`    | Rücksprungadressen per allowlisted Adresse (needs a session)     |
 | `*`    | `/*`                     | Proxy to `API_BASE_URL` with `Authorization: Bearer` from cookie |
 
 Public browser URL examples: `/admin/api/auth/login`, `/admin/api/tenants/...`.
