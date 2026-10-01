@@ -9,6 +9,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Added
 
+-   Theme colours on the „Portal“ tab of the instance settings: a hint above Primär- and Sekundärfarbe asks to keep both colours visible on light and dark backgrounds, and a preview flush beneath the two fields draws one icon per colour on a light and on a dark tile, following the fields as they are typed
 -   Settings, „Kontaktdaten“: an optional „Umsatzsteuer-ID“ (`vatId`) beside Firma, saved with the profile like the other contact fields. Requires the backend that keeps `vatId` on the user
 -   One search bar for every list (`SearchBar` and `FilterCard` in `src/components/commons/`; ECCdigital/tickets#54): a 48px band under the page title with the filter funnel in front, „Suchen nach <Felder> …“, the magnifier at the end and view switch, sorting and actions in a row beneath. It searches 300 ms after the last keystroke; the cross empties it at once. Every funnel opens the booking list's filter card, which replaces `BookingFilterCard`, the bookables' tag chips and the separate filters of tenants, access points, media picker and supervision history (whose „Angebots-ID“ field becomes the search). What each page searches is unchanged; „Meine Mandanten“ drops its lead sentence
 -   Shared interactive card (`scb-card`, `src/scss/card.scss`): bookable cards and the tenant cards of „Meine Mandanten“ sit borderless and slightly raised, lift 3px under a real pointer (not on touch, not with reduced motion) and settle back on the press; the selected tenant carries a primary ring and a faded glow instead of the grey shadow, on the same surface as the others (no tint). New tokens `--scb-shadow-card(-hover)`, `--scb-glow-selected(-hover)`, `--scb-card-lift`, `--scb-motion-lift`; bookable cards drop Vuetify's `hover` elevation and their 12px radius for the 8px surface radius
@@ -77,6 +78,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   SSO sign-in over the BFF with a return target (e.g. `/dashboard`) stays in the admin UI: the BFF SSO start is handed the target with the router base (`/admin/dashboard`), so „Anmelden“ no longer leads to the storefront's 404
 -   Media picker: the check on a picked tile sits top right on a light disc again, readable on dark images; Vuetify's `.v-icon.v-icon` had pinned it into the flow
 -   „Einrichtung fortsetzen“ on „Meine Mandanten“ is gone for an own tenant whose setup is done — at least one offer with the publication wish, as the readiness check (`GET /api/tenants/:tenant/readiness`, criterion `offers`) reports it; while the answer is out or refused, the setup stays offered
 -   Prüfstatus: the bookable and event editors show no review panel for a free tenant — not to the instance owner and not for a status left over from a supervised time, which has no effect there

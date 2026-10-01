@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
@@ -20,6 +20,9 @@ const keycloak = vi.hoisted(() => ({
 
 /** The BFF has led back from the identity provider; the user is known. */
 const CONFIRM_STEP = { flow: "confirm", ticket: "ticket-1" };
+
+/** The admin UI is served under a base path, as in production. */
+const BASE = "/admin";
 
 vi.mock("@/services/api/ApiAuthService", () => ({ default: api }));
 vi.mock("@/services/auth/authMode", () => ({ isBffAuthMode: () => mode.bff }));
@@ -63,6 +66,7 @@ function mountCard(unmatched = [], query = CONFIRM_STEP) {
       $router: {
         push,
         resolve: (path) => ({
+          href: `${BASE}${path}`,
           route: { matched: unmatched.includes(path) ? [] : [{}] },
         }),
       },
@@ -85,6 +89,7 @@ async function click(wrapper, label) {
 }
 
 beforeEach(() => {
+  vi.stubEnv("BASE_URL", `${BASE}/`);
   push = vi.fn();
   nextUrl = null;
   setNextUrl = vi.fn();
@@ -93,13 +98,18 @@ beforeEach(() => {
   api.ssoLogin.mockClear();
 });
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
+
 describe("KeycloakCard — the return target on the way to the identity provider", () => {
   it("hands the page that asked for the login to the BFF", async () => {
     nextUrl = "/onboarding";
     mountCard([], {});
     await flushPromises();
 
-    expect(api.startSsoLogin).toHaveBeenCalledWith("/onboarding");
+    expect(api.startSsoLogin).toHaveBeenCalledWith("/admin/onboarding");
   });
 
   it("hands the BFF no off-site target", async () => {
@@ -118,6 +128,27 @@ describe("KeycloakCard — the return target on the way to the identity provider
 
     expect(api.startSsoLogin).toHaveBeenCalledTimes(1);
     expect(api.startSsoLogin).not.toHaveBeenCalledWith("/nowhere");
+  });
+});
+
+describe("KeycloakCard — where sign-in leads when the BFF hands the target back", () => {
+  it("stays in the admin UI", async () => {
+    const location = { href: "" };
+    vi.stubGlobal("location", location);
+    nextUrl = "/dashboard";
+    mountCard([], {});
+    await flushPromises();
+    const [handedToBff] = api.startSsoLogin.mock.calls[0];
+    api.ssoLogin.mockResolvedValueOnce({
+      user: {},
+      permissions: {},
+      redirect: handedToBff,
+    });
+    const wrapper = mountCard();
+
+    await click(wrapper, "Anmelden");
+
+    expect(location.href).toBe("/admin/dashboard");
   });
 });
 
