@@ -97,11 +97,13 @@ import ApiCatalogService from "@/services/api/ApiCatalogService";
 import InstanceEditTenants from "@/components/Instance/Edit/InstanceEditTenants.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import InstanceEditBookables from "@/components/Instance/Edit/InstanceEditBookables.vue";
-import InstanceEditAuth from "@/components/Instance/Edit/InstanceEditAuth.vue";
+import InstanceEditSingleSignOn from "@/components/Instance/Edit/InstanceEditSingleSignOn.vue";
+import InstanceEditCards from "@/components/Instance/Edit/InstanceEditCards.vue";
 import InstanceEditCheckout from "@/components/Instance/Edit/InstanceEditCheckout.vue";
 import { brandingForSave, defaultBranding } from "@/utils/instanceBranding";
 import { catalogForSave } from "@/utils/instanceCatalog";
 import { legalDocumentsForSave } from "@/utils/instanceLegalDocuments";
+import i18n from "@/language/index";
 
 export default {
   name: "Instances",
@@ -113,7 +115,8 @@ export default {
     InstanceEditLegal,
     InstanceEditMail,
     InstanceEditOwners,
-    InstanceEditAuth,
+    InstanceEditSingleSignOn,
+    InstanceEditCards,
     InstanceEditCatalog,
     InstanceEditTenants,
     InstanceEditBookables,
@@ -158,10 +161,16 @@ export default {
           comp: "InstanceEditOwners",
         },
         {
-          key: "auth",
-          label: "Authentifizierung",
+          key: "sso",
+          label: i18n.t("instance.edit.sso.title"),
           icon: "mdi-shield-lock",
-          comp: "InstanceEditAuth",
+          comp: "InstanceEditSingleSignOn",
+        },
+        {
+          key: "cards",
+          label: i18n.t("instance.edit.cards.title"),
+          icon: "mdi-card-account-details",
+          comp: "InstanceEditCards",
         },
         {
           key: "tenants",
@@ -445,7 +454,10 @@ export default {
     },
   },
   async mounted() {
-    const queryTabKey = this.$route.query.tab;
+    // „Authentifizierung“ (`auth`) became „Single Sign-On“ and „Karten“; old
+    // links open „Single Sign-On“.
+    const queryTabKey =
+      this.$route.query.tab === "auth" ? "sso" : this.$route.query.tab;
     const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
     this.activeTab = foundIndex !== -1 ? foundIndex : 0;
 

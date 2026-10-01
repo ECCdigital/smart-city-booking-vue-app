@@ -45,7 +45,9 @@
           background-color="accent"
           filled
           dense
-          label="Client-ID für Web-Anwendung"
+          :label="$t('instance.edit.sso.webClient.label')"
+          :hint="$t('instance.edit.sso.webClient.hint')"
+          persistent-hint
           v-model="localKeycloak.publicClient"
           @input="emitUpdate"
         />
@@ -55,7 +57,9 @@
           background-color="accent"
           filled
           dense
-          label="Client-ID für Api-Zugriff"
+          :label="$t('instance.edit.sso.apiClient.label')"
+          :hint="$t('instance.edit.sso.apiClient.hint')"
+          persistent-hint
           v-model="localKeycloak.privateClient"
           @input="emitUpdate"
         />

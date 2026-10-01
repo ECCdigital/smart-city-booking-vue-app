@@ -335,6 +335,20 @@
           "hint": "Die Startstufe gilt für jede Selbst-Anlage – über die Freigabeliste ebenso wie bei der offenen Anlage. Mandanten, die ein Instanz-Owner anlegt, beginnen immer frei. Eine Änderung wirkt nur auf neue Mandanten; bestehende Mandanten behalten ihre Aufsichtsstufe. Stufen werden ausschließlich manuell geändert.",
           "invalid": "Als Startstufe sind nur frei, beaufsichtigt oder Freigabe ausstehend zulässig."
         }
+      },
+      "sso": {
+        "title": "Single Sign-On",
+        "webClient": {
+          "label": "Web-Client",
+          "hint": "Client-ID des public Clients, über den sich Admin UI und Storefront anmelden."
+        },
+        "apiClient": {
+          "label": "API-Client",
+          "hint": "Client-ID des confidential Clients, mit dem das Backend Tokens prüft."
+        }
+      },
+      "cards": {
+        "title": "Karten"
       }
     }
   },
