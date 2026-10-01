@@ -24,15 +24,13 @@
           </span>
         </div>
       </div>
-      <!-- „Realm prüfen“ (ECCdigital/tickets#97) and the menu „Als Text“
-           (ECCdigital/tickets#96) go here. -->
+      <!-- „Realm prüfen“ and the menu „Als Text“. -->
       <div class="sso-status__actions">
         <slot name="actions" />
       </div>
     </div>
 
-    <!-- Why „Realm prüfen“ is locked, or the counts of the last check
-         (ECCdigital/tickets#97). -->
+    <!-- Why „Realm prüfen“ is locked, and the counts of the last check. -->
     <slot />
 
     <v-alert
