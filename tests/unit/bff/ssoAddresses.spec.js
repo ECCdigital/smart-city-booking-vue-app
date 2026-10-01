@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { startBff, VALID_ACCESS_TOKEN } from "@tests/unit/support/bff";
+import {
+  accessTokenAnswering,
+  startBff,
+  VALID_ACCESS_TOKEN,
+} from "@tests/unit/support/bff";
 
 const PATHS = {
   BFF_PUBLIC_PATH: "/admin/api",
@@ -47,6 +51,26 @@ describe("GET /auth/sso/addresses", () => {
 
     expect(response.status).toBe(401);
   });
+
+  // A 401 makes the browser refresh and may end the session; only a dead
+  // token earns it. A suspended account stays refused, a failing backend is
+  // the gateway's problem.
+  it.each([
+    [403, 403],
+    [500, 502],
+    [503, 502],
+  ])(
+    "answers %i of the backend's session check with %i, not 401",
+    async (backendStatus, status) => {
+      bff = await startBff(PATHS);
+
+      const response = await getAddresses({
+        cookie: `access-token=${accessTokenAnswering(backendStatus)}`,
+      });
+
+      expect(response.status).toBe(status);
+    }
+  );
 
   it("names the Rücksprungadressen of every Adresse on the allowlist", async () => {
     bff = await startBff({

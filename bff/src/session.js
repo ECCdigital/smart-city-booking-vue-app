@@ -1,4 +1,4 @@
-const { backendFetch, BackendUnreachableError } = require("./backend");
+const { backendFetch, sendCaughtError } = require("./backend");
 const { getAccessToken } = require("./cookies");
 
 function rejectSession(res) {
@@ -7,8 +7,11 @@ function rejectSession(res) {
 
 /**
  * Lets a request through only when the backend accepts its access cookie
- * (`GET /auth/me`); answers `401` otherwise. Checks no role and does not
- * refresh — `POST /auth/refresh` and `GET /auth/me` do that.
+ * (`GET /auth/me`). Only a dead token answers `401`, which makes the browser
+ * refresh; a suspended account stays `403`, and any other answer of the
+ * backend is `502`, so a backend failure does not end the session. Checks
+ * no role and does not refresh — `POST /auth/refresh` and `GET /auth/me` do
+ * that.
  */
 async function requireSession(req, res, next) {
   const accessToken = getAccessToken(req);
@@ -16,23 +19,26 @@ async function requireSession(req, res, next) {
     return rejectSession(res);
   }
 
+  let me;
   try {
-    const me = await backendFetch("/auth/me", {
+    me = await backendFetch("/auth/me", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!me.ok) {
-      return rejectSession(res);
-    }
   } catch (error) {
-    if (error instanceof BackendUnreachableError) {
-      return res.status(502).json({ success: false, message: error.message });
-    }
-    console.error("BFF session check error:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Session check failed" });
+    return sendCaughtError(res, error, "Session check failed");
   }
 
+  if (me.status === 401) {
+    return rejectSession(res);
+  }
+  if (me.status === 403) {
+    return res.status(403).json({ success: false, message: "Forbidden" });
+  }
+  if (!me.ok) {
+    return res
+      .status(502)
+      .json({ success: false, message: "Session check failed" });
+  }
   return next();
 }
 

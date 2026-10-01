@@ -21,6 +21,14 @@ const bffRequire = createRequire(bffSrc);
 /** The access token the stub backend accepts on `GET /auth/me`. */
 export const VALID_ACCESS_TOKEN = "valid-access-token";
 
+/**
+ * An access token on which the stub backend's `GET /auth/me` answers with
+ * `status`, e.g. `500` for a backend that fails.
+ */
+export function accessTokenAnswering(status) {
+  return `answers-${status}`;
+}
+
 /** Keycloak as the stub backend's public instance config names it. */
 export const KEYCLOAK = {
   realm: "biletado",
@@ -82,6 +90,12 @@ async function startBackendStub() {
   });
 
   app.get("/auth/me", (req, res) => {
+    const answering = /^Bearer answers-(\d{3})$/.exec(
+      req.get("authorization") || ""
+    );
+    if (answering) {
+      return res.status(Number(answering[1])).json({ message: "Stub" });
+    }
     if (req.get("authorization") !== `Bearer ${VALID_ACCESS_TOKEN}`) {
       return res.status(401).json({ message: "Unauthorized" });
     }

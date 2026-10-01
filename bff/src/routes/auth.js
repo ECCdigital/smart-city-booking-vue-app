@@ -1,5 +1,9 @@
 const express = require("express");
-const { backendFetch, BackendUnreachableError } = require("../backend");
+const {
+  backendFetch,
+  BackendUnreachableError,
+  sendCaughtError,
+} = require("../backend");
 const {
   setSessionCookies,
   setKeycloakSessionCookies,
@@ -35,17 +39,6 @@ function sendBackendError(res, status, data, fallbackMessage, response) {
     message,
     ...(typeof data === "object" && data !== null ? { data } : {}),
   });
-}
-
-function sendCaughtError(res, error, fallbackMessage) {
-  if (error instanceof BackendUnreachableError) {
-    return res.status(502).json({
-      success: false,
-      message: error.message,
-    });
-  }
-  console.error(fallbackMessage, error);
-  return res.status(500).json({ success: false, message: fallbackMessage });
 }
 
 async function refreshLocalTokens(res, refreshToken) {
