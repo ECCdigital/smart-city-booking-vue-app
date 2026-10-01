@@ -186,3 +186,60 @@ describe("Instances tabs", () => {
     expect(replace).toHaveBeenLastCalledWith({ query: { tab: "sso" } });
   });
 });
+
+describe("Instances save in „Single Sign-On“", () => {
+  const savedHint = (wrapper) => wrapper.find("[data-test='sso-saved']");
+
+  async function changeRealmAndSave(wrapper) {
+    const realm = wrapper
+      .findAll(".v-text-field")
+      .wrappers.find((f) => f.find("label").text() === "Realm");
+    await realm.find("input").setValue("biletado");
+    await wrapper.vm.$nextTick();
+    await wrapper.find(".save-bar-btn--primary").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+  }
+
+  it("says after saving that sign-in runs on the old values for up to a minute", async () => {
+    ApiInstanceService.updateInstance.mockResolvedValue({});
+    ApiCatalogService.updateCatalog.mockResolvedValue({});
+    const { wrapper } = await mountView({ tab: "sso" });
+
+    expect(savedHint(wrapper).exists()).toBe(false);
+
+    await changeRealmAndSave(wrapper);
+
+    expect(ApiInstanceService.updateInstance).toHaveBeenCalled();
+    expect(savedHint(wrapper).text()).toContain(
+      "bis zu einer Minute noch mit den alten Werten"
+    );
+  });
+
+  it("drops the hint when the tab is left", async () => {
+    ApiInstanceService.updateInstance.mockResolvedValue({});
+    ApiCatalogService.updateCatalog.mockResolvedValue({});
+    const { wrapper } = await mountView({ tab: "sso" });
+    await changeRealmAndSave(wrapper);
+
+    const tab = (label) =>
+      wrapper.findAll(".v-tab").wrappers.find((t) => t.text() === label);
+    await tab("Karten").trigger("click");
+    await wrapper.vm.$nextTick();
+    await tab("Single Sign-On").trigger("click");
+    await wrapper.vm.$nextTick();
+
+    expect(activeTab(wrapper)).toBe("Single Sign-On");
+    expect(savedHint(wrapper).exists()).toBe(false);
+  });
+
+  it("says nothing of the kind when saving fails", async () => {
+    ApiInstanceService.updateInstance.mockRejectedValue(new Error("down"));
+    const { wrapper } = await mountView({ tab: "sso" });
+
+    await changeRealmAndSave(wrapper);
+
+    expect(ApiInstanceService.updateInstance).toHaveBeenCalled();
+    expect(savedHint(wrapper).exists()).toBe(false);
+  });
+});

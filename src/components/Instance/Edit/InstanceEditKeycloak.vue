@@ -1,9 +1,5 @@
 <template>
-  <SubSection
-    v-if="localKeycloak && localKeycloak.roleMapping"
-    title="Single Sign-On (Keycloak)"
-    icon="mdi-lock"
-  >
+  <div v-if="localKeycloak && localKeycloak.roleMapping">
     <v-row>
       <v-col>
         <v-switch
@@ -149,15 +145,12 @@
         </v-btn>
       </v-col>
     </v-row>
-  </SubSection>
+  </div>
 </template>
 
 <script>
-import SubSection from "@/components/commons/SubSection.vue";
-
 export default {
   name: "InstanceEditKeycloak",
-  components: { SubSection },
   props: {
     instance: { type: Object, required: true },
     tenants: { type: Array, default: () => [] },

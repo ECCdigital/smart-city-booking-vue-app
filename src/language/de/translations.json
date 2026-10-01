@@ -345,6 +345,72 @@
         "apiClient": {
           "label": "API-Client",
           "hint": "Client-ID des confidential Clients, mit dem das Backend Tokens prüft."
+        },
+        "connection": {
+          "title": "Verbindung zu Keycloak",
+          "subtitle": "Keycloak-URL, Realm, Web-Client, API-Client, Client Secret, Rollenzuordnung"
+        },
+        "status": {
+          "title": "Single Sign-On mit Keycloak",
+          "notSetUp": "Noch nicht eingerichtet",
+          "issuer": "Issuer",
+          "mode": "Modus",
+          "modes": {
+            "direct": "direct",
+            "bff": "BFF"
+          },
+          "saved": "Gespeichert. Die Anmeldung läuft bis zu einer Minute noch mit den alten Werten."
+        },
+        "guide": {
+          "title": "Checkliste für den Realm",
+          "steps": {
+            "realm": { "title": "Realm anlegen" },
+            "webClient": { "title": "Web-Client anlegen" },
+            "addresses": { "title": "Rücksprungadressen und Web Origins eintragen" },
+            "audience": { "title": "Audience-Mapper anlegen" },
+            "apiClient": { "title": "API-Client anlegen" },
+            "roles": { "title": "Client-Rollen zuordnen" },
+            "portal": { "title": "Portal-URL prüfen" }
+          },
+          "notes": {
+            "version": "Für Keycloak 26.x ab {minimum}, empfohlen {recommended}.",
+            "signInAgain": "Melden Sie sich danach neu an, damit Ihr Token den API-Client als Audience trägt.",
+            "clientSecret": "Das Client Secret des API-Clients kommt unter „Verbindung zu Keycloak“ ins Feld „Client Secret“.",
+            "exactEntries": "Am Web-Client {webClient}, je Eintrag eine Zeile. Jede Rücksprungadresse gilt genau so; nur die für „Benutzer wechseln“ endet mit *. Web origins sind die genauen Adressen, ohne +.",
+            "otherDomains": "Jede weitere Domain des Admin UI braucht dieselben Einträge, mit ihrer eigenen Adresse.",
+            "storefrontWithoutPortalUrl": "Ohne Portal-URL keine Werte für die Storefront.",
+            "storefrontReachable": "Die Storefront muss unter der Portal-URL erreichbar sein und sie als eigene Adresse kennen.",
+            "setPortalUrl": "Die Portal-URL ist leer. Setzen Sie sie im Tab „Portal“.",
+            "roleMappingReplacesRoles": "Die Rollenzuordnung greift nur bei der SSO-Anmeldung. Dabei entfernt sie auch von Hand vergebene Rollen.",
+            "createClientRoles": "Legen Sie diese Keycloak-Rollen als Client-Rollen am Web-Client {webClient} an und weisen Sie sie den Personen zu.",
+            "noKeycloakRoles": "Die Rollenzuordnung nennt noch keine Keycloak-Rolle. Tragen Sie sie unter „Verbindung zu Keycloak“ ein.",
+            "rolesScope": "Der Client scope „roles“ mit dem Mapper für Client-Rollen bleibt Default. Ordnen Sie die Client-Rollen gezielt als Scope zu, statt Full scope allowed einzuschalten."
+          },
+          "hints": {
+            "bffUnavailable": "Der BFF hat seine Adressen nicht genannt, die Liste ist vielleicht unvollständig. Die Anleitung nennt nur die Adresse, unter der Sie gerade arbeiten, und ihre Rücksprungadressen als Platzhalter: Nur der BFF kennt seine Pfade.",
+            "portalUrlMissing": "Die Portal-URL ist leer. Setzen Sie sie im Tab „Portal“, dann nennt die Anleitung auch die Rücksprungadressen der Storefront."
+          },
+          "labels": {
+            "portalUrl": "Portal-URL",
+            "keycloakRoles": "Keycloak-Rollen der Rollenzuordnung"
+          },
+          "apps": {
+            "adminUi": "Admin UI",
+            "storefront": "Storefront"
+          },
+          "switchUser": "„Benutzer wechseln“",
+          "none": "keine",
+          "copy": "{value} kopieren",
+          "copied": "Kopiert",
+          "placeholders": {
+            "serverUrl": "‹Keycloak-URL›",
+            "realm": "‹Realm›",
+            "webClient": "‹Client-ID des Web-Clients›",
+            "apiClient": "‹Client-ID des API-Clients›",
+            "bffRedirectUri": "‹Rücksprungadresse des BFF nach der Anmeldung›",
+            "bffPostLogoutRedirectUri": "‹Rücksprungadresse des BFF nach der Abmeldung›",
+            "bffSwitchUserRedirectUri": "‹Rücksprungadresse des BFF für „Benutzer wechseln“›"
+          }
         }
       },
       "cards": {
