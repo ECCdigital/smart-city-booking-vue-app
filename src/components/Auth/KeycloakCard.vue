@@ -124,8 +124,10 @@ export default {
       }
 
       this.loading = true;
+      // The BFF leads the browser there, so it needs the path with the base.
       const redirect =
-        (isSafeInternalRedirect(this.nextUrl, this.$router) && this.nextUrl) ||
+        (isSafeInternalRedirect(this.nextUrl, this.$router) &&
+          this.$router.resolve(this.nextUrl).href) ||
         (() => {
           const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
           return base ? `${base}/` : "/";
