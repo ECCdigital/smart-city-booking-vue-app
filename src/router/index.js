@@ -488,6 +488,20 @@ const routes = [
       public: true,
     },
   },
+  // PROTOTYPE (ECCdigital/tickets#86): stub preview of the auth tab, dev only
+  ...(process.env.NODE_ENV !== "production"
+    ? [
+      {
+        path: "/prototype/86-keycloak",
+        name: "prototype-86-keycloak",
+        component: () =>
+          import(
+            "@/views/Management/prototype-86/KeycloakGuidePreview.vue"
+          ),
+        meta: { title: "Prototyp #86", requiresAuth: false },
+      },
+    ]
+    : []),
   {
     path: "/login",
     name: "login",

@@ -98,6 +98,7 @@ import InstanceEditTenants from "@/components/Instance/Edit/InstanceEditTenants.
 import ApiTenantService from "@/services/api/ApiTenantService";
 import InstanceEditBookables from "@/components/Instance/Edit/InstanceEditBookables.vue";
 import InstanceEditAuth from "@/components/Instance/Edit/InstanceEditAuth.vue";
+import InstanceEditCardsPrototype from "@/components/Instance/Edit/prototype-86/InstanceEditCardsPrototype.vue";
 import InstanceEditCheckout from "@/components/Instance/Edit/InstanceEditCheckout.vue";
 import { brandingForSave, defaultBranding } from "@/utils/instanceBranding";
 import { catalogForSave } from "@/utils/instanceCatalog";
@@ -114,6 +115,7 @@ export default {
     InstanceEditMail,
     InstanceEditOwners,
     InstanceEditAuth,
+    InstanceEditCardsPrototype,
     InstanceEditCatalog,
     InstanceEditTenants,
     InstanceEditBookables,
@@ -157,12 +159,31 @@ export default {
           icon: "mdi-shield-crown",
           comp: "InstanceEditOwners",
         },
-        {
-          key: "auth",
-          label: "Authentifizierung",
-          icon: "mdi-shield-lock",
-          comp: "InstanceEditAuth",
-        },
+        // PROTOTYPE (ECCdigital/tickets#86): „Authentifizierung“ split into
+        // „Single Sign-On“ and „Karten“ in dev builds.
+        ...(process.env.NODE_ENV !== "production"
+          ? [
+            {
+              key: "sso",
+              label: "Single Sign-On",
+              icon: "mdi-shield-lock",
+              comp: "InstanceEditAuth",
+            },
+            {
+              key: "cards",
+              label: "Karten",
+              icon: "mdi-card-account-details",
+              comp: "InstanceEditCardsPrototype",
+            },
+          ]
+          : [
+            {
+              key: "auth",
+              label: "Authentifizierung",
+              icon: "mdi-shield-lock",
+              comp: "InstanceEditAuth",
+            },
+          ]),
         {
           key: "tenants",
           label: "Mandanten",
