@@ -82,6 +82,7 @@ Details: [docs/agents/coding-standards.md](docs/agents/coding-standards.md)
 | BFF hardening / CSRF | [docs/bff-hardening.md](docs/bff-hardening.md) |
 | BFF smoke tests | [docs/bff-smoke-tests.md](docs/bff-smoke-tests.md) |
 | Auth transports (`direct` / `bff`) | [src/services/auth/](src/services/auth/) |
+| Keycloak realm (the guide in the tab „Single Sign-On“ as the one source; what follows a new requirement on the realm or changed SSO paths) | [docs/agents/keycloak-realm.md](docs/agents/keycloak-realm.md) |
 
 ## Guardrails
 

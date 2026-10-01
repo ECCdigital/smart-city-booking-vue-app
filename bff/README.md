@@ -111,16 +111,9 @@ When Admin (`/admin`) and Storefront (`/`) share one origin, both BFFs set the s
 
 ## Keycloak setup
 
-Register the BFF callback URL on the Keycloak public client **for each** browser origin, e.g.:
+`PUBLIC_ORIGIN` / `PUBLIC_ORIGINS` and `BFF_PUBLIC_PATH` (`VUE_APP_BFF_BASE_URL`) determine the Rücksprungadressen the BFF hands to Keycloak, one set per allowlisted Adresse; the one after sign-out also takes `ADMIN_SPA_BASE_PATH`. The Admin UI shows which of them belong in Keycloak, under „Instanz verwalten → Single Sign-On“: it reads them from `GET <BFF>/auth/sso/addresses` and lists them with the rest of the realm setup, and „Realm prüfen“ there checks the realm. Change one of these variables and the realm needs the new addresses.
 
--   Local: `http://localhost:8080/api/auth/sso/callback` (when `BFF_PUBLIC_PATH=/api`)
--   Shared origin: `https://example.com/admin/api/auth/sso/callback` (`BFF_PUBLIC_PATH=/admin/api`)
--   Multi-URL: one callback (+ web origin + post-logout redirect) per entry in `PUBLIC_ORIGIN`
-
-Set in the root `.env` (or BFF aliases):
-
--   `VUE_APP_BFF_BASE_URL` / `BFF_PUBLIC_PATH` — browser-facing BFF prefix
--   `PUBLIC_ORIGIN` — comma-separated browser origins (needed behind the vue-cli proxy so `redirect_uri` is not built with the BFF port). Edge must forward `Host` / `X-Forwarded-Host` and `X-Forwarded-Proto`. Keep the BFF reachable only via the edge (not directly from the public internet).
+-   `PUBLIC_ORIGIN` is also needed behind the vue-cli proxy, so `redirect_uri` is not built with the BFF port. Edge must forward `Host` / `X-Forwarded-Host` and `X-Forwarded-Proto`. Keep the BFF reachable only via the edge (not directly from the public internet).
 
 IDN custom domains: put env values consistently in Unicode **or** Punycode — mixing fails the allowlist match (`URL.origin` normalizes to Punycode).
 
