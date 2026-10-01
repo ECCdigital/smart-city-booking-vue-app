@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises, serverError } from "@tests/unit/support/api";
+import toasts from "@/store/modules/toasts";
 
 const auth = vi.hoisted(() => ({ mode: "direct" }));
 
@@ -866,5 +868,327 @@ describe("InstanceEditSingleSignOn Client-Rollen", () => {
     });
 
     expect(stepTitled(wrapper, ROLES)).toBeUndefined();
+  });
+});
+
+/** The tab with the toasts of the app, for what copying says. */
+function mountTabWithToasts(propsData = {}) {
+  const store = new Vuex.Store({ modules: { toasts } });
+  const wrapper = mountComponent(InstanceEditSingleSignOn, {
+    store,
+    propsData: { instance: instance(), ...propsData },
+  });
+  return Object.assign(wrapper, { store });
+}
+
+function toastMessages(wrapper) {
+  return wrapper.store.getters["toasts/all"].map((toast) => toast.message);
+}
+
+/**
+ * Opens „Als Text“ in the status card, clicks an entry of the menu and hands
+ * back what it toasted (the toasts module keeps its state across stores).
+ */
+async function copyAsText(wrapper, entry) {
+  const before = toastMessages(wrapper).length;
+  await statusCard(wrapper)
+    .find("[data-test='sso-text-menu']")
+    .trigger("click");
+  await settle(wrapper);
+  const menus = document.querySelectorAll(".sso-text-menu");
+  const item = Array.from(
+    menus[menus.length - 1].querySelectorAll(".v-list-item")
+  ).find((candidate) => candidate.textContent.trim() === entry);
+  item.click();
+  await flushPromises();
+  await settle(wrapper);
+  return toastMessages(wrapper).slice(before);
+}
+
+/** The lines of the text that open a step: „<number>. <title>“. */
+function stepLines(text) {
+  return text.split("\n").filter((line) => /^\d+\. /.test(line));
+}
+
+describe("InstanceEditSingleSignOn Anleitung als Text", () => {
+  let writeText;
+
+  beforeEach(() => {
+    writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+  });
+
+  /** What „Anleitung kopieren“ put into the clipboard. */
+  async function copiedGuide(wrapper) {
+    await copyAsText(wrapper, "Anleitung kopieren");
+    expect(writeText).toHaveBeenCalledTimes(1);
+    return writeText.mock.calls[0][0];
+  }
+
+  it("copies a header with instance, mode, Keycloak versions, Keycloak-URL, Realm and Issuer, then the numbered steps", async () => {
+    const wrapper = mountTabWithToasts();
+
+    const text = await copiedGuide(wrapper);
+
+    expect(text.split("\n").slice(0, 9)).toEqual([
+      "Keycloak-Realm für Biletado einrichten",
+      `Instanz: ${ORIGIN}`,
+      "Modus: direct",
+      "Für Keycloak 26.x ab 26.7.3, empfohlen 26.8.x.",
+      "",
+      "Keycloak-URL: https://sso.example.de",
+      "Realm: biletado",
+      "Issuer: https://sso.example.de/realms/biletado",
+      "",
+    ]);
+    expect(stepLines(text)).toEqual([
+      "1. Realm anlegen",
+      "2. Web-Client anlegen",
+      "3. Rücksprungadressen und Web Origins eintragen",
+      "4. Audience-Mapper anlegen",
+      "5. API-Client anlegen",
+      "6. Portal-URL prüfen",
+    ]);
+  });
+
+  it("says in a toast that the Anleitung is in the clipboard", async () => {
+    const wrapper = mountTabWithToasts();
+
+    const toasted = await copyAsText(wrapper, "Anleitung kopieren");
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(toasted).toEqual([
+      "Die Anleitung liegt als Text in der Zwischenablage.",
+    ]);
+  });
+
+  it("lists every step's settings as „Name: Wert“ with its notes", async () => {
+    const wrapper = mountTabWithToasts();
+
+    const text = await copiedGuide(wrapper);
+
+    expect(text).toContain(
+      [
+        "1. Realm anlegen",
+        "   Realm name: biletado",
+        "   Issuer: https://sso.example.de/realms/biletado",
+        "   Für Keycloak 26.x ab 26.7.3, empfohlen 26.8.x.",
+        "",
+        "2. Web-Client anlegen",
+        "   Client ID: biletado-web",
+        "   Client authentication: Off",
+        "   Standard flow: On",
+        "   Direct access grants: Off",
+        "   Implicit flow: Off",
+        "   Service accounts roles: Off",
+        "   PKCE Method: S256",
+        "",
+      ].join("\n")
+    );
+    expect(text).toContain(
+      [
+        "4. Audience-Mapper anlegen",
+        "   Client scope: biletado-web-dedicated",
+        "   Mapper type: Audience",
+        "   Included Client Audience: biletado-api",
+        "   Add to access token: On",
+        "   Add to ID token: Off",
+        "   Melden Sie sich danach neu an, damit Ihr Token den API-Client als Audience trägt.",
+        "",
+      ].join("\n")
+    );
+    expect(text).toContain(
+      [
+        "   Valid redirect URIs: keine",
+        "   Web origins: keine",
+        "   Das Client Secret des API-Clients kommt unter „Verbindung zu Keycloak“ ins Feld „Client Secret“.",
+        "",
+        "6. Portal-URL prüfen",
+        "   Portal-URL: https://portal.example.de/start",
+        "   Die Storefront muss unter der Portal-URL erreichbar sein und sie als eigene Adresse kennen.",
+      ].join("\n")
+    );
+    expect(text.endsWith("kennen.")).toBe(true);
+  });
+
+  it("lists the Rücksprungadressen and Web origins per Adresse of Admin UI and Storefront", async () => {
+    const wrapper = mountTabWithToasts();
+
+    const text = await copiedGuide(wrapper);
+
+    expect(text).toContain(
+      [
+        "3. Rücksprungadressen und Web Origins eintragen",
+        `   Admin UI: ${ORIGIN}`,
+        "     Valid redirect URIs:",
+        `       ${ORIGIN}/admin/login/sso`,
+        `       ${ORIGIN}/admin/silent-check-sso.html`,
+        "     Valid post logout redirect URIs:",
+        `       ${ORIGIN}/admin/`,
+        `       ${ORIGIN}/admin/login/sso*  („Benutzer wechseln“)`,
+        "     Web origins:",
+        `       ${ORIGIN}`,
+        "   Jede weitere Domain des Admin UI braucht dieselben Einträge, mit ihrer eigenen Adresse.",
+        "   Storefront: https://portal.example.de",
+        "     Valid redirect URIs:",
+        "       https://portal.example.de/api/auth/sso/callback",
+        "     Valid post logout redirect URIs:",
+        "       https://portal.example.de/api/auth/sso/login*  („Benutzer wechseln“)",
+        "     Web origins:",
+        "       https://portal.example.de",
+        "   Am Web-Client biletado-web, je Eintrag eine Zeile. Jede Rücksprungadresse gilt genau so; nur die für „Benutzer wechseln“ endet mit *. Web origins sind die genauen Adressen, ohne +.",
+        "",
+        "4. Audience-Mapper anlegen",
+      ].join("\n")
+    );
+  });
+
+  it("follows the role mapping: the step „Client-Rollen zuordnen“ with the roles and the warning", async () => {
+    const wrapper = mountTabWithToasts({
+      instance: withRoleMapping([
+        { tenantId: "t1", keycloakRole: "raumverwaltung", tenantRoleId: "r1" },
+        { tenantId: "t2", keycloakRole: "sportstaetten", tenantRoleId: "r2" },
+      ]),
+    });
+
+    const text = await copiedGuide(wrapper);
+
+    expect(stepLines(text).slice(-2)).toEqual([
+      "6. Client-Rollen zuordnen",
+      "7. Portal-URL prüfen",
+    ]);
+    expect(text).toContain(
+      [
+        "6. Client-Rollen zuordnen",
+        "   Achtung: Die Rollenzuordnung greift nur bei der SSO-Anmeldung. Dabei entfernt sie auch von Hand vergebene Rollen.",
+        "   Keycloak-Rollen der Rollenzuordnung:",
+        "     raumverwaltung",
+        "     sportstaetten",
+        "   Full scope allowed: Off",
+        "   Legen Sie diese Keycloak-Rollen als Client-Rollen am Web-Client biletado-web an und weisen Sie sie den Personen zu.",
+        "   Der Client scope „roles“ mit dem Mapper für Client-Rollen bleibt Default. Ordnen Sie die Client-Rollen gezielt als Scope zu, statt Full scope allowed einzuschalten.",
+        "",
+        "7. Portal-URL prüfen",
+      ].join("\n")
+    );
+  });
+
+  it("follows the mode BFF without the BFF's answer: the hint above the steps and the BFF's Rücksprungadressen as placeholders", async () => {
+    auth.mode = "bff";
+    ApiAuthService.getSsoAddresses.mockRejectedValue(serverError(502));
+    const wrapper = mountTabWithToasts();
+    await flushPromises();
+
+    const text = await copiedGuide(wrapper);
+
+    expect(text).toContain("Modus: BFF");
+    expect(text).toContain(
+      [
+        "Hinweise",
+        "- Der BFF hat seine Adressen nicht genannt, die Liste ist vielleicht unvollständig. Die Anleitung nennt nur die Adresse, unter der Sie gerade arbeiten, und ihre Rücksprungadressen als Platzhalter: Nur der BFF kennt seine Pfade.",
+        "",
+        "1. Realm anlegen",
+      ].join("\n")
+    );
+    expect(text).toContain(
+      [
+        `   Admin UI: ${ORIGIN}`,
+        "     Valid redirect URIs:",
+        "       ‹Rücksprungadresse des BFF nach der Anmeldung›",
+        "     Valid post logout redirect URIs:",
+        "       ‹Rücksprungadresse des BFF nach der Abmeldung›",
+        "       ‹Rücksprungadresse des BFF für „Benutzer wechseln“›  („Benutzer wechseln“)",
+        "     Web origins:",
+        `       ${ORIGIN}`,
+        "   Storefront: https://portal.example.de",
+      ].join("\n")
+    );
+  });
+
+  it("toasts the failure and no success when the clipboard refuses", async () => {
+    writeText.mockRejectedValue(new Error("denied"));
+    const wrapper = mountTabWithToasts();
+
+    const toasted = await copyAsText(wrapper, "Anleitung kopieren");
+
+    expect(toasted).toEqual([
+      "Leider ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+    ]);
+  });
+
+  it("never contains the Client Secret", async () => {
+    const wrapper = mountTabWithToasts({
+      instance: instance({
+        applications: [
+          keycloak({
+            privateClientSecret: "s3cr3t-9f2c",
+            roleMapping: {
+              active: true,
+              roles: [
+                {
+                  tenantId: "t1",
+                  keycloakRole: "raumverwaltung",
+                  tenantRoleId: "r1",
+                },
+              ],
+            },
+          }),
+        ],
+      }),
+    });
+
+    const text = await copiedGuide(wrapper);
+
+    expect(text).toContain("Client Secret");
+    expect(text).not.toContain("s3cr3t-9f2c");
+  });
+
+  it("puts placeholders for the missing values and the hints above the steps", async () => {
+    const wrapper = mountTabWithToasts({
+      instance: instance({ portalUrl: "", applications: [emptyKeycloak()] }),
+    });
+
+    const text = await copiedGuide(wrapper);
+
+    expect(text).toContain(
+      [
+        "Keycloak-URL: ‹Keycloak-URL›",
+        "Realm: ‹Realm›",
+        "Issuer: ‹Keycloak-URL›/realms/‹Realm›",
+        "",
+        "Hinweise",
+        "- Die Portal-URL ist leer. Setzen Sie sie im Tab „Portal“, dann nennt die Anleitung auch die Rücksprungadressen der Storefront.",
+        "",
+        "1. Realm anlegen",
+        "   Realm name: ‹Realm›",
+        "   Issuer: ‹Keycloak-URL›/realms/‹Realm›",
+      ].join("\n")
+    );
+    expect(text).toContain("   Client ID: ‹Client-ID des Web-Clients›");
+    expect(text).toContain(
+      "   Client scope: ‹Client-ID des Web-Clients›-dedicated"
+    );
+    expect(text).toContain(
+      "   Included Client Audience: ‹Client-ID des API-Clients›"
+    );
+    expect(text).toContain("   Client ID: ‹Client-ID des API-Clients›");
+    expect(text).toContain(
+      [
+        `       ${ORIGIN}`,
+        "   Jede weitere Domain des Admin UI braucht dieselben Einträge, mit ihrer eigenen Adresse.",
+        "   Storefront",
+        "   Ohne Portal-URL keine Werte für die Storefront.",
+      ].join("\n")
+    );
+    expect(text).not.toContain("/api/auth/sso/");
+    expect(text).toContain(
+      [
+        "6. Portal-URL prüfen",
+        "   Die Portal-URL ist leer. Setzen Sie sie im Tab „Portal“.",
+      ].join("\n")
+    );
   });
 });
