@@ -210,6 +210,11 @@
         "bookingTypeExpertOnly": "Dieser Buchungstyp ist nur im Experten-Modus auswählbar bzw. änderbar.",
         "traitBadge": "Experten"
       },
+      "maxAmountPerBooking": {
+        "label": "Höchstmenge je Buchung",
+        "unlimited": "Höchstmenge ist unbegrenzt!",
+        "invalid": "Bitte eine ganze Zahl ab 1 eingeben oder das Feld leeren."
+      },
       "openEvent": "Veranstaltung in neuem Tab öffnen",
       "sections": {
         "generalInfo": "Allgemeine Infos",
@@ -1604,6 +1609,14 @@
     "insufficient-lead-time": {
       "title": "Vorlaufzeit nicht eingehalten",
       "message": "Die Buchung liegt zu kurzfristig. Zwischen Buchung und Beginn muss ausreichend Vorbereitungszeit in den Servicezeiten liegen."
+    },
+    "max_amount_per_booking_exceeded": {
+      "title": "Höchstmenge je Buchung überschritten",
+      "message": "Die gewählte Anzahl übersteigt die Höchstmenge je Buchung für dieses Objekt."
+    },
+    "amountLimit": {
+      "perBooking": "Von {title} können höchstens {max} {unit} je Buchung gebucht werden.",
+      "perBookingCaption": "Höchstmenge je Buchung: {max} {unit}"
     },
     "block_period": {
       "unavailable": {

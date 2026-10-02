@@ -16,6 +16,7 @@ const state = {
 
     isBookable: false,
     amount: 1,
+    maxAmountPerBooking: null,
     minBookingDuration: null,
     maxBookingDuration: null,
     autoCommitBooking: false,
@@ -119,6 +120,7 @@ const mutations = {
 
       isBookable: false,
       amount: 1,
+      maxAmountPerBooking: null,
       minBookingDuration: null,
       maxBookingDuration: null,
       autoCommitBooking: false,

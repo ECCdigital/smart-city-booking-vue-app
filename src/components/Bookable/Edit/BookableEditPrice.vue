@@ -376,7 +376,7 @@
           </template>
 
           <v-row>
-            <v-col cols="12" md="4">
+            <v-col cols="12" md="6">
               <v-text-field
                 background-color="accent"
                 filled
@@ -386,13 +386,36 @@
                 :persistent-hint="!model.amount"
                 v-model="model.amount"
                 :disabled="handlesMaxAmount"
-                :suffix="
-                  model.priceType === 'per-square-meter' ? 'm²' : 'Stück'
-                "
+                :suffix="amountSuffix"
               />
             </v-col>
 
-            <v-col cols="12" md="4">
+            <!-- Not the provider's to decide: its maximum and this one both
+                 apply, so the field stays open while it handles maxAmount. -->
+            <v-col cols="12" md="6">
+              <v-text-field
+                class="max-amount-per-booking"
+                background-color="accent"
+                filled
+                dense
+                type="number"
+                min="1"
+                step="1"
+                :label="$t('bookable.edit.maxAmountPerBooking.label')"
+                :hint="
+                  maxAmountPerBookingUnlimited
+                    ? $t('bookable.edit.maxAmountPerBooking.unlimited')
+                    : ''
+                "
+                :persistent-hint="maxAmountPerBookingUnlimited"
+                v-model.number="model.maxAmountPerBooking"
+                :rules="maxAmountPerBookingRules"
+                :suffix="amountSuffix"
+                @input="checkNull('maxAmountPerBooking')"
+              />
+            </v-col>
+
+            <v-col cols="12" md="6">
               <v-select
                 background-color="accent"
                 filled
@@ -407,7 +430,7 @@
               />
             </v-col>
 
-            <v-col cols="12" md="4">
+            <v-col cols="12" md="6">
               <v-text-field
                 background-color="accent"
                 filled
@@ -896,6 +919,7 @@ import {
   IFBS_PROVIDER,
   providerHandles,
 } from "@/utils/bookableExternalProviders";
+import { amountUnit } from "@/utils/bookingAmountLimit";
 
 const DEFAULT_EXTERNAL_PROVIDER = {
   active: false,
@@ -1000,6 +1024,24 @@ export default {
     },
     handlesMaxAmount() {
       return providerHandles(this.externalProvider, "maxAmount");
+    },
+    amountSuffix() {
+      return amountUnit(this.model);
+    },
+    maxAmountPerBookingUnlimited() {
+      return this.model.maxAmountPerBooking == null;
+    },
+    // Empty is unlimited and saved as null; the backend refuses anything
+    // but a whole number from 1.
+    maxAmountPerBookingRules() {
+      return [
+        (v) =>
+          v === null ||
+          v === undefined ||
+          v === "" ||
+          (Number.isInteger(Number(v)) && Number(v) >= 1) ||
+          this.$t("bookable.edit.maxAmountPerBooking.invalid"),
+      ];
     },
     // Why there is nothing to preview: the prices route reads the stored
     // bookable, so it has nothing to say before the first save.
