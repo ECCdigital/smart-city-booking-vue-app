@@ -83,6 +83,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   Checkout of a bookable behind a login offers the login again when the session is gone (ECCdigital/tickets#77). The checkout fell back to the user stored from an earlier session when `auth/me` failed, so the step „Anmeldung“ said „Angemeldet“, the permission check answered 401 and booking stayed impossible until the browser cache was cleared. Now only `auth/me` decides who is signed in, and its 401 also removes the stored user
 -   SSO sign-in over the BFF with a return target (e.g. `/dashboard`) stays in the admin UI: the BFF SSO start is handed the target with the router base (`/admin/dashboard`), so „Anmelden“ no longer leads to the storefront's 404
 -   Media picker: the check on a picked tile sits top right on a light disc again, readable on dark images; Vuetify's `.v-icon.v-icon` had pinned it into the flow
 -   „Einrichtung fortsetzen“ on „Meine Mandanten“ is gone for an own tenant whose setup is done — at least one offer with the publication wish, as the readiness check (`GET /api/tenants/:tenant/readiness`, criterion `offers`) reports it; while the answer is out or refused, the setup stays offered
