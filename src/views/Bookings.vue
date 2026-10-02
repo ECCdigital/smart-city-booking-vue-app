@@ -150,6 +150,11 @@ import {
   statusLabel,
   transitionTarget,
 } from "@/utils/bookingStatus";
+import {
+  REFUND_STATE,
+  filterBookingsByRefundState,
+  refundStateMarker,
+} from "@/utils/cancellationRefund";
 
 /**
  * The search term survives a detour to a booking's page or the editor and
@@ -203,6 +208,9 @@ export default {
       // The list's status filter (spec E11, N1): nothing selected means no
       // filter; plain component state - nothing persists it.
       statusFilter: [],
+      // The refund filter (glossary „Erstattungsstand“), like the status
+      // filter: nothing selected means no filter.
+      refundFilter: [],
       api: {
         users: [],
         bookings: [],
@@ -265,11 +273,13 @@ export default {
     },
     /**
      * The filter card behind the funnel (spec N1): the booking type as a
-     * segment switch, the five states as a checkbox list. One restriction for
-     * a type other than "all", one per selected state.
+     * segment switch, the five states and the two refund states as checkbox
+     * lists. One restriction for a type other than "all", one per selected
+     * state. The refund states only for the Reichweite *any*: under *own*
+     * the backend leaves them out, and the filter would match nothing.
      */
     filterSections() {
-      return [
+      const sections = [
         {
           key: "type",
           label: this.$t("booking.filter.type"),
@@ -307,6 +317,19 @@ export default {
           })),
         },
       ];
+      if (BookingPermissionService.allowReadAny()) {
+        sections.push({
+          key: "refund",
+          label: this.$t("booking.filter.refund"),
+          selected: this.refundFilter,
+          options: Object.values(REFUND_STATE).map((state) => ({
+            value: state,
+            label: this.$t(`booking.refundState.value.${state}`),
+            icon: refundStateMarker(state).icon,
+          })),
+        });
+      }
+      return sections;
     },
     isSelectedBookingHardDeleteBlocked() {
       return !allowsAction(this.selectedBooking, "delete");
@@ -373,7 +396,11 @@ export default {
         bookings = results.map((result) => result.item);
       }
 
-      return this.applyBookingTypeFilter(bookings);
+      bookings = this.applyBookingTypeFilter(bookings);
+      if (this.refundFilter.length > 0) {
+        bookings = filterBookingsByRefundState(bookings, this.refundFilter);
+      }
+      return bookings;
     },
     /**
      * What the table and the calendar show. The kanban stays on
@@ -411,6 +438,7 @@ export default {
     onFilter(key, selection) {
       if (key === "type") this.bookingTypeFilter = selection;
       if (key === "status") this.statusFilter = selection;
+      if (key === "refund") this.refundFilter = selection;
     },
     applyBookingTypeFilter(bookings) {
       if (this.bookingTypeFilter === "single") {

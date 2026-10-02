@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
+import {
+  filterBookingsByRefundState,
+  getCancellationRefundAudit,
+  refundStateMarker,
+  refundStateOf,
+} from "@/utils/cancellationRefund";
 
 const audit = { cancelledFrom: "confirmed", refundPercentage: 50 };
 
@@ -53,5 +58,62 @@ describe("getCancellationRefundAudit", () => {
       })
     ).toEqual({ n: 2 });
     expect(getCancellationRefundAudit({ status: "cancelled" })).toBeNull();
+  });
+});
+
+function cancelled(id, refundState) {
+  return {
+    id,
+    status: "cancelled",
+    cancellationRefund: { cancelledFrom: "confirmed", refundState },
+  };
+}
+
+/**
+ * The refund state (glossary „Erstattungsstand“) as the backend writes it at
+ * the refund audit: `open` or `completed`, absent where no refund is due.
+ */
+describe("refundStateOf", () => {
+  it("reads open and completed off the refund audit", () => {
+    expect(refundStateOf(cancelled("bk-1", "open"))).toBe("open");
+    expect(refundStateOf(cancelled("bk-1", "completed"))).toBe("completed");
+  });
+
+  it("answers null without a refund state, and for a value it does not know", () => {
+    expect(refundStateOf(cancelled("bk-1", undefined))).toBeNull();
+    expect(refundStateOf(cancelled("bk-1", "paid"))).toBeNull();
+    expect(refundStateOf({ status: "cancelled" })).toBeNull();
+    expect(refundStateOf(undefined)).toBeNull();
+  });
+});
+
+describe("filterBookingsByRefundState", () => {
+  const bookings = [
+    cancelled("bk-open", "open"),
+    cancelled("bk-completed", "completed"),
+    cancelled("bk-none", undefined),
+    { id: "bk-confirmed", status: "confirmed" },
+  ];
+
+  it("keeps only the bookings whose refund state is selected", () => {
+    expect(
+      filterBookingsByRefundState(bookings, ["open"]).map((b) => b.id)
+    ).toEqual(["bk-open"]);
+    expect(
+      filterBookingsByRefundState(bookings, ["open", "completed"]).map(
+        (b) => b.id
+      )
+    ).toEqual(["bk-open", "bk-completed"]);
+  });
+});
+
+describe("refundStateMarker", () => {
+  it("words the chip beside the state", () => {
+    expect(refundStateMarker("open").label).toBe("Rückerstattung offen");
+    expect(refundStateMarker("completed").label).toBe("Rückerstattung erfolgt");
+  });
+
+  it("has no chip without a refund state", () => {
+    expect(refundStateMarker(null)).toBeNull();
   });
 });

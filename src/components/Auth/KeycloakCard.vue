@@ -127,15 +127,15 @@ export default {
       }
 
       this.loading = true;
-      // The BFF leads the browser there, so it needs the path with the base.
-      const redirect =
-        (isSafeInternalRedirect(this.nextUrl, this.$router) &&
-          this.$router.resolve(this.nextUrl).href) ||
-        (() => {
-          const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
-          return base ? `${base}/` : "/";
-        })();
-      ApiAuthService.startSsoLogin(redirect);
+      ApiAuthService.startSsoLogin(this.bffReturnTarget());
+    },
+    /** The BFF leads the browser there, so the target carries the router base. */
+    bffReturnTarget() {
+      if (isSafeInternalRedirect(this.nextUrl, this.$router)) {
+        return this.$router.resolve(this.nextUrl).href;
+      }
+      const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
+      return base ? `${base}/` : "/";
     },
     async afterSignIn(user, permissions, redirectHint) {
       await this.updateUser({ user, permissions });
@@ -261,7 +261,7 @@ export default {
     },
     async changeUser() {
       if (this.isBffMode) {
-        ApiAuthService.changeSsoUser(window.location.href, this.ssoTicket());
+        ApiAuthService.changeSsoUser(this.bffReturnTarget(), this.ssoTicket());
         return;
       }
       await keycloakService.logout(

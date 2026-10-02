@@ -24,6 +24,7 @@ vi.mock("@/services/permissions/BookingPermissionService", () => ({
     allowRead: vi.fn(() => true),
     allowUpdate: vi.fn(() => true),
     allowDelete: vi.fn(() => true),
+    allowReadAny: vi.fn(() => true),
   },
 }));
 vi.mock("@/services/api/ApiBookingService", () => ({
@@ -62,6 +63,7 @@ import Bookings from "@/views/Bookings.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 
 const OK = { success: true, data: null, errors: [] };
 const CONFLICT_IN_CONFIRMED =
@@ -430,6 +432,72 @@ describe("Bookings", () => {
       await chooseType(wrapper, "Einzel");
 
       expect(await filterMenuIsOpen(wrapper)).toBe(true);
+    });
+  });
+
+  /**
+   * The refund filter (glossary „Erstattungsstand“): offen and erfolgt as a
+   * checkbox list beside the states, narrowing every view - for the
+   * Reichweite *any* only, since under *own* the bookings come without it.
+   */
+  describe("the refund filter", () => {
+    function withRefunds() {
+      const refund = (refundState) => ({
+        cancelledFrom: "confirmed",
+        refundAmountEur: 20,
+        refundState,
+      });
+      return [
+        booking({
+          id: "bk-open",
+          status: "cancelled",
+          cancellationRefund: refund("open"),
+        }),
+        booking({
+          id: "bk-completed",
+          status: "cancelled",
+          cancellationRefund: refund("completed"),
+        }),
+        booking({ id: "bk-unpaid", status: "cancelled" }),
+        booking({ id: "bk-requested" }),
+      ];
+    }
+
+    beforeEach(() => {
+      BookingPermissionService.allowReadAny.mockReturnValue(true);
+    });
+
+    it("keeps only the bookings whose refund is open", async () => {
+      const { wrapper } = await mountBookings({ bookings: withRefunds() });
+
+      const card = await openFilterCard(wrapper);
+      expect(card.textContent).toContain("Rückerstattung");
+      await toggleStatus(wrapper, "offen");
+
+      expect(funnelBadge(wrapper)).toBe("1");
+      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual(["bk-open"]);
+    });
+
+    it("keeps open and completed refunds together", async () => {
+      const { wrapper } = await mountBookings({ bookings: withRefunds() });
+
+      await openFilterCard(wrapper);
+      await toggleStatus(wrapper, "offen");
+      await toggleStatus(wrapper, "erfolgt");
+
+      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([
+        "bk-open",
+        "bk-completed",
+      ]);
+    });
+
+    it("is not offered under the Reichweite own", async () => {
+      BookingPermissionService.allowReadAny.mockReturnValue(false);
+      const { wrapper } = await mountBookings({ bookings: withRefunds() });
+
+      const card = await openFilterCard(wrapper);
+
+      expect(card.textContent).not.toContain("Rückerstattung");
     });
   });
 

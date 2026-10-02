@@ -289,6 +289,11 @@
               class="mt-3"
               :audit="cancellationRefundAudit"
             />
+            <CancellationRefundState
+              class="mt-3"
+              :booking="booking"
+              @reload="reload"
+            />
           </div>
 
           <div class="booking-page__documents">
@@ -374,6 +379,7 @@ import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
 import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import BookingPaymentLink from "@/components/Booking/BookingPaymentLink.vue";
 import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
+import CancellationRefundState from "@/components/Booking/CancellationRefundState.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import bookingPageShell from "@/mixins/bookingPageShell";
@@ -418,6 +424,7 @@ export default {
     BookingStatusPath,
     BookingTransitions,
     CancellationRefundAudit,
+    CancellationRefundState,
   },
   mixins: [bookingPageShell],
   data() {

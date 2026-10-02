@@ -7,6 +7,7 @@ const api = vi.hoisted(() => ({
   getPendingSsoUser: vi.fn(async () => ({ email: "a@b.de", name: "A B" })),
   ssoLogin: vi.fn(async () => ({ user: {}, permissions: {} })),
   startSsoLogin: vi.fn(),
+  changeSsoUser: vi.fn(),
 }));
 const mode = vi.hoisted(() => ({ bff: true }));
 /** keycloak-js after the identity provider has answered (direct transport). */
@@ -97,6 +98,7 @@ beforeEach(() => {
   mode.bff = true;
   api.startSsoLogin.mockClear();
   api.ssoLogin.mockClear();
+  api.changeSsoUser.mockClear();
   keycloak.login.mockClear();
   keycloak.logout.mockClear();
 });
@@ -152,6 +154,37 @@ describe("KeycloakCard — where sign-in leads when the BFF hands the target bac
     await click(wrapper, "Anmelden");
 
     expect(location.href).toBe("/admin/dashboard");
+  });
+});
+
+describe("KeycloakCard — the return target when the user is switched", () => {
+  it("hands the BFF the page that asked for the login", async () => {
+    nextUrl = "/bookings";
+    const wrapper = mountCard();
+
+    await click(wrapper, "Benutzer wechseln");
+
+    expect(api.changeSsoUser).toHaveBeenCalledWith(
+      "/admin/bookings",
+      "ticket-1"
+    );
+  });
+
+  it("hands the BFF the start page when nothing asked for the login", async () => {
+    const wrapper = mountCard();
+
+    await click(wrapper, "Benutzer wechseln");
+
+    expect(api.changeSsoUser).toHaveBeenCalledWith("/admin/", "ticket-1");
+  });
+
+  it("hands the BFF no off-site target", async () => {
+    nextUrl = "https://evil.example/";
+    const wrapper = mountCard();
+
+    await click(wrapper, "Benutzer wechseln");
+
+    expect(api.changeSsoUser).toHaveBeenCalledWith("/admin/", "ticket-1");
   });
 });
 

@@ -42,6 +42,7 @@ vi.mock("@/services/api/ApiBookingService", () => ({
     generateReceipt: vi.fn(),
     generateInvoice: vi.fn(),
     reprintCancellationReceipt: vi.fn(),
+    setRefundState: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiGroupBookingService", () => ({
@@ -580,6 +581,40 @@ describe("BookingPage", () => {
       expect(payment).not.toContain("Zahlungslink");
       expect(payment).toContain("Erstattung bei Stornierung");
       expect(payment).toMatch(/20,00\s€/);
+    });
+
+    it("shows the refund state under the refund audit and reloads after the tick", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          status: "cancelled",
+          cancellationRefund: {
+            cancelledFrom: "confirmed",
+            originalAmountEur: 25,
+            refundAmountEur: 20,
+            cancellationFeeEur: 5,
+            refundState: "open",
+          },
+        }),
+      });
+      ApiBookingService.setRefundState.mockResolvedValue({ data: {} });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+      const payment = wrapper.find(".booking-page__payment");
+      expect(payment.find(".cancellation-refund-state__value").text()).toBe(
+        "offen"
+      );
+      const loads = ApiBookingService.getBooking.mock.calls.length;
+
+      await payment
+        .find(".cancellation-refund-state__mark input")
+        .trigger("click");
+      await settle(wrapper);
+
+      expect(ApiBookingService.setRefundState).toHaveBeenCalledWith(
+        "bk-1",
+        "completed"
+      );
+      expect(ApiBookingService.getBooking.mock.calls.length).toBe(loads + 1);
     });
 
     it("lists the Dokumente in four groups and downloads a receipt", async () => {

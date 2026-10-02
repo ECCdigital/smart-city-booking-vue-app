@@ -119,11 +119,10 @@ export default {
       this.leave();
     },
     /**
-     * Refetch the booking after a transition the backend refused with 409 or
-     * 404 (spec E5), without leaving the screen: the editor keeps its inline
-     * message and takes the fresh state through its `booking` prop. A
-     * booking that cannot be read any more leaves the screen the way `load`
-     * does.
+     * Refetch the booking after a save the backend refused with 409 or 404
+     * (spec E5), without leaving the screen: the editor takes the fresh
+     * state through its `booking` prop. A booking that cannot be read any
+     * more leaves the screen the way `load` does.
      */
     async reloadBooking() {
       if (this.isCreate) return;

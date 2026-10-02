@@ -163,6 +163,16 @@
             <v-icon left x-small>{{ freeChip.icon }}</v-icon>
             {{ freeChip.label }}
           </v-chip>
+          <v-chip
+            v-if="refundMarker(item)"
+            small
+            :color="refundMarker(item).color"
+            :text-color="refundMarker(item).textColor"
+            class="font-weight-medium ml-1"
+          >
+            <v-icon left x-small>{{ refundMarker(item).icon }}</v-icon>
+            {{ refundMarker(item).label }}
+          </v-chip>
         </template>
 
         <template v-slot:item.paymentMethod="{ item }">
@@ -284,6 +294,7 @@ import {
   statusRank,
   transitionActions,
 } from "@/utils/bookingStatus";
+import { refundStateMarker, refundStateOf } from "@/utils/cancellationRefund";
 
 export default {
   name: "BookingTable",
@@ -357,6 +368,10 @@ export default {
     statusIcon,
     statusLabel,
     transitionActions,
+    /** The refund state's chip beside the state (glossary „Erstattungsstand“), or none. */
+    refundMarker(booking) {
+      return refundStateMarker(refundStateOf(booking));
+    },
     formatDate(date) {
       return Intl.DateTimeFormat("de-DE", {
         dateStyle: "short",
