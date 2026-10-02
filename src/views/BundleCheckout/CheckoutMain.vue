@@ -15,7 +15,7 @@
                 :key="`step-${index}`"
                 :complete="stepComplete(index)"
                 :step="index + 1"
-                :rules="step.rules"
+                :rules="_step.rules"
               >
                 {{ _step.title }}
               </v-stepper-step>

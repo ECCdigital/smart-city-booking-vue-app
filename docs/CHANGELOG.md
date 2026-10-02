@@ -83,6 +83,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   Checkout: the stepper header reads the rules of the step it draws (`_step.rules`) instead of `step.rules`, which threw a `TypeError` while the current step was not set yet (ECCdigital/tickets#106). „Berechtigung“ still does not show as an error: on the first permission check it comes with `preventBooking`, which hides the header
 -   SSO sign-in over the BFF with a return target (e.g. `/dashboard`) stays in the admin UI: the BFF SSO start is handed the target with the router base (`/admin/dashboard`), so „Anmelden“ no longer leads to the storefront's 404
 -   Media picker: the check on a picked tile sits top right on a light disc again, readable on dark images; Vuetify's `.v-icon.v-icon` had pinned it into the flow
 -   „Einrichtung fortsetzen“ on „Meine Mandanten“ is gone for an own tenant whose setup is done — at least one offer with the publication wish, as the readiness check (`GET /api/tenants/:tenant/readiness`, criterion `offers`) reports it; while the answer is out or refused, the setup stays offered
