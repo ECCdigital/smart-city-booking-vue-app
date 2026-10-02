@@ -170,6 +170,7 @@ export default {
     ...mapActions({
       updateTenant: "tenants/update",
       addToast: "toasts/add",
+      deleteUser: "user/delete",
     }),
     async init() {
       await this.fetchMe();
@@ -437,10 +438,8 @@ export default {
         this.me = data.user;
         this.fillContactDetailsFromUser(this.me);
       } catch (error) {
-        if (this.user) {
-          this.me = this.user;
-          this.fillContactDetailsFromUser(this.user);
-          return;
+        if (error.response?.status === 401) {
+          await this.deleteUser();
         }
 
         this.me = null;
