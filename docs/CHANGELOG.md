@@ -83,6 +83,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   Booking page, „Benutzerdefinierte Felder“: a long caption no longer runs past the card's edge and squeezes its value to one letter per line. A fact's label keeps its width up to half the row and wraps beyond it (ECCdigital/tickets#78)
 -   SSO sign-in over the BFF with a return target (e.g. `/dashboard`) stays in the admin UI: the BFF SSO start is handed the target with the router base (`/admin/dashboard`), so „Anmelden“ no longer leads to the storefront's 404
 -   Media picker: the check on a picked tile sits top right on a light disc again, readable on dark images; Vuetify's `.v-icon.v-icon` had pinned it into the flow
 -   „Einrichtung fortsetzen“ on „Meine Mandanten“ is gone for an own tenant whose setup is done — at least one offer with the publication wish, as the readiness check (`GET /api/tenants/:tenant/readiness`, criterion `offers`) reports it; while the answer is out or refused, the setup stays offered
