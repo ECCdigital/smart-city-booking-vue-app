@@ -23,6 +23,8 @@ Sort order of the "Status" column (`statusRank`): `requested < payment_due < con
 | Kostenfrei | `isFree(booking)`, `freeMarker()`       | `priceEur <= 0`. A marker chip beside the status, never a status - a free booking still runs through Angefragt and Bestätigt. |
 | Gemischt   | `groupBookingStatus(members) === MIXED` | A series whose members do not share one status. Group actions are offered only where the status is shared (spec E9).          |
 
+"Rückerstattung offen" / "Rückerstattung erfolgt" (glossary „Erstattungsstand“, `refundStateOf(booking)`, `refundStateMarker(state)` in `src/utils/cancellationRefund.js`) is stored, not derived - `cancellationRefund.refundState`, `open` or `completed` - and is a marker chip beside Storniert as well, never a state.
+
 "Bezahlt" as a fact (the export column, the details chip) is read off the state too: `isPaid(booking)` is true at `confirmed`, and at `cancelled` iff `cancelledFrom === "confirmed"`. `paymentLabel(booking)` turns that into Kostenfrei / Ja / Nein for the Excel export.
 
 ## The action verbs

@@ -68,6 +68,21 @@ describe("BookingTable", () => {
       expect(statusCell(wrapper).text()).toContain("Kostenfrei");
     });
 
+    it("marks an open or completed refund beside Storniert", () => {
+      const refund = (refundState) => ({
+        status: "cancelled",
+        cancellationRefund: { cancelledFrom: "confirmed", refundState },
+      });
+      const open = mountTable([booking(refund("open"))]);
+      const completed = mountTable([booking(refund("completed"))]);
+      const none = mountTable([booking({ status: "cancelled" })]);
+
+      expect(statusCell(open).text()).toContain("Storniert");
+      expect(statusCell(open).text()).toContain("Rückerstattung offen");
+      expect(statusCell(completed).text()).toContain("Rückerstattung erfolgt");
+      expect(statusCell(none).text()).not.toContain("Rückerstattung");
+    });
+
     it("does not show a payment chip for a priced booking", () => {
       const wrapper = mountTable([booking({ status: "confirmed" })]);
 

@@ -52,6 +52,10 @@ _Avoid_: Buchungsdetails (the dialog's title, retired), Drawer
 The page at `/group-bookings/:groupBookingId?tenant=…` that shows one series with its members. Replaces the former group booking dialog.
 _Avoid_: Gruppenbuchungsseite (the code says group booking, the screen says Serienbuchung)
 
+**Erstattungsstand** (admin: „Rückerstattung offen“ / „Rückerstattung erfolgt“):
+Whether the refund of a cancelled booking has been paid out: open or completed. The backend sets it to open at the cancellation, only where a refund is due (cancelled out of Bestätigt with a refund above zero); the administration ticks it off by hand on the Buchungsseite and can take that back - the platform pays nothing out and learns of no payout. A marker beside Storniert, not a state: a reinstatement drops it, and the booker never sees it.
+_Avoid_: Rückerstattungsstatus, Refund-Status, erstattet (as a booking state)
+
 **Mitglied** (of a tenant):
 An admin whose permissions list the tenant, or an instance owner for whom the tenant appears in the loaded tenant list. The one fact about access the client can know without asking the server; decides the non-member state of a Buchungsseite.
 _Avoid_: berechtigt (that is Reichweite, a different question)

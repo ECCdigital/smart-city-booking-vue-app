@@ -78,6 +78,13 @@ export default {
     );
     return response.data;
   },
+  /** Sets the refund state of a cancelled booking (glossary „Erstattungsstand“): `completed`, or back to `open`. */
+  setRefundState(id, refundState) {
+    return ApiClient.put(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/refund-state`,
+      { refundState }
+    );
+  },
   async getCancellationRefundPreview(id, tenantId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     const response = await ApiClient.get(

@@ -113,6 +113,7 @@
       "invalid_transition": "Die Buchung ist inzwischen in einem anderen Zustand ({status}).",
       "invalid_transition-unknown-status": "Die Buchung ist inzwischen in einem anderen Zustand.",
       "not_cancelled": "Die Buchung ist nicht storniert.",
+      "refund_state_not_applicable": "Für diese Buchung ist keine Rückerstattung fällig.",
       "supervision_notification_already_sent": "Die Mitteilung wurde bereits gesendet.",
       "supervision_notification_dispatch_in_progress": "Die Mitteilung wird gerade versendet. Bitte kurz warten und die Liste aktualisieren.",
       "diverging-bookings": "Betroffene Buchungen: {ids}",
@@ -1030,6 +1031,24 @@
       "bic": "BIC (optional)",
       "bankName": "Name der Bank (optional)"
     },
+    "refundState": {
+      "label": "Rückerstattung",
+      "value": {
+        "open": "offen",
+        "completed": "erfolgt"
+      },
+      "marker": {
+        "open": "Rückerstattung offen",
+        "completed": "Rückerstattung erfolgt"
+      },
+      "mark": "Rückerstattung erfolgt",
+      "completedBy": "Abgehakt am {date} von {user}",
+      "completedAt": "Abgehakt am {date}",
+      "error": {
+        "title": "Rückerstattung nicht gespeichert",
+        "message": "Der Stand der Rückerstattung konnte nicht gespeichert werden."
+      }
+    },
     "create": {
       "success": {
         "title": "Erfolgreich erstellt",
@@ -1173,7 +1192,8 @@
       "typeAll": "Alle",
       "typeSingle": "Einzel",
       "typeSeries": "Serie",
-      "status": "Status"
+      "status": "Status",
+      "refund": "Rückerstattung"
     },
     "action": {
       "confirm": "Freigeben",
