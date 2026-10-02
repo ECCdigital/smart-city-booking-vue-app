@@ -1060,11 +1060,9 @@
       "hints": {
         "bookablesForbidden": "Sie haben keinen Zugriff auf Buchungsobjekte. Die Auswahl der Buchungsobjekte bleibt daher leer."
       },
-      "saveFirst": "Erst speichern – die Aktionen sind gesperrt, solange das Formular ungespeicherte Änderungen hat.",
       "reason": {
         "rejected": "Ablehnungsgrund",
-        "cancelled": "Stornierungsgrund",
-        "required": "Begründung ist erforderlich"
+        "cancelled": "Stornierungsgrund"
       },
       "back-to-booking": "Zurück zur Buchung"
     },
@@ -2473,7 +2471,6 @@
       "declined": "Vom Betreiber abgewiesen.",
       "declined-at": "Vom Betreiber abgewiesen am {date}.",
       "reason": "Begründung: „{reason}“",
-      "own-bookings": "Deine eigenen Buchungen findest du weiter unter „Meine Buchungen“.",
       "toast": {
         "title": "Mandant abgewiesen",
         "message": "Der Mandant ‚{name}‘ wurde vom Betreiber abgewiesen. Du hast keinen Verwaltungszugriff mehr."

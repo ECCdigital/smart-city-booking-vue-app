@@ -20,7 +20,7 @@ tests/unit/                          ← mirrors the src/ tree
   services/api/apiErrorMessage.spec.js
   services/permissions/TenantPermissionService.spec.js
   utils/bookingStatus.spec.js
-  components/Booking/BookingEditStatus.spec.js
+  components/Booking/BookingInitialState.spec.js
 ```
 
 -   Tests live under `tests/unit/`, **not** next to the source. Keeping `src/` free of test files keeps the webpack build and the `.vue` component tree clean.

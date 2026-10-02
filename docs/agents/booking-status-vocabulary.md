@@ -42,7 +42,7 @@ Each verb is an i18n key under `booking.action.*` and names one backend transiti
 
 ## The headline over the path
 
-Since 4.3.x a booking's state is drawn once, the same way in three hosts - the detail drawer, the edit form and the series drawer - and once more as the choice in the create form. The words below are the strand's own (spec N2-N6) and, like Reichweite in the access glossary, terms of these docs and not of the UI copy; the code is `src/utils/bookingStatus.js`, `src/utils/bookingForm.js` and `src/components/Booking/BookingStatusPath.vue`. There is no `BookingStatusBar` any more.
+Since 4.3.x a booking's state is drawn once, the same way in two hosts - the detail drawer and the series drawer - and once more as the choice in the create form. The edit form of an existing booking has no status section: its transitions, reason and refund audit live on the booking page. The words below are the strand's own (spec N2-N6) and, like Reichweite in the access glossary, terms of these docs and not of the UI copy; the code is `src/utils/bookingStatus.js`, `src/utils/bookingForm.js` and `src/components/Booking/BookingStatusPath.vue`. There is no `BookingStatusBar` any more.
 
 | German            | Code                                                   | What it is                                                                                                                                                                                                                                     |
 | ----------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -66,7 +66,7 @@ The choice in the create form names the state the booking is born in; internally
 | Zahlung offen             | `confirmed`                                  | `status: payment_due`                                              |
 | Bestätigt                 | `paid` with a price, `confirmed` without one | `status: confirmed`, with `paymentMethod` and `timePaid` at `paid` |
 
-`choose()` in `BookingEditStatus.vue` is that translation; `initialStateChoices(priceEur)` in `bookingForm.js` offers `paid` only with something to pay, and a paid draft that turns free falls back to `confirmed`. The headline's word and checked segment follow `initialStateWire(initialState, priceEur).status`, so a `confirmed` draft reads Zahlung offen with a price and Bestätigt without.
+`choose()` in `BookingInitialState.vue` is that translation; `initialStateChoices(priceEur)` in `bookingForm.js` offers `paid` only with something to pay, and a paid draft that turns free falls back to `confirmed`. The headline's word and checked segment follow `initialStateWire(initialState, priceEur).status`, so a `confirmed` draft reads Zahlung offen with a price and Bestätigt without.
 
 ### A series read as a booking
 

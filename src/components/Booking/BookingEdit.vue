@@ -22,6 +22,25 @@
         </div>
       </div>
 
+      <template v-if="isCreateMode">
+        <BookingInitialState
+          :price-eur="totalPriceEur"
+          :payment-methods="paymentMethod"
+          @update:initial-state="initialState = $event"
+        />
+        <v-alert
+          v-if="createError"
+          type="error"
+          text
+          dense
+          dismissible
+          class="booking-create-error mb-4"
+          @input="createError = null"
+        >
+          {{ createError }}
+        </v-alert>
+      </template>
+
       <v-row dense>
         <v-col cols="12" lg="9">
           <BaseSection title="Objekt & Zeitraum" icon="mdi-cube-outline">
@@ -847,7 +866,7 @@ import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import BaseSection from "@/components/commons/BaseSection.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
-import BookingEditStatus from "@/components/Booking/BookingEditStatus.vue";
+import BookingInitialState from "@/components/Booking/BookingInitialState.vue";
 import BookingCustomFieldsSection from "@/components/Booking/BookingCustomFieldsSection.vue";
 import BookingEditSummary from "@/components/Booking/BookingEditSummary.vue";
 import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
@@ -872,7 +891,7 @@ import {
   toCreatePayload,
   toUpdatePayload,
 } from "@/utils/bookingForm";
-import { BOOKING_STATUS, isRejectedOrCancelled } from "@/utils/bookingStatus";
+import { BOOKING_STATUS } from "@/utils/bookingStatus";
 import _ from "lodash";
 
 export default {
@@ -881,7 +900,7 @@ export default {
     BookableTypeChip,
     BaseSection,
     SaveBar,
-    BookingEditStatus,
+    BookingInitialState,
     BookingCustomFieldsSection,
     BookingEditSummary,
     CheckoutCalendar,
@@ -1023,9 +1042,9 @@ export default {
 
       editableBooking: null,
       originalSnapshot: null,
-      transitionError: null,
-      // Create mode: the "Anfangszustand" the status section reports (spec E10).
+      // Create mode: the "Anfangszustand" and a create the backend refused (spec E10).
       initialState: defaultInitialState(),
+      createError: null,
     };
   },
   computed: {
@@ -1694,19 +1713,20 @@ export default {
       this.externalPricesMap = _.cloneDeep(snap.externalPrices || {});
     },
     /**
-     * A transition or save the backend refused (spec E5). The message is read
-     * through the central reader and shown as a toast and inline; after a 409
-     * or 404 the page is asked to reload the booking, so that the form shows
-     * the server's state instead of the one the change was attempted against.
-     * Returns the message for a dialog that shows it too.
+     * A save the backend refused (spec E5). The message is read through the
+     * central reader and shown as a toast; a refused create shows it at the
+     * Anfangszustand as well, where it is fixed. After a 409 or 404 the page
+     * is asked to reload the booking, so that the form shows the server's
+     * state instead of the one the save was attempted against.
      */
-    async failTransition(error, key) {
-      const message =
-        // `POST …/reject` answers a bad percentage with the naked string.
-        error?.response?.data === "invalid_refund_percentage"
-          ? this.$t("booking.cancellationRefund.percentageRange")
-          : getApiErrorMessage(error, this.$t(`${key}.message`));
-      this.transitionError = message;
+    async failSave(error) {
+      const key = this.isCreateMode
+        ? "booking.create.error"
+        : "booking.edit.error";
+      const message = getApiErrorMessage(error, this.$t(`${key}.message`));
+      if (this.isCreateMode) {
+        this.createError = message;
+      }
       await this.addToast({
         title: this.$t(`${key}.title`),
         message,
@@ -1715,47 +1735,17 @@ export default {
       if (shouldRefetch(error)) {
         this.$emit("reload");
       }
-      return message;
-    },
-    /** The status section edits the reason under the path; the form owns the booking (spec N4). */
-    setRejectionReason(reason) {
-      this.$set(this.selectedBooking, "rejectionReason", reason);
-    },
-    /**
-     * The status section ran a transition (spec E2): the booking is reloaded
-     * from the server, which is where the state now lives. A refused one is
-     * shown inline; after a 409 or 404 the reload follows as well (spec E5).
-     */
-    onTransitioned() {
-      this.transitionError = null;
-      this.$emit("reload");
-    },
-    onTransitionFailed({ message, refetch }) {
-      this.transitionError = message;
-      if (refetch) {
-        this.$emit("reload");
-      }
     },
     finishSave() {
       this.$emit("saved");
     },
     async submitChanges() {
-      this.transitionError = null;
+      this.createError = null;
       const missingFields = validateRequiredCustomFields(
         this.editableCustomFields,
         this.selectedBooking.customFieldValues || []
       );
       if (missingFields.length) {
-        await this.addToast(
-          ToastService.createToast("booking.validation.required", "error")
-        );
-        return;
-      }
-
-      if (
-        isRejectedOrCancelled(this.selectedBooking) &&
-        !this.selectedBooking.rejectionReason?.trim()
-      ) {
         await this.addToast(
           ToastService.createToast("booking.validation.required", "error")
         );
@@ -1803,7 +1793,7 @@ export default {
                 );
               });
             } else {
-              this.failTransition(err, "booking.create.error");
+              this.failSave(err);
             }
             this.inProgress = false;
           });
@@ -1829,7 +1819,7 @@ export default {
                 );
               });
             } else {
-              this.failTransition(err, "booking.edit.error");
+              this.failSave(err);
             }
             this.inProgress = false;
           });
