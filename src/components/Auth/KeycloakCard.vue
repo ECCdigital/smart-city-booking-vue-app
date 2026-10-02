@@ -129,11 +129,7 @@ export default {
       this.loading = true;
       ApiAuthService.startSsoLogin(this.bffReturnTarget());
     },
-    /**
-     * Where the BFF leads the browser after the identity provider: the stored
-     * return target, else the start page. The BFF takes a browser path only,
-     * so the target carries the router base.
-     */
+    /** The BFF leads the browser there, so the target carries the router base. */
     bffReturnTarget() {
       if (isSafeInternalRedirect(this.nextUrl, this.$router)) {
         return this.$router.resolve(this.nextUrl).href;
