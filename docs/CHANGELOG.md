@@ -83,6 +83,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Fixed
 
+-   „Benutzer wechseln“ over the BFF returns to the page that asked for the login, as the sign-in without a switch does (ECCdigital/tickets#104): the card hands the BFF that target with the router base (`/admin/bookings`), no longer the full current URL, which the BFF refused for the start page
 -   SSO sign-in over the BFF with a return target (e.g. `/dashboard`) stays in the admin UI: the BFF SSO start is handed the target with the router base (`/admin/dashboard`), so „Anmelden“ no longer leads to the storefront's 404
 -   Media picker: the check on a picked tile sits top right on a light disc again, readable on dark images; Vuetify's `.v-icon.v-icon` had pinned it into the flow
 -   „Einrichtung fortsetzen“ on „Meine Mandanten“ is gone for an own tenant whose setup is done — at least one offer with the publication wish, as the readiness check (`GET /api/tenants/:tenant/readiness`, criterion `offers`) reports it; while the answer is out or refused, the setup stays offered
