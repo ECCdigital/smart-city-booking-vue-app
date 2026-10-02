@@ -55,8 +55,12 @@
   min-width: 0;
 }
 
+// A label keeps its width up to half the row and wraps beyond it: a custom
+// field's caption is a question of any length, and the value needs the rest.
 .booking-fact__label {
   flex: none;
+  max-width: 50%;
+  overflow-wrap: anywhere;
   color: var(--scb-text-muted);
 }
 
