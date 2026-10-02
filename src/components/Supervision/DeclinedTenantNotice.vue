@@ -16,9 +16,9 @@ import FormatService from "@/services/FormatService";
 
 /**
  * What a member of a declined tenant (glossary „abgewiesen“) still learns
- * about it: when the operator declined it, why, and that the own bookings
- * stay. Read from the membership of the sign-in (`permissions.tenants[]`),
- * because every request about the tenant itself is refused.
+ * about it: when the operator declined it and why. Read from the membership
+ * of the sign-in (`permissions.tenants[]`), because every request about the
+ * tenant itself is refused.
  */
 export default {
   name: "DeclinedTenantNotice",

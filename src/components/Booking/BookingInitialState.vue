@@ -1,7 +1,6 @@
 <template>
   <div>
     <BookingStatusPath
-      v-if="isCreateMode"
       class="mb-4"
       chooser
       :label="$t('booking.initialState.label')"
@@ -89,60 +88,11 @@
         </v-row>
       </template>
     </BookingStatusPath>
-
-    <BookingStatusPath
-      v-else
-      class="mb-4"
-      :status="booking.status"
-      :path="path"
-      :actions="actions"
-      :disabled="dirty"
-      :hint="dirty && actions.length ? $t('booking.edit.saveFirst') : null"
-      @action="transition"
-    >
-      <template v-if="isRejectedOrCancelled(booking)" #reason>
-        <div class="text-caption font-weight-bold error--text">
-          {{ rejectionReasonLabel }}
-        </div>
-        <v-textarea
-          class="mt-1"
-          :value="booking.rejectionReason"
-          outlined
-          dense
-          rows="2"
-          hide-details="auto"
-          :rules="rejectionReasonRules"
-          @input="$emit('update:rejection-reason', $event)"
-        />
-      </template>
-    </BookingStatusPath>
-
-    <v-expand-transition>
-      <v-sheet
-        v-if="cancellationRefundAudit"
-        class="mb-4 px-4 py-3"
-        outlined
-        rounded
-      >
-        <CancellationRefundAudit :audit="cancellationRefundAudit" />
-      </v-sheet>
-    </v-expand-transition>
-
-    <BookingTransitions
-      v-if="!isCreateMode"
-      ref="transitions"
-      @transitioned="$emit('transitioned', $event)"
-      @failed="$emit('failed', $event)"
-    />
   </div>
 </template>
 
 <script>
 import BookingStatusPath from "@/components/Booking/BookingStatusPath.vue";
-import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
-import CancellationRefundAudit from "@/components/Booking/CancellationRefundAudit.vue";
-import BookingPermissionService from "@/services/permissions/BookingPermissionService";
-import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
 import {
   INITIAL_STATE,
   initialStateChoices,
@@ -150,61 +100,27 @@ import {
   timePaidOf,
   timePaidParts,
 } from "@/utils/bookingForm";
-import {
-  BOOKING_STATUS,
-  isRejectedOrCancelled,
-  pathOf,
-  transitionActions,
-  transitionTarget,
-} from "@/utils/bookingStatus";
+import { BOOKING_STATUS, pathOf } from "@/utils/bookingStatus";
 
 /**
- * The status section of the edit form (spec E2, N4): the state as a
- * headline over its path, with the one action along the path as a button
- * and the side ways in the menu, each run by the mounted
- * `BookingTransitions`. Button and menu are locked while the form has
- * unsaved changes - there is no "save, then transition", and no transition
- * on the server's copy while the local one differs. At Abgelehnt /
- * Storniert the reason is edited under the path; the section reports the
- * edit as `update:rejection-reason` and leaves the booking to the form. The
- * form hears `transitioned` and `failed` and reloads the booking.
- *
- * In create mode (spec E10, N6) there is no state yet: the same headline is
- * the choice of the "Anfangszustand" - the draft's path with its segments
- * as radios, named with the state words. The choice stays the act: Angefragt
- * is `requested`, Zahlung offen is `confirmed`, Bestätigt is `paid` on a
- * priced draft (with the payment named under the line) and `confirmed` on a
- * free one. The section reports it as `update:initial-state`; the form turns
- * it into the create PUT's `status`.
+ * The "Anfangszustand" of the create form (spec E10, N6): there is no state
+ * yet, so the headline is the choice of the state the booking is born in -
+ * the draft's path with its segments as radios, named with the state words.
+ * The choice stays the act: Angefragt is `requested`, Zahlung offen is
+ * `confirmed`, Bestätigt is `paid` on a priced draft (with the payment named
+ * under the line) and `confirmed` on a free one. The component reports it as
+ * `update:initial-state`; the form turns it into the create PUT's `status`.
  */
 export default {
-  name: "BookingEditStatus",
-  components: {
-    BookingStatusPath,
-    BookingTransitions,
-    CancellationRefundAudit,
-  },
+  name: "BookingInitialState",
+  components: { BookingStatusPath },
   props: {
-    booking: {
-      type: Object,
-      required: true,
-    },
-    /** True while the form has unsaved changes; locks the actions. */
-    dirty: {
-      type: Boolean,
-      default: false,
-    },
-    /** The series the booking belongs to, with its `bookings` where the page loaded them populated. */
-    groupBooking: {
-      type: Object,
-      default: null,
-    },
-    /** Create mode: the price the booking will be created with, deciding whether Bezahlt is offered. */
+    /** The price the booking will be created with, deciding whether Bezahlt is offered. */
     priceEur: {
       type: Number,
       default: 0,
     },
-    /** Create mode: the form's `{ type, title }` payment methods. */
+    /** The form's `{ type, title }` payment methods. */
     paymentMethods: {
       type: Array,
       default: () => [],
@@ -212,7 +128,7 @@ export default {
   },
   data() {
     return {
-      // Create mode: the choice; its `timePaid` is derived from the pickers below.
+      // The choice; its `timePaid` is derived from the pickers below.
       initialState: { selection: INITIAL_STATE.REQUESTED, paymentMethod: null },
       paymentDate: null,
       paymentTime: null,
@@ -221,9 +137,6 @@ export default {
     };
   },
   computed: {
-    isCreateMode() {
-      return !this.booking.id;
-    },
     /** The choices the price allows; Bezahlt only with something to pay. */
     initialStateChoices() {
       return initialStateChoices(this.priceEur);
@@ -252,25 +165,6 @@ export default {
         new Date(this.paymentDate)
       );
     },
-    path() {
-      return pathOf(this.booking);
-    },
-    /** The state's transitions, for whoever may edit the booking - the gate the list and the drawer use. */
-    actions() {
-      if (!BookingPermissionService.allowUpdate(this.booking)) return [];
-      return transitionActions(this.booking.status);
-    },
-    rejectionReasonLabel() {
-      return this.booking.status === BOOKING_STATUS.CANCELLED
-        ? this.$t("booking.edit.reason.cancelled")
-        : this.$t("booking.edit.reason.rejected");
-    },
-    rejectionReasonRules() {
-      return [(v) => !!v?.trim() || this.$t("booking.edit.reason.required")];
-    },
-    cancellationRefundAudit() {
-      return getCancellationRefundAudit(this.booking);
-    },
   },
   watch: {
     /** Bezahlt is only offered with a price; a paid draft that turns free falls back to `confirmed`. */
@@ -284,19 +178,9 @@ export default {
     },
   },
   created() {
-    if (this.isCreateMode) {
-      this.emitInitialState();
-    }
+    this.emitInitialState();
   },
   methods: {
-    isRejectedOrCancelled,
-    transition(action) {
-      if (this.dirty) return;
-      this.$refs.transitions.start(
-        action,
-        transitionTarget(this.booking, this.groupBooking)
-      );
-    },
     /**
      * A segment names a state; the choice is the act that gets there:
      * Angefragt `requested`, Zahlung offen `confirmed`, Bestätigt `paid`

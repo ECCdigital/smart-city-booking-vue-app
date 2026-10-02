@@ -12,21 +12,10 @@ vi.mock("@/services/api/ApiBookingService", () => ({
     getBooking: vi.fn(),
     createBooking: vi.fn(),
     updateBooking: vi.fn(),
-    commitBooking: vi.fn(),
-    payBooking: vi.fn(),
-    rejectBooking: vi.fn(),
-    reinstateBooking: vi.fn(),
-    getCancellationRefundPreview: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiGroupBookingService", () => ({
-  default: {
-    commitGroupBooking: vi.fn(),
-    payGroupBooking: vi.fn(),
-    rejectGroupBooking: vi.fn(),
-    updateGroupBooking: vi.fn(),
-    getCancellationRefundPreview: vi.fn(),
-  },
+  default: { updateGroupBooking: vi.fn() },
 }));
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenantActivePaymentApps: vi.fn() },
@@ -36,9 +25,6 @@ vi.mock("@/services/api/ApiBookablesService", () => ({
 }));
 vi.mock("@/services/api/ApiCheckoutService", () => ({
   default: { validateCheckoutItem: vi.fn() },
-}));
-vi.mock("@/services/permissions/BookingPermissionService", () => ({
-  default: { allowUpdate: vi.fn(() => true) },
 }));
 vi.mock("@/components/Checkout/CheckoutCalendar.vue", () => ({
   default: {
@@ -55,7 +41,6 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 
 const CONFLICT_IN_CANCELLED =
   "Die Buchung ist inzwischen in einem anderen Zustand (Storniert).";
-const GONE = "Die Buchung existiert nicht mehr.";
 
 function booking(overrides = {}) {
   return {
@@ -113,33 +98,19 @@ async function mountEdit(propsData = {}) {
   return { wrapper, store };
 }
 
+/** A booking the form is to create: no id, no state yet. */
+function draft() {
+  return booking({ id: null, status: undefined, paymentProvider: "invoice" });
+}
+
 function inlineError(wrapper) {
-  return wrapper.find(".booking-transition-error");
+  return wrapper.find(".booking-create-error");
 }
 
-function actionButton(wrapper, label) {
-  return wrapper
-    .findAll("button.booking-action")
-    .wrappers.find((button) => button.text() === label);
-}
-
-function menuButton(wrapper) {
-  return wrapper.find("button.booking-action-menu");
-}
-
-/** Opens the headline's side-way menu and clicks the entry with `label`; the menu detaches into `data-app`. */
-async function clickMenuEntry(wrapper, label) {
-  await menuButton(wrapper).trigger("click");
-  await wrapper.vm.$nextTick();
-  const entry = Array.from(
-    document.querySelectorAll(".v-menu__content .booking-action-secondary")
-  ).find((candidate) => candidate.textContent.trim() === label);
-  entry.click();
-  await wrapper.vm.$nextTick();
-}
-
-function reasonInput(wrapper) {
-  return wrapper.find(".booking-status-reason textarea");
+/** The last toast the form raised; the toasts module keeps one list for every store. */
+function lastToast(store) {
+  const { collection } = store.state.toasts;
+  return collection[collection.length - 1];
 }
 
 function nameInput(wrapper) {
@@ -147,16 +118,6 @@ function nameInput(wrapper) {
     .findAllComponents({ name: "v-text-field" })
     .wrappers.find((field) => field.props("label") === "Name *")
     .find("input");
-}
-
-/** Clicks the button with `label` inside the open dialog of the transition module. */
-async function clickDialogButton(wrapper, label) {
-  const button = Array.from(
-    document.querySelectorAll(".v-dialog--active button")
-  ).find((el) => el.textContent.trim() === label);
-  button.click();
-  await flushPromises();
-  await wrapper.vm.$nextTick();
 }
 
 async function submit(wrapper) {
@@ -180,11 +141,12 @@ function putBody() {
 }
 
 /**
- * The form hosts the transition module through its status section (spec E2,
- * E3): a button runs a transition, the form reloads the booking afterwards,
- * and a refused one is shown inline (spec E5) with a reload after a 409 or
- * 404. The save PUT carries content only (spec E1.1); a create carries the
- * chosen initial state as `status` (spec E10). Nothing here sends a flag.
+ * The form edits content; the state is moved on the booking page (spec E2).
+ * An existing booking has no status section here - no actions, no reason,
+ * no refund audit - and the save PUT carries content only (spec E1.1). A
+ * create carries the chosen Anfangszustand as `status` (spec E10); a create
+ * the backend refuses is named at the Anfangszustand and as a toast (spec
+ * E5), an update refused only as a toast. Nothing here sends a flag.
  */
 describe("BookingEdit", () => {
   beforeEach(() => {
@@ -192,101 +154,24 @@ describe("BookingEdit", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    ApiBookingService.getCancellationRefundPreview.mockResolvedValue({
-      originalAmountEur: 25,
-    });
   });
 
-  describe("Ablehnen", () => {
-    async function reject(wrapper, refundPercentage) {
-      await clickMenuEntry(wrapper, "Ablehnen");
-      await flushPromises();
-      await wrapper.vm.$nextTick();
-      const dialog = wrapper.findComponent({
-        name: "BookingRejectConformationDialog",
-      });
-      dialog.vm.$emit(
-        "reject-booking",
-        "bk-1",
-        "Grund",
-        false,
-        undefined,
-        refundPercentage
-      );
-      await flushPromises();
-      await wrapper.vm.$nextTick();
-      return dialog;
-    }
+  describe("an existing booking", () => {
+    it.each(["requested", "rejected", "cancelled"])(
+      "shows no status section at %s - the booking page runs the transitions",
+      async (status) => {
+        const { wrapper } = await mountEdit({
+          booking: booking({ status, rejectionReason: "Zu spät" }),
+        });
 
-    it("shows the conflict inline and asks for a reload on a 409", async () => {
-      const { wrapper } = await mountEdit();
-      ApiBookingService.rejectBooking.mockRejectedValue(
-        lifecycleError(409, "invalid_transition", { status: "cancelled" })
-      );
-
-      const dialog = await reject(wrapper, 100);
-
-      expect(inlineError(wrapper).text()).toBe(CONFLICT_IN_CANCELLED);
-      expect(dialog.props("error")).toBe(CONFLICT_IN_CANCELLED);
-      expect(wrapper.emitted("reload")).toHaveLength(1);
-      expect(wrapper.emitted("saved")).toBeUndefined();
-    });
-
-    it("still reads the naked `invalid_refund_percentage` string of a 400", async () => {
-      const { wrapper } = await mountEdit();
-      const error = new Error("Request failed with status code 400");
-      error.response = { status: 400, data: "invalid_refund_percentage" };
-      ApiBookingService.rejectBooking.mockRejectedValue(error);
-
-      await reject(wrapper, 150);
-
-      expect(inlineError(wrapper).text()).toBe(
-        "Der Wert muss zwischen 0 und 100 liegen"
-      );
-      expect(wrapper.emitted("reload")).toBeUndefined();
-    });
-  });
-
-  describe("Wiederherstellen", () => {
-    async function reinstate(wrapper) {
-      await actionButton(wrapper, "Wiederherstellen").trigger("click");
-      await flushPromises();
-      await wrapper.vm.$nextTick();
-      await clickDialogButton(wrapper, "Wiederherstellen");
-    }
-
-    it("posts to the reinstate route and reloads the booking", async () => {
-      const { wrapper } = await mountEdit({
-        booking: booking({ status: "rejected" }),
-      });
-      ApiBookingService.reinstateBooking.mockResolvedValue({
-        success: true,
-        data: null,
-        errors: [],
-      });
-
-      await reinstate(wrapper);
-
-      expect(ApiBookingService.reinstateBooking).toHaveBeenCalledWith("bk-1");
-      savers().forEach((saver) => expect(saver).not.toHaveBeenCalled());
-      expect(wrapper.emitted("reload")).toHaveLength(1);
-      expect(wrapper.emitted("saved")).toBeUndefined();
-      expect(inlineError(wrapper).exists()).toBe(false);
-    });
-
-    it("says the booking is gone and asks for a reload on a 404", async () => {
-      const { wrapper } = await mountEdit({
-        booking: booking({ status: "rejected" }),
-      });
-      ApiBookingService.reinstateBooking.mockRejectedValue(
-        lifecycleError(404, "booking_not_found", { bookingId: "bk-1" })
-      );
-
-      await reinstate(wrapper);
-
-      expect(inlineError(wrapper).text()).toBe(GONE);
-      expect(wrapper.emitted("reload")).toHaveLength(1);
-    });
+        expect(
+          wrapper.findComponent({ name: "BookingInitialState" }).exists()
+        ).toBe(false);
+        expect(wrapper.find(".booking-status-path").exists()).toBe(false);
+        expect(wrapper.find("button.booking-action").exists()).toBe(false);
+        expect(wrapper.find(".booking-status-reason").exists()).toBe(false);
+      }
+    );
   });
 
   describe("the paid date", () => {
@@ -313,22 +198,6 @@ describe("BookingEdit", () => {
     });
   });
 
-  describe("the actions while the form is dirty", () => {
-    it("are locked once a field is edited, with the hint to save first", async () => {
-      const { wrapper } = await mountEdit();
-      expect(actionButton(wrapper, "Freigeben").element.disabled).toBe(false);
-
-      await nameInput(wrapper).setValue("Max Muster");
-      await wrapper.vm.$nextTick();
-
-      expect(actionButton(wrapper, "Freigeben").element.disabled).toBe(true);
-      expect(menuButton(wrapper).element.disabled).toBe(true);
-      expect(wrapper.find(".booking-status-hint").text()).toContain(
-        "Erst speichern"
-      );
-    });
-  });
-
   describe("Speichern", () => {
     it("sends content only on an update - no flag, no status", async () => {
       const { wrapper } = await mountEdit({
@@ -352,37 +221,28 @@ describe("BookingEdit", () => {
       expect(wrapper.emitted("saved")).toHaveLength(1);
     });
 
-    it("sends the reason typed under the path with a cancelled booking", async () => {
-      const { wrapper } = await mountEdit({
-        booking: booking({ status: "cancelled", rejectionReason: "Alt" }),
-      });
-      saveAnswers({ data: {} });
+    it.each(["rejected", "cancelled"])(
+      "saves a %s booking without a reason - the reason is asked where it is rejected or cancelled",
+      async (status) => {
+        const { wrapper } = await mountEdit({
+          booking: booking({ status, rejectionReason: null }),
+        });
+        saveAnswers({ data: {} });
+        await nameInput(wrapper).setValue("Max Muster");
 
-      await reasonInput(wrapper).setValue("Zu spät");
-      await wrapper.vm.$nextTick();
-      expect(actionButton(wrapper, "Wiederherstellen").element.disabled).toBe(
-        true
-      );
+        await submit(wrapper);
 
-      await submit(wrapper);
-
-      expect(putBody()).toMatchObject({
-        id: "bk-1",
-        rejectionReason: "Zu spät",
-      });
-    });
+        expect(ApiBookingService.updateBooking).toHaveBeenCalledTimes(1);
+        expect(putBody()).toMatchObject({ id: "bk-1", name: "Max Muster" });
+        expect(wrapper.emitted("saved")).toHaveLength(1);
+      }
+    );
 
     it("sends the chosen initial state and no flag on a create", async () => {
-      const { wrapper } = await mountEdit({
-        booking: booking({
-          id: null,
-          status: undefined,
-          paymentProvider: "invoice",
-        }),
-      });
+      const { wrapper } = await mountEdit({ booking: draft() });
       saveAnswers({ data: {} });
       wrapper
-        .findComponent({ name: "BookingEditStatus" })
+        .findComponent({ name: "BookingInitialState" })
         .vm.$emit("update:initial-state", {
           selection: "paid",
           paymentMethod: "CASH",
@@ -403,13 +263,7 @@ describe("BookingEdit", () => {
     });
 
     it("creates as Angefragt when nothing else was chosen", async () => {
-      const { wrapper } = await mountEdit({
-        booking: booking({
-          id: null,
-          status: undefined,
-          paymentProvider: "invoice",
-        }),
-      });
+      const { wrapper } = await mountEdit({ booking: draft() });
       saveAnswers({ data: {} });
 
       await submit(wrapper);
@@ -417,14 +271,10 @@ describe("BookingEdit", () => {
       expect(putBody().status).toBe("requested");
     });
 
-    it("names the missing payment inline when the create is refused with a 400", async () => {
-      const { wrapper } = await mountEdit({
-        booking: booking({
-          id: null,
-          status: undefined,
-          paymentProvider: "invoice",
-        }),
-      });
+    it("names the missing payment at the Anfangszustand and as a toast when the create is refused with a 400", async () => {
+      const { wrapper, store } = await mountEdit({ booking: draft() });
+      const MISSING_PAYMENT =
+        "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum.";
       saveFails(
         lifecycleError(400, "missing_payment_details", {
           status: "confirmed",
@@ -434,41 +284,79 @@ describe("BookingEdit", () => {
 
       await submit(wrapper);
 
-      expect(inlineError(wrapper).text()).toBe(
-        "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum."
-      );
+      expect(inlineError(wrapper).text()).toBe(MISSING_PAYMENT);
+      expect(
+        wrapper.findComponent({ name: "BookingInitialState" }).element
+          .nextElementSibling
+      ).toBe(inlineError(wrapper).element);
+      expect(lastToast(store)).toMatchObject({
+        type: "error",
+        title: "Fehler beim Erstellen",
+        message: MISSING_PAYMENT,
+      });
       expect(wrapper.emitted("reload")).toBeUndefined();
       expect(wrapper.emitted("saved")).toBeUndefined();
     });
 
-    it("shows the conflict inline and asks for a reload on a 409", async () => {
-      const { wrapper } = await mountEdit();
+    it("names a refused initial state at the Anfangszustand without a reload on a 400", async () => {
+      const { wrapper } = await mountEdit({ booking: draft() });
+      saveFails(lifecycleError(400, "invalid_status", { status: "cancelled" }));
+
+      await submit(wrapper);
+
+      expect(inlineError(wrapper).text()).toBe(
+        "In diesem Zustand kann keine Buchung angelegt werden."
+      );
+      expect(wrapper.emitted("reload")).toBeUndefined();
+    });
+
+    it("shows a conflict of the create at the Anfangszustand on a 409", async () => {
+      const { wrapper, store } = await mountEdit({ booking: draft() });
+      const CONFLICT = "Der Vorgang ist in diesem Zustand nicht möglich.";
+      saveFails(
+        lifecycleError(409, "compartments_unavailable", {
+          bookableId: "room-1",
+          capacity: 1,
+          occupied: 1,
+        })
+      );
+
+      await submit(wrapper);
+
+      expect(inlineError(wrapper).text()).toBe(CONFLICT);
+      expect(lastToast(store)).toMatchObject({ message: CONFLICT });
+      expect(wrapper.emitted("saved")).toBeUndefined();
+    });
+
+    it("clears the message on the next save", async () => {
+      const { wrapper } = await mountEdit({ booking: draft() });
+      saveFails(lifecycleError(400, "invalid_status", { status: "cancelled" }));
+      await submit(wrapper);
+      expect(inlineError(wrapper).exists()).toBe(true);
+
+      saveAnswers({ data: {} });
+      await submit(wrapper);
+
+      expect(inlineError(wrapper).exists()).toBe(false);
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("names a refused update as a toast only and asks for a reload on a 409", async () => {
+      const { wrapper, store } = await mountEdit();
       saveFails(
         lifecycleError(409, "invalid_transition", { status: "cancelled" })
       );
 
       await submit(wrapper);
 
-      expect(inlineError(wrapper).text()).toBe(CONFLICT_IN_CANCELLED);
+      expect(lastToast(store)).toMatchObject({
+        type: "error",
+        title: "Fehler beim Bearbeiten",
+        message: CONFLICT_IN_CANCELLED,
+      });
+      expect(inlineError(wrapper).exists()).toBe(false);
       expect(wrapper.emitted("reload")).toHaveLength(1);
       expect(wrapper.emitted("saved")).toBeUndefined();
-    });
-
-    it("names a refused status change inline without a reload on a 400", async () => {
-      const { wrapper } = await mountEdit();
-      saveFails(
-        lifecycleError(400, "invalid_status_change", {
-          status: "confirmed",
-          requested: "requested",
-        })
-      );
-
-      await submit(wrapper);
-
-      expect(inlineError(wrapper).text()).toBe(
-        "Dieser Statuswechsel ist nicht möglich."
-      );
-      expect(wrapper.emitted("reload")).toBeUndefined();
     });
   });
 });

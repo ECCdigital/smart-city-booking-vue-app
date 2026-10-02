@@ -393,7 +393,7 @@ describe("Home — a declined tenant", () => {
     ownedTenantIds = ["tenant-a"];
   });
 
-  it("names level, time and reason and where the own bookings are", () => {
+  it("names level, time and reason, without a pointer to the own bookings", () => {
     const wrapper = mountHome();
 
     const card = wrapper.find(".tenant-card");
@@ -405,9 +405,7 @@ describe("Home — a declined tenant", () => {
     expect(declined.find("[data-test='declined-reason']").text()).toBe(
       "Begründung: „Kein Impressum“"
     );
-    expect(declined.text()).toContain(
-      "Deine eigenen Buchungen findest du weiter unter „Meine Buchungen“."
-    );
+    expect(declined.text()).not.toContain("Meine Buchungen");
   });
 
   it("writes no reason line when the change came without one", () => {
