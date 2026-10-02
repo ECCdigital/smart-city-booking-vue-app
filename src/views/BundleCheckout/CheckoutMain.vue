@@ -282,7 +282,6 @@ export default {
         props: {
           leadItem: this.leadItem,
           subsequentItems: this.subsequentItems,
-          maxSquares: this.leadItem.bookable.amount,
         },
         events: {
           back: this.previousPage,
@@ -790,7 +789,6 @@ export default {
           return {
             leadItem: this.leadItem,
             subsequentItems: this.subsequentItems,
-            maxSquares: this.leadItem.bookable.amount,
           };
         } else if (currentStep.component === "additional-bookables") {
           return {

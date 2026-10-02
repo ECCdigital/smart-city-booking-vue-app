@@ -131,8 +131,9 @@
                 <v-btn
                   icon
                   x-small
+                  class="increase-amount"
                   @click="increaseItemAmount(item)"
-                  :disabled="item.mandatory"
+                  :disabled="item.mandatory || atAmountLimit(item)"
                 >
                   <v-icon>mdi-plus</v-icon>
                 </v-btn>
@@ -318,6 +319,7 @@ import CheckoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
+import { bookingAmountLimit } from "@/utils/bookingAmountLimit";
 import { getCheckoutErrorToastKey } from "@/utils/checkoutErrors";
 import { isAwaitingPayment } from "@/utils/bookingStatus";
 import { continuesToProvider } from "@/utils/checkoutNextStep";
@@ -440,7 +442,16 @@ export default {
       this.$emit("validate-items");
     },
 
+    // Only the lead item stops at its limit here; an add-on's limit is the
+    // backend's refusal to say.
+    atAmountLimit(item) {
+      if (item !== this.leadItem) return false;
+      const { max } = bookingAmountLimit(item.bookable);
+      return max !== null && Number(item.amount) >= max;
+    },
+
     increaseItemAmount(item) {
+      if (this.atAmountLimit(item)) return;
       item.amount++;
       this.setAmountOfMandatoryItems(item);
 

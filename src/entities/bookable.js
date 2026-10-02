@@ -19,6 +19,7 @@ export default class Bookable {
 
     this.isBookable = false;
     this.amount = null;
+    this.maxAmountPerBooking = null;
     this.minBookingDuration = null;
     this.maxBookingDuration = null;
     this.autoCommitBooking = false;

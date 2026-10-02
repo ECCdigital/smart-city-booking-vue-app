@@ -19,7 +19,15 @@
     </div>
     <h2>Anzahl</h2>
     <p>Bitte wählen Sie die Anzahl an Quadratmetern, die Sie buchen möchten.</p>
-    <p class="text-caption" v-if="maxSquares">
+    <p class="text-caption amount-limit" v-if="amountLimit.perBooking">
+      {{
+        $t("checkout.amountLimit.perBookingCaption", {
+          max: maxSquares,
+          unit: unit,
+        })
+      }}
+    </p>
+    <p class="text-caption amount-limit" v-else-if="maxSquares">
       Maximal verfügbar:
       {{ maxSquares }}
     </p>
@@ -62,6 +70,8 @@
 </template>
 
 <script>
+import { amountUnit, bookingAmountLimit } from "@/utils/bookingAmountLimit";
+
 export default {
   name: "CheckoutAmountSelector",
   props: {
@@ -73,27 +83,38 @@ export default {
       type: Boolean,
       default: true,
     },
-    maxSquares: {
-      type: Number,
-      default: 100,
-    },
   },
   computed: {
     isNextButtonDisabled() {
       return !this.leadItem.valid;
+    },
+    // The stricter of the capacity and the Höchstmenge je Buchung; null when
+    // neither limits the booking.
+    amountLimit() {
+      return bookingAmountLimit(this.leadItem.bookable);
+    },
+    maxSquares() {
+      return this.amountLimit.max;
+    },
+    unit() {
+      return amountUnit(this.leadItem.bookable);
     },
     squareMeterRules() {
       return [
         (value) =>
           value && value > 0 ? true : "Bitte einen Wert > 0 eingeben",
         (value) => {
-          if (this.maxSquares !== null) {
-            return value <= this.maxSquares
-              ? true
-              : `Maximal sind ${this.maxSquares} Quadratmeter möglich`;
-          } else {
+          if (this.maxSquares === null || value <= this.maxSquares) {
             return true;
           }
+          if (this.amountLimit.perBooking) {
+            return this.$t("checkout.amountLimit.perBooking", {
+              title: this.leadItem.bookable?.title,
+              max: this.maxSquares,
+              unit: this.unit,
+            });
+          }
+          return `Maximal sind ${this.maxSquares} Quadratmeter möglich`;
         },
       ];
     },

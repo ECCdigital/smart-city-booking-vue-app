@@ -249,3 +249,71 @@ describe("BookableEditPrice - when the panel applies", () => {
     });
   });
 });
+
+/**
+ * The Höchstmenge je Buchung sits beside the capacity and limits one booking
+ * of the bookable. Empty is unlimited and is saved as null - the backend
+ * refuses an empty string or 0. A provider handling `maxAmount` locks the
+ * capacity, not this field: both limits apply.
+ */
+describe("BookableEditPrice - Höchstmenge je Buchung", () => {
+  beforeEach(() => {
+    ApiHolidaysService.getHolidays.mockResolvedValue({ data: [] });
+  });
+
+  function field(wrapper) {
+    return wrapper.find(".max-amount-per-booking");
+  }
+
+  it("says the Höchstmenge is unlimited while it is empty", async () => {
+    const wrapper = await mountPrice({ maxAmountPerBooking: null });
+
+    expect(field(wrapper).text()).toContain("Höchstmenge je Buchung");
+    expect(field(wrapper).text()).toContain("Höchstmenge ist unbegrenzt!");
+    expect(field(wrapper).find("input").element.value).toBe("");
+  });
+
+  it("stays editable while the provider handles maxAmount", async () => {
+    const wrapper = await mountPrice();
+
+    expect(field(wrapper).find("input").attributes("disabled")).toBe(undefined);
+  });
+
+  it("keeps a typed limit as a number", async () => {
+    const wrapper = await mountPrice({ maxAmountPerBooking: null });
+
+    await field(wrapper).find("input").setValue("3");
+
+    expect(wrapper.props("bookable").maxAmountPerBooking).toBe(3);
+    expect(field(wrapper).text()).not.toContain("unbegrenzt");
+  });
+
+  it("saves an emptied field as null, not as an empty string", async () => {
+    const wrapper = await mountPrice({ maxAmountPerBooking: 3 });
+
+    await field(wrapper).find("input").setValue("");
+
+    expect(wrapper.props("bookable").maxAmountPerBooking).toBeNull();
+    expect(field(wrapper).text()).toContain("Höchstmenge ist unbegrenzt!");
+  });
+
+  it("refuses 0 and a fraction", async () => {
+    const wrapper = await mountPrice({ maxAmountPerBooking: null });
+
+    for (const value of ["0", "2.5"]) {
+      await field(wrapper).find("input").setValue(value);
+      await flushPromises();
+      expect(field(wrapper).text()).toContain(
+        "Bitte eine ganze Zahl ab 1 eingeben"
+      );
+    }
+  });
+
+  it("names the unit of the price type", async () => {
+    const perItem = await mountPrice({ priceType: "per-item" });
+    expect(field(perItem).text()).toContain("Stück");
+
+    const perSquareMeter = await mountPrice({ priceType: "per-square-meter" });
+    expect(field(perSquareMeter).text()).toContain("m²");
+  });
+});
