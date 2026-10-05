@@ -133,38 +133,48 @@ export default {
   },
 
   methods: {
+    /**
+     * The add-ons of the lead item, one direct link each
+     * (`GET bookables/public/:id`), as `CheckoutMain` loads the lead and
+     * the subsequent items. Since backend 4.3 the public list carries the
+     * listed offers only (`isPublic`), while an add-on - a caterer, a
+     * standing table - is usually not listed; a direct link reaches it
+     * anyway. An add-on out of reach is left out, the others stay.
+     */
     async fetchBookables() {
-      try {
-        const response = await ApiBookablesService.getPublicBookables(
-          this.leadItem.bookable.tenantId
-        );
+      const checkoutBookableIds =
+        this.leadItem.bookable.checkoutBookableIds ?? [];
+      const tenantId = this.leadItem.bookable.tenantId;
 
-        this.items = response.data
-          .filter((bookable) => {
-            return this.leadItem.bookable.checkoutBookableIds.find(
-              (cb) => cb.bookableId === bookable.id
-            );
-          })
-          .map((bookable) => {
-            const checkoutInfo =
-              this.leadItem.bookable.checkoutBookableIds.find(
-                (cb) => cb.bookableId === bookable.id
-              );
+      const results = await Promise.allSettled(
+        checkoutBookableIds.map(async (checkoutInfo) => {
+          const { data } = await ApiBookablesService.getPublicBookable(
+            checkoutInfo.bookableId,
+            tenantId
+          );
+          return {
+            bookable: data,
+            isAvailable: null,
+            mandatory: checkoutInfo.mandatory ?? false,
+          };
+        })
+      );
 
-            return {
-              bookable: bookable,
-              isAvailable: null,
-              mandatory: checkoutInfo?.mandatory ?? false,
-            };
-          });
-
-        for (const item of this.items) {
-          if (item.mandatory) {
-            this.selectMandatoryItem(item.bookable, this.leadItem.amount);
-          }
+      this.items = results.flatMap((result) => {
+        if (result.status === "fulfilled") {
+          return [result.value];
         }
-      } catch (error) {
-        console.error(error);
+        // Out of reach is the expected case; anything else is worth a log.
+        if (result.reason?.response?.status !== 404) {
+          console.error(result.reason);
+        }
+        return [];
+      });
+
+      for (const item of this.items) {
+        if (item.mandatory) {
+          this.selectMandatoryItem(item.bookable, this.leadItem.amount);
+        }
       }
     },
 
