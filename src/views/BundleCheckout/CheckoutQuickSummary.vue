@@ -307,8 +307,7 @@
         :disabled="!allItemsValid"
         block
       >
-        <span v-if="isAutoCommit">Buchung abschließen</span>
-        <span v-else>Buchungsanfrage senden</span>
+        <span>Zahlungspflichtig buchen</span>
       </v-btn>
     </div>
   </div>
