@@ -155,12 +155,12 @@
     </v-card-text>
 
     <v-alert
-        v-if="couponError"
-        type="error"
-        border="left"
-        class="mt-5"
-        elevation="2"
-        icon="mdi-alert-circle"
+      v-if="couponError"
+      type="error"
+      border="left"
+      class="mt-5"
+      elevation="2"
+      icon="mdi-alert-circle"
     >
       <template v-slot:default>
         {{ couponError }}
@@ -212,8 +212,7 @@
         :disabled="!allItemsValid"
         block
       >
-        <span v-if="isAutoCommit">Buchung abschließen</span>
-        <span v-else>Buchungsanfrage senden</span>
+        <span>Zahlungspflichtig buchen</span>
       </v-btn>
     </div>
   </div>
