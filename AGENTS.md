@@ -84,9 +84,17 @@ Details: [docs/agents/coding-standards.md](docs/agents/coding-standards.md)
 | Auth transports (`direct` / `bff`) | [src/services/auth/](src/services/auth/) |
 | Keycloak realm (the guide in the tab „Single Sign-On“ as the one source; what follows a new requirement on the realm or changed SSO paths) | [docs/agents/keycloak-realm.md](docs/agents/keycloak-realm.md) |
 
+## Branches
+
+- Work and pull requests go to the newest `version/<major>.<minor>.x`; fixes go to the oldest maintained `version/<major>.<minor>.x` that has the bug and are merged forward from there
+- `develop` is the default branch but gets nothing directly; it is brought up to the newest `version/…` branch by hand
+- When opening a pull request, switch its base by hand from `develop` to the `version/…` branch named above
+
+Rule in full: [README.md](README.md#versions--branches)
+
 ## Guardrails
 
-- Do **not** change version branches (`version/3.x`, `version/4.x`) unless explicitly asked
+- Do **not** push to, merge into or reset `develop` or a `version/…` branch unless explicitly asked
 - Do **not** commit without being asked
 - Do **not** add dependencies without good reason
 - Do **not** upgrade to Vue 3 or Vuetify 3 unless explicitly asked
