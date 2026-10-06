@@ -1,182 +1,164 @@
 <template>
-  <v-container class="text-center">
-    <v-card outlined max-width="500" class="mx-auto mt-sm-10">
-      <v-card-text class="text-center pa-10">
-        <v-img :src="appLogo" max-width="200" class="mx-auto" />
+  <AuthPage title="Registrieren" icon="mdi-account-plus-outline">
+    <v-form ref="form" class="scb-form" @submit.prevent="register">
+      <div class="scb-form__row">
+        <v-text-field
+          background-color="accent"
+          filled
+          dense
+          hide-details="auto"
+          label="Vorname"
+          v-model="firstName"
+          :rules="firstNameRules"
+          name="firstName"
+          autocomplete="given-name"
+        ></v-text-field>
+        <v-text-field
+          background-color="accent"
+          filled
+          dense
+          hide-details="auto"
+          label="Nachname"
+          v-model="lastName"
+          :rules="lastNameRules"
+          name="lastName"
+          autocomplete="family-name"
+        ></v-text-field>
+      </div>
+      <v-text-field
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="Organisation (optional)"
+        class="mt-4"
+        v-model="company"
+        name="company"
+        autocomplete="organization"
+      ></v-text-field>
+      <v-text-field
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="E-Mail-Adresse"
+        class="mt-4"
+        v-model="id"
+        :rules="emailRules"
+        name="email"
+        type="email"
+        autocomplete="email"
+      ></v-text-field>
+      <div class="scb-form__row mt-4">
+        <v-text-field
+          background-color="accent"
+          filled
+          dense
+          hide-details="auto"
+          label="Passwort"
+          hint="Mindestens 8 Zeichen."
+          persistent-hint
+          v-model="password"
+          :type="showPassword ? 'text' : 'password'"
+          :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+          @click:append="showPassword = !showPassword"
+          :rules="passwordRules"
+          name="new-password"
+          id="new-password"
+          autocomplete="new-password"
+        ></v-text-field>
+        <v-text-field
+          background-color="accent"
+          filled
+          dense
+          hide-details="auto"
+          label="Passwort wiederholen"
+          v-model="passwordRepeat"
+          :type="showPassword ? 'text' : 'password'"
+          :rules="passwordCheckRule"
+          name="confirm-password"
+          id="confirm-password"
+          autocomplete="new-password"
+        ></v-text-field>
+      </div>
 
-        <h2 class="mt-8 mb-2">Registrieren</h2>
-        <p class="subtitle-2 mb-10">Erstellen Sie einen Account.</p>
-
-        <form @submit.prevent="register" action="/register" method="post">
-          <v-form ref="form">
-            <div class="d-flex flex-row">
-              <v-text-field
-                outlined
-                hide-details
-                label="Vorname"
-                placeholder="John"
-                prepend-inner-icon="mdi-account"
-                class="mb-5 mr-2"
-                v-model="firstName"
-                :rules="firstNameRules"
-                name="firstName"
-                autocomplete="given-name"
-              ></v-text-field>
-              <v-text-field
-                outlined
-                hide-details
-                label="Nachname"
-                placeholder="Doe"
-                prepend-inner-icon="mdi-account"
-                class="mb-5"
-                v-model="lastName"
-                :rules="lastNameRules"
-                name="lastName"
-                autocomplete="family-name"
-              ></v-text-field>
-            </div>
-            <v-text-field
-              outlined
-              hide-details
-              label="Firma"
-              placeholder="Company"
-              prepend-inner-icon="mdi-home"
-              class="mb-5"
-              v-model="company"
-              name="company"
-              autocomplete="organization"
-            ></v-text-field>
-            <v-text-field
-              outlined
-              label="Email Adresse"
-              placeholder="jemand@domain.de"
-              prepend-inner-icon="mdi-email"
-              hide-details
-              class="mb-5"
-              v-model="id"
-              :rules="emailRules"
-              name="email"
-              type="email"
-              autocomplete="email"
-            ></v-text-field>
-            <div class="d-flex flex-row">
-              <v-text-field
-                outlined
-                label="Passwort"
-                placeholder="Ihr Passwort"
-                prepend-inner-icon="mdi-key"
-                class="mr-2"
-                v-model="password"
-                :type="showPassword ? 'text' : 'password'"
-                :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                @click:append="showPassword = !showPassword"
-                :rules="passwordRules"
-                validate-on="lazy input"
-                name="new-password"
-                id="new-password"
-                autocomplete="new-password"
-              ></v-text-field>
-              <v-text-field
-                outlined
-                label="Passwort wiederholen"
-                placeholder="Ihr Passwort"
-                prepend-inner-icon="mdi-key"
-                v-model="passwordRepeat"
-                :type="showPassword ? 'text' : 'password'"
-                :rules="passwordCheckRule"
-                name="confirm-password"
-                id="confirm-password"
-                autocomplete="new-password"
-              ></v-text-field>
-            </div>
-
-            <ContactInformation />
-
-            <div
-              v-if="requiresDataProtection || requiresTerms"
-              class="mt-2 text-left"
-            >
-              <v-checkbox
-                v-if="requiresDataProtection"
-                v-model="acceptedDataProtection"
-                :rules="dataProtectionAcceptRules"
-                hide-details="auto"
-                class="mt-0"
+      <div
+        v-if="requiresDataProtection || requiresTerms"
+        class="scb-form__consent mt-4"
+      >
+        <v-checkbox
+          v-if="requiresDataProtection"
+          v-model="acceptedDataProtection"
+          :rules="dataProtectionAcceptRules"
+          hide-details="auto"
+          dense
+          class="mt-0 pt-0"
+        >
+          <template v-slot:label>
+            <span>
+              Ich habe die
+              <a
+                :href="dataProtectionHref"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+                >Datenschutzerklärung</a
               >
-                <template v-slot:label>
-                  <span>
-                    Ich habe die
-                    <a
-                      :href="dataProtectionHref"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      @click.stop
-                      >Datenschutzerklärung</a
-                    >
-                    gelesen und akzeptiere sie.
-                  </span>
-                </template>
-              </v-checkbox>
-              <v-checkbox
-                v-if="requiresTerms"
-                v-model="acceptedTerms"
-                :rules="termsAcceptRules"
-                hide-details="auto"
-                class="mt-0"
-              >
-                <template v-slot:label>
-                  <span>
-                    Ich akzeptiere die
-                    <a
-                      :href="termsHref"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      @click.stop
-                      >Allgemeinen Geschäftsbedingungen</a
-                    >.
-                  </span>
-                </template>
-              </v-checkbox>
-            </div>
+              gelesen und stimme ihr zu.
+            </span>
+          </template>
+        </v-checkbox>
+        <v-checkbox
+          v-if="requiresTerms"
+          v-model="acceptedTerms"
+          :rules="termsAcceptRules"
+          hide-details="auto"
+          dense
+          class="mt-0 pt-0"
+          :class="{ 'mt-2': requiresDataProtection }"
+        >
+          <template v-slot:label>
+            <span>
+              Ich akzeptiere die
+              <a
+                :href="termsHref"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+                >Allgemeinen Geschäftsbedingungen</a
+              >.
+            </span>
+          </template>
+        </v-checkbox>
+      </div>
 
-            <input type="submit" style="display: none" />
-          </v-form>
-        </form>
-      </v-card-text>
-      <v-card-actions class="px-10 pb-5">
-        <v-btn to="/login" outlined>Konto vorhanden?</v-btn>
-        <v-spacer></v-spacer>
-        <v-btn color="primary" elevation="0" @click="register" type="submit">
-          Registrieren
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-
-    <v-card
-      v-if="legalLinks.length"
-      elevation="0"
-      max-width="500"
-      class="mx-auto mt-2"
-    >
-      <v-card-text class="text-right pa-0">
-        <template v-for="(doc, i) in legalLinks">
-          <span :key="doc.key">
-            <a :href="doc.url" target="_blank" rel="noopener noreferrer">{{
-              doc.label
-            }}</a>
-            <span v-if="i < legalLinks.length - 1"> | </span>
-          </span>
-        </template>
-      </v-card-text>
-    </v-card>
-  </v-container>
+      <v-btn
+        type="submit"
+        color="primary"
+        block
+        elevation="0"
+        class="scb-form__submit mt-4"
+      >
+        Registrieren
+      </v-btn>
+      <p class="scb-form__switch mt-4 mb-0">
+        <span class="text--secondary">Haben Sie bereits ein Konto?</span>
+        <router-link :to="loginRoute" class="scb-form__link">
+          Anmelden
+        </router-link>
+      </p>
+    </v-form>
+  </AuthPage>
 </template>
 <script>
 import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { mapActions, mapGetters } from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
-import ContactInformation from "@/components/ContactInformation.vue";
+import AuthPage from "@/components/Auth/AuthPage.vue";
+import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
+import { isSafeInternalRedirect } from "@/utils/safeRedirect";
+import { rateLimitMessage, rateLimitOf } from "@/utils/rateLimit";
 
 export default {
   computed: {
@@ -184,11 +166,6 @@ export default {
       instance: "instance/instance",
       nextUrl: "authStore/nextUrl",
     }),
-    appLogo() {
-      return process.env.BASE_URL && process.env.BASE_URL.trim()
-        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
-        : "/app-logo.png";
-    },
     dataProtection() {
       return this.instance?.dataProtection || {};
     },
@@ -202,21 +179,25 @@ export default {
       return !!this.termsAndConditions.url;
     },
     dataProtectionHref() {
-      return this.legalHref(this.dataProtection.url);
+      return legalDocumentHref(this.dataProtection.url);
     },
     termsHref() {
-      return this.legalHref(this.termsAndConditions.url);
+      return legalDocumentHref(this.termsAndConditions.url);
     },
-    legalLinks() {
-      const links = [];
-      const add = (key, label) => {
-        const url = this.legalHref(this.instance?.[key]?.url);
-        if (url) links.push({ key, label, url });
-      };
-      add("dataProtection", "Datenschutz");
-      add("legalNotice", "Impressum");
-      add("termsAndConditions", "AGB");
-      return links;
+    /**
+     * The return target (backend: `nextUrl`) the verification mail carries
+     * back to the login; only a safe in-app path leaves this page.
+     */
+    returnTarget() {
+      return isSafeInternalRedirect(this.nextUrl, this.$router)
+        ? this.nextUrl
+        : null;
+    },
+    /** The way back to the login: the return target travels along. */
+    loginRoute() {
+      return this.returnTarget
+        ? { name: "login", query: { next: this.returnTarget } }
+        : { name: "login" };
     },
     invitationParams() {
       const url = this.nextUrl;
@@ -235,7 +216,7 @@ export default {
       return { token, tenantId };
     },
   },
-  components: { ContactInformation },
+  components: { AuthPage },
   data() {
     return {
       id: "",
@@ -251,9 +232,7 @@ export default {
       dataProtectionAcceptRules: [
         (v) => v === true || "Bitte stimmen Sie der Datenschutzerklärung zu",
       ],
-      termsAcceptRules: [
-        (v) => v === true || "Bitte stimmen Sie den AGB zu",
-      ],
+      termsAcceptRules: [(v) => v === true || "Bitte stimmen Sie den AGB zu"],
       tenants: [],
       tenantRules: [(v) => !!v || "Mandant ist erforderlich"],
       firstNameRules: [(v) => !!v || "Vorname ist erforderlich"],
@@ -285,10 +264,6 @@ export default {
       addToast: "toasts/add",
       updateNextUrl: "authStore/setNextUrl",
     }),
-    legalHref(url) {
-      if (!url) return "";
-      return /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
-    },
     buildLegalAcceptance() {
       const acceptance = {};
       const acceptedAt = new Date().toISOString();
@@ -323,7 +298,7 @@ export default {
           this.lastName,
           this.company,
           this.password,
-          this.nextUrl,
+          this.returnTarget,
           this.buildLegalAcceptance(),
           invitationToken,
           invitationTenantId
@@ -341,12 +316,13 @@ export default {
             }
           })
           .catch((error) => {
-            const status = error.response?.status;
-            if (status === 401) {
+            const limit = rateLimitOf(error);
+            if (limit) {
+              const { key, params } = rateLimitMessage(limit);
               this.addToast(
-                ToastService.createToast("register.error.wrong-email", "error")
+                ToastService.createToast(key, "error", 10000, params)
               );
-            } else if (status === 400) {
+            } else if (error.response?.status === 400) {
               this.addToast(
                 ToastService.createToast(
                   "register.error.information-missing",

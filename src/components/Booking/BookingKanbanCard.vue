@@ -26,14 +26,22 @@
           </v-btn>
         </template>
         <v-list dense>
-          <v-list-item @click.stop="onOpenBooking(element.bookingItem.id)">
+          <v-list-item
+            @click.stop="onOpenBooking(element.bookingItem.id)"
+            :disabled="!BookingPermissionService.allowRead(element.bookingItem)"
+          >
             <v-list-item-icon>
               <v-icon small>mdi-information</v-icon>
             </v-list-item-icon>
             <v-list-item-title>Details</v-list-item-title>
           </v-list-item>
 
-          <v-list-item @click.stop="onOpenEditBooking(element.bookingItem.id)">
+          <v-list-item
+            @click.stop="onOpenEditBooking(element.bookingItem.id)"
+            :disabled="
+              !BookingPermissionService.allowUpdate(element.bookingItem)
+            "
+          >
             <v-list-item-icon>
               <v-icon small>mdi-pencil</v-icon>
             </v-list-item-icon>
@@ -43,6 +51,7 @@
           <v-list-item
             v-if="element.bookingItem?.groupBooking"
             @click.stop="onOpenGroupBooking(element.bookingItem.groupBooking)"
+            :disabled="!BookingPermissionService.allowRead(element.bookingItem)"
           >
             <v-list-item-icon>
               <v-icon small>mdi-calendar-multiple</v-icon>
@@ -52,21 +61,30 @@
 
           <v-divider />
 
-          <v-list-item @click.stop="commitBooking(element.bookingItem.id)">
+          <v-list-item
+            v-for="action in transitionActions(element.bookingItem?.status)"
+            :key="action"
+            :disabled="
+              !BookingPermissionService.allowUpdate(element.bookingItem)
+            "
+            @click.stop="transition(action, element.bookingItem.id)"
+          >
             <v-list-item-icon>
-              <v-icon small color="success">mdi-check-circle</v-icon>
+              <v-icon small :color="actionColor(action)">
+                {{ actionIcon(action) }}
+              </v-icon>
             </v-list-item-icon>
-            <v-list-item-title>Freigeben</v-list-item-title>
+            <v-list-item-title>
+              {{ actionLabel(action, element.bookingItem.status) }}
+            </v-list-item-title>
           </v-list-item>
 
-          <v-list-item @click.stop="payBooking(element.bookingItem.id)">
-            <v-list-item-icon>
-              <v-icon small color="success">mdi-cash-check</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>Bezahlt</v-list-item-title>
-          </v-list-item>
-
-          <v-list-item @click.stop="archiveTask(element.id)">
+          <v-list-item
+            @click.stop="archiveTask(element.id)"
+            :disabled="
+              !BookingPermissionService.allowUpdate(element.bookingItem)
+            "
+          >
             <v-list-item-icon>
               <v-icon small>mdi-archive</v-icon>
             </v-list-item-icon>
@@ -80,6 +98,9 @@
                 { added: { element: { id: element.id }, newIndex: 0 } },
                 'backlog'
               )
+            "
+            :disabled="
+              !BookingPermissionService.allowUpdate(element.bookingItem)
             "
           >
             <v-list-item-icon>
@@ -118,24 +139,25 @@
     <div class="d-flex align-center justify-space-between px-2 pb-2">
       <div class="d-flex align-center flex-wrap" style="gap: 4px">
         <v-chip
-          v-if="showPaymentStatusChip"
+          v-if="element.bookingItem?.status"
           x-small
-          :color="getPaymentStatusColor(element.bookingItem)"
-          :text-color="getPaymentStatusTextColor(element.bookingItem)"
+          :color="statusColor(element.bookingItem.status)"
+          text-color="white"
         >
           <v-icon x-small left>{{
-            getPaymentStatusIcon(element.bookingItem)
+            statusIcon(element.bookingItem.status)
           }}</v-icon>
-          {{ getPaymentStatusLabel(element.bookingItem) }}
+          {{ statusLabel(element.bookingItem.status) }}
         </v-chip>
 
         <v-chip
-          v-if="element.bookingItem?.isCommitted"
+          v-if="isFree(element.bookingItem)"
           x-small
-          color="primary"
-          text-color="white"
+          :color="freeChip.color"
+          :text-color="freeChip.textColor"
         >
-          Freigegeben
+          <v-icon x-small left>{{ freeChip.icon }}</v-icon>
+          {{ freeChip.label }}
         </v-chip>
       </div>
 
@@ -153,19 +175,21 @@
 </template>
 
 <script>
-import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
+import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
-  getPaymentStatus,
-  getPaymentStatusColor,
-  getPaymentStatusIcon,
-  getPaymentStatusLabel,
-  getPaymentStatusTextColor,
-  PAYMENT_STATUS,
-} from "@/utils/bookingPaymentStatus";
+  actionColor,
+  actionIcon,
+  actionLabel,
+  freeMarker,
+  isFree,
+  statusColor,
+  statusIcon,
+  statusLabel,
+  transitionActions,
+} from "@/utils/bookingStatus";
 
 export default {
   name: "BookingKanbanCard",
-  components: { BookingRejectConformationDialog },
   props: {
     element: {
       type: Object,
@@ -180,12 +204,10 @@ export default {
       default: false,
     },
   },
-  data() {
-    return {
-      dialogOpen: false,
-    };
-  },
   computed: {
+    BookingPermissionService() {
+      return BookingPermissionService;
+    },
     bookableTitle() {
       return this.element.bookingItem?.bookableItems?.[0]?._bookableUsed?.title;
     },
@@ -200,17 +222,19 @@ export default {
       if (days >= 2) return "duration--warning";
       return "duration--ok";
     },
-    showPaymentStatusChip() {
-      const booking = this.element.bookingItem;
-      if (!booking) return false;
-      return getPaymentStatus(booking) !== PAYMENT_STATUS.UNPAID;
+    freeChip() {
+      return freeMarker();
     },
   },
   methods: {
-    getPaymentStatusLabel,
-    getPaymentStatusColor,
-    getPaymentStatusIcon,
-    getPaymentStatusTextColor,
+    actionColor,
+    actionIcon,
+    actionLabel,
+    isFree,
+    statusColor,
+    statusIcon,
+    statusLabel,
+    transitionActions,
     onOpenBooking(bookingId) {
       this.$emit("open-booking", bookingId);
     },
@@ -224,25 +248,15 @@ export default {
       if (!text) return "";
       return text.length > max ? text.slice(0, max - 1) + "…" : text;
     },
-    commitBooking(bookingId) {
-      this.$emit("commit-booking", bookingId);
-    },
-    rejectBooking(bookingId, reason = "", skipCancellation = false) {
-      console.log("rejectBooking", bookingId, reason, skipCancellation);
-      this.dialogOpen = false;
-      this.$emit("reject-booking", bookingId, reason, skipCancellation);
-    },
-    onRejectBooking() {
-      this.dialogOpen = true;
+    /** A transition of `BOOKING_ACTION`; the host runs it through `BookingTransitions`. */
+    transition(action, bookingId) {
+      this.$emit("transition", action, bookingId);
     },
     archiveTask(taskId) {
       this.$emit("archive-task", taskId);
     },
     moveTask(event, status) {
       this.$emit("move-task", event, status);
-    },
-    payBooking(bookingId) {
-      this.$emit("pay-booking", bookingId);
     },
   },
 };

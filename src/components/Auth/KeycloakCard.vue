@@ -2,8 +2,11 @@
 import keycloakService from "@/services/KeycloakService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { isBffAuthMode } from "@/services/auth/authMode";
+import { directRedirects } from "@/services/auth/directRedirects";
 import { mapActions, mapGetters } from "vuex";
 import ToastService from "@/services/ToastService";
+import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
+import { isSafeInternalRedirect } from "@/utils/safeRedirect";
 
 export default {
   name: "KeycloakCard",
@@ -48,10 +51,10 @@ export default {
       return !!this.termsAndConditions.url;
     },
     dataProtectionHref() {
-      return this.legalHref(this.dataProtection.url);
+      return legalDocumentHref(this.dataProtection.url);
     },
     termsHref() {
-      return this.legalHref(this.termsAndConditions.url);
+      return legalDocumentHref(this.termsAndConditions.url);
     },
     canSignUp() {
       if (this.requiresDataProtection && !this.acceptedDataProtection)
@@ -80,7 +83,9 @@ export default {
       try {
         keycloakService.setConfig(this.ssoConfig);
 
-        await keycloakService.login();
+        await keycloakService.login(
+          directRedirects(window.location.origin).login
+        );
 
         if (keycloakService.isAuthenticated) {
           this.setState(this.possibleStates.KC_AUTH_SUCCESS);
@@ -122,13 +127,15 @@ export default {
       }
 
       this.loading = true;
-      const redirect =
-        this.nextUrl ||
-        (() => {
-          const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
-          return base ? `${base}/` : "/";
-        })();
-      ApiAuthService.startSsoLogin(redirect);
+      ApiAuthService.startSsoLogin(this.bffReturnTarget());
+    },
+    /** The BFF leads the browser there, so the target carries the router base. */
+    bffReturnTarget() {
+      if (isSafeInternalRedirect(this.nextUrl, this.$router)) {
+        return this.$router.resolve(this.nextUrl).href;
+      }
+      const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
+      return base ? `${base}/` : "/";
     },
     async afterSignIn(user, permissions, redirectHint) {
       await this.updateUser({ user, permissions });
@@ -141,9 +148,9 @@ export default {
         return;
       }
 
-      if (this.nextUrl) {
-        this.$router.push(this.nextUrl);
-        this.updateNextUrl(null);
+      const next = this.consumeNextUrl();
+      if (isSafeInternalRedirect(next, this.$router)) {
+        this.$router.push(next);
       } else {
         this.$router.push({ name: "dashboard" });
       }
@@ -177,10 +184,6 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-    legalHref(url) {
-      if (!url) return "";
-      return /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
     },
     buildLegalAcceptance() {
       const acceptance = {};
@@ -258,18 +261,27 @@ export default {
     },
     async changeUser() {
       if (this.isBffMode) {
-        ApiAuthService.changeSsoUser(window.location.href, this.ssoTicket());
+        ApiAuthService.changeSsoUser(this.bffReturnTarget(), this.ssoTicket());
         return;
       }
-      await keycloakService.logout(window.location.href);
+      await keycloakService.logout(
+        directRedirects(window.location.origin).switchUser
+      );
     },
     back() {
-      if (this.nextUrl) {
-        this.$router.push(this.nextUrl);
-        this.updateNextUrl(null);
+      const next = this.consumeNextUrl();
+      if (isSafeInternalRedirect(next, this.$router)) {
+        this.$router.push(next);
       } else {
         this.$router.push({ name: "login" });
       }
+    },
+    /** Hands out the stored return target once; it is cleared either way. */
+    consumeNextUrl() {
+      const next = this.nextUrl;
+      this.nextUrl = null;
+      this.updateNextUrl(null);
+      return next;
     },
   },
   async mounted() {
@@ -285,192 +297,149 @@ export default {
 </script>
 
 <template>
-  <v-card flat max-width="500">
-    <v-card-text class="px-10 pb-10">
-      <div
-        v-if="loading && !state"
-        class="d-flex flex-column align-center py-6"
-      >
-        <v-progress-circular
-          indeterminate
-          color="primary"
-          size="40"
-          width="3"
-        />
-        <span class="text-body-2 grey--text mt-3">
-      Verbindung wird hergestellt…
-    </span>
-      </div>
+  <div class="scb-form">
+    <div v-if="loading && !state" class="d-flex flex-column align-center py-4">
+      <v-progress-circular indeterminate color="primary" size="40" width="3" />
+      <span class="scb-form__note mt-3">Verbindung wird hergestellt…</span>
+    </div>
+
+    <p
+      v-if="state === possibleStates.KC_AUTH_SUCCESS"
+      class="scb-form__note mb-0"
+    >
+      Authentifiziert als <strong>{{ userEmail }}</strong>
+    </p>
+
+    <v-alert
+      v-if="state === possibleStates.KC_AUTH_ERROR"
+      type="error"
+      text
+      dense
+      class="mb-0"
+    >
+      Authentifizierung fehlgeschlagen. Bitte versuchen Sie es erneut.
+    </v-alert>
+
+    <template v-if="state === possibleStates.NO_USER_FOUND">
+      <p class="scb-form__note mb-0">
+        <strong>Willkommen, {{ userName || userEmail }}.</strong>
+        Sie wurden erfolgreich authentifiziert, sind aber noch nicht in diesem
+        System registriert. Möchten Sie Ihr Konto jetzt automatisch anlegen?
+      </p>
 
       <div
-        v-if="state === possibleStates.KC_AUTH_SUCCESS"
-        class="d-flex flex-column align-center text-center"
+        v-if="requiresDataProtection || requiresTerms"
+        class="scb-form__consent mt-4"
       >
-        <v-avatar color="green lighten-5" size="56" class="mb-3">
-          <v-icon color="green" size="28">mdi-check-circle</v-icon>
-        </v-avatar>
-        <div class="text-body-2 grey--text text--darken-1 mb-1">
-          Authentifiziert als
-        </div>
-        <div class="text-subtitle-1 font-weight-bold">
-          {{ userEmail }}
-        </div>
-      </div>
-
-      <div
-        v-if="state === possibleStates.KC_AUTH_ERROR"
-        class="d-flex flex-column align-center text-center"
-      >
-        <v-avatar color="red lighten-5" size="56" class="mb-3">
-          <v-icon color="red" size="28">mdi-alert-circle</v-icon>
-        </v-avatar>
-        <div class="text-subtitle-1 font-weight-medium mb-1">
-          Authentifizierung fehlgeschlagen
-        </div>
-        <div class="text-body-2 grey--text text--darken-1">
-          Bitte versuchen Sie es erneut.
-        </div>
-      </div>
-
-      <div
-        v-if="state === possibleStates.NO_USER_FOUND"
-        class="d-flex flex-column align-center text-center"
-      >
-        <v-avatar color="blue lighten-5" size="56" class="mb-3">
-          <v-icon color="blue" size="28">mdi-account-plus</v-icon>
-        </v-avatar>
-        <div class="text-subtitle-1 font-weight-medium mb-1">
-          Willkommen, {{ userName || userEmail }}
-        </div>
-        <div class="text-body-2 grey--text text--darken-1">
-          Sie wurden erfolgreich authentifiziert, sind aber noch nicht in
-          diesem System registriert. Möchten Sie Ihr Konto jetzt
-          automatisch anlegen?
-        </div>
-
-        <div
-          v-if="requiresDataProtection || requiresTerms"
-          class="text-left mt-4 align-self-stretch"
+        <v-checkbox
+          v-if="requiresDataProtection"
+          v-model="acceptedDataProtection"
+          hide-details="auto"
+          dense
+          class="mt-0 pt-0"
+          :disabled="loading"
         >
-          <v-checkbox
-            v-if="requiresDataProtection"
-            v-model="acceptedDataProtection"
-            hide-details="auto"
-            class="mt-0"
-            :disabled="loading"
-          >
-            <template v-slot:label>
-              <span class="text-body-2">
-                Ich habe die
-                <a
-                  :href="dataProtectionHref"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  @click.stop
-                  >Datenschutzerklärung</a
-                >
-                gelesen und akzeptiere sie.
-              </span>
-            </template>
-          </v-checkbox>
-          <v-checkbox
-            v-if="requiresTerms"
-            v-model="acceptedTerms"
-            hide-details="auto"
-            class="mt-0"
-            :disabled="loading"
-          >
-            <template v-slot:label>
-              <span class="text-body-2">
-                Ich akzeptiere die
-                <a
-                  :href="termsHref"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  @click.stop
-                  >Allgemeinen Geschäftsbedingungen</a
-                >.
-              </span>
-            </template>
-          </v-checkbox>
-        </div>
+          <template v-slot:label>
+            <span>
+              Ich habe die
+              <a
+                :href="dataProtectionHref"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+                >Datenschutzerklärung</a
+              >
+              gelesen und akzeptiere sie.
+            </span>
+          </template>
+        </v-checkbox>
+        <v-checkbox
+          v-if="requiresTerms"
+          v-model="acceptedTerms"
+          hide-details="auto"
+          dense
+          class="mt-0 pt-0"
+          :class="{ 'mt-2': requiresDataProtection }"
+          :disabled="loading"
+        >
+          <template v-slot:label>
+            <span>
+              Ich akzeptiere die
+              <a
+                :href="termsHref"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+                >Allgemeinen Geschäftsbedingungen</a
+              >.
+            </span>
+          </template>
+        </v-checkbox>
       </div>
+    </template>
 
-      <div
-        v-if="state === possibleStates.SIGNUP_SUCCESS"
-        class="d-flex flex-column align-center text-center"
-      >
-        <v-avatar color="green lighten-5" size="56" class="mb-3">
-          <v-icon color="green" size="28">mdi-account-check</v-icon>
-        </v-avatar>
-        <div class="text-subtitle-1 font-weight-medium mb-1">
-          Konto erstellt
-        </div>
-        <div class="text-body-2 grey--text text--darken-1">
-          Sie werden automatisch angemeldet…
-        </div>
-        <v-progress-linear
-          indeterminate
-          color="green"
-          rounded
-          class="mt-3"
-          style="max-width: 200px"
-        />
-      </div>
+    <template v-if="state === possibleStates.SIGNUP_SUCCESS">
+      <p class="scb-form__note mb-0">
+        Konto erstellt. Sie werden automatisch angemeldet…
+      </p>
+      <v-progress-linear indeterminate color="primary" rounded class="mt-3" />
+    </template>
 
-      <div
-        v-if="
-      state === possibleStates.SIGNUP_ERROR ||
-      state === possibleStates.SIGNIN_ERROR
-    "
-        class="d-flex flex-column align-center text-center"
-      >
-        <v-avatar color="red lighten-5" size="56" class="mb-3">
-          <v-icon color="red" size="28">mdi-close-circle</v-icon>
-        </v-avatar>
-        <div class="text-subtitle-1 font-weight-medium mb-1">
-          {{
-            state === possibleStates.SIGNUP_ERROR
-              ? "Registrierung fehlgeschlagen"
-              : "Anmeldung fehlgeschlagen"
-          }}
-        </div>
-        <div class="text-body-2 grey--text text--darken-1">
-          Bitte versuchen Sie es erneut.
-        </div>
-      </div>
-    </v-card-text>
-    <v-card-actions class="px-10 pb-10">
-      <v-btn outlined @click="back">zurück</v-btn>
-      <v-spacer></v-spacer>
+    <v-alert
+      v-if="
+        state === possibleStates.SIGNUP_ERROR ||
+        state === possibleStates.SIGNIN_ERROR
+      "
+      type="error"
+      text
+      dense
+      class="mb-0"
+    >
+      {{
+        state === possibleStates.SIGNUP_ERROR
+          ? "Registrierung fehlgeschlagen."
+          : "Anmeldung fehlgeschlagen."
+      }}
+      Bitte versuchen Sie es erneut.
+    </v-alert>
+
+    <template v-if="state === possibleStates.KC_AUTH_SUCCESS">
       <v-btn
-        v-if="state === possibleStates.KC_AUTH_SUCCESS"
-        outlined
-        elevation="0"
-        @click="changeUser"
-        :loading="loading"
-      >
-        Benutzer wechseln
-      </v-btn>
-      <v-btn
-        v-if="state === possibleStates.KC_AUTH_SUCCESS"
         color="primary"
+        block
         elevation="0"
-        @click="signIn"
+        class="scb-form__submit mt-4"
         :loading="loading"
+        @click="signIn"
       >
         Anmelden
       </v-btn>
       <v-btn
-        v-if="state === possibleStates.NO_USER_FOUND"
-        color="primary"
+        block
+        outlined
         elevation="0"
-        @click="signUp"
+        class="mt-3"
         :loading="loading"
-        :disabled="!canSignUp"
+        @click="changeUser"
       >
-        Registrieren
+        Benutzer wechseln
       </v-btn>
-    </v-card-actions>
-  </v-card>
+    </template>
+    <v-btn
+      v-if="state === possibleStates.NO_USER_FOUND"
+      color="primary"
+      block
+      elevation="0"
+      class="scb-form__submit mt-4"
+      :loading="loading"
+      :disabled="!canSignUp"
+      @click="signUp"
+    >
+      Registrieren
+    </v-btn>
+
+    <p class="scb-form__switch mt-4 mb-0">
+      <button type="button" class="scb-form__link" @click="back">Zurück</button>
+    </p>
+  </div>
 </template>

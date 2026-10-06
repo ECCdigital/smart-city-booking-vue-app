@@ -164,6 +164,52 @@
                   <v-expansion-panel-header>
                     <v-row align="center" justify="space-between">
                       <v-col class="darkgrey--text col-5"
+                        >Umsatzsteuer-ID ändern</v-col
+                      >
+                      <v-col class="darkgrey--text col-4">{{
+                        api.user.vatId
+                      }}</v-col>
+                      <v-col class="text-right"></v-col>
+                    </v-row>
+                    <template v-slot:actions>
+                      <v-tooltip bottom>
+                        <template v-slot:activator="{ on }">
+                          <v-icon v-on="on" color="darkgrey"
+                            >mdi-chevron-right</v-icon
+                          >
+                        </template>
+                        <span>Umsatzsteuer-ID ändern</span>
+                      </v-tooltip>
+                    </template>
+                  </v-expansion-panel-header>
+                  <v-expansion-panel-content>
+                    <v-row justify="center" align="center">
+                      <v-col>
+                        <v-text-field
+                          outlined
+                          hide-details
+                          v-model="vatId"
+                          label="Umsatzsteuer-ID (optional)"
+                        ></v-text-field>
+                      </v-col>
+                      <v-col class="col-auto text-right">
+                        <v-btn
+                          x-large
+                          color="primary"
+                          @click="updateUser"
+                          :loading="isLoading"
+                        >
+                          Änderungen speichern
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                  </v-expansion-panel-content>
+                  <v-divider></v-divider>
+                </v-expansion-panel>
+                <v-expansion-panel>
+                  <v-expansion-panel-header>
+                    <v-row align="center" justify="space-between">
+                      <v-col class="darkgrey--text col-5"
                         >Telefonnummer ändern</v-col
                       >
                       <v-col class="darkgrey--text col-4">{{
@@ -516,6 +562,7 @@ export default {
       tempLastName: "",
       tempPhone: "",
       tempCompany: "",
+      tempVatId: "",
       tempAddress: "",
       tempZip: "",
       tempCity: "",
@@ -562,6 +609,14 @@ export default {
         this.tempCompany = value;
       },
     },
+    vatId: {
+      get() {
+        return this.api.user.vatId;
+      },
+      set(value) {
+        this.tempVatId = value;
+      },
+    },
     address: {
       get() {
         return this.api.user.address;
@@ -598,9 +653,6 @@ export default {
       if (this.hasPermission(RolePermission.MANAGE_USERS)) {
         permissions.push("Benutzer verwalten");
       }
-      if (this.hasPermission(RolePermission.MANAGE_TENANTS)) {
-        permissions.push("Mandanten verwalten");
-      }
       if (this.hasPermission(RolePermission.MANAGE_BOOKINGS)) {
         permissions.push("Buchungen verwalten");
       }
@@ -625,6 +677,7 @@ export default {
       this.api.user.lastName = this.tempLastName;
       this.api.user.phone = this.tempPhone;
       this.api.user.company = this.tempCompany;
+      this.api.user.vatId = this.tempVatId;
       this.api.user.address = this.tempAddress;
       this.api.user.zipCode = this.tempZip;
       this.api.user.city = this.tempCity;
@@ -699,6 +752,7 @@ export default {
     this.tempZip = this.user.zipCode;
     this.tempCity = this.user.city;
     this.tempCompany = this.user.company;
+    this.tempVatId = this.user.vatId;
   },
   created() {
     this.api.user = this.user;

@@ -81,6 +81,7 @@ PUBLIC_ORIGIN=https://example.com
 # COOKIE_SECURE=true
 # ADMIN_BFF_UPSTREAM=http://other-bff:3001   # only if BFF runs outside this container
 # ADMIN_BFF_ENABLED=false                    # disable embedded BFF
+# MAX_UPLOAD_SIZE=60m                        # nginx client_max_body_size (default 60m)
 ```
 
 **Symptom of a broken BFF proxy:** `POST /api/auth/login` → `405`, or `GET /api/auth/me` returns HTML (`index.html`, ~1KB) with status 200. Then nginx is not forwarding to the BFF — check `STRIP_PREFIX` / edge strip vs. `VUE_APP_BFF_BASE_URL=/admin/api`.
@@ -97,12 +98,7 @@ PUBLIC_ORIGIN=https://example.com
 
 ### Keycloak (BFF SSO)
 
-For **each** allowlisted origin, Valid redirect URIs must include:
-
-- `{origin}/admin/api/auth/sso/callback` (Admin)
-- Storefront callback (existing), e.g. `{origin}/api/auth/sso/callback`
-
-Also register matching Web origins and post-logout redirect URIs (`{origin}/admin/login`, …).
+`PUBLIC_ORIGIN` / `PUBLIC_ORIGINS` and `BFF_PUBLIC_PATH` determine the Rücksprungadressen of the Admin UI, one set per allowlisted origin (the one after sign-out also takes `ADMIN_SPA_BASE_PATH`); the Storefront's follow from the instance's Portal-URL. The Admin UI's tab „Instanz verwalten → Single Sign-On“ shows which belong in Keycloak, for both apps; it reads the BFF's from `GET /admin/api/auth/sso/addresses`, and „Realm prüfen“ there checks the realm against them.
 
 ## Expected behaviour
 

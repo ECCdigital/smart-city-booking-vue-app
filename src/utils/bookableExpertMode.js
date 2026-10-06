@@ -2,7 +2,7 @@ const SESSION_STORAGE_KEY = "bookableEditExpertMode";
 
 /** Tabs hidden in simple (non-expert) mode */
 export const BOOKABLE_EXPERT_ONLY_TAB_KEYS = [
-  "lockerSystems",
+  "accessLocks",
   "relatedBookables",
 ];
 

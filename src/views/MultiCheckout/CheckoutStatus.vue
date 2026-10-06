@@ -228,9 +228,10 @@ import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import {
-  isCheckoutStatusComplete,
-  isFreeBooking,
-} from "@/utils/bookingPaymentStatus";
+  BOOKING_STATUS,
+  isAwaitingPayment,
+  isFree,
+} from "@/utils/bookingStatus";
 
 export default {
   name: "CheckoutSuccess",
@@ -338,11 +339,11 @@ export default {
         );
         this.bookingStatuses = Array.isArray(res.data) ? res.data : [res.data];
 
+        // The one state worth polling for: the provider's webhook moves a
+        // booking from `payment_due` to `confirmed`; every other state is
+        // final for this page.
         const pending = this.bookingStatuses
-          .filter(
-            (b) =>
-              b.isCommitted && !b.isRejected && !isCheckoutStatusComplete(b)
-          )
+          .filter(isAwaitingPayment)
           .map((b) => b.bookingId);
 
         if (pending.length === 0) {
@@ -368,46 +369,47 @@ export default {
     },
 
     applySingleStatus(obj) {
-      const { isCommitted, isPayed, isRejected } = obj;
-      if (isRejected && !isCommitted) {
-        this.status = "rejected";
-        return;
-      }
-
-      if (isRejected && isCommitted) {
-        this.status = "cancelled";
-        return;
-      }
-      if (isCheckoutStatusComplete(obj)) {
-        this.status = "success";
-      } else if (!isCommitted) {
-        this.status = "await-approval";
-      } else if (isCommitted && !isPayed) {
-        this.status =
-          this.paymentProvider === "invoice" ? "await-payment" : "no-payment";
+      switch (obj?.status) {
+        case BOOKING_STATUS.REJECTED:
+          this.status = "rejected";
+          break;
+        case BOOKING_STATUS.CANCELLED:
+          this.status = "cancelled";
+          break;
+        case BOOKING_STATUS.CONFIRMED:
+          this.status = "success";
+          break;
+        case BOOKING_STATUS.REQUESTED:
+          this.status = "await-approval";
+          break;
+        case BOOKING_STATUS.PAYMENT_DUE:
+          // Still unpaid once polling ends: an invoice is expected to be, a
+          // provider payment has failed.
+          this.status =
+            this.paymentProvider === "invoice" ? "await-payment" : "no-payment";
+          break;
+        default:
+          this.status = "not-found";
       }
     },
 
     statusText(booking) {
-      if (booking.isRejected && !booking.isCommitted) {
-        return "Abgelehnt";
+      switch (booking?.status) {
+        case BOOKING_STATUS.REJECTED:
+          return "Abgelehnt";
+        case BOOKING_STATUS.CANCELLED:
+          return "Storniert";
+        case BOOKING_STATUS.CONFIRMED:
+          return isFree(booking)
+            ? "Abgeschlossen (kostenfrei)"
+            : "Abgeschlossen";
+        case BOOKING_STATUS.REQUESTED:
+          return "In Prüfung";
+        case BOOKING_STATUS.PAYMENT_DUE:
+          return "Zahlung ausstehend";
+        default:
+          return "Unbekannt";
       }
-      if (booking.isRejected && booking.isCommitted) {
-        return "Storniert";
-      }
-      if (booking.isCommitted && isFreeBooking(booking)) {
-        return "Abgeschlossen (kostenfrei)";
-      }
-      if (booking.isCommitted && booking.isPayed) {
-        return "Abgeschlossen";
-      }
-      if (!booking.isCommitted) {
-        return "In Prüfung";
-      }
-      if (booking.isCommitted && !booking.isPayed) {
-        return "Zahlung ausstehend";
-      }
-      return "Unbekannt";
     },
 
     isCompletedStatusText(text) {
@@ -478,7 +480,7 @@ export default {
 
     async doPoll() {
       const pending = this.bookingStatuses
-        .filter((b) => !isCheckoutStatusComplete(b) && !b.isRejected)
+        .filter(isAwaitingPayment)
         .map((b) => b.bookingId);
 
       if (pending.length === 0 || this.paymentProvider === "invoice") {

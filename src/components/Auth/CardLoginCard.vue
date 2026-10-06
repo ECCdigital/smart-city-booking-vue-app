@@ -1,194 +1,209 @@
 <template>
-  <v-card flat max-width="500">
-    <v-card-text class="px-10">
-      <v-alert v-if="state === 'success'" dense text type="success">
-        Erfolgreich authentifiziert. Sie werden weitergeleitet…
-      </v-alert>
+  <div class="scb-form">
+    <v-alert v-if="state === 'success'" dense text type="success" class="mb-0">
+      Erfolgreich authentifiziert. Sie werden weitergeleitet…
+    </v-alert>
 
-      <v-alert
-        v-else-if="state === 'awaiting_link_confirmation'"
+    <v-alert
+      v-else-if="state === 'awaiting_link_confirmation'"
+      dense
+      text
+      type="info"
+      class="mb-0"
+    >
+      Die Email-Adresse <strong>{{ email }}</strong> ist bereits registriert.
+      Wir haben Ihnen eine Bestätigungs-Email gesendet. Bitte klicken Sie den
+      Link darin, um die Karte mit Ihrem bestehenden Account zu verknüpfen.
+    </v-alert>
+
+    <v-alert
+      v-else-if="state === 'awaiting_verification'"
+      dense
+      text
+      type="info"
+      class="mb-0"
+    >
+      Ihr Account wurde erstellt. Bitte bestätigen Sie Ihre Email-Adresse über
+      den Link, den wir Ihnen gerade gesendet haben. Danach können Sie sich mit
+      Ihrer Karte anmelden.
+    </v-alert>
+
+    <v-alert v-if="state === 'error'" dense text type="error" class="mb-4">
+      {{ errorMessage }}
+    </v-alert>
+
+    <v-form
+      v-if="step === 'credentials' && state !== 'success'"
+      ref="credentialsForm"
+      @submit.prevent="submitCredentials"
+    >
+      <p v-if="cardMethod.description" class="scb-form__note mb-4">
+        {{ cardMethod.description }}
+      </p>
+      <v-text-field
+        v-model="publicId"
+        background-color="accent"
+        filled
         dense
-        text
-        type="info"
-      >
-        Die Email-Adresse <strong>{{ email }}</strong> ist bereits registriert.
-        Wir haben Ihnen eine Bestätigungs-Email gesendet. Bitte klicken Sie den
-        Link darin, um die Karte mit Ihrem bestehenden Account zu verknüpfen.
-      </v-alert>
-
-      <v-alert
-        v-else-if="state === 'awaiting_verification'"
+        hide-details="auto"
+        :label="cardMethod.publicIdField.label || 'Kartennummer'"
+        :placeholder="cardMethod.publicIdField.placeholder"
+        :hint="cardMethod.publicIdField.helpText"
+        :persistent-hint="!!cardMethod.publicIdField.helpText"
+        :rules="[rules.required]"
+      />
+      <v-text-field
+        v-model="secret"
+        background-color="accent"
+        filled
         dense
-        text
-        type="info"
-      >
-        Ihr Account wurde erstellt. Bitte bestätigen Sie Ihre Email-Adresse über
-        den Link, den wir Ihnen gerade gesendet haben. Danach können Sie sich
-        mit Ihrer Karte anmelden.
-      </v-alert>
-
-      <v-alert v-if="state === 'error'" dense text type="error">
-        {{ errorMessage }}
-      </v-alert>
-
-      <v-form
-        v-if="step === 'credentials' && state !== 'success'"
-        ref="credentialsForm"
-        @keydown.enter="submitCredentials"
-      >
-        <v-text-field
-          v-model="publicId"
-          outlined
-          :label="cardMethod.publicIdField.label || 'Kartennummer'"
-          :placeholder="cardMethod.publicIdField.placeholder"
-          :hint="cardMethod.publicIdField.helpText"
-          :persistent-hint="!!cardMethod.publicIdField.helpText"
-          :rules="[rules.required]"
-          prepend-inner-icon="mdi-card-account-details"
-          class="mb-2"
-        />
-
-        <v-text-field
-          v-model="secret"
-          outlined
-          :label="cardMethod.secretField.label || 'Secret'"
-          :placeholder="cardMethod.secretField.placeholder"
-          :hint="cardMethod.secretField.helpText"
-          :persistent-hint="!!cardMethod.secretField.helpText"
-          :rules="[rules.required]"
-          prepend-inner-icon="mdi-shield-key"
-          :type="showSecret ? 'text' : 'password'"
-          :append-icon="showSecret ? 'mdi-eye' : 'mdi-eye-off'"
-          @click:append="showSecret = !showSecret"
-        />
-      </v-form>
-
-      <v-form
-        v-else-if="step === 'register' && state !== 'awaiting_verification'"
-        ref="registerForm"
-        @keydown.enter="submitRegistration"
-      >
-        <v-alert type="info" text dense class="mb-4">
-          Diese Karte ist noch keinem Account zugeordnet. Bitte vervollständigen
-          Sie Ihre Daten, um einen Account zu erstellen.
-        </v-alert>
-
-        <v-text-field
-          v-model="email"
-          outlined
-          label="Email Adresse"
-          placeholder="jemand@domain.de"
-          :rules="[rules.required, rules.email]"
-          prepend-inner-icon="mdi-email"
-          autocomplete="email"
-          type="email"
-          class="mb-2"
-        />
-
-        <v-text-field
-          v-model="firstName"
-          outlined
-          label="Vorname"
-          prepend-inner-icon="mdi-account"
-          class="mb-2"
-        />
-
-        <v-text-field
-          v-model="lastName"
-          outlined
-          label="Nachname"
-          prepend-inner-icon="mdi-account"
-          class="mb-2"
-        />
-
-        <v-text-field
-          v-model="company"
-          outlined
-          label="Unternehmen (optional)"
-          prepend-inner-icon="mdi-domain"
-        />
-
-        <div
-          v-if="requiresDataProtection || requiresTerms"
-          class="text-left mt-2"
-        >
-          <v-checkbox
-            v-if="requiresDataProtection"
-            v-model="acceptedDataProtection"
-            :rules="[rules.acceptedDataProtection]"
-            hide-details="auto"
-            class="mt-0"
-          >
-            <template v-slot:label>
-              <span class="text-body-2">
-                Ich habe die
-                <a
-                  :href="dataProtectionHref"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  @click.stop
-                  >Datenschutzerklärung</a
-                >
-                gelesen und akzeptiere sie.
-              </span>
-            </template>
-          </v-checkbox>
-          <v-checkbox
-            v-if="requiresTerms"
-            v-model="acceptedTerms"
-            :rules="[rules.acceptedTerms]"
-            hide-details="auto"
-            class="mt-0"
-          >
-            <template v-slot:label>
-              <span class="text-body-2">
-                Ich akzeptiere die
-                <a
-                  :href="termsHref"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  @click.stop
-                  >Allgemeinen Geschäftsbedingungen</a
-                >.
-              </span>
-            </template>
-          </v-checkbox>
-        </div>
-      </v-form>
-    </v-card-text>
-
-    <v-card-actions class="px-10 pb-10">
-      <v-btn outlined @click="back">Zurück</v-btn>
-      <v-spacer />
-
+        hide-details="auto"
+        class="mt-4"
+        :label="cardMethod.secretField.label || 'Secret'"
+        :placeholder="cardMethod.secretField.placeholder"
+        :hint="cardMethod.secretField.helpText"
+        :persistent-hint="!!cardMethod.secretField.helpText"
+        :rules="[rules.required]"
+        :type="showSecret ? 'text' : 'password'"
+        :append-icon="showSecret ? 'mdi-eye' : 'mdi-eye-off'"
+        @click:append="showSecret = !showSecret"
+      />
       <v-btn
-        v-if="step === 'credentials' && state !== 'success'"
+        type="submit"
         color="primary"
+        block
         elevation="0"
+        class="scb-form__submit mt-4"
         :loading="loading"
-        @click="submitCredentials"
       >
-        <v-icon left>mdi-card-account-details</v-icon>
         Anmelden
       </v-btn>
+    </v-form>
+
+    <v-form
+      v-else-if="step === 'register' && state !== 'awaiting_verification'"
+      ref="registerForm"
+      @submit.prevent="submitRegistration"
+    >
+      <p class="scb-form__note mb-4">
+        Diese Karte ist noch keinem Account zugeordnet. Bitte vervollständigen
+        Sie Ihre Daten, um einen Account zu erstellen.
+      </p>
+      <v-text-field
+        v-model="email"
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="Email Adresse"
+        placeholder="jemand@domain.de"
+        :rules="[rules.required, rules.email]"
+        autocomplete="email"
+        type="email"
+      />
+      <div class="scb-form__row mt-4">
+        <v-text-field
+          v-model="firstName"
+          background-color="accent"
+          filled
+          dense
+          hide-details="auto"
+          label="Vorname"
+          autocomplete="given-name"
+        />
+        <v-text-field
+          v-model="lastName"
+          background-color="accent"
+          filled
+          dense
+          hide-details="auto"
+          label="Nachname"
+          autocomplete="family-name"
+        />
+      </div>
+      <v-text-field
+        v-model="company"
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="Unternehmen (optional)"
+        class="mt-4"
+        autocomplete="organization"
+      />
+
+      <div
+        v-if="requiresDataProtection || requiresTerms"
+        class="scb-form__consent mt-4"
+      >
+        <v-checkbox
+          v-if="requiresDataProtection"
+          v-model="acceptedDataProtection"
+          :rules="[rules.acceptedDataProtection]"
+          hide-details="auto"
+          dense
+          class="mt-0 pt-0"
+        >
+          <template v-slot:label>
+            <span>
+              Ich habe die
+              <a
+                :href="dataProtectionHref"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+                >Datenschutzerklärung</a
+              >
+              gelesen und akzeptiere sie.
+            </span>
+          </template>
+        </v-checkbox>
+        <v-checkbox
+          v-if="requiresTerms"
+          v-model="acceptedTerms"
+          :rules="[rules.acceptedTerms]"
+          hide-details="auto"
+          dense
+          class="mt-0 pt-0"
+          :class="{ 'mt-2': requiresDataProtection }"
+        >
+          <template v-slot:label>
+            <span>
+              Ich akzeptiere die
+              <a
+                :href="termsHref"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+                >Allgemeinen Geschäftsbedingungen</a
+              >.
+            </span>
+          </template>
+        </v-checkbox>
+      </div>
 
       <v-btn
-        v-if="step === 'register' && state !== 'awaiting_verification'"
+        type="submit"
         color="primary"
+        block
         elevation="0"
+        class="scb-form__submit mt-4"
         :loading="loading"
-        @click="submitRegistration"
       >
-        <v-icon left>mdi-account-plus</v-icon>
         Account erstellen
       </v-btn>
-    </v-card-actions>
-  </v-card>
+    </v-form>
+
+    <p class="scb-form__switch mt-4 mb-0">
+      <button type="button" class="scb-form__link" @click="back">Zurück</button>
+    </p>
+  </div>
 </template>
 
 <script>
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ToastService from "@/services/ToastService";
+import { legalDocumentHref } from "@/utils/instanceLegalDocuments";
 import { mapActions, mapGetters } from "vuex";
 
 export default {
@@ -249,10 +264,10 @@ export default {
       return !!this.termsAndConditions.url;
     },
     dataProtectionHref() {
-      return this.legalHref(this.dataProtection.url);
+      return legalDocumentHref(this.dataProtection.url);
     },
     termsHref() {
-      return this.legalHref(this.termsAndConditions.url);
+      return legalDocumentHref(this.termsAndConditions.url);
     },
   },
 
@@ -303,11 +318,6 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-
-    legalHref(url) {
-      if (!url) return "";
-      return /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
     },
 
     buildLegalAcceptance() {

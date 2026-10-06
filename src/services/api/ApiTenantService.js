@@ -1,14 +1,61 @@
 import ApiClient from "./ApiClientService";
+import { legalDocumentsForSave } from "@/utils/tenantLegalDocuments";
+
+/**
+ * What the server decides at a creation (supervision spec §6.1): the creator
+ * becomes the owner, the level is the instance's. A form never sends them.
+ */
+const SERVER_DECIDED_ON_CREATE = [
+  "ownerUserIds",
+  "users",
+  "supervisionLevel",
+  "supervisionChangedAt",
+  "review",
+];
+
+function tenantForCreate(tenant) {
+  const payload = { ...legalDocumentsForSave(tenant) };
+  SERVER_DECIDED_ON_CREATE.forEach((field) => delete payload[field]);
+  return payload;
+}
+
+/**
+ * A tenant as it is written: without the fields the supervision owns. The
+ * level changes through `ApiSupervisionService.setTenantLevel` alone; a loaded
+ * tenant carries it, and a write must not hand it back.
+ */
+function tenantForSave(tenant) {
+  if (!tenant || typeof tenant !== "object") return tenant;
+  // eslint-disable-next-line no-unused-vars
+  const { supervisionLevel, supervisionChangedAt, ...written } = tenant;
+  return legalDocumentsForSave(written);
+}
 
 export default {
-  getTenants(publicTenants = false) {
-    return ApiClient.get(`api/tenants?publicTenants=${publicTenants}`);
+  /**
+   * `supervisionLevel` narrows the list to the tenants at that level (a
+   * tenant without a stored level counts as `free`).
+   */
+  getTenants(publicTenants = false, { supervisionLevel } = {}) {
+    const levelFilter = supervisionLevel
+      ? `&supervisionLevel=${encodeURIComponent(supervisionLevel)}`
+      : "";
+    return ApiClient.get(
+      `api/tenants?publicTenants=${publicTenants}${levelFilter}`
+    );
   },
+  /**
+   * Writes a tenant. The legal documents are normalised here rather than at
+   * the editors, because three screens save a tenant and every one of them
+   * would otherwise write back the addresses the backend derives from the
+   * media references on the way out — a shape the platform rejects (§4.8 of
+   * the media spec).
+   */
   submitTenant(tenant) {
-    return ApiClient.put("api/tenants", tenant);
+    return ApiClient.put("api/tenants", tenantForSave(tenant));
   },
   createTenant(tenant) {
-    return ApiClient.post("api/tenants", tenant);
+    return ApiClient.post("api/tenants", tenantForCreate(tenant));
   },
   deleteTenant(tenant) {
     return ApiClient.delete(`api/tenants/${tenant.id}`);
@@ -21,11 +68,29 @@ export default {
       withCredentials: withCredentials,
     });
   },
-  async addTenantUser(tenantId, userId, roles, challenges, type) {
-    const response = await ApiClient.post(
-      `/api/tenants/${tenantId}/add-user`,
-      { userId, roles, challenges, type }
+  async getDashboardData(query = {}) {
+    const _query = { granularity: "week", ...query };
+    const response = await ApiClient.get("api/v2/dashboard/summary", {
+      params: _query,
+    });
+    return response.data;
+  },
+  async getDashboardDataByTenant(tenantId, query = {}) {
+    const _query = { granularity: "week", ...query };
+    const response = await ApiClient.get(
+      `api/v2/${tenantId}/dashboard/summary`,
+      { params: _query }
     );
+    console.log(response);
+    return response.data;
+  },
+  async addTenantUser(tenantId, userId, roles, challenges, type) {
+    const response = await ApiClient.post(`/api/tenants/${tenantId}/add-user`, {
+      userId,
+      roles,
+      challenges,
+      type,
+    });
     return response.data;
   },
   async removeTenantUser(tenantId, userId) {
@@ -67,13 +132,20 @@ export default {
     );
     return response.data;
   },
+  /**
+   * The readiness check (glossary "Bereitschafts-Check"): computed by the
+   * backend on every call, information only - never a gate.
+   */
+  async getReadiness(tenantId) {
+    return (await ApiClient.get(`api/tenants/${tenantId}/readiness`)).data;
+  },
   async tenantCountCheck() {
     return (await ApiClient.get("api/tenants/count/check")).data;
   },
   async updateUserStatus(tenantId, userId, status) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/update-user-status`,
-      { userId, status },
+      { userId, status }
     );
     return response.data;
   },
@@ -82,7 +154,7 @@ export default {
     templateType,
     template,
     pdfBookingLayout,
-    pdfBookingTableMeta,
+    pdfBookingTableMeta
   ) {
     const body = { templateType, template };
     if (pdfBookingLayout) {
@@ -99,11 +171,11 @@ export default {
   async updateUserBookingNotificationRecipients(
     tenantId,
     userId,
-    bookingNotificationRecipients,
+    bookingNotificationRecipients
   ) {
     const response = await ApiClient.post(
       `/api/tenants/${tenantId}/update-user-booking-notification-recipients`,
-      { userId, bookingNotificationRecipients },
+      { userId, bookingNotificationRecipients }
     );
     return response.data;
   },

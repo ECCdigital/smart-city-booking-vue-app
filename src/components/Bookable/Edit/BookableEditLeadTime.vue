@@ -61,7 +61,8 @@ export default {
     },
     hasServiceHours() {
       return (
-        Array.isArray(this.model.serviceHours) && this.model.serviceHours.length > 0
+        Array.isArray(this.model.serviceHours) &&
+        this.model.serviceHours.length > 0
       );
     },
     leadTimeEnabled() {
@@ -161,7 +162,9 @@ export default {
         return true;
       }
       const minutes = Number(value);
-      return Number.isFinite(minutes) && minutes >= 0 && Number.isInteger(minutes);
+      return (
+        Number.isFinite(minutes) && minutes >= 0 && Number.isInteger(minutes)
+      );
     },
     bufferPresetActive(field, minutes) {
       const current = Number(this.model[field]) || 0;
@@ -272,7 +275,6 @@ export default {
     <v-card
       id="be-section-bookingType-lead-time"
       class="mt-4 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -307,9 +309,9 @@ export default {
             <v-icon class="mr-2" color="info" small>
               mdi-information-outline
             </v-icon>
-            Die Vorbereitungszeit muss vollständig innerhalb der
-            Servicezeiten liegen – z. B. Freitag 18:00 → Montag 08:00 ist mit
-            2 Std. Vorbereitung nicht möglich.
+            Die Vorbereitungszeit muss vollständig innerhalb der Servicezeiten
+            liegen – z. B. Freitag 18:00 → Montag 08:00 ist mit 2 Std.
+            Vorbereitung nicht möglich.
           </v-alert>
 
           <div class="text-subtitle-2 mb-2">Vorbereitungszeit</div>
@@ -342,8 +344,15 @@ export default {
                 @input="emitUpdate"
               />
             </v-col>
-            <v-col cols="12" sm="6" md="8" class="d-flex align-center flex-wrap">
-              <span class="text-caption text--secondary mr-2">Schnellauswahl:</span>
+            <v-col
+              cols="12"
+              sm="6"
+              md="8"
+              class="d-flex align-center flex-wrap"
+            >
+              <span class="text-caption text--secondary mr-2"
+                >Schnellauswahl:</span
+              >
               <v-chip
                 v-for="preset in presets"
                 :key="preset.value"
@@ -411,11 +420,7 @@ export default {
 
                   <v-list-item-action>
                     <div class="d-flex align-center">
-                      <v-btn
-                        icon
-                        small
-                        @click.stop="removeServiceHours(index)"
-                      >
+                      <v-btn icon small @click.stop="removeServiceHours(index)">
                         <v-icon small>mdi-delete-outline</v-icon>
                       </v-btn>
                       <v-btn icon small>
@@ -577,7 +582,6 @@ export default {
       v-if="showBuffer"
       id="be-section-bookingType-buffer"
       class="mt-4 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -634,7 +638,9 @@ export default {
                 @input="setBufferMinutes('bufferTimeBeforeMinutes', $event)"
               />
               <div class="d-flex flex-wrap mt-2">
-                <span class="text-caption text--secondary mr-2">Schnellauswahl:</span>
+                <span class="text-caption text--secondary mr-2"
+                  >Schnellauswahl:</span
+                >
                 <v-chip
                   v-for="preset in bufferPresets"
                   :key="`before-${preset.value}`"
@@ -648,7 +654,9 @@ export default {
                   :outlined="
                     !bufferPresetActive('bufferTimeBeforeMinutes', preset.value)
                   "
-                  @click="applyBufferPreset('bufferTimeBeforeMinutes', preset.value)"
+                  @click="
+                    applyBufferPreset('bufferTimeBeforeMinutes', preset.value)
+                  "
                 >
                   {{ preset.label }}
                 </v-chip>
@@ -678,7 +686,9 @@ export default {
                 @input="setBufferMinutes('bufferTimeAfterMinutes', $event)"
               />
               <div class="d-flex flex-wrap mt-2">
-                <span class="text-caption text--secondary mr-2">Schnellauswahl:</span>
+                <span class="text-caption text--secondary mr-2"
+                  >Schnellauswahl:</span
+                >
                 <v-chip
                   v-for="preset in bufferPresets"
                   :key="`after-${preset.value}`"
@@ -692,7 +702,9 @@ export default {
                   :outlined="
                     !bufferPresetActive('bufferTimeAfterMinutes', preset.value)
                   "
-                  @click="applyBufferPreset('bufferTimeAfterMinutes', preset.value)"
+                  @click="
+                    applyBufferPreset('bufferTimeAfterMinutes', preset.value)
+                  "
                 >
                   {{ preset.label }}
                 </v-chip>
@@ -706,36 +718,16 @@ export default {
 </template>
 
 <style scoped>
-.section-card {
-  border-radius: 8px !important;
-}
-
-.section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.02) 0%,
-    rgba(0, 0, 0, 0.01) 100%
-  );
-}
-
-.theme--dark .section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
-}
-
 .service-hours-item {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--scb-motion-base);
 }
 
 .theme--dark .service-hours-item {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--scb-surface-tint);
 }
 
 .service-hours-card {
-  border-radius: 8px !important;
+  border-radius: var(--scb-radius-surface) !important;
 }
 </style>

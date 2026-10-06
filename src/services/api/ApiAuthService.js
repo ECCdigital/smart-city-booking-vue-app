@@ -40,6 +40,18 @@ export default {
     throw new Error("startSilentSso is only available in BFF auth mode");
   },
 
+  /**
+   * The BFF's Adressen with the Rücksprungadressen it hands to Keycloak
+   * (`GET <BFF>/auth/sso/addresses`): `{ allowlist: "active" | "empty",
+   * addresses: [{ origin, redirectUris, postLogoutRedirectUris }] }`.
+   */
+  async getSsoAddresses() {
+    if (!ApiClient.supportsClientSideKeycloak()) {
+      return ApiClient.transport.getSsoAddresses();
+    }
+    throw new Error("getSsoAddresses is only available in BFF auth mode");
+  },
+
   getPendingSsoUser(ticket) {
     return ApiClient.transport.getPendingSsoUser(ticket);
   },
@@ -121,6 +133,15 @@ export default {
     }
 
     return ApiClient.post("auth/signup", body);
+  },
+
+  /**
+   * Requests the verification mail of an unverified account again. The answer
+   * is account-neutral (`202`); `nextUrl` is the return target the mail's
+   * link carries to `/email/verify`.
+   */
+  resendVerification(id, nextUrl) {
+    return ApiClient.post("auth/resend-verification", { id, nextUrl });
   },
 
   async ssoRegister(token, legalAcceptance, ticket) {

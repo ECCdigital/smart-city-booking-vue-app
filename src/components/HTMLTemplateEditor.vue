@@ -563,7 +563,6 @@ export default {
         return this.exampleData[variableName];
       }
       const merged = {
-        ...(SAMPLE_DATA.snippet || {}),
         ...(SAMPLE_DATA.genericMail || {}),
         ...(SAMPLE_DATA.receipt || {}),
         ...(SAMPLE_DATA.invoice || {}),

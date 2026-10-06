@@ -143,27 +143,35 @@
           </div>
         </template>
 
-        <template v-slot:item.isCommitted="{ item }">
+        <template v-slot:item.status="{ item }">
           <v-chip
             small
-            :color="getStatusChipColor(item)"
+            :color="statusColor(item.status)"
             text-color="white"
             class="font-weight-medium"
           >
-            <v-icon left x-small>{{ getStatusIcon(item) }}</v-icon>
-            {{ getStatusText(item) }}
+            <v-icon left x-small>{{ statusIcon(item.status) }}</v-icon>
+            {{ statusLabel(item.status) }}
           </v-chip>
-        </template>
-
-        <template v-slot:item.isPayed="{ item }">
           <v-chip
+            v-if="isFree(item)"
             small
-            :color="getPaymentColor(item)"
-            :text-color="getPaymentTextColor(item)"
-            class="font-weight-medium"
+            :color="freeChip.color"
+            :text-color="freeChip.textColor"
+            class="font-weight-medium ml-1"
           >
-            <v-icon left x-small>{{ getPaymentIcon(item) }}</v-icon>
-            {{ payedStatus(item) }}
+            <v-icon left x-small>{{ freeChip.icon }}</v-icon>
+            {{ freeChip.label }}
+          </v-chip>
+          <v-chip
+            v-if="refundMarker(item)"
+            small
+            :color="refundMarker(item).color"
+            :text-color="refundMarker(item).textColor"
+            class="font-weight-medium ml-1"
+          >
+            <v-icon left x-small>{{ refundMarker(item).icon }}</v-icon>
+            {{ refundMarker(item).label }}
           </v-chip>
         </template>
 
@@ -188,7 +196,7 @@
               <v-list-item
                 link
                 @click="onOpenBooking(item.id)"
-                :disabled="!BookingPermissionService.allowUpdate(item)"
+                :disabled="!BookingPermissionService.allowRead(item)"
               >
                 <v-list-item-icon>
                   <v-icon small>mdi-information</v-icon>
@@ -220,44 +228,19 @@
               </v-list-item>
 
               <v-list-item
+                v-for="action in transitionActions(item.status)"
+                :key="action"
                 link
-                @click="commitBooking(item.id)"
-                :disabled="
-                  !BookingPermissionService.allowUpdate(item) ||
-                  item.isCommitted
-                "
-              >
-                <v-list-item-icon>
-                  <v-icon small color="success"
-                    >mdi-checkbox-marked-circle</v-icon
-                  >
-                </v-list-item-icon>
-                <v-list-item-title>Freigeben</v-list-item-title>
-              </v-list-item>
-
-              <v-list-item
-                link
-                @click="payBooking(item.id)"
-                :disabled="
-                  !BookingPermissionService.allowUpdate(item) || item.isPayed
-                "
-              >
-                <v-list-item-icon>
-                  <v-icon small color="success">mdi-cash-check</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>Als bezahlt markieren</v-list-item-title>
-              </v-list-item>
-
-              <v-list-item
-                link
-                @click="rejectBooking(item.id)"
+                @click="transition(action, item.id)"
                 :disabled="!BookingPermissionService.allowUpdate(item)"
               >
                 <v-list-item-icon>
-                  <v-icon small color="orange">mdi-close-circle</v-icon>
+                  <v-icon small :color="actionColor(action)">
+                    {{ actionIcon(action) }}
+                  </v-icon>
                 </v-list-item-icon>
                 <v-list-item-title>
-                  {{ item.isCommitted ? "Stornieren" : "Ablehnen" }}
+                  {{ actionLabel(action, item.status) }}
                 </v-list-item-title>
               </v-list-item>
 
@@ -266,7 +249,10 @@
               <v-list-item
                 link
                 @click="onOpenDeleteDialog(item.id)"
-                :disabled="!BookingPermissionService.allowDelete(item)"
+                :disabled="
+                  !BookingPermissionService.allowDelete(item) ||
+                  !allowsAction(item, 'delete')
+                "
               >
                 <v-list-item-icon>
                   <v-icon small color="red">mdi-delete</v-icon>
@@ -296,12 +282,19 @@
 <script>
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
 import {
-  getPaymentStatusColor,
-  getPaymentStatusIcon,
-  getPaymentStatusLabel,
-  getPaymentStatusTextColor,
-  isFreeBooking,
-} from "@/utils/bookingPaymentStatus";
+  actionColor,
+  actionIcon,
+  actionLabel,
+  allowsAction,
+  freeMarker,
+  isFree,
+  statusColor,
+  statusIcon,
+  statusLabel,
+  statusRank,
+  transitionActions,
+} from "@/utils/bookingStatus";
+import { refundStateMarker, refundStateOf } from "@/utils/cancellationRefund";
 
 export default {
   name: "BookingTable",
@@ -334,10 +327,19 @@ export default {
         { text: "Von", value: "timeBegin" },
         { text: "Bis", value: "timeEnd" },
         { text: "Preis", value: "priceEur" },
-        { text: "Status", value: "isCommitted" },
-        { text: "Zahlung", value: "isPayed" },
+        {
+          text: "Status",
+          value: "status",
+          cellClass: "status-cell",
+          sort: (a, b) => statusRank(a) - statusRank(b),
+        },
         { text: "Zahlungsart", value: "paymentMethod" },
-        { text: "", value: "controls", sortable: false },
+        {
+          text: "",
+          value: "controls",
+          sortable: false,
+          cellClass: "controls-cell",
+        },
       ],
     };
   },
@@ -345,19 +347,30 @@ export default {
     BookingPermissionService() {
       return BookingPermissionService;
     },
+    freeChip() {
+      return freeMarker();
+    },
     headers() {
       return this.showGroupBooking
         ? this.defaultHeaders
         : this.defaultHeaders.filter(
-          (header) => header.value !== "groupBooking"
-        );
+            (header) => header.value !== "groupBooking"
+          );
     },
   },
   methods: {
-    getStatusColor(item) {
-      if (item.isRejected) return "red";
-      if (item.isCommitted) return "green";
-      return "orange";
+    actionColor,
+    actionIcon,
+    actionLabel,
+    allowsAction,
+    isFree,
+    statusColor,
+    statusIcon,
+    statusLabel,
+    transitionActions,
+    /** The refund state's chip beside the state (glossary „Erstattungsstand“), or none. */
+    refundMarker(booking) {
+      return refundStateMarker(refundStateOf(booking));
     },
     formatDate(date) {
       return Intl.DateTimeFormat("de-DE", {
@@ -369,32 +382,6 @@ export default {
         timeStyle: "short",
       }).format(new Date(date));
     },
-    getStatusIcon(item) {
-      if (item.isRejected) return "mdi-cancel";
-      if (item.isCommitted) return "mdi-check-circle";
-      return "mdi-clock-outline";
-    },
-    getStatusChipColor(item) {
-      if (item.isRejected) return "error";
-      if (item.isCommitted) return "success";
-      return "orange";
-    },
-    getStatusText(item) {
-      if (item.isRejected && !item.isCommitted) return "Abgelehnt";
-      if (item.isRejected && item.isCommitted) return "Storniert";
-      if (item.isCommitted) return "Freigegeben";
-      return "Ausstehend";
-    },
-    isFreeBooking,
-    getPaymentColor(item) {
-      return getPaymentStatusColor(item);
-    },
-    getPaymentTextColor(item) {
-      return getPaymentStatusTextColor(item);
-    },
-    getPaymentIcon(item) {
-      return getPaymentStatusIcon(item);
-    },
     hasEventId(item) {
       return item.bookableItems.some((b) => b._bookableUsed.eventId);
     },
@@ -403,9 +390,6 @@ export default {
         style: "currency",
         currency: "EUR",
       }).format(amount || 0);
-    },
-    payedStatus(item) {
-      return getPaymentStatusLabel(item);
     },
     translatePayMethod(paymentMethod) {
       const methods = {
@@ -450,14 +434,9 @@ export default {
     onDownloadIcal(bookingId) {
       this.$emit("download-ical", bookingId);
     },
-    commitBooking(bookingId) {
-      this.$emit("commit-booking", bookingId);
-    },
-    rejectBooking(bookingId) {
-      this.$emit("reject-booking", bookingId);
-    },
-    payBooking(bookingId) {
-      this.$emit("pay-booking", bookingId);
+    /** A transition of `BOOKING_ACTION`; the host runs it through `BookingTransitions`. */
+    transition(action, bookingId) {
+      this.$emit("transition", action, bookingId);
     },
   },
 };

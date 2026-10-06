@@ -1,17 +1,35 @@
 <template>
-  <AdminLayout scroll-body>
+  <AdminLayout scroll-body :title="pageTitle" class="booking-edit-page">
+    <template #page-header>
+      <div class="booking-page__toolbar d-flex align-center flex-wrap mt-1">
+        <v-btn text small class="booking-edit-page__back px-0" @click="goBack">
+          <v-icon left small>mdi-arrow-left</v-icon>
+          {{ backLabel }}
+        </v-btn>
+        <span class="mx-2 grey--text">·</span>
+        <span class="text-body-2 grey--text text--darken-2">
+          {{ $t("booking.page.tenant", { name: tenantName }) }}
+        </span>
+      </div>
+    </template>
 
     <v-skeleton-loader v-if="loading" type="article" />
 
-    <BookingEdit
-      v-else-if="ready"
-      :booking="booking"
-      :bookables="bookables"
-      :workflow="workflow"
-      :group-booking="groupBooking"
-      @saved="onSaved"
-      @cancel="goBack"
-    />
+    <template v-else-if="ready">
+      <v-alert v-if="bookablesForbidden" type="warning" text class="mb-4">
+        {{ $t("booking.edit.hints.bookablesForbidden") }}
+      </v-alert>
+
+      <BookingEdit
+        :booking="booking"
+        :bookables="bookables"
+        :workflow="workflow"
+        :group-booking="groupBooking"
+        @saved="onSaved"
+        @reload="reloadBooking"
+        @cancel="leave"
+      />
+    </template>
   </AdminLayout>
 </template>
 
@@ -23,7 +41,9 @@ import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import { createEmptyBooking } from "@/utils/bookingForm";
+import { bookingPageRoute } from "@/utils/bookingPageRoutes";
 import { mapGetters } from "vuex";
 
 export default {
@@ -36,13 +56,24 @@ export default {
       booking: null,
       groupBooking: null,
       bookables: [],
+      bookablesForbidden: false,
       workflow: {},
     };
   },
   computed: {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
+      currentTenant: "tenants/currentTenant",
     }),
+    tenantName() {
+      return this.currentTenant?.name || this.tenantId;
+    },
+    /** Editing leads back to the booking's page; creating, to the list. */
+    backLabel() {
+      return this.isCreate
+        ? this.$t("booking.page.back")
+        : this.$t("booking.edit.back-to-booking");
+    },
     isCreate() {
       return this.$route.name === "booking-create";
     },
@@ -72,8 +103,45 @@ export default {
     goBack() {
       this.$router.push({ name: "bookings" });
     },
+    /**
+     * Leaving on purpose - "Zurück", "Abbrechen", a save - returns to the
+     * booking's page; a booking that failed to load still leaves for the
+     * list through `goBack`.
+     */
+    leave() {
+      if (this.isCreate) {
+        this.goBack();
+        return;
+      }
+      this.$router.push(bookingPageRoute(this.bookingId, this.tenantId));
+    },
     onSaved() {
-      this.goBack();
+      this.leave();
+    },
+    /**
+     * Refetch the booking after a save the backend refused with 409 or 404
+     * (spec E5), without leaving the screen: the editor takes the fresh
+     * state through its `booking` prop. A booking that cannot be read any
+     * more leaves the screen the way `load` does.
+     */
+    async reloadBooking() {
+      if (this.isCreate) return;
+
+      try {
+        await this.fetchBooking();
+      } catch (error) {
+        console.error(error);
+        this.goBack();
+      }
+    },
+    async fetchBooking() {
+      const response = await ApiBookingService.getBooking(
+        this.bookingId,
+        undefined,
+        true
+      );
+      this.booking = response.data;
+      await this.loadGroupBooking();
     },
     async load() {
       if (!this.tenantId) return;
@@ -81,25 +149,20 @@ export default {
       this.loading = true;
       this.ready = false;
       this.groupBooking = null;
+      this.bookablesForbidden = false;
 
       try {
-        const [bookablesRes, workflow] = await Promise.all([
-          ApiBookablesService.getBookables(this.tenantId, true),
+        const [bookables, workflow] = await Promise.all([
+          this.loadBookables(),
           ApiWorkflowService.getWorkflowStates(),
         ]);
-        this.bookables = bookablesRes.data;
+        this.bookables = bookables;
         this.workflow = workflow;
 
         if (this.isCreate) {
           this.booking = createEmptyBooking(this.tenantId);
         } else {
-          const response = await ApiBookingService.getBooking(
-            this.bookingId,
-            undefined,
-            true
-          );
-          this.booking = response.data;
-          await this.loadGroupBooking();
+          await this.fetchBooking();
         }
 
         this.ready = true;
@@ -108,6 +171,24 @@ export default {
         this.goBack();
       } finally {
         this.loading = false;
+      }
+    },
+    /**
+     * A denied bookable list is not a reason to throw the user out of the
+     * editor - it only empties the object picker, and the screen says so. Every
+     * other failure (network, 5xx) still rejects and `load` leaves as before.
+     */
+    async loadBookables() {
+      try {
+        const response = await ApiBookablesService.getBookables(
+          this.tenantId,
+          true
+        );
+        return response.data;
+      } catch (error) {
+        if (!isForbiddenError(error)) throw error;
+        this.bookablesForbidden = true;
+        return [];
       }
     },
     async loadGroupBooking() {
@@ -133,11 +214,7 @@ export default {
 </script>
 
 <style scoped>
-.booking-edit-back {
-  min-width: 0 !important;
-  height: auto !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+.booking-edit-page__back {
   letter-spacing: normal;
   text-transform: none;
 }

@@ -8,10 +8,12 @@
     >
       <div v-if="scrollBody" class="admin-page__header">
         <h1 v-if="!hidePageTitle" class="text-h5 mb-0">{{ pageTitle }}</h1>
+        <SupervisionPendingBanner v-if="tenantPage" class="mt-2" />
         <slot name="page-header" />
       </div>
-      <template v-else-if="!hidePageTitle">
-        <h1 class="text-h5 mb-2">{{ pageTitle }}</h1>
+      <template v-else>
+        <h1 v-if="!hidePageTitle" class="text-h5 mb-2">{{ pageTitle }}</h1>
+        <SupervisionPendingBanner v-if="tenantPage" />
       </template>
       <div
         class="admin-page__body"
@@ -25,6 +27,7 @@
 
 <script>
 import Navbar from "@/components/Navbar";
+import SupervisionPendingBanner from "@/components/Supervision/SupervisionPendingBanner.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import { mapActions } from "vuex";
 import { routeRequiresTenant } from "@/router/middlewares/requireTenant";
@@ -38,10 +41,15 @@ export default {
   },
   components: {
     Navbar,
+    SupervisionPendingBanner,
   },
   computed: {
     pageTitle() {
       return this.title || this.$route.meta.title;
+    },
+    // A page of the current tenant, as the router's tenant gate names it.
+    tenantPage() {
+      return routeRequiresTenant(this.$route);
     },
   },
 
@@ -73,6 +81,9 @@ export default {
 
   async mounted() {
     await this.fetchTenants();
+    // A selection restored from the local storage never went through
+    // `tenants/select`, which loads the level otherwise.
+    this.$store.dispatch("tenants/loadSupervisionLevel");
   },
 };
 </script>
@@ -87,9 +98,15 @@ export default {
   overflow: hidden;
 }
 
+/* The header reserves the same right edge as the scrolling body below it -
+   its 12px padding and the scrollbar gutter - so right-aligned actions end
+   where the body's content ends. */
 .admin-page__header {
   flex-shrink: 0;
   padding-bottom: 12px;
+  padding-right: 12px;
+  overflow-y: hidden;
+  scrollbar-gutter: stable;
 }
 
 .admin-page__body--scroll {

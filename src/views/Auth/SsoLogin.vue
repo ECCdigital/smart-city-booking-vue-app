@@ -1,44 +1,15 @@
 <script>
+import AuthPage from "@/components/Auth/AuthPage.vue";
 import KeycloakCard from "@/components/Auth/KeycloakCard.vue";
-import ContactInformation from "@/components/ContactInformation.vue";
 
 export default {
   name: "SsoLogin",
-  components: { ContactInformation, KeycloakCard },
-  computed: {
-    appLogo() {
-      return process.env.BASE_URL && process.env.BASE_URL.trim()
-        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
-        : "/app-logo.png";
-    },
-  },
+  components: { AuthPage, KeycloakCard },
 };
 </script>
 
 <template>
-  <div class="text-center">
-    <v-card outlined max-width="500" class="mx-auto mt-sm-15">
-      <v-card-text>
-        <v-img
-          :src="appLogo"
-          max-width="200"
-          class="mx-auto mt-4"
-        />
-        <h2 class="mt-8 mb-2">Mit Keycloak anmelden</h2>
-      </v-card-text>
-      <KeycloakCard />
-      <v-card-text class="text-center">
-        <ContactInformation class="px-6" />
-      </v-card-text>
-    </v-card>
-    <v-card elevation="0" max-width="500" class="mx-auto mt-2">
-      <v-card-text class="text-right pa-0">
-        <router-link to="/datenschutz">Datenschutz</router-link>
-        |
-        <router-link to="/nutzungsbedingungen">Nutzungsbedingungen</router-link>
-      </v-card-text>
-    </v-card>
-  </div>
+  <AuthPage title="Mit Keycloak anmelden" icon="mdi-domain">
+    <KeycloakCard />
+  </AuthPage>
 </template>
-
-<style scoped></style>

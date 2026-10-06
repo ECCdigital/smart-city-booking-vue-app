@@ -2,13 +2,13 @@
   <v-card
     :class="[
       'bookable-card',
+      'scb-card',
       'fill-height',
       'd-flex',
       'flex-column',
       { 'bookable-card--unavailable': !item.isBookable || !item.isPublic },
     ]"
     @click="navigateToEdit"
-    hover
   >
     <div class="bookable-card-header position-relative">
       <div class="menu-container">
@@ -71,13 +71,14 @@
         </v-menu>
       </div>
 
-      <v-img
-        v-if="item.imgUrl"
-        :lazy-src="item.imgUrl"
+      <MediaReferenceImage
+        v-if="coverImage"
+        :reference="coverImage"
+        size="sm"
+        lazy-size="thumb"
         aspect-ratio="16/9"
-        :src="item.imgUrl"
         class="bookable-image"
-        height="200"
+        :height="200"
       >
         <div
           v-if="!item.isBookable || !item.isPublic"
@@ -115,7 +116,7 @@
             <span>Nicht buchbar</span>
           </v-tooltip>
         </div>
-      </v-img>
+      </MediaReferenceImage>
 
       <div v-else class="placeholder-container">
         <PlaceholderPattern variant="poly" :theme="isDark ? 'dark' : 'light'" />
@@ -175,6 +176,11 @@
         <v-icon x-small class="mr-1">mdi-calendar-star</v-icon>
         {{ item._populated?.event?.information?.name || "Unbekannt" }}
       </p>
+      <ReviewStatusChip
+        class="mt-1"
+        :review="item.review"
+        :supervision-level="supervisionLevel"
+      />
     </div>
 
     <v-divider></v-divider>
@@ -187,72 +193,63 @@
         ></p>
       </div>
 
-      <!-- IFBS External Prices -->
-      <div v-if="isIfbsActive" class="mb-3">
+      <!-- What the external provider charges, in place of the bookable's own
+           price tiers. -->
+      <div v-if="handlesExternalPricing" class="mb-3">
         <div class="d-flex align-center mb-2">
           <v-icon small color="grey darken-1" class="mr-2">
-            mdi-lock-outline
+            mdi-cash-multiple
           </v-icon>
           <span class="text-body-2 font-weight-bold grey--text text--darken-2">
-            IFBS Preise
+            {{ $t("bookable.externalPrice.title") }}
           </span>
           <v-chip x-small class="ml-2" color="primary" outlined label>
             extern
           </v-chip>
         </div>
 
-        <div v-if="isLoadingIfbsPrices" class="ml-7">
+        <div v-if="isLoadingPrices" class="ml-7">
           <v-progress-linear indeterminate color="primary" class="my-2" />
         </div>
 
-        <div v-else-if="ifbsPrices" class="ml-7">
+        <div v-else-if="hasExternalPriceData" class="ml-7">
           <div
-            v-for="row in ifbsCardPriceRows"
-            :key="row.key"
-            class="d-flex align-center justify-space-between text-body-2 mb-1"
+            v-for="row in externalPriceTiers"
+            :key="row.unit"
+            class="d-flex align-center justify-space-between text-body-2 mb-1 external-price-row"
           >
             <div class="d-flex align-center">
               <v-icon x-small color="primary" class="mr-2">
                 {{ row.icon }}
               </v-icon>
-              <span class="grey--text text--darken-1">{{ row.label }}</span>
+              <span class="grey--text text--darken-1">
+                {{ $t(row.labelKey) }}
+              </span>
             </div>
             <span class="font-weight-bold primary--text">
-              {{ row.value }}
+              {{ formatCurrency(row.priceEur) }}
             </span>
           </div>
 
-          <v-divider class="my-2" />
+          <template v-if="externalServiceFee !== null">
+            <v-divider class="my-2" />
 
-          <div class="d-flex align-center justify-space-between text-body-2">
-            <div class="d-flex align-center">
-              <v-icon x-small color="primary" class="mr-2">
-                mdi-cash-plus
-              </v-icon>
-              <span class="grey--text text--darken-1">Servicegebühr</span>
+            <div
+              class="d-flex align-center justify-space-between text-body-2 external-price-fee"
+            >
+              <div class="d-flex align-center">
+                <v-icon x-small color="primary" class="mr-2">
+                  mdi-cash-plus
+                </v-icon>
+                <span class="grey--text text--darken-1">
+                  {{ $t("bookable.externalPrice.serviceFee") }}
+                </span>
+              </div>
+              <span class="font-weight-bold primary--text">
+                {{ formatCurrency(externalServiceFee) }}
+              </span>
             </div>
-            <span class="font-weight-bold primary--text">
-              {{ formatCurrency(ifbsPrices["Preis_Servicegebühr"]) }}
-            </span>
-          </div>
-
-          <div
-            v-if="
-              ifbsPrices['minimum_usage_time_mins'] &&
-              ifbsPrices['minimum_usage_time_mins'] !== '0'
-            "
-            class="d-flex align-center justify-space-between text-body-2 mt-1"
-          >
-            <div class="d-flex align-center">
-              <v-icon x-small color="primary" class="mr-2">
-                mdi-timer-outline
-              </v-icon>
-              <span class="grey--text text--darken-1">Mindestdauer</span>
-            </div>
-            <span class="font-weight-bold primary--text">
-              {{ formatDuration(ifbsPrices["minimum_usage_time_mins"]) }}
-            </span>
-          </div>
+          </template>
         </div>
 
         <div v-else class="ml-7 text-caption grey--text">
@@ -365,12 +362,16 @@
 import { mapActions, mapGetters } from "vuex";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
-import ApiLockerService from "@/services/api/ApiLockerService";
 import ToastService from "@/services/ToastService";
 import PlaceholderPattern from "@/components/commons/PlaceholderPattern.vue";
+import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
+import externalPrices from "@/mixins/externalPrices";
+import { handlesCapability } from "@/utils/bookableExternalProviders";
+import ReviewStatusChip from "@/components/Supervision/ReviewStatusChip.vue";
 
 export default {
-  components: { PlaceholderPattern },
+  components: { MediaReferenceImage, PlaceholderPattern, ReviewStatusChip },
+  mixins: [externalPrices],
   props: {
     editRoute: String,
     fromRoute: String,
@@ -381,10 +382,7 @@ export default {
   },
   data() {
     return {
-      defaultImage: require("@/assets/bookable-default.jpg"),
       isDuplicateAllowed: true,
-      isLoadingIfbsPrices: false,
-      ifbsPrices: null,
       showDeleteDialog: false,
     };
   },
@@ -392,9 +390,18 @@ export default {
     ...mapGetters({
       tenantId: "tenants/currentTenantId",
       instance: "instance/instance",
+      supervisionLevel: "tenants/currentSupervisionLevel",
     }),
     isDark() {
       return this.$vuetify?.theme?.dark || false;
+    },
+    /**
+     * The cover image: the first entry of the image list, determined by
+     * position (§4.8). A bookable the media import has not touched yet falls
+     * back to its legacy `imgUrl`.
+     */
+    coverImage() {
+      return this.item.images?.[0] || this.item.imgUrl || null;
     },
     duplicateDisabled() {
       return (
@@ -405,56 +412,11 @@ export default {
     BookablePermissionService() {
       return BookablePermissionService;
     },
-    isIfbsActive() {
-      const providers = this.item?.externalProviders;
-      const provider = providers?.find(
-        (p) => p.active && p.provider === "ifbs"
-      );
-      if (provider) {
-        return (
-          provider.handles.includes("pricing") && provider.config?.locationId
-        );
-      }
-      return false;
-    },
-    ifbsProvider() {
-      if (!this.isIfbsActive) return null;
-      return this.item.externalProviders.find((p) => p.provider === "ifbs");
-    },
-    ifbsCardPriceRows() {
-      if (!this.ifbsPrices) return [];
-      return [
-        {
-          key: "1h",
-          label: "pro Stunde",
-          value: this.formatCurrency(this.ifbsPrices["Preis_1h"]),
-          icon: "mdi-clock-outline",
-        },
-        {
-          key: "1d",
-          label: "pro Tag",
-          value: this.formatCurrency(this.ifbsPrices["Preis_1d"]),
-          icon: "mdi-calendar-today",
-        },
-        {
-          key: "1w",
-          label: "pro Woche",
-          value: this.formatCurrency(this.ifbsPrices["Preis_1w"]),
-          icon: "mdi-calendar-week",
-        },
-        {
-          key: "1m",
-          label: "pro Monat",
-          value: this.formatCurrency(this.ifbsPrices["Preis_1m"]),
-          icon: "mdi-calendar-month",
-        },
-        {
-          key: "1y",
-          label: "pro Jahr",
-          value: this.formatCurrency(this.ifbsPrices["Preis_1y"]),
-          icon: "mdi-calendar-star",
-        },
-      ];
+    // The card shows the provider's prices exactly where the backend prices
+    // with them instead of the bookable's own: when an active provider
+    // handles the pricing.
+    handlesExternalPricing() {
+      return handlesCapability(this.item, "pricing");
     },
     hasPriceCategories() {
       return (
@@ -470,13 +432,13 @@ export default {
     },
   },
   watch: {
-    isIfbsActive: {
+    handlesExternalPricing: {
       immediate: true,
       handler(active) {
         if (active) {
-          this.fetchIfbsPrices();
+          this.fetchExternalPrices();
         } else {
-          this.ifbsPrices = null;
+          this.externalPrices = null;
         }
       },
     },
@@ -519,42 +481,19 @@ export default {
     formatCurrency(value) {
       return parseFloat(value || 0).toFixed(2) + " €";
     },
-    formatDuration(minutes) {
-      const mins = parseInt(minutes, 10);
-      if (!mins || mins === 0) return "Keine";
-
-      const weeks = Math.floor(mins / 10080);
-      const days = Math.floor((mins % 10080) / 1440);
-      const hours = Math.floor((mins % 1440) / 60);
-      const remainingMins = mins % 60;
-
-      const parts = [];
-      if (weeks > 0) parts.push(`${weeks} ${weeks === 1 ? "Woche" : "Wochen"}`);
-      if (days > 0) parts.push(`${days} ${days === 1 ? "Tag" : "Tage"}`);
-      if (hours > 0)
-        parts.push(`${hours} ${hours === 1 ? "Stunde" : "Stunden"}`);
-      if (remainingMins > 0) parts.push(`${remainingMins} Min.`);
-
-      return parts.join(", ");
-    },
-    async fetchIfbsPrices() {
-      const provider = this.ifbsProvider;
-      if (!provider?.config?.locationId || !this.item?.tenantId) return;
-
-      try {
-        this.isLoadingIfbsPrices = true;
-        const response = await ApiLockerService.getPrice(
-          this.item.tenantId,
-          "ifbs",
-          provider.config.locationId
-        );
-        this.ifbsPrices = response.data;
-      } catch (err) {
-        console.error("Error fetching IFBS prices:", err);
-        this.ifbsPrices = null;
-      } finally {
-        this.isLoadingIfbsPrices = false;
+    /**
+     * What the provider charges for this bookable. The prices route answers
+     * the very categories the checkout prices with, so the card and the cart
+     * cannot disagree; a bookable the route does not answer for simply shows
+     * no prices.
+     */
+    async fetchExternalPrices() {
+      if (this.externalPricesUnavailableKey(this.item)) {
+        this.externalPrices = null;
+        return;
       }
+
+      await this.loadExternalPrices(this.item);
     },
     emitDeleteAction() {
       this.showDeleteDialog = true;
@@ -621,22 +560,11 @@ export default {
   width: 100%;
   height: 200px;
   overflow: hidden;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
 }
 
 .bookable-card {
   max-width: 400px;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
-  cursor: pointer;
   position: relative;
-  border-radius: 12px !important;
-  overflow: hidden;
-}
-
-.bookable-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
 }
 
 .bookable-card--unavailable {
@@ -674,13 +602,13 @@ export default {
 }
 
 .bookable-image {
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-  transition: transform 0.3s ease;
+  transition: transform var(--scb-motion-lift);
 }
 
-.bookable-card:hover .bookable-image {
-  transform: scale(1.02);
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .bookable-card:hover .bookable-image {
+    transform: scale(1.02);
+  }
 }
 
 .status-badges {

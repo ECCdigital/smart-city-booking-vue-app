@@ -55,6 +55,7 @@
             :key="b.id"
             :block="b"
             :variables="variables"
+            :tenant="tenant"
             :selected="selectedBlockId === b.id"
             @select="$emit('select-block', b.id)"
             @update="(updated) => onUpdateBlock(ci, b.id, updated)"
@@ -92,6 +93,7 @@ export default {
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     selected: { type: Boolean, default: false },
     selectedBlockId: { type: String, default: "" },
   },

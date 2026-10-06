@@ -7,7 +7,7 @@ class BookingPermissionService {
   }
 
   static isInstanceOwner() {
-    return user.state.data.permissions.instanceOwner
+    return user.state.data.permissions.instanceOwner;
   }
 
   static allowCreate() {
@@ -17,7 +17,7 @@ class BookingPermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return permissions.manageBookings.create;
   }
@@ -29,13 +29,53 @@ class BookingPermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return (
       permissions.manageBookings.updateAny ||
       (permissions.manageBookings.updateOwn &&
         BookingPermissionService.isOwner(booking))
     );
+  }
+
+  /**
+   * Reissuing a receipt or cancellation receipt (spec E8): the backend's
+   * `booking.reprint` - the booking's own user, or `manageBookings.updateAny`.
+   */
+  static allowReprint(booking) {
+    if (BookingPermissionService.isInstanceOwner()) return true;
+    const tenantId = store.getters["tenants/currentTenantId"];
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    if (!permissions) return false;
+    if (permissions.isOwner) return true;
+
+    return (
+      !!permissions.manageBookings?.updateAny ||
+      BookingPermissionService.isOwner(booking)
+    );
+  }
+
+  /**
+   * The Reichweite of CONTEXT.md: *any* for the instance owner, the tenant
+   * owner and `manageBookings.readAny` at the current tenant, *own* for every
+   * other member. The Buchungsseite words a 404 by it.
+   */
+  static allowReadAny() {
+    if (BookingPermissionService.isInstanceOwner()) return true;
+    const tenantId = store.getters["tenants/currentTenantId"];
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    if (!permissions) return false;
+    if (permissions.isOwner) return true;
+
+    return !!permissions.manageBookings?.readAny;
+  }
+
+  static allowAuditExport() {
+    return BookingPermissionService.allowReadAny();
   }
 
   static allowDelete(booking) {
@@ -45,12 +85,27 @@ class BookingPermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return (
       permissions.manageBookings.deleteAny ||
       (permissions.manageBookings.deleteOwn &&
         BookingPermissionService.isOwner(booking))
+    );
+  }
+
+  static allowRead(booking) {
+    if (BookingPermissionService.isInstanceOwner()) return true;
+    const tenantId = store.getters["tenants/currentTenantId"];
+    const permissions = user.state.data.permissions.tenants.find(
+      (p) => p.tenantId === tenantId
+    );
+    if (!permissions) return false;
+    if (permissions.isOwner) return true;
+
+    return (
+      !!permissions.manageBookings?.readAny ||
+      BookingPermissionService.isOwner(booking)
     );
   }
 }

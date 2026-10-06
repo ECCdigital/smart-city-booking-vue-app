@@ -15,6 +15,7 @@ Vue 2.7 SPA for multi-tenant resource booking administration (rooms, sports faci
 | State | `src/store/modules/` | Vuex modules |
 | Routing | `src/router/` | Routes and auth middleware pipeline |
 | i18n | `src/language/` | German UI strings (`de/translations.json`) |
+| Tests | `tests/unit/` | Vitest specs, mirroring the `src/` tree |
 | JS embed | `src/js-web-interface/` | Standalone `BookingManager` for external websites |
 | Entities | `src/entities/` | Lightweight domain helpers |
 
@@ -41,9 +42,11 @@ npm run lint:check   # eslint
 npm run lint:fix     # eslint --fix
 npm run format:check # prettier --check
 npm run format:write # prettier --write
+npm test             # vitest, single run
+npm run test:watch   # vitest, watch mode
 ```
 
-Run `npm run lint:check` before finishing a task. Fix lint issues you introduce.
+Run `npm run lint:check` and `npm test` before finishing a task. Fix lint issues you introduce.
 
 ## Coding standards
 
@@ -66,14 +69,20 @@ Details: [docs/agents/coding-standards.md](docs/agents/coding-standards.md)
 | Topic | File |
 |-------|------|
 | Architecture & data flow | [docs/agents/architecture.md](docs/agents/architecture.md) |
+| Testing (Vitest) | [docs/agents/testing.md](docs/agents/testing.md) |
+| Access vocabulary (Anlage, Fach, Grant, Reichweite) | [docs/agents/access-vocabulary.md](docs/agents/access-vocabulary.md) |
+| Booking status vocabulary (Angefragt … Storniert, the verbs, the headline over the path, `status` not flags) | [docs/agents/booking-status-vocabulary.md](docs/agents/booking-status-vocabulary.md) |
 | Vue components & views | [docs/agents/components.md](docs/agents/components.md) |
+| Design tokens (`--scb-*` custom properties, `src/scss/tokens.scss`) | [docs/agents/design-tokens.md](docs/agents/design-tokens.md) |
 | API services | [docs/agents/api-services.md](docs/agents/api-services.md) |
 | JS web interface (embed) | [docs/agents/web-integration.md](docs/agents/web-integration.md) |
+| Issue tracker (local markdown under `.scratch/`) | [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md) |
 | Optional Admin BFF / shared session | [docs/adr/0001-optional-admin-bff-shared-session.md](docs/adr/0001-optional-admin-bff-shared-session.md) |
 | Shared-session deploy | [docs/shared-session-deploy.md](docs/shared-session-deploy.md) |
 | BFF hardening / CSRF | [docs/bff-hardening.md](docs/bff-hardening.md) |
 | BFF smoke tests | [docs/bff-smoke-tests.md](docs/bff-smoke-tests.md) |
 | Auth transports (`direct` / `bff`) | [src/services/auth/](src/services/auth/) |
+| Keycloak realm (the guide in the tab „Single Sign-On“ as the one source; what follows a new requirement on the realm or changed SSO paths) | [docs/agents/keycloak-realm.md](docs/agents/keycloak-realm.md) |
 
 ## Guardrails
 

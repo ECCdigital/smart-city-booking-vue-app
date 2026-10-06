@@ -26,9 +26,7 @@
                 >
               </div>
             </template>
-            <span>
-              Bestätigte oder bezahlte Buchungen müssen storniert werden.
-            </span>
+            <span>{{ $t("booking.delete.requires-rejection.message") }}</span>
           </v-tooltip>
         </v-col>
         <v-col class="shrink">
@@ -40,6 +38,8 @@
 </template>
 
 <script>
+import { allowsAction } from "@/utils/bookingStatus";
+
 export default {
   name: "BookingDeleteConformationDialog",
   props: {
@@ -63,7 +63,7 @@ export default {
       },
     },
     isProtectedBooking() {
-      return !!(this.toDelete.isCommitted || this.toDelete.isPayed);
+      return !allowsAction(this.toDelete, "delete");
     },
   },
   methods: {

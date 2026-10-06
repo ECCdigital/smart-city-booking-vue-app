@@ -30,7 +30,16 @@ const {
   clearAuthCookies,
   getRefreshToken,
 } = require("../cookies");
-const { getSsoCallbackUri, spaPath, getBffPublicBase } = require("../publicUrl");
+const { publicOrigins } = require("../config");
+const {
+  getRequestOrigin,
+  requireRequestOrigin,
+  getSsoCallbackUri,
+  getSsoLoginUri,
+  getRedirectUris,
+  spaPath,
+} = require("../publicUrl");
+const { requireSession } = require("../session");
 
 const router = express.Router();
 
@@ -117,7 +126,7 @@ router.get("/login", async (req, res) => {
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const state = generateState();
-    const redirectUri = getSsoCallbackUri(req);
+    const redirectUri = getSsoCallbackUri(requireRequestOrigin(req));
 
     savePkceSession(state, {
       codeVerifier,
@@ -157,7 +166,7 @@ router.get("/silent-check", async (req, res) => {
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const state = generateState("silent_");
-    const redirectUri = getSsoCallbackUri(req);
+    const redirectUri = getSsoCallbackUri(requireRequestOrigin(req));
 
     savePkceSession(state, {
       codeVerifier,
@@ -428,6 +437,19 @@ router.post("/logout", async (req, res) => {
   return res.json({ success: true });
 });
 
+/**
+ * The Rücksprungadressen the BFF hands to Keycloak, per Adresse of the
+ * allowlist; with an empty allowlist only the request's own Adresse.
+ */
+router.get("/addresses", requireSession, (req, res) => {
+  const allowlistActive = publicOrigins.length > 0;
+  const origins = allowlistActive ? publicOrigins : [getRequestOrigin(req)];
+  return res.json({
+    allowlist: allowlistActive ? "active" : "empty",
+    addresses: origins.map(getRedirectUris),
+  });
+});
+
 router.get("/change-user", async (req, res) => {
   try {
     const config = await getKeycloakConfig();
@@ -449,7 +471,7 @@ router.get("/change-user", async (req, res) => {
       }
     }
 
-    const ssoLoginUrl = `${getBffPublicBase(req)}/auth/sso/login?redirect=${encodeURIComponent(redirect)}`;
+    const ssoLoginUrl = `${getSsoLoginUri(requireRequestOrigin(req))}?redirect=${encodeURIComponent(redirect)}`;
     const logoutUrl = new URL(endpoints.logout);
     logoutUrl.searchParams.set("client_id", config.publicClient);
     logoutUrl.searchParams.set("post_logout_redirect_uri", ssoLoginUrl);

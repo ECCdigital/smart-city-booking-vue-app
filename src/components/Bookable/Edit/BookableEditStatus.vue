@@ -1,6 +1,12 @@
 <script>
+import { mapGetters } from "vuex";
+import OfferReviewPanel from "@/components/Supervision/OfferReviewPanel.vue";
+import { publicationWishHintKey } from "@/utils/offerReview";
+import { OFFER_TYPES } from "@/utils/supervision";
+
 export default {
   name: "BookableEditStatus",
+  components: { OfferReviewPanel },
   props: {
     bookable: {
       type: Object,
@@ -8,9 +14,15 @@ export default {
     },
   },
   data() {
-    return {};
+    return { offerType: OFFER_TYPES.BOOKABLE };
   },
   computed: {
+    ...mapGetters({
+      supervisionLevel: "tenants/currentSupervisionLevel",
+    }),
+    publicationWishHint() {
+      return publicationWishHintKey(this.supervisionLevel);
+    },
     model: {
       get() {
         return this.bookable;
@@ -26,6 +38,15 @@ export default {
       set(value) {
         this.model.autoCommitBooking = !value;
       },
+    },
+  },
+  methods: {
+    /**
+     * The review is the backend's alone and never part of a save, so it goes
+     * straight into the bookable - the unsaved edits around it stay.
+     */
+    onReviewUpdated(review) {
+      this.$set(this.bookable, "review", review);
     },
   },
 };
@@ -102,20 +123,43 @@ export default {
       </template>
       <span>{{ $t("bookable.edit.status.manualApproval.tooltip") }}</span>
     </v-tooltip>
+
+    <div class="status-review">
+      <p
+        v-if="publicationWishHint"
+        class="text-caption text--secondary mt-2 mb-0"
+        data-test="publication-wish-hint"
+      >
+        <v-icon small class="mr-1">mdi-information-outline</v-icon>
+        {{ $t(publicationWishHint) }}
+      </p>
+      <OfferReviewPanel
+        class="mt-2"
+        :tenant-id="bookable.tenantId"
+        :offer-type="offerType"
+        :offer-id="bookable.id"
+        :review="bookable.review"
+        :is-public="bookable.isPublic === true"
+        :supervision-level="supervisionLevel"
+        @update:review="onReviewUpdated"
+      />
+    </div>
   </v-sheet>
 </template>
 
 <style scoped>
 .status-indicator {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  background-color: var(--v-accent-base, #f5f5f5) !important;
-}
-
-.theme--dark .status-indicator {
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  transition: transform var(--scb-motion-base),
+    box-shadow var(--scb-motion-base);
+  background-color: var(--scb-surface-raised) !important;
 }
 
 .status-switch-wrap {
   display: inline-flex;
+}
+
+/* Its own row below the switches of the flex-wrapping sheet. */
+.status-review {
+  flex-basis: 100%;
 }
 </style>

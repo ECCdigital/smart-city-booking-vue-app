@@ -72,12 +72,16 @@
               v-for="t in visibleTabs"
               :key="t.key"
               class="bookable-edit-nav__group"
-              :class="{ 'bookable-edit-nav__group--active': activeTabKey === t.key }"
+              :class="{
+                'bookable-edit-nav__group--active': activeTabKey === t.key,
+              }"
             >
               <button
                 type="button"
                 class="bookable-edit-nav__tab"
-                :class="{ 'bookable-edit-nav__tab--active': activeTabKey === t.key }"
+                :class="{
+                  'bookable-edit-nav__tab--active': activeTabKey === t.key,
+                }"
                 @click="goToTab(t.key)"
               >
                 <v-icon small class="bookable-edit-nav__tab-icon">
@@ -177,9 +181,7 @@
       :anchor-el="
         $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
       "
-      :scroll-root="
-        $refs.editorScroll && ($refs.editorScroll.$el || $refs.editorScroll)
-      "
+      :scroll-root="scrollRoot"
       @submit="createOrUpdate"
       @cancel="onRestoreChanges"
       show-restore
@@ -209,7 +211,7 @@ import { normalizeLeadTimeFields } from "@/utils/bookingLeadTime";
 import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
 import { mapActions, mapGetters } from "vuex";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
-import BookableEditLockerSystems from "@/components/Bookable/Edit/BookableEditLockerSystems.vue";
+import BookableEditAccessLocks from "@/components/Bookable/Edit/BookableEditAccessLocks.vue";
 import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
 import BookableEditRelatedBookables from "@/components/Bookable/Edit/BookableEditRelatedBookables.vue";
 import BookableEditAttachments from "@/components/Bookable/Edit/BookableEditAttachments.vue";
@@ -230,6 +232,13 @@ import {
   getVisibleBookableEditSections,
   shouldShowBookableEditSectionNav,
 } from "@/utils/bookableEditSections";
+import BookablePermissionService from "@/services/permissions/BookablePermissionService";
+import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
+
+// What the unsaved-changes snapshot leaves out. The review (glossary
+// "Prüfstatus") is the backend's alone and changes through its own actions,
+// never through a save - a submission must not read as an unsaved edit.
+const SNAPSHOT_IGNORED = ["customFields", "review"];
 
 export default {
   name: "BookableEdit",
@@ -242,7 +251,7 @@ export default {
     BookableEditPrice,
     BookableEditBookingType,
     BookableEditOpeningHours,
-    BookableEditLockerSystems,
+    BookableEditAccessLocks,
     BookableEditPermissions,
     BookableEditRelatedBookables,
     BookableEditAttachments,
@@ -263,6 +272,7 @@ export default {
   },
   data() {
     return {
+      scrollRoot: null,
       isLoading: false,
       inProgress: false,
       validRoot: true,
@@ -298,10 +308,10 @@ export default {
           comp: "BookableEditOpeningHours",
         },
         {
-          key: "lockerSystems",
+          key: "accessLocks",
           label: "Schließsysteme",
           icon: "mdi-lock-outline",
-          comp: "BookableEditLockerSystems",
+          comp: "BookableEditAccessLocks",
         },
         {
           key: "relatedBookables",
@@ -354,10 +364,11 @@ export default {
       return isBookableExpertModeConfigured();
     },
     visibleTabs() {
+      const tabs = this.tabs.filter((tab) => this.isTabVisible(tab));
       if (this.expertMode) {
-        return this.tabs;
+        return tabs;
       }
-      return this.tabs.filter((tab) => !isBookableExpertOnlyTab(tab.key));
+      return tabs.filter((tab) => !isBookableExpertOnlyTab(tab.key));
     },
     tabsRenderKey() {
       return this.expertMode ? "expert" : "simple";
@@ -406,7 +417,7 @@ export default {
       ) {
         return false;
       }
-      const bookableClean = _.omit(this.bookable, ["customFields"]);
+      const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
       return (
         JSON.stringify({
           bookable: bookableClean,
@@ -423,6 +434,16 @@ export default {
       if (discard) {
         await this.init();
       }
+    },
+    isTabVisible(tab) {
+      if (!tab.permission) return true;
+      if (tab.permission === "manageBookables") {
+        if (!this.bookable?.id) {
+          return BookablePermissionService.allowCreate();
+        }
+        return BookablePermissionService.allowUpdate(this.bookable);
+      }
+      return true;
     },
     async createOrUpdate() {
       try {
@@ -441,7 +462,7 @@ export default {
         }
 
         // Match init(): snapshot the normalized bookable, not raw response.data
-        const bookableClean = _.omit(this.bookable, ["customFields"]);
+        const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
 
         this.originalSnapshot = JSON.stringify({
           bookable: bookableClean,
@@ -456,7 +477,20 @@ export default {
           );
         }
       } catch (err) {
-        if (!this.bookableID) {
+        if (err.response?.status === 400) {
+          // A rejected save is a ValidationError whose details name the
+          // offending field - among them an access point id the tenant does
+          // not know.
+          const message = formatAccessPointErrorMessage(err, {
+            fallbackKey: "bookable.update.error.message",
+          });
+          await this.addToast({
+            title: this.$t("accessPoint.bookable.saveError.title"),
+            message,
+            type: "error",
+            timeout: 8000,
+          });
+        } else if (!this.bookableID) {
           await this.addToast(
             ToastService.createToast("bookable.create.error", "error")
           );
@@ -490,7 +524,7 @@ export default {
       }
 
       this.$nextTick(() => {
-        const bookableClean = _.omit(this.bookable, ["customFields"]);
+        const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
         this.originalSnapshot = JSON.stringify({
           bookable: bookableClean,
         });
@@ -690,27 +724,24 @@ export default {
     },
   },
   mounted() {
+    this.scrollRoot = this.$el.closest(".admin-page__body--scroll");
     this.resolveTabFromQuery();
   },
 };
 </script>
 
 <style scoped>
+/* The page scrolls as one, as the booking editor does: the scrollbar sits at
+   the right edge of the page body, and the navigation and the overview stick
+   to the top while the sections pass by. */
 .page-content {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
 }
 
 .page-content__form {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
 }
 
 .page-content__top {
@@ -721,7 +752,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 16px;
+  gap: var(--scb-space-2) var(--scb-space-4);
   min-width: 0;
 }
 
@@ -743,7 +774,7 @@ export default {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  gap: 8px;
+  gap: var(--scb-space-2);
 }
 
 .bookable-id-text {
@@ -755,22 +786,22 @@ export default {
 
 .page-content__main {
   display: flex;
-  flex: 1;
-  min-height: 0;
-  gap: 16px;
-  overflow: hidden;
+  align-items: flex-start;
+  gap: var(--scb-gap-columns);
 }
 
 .page-content__nav {
   flex: 0 0 auto;
-  min-height: 0;
-  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - var(--scb-app-bar-height));
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
 .bookable-edit-nav {
-  min-width: 196px;
-  max-width: 228px;
+  min-width: var(--scb-nav-width-min);
+  max-width: var(--scb-nav-width-max);
   padding: 2px 0;
 }
 
@@ -779,41 +810,37 @@ export default {
 }
 
 .bookable-edit-nav__group--active {
-  margin-bottom: 8px;
+  margin-bottom: var(--scb-space-2);
 }
 
 .bookable-edit-nav__tab {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 40px;
+  min-height: var(--scb-nav-item-height);
   margin: 0;
-  padding: 8px 12px 8px 10px;
+  padding: var(--scb-space-2) var(--scb-space-3) var(--scb-space-2) 10px;
   border: 0;
   border-left: 3px solid transparent;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--scb-radius-control) var(--scb-radius-control) 0;
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease,
-    border-color 0.15s ease;
+  transition: background-color var(--scb-motion-fast),
+    color var(--scb-motion-fast), border-color var(--scb-motion-fast);
 }
 
 .bookable-edit-nav__tab:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.theme--dark .bookable-edit-nav__tab:hover {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--scb-hover-tint);
 }
 
 .bookable-edit-nav__tab--active {
   color: var(--v-primary-base);
   border-left-color: var(--v-primary-base);
-  background-color: rgba(var(--v-primary-base), 0.08);
-  font-weight: 500;
+  background-color: var(--scb-selected-tint);
+  font-weight: var(--scb-font-weight-medium);
 }
 
 .bookable-edit-nav__tab--active .bookable-edit-nav__tab-icon {
@@ -829,7 +856,7 @@ export default {
 .bookable-edit-nav__tab-label {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 0.875rem;
+  font-size: var(--scb-font-size-md);
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
@@ -841,49 +868,37 @@ export default {
   flex-direction: column;
   gap: 1px;
   margin: 2px 0 0 22px;
-  padding: 2px 0 2px 12px;
-  border-left: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.theme--dark .bookable-edit-nav__sections {
-  border-left-color: rgba(255, 255, 255, 0.16);
+  padding: 2px 0 2px var(--scb-space-3);
+  border-left: 1px solid var(--scb-surface-border);
 }
 
 .bookable-edit-nav__section {
   display: block;
   width: 100%;
   margin: 0;
-  padding: 5px 8px;
+  padding: 5px var(--scb-space-2);
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--scb-radius-control);
   background: transparent;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--scb-text-muted);
   font: inherit;
-  font-size: 0.8125rem;
-  line-height: 1.3;
+  font-size: var(--scb-font-size-sm);
+  line-height: var(--scb-line-height-tight);
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.theme--dark .bookable-edit-nav__section {
-  color: rgba(255, 255, 255, 0.7);
+  transition: background-color var(--scb-motion-fast),
+    color var(--scb-motion-fast);
 }
 
 .bookable-edit-nav__section:hover {
-  color: rgba(0, 0, 0, 0.87);
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.theme--dark .bookable-edit-nav__section:hover {
-  color: rgba(255, 255, 255, 0.92);
-  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--scb-text-hover);
+  background-color: var(--scb-hover-tint);
 }
 
 .bookable-edit-nav__section--active {
   color: var(--v-primary-base);
-  font-weight: 500;
-  background-color: rgba(var(--v-primary-base), 0.08);
+  font-weight: var(--scb-font-weight-medium);
+  background-color: var(--scb-selected-tint);
 }
 
 .theme--dark .bookable-edit-nav__section--active {
@@ -893,16 +908,12 @@ export default {
 .bookable-edit-nav__subnav {
   display: flex;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: var(--scb-space-1);
   margin: 0;
-  padding: 6px 4px 8px;
+  padding: 6px var(--scb-space-1) var(--scb-space-2);
   overflow-x: auto;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--scb-rule-strong);
   scrollbar-width: thin;
-}
-
-.theme--dark .bookable-edit-nav__subnav {
-  border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 .bookable-edit-nav__sublink {
@@ -910,35 +921,27 @@ export default {
   margin: 0;
   padding: 6px 10px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--scb-radius-pill);
   background: transparent;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--scb-text-muted);
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: var(--scb-font-size-sm);
   line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.theme--dark .bookable-edit-nav__sublink {
-  color: rgba(255, 255, 255, 0.7);
+  transition: background-color var(--scb-motion-fast),
+    color var(--scb-motion-fast);
 }
 
 .bookable-edit-nav__sublink:hover {
-  color: rgba(0, 0, 0, 0.87);
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.theme--dark .bookable-edit-nav__sublink:hover {
-  color: rgba(255, 255, 255, 0.92);
-  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--scb-text-hover);
+  background-color: var(--scb-hover-tint-strong);
 }
 
 .bookable-edit-nav__sublink--active {
   color: var(--v-primary-base);
-  font-weight: 500;
-  background-color: rgba(var(--v-primary-base), 0.12);
+  font-weight: var(--scb-font-weight-medium);
+  background-color: var(--scb-selected-tint-strong);
 }
 
 .theme--dark .bookable-edit-nav__sublink--active {
@@ -948,36 +951,34 @@ export default {
 .page-content__editor {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-  padding-right: 4px;
-  padding-bottom: calc(
-    56px + /* SaveBar height */ 12px + /* bottom margin */ 12px + /* gap */ 16px
-      /* extra spacing */
-  );
+  padding-bottom: var(--scb-save-bar-clearance);
 }
 
 .page-content__editor >>> [id^="be-section-"] {
-  scroll-margin-top: 16px;
+  scroll-margin-top: var(--scb-space-4);
 }
 
 .page-content__overview {
-  flex: 0 0 280px;
-  max-width: 320px;
-  min-height: 0;
+  flex: 0 0 var(--scb-overview-width);
+  max-width: var(--scb-overview-width-max);
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - var(--scb-app-bar-height));
   overflow-x: hidden;
   overflow-y: auto;
 }
 
+/* $scb-bp-sm / $scb-bp-xs of tokens.scss; a scoped style cannot read them. */
 @media (max-width: 959px) {
   .page-content__main {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .page-content__nav {
     flex: 0 0 auto;
+    position: static;
+    max-height: none;
     overflow-y: hidden;
   }
 
@@ -1007,7 +1008,7 @@ export default {
 
   .page-content__meta-title {
     flex: 1 1 100%;
-    font-weight: 500;
+    font-weight: var(--scb-font-weight-medium);
   }
 
   .bookable-id-copy {
@@ -1030,18 +1031,15 @@ export default {
   max-width: min(100%, 280px);
   min-width: 0;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--scb-radius-control);
   padding: 2px 6px;
   margin: -2px -6px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color var(--scb-motion-base),
+    color var(--scb-motion-base);
 }
 
 .bookable-id-copy:hover {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: var(--scb-hover-tint-strong);
   color: var(--v-primary-base);
-}
-
-.theme--dark .bookable-id-copy:hover {
-  background-color: rgba(255, 255, 255, 0.08);
 }
 </style>

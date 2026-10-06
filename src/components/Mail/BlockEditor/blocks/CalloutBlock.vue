@@ -6,6 +6,7 @@
     <TextBlock
       :block="textProxy"
       :variables="variables"
+      :tenant="tenant"
       @update="onInner"
     />
   </div>
@@ -19,6 +20,7 @@ export default {
   props: {
     block: { type: Object, required: true },
     variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     selected: { type: Boolean, default: false },
   },
   computed: {

@@ -1,0 +1,169 @@
+// Surfaces of the booking pages (BookingPage, GroupBookingPage,
+// BookingEditPage), in the vocabulary of the media library: outlined cards
+// without shadows, small-caps section captions, label/value facts and
+// hairline rows instead of tables. Every colour and size is a token from
+// tokens.scss.
+//
+// The app-wide $card-border-radius (25px !important, see variables.scss) is
+// toned down here the same way media-library.scss does it; the !important is
+// what it takes to out-specify the Vuetify rule. Everything else is plain
+// classes the three pages share.
+
+.booking-page,
+.group-booking-page,
+.booking-edit-page {
+  .v-card,
+  .v-sheet.booking-status-path {
+    border-radius: var(--scb-radius-surface) !important;
+  }
+
+  // The access-points card brings its own elevation; on these pages every
+  // surface is outlined and flat.
+  .v-card.elevation-2 {
+    box-shadow: none !important;
+  }
+}
+
+// A section caption: the same small caps the media library's detail panel
+// and filter column carry.
+.booking-caption {
+  font-size: var(--scb-font-size-caption);
+  font-weight: var(--scb-font-weight-semibold);
+  letter-spacing: var(--scb-letter-spacing-caption);
+  text-transform: uppercase;
+  color: var(--scb-text-caption);
+  margin-bottom: var(--scb-space-2);
+}
+
+.booking-caption--spaced {
+  margin-top: var(--scb-space-5);
+}
+
+// Facts: label left, value right, one line each.
+.booking-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: var(--scb-font-size-sm);
+}
+
+.booking-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--scb-space-4);
+  min-width: 0;
+}
+
+// A label keeps its width up to half the row and wraps beyond it: a custom
+// field's caption is a question of any length, and the value needs the rest.
+.booking-fact__label {
+  flex: none;
+  max-width: 50%;
+  overflow-wrap: anywhere;
+  color: var(--scb-text-muted);
+}
+
+.booking-fact__value {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  color: var(--scb-text);
+}
+
+.booking-fact__value--strong {
+  font-weight: var(--scb-font-weight-semibold);
+}
+
+// A two-column fact grid for the wide column.
+.booking-facts--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 5px 32px;
+}
+
+// Rows: a borderless list separated by hairlines, as the media library's
+// size variants are.
+.booking-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.booking-row {
+  display: flex;
+  align-items: center;
+  gap: var(--scb-space-3);
+  min-height: var(--scb-row-height);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--scb-rule);
+}
+
+.booking-row:last-child {
+  border-bottom: 0;
+}
+
+.booking-row__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.booking-row__title {
+  font-size: var(--scb-font-size-sm);
+  font-weight: var(--scb-font-weight-semibold);
+  color: var(--scb-text);
+  line-height: var(--scb-line-height-base);
+}
+
+.booking-row__subtitle {
+  font-size: var(--scb-font-size-xs);
+  color: var(--scb-text-muted);
+  line-height: var(--scb-line-height-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.booking-row__aside {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--scb-space-1);
+  font-size: var(--scb-font-size-sm);
+  color: var(--scb-text);
+  white-space: nowrap;
+}
+
+// The editor: BaseSection is shared with the other editors of the app, so it
+// is made a section card (section-card.scss) for this page alone - its title
+// row is the header strip, its divider the hairline. The summary beside it
+// is a section card of its own.
+.booking-edit-page {
+  .base-section.v-card {
+    @include section-card-surface;
+    // BaseSection unsets its background with an !important of its own.
+    background-color: var(--scb-surface) !important;
+    border: 1px solid var(--scb-surface-border);
+    margin-bottom: var(--scb-gap-cards);
+
+    > .v-card__title {
+      @include section-card-header;
+    }
+
+    > .v-card__title > .d-flex {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    > .v-card__title + .v-divider {
+      border-color: var(--scb-rule);
+    }
+
+    > .v-card__text {
+      padding: var(--scb-section-body-padding);
+    }
+  }
+
+  .booking-summary {
+    top: 0;
+  }
+}

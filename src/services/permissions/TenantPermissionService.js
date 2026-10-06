@@ -1,51 +1,150 @@
-import user from "@/store/modules/user";
+// The store first: `user.js` imports the store back, and the admin layout's
+// band may be the first to load this service - the other way round the store
+// would be built before `user.js` is.
 import store from "@/store";
+import user from "@/store/modules/user";
 
 class TenantPermissionService {
-  static isOwner(tenant) {
-    return tenant.ownerUserId === user.state.data.user.id;
-  }
-
   static isInstanceOwner() {
-    return user.state.data.permissions.instanceOwner
+    return user.state.data.permissions.instanceOwner;
   }
 
+  /**
+   * Creating a tenant is an instance setting, not a role and not tenant
+   * ownership - the backend authorises `createTenant` against
+   * `allowCreateTenant`, which the permissions payload carries at the top
+   * level. This is the same signal the `user/allowToCreateTenants` getter
+   * reads for `Home.vue` and `InstanceTenants.vue`; the payload is read
+   * directly here because every sibling permission service does, and the
+   * getter is the shape components consume.
+   */
   static allowCreate() {
     if (TenantPermissionService.isInstanceOwner()) return true;
-    const tenantId = store.getters["tenants/currentTenantId"];
+    return user.state.data.permissions.allowCreateTenant === true;
+  }
+
+  /**
+   * Membership of one tenant: the permissions payload lists a membership
+   * for every tenant the user belongs to, owner or not. An instance owner
+   * sees every tenant, but is a member of only these - "Meine Mandanten"
+   * on the tenant overview draws the line here.
+   */
+  static isTenantMember(tenantId) {
+    return (user.state.data?.permissions?.tenants || []).some(
+      (p) => p.tenantId === tenantId
+    );
+  }
+
+  /**
+   * Ownership of one tenant, read from the membership the permissions payload
+   * carries. Update and delete ask the identical question, so they share this.
+   */
+  static isTenantOwner(tenantId) {
     const permissions = user.state.data.permissions.tenants.find(
       (p) => p.tenantId === tenantId
     );
-    if (!permissions) return false;
-    return permissions.manageTenants?.create;
+    return permissions?.isOwner === true;
   }
 
-  static allowUpdate(tenant) {
+  /**
+   * Editing a tenant belongs to its owner and to the instance owner - the
+   * backend authorises `updateTenant` exactly that way.
+   *
+   * The membership's `isOwner` flag is what the permissions payload actually
+   * carries. There is no `manageTenants` dimension in it, so asking for one
+   * locked every tenant owner out of the tenant and access pages.
+   */
+  static allowUpdate() {
     if (TenantPermissionService.isInstanceOwner()) return true;
-    const tenantId = store.getters["tenants/currentTenantId"];
-    const permissions = user.state.data.permissions.tenants.find(
-      (p) => p.tenantId === tenantId
-    );
-    if (!permissions) return false;
-    return (
-      permissions.manageTenants?.updateAny ||
-      (permissions.manageTenants?.updateOwn &&
-        TenantPermissionService.isOwner(tenant))
+    return TenantPermissionService.isTenantOwner(
+      store.getters["tenants/currentTenantId"]
     );
   }
 
+  /**
+   * The readiness check (glossary "Bereitschafts-Check") of a tenant is for
+   * its owner and for the instance owner - the backend's `tenant.readiness`
+   * is `{ own: "tenantOwner", any: "instanceOwner" }`. The tenant argument
+   * scopes the lookup, because the instance tenant list asks for any tenant.
+   */
+  static allowReadiness(tenantId = store.getters["tenants/currentTenantId"]) {
+    if (TenantPermissionService.isInstanceOwner()) return true;
+    return TenantPermissionService.isTenantOwner(tenantId);
+  }
+
+  /**
+   * Who looks at the review of an offer (glossary "Prüfstatus") of the
+   * tenant. The backend's `reviewSubmit` is `{ own: "tenantOwner", any:
+   * "instanceOwner" }` and `reviewDecide` is `{ any: "instanceOwner" }`, for
+   * bookables and events alike; `src/utils/offerReview.js` turns the two
+   * roles into the actions offered.
+   */
+  static reviewViewer(tenantId = store.getters["tenants/currentTenantId"]) {
+    return {
+      tenantOwner: TenantPermissionService.isTenantOwner(tenantId),
+      instanceOwner: TenantPermissionService.isInstanceOwner() === true,
+    };
+  }
+
+  /**
+   * The supervision level (glossary "Aufsichtsstufe") is the instance
+   * owner's alone - the backend's `tenant.supervise` is
+   * `{ any: "instanceOwner" }`.
+   */
+  static allowSupervise() {
+    return TenantPermissionService.isInstanceOwner() === true;
+  }
+
+  /**
+   * Whether a tenant is played out in the instance's catalog is an instance
+   * setting (`PUT /api/catalog`), so only the instance owner changes it - the
+   * Portal tab of the instance settings is gated the same way.
+   */
+  static allowCatalogExposure() {
+    return TenantPermissionService.isInstanceOwner() === true;
+  }
+
+  /**
+   * The supervision history of a tenant is for its owner and for the
+   * instance owner - the backend's `tenant.supervisionHistory` is
+   * `{ own: "tenantOwner", any: "instanceOwner" }`.
+   */
+  static allowSupervisionHistory(
+    tenantId = store.getters["tenants/currentTenantId"]
+  ) {
+    if (TenantPermissionService.isInstanceOwner()) return true;
+    return TenantPermissionService.isTenantOwner(tenantId);
+  }
+
+  /**
+   * The instance-wide history - the backend's `instance.supervisionHistory`
+   * is `{ any: "instanceOwner" }`.
+   */
+  static allowInstanceSupervisionHistory() {
+    return TenantPermissionService.isInstanceOwner() === true;
+  }
+
+  /**
+   * Deleting a tenant belongs to its owner and to the instance owner, exactly
+   * like editing it.
+   *
+   * Ownership comes from the membership's `isOwner` flag, not from a field on
+   * the tenant document: the tenant schema carries no owner field at all, so
+   * the `tenant.ownerUserId` comparison this check used to make read
+   * `undefined` and could never become true. Its `deleteOwn` path was dead.
+   *
+   * The tenant argument scopes the membership lookup, because the tenant being
+   * deleted is not necessarily the selected one - the instance tenant list
+   * deletes any of them. A tenant passed without an id resolves to no
+   * membership and therefore to false: the check fails closed rather than
+   * quietly answering for the selected tenant.
+   */
   static allowDelete(tenant) {
     if (TenantPermissionService.isInstanceOwner()) return true;
-    const tenantId = store.getters["tenants/currentTenantId"];
-    const permissions = user.state.data.permissions.tenants.find(
-      (p) => p.tenantId === tenantId
-    );
-    if (!permissions) return false;
-    return (
-      permissions.manageTenants?.deleteAny ||
-      (permissions.manageTenants?.deleteOwn &&
-        TenantPermissionService.isOwner(tenant))
-    );
+    const tenantId = tenant
+      ? tenant.id
+      : store.getters["tenants/currentTenantId"];
+    return TenantPermissionService.isTenantOwner(tenantId);
   }
 }
 

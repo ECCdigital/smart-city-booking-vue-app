@@ -46,7 +46,6 @@
                     filled
                     dense
                     label="Kontakt Person"
-                    :rules="validationRules.required"
                     v-model="tenant.contactName"
                   ></v-text-field>
                 </v-col>
@@ -56,7 +55,6 @@
                     filled
                     dense
                     label="Adresse"
-                    :rules="validationRules.required"
                     v-model="tenant.location"
                   ></v-text-field>
                 </v-col>
@@ -79,7 +77,6 @@
                     filled
                     dense
                     label="Telefonummer"
-                    :rules="validationRules.required"
                     v-model="tenant.phone"
                   ></v-text-field>
                 </v-col>
@@ -91,7 +88,6 @@
                     filled
                     dense
                     label="Website"
-                    :rules="validationRules.required"
                     type="text"
                     v-model="tenant.website"
                   ></v-text-field>
@@ -725,6 +721,7 @@
             color="primary"
             @click="submitChanges"
             :loading="inProgress"
+            data-test="tenant-edit-submit"
           >
             Speichern
           </v-btn>
@@ -742,6 +739,8 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import { getApiErrorMessage } from "@/services/api/apiErrorMessage";
 import MailKonfiguration from "@/components/Tenant/MailKonfiguration.vue";
 import { mapActions } from "vuex";
+import { findTenantApp } from "@/utilities/access-apps";
+import { isFormallyValidMail } from "@/utils/tenantOnboarding";
 
 export default {
   name: "TenantEdit",
@@ -770,9 +769,12 @@ export default {
       inProgress: false,
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
+        // The required contact of a creation is not retroactive (supervision
+        // spec §6.1): a tenant from before it still saves, and the gap shows
+        // in the readiness check.
         mail: [
-          (v) => !!v || "Pflichtfeld",
-          (v) => /.+@.+\..+/.test(v) || "Muss gültige Email-Adresse sein.",
+          (v) =>
+            !v || isFormallyValidMail(v) || "Muss gültige Email-Adresse sein.",
         ],
         paymentPurposeSuffix: [
           (v) => !v || v.length <= 12 || "Maximal 12 Zeichen erlaubt.",
@@ -843,9 +845,7 @@ export default {
     },
     parevaSystem: {
       get() {
-        return (
-          this.tenant.applications?.find((app) => app.id === "pareva") || {}
-        );
+        return findTenantApp(this.tenant.applications, "pareva") || {};
       },
     },
     eventCreationMode: {
@@ -924,7 +924,7 @@ export default {
           await this.addToast({
             message: getApiErrorMessage(
               e,
-              "Fehler beim Speichern der Änderungen.",
+              "Fehler beim Speichern der Änderungen."
             ),
             type: "error",
           });

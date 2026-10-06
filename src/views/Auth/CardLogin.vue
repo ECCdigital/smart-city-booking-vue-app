@@ -1,59 +1,40 @@
 <template>
-  <v-container class="text-center">
-    <v-card outlined max-width="500" class="mx-auto mt-sm-10">
-      <v-card-text>
-        <v-img :src="appLogo" max-width="200" class="mx-auto mt-4" />
+  <AuthPage
+    :title="cardMethod ? cardMethod.label : 'Mit Karte anmelden'"
+    icon="mdi-card-account-details-outline"
+  >
+    <div v-if="loading" class="scb-form text-center">
+      <v-progress-circular indeterminate color="primary" />
+    </div>
 
-        <template v-if="cardMethod">
-          <h2 class="mt-8 mb-2">{{ cardMethod.label }}</h2>
-          <p v-if="cardMethod.description" class="subtitle-2 mb-6">
-            {{ cardMethod.description }}
-          </p>
-        </template>
+    <CardLoginCard
+      v-else-if="cardMethod"
+      :card-method="cardMethod"
+      @success="onSuccess"
+    />
 
-        <template v-else-if="!loading">
-          <v-alert type="error" text dense class="mt-8">
-            Anmeldemethode nicht gefunden oder deaktiviert.
-          </v-alert>
-        </template>
-      </v-card-text>
-
-      <CardLoginCard
-        v-if="cardMethod"
-        :card-method="cardMethod"
-        @success="onSuccess"
-      />
-
-      <v-card-text v-if="loading" class="text-center py-10">
-        <v-progress-circular indeterminate color="primary" />
-      </v-card-text>
-
-      <v-card-text class="text-center">
-        <ContactInformation class="px-6" />
-      </v-card-text>
-    </v-card>
-
-    <v-card elevation="0" max-width="500" class="mx-auto mt-2">
-      <v-card-text class="text-right pa-0">
-        <router-link to="/datenschutz">Datenschutz</router-link>
-        |
-        <router-link to="/nutzungsbedingungen">
-          Nutzungsbedingungen
+    <div v-else class="scb-form">
+      <v-alert type="error" text dense class="mb-0">
+        Anmeldemethode nicht gefunden oder deaktiviert.
+      </v-alert>
+      <p class="scb-form__switch mt-4 mb-0">
+        <router-link :to="{ name: 'login' }" class="scb-form__link">
+          Zurück zur Anmeldung
         </router-link>
-      </v-card-text>
-    </v-card>
-  </v-container>
+      </p>
+    </div>
+  </AuthPage>
 </template>
 
 <script>
 import { mapActions, mapGetters } from "vuex";
-import ContactInformation from "@/components/ContactInformation.vue";
+import AuthPage from "@/components/Auth/AuthPage.vue";
 import CardLoginCard from "@/components/Auth/CardLoginCard.vue";
 import ApiAuthService from "@/services/api/ApiAuthService";
 
 export default {
   name: "CardLogin",
-  components: { ContactInformation, CardLoginCard },
+  components: { AuthPage, CardLoginCard },
 
   props: {
     appId: { type: String, required: true },
@@ -70,11 +51,6 @@ export default {
     ...mapGetters({
       nextUrl: "authStore/nextUrl",
     }),
-    appLogo() {
-      return process.env.BASE_URL && process.env.BASE_URL.trim()
-        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
-        : "/app-logo.png";
-    },
   },
 
   methods: {

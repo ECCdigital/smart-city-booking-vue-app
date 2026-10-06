@@ -1,4 +1,30 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
+
+const warningsKey = new PluginKey("mailVariableWarnings");
+
+/**
+ * Warning decorations over the chips of conditional variables. They live in
+ * plugin state, not in the node, so the stored HTML never carries them and the
+ * editor re-derives them whenever `setMailVariableWarnings` hands in a new
+ * lookup (catalog or tenant changed).
+ */
+function warningDecorations(doc, warningFor) {
+  const decorations = [];
+  doc.descendants((node, pos) => {
+    if (node.type.name !== "mailVariable") return;
+    const text = warningFor(node.attrs.name);
+    if (!text) return;
+    decorations.push(
+      Decoration.node(pos, pos + node.nodeSize, {
+        class: "mail-variable-chip--warning",
+        title: text,
+      })
+    );
+  });
+  return DecorationSet.create(doc, decorations);
+}
 
 const VariableNode = Node.create({
   name: "mailVariable",
@@ -68,8 +94,35 @@ const VariableNode = Node.create({
     return node.attrs.triple ? `{{{${name}}}}` : `{{${name}}}`;
   },
 
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: warningsKey,
+        state: {
+          init: () => ({ warningFor: () => "" }),
+          apply: (tr, previous) => {
+            const warningFor = tr.getMeta(warningsKey);
+            return warningFor ? { warningFor } : previous;
+          },
+        },
+        props: {
+          decorations(state) {
+            return warningDecorations(state.doc, this.getState(state).warningFor);
+          },
+        },
+      }),
+    ];
+  },
+
   addCommands() {
     return {
+      /** `warningFor(name)` returns the warning text for a chip, or "" for none. */
+      setMailVariableWarnings:
+        (warningFor) =>
+          ({ tr, dispatch }) => {
+            if (dispatch) tr.setMeta(warningsKey, warningFor);
+            return true;
+          },
       insertMailVariable:
         (name, options = {}) =>
           ({ chain }) => {

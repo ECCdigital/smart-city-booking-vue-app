@@ -1,159 +1,35 @@
 <template>
   <AdminLayout>
     <div class="page-header">
-      <div class="d-flex align-center mb-3 justify-space-between">
-        <v-btn-toggle
-          v-model="currentView"
-          mandatory
-          rounded
-          active-class="active-button"
-        >
-          <v-btn value="list">
-            <v-icon left> mdi-list-box-outline </v-icon>
-            Liste
-          </v-btn>
-          <v-btn value="calendar">
-            <v-icon left> mdi-calendar-blank-outline </v-icon>
-            Kalender
-          </v-btn>
-          <v-btn v-if="workflow.active" value="kanban">
-            <v-icon left> mdi-table-column </v-icon>
-            Kanban
-          </v-btn>
-        </v-btn-toggle>
-
-        <div>
-          <v-tooltip v-if="currentView === 'kanban'" bottom>
-            <template v-slot:activator="{ on }">
-              <v-btn
-                v-on="on"
-                icon
-                small
-                class="ml-2"
-                :class="{ 'active-button': showBacklog }"
+      <!-- The search band (SearchBar) with the filter in front; the view
+           switch, backlog and export in the row beneath it. -->
+      <SearchBar
+        v-model="searchTerm"
+        :fields="$t('booking.search')"
+        :filters="filterSections"
+        data-test="booking-search"
+        @filter="onFilter"
+      >
+        <template #actions>
+          <ToolbarRow :views="views" :view.sync="currentView">
+            <template #actions>
+              <ToolbarAction
+                v-if="currentView === 'kanban'"
+                icon="mdi-tray-full"
+                :active="showBacklog"
+                :title="$t('booking.backlog.toggle')"
                 @click="showBacklog = !showBacklog"
               >
-                <v-icon>mdi-tray-full</v-icon>
-              </v-btn>
+                {{ $t("booking.backlog.label") }}
+              </ToolbarAction>
+              <BookingExportButton
+                :bookings="filteredBookings"
+                :tenant="tenantId"
+              />
             </template>
-            <span>Backlog ein-/ausblenden</span>
-          </v-tooltip>
-          <BookingExportButton
-            class="ml-auto"
-            :bookings="filteredBookings"
-            :tenant="tenantId"
-          />
-        </div>
-      </div>
-      <v-text-field
-        v-model="searchTerm"
-        label="Buchung suchen..."
-        append-icon="mdi-magnify"
-        solo
-        clearable
-        class="search-field"
-      >
-        <template v-slot:prepend-inner>
-          <v-menu
-            bottom
-            left
-            offset-y
-            nudge-bottom="8"
-            max-width="320"
-            content-class="booking-type-filter-menu"
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-badge
-                :value="hasActiveBookingTypeFilter"
-                color="primary"
-                dot
-                overlap
-              >
-                <v-btn
-                  icon
-                  v-bind="attrs"
-                  v-on="on"
-                  class="booking-type-filter-trigger"
-                  :class="{
-                    'booking-type-filter-trigger--active':
-                      hasActiveBookingTypeFilter,
-                  }"
-                  @click.stop
-                >
-                  <v-icon>mdi-filter-variant</v-icon>
-                </v-btn>
-              </v-badge>
-            </template>
-
-            <v-card class="booking-type-filter-card" elevation="8" rounded="lg">
-              <div class="booking-type-filter-card__header">
-                <div class="d-flex align-center">
-                  <div class="booking-type-filter-card__header-icon mr-3">
-                    <v-icon color="primary" small>mdi-tune-variant</v-icon>
-                  </div>
-                  <div>
-                    <div class="text-subtitle-2 font-weight-bold line-height-tight">
-                      Buchungstyp
-                    </div>
-                    <div class="text-caption grey--text">
-                      Ansicht einschränken
-                    </div>
-                  </div>
-                </div>
-                <v-btn
-                  v-if="hasActiveBookingTypeFilter"
-                  text
-                  x-small
-                  color="primary"
-                  class="px-2"
-                  @click="bookingTypeFilter = 'all'"
-                >
-                  Zurücksetzen
-                </v-btn>
-              </div>
-
-              <v-divider />
-
-              <div class="booking-type-filter-card__options">
-                <button
-                  v-for="option in bookingTypeFilterOptions"
-                  :key="option.value"
-                  type="button"
-                  class="booking-type-filter-option"
-                  :class="{
-                    'booking-type-filter-option--active':
-                      bookingTypeFilter === option.value,
-                  }"
-                  @click="bookingTypeFilter = option.value"
-                >
-                  <div
-                    class="booking-type-filter-option__icon"
-                    :class="`booking-type-filter-option__icon--${option.value}`"
-                  >
-                    <v-icon small>{{ option.icon }}</v-icon>
-                  </div>
-                  <div class="booking-type-filter-option__content">
-                    <span class="booking-type-filter-option__title">{{
-                      option.text
-                    }}</span>
-                    <span class="booking-type-filter-option__desc">{{
-                      option.description
-                    }}</span>
-                  </div>
-                  <v-icon
-                    v-if="bookingTypeFilter === option.value"
-                    small
-                    color="primary"
-                    class="booking-type-filter-option__check"
-                  >
-                    mdi-check-circle
-                  </v-icon>
-                </button>
-              </div>
-            </v-card>
-          </v-menu>
+          </ToolbarRow>
         </template>
-      </v-text-field>
+      </SearchBar>
     </div>
 
     <div class="page-content">
@@ -161,15 +37,13 @@
       <div v-if="currentView === 'list'">
         <v-skeleton-loader type="table" class="flex">
           <BookingTable
-            :bookings="filteredBookings"
+            :bookings="statusFilteredBookings"
             :loading="loading"
             @open-booking="onOpenBooking"
             @open-group-booking="onOpenGroupBooking"
             @open-edit-booking="onOpenEditBooking"
-            @commit-booking="commitBooking"
-            @pay-booking="onPayBooking"
+            @transition="onTransition"
             @open-delete-dialog="onOpenDeleteDialog"
-            @reject-booking="onOpenRejectDialog"
             @download-ical="onDownloadIcal"
           />
         </v-skeleton-loader>
@@ -178,13 +52,11 @@
       <!-- Calendar view -->
       <div v-else-if="currentView === 'calendar'">
         <BookingOverviewCalendar
-          :bookings="filteredBookings"
+          :bookings="statusFilteredBookings"
           :loading="loading"
           @open-booking="onOpenBooking"
           @open-edit-booking="onOpenEditBooking"
-          @commit-booking="commitBooking"
-          @pay-booking="onPayBooking"
-          @reject-booking="onOpenRejectDialog"
+          @transition="onTransition"
           @open-delete-dialog="onOpenDeleteDialog"
         ></BookingOverviewCalendar>
       </div>
@@ -198,8 +70,7 @@
           @open-booking="onOpenBooking"
           @open-edit-booking="onOpenEditBooking"
           @open-group-booking="onOpenGroupBooking"
-          @pay-booking="onPayBooking"
-          @commit-booking="commitBooking"
+          @transition="onTransition"
           @update:booking="fetchBooking"
         >
         </BookingKanban>
@@ -225,61 +96,10 @@
       @close="onCloseDeleteDialog"
       @delete-booking="deleteBooking"
     />
-    <BookingRejectConformationDialog
-      :to-reject="selectedBooking"
-      :open="openRejectDialog"
-      :loading="loading"
-      @close="onCloseRejectDialog"
-      @reject-booking="rejectBooking"
-    />
-    <v-dialog v-model="openBookingDialog" max-width="800px">
-      <BookingDetails
-        :booking="selectedBooking"
-        :group-booking="selectedGroupBooking"
-        @update="updateBooking"
-        @close="onCloseBookingDialog"
-        @download-ical="onDownloadIcal"
-      ></BookingDetails>
-    </v-dialog>
-    <v-dialog v-model="openGroupBookingDialog" max-width="1200px">
-      <div style="overflow: hidden">
-        <GroupBookingDetails
-          :group-booking="selectedGroupBooking"
-          @close="closeDialog('groupBooking')"
-          @update="updateGroupBookingView"
-          @download-ical="onDownloadGroupBookingIcal"
-        ></GroupBookingDetails>
-      </div>
-    </v-dialog>
-    <BookingPayDialog
-      v-if="selectedBooking.id"
-      :booking-id="selectedBooking.id"
-      :open="openPayDialog"
-      :has-group-booking="!!selectedGroupBooking?.id"
-      @close="openPayDialog = false"
-      @pay-single-booking="payBooking"
-      @pay-group-booking="payGroupBooking"
-    />
-
-    <GroupBookingCommitDialog
-      v-if="selectedBooking.id"
-      :booking-id="selectedBooking.id"
-      :open="openCommitGroupBookingDialog"
-      :in-progress="loading"
-      :error="errors.commit"
-      @close="closeDialog('commitGroupBooking')"
-      @commit-single-booking="commitBooking(selectedBooking.id, true)"
-      @commit-group-booking="commitGroupBooking(selectedGroupBooking.id)"
-    />
-    <GroupBookingRejectConformationDialog
-      :to-reject="selectedBooking"
-      :group-booking-id="selectedGroupBooking?.id"
-      :open="openRejectGroupBookingDialog"
-      :in-progress="loading"
-      :error="errors.reject"
-      @close="closeDialog('rejectGroupBooking')"
-      @reject-single-booking="rejectBooking"
-      @reject-group-booking="rejectGroupBooking"
+    <BookingTransitions
+      ref="transitions"
+      @transitioned="onTransitioned"
+      @failed="onTransitionFailed"
     />
     <GroupBookingDeleteConformationDialog
       v-if="selectedBooking.id"
@@ -287,7 +107,7 @@
       :open="openDeleteGroupBookingDialog"
       :single-delete-disabled="isSelectedBookingHardDeleteBlocked"
       :group-delete-disabled="isSelectedGroupHardDeleteBlocked"
-      @close="closeDialog('deleteGroupBooking')"
+      @close="openDeleteGroupBookingDialog = false"
       @delete-single-booking="deleteBooking"
       @delete-group-booking="deleteGroupBooking"
     />
@@ -302,41 +122,79 @@ import { mapActions, mapGetters } from "vuex";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import BookingDeleteConformationDialog from "@/components/Booking/BookingDeleteConformationDialog.vue";
-import BookingRejectConformationDialog from "@/components/Booking/BookingRejectConformationDialog.vue";
 import BookingPermissionService from "@/services/permissions/BookingPermissionService";
-import BookingDetails from "@/components/Booking/BookingDetails.vue";
 import BookingOverviewCalendar from "@/components/Booking/BookingOverviewCalendar.vue";
 import BookingTable from "@/components/Booking/BookingTable.vue";
 import BookingKanban from "@/components/Booking/BookingKanban.vue";
+import BookingTransitions from "@/components/Booking/BookingTransitions.vue";
 import ApiWorkflowService from "@/services/api/ApiWorkflowService";
-import GroupBookingDetails from "@/components/Booking/GroupBookingDetails.vue";
-import GroupBookingCommitDialog from "@/components/Booking/GroupBookingCommitDialog.vue";
-import GroupBookingRejectConformationDialog from "@/components/Booking/GroupBookingRejectConformationDialog.vue";
 import GroupBookingDeleteConformationDialog from "@/components/Booking/GroupBookingDeleteConformationDialog.vue";
 import ToastService from "@/services/ToastService";
-import {
-  getBookingErrorMessage,
-  getGroupBookingErrorMessage,
-} from "@/utils/errorMessages";
-import BookingPayDialog from "@/components/Booking/BookingPayDialog.vue";
 import ProcessingIndicator from "@/components/ProcessingIndicator.vue";
 import ProcessingService from "@/services/ProcessingService";
 import BookingExportButton from "@/components/Booking/BookingExportButton.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRow from "@/components/commons/ToolbarRow.vue";
+import ToolbarAction from "@/components/commons/ToolbarAction.vue";
+import { saveBlob } from "@/utils/fileDownload";
+import {
+  bookingPageRoute,
+  groupBookingPageRoute,
+} from "@/utils/bookingPageRoutes";
+import {
+  BOOKING_STATUS,
+  allowsAction,
+  filterBookingsByStatus,
+  statusColor,
+  statusIcon,
+  statusLabel,
+  transitionTarget,
+} from "@/utils/bookingStatus";
+import {
+  REFUND_STATE,
+  filterBookingsByRefundState,
+  refundStateMarker,
+} from "@/utils/cancellationRefund";
+
+/**
+ * The search term survives a detour to a booking's page or the editor and
+ * back to the list: it is kept in `sessionStorage`, so it is per tab and gone
+ * with it. The filters stay plain component state (spec E11, N1).
+ */
+const SEARCH_TERM_STORAGE_KEY = "bookings.searchTerm";
+
+function readStoredSearchTerm() {
+  try {
+    return window.sessionStorage.getItem(SEARCH_TERM_STORAGE_KEY) || "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function storeSearchTerm(searchTerm) {
+  try {
+    if (searchTerm) {
+      window.sessionStorage.setItem(SEARCH_TERM_STORAGE_KEY, searchTerm);
+    } else {
+      window.sessionStorage.removeItem(SEARCH_TERM_STORAGE_KEY);
+    }
+  } catch (error) {
+    // Storage may be unavailable (privacy mode); the search still works.
+  }
+}
 
 export default {
   components: {
+    SearchBar,
+    ToolbarRow,
+    ToolbarAction,
     BookingExportButton,
     ProcessingIndicator,
-    BookingPayDialog,
     GroupBookingDeleteConformationDialog,
-    GroupBookingRejectConformationDialog,
-    GroupBookingCommitDialog,
-    GroupBookingDetails,
     BookingTable,
     BookingOverviewCalendar,
-    BookingDetails,
     BookingDeleteConformationDialog,
-    BookingRejectConformationDialog,
+    BookingTransitions,
     AdminLayout,
     BookingKanban,
   },
@@ -345,28 +203,14 @@ export default {
       showBacklog: false,
       fuse: null,
       value: "",
-      searchTerm: "",
+      searchTerm: readStoredSearchTerm(),
       bookingTypeFilter: "all",
-      bookingTypeFilterOptions: [
-        {
-          value: "all",
-          text: "Alle Buchungen",
-          description: "Einzel- und Serienbuchungen",
-          icon: "mdi-view-grid-outline",
-        },
-        {
-          value: "single",
-          text: "Einzelbuchungen",
-          description: "Ohne Serienzuordnung",
-          icon: "mdi-calendar-check-outline",
-        },
-        {
-          value: "series",
-          text: "Serienbuchungen",
-          description: "Teil einer Buchungsserie",
-          icon: "mdi-calendar-multiple",
-        },
-      ],
+      // The list's status filter (spec E11, N1): nothing selected means no
+      // filter; plain component state - nothing persists it.
+      statusFilter: [],
+      // The refund filter (glossary „Erstattungsstand“), like the status
+      // filter: nothing selected means no filter.
+      refundFilter: [],
       api: {
         users: [],
         bookings: [],
@@ -384,28 +228,16 @@ export default {
         { text: "Erstellt am", value: "timeCreated" },
         { text: "Name", value: "name" },
         { text: "Preis", value: "priceEur" },
-        { text: "Status", value: "isCommitted" },
-        { text: "Zahlung", value: "isPayed" },
+        { text: "Status", value: "status" },
         { text: "Zahlungsart", value: "payMethod" },
         { text: "", value: "controls", sortable: false },
       ],
       openDeleteDialog: false,
-      openRejectDialog: false,
-      openGroupBookingDialog: false,
-      openCommitGroupBookingDialog: false,
-      openRejectGroupBookingDialog: false,
       openDeleteGroupBookingDialog: false,
-      openPayDialog: false,
       selectedBooking: {},
       selectedGroupBooking: {},
-      openBookingDialog: false,
       currentView: "list",
       workflow: {},
-      errors: {
-        commit: null,
-        reject: null,
-        pay: null,
-      },
     };
   },
   computed: {
@@ -416,19 +248,97 @@ export default {
     BookingPermissionService() {
       return BookingPermissionService;
     },
-    hasActiveBookingTypeFilter() {
-      return this.bookingTypeFilter !== "all";
+    /** The views in the row beneath the search; the kanban with a workflow. */
+    views() {
+      const views = [
+        {
+          value: "list",
+          label: this.$t("booking.view.list"),
+          icon: "mdi-list-box-outline",
+        },
+        {
+          value: "calendar",
+          label: this.$t("booking.view.calendar"),
+          icon: "mdi-calendar-blank-outline",
+        },
+      ];
+      if (this.workflow.active) {
+        views.push({
+          value: "kanban",
+          label: this.$t("booking.view.kanban"),
+          icon: "mdi-table-column",
+        });
+      }
+      return views;
+    },
+    /**
+     * The filter card behind the funnel (spec N1): the booking type as a
+     * segment switch, the five states and the two refund states as checkbox
+     * lists. One restriction for a type other than "all", one per selected
+     * state. The refund states only for the Reichweite *any*: under *own*
+     * the backend leaves them out, and the filter would match nothing.
+     */
+    filterSections() {
+      const sections = [
+        {
+          key: "type",
+          label: this.$t("booking.filter.type"),
+          multiple: false,
+          segmented: true,
+          empty: "all",
+          selected: this.bookingTypeFilter,
+          options: [
+            {
+              value: "all",
+              label: this.$t("booking.filter.typeAll"),
+              icon: "mdi-view-grid-outline",
+            },
+            {
+              value: "single",
+              label: this.$t("booking.filter.typeSingle"),
+              icon: "mdi-calendar-check-outline",
+            },
+            {
+              value: "series",
+              label: this.$t("booking.filter.typeSeries"),
+              icon: "mdi-calendar-multiple",
+            },
+          ],
+        },
+        {
+          key: "status",
+          label: this.$t("booking.filter.status"),
+          selected: this.statusFilter,
+          options: Object.values(BOOKING_STATUS).map((status) => ({
+            value: status,
+            label: statusLabel(status),
+            color: statusColor(status),
+            icon: statusIcon(status),
+          })),
+        },
+      ];
+      if (BookingPermissionService.allowReadAny()) {
+        sections.push({
+          key: "refund",
+          label: this.$t("booking.filter.refund"),
+          selected: this.refundFilter,
+          options: Object.values(REFUND_STATE).map((state) => ({
+            value: state,
+            label: this.$t(`booking.refundState.value.${state}`),
+            icon: refundStateMarker(state).icon,
+          })),
+        });
+      }
+      return sections;
     },
     isSelectedBookingHardDeleteBlocked() {
-      return !!(
-        this.selectedBooking?.isCommitted || this.selectedBooking?.isPayed
-      );
+      return !allowsAction(this.selectedBooking, "delete");
     },
     isSelectedGroupHardDeleteBlocked() {
       if (!this.selectedGroupBooking?.bookingIds) return false;
       return this.selectedGroupBooking.bookingIds.some((bookingId) => {
         const booking = this.api.bookings.find((item) => item.id === bookingId);
-        return booking?.isCommitted || booking?.isPayed;
+        return !allowsAction(booking, "delete");
       });
     },
     mappedBookings() {
@@ -445,6 +355,11 @@ export default {
       let bookings = this.mappedBookings || [];
 
       if (this.searchTerm) {
+        // A restored term can be there before the bookings - and the index -
+        // are; nothing matches until they arrive.
+        if (!this.fuse) {
+          return [];
+        }
         const terms = this.searchTerm.trim().split(/\s+/);
         const searchQuery = {
           $and: terms.map((term) => ({
@@ -481,13 +396,30 @@ export default {
         bookings = results.map((result) => result.item);
       }
 
-      return this.applyBookingTypeFilter(bookings);
+      bookings = this.applyBookingTypeFilter(bookings);
+      if (this.refundFilter.length > 0) {
+        bookings = filterBookingsByRefundState(bookings, this.refundFilter);
+      }
+      return bookings;
+    },
+    /**
+     * What the table and the calendar show. The kanban stays on
+     * `filteredBookings` - its columns are workflow states, not booking states.
+     */
+    statusFilteredBookings() {
+      if (this.statusFilter.length === 0) {
+        return this.filteredBookings;
+      }
+      return filterBookingsByStatus(this.filteredBookings, this.statusFilter);
     },
   },
   watch: {
     tenantId() {
       this.fetchBookings();
       this.fetchGroupBookings();
+    },
+    searchTerm(searchTerm) {
+      storeSearchTerm(searchTerm);
     },
     currentView(newView) {
       this.$router.replace({ query: { view: newView } }).catch((err) => {
@@ -503,6 +435,11 @@ export default {
       startLoading: "loading/start",
       stopLoading: "loading/stop",
     }),
+    onFilter(key, selection) {
+      if (key === "type") this.bookingTypeFilter = selection;
+      if (key === "status") this.statusFilter = selection;
+      if (key === "refund") this.refundFilter = selection;
+    },
     applyBookingTypeFilter(bookings) {
       if (this.bookingTypeFilter === "single") {
         return bookings.filter((booking) => !booking.groupBooking);
@@ -512,59 +449,33 @@ export default {
       }
       return bookings;
     },
-    async onDownloadGroupBookingIcal(bookingIds) {
-      const operationId = ProcessingService.showSnackbar(
-        "Termine werden heruntergeladen..."
+    /**
+     * A menu raised a transition (spec E3): the module runs it against the
+     * booking and, for a series member, its series and members.
+     */
+    onTransition(action, bookingId) {
+      const booking = this.api.bookings.find((item) => item.id === bookingId);
+      this.$refs.transitions.start(
+        action,
+        transitionTarget(booking, this.groupBookingOf(bookingId))
       );
-      try {
-        const response = await ApiBookingService.downloadGroupBookingIcal(
-          bookingIds
-        );
-
-        const blob = new Blob([response.data], {
-          type: "text/calendar;charset=utf-8",
-        });
-        const url = window.URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute(
-          "download",
-          `serienbuchung-${this.selectedGroupBooking.id}.ics`
-        );
-        document.body.appendChild(link);
-        link.click();
-
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } catch (error) {
-        await this.addToast(
-          ToastService.createToast("booking.ical.error", "error")
-        );
-      } finally {
-        ProcessingService.hide(operationId);
+    },
+    async onTransitioned() {
+      await this.reloadBookings();
+    },
+    /**
+     * After a 409 or 404 the module asks for a reload (spec E5), so that list,
+     * calendar and kanban show the server's state instead of the one the
+     * transition was attempted against.
+     */
+    async onTransitionFailed({ refetch }) {
+      if (refetch) {
+        await this.reloadBookings();
       }
     },
-
-    handleGroupBookingError(action, errors) {
-      const code = errors[0]?.code;
-      if (errors.length === 0) {
-        return;
-      }
-      this.addToast(
-        ToastService.createToast(`group-booking.${action}.error`, "error")
-      );
-      this.errors[action] = getGroupBookingErrorMessage(code);
-    },
-    handleBookingError(action, errors) {
-      if (errors.length === 0) {
-        return;
-      }
-      const code = errors[0]?.code;
-      this.addToast(
-        ToastService.createToast(`booking.${action}.error`, "error")
-      );
-      this.errors[action] = getBookingErrorMessage(code);
+    async reloadBookings() {
+      await this.fetchBookings();
+      await this.fetchGroupBookings();
     },
 
     async fetchBookings() {
@@ -615,39 +526,9 @@ export default {
           console.log(error);
         });
     },
-    async closeDialog(type) {
-      switch (type) {
-        case "delete":
-          this.openDeleteDialog = false;
-          break;
-        case "reject":
-          this.errors.reject = null;
-          break;
-        case "booking":
-          this.openBookingDialog = false;
-          break;
-        case "groupBooking":
-          await this.fetchGroupBookings();
-          this.openGroupBookingDialog = false;
-          break;
-        case "commitGroupBooking":
-          this.errors.commit = null;
-          this.openCommitGroupBookingDialog = false;
-          break;
-        case "deleteGroupBooking":
-          this.openDeleteGroupBookingDialog = false;
-          break;
-        case "rejectGroupBooking":
-          this.errors.reject = null;
-          this.openRejectGroupBookingDialog = false;
-          break;
-        default:
-          break;
-      }
-    },
     async deleteBooking(bookingId) {
       const booking = this.api.bookings.find((item) => item.id === bookingId);
-      if (booking?.isCommitted || booking?.isPayed) {
+      if (!allowsAction(booking, "delete")) {
         await this.addToast(
           ToastService.createToast("booking.delete.requires-rejection", "error")
         );
@@ -672,7 +553,7 @@ export default {
       );
       const hasProtectedBooking = groupBooking.bookingIds.some((id) => {
         const booking = this.api.bookings.find((item) => item.id === id);
-        return booking?.isCommitted || booking?.isPayed;
+        return !allowsAction(booking, "delete");
       });
       if (hasProtectedBooking) {
         await this.addToast(
@@ -693,283 +574,33 @@ export default {
         await this.stopLoading("delete-booking");
       }
     },
-    async commitBooking(id, force = false) {
-      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(id)
-      );
-      if (!force && hasGroupBooking) {
-        this.selectedBooking = Object.assign(
-          {},
-          this.api.bookings.find((booking) => booking.id === id)
-        );
-        this.selectedGroupBooking = Object.assign(
-          {},
-          this.api.groupBookings.find((groupBooking) =>
-            groupBooking.bookingIds.includes(id)
-          )
-        );
-        this.openCommitGroupBookingDialog = true;
-      } else {
-        const operationId = ProcessingService.showOverlay(
-          "Buchung wird freigegeben..."
-        );
-        try {
-          const booking = this.api.bookings.find(
-            (booking) => booking.id === id
-          );
-
-          if (booking.priceEur > 0 && !booking.paymentProvider) {
-            await this.addToast(
-              ToastService.createToast(
-                "booking.commit.no-payment-method",
-                "error"
-              )
-            );
-            return;
-          }
-          const data = await ApiBookingService.commitBooking(id);
-
-          if (!data.success) {
-            this.handleBookingError("commit", data.errors);
-          } else {
-            await this.addToast(
-              ToastService.createToast("booking.commit.success", "success")
-            );
-            this.errors.commit = null;
-            await this.fetchBookings();
-            await this.fetchGroupBookings();
-            this.openCommitGroupBookingDialog = false;
-          }
-        } finally {
-          ProcessingService.hide(operationId);
-        }
-      }
-    },
-    hasGroupBooking(id) {
-      return !!this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(id)
-      );
-    },
-    async onPayBooking(id) {
-      this.selectedBooking = Object.assign(
-        {},
-        this.api.bookings.find((booking) => booking.id === id)
-      );
-      if (this.hasGroupBooking(id)) {
-        this.selectedGroupBooking = Object.assign(
-          {},
-          this.api.groupBookings.find((groupBooking) =>
-            groupBooking.bookingIds.includes(id)
-          )
-        );
-      } else {
-        this.selectedGroupBooking = null;
-      }
-      this.openPayDialog = true;
-    },
-
-    async payBooking({ id, paymentMethod, timePaid }) {
-      const operationId = ProcessingService.showOverlay(
-        "Zahlung wird verarbeitet..."
-      );
-      try {
-        await this.startLoading("pay-booking");
-        const data = await ApiBookingService.payBooking(
-          id,
-          paymentMethod,
-          timePaid
-        );
-
-        if (!data.success) {
-          this.handleBookingError("pay", data.errors);
-        } else {
-          await this.addToast(
-            ToastService.createToast("booking.pay.success", "success")
-          );
-          this.openPayDialog = false;
-          this.errors.pay = null;
-          await this.fetchBookings();
-          await this.fetchGroupBookings();
-        }
-      } finally {
-        await this.stopLoading("pay-booking");
-        ProcessingService.hide(operationId);
-      }
-    },
-
-    async payGroupBooking({ paymentMethod, timePaid }) {
-      const operationId = ProcessingService.showOverlay(
-        "Zahlung wird verarbeitet..."
-      );
-      try {
-        await this.startLoading("pay-booking");
-        const response = await ApiGroupBookingService.payGroupBooking({
-          id: this.selectedGroupBooking.id,
-          paymentMethod,
-          timePaid,
-        });
-
-        if (!response.success) {
-          this.handleGroupBookingError("pay", response.errors);
-        } else {
-          await this.addToast(
-            ToastService.createToast("group-booking.pay.success", "success")
-          );
-          this.errors.pay = null;
-          this.openPayDialog = false;
-          await this.fetchBookings();
-          await this.fetchGroupBookings();
-        }
-      } finally {
-        await this.stopLoading("pay-booking");
-        ProcessingService.hide(operationId);
-      }
-    },
-    async commitGroupBooking(id) {
-      const operationId = ProcessingService.showOverlay(
-        "Serienbuchung wird freigegeben..."
-      );
-      try {
-        const response = await ApiGroupBookingService.commitGroupBooking(
-          null,
-          id
-        );
-
-        if (!response.success) {
-          this.handleGroupBookingError("commit", response.errors);
-        } else {
-          await this.addToast(
-            ToastService.createToast("group-booking.commit.success", "success")
-          );
-          this.errors.commit = null;
-          await this.fetchBookings();
-          await this.fetchGroupBookings();
-          this.openCommitGroupBookingDialog = false;
-        }
-      } finally {
-        ProcessingService.hide(operationId);
-      }
-    },
-    async rejectBooking(
-      id,
-      rejectReason,
-      skipCancellation,
-      bankDetails,
-      refundPercentage
-    ) {
-      const operationId = ProcessingService.showOverlay(
-        "Buchung wird abgelehnt..."
-      );
-      try {
-        await this.startLoading("reject-booking");
-        await ApiBookingService.rejectBooking(
-          id,
-          this.tenantId,
-          rejectReason,
-          skipCancellation,
-          bankDetails,
-          refundPercentage
-        );
-        await this.addToast(
-          ToastService.createToast("booking.reject.success", "success")
-        );
-        await this.fetchBookings();
-        await this.fetchGroupBookings();
-        this.openRejectDialog = false;
-        this.openRejectGroupBookingDialog = false;
-      } catch (error) {
-        await this.addToast(
-          ToastService.createToast("booking.reject.error", "error")
-        );
-      } finally {
-        await this.stopLoading("reject-booking");
-        ProcessingService.hide(operationId);
-      }
-    },
-    async rejectGroupBooking(
-      id,
-      rejectReason,
-      skipCancellation,
-      bankDetails,
-      refundPercentage
-    ) {
-      const groupBooking = this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(id)
-      );
-      const operationId = ProcessingService.showOverlay(
-        "Serienbuchung wird abgelehnt..."
-      );
-      try {
-        await this.startLoading("reject-booking");
-        const response = await ApiGroupBookingService.rejectGroupBooking(
-          null,
-          groupBooking.id,
-          rejectReason,
-          skipCancellation,
-          bankDetails,
-          refundPercentage
-        );
-
-        if (!response.success) {
-          this.handleGroupBookingError("reject", response.errors);
-        } else {
-          await this.addToast(
-            ToastService.createToast("group-booking.reject.success", "success")
-          );
-          this.errors.reject = null;
-          await this.fetchBookings();
-          await this.fetchGroupBookings();
-          this.openRejectGroupBookingDialog = false;
-        }
-      } catch (error) {
-        this.errors.reject =
-          error?.response?.data === "invalid_refund_percentage"
-            ? this.$t("booking.cancellationRefund.percentageRange")
-            : this.$t("group-booking.reject.error.message");
-        await this.addToast(
-          ToastService.createToast("group-booking.reject.error", "error")
-        );
-      } finally {
-        await this.stopLoading("reject-booking");
-        ProcessingService.hide(operationId);
-      }
-    },
+    /** "Details" leads to the Buchungsseite; `?tenant=` completes the Buchungslink. */
     onOpenBooking(bookingId) {
-      this.selectedBooking = Object.assign(
-        {},
-        this.api.bookings.find((booking) => booking.id === bookingId)
-      );
-      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(bookingId)
-      );
-      if (hasGroupBooking) {
-        this.selectedGroupBooking = Object.assign(
-          {},
-          this.api.groupBookings.find((groupBooking) =>
-            groupBooking.bookingIds.includes(bookingId)
-          )
-        );
-      } else {
-        this.selectedGroupBooking = null;
-      }
-      this.openBookingDialog = true;
+      this.$router.push(bookingPageRoute(bookingId, this.tenantId));
     },
+    /**
+     * The series a booking belongs to, with its members populated, so that
+     * `BookingTransitions` can act on a member with its series (spec E3); `null` for
+     * a single booking.
+     */
+    groupBookingOf(bookingId) {
+      const groupBooking = this.api.groupBookings.find((item) =>
+        item.bookingIds.includes(bookingId)
+      );
+      return groupBooking ? this.withMembers(groupBooking) : null;
+    },
+    /** A series with its members populated from the loaded bookings. */
+    withMembers(groupBooking) {
+      return {
+        ...groupBooking,
+        bookings: groupBooking.bookingIds
+          .map((id) => this.api.bookings.find((booking) => booking.id === id))
+          .filter(Boolean),
+      };
+    },
+    /** "Gruppenbuchung" leads to the Serienbuchungsseite, with `?tenant=` as above. */
     onOpenGroupBooking(groupBookingId) {
-      const groupBooking = this.api.groupBookings.find(
-        (groupBooking) => groupBooking.id === groupBookingId
-      );
-      this.selectedGroupBooking = Object.assign(
-        {},
-        {
-          ...groupBooking,
-          bookings: groupBooking.bookingIds
-            .map((bookingId) =>
-              this.api.bookings.find((booking) => booking.id === bookingId)
-            )
-            .filter(Boolean),
-        }
-      );
-      this.openGroupBookingDialog = true;
+      this.$router.push(groupBookingPageRoute(groupBookingId, this.tenantId));
     },
     onOpenEditBooking(bookingId) {
       this.$router.push({
@@ -993,66 +624,10 @@ export default {
         this.openDeleteDialog = true;
       }
     },
-    onOpenRejectDialog(bookingId) {
-      const hasGroupBooking = this.api.groupBookings.find((groupBooking) =>
-        groupBooking.bookingIds.includes(bookingId)
-      );
-      this.selectedBooking = Object.assign(
-        {},
-        this.api.bookings.find((booking) => booking.id === bookingId)
-      );
-      if (hasGroupBooking) {
-        this.selectedGroupBooking = Object.assign({}, hasGroupBooking);
-        this.openRejectGroupBookingDialog = true;
-      } else {
-        this.selectedGroupBooking = null;
-        this.openRejectDialog = true;
-      }
-    },
     onCloseDeleteDialog() {
       this.fetchBookings();
       this.fetchGroupBookings();
       this.openDeleteDialog = false;
-    },
-    onCloseRejectDialog() {
-      this.fetchBookings();
-      this.fetchGroupBookings();
-      this.openRejectDialog = false;
-    },
-    onCloseBookingDialog() {
-      this.openBookingDialog = false;
-    },
-    async updateBooking(bookingId) {
-      await this.fetchBookings();
-      await this.fetchGroupBookings();
-      this.selectedBooking = Object.assign(
-        {},
-        this.api.bookings.find((booking) => booking.id === bookingId)
-      );
-    },
-    async updateGroupBookingView() {
-      const groupBookingId = this.selectedGroupBooking?.id;
-      if (!groupBookingId) return;
-
-      await this.fetchBookings();
-      await this.fetchGroupBookings();
-
-      const groupBooking = this.api.groupBookings.find(
-        (gb) => gb.id === groupBookingId
-      );
-      if (!groupBooking) return;
-
-      this.selectedGroupBooking = Object.assign(
-        {},
-        {
-          ...groupBooking,
-          bookings: groupBooking.bookingIds
-            .map((bookingId) =>
-              this.api.bookings.find((booking) => booking.id === bookingId)
-            )
-            .filter(Boolean),
-        }
-      );
     },
     initializeFuse() {
       const options = {
@@ -1096,21 +671,11 @@ export default {
     },
     async onDownloadIcal(bookingId) {
       try {
-        const temp = await ApiBookingService.downloadBookingIcal(bookingId);
-
-        const blob = new Blob([temp.data], {
-          type: "text/calendar;charset=utf-8",
-        });
-        const url = window.URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", `buchung-${bookingId}.ics`);
-        document.body.appendChild(link);
-        link.click();
-
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        const response = await ApiBookingService.downloadBookingIcal(bookingId);
+        saveBlob(
+          new Blob([response.data], { type: "text/calendar;charset=utf-8" }),
+          `buchung-${bookingId}.ics`
+        );
       } catch (error) {
         await this.addToast(
           ToastService.createToast("booking.ical.error", "error")
@@ -1142,165 +707,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.search-field {
-  border-radius: 15px;
-}
-
-.booking-type-filter-trigger--active {
-  background: rgba(var(--v-primary-base), 0.12) !important;
-
-  .v-icon {
-    color: var(--v-primary-base) !important;
-  }
-}
-
-.booking-type-filter-card {
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.booking-type-filter-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px 12px;
-  background: linear-gradient(
-    135deg,
-    rgba(var(--v-primary-base), 0.06) 0%,
-    rgba(var(--v-primary-base), 0.02) 100%
-  );
-}
-
-.booking-type-filter-card__header-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: rgba(var(--v-primary-base), 0.12);
-}
-
-.line-height-tight {
-  line-height: 1.25;
-}
-
-.booking-type-filter-card__options {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-}
-
-.booking-type-filter-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid transparent;
-  border-radius: 12px;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.04);
-    transform: translateX(2px);
-  }
-
-  &--active {
-    background: rgba(var(--v-primary-base), 0.08);
-    border-color: rgba(var(--v-primary-base), 0.35);
-    box-shadow: 0 2px 8px rgba(var(--v-primary-base), 0.12);
-
-    .booking-type-filter-option__title {
-      color: var(--v-primary-base);
-      font-weight: 600;
-    }
-  }
-}
-
-.booking-type-filter-option__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  transition: transform 0.2s ease;
-
-  .booking-type-filter-option--active & {
-    transform: scale(1.05);
-  }
-
-  &--all {
-    background: transparent;
-    color: #607d8b;
-  }
-
-  &--single {
-    background: transparent;
-    color: #2196f3;
-  }
-
-  &--series {
-    background: rgba(var(--v-primary-base), 0.16);
-    color: var(--v-primary-base);
-  }
-}
-
-.booking-type-filter-option__content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.booking-type-filter-option__title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.3;
-  color: rgba(0, 0, 0, 0.87);
-}
-
-.booking-type-filter-option__desc {
-  font-size: 0.75rem;
-  line-height: 1.3;
-  color: rgba(0, 0, 0, 0.54);
-  margin-top: 2px;
-}
-
-.booking-type-filter-option__check {
-  flex-shrink: 0;
-}
-
-.theme--dark {
-  .booking-type-filter-card {
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-
-  .booking-type-filter-option {
-    &:hover {
-      background: rgba(255, 255, 255, 0.06);
-    }
-
-    &--active {
-      background: rgba(var(--v-primary-base), 0.15);
-    }
-  }
-
-  .booking-type-filter-option__title {
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .booking-type-filter-option__desc {
-    color: rgba(255, 255, 255, 0.55);
-  }
-}
-
 ::v-deep .active-button {
   color: black !important;
   background-color: var(--v-secondary-base) !important;
@@ -1329,17 +735,5 @@ body {
 
 .page-footer {
   flex: 0 0 auto;
-}
-</style>
-
-<style lang="scss">
-.booking-type-filter-menu {
-  border-radius: 14px !important;
-  overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14) !important;
-
-  .v-card {
-    border-radius: 14px !important;
-  }
 }
 </style>

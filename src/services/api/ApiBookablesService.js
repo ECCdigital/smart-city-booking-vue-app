@@ -27,6 +27,24 @@ export default {
     const formData = { ...bookable };
     formData.tenantId = t;
 
+    // Derived from the access points on the way out, dropped on the way in:
+    // sending it would claim a write permission that does not exist.
+    delete formData.lockerDetails;
+
+    // The review (glossary "Prüfstatus") is written by its own operations
+    // alone (`ApiReviewService`); a save never carries it.
+    delete formData.review;
+
+    // Retired: nothing is distributed over the locker systems any more, a
+    // booking gets one compartment per booked unit at each of them. A map a
+    // bookable saved before that is dropped here so an old state does not
+    // travel on - from a copy, because the shallow clone above still shares
+    // the nested block with the caller's bookable.
+    if (formData.accessPointDetails?.accessPointAmounts !== undefined) {
+      formData.accessPointDetails = { ...formData.accessPointDetails };
+      delete formData.accessPointDetails.accessPointAmounts;
+    }
+
     if (formData.priceEur && typeof formData.priceEur === "string") {
       formData.priceEur = formData.priceEur.replace(",", ".");
       formData.priceEur = Number(formData.priceEur);
@@ -47,6 +65,10 @@ export default {
       (item) => item.date !== null
     );
 
+    // A bookable without an id is created (`POST`), one with an id updated.
+    if (!formData.id) {
+      return ApiClient.post(`api/${t}/bookables`, formData);
+    }
     return ApiClient.put(`api/${t}/bookables`, formData);
   },
   deleteBookable(bookableId) {
@@ -64,11 +86,12 @@ export default {
 
           delete bookable.id;
           delete bookable._id;
+          delete bookable.lockerDetails;
 
           bookable.title = `${bookable.title} (Kopie)`;
 
           if (bookable) {
-            ApiClient.put(
+            ApiClient.post(
               `api/${store.getters["tenants/currentTenantId"]}/bookables`,
               bookable
             )

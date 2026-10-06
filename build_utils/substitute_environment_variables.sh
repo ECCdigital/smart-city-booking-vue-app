@@ -36,6 +36,11 @@ find "$ROOT_DIR" -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) \
 LOCATION_PATH="${BASE_URL%/}"
 LOCATION_PATH="${LOCATION_PATH:-/}"
 STRIP_PREFIX="${STRIP_PREFIX:-true}"
+# Media uploads reach the API through this nginx, so its body limit caps them.
+# nginx defaults to 1m, far below the API's own media limits — this sits just
+# above the API's global upload backstop (55 MiB) so the API stays the one
+# that rejects, with a proper error code instead of a bare 413.
+MAX_UPLOAD_SIZE="${MAX_UPLOAD_SIZE:-60m}"
 
 # Optional Admin BFF upstream (e.g. http://127.0.0.1:3001).
 # Register BOTH /admin/api/ and /api/ so it works with:
@@ -121,6 +126,7 @@ http {
   keepalive_timeout 65;
   # Requests carry the BFF session cookies (Keycloak access + refresh JWT).
   large_client_header_buffers 8 32k;
+  client_max_body_size ${MAX_UPLOAD_SIZE};
   add_header X-Frame-Options "DENY" always;
 ${NGINX_FORWARDED_MAPS}
   server {
@@ -151,7 +157,7 @@ ${ADMIN_BFF_LOCATION}
   }
 }
 NGINXEOF
-echo "==> Generated nginx.conf (location /)"
+echo "==> Generated nginx.conf (location /, client_max_body_size ${MAX_UPLOAD_SIZE})"
 
 else
 
@@ -172,6 +178,7 @@ http {
   keepalive_timeout 65;
   # Requests carry the BFF session cookies (Keycloak access + refresh JWT).
   large_client_header_buffers 8 32k;
+  client_max_body_size ${MAX_UPLOAD_SIZE};
   add_header X-Frame-Options "DENY" always;
 ${NGINX_FORWARDED_MAPS}
   server {
@@ -216,7 +223,7 @@ ${ADMIN_BFF_LOCATION}
   }
 }
 NGINXEOF
-echo "==> Generated nginx.conf (location ${LOCATION_PATH}/)"
+echo "==> Generated nginx.conf (location ${LOCATION_PATH}/, client_max_body_size ${MAX_UPLOAD_SIZE})"
 
 fi
 

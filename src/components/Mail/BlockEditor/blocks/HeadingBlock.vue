@@ -1,24 +1,32 @@
 <template>
   <div class="heading-block" :class="{ selected }">
-    <v-text-field
-      :value="block.text"
+    <MailVariableTextField
+      :value="block.text || ''"
       placeholder="Überschrift…"
       dense
       hide-details
       flat
       solo
       background-color="transparent"
-      :style="headingStyle"
+      :field-style="headingStyle"
+      field="line"
+      :variables="variables"
+      :tenant="tenant"
       @input="onTextChange"
     />
   </div>
 </template>
 
 <script>
+import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
+
 export default {
   name: "HeadingBlock",
+  components: { MailVariableTextField },
   props: {
     block: { type: Object, required: true },
+    variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     selected: { type: Boolean, default: false },
   },
   computed: {

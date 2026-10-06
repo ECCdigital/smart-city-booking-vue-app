@@ -13,9 +13,29 @@ Components are grouped by domain under `src/components/`:
 | `Mail/` | Mail templates, block editor |
 | `PDF/` | PDF template editor and preview |
 | `Auth/` | Login cards, Keycloak |
-| `commons/` | Shared UI (SaveBar, toasts, selectors) |
+| `commons/` | Shared UI (SaveBar, toasts, selectors, `AppList`) |
 | `Checkout/` | Checkout calendar and shared checkout UI |
 | `Coupon/`, `Role/`, `User/`, `Files/`, … | Other domain areas |
+
+## Shared list
+
+`src/components/commons/AppList.vue` is the one list surface: hairline rows on a grid of named columns, in the vocabulary of the section card and the booking page. New lists use it instead of `v-simple-table` / `v-data-table`, and existing tables move onto it one at a time (the supervision history was first).
+
+- The caller owns the data and hands in `items`, `loading`, `errorMessage`, and the server page (`page`, `pageSize`, `total`); the list asks for another page with `update:page` and another try with `retry`.
+- `columns` is `[{ key, label, width, align }]`; `width` is a grid track (`"76px"`, `"minmax(160px, 1.5fr)"`). A `cell.<key>` scoped slot draws a cell, the `toolbar` slot holds filters and the reload.
+- Below 959px the grid folds into stacked rows with the column name before each cell.
+
+## Shared search bar
+
+`src/components/commons/SearchBar.vue` is the one search of every list (ECCdigital/tickets#54). A page does not draw a `v-text-field` for searching.
+
+- `v-model` is the query, handed on 300 ms after the last keystroke; the cross and an emptied field hand on `""` at once. What the page searches stays the page's business.
+- `fields` names what the page searches, for the placeholder „Suchen nach <fields> …“ — a translation key, e.g. `$t('bookable.list.search')`.
+- `filters` are the sections of the filter card behind the funnel (`FilterCard.vue`, shape in `src/utils/filterSections.js`: multiple choice as rows, single choice as rows or `segmented`); a change comes back as `filter(key, selection)`. No `filters`, no funnel.
+- The `actions` slot is the row beneath the band. A page puts `ToolbarRow` there (ECCdigital/tickets#57): `views` (`[{ value, label, icon }]`, `:view.sync`) as tabs on the left, `sortOptions` (`[{ text, value }]`, `:sort-by.sync`, `:sort-dir.sync`) and its own `actions` slot on the right, each in its fixed place. A further action is a `ToolbarAction` (icon, label, `active` for a switch, `menu` for a menu opener); the creation is no action of the row but the floating button bottom right. A page with nothing for the row leaves the slot out.
+- Attributes such as `data-test` land on the input. Specs type through `typeSearch()` and open the card through `openFilterCard()` from `tests/unit/support/search.js`.
+
+`Search.vue` wraps it for the bookable and coupon lists (Fuse search over `keys`, tags, sorting); its `actions` slot goes on into the row's (the events' iCal export).
 
 Views in `src/views/` are route-level pages. They compose components and handle page-level data loading.
 
@@ -106,6 +126,30 @@ computed: {
   },
 },
 ```
+
+### Known gap: `create` without `update` in the role editor
+
+`src/components/Role/RoleEdit.vue` renders every access level of a role
+dimension as a free-standing checkbox. There is no coupling between them —
+no `watch`, no `computed` setter, no `@change` — and the backend role schema
+does not couple them either. A role with `manageRoles.create` and neither
+`updateOwn` nor `updateAny` is two clicks away, and it is the most obvious
+state of a freshly created role where somebody ticks only "Erstellen".
+
+That role does not work. The obsolete PUT store routes carry `update` at the
+door and only decide inside the handler whether something is created; for
+`role` the backend authorization table knows no `updateOwn` at all, so the
+request is rejected with 403 before it ever reaches the creating path.
+
+**Deliberately not fixed** (§E9 of the 4.3.x permissions spec). Coupling the
+checkboxes in the UI would be the lie in the opposite direction — it would
+claim that creating implies editing, which is not true of the domain, and it
+would have to come out again once the store routes are dropped. A backend PR
+for routes that are meant to die is not worth it either.
+
+**The caveat, on the record:** if customers maintain roles themselves, a
+silent 403 two clicks into the editor becomes a support ticket. If that
+happens, coupling the checkboxes in the UI is the fastest answer.
 
 ## Dialogs
 

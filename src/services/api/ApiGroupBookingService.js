@@ -4,6 +4,18 @@ export default {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/group-bookings?populate=${populate}`);
   },
+  getGroupBooking(id, tenant, populate) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    const p = populate || false;
+    return ApiClient.get(`api/${t}/group-bookings/${id}?populate=${p}`);
+  },
+  getGroupBookingByBooking(bookingId, tenant, populate) {
+    const t = tenant || store.getters["tenants/currentTenantId"];
+    const p = populate || false;
+    return ApiClient.get(
+      `api/${t}/group-bookings/booking/${bookingId}?populate=${p}`
+    );
+  },
   async commitGroupBooking(tenantId, groupBookingId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
 
@@ -62,6 +74,15 @@ export default {
     const t = tenantId || store.getters["tenants/currentTenantId"];
     const response = await ApiClient.post(
       `api/${t}/group-bookings/${groupBookingId}/receipt`,
+      {}
+    );
+    return response.data;
+  },
+  /** Reissues the series' aggregated cancellation receipt as a revision; answers with the series. */
+  async reprintGroupCancellationReceipt(tenantId, groupBookingId) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
+    const response = await ApiClient.post(
+      `api/${t}/group-bookings/${groupBookingId}/cancellation-receipt`,
       {}
     );
     return response.data;

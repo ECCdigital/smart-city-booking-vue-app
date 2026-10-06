@@ -17,24 +17,23 @@ import Locations from "@/views/Bookables/Locations/Locations";
 import Tenants from "@/views/Management/Tenants";
 import Users from "@/views/Management/TenantUsers.vue";
 import Roles from "@/views/Management/Roles";
+import AccessPoints from "@/views/Management/AccessPoints.vue";
 import Tickets from "@/views/Bookables/Tickets/Tickets";
 import Bookings from "@/views/Bookings.vue";
 import BookingEditPage from "@/views/BookingEditPage.vue";
+import BookingPage from "@/views/BookingPage.vue";
+import GroupBookingPage from "@/views/GroupBookingPage.vue";
 import Settings from "@/views/Settings";
 import Coupons from "@/views/Coupons.vue";
 import Instances from "@/views/Management/Instances.vue";
 import InstanceUsers from "@/views/Management/InstanceUsers.vue";
 import InstanceTenants from "@/views/Management/InstanceTenants.vue";
+import InstanceReviewQueue from "@/views/Management/InstanceReviewQueue.vue";
 import RuleEngineRules from "@/views/Management/RuleEngineRules.vue";
 import RuleEngineEdit from "@/views/Management/RuleEngineEdit.vue";
 import RuleEngineExecutions from "@/views/Management/RuleEngineExecutions.vue";
-import { pipeline } from "./middleware";
-
-import { requiresAuth } from "./middlewares/auth";
-import { checkGroupBooking } from "./middlewares/groupBooking";
-import { checkInterface } from "./middlewares/interface";
-import { requireTenant } from "./middlewares/requireTenant";
-import { finalAuthRedirect } from "./middlewares/finalAuth";
+import { middlewares, pipeline } from "./middleware";
+import Dashboard from "@/views/Dashboard.vue";
 
 Vue.use(VueRouter);
 
@@ -60,6 +59,30 @@ const routes = [
     },
   },
   {
+    path: "/onboarding",
+    name: "tenant-onboarding",
+    component: lazyLoad("Management/TenantOnboarding"),
+    meta: {
+      title: "Angebote bereitstellen",
+      requiresAuth: true,
+      publicEntry: true,
+      interfaceName: "dashboard",
+      public: true,
+      tenantFromQuery: true,
+    },
+  },
+  {
+    path: "/dataDashboard",
+    name: "dataDashboard",
+    component: Dashboard,
+    meta: {
+      title: "Daten-Dashboard",
+      requiresAuth: true,
+      interfaceName: "dataDashboard",
+      //public: true,
+    },
+  },
+  {
     path: "/instance",
     name: "instances",
     component: Instances,
@@ -78,6 +101,22 @@ const routes = [
       requiresAuth: true,
       interfaceName: "instance",
     },
+  },
+  {
+    path: "/instance/review-queue",
+    name: "instance-review-queue",
+    component: InstanceReviewQueue,
+    meta: {
+      title: "Prüfliste",
+      requiresAuth: true,
+      interfaceName: "instance",
+    },
+  },
+  {
+    // The outbox used to be a page of its own; it lives in the review queue's
+    // panel now, and the old address leads there.
+    path: "/instance/aufsichtsmitteilungen",
+    redirect: { name: "instance-review-queue" },
   },
   {
     path: "/instance/benutzer",
@@ -160,6 +199,16 @@ const routes = [
     },
   },
   {
+    path: "/tenant/access-points",
+    name: "access-points",
+    component: AccessPoints,
+    meta: {
+      title: "Zutritt & Schließsysteme",
+      requiresAuth: true,
+      interfaceName: "tenants",
+    },
+  },
+  {
     path: "/coupons",
     name: "coupons",
     component: Coupons,
@@ -197,6 +246,28 @@ const routes = [
       title: "Buchung bearbeiten",
       requiresAuth: true,
       interfaceName: "bookings",
+    },
+  },
+  {
+    path: "/bookings/:bookingId",
+    name: "booking-details",
+    component: BookingPage,
+    meta: {
+      title: "Buchung",
+      requiresAuth: true,
+      interfaceName: "bookings",
+      tenantFromQuery: true,
+    },
+  },
+  {
+    path: "/group-bookings/:groupBookingId",
+    name: "group-booking-details",
+    component: GroupBookingPage,
+    meta: {
+      title: "Serienbuchung",
+      requiresAuth: true,
+      interfaceName: "bookings",
+      tenantFromQuery: true,
     },
   },
   {
@@ -397,6 +468,16 @@ const routes = [
     ],
   },
   {
+    path: "/media",
+    name: "media",
+    component: lazyLoad("Media/Media"),
+    meta: {
+      title: "Mediathek",
+      requiresAuth: true,
+      interfaceName: "media",
+    },
+  },
+  {
     path: "/settings",
     name: "settings",
     component: Settings,
@@ -582,13 +663,6 @@ if (process.env.BASE_URL) {
 const router = new VueRouter(routerConfig);
 
 router.beforeEach((to, from, next) => {
-  const middlewares = [
-    requiresAuth,
-    checkGroupBooking,
-    checkInterface,
-    requireTenant,
-    finalAuthRedirect,
-  ];
   const context = { to, from, next, router };
   const first = pipeline(context, middlewares, 0);
   return first();

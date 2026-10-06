@@ -35,7 +35,15 @@ export default {
       `api/${t}/bookables/${bookableId}/bookings?related=${irb}&parent=${ipb}&public=${po}`
     );
   },
-  storeBooking(booking) {
+  /** A manual booking of the administration (`POST`). */
+  createBooking(booking) {
+    const cleansedBooking = Object.assign(new Object(), booking);
+    return ApiClient.post(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings`,
+      cleansedBooking
+    );
+  },
+  updateBooking(booking) {
     const cleansedBooking = Object.assign(new Object(), booking);
     return ApiClient.put(
       `api/${store.getters["tenants/currentTenantId"]}/bookings`,
@@ -61,6 +69,21 @@ export default {
       { paymentMethod: paymentMethod, timePaid }
     );
     return response.data;
+  },
+  /** Wiederherstellen: `rejected` back to `requested`, `cancelled` back to where it was cancelled from. */
+  async reinstateBooking(id) {
+    const response = await ApiClient.post(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/reinstate`,
+      {}
+    );
+    return response.data;
+  },
+  /** Sets the refund state of a cancelled booking (glossary „Erstattungsstand“): `completed`, or back to `open`. */
+  setRefundState(id, refundState) {
+    return ApiClient.put(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/refund-state`,
+      { refundState }
+    );
   },
   async getCancellationRefundPreview(id, tenantId) {
     const t = tenantId || store.getters["tenants/currentTenantId"];
@@ -153,6 +176,14 @@ export default {
         responseType: "blob",
       }
     );
+  },
+  /** Reissues the cancellation receipt as a revision under the same number; answers with the booking. */
+  async reprintCancellationReceipt(id) {
+    const response = await ApiClient.post(
+      `api/${store.getters["tenants/currentTenantId"]}/bookings/${id}/cancellation-receipt`,
+      {}
+    );
+    return response.data;
   },
   getCancellationReceipt(id, cancellationReceiptId) {
     return ApiClient.get(

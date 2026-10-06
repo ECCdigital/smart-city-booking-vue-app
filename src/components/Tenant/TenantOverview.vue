@@ -3,6 +3,34 @@
     <v-form ref="rootForm" v-model="validRoot">
       <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
+      <v-alert
+        v-if="onboardingReturnRoute"
+        type="info"
+        text
+        dense
+        data-test="onboarding-return"
+      >
+        <div class="d-flex align-center flex-wrap">
+          <span>{{ $t("tenant.onboarding.return-banner") }}</span>
+          <v-spacer />
+          <v-btn small color="primary" :to="onboardingReturnRoute">
+            {{ $t("tenant.onboarding.back-to-wizard") }}
+          </v-btn>
+        </div>
+      </v-alert>
+
+      <v-alert
+        v-if="editsForeignTenant"
+        type="info"
+        text
+        dense
+        data-test="foreign-tenant-banner"
+      >
+        {{
+          $t("tenant.list.edit-banner", { name: tenant?.name || tenant?.id })
+        }}
+      </v-alert>
+
       <div class="d-flex align-center mb-2">
         <div>
           <div class="text--secondary">
@@ -31,7 +59,7 @@
             :vertical="$vuetify.breakpoint.mdAndUp"
           >
             <v-tab
-              v-for="t in tabs"
+              v-for="t in visibleTabs"
               :key="t.key"
               class="d-flex justify-start"
               style="text-transform: none"
@@ -123,12 +151,14 @@ import TenantEditGeneral from "@/components/Tenant/Edit/TenantEditGeneral.vue";
 import TenantEditWeb from "@/components/Tenant/Edit/TenantEditWeb.vue";
 import TenantEditEmail from "@/components/Tenant/Edit/TenantEditEmail.vue";
 import TenantEditPayments from "@/components/Tenant/Edit/TenantEditPayments.vue";
-import TenantEditLocks from "@/components/Tenant/Edit/TenantEditLocks.vue";
 import TenantEditBooking from "@/components/Tenant/Edit/TenantEditBooking.vue";
 import TenantEditEvents from "@/components/Tenant/Edit/TenantEditEvents.vue";
 import TenantEditWorkflow from "@/components/Tenant/Edit/TenantEditWorkflow.vue";
 import TenantEditVerificationChallenges from "@/components/Tenant/Edit/TenantEditVerificationChallenges.vue";
 import TenantEditCatalog from "@/components/Tenant/Edit/TenantEditCatalog.vue";
+import TenantEditLegal from "@/components/Tenant/Edit/TenantEditLegal.vue";
+import TenantEditReadiness from "@/components/Tenant/Edit/TenantEditReadiness.vue";
+import TenantEditSupervision from "@/components/Tenant/Edit/TenantEditSupervision.vue";
 
 import ReceiptTemplateDialog from "@/components/Tenant/ReceiptTemplateDialog.vue";
 import InvoiceTemplateDialog from "@/components/Tenant/InvoiceTemplateDialog.vue";
@@ -141,6 +171,13 @@ import ApiInstanceService from "@/services/api/ApiInstanceService";
 import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vue";
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
 import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
+import { onboardingReturnRoute } from "@/utils/tenantOnboarding";
+import {
+  createLockAndAccessAppDefaults,
+  findTenantApp,
+  withoutUnchangedSecrets,
+} from "@/utilities/access-apps";
 
 export default {
   name: "TenantOverview",
@@ -152,7 +189,6 @@ export default {
     TenantEditWeb,
     TenantEditEmail,
     TenantEditPayments,
-    TenantEditLocks,
     TenantEditBooking,
     TenantEditEvents,
     TenantEditWorkflow,
@@ -161,6 +197,9 @@ export default {
     TenantEditVerificationChallenges,
     TenantEditCatalog,
     TenantEditBookables,
+    TenantEditLegal,
+    TenantEditReadiness,
+    TenantEditSupervision,
   },
   mixins: [unsavedChangesGuard],
   data() {
@@ -190,12 +229,6 @@ export default {
           label: "Zahlungen",
           icon: "mdi-credit-card",
           comp: "TenantEditPayments",
-        },
-        {
-          key: "locks",
-          label: "Schließsysteme",
-          icon: "mdi-lock",
-          comp: "TenantEditLocks",
         },
         {
           key: "bookables",
@@ -232,6 +265,26 @@ export default {
           label: "Kataloge",
           icon: "mdi-book-open-page-variant",
           comp: "TenantEditCatalog",
+        },
+        {
+          key: "legal",
+          label: "Rechtliches",
+          icon: "mdi-scale-balance",
+          comp: "TenantEditLegal",
+        },
+        {
+          key: "readiness",
+          label: this.$t("tenant.readiness.tab"),
+          icon: "mdi-clipboard-check-outline",
+          comp: "TenantEditReadiness",
+          permission: "readiness",
+        },
+        {
+          key: "supervision",
+          label: this.$t("supervision.history.tab"),
+          icon: "mdi-history",
+          comp: "TenantEditSupervision",
+          permission: "supervisionHistory",
         },
       ],
       instanceCustomFields: [],
@@ -299,31 +352,7 @@ export default {
           daysUntilPaymentDue: null,
           active: false,
         },
-        pareva: {
-          type: "locker",
-          id: "pareva",
-          title: "Pareva",
-          serverUrl: "",
-          lockerId: "",
-          user: "",
-          password: "",
-          active: false,
-        },
-        ifbs: {
-          type: "locker",
-          id: "ifbs",
-          title: "Parkraumservice",
-          serverUrl: "",
-          secretPhrase: "",
-          apiKeyID: "",
-          apiKey: "",
-          active: false,
-          customerService: {
-            name: "",
-            email: "",
-            phone: "",
-          },
-        },
+        ...createLockAndAccessAppDefaults(),
       },
     };
   },
@@ -348,13 +377,31 @@ export default {
         }) !== this.originalSnapshot
       );
     },
+    visibleTabs() {
+      return this.tabs.filter((tab) => this.isTabVisible(tab));
+    },
+    // Opened from the guided setup: the way back to the step it came from.
+    /**
+     * The instance owner editing a tenant that is not one of their own: the
+     * page says so, since it looks the same as the owner's own tenant page.
+     */
+    editsForeignTenant() {
+      return (
+        TenantPermissionService.isInstanceOwner() === true &&
+        !TenantPermissionService.isTenantOwner(this.tenantId)
+      );
+    },
+    onboardingReturnRoute() {
+      return onboardingReturnRoute(this.$route.query, this.tenant?.id);
+    },
     currentComponent() {
-      return this.tabs[this.activeTab]?.comp || "TenantEditGeneral";
+      return this.visibleTabs[this.activeTab]?.comp || "TenantEditGeneral";
     },
   },
   watch: {
     activeTab(newIndex) {
-      const tabKey = this.tabs[newIndex].key;
+      const tabKey = this.visibleTabs[newIndex]?.key;
+      if (!tabKey) return;
       if (this.$route.query.tab === tabKey) return;
       this.$router.replace({
         query: { ...this.$route.query, tab: tabKey },
@@ -374,6 +421,22 @@ export default {
       if (discard) {
         await this.fetchTenant();
       }
+    },
+    // A tab may name the tenant operation it needs. `updateTenant` is tenant
+    // ownership (instance owners trump it) - the marker used to be called
+    // `manageTenants`, after a role dimension 4.3.x no longer has.
+    isTabVisible(tab) {
+      if (!tab.permission) return true;
+      if (tab.permission === "updateTenant") {
+        return TenantPermissionService.allowUpdate();
+      }
+      if (tab.permission === "readiness") {
+        return TenantPermissionService.allowReadiness();
+      }
+      if (tab.permission === "supervisionHistory") {
+        return TenantPermissionService.allowSupervisionHistory();
+      }
+      return true;
     },
     async fetchRoles() {
       try {
@@ -414,29 +477,32 @@ export default {
       const existing = this.tenant.applications || [];
       const map = {};
       Object.keys(this.defaultApps).forEach((k) => {
-        const found = existing.find((a) => a.id === k);
+        const found = findTenantApp(existing, k);
         map[k] = found ? { ...found } : { ...this.defaultApps[k] };
       });
+      // Die Zugangs- und Schließsystem-Apps werden unter "Zutritt &
+      // Schließsysteme" gepflegt; hier werden sie nur unverändert
+      // mitgespeichert.
       this.apps = map;
     },
     replaceApps() {
-      this.tenant.applications = Object.values(this.apps).map((a) => ({
-        ...a,
-      }));
+      this.tenant.applications = Object.values(this.apps).map(
+        withoutUnchangedSecrets
+      );
     },
     async fetchWorkflow() {
       const data = await ApiWorkflowService.getWorkflow(this.tenant.id);
       this.workflow = data?.id
         ? data
         : {
-          active: false,
-          states: [],
-          archive: [],
-          description: "",
-          name: "",
-          eventStateMapping: "",
-          tenantId: this.tenant.id,
-        };
+            active: false,
+            states: [],
+            archive: [],
+            description: "",
+            name: "",
+            eventStateMapping: "",
+            tenantId: this.tenant.id,
+          };
     },
     async fetchChallenges() {
       try {
@@ -562,7 +628,7 @@ export default {
         await this.addToast({
           message: getApiErrorMessage(
             e,
-            "Fehler beim Speichern der Änderungen.",
+            "Fehler beim Speichern der Änderungen."
           ),
           type: "error",
         });
@@ -603,7 +669,7 @@ export default {
   },
   async mounted() {
     const queryTabKey = this.$route.query.tab;
-    const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
+    const foundIndex = this.visibleTabs.findIndex((t) => t.key === queryTabKey);
     this.activeTab = foundIndex !== -1 ? foundIndex : 0;
 
     await this.fetchTenant();

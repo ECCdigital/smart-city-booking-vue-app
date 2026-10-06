@@ -49,8 +49,10 @@
                 :catalog="catalog"
                 :available-users="availableUserIds"
                 :available-roles="availableRoles"
+                :has-unsaved-changes="hasUnsavedChanges"
                 @update:instance="onUpdateInstance"
                 @update:catalog="onUpdateCatalog"
+                @refetch="fetchInstance"
               />
             </keep-alive>
           </v-col>
@@ -87,6 +89,7 @@ import SaveBar from "@/components/commons/SaveBar.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
 import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import InstanceEditGeneral from "@/components/Instance/Edit/InstanceEditGeneral.vue";
+import InstanceEditLegal from "@/components/Instance/Edit/InstanceEditLegal.vue";
 import InstanceEditMail from "@/components/Instance/Edit/InstanceEditMail.vue";
 import InstanceEditOwners from "@/components/Instance/Edit/InstanceEditOwners.vue";
 import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
@@ -94,8 +97,13 @@ import ApiCatalogService from "@/services/api/ApiCatalogService";
 import InstanceEditTenants from "@/components/Instance/Edit/InstanceEditTenants.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import InstanceEditBookables from "@/components/Instance/Edit/InstanceEditBookables.vue";
-import InstanceEditAuth from "@/components/Instance/Edit/InstanceEditAuth.vue";
+import InstanceEditSingleSignOn from "@/components/Instance/Edit/InstanceEditSingleSignOn.vue";
+import InstanceEditCards from "@/components/Instance/Edit/InstanceEditCards.vue";
 import InstanceEditCheckout from "@/components/Instance/Edit/InstanceEditCheckout.vue";
+import { brandingForSave, defaultBranding } from "@/utils/instanceBranding";
+import { catalogForSave } from "@/utils/instanceCatalog";
+import { legalDocumentsForSave } from "@/utils/instanceLegalDocuments";
+import i18n from "@/language/index";
 
 export default {
   name: "Instances",
@@ -104,9 +112,11 @@ export default {
     SaveBar,
     UnsavedChangesDialog,
     InstanceEditGeneral,
+    InstanceEditLegal,
     InstanceEditMail,
     InstanceEditOwners,
-    InstanceEditAuth,
+    InstanceEditSingleSignOn,
+    InstanceEditCards,
     InstanceEditCatalog,
     InstanceEditTenants,
     InstanceEditBookables,
@@ -133,6 +143,12 @@ export default {
           comp: "InstanceEditGeneral",
         },
         {
+          key: "legal",
+          label: "Rechtliches",
+          icon: "mdi-scale-balance",
+          comp: "InstanceEditLegal",
+        },
+        {
           key: "mail",
           label: "E-Mail",
           icon: "mdi-email",
@@ -145,10 +161,16 @@ export default {
           comp: "InstanceEditOwners",
         },
         {
-          key: "auth",
-          label: "Authentifizierung",
+          key: "sso",
+          label: i18n.t("instance.edit.sso.title"),
           icon: "mdi-shield-lock",
-          comp: "InstanceEditAuth",
+          comp: "InstanceEditSingleSignOn",
+        },
+        {
+          key: "cards",
+          label: i18n.t("instance.edit.cards.title"),
+          icon: "mdi-card-account-details",
+          comp: "InstanceEditCards",
         },
         {
           key: "tenants",
@@ -177,18 +199,6 @@ export default {
       ],
       catalog: {
         type: "instanze",
-        hero: {
-          title: "",
-          subtitle: "",
-        },
-      },
-      defaultBranding: {
-        active: false,
-        theme: {
-          colors: { primary: "", secondary: "" },
-        },
-        logoUrl: "",
-        faviconUrl: "",
       },
       defaultKeycloak: {
         id: "keycloak",
@@ -310,14 +320,15 @@ export default {
       this.instance = await ApiInstanceService.getInstance();
       await this.fetchCatalog();
 
+      const branding = defaultBranding();
       this.instance.branding = {
-        ...this.defaultBranding,
+        ...branding,
         ...(this.instance.branding || {}),
         theme: {
-          ...this.defaultBranding.theme,
+          ...branding.theme,
           ...((this.instance.branding && this.instance.branding.theme) || {}),
           colors: {
-            ...this.defaultBranding.theme.colors,
+            ...branding.theme.colors,
             ...(((this.instance.branding && this.instance.branding.theme) || {})
               .colors || {}),
           },
@@ -379,23 +390,66 @@ export default {
       }
       return true;
     },
+    /**
+     * The instance as it goes to the API: the derived read fields of the
+     * branding and of the legal documents drop out wherever a media reference
+     * stands, because the backend derives them from that reference on the way
+     * out (§4.9 of the media spec).
+     */
+    instancePayload() {
+      return legalDocumentsForSave({
+        ...this.instance,
+        branding: brandingForSave(this.instance.branding),
+      });
+    },
+    /**
+     * The catalog as it goes to the API: without the Hero Layout, which the
+     * Hero Editor owns and saves through its own route.
+     */
+    catalogPayload() {
+      return catalogForSave(this.catalog);
+    },
+    /**
+     * A 400 `ValidationError` names its fields as JSON paths in
+     * `details[].field`, a 400 `BadRequestError` (the Startstufe) its one
+     * field in `params.field`; a tab that knows how to show them inline gets
+     * them in the first shape.
+     */
+    showApiErrors(error) {
+      const data = error?.response?.data;
+      const child = this.$refs.activeChild;
+      if (!child || typeof child.showApiErrors !== "function") return;
+
+      if (data?.error === "ValidationError" && Array.isArray(data.details)) {
+        child.showApiErrors(data.details);
+      } else if (data?.error === "BadRequestError" && data.params?.field) {
+        child.showApiErrors([{ field: data.params.field, code: data.code }]);
+      }
+    },
+    /** Tells the open tab that its values are saved, if it wants to know. */
+    notifySaved() {
+      const child = this.$refs.activeChild;
+      if (child && typeof child.onSaved === "function") child.onSaved();
+    },
     async submitChanges() {
       const ok = await this.validateActiveChild();
       if (!ok) return;
 
       this.inProgress = true;
       try {
-        await ApiInstanceService.updateInstance(this.instance);
-        await ApiCatalogService.updateCatalog(this.catalog);
+        await ApiInstanceService.updateInstance(this.instancePayload());
+        await ApiCatalogService.updateCatalog(this.catalogPayload());
         this.originalSnapshot = JSON.stringify({
           instance: this.instance,
           catalog: this.catalog,
         });
+        this.notifySaved();
         await this.addToast({
           message: "Instanz erfolgreich aktualisiert",
           type: "success",
         });
       } catch (e) {
+        this.showApiErrors(e);
         await this.addToast({
           message: "Fehler beim Aktualisieren der Instanz",
           type: "error",
@@ -406,7 +460,10 @@ export default {
     },
   },
   async mounted() {
-    const queryTabKey = this.$route.query.tab;
+    // „Authentifizierung“ (`auth`) became „Single Sign-On“ and „Karten“; old
+    // links open „Single Sign-On“.
+    const queryTabKey =
+      this.$route.query.tab === "auth" ? "sso" : this.$route.query.tab;
     const foundIndex = this.tabs.findIndex((t) => t.key === queryTabKey);
     this.activeTab = foundIndex !== -1 ? foundIndex : 0;
 

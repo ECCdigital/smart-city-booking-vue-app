@@ -50,6 +50,8 @@
         :tenant-name="tenant.name || ''"
         :show-support-footer="mailShowSupportFooter"
         :booking-period-format="mailBookingPeriodFormat"
+        :template-variables="templateVariables"
+        :tenant="tenant"
         @update="updateMailOverrides"
       />
 
@@ -117,6 +119,7 @@ export default {
   data: () => ({
     valid: false,
     defaultMailSnippets: {},
+    templateVariables: [],
     bookingPeriodFormatItems: [
       {
         value: "default",
@@ -186,6 +189,7 @@ export default {
       try {
         const data = await ApiTenantService.getDefaultMailTempaltes(tenantId);
         this.defaultMailSnippets = (data && data.mailSnippets) || {};
+        this.templateVariables = (data && data.templateVariables) || [];
       } catch (e) {
         console.error("Standard-Mailvorlagen konnten nicht geladen werden", e);
       }

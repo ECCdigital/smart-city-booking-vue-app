@@ -3,6 +3,7 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import BookableCheckoutBookables from "@/components/Bookable/BookableCheckoutBookables.vue";
 import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import SortableList from "@/components/SortableList.vue";
 
 export default {
@@ -20,6 +21,7 @@ export default {
     return {
       valid: true,
       bookables: [],
+      bookablesForbidden: false,
     };
   },
   computed: {
@@ -37,9 +39,19 @@ export default {
   },
   methods: {
     async fetchBookables() {
-      await ApiBookablesService.getBookables().then((result) => {
-        this.bookables = result?.data;
-      });
+      this.bookablesForbidden = false;
+      try {
+        const result = await ApiBookablesService.getBookables();
+        this.bookables = result?.data || [];
+      } catch (error) {
+        // This is a form section, not a dialog: a denial empties the two
+        // pickers and is named beside them, it does not pop anything up.
+        // Without a catch at all the 403 left `mounted` as an unhandled
+        // rejection.
+        this.bookables = [];
+        this.bookablesForbidden = isForbiddenError(error);
+        if (!this.bookablesForbidden) console.error(error);
+      }
     },
   },
   mounted() {
@@ -51,12 +63,7 @@ export default {
 <template>
   <v-form ref="form" v-model="valid">
     <BaseSection title="Abhängigkeiten" icon="mdi-link-variant" />
-    <v-card
-      id="be-section-related-checkout"
-      class="mb-6 section-card"
-      elevation="2"
-      outlined
-    >
+    <v-card id="be-section-related-checkout" class="mb-6 section-card" outlined>
       <v-card-title class="section-header pa-4">
         <v-icon small class="mr-2">mdi-cart-plus</v-icon>
         Zusätzliche Buchungsoptionen
@@ -68,6 +75,9 @@ export default {
           Buchungsobjekte, die Sie als zusätzliche Buchungsoptionen definieren,
           werden ihren Kund*innen beim Checkout als ergänzende Buchungsobjekte
           angezeigt.
+        </p>
+        <p v-if="bookablesForbidden" class="mb-3 text-caption text--secondary">
+          {{ $t("bookable.select.forbidden") }}
         </p>
         <BookableCheckoutBookables
           :items="model.checkoutBookableIds"
@@ -83,7 +93,6 @@ export default {
     <v-card
       id="be-section-related-hierarchy"
       class="mb-6 section-card"
-      elevation="2"
       outlined
     >
       <v-card-title class="section-header pa-4">
@@ -232,6 +241,9 @@ export default {
         </v-row>
 
         <v-divider class="my-5"></v-divider>
+        <p v-if="bookablesForbidden" class="mb-3 text-caption text--secondary">
+          {{ $t("bookable.select.forbidden") }}
+        </p>
         <v-row>
           <v-col>
             <SortableList
@@ -251,24 +263,3 @@ export default {
     </v-card>
   </v-form>
 </template>
-
-<style scoped>
-.section-card {
-  border-radius: 8px !important;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
-}
-.section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.02) 0%,
-    rgba(0, 0, 0, 0.01) 100%
-  );
-}
-.theme--dark .section-header {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
-}
-</style>

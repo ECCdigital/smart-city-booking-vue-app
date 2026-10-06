@@ -12,8 +12,15 @@ docs/agents/
   architecture.md         ← project layout & data flow
   coding-standards.md     ← style & patterns
   components.md           ← Vue component & view conventions
+  design-tokens.md        ← --scb-* custom properties in src/scss/tokens.scss: shape, surfaces, text, type, spacing, motion
   api-services.md         ← API client layer
   web-integration.md      ← JS web interface (BookingManager)
+  testing.md              ← Vitest setup, layout & conventions
+  access-vocabulary.md    ← doors, locker systems, grants: German UI terms ↔ code
+  booking-status-vocabulary.md ← the five booking states, the action verbs, the headline over the path, "read status, never a flag"
+  keycloak-realm.md       ← the guide in the tab „Single Sign-On“ as the one source for Keycloak settings; what follows a new requirement on the realm or changed SSO paths
+  issue-tracker.md        ← where issues live: GitHub ECC, Produkt-Repo (tickets in ECCdigital/tickets)
+  domain.md               ← how skills consume CONTEXT.md and docs/adr/
 docs/
   shared-session-deploy.md                   ← shared-origin Admin + Storefront deploy
 .cursor/rules/

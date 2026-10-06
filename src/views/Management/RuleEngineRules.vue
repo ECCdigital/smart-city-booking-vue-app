@@ -1,17 +1,22 @@
 <template>
   <AdminLayout>
-    <div class="page-content">
-      <div class="d-flex align-center flex-wrap mb-4">
-        <v-spacer />
-        <v-btn outlined class="mr-2" :to="{ name: 'rule-executions' }">
-          <v-icon left>mdi-history</v-icon>
-          Historie
-        </v-btn>
-        <v-btn color="primary" :to="{ name: 'rule-create' }">
-          <v-icon left>mdi-plus</v-icon>
-          Regel anlegen
-        </v-btn>
-      </div>
+    <!-- Room beneath the last rule for the floating button. -->
+    <div class="page-content mb-16">
+      <!-- The search band (SearchBar), the history in the row beneath it. -->
+      <SearchBar v-model="search" :fields="$t('rule.list.search')">
+        <template #actions>
+          <ToolbarRow>
+            <template #actions>
+              <ToolbarAction
+                icon="mdi-history"
+                :to="{ name: 'rule-executions' }"
+              >
+                Historie
+              </ToolbarAction>
+            </template>
+          </ToolbarRow>
+        </template>
+      </SearchBar>
 
       <v-alert
         v-if="engineEnabled === false"
@@ -36,15 +41,6 @@
       >
         Regeln führen zeitgesteuerte Aktionen (Cronjobs) gegen Datenobjekte aus.
       </v-alert>
-
-      <v-text-field
-        v-model="search"
-        label="Regel suchen..."
-        append-icon="mdi-magnify"
-        solo
-        clearable
-        style="border-radius: 15px"
-      />
 
       <v-progress-linear v-if="loading" indeterminate color="primary" />
 
@@ -158,6 +154,20 @@
       </v-data-table>
     </div>
 
+    <!-- The creation floats bottom right, as it does on every main page. -->
+    <v-btn
+      color="primary"
+      fixed
+      large
+      bottom
+      right
+      rounded
+      :to="{ name: 'rule-create' }"
+      data-test="open-create"
+    >
+      <v-icon>mdi-plus</v-icon>Regel anlegen
+    </v-btn>
+
     <RuleDeleteDialog
       :open="deleteDialog"
       :to-delete="selectedRule"
@@ -175,10 +185,20 @@ import Fuse from "fuse.js";
 import ApiRuleEngineService from "@/services/api/ApiRuleEngineService";
 import RuleStatusBadge from "@/components/Instance/RuleEngine/RuleStatusBadge.vue";
 import RuleDeleteDialog from "@/components/Instance/RuleEngine/RuleDeleteDialog.vue";
+import SearchBar from "@/components/commons/SearchBar.vue";
+import ToolbarRow from "@/components/commons/ToolbarRow.vue";
+import ToolbarAction from "@/components/commons/ToolbarAction.vue";
 
 export default {
   name: "RuleEngineRules",
-  components: { AdminLayout, RuleStatusBadge, RuleDeleteDialog },
+  components: {
+    AdminLayout,
+    RuleStatusBadge,
+    RuleDeleteDialog,
+    SearchBar,
+    ToolbarRow,
+    ToolbarAction,
+  },
   data() {
     return {
       rules: [],

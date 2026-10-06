@@ -16,6 +16,7 @@ const state = {
 
     isBookable: false,
     amount: 1,
+    maxAmountPerBooking: null,
     minBookingDuration: null,
     maxBookingDuration: null,
     autoCommitBooking: false,
@@ -67,7 +68,6 @@ const state = {
     checkoutBookableIds: [],
 
     attachments: [],
-    lockerDetails: { active: false, units: [] },
     requiredFields: [],
     eventId: null,
     ownerUserId: "",
@@ -120,6 +120,7 @@ const mutations = {
 
       isBookable: false,
       amount: 1,
+      maxAmountPerBooking: null,
       minBookingDuration: null,
       maxBookingDuration: null,
       autoCommitBooking: false,
@@ -170,7 +171,6 @@ const mutations = {
       checkoutBookableIds: [],
 
       attachments: [],
-      lockerDetails: { active: false, units: [] },
       requiredFields: [],
       eventId: null,
       ownerUserId: "",

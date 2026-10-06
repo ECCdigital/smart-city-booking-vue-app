@@ -15,7 +15,7 @@
           <code>{{ supportEmailExample }}</code>.
         </div>
 
-        <v-text-field
+        <MailVariableTextField
           ref="addressField"
           v-model="address"
           label="E-Mail-Adresse / Empfänger"
@@ -24,44 +24,11 @@
           dense
           hide-details="auto"
           class="mb-2"
+          field="url"
+          :variables="variables"
+          :tenant="tenant"
           @keydown.enter.prevent="onApply"
-        >
-          <template v-if="insertableVariables.length" #append>
-            <v-menu
-              offset-y
-              left
-              :close-on-content-click="true"
-            >
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn
-                  icon
-                  x-small
-                  v-bind="attrs"
-                  v-on="on"
-                  title="Variable einfügen"
-                >
-                  <v-icon small>mdi-code-tags</v-icon>
-                </v-btn>
-              </template>
-              <v-list dense style="max-height: 280px; overflow-y: auto;">
-                <v-list-item
-                  v-for="v in insertableVariables"
-                  :key="v.name"
-                  @click="insertVariable(v)"
-                >
-                  <v-list-item-content>
-                    <v-list-item-title>
-                      {{ v.label || v.name }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle>
-                      <code>{{ variableToken(v) }}</code>
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-          </template>
-        </v-text-field>
+        />
 
         <div v-if="presetVariables.length" class="mb-3">
           <v-chip
@@ -69,7 +36,7 @@
             :key="'preset-' + v.name"
             small
             class="mr-1 mb-1"
-            @click="address = variableToken(v)"
+            @click="address = '{{' + v.name + '}}'"
           >
             <v-icon left x-small>mdi-email-outline</v-icon>
             {{ v.label || v.name }}
@@ -108,12 +75,19 @@ import {
   toMailtoHref,
   mailtoAddressFromHref,
 } from "@/components/Mail/templateVariables.js";
+import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
+import {
+  filterVariablesForField,
+  isCatalogLoadable,
+} from "@/components/Mail/mailVariableCatalog.js";
 
 export default {
   name: "MailtoLinkDialog",
+  components: { MailVariableTextField },
   props: {
     open: { type: Boolean, default: false },
     variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     initialHref: { type: String, default: "" },
     initialLinkText: { type: String, default: "kontaktieren" },
     showLinkText: { type: Boolean, default: true },
@@ -126,15 +100,10 @@ export default {
     };
   },
   computed: {
-    insertableVariables() {
-      return (this.variables || []).filter((v) => {
-        if (!v || !v.placeholder) return false;
-        // Skip control-flow helpers; only simple/value placeholders.
-        return !/^\{\{[#^/]/.test(String(v.placeholder).trim());
-      });
-    },
+    /** Quick picks: the catalog's email-ish variables, as the whole address. */
     presetVariables() {
-      return this.insertableVariables.filter((v) =>
+      if (!isCatalogLoadable(this.variables)) return [];
+      return filterVariablesForField(this.variables, "line").filter((v) =>
         /email|mail/i.test(v.name || "")
       );
     },
@@ -157,19 +126,6 @@ export default {
     },
   },
   methods: {
-    variableToken(v) {
-      if (!v) return "";
-      const placeholder = String(v.placeholder || "").trim();
-      const simple = placeholder.match(/^\{\{\{?\s*([\w.]+)\s*\}?\}\}$/);
-      if (simple) return `{{${simple[1]}}}`;
-      if (placeholder) return placeholder;
-      return `{{${v.name}}}`;
-    },
-    insertVariable(v) {
-      const token = this.variableToken(v);
-      if (!token) return;
-      this.address = `${this.address || ""}${token}`;
-    },
     onDialogInput(v) {
       if (!v) this.close();
     },

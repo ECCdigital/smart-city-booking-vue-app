@@ -1,45 +1,41 @@
 <template>
-  <v-container class="text-center fill-height fluid justify-center">
-    <v-card outlined class="text-center">
-      <v-card-text>
-        <v-img :src="appLogo" max-width="200" class="mx-auto" />
-        <h2 class="mt-8 mb-2">Email-Bestätigung</h2>
-        <v-alert
-          type="success"
-          border="left"
-          colored-border
-          elevation="2"
-          class="mb-4"
-        >
-          Ihre Email-Adresse wurde erfolgreich bestätigt.
-        </v-alert>
-        <v-btn color="primary" class="white--text" @click="login">
-          Weiter zum Login
-        </v-btn>
-      </v-card-text>
-    </v-card>
-  </v-container>
+  <AuthPage title="Email-Bestätigung" icon="mdi-email-check-outline">
+    <div class="scb-form">
+      <p class="scb-form__note mb-0">
+        Ihre Email-Adresse wurde erfolgreich bestätigt.
+      </p>
+      <v-btn
+        color="primary"
+        block
+        elevation="0"
+        class="scb-form__submit mt-4"
+        @click="login"
+      >
+        Weiter zum Login
+      </v-btn>
+    </div>
+  </AuthPage>
 </template>
 
 <script>
+import AuthPage from "@/components/Auth/AuthPage.vue";
+import { isSafeInternalRedirect } from "@/utils/safeRedirect";
+
 export default {
   name: "EmailVerify",
-  components: {},
+  components: { AuthPage },
   data() {
     return {
       nextUrl: null,
     };
   },
-  computed: {
-    appLogo() {
-      return process.env.BASE_URL && process.env.BASE_URL.trim()
-        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
-        : "/app-logo.png";
-    },
-  },
   methods: {
     login() {
-      this.$router.push({ name: "login", query: { next: this.nextUrl } });
+      this.$router.push(
+        isSafeInternalRedirect(this.nextUrl, this.$router)
+          ? { name: "login", query: { next: this.nextUrl } }
+          : { name: "login" }
+      );
     },
   },
   mounted() {
@@ -50,5 +46,3 @@ export default {
   },
 };
 </script>
-
-<style scoped></style>

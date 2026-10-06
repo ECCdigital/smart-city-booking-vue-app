@@ -6,48 +6,62 @@
         : 'bookable-overview-band'
     "
   >
-    <template v-if="variant === 'sidebar'">
-      <div class="text-subtitle-2 mb-3">Übersicht</div>
-      <component
-        :is="isTraitNavigable(trait) ? 'button' : 'div'"
-        v-for="trait in traits"
-        :key="trait.key"
-        :type="isTraitNavigable(trait) ? 'button' : undefined"
-        class="overview-row"
-        :class="{
-          'overview-row--block': isLongTrait(trait),
-          'overview-row--static': !isTraitNavigable(trait),
-          'overview-row--expert': isExpertTraitHint(trait),
-        }"
-        @click="onTraitActivate(trait)"
-      >
-        <div class="overview-row__head">
-          <v-icon x-small class="mr-2 flex-shrink-0">{{ trait.icon }}</v-icon>
-          <span class="overview-row__label text--secondary">{{
-            trait.label
-          }}</span>
-          <span
-            v-if="isExpertTraitHint(trait)"
-            class="overview-row__expert-badge"
-          >
-            {{ $t("bookable.edit.expertMode.traitBadge") }}
-          </span>
-        </div>
-        <span class="overview-row__value" :title="trait.value">
-          {{ trait.value }}
-        </span>
-        <v-btn
-          v-if="trait.openRoute"
-          icon
-          x-small
-          class="overview-row__external flex-shrink-0"
-          :title="$t('bookable.edit.openEvent')"
-          @click.stop="openTraitRoute(trait)"
+    <!-- The sidebar is a section card, as the booking page's panel and the
+         booking editor's summary are. -->
+    <v-card v-if="variant === 'sidebar'" outlined class="section-card">
+      <v-card-title class="section-header">
+        <v-icon>mdi-clipboard-text-outline</v-icon>
+        <span>Übersicht</span>
+      </v-card-title>
+      <v-divider />
+      <v-card-text class="bookable-overview-sidebar__body">
+        <component
+          :is="isTraitNavigable(trait) ? 'button' : 'div'"
+          v-for="trait in traits"
+          :key="trait.key"
+          :type="isTraitNavigable(trait) ? 'button' : undefined"
+          class="overview-row"
+          :class="{
+            'overview-row--block': isLongTrait(trait),
+            'overview-row--static': !isTraitNavigable(trait),
+            'overview-row--expert': isExpertTraitHint(trait),
+          }"
+          @click="onTraitActivate(trait)"
         >
-          <v-icon x-small>mdi-open-in-new</v-icon>
-        </v-btn>
-      </component>
-    </template>
+          <div class="overview-row__head">
+            <v-icon x-small class="mr-2 flex-shrink-0">{{ trait.icon }}</v-icon>
+            <span class="overview-row__label text--secondary">{{
+              trait.label
+            }}</span>
+            <span
+              v-if="isExpertTraitHint(trait)"
+              class="overview-row__expert-badge"
+            >
+              {{ $t("bookable.edit.expertMode.traitBadge") }}
+            </span>
+          </div>
+          <span class="overview-row__value" :title="trait.value">
+            {{ trait.value }}
+          </span>
+          <v-btn
+            v-if="trait.openRoute"
+            icon
+            x-small
+            class="overview-row__external flex-shrink-0"
+            :title="$t('bookable.edit.openEvent')"
+            @click.stop="openTraitRoute(trait)"
+          >
+            <v-icon x-small>mdi-open-in-new</v-icon>
+          </v-btn>
+        </component>
+        <div
+          v-if="showTitlesForbidden"
+          class="overview-row overview-row--static text-caption text--secondary"
+        >
+          {{ $t("bookable.edit.overview.titlesForbidden") }}
+        </div>
+      </v-card-text>
+    </v-card>
 
     <template v-else>
       <div class="d-flex flex-wrap overview-band-chips">
@@ -116,12 +130,19 @@
           <v-icon x-small>mdi-open-in-new</v-icon>
         </v-btn>
       </component>
+      <div
+        v-if="showTitlesForbidden"
+        class="overview-band-detail overview-band-detail--static text-caption text--secondary"
+      >
+        {{ $t("bookable.edit.overview.titlesForbidden") }}
+      </div>
     </template>
   </div>
 </template>
 
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import ApiEventService from "@/services/api/ApiEventService";
 import store from "@/store";
 import { getBookableOverviewTraits } from "@/utils/bookableOverview";
@@ -133,9 +154,18 @@ let eventTitlesCache = null;
 let eventTitlesPromise = null;
 let eventTitlesTenantId = null;
 
+/**
+ * Resolves `{ titlesById, forbidden }`. `forbidden` is carried out of the
+ * loader because an empty map has two very different causes: there is nothing
+ * to name, or the list may not be read. Only the second one is worth telling
+ * the user about, and without it the overview would quietly print raw ids.
+ */
 function loadBookableTitlesById() {
   if (bookableTitlesCache) {
-    return Promise.resolve(bookableTitlesCache);
+    return Promise.resolve({
+      titlesById: bookableTitlesCache,
+      forbidden: false,
+    });
   }
   if (!bookableTitlesPromise) {
     bookableTitlesPromise = ApiBookablesService.getBookables()
@@ -147,12 +177,12 @@ function loadBookableTitlesById() {
           }
         });
         bookableTitlesCache = map;
-        return map;
+        return { titlesById: map, forbidden: false };
       })
       .catch((error) => {
         console.error("Error loading bookable titles for overview:", error);
         bookableTitlesPromise = null;
-        return {};
+        return { titlesById: {}, forbidden: isForbiddenError(error) };
       });
   }
   return bookableTitlesPromise;
@@ -210,6 +240,7 @@ export default {
   data() {
     return {
       bookableTitlesById: bookableTitlesCache || {},
+      bookableTitlesForbidden: false,
       eventTitlesById: eventTitlesCache || {},
     };
   },
@@ -225,6 +256,15 @@ export default {
     },
     longTraits() {
       return this.traits.filter((trait) => this.isLongTrait(trait));
+    },
+    // Only worth saying when there is actually something the missing titles
+    // would have named - otherwise the notice is noise on every bookable.
+    showTitlesForbidden() {
+      return (
+        this.bookableTitlesForbidden &&
+        (this.bookable?.checkoutBookableIds?.length > 0 ||
+          this.bookable?.relatedBookableIds?.length > 0)
+      );
     },
     needsEventTitles() {
       return (
@@ -273,8 +313,9 @@ export default {
       window.open(routeData.href, "_blank", "noopener,noreferrer");
     },
     async ensureBookableTitles() {
-      const map = await loadBookableTitlesById();
-      this.bookableTitlesById = map;
+      const { titlesById, forbidden } = await loadBookableTitlesById();
+      this.bookableTitlesById = titlesById;
+      this.bookableTitlesForbidden = forbidden;
     },
     async ensureEventTitles() {
       const map = await loadEventTitlesById();
@@ -288,41 +329,26 @@ export default {
 </script>
 
 <style scoped>
-.bookable-overview-sidebar {
-  padding: 4px 0 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.theme--dark .bookable-overview-sidebar {
-  border-top-color: rgba(255, 255, 255, 0.12);
-}
-
-@media (min-width: 1264px) {
-  .bookable-overview-sidebar {
-    border-top: none;
-    padding-left: 16px;
-    border-left: 1px solid rgba(0, 0, 0, 0.08);
-  }
-
-  .theme--dark .bookable-overview-sidebar {
-    border-left-color: rgba(255, 255, 255, 0.12);
-  }
+/* The rows carry 4px of their own, so the card's text lines up with its
+   header at 16px. */
+.bookable-overview-sidebar__body {
+  padding: 10px var(--scb-space-3) var(--scb-space-3);
 }
 
 .overview-row {
   display: flex;
   align-items: flex-start;
   width: 100%;
-  padding: 6px 4px;
+  padding: 6px var(--scb-space-1);
   margin: 0 0 2px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--scb-radius-control);
   background: transparent;
   text-align: left;
   cursor: pointer;
   font: inherit;
   color: inherit;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--scb-motion-fast);
 }
 
 .overview-row--block {
@@ -330,11 +356,7 @@ export default {
 }
 
 .overview-row:not(.overview-row--static):hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.theme--dark .overview-row:not(.overview-row--static):hover {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--scb-hover-tint);
 }
 
 .overview-row--static {
@@ -350,7 +372,7 @@ export default {
   align-items: center;
   flex: 0 0 42%;
   min-width: 0;
-  padding-right: 8px;
+  padding-right: var(--scb-space-2);
   flex-wrap: wrap;
 }
 
@@ -362,8 +384,8 @@ export default {
 }
 
 .overview-row__label {
-  font-size: 0.75rem;
-  line-height: 1.3;
+  font-size: var(--scb-font-size-xs);
+  line-height: var(--scb-line-height-tight);
 }
 
 .overview-row__expert-badge,
@@ -371,21 +393,21 @@ export default {
 .overview-band-detail__expert-badge {
   margin-left: 6px;
   padding: 0 5px;
-  border-radius: 3px;
+  border-radius: var(--scb-radius-badge);
   font-size: 0.625rem;
-  font-weight: 600;
+  font-weight: var(--scb-font-weight-semibold);
   letter-spacing: 0.02em;
-  line-height: 1.4;
+  line-height: var(--scb-line-height-base);
   text-transform: uppercase;
   color: var(--v-warning-base);
-  background-color: rgba(251, 140, 0, 0.12);
+  background-color: var(--scb-warning-tint);
   white-space: nowrap;
 }
 
 .overview-row__value {
   flex: 1 1 auto;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: var(--scb-font-size-sm);
+  font-weight: var(--scb-font-weight-medium);
   line-height: 1.35;
   min-width: 0;
   white-space: normal;
@@ -403,7 +425,7 @@ export default {
 }
 
 .bookable-overview-band {
-  margin-bottom: 12px;
+  margin-bottom: var(--scb-space-3);
 }
 
 .overview-band-chips {
@@ -426,29 +448,21 @@ export default {
 .overview-band-detail {
   display: block;
   width: 100%;
-  margin-top: 8px;
-  padding: 6px 8px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 4px;
+  margin-top: var(--scb-space-2);
+  padding: 6px var(--scb-space-2);
+  border: 1px solid var(--scb-surface-border);
+  border-radius: var(--scb-radius-control);
   background: transparent;
   text-align: left;
   cursor: pointer;
   font: inherit;
-  font-size: 0.8125rem;
-  line-height: 1.4;
+  font-size: var(--scb-font-size-sm);
+  line-height: var(--scb-line-height-base);
   color: inherit;
 }
 
-.theme--dark .overview-band-detail {
-  border-color: rgba(255, 255, 255, 0.16);
-}
-
 .overview-band-detail:not(.overview-band-detail--static):hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.theme--dark .overview-band-detail:not(.overview-band-detail--static):hover {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--scb-hover-tint);
 }
 
 .overview-band-detail--static {

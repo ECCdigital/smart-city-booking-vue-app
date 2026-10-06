@@ -60,6 +60,7 @@ import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { continuesToProvider, payableBookings } from "@/utils/checkoutNextStep";
 import CheckoutContactDetails from "@/views/BundleCheckout/CheckoutContactDetails.vue";
 import CheckoutPaymentProvider from "@/views/BundleCheckout/CheckoutPaymentProvider.vue";
 import CheckoutSeriesBooking from "@/views/BundleCheckout/CheckoutSeriesBooking.vue";
@@ -741,14 +742,10 @@ export default {
         const groupBooking = await this.performGroupCheckoutRequest();
         const bookings = groupBooking.bookings || [];
 
-        const payableBookings = bookings.filter(
-          (booking) => booking.isCommitted === true && booking.isPayed === false
-        );
+        const bookingsToPay = payableBookings(bookings);
 
-        if (payableBookings.length > 0) {
-          const paymentResponse = await this.processGroupPayment(
-            payableBookings
-          );
+        if (bookingsToPay.length > 0) {
+          const paymentResponse = await this.processGroupPayment(bookingsToPay);
           await this.handleGroupPaymentOutcome(paymentResponse, groupBooking);
         } else {
           await this.routeToStatus(groupBooking.bookingIds);
@@ -778,8 +775,8 @@ export default {
       return response.data;
     },
 
-    async processGroupPayment(payableBookings) {
-      const bookingIds = payableBookings.map((booking) => booking.id);
+    async processGroupPayment(bookingsToPay) {
+      const bookingIds = bookingsToPay.map((booking) => booking.id);
       const response = await ApiPaymentService.payments(
         bookingIds,
         this.tenantId,
@@ -795,12 +792,7 @@ export default {
       const paymentProvider =
         bookings[0]?.paymentProvider || this.selectedPaymentApp;
 
-      const totalPrice = bookings.reduce(
-        (sum, booking) => sum + (booking.priceEur || 0),
-        0
-      );
-
-      if (totalPrice <= 0 || bookings.some((booking) => !booking.isCommitted)) {
+      if (!continuesToProvider(bookings)) {
         await this.routeToStatus(groupBooking.bookingIds);
         return;
       }

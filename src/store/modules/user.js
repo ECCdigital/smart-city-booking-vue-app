@@ -1,7 +1,16 @@
 import store from "@/store";
 import PersistenceService from "@/services/PersistenceService";
+import { SUPERVISION_LEVELS } from "@/utils/supervision";
+import { tenantToHold } from "@/utils/tenantMembership";
 
 const namespaced = true;
+
+function membership(state, tenantId) {
+  return (
+    state.data?.permissions?.tenants?.find((p) => p.tenantId === tenantId) ||
+    null
+  );
+}
 
 const state = {
   data: PersistenceService.getFromLocalStorage("user") || null,
@@ -19,36 +28,70 @@ const mutations = {
 };
 
 const actions = {
-  update({ commit }, user) {
+  // Every sign-in path (login, SSO, shared session, `/me`) lands here, so
+  // this is where a stale current tenant is replaced by one the user is
+  // still a Mitglied of.
+  async update({ commit, dispatch, rootGetters }, user) {
     commit("UPDATE", user);
+    const currentTenantId = rootGetters["tenants/currentTenantId"];
+    const tenantId = tenantToHold(currentTenantId, user?.permissions);
+    if (tenantId !== currentTenantId) {
+      await dispatch("tenants/select", tenantId, { root: true });
+    }
   },
   delete({ commit }) {
     commit("DELETE");
   },
   reset({ commit }) {
     commit("DELETE");
-  }
+  },
 };
 
 const getters = {
   getUser: (state) => state.data?.user,
   isLoggedIn: () => !_.isNil(state.data?.user),
+  // Whether the reach of the signed-in user is known at all.
+  permissionsLoaded: (state) => !!state.data?.permissions,
+  // The counterpart of `isAuthorized`, for callers that take something away
+  // from the user: `isAuthorized` answers `false` both for "not permitted"
+  // and for "not loaded yet", and only the first of those may be acted on.
+  isDenied: (state, getters) => (ifce) =>
+    getters.permissionsLoaded && !getters.isAuthorized(ifce),
   isAuthorized: (state) => (ifce) => {
     if (state.data && state.data.permissions) {
-      if(state.data.permissions.instanceOwner) return true;
+      if (state.data.permissions.instanceOwner) return true;
       const t = store.getters["tenants/currentTenantId"];
-      const adIfces = state.data.permissions.tenants?.find((p) => p.tenantId === t);
-      if(!adIfces) return false;
+      const adIfces = state.data.permissions.tenants?.find(
+        (p) => p.tenantId === t
+      );
+      if (!adIfces) return false;
       return adIfces.adminInterfaces.includes(ifce);
     }
     return false;
+  },
+  // The supervision level of a tenant as the sign-in names it per membership
+  // (`permissions.tenants[]`); `null` where it names none.
+  supervisionLevelOf: (state) => (tenantId) =>
+    membership(state, tenantId)?.supervisionLevel ?? null,
+  /**
+   * The membership - level, time and reason included - of a declined tenant
+   * (glossary „abgewiesen“), whose management is closed to its own people.
+   * `null` for every other tenant and for an instance owner, who keeps them
+   * all.
+   */
+  declinedMembership: (state) => (tenantId) => {
+    if (state.data?.permissions?.instanceOwner) return null;
+    const entry = membership(state, tenantId);
+    return entry?.supervisionLevel === SUPERVISION_LEVELS.DECLINED
+      ? entry
+      : null;
   },
   allowToCreateTenants: (state) => {
     if (state.data && state.data.permissions) {
       return state.data.permissions.allowCreateTenant;
     }
     return false;
-  }
+  },
 };
 
 export default {

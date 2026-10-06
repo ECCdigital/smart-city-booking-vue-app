@@ -31,13 +31,13 @@ export default {
 </script>
 
 <style scoped>
-
 .base-section {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform var(--scb-motion-base),
+    box-shadow var(--scb-motion-base);
   background-color: unset !important;
 }
 
 .theme--dark .base-section {
-  background-color: unset  !important;
+  background-color: unset !important;
 }
 </style>

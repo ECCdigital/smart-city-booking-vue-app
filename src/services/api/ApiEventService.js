@@ -17,6 +17,16 @@ export default {
     const t = tenant || store.getters["tenants/currentTenantId"];
     const formData = { ...store.state.events.form };
     formData.tenantId = t;
+    // The review (glossary "Prüfstatus") is written by its own operations
+    // alone (`ApiReviewService`); a save never carries it.
+    delete formData.review;
+    // An event without an id is created (`POST`), one with an id updated.
+    if (!formData.id) {
+      return ApiClient.post(
+        `api/${t}/events?withTickets=${addTickets}`,
+        formData
+      );
+    }
     return ApiClient.put(`api/${t}/events?withTickets=${addTickets}`, formData);
   },
   deleteEvent(id, tenant) {
@@ -33,11 +43,13 @@ export default {
 
           delete event.id;
           delete event._id;
+          // A copy is a new offer: it starts without the original's review.
+          delete event.review;
 
           event.information.name = `${event.information.name} (Kopie)`;
 
           if (event) {
-            ApiClient.put(
+            ApiClient.post(
               `api/${store.getters["tenants/currentTenantId"]}/events`,
               event
             )

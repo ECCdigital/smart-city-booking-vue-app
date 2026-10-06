@@ -60,8 +60,8 @@
     />
 
     <v-select
-      v-else-if="field.inputType === 'select'"
-      :value="value"
+      v-else-if="isChoiceField"
+      :value="selectValue"
       @input="$emit('input', $event)"
       :items="field.options || []"
       item-text="caption"
@@ -69,11 +69,14 @@
       :label="fieldLabel"
       :placeholder="field.placeholder || ''"
       :rules="rules"
+      :multiple="isMultiselect"
+      :chips="isMultiselect"
+      :deletable-chips="isMultiselect"
       background-color="accent"
       filled
       :hide-details="hideDetails"
       clearable
-      @click:clear="$emit('input', null)"
+      @click:clear="$emit('input', isMultiselect ? [] : null)"
     />
   </component>
 </template>
@@ -102,15 +105,28 @@ export default {
       if (this.lg != null) props.lg = this.lg;
       return props;
     },
+    isMultiselect() {
+      return this.field.inputType === "multiselect";
+    },
+    isChoiceField() {
+      return this.field.inputType === "select" || this.isMultiselect;
+    },
+    selectValue() {
+      if (!this.isMultiselect) return this.value;
+      return Array.isArray(this.value) ? this.value : [];
+    },
     fieldLabel() {
       return this.required ? `${this.field.caption} *` : this.field.caption;
     },
     rules() {
       if (!this.required) return [];
       return [
-        (v) =>
-          (v !== null && v !== undefined && v !== "") ||
-          `${this.field.caption} ist erforderlich`,
+        (v) => {
+          const filled = Array.isArray(v)
+            ? v.length > 0
+            : v !== null && v !== undefined && v !== "";
+          return filled || `${this.field.caption} ist erforderlich`;
+        },
       ];
     },
   },

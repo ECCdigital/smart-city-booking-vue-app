@@ -2,22 +2,25 @@
   <div class="list-block" :class="{ selected }">
     <component :is="block.ordered ? 'ol' : 'ul'" class="list-items">
       <li v-for="(item, idx) in block.items || []" :key="idx">
-        <v-text-field
-          :value="item"
+        <MailVariableTextField
+          :value="item || ''"
           dense
           hide-details
           flat
           solo
           background-color="transparent"
           placeholder="Listenpunkt…"
+          field="line"
+          :variables="variables"
+          :tenant="tenant"
           @input="(v) => onItem(idx, v)"
         >
-          <template v-slot:append>
+          <template #append>
             <v-btn icon x-small @click.stop="removeItem(idx)">
               <v-icon x-small>mdi-close</v-icon>
             </v-btn>
           </template>
-        </v-text-field>
+        </MailVariableTextField>
       </li>
     </component>
     <v-btn x-small text color="primary" @click="addItem">
@@ -28,10 +31,15 @@
 </template>
 
 <script>
+import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
+
 export default {
   name: "ListBlock",
+  components: { MailVariableTextField },
   props: {
     block: { type: Object, required: true },
+    variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
     selected: { type: Boolean, default: false },
   },
   methods: {

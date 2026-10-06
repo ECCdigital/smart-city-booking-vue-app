@@ -114,7 +114,7 @@
 
       <!-- Image -->
       <div v-if="selectedBlock.type === 'image'">
-        <v-text-field
+        <MailVariableTextField
           label="Bild-URL"
           :value="selectedBlock.src || ''"
           placeholder="https://..."
@@ -122,6 +122,9 @@
           outlined
           hide-details
           class="mb-2"
+          field="url"
+          :variables="variables"
+          :tenant="tenant"
           @input="(v) => onUpdate('src', v)"
         />
         <v-alert
@@ -133,13 +136,16 @@
         >
           Unsichere Verbindung (http). Bevorzugt https verwenden.
         </v-alert>
-        <v-text-field
+        <MailVariableTextField
           label="Alt-Text"
           :value="selectedBlock.alt || ''"
           dense
           outlined
           hide-details
           class="mb-2"
+          field="line"
+          :variables="variables"
+          :tenant="tenant"
           @input="(v) => onUpdate('alt', v)"
         />
         <v-text-field
@@ -162,29 +168,35 @@
           class="mb-2"
           @change="(v) => onUpdate('align', v)"
         />
-        <v-text-field
+        <MailVariableTextField
           label="Link-Ziel (optional)"
           :value="selectedBlock.link || ''"
           placeholder="https://..."
           dense
           outlined
           hide-details
+          field="url"
+          :variables="variables"
+          :tenant="tenant"
           @input="(v) => onUpdate('link', v)"
         />
       </div>
 
       <!-- Button -->
       <div v-if="selectedBlock.type === 'button'">
-        <v-text-field
+        <MailVariableTextField
           label="Beschriftung"
           :value="selectedBlock.label || ''"
           dense
           outlined
           hide-details
           class="mb-2"
+          field="line"
+          :variables="variables"
+          :tenant="tenant"
           @input="(v) => onUpdate('label', v)"
         />
-        <v-text-field
+        <MailVariableTextField
           label="Link-Ziel"
           :value="selectedBlock.href || ''"
           placeholder="https://… oder mailto:…"
@@ -192,6 +204,9 @@
           outlined
           hide-details
           class="mb-2"
+          field="url"
+          :variables="variables"
+          :tenant="tenant"
           @input="(v) => onUpdate('href', v)"
         />
         <v-btn
@@ -355,25 +370,31 @@
           class="mb-2"
           @change="(v) => onUpdate('variant', v)"
         />
-        <v-text-field
+        <MailVariableTextField
           label="Titel (optional)"
           :value="selectedBlock.title || ''"
           dense
           outlined
           hide-details
+          field="line"
+          :variables="variables"
+          :tenant="tenant"
           @input="(v) => onUpdate('title', v)"
         />
       </div>
 
       <!-- Quote -->
       <div v-if="selectedBlock.type === 'quote'">
-        <v-text-field
+        <MailVariableTextField
           label="Quelle (cite)"
           :value="selectedBlock.cite || ''"
           dense
           outlined
           hide-details
           class="mb-2"
+          field="line"
+          :variables="variables"
+          :tenant="tenant"
           @input="(v) => onUpdate('cite', v)"
         />
         <v-select
@@ -402,6 +423,7 @@
     <MailtoLinkDialog
       :open="mailtoDialogOpen"
       :variables="variables"
+      :tenant="tenant"
       :initial-href="mailtoDialogHref"
       :show-link-text="false"
       @close="mailtoDialogOpen = false"
@@ -413,6 +435,7 @@
 <script>
 import { BLOCK_PALETTE } from "./blockFactory.js";
 import MailtoLinkDialog from "./MailtoLinkDialog.vue";
+import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
 import { SUPPORT_EMAIL_MAILTO } from "@/components/Mail/templateVariables.js";
 import {
   FONT_SIZE_OPTIONS,
@@ -421,10 +444,11 @@ import {
 
 export default {
   name: "BlockPropertiesPanel",
-  components: { MailtoLinkDialog },
+  components: { MailtoLinkDialog, MailVariableTextField },
   props: {
     selectedBlock: { type: Object, default: null },
     variables: { type: Array, default: () => [] },
+    tenant: { type: Object, default: () => ({}) },
   },
   data: () => ({
     mailtoDialogOpen: false,

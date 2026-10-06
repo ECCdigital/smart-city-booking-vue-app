@@ -81,13 +81,14 @@ export default {
       },
     },
 
+    // The workflow actions the backend knows (`workflow-action.js`):
+    // `commit`, `paid`, `reject`. `pending` and `cancelled` were offered
+    // once and ignored.
     statusMap() {
       return {
-        commit: "Freigegeben",
-        paid: "Bezahlt",
-        reject: "Abgelehnt",
-        pending: "Ausstehend",
-        cancelled: "Storniert",
+        commit: this.$t("booking.action.confirm"),
+        paid: this.$t("booking.action.pay"),
+        reject: this.$t("booking.action.cancel"),
       };
     },
 

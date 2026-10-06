@@ -1,70 +1,37 @@
 <template>
-  <v-container class="text-center">
-    <v-card outlined max-width="500" class="mx-auto mt-sm-10">
-      <v-card-text class="text-center">
-        <v-img :src="appLogo" max-width="200" class="mx-auto" />
+  <AuthPage title="Anmelden" icon="mdi-login-variant">
+    <div
+      v-if="checkingSharedSession"
+      class="d-flex flex-column align-center py-8"
+    >
+      <v-progress-circular indeterminate color="primary" size="40" width="3" />
+      <span class="text-body-2 text--secondary mt-3">
+        Sitzung wird geprüft…
+      </span>
+    </div>
 
-        <h2 class="mt-8 mb-2">Anmeldung</h2>
-        <p class="subtitle-2 mb-10">Mit Ihrem Account anmelden.</p>
-
-        <div
-          v-if="checkingSharedSession"
-          class="d-flex flex-column align-center py-6"
-        >
-          <v-progress-circular
-            indeterminate
-            color="primary"
-            size="40"
-            width="3"
-          />
-          <span class="text-body-2 grey--text mt-3">
-            Sitzung wird geprüft…
-          </span>
-        </div>
-
-        <LoginCard
-          v-else
-          :sso-active="ssoActive"
-          :card-methods="cardMethods"
-          @success="signedIn"
-        />
-
-        <ContactInformation />
-      </v-card-text>
-    </v-card>
-
-    <v-card elevation="0" max-width="500" class="mx-auto mt-2">
-      <v-card-text class="text-right pa-0">
-        <a
-          :href="'https://' + Utils.sanitizeUrl(instance?.dataProtectionUrl)"
-          target="_blank"
-        >
-          Datenschutz
-        </a>
-        |
-        <a
-          :href="'https://' + Utils.sanitizeUrl(instance?.legalNoticeUrl)"
-          target="_blank"
-        >
-          Nutzungsbedingungen
-        </a>
-      </v-card-text>
-    </v-card>
-  </v-container>
+    <LoginCard
+      v-else
+      :sso-active="ssoActive"
+      :card-methods="cardMethods"
+      :register-in-new-tab="false"
+      @success="signedIn"
+    />
+  </AuthPage>
 </template>
 
 <script>
 import { mapActions, mapGetters } from "vuex";
-import ContactInformation from "@/components/ContactInformation.vue";
-import Utils from "@/utils/Utils";
+import AuthPage from "@/components/Auth/AuthPage.vue";
 import LoginCard from "@/components/Auth/LoginCard.vue";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { isBffAuthMode } from "@/services/auth/authMode";
+import { isSafeInternalRedirect } from "@/utils/safeRedirect";
 
 export default {
   components: {
+    AuthPage,
     LoginCard,
-    ContactInformation,
   },
 
   data() {
@@ -75,9 +42,6 @@ export default {
   },
 
   computed: {
-    Utils() {
-      return Utils;
-    },
     ...mapGetters({
       instance: "instance/instance",
       nextUrl: "authStore/nextUrl",
@@ -86,11 +50,6 @@ export default {
       return (this.instance?.applications || []).some(
         (app) => app.id === "keycloak" && app.active
       );
-    },
-    appLogo() {
-      return process.env.BASE_URL && process.env.BASE_URL.trim()
-        ? `${process.env.BASE_URL.replace(/\/$/, "")}/app-logo.png`
-        : "/app-logo.png";
     },
   },
 
@@ -102,9 +61,10 @@ export default {
       updateNextUrl: "authStore/setNextUrl",
     }),
     signedIn() {
-      if (this.nextUrl) {
-        this.$router.push(this.nextUrl);
-        this.updateNextUrl(null);
+      const next = this.nextUrl;
+      this.updateNextUrl(null);
+      if (isSafeInternalRedirect(next, this.$router)) {
+        this.$router.push(next);
       } else {
         this.$router.push({ name: "dashboard" });
       }

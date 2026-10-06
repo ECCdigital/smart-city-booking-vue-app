@@ -1,0 +1,292 @@
+// The search bar of every list (`SearchBar` in src/components/commons,
+// ECCdigital/tickets#54): a band of its own directly under the page title,
+// over the whole width of the content, and beneath it one row for the view
+// switch, sorting and actions. The band is 48px tall on the surface radius
+// with a hairline in the card border colour - darker under the pointer,
+// primary in focus - the filter funnel in front (pages with filters only)
+// and the magnifier at the end. Every value is a token from tokens.scss.
+//
+// Markup, as SearchBar, ToolbarRow and ToolbarAction draw it:
+//   <div class="scb-search-bar">
+//     <v-text-field class="scb-search" outlined hide-details … />
+//     <div class="scb-toolbar">            <!-- the `actions` slot -->
+//       <div class="scb-toolbar-row">
+//         <div class="scb-toolbar-row__start">
+//           <div class="scb-toolbar-row__views">
+//             <button class="scb-toolbar-row__view">…</button>
+//         <div class="scb-toolbar-row__end">
+//           <div class="scb-toolbar-row__sort">
+//             <span class="scb-toolbar-row__caption">Sortieren</span>
+//             <button class="scb-toolbar-row__field">…</button>
+//             <button class="scb-toolbar-row__reset">…</button>
+//           <div class="scb-toolbar-row__actions">
+//             <v-btn class="scb-toolbar-row__action" text small>…</v-btn>
+//     </div>
+//   </div>
+
+.scb-search-bar {
+  margin-bottom: var(--scb-space-5);
+}
+
+// --- The search band ---------------------------------------------------------
+
+// Vuetify draws the outline as a fieldset in currentColor; the tokens set
+// the rest colour and the hover, the focus is primary.
+.v-text-field.scb-search {
+  > .v-input__control > .v-input__slot {
+    min-height: var(--scb-search-height) !important;
+    border-radius: var(--scb-radius-surface);
+    background: var(--scb-surface);
+  }
+
+  fieldset {
+    border-color: var(--scb-surface-border);
+    transition: border-color var(--scb-motion-fast);
+  }
+
+  &:not(.v-input--is-focused):hover fieldset {
+    border-color: var(--scb-text-muted);
+  }
+
+  // In focus the outline takes Vuetify's colour again: the primary.
+  &.v-input--is-focused fieldset {
+    border-color: currentColor;
+  }
+
+  input {
+    font-size: var(--scb-font-size-md);
+  }
+
+  input::placeholder {
+    color: var(--scb-text-muted);
+  }
+
+  // The funnel in front, the cross and the magnifier at the end sit on the
+  // middle of the band, not on Vuetify's label line.
+  .v-input__prepend-inner,
+  .v-input__append-inner {
+    margin-top: 0 !important;
+    align-self: center;
+  }
+
+  .v-input__prepend-inner {
+    margin-right: var(--scb-space-2);
+  }
+
+  .v-input__append-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--scb-space-1);
+  }
+}
+
+// The magnifier and the cross are hints, not actions: muted.
+.scb-search__magnifier.v-icon,
+.scb-search__clear .v-icon {
+  color: var(--scb-text-caption);
+}
+
+// The funnel tinted primary while a filter restricts; the tint rides on the
+// button's own overlay (Vuetify's `::before` is `currentColor`).
+.scb-search__filter--active {
+  color: var(--v-primary-base) !important;
+
+  &::before {
+    opacity: 0.12;
+  }
+}
+
+// The menu around the filter card (detached to the app root).
+.scb-filter-menu {
+  border-radius: var(--scb-radius-popover) !important;
+  overflow: hidden;
+  box-shadow: var(--scb-shadow-popover) !important;
+
+  .v-card {
+    border-radius: var(--scb-radius-popover) !important;
+  }
+}
+
+// --- The row beneath: view switch, sorting, actions ----------------------------
+
+.scb-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--scb-space-2) var(--scb-space-4);
+  margin-top: var(--scb-space-3);
+}
+
+// ToolbarRow (ECCdigital/tickets#57, „Register“): the row stands on a
+// hairline and heads the content beneath it, over the whole width. The views
+// left as tabs, the active one underlined in primary on the hairline;
+// sorting and the further actions right. A place a page has nothing for
+// stays empty, the others keep theirs.
+.scb-toolbar-row {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 0 var(--scb-space-4);
+  min-height: var(--scb-row-height);
+  border-bottom: 1px solid var(--scb-rule-strong);
+}
+
+.scb-toolbar-row__start,
+.scb-toolbar-row__views {
+  display: flex;
+  align-items: stretch;
+}
+
+.scb-toolbar-row__view {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--scb-space-2);
+  padding: 0 var(--scb-space-3);
+  // The underline lies on the hairline, not above it.
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-size: var(--scb-font-size-md);
+  font-weight: var(--scb-font-weight-medium);
+  color: var(--scb-text-muted);
+  transition: color var(--scb-motion-fast), border-color var(--scb-motion-fast);
+
+  .v-icon {
+    color: inherit;
+  }
+
+  &:hover {
+    color: var(--scb-text-hover);
+  }
+
+  &--active,
+  &--active:hover {
+    color: var(--v-primary-base);
+    border-bottom-color: var(--v-primary-base);
+  }
+}
+
+.scb-toolbar-row__end {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--scb-space-2) var(--scb-space-5);
+  margin-left: auto;
+  padding: var(--scb-space-1) 0;
+}
+
+// Sorting spelled out: „SORTIEREN Titel · Erstellt · …“, the active field
+// bold on a tint with its direction in primary.
+.scb-toolbar-row__sort {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--scb-space-1);
+}
+
+.scb-toolbar-row__caption {
+  margin-right: var(--scb-space-1);
+  font-size: var(--scb-font-size-caption);
+  font-weight: var(--scb-font-weight-semibold);
+  letter-spacing: var(--scb-letter-spacing-caption);
+  text-transform: uppercase;
+  color: var(--scb-text-caption);
+}
+
+.scb-toolbar-row__field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--scb-space-1);
+  padding: var(--scb-space-1) var(--scb-space-2);
+  border-radius: var(--scb-radius-control);
+  font-size: var(--scb-font-size-sm);
+  line-height: var(--scb-line-height-base);
+  color: var(--scb-text-muted);
+  transition: background-color var(--scb-motion-fast),
+    color var(--scb-motion-fast);
+
+  &:hover {
+    background: var(--scb-hover-tint);
+    color: var(--scb-text-hover);
+  }
+
+  &--active,
+  &--active:hover {
+    background: var(--scb-surface-tint);
+    color: var(--scb-text);
+    font-weight: var(--scb-font-weight-semibold);
+  }
+
+  &--active .v-icon {
+    color: var(--v-primary-base);
+  }
+}
+
+.scb-toolbar-row__reset {
+  display: inline-flex;
+  padding: var(--scb-space-1);
+  border-radius: var(--scb-radius-control);
+  transition: background-color var(--scb-motion-fast);
+
+  .v-icon {
+    color: var(--scb-text-caption);
+  }
+
+  &:hover {
+    background: var(--scb-hover-tint);
+  }
+}
+
+.scb-toolbar-row__view,
+.scb-toolbar-row__field,
+.scb-toolbar-row__reset {
+  &:focus-visible {
+    outline: 2px solid var(--v-primary-base);
+    outline-offset: -2px;
+  }
+}
+
+// The further actions: text buttons with icon and label, muted until the
+// pointer comes. The app's buttons capitalise every word (!important,
+// variables.scss); these labels are words as written, so the override needs
+// the same weight.
+.scb-toolbar-row__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--scb-space-1);
+}
+
+// The selectors carry `.v-size--small` so padding and colour outweigh
+// Vuetify's `.v-btn:not(.v-btn--round).v-size--small` and `.theme--light.v-btn`.
+.scb-toolbar-row__actions .v-btn.v-size--small.scb-toolbar-row__action {
+  padding: 0 var(--scb-space-2);
+  text-transform: none !important;
+  letter-spacing: normal;
+  font-size: var(--scb-font-size-sm);
+  font-weight: var(--scb-font-weight-medium);
+
+  &:not(.v-btn--disabled) {
+    color: var(--scb-text-muted);
+  }
+
+  &:not(.v-btn--disabled):hover {
+    color: var(--scb-text-hover);
+  }
+
+  .v-icon {
+    color: inherit;
+  }
+}
+
+// A switch the action toggles, while on (the backlog of the kanban); it
+// stays primary under the pointer. Same weight as the rules above, later.
+.scb-toolbar-row__actions
+  .v-btn.v-size--small.scb-toolbar-row__action--active:not(.v-btn--disabled) {
+  background-color: var(--scb-selected-tint) !important;
+
+  &,
+  &:hover {
+    color: var(--v-primary-base);
+  }
+}

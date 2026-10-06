@@ -11,16 +11,20 @@ export async function requiresAuth({ to, next }) {
     await store.dispatch("user/update", response.data);
     next();
   } catch {
-    await store.dispatch(
-      "toasts/add",
-      ToastService.createToast("session.expired", "error")
-    );
+    // A public entry is opened by visitors who never signed in: they are led
+    // to the login like everyone else, without an expired-session error.
+    if (!to.meta.publicEntry) {
+      await store.dispatch(
+        "toasts/add",
+        ToastService.createToast("session.expired", "error")
+      );
+    }
     if (isBffAuthMode()) {
-      await endAdminSession({ redirect: true });
+      await endAdminSession({ redirect: true, next: to.fullPath });
       next(false);
       return;
     }
     await store.dispatch("user/delete");
-    next({ name: "login", query: { redirectUrl: to.name } });
+    next({ name: "login", query: { next: to.fullPath } });
   }
 }

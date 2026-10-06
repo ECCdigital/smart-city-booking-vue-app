@@ -142,7 +142,10 @@ export default {
       return map[this.detailPosition] || this.detailPosition;
     },
     selectPreviewOptions() {
-      if (this.field.inputType === "select") {
+      if (
+        this.field.inputType === "select" ||
+        this.field.inputType === "multiselect"
+      ) {
         return (this.field.options || [])
           .map((opt) => opt.caption)
           .filter(Boolean)
@@ -157,6 +160,12 @@ export default {
       if (this.field.inputType === "boolean") return "Ja";
       if (this.field.inputType === "select") {
         return this.field.options?.[0]?.caption || "Beispielwert";
+      }
+      if (this.field.inputType === "multiselect") {
+        const captions = (this.field.options || [])
+          .map((opt) => opt.caption)
+          .filter(Boolean);
+        return captions.slice(0, 2).join(", ") || "Beispielwert";
       }
       if (this.field.inputType === "numeric") return "42";
       if (this.field.inputType === "text") {
@@ -179,6 +188,10 @@ export default {
       if (this.field.inputType === "boolean") return false;
       if (this.field.inputType === "select") {
         return this.field.options?.[0]?.value ?? null;
+      }
+      if (this.field.inputType === "multiselect") {
+        const first = this.field.options?.[0]?.value;
+        return first != null ? [first] : [];
       }
       if (this.field.inputType === "numeric") return null;
       return null;

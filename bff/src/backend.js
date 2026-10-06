@@ -76,9 +76,25 @@ async function backendFetch(path, options = {}) {
   return { response, data, status: response.status, ok: response.ok };
 }
 
+/**
+ * Answers an error caught around `backendFetch`: `502` when the backend is
+ * unreachable, `500` (logged) for anything else.
+ */
+function sendCaughtError(res, error, fallbackMessage) {
+  if (error instanceof BackendUnreachableError) {
+    return res.status(502).json({
+      success: false,
+      message: error.message,
+    });
+  }
+  console.error(fallbackMessage, error);
+  return res.status(500).json({ success: false, message: fallbackMessage });
+}
+
 module.exports = {
   backendFetch,
   BackendUnreachableError,
+  sendCaughtError,
   fetchWithTimeout,
   DEFAULT_FETCH_TIMEOUT_MS,
 };

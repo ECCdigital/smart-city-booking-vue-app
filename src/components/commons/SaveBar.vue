@@ -1,4 +1,6 @@
 <script>
+import { SAVE_BAR_Z_INDEX } from "@/utilities/overlay-layers";
+
 export default {
   name: "SaveBar",
   props: {
@@ -19,6 +21,7 @@ export default {
     return {
       anchorBox: { left: 0, width: 0 },
       ro: null,
+      zIndex: SAVE_BAR_Z_INDEX,
     };
   },
   computed: {
@@ -128,6 +131,7 @@ export default {
     :style="{
       left: anchorBox.left + 'px',
       width: anchorBox.width + 'px',
+      zIndex: zIndex,
     }"
   >
     <div
@@ -140,10 +144,17 @@ export default {
       }"
     >
       <div class="d-flex align-center">
-        <v-icon color="primary" class="mr-2">mdi-content-save</v-icon>
-        <span class="mr-4">Änderungen speichern</span>
+        <v-icon color="primary" class="save-bar-icon mr-2"
+          >mdi-content-save</v-icon
+        >
+        <span class="save-bar-label mr-4">Änderungen speichern</span>
         <v-spacer />
-        <v-btn v-if="showCancel" text class="save-bar-btn" @click="cancelChanges">
+        <v-btn
+          v-if="showCancel"
+          text
+          class="save-bar-btn"
+          @click="cancelChanges"
+        >
           Abbrechen
         </v-btn>
         <v-btn
@@ -178,7 +189,6 @@ export default {
 .save-bar-wrapper {
   position: fixed;
   bottom: 12px;
-  z-index: 4;
   pointer-events: none;
   padding-bottom: calc(var(--save-bar-gap) + env(safe-area-inset-bottom));
 }
@@ -202,5 +212,21 @@ export default {
 
 .save-bar-btn--primary {
   padding: 0 20px !important;
+}
+
+/* On a phone the bar drops its icon and label and tightens the buttons, so
+   both stay inside the bar. Last in the file: the paddings above carry
+   !important too, and Vuetify's own icon and size rules tie on specificity. */
+@media (max-width: 599px) {
+  .save-bar-label,
+  .save-bar-icon {
+    display: none !important;
+  }
+
+  .save-bar-btn,
+  .save-bar-btn--primary {
+    padding: 0 8px !important;
+    font-size: 13px !important;
+  }
 }
 </style>

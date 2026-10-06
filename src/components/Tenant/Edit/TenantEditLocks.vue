@@ -1,11 +1,13 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import AppPanel from "@/components/AppPanel.vue";
-import ApiLockerService from "@/services/api/ApiLockerService";
+import AccessAppCustomerServiceFields from "@/components/Tenant/Edit/AccessAppCustomerServiceFields.vue";
+import { emptyCustomerService } from "@/utilities/access-apps";
+import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 
 export default {
   name: "TenantEditLocks",
-  components: { AppPanel, BaseSection },
+  components: { AccessAppCustomerServiceFields, AppPanel, BaseSection },
   props: {
     tenant: { type: Object, required: true },
     apps: { type: Object, required: true },
@@ -28,18 +30,6 @@ export default {
       },
       validationRules: {
         required: [(v) => !!v || "Pflichtfeld"],
-        mail: [
-          (v) =>
-            !v ||
-            /.+@.+\..+/.test(v) ||
-            "Muss eine gültige Email-Adresse sein.",
-        ],
-        phone: [
-          (v) =>
-            !v ||
-            /^[+\d][\d\s\-/()]{3,}$/.test(v) ||
-            "Muss eine gültige Telefonnummer sein.",
-        ],
         paymentPurposeSuffix: [
           (v) => !v || v.length <= 12 || "Maximal 12 Zeichen erlaubt.",
         ],
@@ -69,9 +59,8 @@ export default {
   methods: {
     cloneApps(apps) {
       const cloned = JSON.parse(JSON.stringify(apps));
-      // Sicherstellen, dass customerService existiert
       if (cloned.ifbs && !cloned.ifbs.customerService) {
-        cloned.ifbs.customerService = { name: "", email: "", phone: "" };
+        cloned.ifbs.customerService = emptyCustomerService();
       }
       return cloned;
     },
@@ -98,11 +87,11 @@ export default {
           apiKey: this.localApps.ifbs.apiKey,
         };
 
-        const response = await ApiLockerService.testConnection({
-          tenantID: this.tenant.id,
-          provider: "ifbs",
+        const response = await ApiAccessAppsService.testConnection(
+          this.tenant.id,
           config,
-        });
+          "ifbs"
+        );
 
         this.testResults.ifbs = {
           success:
@@ -136,11 +125,11 @@ export default {
           password: this.localApps.pareva.password,
         };
 
-        const response = await ApiLockerService.testConnection({
-          tenantID: this.tenant.id,
-          provider: "pareva",
+        const response = await ApiAccessAppsService.testConnection(
+          this.tenant.id,
           config,
-        });
+          "pareva"
+        );
 
         this.testResults.pareva = {
           success:
@@ -167,7 +156,11 @@ export default {
 </script>
 
 <template>
-  <BaseSection title="Schließsysteme" icon="mdi-lock">
+  <BaseSection
+    title="Schließfächer & Fahrradboxen"
+    icon="mdi-locker-multiple"
+    hint="Hinterlegen Sie Buchungsobjekte in Schließfächern oder bieten Sie abschließbare Fahrradboxen an. Buchende entnehmen bzw. öffnen sie selbstständig zum Zeitpunkt ihrer Buchung."
+  >
     <v-form ref="form" v-model="valid">
       <v-row>
         <v-col>
@@ -179,6 +172,44 @@ export default {
             :active="localApps.pareva.active"
             class="mb-2"
           >
+            <!-- Beschreibung -->
+            <v-alert
+              color="primary"
+              text
+              dense
+              class="provider-description mb-4 mt-2"
+            >
+              <div class="d-flex">
+                <v-icon color="primary" class="mr-3 mt-1"
+                  >mdi-locker-multiple</v-icon
+                >
+                <div>
+                  <div class="font-weight-bold mb-1">
+                    Schließfach-System (Smart Locker)
+                  </div>
+                  <div class="text-body-2">
+                    Mit Pareva hinterlegen Sie ein Buchungsobjekt – zum Beispiel
+                    ein iPad, Werkzeug oder anderes Equipment – in einem
+                    abschließbaren Fach. Buchende entnehmen den Gegenstand
+                    selbstständig zum Zeitpunkt ihrer Buchung und legen ihn nach
+                    Ablauf wieder zurück.
+                  </div>
+                  <v-btn
+                    text
+                    small
+                    color="primary"
+                    class="px-0 mt-1"
+                    href="https://www.pareva.de"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <v-icon left small>mdi-open-in-new</v-icon>
+                    Mehr über Pareva
+                  </v-btn>
+                </div>
+              </div>
+            </v-alert>
+
             <!-- Aktivierung -->
             <v-row dense>
               <v-col cols="12">
@@ -295,6 +326,41 @@ export default {
             :logo="require('@/assets/prsn-logo.png')"
             :active="localApps.ifbs.active"
           >
+            <!-- Beschreibung -->
+            <v-alert
+              color="primary"
+              text
+              dense
+              class="provider-description mb-4 mt-2"
+            >
+              <div class="d-flex">
+                <v-icon color="primary" class="mr-3 mt-1">mdi-bike</v-icon>
+                <div>
+                  <div class="font-weight-bold mb-1">
+                    Abschließbare Fahrradboxen
+                  </div>
+                  <div class="text-body-2">
+                    Die Fahrradboxen der PRS Parkraum Service GmbH
+                    (Parkraumservice) bieten sichere Stellplätze für Fahrräder
+                    und E-Bikes. Buchende reservieren eine Box und öffnen sie
+                    zum Zeitpunkt ihrer Buchung.
+                  </div>
+                  <v-btn
+                    text
+                    small
+                    color="primary"
+                    class="px-0 mt-1"
+                    href="https://parkraumservice.de"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <v-icon left small>mdi-open-in-new</v-icon>
+                    Mehr über Parkraumservice
+                  </v-btn>
+                </div>
+              </div>
+            </v-alert>
+
             <!-- Aktivierung -->
             <v-row dense>
               <v-col cols="12">
@@ -373,53 +439,10 @@ export default {
             </v-row>
 
             <!-- Kundenservice -->
-            <div class="section-title mt-6 mb-2">
-              <v-icon small left>mdi-face-agent</v-icon>
-              <span class="font-weight-medium">Kundenservice</span>
-            </div>
-            <v-alert type="info" text dense class="mb-3">
-              Diese Kontaktdaten werden dem Kunden angezeigt, sofern angegeben.
-              Alle Felder sind optional.
-            </v-alert>
-            <v-row dense>
-              <v-col cols="12" md="4">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Name / Ansprechpartner"
-                  prepend-inner-icon="mdi-account"
-                  v-model="localApps.ifbs.customerService.name"
-                  @input="emitApps()"
-                />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  label="E-Mail"
-                  prepend-inner-icon="mdi-email-outline"
-                  type="email"
-                  :rules="validationRules.mail"
-                  v-model="localApps.ifbs.customerService.email"
-                  @input="emitApps()"
-                />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field
-                  background-color="accent"
-                  filled
-                  dense
-                  label="Telefon"
-                  prepend-inner-icon="mdi-phone-outline"
-                  type="tel"
-                  :rules="validationRules.phone"
-                  v-model="localApps.ifbs.customerService.phone"
-                  @input="emitApps()"
-                />
-              </v-col>
-            </v-row>
+            <AccessAppCustomerServiceFields
+              v-model="localApps.ifbs.customerService"
+              @input="emitApps()"
+            />
 
             <!-- Testergebnis -->
             <v-row v-if="testResults.ifbs" dense>
@@ -480,5 +503,8 @@ export default {
 .theme--dark .section-title {
   color: rgba(255, 255, 255, 0.8);
   border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+.provider-description {
+  border-left: 3px solid var(--v-primary-base);
 }
 </style>

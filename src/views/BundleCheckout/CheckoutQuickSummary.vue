@@ -131,8 +131,9 @@
                 <v-btn
                   icon
                   x-small
+                  class="increase-amount"
                   @click="increaseItemAmount(item)"
-                  :disabled="item.mandatory"
+                  :disabled="item.mandatory || atAmountLimit(item)"
                 >
                   <v-icon>mdi-plus</v-icon>
                 </v-btn>
@@ -306,8 +307,7 @@
         :disabled="!allItemsValid"
         block
       >
-        <span v-if="isAutoCommit">Buchung abschließen</span>
-        <span v-else>Buchungsanfrage senden</span>
+        <span>Zahlungspflichtig buchen</span>
       </v-btn>
     </div>
   </div>
@@ -318,7 +318,10 @@ import CheckoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
+import { bookingAmountLimit } from "@/utils/bookingAmountLimit";
 import { getCheckoutErrorToastKey } from "@/utils/checkoutErrors";
+import { isAwaitingPayment } from "@/utils/bookingStatus";
+import { continuesToProvider } from "@/utils/checkoutNextStep";
 import ToastService from "@/services/ToastService";
 import { mapActions } from "vuex";
 
@@ -438,7 +441,16 @@ export default {
       this.$emit("validate-items");
     },
 
+    // Only the lead item stops at its limit here; an add-on's limit is the
+    // backend's refusal to say.
+    atAmountLimit(item) {
+      if (item !== this.leadItem) return false;
+      const { max } = bookingAmountLimit(item.bookable);
+      return max !== null && Number(item.amount) >= max;
+    },
+
     increaseItemAmount(item) {
+      if (this.atAmountLimit(item)) return;
       item.amount++;
       this.setAmountOfMandatoryItems(item);
 
@@ -508,10 +520,7 @@ export default {
 
       try {
         const checkoutResponse = await this.performCheckout();
-        if (
-          checkoutResponse.data.isCommitted === true &&
-          checkoutResponse.data.isPayed === false
-        ) {
+        if (isAwaitingPayment(checkoutResponse.data)) {
           const paymentResponse = await this.processPayment(
             checkoutResponse.data
           );
@@ -553,7 +562,7 @@ export default {
     async handlePaymentOutcome(paymentResponse) {
       const finalBooking = paymentResponse.data.bookings[0];
 
-      if (finalBooking?.totalPrice <= 0 || !finalBooking?.isCommitted) {
+      if (!continuesToProvider([finalBooking])) {
         await this.routeToStatus(finalBooking);
         return;
       }

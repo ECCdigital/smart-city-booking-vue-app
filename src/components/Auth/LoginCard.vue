@@ -1,101 +1,145 @@
 <template>
-  <v-card flat max-width="500">
-    <v-card-text class="text-center">
-      <v-form ref="loginForm" @keydown.enter="signin">
-        <v-text-field
-          outlined
-          hide-details
-          label="Email Adresse"
-          placeholder="jemand@domain.de"
-          class="mb-5"
-          v-model="id"
-          :rules="[rules.required]"
-          prepend-inner-icon="mdi-email"
-          autocomplete="email"
-          id="email"
-          name="email"
-          type="email"
-          @keydown.enter="signin"
-        />
-        <v-text-field
-          outlined
-          hide-details
-          label="Passwort"
-          placeholder="Ihr Passwort"
-          v-model="password"
-          :type="showPassword ? 'text' : 'password'"
-          :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-          @click:append="showPassword = !showPassword"
-          :rules="[rules.required]"
-          prepend-inner-icon="mdi-lock"
-          autocomplete="current-password"
-          id="password"
-          name="password"
-          @keydown.enter="signin"
-        />
-      </v-form>
-      <div class="text-left mt-2">
+  <div class="scb-form">
+    <v-form ref="loginForm" @submit.prevent="signin">
+      <v-text-field
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="E-Mail-Adresse"
+        class="mb-4"
+        v-model="id"
+        :rules="[rules.required]"
+        autocomplete="email"
+        id="email"
+        name="email"
+        type="email"
+      />
+      <v-text-field
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="Passwort"
+        v-model="password"
+        :type="showPassword ? 'text' : 'password'"
+        :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+        @click:append="showPassword = !showPassword"
+        :rules="[rules.required]"
+        autocomplete="current-password"
+        id="password"
+        name="password"
+      />
+      <div class="d-flex justify-end mt-2 mb-4">
         <router-link
           :to="{ name: 'password-reset' }"
-          class="forgot-link"
+          class="scb-form__link"
           rel="noopener"
           target="_blank"
         >
           Passwort vergessen?
         </router-link>
       </div>
-    </v-card-text>
-
-    <v-card-actions class="px-4">
-      <v-btn :to="{ name: 'register' }" target="_blank" outlined>
-        Konto erstellen
-      </v-btn>
-      <v-spacer />
-      <v-btn color="primary" elevation="0" @click="signin" :loading="isLoading">
+      <v-btn
+        type="submit"
+        color="primary"
+        block
+        elevation="0"
+        class="scb-form__submit"
+        :loading="isLoading"
+      >
         Anmelden
       </v-btn>
-    </v-card-actions>
+      <p class="scb-form__switch mt-4 mb-0">
+        <span class="text--secondary">Noch kein Konto?</span>
+        <router-link
+          :to="registerRoute"
+          class="scb-form__link"
+          :target="registerInNewTab ? '_blank' : null"
+        >
+          Hier registrieren
+        </router-link>
+      </p>
+      <v-alert
+        v-if="unverifiedId"
+        type="info"
+        text
+        dense
+        class="text-left mt-4 mb-0"
+        data-test="verification-required"
+      >
+        <div v-if="verificationMail === 'sent'" data-test="verification-sent">
+          {{ $t("auth.verification.sent") }}
+        </div>
+        <template v-else>
+          <div>{{ $t("auth.verification.required") }}</div>
+          <v-btn
+            small
+            outlined
+            color="primary"
+            class="mt-2"
+            :loading="verificationMail === 'sending'"
+            data-test="verification-resend"
+            @click="resendVerification"
+          >
+            {{ $t("auth.verification.resend") }}
+          </v-btn>
+          <div
+            v-if="verificationError"
+            class="error--text mt-2"
+            data-test="verification-failed"
+          >
+            {{ verificationError }}
+          </div>
+        </template>
+      </v-alert>
+    </v-form>
 
     <!-- ═══════ Alternative Methoden ═══════ -->
     <template v-if="hasAlternativeMethods">
-      <v-card-text class="px-4 pb-0">
-        <v-row no-gutters align="center">
-          <v-col><v-divider /></v-col>
-          <v-col cols="auto" class="mx-2">
-            <span class="text--secondary text-caption">oder</span>
-          </v-col>
-          <v-col><v-divider /></v-col>
-        </v-row>
-      </v-card-text>
+      <div class="login-card__or my-4">
+        <v-divider />
+        <span class="text-caption text--secondary mx-3">oder</span>
+        <v-divider />
+      </div>
 
-      <v-card-actions class="px-4 pt-2" style="gap: 8px">
-        <v-row>
-          <v-col cols="12">
-            <v-btn v-if="ssoActive" block outlined elevation="0" @click="sso">
-              <v-img
-                src="@/assets/keycloak.svg"
-                max-width="80"
-                class="mr-2"
-                alt="Keycloak"
-              /> </v-btn
-          ></v-col>
-
-          <v-col v-for="method in cardMethods" :key="method.id" cols="12"
-            ><v-btn block outlined elevation="0" @click="goToCardLogin(method)">
-              <v-icon left>mdi-card-account-details</v-icon>
-              Mit {{ method.label }} anmelden
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-card-actions>
+      <v-btn
+        v-if="ssoActive"
+        block
+        outlined
+        elevation="0"
+        class="mb-3"
+        @click="sso"
+      >
+        <v-icon left>mdi-domain</v-icon>
+        Über Single Sign-on anmelden
+      </v-btn>
+      <v-btn
+        v-for="method in cardMethods"
+        :key="method.id"
+        block
+        outlined
+        elevation="0"
+        class="mb-3"
+        @click="goToCardLogin(method)"
+      >
+        <v-icon left>mdi-card-account-details</v-icon>
+        Mit {{ method.label }} anmelden
+      </v-btn>
     </template>
-  </v-card>
+  </div>
 </template>
 
 <script>
 import ToastService from "@/services/ToastService";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import { mapActions } from "vuex";
+import { rateLimitMessage, rateLimitOf } from "@/utils/rateLimit";
+
+/** The backend's login refusal of an account without e-mail verification. */
+const isNotVerified = (error) =>
+  error.response?.status === 403 &&
+  error.response.data?.message === "User is not verified";
 
 export default {
   name: "LoginCard",
@@ -111,6 +155,14 @@ export default {
       type: Array,
       default: () => [],
     },
+    /**
+     * The checkout embeds the card and must keep its own page, so its
+     * registration link opens a new tab; the login page navigates in place.
+     */
+    registerInNewTab: {
+      type: Boolean,
+      default: true,
+    },
   },
 
   data() {
@@ -119,6 +171,11 @@ export default {
       password: "",
       showPassword: false,
       isLoading: false,
+      /** The address the login refused as unverified; offers the resend. */
+      unverifiedId: null,
+      /** The renewed verification mail: `null`, `sending`, `sent` or `failed`. */
+      verificationMail: null,
+      verificationError: "",
       rules: {
         required: (value) => !!value || "Erforderlich.",
         email: (value) => {
@@ -133,6 +190,19 @@ export default {
     hasAlternativeMethods() {
       return this.ssoActive || this.cardMethods.length > 0;
     },
+    registerRoute() {
+      const next = this.$route.query.next;
+      return next
+        ? { name: "register", query: { next } }
+        : { name: "register" };
+    },
+    /** Where the login leads: the page that asked for it, or its checkout. */
+    returnTarget() {
+      if (this.$route.query.next) return this.$route.query.next;
+      return this.$route.fullPath.includes("checkout")
+        ? this.$route.fullPath
+        : undefined;
+    },
   },
 
   methods: {
@@ -146,6 +216,9 @@ export default {
       if (!this.$refs.loginForm.validate()) return;
 
       this.isLoading = true;
+      this.unverifiedId = null;
+      this.verificationMail = null;
+      this.verificationError = "";
       try {
         const { user, permissions } = await ApiAuthService.login(
           this.id,
@@ -159,7 +232,9 @@ export default {
         this.password = "";
         this.$emit("success");
       } catch (error) {
-        if (error.response?.status === 401) {
+        if (isNotVerified(error)) {
+          this.unverifiedId = this.id;
+        } else if (error.response?.status === 401) {
           await this.addToast(
             ToastService.createToast("login.error.wrong-email", "error")
           );
@@ -170,6 +245,31 @@ export default {
         }
       } finally {
         this.isLoading = false;
+      }
+    },
+
+    /**
+     * The verification mail again, account-neutral like the backend's answer;
+     * its link leads back to where this login leads.
+     */
+    async resendVerification() {
+      this.verificationMail = "sending";
+      this.verificationError = "";
+      try {
+        await ApiAuthService.resendVerification(
+          this.unverifiedId,
+          this.returnTarget
+        );
+        this.verificationMail = "sent";
+      } catch (error) {
+        const limit = rateLimitOf(error);
+        if (limit) {
+          const { key, params } = rateLimitMessage(limit);
+          this.verificationError = this.$t(`${key}.message`, params);
+        } else {
+          this.verificationError = this.$t("auth.verification.failed");
+        }
+        this.verificationMail = "failed";
       }
     },
 
@@ -194,7 +294,8 @@ export default {
 </script>
 
 <style scoped>
-.forgot-link {
-  font-size: 0.85rem;
+.login-card__or {
+  display: flex;
+  align-items: center;
 }
 </style>

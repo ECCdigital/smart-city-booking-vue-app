@@ -23,6 +23,13 @@ function createDateTimeObject(input) {
 }
 
 export default {
+  bytes(bytes) {
+    if (!bytes && bytes !== 0) return "—";
+    if (bytes >= 1024 * 1024) {
+      return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+    }
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  },
   currency(number, currency = "EUR", locale = "de-DE") {
     return new Intl.NumberFormat(locale, {
       style: "currency",
@@ -34,6 +41,18 @@ export default {
     return new Intl.DateTimeFormat(locale, { dateStyle }).format(
       createDateTimeObject(date)
     );
+  },
+  /**
+   * Date and time in one, "15.11.23, 00:13" - the admin's stamp on a booking.
+   * Takes a timestamp, an ISO string or a Date; unlike `date()` it does not
+   * read a bare "HH:MM", so it needs no lodash.
+   */
+  dateTime(date, locale = "de-DE") {
+    if (!date) return "";
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(date instanceof Date ? date : new Date(date));
   },
   time(time, timeStyle = "short", locale = "de-DE") {
     if (!time) return "";

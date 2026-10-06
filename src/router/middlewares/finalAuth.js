@@ -8,7 +8,7 @@ function isLoggedIn() {
 export async function finalAuthRedirect({ to, next }) {
   if (!to.meta.requiresAuth) return next();
   if (!isLoggedIn()) {
-    next({ name: "login", query: { redirectUrl: to.name } });
+    next({ name: "login", query: { next: to.fullPath } });
     await store.dispatch(
       "toasts/add",
       ToastService.createToast("errors.unauthenticated", "error")
