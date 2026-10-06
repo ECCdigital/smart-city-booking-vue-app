@@ -3,7 +3,7 @@
 Notable changes for the Smart City Booking Admin UI.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-Releases are tagged `v4.x.x` from branch `version/4.x`.
+Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major>.<minor>.x`. Work and pull requests go to the newest `version/<major>.<minor>.x`, fixes to the oldest maintained one and from there forward; `develop` only follows the newest, so switch a pull request's base from `develop` by hand. See [Versions & Branches](../README.md#versions--branches).
 
 ## [Unreleased]
 
@@ -102,6 +102,8 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 ### Changed
 
+-   Checkout, quick summary and group booking summary: the submit button reads „Zahlungspflichtig buchen“ for every booking, also one that is sent as a request and one at 0 EUR, for every tenant (ECCdigital/tickets#63). It replaces „Buchung abschließen“ and „Buchungsanfrage senden“
+-   Docs name the branch rule without a version number (ECCdigital/tickets#224): work and pull requests go to the newest `version/<major>.<minor>.x`, fixes to the oldest maintained one and are merged forward, `develop` stays the default branch but only follows the newest; a pull request's base is switched from `develop` by hand. README, `AGENTS.md` and `docs/agents/architecture.md` no longer name `version/4.x`, which is gone. The mirror to openCode runs for `develop` and every `version/*` branch by pattern. No code change
 -   Docs point to the tab „Single Sign-On“ (ECCdigital/tickets#102): the Anleitung there is the one source for Keycloak settings. `bff/README.md` (Keycloak setup) and `docs/shared-session-deploy.md` (Keycloak (BFF SSO)) drop their own Rücksprungadressen and say that `PUBLIC_ORIGIN` / `PUBLIC_ORIGINS` and `BFF_PUBLIC_PATH` determine them and that „Instanz verwalten → Single Sign-On“ shows which belong in Keycloak. `docs/agents/keycloak-realm.md` lists what follows a new requirement on the realm or changed SSO paths. From now on a new requirement on the realm is announced here with the action „Realm prüfen“, so the owners of existing instances check their realm after the update
 -   SSO in direct mode hands Keycloak fixed Rücksprungadressen from one function (`directRedirects` in `src/services/auth/directRedirects.js`; ECCdigital/tickets#92), the ones the tab „Single Sign-On“ lists: sign-in returns to `<BASE_URL>login/sso`, now set explicitly instead of the current address with its query, the silent check to `<BASE_URL>silent-check-sso.html`, sign-out to `<BASE_URL>`, and „Benutzer wechseln“ signs out to `<BASE_URL>login/sso` instead of the full current URL (in Keycloak `login/sso*`). Without third-party cookies the silent check no longer falls back to a full redirect to the current page; it finds no session instead. BFF mode is unchanged. **Realms set up before need exactly these Rücksprungadressen: run „Realm prüfen“ after the update**
 -   Instance settings (ECCdigital/tickets#90): the tab „Authentifizierung“ is split into „Single Sign-On“ (`?tab=sso`, the Keycloak form) and „Karten“ (`?tab=cards`, the card authentication); old links with `?tab=auth` open „Single Sign-On“. The form names the clients „Web-Client“ (public client) and „API-Client“ (confidential client) instead of „Client-ID für Web-Anwendung“ and „Client-ID für Api-Zugriff“, with a hint on what each is for

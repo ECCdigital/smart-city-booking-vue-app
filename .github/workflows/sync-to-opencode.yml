@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - develop
-      - version/3.x
-      - version/4.x
+      - "version/*"
 
 jobs:
   mirror:
