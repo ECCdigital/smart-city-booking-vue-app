@@ -46,3 +46,4 @@ AGENTS.override.md
 #Claude local overrides
 CLAUDE.override.md
 .claude
+.scratch

@@ -193,6 +193,12 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 -   Tenant access apps: webhook configuration is gone — Nuki's callback-URL/notification-ID form with its register/unregister buttons, and the Salto KS webhook registration status. The method is not supported (the Salto Connect API has no webhooks at all)
 -   The old file picker's write paths: no editor calls `POST /:tenant/files` or `GET /:tenant/files/list` any more (`FileList` component and the unrouted `FileTest` view are gone); the orphaned `ChooseFile` component and `ApiFileService` are now deleted too, so nothing addresses the removed `/api/:tenant/files` endpoints
 
+## [4.2.10] — 2026-09-11
+
+### Fixed
+
+-   GroupBookings: Fixed wrong bookable call. That prevents the group from being created.
+
 ## [4.2.9] — 2026-08-31
 
 ### Fixed
@@ -410,6 +416,7 @@ Releases are tagged `v4.x.x` from branch `version/4.x`.
 
 See git tags `v4.0.0-rc.*` for release-candidate history.
 
+[4.2.10]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.9...v4.2.10
 [4.2.9]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.8...v4.2.9
 [4.2.8]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.7...v4.2.8
 [4.2.7]: https://github.com/ECCdigital/smart-city-booking-vue-app/compare/v4.2.6...v4.2.7
