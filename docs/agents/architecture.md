@@ -130,8 +130,9 @@ Views and components should stay thin — delegate HTTP to API services and auth
 
 | Branch | Version | Notes |
 |--------|---------|-------|
-| `develop` | v4.x dev | Active development |
-| `version/4.x` | v4.x stable | Production releases |
+| newest `version/<major>.<minor>.x` | next minor | All work and pull requests |
+| older `version/<major>.<minor>.x` | maintained lines | Fixes, merged forward |
+| `develop` | default branch | Follows the newest, nothing directly |
 | `version/3.x` | v3.x LTS | Maintenance only |
 
-Work on `develop` unless told otherwise.
+Work on the newest `version/<major>.<minor>.x` unless told otherwise, and switch a pull request's base from `develop` to it by hand. Rule in full: [README.md](../../README.md#versions--branches).
