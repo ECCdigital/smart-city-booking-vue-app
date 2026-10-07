@@ -481,6 +481,21 @@
                         <v-col>
                           <v-text-field
                             outlined
+                            label="Bisheriges Passwort"
+                            placeholder="********"
+                            hide-details
+                            :rules="passwordRules"
+                            v-model="currentPassword"
+                            :type="showPassword ? 'text' : 'password'"
+                            name="current-password"
+                            id="current-password"
+                            autocomplete="current-password"
+                          >
+                          </v-text-field>
+                        </v-col>
+                        <v-col>
+                          <v-text-field
+                            outlined
                             label="Neues Passwort"
                             placeholder="********"
                             hide-details
@@ -551,6 +566,7 @@ export default {
       generalPanel: [],
       contactPanel: [],
       securePanel: [],
+      currentPassword: "",
       password: "",
       passwordRepeat: "",
       showPassword: false,
@@ -666,7 +682,7 @@ export default {
     ...mapActions({
       startLoading: "loading/start",
       stopLoading: "loading/stop",
-      updateMe: "user/update",
+      updateProfile: "user/updateProfile",
       addToast: "toasts/add",
     }),
     // get user from store
@@ -683,7 +699,7 @@ export default {
       this.api.user.city = this.tempCity;
       ApiUsersService.updateMe(this.api.user)
         .then((user) => {
-          this.updateMe(user.data);
+          this.updateProfile(user.data);
           this.isLoading = false;
           this.addToast(
             ToastService.createToast("user.edit-profile.success", "success")
@@ -708,29 +724,31 @@ export default {
         this.startLoading("update-user");
         if (this.password === this.passwordRepeat) {
           // call api
-          ApiAuthService.resetPassword(this.api.user.id, this.password)
+          ApiAuthService.changePassword(this.currentPassword, this.password)
             .then(() => {
               this.addToast(
                 ToastService.createToast("password.reset.success", "success")
               );
               this.isLoading = false;
               this.securePanel = -1;
+              this.currentPassword = "";
+              this.password = "";
+              this.passwordRepeat = "";
             })
             .catch((err) => {
-              if (err.response.status === 404) {
+              if (err.response?.status === 403) {
                 this.addToast(
                   ToastService.createToast(
-                    "password.reset.wrong-email",
+                    "password.change.wrong-current-password",
                     "error"
                   )
                 );
-                this.isLoading = false;
               } else {
                 this.addToast(
                   ToastService.createToast("password.reset.error", "error")
                 );
-                this.isLoading = false;
               }
+              this.isLoading = false;
             });
         } else {
           this.isLoading = false;

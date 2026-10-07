@@ -43,7 +43,7 @@
           >
             <span
               v-if="BookingPermissionService.allowUpdate(item)"
-              class="font-weight-medium primary--text cursor-pointer"
+              class="font-weight-medium booking-number cursor-pointer"
             >
               {{ truncate(item.id, 12) }}
             </span>
@@ -443,6 +443,10 @@ export default {
 </script>
 
 <style scoped>
+.booking-number {
+  color: var(--scb-text-link);
+}
+
 .booking-table-wrapper {
   position: relative;
   border-radius: 25px;

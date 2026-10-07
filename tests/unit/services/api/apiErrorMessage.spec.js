@@ -1,8 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import i18n from "@/language/index";
-import { lifecycleError } from "@tests/unit/support/api";
+import {
+  lifecycleError,
+  serverError,
+  validationError,
+} from "@tests/unit/support/api";
 import {
   getApiErrorMessage,
+  getBookingValidationReasons,
   isForbiddenError,
   isLockBusyError,
   isOutOfReach,
@@ -650,5 +655,39 @@ describe("shouldRefetch", () => {
   it("is false when there is no response at all", () => {
     expect(shouldRefetch(new Error("Network Error"))).toBe(false);
     expect(shouldRefetch(undefined)).toBe(false);
+  });
+});
+
+/**
+ * A transition writes the stored booking, and a booking that no longer passes
+ * the backend's schema answers 400 `ValidationError` with `details[]`. Each
+ * detail reads as the title of the booking form's validation table, a field
+ * without one by its name (ECCdigital/tickets#187).
+ */
+describe("getBookingValidationReasons", () => {
+  it("names each detail by the title of the booking form's table", () => {
+    const error = validationError([
+      { field: "mail", code: "required", params: {} },
+      { field: "timeEnd", code: "greater_equal_than", params: {} },
+    ]);
+    expect(getBookingValidationReasons(error)).toEqual([
+      "E-Mail fehlt",
+      "Ungültige Endzeit",
+    ]);
+  });
+
+  it("names a field without its own text by its name", () => {
+    const error = validationError([
+      { field: "zipCode", code: "invalid_format", params: {} },
+    ]);
+    expect(getBookingValidationReasons(error)).toEqual([
+      "Angabe „zipCode“ ungültig",
+    ]);
+  });
+
+  it("has none for any other error", () => {
+    expect(getBookingValidationReasons(serverError(400))).toEqual([]);
+    expect(getBookingValidationReasons(serverError(500))).toEqual([]);
+    expect(getBookingValidationReasons(new Error("Network Error"))).toEqual([]);
   });
 });

@@ -628,10 +628,7 @@ export default {
 
         if (response.data.id) {
           this.leadItem.bookable = response.data;
-          if (
-            this.leadItem.bookable.permittedRoles?.length > 0 ||
-            this.leadItem.bookable.permittedUsers?.length > 0
-          ) {
+          if (this.leadItem.bookable.permittedRoles?.length > 0) {
             this.loginRequired = true;
           }
         }

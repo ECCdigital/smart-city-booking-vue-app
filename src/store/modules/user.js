@@ -39,6 +39,11 @@ const actions = {
       await dispatch("tenants/select", tenantId, { root: true });
     }
   },
+  // `PUT /api/user` answers with the bare user, not the sign-in: only the
+  // user is replaced, the permissions stay.
+  updateProfile({ commit, state }, user) {
+    commit("UPDATE", { ...state.data, user });
+  },
   delete({ commit }) {
     commit("DELETE");
   },

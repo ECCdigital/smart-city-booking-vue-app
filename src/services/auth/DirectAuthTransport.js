@@ -1,12 +1,7 @@
 import axios from "axios";
 import keycloakService from "../KeycloakService";
 import { getApiHttpBaseUrl } from "./authMode";
-
-function redirectToLogin() {
-  if (/\/login(?:\/|$)/.test(window.location.pathname)) return;
-  const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
-  window.location.href = `${base}/login`;
-}
+import { leaveInternalPageForLogin } from "./sessionSync";
 
 /**
  * Legacy auth: Bearer tokens in localStorage, direct calls to the backend API.
@@ -84,11 +79,12 @@ class DirectAuthTransport {
           return this.client(originalRequest);
         }
       } catch {
-        // fall through to clear + redirect
+        // fall through to clear + redirect on internal pages
       }
 
+      // As in BFF mode: a public path carries on anonymously
       this.clearSession();
-      redirectToLogin();
+      leaveInternalPageForLogin();
       return Promise.reject(error);
     }
 
@@ -97,8 +93,13 @@ class DirectAuthTransport {
       this.refreshToken
     ) {
       if (this.isRefreshing) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           this.addRefreshSubscriber((newToken) => {
+            // A failed renewal hands no token; the page may stay, so settle
+            if (!newToken) {
+              reject(error);
+              return;
+            }
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             resolve(this.client(originalRequest));
           });
@@ -114,8 +115,9 @@ class DirectAuthTransport {
         originalRequest.headers.Authorization = `Bearer ${this.accessToken}`;
         return this.client(originalRequest);
       } catch (refreshError) {
+        this.onTokenRefreshed(null);
         this.clearSession();
-        redirectToLogin();
+        leaveInternalPageForLogin();
         return Promise.reject(refreshError);
       } finally {
         this.isRefreshing = false;

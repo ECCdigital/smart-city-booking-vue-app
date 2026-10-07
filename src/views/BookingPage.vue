@@ -288,6 +288,7 @@
               v-if="cancellationRefundAudit"
               class="mt-3"
               :audit="cancellationRefundAudit"
+              :has-time-span="!!booking.timeBegin"
             />
             <CancellationRefundState
               class="mt-3"
@@ -397,7 +398,7 @@ import {
 } from "@/utils/paymentLabels";
 import {
   pathOf,
-  paymentLabel,
+  paymentStatusLabel,
   transitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
@@ -465,7 +466,7 @@ export default {
       )}`;
     },
     paymentStatus() {
-      return paymentLabel(this.booking);
+      return paymentStatusLabel(this.booking);
     },
     paymentMethod() {
       return paymentMethodLabel(this.booking.paymentMethod);
@@ -546,8 +547,8 @@ export default {
     /**
      * The series a member belongs to, for the toolbar chip. Its failure
      * leaves the chip off and never fails the page: the booking is the page.
-     * A 404 is the backend's answer for a booking without a series and is
-     * not worth a log line; anything else is.
+     * A booking without a series answers 200 with `null` (backend 4.3.1 on)
+     * or 404 (before); neither is worth a log line, anything else is.
      */
     async loadGroupBooking() {
       try {
