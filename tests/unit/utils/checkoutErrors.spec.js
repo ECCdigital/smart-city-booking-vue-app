@@ -3,6 +3,7 @@ import {
   formatCheckoutValidationError,
   getCheckoutErrorToastKey,
 } from "@/utils/checkoutErrors";
+import ToastService from "@/services/ToastService";
 
 const REASON = "checkout.max_amount_per_booking_exceeded";
 
@@ -31,5 +32,36 @@ describe("checkoutErrors - the Höchstmenge je Buchung", () => {
 
   it("toasts the reason code with its own title and message", () => {
     expect(getCheckoutErrorToastKey({ reason: REASON })).toBe(REASON);
+  });
+});
+
+const NOT_FOUND = "checkout.bookable_not_found";
+const NO_LONGER_AVAILABLE =
+  "Dieses Angebot ist nicht mehr verfügbar und kann nicht gebucht werden.";
+
+/**
+ * ECCdigital/tickets#262: an offer that is no longer reachable - withdrawn,
+ * never existed or hidden by the tenant supervision - is refused with
+ * `checkout.bookable_not_found`, deliberately without a cause. `validateItem`
+ * answers `{ error: reason, checkoutId }`, the checkout the bare reason. Both
+ * used to end in the generic text for unexpected errors.
+ */
+describe("checkoutErrors - an offer that is no longer available", () => {
+  it("says so for the refusal of validateItem", () => {
+    expect(
+      formatCheckoutValidationError({ error: NOT_FOUND, checkoutId: "c1" })
+    ).toBe(NO_LONGER_AVAILABLE);
+  });
+
+  it("says so in the toast of the refused checkout", () => {
+    const toast = ToastService.createToast(
+      getCheckoutErrorToastKey(NOT_FOUND),
+      "error"
+    );
+
+    expect(toast.message).toBe(NO_LONGER_AVAILABLE);
+    expect(toast.title).not.toBe(
+      ToastService.createToast("checkout.error.unexpected", "error").title
+    );
   });
 });
