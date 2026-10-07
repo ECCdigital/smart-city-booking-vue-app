@@ -971,6 +971,12 @@
         "title": "Passwörter stimmen nicht überein",
         "message": "Leider stimmen die Passwörter nicht überein. Bitte versuchen Sie es erneut."
       }
+    },
+    "change": {
+      "wrong-current-password": {
+        "title": "Bisheriges Passwort falsch",
+        "message": "Das bisherige Passwort stimmt nicht. Bitte versuchen Sie es erneut."
+      }
     }
   },
   "booking": {

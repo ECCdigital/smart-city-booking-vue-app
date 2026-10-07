@@ -29,6 +29,12 @@ export function accessTokenAnswering(status) {
   return `answers-${status}`;
 }
 
+/**
+ * The current password the stub backend's `POST /auth/resetpassword` takes
+ * for the session of `VALID_ACCESS_TOKEN`.
+ */
+export const CURRENT_PASSWORD = "bisheriges-passwort";
+
 /** Keycloak as the stub backend's public instance config names it. */
 export const KEYCLOAK = {
   realm: "biletado",
@@ -100,6 +106,18 @@ async function startBackendStub() {
       return res.status(401).json({ message: "Unauthorized" });
     }
     return res.json({ id: "owner@example.de" });
+  });
+
+  // The password change of the signed-in account (backend 4.3.1): a
+  // session and the current password, or nothing changes.
+  app.post("/auth/resetpassword", express.json(), (req, res) => {
+    if (req.get("authorization") !== `Bearer ${VALID_ACCESS_TOKEN}`) {
+      return res.status(401).json({ message: "Access token required" });
+    }
+    if (req.body?.currentPassword !== CURRENT_PASSWORD) {
+      return res.status(403).send("Current password is wrong");
+    }
+    return res.sendStatus(200);
   });
 
   app.post(

@@ -277,11 +277,15 @@ router.post("/reset", async (req, res) => {
   }
 });
 
+// The password change of the signed-in account: the backend needs the
+// session. A 401 goes back to the browser, which refreshes and retries.
 router.post("/resetpassword", async (req, res) => {
   try {
+    const accessToken = getAccessToken(req);
     const { ok, data, status } = await backendFetch("/auth/resetpassword", {
       method: "POST",
       body: req.body || {},
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     });
 
     if (!ok) {

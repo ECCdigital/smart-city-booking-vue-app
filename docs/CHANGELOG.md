@@ -7,6 +7,10 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ## [Unreleased]
 
+### Security
+
+-   Settings, „Passwort ändern“ asks for „Bisheriges Passwort“ (ECCdigital/tickets#264): the own password change sends it with the new one (`ApiAuthService.changePassword`, `POST auth/resetpassword` with `{ currentPassword, password }`), a wrong one shows „Bisheriges Passwort falsch“. The BFF hands the session on to the backend for this route. Requires backend 4.3.1, which accepts the change only signed in and with the current password; deploy them together
+
 ### Added
 
 -   „Höchstmenge je Buchung“ beside „Verfügbare Anzahl“ in the bookable editor (ECCdigital/tickets#35): the units of the bookable one booking may hold, a whole number from 1, empty is unlimited (saved as `null`); it stays editable while a provider handles the maximum. The legacy checkout `/checkout` stops the lead item's amount at the stricter of capacity and Höchstmenge je Buchung, in the square-meter step and the sidebar, and names the Höchstmenge when it binds; add-ons are left to the backend's refusal, which reads German (`checkout.max_amount_per_booking_exceeded`). Requires the backend with `maxAmountPerBooking`

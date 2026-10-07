@@ -177,6 +177,11 @@ export default {
     return ApiClient.post("auth/resetpassword", { id, password });
   },
 
+  /** The password change of the signed-in account, with its current password. */
+  async changePassword(currentPassword, password) {
+    return ApiClient.post("auth/resetpassword", { currentPassword, password });
+  },
+
   async requestPasswordReset(email) {
     return ApiClient.post("auth/reset", { email });
   },
