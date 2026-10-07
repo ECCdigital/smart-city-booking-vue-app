@@ -1,4 +1,4 @@
-import i18n from "@/language/index";
+import { withDivergingBookings } from "@/services/api/apiErrorMessage";
 
 export const GROUP_BOOKING_ERROR_MESSAGES = {
   CONTACT_DETAILS_MISMATCH:
@@ -29,15 +29,10 @@ const ERROR_MESSAGES = {
  * way the lifecycle's 409 names them.
  */
 export function getGroupBookingErrorMessage(code, meta) {
-  const message =
-    GROUP_BOOKING_ERROR_MESSAGES[code] || ERROR_MESSAGES.UNKNOWN_ERROR;
-  const bookingIds = meta?.bookingIds;
-  if (!Array.isArray(bookingIds) || bookingIds.length === 0) {
-    return message;
-  }
-  return `${message} ${i18n.t("errors.conflict-codes.diverging-bookings", {
-    ids: bookingIds.join(", "),
-  })}`;
+  return withDivergingBookings(
+    GROUP_BOOKING_ERROR_MESSAGES[code] || ERROR_MESSAGES.UNKNOWN_ERROR,
+    meta?.bookingIds
+  );
 }
 
 export function getBookingErrorMessage(code) {

@@ -13,6 +13,7 @@
 
 <script>
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
+import { refundPolicyText } from "@/utils/cancellationRefund";
 
 export default {
   name: "CancellationRefundAudit",
@@ -37,28 +38,17 @@ export default {
       if (!this.audit) return "";
 
       const days = this.hasTimeSpan ? this.audit.daysBeforeStart : null;
-      const withoutTimeSpan = days === null || days === undefined;
       const percentage = this.audit.appliedRefundPercentage;
 
       if (this.audit.adminOverride) {
-        return this.$t(
-          withoutTimeSpan
-            ? "booking.cancellationRefund.auditOverrideWithoutTimeSpan"
-            : "booking.cancellationRefund.auditOverride",
-          {
-            days,
-            suggested: this.audit.suggestedRefundPercentage,
-            applied: percentage,
-          }
-        );
+        return refundPolicyText("auditOverride", {
+          days,
+          suggested: this.audit.suggestedRefundPercentage,
+          applied: percentage,
+        });
       }
 
-      return this.$t(
-        withoutTimeSpan
-          ? "booking.cancellationRefund.singlePolicyWithoutTimeSpan"
-          : "booking.cancellationRefund.singlePolicy",
-        { days, percentage }
-      );
+      return refundPolicyText("singlePolicy", { days, percentage });
     },
     cancelledAtFooter() {
       if (!this.audit?.cancelledAt) return "";
