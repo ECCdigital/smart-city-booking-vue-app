@@ -3,7 +3,7 @@
     <div class="scb-form">
       <p class="scb-form__note mb-0">
         Vielen Dank für Ihre Registrierung. Falls die Adresse noch nicht
-        registriert ist, haben wir Ihnen eine E-Mail gesendet, um Ihre
+        bestätigt ist, haben wir Ihnen eine E-Mail gesendet, um Ihre
         Registrierung abzuschließen.
       </p>
       <v-btn
