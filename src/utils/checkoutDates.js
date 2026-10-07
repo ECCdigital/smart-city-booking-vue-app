@@ -4,8 +4,12 @@
  * (ECCdigital/tickets#188); the staff's booking form is not bound by it.
  */
 
-export const DATE_BEFORE_TODAY_MESSAGE =
-  "Das Datum darf nicht vor heute liegen";
+import i18n from "@/language/index";
+
+/** The rule's message for a typed date before today. */
+export function dateBeforeTodayMessage() {
+  return i18n.t("checkout.dateBeforeToday");
+}
 
 /** Today in local time, e.g. `2026-10-07`. */
 export function todayIso(now = new Date()) {

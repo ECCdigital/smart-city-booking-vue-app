@@ -1610,6 +1610,7 @@
       "title": "Vorlaufzeit nicht eingehalten",
       "message": "Die Buchung liegt zu kurzfristig. Zwischen Buchung und Beginn muss ausreichend Vorbereitungszeit in den Servicezeiten liegen."
     },
+    "dateBeforeToday": "Das Datum darf nicht vor heute liegen",
     "time_in_past": {
       "title": "Zeitraum liegt in der Vergangenheit",
       "message": "Der gewählte Beginn liegt in der Vergangenheit. Bitte wählen Sie einen Zeitpunkt ab jetzt."

@@ -111,7 +111,7 @@
                   v-on="on"
                   :rules="[
                     (v) => !!v || 'Startdatum ist erforderlich',
-                    (v) => !isBeforeToday(v) || dateBeforeTodayMessage,
+                    (v) => !isBeforeToday(v) || dateBeforeTodayMessage(),
                   ]"
                 ></v-text-field>
               </template>
@@ -323,7 +323,7 @@
 import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import CheckoutTimeSelector from "@/views/BundleCheckout/CheckoutTimeSelector.vue";
 import {
-  DATE_BEFORE_TODAY_MESSAGE,
+  dateBeforeTodayMessage,
   isBeforeToday,
   todayIso,
 } from "@/utils/checkoutDates";
@@ -373,7 +373,6 @@ export default {
     return {
       startDateMenu: false,
       endDateMenu: false,
-      dateBeforeTodayMessage: DATE_BEFORE_TODAY_MESSAGE,
       seriesStartDate: null,
       seriesEndDate: null,
       seriesFrequency: "weekly",
@@ -464,6 +463,7 @@ export default {
   },
   methods: {
     isBeforeToday,
+    dateBeforeTodayMessage,
     toggleWeekday(dayValue) {
       const index = this.selectedWeekdays.indexOf(dayValue);
       if (index === -1) {

@@ -284,7 +284,7 @@ import CheckoutTimePeriodPicker from "@/components/Checkout/CheckoutTimePeriodPi
 import CheckoutBlockPeriodPicker from "@/components/Checkout/CheckoutBlockPeriodPicker.vue";
 import TimezoneWarning from "@/components/TimezoneWarning.vue";
 import {
-  DATE_BEFORE_TODAY_MESSAGE,
+  dateBeforeTodayMessage,
   isBeforeToday,
   todayIso,
 } from "@/utils/checkoutDates";
@@ -359,13 +359,13 @@ export default {
           (v) => !!v || "Bitte wählen Sie ein Datum aus",
           (v) => !!this.parseDeToIso(v) || "Ungültiges Datum",
           (v) =>
-            !isBeforeToday(this.parseDeToIso(v)) || DATE_BEFORE_TODAY_MESSAGE,
+            !isBeforeToday(this.parseDeToIso(v)) || dateBeforeTodayMessage(),
         ],
         dateEnd: [
           (v) => !!v || "Bitte wählen Sie ein Datum aus",
           (v) => !!this.parseDeToIso(v) || "Ungültiges Datum",
           (v) =>
-            !isBeforeToday(this.parseDeToIso(v)) || DATE_BEFORE_TODAY_MESSAGE,
+            !isBeforeToday(this.parseDeToIso(v)) || dateBeforeTodayMessage(),
           (v) =>
             !this.dateBeginModel ||
             this.parseDeToIso(v) >= this.dateBeginModel ||

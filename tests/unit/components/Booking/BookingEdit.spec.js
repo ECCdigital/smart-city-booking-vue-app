@@ -367,9 +367,9 @@ describe("BookingEdit", () => {
    * for the staff that is no conflict. The backend names a conflict first.
    */
   describe("the availability of a backwards booking", () => {
-    function refusal(data) {
+    function refusal(data, status = 400) {
       return Object.assign(new Error("refused"), {
-        response: { status: 400, data },
+        response: { status, data },
       });
     }
 
@@ -393,9 +393,7 @@ describe("BookingEdit", () => {
     it("still warns of a conflict", async () => {
       const message = "Raum 1 ist im gewählten Zeitraum nicht verfügbar.";
       ApiCheckoutService.validateCheckoutItem.mockRejectedValue(
-        Object.assign(new Error("refused"), {
-          response: { status: 409, data: { error: message } },
-        })
+        refusal({ error: message }, 409)
       );
       const { wrapper } = await mountEdit({ booking: draft() });
 
