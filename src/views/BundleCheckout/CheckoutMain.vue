@@ -63,6 +63,7 @@
               @redeem-coupon="redeemCoupon"
               @remove-coupon="removeCoupon"
               @set-book-without-discount="setBookWithoutDiscount"
+              @login-required="offerLogin"
             ></checkout-quick-summary>
           </v-col>
         </v-row>
@@ -183,6 +184,21 @@ export default {
       this.steps = this.createSteps();
       this.step = 1;
       this.loading = false;
+    },
+
+    /**
+     * The backend refused the completion for want of a sign-in
+     * (ECCdigital/tickets#123): the session is read again, and the checkout
+     * goes back to its step „Anmeldung“, which offers the login.
+     */
+    async offerLogin() {
+      await this.fetchMe();
+      this.loginRequired = true;
+      this.steps = this.createSteps();
+      const signin = this.steps.findIndex(
+        (step) => step.component === "checkout-signin"
+      );
+      this.step = signin + 1;
     },
 
     goToGroupBooking() {

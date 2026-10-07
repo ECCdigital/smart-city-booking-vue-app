@@ -320,7 +320,11 @@ import ApiPaymentService from "@/services/api/ApiPaymentService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
 import { bookingAmountLimit } from "@/utils/bookingAmountLimit";
-import { getCheckoutErrorToastKey } from "@/utils/checkoutErrors";
+import {
+  getCheckoutErrorToastKey,
+  isLoginRefusal,
+  LOGIN_REQUIRED_TOAST_KEY,
+} from "@/utils/checkoutErrors";
 import { isAwaitingPayment } from "@/utils/bookingStatus";
 import { continuesToProvider } from "@/utils/checkoutNextStep";
 import ToastService from "@/services/ToastService";
@@ -530,6 +534,14 @@ export default {
           await this.routeToStatus(checkoutResponse.data);
         }
       } catch (error) {
+        if (isLoginRefusal(error)) {
+          // ECCdigital/tickets#123: the checkout offers the sign-in again.
+          this.addToast(
+            ToastService.createToast(LOGIN_REQUIRED_TOAST_KEY, "error")
+          );
+          this.$emit("login-required");
+          return;
+        }
         const toastKey = getCheckoutErrorToastKey(error.response?.data);
         this.addToast(ToastService.createToast(toastKey, "error"));
         console.error("Checkout process failed:", error.message);

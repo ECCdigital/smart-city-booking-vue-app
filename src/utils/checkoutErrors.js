@@ -48,6 +48,18 @@ export function formatCheckoutValidationError(data) {
   return i18n.t("checkout.error.unexpected.message");
 }
 
+/**
+ * Whether the backend refused a completion for want of a sign-in
+ * (ECCdigital/tickets#123): its 401 `checkout.login_required`, or the 401 of
+ * a session that ended on the way and could not be renewed.
+ */
+export function isLoginRefusal(error) {
+  return error?.response?.status === 401;
+}
+
+/** The toast of a completion refused for want of a sign-in. */
+export const LOGIN_REQUIRED_TOAST_KEY = "checkout.login_required";
+
 export function getCheckoutErrorToastKey(data) {
   const reason = getReason(data);
   const messageKey = resolveCheckoutMessageKey(reason);

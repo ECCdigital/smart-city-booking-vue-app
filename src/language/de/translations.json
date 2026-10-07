@@ -1602,6 +1602,10 @@
         "message": "Leider ist bei der Prüfung ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
       }
     },
+    "login_required": {
+      "title": "Anmeldung erforderlich",
+      "message": "Für diese Buchung müssen Sie angemeldet sein. Bitte melden Sie sich an und senden Sie die Buchung erneut."
+    },
     "block_period_mismatch": {
       "title": "Ungültiger Zeitraum",
       "message": "Für dieses Objekt muss ein vollständiger Zeitraum gebucht werden."

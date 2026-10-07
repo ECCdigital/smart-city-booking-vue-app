@@ -71,7 +71,11 @@ import ApiCouponService from "@/services/api/ApiCouponService";
 import BookingSidebar from "@/views/BundleCheckout/BookingSidebar.vue";
 import ToastService from "@/services/ToastService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
-import { formatCheckoutValidationError } from "@/utils/checkoutErrors";
+import {
+  formatCheckoutValidationError,
+  isLoginRefusal,
+  LOGIN_REQUIRED_TOAST_KEY,
+} from "@/utils/checkoutErrors";
 
 export default {
   name: "CheckoutGroupBooking",
@@ -752,6 +756,14 @@ export default {
         }
       } catch (error) {
         console.error("Group checkout process failed:", error.message);
+        if (isLoginRefusal(error)) {
+          // ECCdigital/tickets#123: the group checkout has no step
+          // „Anmeldung“; the single checkout of the offer starts with it.
+          this.addToast(
+            ToastService.createToast(LOGIN_REQUIRED_TOAST_KEY, "error")
+          );
+          this.backToSingleBooking();
+        }
       } finally {
         this.isSubmitting = false;
       }
