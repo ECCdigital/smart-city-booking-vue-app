@@ -85,6 +85,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Fixed
 
+-   Dark mode (ECCdigital/tickets#276): the booking numbers in the booking list are drawn in the primary colour lightened with 60 % white (new token `--scb-text-link`), readable on the dark table even with a dark `VUE_APP_PRIMARY_COLOR_DARK`; the instance logo in the app bar sits on a white plate (`--scb-logo-plate`), so a dark logo no longer vanishes. The light theme is unchanged
 -   Legacy checkout `/checkout`, step „Ergänzungen“ (ECCdigital/tickets#133): the add-ons are loaded by their ids (`GET api/:tenant/bookables/public/:id`), as the lead item is, instead of from the public list, which since backend 4.3 carries listed offers only. Add-ons without `isPublic` show again; an add-on out of reach is left out, the others stay
 -   Checkout of a bookable behind a login offers the login again when the session is gone (ECCdigital/tickets#77). The checkout fell back to the user stored from an earlier session when `auth/me` failed, so the step „Anmeldung“ said „Angemeldet“, the permission check answered 401 and booking stayed impossible until the browser cache was cleared. Now only `auth/me` decides who is signed in, and its 401 also removes the stored user
 -   Booking page, „Benutzerdefinierte Felder“: a long caption no longer runs past the card's edge and squeezes its value to one letter per line. A fact's label keeps its width up to half the row and wraps beyond it (ECCdigital/tickets#78)

@@ -126,6 +126,20 @@ describe("BookingTable", () => {
    * exist nowhere. Delete is not a transition and keeps its own, disabled
    * entry where the state forbids it.
    */
+  describe("the booking number", () => {
+    // A dark primary colour (VUE_APP_PRIMARY_COLOR_DARK) all but vanished on
+    // the dark table (ECCdigital/tickets#276). The link token lightens it
+    // under .theme--dark; the bare Vuetify class `primary--text` cannot.
+    it("is drawn in the link colour, not the bare primary colour", () => {
+      const wrapper = mountTable([booking()]);
+      const number = wrapper.find("td span.booking-number");
+
+      expect(number.exists()).toBe(true);
+      expect(number.text()).toBe("bk-1");
+      expect(number.classes()).not.toContain("primary--text");
+    });
+  });
+
   describe("the row menu", () => {
     const FIXED = ["Details ansehen", "Bearbeiten", "Löschen"];
 
