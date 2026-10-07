@@ -963,9 +963,13 @@
         "title": "Fehler beim Zurücksetzen",
         "message": "Leider ist beim Zurücksetzen des Passworts ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
       },
-      "wrong-email": {
-        "title": "Falsche E-Mail",
-        "message": "Leider stimmt die E-Mail nicht. Bitte versuchen Sie es erneut."
+      "done": {
+        "title": "Passwort geändert",
+        "message": "Sie können sich jetzt mit dem neuen Passwort anmelden."
+      },
+      "link-invalid": {
+        "title": "Link ungültig",
+        "message": "Der Link ist abgelaufen oder wurde schon benutzt. Bitte fordern Sie einen neuen an."
       },
       "password-mismatch": {
         "title": "Passwörter stimmen nicht überein",

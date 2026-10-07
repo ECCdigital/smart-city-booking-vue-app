@@ -15,7 +15,8 @@ BFF listens at the process root. Reverse proxy should expose it as `/admin/api` 
 | `POST` | `/auth/signup`           | Local registration (forwards to API)                             |
 | `POST` | `/auth/card/signin`      | Card login → sets cookies                                        |
 | `POST` | `/auth/card/signup`      | Card registration (forwards to API)                              |
-| `POST` | `/auth/reset`            | Request password-reset mail (forwards to API)                    |
+| `POST` | `/auth/forgot-password`  | „Passwort vergessen“: request the mail with the link (public)    |
+| `POST` | `/auth/reset-password`   | New password from the mail's token (public, forwards to API)     |
 | `POST` | `/auth/resetpassword`    | Own password change: forwards body and session to API            |
 | `POST` | `/auth/logout`           | Clears cookies (local or Keycloak revoke)                        |
 | `POST` | `/auth/refresh`          | Refresh access cookie (local JWT or Keycloak)                    |

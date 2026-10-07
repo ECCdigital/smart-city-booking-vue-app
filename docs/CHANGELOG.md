@@ -10,6 +10,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 ### Security
 
 -   Settings, „Passwort ändern“ asks for „Bisheriges Passwort“ (ECCdigital/tickets#264): the own password change sends it with the new one (`ApiAuthService.changePassword`, `POST auth/resetpassword` with `{ currentPassword, password }`), a wrong one shows „Bisheriges Passwort falsch“. The BFF hands the session on to the backend for this route. Requires backend 4.3.1, which accepts the change only signed in and with the current password; deploy them together
+-   „Passwort vergessen?“ works with backend 4.3.1 again (ECCdigital/tickets#264): `/password/reset` asks only for the address and requests the mail (`ApiAuthService.forgotPassword`, `POST auth/forgot-password`), then answers the same sentence for every address; the toast „Falsche E-Mail“ is gone, it told whether an account exists (ECCdigital/tickets#259). The mail's link `/password/reset?token=…&id=…` opens the second step, which sets the new password (`ApiAuthService.resetPasswordWithToken`, `POST auth/reset-password`); a spent or unknown link says „Link ungültig“. Before, the page sent address and new password anonymously to `POST auth/resetpassword`, which backend 4.3.1 refuses with 401. The BFF owns `/auth/forgot-password` and `/auth/reset-password` instead of the dead `/auth/reset`; `ApiAuthService.resetPassword` and `requestPasswordReset` are removed
 
 ### Added
 
