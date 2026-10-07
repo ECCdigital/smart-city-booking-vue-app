@@ -329,7 +329,7 @@ const routes = [
     component: lazyLoad("Bookables/Resources/ResourceEdit"),
     meta: {
       type: "resource",
-      title: "Raum bearbeiten",
+      title: "Objekt bearbeiten",
       requiresAuth: true,
       interfaceName: "resources",
     },

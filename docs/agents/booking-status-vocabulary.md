@@ -25,7 +25,7 @@ Sort order of the "Status" column (`statusRank`): `requested < payment_due < con
 
 "Rückerstattung offen" / "Rückerstattung erfolgt" (glossary „Erstattungsstand“, `refundStateOf(booking)`, `refundStateMarker(state)` in `src/utils/cancellationRefund.js`) is stored, not derived - `cancellationRefund.refundState`, `open` or `completed` - and is a marker chip beside Storniert as well, never a state.
 
-"Bezahlt" as a fact (the export column, the details chip) is read off the state too: `isPaid(booking)` is true at `confirmed`, and at `cancelled` iff `cancelledFrom === "confirmed"`. `paymentLabel(booking)` turns that into Kostenfrei / Ja / Nein for the Excel export.
+"Bezahlt" as a fact (the export column, the details chip) is read off the state too: `isPaid(booking)` is true at `confirmed`, and at `cancelled` iff `cancelledFrom === "confirmed"`. `paymentLabel(booking)` turns that into Kostenfrei / Ja / Nein for the Excel export, `paymentStatusLabel(booking)` into Kostenfrei / Bezahlt / Nicht bezahlt for „Zahlungsstatus“ on the booking page and the series page.
 
 ## The action verbs
 
