@@ -75,6 +75,7 @@
               @redeem-coupon="redeemCoupon"
               @remove-coupon="removeCoupon"
               @set-book-without-discount="setBookWithoutDiscount"
+              @login-required="offerLogin"
             ></checkout-quick-summary>
           </v-col>
         </v-row>
@@ -176,6 +177,10 @@ export default {
     this.timeBegin = this.parseStringToTimestamp(this.$route.query.start);
     this.timeEnd = this.parseStringToTimestamp(this.$route.query.end);
     await this.init();
+    // Back from a series refused for want of a sign-in (CheckoutGroupBooking).
+    if (this.$route.query.login === "1") {
+      await this.offerLogin({ series: true });
+    }
     await this.fetchTenant();
   },
 
@@ -200,6 +205,43 @@ export default {
       this.steps = this.createSteps();
       this.step = 1;
       this.loading = false;
+    },
+
+    /**
+     * The backend refused the completion for want of a sign-in
+     * (ECCdigital/tickets#123): the session is read again. An offer that
+     * needs a sign-in (`loginRequired`, from `requiresLogin` or a role) goes
+     * back to the step „Anmeldung“, which offers the login. Any other goes on
+     * as a guest (ECCdigital/tickets#110): its prices are checked again, and
+     * the contact details, which the ended session had filled, come next.
+     *
+     * Back from a series (`series`), a series open to a role only needs the
+     * sign-in as well; otherwise the checkout stays at its start.
+     */
+    async offerLogin({ series = false } = {}) {
+      await this.fetchMe();
+      if (
+        series &&
+        this.leadItem.bookable?.groupBooking?.permittedRoles?.length > 0
+      ) {
+        this.loginRequired = true;
+      }
+      if (!this.loginRequired) {
+        if (series) {
+          return;
+        }
+        await this.validateItems();
+        this.steps = this.createSteps();
+        this.goToStep("checkout-contact-details");
+        return;
+      }
+      this.steps = this.createSteps();
+      this.goToStep("checkout-signin");
+    },
+
+    goToStep(component) {
+      this.step =
+        this.steps.findIndex((step) => step.component === component) + 1;
     },
 
     goToGroupBooking() {
