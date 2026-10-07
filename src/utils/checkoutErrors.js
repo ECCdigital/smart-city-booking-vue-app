@@ -48,6 +48,14 @@ export function formatCheckoutValidationError(data) {
   return i18n.t("checkout.error.unexpected.message");
 }
 
+/**
+ * Whether the backend refused a begin in the past (ECCdigital/tickets#188),
+ * a refusal of the self-booking alone: the staff books backwards.
+ */
+export function isTimeInPastRefusal(data) {
+  return getReason(data) === "checkout.time_in_past";
+}
+
 export function getCheckoutErrorToastKey(data) {
   const reason = getReason(data);
   const messageKey = resolveCheckoutMessageKey(reason);

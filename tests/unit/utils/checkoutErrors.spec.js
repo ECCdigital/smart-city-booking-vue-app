@@ -33,3 +33,23 @@ describe("checkoutErrors - the Höchstmenge je Buchung", () => {
     expect(getCheckoutErrorToastKey({ reason: REASON })).toBe(REASON);
   });
 });
+
+/**
+ * A begin in the past (ECCdigital/tickets#188): the legacy checkout answers
+ * `400` with the reason as its body, `validateItem` as `{ error: reason }`.
+ */
+describe("checkoutErrors - a begin in the past", () => {
+  const PAST = "checkout.time_in_past";
+  const expected =
+    "Der gewählte Beginn liegt in der Vergangenheit. Bitte wählen Sie einen Zeitpunkt ab jetzt.";
+
+  it("names the reason of validateItem in German", () => {
+    expect(
+      formatCheckoutValidationError({ error: PAST, checkoutId: "c1" })
+    ).toBe(expected);
+  });
+
+  it("toasts the reason of the checkout with its own title and message", () => {
+    expect(getCheckoutErrorToastKey(PAST)).toBe(PAST);
+  });
+});

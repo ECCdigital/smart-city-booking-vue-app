@@ -129,7 +129,7 @@
                 v-mask="'##.##.####'"
                 inputmode="numeric"
                 placeholder="DD.MM.YYYY"
-                :rules="validationRules.dateBegin"
+                :rules="validationRules.dateEnd"
                 @click:prepend="dateEndMenu = true"
                 @change="$refs.dateEndMenu.save(dateEndModel)"
               />
@@ -283,6 +283,11 @@ import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
 import CheckoutTimePeriodPicker from "@/components/Checkout/CheckoutTimePeriodPicker.vue";
 import CheckoutBlockPeriodPicker from "@/components/Checkout/CheckoutBlockPeriodPicker.vue";
 import TimezoneWarning from "@/components/TimezoneWarning.vue";
+import {
+  DATE_BEFORE_TODAY_MESSAGE,
+  isBeforeToday,
+  todayIso,
+} from "@/utils/checkoutDates";
 
 export default {
   name: "CheckoutTimeSelector",
@@ -353,14 +358,17 @@ export default {
         dateBegin: [
           (v) => !!v || "Bitte wählen Sie ein Datum aus",
           (v) => !!this.parseDeToIso(v) || "Ungültiges Datum",
+          (v) =>
+            !isBeforeToday(this.parseDeToIso(v)) || DATE_BEFORE_TODAY_MESSAGE,
         ],
         dateEnd: [
           (v) => !!v || "Bitte wählen Sie ein Datum aus",
           (v) => !!this.parseDeToIso(v) || "Ungültiges Datum",
-          () =>
+          (v) =>
+            !isBeforeToday(this.parseDeToIso(v)) || DATE_BEFORE_TODAY_MESSAGE,
+          (v) =>
             !this.dateBeginModel ||
-            !this.dateEndModel ||
-            this.dateEndModel >= this.dateBeginModel ||
+            this.parseDeToIso(v) >= this.dateBeginModel ||
             "Enddatum muss nach dem Startdatum liegen",
         ],
         time: [
@@ -456,7 +464,7 @@ export default {
       },
       set(v) {
         const iso = this.parseDeToIso(v);
-        if (iso) this.dateBeginModel = iso;
+        if (iso && !isBeforeToday(iso)) this.dateBeginModel = iso;
       },
     },
 
@@ -466,7 +474,7 @@ export default {
       },
       set(v) {
         const iso = this.parseDeToIso(v);
-        if (iso) this.dateEndModel = iso;
+        if (iso && !isBeforeToday(iso)) this.dateEndModel = iso;
       },
     },
     isNextButtonDisabled() {
@@ -539,7 +547,7 @@ export default {
       });
     },
     minBookingDate() {
-      return new Date().toISOString().split("T")[0];
+      return todayIso();
     },
     selectionType() {
       if (this.leadItem.bookable?.isBlockPeriodRelated === true) {
