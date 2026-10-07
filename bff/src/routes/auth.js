@@ -257,31 +257,50 @@ router.post("/card/signup", async (req, res) => {
   }
 });
 
-router.post("/reset", async (req, res) => {
-  try {
-    const { ok, data, status } = await backendFetch("/auth/reset", {
-      method: "POST",
-      body: req.body || {},
-    });
+/**
+ * „Passwort vergessen“ and the new password from the mail's link: public,
+ * without a session. Owned here for the same body-consumed reason as /signup.
+ */
+function forwardPublic(path, failure) {
+  return async (req, res) => {
+    try {
+      const { ok, data, status } = await backendFetch(path, {
+        method: "POST",
+        body: req.body || {},
+      });
 
-    if (!ok) {
-      return sendBackendError(res, status, data, "Password reset request failed");
+      if (!ok) {
+        return sendBackendError(res, status, data, failure);
+      }
+
+      if (data !== null && data !== undefined) {
+        return res.status(status || 200).json(data);
+      }
+      return res.sendStatus(status || 200);
+    } catch (error) {
+      return sendCaughtError(res, error, failure);
     }
+  };
+}
 
-    if (data !== null && data !== undefined) {
-      return res.status(status || 200).json(data);
-    }
-    return res.sendStatus(status || 200);
-  } catch (error) {
-    return sendCaughtError(res, error, "Password reset request failed");
-  }
-});
+router.post(
+  "/forgot-password",
+  forwardPublic("/auth/forgot-password", "Password reset request failed")
+);
+router.post(
+  "/reset-password",
+  forwardPublic("/auth/reset-password", "Password reset failed")
+);
 
+// The password change of the signed-in account: the backend needs the
+// session. A 401 goes back to the browser, which refreshes and retries.
 router.post("/resetpassword", async (req, res) => {
   try {
+    const accessToken = getAccessToken(req);
     const { ok, data, status } = await backendFetch("/auth/resetpassword", {
       method: "POST",
       body: req.body || {},
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     });
 
     if (!ok) {

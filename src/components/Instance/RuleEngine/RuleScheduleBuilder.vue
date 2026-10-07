@@ -325,5 +325,10 @@ export default {
       this.$emit("input", this.build());
     },
   },
+  created() {
+    // Without a schedule the builder shows its default; hand it to the
+    // parent too, so the schedule on screen is the one that gets saved.
+    if (!this.value || !this.value.trim()) this.emitChange();
+  },
 };
 </script>

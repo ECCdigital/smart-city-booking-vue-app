@@ -1,7 +1,19 @@
 <template>
   <div>
     <v-container>
-      <div>
+      <!-- ECCdigital/tickets#262: the offer is gone before the checkout
+           opened; the words are the store front's. -->
+      <v-alert
+        v-if="bookableGone"
+        type="error"
+        icon="mdi-alert"
+        border="left"
+        elevation="2"
+        data-test="bookable-gone"
+      >
+        {{ $t("checkout.bookable_not_found.message") }}
+      </v-alert>
+      <div v-else>
         <v-stepper
           v-if="!preventBooking && steps.length > 0"
           alt-labels
@@ -115,6 +127,7 @@ export default {
       trace: false,
       preventBooking: false,
       loginRequired: false,
+      bookableGone: false,
       bookingPermission: true,
       step: null,
       me: null,
@@ -176,6 +189,10 @@ export default {
       await this.fetchMe();
       await this.getCheckoutPermissions();
       await this.fetchLeadBookable();
+      if (this.bookableGone) {
+        this.loading = false;
+        return;
+      }
       await this.fetchSubsequentBookables();
       await this.validateItems();
       await this.fetchActivePaymentApps();
@@ -339,7 +356,7 @@ export default {
         stepsToReturn.push(timeSelectorStep);
       }
 
-      if (this.leadItem.bookable.priceType === "per-square-meter") {
+      if (this.leadItem.bookable?.priceType === "per-square-meter") {
         stepsToReturn.push(amountStep);
       }
 
@@ -489,6 +506,7 @@ export default {
         }
       } catch (error) {
         this.leadItem.bookable = null;
+        this.bookableGone = error?.response?.status === 404;
       }
     },
 
