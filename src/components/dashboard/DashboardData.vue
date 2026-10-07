@@ -437,7 +437,7 @@
               </div>
               <div class="metric-row">
                 <div class="d-flex align-center items-center">
-                  <span>Entganger Umsatz (brutto)</span>
+                  <span>Entgangener Umsatz (brutto)</span>
                 </div>
                 <strong>{{ formatCurrency(missedRevenue) }}</strong>
               </div>
