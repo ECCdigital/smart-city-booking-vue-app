@@ -119,13 +119,6 @@ describe("BookingTable", () => {
     });
   });
 
-  /**
-   * The menu carries the entries that are not transitions, then exactly the
-   * transitions the state allows (spec E2) - a transition the state forbids
-   * is not there at all, and "Freigabe zurücknehmen" / "Zahlung zurücknehmen"
-   * exist nowhere. Delete is not a transition and keeps its own, disabled
-   * entry where the state forbids it.
-   */
   describe("the booking number", () => {
     // A dark primary colour (VUE_APP_PRIMARY_COLOR_DARK) all but vanished on
     // the dark table (ECCdigital/tickets#276). The link token lightens it
@@ -140,6 +133,13 @@ describe("BookingTable", () => {
     });
   });
 
+  /**
+   * The menu carries the entries that are not transitions, then exactly the
+   * transitions the state allows (spec E2) - a transition the state forbids
+   * is not there at all, and "Freigabe zurücknehmen" / "Zahlung zurücknehmen"
+   * exist nowhere. Delete is not a transition and keeps its own, disabled
+   * entry where the state forbids it.
+   */
   describe("the row menu", () => {
     const FIXED = ["Details ansehen", "Bearbeiten", "Löschen"];
 

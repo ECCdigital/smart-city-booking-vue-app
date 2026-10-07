@@ -514,12 +514,6 @@ export default {
 };
 </script>
 <style>
-.navbar-logo {
-  padding: var(--scb-logo-plate-padding);
-  border-radius: var(--scb-radius-control);
-  background: var(--scb-logo-plate);
-}
-
 .active-item {
   color: black !important;
 }
@@ -564,5 +558,13 @@ export default {
 
 .theme--dark #nav {
   scrollbar-color: #555 #1e1e1e;
+}
+</style>
+
+<style scoped>
+.navbar-logo {
+  padding: var(--scb-logo-plate-padding);
+  border-radius: var(--scb-radius-control);
+  background: var(--scb-logo-plate);
 }
 </style>
