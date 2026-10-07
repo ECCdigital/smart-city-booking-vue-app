@@ -49,6 +49,17 @@ export function refundStateMarker(state) {
   };
 }
 
+/**
+ * The policy line of a single booking's refund preview or audit: the calendar
+ * days before the start where there are any, else that the booking has no
+ * time span. `key` is `singlePolicy` or `auditOverride`.
+ */
+export function refundPolicyText(key, { days, ...values }) {
+  return days === null || days === undefined
+    ? i18n.t(`booking.cancellationRefund.${key}WithoutTimeSpan`, values)
+    : i18n.t(`booking.cancellationRefund.${key}`, { days, ...values });
+}
+
 export function getCancellationRefundAudit(booking) {
   if (!isRejectedOrCancelled(booking)) {
     return null;
@@ -64,7 +75,8 @@ export function getCancellationRefundAudit(booking) {
   const cancellationAttachments = attachments
     .filter((item) => item.type === "cancellation" && item.cancellation)
     .sort(
-      (left, right) => Number(right.timeCreated || 0) - Number(left.timeCreated || 0)
+      (left, right) =>
+        Number(right.timeCreated || 0) - Number(left.timeCreated || 0)
     );
 
   return cancellationAttachments[0]?.cancellation || null;

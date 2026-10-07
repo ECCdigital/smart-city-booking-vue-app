@@ -10,6 +10,7 @@
       <img
         alt="Smart City Booking"
         :src="appLogo"
+        class="navbar-logo"
         style="max-height: 50px; width: auto; max-width: 250px"
       />
       <v-spacer></v-spacer>
@@ -557,5 +558,13 @@ export default {
 
 .theme--dark #nav {
   scrollbar-color: #555 #1e1e1e;
+}
+</style>
+
+<style scoped>
+.navbar-logo {
+  padding: var(--scb-logo-plate-padding);
+  border-radius: var(--scb-radius-control);
+  background: var(--scb-logo-plate);
 }
 </style>

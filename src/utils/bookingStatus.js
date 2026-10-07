@@ -214,6 +214,16 @@ export function paymentLabel(booking) {
     : i18n.t("booking.payment.unpaid");
 }
 
+/** The Zahlungsstatus on the booking page: Kostenfrei / Bezahlt / Nicht bezahlt. */
+export function paymentStatusLabel(booking) {
+  if (isFree(booking)) {
+    return i18n.t("booking.status.free");
+  }
+  return isPaid(booking)
+    ? i18n.t("booking.payment.status.paid")
+    : i18n.t("booking.payment.status.unpaid");
+}
+
 export function isRejectedOrCancelled(booking) {
   return (
     booking?.status === BOOKING_STATUS.REJECTED ||
