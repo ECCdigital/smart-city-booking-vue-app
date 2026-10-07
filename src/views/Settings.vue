@@ -666,7 +666,7 @@ export default {
     ...mapActions({
       startLoading: "loading/start",
       stopLoading: "loading/stop",
-      updateMe: "user/update",
+      updateProfile: "user/updateProfile",
       addToast: "toasts/add",
     }),
     // get user from store
@@ -683,7 +683,7 @@ export default {
       this.api.user.city = this.tempCity;
       ApiUsersService.updateMe(this.api.user)
         .then((user) => {
-          this.updateMe(user.data);
+          this.updateProfile(user.data);
           this.isLoading = false;
           this.addToast(
             ToastService.createToast("user.edit-profile.success", "success")
