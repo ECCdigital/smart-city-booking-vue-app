@@ -1,11 +1,16 @@
 import axios from "axios";
 import keycloakService from "../KeycloakService";
 import { getApiHttpBaseUrl } from "./authMode";
+import { isPublicAuthPath, loginUrl } from "./sessionSync";
 
+/**
+ * After a failed renewal, as in BFF mode: a public path such as the checkout
+ * carries on anonymously, an internal page goes to the login and returns to
+ * itself afterwards.
+ */
 function redirectToLogin() {
-  if (/\/login(?:\/|$)/.test(window.location.pathname)) return;
-  const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
-  window.location.href = `${base}/login`;
+  if (isPublicAuthPath()) return;
+  window.location.replace(loginUrl());
 }
 
 /**
@@ -84,7 +89,7 @@ class DirectAuthTransport {
           return this.client(originalRequest);
         }
       } catch {
-        // fall through to clear + redirect
+        // fall through to clear + redirect on internal pages
       }
 
       this.clearSession();

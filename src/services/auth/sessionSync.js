@@ -103,6 +103,16 @@ function loginReturnQuery(next) {
 }
 
 /**
+ * The login page under the router base, with `?next=` as `loginReturnQuery`
+ * builds it.
+ * @param {string} [next] app path incl. query; defaults to the current one
+ */
+export function loginUrl(next) {
+  const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
+  return `${base}/login${loginReturnQuery(next)}`;
+}
+
+/**
  * Clear client auth state and hard-redirect to login when needed.
  * Redirect is synchronous so bootstrap cannot keep mounting the SPA.
  * @param {{ redirect?: boolean, next?: string }} [options] `next`: the app
@@ -123,8 +133,7 @@ export async function endAdminSession({ redirect = true, next } = {}) {
 
     // Redirect first — do not wait on dynamic imports / store cleanup
     if (redirect && typeof window !== "undefined" && !isPublicAuthPath()) {
-      const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
-      window.location.replace(`${base}/login${loginReturnQuery(next)}`);
+      window.location.replace(loginUrl(next));
     }
 
     broadcastSessionEnded();
