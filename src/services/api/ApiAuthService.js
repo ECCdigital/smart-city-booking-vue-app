@@ -70,7 +70,9 @@ export default {
 
     if (!ssoConfig) return null;
 
-    let authenticated = await keycloakService.restoreFromStoredTokens(ssoConfig);
+    let authenticated = await keycloakService.restoreFromStoredTokens(
+      ssoConfig
+    );
 
     if (!authenticated) {
       keycloakService.setConfig(ssoConfig);
@@ -173,12 +175,22 @@ export default {
     return ApiClient.transport.me();
   },
 
-  async resetPassword(id, password) {
-    return ApiClient.post("auth/resetpassword", { id, password });
+  /** The password change of the signed-in account, with its current password. */
+  async changePassword(currentPassword, password) {
+    return ApiClient.post("auth/resetpassword", { currentPassword, password });
   },
 
-  async requestPasswordReset(email) {
-    return ApiClient.post("auth/reset", { email });
+  /**
+   * „Passwort vergessen“: the backend mails a link to the Admin UI's
+   * `/password/reset?token=…&id=…` and answers every address alike.
+   */
+  async forgotPassword(email) {
+    return ApiClient.post("auth/forgot-password", { id: email });
+  },
+
+  /** The new password from the mail's link, without a session. */
+  async resetPasswordWithToken({ token, id, password }) {
+    return ApiClient.post("auth/reset-password", { token, id, password });
   },
 
   async getCardAuthMethods() {
