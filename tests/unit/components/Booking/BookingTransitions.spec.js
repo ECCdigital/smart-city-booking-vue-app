@@ -434,12 +434,10 @@ describe("BookingTransitions", () => {
     it("names the reason when the stored booking does not pass its schema", async () => {
       const { wrapper, store } = mountTransitions();
       ApiBookingService.payBooking.mockRejectedValue(
-        validationError([
-          { field: "paymentProvider", code: "required", params: {} },
-        ])
+        validationError([{ field: "mail", code: "required", params: {} }])
       );
       const reason =
-        "Die Buchung konnte nicht als bezahlt markiert werden. Grund: Zahlungsanbieter fehlt.";
+        "Die Buchung konnte nicht als bezahlt markiert werden. Grund: E-Mail fehlt.";
 
       await start(wrapper, "pay", { booking: due() });
       await payWith(wrapper, {});
@@ -459,7 +457,7 @@ describe("BookingTransitions", () => {
       const { wrapper } = mountTransitions();
       ApiBookingService.payBooking.mockRejectedValue(
         validationError([
-          { field: "mail", code: "required", params: {} },
+          { field: "timeEnd", code: "greater_equal_than", params: {} },
           { field: "zipCode", code: "invalid_format", params: {} },
         ])
       );
@@ -468,7 +466,7 @@ describe("BookingTransitions", () => {
       await payWith(wrapper, {});
 
       expect(dialog(wrapper, "BookingPayDialog").props("error")).toBe(
-        "Die Buchung konnte nicht als bezahlt markiert werden. Gründe: E-Mail fehlt, Angabe „zipCode“ ungültig."
+        "Die Buchung konnte nicht als bezahlt markiert werden. Gründe: Ungültige Endzeit, Angabe „zipCode“ ungültig."
       );
     });
 

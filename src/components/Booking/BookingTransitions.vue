@@ -92,6 +92,7 @@ import ProcessingService from "@/services/ProcessingService";
 import ToastService from "@/services/ToastService";
 import {
   getBookingErrorMessage,
+  getBookingValidationReasons,
   getGroupBookingErrorMessage,
 } from "@/utils/errorMessages";
 import {
@@ -410,17 +411,16 @@ export default {
     /** The route refused (spec E5). */
     async failTransition(action, error, errorKey) {
       const fallback = this.$t(`${errorKey}.message`);
-      const reasons = this.validationReasons(error);
+      const reasons = getBookingValidationReasons(error);
       let message = getApiErrorMessage(error, fallback);
       // `POST …/reject` answers a bad percentage with the naked string.
       if (error?.response?.data === "invalid_refund_percentage") {
         message = this.$t("booking.cancellationRefund.percentageRange");
       } else if (reasons.length > 0) {
-        message = this.$tc(
-          "booking.validation.transition-failed",
-          reasons.length,
-          { message: fallback, reasons: reasons.join(", ") }
-        );
+        message = this.$tc("booking.transition-failed", reasons.length, {
+          message: fallback,
+          reasons: reasons.join(", "),
+        });
       }
       await this.addToast({
         title: this.$t(`${errorKey}.title`),
@@ -428,30 +428,6 @@ export default {
         type: "error",
       });
       return this.fail(action, error, message, shouldRefetch(error));
-    },
-
-    /**
-     * The reasons of a `ValidationError` (400, `details[]`): the stored
-     * booking does not pass the backend's schema, so the transition could not
-     * write it - e.g. a priced, unpaid booking without a payment provider.
-     * Each detail reads as the title of the booking form's validation table,
-     * a field without one by its name.
-     */
-    validationReasons(error) {
-      const data = error?.response?.data;
-      if (
-        error?.response?.status !== 400 ||
-        data?.error !== "ValidationError" ||
-        !Array.isArray(data.details)
-      ) {
-        return [];
-      }
-      return data.details.map(({ field, code, params }) => {
-        const key = `booking.validation.${field}.${code}.title`;
-        return this.$te(key)
-          ? this.$t(key, params)
-          : this.$t("booking.validation.unknown-field", { field });
-      });
     },
 
     /** Nothing was called: the module refused the action itself. */
