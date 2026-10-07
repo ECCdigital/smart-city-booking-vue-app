@@ -93,6 +93,15 @@ async function mountCheckout() {
   return wrapper;
 }
 
+/** „Mit einem anderen Konto anmelden“ on the step „Berechtigung“. */
+async function signInAnew(wrapper) {
+  const button = wrapper
+    .findAll("button")
+    .filter((b) => b.text().includes("Mit einem anderen Konto anmelden"))
+    .at(0);
+  await button.trigger("click");
+}
+
 function stepperHeader(wrapper) {
   const header = wrapper.find(".v-stepper__header");
   return header.exists() ? header.text() : "";
@@ -123,13 +132,7 @@ describe("CheckoutMain — a permission check that passes after a refusal", () =
     const wrapper = await mountCheckout();
     expect(wrapper.text()).toContain(NOT_BOOKABLE);
 
-    const signOut = wrapper
-      .findAll("button")
-      .filter((button) =>
-        button.text().includes("Mit einem anderen Konto anmelden")
-      )
-      .at(0);
-    await signOut.trigger("click");
+    await signInAnew(wrapper);
     await flushPromises();
 
     expect(ApiCheckoutService.getCheckoutPermissions).toHaveBeenCalledTimes(2);
@@ -161,13 +164,7 @@ describe("CheckoutMain — a permission check that passes after a refusal", () =
     );
 
     const wrapper = await mountCheckout();
-    const signOut = wrapper
-      .findAll("button")
-      .filter((button) =>
-        button.text().includes("Mit einem anderen Konto anmelden")
-      )
-      .at(0);
-    await signOut.trigger("click");
+    await signInAnew(wrapper);
     await flushPromises();
 
     expect(wrapper.text()).toContain(NOT_BOOKABLE);
