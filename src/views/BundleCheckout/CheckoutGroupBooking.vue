@@ -415,6 +415,24 @@ export default {
       });
     },
 
+    /**
+     * Back to the single checkout, which offers the sign-in (`login=1`,
+     * ECCdigital/tickets#123) and keeps the time of the first booking. The
+     * series itself is set up again after the sign-in.
+     */
+    backToSignIn() {
+      const { timeBegin, timeEnd } = this.$route.query;
+      this.$router.push({
+        name: "checkout",
+        query: {
+          id: this.leadItem.bookableId,
+          tenant: this.tenantId,
+          login: "1",
+          ...(timeBegin && timeEnd ? { start: timeBegin, end: timeEnd } : {}),
+        },
+      });
+    },
+
     async generateSeriesBookings(data) {
       this.bookingAttempts = [];
 
@@ -766,7 +784,7 @@ export default {
           this.addToast(
             ToastService.createToast(LOGIN_REQUIRED_TOAST_KEY, "error")
           );
-          this.backToSingleBooking();
+          this.backToSignIn();
         }
       } finally {
         this.isSubmitting = false;

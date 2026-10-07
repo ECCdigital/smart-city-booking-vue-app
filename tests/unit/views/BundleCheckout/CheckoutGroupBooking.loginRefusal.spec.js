@@ -68,7 +68,7 @@ const BOOKABLE = {
   checkoutBookableIds: [],
 };
 
-async function mountGroupCheckout() {
+async function mountGroupCheckout(query = {}) {
   const addToast = vi.fn();
   const push = vi.fn();
   const store = new Vuex.Store({
@@ -80,7 +80,7 @@ async function mountGroupCheckout() {
   const wrapper = mountComponent(CheckoutGroupBooking, {
     store,
     mocks: {
-      $route: { query: { tenant: "t1", id: "b1" } },
+      $route: { query: { tenant: "t1", id: "b1", ...query } },
       $router: { push },
     },
   });
@@ -120,7 +120,28 @@ describe("CheckoutGroupBooking — completion refused for want of a sign-in", ()
     });
     expect(push).toHaveBeenCalledWith({
       name: "checkout",
-      query: { id: "b1", tenant: "t1" },
+      query: { id: "b1", tenant: "t1", login: "1" },
+    });
+  });
+
+  it("keeps the time of the first booking on the way back", async () => {
+    ApiCheckoutService.groupCheckout.mockRejectedValue(unauthorizedError());
+    const { wrapper, push } = await mountGroupCheckout({
+      timeBegin: "1767261600000",
+      timeEnd: "1767265200000",
+    });
+
+    await performCheckout(wrapper);
+
+    expect(push).toHaveBeenCalledWith({
+      name: "checkout",
+      query: {
+        id: "b1",
+        tenant: "t1",
+        login: "1",
+        start: "1767261600000",
+        end: "1767265200000",
+      },
     });
   });
 

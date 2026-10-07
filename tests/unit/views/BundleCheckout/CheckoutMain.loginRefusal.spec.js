@@ -182,3 +182,60 @@ describe("CheckoutMain — completion refused for want of a sign-in", () => {
     expect(store.getters["user/getUser"]).toBeUndefined();
   });
 });
+
+/**
+ * The group checkout has no step „Anmeldung“: refused for want of a sign-in,
+ * it sends the person back here with `login=1`. A public offer whose series is
+ * open to a role only then needs the sign-in for the series.
+ */
+describe("CheckoutMain — back from a series refused for want of a sign-in", () => {
+  const SERIES_BOOKABLE = {
+    ...BOOKABLE,
+    requiresLogin: false,
+    groupBooking: { enabled: true, permittedRoles: ["r1"] },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    ApiCheckoutService.validateCheckoutItem.mockResolvedValue({
+      status: 200,
+      data: {},
+    });
+    ApiAuthService.me.mockRejectedValue(unauthorizedError({}));
+    ApiCheckoutService.getCheckoutPermissions.mockResolvedValue({});
+  });
+
+  it("offers the login for a series behind a role", async () => {
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: SERIES_BOOKABLE,
+    });
+
+    const { wrapper } = await mountCheckout({ login: "1" });
+
+    expect(wrapper.text()).toContain("Anmeldung erforderlich");
+  });
+
+  it("starts as a guest without the signal", async () => {
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: SERIES_BOOKABLE,
+    });
+
+    const { wrapper } = await mountCheckout();
+
+    expect(wrapper.text()).not.toContain("Anmeldung erforderlich");
+  });
+
+  it("starts as a guest when the series is open to all", async () => {
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: {
+        ...SERIES_BOOKABLE,
+        groupBooking: { enabled: true, permittedRoles: [] },
+      },
+    });
+
+    const { wrapper } = await mountCheckout({ login: "1" });
+
+    expect(wrapper.text()).not.toContain("Anmeldung erforderlich");
+  });
+});
