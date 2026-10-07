@@ -403,6 +403,39 @@ describe("BookingPage", () => {
       });
     });
 
+    // From backend 4.3.1 on a booking without a series answers 200 with
+    // `null`; an older backend answers 404. Neither is an error.
+    it.each([
+      [
+        "200 with null",
+        () =>
+          ApiGroupBookingService.getGroupBookingByBooking.mockResolvedValue({
+            data: null,
+          }),
+      ],
+      [
+        "404",
+        () =>
+          ApiGroupBookingService.getGroupBookingByBooking.mockRejectedValue(
+            lifecycleError(404, "group_booking_not_found")
+          ),
+      ],
+    ])(
+      "a booking without a series (%s) reads „Serie: keine“ and logs nothing",
+      async (_answer, answerWith) => {
+        answerWith();
+        const { wrapper } = mountPage();
+        await settle(wrapper);
+
+        const fact = wrapper
+          .findAll(".booking-fact")
+          .filter((f) => f.text().startsWith("Serie")).wrappers[0];
+        expect(fact.find(".booking-fact__value").text()).toBe("keine");
+        expect(wrapper.find(".booking-page__series").exists()).toBe(false);
+        expect(console.error).not.toHaveBeenCalled();
+      }
+    );
+
     it("„Link kopieren“ copies the address and reads „Link kopiert“ for two seconds", async () => {
       const writeText = vi.fn(() => Promise.resolve());
       Object.defineProperty(navigator, "clipboard", {

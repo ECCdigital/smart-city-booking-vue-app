@@ -546,8 +546,8 @@ export default {
     /**
      * The series a member belongs to, for the toolbar chip. Its failure
      * leaves the chip off and never fails the page: the booking is the page.
-     * A 404 is the backend's answer for a booking without a series and is
-     * not worth a log line; anything else is.
+     * A booking without a series answers 200 with `null` (backend 4.3.1 on)
+     * or 404 (before); neither is worth a log line, anything else is.
      */
     async loadGroupBooking() {
       try {

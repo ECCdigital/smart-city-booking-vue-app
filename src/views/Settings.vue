@@ -666,7 +666,7 @@ export default {
     ...mapActions({
       startLoading: "loading/start",
       stopLoading: "loading/stop",
-      updateMe: "user/update",
+      updateMe: "user/updateProfile",
       addToast: "toasts/add",
     }),
     // get user from store

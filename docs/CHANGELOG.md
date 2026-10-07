@@ -85,6 +85,8 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Fixed
 
+-   Settings (ECCdigital/tickets#277): saving a field no longer throws `Cannot read properties of undefined (reading 'firstName')`. `PUT api/user` answers with the bare user, which replaced the whole sign-in in the store, permissions included; now only the user is replaced (`user/updateProfile`)
+-   Booking page of a booking without a series (ECCdigital/tickets#277): backend 4.3.1 answers `GET api/:tenant/group-bookings/booking/:id` with `200` and `null` instead of `404`, so the browser console and the logs stay free of it. The page reads both answers as „Serie: keine“
 -   Legacy checkout `/checkout`, step „Ergänzungen“ (ECCdigital/tickets#133): the add-ons are loaded by their ids (`GET api/:tenant/bookables/public/:id`), as the lead item is, instead of from the public list, which since backend 4.3 carries listed offers only. Add-ons without `isPublic` show again; an add-on out of reach is left out, the others stay
 -   Checkout of a bookable behind a login offers the login again when the session is gone (ECCdigital/tickets#77). The checkout fell back to the user stored from an earlier session when `auth/me` failed, so the step „Anmeldung“ said „Angemeldet“, the permission check answered 401 and booking stayed impossible until the browser cache was cleared. Now only `auth/me` decides who is signed in, and its 401 also removes the stored user
 -   Booking page, „Benutzerdefinierte Felder“: a long caption no longer runs past the card's edge and squeezes its value to one letter per line. A fact's label keeps its width up to half the row and wraps beyond it (ECCdigital/tickets#78)
