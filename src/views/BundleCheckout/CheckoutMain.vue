@@ -470,6 +470,9 @@ export default {
           this.leadItem.bookableId
         );
         this.preventBooking = false;
+        // A check that passes after a refused one - signed in anew with
+        // another account - takes the refusal back.
+        this.bookingPermission = true;
       } catch (error) {
         console.log("Error while checking checkout permissions", error);
         // `init` awaits this method, so an error without a response - a
@@ -492,9 +495,10 @@ export default {
 
         if (response.data.id) {
           this.leadItem.bookable = response.data;
+          // A restriction to named persons is not public: the permission
+          // check answers it (401, 403), and the booking itself.
           if (
             this.leadItem.bookable.permittedRoles?.length > 0 ||
-            this.leadItem.bookable.permittedUsers?.length > 0 ||
             this.leadItem.bookable.requiresLogin
           ) {
             this.loginRequired = true;
