@@ -51,7 +51,8 @@ function keycloakSessionWithDeadRefresh() {
   const transport = new DirectAuthTransport();
   transport.bindClient(vi.fn());
   transport.setKeycloakAuth();
-  keycloakService.getValidToken.mockRejectedValue(new Error("refresh failed"));
+  // keycloak-js failing to renew: `getValidToken` answers without a token
+  keycloakService.getValidToken.mockResolvedValue(null);
   return transport;
 }
 
@@ -110,3 +111,32 @@ describe.each([
     });
   }
 );
+
+describe("DirectAuthTransport.onResponseError with requests waiting on a failed renewal", () => {
+  it("rejects every request that waited for the renewal", async () => {
+    // On a public path the page stays, so a waiting request must settle
+    // instead of hanging for good.
+    locatedAt("/checkout", "?id=room-1&tenant=t");
+    const transport = new DirectAuthTransport();
+    const client = vi.fn();
+    transport.bindClient(client);
+    transport.setTokens("expired-access", "expired-refresh");
+    let failRefresh;
+    vi.spyOn(transport, "refresh").mockReturnValue(
+      new Promise((_, reject) => {
+        failRefresh = () => reject(new Error("refresh 401"));
+      })
+    );
+
+    const first = transport.onResponseError(unauthorized("auth/me"));
+    const waiting = transport.onResponseError(
+      unauthorized("api/t/bookables/public/room-1")
+    );
+    failRefresh();
+
+    await expect(first).rejects.toThrow();
+    await expect(waiting).rejects.toThrow();
+    expect(client).not.toHaveBeenCalled();
+    expect(navigations).toEqual([]);
+  });
+});

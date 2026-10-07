@@ -103,13 +103,15 @@ function loginReturnQuery(next) {
 }
 
 /**
- * The login page under the router base, with `?next=` as `loginReturnQuery`
- * builds it.
+ * Leave an internal page for the login, which returns to `next` afterwards.
+ * A public path such as the checkout stays where it is, anonymously. Both
+ * transports end a dead session through here.
  * @param {string} [next] app path incl. query; defaults to the current one
  */
-export function loginUrl(next) {
+export function leaveInternalPageForLogin(next) {
+  if (isPublicAuthPath()) return;
   const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
-  return `${base}/login${loginReturnQuery(next)}`;
+  window.location.replace(`${base}/login${loginReturnQuery(next)}`);
 }
 
 /**
@@ -132,8 +134,8 @@ export async function endAdminSession({ redirect = true, next } = {}) {
     }
 
     // Redirect first — do not wait on dynamic imports / store cleanup
-    if (redirect && typeof window !== "undefined" && !isPublicAuthPath()) {
-      window.location.replace(loginUrl(next));
+    if (redirect && typeof window !== "undefined") {
+      leaveInternalPageForLogin(next);
     }
 
     broadcastSessionEnded();
