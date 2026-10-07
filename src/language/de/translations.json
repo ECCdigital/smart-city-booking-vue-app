@@ -1186,6 +1186,8 @@
         "message": "Bitte überprüfen Sie Ihre Eingaben."
       }
     },
+    "validation-reason-unknown": "Angabe „{field}“ ungültig",
+    "transition-failed": "{message} Grund: {reasons}. | {message} Gründe: {reasons}.",
     "ical": {
       "error": {
         "title": "Fehler beim Generieren",

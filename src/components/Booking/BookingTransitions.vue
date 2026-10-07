@@ -104,6 +104,7 @@ import {
 } from "@/utils/bookingStatus";
 import {
   getApiErrorMessage,
+  getBookingValidationReasons,
   shouldRefetch,
 } from "@/services/api/apiErrorMessage";
 
@@ -409,11 +410,18 @@ export default {
 
     /** The route refused (spec E5). */
     async failTransition(action, error, errorKey) {
-      const message =
-        // `POST …/reject` answers a bad percentage with the naked string.
-        error?.response?.data === "invalid_refund_percentage"
-          ? this.$t("booking.cancellationRefund.percentageRange")
-          : getApiErrorMessage(error, this.$t(`${errorKey}.message`));
+      const fallback = this.$t(`${errorKey}.message`);
+      const reasons = getBookingValidationReasons(error);
+      let message = getApiErrorMessage(error, fallback);
+      // `POST …/reject` answers a bad percentage with the naked string.
+      if (error?.response?.data === "invalid_refund_percentage") {
+        message = this.$t("booking.cancellationRefund.percentageRange");
+      } else if (reasons.length > 0) {
+        message = this.$tc("booking.transition-failed", reasons.length, {
+          message: fallback,
+          reasons: reasons.join(", "),
+        });
+      }
       await this.addToast({
         title: this.$t(`${errorKey}.title`),
         message,
