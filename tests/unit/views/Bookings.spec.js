@@ -284,6 +284,36 @@ describe("Bookings", () => {
    * states. Nothing selected means no filter; plain component state, no
    * persistence.
    */
+  /**
+   * „Buchung erstellen“ is there only for whom the API lets create a
+   * booking (`manageBookings.create`, tenant owner, instance owner);
+   * everyone else would run into a 403.
+   */
+  describe("Buchung erstellen", () => {
+    const createButton = (wrapper) =>
+      wrapper
+        .findAll(".v-btn")
+        .wrappers.find((button) => button.text() === "Buchung erstellen");
+
+    it("is offered to whom may create a booking", async () => {
+      const { wrapper } = await mountBookings({});
+
+      expect(createButton(wrapper)).toBeDefined();
+      expect(createButton(wrapper).classes()).not.toContain("v-btn--disabled");
+    });
+
+    it("is not there without the right to create a booking", async () => {
+      BookingPermissionService.allowCreate.mockReturnValue(false);
+      try {
+        const { wrapper } = await mountBookings({});
+
+        expect(createButton(wrapper)).toBeUndefined();
+      } finally {
+        BookingPermissionService.allowCreate.mockReturnValue(true);
+      }
+    });
+  });
+
   describe("the status filter", () => {
     it("starts with nothing selected and the table shows every booking", async () => {
       const { wrapper } = await mountBookings({

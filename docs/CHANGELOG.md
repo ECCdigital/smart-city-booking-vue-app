@@ -85,6 +85,8 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Fixed
 
+-   Supervision history names an offer by its title (ECCdigital/tickets#261): a review row reads „Buchungsobjekt Großer Saal“ instead of the offer's UUID, from `offerTitle` of the history rows; an offer that is gone, or a backend without the field, still shows its id. Requires the backend that adds `offerTitle` to `GET …/supervision/history`
+-   „Buchung erstellen“ on the booking list shows only for whom may create a booking (`manageBookings.create`, tenant owner, instance owner) (ECCdigital/tickets#261). It stood there for every member, greyed out without the right, and led to a creation the API refuses with `403`
 -   Legacy checkout `/checkout`, step „Ergänzungen“ (ECCdigital/tickets#133): the add-ons are loaded by their ids (`GET api/:tenant/bookables/public/:id`), as the lead item is, instead of from the public list, which since backend 4.3 carries listed offers only. Add-ons without `isPublic` show again; an add-on out of reach is left out, the others stay
 -   Checkout of a bookable behind a login offers the login again when the session is gone (ECCdigital/tickets#77). The checkout fell back to the user stored from an earlier session when `auth/me` failed, so the step „Anmeldung“ said „Angemeldet“, the permission check answered 401 and booking stayed impossible until the browser cache was cleared. Now only `auth/me` decides who is signed in, and its 401 also removes the stored user
 -   Booking page, „Benutzerdefinierte Felder“: a long caption no longer runs past the card's edge and squeezes its value to one letter per line. A fact's label keeps its width up to half the row and wraps beyond it (ECCdigital/tickets#78)
