@@ -198,8 +198,18 @@ export default {
         }
         return this.$t("booking.cancellationRefund.groupPolicyMixed");
       }
+      const days = this.preview.daysBeforeStart;
+      // A booking without a time span has no days before its start.
+      if (days === null || days === undefined) {
+        return this.$t(
+          "booking.cancellationRefund.singlePolicyWithoutTimeSpan",
+          {
+            percentage: this.preview.suggestedRefundPercentage,
+          }
+        );
+      }
       return this.$t("booking.cancellationRefund.singlePolicy", {
-        days: this.formatDays(this.preview.daysBeforeStart),
+        days,
         percentage: this.preview.suggestedRefundPercentage,
       });
     },
