@@ -50,6 +50,17 @@ function formatUnknownAccessPoint(detail) {
 }
 
 /**
+ * The provider field is free text, so a typo reaches the backend, which
+ * refuses a provider its registry does not know. The message names what was
+ * typed, so the admin sees the typo rather than a bare code.
+ */
+function formatUnknownProvider(detail) {
+  return i18n.t("accessPoint.management.errors.unknownProvider", {
+    provider: detail.params?.provider,
+  });
+}
+
+/**
  * The Öffnungsart was saved against a lock that cannot carry it out - a device
  * swapped behind a door that keeps its configuration. The raw payload names
  * the codes only, so the message translates both what was asked for and what
@@ -89,6 +100,10 @@ function formatDetail(detail) {
 
   if (detail.code === "unknown_access_point") {
     return formatUnknownAccessPoint(detail);
+  }
+
+  if (detail.code === "unknown_provider") {
+    return formatUnknownProvider(detail);
   }
 
   if (detail.code === "unsupported_open_action") {
@@ -164,7 +179,8 @@ export function formatAccessPointErrorMessage(
     return response.data;
   }
 
-  // A blob response body (QR download) carries no readable message.
+  // A blob response body carries no readable message - the QR download
+  // unpacks its own before it gets here.
   const message = response?.data?.message;
   if (
     typeof message === "string" &&

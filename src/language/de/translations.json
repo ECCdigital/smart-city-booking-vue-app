@@ -135,7 +135,8 @@
     },
     "unavailable-codes": {
       "unavailable": "Ein angebundener Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen.",
-      "access_provider_unreachable": "{provider} ist gerade nicht erreichbar. Die Einstellung wurde nicht gespeichert. Bitte später erneut versuchen."
+      "access_provider_unreachable": "{provider} ist gerade nicht erreichbar. Die Einstellung wurde nicht gespeichert. Bitte später erneut versuchen.",
+      "store_front_url_missing": "Für diese Instanz ist keine Adresse der Storefront eingerichtet (STORE_FRONT_URL), der QR-Code lässt sich deshalb nicht erzeugen. Bitte wenden Sie sich an den Betrieb."
     },
     "interface-forbidden": {
       "title": "Kein Zugriff auf diesen Bereich",
@@ -2061,6 +2062,7 @@
         },
         "unsupportedOpenAction": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht. Möglich sind: {supportedOpenActions}.",
         "unsupportedOpenActionWithoutList": "Die Öffnungsart „{openAction}“ unterstützt dieses Schloss nicht.",
+        "unknownProvider": "Den Anbieter „{provider}“ gibt es nicht. Bitte prüfen Sie die Schreibweise oder wählen Sie einen Anbieter aus der Liste.",
         "unknownAccessPoint": "Der Zugangspunkt „{id}“ gehört nicht (mehr) zu diesem Mandanten. Bitte entfernen Sie ihn im Reiter „Schließsysteme“ aus der Auswahl."
       },
       "toasts": {
