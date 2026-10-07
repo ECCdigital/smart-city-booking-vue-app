@@ -145,15 +145,16 @@ describe("Register — back to the login", () => {
 });
 
 describe("Register — account-neutral answers", () => {
-  it("promises a mail only for an address that is not registered yet", async () => {
+  it("promises a mail only for an address that is not verified yet", async () => {
     const wrapper = mountRegister();
 
     await register(wrapper);
 
     expect(push).toHaveBeenCalledWith("/welcome/");
     expect(lastToast().type).toBe("success");
+    // ECCdigital/tickets#259: a registered, unverified address gets it too.
     expect(lastToast().message).toContain(
-      "Falls die Adresse noch nicht registriert ist"
+      "Falls die Adresse noch nicht bestätigt ist"
     );
   });
 

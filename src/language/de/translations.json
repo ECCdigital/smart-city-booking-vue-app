@@ -51,7 +51,7 @@
     "success": {
       "default": {
         "title": "Registrierung abgeschickt",
-        "message": "Falls die Adresse noch nicht registriert ist, haben wir Ihnen eine Bestätigungs-E-Mail gesendet."
+        "message": "Falls die Adresse noch nicht bestätigt ist, haben wir Ihnen eine Bestätigungs-E-Mail gesendet."
       }
     },
     "error": {
