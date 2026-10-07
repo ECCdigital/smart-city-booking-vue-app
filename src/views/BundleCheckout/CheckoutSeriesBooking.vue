@@ -109,7 +109,10 @@
                   type="date"
                   v-bind="attrs"
                   v-on="on"
-                  :rules="[(v) => !!v || 'Startdatum ist erforderlich']"
+                  :rules="[
+                    (v) => !!v || 'Startdatum ist erforderlich',
+                    (v) => !isBeforeToday(v) || dateBeforeTodayMessage(),
+                  ]"
                 ></v-text-field>
               </template>
               <v-date-picker
@@ -319,6 +322,11 @@
 <script>
 import checkoutUtils from "@/views/MultiCheckout/CheckoutUtils";
 import CheckoutTimeSelector from "@/views/BundleCheckout/CheckoutTimeSelector.vue";
+import {
+  dateBeforeTodayMessage,
+  isBeforeToday,
+  todayIso,
+} from "@/utils/checkoutDates";
 
 export default {
   name: "CheckoutSeriesBooking",
@@ -430,7 +438,7 @@ export default {
   },
   computed: {
     minBookingDate() {
-      return new Date().toISOString().split("T")[0];
+      return todayIso();
     },
     allValid() {
       return this.bookingAttempts.every((attempt) => attempt.valid);
@@ -439,7 +447,8 @@ export default {
       const isIntervalValid =
         this.seriesInterval !== null && this.seriesInterval > 0;
 
-      const isStartDateValid = !!this.seriesStartDate;
+      const isStartDateValid =
+        !!this.seriesStartDate && !isBeforeToday(this.seriesStartDate);
       const isEndDateValid =
         !!this.seriesEndDate &&
         new Date(this.seriesEndDate) >= new Date(this.seriesStartDate);
@@ -453,6 +462,8 @@ export default {
     },
   },
   methods: {
+    isBeforeToday,
+    dateBeforeTodayMessage,
     toggleWeekday(dayValue) {
       const index = this.selectedWeekdays.indexOf(dayValue);
       if (index === -1) {
@@ -583,7 +594,7 @@ export default {
     if (this.dateBeginModel) {
       this.seriesStartDate = this.dateBeginModel;
     } else {
-      this.seriesStartDate = new Date().toISOString().split("T")[0];
+      this.seriesStartDate = todayIso();
     }
 
     const endDate = new Date(this.firstBookingDate || new Date());
