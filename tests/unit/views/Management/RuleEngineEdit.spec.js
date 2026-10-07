@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
+import { button, chooseOption } from "@tests/unit/support/vuetify";
 
 vi.mock("@/services/api/ApiRuleEngineService", () => ({
   default: {
@@ -66,9 +67,10 @@ const META = {
   ],
 };
 
-async function mountNewRule() {
+async function mountEditor(params = {}) {
   ApiRuleEngineService.getMeta.mockResolvedValue(META);
   ApiRuleEngineService.createRule.mockResolvedValue({ id: "rule-1" });
+  ApiRuleEngineService.updateRule.mockResolvedValue({ id: "rule-1" });
   const store = new Vuex.Store({
     modules: {
       toasts: { namespaced: true, actions: { add: vi.fn() } },
@@ -77,7 +79,7 @@ async function mountNewRule() {
   const wrapper = mountComponent(RuleEngineEdit, {
     store,
     mocks: {
-      $route: { params: {} },
+      $route: { params },
       $router: { push: vi.fn() },
     },
     stubs: { RouterLink: true },
@@ -87,34 +89,9 @@ async function mountNewRule() {
   return wrapper;
 }
 
-async function fillName(wrapper, name) {
-  await wrapper.find("input[type=text]").setValue(name);
-}
-
-async function save(wrapper) {
-  const button = wrapper
-    .findAll("button")
-    .filter((b) => b.text().includes("Speichern"))
-    .at(0);
-  await button.trigger("click");
+async function click(wrapper, label) {
+  await button(wrapper, label).trigger("click");
   await flushPromises();
-}
-
-/** Opens the select labelled `label` and clicks the entry `entry`. */
-async function choose(wrapper, label, entry) {
-  const select = wrapper
-    .findAll(".v-select")
-    .filter((s) => s.find("label").exists() && s.find("label").text() === label)
-    .at(-1);
-  await select.find(".v-input__slot").trigger("click");
-  await wrapper.vm.$nextTick();
-  const item = Array.from(
-    document.querySelectorAll(".menuable__content__active .v-list-item")
-  ).find((el) => el.textContent.trim() === entry);
-  if (!item) throw new Error(`no entry "${entry}" in "${label}"`);
-  item.click();
-  await flushPromises();
-  await wrapper.vm.$nextTick();
 }
 
 /**
@@ -126,11 +103,11 @@ async function choose(wrapper, label, entry) {
  */
 describe("RuleEngineEdit, new rule", () => {
   it("saves the schedule it shows by default", async () => {
-    const wrapper = await mountNewRule();
+    const wrapper = await mountEditor();
     expect(wrapper.text()).toContain("0 9 * * *");
 
-    await fillName(wrapper, "Erinnerung");
-    await save(wrapper);
+    await wrapper.find("input[type=text]").setValue("Erinnerung");
+    await click(wrapper, "Speichern");
 
     expect(wrapper.text()).not.toContain(SCHEDULE_ERROR);
     expect(ApiRuleEngineService.createRule).toHaveBeenCalledWith(
@@ -139,18 +116,15 @@ describe("RuleEngineEdit, new rule", () => {
   });
 
   it("lets a new filter row filter and save by „Erstellt am“", async () => {
-    const wrapper = await mountNewRule();
-    await fillName(wrapper, "Alte Anfragen");
+    const wrapper = await mountEditor();
+    await wrapper.find("input[type=text]").setValue("Alte Anfragen");
 
-    const addFilter = wrapper
-      .findAll("button")
-      .filter((b) => b.text().includes("Filter hinzufügen"))
-      .at(0);
-    await addFilter.trigger("click");
-    await choose(wrapper, "Feld", "Erstellt am");
-    await choose(wrapper, "Operator", "kleiner als");
-    await choose(wrapper, "Wert", "Jetzt minus Zeitspanne");
-    await save(wrapper);
+    await click(wrapper, "Filter hinzufügen");
+    const filter = wrapper.findComponent({ name: "RuleQueryBuilder" });
+    await chooseOption(filter, "Feld", "Erstellt am");
+    await chooseOption(filter, "Operator", "kleiner als");
+    await chooseOption(filter, "Wert", "Jetzt minus Zeitspanne");
+    await click(wrapper, "Speichern");
 
     expect(ApiRuleEngineService.createRule).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -160,6 +134,32 @@ describe("RuleEngineEdit, new rule", () => {
           },
         },
       })
+    );
+  });
+});
+
+describe("RuleEngineEdit, existing rule", () => {
+  it("keeps its schedule and its date filter when saved unchanged", async () => {
+    const query = {
+      isPayed: false,
+      timeCreated: { $lt: { $$DATE_SUBTRACT: { unit: "day", amount: 14 } } },
+    };
+    ApiRuleEngineService.getRule.mockResolvedValue({
+      name: "Unbezahlte Buchungen",
+      enabled: false,
+      schedule: "30 6 * * 1",
+      resource: "Booking",
+      query,
+      conditions: null,
+      actions: [{ type: "test", params: {} }],
+    });
+    const wrapper = await mountEditor({ id: "rule-1" });
+
+    await click(wrapper, "Speichern");
+
+    expect(ApiRuleEngineService.updateRule).toHaveBeenCalledWith(
+      "rule-1",
+      expect.objectContaining({ schedule: "30 6 * * 1", query })
     );
   });
 });
