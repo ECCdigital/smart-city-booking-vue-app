@@ -103,6 +103,18 @@ function loginReturnQuery(next) {
 }
 
 /**
+ * Leave an internal page for the login, which returns to `next` afterwards.
+ * A public path such as the checkout stays where it is, anonymously. Both
+ * transports end a dead session through here.
+ * @param {string} [next] app path incl. query; defaults to the current one
+ */
+export function leaveInternalPageForLogin(next) {
+  if (isPublicAuthPath()) return;
+  const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
+  window.location.replace(`${base}/login${loginReturnQuery(next)}`);
+}
+
+/**
  * Clear client auth state and hard-redirect to login when needed.
  * Redirect is synchronous so bootstrap cannot keep mounting the SPA.
  * @param {{ redirect?: boolean, next?: string }} [options] `next`: the app
@@ -122,9 +134,8 @@ export async function endAdminSession({ redirect = true, next } = {}) {
     }
 
     // Redirect first — do not wait on dynamic imports / store cleanup
-    if (redirect && typeof window !== "undefined" && !isPublicAuthPath()) {
-      const base = (process.env.BASE_URL || "/").replace(/\/$/, "");
-      window.location.replace(`${base}/login${loginReturnQuery(next)}`);
+    if (redirect && typeof window !== "undefined") {
+      leaveInternalPageForLogin(next);
     }
 
     broadcastSessionEnded();
