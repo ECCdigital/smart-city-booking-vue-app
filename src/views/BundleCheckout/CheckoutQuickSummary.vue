@@ -522,9 +522,11 @@ export default {
 
     async checkout() {
       this.isSubmitting = true;
+      let booked = false;
 
       try {
         const checkoutResponse = await this.performCheckout();
+        booked = true;
         if (isAwaitingPayment(checkoutResponse.data)) {
           const paymentResponse = await this.processPayment(
             checkoutResponse.data
@@ -534,7 +536,9 @@ export default {
           await this.routeToStatus(checkoutResponse.data);
         }
       } catch (error) {
-        if (isLoginRefusal(error)) {
+        // A 401 after the booking was made (the payment) is no refusal of the
+        // completion: sending the booking again would book it twice.
+        if (!booked && isLoginRefusal(error)) {
           // ECCdigital/tickets#123: the checkout offers the sign-in again.
           this.addToast(
             ToastService.createToast(LOGIN_REQUIRED_TOAST_KEY, "error")

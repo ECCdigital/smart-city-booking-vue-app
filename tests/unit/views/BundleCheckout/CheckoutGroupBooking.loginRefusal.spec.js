@@ -9,6 +9,7 @@ import {
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import ApiPaymentService from "@/services/api/ApiPaymentService";
 import CheckoutGroupBooking from "@/views/BundleCheckout/CheckoutGroupBooking.vue";
 
 vi.mock("@/services/api/ApiAuthService", () => ({
@@ -23,7 +24,9 @@ vi.mock("@/services/api/ApiBookablesService", () => ({
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenantActivePaymentApps: vi.fn(async () => ({ data: [] })) },
 }));
-vi.mock("@/services/api/ApiPaymentService", () => ({ default: {} }));
+vi.mock("@/services/api/ApiPaymentService", () => ({
+  default: { payments: vi.fn() },
+}));
 vi.mock("@/services/api/ApiCouponService", () => ({ default: {} }));
 
 const { stub } = vi.hoisted(() => ({
@@ -129,5 +132,26 @@ describe("CheckoutGroupBooking — completion refused for want of a sign-in", ()
 
     expect(ApiCheckoutService.groupCheckout).toHaveBeenCalledTimes(1);
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("stays where it is on a 401 during the payment, so the series is not sent twice", async () => {
+    ApiCheckoutService.groupCheckout.mockResolvedValue({
+      status: 200,
+      data: {
+        bookingIds: ["bk1"],
+        bookings: [{ id: "bk1", status: "payment_due" }],
+      },
+    });
+    ApiPaymentService.payments.mockRejectedValue(unauthorizedError({}));
+    const { wrapper, addToast, push } = await mountGroupCheckout();
+
+    await performCheckout(wrapper);
+
+    expect(ApiPaymentService.payments).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
+    expect(addToast).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ title: "Anmeldung erforderlich" })
+    );
   });
 });

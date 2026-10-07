@@ -741,9 +741,11 @@ export default {
 
     async performGroupCheckout() {
       this.isSubmitting = true;
+      let booked = false;
 
       try {
         const groupBooking = await this.performGroupCheckoutRequest();
+        booked = true;
         const bookings = groupBooking.bookings || [];
 
         const bookingsToPay = payableBookings(bookings);
@@ -756,7 +758,9 @@ export default {
         }
       } catch (error) {
         console.error("Group checkout process failed:", error.message);
-        if (isLoginRefusal(error)) {
+        // A 401 after the bookings were made (the payment) is no refusal of
+        // the completion: sending the series again would book it twice.
+        if (!booked && isLoginRefusal(error)) {
           // ECCdigital/tickets#123: the group checkout has no step
           // „Anmeldung“; the single checkout of the offer starts with it.
           this.addToast(

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import CheckoutQuickSummary from "@/views/BundleCheckout/CheckoutQuickSummary.vue";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
+import ApiPaymentService from "@/services/api/ApiPaymentService";
 import { mountComponent } from "@tests/unit/support/mount";
 import {
   flushPromises,
@@ -12,7 +13,9 @@ import {
 vi.mock("@/services/api/ApiCheckoutService", () => ({
   default: { checkout: vi.fn() },
 }));
-vi.mock("@/services/api/ApiPaymentService", () => ({ default: {} }));
+vi.mock("@/services/api/ApiPaymentService", () => ({
+  default: { payments: vi.fn() },
+}));
 
 /**
  * ECCdigital/tickets#123: the backend refuses the completion of an offer
@@ -97,6 +100,22 @@ describe("CheckoutQuickSummary - completion refused for want of a sign-in", () =
 
     await submit(wrapper);
 
+    expect(wrapper.emitted("login-required")).toBeUndefined();
+    expect(addToast).toHaveBeenCalledTimes(1);
+    expect(addToast.mock.calls[0][1].title).not.toBe("Anmeldung erforderlich");
+  });
+
+  it("keeps a 401 during the payment a refusal without the sign-in, so the booking is not sent twice", async () => {
+    ApiCheckoutService.checkout.mockResolvedValue({
+      status: 200,
+      data: { id: "bk1", tenantId: "t1", status: "payment_due" },
+    });
+    ApiPaymentService.payments.mockRejectedValue(unauthorizedError({}));
+    const { wrapper, addToast } = await mountFinalCheck();
+
+    await submit(wrapper);
+
+    expect(ApiPaymentService.payments).toHaveBeenCalledTimes(1);
     expect(wrapper.emitted("login-required")).toBeUndefined();
     expect(addToast).toHaveBeenCalledTimes(1);
     expect(addToast.mock.calls[0][1].title).not.toBe("Anmeldung erforderlich");
