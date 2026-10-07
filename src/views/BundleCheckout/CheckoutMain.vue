@@ -188,17 +188,27 @@ export default {
 
     /**
      * The backend refused the completion for want of a sign-in
-     * (ECCdigital/tickets#123): the session is read again, and the checkout
-     * goes back to its step „Anmeldung“, which offers the login.
+     * (ECCdigital/tickets#123): the session is read again. An offer that
+     * needs a sign-in (`loginRequired`, from `requiresLogin` or a role) goes
+     * back to the step „Anmeldung“, which offers the login. Any other goes on
+     * as a guest (ECCdigital/tickets#110): its prices are checked again, and
+     * the contact details, which the ended session had filled, come next.
      */
     async offerLogin() {
       await this.fetchMe();
-      this.loginRequired = true;
+      if (!this.loginRequired) {
+        await this.validateItems();
+        this.steps = this.createSteps();
+        this.goToStep("checkout-contact-details");
+        return;
+      }
       this.steps = this.createSteps();
-      const signin = this.steps.findIndex(
-        (step) => step.component === "checkout-signin"
-      );
-      this.step = signin + 1;
+      this.goToStep("checkout-signin");
+    },
+
+    goToStep(component) {
+      this.step =
+        this.steps.findIndex((step) => step.component === component) + 1;
     },
 
     goToGroupBooking() {

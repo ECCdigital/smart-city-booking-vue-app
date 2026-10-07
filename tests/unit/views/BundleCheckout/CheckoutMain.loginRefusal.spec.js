@@ -37,7 +37,10 @@ vi.mock("@/views/BundleCheckout/CheckoutTimeSelector.vue", () => ({
   },
 }));
 vi.mock("@/views/BundleCheckout/CheckoutContactDetails.vue", () => ({
-  default: { name: "CheckoutContactDetails", render: (h) => h("div") },
+  default: {
+    name: "CheckoutContactDetails",
+    render: (h) => h("div", "Kontaktformular"),
+  },
 }));
 
 /**
@@ -62,7 +65,7 @@ const BOOKABLE = {
   isScheduleRelated: true,
 };
 
-async function mountCheckout() {
+async function mountCheckout(query = {}) {
   const store = new Vuex.Store({
     modules: {
       user: {
@@ -96,7 +99,7 @@ async function mountCheckout() {
     store,
     data: () => ({ step: 1 }),
     mocks: {
-      $route: { query: { tenant: "t1", id: "b1" } },
+      $route: { query: { tenant: "t1", id: "b1", ...query } },
       $router: { push: vi.fn() },
     },
   });
@@ -117,6 +120,48 @@ describe("CheckoutMain — completion refused for want of a sign-in", () => {
     });
     ApiAuthService.me.mockResolvedValue({ data: { user: USER } });
     ApiCheckoutService.getCheckoutPermissions.mockResolvedValue({});
+  });
+
+  async function refuseAtTheSummary(wrapper) {
+    wrapper.setData({ step: wrapper.vm.steps.length - 1 });
+    await flushPromises();
+    // The session is gone by the time the booking is sent.
+    ApiAuthService.me.mockRejectedValue(unauthorizedError({}));
+    wrapper
+      .findComponent({ name: "CheckoutQuickSummary" })
+      .vm.$emit("login-required");
+    await flushPromises();
+  }
+
+  it("goes back to the step „Anmeldung“ for an offer behind a role", async () => {
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: { ...BOOKABLE, requiresLogin: false, permittedRoles: ["r1"] },
+    });
+    const { wrapper } = await mountCheckout();
+
+    await refuseAtTheSummary(wrapper);
+
+    expect(wrapper.text()).toContain("Anmeldung erforderlich");
+  });
+
+  // ECCdigital/tickets#110: the person is anonymous now; only an offer that
+  // needs a sign-in leads to the step „Anmeldung“.
+  it("goes on as a guest from the contact details for an offer without a sign-in", async () => {
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: { ...BOOKABLE, requiresLogin: false },
+    });
+    const { wrapper, store } = await mountCheckout({
+      start: "1767261600000",
+      end: "1767265200000",
+    });
+    ApiCheckoutService.validateCheckoutItem.mockClear();
+
+    await refuseAtTheSummary(wrapper);
+
+    expect(wrapper.text()).not.toContain("Anmeldung erforderlich");
+    expect(wrapper.text()).toContain("Kontaktformular");
+    expect(ApiCheckoutService.validateCheckoutItem).toHaveBeenCalled();
+    expect(store.getters["user/getUser"]).toBeUndefined();
   });
 
   it("goes back to the step „Anmeldung“, which offers the login", async () => {
