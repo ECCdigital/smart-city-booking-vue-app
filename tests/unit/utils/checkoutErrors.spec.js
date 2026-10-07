@@ -35,7 +35,7 @@ describe("checkoutErrors - the Höchstmenge je Buchung", () => {
   });
 });
 
-const NOT_FOUND = "checkout.bookable_not_found";
+const NOT_FOUND_REASON = "checkout.bookable_not_found";
 const NO_LONGER_AVAILABLE =
   "Dieses Angebot ist nicht mehr verfügbar und kann nicht gebucht werden.";
 
@@ -49,19 +49,20 @@ const NO_LONGER_AVAILABLE =
 describe("checkoutErrors - an offer that is no longer available", () => {
   it("says so for the refusal of validateItem", () => {
     expect(
-      formatCheckoutValidationError({ error: NOT_FOUND, checkoutId: "c1" })
+      formatCheckoutValidationError({
+        error: NOT_FOUND_REASON,
+        checkoutId: "c1",
+      })
     ).toBe(NO_LONGER_AVAILABLE);
   });
 
   it("says so in the toast of the refused checkout", () => {
     const toast = ToastService.createToast(
-      getCheckoutErrorToastKey(NOT_FOUND),
+      getCheckoutErrorToastKey(NOT_FOUND_REASON),
       "error"
     );
 
+    expect(toast.title).toBe("Angebot nicht mehr verfügbar");
     expect(toast.message).toBe(NO_LONGER_AVAILABLE);
-    expect(toast.title).not.toBe(
-      ToastService.createToast("checkout.error.unexpected", "error").title
-    );
   });
 });
