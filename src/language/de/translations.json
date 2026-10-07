@@ -1614,6 +1614,10 @@
       "title": "Höchstmenge je Buchung überschritten",
       "message": "Die gewählte Anzahl übersteigt die Höchstmenge je Buchung für dieses Objekt."
     },
+    "bookable_not_found": {
+      "title": "Angebot nicht mehr verfügbar",
+      "message": "Dieses Angebot ist nicht mehr verfügbar und kann nicht gebucht werden."
+    },
     "amountLimit": {
       "perBooking": "Von {title} können höchstens {max} {unit} je Buchung gebucht werden.",
       "perBookingCaption": "Höchstmenge je Buchung: {max} {unit}"
