@@ -254,8 +254,8 @@ export default {
       };
       return { from: label(row.from), to: label(row.to) };
     },
-    // The offer by its type and current title; an offer that is gone has
-    // no title any more and shows by its id.
+    // The offer by its type and current title (`offerTitle`); an offer that
+    // is gone, or a backend without the field, shows by its id.
     offerLabel(row) {
       if (!row.offerType && !row.offerId) return "";
       const typeKey = offerTypeLabelKey(row.offerType);
