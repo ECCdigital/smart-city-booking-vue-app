@@ -73,6 +73,17 @@ export function validationError(details = []) {
   return error;
 }
 
+/**
+ * An axios error for a 401: the backend's refusal of a checkout for want of
+ * a sign-in (v1 answers the reason `checkout.login_required` as text), or a
+ * session that ended and could not be renewed.
+ */
+export function unauthorizedError(data = "checkout.login_required") {
+  const error = new Error("Request failed with status code 401");
+  error.response = { status: 401, data };
+  return error;
+}
+
 /** An axios error for a failure that is not a denial. */
 export function serverError(status = 500) {
   const error = new Error(`Request failed with status code ${status}`);

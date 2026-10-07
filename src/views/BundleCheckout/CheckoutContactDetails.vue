@@ -294,13 +294,10 @@ export default {
     companyLabel() {
       return this.companyRequired ? "Firma*" : "Firma";
     },
+    // By its roles alone: a restriction to named persons is not public,
+    // the backend decides it at the permission check and the booking.
     isRestrictedBookable() {
-      return (
-        (this.leadItem.bookable.permittedUsers &&
-          this.leadItem.bookable.permittedUsers.length > 0) ||
-        (this.leadItem.bookable.permittedRoles &&
-          this.leadItem.bookable.permittedRoles.length > 0)
-      );
+      return this.leadItem.bookable.permittedRoles?.length > 0;
     },
   },
 };

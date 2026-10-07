@@ -1,29 +1,20 @@
 <template>
-  <AuthPage title="Passwort zurücksetzen" icon="mdi-lock-reset">
+  <AuthPage
+    :title="link ? 'Neues Passwort festlegen' : 'Passwort zurücksetzen'"
+    icon="mdi-lock-reset"
+  >
     <v-form
+      v-if="link"
       ref="form"
       v-model="valid"
       lazy-validation
       class="scb-form"
-      @submit.prevent="resetPassword"
+      @submit.prevent="setPassword"
     >
       <p class="scb-form__note mb-4">
-        Sie erhalten eine E-Mail mit einem Link, über den Sie das neue Passwort
-        bestätigen können.
+        Legen Sie das neue Passwort für {{ link.id }} fest.
       </p>
-      <v-text-field
-        background-color="accent"
-        filled
-        dense
-        hide-details="auto"
-        label="E-Mail-Adresse"
-        :rules="emailRules"
-        v-model="id"
-        name="email"
-        type="email"
-        autocomplete="email"
-      ></v-text-field>
-      <div class="scb-form__row mt-4">
+      <div class="scb-form__row">
         <v-text-field
           background-color="accent"
           filled
@@ -59,7 +50,62 @@
         elevation="0"
         class="scb-form__submit mt-4"
       >
-        Passwort zurücksetzen
+        Passwort speichern
+      </v-btn>
+
+      <p class="scb-form__switch mt-4 mb-0">
+        <router-link :to="{ name: 'password-reset' }" class="scb-form__link">
+          Neuen Link anfordern
+        </router-link>
+      </p>
+    </v-form>
+
+    <div v-else-if="requested" class="scb-form">
+      <p class="scb-form__note mb-0">
+        Wenn zu dieser E-Mail-Adresse ein Konto besteht, erhalten Sie in Kürze
+        eine E-Mail mit einem Link, über den Sie ein neues Passwort festlegen
+        können.
+      </p>
+      <p class="scb-form__switch mt-4 mb-0">
+        <router-link :to="{ name: 'login' }" class="scb-form__link">
+          Zurück zur Anmeldung
+        </router-link>
+      </p>
+    </div>
+
+    <v-form
+      v-else
+      ref="form"
+      v-model="valid"
+      lazy-validation
+      class="scb-form"
+      @submit.prevent="requestLink"
+    >
+      <p class="scb-form__note mb-4">
+        Sie erhalten eine E-Mail mit einem Link, über den Sie ein neues Passwort
+        festlegen können.
+      </p>
+      <v-text-field
+        background-color="accent"
+        filled
+        dense
+        hide-details="auto"
+        label="E-Mail-Adresse"
+        :rules="emailRules"
+        v-model="email"
+        name="email"
+        type="email"
+        autocomplete="email"
+      ></v-text-field>
+
+      <v-btn
+        type="submit"
+        color="primary"
+        block
+        elevation="0"
+        class="scb-form__submit mt-4"
+      >
+        Link anfordern
       </v-btn>
 
       <p class="scb-form__switch mt-4 mb-0">
@@ -77,6 +123,15 @@ import { mapActions } from "vuex";
 import ToastService from "@/services/ToastService";
 import AuthPage from "@/components/Auth/AuthPage.vue";
 
+// The backend's refusal of a link that is unknown, spent or not the address's.
+const LINK_REFUSED = [400, 410];
+
+/**
+ * „Passwort vergessen“ in two steps. Without a link the page asks for the
+ * address and requests the mail; the answer is the same for every address,
+ * so the page tells nobody whether an account exists. The mail's link
+ * (`?token=…&id=…`) opens the second step, which sets the new password.
+ */
 export default {
   name: "PasswordReset",
   components: { AuthPage },
@@ -84,7 +139,8 @@ export default {
     return {
       showPassword: false,
       valid: true,
-      id: "",
+      email: "",
+      requested: false,
       password: "",
       passwordRepeat: "",
       emailRules: [
@@ -94,43 +150,48 @@ export default {
       passwordRules: [(v) => !!v || "Passwort ist erforderlich"],
     };
   },
+  computed: {
+    /** Token and address of the mail's link, or null without both. */
+    link() {
+      const { token, id } = this.$route.query;
+      return token && id ? { token, id } : null;
+    },
+  },
   methods: {
     ...mapActions({ addToast: "toasts/add" }),
-    resetPassword() {
-      // validate form
-      if (this.$refs.form.validate()) {
-        // check if passwords match
-        if (this.password === this.passwordRepeat) {
-          // call api
-          ApiAuthService.resetPassword(this.id, this.password)
-            .then(() => {
-              this.addToast(
-                ToastService.createToast("password.reset.success", "success")
-              );
-              this.$router.push("/login");
-            })
-            .catch((err) => {
-              if (err.response.status === 404) {
-                this.addToast(
-                  ToastService.createToast(
-                    "password.reset.wrong-email",
-                    "error"
-                  )
-                );
-              } else {
-                this.addToast(
-                  ToastService.createToast("password.reset.error", "error")
-                );
-              }
-            });
-        } else {
-          this.addToast(
-            ToastService.createToast(
-              "password.reset.password-mismatch",
-              "error"
-            )
-          );
-        }
+    async requestLink() {
+      if (!this.$refs.form.validate()) return;
+      try {
+        await ApiAuthService.forgotPassword(this.email);
+        this.requested = true;
+      } catch {
+        this.addToast(
+          ToastService.createToast("password.reset.error", "error")
+        );
+      }
+    },
+    async setPassword() {
+      if (!this.$refs.form.validate()) return;
+      if (this.password !== this.passwordRepeat) {
+        this.addToast(
+          ToastService.createToast("password.reset.password-mismatch", "error")
+        );
+        return;
+      }
+      try {
+        await ApiAuthService.resetPasswordWithToken({
+          ...this.link,
+          password: this.password,
+        });
+        this.addToast(
+          ToastService.createToast("password.reset.done", "success")
+        );
+        this.$router.push({ name: "login" });
+      } catch (err) {
+        const key = LINK_REFUSED.includes(err.response?.status)
+          ? "password.reset.link-invalid"
+          : "password.reset.error";
+        this.addToast(ToastService.createToast(key, "error"));
       }
     },
   },
