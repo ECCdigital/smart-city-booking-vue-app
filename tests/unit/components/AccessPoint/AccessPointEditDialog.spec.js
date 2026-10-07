@@ -831,6 +831,43 @@ describe("AccessPointEditDialog", () => {
   });
 
   /**
+   * The provider field stays a free-text combobox: a provider the tenant has
+   * not switched on yet is typed in by hand. A typo is refused by the backend
+   * (`400 unknown_provider`, tickets#272), and the alert names it instead of
+   * the generic save failure.
+   */
+  describe("when the backend does not know the provider", () => {
+    it("sends the typed-in provider and names it in the save alert", async () => {
+      ApiAccessPointService.storeAccessPoint.mockRejectedValue(
+        validationError([
+          {
+            field: "provider",
+            code: "unknown_provider",
+            params: { provider: "dummy" },
+          },
+        ])
+      );
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [] });
+      const wrapper = await mountDialog({ accessPoint: DOOR, providers: [] });
+
+      const providerInput = wrapper.find(".provider-field input");
+      providerInput.setValue("dummy");
+      await providerInput.trigger("keydown.enter");
+      await wrapper.vm.$nextTick();
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+      expect(payload.provider).toBe("dummy");
+      expect(dialogText(wrapper)).toContain(
+        "Den Anbieter „dummy“ gibt es nicht. Bitte prüfen Sie die Schreibweise oder wählen Sie einen Anbieter aus der Liste."
+      );
+      expect(wrapper.emitted("saved")).toBeUndefined();
+    });
+  });
+
+  /**
    * An Anlage shows the one id field its provider reads - iFBS a location,
    * Pareva a product - and no "Standort-ID beim Anbieter", which no provider
    * reads. Created, it goes out without one, whatever the listing offered
