@@ -214,6 +214,40 @@ export function shouldRefetch(error) {
 }
 
 /**
+ * The text of one detail of a booking's 400 `ValidationError`
+ * (`booking.validation.<field>.<code>.<part>`, `part` being `title` or
+ * `message`), or `null` when the table has no entry for it. The booking form's
+ * toasts and the transitions' reasons both read it here.
+ */
+export function bookingValidationText(detail, part) {
+  const key = `booking.validation.${detail?.field}.${detail?.code}.${part}`;
+  return i18n.te(key) ? i18n.t(key, detail.params) : null;
+}
+
+/**
+ * The reasons of a booking's 400 `ValidationError` (`details[]` with field and
+ * code): the stored booking does not pass the backend's schema, so a
+ * transition could not write it. Each detail reads as the title of the booking
+ * form's validation table, a field without one by its name. Any other error
+ * has none.
+ */
+export function getBookingValidationReasons(error) {
+  const data = error?.response?.data;
+  if (
+    error?.response?.status !== 400 ||
+    data?.error !== "ValidationError" ||
+    !Array.isArray(data.details)
+  ) {
+    return [];
+  }
+  return data.details.map(
+    (detail) =>
+      bookingValidationText(detail, "title") ??
+      i18n.t("booking.validation-reason-unknown", { field: detail.field })
+  );
+}
+
+/**
  * Extract a displayable message from an axios error response. A 400 with a
  * plain-text body (e.g. the server-side PDF template validation of
  * `PUT /api/tenants`) returns that text, a 403 the message translated over

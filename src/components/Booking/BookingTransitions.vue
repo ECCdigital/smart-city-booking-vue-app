@@ -92,7 +92,6 @@ import ProcessingService from "@/services/ProcessingService";
 import ToastService from "@/services/ToastService";
 import {
   getBookingErrorMessage,
-  getBookingValidationReasons,
   getGroupBookingErrorMessage,
 } from "@/utils/errorMessages";
 import {
@@ -105,6 +104,7 @@ import {
 } from "@/utils/bookingStatus";
 import {
   getApiErrorMessage,
+  getBookingValidationReasons,
   shouldRefetch,
 } from "@/services/api/apiErrorMessage";
 
