@@ -319,6 +319,32 @@ describe("BookingTransitions", () => {
       );
     });
 
+    it("names the deviating members of a state mismatch as the 409 does", async () => {
+      const { wrapper } = mountTransitions();
+      ApiGroupBookingService.commitGroupBooking.mockResolvedValue({
+        success: false,
+        data: null,
+        errors: [
+          {
+            code: "STATUS_MISMATCH",
+            meta: { status: "requested", bookingIds: ["bk-2", "bk-3"] },
+          },
+        ],
+      });
+
+      await start(wrapper, "confirm", series());
+      await clickDialogButton(wrapper, "Serie freigeben");
+
+      const expected =
+        "Die Buchungen haben unterschiedliche Status. Betroffene Buchungen: bk-2, bk-3";
+      expect(wrapper.emitted("failed")[0][0]).toMatchObject({
+        message: expected,
+      });
+      expect(dialog(wrapper, "GroupBookingCommitDialog").props("error")).toBe(
+        expected
+      );
+    });
+
     describe("while the members are in mixed states", () => {
       const mixed = () => series([{}, { id: "bk-2", status: "confirmed" }]);
 

@@ -609,6 +609,35 @@ describe("BookingPage", () => {
       expect(payment).toMatch(/20,00\s€/);
     });
 
+    it("counts no days before the start in the refund audit of a booking without a time span", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          status: "cancelled",
+          timeBegin: null,
+          timeEnd: null,
+          // as the backend stored it before 4.3.1: counted from 01.01.1970
+          cancellationRefund: {
+            originalAmountEur: 25,
+            refundAmountEur: 25,
+            cancellationFeeEur: 0,
+            suggestedRefundPercentage: 100,
+            appliedRefundPercentage: 100,
+            daysBeforeStart: -20728,
+          },
+        }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      const policy = wrapper
+        .find(".booking-page__payment .cancellation-refund-panel__policy")
+        .text();
+      expect(policy).toBe(
+        "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt 100 % Erstattung vor."
+      );
+      expect(wrapper.text()).not.toContain("-20728");
+    });
+
     it("shows the refund state under the refund audit and reloads after the tick", async () => {
       ApiBookingService.getBooking.mockResolvedValue({
         data: booking({

@@ -51,7 +51,7 @@
     "success": {
       "default": {
         "title": "Registrierung abgeschickt",
-        "message": "Falls die Adresse noch nicht registriert ist, haben wir Ihnen eine Bestätigungs-E-Mail gesendet."
+        "message": "Falls die Adresse noch nicht bestätigt ist, haben wir Ihnen eine Bestätigungs-E-Mail gesendet."
       }
     },
     "error": {
@@ -1012,6 +1012,7 @@
       "refundShare": "{percentage} % Erstattung",
       "cancelledAt": "Storniert am",
       "auditOverride": "Bei {days} Kalendertagen bis zum Beginn schlug die Mandantenregel {suggested} % vor. Angewendet wurden {applied} % (Admin-Überschreibung).",
+      "auditOverrideWithoutTimeSpan": "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlug {suggested} % vor. Angewendet wurden {applied} % (Admin-Überschreibung).",
       "booking": "Buchung",
       "date": "Termin",
       "days": "Tage",
@@ -1020,6 +1021,7 @@
       "overridePercentage": "Einheitliche Erstattung",
       "percentageRange": "Der Wert muss zwischen 0 und 100 liegen",
       "singlePolicy": "Bei {days} Kalendertagen bis zum Beginn schlägt die Mandantenregel {percentage} % Erstattung vor.",
+      "singlePolicyWithoutTimeSpan": "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt {percentage} % Erstattung vor.",
       "userPolicySummary": "Bei {days} Kalendertagen bis zum Beginn beträgt die Erstattung {percentage} %.",
       "groupPolicySingle": "Die Mandantenregel schlägt für alle Buchungen der Serie {percentage} % Erstattung vor.",
       "groupPolicyMixed": "Pro Termin (chronologisch nach Buchungsbeginn) können unterschiedliche Erstattungswerte gelten. Ohne Überschreibung werden die Einzelwerte je Termin angewendet.",
@@ -1617,6 +1619,10 @@
     "max_amount_per_booking_exceeded": {
       "title": "Höchstmenge je Buchung überschritten",
       "message": "Die gewählte Anzahl übersteigt die Höchstmenge je Buchung für dieses Objekt."
+    },
+    "bookable_not_found": {
+      "title": "Angebot nicht mehr verfügbar",
+      "message": "Dieses Angebot ist nicht mehr verfügbar und kann nicht gebucht werden."
     },
     "amountLimit": {
       "perBooking": "Von {title} können höchstens {max} {unit} je Buchung gebucht werden.",

@@ -366,14 +366,12 @@ const routes = [
     },
   },
   {
+    // The direct link of an event (review queue, „Verwendung“ in the media
+    // library). Form and steps are the children of `event-create`, so the link
+    // opens the first step with the event's id, as the event list does.
     path: "/events/edit",
     name: "event-edit",
-    component: EventCreate,
-    meta: {
-      title: "Veranstaltung bearbeiten",
-      requiresAuth: true,
-      interfaceName: "events",
-    },
+    redirect: (to) => ({ name: "event-create-information", query: to.query }),
   },
   {
     path: "/events/create",
