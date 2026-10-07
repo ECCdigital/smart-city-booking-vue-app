@@ -478,9 +478,10 @@ export default {
 
         if (response.data.id) {
           this.leadItem.bookable = response.data;
+          // A restriction to named persons is not public: the permission
+          // check answers it (401, 403), and the booking itself.
           if (
             this.leadItem.bookable.permittedRoles?.length > 0 ||
-            this.leadItem.bookable.permittedUsers?.length > 0 ||
             this.leadItem.bookable.requiresLogin
           ) {
             this.loginRequired = true;

@@ -173,3 +173,85 @@ describe("CheckoutMain — a permission check that passes after a refusal", () =
     expect(wrapper.text()).toContain(NOT_BOOKABLE);
   });
 });
+
+/**
+ * ECCdigital/tickets#260: the public bookable no longer carries the list of
+ * permitted persons (`permittedUsers`). Whether a person may book is the
+ * backend's decision - the permission check and the booking itself - not
+ * the checkout's reading of that list.
+ */
+describe("CheckoutMain — the permission is the backend's, not the list of permitted persons", () => {
+  const NAMED_PERSONS_ONLY = {
+    ...BOOKABLE,
+    permittedRoles: [],
+  };
+
+  function unauthorized() {
+    const error = new Error("Request failed with status code 401");
+    error.response = { status: 401, data: {} };
+    return error;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    ApiCheckoutService.validateCheckoutItem.mockResolvedValue({
+      status: 200,
+      data: {},
+    });
+  });
+
+  it("asks no login of a signed-in person the check lets through, even if an older backend still names the persons", async () => {
+    ApiAuthService.me.mockResolvedValue({ data: { user: SECOND } });
+    ApiCheckoutService.getCheckoutPermissions.mockResolvedValue({});
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: { ...NAMED_PERSONS_ONLY, permittedUsers: [SECOND.id] },
+    });
+
+    const wrapper = await mountCheckout();
+
+    expect(stepperHeader(wrapper)).toContain("Kontaktdaten");
+    expect(stepperHeader(wrapper)).not.toContain("Anmeldung");
+    expect(wrapper.text()).toContain("Kontaktdaten-Formular");
+  });
+
+  it("asks the anonymous for a login when the check answers 401, without the list", async () => {
+    ApiAuthService.me.mockRejectedValue(unauthorized());
+    ApiCheckoutService.getCheckoutPermissions.mockRejectedValue(unauthorized());
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: NAMED_PERSONS_ONLY,
+    });
+
+    const wrapper = await mountCheckout();
+
+    expect(wrapper.text()).toContain("Anmeldung erforderlich");
+    expect(wrapper.text()).not.toContain("Kontaktdaten-Formular");
+  });
+
+  it("refuses a signed-in person the check refuses, without the list", async () => {
+    ApiAuthService.me.mockResolvedValue({ data: { user: FIRST } });
+    ApiCheckoutService.getCheckoutPermissions.mockRejectedValue(
+      forbiddenError()
+    );
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: NAMED_PERSONS_ONLY,
+    });
+
+    const wrapper = await mountCheckout();
+
+    expect(wrapper.text()).toContain(NOT_BOOKABLE);
+    expect(wrapper.text()).not.toContain("Kontaktdaten-Formular");
+  });
+
+  it("still asks a login for a bookable restricted to roles", async () => {
+    ApiAuthService.me.mockResolvedValue({ data: { user: SECOND } });
+    ApiCheckoutService.getCheckoutPermissions.mockResolvedValue({});
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: BOOKABLE,
+    });
+
+    const wrapper = await mountCheckout();
+
+    expect(stepperHeader(wrapper)).toContain("Anmeldung");
+  });
+});
