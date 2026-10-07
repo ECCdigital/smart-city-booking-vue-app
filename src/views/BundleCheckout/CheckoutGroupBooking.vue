@@ -71,7 +71,11 @@ import ApiCouponService from "@/services/api/ApiCouponService";
 import BookingSidebar from "@/views/BundleCheckout/BookingSidebar.vue";
 import ToastService from "@/services/ToastService";
 import { isTimeDependentBookable } from "@/utils/bookableBookingMode";
-import { formatCheckoutValidationError } from "@/utils/checkoutErrors";
+import {
+  formatCheckoutValidationError,
+  isLoginRefusal,
+  LOGIN_REQUIRED_TOAST_KEY,
+} from "@/utils/checkoutErrors";
 
 export default {
   name: "CheckoutGroupBooking",
@@ -411,6 +415,24 @@ export default {
       });
     },
 
+    /**
+     * Back to the single checkout, which offers the sign-in (`login=1`,
+     * ECCdigital/tickets#123) and keeps the time of the first booking. The
+     * series itself is set up again after the sign-in.
+     */
+    backToSignIn() {
+      const { timeBegin, timeEnd } = this.$route.query;
+      this.$router.push({
+        name: "checkout",
+        query: {
+          id: this.leadItem.bookableId,
+          tenant: this.tenantId,
+          login: "1",
+          ...(timeBegin && timeEnd ? { start: timeBegin, end: timeEnd } : {}),
+        },
+      });
+    },
+
     async generateSeriesBookings(data) {
       this.bookingAttempts = [];
 
@@ -606,10 +628,7 @@ export default {
 
         if (response.data.id) {
           this.leadItem.bookable = response.data;
-          if (
-            this.leadItem.bookable.permittedRoles?.length > 0 ||
-            this.leadItem.bookable.permittedUsers?.length > 0
-          ) {
+          if (this.leadItem.bookable.permittedRoles?.length > 0) {
             this.loginRequired = true;
           }
         }
@@ -737,9 +756,11 @@ export default {
 
     async performGroupCheckout() {
       this.isSubmitting = true;
+      let booked = false;
 
       try {
         const groupBooking = await this.performGroupCheckoutRequest();
+        booked = true;
         const bookings = groupBooking.bookings || [];
 
         const bookingsToPay = payableBookings(bookings);
@@ -752,6 +773,16 @@ export default {
         }
       } catch (error) {
         console.error("Group checkout process failed:", error.message);
+        // A 401 after the bookings were made (the payment) is no refusal of
+        // the completion: sending the series again would book it twice.
+        if (!booked && isLoginRefusal(error)) {
+          // ECCdigital/tickets#123: the group checkout has no step
+          // „Anmeldung“; the single checkout of the offer starts with it.
+          this.addToast(
+            ToastService.createToast(LOGIN_REQUIRED_TOAST_KEY, "error")
+          );
+          this.backToSignIn();
+        }
       } finally {
         this.isSubmitting = false;
       }

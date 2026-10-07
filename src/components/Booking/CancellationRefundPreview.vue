@@ -89,6 +89,7 @@
 <script>
 import CancellationRefundPanel from "@/components/Booking/CancellationRefundPanel.vue";
 import FormatService from "@/services/FormatService";
+import { refundPolicyText } from "@/utils/cancellationRefund";
 
 export default {
   name: "CancellationRefundPreview",
@@ -198,8 +199,8 @@ export default {
         }
         return this.$t("booking.cancellationRefund.groupPolicyMixed");
       }
-      return this.$t("booking.cancellationRefund.singlePolicy", {
-        days: this.formatDays(this.preview.daysBeforeStart),
+      return refundPolicyText("singlePolicy", {
+        days: this.preview.daysBeforeStart,
         percentage: this.preview.suggestedRefundPercentage,
       });
     },

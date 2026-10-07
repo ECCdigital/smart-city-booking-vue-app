@@ -409,7 +409,7 @@ import {
   groupBookingStatus,
   isFree,
   mixedCounts,
-  paymentLabel,
+  paymentStatusLabel,
   seriesActionLabel,
   seriesPathOf,
   statusColor,
@@ -490,12 +490,12 @@ export default {
     totalPriceEur() {
       return totalPriceOf(this.members);
     },
-    /** `paymentLabel` over the members: their shared word, Nein where they differ. */
+    /** `paymentStatusLabel` over the members: their shared word, Nicht bezahlt where they differ. */
     paymentStatus() {
-      const labels = [...new Set(this.members.map(paymentLabel))];
+      const labels = [...new Set(this.members.map(paymentStatusLabel))];
       return labels.length === 1
         ? labels[0]
-        : this.$t("booking.payment.unpaid");
+        : this.$t("booking.payment.status.unpaid");
     },
     /** The members' payment method where they share one. */
     paymentMethod() {
