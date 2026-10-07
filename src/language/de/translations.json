@@ -1208,7 +1208,11 @@
     },
     "payment": {
       "paid": "Ja",
-      "unpaid": "Nein"
+      "unpaid": "Nein",
+      "status": {
+        "paid": "Bezahlt",
+        "unpaid": "Nicht bezahlt"
+      }
     },
     "cancellationReceipt": {
       "title": "Stornobelege",

@@ -397,7 +397,7 @@ import {
 } from "@/utils/paymentLabels";
 import {
   pathOf,
-  paymentLabel,
+  paymentStatusLabel,
   transitionActions,
   transitionTarget,
 } from "@/utils/bookingStatus";
@@ -465,7 +465,7 @@ export default {
       )}`;
     },
     paymentStatus() {
-      return paymentLabel(this.booking);
+      return paymentStatusLabel(this.booking);
     },
     paymentMethod() {
       return paymentMethodLabel(this.booking.paymentMethod);

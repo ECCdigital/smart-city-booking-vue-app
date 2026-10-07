@@ -213,6 +213,16 @@ function buttonLabelled(wrapper, label) {
     .filter((button) => button.text().includes(label)).wrappers[0];
 }
 
+/** The value beside „Zahlungsstatus“ in the Zahlung block. */
+function paymentStatus(wrapper) {
+  const fact = wrapper
+    .find(".booking-page__payment")
+    .findAll(".booking-fact")
+    .filter((f) => f.find(".booking-fact__label").text() === "Zahlungsstatus")
+    .at(0);
+  return fact.find(".booking-fact__value").text();
+}
+
 describe("BookingPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -537,7 +547,7 @@ describe("BookingPage", () => {
 
       const payment = wrapper.find(".booking-page__payment").text();
       expect(payment).toMatch(/25,00\s€/);
-      expect(payment).toContain("Nein");
+      expect(paymentStatus(wrapper)).toBe("Nicht bezahlt");
       expect(payment).toContain("Bar");
       expect(payment).toContain("Manuelle Zahlung");
 
@@ -546,6 +556,22 @@ describe("BookingPage", () => {
       expect(details).toContain("Selbststornierung erlaubt");
       expect(details).toContain("Serie");
     });
+
+    it.each([
+      ["confirmed", { priceEur: 25 }, "Bezahlt"],
+      ["payment_due", { priceEur: 25 }, "Nicht bezahlt"],
+      ["confirmed", { priceEur: 0 }, "Kostenfrei"],
+    ])(
+      "names the Zahlungsstatus of a booking at %s %o as %s, not Ja/Nein",
+      async (status, extra, word) => {
+        ApiBookingService.getBooking.mockResolvedValue({
+          data: booking({ status, ...extra }),
+        });
+        const { wrapper } = mountPage();
+        await settle(wrapper);
+        expect(paymentStatus(wrapper)).toBe(word);
+      }
+    );
 
     it("offers the Zahlungslink while an online payment is pending, and the refund audit once cancelled", async () => {
       ApiBookingService.getBooking.mockResolvedValue({
