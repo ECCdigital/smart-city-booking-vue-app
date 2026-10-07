@@ -225,6 +225,16 @@ function spyOnStart(wrapper) {
     .mockImplementation(() => {});
 }
 
+/** The value beside „Zahlungsstatus“ in the Zahlung block. */
+function paymentStatus(wrapper) {
+  const fact = wrapper
+    .find(".group-booking-page__payment")
+    .findAll(".booking-fact")
+    .filter((f) => f.find(".booking-fact__label").text() === "Zahlungsstatus")
+    .at(0);
+  return fact.find(".booking-fact__value").text();
+}
+
 function toolbar(wrapper) {
   return wrapper.find(".admin-layout-header");
 }
@@ -620,8 +630,20 @@ describe("GroupBookingPage", () => {
       expect(strip).toContain("erika@example.org");
       const payment = wrapper.find(".group-booking-page__payment").text();
       expect(payment).toMatch(/75,00\s€/);
-      expect(payment).toContain("Ja");
+      expect(paymentStatus(wrapper)).toBe("Bezahlt");
     });
+
+    it.each([
+      [["payment_due", "payment_due"], "Nicht bezahlt"],
+      [["confirmed", "payment_due"], "Nicht bezahlt"],
+      [[{ status: "confirmed", priceEur: 0 }], "Kostenfrei"],
+    ])(
+      "names the Zahlungsstatus of members %j as %s, not Ja/Nein",
+      async (statuses, word) => {
+        const { wrapper } = await mountLoaded(series(statuses));
+        expect(paymentStatus(wrapper)).toBe(word);
+      }
+    );
 
     it("reads the range off date strings as well", async () => {
       const { wrapper } = await mountLoaded(
