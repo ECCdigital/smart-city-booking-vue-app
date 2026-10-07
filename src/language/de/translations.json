@@ -1604,7 +1604,7 @@
     },
     "login_required": {
       "title": "Anmeldung erforderlich",
-      "message": "Für diese Buchung müssen Sie angemeldet sein. Bitte melden Sie sich an und senden Sie die Buchung erneut."
+      "message": "Für diese Buchung müssen Sie angemeldet sein, oder Ihre Anmeldung ist abgelaufen. Bitte melden Sie sich an und senden Sie die Buchung erneut."
     },
     "block_period_mismatch": {
       "title": "Ungültiger Zeitraum",

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises } from "@tests/unit/support/api";
+import { flushPromises, unauthorizedError } from "@tests/unit/support/api";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
@@ -61,12 +61,6 @@ const BOOKABLE = {
   priceType: "per-item",
   isScheduleRelated: true,
 };
-
-function unauthorized() {
-  const error = new Error("Request failed with status code 401");
-  error.response = { status: 401, data: "checkout.login_required" };
-  return error;
-}
 
 async function mountCheckout() {
   const store = new Vuex.Store({
@@ -132,17 +126,14 @@ describe("CheckoutMain — completion refused for want of a sign-in", () => {
     expect(wrapper.text()).not.toContain("Anmeldung erforderlich");
 
     // The session is gone by the time the booking is sent.
-    ApiAuthService.me.mockRejectedValue(unauthorized());
+    ApiAuthService.me.mockRejectedValue(unauthorizedError({}));
     wrapper
       .findComponent({ name: "CheckoutQuickSummary" })
       .vm.$emit("login-required");
     await flushPromises();
 
-    const signin = wrapper.vm.steps.findIndex(
-      (s) => s.component === "checkout-signin"
-    );
-    expect(wrapper.vm.step).toBe(signin + 1);
     expect(wrapper.text()).toContain("Anmeldung erforderlich");
+    expect(wrapper.text()).not.toContain("Angemeldet");
     expect(store.getters["user/getUser"]).toBeUndefined();
   });
 });

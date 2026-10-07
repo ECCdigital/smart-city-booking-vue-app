@@ -57,7 +57,6 @@ export function isLoginRefusal(error) {
   return error?.response?.status === 401;
 }
 
-/** The toast of a completion refused for want of a sign-in. */
 export const LOGIN_REQUIRED_TOAST_KEY = "checkout.login_required";
 
 export function getCheckoutErrorToastKey(data) {

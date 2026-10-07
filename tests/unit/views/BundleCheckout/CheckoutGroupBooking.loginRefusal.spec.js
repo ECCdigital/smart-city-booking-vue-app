@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Vuex from "vuex";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises } from "@tests/unit/support/api";
+import {
+  flushPromises,
+  serverError,
+  unauthorizedError,
+} from "@tests/unit/support/api";
 import ApiAuthService from "@/services/api/ApiAuthService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
@@ -61,12 +65,6 @@ const BOOKABLE = {
   checkoutBookableIds: [],
 };
 
-function refusal(status, data) {
-  const error = new Error(`Request failed with status code ${status}`);
-  error.response = { status, data };
-  return error;
-}
-
 async function mountGroupCheckout() {
   const addToast = vi.fn();
   const push = vi.fn();
@@ -100,16 +98,14 @@ describe("CheckoutGroupBooking — completion refused for want of a sign-in", ()
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, "error").mockImplementation(() => {});
-    ApiAuthService.me.mockRejectedValue(refusal(401, {}));
+    ApiAuthService.me.mockRejectedValue(unauthorizedError({}));
     ApiBookablesService.getPublicBookable.mockResolvedValue({
       data: BOOKABLE,
     });
   });
 
   it("names the sign-in and goes back to the single checkout, which offers it", async () => {
-    ApiCheckoutService.groupCheckout.mockRejectedValue(
-      refusal(401, "checkout.login_required")
-    );
+    ApiCheckoutService.groupCheckout.mockRejectedValue(unauthorizedError());
     const { wrapper, addToast, push } = await mountGroupCheckout();
 
     await performCheckout(wrapper);
@@ -126,9 +122,7 @@ describe("CheckoutGroupBooking — completion refused for want of a sign-in", ()
   });
 
   it("stays where it is on any other refusal", async () => {
-    ApiCheckoutService.groupCheckout.mockRejectedValue(
-      refusal(409, "Booking not possible")
-    );
+    ApiCheckoutService.groupCheckout.mockRejectedValue(serverError(409));
     const { wrapper, push } = await mountGroupCheckout();
 
     await performCheckout(wrapper);

@@ -3,7 +3,11 @@ import Vuex from "vuex";
 import CheckoutQuickSummary from "@/views/BundleCheckout/CheckoutQuickSummary.vue";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises } from "@tests/unit/support/api";
+import {
+  flushPromises,
+  serverError,
+  unauthorizedError,
+} from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiCheckoutService", () => ({
   default: { checkout: vi.fn() },
@@ -16,18 +20,6 @@ vi.mock("@/services/api/ApiPaymentService", () => ({ default: {} }));
  * the session ended on the way and its renewal failed. The checkout says so
  * and hands over to the sign-in instead of a generic error.
  */
-
-function loginRefusal() {
-  const error = new Error("Request failed with status code 401");
-  error.response = { status: 401, data: "checkout.login_required" };
-  return error;
-}
-
-function conflict() {
-  const error = new Error("Request failed with status code 409");
-  error.response = { status: 409, data: "Booking not possible" };
-  return error;
-}
 
 const leadItem = {
   bookableId: "login-room",
@@ -86,7 +78,7 @@ describe("CheckoutQuickSummary - completion refused for want of a sign-in", () =
   });
 
   it("names the sign-in and hands over to it", async () => {
-    ApiCheckoutService.checkout.mockRejectedValue(loginRefusal());
+    ApiCheckoutService.checkout.mockRejectedValue(unauthorizedError());
     const { wrapper, addToast } = await mountFinalCheck();
 
     await submit(wrapper);
@@ -100,7 +92,7 @@ describe("CheckoutQuickSummary - completion refused for want of a sign-in", () =
   });
 
   it("keeps any other refusal a refusal without the sign-in", async () => {
-    ApiCheckoutService.checkout.mockRejectedValue(conflict());
+    ApiCheckoutService.checkout.mockRejectedValue(serverError(409));
     const { wrapper, addToast } = await mountFinalCheck();
 
     await submit(wrapper);
