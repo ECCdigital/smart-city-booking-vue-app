@@ -123,6 +123,22 @@ describe("LoginCard — an account that is not verified yet", () => {
     }
   });
 
+  it("answers an unknown account like a wrong password", async () => {
+    // Backend 4.3.1 refuses an unknown account, a wrong password and an SSO
+    // account alike (ECCdigital/tickets#259).
+    ApiAuthService.login.mockRejectedValueOnce(
+      refused(401, { message: "Invalid email or password" })
+    );
+    const wrapper = mountCard();
+
+    await signIn(wrapper);
+
+    const toast = addToast.mock.calls.at(-1)[1];
+    expect(toast.type).toBe("error");
+    expect(toast.title).toBe("Falsche E-Mail/Passwort");
+    expect(find(wrapper, "verification-required").exists()).toBe(false);
+  });
+
   it("withdraws the offer with the next sign-in", async () => {
     ApiAuthService.login.mockRejectedValueOnce(notVerified);
     const wrapper = mountCard();

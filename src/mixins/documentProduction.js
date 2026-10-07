@@ -22,7 +22,8 @@ export default {
       try {
         const response = await call();
         if (response && response.success === false) {
-          this.errors[group] = errorMessage(response.errors?.[0]?.code);
+          const [first] = response.errors || [];
+          this.errors[group] = errorMessage(first?.code, first?.meta);
           await this.addToast(ToastService.createToast(errorKey, "error"));
           return;
         }

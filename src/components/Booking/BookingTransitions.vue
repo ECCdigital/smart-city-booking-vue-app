@@ -401,7 +401,7 @@ export default {
       const code = errors?.[0]?.code;
       const message = code
         ? group
-          ? getGroupBookingErrorMessage(code)
+          ? getGroupBookingErrorMessage(code, errors[0].meta)
           : getBookingErrorMessage(code)
         : this.$t(`${errorKey}.message`);
       await this.addToast(ToastService.createToast(errorKey, "error"));

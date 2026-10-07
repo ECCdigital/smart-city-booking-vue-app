@@ -130,12 +130,22 @@ function getConflictMessage(data) {
     message = i18n.t(GENERIC_CONFLICT_KEY);
   }
 
-  if (Array.isArray(params.bookingIds) && params.bookingIds.length > 0) {
-    message += ` ${i18n.t(DIVERGING_BOOKINGS_KEY, {
-      ids: params.bookingIds.join(", "),
-    })}`;
+  return withDivergingBookings(message, params.bookingIds);
+}
+
+/**
+ * A message with the members of a group that deviate from its state named
+ * after it („Betroffene Buchungen: …“), as the 409 of a group transition and
+ * the 200 `STATUS_MISMATCH` of its consistency check send them; the message
+ * alone without any.
+ */
+export function withDivergingBookings(message, bookingIds) {
+  if (!Array.isArray(bookingIds) || bookingIds.length === 0) {
+    return message;
   }
-  return message;
+  return `${message} ${i18n.t(DIVERGING_BOOKINGS_KEY, {
+    ids: bookingIds.join(", "),
+  })}`;
 }
 
 /**

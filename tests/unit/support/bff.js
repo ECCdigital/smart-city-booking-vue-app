@@ -29,6 +29,15 @@ export function accessTokenAnswering(status) {
   return `answers-${status}`;
 }
 
+/**
+ * The current password the stub backend's `POST /auth/resetpassword` takes
+ * for the session of `VALID_ACCESS_TOKEN`.
+ */
+export const CURRENT_PASSWORD = "bisheriges-passwort";
+
+/** The token of the mail's link the stub backend's `POST /auth/reset-password` takes. */
+export const RESET_TOKEN = "hook-aus-der-mail";
+
 /** Keycloak as the stub backend's public instance config names it. */
 export const KEYCLOAK = {
   realm: "biletado",
@@ -100,6 +109,38 @@ async function startBackendStub() {
       return res.status(401).json({ message: "Unauthorized" });
     }
     return res.json({ id: "owner@example.de" });
+  });
+
+  // The password change of the signed-in account (backend 4.3.1): a
+  // session and the current password, or nothing changes.
+  app.post("/auth/resetpassword", express.json(), (req, res) => {
+    if (req.get("authorization") !== `Bearer ${VALID_ACCESS_TOKEN}`) {
+      return res.status(401).json({ message: "Access token required" });
+    }
+    if (req.body?.currentPassword !== CURRENT_PASSWORD) {
+      return res.status(403).send("Current password is wrong");
+    }
+    return res.sendStatus(200);
+  });
+
+  // „Passwort vergessen“ (backend 4.3.1): public, answers every address
+  // alike, and echoes what it got so a spec sees what the BFF forwarded.
+  app.post("/auth/forgot-password", express.json(), (req, res) => {
+    return res
+      .status(200)
+      .json({ received: req.body, message: "If the email exists" });
+  });
+
+  // The new password from the mail's link: public, the token is the secret.
+  app.post("/auth/reset-password", express.json(), (req, res) => {
+    const { token, password, id } = req.body || {};
+    if (!token || !password || !id) {
+      return res.status(400).send("Token, password, and ID are required");
+    }
+    if (token !== RESET_TOKEN) {
+      return res.status(410).send("Token already used or expired");
+    }
+    return res.status(200).send("Password reset successfully");
   });
 
   app.post(
