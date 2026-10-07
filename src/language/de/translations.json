@@ -1172,7 +1172,9 @@
       "fallback": {
         "title": "Validierungsfehler",
         "message": "Bitte überprüfen Sie Ihre Eingaben."
-      }
+      },
+      "unknown-field": "Angabe „{field}“ ungültig",
+      "transition-failed": "{message} Grund: {reasons}. | {message} Gründe: {reasons}."
     },
     "ical": {
       "error": {
