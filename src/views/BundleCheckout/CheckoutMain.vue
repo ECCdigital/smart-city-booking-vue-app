@@ -453,6 +453,9 @@ export default {
           this.leadItem.bookableId
         );
         this.preventBooking = false;
+        // A check that passes after a refused one - signed in anew with
+        // another account - takes the refusal back.
+        this.bookingPermission = true;
       } catch (error) {
         console.log("Error while checking checkout permissions", error);
         // `init` awaits this method, so an error without a response - a
