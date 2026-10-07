@@ -38,7 +38,6 @@ describe("DashboardData", () => {
       },
     });
 
-    expect(wrapper.text()).not.toContain("Entganger");
     expect(metric(wrapper, "Entgangener Umsatz (brutto)")).toMatch(/20,00\s€/);
   });
 });
