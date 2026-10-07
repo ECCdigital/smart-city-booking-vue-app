@@ -5,6 +5,7 @@ import {
   flushPromises,
   lifecycleError,
   serverError,
+  validationError,
 } from "@tests/unit/support/api";
 import { dialogButton } from "@tests/unit/support/dialog";
 import i18n from "@/language/index";
@@ -319,6 +320,32 @@ describe("BookingTransitions", () => {
       );
     });
 
+    it("names the deviating members of a state mismatch as the 409 does", async () => {
+      const { wrapper } = mountTransitions();
+      ApiGroupBookingService.commitGroupBooking.mockResolvedValue({
+        success: false,
+        data: null,
+        errors: [
+          {
+            code: "STATUS_MISMATCH",
+            meta: { status: "requested", bookingIds: ["bk-2", "bk-3"] },
+          },
+        ],
+      });
+
+      await start(wrapper, "confirm", series());
+      await clickDialogButton(wrapper, "Serie freigeben");
+
+      const expected =
+        "Die Buchungen haben unterschiedliche Status. Betroffene Buchungen: bk-2, bk-3";
+      expect(wrapper.emitted("failed")[0][0]).toMatchObject({
+        message: expected,
+      });
+      expect(dialog(wrapper, "GroupBookingCommitDialog").props("error")).toBe(
+        expected
+      );
+    });
+
     describe("while the members are in mixed states", () => {
       const mixed = () => series([{}, { id: "bk-2", status: "confirmed" }]);
 
@@ -428,6 +455,78 @@ describe("BookingTransitions", () => {
         action: "pay",
         refetch: true,
       });
+    });
+
+    it("names the reason when the stored booking does not pass its schema", async () => {
+      const { wrapper, store } = mountTransitions();
+      ApiBookingService.payBooking.mockRejectedValue(
+        validationError([{ field: "mail", code: "required", params: {} }])
+      );
+      const reason =
+        "Die Buchung konnte nicht als bezahlt markiert werden. Grund: E-Mail fehlt.";
+
+      await start(wrapper, "pay", { booking: due() });
+      await payWith(wrapper, {});
+
+      const payDialog = dialog(wrapper, "BookingPayDialog");
+      expect(payDialog.props("open")).toBe(true);
+      expect(payDialog.props("error")).toBe(reason);
+      expect(toastMessages(store)).toContain(reason);
+      expect(wrapper.emitted("failed")[0][0]).toMatchObject({
+        action: "pay",
+        message: reason,
+        refetch: false,
+      });
+    });
+
+    it("names every reason, and a field without its own text by its name", async () => {
+      const { wrapper } = mountTransitions();
+      ApiBookingService.payBooking.mockRejectedValue(
+        validationError([
+          { field: "timeEnd", code: "greater_equal_than", params: {} },
+          { field: "zipCode", code: "invalid_format", params: {} },
+        ])
+      );
+
+      await start(wrapper, "pay", { booking: due() });
+      await payWith(wrapper, {});
+
+      expect(dialog(wrapper, "BookingPayDialog").props("error")).toBe(
+        "Die Buchung konnte nicht als bezahlt markiert werden. Gründe: Ungültige Endzeit, Angabe „zipCode“ ungültig."
+      );
+    });
+
+    it("keeps the generic message on a 500 that names no reason", async () => {
+      const { wrapper } = mountTransitions();
+      ApiBookingService.payBooking.mockRejectedValue(serverError(500));
+
+      await start(wrapper, "pay", { booking: due() });
+      await payWith(wrapper, {});
+
+      expect(dialog(wrapper, "BookingPayDialog").props("error")).toBe(
+        "Die Buchung konnte nicht als bezahlt markiert werden."
+      );
+    });
+
+    it("names the reason for a series too", async () => {
+      const { wrapper } = mountTransitions();
+      ApiGroupBookingService.payGroupBooking.mockRejectedValue(
+        validationError([{ field: "mail", code: "required", params: {} }])
+      );
+
+      await start(
+        wrapper,
+        "pay",
+        series([
+          { status: "payment_due" },
+          { id: "bk-2", status: "payment_due" },
+        ])
+      );
+      await clickDialogButton(wrapper, "Serie als bezahlt markieren");
+
+      expect(dialog(wrapper, "BookingPayDialog").props("error")).toBe(
+        "Die Buchungen konnten nicht als bezahlt markiert werden. Grund: E-Mail fehlt."
+      );
     });
 
     it("offers the whole series and pays it through the group route", async () => {

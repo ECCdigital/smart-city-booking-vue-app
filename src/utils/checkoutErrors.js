@@ -49,6 +49,17 @@ export function formatCheckoutValidationError(data) {
 }
 
 /**
+ * Whether the backend refused a completion for want of a sign-in
+ * (ECCdigital/tickets#123): its 401 `checkout.login_required`, or the 401 of
+ * a session that ended on the way and could not be renewed.
+ */
+export function isLoginRefusal(error) {
+  return error?.response?.status === 401;
+}
+
+export const LOGIN_REQUIRED_TOAST_KEY = "checkout.login_required";
+
+/**
  * Whether the backend refused a begin in the past (ECCdigital/tickets#188),
  * a refusal of the self-booking alone: the staff books backwards.
  */

@@ -19,6 +19,7 @@ import {
   mixedCounts,
   pathOf,
   paymentLabel,
+  paymentStatusLabel,
   seriesActionLabel,
   seriesPathOf,
   splitActions,
@@ -254,6 +255,38 @@ describe("paymentLabel", () => {
   ])("answers Ja/Nein for a priced booking at %s", (status, extra, label) => {
     expect(paymentLabel({ status, priceEur: 25, ...extra })).toBe(label);
   });
+});
+
+describe("paymentStatusLabel", () => {
+  it("answers Kostenfrei for a free booking whatever its state", () => {
+    expect(paymentStatusLabel({ status: "confirmed", priceEur: 0 })).toBe(
+      "Kostenfrei"
+    );
+  });
+
+  it.each([
+    ["requested", {}, "Nicht bezahlt"],
+    ["payment_due", {}, "Nicht bezahlt"],
+    ["confirmed", {}, "Bezahlt"],
+    ["rejected", {}, "Nicht bezahlt"],
+    [
+      "cancelled",
+      { cancellationRefund: { cancelledFrom: "confirmed" } },
+      "Bezahlt",
+    ],
+    [
+      "cancelled",
+      { cancellationRefund: { cancelledFrom: "payment_due" } },
+      "Nicht bezahlt",
+    ],
+  ])(
+    "names the payment of a priced booking at %s in words",
+    (status, extra, label) => {
+      expect(paymentStatusLabel({ status, priceEur: 25, ...extra })).toBe(
+        label
+      );
+    }
+  );
 });
 
 describe("isRejectedOrCancelled", () => {
