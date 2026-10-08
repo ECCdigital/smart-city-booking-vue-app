@@ -89,6 +89,7 @@ export default {
         <BookableCheckoutBookables
           :items="model.checkoutBookableIds"
           :available-items="bookablesWithoutSelf"
+          @update:items="patch({ checkoutBookableIds: $event })"
         >
           <template v-slot:detail="{ itemObject }">
             <BookableTypeChip :type="itemObject.type" />
@@ -260,6 +261,7 @@ export default {
               item-value="id"
               item-text="title"
               item-detail="type"
+              @update:items="patch({ relatedBookableIds: $event })"
             >
               <template v-slot:detail="{ itemObject }">
                 <BookableTypeChip :type="itemObject.type" />

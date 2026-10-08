@@ -559,6 +559,112 @@
         "titlesForbidden": "Titel der verknüpften Buchungsobjekte nicht abrufbar – Sie haben keinen Zugriff auf Buchungsobjekte."
       }
     },
+    "areas": {
+      "accessLocks": {
+        "title": "Schließsysteme",
+        "hint": "Welche Türen und Schließfachanlagen Buchende mit der Buchung öffnen.",
+        "summary": "{count} Schließsystem | {count} Schließsysteme"
+      },
+      "checkoutBookables": {
+        "title": "Zusatzobjekte",
+        "hint": "Zusatzbuchungen, die im Checkout mit angeboten werden.",
+        "summary": "{count} Zusatzobjekt | {count} Zusatzobjekte",
+        "intro": "Buchungsobjekte, die Sie als Zusatzobjekte festlegen, werden Ihren Kund*innen beim Checkout als ergänzende Buchungsobjekte angezeigt."
+      },
+      "hierarchy": {
+        "title": "Hierarchie",
+        "hint": "Kinderobjekte, die sich mit diesem Objekt gegenseitig blockieren.",
+        "summary": "{count} Kinderobjekt | {count} Kinderobjekte",
+        "how": {
+          "title": "Wie funktioniert die Hierarchie?",
+          "text": "Das aktuell bearbeitete Objekt ist das <strong>Elternobjekt</strong>. Hier legen Sie die untergeordneten <strong>Kinderobjekte</strong> fest."
+        },
+        "rules": {
+          "title": "Buchungsregeln",
+          "parentAvailable": "Kinderobjekte sind nur buchbar, wenn das Elternobjekt im gewählten Zeitraum verfügbar ist",
+          "independent": "Mehrere Kinderobjekte sind unabhängig voneinander buchbar",
+          "siblingsFree": "Bei Buchung eines Kindes bleiben andere Kinder verfügbar"
+        },
+        "notes": {
+          "title": "Wichtige Hinweise",
+          "parentBooked": "<strong>Elternobjekt gebucht:</strong> Alle Kinderobjekte werden im selben Zeitraum blockiert",
+          "childBooked": "<strong>Kindobjekt gebucht:</strong> Das Elternobjekt wird im selben Zeitraum blockiert",
+          "ticket": "<strong>Sonderfall Ticket:</strong> Die Buchung eines Tickets blockiert alle weiteren Tickets des Elternobjekts",
+          "api": "<strong>API-Ausgabe:</strong> Elternobjekt wird zusammen mit allen Kinderobjekten ausgeliefert"
+        }
+      },
+      "groupBooking": {
+        "title": "Serienbuchung",
+        "hint": "Wiederkehrende Buchungen erlauben.",
+        "summary": "Erlaubt",
+        "summaryRoles": "nur für {count} Rolle | nur für {count} Rollen",
+        "allow": "Serienbuchung erlauben",
+        "notWithBlockPeriods": "Serienbuchungen sind bei Zeiträumen nicht verfügbar.",
+        "explanation": "Serienbuchungen ermöglichen es Benutzern, mehrere Termine in einer Buchungsserie zusammenzufassen. Dadurch können z.B. wöchentliche Meetings oder Kurse mit mehreren Terminen einfacher gebucht und verwaltet werden.",
+        "rolesNote": "<strong>Hinweis:</strong> Sie können die Möglichkeit zur Erstellung von Buchungsserien weiter einschränken, indem Sie nur bestimmten Rollen die Berechtigung dazu erteilen. Benutzer ohne diese Berechtigung können weiterhin einzelne Termine buchen, aber keine Serien erstellen.",
+        "roles": "Rollen, die eine Buchungsserie erstellen dürfen",
+        "noRoles": "Keine Rollen verfügbar"
+      },
+      "cancellation": {
+        "title": "Stornierung",
+        "hint": "Ob Buchende selbst absagen können.",
+        "summary": "Nur durch die Verwaltung",
+        "userCancellable": "Benutzer dürfen ihre Buchungen selbst stornieren",
+        "explanation": "Wenn aktiviert, können Benutzer ihre eigenen Buchungen stornieren. Andernfalls ist eine Stornierung nur durch Administratoren möglich."
+      },
+      "attachments": {
+        "title": "Anhänge",
+        "hint": "Was Buchende bestätigen müssen und welche Unterlagen sie bekommen.",
+        "summary": "{count} Anhang | {count} Anhänge",
+        "add": "Hinzufügen",
+        "publicOnlyReason": "Dieses Buchungsobjekt ist öffentlich sichtbar — interne Medien können hier nicht gespeichert werden."
+      },
+      "customFields": {
+        "title": "Eigene Felder",
+        "hint": "Werte für die Felder von Instanz und Mandant, und Felder nur für dieses Objekt.",
+        "summaryValues": "{count} Wert gesetzt | {count} Werte gesetzt",
+        "summaryDefinitions": "{count} Feld definiert | {count} Felder definiert"
+      },
+      "requiredFields": {
+        "title": "Pflichtfelder",
+        "hint": "Welche Kontaktangaben Buchende im Checkout machen müssen.",
+        "summary": "Keine Pflichtfelder | {count} Pflichtfeld | {count} Pflichtfelder",
+        "intro": "Wählen Sie die Felder aus, die beim Checkout ausgefüllt werden müssen",
+        "selected": "Ausgewählte Pflichtfelder:",
+        "available": "Verfügbare Felder:",
+        "active": "Aktiv",
+        "fields": {
+          "phone": {
+            "name": "Telefonnummer",
+            "description": "Kontakttelefonnummer"
+          },
+          "company": {
+            "name": "Firma",
+            "description": "Firmenname des Kunden"
+          },
+          "address": {
+            "name": "Straße & Hausnummer",
+            "description": "Adressangaben des Kunden"
+          },
+          "zipCode": {
+            "name": "Postleitzahl",
+            "description": "Adressangaben des Kunden"
+          },
+          "city": {
+            "name": "Stadt",
+            "description": "Adressangaben des Kunden"
+          },
+          "comment": {
+            "name": "Kommentar",
+            "description": "Zusätzliche Anmerkungen zur Buchung"
+          }
+        }
+      },
+      "bookingNotes": {
+        "title": "Buchungshinweise",
+        "hint": "Kurze Hinweise im Checkout und in der Bestätigungsmail."
+      }
+    },
     "externalPrice": {
       "title": "Preise vom Anbieter",
       "units": {

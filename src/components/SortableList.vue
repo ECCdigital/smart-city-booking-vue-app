@@ -1,11 +1,8 @@
 <template>
   <div>
     <v-list>
-      <template
-        v-for="(item, i) in items"
-        v-if="itemObject(item) !== undefined"
-      >
-        <v-list-item :key="i">
+      <template v-for="{ item, i } in knownItems">
+        <v-list-item :key="`item-${i}`">
           <v-list-item-content>
             <v-list-item-title>
               <slot name="text" :itemObject="itemObject(item)">
@@ -34,7 +31,10 @@
             </v-btn>
           </v-list-item-action>
         </v-list-item>
-        <v-divider v-if="i < items.length - 1"></v-divider>
+        <v-divider
+          v-if="i < items.length - 1"
+          :key="`divider-${i}`"
+        ></v-divider>
       </template>
     </v-list>
 
@@ -87,6 +87,13 @@
 <script>
 import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
 
+/** `items` with the entries at `a` and `b` swapped, as a new list. */
+function swapped(items, a, b) {
+  const next = [...items];
+  [next[a], next[b]] = [next[b], next[a]];
+  return next;
+}
+
 export default {
   name: "SortableList",
   props: ["items", "availableItems", "itemValue", "itemText", "itemDetail"],
@@ -101,26 +108,24 @@ export default {
     getTypeIcon,
     getTypeText,
     getTypeColor,
+    // The list is the parent's: every change goes out as a new list.
+    emitItems(items) {
+      this.$emit("update:items", items);
+    },
     moveUp(index) {
-      if (index > 0) {
-        const item = this.items[index];
-        this.items.splice(index, 1);
-        this.items.splice(index - 1, 0, item);
-      }
+      if (index > 0) this.emitItems(swapped(this.items, index - 1, index));
     },
     moveDown(index) {
       if (index < this.items.length - 1) {
-        const item = this.items[index];
-        this.items.splice(index, 1);
-        this.items.splice(index + 1, 0, item);
+        this.emitItems(swapped(this.items, index, index + 1));
       }
     },
     remove(index) {
-      this.items.splice(index, 1);
+      this.emitItems(this.items.filter((_, i) => i !== index));
     },
     add() {
       if (this.addItemValue != null) {
-        this.items.push(this.addItemValue);
+        this.emitItems([...this.items, this.addItemValue]);
         this.addItemValue = null;
       }
     },
@@ -130,6 +135,12 @@ export default {
   },
 
   computed: {
+    // The entries with an object to show, each with its place in `items`.
+    knownItems() {
+      return (this.items || [])
+        .map((item, i) => ({ item, i }))
+        .filter(({ item }) => this.itemObject(item) !== undefined);
+    },
     unselectedItems() {
       return this.availableItems.filter(
         (item) => !this.items.includes(item[this.itemValue])
