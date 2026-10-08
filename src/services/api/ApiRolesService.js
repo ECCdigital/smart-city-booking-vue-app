@@ -4,8 +4,10 @@ export default {
   getRoles() {
     return ApiClient.get("api/roles");
   },
-  getTenantRoles(publicRoles = false) {
-    const t = store.getters["tenants/currentTenantId"];
+  // The roles of `tenantId`, by default of the current tenant. A bookable's
+  // roles are its own tenant's, which need not be the current one.
+  getTenantRoles(publicRoles = false, tenantId = null) {
+    const t = tenantId || store.getters["tenants/currentTenantId"];
     return ApiClient.get(`api/${t}/roles?public=${publicRoles}`);
   },
   getUserRolesByTenant(tenantId, publicRoles = false) {

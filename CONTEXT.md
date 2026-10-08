@@ -82,6 +82,14 @@ _Avoid_: Fehler, Validierungsfehler, Offene Punkte (those are the confirmation p
 How a bookable is booked in time, asked in both modes by up to three questions: Ohne Zeit, or for a time Freie Zeitwahl, Feste Zeitfenster, Zeiträume or Langzeit, the last as Ganze Wochen or Ganze Monate. Langzeit is only the answer that leads to the two, not a mode of its own.
 _Avoid_: Buchungstyp (Typ is Raum, Ressource or Ticket), Feste Zeiten, Wochenbuchung, Monatsbuchung, Zeitunabhängig
 
+**Wer darf buchen?** (admin: „Wer darf buchen?“):
+Who may book a bookable, for every booking, also through a direct link: „Alle“ (no account), „Alle mit Konto“ or „Nur ausgewählte Rollen und Personen“ of the bookable's tenant. Naming a role or person needs an account with it; while nobody is named, every person with an account may book. It decides booking, not whether the bookable is listed (that is Veröffentlichung).
+_Avoid_: Zugang (Schließsysteme are the doors), Berechtigungen as the field's name (the tab keeps it), Anmeldepflicht, Jeder, Angemeldete Nutzer, Benutzer (say Personen), „zu sehen“
+
+**Preisnachlass** (admin: „Preisnachlass“):
+A percent off the price, 0 to 100 in whole numbers, for named roles and persons of the tenant; 100 % means free of charge, and where several entries apply the highest wins. Stored on a free bookable too, it acts once the bookable has a price.
+_Avoid_: Rabatt, Rabatte, Preisrabatte, Preis-Ausnahme (Rabattcodes are the codes bookers type in)
+
 ### SSO
 
 **Adresse**:

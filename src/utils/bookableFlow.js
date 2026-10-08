@@ -346,8 +346,10 @@ export function warnsAboutAmount(bookable) {
 // --- Berechtigung ----------------------------------------------------------
 
 /**
- * Who may book: `everyone`, `signedIn` (an account is needed) or `selected`
- * (named roles or users, which need an account too).
+ * „Wer darf buchen?“: `everyone` („Alle“), `signedIn` („Alle mit Konto“) or
+ * `selected` („Nur ausgewählte Rollen und Personen“). The backend lets only
+ * the named roles and people book once a list is set, with or without
+ * `requiresLogin` - so lists read as `selected` before the login requirement.
  */
 export function accessOf(bookable) {
   if (
@@ -359,12 +361,32 @@ export function accessOf(bookable) {
   return bookable?.requiresLogin ? "signedIn" : "everyone";
 }
 
+/**
+ * Sets the choice of „Wer darf buchen?“ in place: `everyone` clears the login
+ * requirement and the lists, `signedIn` clears the lists, `selected` sets
+ * the login requirement and keeps the lists.
+ */
 export function applyAccess(bookable, access) {
   bookable.requiresLogin = access !== "everyone";
   if (access !== "selected") {
     bookable.permittedRoles = [];
     bookable.permittedUsers = [];
   }
+  return bookable;
+}
+
+/**
+ * Sets `permittedRoles` and/or `permittedUsers` in place. A role or person
+ * named sets `requiresLogin` with it, so data and effect agree; emptying
+ * the lists leaves it (nobody named reads as „Alle mit Konto“).
+ */
+export function applyPermitted(bookable, { permittedRoles, permittedUsers }) {
+  if (permittedRoles) bookable.permittedRoles = permittedRoles;
+  if (permittedUsers) bookable.permittedUsers = permittedUsers;
+  bookable.permittedRoles = bookable.permittedRoles || [];
+  bookable.permittedUsers = bookable.permittedUsers || [];
+  if (bookable.permittedRoles.length > 0 || bookable.permittedUsers.length > 0)
+    bookable.requiresLogin = true;
   return bookable;
 }
 
