@@ -356,6 +356,7 @@
           "image-none": "keins",
           "external": "extern gesteuert",
           "tiers": "{count} Tarif | {count} Tarife",
+          "once": "{price} für die ganze Buchung",
           "vat-rate": "{rate} %",
           "vat-none": "ohne",
           "yes": "ja",

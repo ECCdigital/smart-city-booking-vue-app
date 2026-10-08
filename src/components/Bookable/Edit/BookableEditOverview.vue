@@ -143,16 +143,15 @@
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import { isForbiddenError } from "@/services/api/apiErrorMessage";
-import ApiEventService from "@/services/api/ApiEventService";
-import store from "@/store";
 import { getBookableOverviewTraits } from "@/utils/bookableOverview";
+import {
+  cachedEventTitlesById,
+  loadEventTitlesById,
+} from "@/utils/eventTitles";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 let bookableTitlesCache = null;
 let bookableTitlesPromise = null;
-let eventTitlesCache = null;
-let eventTitlesPromise = null;
-let eventTitlesTenantId = null;
 
 /**
  * Resolves `{ titlesById, forbidden }`. `forbidden` is carried out of the
@@ -188,41 +187,6 @@ function loadBookableTitlesById() {
   return bookableTitlesPromise;
 }
 
-function loadEventTitlesById() {
-  const currentTenantId = store.getters["tenants/currentTenantId"];
-  if (eventTitlesCache && eventTitlesTenantId === currentTenantId) {
-    return Promise.resolve(eventTitlesCache);
-  }
-  if (eventTitlesTenantId !== currentTenantId) {
-    eventTitlesCache = null;
-    eventTitlesPromise = null;
-    eventTitlesTenantId = currentTenantId;
-  }
-  if (!eventTitlesPromise) {
-    eventTitlesPromise = ApiEventService.getEvents()
-      .then((result) => {
-        if (store.getters["tenants/currentTenantId"] !== currentTenantId) {
-          return {};
-        }
-        const map = {};
-        (result?.data || []).forEach((item) => {
-          if (item?.id) {
-            map[item.id] = item.information?.name || item.id;
-          }
-        });
-        eventTitlesCache = map;
-        eventTitlesTenantId = currentTenantId;
-        return map;
-      })
-      .catch((error) => {
-        console.error("Error loading event titles for overview:", error);
-        eventTitlesPromise = null;
-        return {};
-      });
-  }
-  return eventTitlesPromise;
-}
-
 export default {
   name: "BookableEditOverview",
   mixins: [bookableExpertMode],
@@ -241,7 +205,7 @@ export default {
     return {
       bookableTitlesById: bookableTitlesCache || {},
       bookableTitlesForbidden: false,
-      eventTitlesById: eventTitlesCache || {},
+      eventTitlesById: cachedEventTitlesById() || {},
     };
   },
   computed: {

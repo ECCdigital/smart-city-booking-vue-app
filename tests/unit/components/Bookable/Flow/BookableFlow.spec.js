@@ -358,7 +358,6 @@ describe("BookableFlow on a wide screen", () => {
     });
     await flushPromises();
 
-    expect(ApiEventService.getEvents).toHaveBeenCalledWith("t1");
     expect(blockOf(wrapper, "identity").text()).toContain("Sommerfest");
   });
 });

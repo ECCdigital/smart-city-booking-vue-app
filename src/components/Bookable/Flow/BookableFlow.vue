@@ -1,7 +1,7 @@
 <template>
   <div
     class="bookable-flow"
-    :class="{ 'bookable-flow--wide': wide }"
+    :class="{ 'bookable-flow--with-overview': showOverview }"
     data-test="bookable-flow"
   >
     <BookableFlowDone
@@ -20,7 +20,7 @@
       <!-- From xl the steps stand as a list left, in place of the dots; the
            same state, lock and jump as the dots. -->
       <nav
-        v-if="extraWide"
+        v-if="showStepList"
         class="bookable-flow__steps"
         :aria-label="$t('bookable.flow.progress')"
         data-test="flow-steps"
@@ -30,21 +30,21 @@
           :key="step"
           type="button"
           class="bookable-flow__entry"
-          :class="`bookable-flow__entry--${dotState(idx)}`"
+          :class="`bookable-flow__entry--${stepState(idx)}`"
           :disabled="locked(idx)"
           :aria-current="idx === index ? 'step' : null"
           :data-test="`flow-steps-${step}`"
           @click="goTo(idx)"
         >
           <span class="bookable-flow__badge" aria-hidden="true">
-            <v-icon v-if="dotState(idx) === 'done'" x-small>mdi-check</v-icon>
+            <v-icon v-if="stepState(idx) === 'done'" x-small>mdi-check</v-icon>
             <span v-else>{{ idx + 1 }}</span>
           </span>
           <span class="bookable-flow__entry-title">
             {{ $t(`bookable.flow.steps.${step}.title`) }}
           </span>
           <span class="d-sr-only">
-            {{ $t(`bookable.flow.step-state.${dotState(idx)}`) }}
+            {{ $t(`bookable.flow.step-state.${stepState(idx)}`) }}
           </span>
         </button>
         <div class="bookable-flow__entry bookable-flow__entry--flag">
@@ -67,7 +67,7 @@
         />
 
         <nav
-          v-if="!extraWide"
+          v-if="!showStepList"
           class="bookable-flow__progress"
           :aria-label="$t('bookable.flow.progress')"
           data-test="flow-progress"
@@ -77,7 +77,7 @@
             :key="step"
             type="button"
             class="bookable-flow__dot"
-            :class="`bookable-flow__dot--${dotState(idx)}`"
+            :class="`bookable-flow__dot--${stepState(idx)}`"
             :disabled="locked(idx)"
             :aria-current="idx === index ? 'step' : null"
             :aria-label="
@@ -89,7 +89,7 @@
             :data-test="`flow-dot-${step}`"
             @click="goTo(idx)"
           >
-            <v-icon v-if="dotState(idx) === 'done'" x-small>mdi-check</v-icon>
+            <v-icon v-if="stepState(idx) === 'done'" x-small>mdi-check</v-icon>
             <span v-else>{{ idx + 1 }}</span>
           </button>
           <span class="bookable-flow__line" />
@@ -212,7 +212,7 @@
       </div>
 
       <BookableFlowSummary
-        v-if="wide"
+        v-if="showOverview"
         class="bookable-flow__summary"
         :blocks="summaryBlocks"
         :current="step"
@@ -231,7 +231,6 @@ import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermi
 import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
 import BookableFlowDone from "@/components/Bookable/Flow/BookableFlowDone.vue";
 import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
-import ApiEventService from "@/services/api/ApiEventService";
 import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
 import {
   FLOW_STEPS,
@@ -239,6 +238,10 @@ import {
   overviewBlocks,
   publishVariant,
 } from "@/utils/bookableFlow";
+import {
+  cachedEventTitlesById,
+  loadEventTitlesById,
+} from "@/utils/eventTitles";
 
 const STEP_COMPONENTS = {
   identity: "BookableFlowIdentity",
@@ -248,6 +251,19 @@ const STEP_COMPONENTS = {
   permission: "BookableFlowPermission",
   approval: "BookableFlowApproval",
 };
+
+/**
+ * Where the flow starts, and starts over: at the identity. A step is done
+ * once it was left forward and visited once it was current (only the
+ * overview reads that); an existing bookable has been through all of them.
+ */
+function startingPoint(isNew) {
+  return {
+    index: 0,
+    done: isNew ? [] : [...FLOW_STEPS],
+    visited: isNew ? [FLOW_STEPS[0]] : [...FLOW_STEPS],
+  };
+}
 
 /**
  * The guided flow of a bookable after the cloud variant (ECCdigital/
@@ -292,13 +308,8 @@ export default {
   data() {
     return {
       steps: FLOW_STEPS,
-      index: 0,
-      // A step is done once it was left forward; an existing bookable has
-      // been through all of them.
-      done: this.isNew ? [] : [...FLOW_STEPS],
-      // A step is visited once it was current; only the overview reads it.
-      visited: this.isNew ? [FLOW_STEPS[0]] : [...FLOW_STEPS],
-      eventTitlesById: null,
+      ...startingPoint(this.isNew),
+      eventTitlesById: cachedEventTitlesById() || {},
     };
   },
   computed: {
@@ -318,62 +329,42 @@ export default {
       return publishVariant(this.level);
     },
     /** From Vuetify's lg the overview stands beside the step. */
-    wide() {
+    showOverview() {
       return !this.outcome && this.$vuetify.breakpoint.lgAndUp;
     },
     /** From Vuetify's xl the step list stands left, in place of the dots. */
-    extraWide() {
-      return this.wide && this.$vuetify.breakpoint.xl;
+    showStepList() {
+      return this.showOverview && this.$vuetify.breakpoint.xl;
     },
     summaryBlocks() {
       return overviewBlocks(this.bookable, {
         visited: this.visited,
-        eventTitlesById: this.eventTitlesById || {},
+        eventTitlesById: this.eventTitlesById,
       });
     },
     needsEventTitles() {
-      return this.wide && this.bookable.type === "ticket";
+      return this.showOverview && this.bookable.type === "ticket";
     },
   },
   watch: {
     needsEventTitles: {
       immediate: true,
-      handler(needed) {
-        if (needed && !this.eventTitlesById) this.loadEventTitles();
+      async handler(needed) {
+        if (needed) this.eventTitlesById = await loadEventTitlesById();
       },
     },
     // „Weiteres Buchungsobjekt anlegen“ starts over on the same page.
     outcome(outcome) {
-      if (!outcome) {
-        this.index = 0;
-        this.done = this.isNew ? [] : [...FLOW_STEPS];
-        this.visited = this.isNew ? [FLOW_STEPS[0]] : [...FLOW_STEPS];
-      }
+      if (!outcome) Object.assign(this, startingPoint(this.isNew));
     },
   },
   methods: {
-    /** The titles of the tenant's events, for a ticket's event (once). */
-    async loadEventTitles() {
-      this.eventTitlesById = {};
-      try {
-        const response = await ApiEventService.getEvents(
-          this.bookable.tenantId || undefined
-        );
-        this.eventTitlesById = Object.fromEntries(
-          (response?.data || []).map((event) => [
-            event.id,
-            event.information?.name || event.id,
-          ])
-        );
-      } catch (error) {
-        console.error(error);
-      }
-    },
     /** Without a name only the identity can be reached. */
     locked(idx) {
       return idx > 0 && !this.named;
     },
-    dotState(idx) {
+    /** `current`, `done` or `upcoming`, for the dots and the step list. */
+    stepState(idx) {
       if (idx === this.index) return "current";
       return this.done.includes(this.steps[idx]) ? "done" : "upcoming";
     },
@@ -400,7 +391,7 @@ export default {
   padding-bottom: var(--scb-space-6);
 }
 
-.bookable-flow--wide {
+.bookable-flow--with-overview {
   display: flex;
   align-items: flex-start;
   gap: var(--scb-gap-columns);
@@ -408,16 +399,16 @@ export default {
   margin: 0;
 }
 
-.bookable-flow--wide .bookable-flow__column {
+.bookable-flow--with-overview .bookable-flow__column {
   flex: 1 1 auto;
   min-width: 0;
   max-width: 720px;
 }
 
-/* Sticks and scrolls in itself as the editor's overview column does. */
+/* The side columns stick and scroll in themselves, as the editor's section
+   nav and overview column do. */
+.bookable-flow__steps,
 .bookable-flow__summary {
-  flex: 0 0 var(--scb-overview-width);
-  max-width: var(--scb-overview-width-max);
   position: sticky;
   top: 0;
   max-height: calc(100vh - var(--scb-app-bar-height));
@@ -425,20 +416,20 @@ export default {
   overflow-y: auto;
 }
 
-/* Sticks and scrolls in itself as the editor's section nav does. */
+.bookable-flow__summary {
+  flex: 0 0 var(--scb-overview-width);
+  max-width: var(--scb-overview-width-max);
+}
+
+/* The editor's section nav: its width and padding. */
 .bookable-flow__steps {
   flex: 0 0 auto;
   min-width: var(--scb-nav-width-min);
   max-width: var(--scb-nav-width-max);
   padding: 2px 0;
-  position: sticky;
-  top: 0;
-  max-height: calc(100vh - var(--scb-app-bar-height));
-  overflow-x: hidden;
-  overflow-y: auto;
 }
 
-/* An entry looks like a tab of the editor's section nav. */
+/* An entry looks like a tab of the editor's section nav, its 10px too. */
 .bookable-flow__entry {
   display: flex;
   align-items: center;
@@ -486,7 +477,7 @@ export default {
 }
 
 .bookable-flow__entry--flag {
-  margin-top: 6px;
+  margin-top: var(--scb-space-2);
   padding-top: var(--scb-space-3);
   border-top: 1px solid var(--scb-rule);
   border-radius: 0;
@@ -511,20 +502,10 @@ export default {
   color: inherit;
 }
 
-.bookable-flow__entry--done .bookable-flow__badge {
-  color: var(--v-primary-base);
-  background-color: var(--scb-selected-tint);
-}
-
-.bookable-flow__entry--current .bookable-flow__badge {
-  color: #fff;
-  background-color: var(--v-primary-base);
-}
-
 .bookable-flow__entry-title {
   flex: 1 1 auto;
   min-width: 0;
-  line-height: 1.25;
+  line-height: var(--scb-line-height-tight);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -566,12 +547,15 @@ export default {
   opacity: 0.4;
 }
 
-.bookable-flow__dot--current {
+/* An entry's badge takes the colours of its dot. */
+.bookable-flow__dot--current,
+.bookable-flow__entry--current .bookable-flow__badge {
   color: #fff;
   background-color: var(--v-primary-base);
 }
 
-.bookable-flow__dot--done {
+.bookable-flow__dot--done,
+.bookable-flow__entry--done .bookable-flow__badge {
   color: var(--v-primary-base);
   background-color: var(--scb-selected-tint);
 }
