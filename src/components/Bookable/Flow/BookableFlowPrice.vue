@@ -1,14 +1,18 @@
 <template>
-  <div data-test="flow-price">
-    <div v-if="external" class="flow-note flow-note--warning">
-      <div class="flow-note__title">
+  <div class="bookable-price" data-test="flow-price">
+    <div
+      v-if="external"
+      class="bookable-price__note bookable-price__note--warning"
+      data-test="flow-price-external"
+    >
+      <div class="bookable-price__note-title">
         {{ $t("bookable.flow.price.external-title") }}
       </div>
       {{ $t("bookable.flow.price.external-text") }}
     </div>
 
     <template v-else>
-      <div class="flow-field">
+      <div class="bookable-price__field">
         <FlowSegmented
           :value="mode"
           :options="modeOptions"
@@ -18,12 +22,20 @@
         />
       </div>
 
-      <p v-if="mode === 'free'" class="flow-note mb-0" data-test="flow-free">
+      <p
+        v-if="mode === 'free'"
+        class="bookable-price__note mb-0"
+        data-test="flow-free"
+      >
         {{ $t("bookable.flow.price.free-info") }}
       </p>
 
       <template v-else>
-        <p v-if="prefilled" class="flow-note" data-test="flow-prefilled">
+        <p
+          v-if="prefilled"
+          class="bookable-price__note"
+          data-test="flow-prefilled"
+        >
           {{
             $t("bookable.flow.price.prefilled", {
               reason: $t(`bookable.flow.price.reasons.${bookingMode}`),
@@ -31,58 +43,27 @@
           }}
         </p>
 
-        <div class="flow-field">
-          <div class="flow-question">
-            {{
-              mode === "tiers"
-                ? $t("bookable.flow.price.basis-tiers")
-                : $t("bookable.flow.price.basis")
-            }}
+        <div class="bookable-price__field">
+          <div class="bookable-price__question">
+            {{ typeQuestion }}
           </div>
           <FlowSegmented
-            :value="basis"
-            :options="basisOptions"
-            :label="$t('bookable.flow.price.basis')"
-            test-id="flow-price-basis"
-            @input="setBasis"
-          />
-          <div v-if="mode === 'tiers'" class="flow-field__hint">
-            {{ $t("bookable.flow.price.basis-tiers-hint") }}
-          </div>
-        </div>
-
-        <div v-if="basis === 'fixed'" class="flow-field flow-inline">
-          <span class="flow-inline__text">
-            {{ $t("bookable.flow.price.unit") }}
-          </span>
-          <v-chip-group
             :value="bookable.priceType"
-            mandatory
-            active-class="primary--text"
-            @change="patch({ priceType: $event })"
-          >
-            <v-chip
-              v-for="unit in units"
-              :key="unit"
-              :value="unit"
-              small
-              outlined
-              :data-test="`flow-price-unit-${unit}`"
-            >
-              {{ $t(`bookable.flow.price.units.${unit}`) }}
-            </v-chip>
-          </v-chip-group>
+            :options="typeOptions"
+            :label="typeQuestion"
+            test-id="flow-price-type"
+            @input="setType"
+          />
+          <div v-if="mode === 'tiers'" class="bookable-price__hint">
+            {{ $t("bookable.flow.price.type-tiers-hint") }}
+          </div>
         </div>
 
         <template v-if="mode === 'simple'">
-          <div class="flow-field">
+          <div class="bookable-price__field" data-test="flow-price-amount">
             <v-text-field
               :value="firstCategory.priceEur"
-              :label="
-                vatOn
-                  ? $t('bookable.flow.price.amount-net')
-                  : $t('bookable.flow.price.amount')
-              "
+              :label="amountLabel"
               type="number"
               min="0"
               step="0.01"
@@ -90,115 +71,101 @@
               outlined
               dense
               hide-details="auto"
-              data-test="flow-price-amount"
               :rules="fieldRules.price"
               @input="setCategory({ priceEur: $event })"
             />
-            <div class="flow-field__hint" data-test="flow-price-explain">
+            <div class="bookable-price__hint" data-test="flow-price-explain">
               {{ explanation }}
             </div>
           </div>
 
-          <v-switch
-            v-if="basis === 'per-day' && !longRange"
-            :input-value="!!firstCategory.fixedPrice"
-            :label="$t('bookable.flow.price.full-days')"
-            dense
-            hide-details
-            class="flow-switch"
-            @change="setCategory({ fixedPrice: !!$event })"
-          />
-          <v-switch
-            v-if="basis === 'fixed' && !singleUnit"
-            :input-value="!!firstCategory.fixedPrice"
-            dense
-            hide-details
-            class="flow-switch"
-            @change="setCategory({ fixedPrice: !!$event })"
-          >
-            <template #label>
-              <div>
-                <div>{{ $t("bookable.flow.price.once-per-booking") }}</div>
-                <div class="flow-field__hint mt-0">
-                  {{ $t("bookable.flow.price.once-per-booking-hint") }}
+          <div data-test="flow-price-fixed">
+            <v-switch
+              :input-value="!!firstCategory.fixedPrice"
+              dense
+              hide-details
+              class="bookable-price__switch"
+              @change="setCategory({ fixedPrice: !!$event })"
+            >
+              <template #label>
+                <div>
+                  <div>{{ $t(`${fixedKey}.label`) }}</div>
+                  <div class="bookable-price__hint mt-0">
+                    {{ $t(`${fixedKey}.hint`) }}
+                  </div>
                 </div>
-              </div>
-            </template>
-          </v-switch>
+              </template>
+            </v-switch>
+          </div>
         </template>
 
-        <div v-else class="flow-field">
-          <BookableEditPrice
+        <div v-else class="bookable-price__field">
+          <BookableEditPriceTiers
             :bookable="bookable"
-            tiers-only
             @update:bookable="$emit('update:bookable', $event)"
           />
         </div>
 
-        <!-- VAT: on or off, a common rate as a chip, any other typed. -->
-        <div class="flow-box" data-test="flow-vat">
-          <v-switch
-            :input-value="vatOn"
-            dense
-            hide-details
-            class="mt-0 pt-0"
-            data-test="flow-vat-switch"
-            @change="setVat($event ? 19 : 0)"
-          >
-            <template #label>
-              <div>
-                <div class="flow-question mb-0">
-                  {{ $t("bookable.flow.price.vat") }}
-                </div>
-                <div class="flow-field__hint mt-0">
-                  {{
-                    vatOn
-                      ? $t("bookable.flow.price.vat-on")
-                      : $t("bookable.flow.price.vat-off")
-                  }}
-                </div>
-              </div>
-            </template>
-          </v-switch>
-          <div v-if="vatOn" class="flow-inline mt-3">
-            <v-chip-group
-              :value="vatChoice"
-              mandatory
-              active-class="primary--text"
-              @change="chooseVat"
-            >
-              <v-chip
-                v-for="rate in vatRates"
-                :key="rate"
-                :value="rate"
-                small
-                outlined
-              >
-                {{ rate }} %
-              </v-chip>
-              <v-chip value="other" small outlined>
-                {{ $t("bookable.flow.price.vat-other") }}
-              </v-chip>
-            </v-chip-group>
-            <v-text-field
-              v-if="vatChoice === 'other'"
-              :value="bookable.priceValueAddedTax"
-              :label="$t('bookable.flow.price.vat-rate')"
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              suffix="%"
-              outlined
+        <!-- Mehrwertsteuer is one number: 19 % and 7 % set it, any other is
+             typed, „aus“ is 0 %. -->
+        <div class="bookable-price__box" data-test="flow-vat">
+          <div data-test="flow-vat-switch">
+            <v-switch
+              :input-value="vatOn"
               dense
               hide-details
-              class="flow-vat-rate"
-              @input="setVat($event)"
-            />
+              class="mt-0 pt-0"
+              @change="setVat($event ? 19 : 0)"
+            >
+              <template #label>
+                <div>
+                  <div class="bookable-price__question mb-0">
+                    {{ $t("bookable.flow.price.vat") }}
+                  </div>
+                  <div class="bookable-price__hint mt-0">
+                    {{
+                      vatOn
+                        ? $t("bookable.flow.price.vat-on")
+                        : $t("bookable.flow.price.vat-off")
+                    }}
+                  </div>
+                </div>
+              </template>
+            </v-switch>
+          </div>
+          <div v-if="vatOn" class="bookable-price__inline mt-3">
+            <v-chip
+              v-for="rate in vatRates"
+              :key="rate"
+              small
+              outlined
+              :color="vatRate === rate ? 'primary' : undefined"
+              :data-test="`flow-vat-${rate}`"
+              @click="setVat(rate)"
+            >
+              {{ rate }} %
+            </v-chip>
+            <div class="bookable-price__vat-rate" data-test="flow-vat-rate">
+              <v-text-field
+                :value="bookable.priceValueAddedTax"
+                :label="$t('bookable.flow.price.vat-rate')"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                suffix="%"
+                outlined
+                dense
+                hide-details
+                @focus="vatTyping = true"
+                @blur="vatTyping = false"
+                @input="setVat"
+              />
+            </div>
           </div>
           <div
             v-if="mode === 'simple' && price > 0"
-            class="flow-box__summary"
+            class="bookable-price__summary"
             data-test="flow-vat-summary"
           >
             <span>
@@ -206,14 +173,14 @@
                 vatOn
                   ? $t("bookable.flow.price.vat-summary", {
                       net: euro(price),
-                      rate: vatRate,
+                      rate: vatRate.toLocaleString("de-DE"),
                     })
                   : $t("bookable.flow.price.vat-none")
               }}
             </span>
-            <span class="flow-box__total">
+            <span class="bookable-price__total">
               {{ euro(gross) }}
-              <span class="flow-field__hint">
+              <span class="bookable-price__hint">
                 {{
                   vatOn
                     ? $t("bookable.flow.price.gross")
@@ -224,28 +191,28 @@
           </div>
         </div>
 
-        <v-switch
-          v-if="expertOptionShown('coupons')"
-          :input-value="bookable.enableCoupons !== false"
-          dense
-          hide-details
-          class="flow-switch"
-          data-test="flow-coupons"
-          @change="patch({ enableCoupons: !!$event })"
-        >
-          <template #label>
-            <div>
-              <div>{{ $t("bookable.flow.price.coupons") }}</div>
-              <div class="flow-field__hint mt-0">
-                {{
-                  bookable.enableCoupons !== false
-                    ? $t("bookable.flow.price.coupons-on")
-                    : $t("bookable.flow.price.coupons-off")
-                }}
+        <div v-if="expertOptionShown('coupons')" data-test="flow-coupons">
+          <v-switch
+            :input-value="couponsOn"
+            dense
+            hide-details
+            class="bookable-price__switch mt-5"
+            @change="patch({ enableCoupons: !!$event })"
+          >
+            <template #label>
+              <div>
+                <div>{{ $t("bookable.flow.price.coupons") }}</div>
+                <div class="bookable-price__hint mt-0">
+                  {{
+                    couponsOn
+                      ? $t("bookable.flow.price.coupons-on")
+                      : $t("bookable.flow.price.coupons-off")
+                  }}
+                </div>
               </div>
-            </div>
-          </template>
-        </v-switch>
+            </template>
+          </v-switch>
+        </div>
       </template>
     </template>
   </div>
@@ -253,15 +220,15 @@
 
 <script>
 import FlowSegmented from "@/components/Bookable/Flow/FlowSegmented.vue";
-import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
+import BookableEditPriceTiers from "@/components/Bookable/Edit/BookableEditPriceTiers.vue";
 import bookableEditing from "@/mixins/bookableEditing";
 import {
+  PRICE_TYPES,
   VAT_RATES,
-  applyPriceBasis,
   applyPriceMode,
+  applyPriceType,
   bookingModeOf,
   handlesExternalPricing,
-  priceBasisOf,
   priceExplanation,
   priceModeOf,
 } from "@/utils/bookableFlow";
@@ -272,25 +239,33 @@ const euro = (value) =>
     currency: "EUR",
   });
 
+const toNumber = (value) =>
+  Number(typeof value === "string" ? value.replace(",", ".") : value) || 0;
+
 /**
- * Step 3, Preis: Kostenfrei, Einfacher Preis or Tarife after the cloud
- * variant, the basis of the price, VAT and coupons. Tarife are the price
- * editor's graduated prices; the flow asks only for their basis. The form
- * is read from the categories; a chosen one is kept only while they cannot
- * show it yet (a simple price at 0 € looks free, a fresh tier list simple),
- * and losing that choice on unmount costs nothing.
+ * Preis, in both modes: the editing page frames it as the card „Preis“ in
+ * „Preise & Kapazität“, the guided flow as the step „Preis“. The price form
+ * (Kostenfrei, Einfacher Preis, Tarife), the Preisart of the backend, the
+ * amount with an example as the backend reckons it, the fixed price named
+ * by the Preisart, Mehrwertsteuer and Rabattcodes. Tarife are the Staffel.
+ *
+ * The form is read from the categories by `priceModeOf`; a chosen one is
+ * kept only while they cannot show it yet (a simple price at 0 € looks
+ * free, a fresh tier list simple), and losing that choice costs nothing.
+ * Where ParkraumService handles the prices only its note shows; its
+ * settings are the Schließsysteme's.
  */
 export default {
   name: "BookableFlowPrice",
-  components: { FlowSegmented, BookableEditPrice },
+  components: { FlowSegmented, BookableEditPriceTiers },
   mixins: [bookableEditing],
   data() {
     return {
       chosenMode: null,
       prefilled: false,
-      otherVatChosen: false,
+      // While the rate is typed, an emptied field is not yet „aus“.
+      vatTyping: false,
       vatRates: VAT_RATES,
-      units: ["per-item", "per-square-meter"],
     };
   },
   computed: {
@@ -301,44 +276,45 @@ export default {
         (stored === "simple" && this.chosenMode === "tiers");
       return this.chosenMode && unshown ? this.chosenMode : stored;
     },
-    otherVat() {
-      return (
-        this.otherVatChosen ||
-        !this.isCommonVat(this.bookable.priceValueAddedTax)
-      );
-    },
     external() {
       return handlesExternalPricing(this.bookable);
     },
     bookingMode() {
       return bookingModeOf(this.bookable);
     },
-    longRange() {
-      return ["week", "month"].includes(this.bookingMode);
-    },
-    basis() {
-      return priceBasisOf(this.bookable);
-    },
     firstCategory() {
       return this.bookable.priceCategories?.[0] || {};
     },
     price() {
-      return Number(this.firstCategory.priceEur) || 0;
+      return toNumber(this.firstCategory.priceEur);
     },
-    singleUnit() {
-      return Number(this.bookable.amount) === 1;
+    fixedKey() {
+      const type = PRICE_TYPES.includes(this.bookable.priceType)
+        ? this.bookable.priceType
+        : "per-item";
+      return `bookable.flow.price.fixed.${type}`;
+    },
+    typeQuestion() {
+      return this.mode === "tiers"
+        ? this.$t("bookable.flow.price.type-tiers")
+        : this.$t("bookable.flow.price.type");
     },
     vatRate() {
-      return Number(this.bookable.priceValueAddedTax) || 0;
+      return toNumber(this.bookable.priceValueAddedTax);
     },
     vatOn() {
-      return this.vatRate > 0;
+      return this.vatRate > 0 || this.vatTyping;
     },
-    vatChoice() {
-      return this.otherVat ? "other" : this.vatRate;
+    amountLabel() {
+      return this.vatRate > 0
+        ? this.$t("bookable.flow.price.amount-net")
+        : this.$t("bookable.flow.price.amount");
     },
     gross() {
       return this.price * (1 + this.vatRate / 100);
+    },
+    couponsOn() {
+      return this.bookable.enableCoupons !== false;
     },
     explanation() {
       const { key, amounts } = priceExplanation(this.bookable);
@@ -358,41 +334,122 @@ export default {
         label: this.$t(`bookable.flow.price.modes.${value}`),
       }));
     },
-    basisOptions() {
-      return ["per-hour", "per-day", "fixed"].map((value) => ({
+    typeOptions() {
+      return PRICE_TYPES.map((value) => ({
         value,
-        label: this.$t(`bookable.flow.price.bases.${value}`),
+        label: this.$t(`bookable.flow.price.types.${value}`),
       }));
     },
   },
   methods: {
     euro,
-    isCommonVat(rate) {
-      const value = Number(rate) || 0;
-      return value === 0 || VAT_RATES.includes(value);
-    },
     setMode(mode) {
       if (mode === this.mode) return;
       this.prefilled = this.mode === "free" && mode !== "free";
       this.chosenMode = mode;
       this.apply((next) => applyPriceMode(next, mode));
     },
-    setBasis(basis) {
-      this.apply((next) => applyPriceBasis(next, basis));
+    setType(priceType) {
+      this.apply((next) => applyPriceType(next, priceType));
     },
     setCategory(changes) {
-      this.apply((next) => {
-        next.priceCategories[0] = { ...next.priceCategories[0], ...changes };
+      // An emptied amount reads as free; the form stays while it is typed.
+      this.chosenMode = this.mode;
+      const categories = this.bookable.priceCategories || [];
+      this.patch({
+        priceCategories: (categories.length ? categories : [{}]).map(
+          (category, index) =>
+            index === 0 ? { ...category, ...changes } : category
+        ),
       });
     },
-    chooseVat(choice) {
-      this.otherVatChosen = choice === "other";
-      if (!this.otherVatChosen) this.setVat(choice);
-    },
     setVat(rate) {
-      if (!Number(rate)) this.otherVatChosen = false;
-      this.patch({ priceValueAddedTax: Number(rate) || 0 });
+      this.patch({ priceValueAddedTax: toNumber(rate) });
     },
   },
 };
 </script>
+
+<style scoped>
+.bookable-price__field {
+  margin-bottom: var(--scb-space-5);
+}
+
+.bookable-price__question {
+  margin-bottom: var(--scb-space-2);
+  font-size: var(--scb-font-size-md);
+  font-weight: var(--scb-font-weight-semibold);
+  line-height: var(--scb-line-height-base);
+  color: var(--scb-text);
+}
+
+.bookable-price__hint {
+  margin-top: var(--scb-space-1);
+  font-size: var(--scb-font-size-xs);
+  line-height: var(--scb-line-height-base);
+  color: var(--scb-text-muted);
+}
+
+.bookable-price__note {
+  padding: var(--scb-space-3) var(--scb-space-4);
+  font-size: var(--scb-font-size-sm);
+  line-height: var(--scb-line-height-base);
+  color: var(--scb-text);
+  background-color: var(--scb-selected-tint-faint);
+  border-radius: var(--scb-radius-control);
+}
+
+.bookable-price__note--warning {
+  background-color: var(--scb-warning-tint);
+  border: 1px solid var(--v-warning-base);
+}
+
+.bookable-price__note-title {
+  margin-bottom: 2px;
+  font-weight: var(--scb-font-weight-semibold);
+}
+
+.bookable-price__switch {
+  margin-top: 0;
+  padding-top: 0;
+  margin-bottom: var(--scb-space-4);
+}
+
+.bookable-price__box {
+  margin-top: var(--scb-space-5);
+  padding: var(--scb-space-4);
+  background: var(--scb-surface);
+  border: 1px solid var(--scb-surface-border);
+  border-radius: var(--scb-radius-surface);
+}
+
+.bookable-price__inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--scb-space-2) var(--scb-space-3);
+}
+
+.bookable-price__vat-rate {
+  max-width: 160px;
+}
+
+.bookable-price__summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--scb-space-2);
+  margin-top: var(--scb-space-4);
+  padding-top: var(--scb-space-3);
+  font-size: var(--scb-font-size-sm);
+  color: var(--scb-text-muted);
+  border-top: 1px solid var(--scb-rule);
+}
+
+.bookable-price__total {
+  font-size: 1.25rem;
+  font-weight: var(--scb-font-weight-semibold);
+  color: var(--v-primary-base);
+}
+</style>

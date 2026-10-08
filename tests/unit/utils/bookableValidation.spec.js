@@ -102,16 +102,27 @@ describe("bookableValidation - the rules of the spec", () => {
       expect.objectContaining({
         field: "priceCategories",
         message: "bookable.validation.price",
+        tab: "pricing",
+        section: "pricing-price",
         step: "price",
       }),
     ]);
+  });
+
+  it("leaves the prices to ParkraumService while it handles them", () => {
+    const priceCategories = [{ priceEur: "", interval: {} }];
+    const externalProviders = [
+      { provider: "ifbs", active: true, handles: ["pricing"] },
+    ];
+
+    expect(issuesOf({ priceCategories, externalProviders })).toEqual([]);
   });
 
   it("finds an invalid Höchstmenge je Buchung", () => {
     expect(issuesOf({ maxAmountPerBooking: 0 })).toEqual([
       expect.objectContaining({
         field: "maxAmountPerBooking",
-        section: "pricing-base",
+        section: "pricing-amount",
         step: "amount",
       }),
     ]);

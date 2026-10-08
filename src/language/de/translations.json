@@ -258,7 +258,7 @@
       },
       "price": {
         "external-title": "Preise kommen von einem externen Anbieter",
-        "external-text": "Die Preisgestaltung wird extern geführt. Deaktivieren Sie die externe Preissteuerung unter „Preise & Kapazität“, um die Preise hier selbst zu pflegen.",
+        "external-text": "Die Preise führt ParkraumService. Schalten Sie die externen Preise unter „Schließsysteme“ aus, um sie hier selbst zu pflegen.",
         "modes": {
           "free": "Kostenfrei",
           "simple": "Einfacher Preis",
@@ -276,27 +276,39 @@
         },
         "amount": "Was kostet es?",
         "amount-net": "Was kostet es? (netto)",
-        "basis": "Wonach richtet sich der Preis?",
-        "basis-tiers": "Wonach richten sich die Tarife?",
-        "basis-tiers-hint": "Bestimmt die Schwellen der Staffel und was Buchende im Katalog lesen.",
-        "bases": {
+        "type": "Wonach richtet sich der Preis?",
+        "type-tiers": "Wonach richten sich die Tarife?",
+        "type-tiers-hint": "Bestimmt die Schwellen der Staffel und was Buchende im Katalog lesen.",
+        "types": {
           "per-hour": "Pro Stunde",
           "per-day": "Pro Tag",
-          "fixed": "Fester Preis"
-        },
-        "unit": "Der Preis gilt je",
-        "units": {
           "per-item": "Stück",
           "per-square-meter": "m²"
         },
-        "full-days": "Angefangene Tage zählen voll",
-        "once-per-booking": "Gilt einmal je Buchung",
-        "once-per-booking-hint": "Sonderfall: Die gebuchte Menge multipliziert den Preis dann nicht.",
+        "fixed": {
+          "per-hour": {
+            "label": "Tagespauschale",
+            "hint": "Jeder angefangene Tag kostet den Preis einmal, egal wie viele Stunden."
+          },
+          "per-day": {
+            "label": "Angefangene Tage zählen voll",
+            "hint": "Jeder angefangene Tag kostet den vollen Preis. Aus: anteilig nach Minuten."
+          },
+          "per-item": {
+            "label": "Gilt einmal je Buchung",
+            "hint": "Sonderfall: Die gebuchte Menge multipliziert den Preis dann nicht."
+          },
+          "per-square-meter": {
+            "label": "Gilt einmal je Buchung",
+            "hint": "Sonderfall: Die gebuchte Fläche multipliziert den Preis dann nicht."
+          }
+        },
         "explain": {
           "none": "Ohne Betrag bleibt die Buchung kostenfrei.",
           "per-hour": "Gerechnet wird minutengenau – eine Buchung über 2,5 Stunden kostet {total}.",
+          "per-hour-daily": "Jeder angefangene Tag zählt einmal – Freitag 14:00 bis Sonntag 12:00 sind 3 Tage: {total}.",
           "per-day-full": "Jeder angefangene Tag zählt voll – Freitag 14:00 bis Sonntag 12:00 sind 3 Tage: {total}.",
-          "per-day-exact": "Gerechnet wird stundengenau – 6 Stunden kosten {total}.",
+          "per-day-exact": "Gerechnet wird minutengenau – 6 Stunden kosten {total}.",
           "week": "Eine Woche sind 7 Tage: {total}.",
           "month": "Ein Monat sind je nach Monat 28 bis 31 Tage: {low} bis {high}.",
           "once": "{price} für die ganze Buchung – Dauer und Menge spielen keine Rolle.",
@@ -307,15 +319,14 @@
         "vat": "Mehrwertsteuer",
         "vat-on": "Auf den Betrag kommt Mehrwertsteuer.",
         "vat-off": "Der Betrag ist der Endpreis.",
-        "vat-other": "anderer Satz",
         "vat-rate": "Steuersatz",
         "vat-summary": "{net} netto + {rate} % MwSt.",
         "vat-none": "Ohne Steueraufschlag",
         "gross": "brutto",
         "final": "Endpreis",
-        "coupons": "Gutscheine",
-        "coupons-on": "Buchende können im Checkout einen Gutschein einlösen.",
-        "coupons-off": "Keine Gutschein-Einlösung im Checkout."
+        "coupons": "Rabattcodes",
+        "coupons-on": "Buchende können im Checkout einen Rabattcode einlösen.",
+        "coupons-off": "Buchende können keinen Rabattcode einlösen."
       },
       "amount": {
         "title": "Anzahl / Kapazität",
@@ -371,6 +382,7 @@
           "external": "extern gesteuert",
           "tiers": "{count} Tarif | {count} Tarife",
           "once": "{price} für die ganze Buchung",
+          "daily-flat": "{price} Tagespauschale",
           "vat-rate": "{rate} %",
           "vat-none": "ohne",
           "yes": "ja",
@@ -516,9 +528,8 @@
         "generalImages": "Bilder",
         "generalBookerInfo": "Infos für Buchende",
         "generalTags": "Interne Tags",
-        "pricingExternal": "Externe Datenquelle",
-        "pricingBase": "Grundeinstellungen",
-        "pricingTiers": "Preisgestaltung",
+        "pricingAmount": "Anzahl",
+        "accessLocksExternal": "Externe Datenquelle",
         "bookingTypeSelect": "Auswahl",
         "bookingTypeDuration": "Dauer",
         "bookingTypeTimePeriods": "Zeitfenster",

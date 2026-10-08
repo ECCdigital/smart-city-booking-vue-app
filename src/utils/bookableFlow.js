@@ -139,7 +139,7 @@ const toNumber = (value) =>
   Number(typeof value === "string" ? value.replace(",", ".") : value) || 0;
 
 /** A category beyond the plain one: an interval, weekdays or holidays. */
-function isTierCategory(category) {
+export function isTierCategory(category) {
   return (
     (category?.interval &&
       (category.interval.start != null || category.interval.end != null)) ||
@@ -149,9 +149,9 @@ function isTierCategory(category) {
 }
 
 /**
- * `free` when nothing costs anything, `tiers` when the price editor would
- * show graduated prices, `simple` otherwise - the same rule as the price
- * tab's „Staffelpreise“ switch.
+ * `free` when nothing costs anything, `tiers` when a category is more than
+ * the plain one, `simple` otherwise. The one rule of the price form in both
+ * modes: a missing bound (`null` or `undefined`) makes no tier.
  */
 export function priceModeOf(bookable) {
   const categories = bookable?.priceCategories || [];
@@ -167,6 +167,22 @@ export function isPaid(bookable) {
   return (bookable?.priceCategories || []).some(
     (category) => toNumber(category.priceEur) > 0
   );
+}
+
+/** The four Preisarten the backend prices by, in the order offered. */
+export const PRICE_TYPES = Object.freeze([
+  "per-hour",
+  "per-day",
+  "per-item",
+  "per-square-meter",
+]);
+
+/**
+ * What `fixedPrice` starts as for a Preisart: on for a day price (started
+ * days count in full), off for the others.
+ */
+export function defaultFixedPrice(priceType) {
+  return priceType === "per-day";
 }
 
 function plainCategory(priceEur, fixedPrice) {
@@ -192,62 +208,59 @@ export function suggestedPriceType(bookable) {
 }
 
 /**
- * Lands the price mode on the bookable. Free keeps one category at 0 €;
- * simple keeps the first category's amount; tiers starts from what is
- * stored. Leaving free takes the unit the availability suggests.
+ * Sets the Preisart. `fixedPrice` means something else for each of them
+ * (Tagespauschale, full days, once per booking), so every category falls
+ * back to the new Preisart's default rather than silently changing meaning.
+ * The same Preisart again changes nothing.
+ */
+export function applyPriceType(bookable, priceType) {
+  if (bookable.priceType === priceType) return bookable;
+  bookable.priceType = priceType;
+  (bookable.priceCategories || []).forEach((category) => {
+    category.fixedPrice = defaultFixedPrice(priceType);
+  });
+  return bookable;
+}
+
+/**
+ * Lands the price form on the bookable. Free keeps one category at 0 €;
+ * simple keeps the first category's amount; tiers start from what is
+ * stored. Leaving free takes the Preisart the availability suggests, with
+ * its default `fixedPrice`.
  */
 export function applyPriceMode(bookable, mode) {
-  const categories = bookable.priceCategories || [];
-  const first = categories[0] || plainCategory(0, false);
-  const wasFree = priceModeOf(bookable) === "free";
-
   if (mode === "free") {
     bookable.priceCategories = [plainCategory(0, false)];
     return bookable;
   }
-  if (wasFree) {
+  if (!bookable.priceCategories?.length) {
+    bookable.priceCategories = [plainCategory(0, false)];
+  }
+  if (priceModeOf(bookable) === "free") {
     bookable.priceType = suggestedPriceType(bookable);
+    bookable.priceCategories.forEach((category) => {
+      category.fixedPrice = defaultFixedPrice(bookable.priceType);
+    });
   }
   if (mode === "simple") {
+    const first = bookable.priceCategories[0];
     bookable.priceCategories = [
       plainCategory(toNumber(first.priceEur), first.fixedPrice),
     ];
-  } else if (!categories.length) {
-    bookable.priceCategories = [plainCategory(0, false)];
-  }
-  return bookable;
-}
-
-/** `per-hour`, `per-day` or `fixed` - the item and the m² are both fixed. */
-export function priceBasisOf(bookable) {
-  return ["per-hour", "per-day"].includes(bookable?.priceType)
-    ? bookable.priceType
-    : "fixed";
-}
-
-/**
- * Sets the basis of the price. A day counts started days in full, as the
- * cloud variant sets it for a simple price; the fixed price keeps m² when
- * it had it. Tiers keep their categories' own settings.
- */
-export function applyPriceBasis(bookable, basis) {
-  if (basis === "fixed") {
-    if (bookable.priceType !== "per-square-meter") {
-      bookable.priceType = "per-item";
-    }
-  } else {
-    bookable.priceType = basis;
-  }
-  if (priceModeOf(bookable) === "simple" && bookable.priceCategories?.[0]) {
-    bookable.priceCategories[0].fixedPrice = basis === "per-day";
   }
   return bookable;
 }
 
 /**
  * The sentence under a simple price: what an example booking costs, as the
- * cloud variant explains it. The key below `bookable.flow.price.explain`
- * and the amounts (net, in euros) its parameters need.
+ * backend reckons it (`_internalRegularPriceEur`). The booking is split into
+ * calendar days; per day an hour price counts the hours, a day price the
+ * share of 24 hours, and `fixedPrice` drops that factor, so each touched day
+ * costs the price once. Item and m² ignore the duration; with `fixedPrice`
+ * they ignore the booked quantity too. The key below
+ * `bookable.flow.price.explain` and the amounts (net, in euros) its
+ * parameters need. The examples: 2.5 hours, Friday 14:00 to Sunday 12:00
+ * (three touched days), 6 hours, 3 items.
  */
 export function priceExplanation(bookable) {
   const category = bookable?.priceCategories?.[0];
@@ -258,7 +271,10 @@ export function priceExplanation(bookable) {
   const mode = bookingModeOf(bookable);
   switch (bookable.priceType) {
   case "per-hour":
-    return { key: "per-hour", amounts: { total: price * 2.5 } };
+    // Tagespauschale: no time factor, once per touched calendar day.
+    return fixed
+      ? { key: "per-hour-daily", amounts: { total: price * 3 } }
+      : { key: "per-hour", amounts: { total: price * 2.5 } };
   case "per-day":
     if (mode === "week")
       return { key: "week", amounts: { total: price * 7 } };
@@ -280,7 +296,15 @@ export function priceExplanation(bookable) {
   }
 }
 
-/** The VAT rates offered as chips; any other is typed. */
+/** Item and m² with `fixedPrice`: the price holds once per booking. */
+function oncePerBooking(bookable) {
+  return (
+    ["per-item", "per-square-meter"].includes(bookable?.priceType) &&
+    !!bookable?.priceCategories?.[0]?.fixedPrice
+  );
+}
+
+/** The VAT rates offered as shortcuts; any other is typed. */
 export const VAT_RATES = Object.freeze([19, 7]);
 
 // --- Anzahl ----------------------------------------------------------------
@@ -458,13 +482,17 @@ function availabilityRows(bookable) {
 
 /**
  * A simple price's amount with its unit, as the editor's overview formats
- * it; a fixed price that holds once per booking in the step's words.
+ * it; a fixed price that holds once per booking, or an hour price as
+ * Tagespauschale, in the words of the price.
  */
 function simpleAmountValue(bookable) {
   const category = bookable.priceCategories[0];
   const amount = formatCurrency(toNumber(category.priceEur));
-  if (priceBasisOf(bookable) === "fixed" && category.fixedPrice) {
+  if (oncePerBooking(bookable)) {
     return asWord(`${OVERVIEW}.values.once`, { price: amount });
+  }
+  if (bookable.priceType === "per-hour" && category.fixedPrice) {
+    return asWord(`${OVERVIEW}.values.daily-flat`, { price: amount });
   }
   return asText(`${amount}${PRICE_TYPE_SUFFIX[bookable.priceType] || ""}`);
 }

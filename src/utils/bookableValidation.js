@@ -16,6 +16,7 @@
  */
 
 import { isBookableEditSectionVisible } from "@/utils/bookableEditSections";
+import { handlesCapability } from "@/utils/bookableExternalProviders";
 
 const message = (name) => `bookable.validation.${name}`;
 
@@ -125,10 +126,10 @@ export const BOOKABLE_RULE_NAMES = Object.freeze(Object.keys(RULES));
  */
 const PLACES = Object.freeze({
   title: { tab: "general", section: "general-info", step: "identity" },
-  priceCategories: { tab: "pricing", section: "pricing-tiers", step: "price" },
+  priceCategories: { tab: "pricing", section: "pricing-price", step: "price" },
   maxAmountPerBooking: {
     tab: "pricing",
-    section: "pricing-base",
+    section: "pricing-amount",
     step: "amount",
   },
   bookingDiscounts: {
@@ -288,7 +289,8 @@ export function bookableIssues(bookable, { shown = everyOption } = {}) {
   const times = { startTime: "startTime", endTime: "endTime" };
 
   check("title", "title", [bookable.title]);
-  if (sectionShows("pricing-tiers")) {
+  // Where ParkraumService handles the prices, the price shows only its note.
+  if (!handlesCapability(bookable, "pricing")) {
     checkEntries("priceCategories", bookable.priceCategories, {
       priceEur: "price",
     });

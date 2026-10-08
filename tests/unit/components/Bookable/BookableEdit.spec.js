@@ -181,6 +181,50 @@ describe("BookableEdit - the areas without a step", () => {
   });
 });
 
+describe("BookableEdit - the price in both modes", () => {
+  const cardTitles = (wrapper) =>
+    wrapper
+      .findAll(".page-content__editor .section-card .section-header")
+      .wrappers.map((title) => title.text());
+  const paid = () =>
+    stored({
+      priceType: "per-hour",
+      priceCategories: [
+        {
+          priceEur: 20,
+          interval: { start: null, end: null },
+          fixedPrice: true,
+          holidays: [],
+          weekdays: [],
+        },
+      ],
+    });
+
+  it("frames Preis and Anzahl as cards of „Preise & Kapazität“", async () => {
+    const wrapper = await mountEdit({ id: "b1", tab: "pricing" }, paid());
+
+    expect(cardTitles(wrapper)).toEqual(["Preis", "Anzahl"]);
+    expect(find(wrapper, "flow-price-fixed").text()).toContain(
+      "Tagespauschale"
+    );
+  });
+
+  it("asks the same questions in the step „Preis“", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "pricing", mode: "flow" },
+      paid()
+    );
+
+    await find(wrapper, "flow-dot-price").trigger("click");
+    await flushPromises();
+
+    expect(find(wrapper, "flow-price-type-per-hour").exists()).toBe(true);
+    expect(find(wrapper, "flow-price-fixed").text()).toContain(
+      "Tagespauschale"
+    );
+  });
+});
+
 describe("BookableEdit - switching between the modes", () => {
   it("keeps what was typed on the editing page in the guided flow", async () => {
     const wrapper = await mountEdit({ id: "b1", tab: "pricing" });

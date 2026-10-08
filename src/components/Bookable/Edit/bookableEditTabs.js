@@ -1,5 +1,6 @@
 import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.vue";
-import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
+import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
+import BookableEditAmount from "@/components/Bookable/Edit/BookableEditAmount.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
 import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
@@ -89,7 +90,24 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
     key: "pricing",
     label: "Preise & Kapazität",
     icon: "mdi-cash",
-    comp: BookableEditPrice,
+    // Preis, as the guided flow's step „Preis“ asks it; the settings of
+    // ParkraumService are in Schließsysteme.
+    cards: [
+      {
+        key: "price",
+        comp: BookableFlowPrice,
+        titleKey: "bookable.flow.steps.price.title",
+        icon: "mdi-cash",
+        section: "pricing-price",
+      },
+      {
+        key: "amount",
+        comp: BookableEditAmount,
+        titleKey: "bookable.edit.sections.pricingAmount",
+        icon: "mdi-counter",
+        section: "pricing-amount",
+      },
+    ],
   },
   {
     key: "bookingType",

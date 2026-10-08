@@ -22,7 +22,7 @@ vi.mock("@/services/api/ApiEventService", () => ({
 
 const editorStub = (name) => ({
   name,
-  props: { bookable: Object, embedded: Boolean, tiersOnly: Boolean },
+  props: { bookable: Object, embedded: Boolean },
   render(h) {
     return h("div", { attrs: { "data-test": `stub-${name}` } });
   },
@@ -31,7 +31,7 @@ const editorStub = (name) => ({
 const STUBS = {
   BookableEditBookingType: editorStub("BookableEditBookingType"),
   BookableEditOpeningHours: editorStub("BookableEditOpeningHours"),
-  BookableEditPrice: editorStub("BookableEditPrice"),
+  BookableEditPriceTiers: editorStub("BookableEditPriceTiers"),
   UserRoleSelector: editorStub("UserRoleSelector"),
   BookingDiscountEditor: editorStub("BookingDiscountEditor"),
   MediaReferenceList: editorStub("MediaReferenceList"),
@@ -238,111 +238,6 @@ describe("BookableFlowAvailability", () => {
 
     expect(wrapper.text()).toContain("externen Anbieter");
     expect(find(wrapper, "flow-timed").exists()).toBe(false);
-  });
-});
-
-describe("BookableFlowPrice", () => {
-  it("starts free and says so", () => {
-    const wrapper = mountStep(BookableFlowPrice);
-
-    expect(
-      find(wrapper, "flow-price-mode-free").attributes("aria-checked")
-    ).toBe("true");
-    expect(find(wrapper, "flow-free").exists()).toBe(true);
-  });
-
-  it("prefills the unit from the availability when a price is set", async () => {
-    const wrapper = mountStep(BookableFlowPrice, { isScheduleRelated: true });
-
-    await find(wrapper, "flow-price-mode-simple").trigger("click");
-
-    expect(lastChange(wrapper).priceType).toBe("per-hour");
-    expect(find(wrapper, "flow-prefilled").text()).toContain(
-      "weil Buchende im Kalender eine Zeit wählen"
-    );
-  });
-
-  it("explains the price and adds VAT on top", () => {
-    const wrapper = mountStep(BookableFlowPrice, {
-      priceType: "per-hour",
-      priceValueAddedTax: 19,
-      priceCategories: [{ priceEur: 10, interval: {}, weekdays: [] }],
-    });
-
-    expect(find(wrapper, "flow-price-explain").text()).toContain("25,00");
-    expect(find(wrapper, "flow-vat-summary").text()).toContain("11,90");
-  });
-
-  it("hands tiers to the price editor's graduated prices", async () => {
-    const wrapper = mountStep(BookableFlowPrice, {
-      priceType: "per-hour",
-      priceCategories: [{ priceEur: 10, interval: {}, weekdays: [] }],
-    });
-
-    await find(wrapper, "flow-price-mode-tiers").trigger("click");
-
-    expect(
-      wrapper.findComponent({ name: "BookableEditPrice" }).props()
-    ).toMatchObject({ tiersOnly: true });
-  });
-
-  it("reads the price form from a bookable changed elsewhere", async () => {
-    const wrapper = mountStep(BookableFlowPrice);
-
-    await wrapper.setProps({
-      bookable: bookable({
-        priceCategories: [{ priceEur: 10, interval: {}, weekdays: [] }],
-        priceType: "per-hour",
-      }),
-    });
-
-    expect(
-      find(wrapper, "flow-price-mode-free").attributes("aria-checked")
-    ).toBe("false");
-  });
-
-  it("keeps a chosen simple price while it is still 0 €", async () => {
-    const wrapper = mountStep(BookableFlowPrice, { isScheduleRelated: true });
-
-    await find(wrapper, "flow-price-mode-simple").trigger("click");
-
-    expect(
-      find(wrapper, "flow-price-mode-simple").attributes("aria-checked")
-    ).toBe("true");
-  });
-
-  it("offers tiers unused in expert mode only", () => {
-    const wrapper = mountStep(BookableFlowPrice, {}, false);
-
-    expect(find(wrapper, "flow-price-mode-tiers").exists()).toBe(false);
-  });
-
-  it("offers tiers in use without expert mode", () => {
-    const wrapper = mountStep(
-      BookableFlowPrice,
-      {
-        priceCategories: [
-          { priceEur: 10, interval: { start: null, end: 2 }, weekdays: [] },
-          { priceEur: 8, interval: { start: 2, end: null }, weekdays: [] },
-        ],
-      },
-      false
-    );
-
-    expect(find(wrapper, "flow-price-mode-tiers").exists()).toBe(true);
-  });
-
-  it("shows Rabattcodes without expert mode while they are switched off", () => {
-    const paid = { priceCategories: [{ priceEur: 10, interval: {} }] };
-    const off = mountStep(
-      BookableFlowPrice,
-      { ...paid, enableCoupons: false },
-      false
-    );
-    const on = mountStep(BookableFlowPrice, paid, false);
-
-    expect(find(off, "flow-coupons").exists()).toBe(true);
-    expect(find(on, "flow-coupons").exists()).toBe(false);
   });
 });
 

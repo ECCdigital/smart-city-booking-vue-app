@@ -1,5 +1,6 @@
 <script>
 import BookableEditAccessPoints from "@/components/Bookable/Edit/BookableEditAccessPoints.vue";
+import BookableEditExternalProvider from "@/components/Bookable/Edit/BookableEditExternalProvider.vue";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { defaultAccessPointDetails } from "@/utilities/access-points";
 import bookableEditing from "@/mixins/bookableEditing";
@@ -14,15 +15,17 @@ import bookableEditing from "@/mixins/bookableEditing";
  * which access points this bookable uses. The provider is a property of the
  * access point and is chosen where the access point is created.
  *
- * The tab owns the switch, the buffer and the assignment - nothing that
- * counts. The bookable's `amount` (Stückzahl) is edited on the pricing tab
- * only; it is the capacity the concurrent bookings are counted against, and a
- * booking gets one compartment per booked unit at each assigned locker system
- * regardless of it (`docs/agents/access-vocabulary.md`).
+ * The area owns the switch, the buffer and the assignment - nothing that
+ * counts - and, for an assigned locker system of ParkraumService, the
+ * provider's settings (`BookableEditExternalProvider`). The bookable's
+ * `amount` (Stückzahl) is edited on the pricing tab only; it is the capacity
+ * the concurrent bookings are counted against, and a booking gets one
+ * compartment per booked unit at each assigned locker system regardless of
+ * it (`docs/agents/access-vocabulary.md`).
  */
 export default {
   name: "BookableEditAccessLocks",
-  components: { BookableEditAccessPoints },
+  components: { BookableEditAccessPoints, BookableEditExternalProvider },
   mixins: [bookableEditing],
   computed: {
     // The same gate the editor itself uses. Someone who may not write this
@@ -93,6 +96,10 @@ export default {
 
       <template v-if="active">
         <BookableEditAccessPoints
+          :bookable="bookable"
+          @update:bookable="$emit('update:bookable', $event)"
+        />
+        <BookableEditExternalProvider
           :bookable="bookable"
           @update:bookable="$emit('update:bookable', $event)"
         />

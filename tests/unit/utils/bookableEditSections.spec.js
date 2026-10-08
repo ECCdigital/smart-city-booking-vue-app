@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { getVisibleBookableEditSections } from "@/utils/bookableEditSections";
 
-function sectionIds(bookable) {
-  return getVisibleBookableEditSections("pricing", { bookable }).map(
+function sectionIds(bookable, tabKey = "pricing") {
+  return getVisibleBookableEditSections(tabKey, { bookable }).map(
     (section) => section.id
   );
 }
@@ -19,45 +19,53 @@ function bookable(externalProviders) {
 }
 
 /**
- * Since the locker fold the bookable no longer says which of its access points
- * is a locker system - that needs the tenant's access point list, which this
- * module cannot load. What it can read is the external provider the pricing
- * section configures, so that is what the anchor keys on.
+ * „Preise & Kapazität“ is two cards, Preis and Anzahl. Both stay while
+ * ParkraumService handles prices or Anzahl: they show its note then.
  */
 describe("bookableEditSections - the pricing tab", () => {
-  it("offers the external source once a provider is declared", () => {
-    expect(sectionIds(bookable([{ provider: "ifbs", handles: [] }]))).toContain(
-      "pricing-external"
-    );
+  it("has the cards Preis and Anzahl", () => {
+    expect(sectionIds(bookable([]))).toEqual([
+      "pricing-price",
+      "pricing-amount",
+    ]);
   });
 
-  it("leaves it out for a bookable with no provider at all", () => {
-    expect(sectionIds(bookable([]))).not.toContain("pricing-external");
-    expect(sectionIds({ id: "b1" })).not.toContain("pricing-external");
-  });
-
-  it("shows the own price tiers while no provider handles the pricing", () => {
-    expect(
-      sectionIds(
-        bookable([{ provider: "ifbs", active: true, handles: ["maxAmount"] }])
-      )
-    ).toContain("pricing-tiers");
-  });
-
-  it("hides the own price tiers when a provider handles the pricing", () => {
+  it("keeps Preis while a provider handles the pricing", () => {
     expect(
       sectionIds(
         bookable([{ provider: "ifbs", active: true, handles: ["pricing"] }])
       )
-    ).not.toContain("pricing-tiers");
+    ).toEqual(["pricing-price", "pricing-amount"]);
+  });
+});
+
+/**
+ * The settings of ParkraumService belong to the assigned locker system.
+ * Since the locker fold the bookable no longer says which of its access
+ * points is a locker system - that needs the tenant's access point list,
+ * which this module cannot load. What it can read is the provider the
+ * settings declare, so that is what the anchor keys on.
+ */
+describe("bookableEditSections - ParkraumService in Schließsysteme", () => {
+  it("offers its settings once a provider is declared", () => {
+    expect(
+      sectionIds(bookable([{ provider: "ifbs", handles: [] }]), "accessLocks")
+    ).toContain("pricing-external");
   });
 
-  it("keeps the own price tiers while the provider is switched off", () => {
+  it("leaves them out for a bookable with no provider at all", () => {
+    expect(sectionIds(bookable([]), "accessLocks")).not.toContain(
+      "pricing-external"
+    );
+    expect(sectionIds({ id: "b1" }, "accessLocks")).not.toContain(
+      "pricing-external"
+    );
+  });
+
+  it("no longer offers them in the pricing tab", () => {
     expect(
-      sectionIds(
-        bookable([{ provider: "ifbs", active: false, handles: ["pricing"] }])
-      )
-    ).toContain("pricing-tiers");
+      sectionIds(bookable([{ provider: "ifbs", handles: [] }]))
+    ).not.toContain("pricing-external");
   });
 });
 

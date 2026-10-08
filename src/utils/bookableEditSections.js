@@ -3,10 +3,7 @@
  * DOM id: be-section-{id}
  */
 
-import {
-  IFBS_PROVIDER,
-  providerHandles,
-} from "@/utils/bookableExternalProviders";
+import { IFBS_PROVIDER } from "@/utils/bookableExternalProviders";
 
 export function bookableEditSectionElementId(sectionId) {
   return `be-section-${sectionId}`;
@@ -26,7 +23,7 @@ export function getBookingMode(bookable) {
 }
 
 /**
- * Whether the bookable declares the external data source the pricing tab
+ * Whether the bookable declares the external data source Schließsysteme
  * configures.
  *
  * Since the locker fold the bookable no longer says which of its access points
@@ -38,16 +35,6 @@ export function getBookingMode(bookable) {
 function declaresExternalProvider(bookable) {
   return (bookable?.externalProviders || []).some(
     (provider) => provider?.provider === IFBS_PROVIDER
-  );
-}
-
-function handlesExternalPricing(bookable) {
-  const providers = bookable?.externalProviders;
-  if (!Array.isArray(providers)) return false;
-  return providers.some(
-    (provider) =>
-      provider?.provider === IFBS_PROVIDER &&
-      providerHandles(provider, "pricing")
   );
 }
 
@@ -84,22 +71,24 @@ const ALL_SECTIONS = [
   },
   {
     tabKey: "pricing",
+    id: "pricing-price",
+    labelKey: "bookable.flow.steps.price.title",
+    type: "scroll",
+  },
+  {
+    tabKey: "pricing",
+    id: "pricing-amount",
+    labelKey: "bookable.edit.sections.pricingAmount",
+    type: "scroll",
+  },
+  // The settings of ParkraumService, part of Schließsysteme; the id stays
+  // what links to it have known.
+  {
+    tabKey: "accessLocks",
     id: "pricing-external",
-    labelKey: "bookable.edit.sections.pricingExternal",
+    labelKey: "bookable.edit.sections.accessLocksExternal",
     type: "scroll",
     expertOption: "externalPrices",
-  },
-  {
-    tabKey: "pricing",
-    id: "pricing-base",
-    labelKey: "bookable.edit.sections.pricingBase",
-    type: "scroll",
-  },
-  {
-    tabKey: "pricing",
-    id: "pricing-tiers",
-    labelKey: "bookable.edit.sections.pricingTiers",
-    type: "scroll",
   },
   {
     tabKey: "bookingType",
@@ -239,7 +228,6 @@ function isSectionVisible(section, { bookable, shown = everyOption }) {
   const isTimeWindowMode = mode === "schedule" || mode === "timePeriod";
   const visibilityById = {
     "pricing-external": () => declaresExternalProvider(bookable),
-    "pricing-tiers": () => !handlesExternalPricing(bookable),
     "bookingType-duration": () => mode === "schedule",
     "bookingType-time-periods": () => mode === "timePeriod",
     "bookingType-block-periods": () => mode === "blockPeriod",

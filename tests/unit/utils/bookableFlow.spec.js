@@ -5,15 +5,14 @@ import {
   accessOf,
   applyAccess,
   applyBookingMode,
-  applyPriceBasis,
   applyPriceMode,
+  applyPriceType,
   editRouteOf,
   isFlowMode,
   listRouteOf,
   isUnlimitedAmount,
   optionalSections,
   overviewBlocks,
-  priceBasisOf,
   priceExplanation,
   priceModeOf,
   publishVariant,
@@ -193,26 +192,68 @@ describe("price", () => {
     expect(next.priceCategories).toEqual([category(12)]);
   });
 
-  it("counts started days in full for a simple daily price", () => {
-    const next = applyPriceBasis(
-      bookable({ priceType: "per-hour", priceCategories: [category(30)] }),
+  it("sets the fixed price of every category to the new Preisart's default", () => {
+    const tiers = [
+      category(30, { fixedPrice: true, interval: { start: null, end: 2 } }),
+      category(20, { fixedPrice: false, interval: { start: 2, end: null } }),
+    ];
+
+    const daily = applyPriceType(
+      bookable({ priceType: "per-hour", priceCategories: tiers }),
       "per-day"
     );
-    expect(next.priceType).toBe("per-day");
-    expect(next.priceCategories[0].fixedPrice).toBe(true);
+    expect(daily.priceType).toBe("per-day");
+    expect(daily.priceCategories.map((c) => c.fixedPrice)).toEqual([
+      true,
+      true,
+    ]);
 
-    applyPriceBasis(next, "fixed");
-    expect(next.priceType).toBe("per-item");
-    expect(next.priceCategories[0].fixedPrice).toBe(false);
+    for (const type of ["per-hour", "per-item", "per-square-meter"]) {
+      const next = applyPriceType(
+        bookable({ priceType: "per-day", priceCategories: tiers }),
+        type
+      );
+      expect(next.priceType).toBe(type);
+      expect(next.priceCategories.map((c) => c.fixedPrice)).toEqual([
+        false,
+        false,
+      ]);
+    }
   });
 
-  it("keeps m² as the fixed price's unit", () => {
-    const next = applyPriceBasis(
-      bookable({ priceType: "per-square-meter" }),
-      "fixed"
+  it("keeps the fixed price while the Preisart stays", () => {
+    const next = applyPriceType(
+      bookable({
+        priceType: "per-hour",
+        priceCategories: [category(30, { fixedPrice: true })],
+      }),
+      "per-hour"
     );
-    expect(next.priceType).toBe("per-square-meter");
-    expect(priceBasisOf(next)).toBe("fixed");
+    expect(next.priceCategories[0].fixedPrice).toBe(true);
+  });
+
+  it("takes the suggested Preisart's fixed price when leaving free", () => {
+    const longRange = applyPriceMode(
+      bookable({
+        isScheduleRelated: false,
+        isLongRange: true,
+        longRangeOptions: { type: "week" },
+        priceType: "per-day",
+      }),
+      "simple"
+    );
+    expect(longRange.priceCategories[0].fixedPrice).toBe(true);
+
+    const hourly = applyPriceMode(
+      bookable({
+        isScheduleRelated: true,
+        priceType: "per-day",
+        priceCategories: [category(0, { fixedPrice: true })],
+      }),
+      "tiers"
+    );
+    expect(hourly.priceType).toBe("per-hour");
+    expect(hourly.priceCategories[0].fixedPrice).toBe(false);
   });
 
   it("explains a price by an example booking", () => {
@@ -230,6 +271,23 @@ describe("price", () => {
         })
       )
     ).toEqual({ key: "per-day-full", amounts: { total: 60 } });
+    // Tagespauschale: once per touched calendar day, as for a day price.
+    expect(
+      priceExplanation(
+        bookable({
+          priceType: "per-hour",
+          priceCategories: [category(20, { fixedPrice: true })],
+        })
+      )
+    ).toEqual({ key: "per-hour-daily", amounts: { total: 60 } });
+    expect(
+      priceExplanation(
+        bookable({
+          priceType: "per-square-meter",
+          priceCategories: [category(4, { fixedPrice: true })],
+        })
+      )
+    ).toEqual({ key: "once", amounts: { price: 4 } });
     expect(
       priceExplanation(
         bookable({
@@ -483,7 +541,7 @@ describe("overview", () => {
     expect(shown(blockOf("price", item))).toEqual([
       ["Preis", "25,00 €/h"],
       ["Mehrwertsteuer", "19 %"],
-      ["Gutscheine", "ja"],
+      ["Rabattcodes", "ja"],
     ]);
   });
 
@@ -498,7 +556,7 @@ describe("overview", () => {
     expect(shown(blockOf("price", item))).toEqual([
       ["Preis", "12,50 €/Stk."],
       ["Mehrwertsteuer", "ohne"],
-      ["Gutscheine", "nein"],
+      ["Rabattcodes", "nein"],
     ]);
   });
 
@@ -513,6 +571,25 @@ describe("overview", () => {
       "Preis",
       "25,00 € für die ganze Buchung",
     ]);
+  });
+
+  it("names an hour price with fixedPrice as „Tagespauschale“", () => {
+    const item = bookable({
+      priceCategories: [category(25, { fixedPrice: true })],
+      priceType: "per-hour",
+    });
+
+    expect(shown(blockOf("price", item))[0]).toEqual([
+      "Preis",
+      "25,00 € Tagespauschale",
+    ]);
+  });
+
+  it("names a coupon setting never stored as switched on", () => {
+    const item = bookable({ priceCategories: [category(25)] });
+    delete item.enableCoupons;
+
+    expect(shown(blockOf("price", item))[2]).toEqual(["Rabattcodes", "ja"]);
   });
 
   it("counts the tiers instead of naming an amount", () => {
