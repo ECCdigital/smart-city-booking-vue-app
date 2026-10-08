@@ -25,19 +25,16 @@ const store = () =>
 const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t1", title: "Saal", ...overrides }).toPlain();
 
-const sections = (overrides, saved) => {
-  const { wrapper } = mountEditing(BookableEditPermissions, {
+const discountsShown = (overrides, saved) =>
+  mountEditing(BookableEditPermissions, {
     bookable: bookable(overrides),
     saved: saved && bookable(saved),
     expertMode: false,
     store: store(),
     stubs: { UserRoleSelector: true, BookingDiscountEditor: true },
-  });
-  return {
-    discounts: wrapper.find("#be-section-permissions-discounts").exists(),
-    cancellation: wrapper.find("#be-section-permissions-cancellation").exists(),
-  };
-};
+  })
+    .wrapper.find("#be-section-permissions-discounts")
+    .exists();
 
 const DISCOUNTS = {
   bookingDiscounts: {
@@ -45,31 +42,30 @@ const DISCOUNTS = {
     roles: [],
   },
 };
-const ADMINS_CANCEL = { cancellationPolicy: { userCancellable: false } };
 
-describe("BookableEditPermissions - expert options without expert mode", () => {
-  it("leaves out Preisnachlass and Stornierung unused", () => {
-    expect(sections({})).toEqual({ discounts: false, cancellation: false });
+// Serienbuchung and Stornierung are areas of their own now, framed by the
+// tab (BookableEditTab.spec.js).
+describe("BookableEditPermissions - Preisnachlass without expert mode", () => {
+  it("leaves it out unused", () => {
+    expect(discountsShown({})).toBe(false);
   });
 
-  it("shows Preisnachlass while set, on its own", () => {
-    expect(sections(DISCOUNTS)).toEqual({
-      discounts: true,
-      cancellation: false,
-    });
+  it("shows it while set", () => {
+    expect(discountsShown(DISCOUNTS)).toBe(true);
   });
 
-  it("shows Stornierung while only admins cancel, on its own", () => {
-    expect(sections(ADMINS_CANCEL)).toEqual({
-      discounts: false,
-      cancellation: true,
-    });
+  it("keeps it while the stored bookable uses it", () => {
+    expect(discountsShown({}, DISCOUNTS)).toBe(true);
   });
 
-  it("keeps both while the stored bookable uses them", () => {
-    expect(sections({}, { ...DISCOUNTS, ...ADMINS_CANCEL })).toEqual({
-      discounts: true,
-      cancellation: true,
+  it("leaves Serienbuchung and Stornierung to their own areas", () => {
+    const { wrapper } = mountEditing(BookableEditPermissions, {
+      bookable: bookable(),
+      store: store(),
+      stubs: { UserRoleSelector: true, BookingDiscountEditor: true },
     });
+
+    expect(wrapper.text()).not.toContain("Serienbuchung");
+    expect(wrapper.text()).not.toContain("stornieren");
   });
 });

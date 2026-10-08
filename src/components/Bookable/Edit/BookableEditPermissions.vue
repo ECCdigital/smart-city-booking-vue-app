@@ -8,6 +8,12 @@ import BookingDiscountEditor from "@/components/Bookable/Edit/BookingDiscountEdi
 import { mapGetters } from "vuex";
 import bookableEditing from "@/mixins/bookableEditing";
 
+/**
+ * What is left of the Berechtigungen tab once Serienbuchung and Stornierung
+ * became areas of their own: Anmeldepflicht, Individuelle Berechtigungen and
+ * Preisrabatte, until „Wer darf buchen?“ takes their place. Drawn in the tab
+ * without a frame (`BOOKABLE_EDIT_TABS`); its cards are its own.
+ */
 export default {
   name: "BookableEditPermissions",
   components: { BookingDiscountEditor, UserRoleSelector, BaseSection },
@@ -39,14 +45,6 @@ export default {
     },
   },
   watch: {
-    "model.isBlockPeriodRelated": {
-      immediate: true,
-      handler(enabled) {
-        if (enabled && this.model.groupBooking?.enabled) {
-          this.model.groupBooking.enabled = false;
-        }
-      },
-    },
     tenantId() {
       this.fetchUsers();
     },
@@ -66,12 +64,6 @@ export default {
     removePermittedRole(item) {
       this.model.permittedRoles.splice(
         this.model.permittedRoles.indexOf(item),
-        1
-      );
-    },
-    removeGroupBookingRole(item) {
-      this.model.groupBooking.permittedRoles.splice(
-        this.model.groupBooking.permittedRoles.indexOf(item),
         1
       );
     },
@@ -111,8 +103,6 @@ export default {
 
 <template>
   <div>
-    <BaseSection title="Berechtigungen" icon="mdi-account-lock-outline" />
-
     <v-card
       id="be-section-permissions-login"
       class="mb-6 section-card"
@@ -197,122 +187,5 @@ export default {
         hint="Gewähren Sie <strong>allen Benutzern einer Rolle</strong> einen Preisnachlass auf dieses Buchungsobjekt."
       />
     </div>
-
-    <v-card
-      id="be-section-permissions-group-booking"
-      class="mb-6 section-card"
-      outlined
-    >
-      <v-card-title class="section-header pa-4">
-        <v-icon class="mr-2">mdi-calendar-multiple</v-icon>
-        <span class="text-h6 font-weight-bold">Serienbuchungen</span>
-      </v-card-title>
-      <v-divider></v-divider>
-      <v-card-text class="pa-4">
-        <v-row>
-          <v-col cols="12">
-            <v-switch
-              dense
-              label="Serienbuchung erlauben"
-              hide-details
-              v-model="model.groupBooking.enabled"
-              :disabled="model.isBlockPeriodRelated"
-            ></v-switch>
-          </v-col>
-        </v-row>
-        <v-alert
-          v-if="model.isBlockPeriodRelated"
-          color="info"
-          dense
-          text
-          class="mt-3 mb-0"
-        >
-          Serienbuchungen sind bei Zeiträumen nicht verfügbar.
-        </v-alert>
-        <p v-else class="mb-3 mt-5 text-caption" style="max-width: 700px">
-          Serienbuchungen ermöglichen es Benutzern, mehrere Termine in einer
-          Buchungsserie zusammenzufassen. Dadurch können z.B. wöchentliche
-          Meetings oder Kurse mit mehreren Terminen einfacher gebucht und
-          verwaltet werden.
-        </p>
-        <v-row v-if="model.groupBooking.enabled" class="mt-4">
-          <v-col cols="12">
-            <v-alert color="info" dense text class="mb-4">
-              <div class="d-flex align-center">
-                <v-icon class="mr-3" color="info">
-                  mdi-information-outline
-                </v-icon>
-                <div>
-                  <strong>Hinweis:</strong>
-                  Sie können die Möglichkeit zur Erstellung von Buchungsserien
-                  weiter einschränken, indem Sie nur bestimmten Rollen die
-                  Berechtigung dazu erteilen. Benutzer ohne diese Berechtigung
-                  können weiterhin einzelne Termine buchen, aber keine Serien
-                  erstellen.
-                </div>
-              </div>
-            </v-alert>
-
-            <v-combobox
-              v-model="model.groupBooking.permittedRoles"
-              :items="availableRoles"
-              label="Rollen, die eine Buchungsserie erstellen dürfen"
-              item-text="name"
-              item-value="id"
-              hide-selected
-              no-data-text="Keine Rollen verfügbar"
-              multiple
-              background-color="accent"
-              clearable
-              chips
-              filled
-              dense
-              :return-object="false"
-            >
-              <template v-slot:selection="{ attrs, item, select, selected }">
-                <v-chip
-                  v-bind="attrs"
-                  :input-value="selected"
-                  close
-                  small
-                  color="secondary"
-                  @click="select"
-                  @click:close="removeGroupBookingRole(item)"
-                >
-                  <strong>{{
-                    availableRoles.find((r) => r.id === item)?.name
-                  }}</strong>
-                </v-chip>
-              </template>
-            </v-combobox>
-          </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
-
-    <v-card
-      v-if="expertOptionShown('cancellation')"
-      id="be-section-permissions-cancellation"
-      class="mb-6 section-card"
-      outlined
-    >
-      <v-card-title class="section-header pa-4">
-        <v-icon class="mr-2">mdi-book-cancel-outline</v-icon>
-        <span class="text-h6 font-weight-bold">Stornierungsrichtlinie</span>
-      </v-card-title>
-      <v-divider></v-divider>
-      <v-card-text class="pa-4">
-        <v-switch
-          dense
-          label="Benutzer dürfen ihre Buchungen selbst stornieren"
-          hide-details
-          v-model="model.cancellationPolicy.userCancellable"
-        ></v-switch>
-        <p class="mb-0 mt-3 text-caption" style="max-width: 700px">
-          Wenn aktiviert, können Benutzer ihre eigenen Buchungen stornieren.
-          Andernfalls ist eine Stornierung nur durch Administratoren möglich.
-        </p>
-      </v-card-text>
-    </v-card>
   </div>
 </template>

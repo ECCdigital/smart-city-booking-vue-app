@@ -58,6 +58,26 @@ describe("normalizeBookable", () => {
     ).toEqual({ userCancellable: false });
   });
 
+  it("switches Serienbuchung off for Zeiträume, keeping its roles", () => {
+    const normalized = normalizeBookable({
+      isBlockPeriodRelated: true,
+      groupBooking: { enabled: true, permittedRoles: ["r1"] },
+    });
+
+    expect(normalized.groupBooking).toEqual({
+      enabled: false,
+      permittedRoles: ["r1"],
+    });
+  });
+
+  it("leaves Serienbuchung alone without Zeiträume", () => {
+    const groupBooking = { enabled: true, permittedRoles: [] };
+
+    expect(normalizeBookable({ groupBooking }).groupBooking).toEqual(
+      groupBooking
+    );
+  });
+
   it("switches the lead time on where service hours are stored", () => {
     const normalized = normalizeBookable({
       isScheduleRelated: true,

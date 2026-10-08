@@ -32,6 +32,12 @@ vi.mock("@/services/api/ApiRolesService", () => ({
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenantUsers: vi.fn().mockResolvedValue({ data: [] }) },
 }));
+vi.mock("@/services/permissions/BookablePermissionService", () => ({
+  default: { allowCreate: () => true, allowUpdate: () => true },
+}));
+vi.mock("@/services/api/ApiInstanceService", () => ({
+  default: { getBookableCustomFields: vi.fn().mockResolvedValue([]) },
+}));
 
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 
@@ -96,6 +102,82 @@ describe("BookableEdit - loading", () => {
     });
     expect(saved.blockPeriods[0].id).toEqual(expect.any(String));
     expect(unsaved(wrapper)).toBe(false);
+  });
+});
+
+describe("BookableEdit - the areas without a step", () => {
+  /** The links below the open tab in the navigation, in order. */
+  const subNav = (wrapper) =>
+    wrapper
+      .findAll(".bookable-edit-nav__section")
+      .wrappers.map((link) => link.text());
+  const cardTitles = (wrapper) =>
+    wrapper
+      .findAll(".page-content__editor .section-card .section-header")
+      .wrappers.map((title) => title.text());
+
+  it("frames the areas of a tab as cards, named as in its navigation", async () => {
+    const wrapper = await mountEdit({ id: "b1", tab: "relatedBookables" });
+
+    expect(cardTitles(wrapper)).toEqual(["Zusatzobjekte", "Hierarchie"]);
+    expect(subNav(wrapper)).toEqual(["Zusatzobjekte", "Hierarchie"]);
+  });
+
+  it("names Serienbuchung and Stornierung in Berechtigungen the same way", async () => {
+    const wrapper = await mountEdit({ id: "b1", tab: "permissions" });
+
+    expect(subNav(wrapper).slice(-2)).toEqual(["Serienbuchung", "Stornierung"]);
+    expect(cardTitles(wrapper).slice(-2)).toEqual([
+      "Serienbuchung",
+      "Stornierung",
+    ]);
+  });
+
+  it("changes nothing when the tabs of areas open", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "general" },
+      stored({
+        isScheduleRelated: false,
+        isBlockPeriodRelated: true,
+        blockPeriods: [{ id: "p1", label: "Wochenende" }],
+        groupBooking: { enabled: true, permittedRoles: [] },
+        cancellationPolicy: null,
+      })
+    );
+
+    for (const label of [
+      "Schließsysteme",
+      "Abhängigkeiten",
+      "Berechtigungen",
+      "Anhänge",
+      "Eigene Felder",
+      "Sonstiges",
+    ]) {
+      await tab(wrapper, label).trigger("click");
+      await flushPromises();
+    }
+
+    expect(unsaved(wrapper)).toBe(false);
+  });
+
+  it("hands a change of an area to the bookable it saves", async () => {
+    ApiBookablesService.createOrUpdateBookable.mockImplementation(
+      async (bookable) => ({ data: bookable })
+    );
+    const wrapper = await mountEdit({ id: "b1", tab: "permissions" });
+
+    await wrapper
+      .find("#be-section-permissions-cancellation input")
+      .trigger("click");
+    expect(unsaved(wrapper)).toBe(true);
+    // The stub's button takes SaveBar's `disabled` as its own; the bar
+    // itself is SaveBar's spec.
+    wrapper.findComponent({ name: "SaveBar" }).vm.$emit("submit");
+    await flushPromises();
+
+    const [saved] =
+      ApiBookablesService.createOrUpdateBookable.mock.calls.at(-1);
+    expect(saved.cancellationPolicy).toEqual({ userCancellable: false });
   });
 });
 
