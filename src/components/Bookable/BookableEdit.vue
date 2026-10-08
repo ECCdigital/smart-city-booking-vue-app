@@ -29,6 +29,30 @@
             </span>
           </div>
           <div class="page-content__meta-actions">
+            <v-btn
+              v-if="bookableID && !flowMode"
+              small
+              text
+              color="primary"
+              class="page-content__flow-switch"
+              data-test="flow-enter"
+              @click="enterFlow"
+            >
+              <v-icon left small>mdi-format-list-checks</v-icon>
+              {{ $t("bookable.flow.enter") }}
+            </v-btn>
+            <v-btn
+              v-if="bookableID && flowMode && !flowOutcome"
+              small
+              text
+              color="primary"
+              class="page-content__flow-switch"
+              data-test="flow-leave"
+              @click="leaveFlow"
+            >
+              <v-icon left small>mdi-view-dashboard-outline</v-icon>
+              {{ $t("bookable.flow.leave") }}
+            </v-btn>
             <v-switch
               v-if="expertModeToggleVisible"
               :input-value="expertMode"
@@ -53,14 +77,32 @@
         <BookableEditStatus :bookable="bookable" />
 
         <BookableEditOverview
-          v-if="!$vuetify.breakpoint.lgAndUp"
+          v-if="!flowMode && !$vuetify.breakpoint.lgAndUp"
           variant="band"
           :bookable="bookable"
           @navigate-tab="goToTab"
         />
       </div>
 
-      <div class="page-content__main">
+      <!-- The guided flow (ECCdigital/tickets#326) is a mode of this page:
+           the same bookable, saved once at its end. A new bookable is
+           always created in it. -->
+      <BookableFlow
+        v-if="flowMode && bookable.tenantId"
+        :bookable="bookable"
+        :is-new="!bookableID"
+        :level="supervisionLevel"
+        :in-progress="inProgress"
+        :save-failed="flowSaveFailed"
+        :outcome="flowOutcome"
+        @update:bookable="onUpdateBookable"
+        @save="saveFlow"
+        @open-section="openSection"
+        @another="createAnother"
+        @overview="toOverview"
+      />
+
+      <div v-else-if="!flowMode" class="page-content__main">
         <div class="page-content__nav">
           <nav
             v-if="$vuetify.breakpoint.mdAndUp"
@@ -178,11 +220,12 @@
     </v-form>
 
     <SaveBar
+      v-if="!flowMode"
       :anchor-el="
         $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
       "
       :scroll-root="scrollRoot"
-      @submit="createOrUpdate"
+      @submit="createOrUpdate()"
       @cancel="onRestoreChanges"
       show-restore
       :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
@@ -220,6 +263,13 @@ import BookableEditStatus from "@/components/Bookable/Edit/BookableEditStatus.vu
 import BookableEditOverview from "@/components/Bookable/Edit/BookableEditOverview.vue";
 import ToastService from "@/services/ToastService";
 import BookableEditCustomFields from "@/components/Bookable/Edit/BookableEditCustomFields.vue";
+import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
+import {
+  FLOW_MODE,
+  editRouteOf,
+  isFlowMode,
+  withPublication,
+} from "@/utils/bookableFlow";
 import {
   getInitialBookableExpertMode,
   isBookableExpertModeConfigured,
@@ -257,6 +307,7 @@ export default {
     BookableEditAttachments,
     BookableEditAdditional,
     BookableEditCustomFields,
+    BookableFlow,
   },
   mixins: [unsavedChangesGuard],
   props: {
@@ -348,14 +399,32 @@ export default {
         bookable: {},
       },
       bookable: {},
+      // The guided flow's save: its outcome (`published`, `draft`, `kept`)
+      // turns the flow into its confirmation.
+      flowOutcome: null,
+      flowSaveFailed: false,
     };
   },
   computed: {
     ...mapGetters({
       currentTenant: "tenants/currentTenant",
+      adminSupervisionLevel: "tenants/currentSupervisionLevel",
+      supervisionLevelOf: "user/supervisionLevelOf",
     }),
     bookableID() {
       return this.$route.query.id;
+    },
+    flowMode() {
+      return isFlowMode({
+        bookableId: this.bookableID,
+        mode: this.$route.query.mode,
+      });
+    },
+    // The sign-in's level, else the admin DTO's - as the pending banner
+    // reads it. It words the flow's closing action.
+    supervisionLevel() {
+      const tenantId = this.bookable.tenantId || this.currentTenant?.id;
+      return this.supervisionLevelOf(tenantId) ?? this.adminSupervisionLevel;
     },
     expertMode() {
       return this.expertModeContext.enabled;
@@ -445,20 +514,22 @@ export default {
       }
       return true;
     },
-    async createOrUpdate() {
+    /** Saves `payload` (the bookable as edited); `true` when it was stored. */
+    async createOrUpdate(payload = this.bookable) {
       try {
         this.inProgress = true;
         const response = await ApiBookablesService.createOrUpdateBookable(
-          this.bookable
+          payload
         );
         this.bookable = normalizeBookingDiscounts(
           normalizeLeadTimeFields(_.cloneDeep(response.data))
         );
 
         if (!this.bookableID) {
-          this.$router.replace({
-            query: { ...this.$route.query, id: this.bookable.id },
-          });
+          const query = { ...this.$route.query, id: this.bookable.id };
+          // A bookable created in the flow stays in it for the confirmation.
+          if (this.flowMode) query.mode = FLOW_MODE;
+          this.$router.replace({ query });
         }
 
         // Match init(): snapshot the normalized bookable, not raw response.data
@@ -476,6 +547,7 @@ export default {
             ToastService.createToast("bookable.update.success", "success")
           );
         }
+        return true;
       } catch (err) {
         if (err.response?.status === 400) {
           // A rejected save is a ValidationError whose details name the
@@ -499,9 +571,61 @@ export default {
             ToastService.createToast("bookable.update.error", "error")
           );
         }
+        return false;
       } finally {
         this.inProgress = false;
       }
+    },
+    /**
+     * The flow's single save. „Speichern und veröffentlichen“ stores the
+     * publication wish; „Nur speichern“ leaves the publication as it is.
+     */
+    async saveFlow(publish) {
+      const isNew = !this.bookableID;
+      const wasPublic = this.bookable.isPublic === true;
+      this.flowSaveFailed = false;
+      const saved = await this.createOrUpdate(
+        withPublication(this.bookable, publish)
+      );
+      if (!saved) {
+        this.flowSaveFailed = true;
+        return;
+      }
+      if (publish) {
+        this.flowOutcome = "published";
+      } else {
+        this.flowOutcome = !isNew && wasPublic ? "kept" : "draft";
+      }
+    },
+    enterFlow() {
+      this.$router.replace({
+        query: { ...this.$route.query, mode: FLOW_MODE },
+      });
+    },
+    /** Back to the editor; what the flow changed stays unsaved, not lost. */
+    leaveFlow() {
+      const query = { ...this.$route.query };
+      delete query.mode;
+      this.flowOutcome = null;
+      return this.$router.replace({ query });
+    },
+    async openSection({ tabKey, sectionId }) {
+      await this.leaveFlow();
+      this.$nextTick(() => this.goToTab(tabKey, sectionId || undefined));
+    },
+    /** „Zur Übersicht“: this bookable in the editor of its type. */
+    toOverview() {
+      const name = editRouteOf(this.bookable.type);
+      if (name === this.$route.name) {
+        this.leaveFlow();
+        return;
+      }
+      this.flowOutcome = null;
+      this.$router.push({ name, query: { id: this.bookable.id } });
+    },
+    /** „Weiteres Buchungsobjekt anlegen“: a new one of the same type. */
+    createAnother() {
+      this.$router.push({ name: editRouteOf(this.bookable.type) });
     },
     async init() {
       if (this.bookableID) {
@@ -711,6 +835,10 @@ export default {
     bookableID: {
       immediate: true,
       handler() {
+        if (!this.bookableID) {
+          this.flowOutcome = null;
+          this.flowSaveFailed = false;
+        }
         this.init();
       },
     },

@@ -12,7 +12,8 @@ export function bookableEditSectionElementId(sectionId) {
   return `be-section-${sectionId}`;
 }
 
-function getBookingMode(bookable) {
+/** The booking type of the bookable, as the booking type tab names it. */
+export function getBookingMode(bookable) {
   if (!bookable) return "independent";
   if (bookable.isScheduleRelated) return "schedule";
   if (bookable.isTimePeriodRelated) return "timePeriod";

@@ -1,10 +1,10 @@
 <template>
   <v-form ref="form" v-model="valid">
-    <BaseSection title="Preise & Kapazität" icon="mdi-cash" />
+    <BaseSection v-if="!tiersOnly" title="Preise & Kapazität" icon="mdi-cash" />
 
     <v-expand-transition>
       <v-alert
-        v-if="expertMode && showIfbsRecommendation"
+        v-if="!tiersOnly && expertMode && showIfbsRecommendation"
         prominent
         colored-border
         border="left"
@@ -96,7 +96,7 @@
 
     <v-expand-transition>
       <v-card
-        v-if="expertMode && isIfbsActive"
+        v-if="!tiersOnly && expertMode && isIfbsActive"
         id="be-section-pricing-external"
         class="mb-4 section-card"
         outlined
@@ -341,7 +341,12 @@
     </v-expand-transition>
 
     <template>
-      <v-card id="be-section-pricing-base" class="mb-4 section-card" outlined>
+      <v-card
+        v-if="!tiersOnly"
+        id="be-section-pricing-base"
+        class="mb-4 section-card"
+        outlined
+      >
         <v-card-title class="section-header pa-4">
           <v-icon class="mr-2">mdi-cog-outline</v-icon>
           <span class="text-h6 font-weight-bold">Grundeinstellungen</span>
@@ -466,7 +471,7 @@
         <v-divider />
 
         <v-card-text class="pa-4">
-          <template v-if="expertMode">
+          <template v-if="expertMode && !tiersOnly">
             <v-row>
               <v-col cols="12">
                 <v-switch
@@ -935,7 +940,12 @@ export default {
   name: "BookableEditPrice",
   components: { BaseSection },
   mixins: [bookableExpertMode, externalPrices],
-  props: { bookable: { type: Object, required: true } },
+  props: {
+    bookable: { type: Object, required: true },
+    // Inside the guided flow, which asks for free, simple or tiered prices,
+    // the unit and the VAT itself: only the graduated price editor.
+    tiersOnly: { type: Boolean, default: false },
+  },
   data() {
     return {
       useGraduatedPrices: false,
@@ -1149,6 +1159,7 @@ export default {
         if (!val?.priceCategories) return;
         const cats = val.priceCategories;
         this.useGraduatedPrices =
+          this.tiersOnly ||
           cats.length > 1 ||
           cats.some(
             (c) =>

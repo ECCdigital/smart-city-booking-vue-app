@@ -6,7 +6,11 @@ export default {
   name: "BookableEditOpeningHours",
   components: { BaseSection },
   mixins: [bookableExpertMode],
-  props: { bookable: { type: Object, required: true } },
+  props: {
+    bookable: { type: Object, required: true },
+    // Inside the guided flow, which titles the step itself.
+    embedded: { type: Boolean, default: false },
+  },
 
   data() {
     return {
@@ -166,7 +170,11 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <BaseSection title="Öffnungszeiten" icon="mdi-clock-outline" />
+    <BaseSection
+      v-if="!embedded"
+      title="Öffnungszeiten"
+      icon="mdi-clock-outline"
+    />
 
     <div v-if="bookingType === 'schedule' || bookingType === 'timePeriod'">
       <!-- Regular Opening Hours -->

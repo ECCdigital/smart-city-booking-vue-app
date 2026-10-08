@@ -9,7 +9,12 @@ export default {
   name: "BookableEditBookingType",
   components: { BaseSection, BookableEditLeadTime },
   mixins: [bookableExpertMode],
-  props: { bookable: { type: Object, required: true } },
+  props: {
+    bookable: { type: Object, required: true },
+    // Inside the guided flow, which asks for the booking type itself: only
+    // the settings of the chosen type are shown.
+    embedded: { type: Boolean, default: false },
+  },
   data() {
     return {
       valid: false,
@@ -314,14 +319,18 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <BaseSection title="Buchungstyp" icon="mdi-calendar-clock">
-      <v-alert color="info" dense text class="mb-4">
+    <component
+      :is="embedded ? 'div' : 'BaseSection'"
+      title="Buchungstyp"
+      icon="mdi-calendar-clock"
+    >
+      <v-alert v-if="!embedded" color="info" dense text class="mb-4">
         <v-icon class="mr-3" color="info"> mdi-information-outline </v-icon>
         Wählen Sie aus, wie Kunden dieses Objekt buchen können.
       </v-alert>
 
       <v-alert
-        v-if="!expertMode && isExpertBookingTypeActive"
+        v-if="!embedded && !expertMode && isExpertBookingTypeActive"
         color="info"
         dense
         text
@@ -330,7 +339,7 @@ export default {
         {{ $t("bookable.edit.expertMode.bookingTypeExpertOnly") }}
       </v-alert>
 
-      <div id="be-section-bookingType-select">
+      <div v-if="!embedded" id="be-section-bookingType-select">
         <v-radio-group v-model="bookingType">
           <v-radio value="schedule" class="mb-3">
             <template v-slot:label>
@@ -1022,7 +1031,7 @@ export default {
         :show-buffer="false"
         @update:bookable="model = $event"
       />
-    </BaseSection>
+    </component>
   </v-form>
 </template>
 

@@ -148,6 +148,258 @@
     "integerRequired": "Ganzzahl erforderlich"
   },
   "bookable": {
+    "flow": {
+      "enter": "Geführt bearbeiten",
+      "leave": "Zur Bearbeitungsseite",
+      "progress": "Fortschritt",
+      "count": "Schritt {index} von {total}",
+      "step-label": "Schritt {index}: {title}",
+      "done-label": "Abschluss",
+      "back": "Zurück",
+      "next": "Weiter",
+      "name-missing": "Ein Name fehlt noch",
+      "save-only": "Nur speichern",
+      "save-and-publish": {
+        "free": "Speichern und veröffentlichen",
+        "supervised": "Speichern und zur Prüfung einreichen",
+        "pending": "Speichern und Veröffentlichung vormerken",
+        "declined": "Speichern und Veröffentlichung vormerken"
+      },
+      "save-hint": "Gespeichert wird erst hier. Wer den Ablauf vorher verlässt, verliert die Angaben.",
+      "save-failed": "Das Buchungsobjekt konnte nicht gespeichert werden.",
+      "steps": {
+        "identity": {
+          "title": "Identität",
+          "why": "Name, Typ und Bild – daran erkennen Buchende das Objekt und Sie es später selbst wieder."
+        },
+        "availability": {
+          "title": "Verfügbarkeit",
+          "why": "Wie Buchende Zeit wählen – Kalender, feste Zeiten, Langzeit oder keine Zeitauswahl. Der Kern der Buchung."
+        },
+        "price": {
+          "title": "Preis",
+          "why": "Was Buchende zahlen. Kostenfrei ist eine vollwertige Antwort."
+        },
+        "amount": {
+          "title": "Anzahl & Kapazität",
+          "why": "Wie viele Einheiten gleichzeitig buchbar sind. Unbegrenzt ist die häufigste Ursache für Überbuchung."
+        },
+        "permission": {
+          "title": "Berechtigung",
+          "why": "Wer buchen darf – offen für alle oder auf bestimmte Gruppen beschränkt."
+        },
+        "approval": {
+          "title": "Freigabe",
+          "why": "Sollen Buchungen automatisch freigegeben werden oder erst nach Ihrer Prüfung?"
+        }
+      },
+      "identity": {
+        "catalog": "Das sehen Buchende im Katalog",
+        "title": "Titel",
+        "title-placeholder": "z. B. Großer Saal",
+        "description": "Beschreibung",
+        "flags": "Merkmale",
+        "flags-hint": "Kurze Vorteile neben der Beschreibung, z. B. „WLAN inklusive“. Knapp halten.",
+        "flags-empty": "Merkmal eingeben und mit Enter übernehmen",
+        "type": "Typ",
+        "type-hint": "Bestimmt Darstellung und Icon im Katalog. Wie gebucht wird, legen Sie unter „Verfügbarkeit“ fest.",
+        "event": "Veranstaltung",
+        "event-hint": "Verknüpft das Ticket mit einer Veranstaltung.",
+        "image": "Bild",
+        "image-hint": "Aus der Mediathek wählen, neu hochladen oder extern verlinken.",
+        "location": "Standort",
+        "location-hint": "Wo Buchende hin müssen. Wird die Adresse gefunden, erscheint sie auf der Objektseite auf der Karte."
+      },
+      "availability": {
+        "external-title": "Verfügbarkeit kommt von einem externen Anbieter",
+        "external-text": "Die Verfügbarkeit wird extern geführt. Deaktivieren Sie die externe Steuerung unter „Schließsysteme“, um sie hier selbst zu pflegen.",
+        "timed": "Wird dieses Objekt für eine Zeit gebucht?",
+        "timed-no": "Ohne Zeit",
+        "timed-yes": "Für eine Zeit",
+        "untimed-info": "Buchende buchen eine feste Menge ohne Zeitauswahl. Die Kapazität steuern Sie über „Anzahl & Kapazität“.",
+        "mode": "Wie wird die Zeit gebucht?",
+        "modes": {
+          "schedule": "Freie Zeitwahl",
+          "timePeriod": "Feste Zeiten",
+          "blockPeriod": "Zeiträume",
+          "longRange": "Langzeit"
+        },
+        "explain": {
+          "schedule": "Buchende suchen sich im Kalender einen freien Zeitpunkt und wählen die Dauer innerhalb der Grenzen.",
+          "timePeriod": "Sie geben feste Zeiten vor; Buchende wählen eine freie davon.",
+          "blockPeriod": "Sie geben wiederkehrende, tagesübergreifende Zeiträume vor, etwa ein Wochenende; Buchende wählen einen davon.",
+          "week": "Buchende buchen ganze Wochen am Stück.",
+          "month": "Buchende buchen ganze Monate am Stück."
+        },
+        "long-range": "Wochen oder Monate?",
+        "long-range-week": "Wochen",
+        "long-range-month": "Monate",
+        "long-range-info": "Bei Langzeitbuchungen prüft das System keine Öffnungszeiten oder Ausnahmen – sie liegen naturgemäß außerhalb von Tagesfenstern."
+      },
+      "price": {
+        "external-title": "Preise kommen von einem externen Anbieter",
+        "external-text": "Die Preisgestaltung wird extern geführt. Deaktivieren Sie die externe Preissteuerung unter „Preise & Kapazität“, um die Preise hier selbst zu pflegen.",
+        "modes": {
+          "free": "Kostenfrei",
+          "simple": "Einfacher Preis",
+          "tiers": "Tarife"
+        },
+        "free-info": "Dieses Objekt ist kostenfrei buchbar – im Checkout gibt es keinen Zahlungsschritt.",
+        "prefilled": "Vorbelegt, {reason} – Sie können das ändern.",
+        "reasons": {
+          "week": "weil Buchende ganze Wochen buchen",
+          "month": "weil Buchende ganze Monate buchen",
+          "schedule": "weil Buchende im Kalender eine Zeit wählen",
+          "timePeriod": "weil die festen Zeiten eine Dauer haben",
+          "blockPeriod": "weil die Zeiträume eine Dauer haben",
+          "independent": "weil hier keine Zeit gewählt wird"
+        },
+        "amount": "Was kostet es?",
+        "amount-net": "Was kostet es? (netto)",
+        "basis": "Wonach richtet sich der Preis?",
+        "basis-tiers": "Wonach richten sich die Tarife?",
+        "basis-tiers-hint": "Bestimmt die Schwellen der Staffel und was Buchende im Katalog lesen.",
+        "bases": {
+          "per-hour": "Pro Stunde",
+          "per-day": "Pro Tag",
+          "fixed": "Fester Preis"
+        },
+        "unit": "Der Preis gilt je",
+        "units": {
+          "per-item": "Stück",
+          "per-square-meter": "m²"
+        },
+        "full-days": "Angefangene Tage zählen voll",
+        "once-per-booking": "Gilt einmal je Buchung",
+        "once-per-booking-hint": "Sonderfall: Die gebuchte Menge multipliziert den Preis dann nicht.",
+        "explain": {
+          "none": "Ohne Betrag bleibt die Buchung kostenfrei.",
+          "per-hour": "Gerechnet wird minutengenau – eine Buchung über 2,5 Stunden kostet {total}.",
+          "per-day-full": "Jeder angefangene Tag zählt voll – Freitag 14:00 bis Sonntag 12:00 sind 3 Tage: {total}.",
+          "per-day-exact": "Gerechnet wird stundengenau – 6 Stunden kosten {total}.",
+          "week": "Eine Woche sind 7 Tage: {total}.",
+          "month": "Ein Monat sind je nach Monat 28 bis 31 Tage: {low} bis {high}.",
+          "once": "{price} für die ganze Buchung – Dauer und Menge spielen keine Rolle.",
+          "per-item": "Die Dauer spielt keine Rolle – jede Buchung kostet {price}.",
+          "per-items": "Die Dauer spielt keine Rolle: 3 Stück kosten {total}.",
+          "per-square-meter": "Die Dauer spielt keine Rolle – {price} je m²."
+        },
+        "vat": "Mehrwertsteuer",
+        "vat-on": "Auf den Betrag kommt Mehrwertsteuer.",
+        "vat-off": "Der Betrag ist der Endpreis.",
+        "vat-other": "anderer Satz",
+        "vat-rate": "Steuersatz",
+        "vat-summary": "{net} netto + {rate} % MwSt.",
+        "vat-none": "Ohne Steueraufschlag",
+        "gross": "brutto",
+        "final": "Endpreis",
+        "coupons": "Gutscheine",
+        "coupons-on": "Buchende können im Checkout einen Gutschein einlösen.",
+        "coupons-off": "Keine Gutschein-Einlösung im Checkout."
+      },
+      "amount": {
+        "title": "Anzahl / Kapazität",
+        "limited": "Begrenzt",
+        "unlimited": "Unbegrenzt",
+        "less": "weniger",
+        "more": "mehr",
+        "unit": "Einheit | Einheiten",
+        "unlimited-hint": "Es gibt keine feste Anzahl – jede Buchung wird angenommen, die zu den Zeiten passt.",
+        "room-warning": "Mehr als eine Einheit für einen Raum – sicher?",
+        "external": "Die Anzahl kommt von einem externen Anbieter."
+      },
+      "permission": {
+        "who": "Wer darf buchen?",
+        "who-hint": "Bestimmt, wer dieses Objekt überhaupt buchen kann.",
+        "access": {
+          "everyone": "Jeder",
+          "everyone-hint": "Ohne Konto buchbar, offen für alle.",
+          "signedIn": "Angemeldete Nutzer",
+          "signedIn-hint": "Konto nötig, aber jeder registrierte Nutzer darf buchen.",
+          "selected": "Bestimmte Rollen und Personen",
+          "selected-hint": "Nur ausgewählte Gruppen oder Personen – ein Konto ist dann automatisch nötig."
+        },
+        "selected-empty": "Solange niemand gewählt ist, darf jeder angemeldete Nutzer buchen. Wählen Sie Rollen oder Personen, um einzuschränken.",
+        "users": "Personen",
+        "roles": "Rollen",
+        "free": "Wer bucht kostenfrei?",
+        "free-hint": "Preis-Ausnahme: Diese Rollen oder Personen buchen günstiger oder ohne Zahlung – 100 % entspricht einer kostenfreien Buchung.",
+        "free-not-paid": "Dieses Objekt ist ohnehin kostenfrei – eine Ausnahme wirkt erst, sobald es einen Preis hat.",
+        "free-users": "Nachlass für Personen",
+        "free-roles": "Nachlass für Rollen"
+      },
+      "approval": {
+        "question": "Wie werden eingehende Buchungen bestätigt?",
+        "auto": "Automatisch",
+        "auto-hint": "Das System prüft alle Angaben. Passt alles, wird die Buchung sofort erstellt und als freigegeben bestätigt – ohne Ihr Zutun.",
+        "manual": "Manuell prüfen",
+        "manual-hint": "Das System prüft weiterhin alles; buchen kann man nur, wenn alle Angaben passen. Die Buchung kommt aber als ausstehend in Ihre Buchungsliste – Sie geben sie frei oder lehnen ab."
+      },
+      "done": {
+        "published": {
+          "free": {
+            "title": "Veröffentlicht",
+            "text": "Das Buchungsobjekt ist sichtbar und buchbar."
+          },
+          "supervised": {
+            "title": "Zur Prüfung eingereicht",
+            "text": "Ihr Angebot wartet auf Prüfung. Bis zur Freigabe ist es öffentlich nicht sichtbar."
+          },
+          "pending": {
+            "title": "Veröffentlichung vorgemerkt",
+            "text": "Ihr Veröffentlichungswunsch ist vorgemerkt. Der Mandant wartet auf die Freigabe durch den Betreiber."
+          },
+          "declined": {
+            "title": "Veröffentlichung vorgemerkt",
+            "text": "Der Veröffentlichungswunsch ist vorgemerkt. Der Mandant ist abgewiesen; solange das so bleibt, wird nichts veröffentlicht."
+          }
+        },
+        "draft": {
+          "title": "Als Entwurf gespeichert",
+          "text": "Das Buchungsobjekt ist gespeichert, aber noch nicht veröffentlicht."
+        },
+        "kept": {
+          "title": "Gespeichert",
+          "text": "Ihre Änderungen sind gespeichert. An der Veröffentlichung hat sich nichts geändert."
+        },
+        "open-points": "Offene Punkte",
+        "open-points-hint": "Nichts davon ist Pflicht. Sie können es jetzt oder später in den Einstellungen des Mandanten ergänzen.",
+        "optional": "Weitere Einstellungen",
+        "optional-note": "optional",
+        "sections": {
+          "required-fields": {
+            "title": "Pflichtangaben",
+            "hint": "Welche Kontaktangaben Buchende im Checkout machen müssen."
+          },
+          "attachments": {
+            "title": "Dokumente & Einwilligungen",
+            "hint": "Was Buchende bestätigen müssen und welche Unterlagen sie bekommen."
+          },
+          "notes": {
+            "title": "Hinweise zur Buchung",
+            "hint": "Kurze Hinweise im Checkout und in der Bestätigungsmail."
+          },
+          "checkout": {
+            "title": "Zusatzobjekte",
+            "hint": "Zusatzbuchungen, die im Checkout mit angeboten werden."
+          },
+          "hierarchy": {
+            "title": "Hierarchie",
+            "hint": "Teil-von-Beziehungen zu anderen Objekten."
+          },
+          "group-booking": {
+            "title": "Serienbuchung",
+            "hint": "Wiederkehrende Buchungen erlauben."
+          },
+          "cancellation": {
+            "title": "Stornierung",
+            "hint": "Ob Buchende selbst absagen können."
+          }
+        },
+        "another": "Weiteres Buchungsobjekt anlegen",
+        "overview": "Zur Übersicht"
+      }
+    },
     "delete": {
       "success": {
         "title": "Erfolgreich gelöscht",
