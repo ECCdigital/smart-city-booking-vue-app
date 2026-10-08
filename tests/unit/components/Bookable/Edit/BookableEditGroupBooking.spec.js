@@ -71,6 +71,12 @@ describe("BookableEditGroupBooking (Serienbuchung)", () => {
     expect(wrapper.text()).toContain("Vereine");
   });
 
+  it("offers the roles of the bookable's tenant", async () => {
+    await mountArea({ ...ON, tenantId: "t2" });
+
+    expect(ApiRolesService.getTenantRoles).toHaveBeenLastCalledWith(true, "t2");
+  });
+
   it("limits Serienbuchung to another role", async () => {
     const { wrapper, patches } = await mountArea(ON);
 

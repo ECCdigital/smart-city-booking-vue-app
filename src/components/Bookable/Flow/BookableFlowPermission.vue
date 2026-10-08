@@ -1,134 +1,270 @@
 <template>
-  <div data-test="flow-permission">
-    <div class="flow-field">
-      <div class="flow-question">
+  <div class="bookable-permission" data-test="permission">
+    <div class="bookable-permission__part">
+      <div class="bookable-permission__question">
         <v-icon small>mdi-account-check-outline</v-icon>
         {{ $t("bookable.flow.permission.who") }}
       </div>
-      <div class="flow-field__hint mt-0 mb-3">
+      <p class="bookable-permission__hint">
         {{ $t("bookable.flow.permission.who-hint") }}
-      </div>
+      </p>
       <OnboardingChoiceTiles
         :value="access"
         :options="accessOptions"
         :label="$t('bookable.flow.permission.who')"
-        test-id="flow-access"
+        test-id="access"
         @input="setAccess"
       />
     </div>
 
     <div
       v-if="access === 'selected'"
-      class="flow-field"
-      data-test="flow-selected"
+      class="bookable-permission__part"
+      data-test="selected"
     >
-      <p v-if="!hasSelection" class="flow-note" data-test="flow-selected-empty">
+      <p
+        v-if="!hasSelection"
+        class="bookable-permission__note"
+        data-test="selected-empty"
+      >
         {{ $t("bookable.flow.permission.selected-empty") }}
       </p>
-      <UserRoleSelector
-        :users="bookable.permittedUsers || []"
-        :roles="bookable.permittedRoles || []"
-        :available-users="availableUserIds"
-        :available-roles-prop="availableRoles"
-        :fetch-roles-on-mount="false"
-        :users-label="$t('bookable.flow.permission.users')"
-        :roles-label="$t('bookable.flow.permission.roles')"
-        @update:users="patch({ permittedUsers: $event })"
-        @update:roles="patch({ permittedRoles: $event })"
-      />
+      <div data-test="permitted-roles" class="mb-4">
+        <v-autocomplete
+          :value="permittedRoles"
+          :items="roleOptions"
+          item-text="label"
+          item-value="id"
+          :label="$t('bookable.flow.permission.roles')"
+          :no-data-text="$t('bookable.flow.permission.no-roles')"
+          prepend-inner-icon="mdi-account-group"
+          multiple
+          hide-selected
+          outlined
+          dense
+          hide-details
+          @change="setPermitted({ permittedRoles: $event })"
+        >
+          <template #selection="{ item }">
+            <v-chip
+              small
+              close
+              :class="{ 'bookable-permission__unknown': item.unknown }"
+              :title="item.unknown ? item.sub : undefined"
+              @click:close="
+                setPermitted({
+                  permittedRoles: without(permittedRoles, item.id),
+                })
+              "
+            >
+              {{ item.label }}
+            </v-chip>
+          </template>
+          <template #item="{ item }">
+            <v-list-item-content>
+              <v-list-item-title>{{ item.label }}</v-list-item-title>
+              <v-list-item-subtitle v-if="item.sub">
+                {{ item.sub }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+          </template>
+        </v-autocomplete>
+      </div>
+      <div data-test="permitted-users">
+        <v-autocomplete
+          :value="permittedUsers"
+          :items="userOptions"
+          item-text="label"
+          item-value="id"
+          :filter="matchesPerson"
+          :label="$t('bookable.flow.permission.users')"
+          :no-data-text="$t('bookable.flow.permission.no-users')"
+          prepend-inner-icon="mdi-account"
+          multiple
+          hide-selected
+          outlined
+          dense
+          hide-details
+          @change="setPermitted({ permittedUsers: $event })"
+        >
+          <template #selection="{ item }">
+            <v-chip
+              small
+              close
+              :class="{ 'bookable-permission__unknown': item.unknown }"
+              :title="item.sub || undefined"
+              @click:close="
+                setPermitted({
+                  permittedUsers: without(permittedUsers, item.id),
+                })
+              "
+            >
+              {{ item.label }}
+            </v-chip>
+          </template>
+          <template #item="{ item }">
+            <v-list-item-content>
+              <v-list-item-title>{{ item.label }}</v-list-item-title>
+              <v-list-item-subtitle v-if="item.sub">
+                {{ item.sub }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+          </template>
+        </v-autocomplete>
+      </div>
     </div>
 
-    <!-- Price exceptions are the editor's discounts, as in the permissions
-         tab; an expert option, as there. -->
+    <!-- An expert option (bookableExpertMode.js); the sub-navigation of the
+         editing page jumps to it. -->
     <div
       v-if="expertOptionShown('bookingDiscounts')"
-      class="flow-rule"
-      data-test="flow-free-booking"
+      :id="discountsElementId"
+      class="bookable-permission__part bookable-permission__part--ruled"
+      data-test="discounts"
     >
-      <div class="flow-question">
+      <div class="bookable-permission__question">
         <v-icon small>mdi-ticket-percent-outline</v-icon>
-        {{ $t("bookable.flow.permission.free") }}
+        {{ $t("bookable.flow.permission.discounts") }}
       </div>
-      <p v-if="!paid" class="flow-note mb-0" data-test="flow-free-not-paid">
-        {{ $t("bookable.flow.permission.free-not-paid") }}
+      <p class="bookable-permission__hint">
+        {{ $t("bookable.flow.permission.discounts-hint") }}
       </p>
-      <template v-else>
-        <div class="flow-field__hint mt-0 mb-3">
-          {{ $t("bookable.flow.permission.free-hint") }}
-        </div>
-        <BookingDiscountEditor
-          v-if="bookable.bookingDiscounts"
-          :items="bookable.bookingDiscounts.users"
-          @update:items="setDiscounts('users', $event)"
-          type="user"
-          :available-users="availableUsers"
-          :label="$t('bookable.flow.permission.free-users')"
-        />
-        <BookingDiscountEditor
-          v-if="bookable.bookingDiscounts"
-          :items="bookable.bookingDiscounts.roles"
-          @update:items="setDiscounts('roles', $event)"
-          type="role"
-          :available-roles="availableRoles"
-          :label="$t('bookable.flow.permission.free-roles')"
-        />
-      </template>
+      <p
+        v-if="!paid"
+        class="bookable-permission__note"
+        data-test="discounts-not-paid"
+      >
+        {{ $t("bookable.flow.permission.discounts-not-paid") }}
+      </p>
+      <BookingDiscountList
+        :items="discounts.roles"
+        id-key="roleId"
+        :options="roleOptions"
+        :label="$t('bookable.flow.permission.roles')"
+        icon="mdi-account-group"
+        :add-label="$t('bookable.flow.permission.add-role')"
+        :no-data-text="$t('bookable.flow.permission.no-roles')"
+        :rules="fieldRules.discountPercent"
+        @update:items="setDiscounts('roles', $event)"
+      />
+      <BookingDiscountList
+        :items="discounts.users"
+        id-key="userId"
+        :options="userOptions"
+        :label="$t('bookable.flow.permission.users')"
+        icon="mdi-account"
+        :add-label="$t('bookable.flow.permission.add-user')"
+        :no-data-text="$t('bookable.flow.permission.no-users')"
+        :rules="fieldRules.discountPercent"
+        @update:items="setDiscounts('users', $event)"
+      />
     </div>
   </div>
 </template>
 
 <script>
+import _ from "lodash";
 import OnboardingChoiceTiles from "@/components/Tenant/Onboarding/OnboardingChoiceTiles.vue";
-import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
-import BookingDiscountEditor from "@/components/Bookable/Edit/BookingDiscountEditor.vue";
+import BookingDiscountList from "@/components/Bookable/Edit/BookingDiscountList.vue";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import bookableEditing from "@/mixins/bookableEditing";
 import { tenantUserOptions } from "@/utils/tenantUsers";
-import { accessOf, applyAccess, isPaid } from "@/utils/bookableFlow";
+import { bookableEditSectionElementId } from "@/utils/bookableEditSections";
+import {
+  accessOf,
+  applyAccess,
+  applyPermitted,
+  isPaid,
+} from "@/utils/bookableFlow";
+
+const ACCESS = ["everyone", "signedIn", "selected"];
 
 /**
- * Step 5, Berechtigung: who may book - everyone, signed-in users, or named
- * roles and people - and who books at a discount up to free of charge. The
- * choice is read from the bookable; „selected“ is kept only until roles or
- * people are named (an empty selection reads as „signed in“), and losing
- * that on unmount costs nothing.
+ * „Wer darf buchen?“ and the Preisnachlass, the one component of both modes:
+ * the editing page frames it as a card in the tab Berechtigungen, the guided
+ * flow as its step Berechtigung.
+ *
+ * The choice is read from the bookable (`accessOf`) and set by `applyAccess`;
+ * naming roles or people sets the login requirement in the same patch
+ * (`applyPermitted`). „Nur ausgewählte“ with nobody named is the same data as
+ * „Alle mit Konto“, so the tile clicked is held while the data cannot show
+ * it; losing that costs nothing. Roles and people are those of the
+ * bookable's tenant, loaded once; ids the tenant no longer knows stay
+ * visible and removable. The Preisnachlass is rebuilt as a whole and stays
+ * on a free bookable, where it acts once there is a price.
  */
 export default {
   name: "BookableFlowPermission",
-  components: {
-    OnboardingChoiceTiles,
-    UserRoleSelector,
-    BookingDiscountEditor,
-  },
+  components: { OnboardingChoiceTiles, BookingDiscountList },
   mixins: [bookableEditing],
   data() {
     return {
-      selectedChosen: false,
-      availableUsers: [],
-      availableRoles: [],
+      chosenAccess: null,
+      roles: [],
+      people: [],
     };
   },
   computed: {
     access() {
       const stored = accessOf(this.bookable);
-      return this.selectedChosen && stored === "signedIn" ? "selected" : stored;
+      return this.chosenAccess === "selected" && stored === "signedIn"
+        ? "selected"
+        : stored;
     },
     accessOptions() {
-      return ["everyone", "signedIn", "selected"].map((value) => ({
+      return ACCESS.map((value) => ({
         value,
         label: this.$t(`bookable.flow.permission.access.${value}`),
         description: this.$t(`bookable.flow.permission.access.${value}-hint`),
       }));
     },
+    permittedRoles() {
+      return this.bookable.permittedRoles || [];
+    },
+    permittedUsers() {
+      return this.bookable.permittedUsers || [];
+    },
     hasSelection() {
-      return (
-        (this.bookable.permittedUsers || []).length > 0 ||
-        (this.bookable.permittedRoles || []).length > 0
+      return this.permittedRoles.length > 0 || this.permittedUsers.length > 0;
+    },
+    discounts() {
+      return {
+        roles: this.bookable.bookingDiscounts?.roles || [],
+        users: this.bookable.bookingDiscounts?.users || [],
+      };
+    },
+    roleOptions() {
+      const known = this.roles.map((role) => ({
+        id: role.id,
+        label: role.name || role.id,
+      }));
+      return withUnknown(
+        known,
+        [
+          ...this.permittedRoles,
+          ...this.discounts.roles.map((entry) => entry.roleId),
+        ],
+        this.unknownHint
       );
     },
-    availableUserIds() {
-      return this.availableUsers.map((user) => user.userId);
+    userOptions() {
+      const known = this.people.map((person) => ({
+        id: person.userId,
+        label: person.label,
+        sub: person.name ? person.userId : "",
+      }));
+      return withUnknown(
+        known,
+        [
+          ...this.permittedUsers,
+          ...this.discounts.users.map((entry) => entry.userId),
+        ],
+        this.unknownHint
+      );
+    },
+    unknownHint() {
+      return this.$t("bookable.flow.permission.unknown");
     },
     paid() {
       return isPaid(this.bookable);
@@ -136,51 +272,111 @@ export default {
     tenantId() {
       return this.bookable.tenantId;
     },
+    discountsElementId() {
+      return bookableEditSectionElementId("permissions-discounts");
+    },
   },
   watch: {
-    tenantId: { immediate: true, handler: "fetchUsers" },
-  },
-  mounted() {
-    this.fetchRoles();
+    tenantId: { immediate: true, handler: "load" },
   },
   methods: {
     setAccess(access) {
-      this.selectedChosen = access === "selected";
+      this.chosenAccess = access;
       this.apply((next) => applyAccess(next, access));
     },
-    setDiscounts(kind, items) {
-      this.patch({
-        bookingDiscounts: { ...this.bookable.bookingDiscounts, [kind]: items },
-      });
+    setPermitted(lists) {
+      this.chosenAccess = "selected";
+      this.apply((next) => applyPermitted(next, lists));
     },
-    async fetchRoles() {
+    setDiscounts(kind, items) {
+      this.patch({ bookingDiscounts: { ...this.discounts, [kind]: items } });
+    },
+    without(list, id) {
+      return list.filter((entry) => entry !== id);
+    },
+    // People are found by name and by id.
+    matchesPerson(item, query) {
+      const text = `${item.label} ${item.sub || ""}`.toLowerCase();
+      return text.includes((query || "").toLowerCase());
+    },
+    load() {
+      if (!this.tenantId) return;
+      this.loadRoles();
+      this.loadPeople();
+    },
+    async loadRoles() {
       try {
-        const response = await ApiRolesService.getTenantRoles(true);
-        this.availableRoles = response?.data || [];
+        const response = await ApiRolesService.getTenantRoles(
+          true,
+          this.tenantId
+        );
+        this.roles = response?.data || [];
       } catch (error) {
         console.error(error);
-        this.availableRoles = [];
+        this.roles = [];
       }
     },
-    async fetchUsers() {
-      if (!this.tenantId) {
-        this.availableUsers = [];
-        return;
-      }
+    async loadPeople() {
       try {
         const response = await ApiTenantService.getTenantUsers(this.tenantId);
-        this.availableUsers = tenantUserOptions(response).map((user) => ({
-          userId: user.userId,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          fullName: user.label,
-          hasName: !!user.name,
-        }));
+        this.people = tenantUserOptions(response);
       } catch (error) {
         console.error(error);
-        this.availableUsers = [];
+        this.people = [];
       }
     },
   },
 };
+
+/** The known options plus each id in `ids` they lack, marked as unknown. */
+function withUnknown(known, ids, hint) {
+  const knownIds = known.map((option) => option.id);
+  const unknown = _.uniq(ids)
+    .filter((id) => id && !knownIds.includes(id))
+    .map((id) => ({ id, label: id, sub: hint, unknown: true }));
+  return [...known, ...unknown];
+}
 </script>
+
+<style scoped>
+.bookable-permission__part + .bookable-permission__part {
+  margin-top: var(--scb-space-5);
+}
+
+.bookable-permission__part--ruled {
+  padding-top: var(--scb-space-5);
+  border-top: 1px solid var(--scb-rule);
+}
+
+.bookable-permission__question {
+  display: flex;
+  align-items: center;
+  gap: var(--scb-space-2);
+  margin-bottom: var(--scb-space-1);
+  font-size: var(--scb-font-size-md);
+  font-weight: var(--scb-font-weight-semibold);
+  line-height: var(--scb-line-height-base);
+  color: var(--scb-text);
+}
+
+.bookable-permission__hint {
+  margin: 0 0 var(--scb-space-3);
+  font-size: var(--scb-font-size-xs);
+  line-height: var(--scb-line-height-base);
+  color: var(--scb-text-muted);
+}
+
+.bookable-permission__note {
+  margin: 0 0 var(--scb-space-4);
+  padding: var(--scb-space-3) var(--scb-space-4);
+  font-size: var(--scb-font-size-sm);
+  line-height: var(--scb-line-height-base);
+  color: var(--scb-text);
+  background-color: var(--scb-selected-tint-faint);
+  border-radius: var(--scb-radius-control);
+}
+
+.bookable-permission__unknown {
+  font-style: italic;
+}
+</style>

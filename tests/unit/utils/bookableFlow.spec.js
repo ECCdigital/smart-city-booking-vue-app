@@ -4,6 +4,7 @@ import i18n from "@/language/index";
 import {
   accessOf,
   applyAccess,
+  applyPermitted,
   applyBookingMode,
   applyPriceBasis,
   applyPriceMode,
@@ -345,6 +346,49 @@ describe("access", () => {
     expect(selected.requiresLogin).toBe(true);
     expect(selected.permittedRoles).toEqual(["r1"]);
   });
+
+  it("keeps the account but drops the lists for „Alle mit Konto“", () => {
+    const signedIn = applyAccess(
+      bookable({ permittedRoles: ["r1"], permittedUsers: ["u1"] }),
+      "signedIn"
+    );
+
+    expect(signedIn).toMatchObject({
+      requiresLogin: true,
+      permittedRoles: [],
+      permittedUsers: [],
+    });
+  });
+
+  it("reads lists without the login requirement as „Nur ausgewählte“", () => {
+    expect(
+      accessOf(bookable({ requiresLogin: false, permittedUsers: ["u1"] }))
+    ).toBe("selected");
+  });
+});
+
+describe("permitted roles and people", () => {
+  it("sets the login requirement with a role or person named", () => {
+    const named = applyPermitted(bookable({ requiresLogin: false }), {
+      permittedRoles: ["r1"],
+    });
+
+    expect(named).toMatchObject({
+      requiresLogin: true,
+      permittedRoles: ["r1"],
+      permittedUsers: [],
+    });
+  });
+
+  it("leaves the login requirement once nobody is named any more", () => {
+    const emptied = applyPermitted(
+      bookable({ requiresLogin: true, permittedUsers: ["u1"] }),
+      { permittedUsers: [] }
+    );
+
+    expect(emptied.requiresLogin).toBe(true);
+    expect(emptied.permittedUsers).toEqual([]);
+  });
 });
 
 describe("closing", () => {
@@ -548,8 +592,10 @@ describe("overview", () => {
     const accessShown = (access) =>
       shown(blockOf("permission", applyAccess(bookable(), access)));
 
-    expect(accessShown("everyone")).toEqual([["Zugang", "Jeder"]]);
-    expect(accessShown("signedIn")).toEqual([["Zugang", "Angemeldete Nutzer"]]);
+    expect(accessShown("everyone")).toEqual([["Wer darf buchen?", "Alle"]]);
+    expect(accessShown("signedIn")).toEqual([
+      ["Wer darf buchen?", "Alle mit Konto"],
+    ]);
   });
 
   it("counts the roles and persons chosen", () => {
@@ -562,17 +608,19 @@ describe("overview", () => {
       );
 
     expect(counted(["r1", "r2"], ["u1"])).toEqual([
-      ["Zugang", "2 Rollen, 1 Person"],
+      ["Wer darf buchen?", "2 Rollen, 1 Person"],
     ]);
-    expect(counted(["r1"], [])).toEqual([["Zugang", "1 Rolle"]]);
-    expect(counted([], ["u1", "u2", "u3"])).toEqual([["Zugang", "3 Personen"]]);
+    expect(counted(["r1"], [])).toEqual([["Wer darf buchen?", "1 Rolle"]]);
+    expect(counted([], ["u1", "u2", "u3"])).toEqual([
+      ["Wer darf buchen?", "3 Personen"],
+    ]);
   });
 
   it("reads selected access with nobody named yet as signed-in users", () => {
     const item = applyAccess(bookable(), "selected");
 
     expect(shown(blockOf("permission", item))).toEqual([
-      ["Zugang", "Angemeldete Nutzer"],
+      ["Wer darf buchen?", "Alle mit Konto"],
     ]);
   });
 

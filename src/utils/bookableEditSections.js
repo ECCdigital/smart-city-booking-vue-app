@@ -158,20 +158,15 @@ const ALL_SECTIONS = [
   },
   {
     tabKey: "permissions",
-    id: "permissions-login",
-    labelKey: "bookable.edit.sections.permissionsLogin",
-    type: "scroll",
-  },
-  {
-    tabKey: "permissions",
     id: "permissions-access",
-    labelKey: "bookable.edit.sections.permissionsAccess",
+    labelKey: "bookable.flow.steps.permission.title",
     type: "scroll",
   },
   {
+    // Inside the card of „Wer darf buchen?“ (BookableFlowPermission).
     tabKey: "permissions",
     id: "permissions-discounts",
-    labelKey: "bookable.edit.sections.permissionsDiscounts",
+    labelKey: "bookable.flow.permission.discounts",
     type: "scroll",
     expertOption: "bookingDiscounts",
   },

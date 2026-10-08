@@ -32,8 +32,6 @@ const STUBS = {
   BookableEditBookingType: editorStub("BookableEditBookingType"),
   BookableEditOpeningHours: editorStub("BookableEditOpeningHours"),
   BookableEditPrice: editorStub("BookableEditPrice"),
-  UserRoleSelector: editorStub("UserRoleSelector"),
-  BookingDiscountEditor: editorStub("BookingDiscountEditor"),
   MediaReferenceList: editorStub("MediaReferenceList"),
   AddressLookup: editorStub("AddressLookup"),
   Tiptap: editorStub("Tiptap"),
@@ -115,7 +113,7 @@ describe("the steps of the guided flow", () => {
       permittedUsers: [],
     });
 
-    await find(wrapper, "flow-access-everyone").trigger("click");
+    await find(wrapper, "access-everyone").trigger("click");
 
     expect(patches).toEqual([{ requiresLogin: false, permittedRoles: [] }]);
     expect(handedIn).toEqual(stored);
@@ -311,95 +309,4 @@ describe("BookableFlowAmount", () => {
   });
 });
 
-describe("BookableFlowPermission", () => {
-  it("opens the bookable to everyone without an account", async () => {
-    const wrapper = mountStep(BookableFlowPermission, {
-      requiresLogin: true,
-      permittedRoles: ["r1"],
-    });
-
-    await find(wrapper, "flow-access-everyone").trigger("click");
-
-    expect(wrapper.props("bookable")).toMatchObject({
-      requiresLogin: false,
-      permittedRoles: [],
-      permittedUsers: [],
-    });
-  });
-
-  it("keeps the selection open until roles or people are named", async () => {
-    const wrapper = mountStep(BookableFlowPermission);
-
-    await find(wrapper, "flow-access-selected").trigger("click");
-
-    expect(lastChange(wrapper).requiresLogin).toBe(true);
-    expect(
-      find(wrapper, "flow-access-selected").attributes("aria-checked")
-    ).toBe("true");
-    expect(find(wrapper, "flow-selected-empty").exists()).toBe(true);
-  });
-
-  it("reads the choice from a bookable changed elsewhere", async () => {
-    const wrapper = mountStep(BookableFlowPermission);
-
-    await wrapper.setProps({
-      bookable: bookable({ requiresLogin: true, permittedRoles: ["r1"] }),
-    });
-
-    expect(
-      find(wrapper, "flow-access-selected").attributes("aria-checked")
-    ).toBe("true");
-  });
-
-  it("hands on a removed price exception as rebuilt discounts", async () => {
-    const discounts = {
-      users: [{ userId: "u1", discountPercent: 50 }],
-      roles: [{ roleId: "r1", discountPercent: 100 }],
-    };
-    // The real list, to remove an entry from.
-    const stubs = { ...STUBS, BookingDiscountEditor: false };
-    const {
-      wrapper,
-      patches,
-      bookable: handedIn,
-      stored,
-    } = mountEditing(BookableFlowPermission, {
-      bookable: bookable({
-        bookingDiscounts: discounts,
-        priceCategories: [{ priceEur: 10, interval: {}, weekdays: [] }],
-      }),
-      provide: { bookableExpertMode: { enabled: true } },
-      stubs,
-    });
-
-    await wrapper.find("[title='Entfernen'] button").trigger("click");
-
-    expect(patches).toEqual([
-      { bookingDiscounts: { users: [], roles: discounts.roles } },
-    ]);
-    expect(handedIn).toEqual(stored);
-  });
-
-  it("shows Preisnachlass without expert mode while it is set", () => {
-    const set = mountStep(
-      BookableFlowPermission,
-      {
-        bookingDiscounts: {
-          users: [],
-          roles: [{ roleId: "r1", discountPercent: 50 }],
-        },
-      },
-      false
-    );
-    const unset = mountStep(BookableFlowPermission, {}, false);
-
-    expect(find(set, "flow-free-booking").exists()).toBe(true);
-    expect(find(unset, "flow-free-booking").exists()).toBe(false);
-  });
-
-  it("names price exceptions only once there is a price", () => {
-    expect(
-      find(mountStep(BookableFlowPermission), "flow-free-not-paid").exists()
-    ).toBe(true);
-  });
-});
+// BookableFlowPermission („Wer darf buchen?“) has its own spec.
