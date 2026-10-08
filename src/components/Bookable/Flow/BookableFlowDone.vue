@@ -75,11 +75,11 @@
       <v-btn
         color="primary"
         depressed
-        data-test="flow-overview"
-        @click="$emit('overview')"
+        data-test="flow-done-leave"
+        @click="$emit('leave')"
       >
         <v-icon left small>mdi-view-grid-outline</v-icon>
-        {{ $t("bookable.flow.done.overview") }}
+        {{ $t("bookable.flow.leave") }}
       </v-btn>
     </div>
   </div>

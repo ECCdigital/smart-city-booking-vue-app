@@ -11,7 +11,7 @@
       :level="level"
       @open-area="$emit('open-area', $event)"
       @another="$emit('another')"
-      @overview="$emit('overview')"
+      @leave="$emit('leave')"
     />
 
     <!-- One structure at every width: the breakpoint only adds the side
@@ -179,8 +179,14 @@
               <v-icon right small>mdi-chevron-right</v-icon>
             </v-btn>
           </div>
-          <p v-if="last" class="flow-footer__note">
-            {{ $t("bookable.flow.save-hint") }}
+          <p v-if="last" class="flow-footer__note" data-test="flow-save-hint">
+            {{
+              $t(
+                isNew
+                  ? "bookable.flow.save-hint-new"
+                  : "bookable.flow.save-hint"
+              )
+            }}
           </p>
         </div>
       </div>

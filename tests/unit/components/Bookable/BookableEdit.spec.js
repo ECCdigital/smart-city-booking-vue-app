@@ -614,6 +614,63 @@ describe("BookableEdit - switching between the modes", () => {
     expect(values).toContain("5");
     expect(unsaved(wrapper)).toBe(true);
   });
+
+  it("names the other mode on the buttons between them", async () => {
+    const wrapper = await mountEdit({ id: "b1" });
+
+    expect(find(wrapper, "flow-enter").text()).toBe("Zum geführten Ablauf");
+    await find(wrapper, "flow-enter").trigger("click");
+    await flushPromises();
+
+    expect(find(wrapper, "flow-leave").text()).toBe("Zur Bearbeitungsseite");
+  });
+
+  it("says at the flow's save that inputs survive the switch, not leaving the bookable", async () => {
+    const wrapper = await mountEdit({ id: "b1", mode: "flow" });
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+
+    expect(find(wrapper, "flow-save-hint").text()).toBe(
+      "Gespeichert wird erst hier. Ihre Eingaben bleiben erhalten, wenn Sie " +
+        "zur Bearbeitungsseite wechseln, und gehen erst verloren, wenn Sie " +
+        "das Buchungsobjekt verlassen."
+    );
+  });
+
+  it("says at the save of a new bookable only that leaving it loses the inputs", async () => {
+    ApiBookablesService.getBookableTemplate.mockResolvedValue({
+      data: stored({ id: undefined }),
+    });
+    const wrapper = await mountBookableEdit({ query: {} });
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+
+    expect(find(wrapper, "flow-save-hint").text()).toBe(
+      "Gespeichert wird erst hier. Wer das Buchungsobjekt vorher verlässt, " +
+        "verliert die Eingaben."
+    );
+  });
+
+  it("leads from the confirmation „Zur Bearbeitungsseite“ to the editing page", async () => {
+    ApiBookablesService.createOrUpdateBookable.mockImplementation(
+      async (bookable) => ({ data: bookable })
+    );
+    const wrapper = await mountBookableEdit({
+      query: { id: "b1", mode: "flow" },
+      stubs: { TenantReadinessCheck: stub("TenantReadinessCheck") },
+    });
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await find(wrapper, "flow-save").trigger("click");
+    await flushPromises();
+
+    const leave = find(wrapper, "flow-done-leave");
+    expect(leave.text()).toBe("Zur Bearbeitungsseite");
+    await leave.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query.mode).toBeUndefined();
+    expect(find(wrapper, "flow-enter").exists()).toBe(true);
+  });
 });
 
 describe("BookableEdit - expert options without expert mode", () => {

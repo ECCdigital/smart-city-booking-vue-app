@@ -297,14 +297,14 @@ describe("BookableFlow", () => {
       expect(find(wrapper, "flow-done-area-groupBooking").exists()).toBe(true);
     });
 
-    it("leads on to another bookable or to the overview", async () => {
+    it("leads on to another bookable or to the editing page", async () => {
       const wrapper = mountDone({ outcome: "published" });
 
       await find(wrapper, "flow-another").trigger("click");
-      await find(wrapper, "flow-overview").trigger("click");
+      await find(wrapper, "flow-done-leave").trigger("click");
 
       expect(wrapper.emitted("another")).toHaveLength(1);
-      expect(wrapper.emitted("overview")).toHaveLength(1);
+      expect(wrapper.emitted("leave")).toHaveLength(1);
     });
   });
 });

@@ -149,7 +149,7 @@
   },
   "bookable": {
     "flow": {
-      "enter": "Geführt bearbeiten",
+      "enter": "Zum geführten Ablauf",
       "leave": "Zur Bearbeitungsseite",
       "bar": {
         "new": {
@@ -179,7 +179,8 @@
       "next": "Weiter",
       "skip": "Überspringen",
       "save": "Speichern",
-      "save-hint": "Gespeichert wird erst hier. Wer den Ablauf vorher verlässt, verliert die Angaben.",
+      "save-hint": "Gespeichert wird erst hier. Ihre Eingaben bleiben erhalten, wenn Sie zur Bearbeitungsseite wechseln, und gehen erst verloren, wenn Sie das Buchungsobjekt verlassen.",
+      "save-hint-new": "Gespeichert wird erst hier. Wer das Buchungsobjekt vorher verlässt, verliert die Eingaben.",
       "save-failed": "Das Buchungsobjekt konnte nicht gespeichert werden.",
       "steps": {
         "identity": {
@@ -452,8 +453,7 @@
         "open-points-hint": "Nichts davon ist Pflicht. Sie können es jetzt oder später in den Einstellungen des Mandanten ergänzen.",
         "optional": "Weitere Einstellungen",
         "optional-note": "optional",
-        "another": "Weiteres Buchungsobjekt anlegen",
-        "overview": "Zur Übersicht"
+        "another": "Weiteres Buchungsobjekt anlegen"
       }
     },
     "delete": {

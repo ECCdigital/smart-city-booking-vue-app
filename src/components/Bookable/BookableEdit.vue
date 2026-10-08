@@ -178,7 +178,7 @@
         @open-section="openSection"
         @open-area="openArea"
         @another="createAnother"
-        @overview="toOverview"
+        @leave="toEditingPage"
         @skip="skipFlow"
       />
 
@@ -709,8 +709,11 @@ export default {
       await this.$nextTick();
       revealField(this.$el, field);
     },
-    /** „Zur Übersicht“: this bookable in the editor of its type. */
-    toOverview() {
+    /**
+     * The confirmation's „Zur Bearbeitungsseite“: this bookable on the
+     * editing page of its type.
+     */
+    toEditingPage() {
       const name = editRouteOf(this.bookable.type);
       if (name === this.$route.name) {
         this.leaveFlow();
