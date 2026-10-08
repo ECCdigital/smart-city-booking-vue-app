@@ -216,6 +216,8 @@
 
 <script>
 import BookableFlowIdentity from "@/components/Bookable/Flow/BookableFlowIdentity.vue";
+// PROTOTYPE #341: the basics variants stand in for the step „Identität“.
+import BookableBasicsPrototype from "@/components/Bookable/Prototype341/BookableBasicsPrototype.vue";
 import BookableFlowAvailability from "@/components/Bookable/Flow/BookableFlowAvailability.vue";
 import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
 import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vue";
@@ -236,7 +238,7 @@ import {
 } from "@/utils/eventTitles";
 
 const STEP_COMPONENTS = {
-  identity: "BookableFlowIdentity",
+  identity: "BookableBasicsPrototype",
   availability: "BookableFlowAvailability",
   price: "BookableFlowPrice",
   amount: "BookableFlowAmount",
@@ -277,6 +279,7 @@ export default {
   name: "BookableFlow",
   components: {
     BookableFlowIdentity,
+    BookableBasicsPrototype,
     BookableFlowAvailability,
     BookableFlowPrice,
     BookableFlowAmount,

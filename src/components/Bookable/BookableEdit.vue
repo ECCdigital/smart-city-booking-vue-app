@@ -322,6 +322,8 @@
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import _ from "lodash";
 import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.vue";
+// PROTOTYPE #341: the basics variants stand in for the tab „Allgemein“.
+import BookableBasicsPrototype from "@/components/Bookable/Prototype341/BookableBasicsPrototype.vue";
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
@@ -377,6 +379,7 @@ export default {
     SaveBar,
     UnsavedChangesDialog,
     BookableEditGeneral,
+    BookableBasicsPrototype,
     BookableEditPrice,
     BookableEditBookingType,
     BookableEditOpeningHours,
@@ -417,7 +420,7 @@ export default {
           key: "general",
           label: "Allgemein",
           icon: "mdi-information-outline",
-          comp: "BookableEditGeneral",
+          comp: "BookableBasicsPrototype",
         },
         {
           key: "pricing",
