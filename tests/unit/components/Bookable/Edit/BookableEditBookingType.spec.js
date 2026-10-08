@@ -16,10 +16,9 @@ const STUBS = {
 const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t1", title: "Saal", ...overrides }).toPlain();
 
-const mountType = (overrides, { embedded = false, expertMode = true } = {}) =>
+const mountType = (overrides, { expertMode = true } = {}) =>
   mountEditing(BookableEditBookingType, {
     bookable: bookable(overrides),
-    propsData: { embedded },
     provide: { bookableExpertMode: { enabled: expertMode } },
     stubs: STUBS,
   });
@@ -36,26 +35,41 @@ const BLOCK_PERIOD = {
 };
 
 describe("BookableEditBookingType", () => {
-  it("changes nothing when it mounts, in either mode", async () => {
-    for (const embedded of [false, true]) {
-      const {
-        wrapper,
-        patches,
-        bookable: handedIn,
-        stored,
-      } = mountType(
-        {
-          isScheduleRelated: false,
-          isBlockPeriodRelated: true,
-          blockPeriods: [{ label: "Woche" }],
-        },
-        { embedded }
-      );
-      await wrapper.vm.$nextTick();
+  it("changes nothing when it mounts", async () => {
+    const {
+      wrapper,
+      patches,
+      bookable: handedIn,
+      stored,
+    } = mountType({
+      isScheduleRelated: false,
+      isBlockPeriodRelated: true,
+      blockPeriods: [{ label: "Woche" }],
+    });
+    await wrapper.vm.$nextTick();
 
-      expect(patches).toEqual([]);
-      expect(handedIn).toEqual(stored);
-    }
+    expect(patches).toEqual([]);
+    expect(handedIn).toEqual(stored);
+  });
+
+  // The Buchungsart is BookableEditBookingMode, above it in either frame.
+  it("shows the sections of the chosen mode, not the Buchungsart", () => {
+    const { wrapper } = mountType({ isScheduleRelated: true });
+
+    expect(find(wrapper, "booking-duration-min").exists()).toBe(true);
+    expect(wrapper.find("input[type='radio']").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Buchungstyp");
+  });
+
+  it("shows nothing where a provider handles the availability", () => {
+    const { wrapper } = mountType({
+      isScheduleRelated: true,
+      externalProviders: [
+        { provider: "ifbs", active: true, handles: ["availability"] },
+      ],
+    });
+
+    expect(find(wrapper, "booking-duration-min").exists()).toBe(false);
   });
 
   it("hands on the booking duration as typed", async () => {
@@ -132,75 +146,5 @@ describe("BookableEditBookingType", () => {
 
     expect(lastPatch(patches)).toEqual({ blockPeriods: [] });
     expect(handedIn).toEqual(stored);
-  });
-
-  it("hands on a chosen booking type with only the fields it changed", async () => {
-    const {
-      wrapper,
-      patches,
-      bookable: handedIn,
-      stored,
-    } = mountType({
-      isScheduleRelated: true,
-      groupBooking: { enabled: true, permittedRoles: [] },
-    });
-
-    await wrapper.find("input[value='blockPeriod']").trigger("click");
-
-    expect(lastPatch(patches)).toEqual({
-      isScheduleRelated: false,
-      isBlockPeriodRelated: true,
-      longRangeOptions: {},
-      groupBooking: { enabled: false, permittedRoles: [] },
-    });
-    expect(handedIn).toEqual(stored);
-  });
-});
-
-describe("BookableEditBookingType - expert booking modes", () => {
-  const radio = (wrapper, mode) => wrapper.find(`input[value='${mode}']`);
-  const simple = (overrides) =>
-    mountEditing(BookableEditBookingType, {
-      bookable: bookable(overrides),
-      expertMode: false,
-      stubs: STUBS,
-    }).wrapper;
-
-  it("offers the expert mode in use, and not the others", () => {
-    const wrapper = simple({
-      isScheduleRelated: false,
-      isLongRange: true,
-      longRangeOptions: { type: "week" },
-    });
-
-    expect(radio(wrapper, "week").exists()).toBe(true);
-    expect(radio(wrapper, "week").attributes("disabled")).toBeUndefined();
-    expect(radio(wrapper, "month").exists()).toBe(false);
-    expect(radio(wrapper, "blockPeriod").exists()).toBe(false);
-  });
-
-  it("offers no expert mode while none is in use", () => {
-    const wrapper = simple({ isScheduleRelated: true });
-
-    for (const mode of ["week", "month", "blockPeriod"]) {
-      expect(radio(wrapper, mode).exists()).toBe(false);
-    }
-  });
-
-  it("says nothing about expert mode", () => {
-    const wrapper = simple({
-      isScheduleRelated: false,
-      isBlockPeriodRelated: true,
-    });
-
-    expect(wrapper.text()).not.toContain("Experten-Modus");
-  });
-
-  it("offers every mode in expert mode", () => {
-    const { wrapper } = mountType({ isScheduleRelated: true });
-
-    for (const mode of ["week", "month", "blockPeriod"]) {
-      expect(radio(wrapper, mode).exists()).toBe(true);
-    }
   });
 });

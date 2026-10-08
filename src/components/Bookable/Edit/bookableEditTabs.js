@@ -1,5 +1,6 @@
 import BookableFlowIdentity from "@/components/Bookable/Flow/BookableFlowIdentity.vue";
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
+import BookableEditBookingMode from "@/components/Bookable/Edit/BookableEditBookingMode.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
 import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
@@ -103,9 +104,19 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
   },
   {
     key: "bookingType",
-    label: "Buchungstyp",
+    label: "Buchungsart",
     icon: "mdi-calendar-clock",
-    comp: BookableEditBookingType,
+    cards: [
+      {
+        key: "bookingMode",
+        comp: BookableEditBookingMode,
+        titleKey: "bookable.edit.sections.bookingTypeSelect",
+        icon: "mdi-calendar-question",
+        section: "bookingType-select",
+      },
+      // The sections of the chosen mode, each a card of its own.
+      { key: "bookingTypeSettings", comp: BookableEditBookingType, bare: true },
+    ],
   },
   {
     key: "openingHours",

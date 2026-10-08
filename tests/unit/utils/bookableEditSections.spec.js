@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getVisibleBookableEditSections } from "@/utils/bookableEditSections";
+import {
+  EXTERNAL_PROVIDER_SETTING,
+  getVisibleBookableEditSections,
+} from "@/utils/bookableEditSections";
 
 function sectionIds(bookable) {
   return getVisibleBookableEditSections("pricing", { bookable }).map(
@@ -107,5 +110,40 @@ describe("bookableEditSections - Grunddaten", () => {
       "bookable.flow.identity.catalog",
       "bookable.flow.identity.admin",
     ]);
+  });
+});
+
+describe("bookableEditSections - the Buchungsart tab", () => {
+  const ids = (overrides) =>
+    getVisibleBookableEditSections("bookingType", {
+      bookable: { isScheduleRelated: true, ...overrides },
+    }).map((section) => section.id);
+
+  it("shows the Buchungsart above the sections of the chosen mode", () => {
+    expect(ids()).toEqual([
+      "bookingType-select",
+      "bookingType-duration",
+      "bookingType-lead-time",
+      "bookingType-buffer",
+    ]);
+  });
+
+  it("keeps only the Buchungsart, with its note, when a provider handles the availability", () => {
+    expect(
+      ids({
+        externalProviders: [
+          { provider: "ifbs", active: true, handles: ["availability"] },
+        ],
+      })
+    ).toEqual(["bookingType-select"]);
+  });
+});
+
+describe("EXTERNAL_PROVIDER_SETTING", () => {
+  it("points at the section where the provider is set up", () => {
+    expect(EXTERNAL_PROVIDER_SETTING).toEqual({
+      tabKey: "pricing",
+      sectionId: "pricing-external",
+    });
   });
 });
