@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import Vuex from "vuex";
-import VueRouter from "vue-router";
-import { createLocalVue } from "@vue/test-utils";
-import { mountComponent } from "@tests/unit/support/mount";
 import { flushPromises } from "@tests/unit/support/api";
-import Bookable from "@/entities/bookable";
+import {
+  editTab as tab,
+  find,
+  mountBookableEdit,
+  showsUnsavedChanges as unsaved,
+  storedBookable as stored,
+} from "@tests/unit/support/bookableEdit";
 
 vi.mock("@/services/api/ApiBookablesService", () => ({
   default: {
@@ -31,98 +33,8 @@ vi.mock("@/services/api/ApiTenantService", () => ({
 }));
 
 import ApiBookablesService from "@/services/api/ApiBookablesService";
-import BookableEdit from "@/components/Bookable/BookableEdit.vue";
 
-const localVue = createLocalVue();
-localVue.use(VueRouter);
-
-// The frame is under test, not the panels around the field: those with their
-// own API calls stand aside.
-const stub = (name) => ({
-  name,
-  render(h) {
-    return h("div", { attrs: { "data-test": `stub-${name}` } });
-  },
-});
-
-const STUBS = {
-  BookableEditStatus: stub("BookableEditStatus"),
-  BookableEditOverview: stub("BookableEditOverview"),
-  BookableFlowSummary: stub("BookableFlowSummary"),
-  // The bar's own look is SaveBar's spec; here it only saves.
-  SaveBar: {
-    name: "SaveBar",
-    render(h) {
-      return h(
-        "button",
-        {
-          attrs: { "data-test": "save" },
-          on: { click: () => this.$emit("submit") },
-        },
-        "Speichern"
-      );
-    },
-  },
-  MediaReferenceList: stub("MediaReferenceList"),
-  AddressLookup: stub("AddressLookup"),
-  Tiptap: stub("Tiptap"),
-};
-
-function store() {
-  return new Vuex.Store({
-    modules: {
-      tenants: {
-        namespaced: true,
-        getters: {
-          currentTenant: () => ({ id: "t1" }),
-          currentTenantId: () => "t1",
-          currentSupervisionLevel: () => null,
-        },
-      },
-      user: {
-        namespaced: true,
-        getters: { supervisionLevelOf: () => () => null },
-      },
-      toasts: { namespaced: true, actions: { add: () => {} } },
-    },
-  });
-}
-
-const stored = (overrides = {}) =>
-  new Bookable({
-    id: "b1",
-    tenantId: "t1",
-    title: "Saal",
-    amount: 4,
-    ...overrides,
-  }).toPlain();
-
-async function mountEdit(query, bookable = stored()) {
-  ApiBookablesService.getBookable.mockResolvedValue({ data: bookable });
-  const router = new VueRouter({
-    mode: "abstract",
-    routes: [{ path: "/edit", name: "room-edit", component: stub("Page") }],
-  });
-  await router.push({ path: "/edit", query });
-  const wrapper = mountComponent(BookableEdit, {
-    localVue,
-    router,
-    store: store(),
-    propsData: { type: "room" },
-    stubs: STUBS,
-  });
-  await flushPromises();
-  await wrapper.vm.$nextTick();
-  return wrapper;
-}
-
-const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
-const tab = (wrapper, label) =>
-  wrapper
-    .findAll(".bookable-edit-nav__tab")
-    .wrappers.find((button) => button.text() === label);
-const unsaved = (wrapper) =>
-  wrapper.text().includes("Ungespeicherte Änderungen");
+const mountEdit = (query, bookable) => mountBookableEdit({ query, bookable });
 
 describe("BookableEdit - loading", () => {
   // Stored as the backend has it, but not as the editor works on it.
