@@ -242,6 +242,31 @@ describe("BookableFlowPrice", () => {
     ).toMatchObject({ tiersOnly: true });
   });
 
+  it("reads the price form from a bookable changed elsewhere", async () => {
+    const wrapper = mountStep(BookableFlowPrice);
+
+    await wrapper.setProps({
+      bookable: bookable({
+        priceCategories: [{ priceEur: 10, interval: {}, weekdays: [] }],
+        priceType: "per-hour",
+      }),
+    });
+
+    expect(
+      find(wrapper, "flow-price-mode-free").attributes("aria-checked")
+    ).toBe("false");
+  });
+
+  it("keeps a chosen simple price while it is still 0 €", async () => {
+    const wrapper = mountStep(BookableFlowPrice, { isScheduleRelated: true });
+
+    await find(wrapper, "flow-price-mode-simple").trigger("click");
+
+    expect(
+      find(wrapper, "flow-price-mode-simple").attributes("aria-checked")
+    ).toBe("true");
+  });
+
   it("offers tiers in expert mode only", () => {
     const wrapper = mountStep(BookableFlowPrice, {}, false);
 
@@ -295,6 +320,47 @@ describe("BookableFlowPermission", () => {
       find(wrapper, "flow-access-selected").attributes("aria-checked")
     ).toBe("true");
     expect(find(wrapper, "flow-selected-empty").exists()).toBe(true);
+  });
+
+  it("reads the choice from a bookable changed elsewhere", async () => {
+    const wrapper = mountStep(BookableFlowPermission);
+
+    await wrapper.setProps({
+      bookable: bookable({ requiresLogin: true, permittedRoles: ["r1"] }),
+    });
+
+    expect(
+      find(wrapper, "flow-access-selected").attributes("aria-checked")
+    ).toBe("true");
+  });
+
+  it("hands on a removed price exception as rebuilt discounts", async () => {
+    const discounts = {
+      users: [{ userId: "u1", discountPercent: 50 }],
+      roles: [{ roleId: "r1", discountPercent: 100 }],
+    };
+    // The real list, to remove an entry from.
+    const stubs = { ...STUBS, BookingDiscountEditor: false };
+    const {
+      wrapper,
+      patches,
+      bookable: handedIn,
+      stored,
+    } = mountEditing(BookableFlowPermission, {
+      bookable: bookable({
+        bookingDiscounts: discounts,
+        priceCategories: [{ priceEur: 10, interval: {}, weekdays: [] }],
+      }),
+      provide: { bookableExpertMode: { enabled: true } },
+      stubs,
+    });
+
+    await wrapper.find("[title='Entfernen'] button").trigger("click");
+
+    expect(patches).toEqual([
+      { bookingDiscounts: { users: [], roles: discounts.roles } },
+    ]);
+    expect(handedIn).toEqual(stored);
   });
 
   it("names price exceptions only once there is a price", () => {

@@ -38,8 +38,8 @@
       />
     </div>
 
-    <!-- Price exceptions are the editor's discounts, which change the lists
-         in place as in the permissions tab; expert mode only, as there. -->
+    <!-- Price exceptions are the editor's discounts, as in the permissions
+         tab; expert mode only, as there. -->
     <div v-if="expertMode" class="flow-rule" data-test="flow-free-booking">
       <div class="flow-question">
         <v-icon small>mdi-ticket-percent-outline</v-icon>
@@ -55,6 +55,7 @@
         <BookingDiscountEditor
           v-if="bookable.bookingDiscounts"
           :items="bookable.bookingDiscounts.users"
+          @update:items="setDiscounts('users', $event)"
           type="user"
           :available-users="availableUsers"
           :label="$t('bookable.flow.permission.free-users')"
@@ -62,6 +63,7 @@
         <BookingDiscountEditor
           v-if="bookable.bookingDiscounts"
           :items="bookable.bookingDiscounts.roles"
+          @update:items="setDiscounts('roles', $event)"
           type="role"
           :available-roles="availableRoles"
           :label="$t('bookable.flow.permission.free-roles')"
@@ -85,8 +87,9 @@ import { accessOf, applyAccess, isPaid } from "@/utils/bookableFlow";
 /**
  * Step 5, Berechtigung: who may book - everyone, signed-in users, or named
  * roles and people - and who books at a discount up to free of charge. The
- * choice is the step's own until roles or people are named (an empty
- * selection reads as „signed in“), so the step is kept alive by the flow.
+ * choice is read from the bookable; „selected“ is kept only until roles or
+ * people are named (an empty selection reads as „signed in“), and losing
+ * that on unmount costs nothing.
  */
 export default {
   name: "BookableFlowPermission",
@@ -98,12 +101,16 @@ export default {
   mixins: [bookableEditing, bookableExpertMode],
   data() {
     return {
-      access: accessOf(this.bookable),
+      selectedChosen: false,
       availableUsers: [],
       availableRoles: [],
     };
   },
   computed: {
+    access() {
+      const stored = accessOf(this.bookable);
+      return this.selectedChosen && stored === "signedIn" ? "selected" : stored;
+    },
     accessOptions() {
       return ["everyone", "signedIn", "selected"].map((value) => ({
         value,
@@ -135,8 +142,13 @@ export default {
   },
   methods: {
     setAccess(access) {
-      this.access = access;
+      this.selectedChosen = access === "selected";
       this.apply((next) => applyAccess(next, access));
+    },
+    setDiscounts(kind, items) {
+      this.patch({
+        bookingDiscounts: { ...this.bookable.bookingDiscounts, [kind]: items },
+      });
     },
     async fetchRoles() {
       try {

@@ -5,7 +5,6 @@ import ApiTenantService from "@/services/api/ApiTenantService";
 import { tenantUserOptions } from "@/utils/tenantUsers";
 import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 import BookingDiscountEditor from "@/components/Bookable/Edit/BookingDiscountEditor.vue";
-import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
 import { mapGetters } from "vuex";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
 
@@ -41,12 +40,6 @@ export default {
     },
   },
   watch: {
-    bookable: {
-      immediate: true,
-      handler() {
-        this.ensureBookingDiscounts();
-      },
-    },
     "model.isBlockPeriodRelated": {
       immediate: true,
       handler(enabled) {
@@ -60,13 +53,10 @@ export default {
     },
   },
   methods: {
-    ensureBookingDiscounts() {
-      const hadDiscounts = !!this.model.bookingDiscounts;
-      normalizeBookingDiscounts(this.model);
-
-      if (!hadDiscounts && this.model.bookingDiscounts) {
-        this.$set(this.model, "bookingDiscounts", this.model.bookingDiscounts);
-      }
+    setDiscounts(kind, items) {
+      this.$emit("update:bookable", {
+        bookingDiscounts: { ...this.model.bookingDiscounts, [kind]: items },
+      });
     },
     removePermittedUser(item) {
       this.model.permittedUsers.splice(
@@ -119,15 +109,9 @@ export default {
       this.$refs.form?.resetValidation();
     },
   },
-  created() {
-    this.ensureBookingDiscounts();
-  },
   mounted() {
     this.fetchRoles();
     this.fetchUsers();
-    if (!this.model.cancellationPolicy) {
-      this.model.cancellationPolicy = { userCancellable: true };
-    }
   },
 };
 </script>
@@ -200,6 +184,7 @@ export default {
       <BookingDiscountEditor
         v-if="model.bookingDiscounts"
         :items="model.bookingDiscounts.users"
+        @update:items="setDiscounts('users', $event)"
         type="user"
         :available-users="availableUsers"
         label="Rabatt für Benutzer"
@@ -209,6 +194,7 @@ export default {
       <BookingDiscountEditor
         v-if="model.bookingDiscounts"
         :items="model.bookingDiscounts.roles"
+        @update:items="setDiscounts('roles', $event)"
         type="role"
         :available-roles="availableRoles"
         label="Rabatt für Rollen"

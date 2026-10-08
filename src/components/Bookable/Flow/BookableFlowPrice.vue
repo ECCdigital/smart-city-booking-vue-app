@@ -275,9 +275,10 @@ const euro = (value) =>
 /**
  * Step 3, Preis: Kostenfrei, Einfacher Preis or Tarife after the cloud
  * variant, the basis of the price, VAT and coupons. Tarife are the price
- * editor's graduated prices; the flow asks only for their basis. The chosen
- * mode is the step's own until the categories say it (a fresh tier list
- * still looks like a simple price), so the step is kept alive by the flow.
+ * editor's graduated prices; the flow asks only for their basis. The form
+ * is read from the categories; a chosen one is kept only while they cannot
+ * show it yet (a simple price at 0 € looks free, a fresh tier list simple),
+ * and losing that choice on unmount costs nothing.
  */
 export default {
   name: "BookableFlowPrice",
@@ -285,14 +286,27 @@ export default {
   mixins: [bookableEditing, bookableExpertMode],
   data() {
     return {
-      mode: priceModeOf(this.bookable),
+      chosenMode: null,
       prefilled: false,
-      otherVat: !this.isCommonVat(this.bookable.priceValueAddedTax),
+      otherVatChosen: false,
       vatRates: VAT_RATES,
       units: ["per-item", "per-square-meter"],
     };
   },
   computed: {
+    mode() {
+      const stored = priceModeOf(this.bookable);
+      const unshown =
+        stored === "free" ||
+        (stored === "simple" && this.chosenMode === "tiers");
+      return this.chosenMode && unshown ? this.chosenMode : stored;
+    },
+    otherVat() {
+      return (
+        this.otherVatChosen ||
+        !this.isCommonVat(this.bookable.priceValueAddedTax)
+      );
+    },
     external() {
       return handlesExternalPricing(this.bookable);
     },
@@ -358,7 +372,7 @@ export default {
     setMode(mode) {
       if (mode === this.mode) return;
       this.prefilled = this.mode === "free" && mode !== "free";
-      this.mode = mode;
+      this.chosenMode = mode;
       this.apply((next) => applyPriceMode(next, mode));
     },
     setBasis(basis) {
@@ -370,11 +384,11 @@ export default {
       });
     },
     chooseVat(choice) {
-      this.otherVat = choice === "other";
-      if (!this.otherVat) this.setVat(choice);
+      this.otherVatChosen = choice === "other";
+      if (!this.otherVatChosen) this.setVat(choice);
     },
     setVat(rate) {
-      if (!Number(rate)) this.otherVat = false;
+      if (!Number(rate)) this.otherVatChosen = false;
       this.patch({ priceValueAddedTax: Number(rate) || 0 });
     },
   },

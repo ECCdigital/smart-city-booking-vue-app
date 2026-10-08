@@ -1,4 +1,8 @@
 <script>
+/**
+ * One list of price exceptions (users or roles). It never changes `items`:
+ * every change goes out as the rebuilt list (`update:items`).
+ */
 export default {
   name: "BookingDiscountEditor",
   props: {
@@ -75,8 +79,7 @@ export default {
           "Pflichtfeld",
         (value) => Number.isInteger(Number(value)) || "Ganzzahl erforderlich",
         (value) =>
-          (value >= 0 && value <= 100) ||
-          "Wert muss zwischen 0 und 100 liegen",
+          (value >= 0 && value <= 100) || "Wert muss zwischen 0 und 100 liegen",
       ];
     },
     idRules() {
@@ -177,27 +180,35 @@ export default {
         return;
       }
 
-      if (!Array.isArray(this.items)) {
-        return;
-      }
-
-      this.items.push({
-        [this.idKey]: this.newEntryId,
-        discountPercent: Number(this.newEntryPercent),
-      });
+      this.$emit("update:items", [
+        ...this.safeItems,
+        {
+          [this.idKey]: this.newEntryId,
+          discountPercent: Number(this.newEntryPercent),
+        },
+      ]);
 
       this.cancelAdd();
     },
     removeEntry(index) {
-      const entry = this.safeItems[index];
-      if (!entry || !Array.isArray(this.items)) {
-        return;
-      }
-
-      const originalIndex = this.items.indexOf(entry);
-      if (originalIndex !== -1) {
-        this.items.splice(originalIndex, 1);
-      }
+      this.$emit(
+        "update:items",
+        this.safeItems.filter((_, i) => i !== index)
+      );
+    },
+    setPercent(index, value) {
+      const percent = parseFloat(value);
+      this.$emit(
+        "update:items",
+        this.safeItems.map((entry, i) =>
+          i === index
+            ? {
+                ...entry,
+                discountPercent: Number.isNaN(percent) ? value : percent,
+              }
+            : entry
+        )
+      );
     },
   },
 };
@@ -266,7 +277,8 @@ export default {
 
               <v-list-item-content class="discount-field-col">
                 <v-text-field
-                  v-model.number="entry.discountPercent"
+                  :value="entry.discountPercent"
+                  @input="setPercent(index, $event)"
                   label="Rabatt"
                   type="number"
                   min="0"
