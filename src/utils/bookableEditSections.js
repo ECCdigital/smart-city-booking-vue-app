@@ -3,7 +3,10 @@
  * DOM id: be-section-{id}
  */
 
-import { IFBS_PROVIDER } from "@/utils/bookableExternalProviders";
+import {
+  IFBS_PROVIDER,
+  handlesCapability,
+} from "@/utils/bookableExternalProviders";
 
 export function bookableEditSectionElementId(sectionId) {
   return `be-section-${sectionId}`;
@@ -20,6 +23,20 @@ export function getBookingMode(bookable) {
     if (type === "week" || type === "month") return type;
   }
   return "independent";
+}
+
+/**
+ * The Buchungsart by the names of its questions: Freie Zeitwahl, Feste
+ * Zeitfenster, Zeiträume, Ganze Wochen, Ganze Monate or Ohne Zeit.
+ */
+export function bookingModeNameKey(bookable) {
+  const availability = "bookable.flow.availability";
+  const mode = getBookingMode(bookable);
+  if (mode === "independent") return `${availability}.timed-no`;
+  if (mode === "week" || mode === "month") {
+    return `${availability}.long-range-${mode}`;
+  }
+  return `${availability}.modes.${mode}`;
 }
 
 /**
@@ -44,30 +61,19 @@ function declaresExternalProvider(bookable) {
  * expert option names it in `expertOption`.
  */
 const ALL_SECTIONS = [
+  // The two groups of the Grunddaten (BookableFlowIdentity), named as the
+  // groups themselves are.
   {
     tabKey: "general",
-    id: "general-info",
-    labelKey: "bookable.edit.sections.generalInfo",
+    id: "general-catalog",
+    labelKey: "bookable.flow.identity.catalog",
     type: "scroll",
   },
   {
     tabKey: "general",
-    id: "general-images",
-    labelKey: "bookable.edit.sections.generalImages",
+    id: "general-admin",
+    labelKey: "bookable.flow.identity.admin",
     type: "scroll",
-  },
-  {
-    tabKey: "general",
-    id: "general-booker-info",
-    labelKey: "bookable.edit.sections.generalBookerInfo",
-    type: "scroll",
-  },
-  {
-    tabKey: "general",
-    id: "general-tags",
-    labelKey: "bookable.edit.sections.generalTags",
-    type: "scroll",
-    expertOption: "tags",
   },
   {
     tabKey: "pricing",
@@ -224,8 +230,12 @@ function isSectionVisible(section, { bookable, shown = everyOption }) {
     return false;
   }
 
-  const mode = getBookingMode(bookable);
-  const isTimeWindowMode = mode === "schedule" || mode === "timePeriod";
+  const bookingMode = getBookingMode(bookable);
+  const isTimeWindowMode =
+    bookingMode === "schedule" || bookingMode === "timePeriod";
+  // Where a provider handles the availability, the Buchungsart shows only
+  // its note and none of the sections of a mode.
+  const mode = handlesCapability(bookable, "availability") ? null : bookingMode;
   const visibilityById = {
     "pricing-external": () => declaresExternalProvider(bookable),
     "bookingType-duration": () => mode === "schedule",
@@ -276,3 +286,14 @@ export function getBookableEditSectionById(sectionId) {
 export function shouldShowBookableEditSectionNav(tabKey, ctx) {
   return getVisibleBookableEditSections(tabKey, ctx).length >= 2;
 }
+
+/**
+ * Where an external provider is set up, as `{ tabKey, sectionId }` for
+ * `BookableEdit.openSection`: the jump of the notes that a provider handles
+ * the availability or the prices - the settings of ParkraumService in
+ * Schließsysteme. Follows the section wherever its tab is.
+ */
+export const EXTERNAL_PROVIDER_SETTING = Object.freeze({
+  tabKey: getBookableEditSectionById("pricing-external").tabKey,
+  sectionId: "pricing-external",
+});

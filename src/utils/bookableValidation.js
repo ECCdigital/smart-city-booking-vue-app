@@ -125,7 +125,7 @@ export const BOOKABLE_RULE_NAMES = Object.freeze(Object.keys(RULES));
  * editing page, the step of the guided flow (`null` where it has none).
  */
 const PLACES = Object.freeze({
-  title: { tab: "general", section: "general-info", step: "identity" },
+  title: { tab: "general", section: "general-catalog", step: "identity" },
   priceCategories: { tab: "pricing", section: "pricing-price", step: "price" },
   maxAmountPerBooking: {
     tab: "pricing",

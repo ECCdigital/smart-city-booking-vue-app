@@ -1,10 +1,10 @@
 /**
  * The guided flow of a bookable (ECCdigital/tickets#326), after the cloud
- * variant: six steps over the same bookable the editor holds, saved once at
+ * variant: the steps over the same bookable the editor holds, saved once at
  * the end. Pure: which steps there are, how each question reads from the
- * bookable and lands on it, what the closing action is called by
- * supervision level and which optional editor sections the confirmation
- * links. The flow components only wire it to the page.
+ * bookable and lands on it, how the confirmation is worded by supervision
+ * level and which optional editor sections it links. The flow components
+ * only wire it to the page.
  *
  * Every answer is read from the bookable itself - the flow keeps no state of
  * its own beyond the step - so leaving for the editor and coming back shows
@@ -14,6 +14,7 @@
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import { providerHandles } from "@/utils/bookableExternalProviders";
 import {
+  bookingModeNameKey,
   getBookingMode,
   getVisibleBookableEditSections,
   getBookableEditSectionById,
@@ -34,6 +35,8 @@ export const FLOW_STEPS = Object.freeze([
   "amount",
   "permission",
   "approval",
+  // Always last: what becomes public is the final question (#362).
+  "publication",
 ]);
 
 /** The bookable types a new bookable may take; events stay in their editor. */
@@ -106,11 +109,29 @@ export function timeModeOf(bookable) {
 }
 
 /**
- * Sets the booking mode as the booking type tab does: one flag at a time,
- * the long range with its unit. What belongs to another mode stays stored,
- * as it does when the tab switches - the backend reads only the active one.
+ * The modes an answer to the questions of the Buchungsart stands for, the
+ * one it sets first in front: „Für eine Zeit“ (`timed`) Freie Zeitwahl,
+ * „Langzeit“ (`longRange`) Ganze Wochen.
  */
-export function applyBookingMode(bookable, mode) {
+const BOOKING_ANSWERS = Object.freeze({
+  timed: ["schedule"],
+  longRange: ["week", "month"],
+});
+
+/**
+ * Sets the Buchungsart from an answer to its questions, in both modes: a mode
+ * (`schedule`, `timePeriod`, `blockPeriod`, `week`, `month`, `independent`)
+ * or `timed` / `longRange`, which set their first mode among `offered` - all
+ * of them by default; „Langzeit“ sets Ganze Monate only where Ganze Wochen is
+ * not offered. One flag at a time, the long range with its unit. What belongs
+ * to another mode stays stored - the backend reads only the active one -
+ * and Zeiträume turn the Serienbuchung off.
+ */
+export function applyBookingMode(bookable, answer, offered = null) {
+  const modes = BOOKING_ANSWERS[answer];
+  const mode = modes
+    ? modes.find((m) => !offered || offered.includes(m)) || modes[0]
+    : answer;
   bookable.isScheduleRelated = mode === "schedule";
   bookable.isTimePeriodRelated = mode === "timePeriod";
   bookable.isBlockPeriodRelated = mode === "blockPeriod";
@@ -119,7 +140,7 @@ export function applyBookingMode(bookable, mode) {
 
   if (mode === "blockPeriod") {
     if (!Array.isArray(bookable.blockPeriods)) bookable.blockPeriods = [];
-    // A group booking is not offered for time ranges (booking type tab).
+    // Zeiträume offer no Serienbuchung.
     if (bookable.groupBooking?.enabled) bookable.groupBooking.enabled = false;
   }
   return bookable;
@@ -350,7 +371,7 @@ export function applyAccess(bookable, access) {
 // --- Abschluss -------------------------------------------------------------
 
 /**
- * The wording of the closing action by supervision level: free publishes,
+ * The wording of the confirmation by supervision level: free publishes,
  * supervised submits for review, pending and declined note the wish. A
  * missing or unknown level reads as free - wording only, the backend decides
  * what becomes public.
@@ -359,15 +380,6 @@ export function publishVariant(level) {
   return Object.values(SUPERVISION_LEVELS).includes(level)
     ? level
     : SUPERVISION_LEVELS.FREE;
-}
-
-/**
- * „Speichern und veröffentlichen“ stores the publication wish, as the
- * guided setup did; „Nur speichern“ leaves it as it is - a published
- * bookable stays published, a new one stays a draft.
- */
-export function withPublication(bookable, publish) {
-  return publish ? { ...bookable, isPublic: true, isBookable: true } : bookable;
 }
 
 /**
@@ -443,7 +455,7 @@ function identityRows(bookable, { eventTitlesById } = {}) {
     { label: label("type"), value: asText(getTypeText(bookable?.type)) },
     ...(bookable?.type === "ticket" ? [event] : []),
     {
-      label: label("image"),
+      label: label("images"),
       value: asWord(
         `${OVERVIEW}.values.${image ? "image-present" : "image-none"}`
       ),
@@ -455,27 +467,13 @@ function identityRows(bookable, { eventTitlesById } = {}) {
 
 const EXTERNAL = asWord(`${OVERVIEW}.values.external`);
 
-/** The booking type in the step's words; the long range with its unit. */
-function bookingTypeValue(bookable) {
-  const availability = "bookable.flow.availability";
-  const mode = bookingModeOf(bookable);
-  if (mode === "independent") return asWord(`${availability}.timed-no`);
-  if (mode === "week" || mode === "month") {
-    return [
-      wordPart(`${availability}.modes.longRange`),
-      wordPart(`${availability}.long-range-${mode}`),
-    ];
-  }
-  return asWord(`${availability}.modes.${mode}`);
-}
-
 function availabilityRows(bookable) {
   return [
     {
       label: `${OVERVIEW}.labels.availability`,
       value: handlesExternalAvailability(bookable)
         ? EXTERNAL
-        : bookingTypeValue(bookable),
+        : asWord(bookingModeNameKey(bookable)),
     },
   ];
 }
@@ -581,6 +579,15 @@ const OVERVIEW_ROWS = {
       ),
     },
   ],
+  // The two switches by the labels of the fields themselves.
+  publication: (bookable) =>
+    [
+      ["isBookable", "bookable.publication.bookable.label"],
+      ["isPublic", "bookable.publication.public.label"],
+    ].map(([field, label]) => ({
+      label,
+      value: asWord(`${OVERVIEW}.values.${bookable?.[field] ? "yes" : "no"}`),
+    })),
 };
 
 /**

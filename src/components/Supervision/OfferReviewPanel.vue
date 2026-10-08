@@ -34,7 +34,7 @@
       {{ $t("supervision.review.reason", { reason }) }}
     </p>
     <p
-      v-if="effectKey"
+      v-if="showEffect && effectKey"
       class="text-body-2 text--secondary mt-2 mb-0"
       data-test="review-effect"
     >
@@ -53,7 +53,7 @@
     </v-alert>
 
     <p
-      v-if="!offerId"
+      v-if="!offerId && showUnsaved"
       class="text-caption text--secondary mt-2 mb-0"
       data-test="review-unsaved"
     >
@@ -141,6 +141,10 @@ export default {
     review: { type: Object, default: null },
     isPublic: { type: Boolean, default: false },
     supervisionLevel: { type: String, default: null },
+    /** Off where the host says what the status means (the bookable's „Veröffentlichung“). */
+    showEffect: { type: Boolean, default: true },
+    /** Off where the host says what saving an unsaved offer does. */
+    showUnsaved: { type: Boolean, default: true },
   },
   data() {
     return {

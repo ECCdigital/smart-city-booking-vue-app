@@ -100,3 +100,31 @@ describe("BookableEditOverview - without expert mode", () => {
     expect(wrapper.emitted("navigate-tab")).toEqual([["general"]]);
   });
 });
+
+describe("BookableEditOverview - Buchungsart", () => {
+  it("names the field and its mode as the questions do", async () => {
+    const wrapper = await mountOverview(
+      {
+        id: "b1",
+        isScheduleRelated: false,
+        isLongRange: true,
+        longRangeOptions: { type: "week" },
+      },
+      []
+    );
+
+    expect(wrapper.text()).toContain("Buchungsart");
+    expect(wrapper.text()).toContain("Ganze Wochen");
+    expect(wrapper.text()).not.toContain("Wochenbuchung");
+  });
+
+  it("says Ohne Zeit for a bookable booked without a time", async () => {
+    const wrapper = await mountOverview(
+      { id: "b1", isScheduleRelated: false },
+      []
+    );
+
+    expect(wrapper.text()).toContain("Ohne Zeit");
+    expect(wrapper.text()).not.toContain("Zeitunabhängig");
+  });
+});

@@ -119,7 +119,9 @@
               :key="step"
               :bookable="bookable"
               :is-new="isNew"
+              v-bind="stepProps"
               @update:bookable="$emit('update:bookable', $event)"
+              @open-section="$emit('open-section', $event)"
             />
           </keep-alive>
         </div>
@@ -154,28 +156,17 @@
           >
             {{ $t("bookable.flow.skip") }}
           </v-btn>
-          <div class="flow-footer__right">
-            <template v-if="last">
-              <v-btn
-                outlined
-                color="primary"
-                :disabled="inProgress"
-                data-test="flow-save-only"
-                @click="$emit('save', false)"
-              >
-                {{ $t("bookable.flow.save-only") }}
-              </v-btn>
-              <v-btn
-                color="primary"
-                depressed
-                :loading="inProgress"
-                data-test="flow-save-publish"
-                @click="$emit('save', true)"
-              >
-                <v-icon left small>mdi-flag-outline</v-icon>
-                {{ $t(`bookable.flow.save-and-publish.${variant}`) }}
-              </v-btn>
-            </template>
+          <div class="flow-footer__right" data-test="flow-footer-actions">
+            <v-btn
+              v-if="last"
+              color="primary"
+              depressed
+              :loading="inProgress"
+              data-test="flow-save"
+              @click="$emit('save')"
+            >
+              {{ $t("bookable.flow.save") }}
+            </v-btn>
             <v-btn
               v-else
               color="primary"
@@ -211,14 +202,11 @@ import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue"
 import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vue";
 import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
 import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
+import BookableEditPublication from "@/components/Bookable/Edit/BookableEditPublication.vue";
 import BookableFlowDone from "@/components/Bookable/Flow/BookableFlowDone.vue";
 import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
 import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
-import {
-  FLOW_STEPS,
-  overviewBlocks,
-  publishVariant,
-} from "@/utils/bookableFlow";
+import { FLOW_STEPS, overviewBlocks } from "@/utils/bookableFlow";
 import {
   cachedEventTitlesById,
   loadEventTitlesById,
@@ -231,6 +219,7 @@ const STEP_COMPONENTS = {
   amount: "BookableFlowAmount",
   permission: "BookableFlowPermission",
   approval: "BookableFlowApproval",
+  publication: "BookableEditPublication",
 };
 
 /**
@@ -250,9 +239,9 @@ function startingPoint(isNew) {
  * The guided flow of a bookable after the cloud variant (ECCdigital/
  * tickets#326): a centred column with the progress as dots, the step's
  * question beneath its title, and the way on in a footer. It edits the
- * editor's bookable and saves nothing itself - the last step asks the
- * editor to save, once, with or without the publication wish, and the
- * editor answers with the outcome the confirmation shows.
+ * editor's bookable and saves nothing itself - „Speichern“ on the last
+ * step, the publication (ECCdigital/tickets#362), asks the editor to save
+ * once, and the editor answers with the outcome the confirmation shows.
  *
  * The steps can be visited in any order; „Weiter“ never holds. What the
  * backend would refuse is checked on save (`bookableValidation`), and
@@ -273,6 +262,7 @@ export default {
     BookableFlowAmount,
     BookableFlowPermission,
     BookableFlowApproval,
+    BookableEditPublication,
     BookableFlowDone,
     BookableFlowSummary,
     OnboardingSupervisionNotice,
@@ -305,8 +295,9 @@ export default {
     last() {
       return this.index === this.steps.length - 1;
     },
-    variant() {
-      return publishVariant(this.level);
+    /** What a step takes beside the bookable and `isNew`. */
+    stepProps() {
+      return this.step === "publication" ? { level: this.level } : {};
     },
     /** From Vuetify's lg the overview stands beside the step. */
     showOverview() {

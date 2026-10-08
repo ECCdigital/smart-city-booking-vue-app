@@ -58,6 +58,7 @@ export default {
         :bookable="bookable"
         v-bind="cardProps(card)"
         @update:bookable="$emit('update:bookable', $event)"
+        @open-section="$emit('open-section', $event)"
       />
       <v-card
         v-else
@@ -77,6 +78,7 @@ export default {
             :bookable="bookable"
             v-bind="cardProps(card)"
             @update:bookable="$emit('update:bookable', $event)"
+            @open-section="$emit('open-section', $event)"
           />
         </v-card-text>
       </v-card>

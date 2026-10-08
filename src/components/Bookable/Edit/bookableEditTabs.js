@@ -1,6 +1,7 @@
-import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.vue";
+import BookableFlowIdentity from "@/components/Bookable/Flow/BookableFlowIdentity.vue";
 import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
 import BookableEditAmount from "@/components/Bookable/Edit/BookableEditAmount.vue";
+import BookableEditBookingMode from "@/components/Bookable/Edit/BookableEditBookingMode.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
 import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
@@ -84,7 +85,17 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
     key: "general",
     label: "Allgemein",
     icon: "mdi-information-outline",
-    comp: BookableEditGeneral,
+    // The Grunddaten, as the guided flow's step Identität shows them; their
+    // two groups carry the anchors of the sections general-catalog and
+    // general-admin themselves.
+    cards: [
+      {
+        key: "basics",
+        comp: BookableFlowIdentity,
+        titleKey: "bookable.flow.identity.heading",
+        icon: "mdi-information-outline",
+      },
+    ],
   },
   {
     key: "pricing",
@@ -111,9 +122,19 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
   },
   {
     key: "bookingType",
-    label: "Buchungstyp",
+    label: "Buchungsart",
     icon: "mdi-calendar-clock",
-    comp: BookableEditBookingType,
+    cards: [
+      {
+        key: "bookingMode",
+        comp: BookableEditBookingMode,
+        titleKey: "bookable.edit.sections.bookingTypeSelect",
+        icon: "mdi-calendar-question",
+        section: "bookingType-select",
+      },
+      // The sections of the chosen mode, each a card of its own.
+      { key: "bookingTypeSettings", comp: BookableEditBookingType, bare: true },
+    ],
   },
   {
     key: "openingHours",

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getVisibleBookableEditSections } from "@/utils/bookableEditSections";
+import {
+  EXTERNAL_PROVIDER_SETTING,
+  getVisibleBookableEditSections,
+} from "@/utils/bookableEditSections";
 
 function sectionIds(bookable, tabKey = "pricing") {
   return getVisibleBookableEditSections(tabKey, { bookable }).map(
@@ -70,24 +73,85 @@ describe("bookableEditSections - ParkraumService in Schließsysteme", () => {
 });
 
 describe("bookableEditSections - expert options", () => {
+  const relatedIds = (shown) =>
+    getVisibleBookableEditSections("relatedBookables", {
+      bookable: {},
+      shown,
+    }).map((section) => section.id);
+
+  it("offers the section of an expert option that shows", () => {
+    expect(relatedIds((option) => option === "hierarchy")).toEqual([
+      "related-hierarchy",
+    ]);
+  });
+
+  it("leaves out the section of an expert option that does not show", () => {
+    expect(relatedIds(() => false)).toEqual([]);
+  });
+
+  it("offers every section without a rule, as expert mode does", () => {
+    expect(relatedIds(undefined)).toEqual([
+      "related-checkout",
+      "related-hierarchy",
+    ]);
+  });
+});
+
+describe("bookableEditSections - Grunddaten", () => {
   const generalIds = (shown) =>
     getVisibleBookableEditSections("general", { bookable: {}, shown }).map(
       (section) => section.id
     );
 
-  it("offers the section of an expert option that shows", () => {
-    expect(generalIds((option) => option === "tags")).toContain("general-tags");
+  it("has the two groups of the Grunddaten, with or without expert mode", () => {
+    const groups = ["general-catalog", "general-admin"];
+    expect(generalIds(() => false)).toEqual(groups);
+    expect(generalIds(undefined)).toEqual(groups);
   });
 
-  it("leaves out the section of an expert option that does not show", () => {
-    expect(generalIds(() => false)).toEqual([
-      "general-info",
-      "general-images",
-      "general-booker-info",
+  it("names them as the groups do", () => {
+    expect(
+      getVisibleBookableEditSections("general", { bookable: {} }).map(
+        (section) => section.labelKey
+      )
+    ).toEqual([
+      "bookable.flow.identity.catalog",
+      "bookable.flow.identity.admin",
+    ]);
+  });
+});
+
+describe("bookableEditSections - the Buchungsart tab", () => {
+  const ids = (overrides) =>
+    getVisibleBookableEditSections("bookingType", {
+      bookable: { isScheduleRelated: true, ...overrides },
+    }).map((section) => section.id);
+
+  it("shows the Buchungsart above the sections of the chosen mode", () => {
+    expect(ids()).toEqual([
+      "bookingType-select",
+      "bookingType-duration",
+      "bookingType-lead-time",
+      "bookingType-buffer",
     ]);
   });
 
-  it("offers every section without a rule, as expert mode does", () => {
-    expect(generalIds(undefined)).toContain("general-tags");
+  it("keeps only the Buchungsart, with its note, when a provider handles the availability", () => {
+    expect(
+      ids({
+        externalProviders: [
+          { provider: "ifbs", active: true, handles: ["availability"] },
+        ],
+      })
+    ).toEqual(["bookingType-select"]);
+  });
+});
+
+describe("EXTERNAL_PROVIDER_SETTING", () => {
+  it("points at the section where the provider is set up", () => {
+    expect(EXTERNAL_PROVIDER_SETTING).toEqual({
+      tabKey: "accessLocks",
+      sectionId: "pricing-external",
+    });
   });
 });

@@ -152,7 +152,12 @@
           </div>
         </div>
 
-        <BookableEditStatus v-if="!flowMode" :bookable="bookable" />
+        <BookableEditStatus
+          v-if="!flowMode"
+          :bookable="bookable"
+          :level="supervisionLevel"
+          @update:bookable="onUpdateBookable"
+        />
 
         <BookableEditOverview
           v-if="!flowMode && !$vuetify.breakpoint.lgAndUp"
@@ -285,6 +290,7 @@
               v-bind="activeTabExtraProps"
               @update:bookable="onUpdateBookable"
               @navigate-tab="goToTab"
+              @open-section="openSection"
             />
           </keep-alive>
         </div>
@@ -341,8 +347,8 @@ import {
   editRouteOf,
   isFlowMode,
   listRouteOf,
-  withPublication,
 } from "@/utils/bookableFlow";
+import { publicationOutcome } from "@/utils/bookablePublication";
 import {
   expertOptionShown,
   expertTabShown,
@@ -431,7 +437,8 @@ export default {
       });
     },
     // The sign-in's level, else the admin DTO's - as the pending banner
-    // reads it. It words the flow's closing action.
+    // reads it. The publication reads it in both modes, the confirmation
+    // words its outcome by it.
     supervisionLevel() {
       const tenantId = this.bookable.tenantId || this.currentTenant?.id;
       return this.supervisionLevelOf(tenantId) ?? this.adminSupervisionLevel;
@@ -642,26 +649,20 @@ export default {
       }
     },
     /**
-     * The flow's single save. „Speichern und veröffentlichen“ stores the
-     * publication wish; „Nur speichern“ leaves the publication as it is.
+     * The flow's one „Speichern“: the bookable as edited, its publication as
+     * the step „Veröffentlichung“ set it. The confirmation reads its outcome
+     * from the saved fields against the ones stored before.
      */
-    async saveFlow(publish) {
+    async saveFlow() {
       if (this.refuseSave()) return;
-      const isNew = !this.bookableID;
-      const wasPublic = this.bookable.isPublic === true;
+      const before = this.bookableID ? this.expertModeContext.stored : null;
       this.flowSaveFailed = false;
-      const saved = await this.createOrUpdate(
-        withPublication(this.bookable, publish)
-      );
+      const saved = await this.createOrUpdate();
       if (!saved) {
         this.flowSaveFailed = true;
         return;
       }
-      if (publish) {
-        this.flowOutcome = "published";
-      } else {
-        this.flowOutcome = !isNew && wasPublic ? "kept" : "draft";
-      }
+      this.flowOutcome = publicationOutcome(this.bookable, before);
     },
     enterFlow() {
       this.$router.replace({
@@ -676,7 +677,7 @@ export default {
       return this.$router.replace({ query });
     },
     async openSection({ tabKey, sectionId }) {
-      await this.leaveFlow();
+      if (this.flowMode) await this.leaveFlow();
       this.$nextTick(() => this.goToTab(tabKey, sectionId || undefined));
     },
     /** „Zur Übersicht“: this bookable in the editor of its type. */
@@ -716,6 +717,9 @@ export default {
           longRangeOptions: {},
           // Tickets default to time-independent; other bookables to free time selection
           isScheduleRelated: this.type !== "ticket",
+          // Nothing is published unasked: both switches start off (#362).
+          isBookable: false,
+          isPublic: false,
         });
       }
 

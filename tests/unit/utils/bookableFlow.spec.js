@@ -19,7 +19,6 @@ import {
   timeModeOf,
   usesOpeningHours,
   warnsAboutAmount,
-  withPublication,
 } from "@/utils/bookableFlow";
 
 const category = (priceEur, overrides = {}) => ({
@@ -95,6 +94,47 @@ describe("availability", () => {
     expect(next.isLongRange).toBe(false);
     expect(next.longRangeOptions).toEqual({});
     expect(next.isTimePeriodRelated).toBe(true);
+  });
+
+  it("sets Freie Zeitwahl first for „Für eine Zeit“", () => {
+    const next = applyBookingMode(
+      bookable({ isScheduleRelated: false }),
+      "timed"
+    );
+
+    expect(next.isScheduleRelated).toBe(true);
+    expect(next.isLongRange).toBe(false);
+  });
+
+  it("sets Ganze Wochen first for „Langzeit“, Ganze Monate where only they are offered", () => {
+    expect(
+      applyBookingMode(bookable({ isScheduleRelated: true }), "longRange")
+        .longRangeOptions
+    ).toEqual({ type: "week" });
+    expect(
+      applyBookingMode(bookable({ isScheduleRelated: true }), "longRange", [
+        "month",
+      ]).longRangeOptions
+    ).toEqual({ type: "month" });
+  });
+
+  it("keeps what belongs to the other booking modes", () => {
+    const periods = [{ weekdays: [1], startTime: "09:00", endTime: "12:00" }];
+    const blocks = [{ id: "b1", label: "Wochenende" }];
+    const next = applyBookingMode(
+      bookable({
+        isTimePeriodRelated: true,
+        timePeriods: periods,
+        blockPeriods: blocks,
+        minBookingDuration: 2,
+      }),
+      "independent"
+    );
+
+    expect(next.timePeriods).toEqual(periods);
+    expect(next.blockPeriods).toEqual(blocks);
+    expect(next.minBookingDuration).toBe(2);
+    expect(next.isTimePeriodRelated).toBe(false);
   });
 
   it("turns off the group booking for time ranges, as the booking type tab does", () => {
@@ -366,21 +406,11 @@ describe("access", () => {
 });
 
 describe("closing", () => {
-  it("words the action by supervision level and reads an unknown one as free", () => {
+  it("words the confirmation by supervision level and reads an unknown one as free", () => {
     expect(publishVariant("supervised")).toBe("supervised");
     expect(publishVariant("pending")).toBe("pending");
     expect(publishVariant(null)).toBe("free");
     expect(publishVariant("whatever")).toBe("free");
-  });
-
-  it("stores the publication wish only when publishing", () => {
-    const draft = bookable({ isPublic: false, isBookable: false });
-
-    expect(withPublication(draft, true)).toMatchObject({
-      isPublic: true,
-      isBookable: true,
-    });
-    expect(withPublication(draft, false)).toBe(draft);
   });
 });
 
@@ -467,6 +497,7 @@ describe("overview", () => {
       ["amount", true],
       ["permission", true],
       ["approval", true],
+      ["publication", true],
     ]);
     expect(blocks[1].rows).toEqual([]);
   });
@@ -475,7 +506,7 @@ describe("overview", () => {
     expect(shown(blockOf("identity", bookable({ type: "room" })))).toEqual([
       ["Titel", "–"],
       ["Typ", "Raum"],
-      ["Bild", "keins"],
+      ["Bilder", "keins"],
       ["Standort", "–"],
       ["Merkmale", "–"],
     ]);
@@ -493,13 +524,13 @@ describe("overview", () => {
     expect(shown(blockOf("identity", item))).toEqual([
       ["Titel", "Großer Saal"],
       ["Typ", "Veranstaltungsort"],
-      ["Bild", "vorhanden"],
+      ["Bilder", "vorhanden"],
       ["Standort", "Markt 1, Rostock"],
       ["Merkmale", "WLAN, Beamer, Bühne, Küche +2"],
     ]);
     expect(
       shown(blockOf("identity", bookable({ imgUrl: "https://x/y.png" })))
-    ).toContainEqual(["Bild", "vorhanden"]);
+    ).toContainEqual(["Bilder", "vorhanden"]);
   });
 
   it("names the event of a ticket only, by its title or else its id", () => {
@@ -667,17 +698,38 @@ describe("overview", () => {
     ).toEqual([["Buchungen", "wird geprüft"]]);
   });
 
-  it("names the booking type with the step's words", () => {
+  it("names both switches of the publication with the field's words", () => {
+    expect(
+      shown(
+        blockOf("publication", bookable({ isBookable: true, isPublic: false }))
+      )
+    ).toEqual([
+      ["Buchbar", "ja"],
+      ["Im Katalog listen", "nein"],
+    ]);
+    expect(
+      shown(
+        blockOf("publication", bookable({ isBookable: false, isPublic: true }))
+      )
+    ).toEqual([
+      ["Buchbar", "nein"],
+      ["Im Katalog listen", "ja"],
+    ]);
+  });
+
+  it("names the Buchungsart with the names of its questions", () => {
     const typeOf = (mode) => {
       const item = applyBookingMode(bookable(), mode);
       return shown(blockOf("availability", item));
     };
 
     expect(typeOf("schedule")).toEqual([["Buchungsart", "Freie Zeitwahl"]]);
-    expect(typeOf("timePeriod")).toEqual([["Buchungsart", "Feste Zeiten"]]);
+    expect(typeOf("timePeriod")).toEqual([
+      ["Buchungsart", "Feste Zeitfenster"],
+    ]);
     expect(typeOf("blockPeriod")).toEqual([["Buchungsart", "Zeiträume"]]);
-    expect(typeOf("week")).toEqual([["Buchungsart", "Langzeit, Wochen"]]);
-    expect(typeOf("month")).toEqual([["Buchungsart", "Langzeit, Monate"]]);
+    expect(typeOf("week")).toEqual([["Buchungsart", "Ganze Wochen"]]);
+    expect(typeOf("month")).toEqual([["Buchungsart", "Ganze Monate"]]);
     expect(typeOf("independent")).toEqual([["Buchungsart", "Ohne Zeit"]]);
   });
 

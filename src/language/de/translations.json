@@ -178,13 +178,7 @@
       "back": "Zurück",
       "next": "Weiter",
       "skip": "Überspringen",
-      "save-only": "Nur speichern",
-      "save-and-publish": {
-        "free": "Speichern und veröffentlichen",
-        "supervised": "Speichern und zur Prüfung einreichen",
-        "pending": "Speichern und Veröffentlichung vormerken",
-        "declined": "Speichern und Veröffentlichung vormerken"
-      },
+      "save": "Speichern",
       "save-hint": "Gespeichert wird erst hier. Wer den Ablauf vorher verlässt, verliert die Angaben.",
       "save-failed": "Das Buchungsobjekt konnte nicht gespeichert werden.",
       "steps": {
@@ -211,50 +205,66 @@
         "approval": {
           "title": "Freigabe",
           "why": "Sollen Buchungen automatisch freigegeben werden oder erst nach Ihrer Prüfung?"
+        },
+        "publication": {
+          "title": "Veröffentlichung",
+          "why": "Ob Buchende das Objekt im Katalog finden und ob sie es buchen können – beides lässt sich einzeln einstellen."
         }
       },
       "identity": {
         "catalog": "Das sehen Buchende im Katalog",
+        "admin": "Nur für die Verwaltung",
+        "heading": "Grunddaten",
         "title": "Titel",
         "title-placeholder": "z. B. Großer Saal",
+        "title-hint": "Daran erkennen Buchende das Objekt im Katalog und Sie es in den Listen der Verwaltung.",
         "description": "Beschreibung",
+        "description-hint": "Steht auf der Objektseite im Katalog: was das Objekt bietet und was Buchende wissen sollten.",
         "flags": "Merkmale",
         "flags-hint": "Kurze Vorteile neben der Beschreibung, z. B. „WLAN inklusive“. Knapp halten.",
-        "flags-empty": "Merkmal eingeben und mit Enter übernehmen",
-        "type": "Typ",
-        "type-hint": "Bestimmt Darstellung und Icon im Katalog. Wie gebucht wird, legen Sie unter „Verfügbarkeit“ fest.",
-        "event": "Veranstaltung",
-        "event-hint": "Verknüpft das Ticket mit einer Veranstaltung.",
-        "image": "Bild",
-        "image-hint": "Aus der Mediathek wählen, neu hochladen oder extern verlinken.",
+        "chips-empty": "Eingeben und mit Enter übernehmen",
+        "images": "Bilder",
+        "images-hint": "Das erste Bild ist das Titelbild im Katalog. Aus der Mediathek wählen, neu hochladen oder extern verlinken.",
+        "images-public-only": "Dieses Buchungsobjekt ist öffentlich sichtbar, interne Medien können hier nicht gespeichert werden.",
+        "legacy-cover": "Das bisherige Titelbild liegt noch in der alten Dateiablage:",
+        "legacy-cover-active": "Es bleibt aktiv, bis hier Bilder aus der Mediathek zugeordnet werden.",
+        "legacy-cover-adopt": "Als Bild übernehmen",
         "location": "Standort",
-        "location-hint": "Wo Buchende hin müssen. Wird die Adresse gefunden, erscheint sie auf der Objektseite auf der Karte."
+        "location-hint": "Wo Buchende hin müssen. Wird die Adresse gefunden, erscheint sie auf der Objektseite auf der Karte.",
+        "type": "Typ",
+        "type-hint": "Bestimmt Darstellung und Icon im Katalog. Lässt sich nach dem Anlegen nicht mehr ändern.",
+        "type-fixed": "Wird beim Anlegen festgelegt.",
+        "event": "Veranstaltung",
+        "event-hint": "Verknüpft das Ticket mit einer Veranstaltung des Mandanten, dem das Ticket gehört.",
+        "tags": "Interne Tags",
+        "tags-hint": "Zum Filtern und Gruppieren in der Verwaltung. Buchende sehen sie nicht."
       },
       "availability": {
         "external-title": "Verfügbarkeit kommt von einem externen Anbieter",
-        "external-text": "Die Verfügbarkeit wird extern geführt. Deaktivieren Sie die externe Steuerung unter „Schließsysteme“, um sie hier selbst zu pflegen.",
+        "external-text": "Ein externer Anbieter führt die Verfügbarkeit dieses Buchungsobjekts. Um sie hier selbst zu pflegen, schalten Sie die externe Steuerung aus.",
+        "external-link": "Zur Einstellung",
         "timed": "Wird dieses Objekt für eine Zeit gebucht?",
         "timed-no": "Ohne Zeit",
         "timed-yes": "Für eine Zeit",
-        "untimed-info": "Buchende buchen eine feste Menge ohne Zeitauswahl. Die Kapazität steuern Sie über „Anzahl & Kapazität“.",
         "mode": "Wie wird die Zeit gebucht?",
         "modes": {
           "schedule": "Freie Zeitwahl",
-          "timePeriod": "Feste Zeiten",
+          "timePeriod": "Feste Zeitfenster",
           "blockPeriod": "Zeiträume",
           "longRange": "Langzeit"
         },
         "explain": {
+          "independent": "Buchende buchen eine Menge ohne Zeitauswahl.",
           "schedule": "Buchende suchen sich im Kalender einen freien Zeitpunkt und wählen die Dauer innerhalb der Grenzen.",
-          "timePeriod": "Sie geben feste Zeiten vor; Buchende wählen eine freie davon.",
+          "timePeriod": "Sie geben feste Zeitfenster vor, etwa montags 9–12 Uhr; Buchende wählen ein freies davon.",
           "blockPeriod": "Sie geben wiederkehrende, tagesübergreifende Zeiträume vor, etwa ein Wochenende; Buchende wählen einen davon.",
           "week": "Buchende buchen ganze Wochen am Stück.",
-          "month": "Buchende buchen ganze Monate am Stück."
+          "month": "Buchende buchen ganze Kalendermonate am Stück."
         },
         "long-range": "Wochen oder Monate?",
-        "long-range-week": "Wochen",
-        "long-range-month": "Monate",
-        "long-range-info": "Bei Langzeitbuchungen prüft das System keine Öffnungszeiten oder Ausnahmen – sie liegen naturgemäß außerhalb von Tagesfenstern."
+        "long-range-week": "Ganze Wochen",
+        "long-range-month": "Ganze Monate",
+        "long-range-info": "Bei ganzen Wochen und Monaten prüft das System keine Öffnungszeiten oder Ausnahmen."
       },
       "price": {
         "external-title": "Preise kommen von einem externen Anbieter",
@@ -524,13 +534,9 @@
       },
       "openEvent": "Veranstaltung in neuem Tab öffnen",
       "sections": {
-        "generalInfo": "Allgemeine Infos",
-        "generalImages": "Bilder",
-        "generalBookerInfo": "Infos für Buchende",
-        "generalTags": "Interne Tags",
         "pricingAmount": "Anzahl",
         "accessLocksExternal": "Externe Datenquelle",
-        "bookingTypeSelect": "Auswahl",
+        "bookingTypeSelect": "Buchungsart",
         "bookingTypeDuration": "Dauer",
         "bookingTypeTimePeriods": "Zeitfenster",
         "bookingTypeBlockPeriods": "Zeiträume",
@@ -545,14 +551,6 @@
         "customFieldsDefinitions": "Felder definieren"
       },
       "status": {
-        "bookable": {
-          "label": "Buchbar",
-          "tooltip": "Kunde/Nutzer kann das Objekt über den Checkout buchen."
-        },
-        "public": {
-          "label": "Öffentlich",
-          "tooltip": "Buchungsobjekt wird durch Webschnittstellen im Katalog oder auf eigenen Webseiten ausgeliefert."
-        },
         "manualApproval": {
           "label": "Manuelle Freigabe",
           "tooltip": "Eine Buchung muss vom Administrator freigegeben werden."
@@ -666,6 +664,31 @@
       "bookingNotes": {
         "title": "Buchungshinweise",
         "hint": "Kurze Hinweise im Checkout und in der Bestätigungsmail."
+      }
+    },
+    "publication": {
+      "question": "Wer kann das Buchungsobjekt finden und buchen?",
+      "bookable": {
+        "label": "Buchbar",
+        "hint": "Buchende können es im Checkout buchen."
+      },
+      "public": {
+        "label": "Im Katalog listen",
+        "hint": "Es steht im Katalog und auf eingebundenen Webseiten."
+      },
+      "submits-on-save": "Beim Speichern wird das Angebot zur Prüfung eingereicht.",
+      "effect": {
+        "listed": "Das Buchungsobjekt steht im Katalog und ist buchbar.",
+        "direct-link": "Das Buchungsobjekt steht nicht im Katalog, ist aber per Direktlink buchbar.",
+        "listed-not-bookable": "Das Buchungsobjekt steht im Katalog, ist aber nicht buchbar.",
+        "hidden": "Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar.",
+        "after-approval": {
+          "listed": "Nach der Freigabe steht das Buchungsobjekt im Katalog und ist buchbar. Bis dahin ist es weder gelistet noch per Direktlink buchbar.",
+          "direct-link": "Nach der Freigabe ist das Buchungsobjekt per Direktlink buchbar, steht aber nicht im Katalog. Bis dahin ist es nicht per Direktlink buchbar.",
+          "listed-not-bookable": "Nach der Freigabe steht das Buchungsobjekt im Katalog, ist aber nicht buchbar. Bis dahin ist es nicht gelistet."
+        },
+        "pending": "Ihr Mandant wartet auf die Freigabe durch den Betreiber: Bis dahin steht das Buchungsobjekt nicht im Katalog und ist nicht buchbar.",
+        "declined": "Der Mandant ist abgewiesen: Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar."
       }
     },
     "externalPrice": {
