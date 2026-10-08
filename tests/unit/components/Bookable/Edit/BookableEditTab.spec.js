@@ -29,6 +29,7 @@ const AREAS = [
   "BookableEditCheckoutBookables",
   "BookableEditHierarchy",
   "BookableFlowPermission",
+  "BookableFlowApproval",
   "BookableEditGroupBooking",
   "BookableEditCancellation",
   "BookableEditAttachments",
@@ -99,6 +100,7 @@ describe("BookableEditTab - a tab of the editing page made of cards", () => {
       "Zusatzobjekte",
       "Hierarchie",
       "Berechtigung",
+      "Bestätigung",
       "Serienbuchung",
       "Stornierung",
       "Anhänge",
@@ -120,6 +122,22 @@ describe("BookableEditTab - a tab of the editing page made of cards", () => {
       card.element.compareDocumentPosition(
         wrapper.find("#be-section-permissions-group-booking").element
       ) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("frames the Bestätigung as the card after „Wer darf buchen?“", () => {
+    const { wrapper } = mountTab("permissions");
+    const card = wrapper.find("#be-section-permissions-confirmation");
+
+    expect(card.find(".section-header").text()).toBe("Bestätigung");
+    expect(card.find("[data-test='area-BookableFlowApproval']").exists()).toBe(
+      true
+    );
+    expect(
+      wrapper
+        .find("#be-section-permissions-access")
+        .element.compareDocumentPosition(card.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 
@@ -151,7 +169,11 @@ describe("BookableEditTab - without expert mode", () => {
     cardTitles(mountTab(key, { overrides, expertMode: false }).wrapper);
 
   it("leaves out the unused expert areas", () => {
-    expect(shown("permissions")).toEqual(["Berechtigung", "Serienbuchung"]);
+    expect(shown("permissions")).toEqual([
+      "Berechtigung",
+      "Bestätigung",
+      "Serienbuchung",
+    ]);
     expect(shown("additional")).toEqual(["Buchungshinweise"]);
   });
 
@@ -163,7 +185,7 @@ describe("BookableEditTab - without expert mode", () => {
       shown("permissions", {
         cancellationPolicy: { userCancellable: false },
       })
-    ).toEqual(["Berechtigung", "Serienbuchung", "Stornierung"]);
+    ).toEqual(["Berechtigung", "Bestätigung", "Serienbuchung", "Stornierung"]);
   });
 
   it("always shows Serienbuchung, Anhänge, Eigene Felder and Buchungshinweise", () => {
@@ -172,7 +194,7 @@ describe("BookableEditTab - without expert mode", () => {
         shown(key)
       )
     ).toEqual([
-      ["Berechtigung", "Serienbuchung"],
+      ["Berechtigung", "Bestätigung", "Serienbuchung"],
       ["Anhänge"],
       ["Eigene Felder"],
       ["Buchungshinweise"],

@@ -87,7 +87,7 @@ describe("the steps of the guided flow", () => {
       stored,
     } = editing(BookableFlowApproval);
 
-    await find(wrapper, "flow-approval-auto").trigger("click");
+    await find(wrapper, "confirmation-auto").trigger("click");
 
     expect(patches).toEqual([{ autoCommitBooking: true }]);
     expect(handedIn).toEqual(stored);

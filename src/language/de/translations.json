@@ -203,8 +203,8 @@
           "why": "Wer buchen darf – offen für alle oder auf bestimmte Gruppen beschränkt."
         },
         "approval": {
-          "title": "Freigabe",
-          "why": "Sollen Buchungen automatisch freigegeben werden oder erst nach Ihrer Prüfung?"
+          "title": "Bestätigung",
+          "why": "Ob eingehende Buchungen ohne Ihr Zutun angenommen werden oder erst, wenn Sie sie bestätigen."
         },
         "more": {
           "title": "Weitere Einstellungen",
@@ -381,9 +381,9 @@
       "approval": {
         "question": "Wie werden eingehende Buchungen bestätigt?",
         "auto": "Automatisch",
-        "auto-hint": "Das System prüft alle Angaben. Passt alles, wird die Buchung sofort erstellt und als freigegeben bestätigt – ohne Ihr Zutun.",
-        "manual": "Manuell prüfen",
-        "manual-hint": "Das System prüft weiterhin alles; buchen kann man nur, wenn alle Angaben passen. Die Buchung kommt aber als ausstehend in Ihre Buchungsliste – Sie geben sie frei oder lehnen ab."
+        "auto-hint": "Passt alles, ist eine Buchung ohne Ihr Zutun angenommen. Kostet sie etwas, wartet sie nur noch auf die Zahlung.",
+        "manual": "Manuell bestätigen",
+        "manual-hint": "Jede Buchung kommt als angefragt in Ihre Buchungsliste. Sie bestätigen sie oder lehnen sie ab."
       },
       "more": {
         "unused": "Nicht genutzt",
@@ -396,8 +396,7 @@
         "labels": {
           "availability": "Buchungsart",
           "amount": "Anzahl",
-          "permission": "Wer darf buchen?",
-          "approval": "Buchungen"
+          "permission": "Wer darf buchen?"
         },
         "values": {
           "image-present": "vorhanden",
@@ -411,9 +410,7 @@
           "yes": "ja",
           "no": "nein",
           "roles": "{count} Rolle | {count} Rollen",
-          "users": "{count} Person | {count} Personen",
-          "approval-auto": "automatisch bestätigt",
-          "approval-manual": "wird geprüft"
+          "users": "{count} Person | {count} Personen"
         }
       },
       "done": {
@@ -529,12 +526,6 @@
         "openingHoursSpecial": "Sonder",
         "customFieldsValues": "Werte pflegen",
         "customFieldsDefinitions": "Felder definieren"
-      },
-      "status": {
-        "manualApproval": {
-          "label": "Manuelle Freigabe",
-          "tooltip": "Eine Buchung muss vom Administrator freigegeben werden."
-        }
       },
       "overview": {
         "titlesForbidden": "Titel der verknüpften Buchungsobjekte nicht abrufbar – Sie haben keinen Zugriff auf Buchungsobjekte."

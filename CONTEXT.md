@@ -90,6 +90,10 @@ _Avoid_: Zugang (Schließsysteme are the doors), Berechtigungen as the field's n
 A percent off the price, 0 to 100 in whole numbers, for named roles and persons of the tenant; 100 % means free of charge, and where several entries apply the highest wins. Stored on a free bookable too, it acts once the bookable has a price.
 _Avoid_: Rabatt, Rabatte, Preisrabatte, Preis-Ausnahme (Rabattcodes are the codes bookers type in)
 
+**Bestätigung** (admin: „Bestätigung“):
+How incoming bookings of a bookable are confirmed, asked in both modes with „Wie werden eingehende Buchungen bestätigt?“: „Automatisch“, where a booking that passes every check is accepted without the administration and a paid one only waits for the payment, or „Manuell bestätigen“, where every booking arrives as Angefragt and the administration confirms or rejects it. A setting of the bookable, not its status; the review of an offer is the Prüfstatus.
+_Avoid_: Freigabe (that is the review decision on the Prüfstatus and the tenant's approval), Manuelle Freigabe, Manuell prüfen, „freigegeben“ for an accepted booking
+
 ### SSO
 
 **Adresse**:

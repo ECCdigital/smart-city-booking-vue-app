@@ -701,13 +701,13 @@ describe("overview", () => {
     ]);
   });
 
-  it("says whether bookings are confirmed automatically or reviewed", () => {
+  it("names the Bestätigung with the words of its tiles", () => {
     expect(
       shown(blockOf("approval", bookable({ autoCommitBooking: true })))
-    ).toEqual([["Buchungen", "automatisch bestätigt"]]);
+    ).toEqual([["Bestätigung", "Automatisch"]]);
     expect(
       shown(blockOf("approval", bookable({ autoCommitBooking: false })))
-    ).toEqual([["Buchungen", "wird geprüft"]]);
+    ).toEqual([["Bestätigung", "Manuell bestätigen"]]);
   });
 
   it("names both switches of the publication with the field's words", () => {

@@ -571,12 +571,13 @@ const OVERVIEW_ROWS = {
     },
   ],
   permission: permissionRows,
+  // The Bestätigung by its name and the words of its tiles.
   approval: (bookable) => [
     {
-      label: `${OVERVIEW}.labels.approval`,
+      label: "bookable.flow.steps.approval.title",
       value: asWord(
-        `${OVERVIEW}.values.${
-          bookable?.autoCommitBooking ? "approval-auto" : "approval-manual"
+        `bookable.flow.approval.${
+          bookable?.autoCommitBooking ? "auto" : "manual"
         }`
       ),
     },
