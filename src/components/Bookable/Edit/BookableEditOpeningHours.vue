@@ -1,13 +1,13 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
+import bookableEditing from "@/mixins/bookableEditing";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditOpeningHours",
   components: { BaseSection },
-  mixins: [bookableExpertMode],
+  mixins: [bookableEditing, bookableExpertMode],
   props: {
-    bookable: { type: Object, required: true },
     // Inside the guided flow, which titles the step itself.
     embedded: { type: Boolean, default: false },
   },
@@ -36,86 +36,89 @@ export default {
     };
   },
   computed: {
-    model: {
-      get() {
-        return this.bookable;
-      },
-      set(val) {
-        this.$emit("update:bookable", { ...val });
-      },
+    openingHours() {
+      return this.bookable.openingHours || [];
+    },
+    specialOpeningHours() {
+      return this.bookable.specialOpeningHours || [];
     },
     bookingType() {
-      if (this.model.isScheduleRelated) return "schedule";
-      if (this.model.isTimePeriodRelated) return "timePeriod";
-      if (this.model.isBlockPeriodRelated) return "blockPeriod";
-      if (this.model.isLongRange) return this.model.longRangeOptions.type;
+      if (this.bookable.isScheduleRelated) return "schedule";
+      if (this.bookable.isTimePeriodRelated) return "timePeriod";
+      if (this.bookable.isBlockPeriodRelated) return "blockPeriod";
+      if (this.bookable.isLongRange) return this.bookable.longRangeOptions.type;
       return "independent";
     },
     hasOpeningHours() {
-      return this.model.openingHours && this.model.openingHours.length > 0;
+      return this.openingHours.length > 0;
     },
     hasSpecialOpeningHours() {
-      return (
-        this.model.specialOpeningHours &&
-        this.model.specialOpeningHours.length > 0
-      );
+      return this.specialOpeningHours.length > 0;
     },
   },
   methods: {
+    updateOpeningHours(index, changes) {
+      this.patch({
+        openingHours: this.openingHours.map((entry, i) =>
+          i === index ? { ...entry, ...changes } : entry
+        ),
+      });
+    },
+    updateSpecialOpeningHours(index, changes) {
+      this.patch({
+        specialOpeningHours: this.specialOpeningHours.map((entry, i) =>
+          i === index ? { ...entry, ...changes } : entry
+        ),
+      });
+    },
+    closeMenu(menus, index) {
+      this.$set(menus, index, false);
+    },
     removeOpeningHoursWeekdays(index, item) {
-      this.model.openingHours[index].weekdays.splice(
-        this.model.openingHours[index].weekdays.indexOf(item),
-        1
-      );
-    },
-    setStartOpeningHoursTime(index, time) {
-      this.model.openingHours[index].startTime = time;
-      this.timeStartOpeningHoursMenu[index] = false;
-    },
-    setEndOpeningHoursTime(index, time) {
-      this.model.openingHours[index].endTime = time;
-      this.timeEndOpeningHoursMenu[index] = false;
+      this.updateOpeningHours(index, {
+        weekdays: this.openingHours[index].weekdays.filter((id) => id !== item),
+      });
     },
     removeOpeningHours(index) {
-      this.model.openingHours.splice(index, 1);
+      this.patch({
+        openingHours: this.openingHours.filter((_, i) => i !== index),
+      });
       this.timeStartOpeningHoursMenu.splice(index, 1);
       this.timeEndOpeningHoursMenu.splice(index, 1);
       const idx = this.expandedItemsOpeningHours.indexOf(index);
       if (idx > -1) this.expandedItemsOpeningHours.splice(idx, 1);
     },
     addNewOpeningHours() {
-      const index = this.model.openingHours.length;
+      const index = this.openingHours.length;
       this.timeStartOpeningHoursMenu.push(false);
       this.timeEndOpeningHoursMenu.push(false);
-      this.model.openingHours.push({
-        weekdays: [],
-        startTime: null,
-        endTime: null,
+      this.patch({
+        openingHours: [
+          ...this.openingHours,
+          { weekdays: [], startTime: null, endTime: null },
+        ],
       });
       this.expandedItemsOpeningHours.push(index);
     },
-    setStartSpecialOpeningHoursTime(index, time) {
-      this.model.specialOpeningHours[index].startTime = time;
-      this.timeStartSpecialOpeningHoursMenu[index] = false;
-    },
-    setEndSpecialOpeningHoursTime(index, time) {
-      this.model.specialOpeningHours[index].endTime = time;
-      this.timeEndSpecialOpeningMenu[index] = false;
-    },
     addNewSpecialOpeningHours() {
-      const index = this.model.specialOpeningHours.length;
+      const index = this.specialOpeningHours.length;
       this.timeStartSpecialOpeningHoursMenu.push(false);
       this.timeEndSpecialOpeningMenu.push(false);
       this.specialOpeningHoursDateMenu.push(false);
-      this.model.specialOpeningHours.push({
-        date: null,
-        startTime: null,
-        endTime: null,
+      this.patch({
+        specialOpeningHours: [
+          ...this.specialOpeningHours,
+          { date: null, startTime: null, endTime: null },
+        ],
       });
       this.expandedItemsSpecialHours.push(index);
     },
     removeSpecialOpeningHours(index) {
-      this.model.specialOpeningHours.splice(index, 1);
+      this.patch({
+        specialOpeningHours: this.specialOpeningHours.filter(
+          (_, i) => i !== index
+        ),
+      });
       this.timeStartSpecialOpeningHoursMenu.splice(index, 1);
       this.timeEndSpecialOpeningMenu.splice(index, 1);
       this.specialOpeningHoursDateMenu.splice(index, 1);
@@ -191,9 +194,10 @@ export default {
             <span class="text-h6 font-weight-bold">Öffnungszeiten</span>
           </div>
           <v-btn
-            v-if="model.isOpeningHoursRelated"
+            v-if="bookable.isOpeningHoursRelated"
             small
             color="primary"
+            data-test="opening-hours-add"
             @click="addNewOpeningHours"
           >
             <v-icon left small>mdi-plus</v-icon>
@@ -206,7 +210,9 @@ export default {
           <v-row>
             <v-col cols="12">
               <v-switch
-                v-model="model.isOpeningHoursRelated"
+                data-test="opening-hours-switch"
+                :input-value="bookable.isOpeningHoursRelated"
+                @change="patch({ isOpeningHoursRelated: !!$event })"
                 label="Öffnungszeiten aktivieren"
                 hide-details
                 color="primary"
@@ -226,7 +232,7 @@ export default {
             </v-col>
           </v-row>
 
-          <template v-if="model.isOpeningHoursRelated">
+          <template v-if="bookable.isOpeningHoursRelated">
             <v-divider class="my-4"></v-divider>
 
             <v-alert color="info" dense text class="mb-4">
@@ -242,7 +248,7 @@ export default {
 
             <div v-if="hasOpeningHours">
               <v-list two-line class="py-0">
-                <template v-for="(openingHour, idx) in model.openingHours">
+                <template v-for="(openingHour, idx) in openingHours">
                   <v-list-item
                     :key="`opening-${idx}`"
                     class="opening-hours-item elevation-1 mb-3 rounded"
@@ -290,6 +296,7 @@ export default {
                         <v-btn
                           icon
                           small
+                          data-test="opening-hours-remove"
                           @click.stop="removeOpeningHours(idx)"
                           color="error"
                         >
@@ -325,7 +332,10 @@ export default {
                             :items="weekdays"
                             item-value="id"
                             item-text="name"
-                            v-model="openingHour.weekdays"
+                            :value="openingHour.weekdays"
+                            @change="
+                              updateOpeningHours(idx, { weekdays: $event })
+                            "
                             multiple
                             chips
                             hide-selected
@@ -378,7 +388,7 @@ export default {
                                 dense
                                 background-color="accent"
                                 filled
-                                v-model="openingHour.startTime"
+                                :value="openingHour.startTime"
                                 label="Von *"
                                 readonly
                                 suffix="Uhr"
@@ -392,13 +402,13 @@ export default {
                             </template>
                             <v-time-picker
                               v-if="timeStartOpeningHoursMenu[idx]"
-                              v-model="openingHour.startTime"
+                              :value="openingHour.startTime"
                               full-width
+                              @input="
+                                updateOpeningHours(idx, { startTime: $event })
+                              "
                               @click:minute="
-                                setStartOpeningHoursTime(
-                                  idx,
-                                  openingHour.startTime
-                                )
+                                closeMenu(timeStartOpeningHoursMenu, idx)
                               "
                               format="24hr"
                             ></v-time-picker>
@@ -420,7 +430,7 @@ export default {
                                 dense
                                 background-color="accent"
                                 filled
-                                v-model="openingHour.endTime"
+                                :value="openingHour.endTime"
                                 label="Bis *"
                                 readonly
                                 suffix="Uhr"
@@ -434,10 +444,13 @@ export default {
                             </template>
                             <v-time-picker
                               v-if="timeEndOpeningHoursMenu[idx]"
-                              v-model="openingHour.endTime"
+                              :value="openingHour.endTime"
                               full-width
+                              @input="
+                                updateOpeningHours(idx, { endTime: $event })
+                              "
                               @click:minute="
-                                setEndOpeningHoursTime(idx, openingHour.endTime)
+                                closeMenu(timeEndOpeningHoursMenu, idx)
                               "
                               format="24hr"
                             ></v-time-picker>
@@ -448,7 +461,7 @@ export default {
                   </v-expand-transition>
 
                   <v-divider
-                    v-if="idx < model.openingHours.length - 1"
+                    v-if="idx < openingHours.length - 1"
                     :key="`divider-opening-${idx}`"
                     class="my-2"
                   />
@@ -490,9 +503,10 @@ export default {
             <span class="text-h6 font-weight-bold"> Sonderöffnungszeiten </span>
           </div>
           <v-btn
-            v-if="model.isSpecialOpeningHoursRelated"
+            v-if="bookable.isSpecialOpeningHoursRelated"
             small
             color="primary"
+            data-test="special-opening-hours-add"
             @click="addNewSpecialOpeningHours"
           >
             <v-icon left small>mdi-plus</v-icon>
@@ -505,7 +519,9 @@ export default {
           <v-row>
             <v-col cols="12">
               <v-switch
-                v-model="model.isSpecialOpeningHoursRelated"
+                data-test="special-opening-hours-switch"
+                :input-value="bookable.isSpecialOpeningHoursRelated"
+                @change="patch({ isSpecialOpeningHoursRelated: !!$event })"
                 label="Sonderöffnungszeiten aktivieren"
                 hide-details
                 color="primary"
@@ -525,7 +541,7 @@ export default {
             </v-col>
           </v-row>
 
-          <template v-if="model.isSpecialOpeningHoursRelated">
+          <template v-if="bookable.isSpecialOpeningHoursRelated">
             <v-divider class="my-4"></v-divider>
 
             <v-alert
@@ -550,7 +566,7 @@ export default {
             <div v-if="hasSpecialOpeningHours">
               <v-list two-line class="py-0">
                 <template
-                  v-for="(specialOpeningHour, idx) in model.specialOpeningHours"
+                  v-for="(specialOpeningHour, idx) in specialOpeningHours"
                 >
                   <v-list-item
                     :key="`special-${idx}`"
@@ -599,6 +615,7 @@ export default {
                         <v-btn
                           icon
                           small
+                          data-test="special-opening-hours-remove"
                           @click.stop="removeSpecialOpeningHours(idx)"
                           color="error"
                         >
@@ -633,7 +650,7 @@ export default {
                             <template v-slot:activator="{ on, attrs }">
                               <v-text-field
                                 dense
-                                v-model="specialOpeningHour.date"
+                                :value="specialOpeningHour.date"
                                 label="Datum *"
                                 prepend-inner-icon="mdi-calendar"
                                 background-color="accent"
@@ -648,7 +665,10 @@ export default {
                               ></v-text-field>
                             </template>
                             <v-date-picker
-                              v-model="specialOpeningHour.date"
+                              :value="specialOpeningHour.date"
+                              @input="
+                                updateSpecialOpeningHours(idx, { date: $event })
+                              "
                               scrollable
                               locale="de"
                               :first-day-of-week="1"
@@ -693,7 +713,7 @@ export default {
                                 dense
                                 background-color="accent"
                                 filled
-                                v-model="specialOpeningHour.startTime"
+                                :value="specialOpeningHour.startTime"
                                 label="Von *"
                                 readonly
                                 suffix="Uhr"
@@ -707,13 +727,15 @@ export default {
                             </template>
                             <v-time-picker
                               v-if="timeStartSpecialOpeningHoursMenu[idx]"
-                              v-model="specialOpeningHour.startTime"
+                              :value="specialOpeningHour.startTime"
                               full-width
+                              @input="
+                                updateSpecialOpeningHours(idx, {
+                                  startTime: $event,
+                                })
+                              "
                               @click:minute="
-                                setStartSpecialOpeningHoursTime(
-                                  idx,
-                                  specialOpeningHour.startTime
-                                )
+                                closeMenu(timeStartSpecialOpeningHoursMenu, idx)
                               "
                               format="24hr"
                             ></v-time-picker>
@@ -735,7 +757,7 @@ export default {
                                 dense
                                 background-color="accent"
                                 filled
-                                v-model="specialOpeningHour.endTime"
+                                :value="specialOpeningHour.endTime"
                                 label="Bis *"
                                 readonly
                                 suffix="Uhr"
@@ -749,13 +771,15 @@ export default {
                             </template>
                             <v-time-picker
                               v-if="timeEndSpecialOpeningMenu[idx]"
-                              v-model="specialOpeningHour.endTime"
+                              :value="specialOpeningHour.endTime"
                               full-width
+                              @input="
+                                updateSpecialOpeningHours(idx, {
+                                  endTime: $event,
+                                })
+                              "
                               @click:minute="
-                                setEndSpecialOpeningHoursTime(
-                                  idx,
-                                  specialOpeningHour.endTime
-                                )
+                                closeMenu(timeEndSpecialOpeningMenu, idx)
                               "
                               format="24hr"
                             ></v-time-picker>
@@ -766,7 +790,7 @@ export default {
                   </v-expand-transition>
 
                   <v-divider
-                    v-if="idx < model.specialOpeningHours.length - 1"
+                    v-if="idx < specialOpeningHours.length - 1"
                     :key="`divider-special-${idx}`"
                     class="my-2"
                   />
