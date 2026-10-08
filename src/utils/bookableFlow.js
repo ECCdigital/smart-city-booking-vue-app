@@ -330,9 +330,31 @@ export const VAT_RATES = Object.freeze([19, 7]);
 
 // --- Anzahl ----------------------------------------------------------------
 
-/** Empty or 0 is unlimited, as the price tab reads it. */
+/**
+ * Anzahl: empty, `null` and 0 are unlimited, as the backend reads them
+ * (`normalizeBookable` stores 0 as `null`).
+ */
 export function isUnlimitedAmount(bookable) {
   return !toNumber(bookable?.amount);
+}
+
+/**
+ * Höchstmenge je Buchung: only empty is unlimited. 0 or a fraction is a limit
+ * the backend refuses (`min: 1`, whole numbers), so it stays a limit and
+ * shows its Meldung until it is fixed or „Unbegrenzt“ is chosen.
+ */
+export function isUnlimitedMaxAmount(bookable) {
+  const value = bookable?.maxAmountPerBooking;
+  return value == null || value === "";
+}
+
+/**
+ * The Höchstmenge je Buchung matters only where one booking could take more
+ * than one unit: it shows unless the Anzahl is exactly 1, and always once it
+ * is set.
+ */
+export function showsMaxAmount(bookable) {
+  return toNumber(bookable?.amount) !== 1 || !isUnlimitedMaxAmount(bookable);
 }
 
 /** More than one unit of a room is rarely meant (cloud variant). */
@@ -569,6 +591,17 @@ const OVERVIEW_ROWS = {
         ? asWord("bookable.flow.amount.unlimited")
         : asText(toNumber(bookable.amount)),
     },
+    // Where the step asks for it, by the step's name and words.
+    ...(showsMaxAmount(bookable)
+      ? [
+          {
+            label: "bookable.flow.amount.max-title",
+            value: isUnlimitedMaxAmount(bookable)
+              ? asWord("bookable.flow.amount.unlimited")
+              : asText(String(bookable.maxAmountPerBooking)),
+          },
+        ]
+      : []),
   ],
   permission: permissionRows,
   // The Bestätigung by its name and the words of its tiles.

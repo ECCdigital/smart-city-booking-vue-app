@@ -13,10 +13,12 @@ import {
   isFlowMode,
   listRouteOf,
   isUnlimitedAmount,
+  isUnlimitedMaxAmount,
   overviewBlocks,
   priceExplanation,
   priceModeOf,
   publishVariant,
+  showsMaxAmount,
   timeModeOf,
   usesOpeningHours,
   warnsAboutAmount,
@@ -368,6 +370,34 @@ describe("amount", () => {
     expect(isUnlimitedAmount(bookable({ amount: 2 }))).toBe(false);
   });
 
+  it("reads only an empty Höchstmenge as unlimited, 0 being a limit the backend refuses", () => {
+    expect(isUnlimitedMaxAmount(bookable({ maxAmountPerBooking: null }))).toBe(
+      true
+    );
+    expect(isUnlimitedMaxAmount(bookable({ maxAmountPerBooking: "" }))).toBe(
+      true
+    );
+    expect(isUnlimitedMaxAmount(bookable({ maxAmountPerBooking: 0 }))).toBe(
+      false
+    );
+    expect(isUnlimitedMaxAmount(bookable({ maxAmountPerBooking: 2 }))).toBe(
+      false
+    );
+  });
+
+  it("offers the Höchstmenge unless the Anzahl is 1 and none is set", () => {
+    const shows = (amount, maxAmountPerBooking = null) =>
+      showsMaxAmount(bookable({ amount, maxAmountPerBooking }));
+
+    expect(shows(1)).toBe(false);
+    expect(shows("1")).toBe(false);
+    expect(shows(3)).toBe(true);
+    expect(shows(null)).toBe(true);
+    expect(shows(0)).toBe(true);
+    expect(shows(1, 2)).toBe(true);
+    expect(shows(1, 0)).toBe(true);
+  });
+
   it("questions more than one unit of a room or venue only", () => {
     expect(warnsAboutAmount(bookable({ type: "room", amount: 2 }))).toBe(true);
     expect(
@@ -659,10 +689,23 @@ describe("overview", () => {
   it("names the amount or „Unbegrenzt“", () => {
     expect(shown(blockOf("amount", bookable({ amount: 3 })))).toEqual([
       ["Anzahl", "3"],
+      ["Höchstmenge je Buchung", "Unbegrenzt"],
     ]);
     expect(shown(blockOf("amount", bookable({ amount: null })))).toEqual([
       ["Anzahl", "Unbegrenzt"],
+      ["Höchstmenge je Buchung", "Unbegrenzt"],
     ]);
+  });
+
+  it("names the Höchstmenge where the step asks for it", () => {
+    const rows = (amount, maxAmountPerBooking) =>
+      shown(blockOf("amount", bookable({ amount, maxAmountPerBooking })));
+
+    expect(rows(10, 2)).toEqual([
+      ["Anzahl", "10"],
+      ["Höchstmenge je Buchung", "2"],
+    ]);
+    expect(rows(1, null)).toEqual([["Anzahl", "1"]]);
   });
 
   it("names who may book as the step does", () => {
