@@ -76,7 +76,7 @@ describe("requiresAuth", () => {
   });
 });
 
-describe("requiresAuth — the public entry „Angebote bereitstellen“", () => {
+describe("requiresAuth — the public entry „Mandant anlegen“", () => {
   /** The link the storefront points to, opened by a signed-out visitor. */
   const ONBOARDING = {
     name: "tenant-onboarding",

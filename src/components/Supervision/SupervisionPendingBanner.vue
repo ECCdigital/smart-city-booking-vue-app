@@ -31,6 +31,7 @@
 import { mapGetters } from "vuex";
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
+import { firstBookableRoute } from "@/utils/tenantOnboarding";
 
 /**
  * The band over a page of a tenant waiting for its approval (glossary
@@ -57,18 +58,16 @@ export default {
     tenantName() {
       return this.currentTenant?.name || this.tenantId;
     },
-    // The guided setup writes the tenant: its owner's and the instance
-    // owner's right.
+    // The setup goes on with a new bookable in the guided flow
+    // (ECCdigital/tickets#326): the tenant owner's and the instance owner's
+    // way, who may write the tenant and its bookables.
     mayResume() {
       return TenantPermissionService.allowUpdate();
     },
   },
   methods: {
     resume() {
-      this.$router.push({
-        name: "tenant-onboarding",
-        query: { tenant: this.tenantId },
-      });
+      this.$router.push(firstBookableRoute());
     },
   },
 };

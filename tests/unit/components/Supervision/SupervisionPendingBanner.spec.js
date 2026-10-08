@@ -99,17 +99,14 @@ describe("SupervisionPendingBanner", () => {
     expect(find(wrapper, "supervision-pending-banner").exists()).toBe(false);
   });
 
-  it("continues the guided setup of the current tenant", async () => {
+  it("continues the setup with a new bookable in the guided flow", async () => {
     const { wrapper } = mountBanner({ membershipLevel: "pending" });
 
     const resume = find(wrapper, "pending-banner-resume");
     expect(resume.text()).toBe("Einrichtung fortsetzen");
     await resume.trigger("click");
 
-    expect(push).toHaveBeenCalledWith({
-      name: "tenant-onboarding",
-      query: { tenant: "tenant-a" },
-    });
+    expect(push).toHaveBeenCalledWith({ name: "room-edit" });
   });
 
   it("offers the setup only to who may edit the tenant", () => {
