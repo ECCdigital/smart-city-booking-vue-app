@@ -79,6 +79,7 @@ async function mountPrice({
   accessPoints = [IFBS_SYSTEM, DOOR],
   prices = EXTERNAL_PRICES,
   pricesError = null,
+  expertMode,
   ...overrides
 } = {}) {
   ApiAccessPointService.getAccessPoints.mockReset();
@@ -95,6 +96,7 @@ async function mountPrice({
   // Hosted as BookableEdit hosts it: every patch lands in the next prop.
   const mounted = mountEditing(BookableEditPrice, {
     bookable: bookable(overrides),
+    expertMode,
   });
   const { wrapper } = mounted;
   wrapper.patches = mounted.patches;
@@ -463,5 +465,64 @@ describe("BookableEditPrice - changes as partial patches", () => {
 
     expect(find(wrapper, "price-category-add").exists()).toBe(true);
     expect(wrapper.patches).toEqual([{ amount: "7" }]);
+  });
+});
+
+describe("BookableEditPrice - without expert mode", () => {
+  beforeEach(() => {
+    ApiHolidaysService.getHolidays.mockResolvedValue({ data: [] });
+  });
+
+  const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
+  const OWN_PRICES = { externalProviders: [], accessPointDetails: undefined };
+  const TIERS = [
+    { priceEur: 10, interval: { start: null, end: 2 }, weekdays: [] },
+    { priceEur: 8, interval: { start: 2, end: null }, weekdays: [] },
+  ];
+
+  it("shows Rabattcodes while they are switched off", async () => {
+    const off = await mountPrice({
+      ...OWN_PRICES,
+      enableCoupons: false,
+      expertMode: false,
+    });
+    const on = await mountPrice({
+      ...OWN_PRICES,
+      enableCoupons: true,
+      expertMode: false,
+    });
+
+    expect(find(off, "price-coupons").exists()).toBe(true);
+    expect(find(on, "price-coupons").exists()).toBe(false);
+  });
+
+  it("lets tiers in use be edited, without a hint", async () => {
+    const wrapper = await mountPrice({
+      ...OWN_PRICES,
+      priceCategories: TIERS,
+      expertMode: false,
+    });
+
+    expect(find(wrapper, "price-graduated-switch").exists()).toBe(true);
+    expect(find(wrapper, "price-category-add").exists()).toBe(true);
+    expect(wrapper.text()).not.toContain("Experten-Modus");
+  });
+
+  it("offers no tiers while a single price is set", async () => {
+    const wrapper = await mountPrice({ ...OWN_PRICES, expertMode: false });
+
+    expect(find(wrapper, "price-graduated-switch").exists()).toBe(false);
+    expect(find(wrapper, "price-simple").exists()).toBe(true);
+  });
+
+  it("shows the provider's panel while its prices are switched on", async () => {
+    const active = await mountPrice({ expertMode: false });
+    const inactive = await mountPrice({
+      expertMode: false,
+      externalProviders: [{ active: false, provider: "ifbs", handles: [] }],
+    });
+
+    expect(active.find("#be-section-pricing-external").exists()).toBe(true);
+    expect(inactive.find("#be-section-pricing-external").exists()).toBe(false);
   });
 });

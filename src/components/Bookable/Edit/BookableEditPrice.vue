@@ -4,7 +4,11 @@
 
     <v-expand-transition>
       <v-alert
-        v-if="!tiersOnly && expertMode && showIfbsRecommendation"
+        v-if="
+          !tiersOnly &&
+          expertOptionShown('externalPrices') &&
+          showIfbsRecommendation
+        "
         prominent
         colored-border
         border="left"
@@ -96,7 +100,7 @@
 
     <v-expand-transition>
       <v-card
-        v-if="!tiersOnly && expertMode && isIfbsActive"
+        v-if="!tiersOnly && expertOptionShown('externalPrices') && isIfbsActive"
         id="be-section-pricing-external"
         class="mb-4 section-card"
         outlined
@@ -354,10 +358,11 @@
         <v-divider />
 
         <v-card-text class="pa-4">
-          <template v-if="expertMode">
+          <template v-if="expertOptionShown('coupons')">
             <v-row>
               <v-col cols="12" md="6">
                 <v-switch
+                  data-test="price-coupons"
                   dense
                   hide-details
                   :input-value="bookable.enableCoupons"
@@ -476,7 +481,13 @@
         <v-divider />
 
         <v-card-text class="pa-4">
-          <template v-if="expertMode && !tiersOnly">
+          <!-- The switch stays while the tiers show: switched on, they may
+               not read as tiers yet. -->
+          <template
+            v-if="
+              !tiersOnly && (expertOptionShown('tiers') || useGraduatedPrices)
+            "
+          >
             <v-row>
               <v-col cols="12">
                 <v-switch
@@ -523,16 +534,6 @@
             <v-divider class="my-4" />
           </template>
 
-          <v-alert
-            v-if="!expertMode && useGraduatedPrices"
-            color="info"
-            dense
-            text
-            class="mb-4"
-          >
-            {{ $t("bookable.edit.expertMode.graduatedPricesActive") }}
-          </v-alert>
-
           <div v-if="!useGraduatedPrices && priceCategories[0]">
             <v-row align="center">
               <v-col cols="12" md="6">
@@ -573,7 +574,7 @@
           </div>
 
           <v-expand-transition>
-            <div v-if="expertMode && useGraduatedPrices">
+            <div v-if="useGraduatedPrices">
               <div class="d-flex justify-space-between align-center mb-3">
                 <v-subheader class="pl-0">
                   <v-icon small class="mr-2"> mdi-format-list-numbered </v-icon>
@@ -960,7 +961,6 @@ import _ from "lodash";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
 import bookableEditing from "@/mixins/bookableEditing";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
 import externalPrices from "@/mixins/externalPrices";
 import {
   IFBS_PROVIDER,
@@ -999,7 +999,7 @@ function graduatedCategories(categories) {
 export default {
   name: "BookableEditPrice",
   components: { BaseSection },
-  mixins: [bookableEditing, bookableExpertMode, externalPrices],
+  mixins: [bookableEditing, externalPrices],
   props: {
     // Inside the guided flow, which asks for free, simple or tiered prices,
     // the unit and the VAT itself: only the graduated price editor.
