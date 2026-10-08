@@ -111,8 +111,9 @@
           </p>
         </header>
 
-        <!-- Kept alive: a step's own choice (Tarife, Bestimmte Rollen) holds
-             while the bookable cannot tell it yet. -->
+        <!-- Kept alive as a cache only: a step reads everything from the
+             bookable, and a choice it cannot show yet (Tarife, Bestimmte
+             Rollen) may be lost when it unmounts. -->
         <div :class="{ 'bookable-flow__panel': step !== 'amount' }">
           <keep-alive>
             <component
