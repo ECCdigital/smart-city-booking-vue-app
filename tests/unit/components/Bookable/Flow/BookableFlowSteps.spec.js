@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { mountComponent } from "@tests/unit/support/mount";
+import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
 import Bookable from "@/entities/bookable";
 import BookableFlowAvailability from "@/components/Bookable/Flow/BookableFlowAvailability.vue";
 import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
 import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vue";
 import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
+import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
+import BookableFlowIdentity from "@/components/Bookable/Flow/BookableFlowIdentity.vue";
 
 vi.mock("@/services/api/ApiRolesService", () => ({
   default: { getTenantRoles: vi.fn().mockResolvedValue({ data: [] }) },
@@ -12,6 +14,10 @@ vi.mock("@/services/api/ApiRolesService", () => ({
 
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenantUsers: vi.fn().mockResolvedValue({ data: [] }) },
+}));
+
+vi.mock("@/services/api/ApiEventService", () => ({
+  default: { getEvents: vi.fn().mockResolvedValue({ data: [] }) },
 }));
 
 const editorStub = (name) => ({
@@ -28,21 +34,92 @@ const STUBS = {
   BookableEditPrice: editorStub("BookableEditPrice"),
   UserRoleSelector: editorStub("UserRoleSelector"),
   BookingDiscountEditor: editorStub("BookingDiscountEditor"),
+  MediaReferenceList: editorStub("MediaReferenceList"),
+  AddressLookup: editorStub("AddressLookup"),
+  Tiptap: editorStub("Tiptap"),
 };
 
 const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t1", title: "Saal", ...overrides }).toPlain();
 
-const mountStep = (component, overrides, expertMode = true) =>
-  mountComponent(component, {
-    propsData: { bookable: bookable(overrides) },
+// A step as BookableEdit hosts it: every patch lands in the next prop.
+const editing = (component, overrides, expertMode = true) =>
+  mountEditing(component, {
+    bookable: bookable(overrides),
     provide: { bookableExpertMode: { enabled: expertMode } },
     stubs: STUBS,
   });
 
+const mountStep = (...args) => {
+  const { wrapper, patches } = editing(...args);
+  wrapper.patches = patches;
+  return wrapper;
+};
+
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
-const lastChange = (wrapper) =>
-  wrapper.emitted("update:bookable").slice(-1)[0][0];
+const lastChange = (wrapper) => lastPatch(wrapper.patches);
+
+describe("the steps of the guided flow", () => {
+  it.each([
+    ["identity", BookableFlowIdentity],
+    ["availability", BookableFlowAvailability],
+    ["price", BookableFlowPrice],
+    ["amount", BookableFlowAmount],
+    ["permission", BookableFlowPermission],
+    ["approval", BookableFlowApproval],
+  ])("change nothing when the %s step mounts", async (_, component) => {
+    const {
+      wrapper,
+      patches,
+      bookable: handedIn,
+      stored,
+    } = editing(component, { isScheduleRelated: true });
+    await wrapper.vm.$nextTick();
+
+    expect(patches).toEqual([]);
+    expect(handedIn).toEqual(stored);
+  });
+
+  it("hands on only the field that changed", async () => {
+    const {
+      wrapper,
+      patches,
+      bookable: handedIn,
+      stored,
+    } = editing(BookableFlowApproval);
+
+    await find(wrapper, "flow-approval-auto").trigger("click");
+
+    expect(patches).toEqual([{ autoCommitBooking: true }]);
+    expect(handedIn).toEqual(stored);
+  });
+
+  it("hands on the title as it is typed", async () => {
+    const { wrapper, patches } = editing(BookableFlowIdentity);
+
+    await find(wrapper, "flow-title").find("input").setValue("Aula");
+
+    expect(lastPatch(patches)).toEqual({ title: "Aula" });
+  });
+
+  it("hands on only the top-level fields a rule changed", async () => {
+    const {
+      wrapper,
+      patches,
+      bookable: handedIn,
+      stored,
+    } = editing(BookableFlowPermission, {
+      requiresLogin: true,
+      permittedRoles: ["r1"],
+      permittedUsers: [],
+    });
+
+    await find(wrapper, "flow-access-everyone").trigger("click");
+
+    expect(patches).toEqual([{ requiresLogin: false, permittedRoles: [] }]);
+    expect(handedIn).toEqual(stored);
+  });
+});
 
 describe("BookableFlowAvailability", () => {
   it("asks whether a time is booked and books none without the editor's sections", () => {
@@ -64,7 +141,7 @@ describe("BookableFlowAvailability", () => {
 
     await find(wrapper, "flow-timed-yes").trigger("click");
 
-    expect(lastChange(wrapper)).toMatchObject({
+    expect(wrapper.props("bookable")).toMatchObject({
       isScheduleRelated: true,
       isLongRange: false,
     });
@@ -89,7 +166,6 @@ describe("BookableFlowAvailability", () => {
     await find(wrapper, "flow-time-mode-longRange").trigger("click");
     expect(lastChange(wrapper).longRangeOptions).toEqual({ type: "week" });
 
-    await wrapper.setProps({ bookable: lastChange(wrapper) });
     await find(wrapper, "flow-long-range-month").trigger("click");
     expect(lastChange(wrapper).longRangeOptions).toEqual({ type: "month" });
   });
@@ -160,7 +236,6 @@ describe("BookableFlowPrice", () => {
     });
 
     await find(wrapper, "flow-price-mode-tiers").trigger("click");
-    await wrapper.setProps({ bookable: lastChange(wrapper) });
 
     expect(
       wrapper.findComponent({ name: "BookableEditPrice" }).props()
@@ -203,7 +278,7 @@ describe("BookableFlowPermission", () => {
 
     await find(wrapper, "flow-access-everyone").trigger("click");
 
-    expect(lastChange(wrapper)).toMatchObject({
+    expect(wrapper.props("bookable")).toMatchObject({
       requiresLogin: false,
       permittedRoles: [],
       permittedUsers: [],
@@ -214,7 +289,6 @@ describe("BookableFlowPermission", () => {
     const wrapper = mountStep(BookableFlowPermission);
 
     await find(wrapper, "flow-access-selected").trigger("click");
-    await wrapper.setProps({ bookable: lastChange(wrapper) });
 
     expect(lastChange(wrapper).requiresLogin).toBe(true);
     expect(

@@ -15,13 +15,13 @@
 
 <script>
 import OnboardingChoiceTiles from "@/components/Tenant/Onboarding/OnboardingChoiceTiles.vue";
-import bookableFlowStep from "@/mixins/bookableFlowStep";
+import bookableEditing from "@/mixins/bookableEditing";
 
 /** Step 6, Freigabe: bookings confirmed at once, or after a manual review. */
 export default {
   name: "BookableFlowApproval",
   components: { OnboardingChoiceTiles },
-  mixins: [bookableFlowStep],
+  mixins: [bookableEditing],
   computed: {
     options() {
       return ["auto", "manual"].map((value) => ({

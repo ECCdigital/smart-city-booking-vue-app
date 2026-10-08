@@ -88,8 +88,7 @@ describe("BookableFlow", () => {
     await find(wrapper, "flow-approval-auto").trigger("click");
 
     const [changed] = wrapper.emitted("update:bookable").slice(-1)[0];
-    expect(changed.autoCommitBooking).toBe(true);
-    expect(changed.title).toBe("Saal");
+    expect(changed).toEqual({ autoCommitBooking: true });
   });
 
   it("saves only at the end, with or without the publication wish", async () => {

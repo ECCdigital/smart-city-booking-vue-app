@@ -78,7 +78,7 @@
 
 <script>
 import FlowSegmented from "@/components/Bookable/Flow/FlowSegmented.vue";
-import bookableFlowStep from "@/mixins/bookableFlowStep";
+import bookableEditing from "@/mixins/bookableEditing";
 import { providerHandles } from "@/utils/bookableExternalProviders";
 import { isUnlimitedAmount, warnsAboutAmount } from "@/utils/bookableFlow";
 
@@ -90,7 +90,7 @@ import { isUnlimitedAmount, warnsAboutAmount } from "@/utils/bookableFlow";
 export default {
   name: "BookableFlowAmount",
   components: { FlowSegmented },
-  mixins: [bookableFlowStep],
+  mixins: [bookableEditing],
   computed: {
     external() {
       return (this.bookable.externalProviders || []).some((provider) =>

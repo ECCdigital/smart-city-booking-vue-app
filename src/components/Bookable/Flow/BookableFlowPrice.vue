@@ -253,7 +253,7 @@
 <script>
 import FlowSegmented from "@/components/Bookable/Flow/FlowSegmented.vue";
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
-import bookableFlowStep from "@/mixins/bookableFlowStep";
+import bookableEditing from "@/mixins/bookableEditing";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
 import {
   VAT_RATES,
@@ -282,7 +282,7 @@ const euro = (value) =>
 export default {
   name: "BookableFlowPrice",
   components: { FlowSegmented, BookableEditPrice },
-  mixins: [bookableFlowStep, bookableExpertMode],
+  mixins: [bookableEditing, bookableExpertMode],
   data() {
     return {
       mode: priceModeOf(this.bookable),

@@ -116,7 +116,7 @@ import Tiptap from "@/components/Tiptap.vue";
 import MediaReferenceList from "@/components/Media/MediaReferenceList.vue";
 import AddressLookup from "@/components/commons/AddressLookup.vue";
 import ApiEventService from "@/services/api/ApiEventService";
-import bookableFlowStep from "@/mixins/bookableFlowStep";
+import bookableEditing from "@/mixins/bookableEditing";
 import { getTypeIcon, getTypeText } from "@/utils/bookables";
 import { FLOW_BOOKABLE_TYPES } from "@/utils/bookableFlow";
 
@@ -128,7 +128,7 @@ import { FLOW_BOOKABLE_TYPES } from "@/utils/bookableFlow";
 export default {
   name: "BookableFlowIdentity",
   components: { Tiptap, MediaReferenceList, AddressLookup },
-  mixins: [bookableFlowStep],
+  mixins: [bookableEditing],
   props: {
     isNew: { type: Boolean, default: false },
   },

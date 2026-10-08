@@ -85,7 +85,7 @@
 import FlowSegmented from "@/components/Bookable/Flow/FlowSegmented.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
-import bookableFlowStep from "@/mixins/bookableFlowStep";
+import bookableEditing from "@/mixins/bookableEditing";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
 import {
   applyBookingMode,
@@ -108,7 +108,7 @@ export default {
     BookableEditBookingType,
     BookableEditOpeningHours,
   },
-  mixins: [bookableFlowStep, bookableExpertMode],
+  mixins: [bookableEditing, bookableExpertMode],
   computed: {
     external() {
       return handlesExternalAvailability(this.bookable);

@@ -77,7 +77,7 @@ import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 import BookingDiscountEditor from "@/components/Bookable/Edit/BookingDiscountEditor.vue";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
-import bookableFlowStep from "@/mixins/bookableFlowStep";
+import bookableEditing from "@/mixins/bookableEditing";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
 import { tenantUserOptions } from "@/utils/tenantUsers";
 import { accessOf, applyAccess, isPaid } from "@/utils/bookableFlow";
@@ -95,7 +95,7 @@ export default {
     UserRoleSelector,
     BookingDiscountEditor,
   },
-  mixins: [bookableFlowStep, bookableExpertMode],
+  mixins: [bookableEditing, bookableExpertMode],
   data() {
     return {
       access: accessOf(this.bookable),
