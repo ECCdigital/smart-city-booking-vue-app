@@ -2,6 +2,7 @@
 import BaseSection from "@/components/commons/BaseSection.vue";
 import bookableEditing from "@/mixins/bookableEditing";
 import { bookingModeNameKey } from "@/utils/bookableEditSections";
+import { weekdayItems } from "@/utils/bookableWeekdays";
 
 export default {
   name: "BookableEditOpeningHours",
@@ -14,15 +15,6 @@ export default {
 
   data() {
     return {
-      weekdays: [
-        { id: 1, name: "Montag", short: "Mo" },
-        { id: 2, name: "Dienstag", short: "Di" },
-        { id: 3, name: "Mittwoch", short: "Mi" },
-        { id: 4, name: "Donnerstag", short: "Do" },
-        { id: 5, name: "Freitag", short: "Fr" },
-        { id: 6, name: "Samstag", short: "Sa" },
-        { id: 0, name: "Sonntag", short: "So" },
-      ],
       timeStartSpecialOpeningHoursMenu: [],
       timeEndSpecialOpeningMenu: [],
       timeEndMenu: [],
@@ -35,6 +27,9 @@ export default {
     };
   },
   computed: {
+    weekdays() {
+      return weekdayItems((key) => this.$t(key));
+    },
     openingHours() {
       return this.bookable.openingHours || [];
     },
@@ -175,7 +170,7 @@ export default {
   <div>
     <BaseSection
       v-if="!embedded"
-      title="Öffnungszeiten"
+      :title="$t('bookable.edit.cards.openingHours')"
       icon="mdi-clock-outline"
     />
 
@@ -204,7 +199,7 @@ export default {
             @click="addNewOpeningHours"
           >
             <v-icon left small>mdi-plus</v-icon>
-            Hinzufügen
+            {{ $t("bookable.edit.common.add") }}
           </v-btn>
         </v-card-title>
         <v-divider></v-divider>
@@ -216,7 +211,6 @@ export default {
                 data-test="opening-hours-switch"
                 :input-value="bookable.isOpeningHoursRelated"
                 @change="patch({ isOpeningHoursRelated: !!$event })"
-                label="Öffnungszeiten aktivieren"
                 hide-details
                 color="primary"
                 class="mt-0"
@@ -224,10 +218,10 @@ export default {
                 <template v-slot:label>
                   <div>
                     <div class="font-weight-medium">
-                      Öffnungszeiten aktivieren
+                      {{ $t("bookable.edit.openingHours.switch") }}
                     </div>
                     <div class="text-caption text--secondary">
-                      Wiederkehrende Öffnungszeiten für Wochentage
+                      {{ $t("bookable.edit.openingHours.switch-hint") }}
                     </div>
                   </div>
                 </template>
@@ -241,11 +235,7 @@ export default {
             <v-alert color="info" dense text class="mb-4">
               <div class="d-flex align-center">
                 <v-icon class="mr-3" color="info"> mdi-calendar-alert </v-icon>
-                <div>
-                  <strong>Wichtig:</strong> Nur Wochentage mit definierten
-                  Öffnungszeiten sind buchbar. Alle anderen Tage gelten als
-                  geschlossen.
-                </div>
+                <div v-html="$t('bookable.edit.openingHours.info')" />
               </div>
             </v-alert>
 
@@ -273,7 +263,7 @@ export default {
                         <span class="font-weight-medium">
                           {{
                             getWeekdayNamesFormatted(openingHour.weekdays) ||
-                            "Keine Tage gewählt"
+                            $t("bookable.edit.common.no-days")
                           }}
                         </span>
                       </v-list-item-title>
@@ -285,12 +275,16 @@ export default {
                         <span
                           v-if="openingHour.startTime && openingHour.endTime"
                         >
-                          {{ openingHour.startTime }} -
-                          {{ openingHour.endTime }} Uhr
+                          {{
+                            $t("bookable.edit.common.time-range", {
+                              start: openingHour.startTime,
+                              end: openingHour.endTime,
+                            })
+                          }}
                         </span>
-                        <span v-else class="grey--text"
-                          >Zeit nicht gesetzt</span
-                        >
+                        <span v-else class="grey--text">{{
+                          $t("bookable.edit.common.no-time")
+                        }}</span>
                       </v-list-item-subtitle>
                     </v-list-item-content>
 
@@ -331,7 +325,7 @@ export default {
                             dense
                             background-color="accent"
                             filled
-                            label="Wochentag(e) *"
+                            :label="$t('bookable.edit.common.weekdays')"
                             :items="weekdays"
                             item-value="id"
                             item-text="name"
@@ -388,9 +382,9 @@ export default {
                                 background-color="accent"
                                 filled
                                 :value="openingHour.startTime"
-                                label="Von *"
+                                :label="$t('bookable.edit.common.from')"
                                 readonly
-                                suffix="Uhr"
+                                :suffix="$t('bookable.edit.common.clock')"
                                 v-bind="attrs"
                                 v-on="on"
                                 hide-details="auto"
@@ -428,9 +422,9 @@ export default {
                                 background-color="accent"
                                 filled
                                 :value="openingHour.endTime"
-                                label="Bis *"
+                                :label="$t('bookable.edit.common.to')"
                                 readonly
-                                suffix="Uhr"
+                                :suffix="$t('bookable.edit.common.clock')"
                                 v-bind="attrs"
                                 v-on="on"
                                 hide-details="auto"
@@ -469,14 +463,14 @@ export default {
                 mdi-calendar-remove
               </v-icon>
               <div class="text-h6 grey--text mb-2">
-                Noch keine Öffnungszeiten definiert
+                {{ $t("bookable.edit.openingHours.empty") }}
               </div>
               <div class="text-body-2 grey--text text--darken-1 mb-4">
-                Fügen Sie wiederkehrende Öffnungszeiten für Wochentage hinzu
+                {{ $t("bookable.edit.openingHours.empty-hint") }}
               </div>
               <v-btn small text color="primary" @click="addNewOpeningHours">
                 <v-icon left small>mdi-plus</v-icon>
-                Erste Öffnungszeit hinzufügen
+                {{ $t("bookable.edit.openingHours.add-first") }}
               </v-btn>
             </div>
           </template>
@@ -508,7 +502,7 @@ export default {
             @click="addNewSpecialOpeningHours"
           >
             <v-icon left small>mdi-plus</v-icon>
-            Hinzufügen
+            {{ $t("bookable.edit.common.add") }}
           </v-btn>
         </v-card-title>
         <v-divider></v-divider>
@@ -520,7 +514,6 @@ export default {
                 data-test="special-opening-hours-switch"
                 :input-value="bookable.isSpecialOpeningHoursRelated"
                 @change="patch({ isSpecialOpeningHoursRelated: !!$event })"
-                label="Sonderöffnungszeiten aktivieren"
                 hide-details
                 color="primary"
                 class="mt-0"
@@ -528,10 +521,10 @@ export default {
                 <template v-slot:label>
                   <div>
                     <div class="font-weight-medium">
-                      Sonderöffnungszeiten aktivieren
+                      {{ $t("bookable.edit.specialOpeningHours.switch") }}
                     </div>
                     <div class="text-caption text--secondary">
-                      Abweichende Öffnungszeiten für einzelne Daten
+                      {{ $t("bookable.edit.specialOpeningHours.switch-hint") }}
                     </div>
                   </div>
                 </template>
@@ -553,11 +546,7 @@ export default {
                 <v-icon class="mr-3" color="info">
                   mdi-lightbulb-on-outline
                 </v-icon>
-                <div>
-                  <strong>Tipp:</strong> Um einen Tag als geschlossen zu
-                  markieren, wählen Sie die gleiche Start- und Endzeit
-                  <span class="grey--text">(z.B. 00:00 - 00:00)</span>
-                </div>
+                <div v-html="$t('bookable.edit.specialOpeningHours.info')" />
               </div>
             </v-alert>
 
@@ -584,7 +573,8 @@ export default {
                       <v-list-item-title class="d-flex align-center">
                         <span class="font-weight-medium">
                           {{
-                            formatDate(specialOpeningHour.date) || "Kein Datum"
+                            formatDate(specialOpeningHour.date) ||
+                            $t("bookable.edit.specialOpeningHours.no-date")
                           }}
                         </span>
                       </v-list-item-title>
@@ -599,12 +589,16 @@ export default {
                             specialOpeningHour.endTime
                           "
                         >
-                          {{ specialOpeningHour.startTime }} -
-                          {{ specialOpeningHour.endTime }} Uhr
+                          {{
+                            $t("bookable.edit.common.time-range", {
+                              start: specialOpeningHour.startTime,
+                              end: specialOpeningHour.endTime,
+                            })
+                          }}
                         </span>
-                        <span v-else class="grey--text"
-                          >Zeit nicht gesetzt</span
-                        >
+                        <span v-else class="grey--text">{{
+                          $t("bookable.edit.common.no-time")
+                        }}</span>
                       </v-list-item-subtitle>
                     </v-list-item-content>
 
@@ -649,7 +643,7 @@ export default {
                               <v-text-field
                                 dense
                                 :value="specialOpeningHour.date"
-                                label="Datum *"
+                                :label="$t('bookable.edit.common.date')"
                                 prepend-inner-icon="mdi-calendar"
                                 background-color="accent"
                                 filled
@@ -677,7 +671,7 @@ export default {
                                   $set(specialOpeningHoursDateMenu, idx, false)
                                 "
                               >
-                                Abbrechen
+                                {{ $t("bookable.edit.common.cancel") }}
                               </v-btn>
                               <v-btn
                                 text
@@ -686,7 +680,7 @@ export default {
                                   $set(specialOpeningHoursDateMenu, idx, false)
                                 "
                               >
-                                OK
+                                {{ $t("bookable.edit.common.ok") }}
                               </v-btn>
                             </v-date-picker>
                           </v-dialog>
@@ -710,9 +704,9 @@ export default {
                                 background-color="accent"
                                 filled
                                 :value="specialOpeningHour.startTime"
-                                label="Von *"
+                                :label="$t('bookable.edit.common.from')"
                                 readonly
-                                suffix="Uhr"
+                                :suffix="$t('bookable.edit.common.clock')"
                                 v-bind="attrs"
                                 v-on="on"
                                 hide-details="auto"
@@ -752,9 +746,9 @@ export default {
                                 background-color="accent"
                                 filled
                                 :value="specialOpeningHour.endTime"
-                                label="Bis *"
+                                :label="$t('bookable.edit.common.to')"
                                 readonly
-                                suffix="Uhr"
+                                :suffix="$t('bookable.edit.common.clock')"
                                 v-bind="attrs"
                                 v-on="on"
                                 hide-details="auto"
@@ -795,10 +789,10 @@ export default {
                 mdi-calendar-remove
               </v-icon>
               <div class="text-h6 grey--text mb-2">
-                Noch keine Sonderöffnungszeiten definiert
+                {{ $t("bookable.edit.specialOpeningHours.empty") }}
               </div>
               <div class="text-body-2 grey--text text--darken-1 mb-4">
-                Fügen Sie abweichende Öffnungszeiten für einzelne Daten hinzu
+                {{ $t("bookable.edit.specialOpeningHours.empty-hint") }}
               </div>
               <v-btn
                 small
@@ -807,7 +801,7 @@ export default {
                 @click="addNewSpecialOpeningHours"
               >
                 <v-icon left small>mdi-plus</v-icon>
-                Erste Sonderöffnungszeit hinzufügen
+                {{ $t("bookable.edit.specialOpeningHours.add-first") }}
               </v-btn>
             </div>
           </template>
@@ -820,15 +814,23 @@ export default {
         mdi-information-outline
       </v-icon>
       <div class="text-h6 font-weight-medium mb-2">
-        Öffnungszeiten nicht verfügbar
+        {{ $t("bookable.edit.openingHours.unavailable") }}
       </div>
       <div class="text-body-2 grey--text text--darken-1">
-        Öffnungszeiten können nur für die Buchungsarten
-        <br />
-        Freie Zeitwahl und Feste Zeitfenster definiert werden.
+        {{
+          $t("bookable.edit.openingHours.unavailable-hint", {
+            schedule: $t("bookable.flow.availability.modes.schedule"),
+            timePeriod: $t("bookable.flow.availability.modes.timePeriod"),
+          })
+        }}
       </div>
       <v-chip small class="mt-4" color="grey lighten-3">
-        Buchungsart: {{ $t(bookingModeNameKey(bookable)) }}
+        {{
+          $t("bookable.edit.common.label-value", {
+            label: $t("bookable.edit.sections.bookingTypeSelect"),
+            value: $t(bookingModeNameKey(bookable)),
+          })
+        }}
       </v-chip>
     </div>
   </div>

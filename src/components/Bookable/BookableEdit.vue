@@ -63,7 +63,9 @@
                   data-test="flow-bar-id"
                   @click="copyBookableId"
                 >
-                  <span class="bookable-id-text">ID: {{ bookableID }}</span>
+                  <span class="bookable-id-text">{{
+                    $t("bookable.edit.id", { id: bookableID })
+                  }}</span>
                   <v-icon x-small class="ml-1 flex-shrink-0">
                     mdi-content-copy
                   </v-icon>
@@ -104,7 +106,9 @@
                   v-on="on"
                   @click="copyBookableId"
                 >
-                  <span class="bookable-id-text">ID: {{ bookableID }}</span>
+                  <span class="bookable-id-text">{{
+                    $t("bookable.edit.id", { id: bookableID })
+                  }}</span>
                   <v-icon x-small class="ml-1 flex-shrink-0">
                     mdi-content-copy
                   </v-icon>
@@ -112,7 +116,9 @@
               </template>
               <span>{{ $t("bookable.edit.copyId.tooltip") }}</span>
             </v-tooltip>
-            <span v-else class="bookable-id-text">ID: -</span>
+            <span v-else class="bookable-id-text">{{
+              $t("bookable.edit.id", { id: "-" })
+            }}</span>
             <span class="page-content__meta-sep mx-1">•</span>
             <span class="page-content__meta-title">
               {{ bookable.title || $t("bookable.edit.untitled") }}
@@ -188,7 +194,7 @@
             v-if="$vuetify.breakpoint.mdAndUp"
             :key="tabsRenderKey"
             class="bookable-edit-nav"
-            aria-label="Buchungsobjekt-Bereiche"
+            :aria-label="$t('bookable.edit.nav.tabs')"
           >
             <div
               v-for="t in visibleTabs"
@@ -209,7 +215,9 @@
                 <v-icon small class="bookable-edit-nav__tab-icon">
                   {{ t.icon }}
                 </v-icon>
-                <span class="bookable-edit-nav__tab-label">{{ t.label }}</span>
+                <span class="bookable-edit-nav__tab-label">{{
+                  $t(t.labelKey)
+                }}</span>
               </button>
 
               <div
@@ -248,14 +256,14 @@
                 style="text-transform: none"
               >
                 <v-icon left small>{{ t.icon }}</v-icon>
-                {{ t.label }}
+                {{ $t(t.labelKey) }}
               </v-tab>
             </v-tabs>
             <div
               v-if="showSectionNav"
               class="bookable-edit-nav__subnav"
               role="navigation"
-              aria-label="Unterbereiche"
+              :aria-label="$t('bookable.edit.nav.sections')"
             >
               <button
                 v-for="section in activeTabSections"

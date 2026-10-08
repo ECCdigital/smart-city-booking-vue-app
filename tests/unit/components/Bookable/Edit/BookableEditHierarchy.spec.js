@@ -74,7 +74,7 @@ describe("BookableEditHierarchy (Hierarchie)", () => {
   it("removes a child", async () => {
     const { wrapper, patches } = await mountArea(["b2"]);
 
-    await titledButton(wrapper, "Löschen").trigger("click");
+    await titledButton(wrapper, "Entfernen").trigger("click");
 
     expect(lastPatch(patches)).toEqual({ relatedBookableIds: [] });
   });

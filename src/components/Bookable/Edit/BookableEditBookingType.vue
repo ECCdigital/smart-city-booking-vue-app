@@ -7,6 +7,7 @@ import {
   handlesExternalAvailability,
 } from "@/utils/bookableFlow";
 import { blockPeriodTooShort } from "@/utils/bookableValidation";
+import { weekdayItems } from "@/utils/bookableWeekdays";
 
 /** What `v-model.number` keeps: a number where the input reads as one. */
 function toNumber(value) {
@@ -26,15 +27,6 @@ export default {
   mixins: [bookableEditing],
   data() {
     return {
-      weekdays: [
-        { id: 1, name: "Montag", short: "Mo" },
-        { id: 2, name: "Dienstag", short: "Di" },
-        { id: 3, name: "Mittwoch", short: "Mi" },
-        { id: 4, name: "Donnerstag", short: "Do" },
-        { id: 5, name: "Freitag", short: "Fr" },
-        { id: 6, name: "Samstag", short: "Sa" },
-        { id: 0, name: "Sonntag", short: "So" },
-      ],
       timeEndMenu: [],
       timeStartMenu: [],
       expandedItems: [],
@@ -44,6 +36,9 @@ export default {
     };
   },
   computed: {
+    weekdays() {
+      return weekdayItems((key) => this.$t(key));
+    },
     bookingType() {
       return bookingModeOf(this.bookable);
     },
@@ -100,7 +95,7 @@ export default {
       const start = this.getWeekdayName(blockPeriod.startWeekday);
       const end = this.getWeekdayName(blockPeriod.endWeekday);
       if (!start || !end) {
-        return "Keine Tage gewählt";
+        return this.$t("bookable.edit.common.no-days");
       }
       return `${start} – ${end}`;
     },
@@ -144,7 +139,7 @@ export default {
         return "";
       }
       const day = this.weekdays.find((d) => d.id === Number(id));
-      return day ? day.name.substring(0, 2) : "";
+      return day ? day.short : "";
     },
     getWeekdayNamesFormatted(weekdays) {
       if (!weekdays || weekdays.length === 0) return "";
@@ -208,11 +203,11 @@ export default {
             <v-text-field
               background-color="accent"
               filled
-              label="Minimale Buchungsdauer"
+              :label="$t('bookable.edit.bookingDuration.min')"
               data-test="booking-duration-min"
               :value="bookable.minBookingDuration"
               @input="patch({ minBookingDuration: toNumber($event) })"
-              suffix="Stunden"
+              :suffix="$t('bookable.edit.common.hours')"
               type="number"
               min="0"
               hide-details
@@ -222,11 +217,11 @@ export default {
             <v-text-field
               background-color="accent"
               filled
-              label="Maximale Buchungsdauer"
+              :label="$t('bookable.edit.bookingDuration.max')"
               data-test="booking-duration-max"
               :value="bookable.maxBookingDuration"
               @input="patch({ maxBookingDuration: toNumber($event) })"
-              suffix="Stunden"
+              :suffix="$t('bookable.edit.common.hours')"
               type="number"
               min="0"
               hide-details
@@ -266,7 +261,7 @@ export default {
           @click="addNewTimePeriod"
         >
           <v-icon left small>mdi-plus</v-icon>
-          Hinzufügen
+          {{ $t("bookable.edit.common.add") }}
         </v-btn>
       </v-card-title>
       <v-divider />
@@ -294,17 +289,23 @@ export default {
                     <span class="font-weight-medium">
                       {{
                         getWeekdayNamesFormatted(timePeriod.weekdays) ||
-                        "Keine Tage gewählt"
+                        $t("bookable.edit.common.no-days")
                       }}
                     </span>
                   </v-list-item-title>
                   <v-list-item-subtitle class="d-flex align-center flex-wrap">
                     <v-icon small class="mr-1">mdi-clock-outline</v-icon>
                     <span v-if="timePeriod.startTime && timePeriod.endTime">
-                      {{ timePeriod.startTime }} - {{ timePeriod.endTime }}
-                      Uhr
+                      {{
+                        $t("bookable.edit.common.time-range", {
+                          start: timePeriod.startTime,
+                          end: timePeriod.endTime,
+                        })
+                      }}
                     </span>
-                    <span v-else class="grey--text">Zeit nicht gesetzt</span>
+                    <span v-else class="grey--text">{{
+                      $t("bookable.edit.common.no-time")
+                    }}</span>
                   </v-list-item-subtitle>
                 </v-list-item-content>
 
@@ -339,7 +340,7 @@ export default {
                         dense
                         background-color="accent"
                         filled
-                        label="Wochentag(e) *"
+                        :label="$t('bookable.edit.common.weekdays')"
                         :items="weekdays"
                         item-value="id"
                         item-text="name"
@@ -387,9 +388,9 @@ export default {
                             background-color="accent"
                             filled
                             :value="timePeriod.startTime"
-                            label="Startzeit *"
+                            :label="$t('bookable.edit.common.start-time')"
                             readonly
-                            suffix="Uhr"
+                            :suffix="$t('bookable.edit.common.clock')"
                             v-bind="attrs"
                             v-on="on"
                             hide-details="auto"
@@ -425,9 +426,9 @@ export default {
                             background-color="accent"
                             filled
                             :value="timePeriod.endTime"
-                            label="Endzeit *"
+                            :label="$t('bookable.edit.common.end-time')"
                             readonly
-                            suffix="Uhr"
+                            :suffix="$t('bookable.edit.common.clock')"
                             v-bind="attrs"
                             v-on="on"
                             hide-details="auto"
@@ -462,14 +463,14 @@ export default {
             mdi-clock-outline
           </v-icon>
           <div class="text-h6 grey--text mb-2">
-            Noch keine Zeitfenster definiert
+            {{ $t("bookable.edit.timePeriods.empty") }}
           </div>
           <div class="text-body-2 grey--text text--darken-1 mb-4">
-            Fügen Sie Zeitfenster hinzu, um feste Buchungszeiten zu definieren
+            {{ $t("bookable.edit.timePeriods.empty-hint") }}
           </div>
           <v-btn small text color="primary" @click="addNewTimePeriod">
             <v-icon left small>mdi-plus</v-icon>
-            Erstes Zeitfenster hinzufügen
+            {{ $t("bookable.edit.timePeriods.add-first") }}
           </v-btn>
         </div>
       </v-card-text>
@@ -505,7 +506,7 @@ export default {
           @click="addNewBlockPeriod"
         >
           <v-icon left small>mdi-plus</v-icon>
-          Hinzufügen
+          {{ $t("bookable.edit.common.add") }}
         </v-btn>
       </v-card-title>
       <v-divider />
@@ -513,9 +514,7 @@ export default {
       <v-card-text class="pa-4">
         <v-alert color="info" dense text class="mb-4">
           <v-icon class="mr-3" color="info">mdi-information-outline</v-icon>
-          Öffnungszeiten und min./max. Buchungsdauer gelten bei Zeiträumen
-          nicht. Zeiträume können über den Wochenwechsel hinausgehen (z. B. Fr
-          18:00 → Mo 08:00).
+          {{ $t("bookable.edit.blockPeriods.info") }}
         </v-alert>
 
         <v-alert
@@ -548,7 +547,10 @@ export default {
                 <v-list-item-content>
                   <v-list-item-title class="d-flex align-center">
                     <span class="font-weight-medium">
-                      {{ blockPeriod.label || "Ohne Bezeichnung" }}
+                      {{
+                        blockPeriod.label ||
+                        $t("bookable.edit.blockPeriods.untitled")
+                      }}
                     </span>
                   </v-list-item-title>
                   <v-list-item-subtitle class="d-flex align-center flex-wrap">
@@ -561,11 +563,17 @@ export default {
                         blockPeriod.endWeekday != null
                       "
                     >
-                      {{ getBlockPeriodWeekdayRange(blockPeriod) }},
-                      {{ blockPeriod.startTime }} – {{ blockPeriod.endTime }}
-                      Uhr
+                      {{
+                        $t("bookable.edit.blockPeriods.when", {
+                          days: getBlockPeriodWeekdayRange(blockPeriod),
+                          start: blockPeriod.startTime,
+                          end: blockPeriod.endTime,
+                        })
+                      }}
                     </span>
-                    <span v-else class="grey--text">Zeit nicht gesetzt</span>
+                    <span v-else class="grey--text">{{
+                      $t("bookable.edit.common.no-time")
+                    }}</span>
                   </v-list-item-subtitle>
                 </v-list-item-content>
 
@@ -605,7 +613,7 @@ export default {
                         dense
                         background-color="accent"
                         filled
-                        label="Bezeichnung *"
+                        :label="$t('bookable.edit.blockPeriods.label')"
                         data-test="block-period-label"
                         :value="blockPeriod.label"
                         @input="updateBlockPeriod(index, { label: $event })"
@@ -621,7 +629,7 @@ export default {
                         dense
                         background-color="accent"
                         filled
-                        label="Start-Wochentag *"
+                        :label="$t('bookable.edit.blockPeriods.start-weekday')"
                         :items="weekdays"
                         item-value="id"
                         item-text="name"
@@ -649,9 +657,9 @@ export default {
                             background-color="accent"
                             filled
                             :value="blockPeriod.startTime"
-                            label="Startzeit *"
+                            :label="$t('bookable.edit.common.start-time')"
                             readonly
-                            suffix="Uhr"
+                            :suffix="$t('bookable.edit.common.clock')"
                             v-bind="attrs"
                             v-on="on"
                             hide-details="auto"
@@ -678,13 +686,15 @@ export default {
                         dense
                         background-color="accent"
                         filled
-                        label="End-Wochentag *"
+                        :label="$t('bookable.edit.blockPeriods.end-weekday')"
                         :items="weekdays"
                         item-value="id"
                         item-text="name"
                         :value="blockPeriod.endWeekday"
                         hide-details="auto"
-                        hint="Ende in derselben Woche, wenn der Tag nach dem Start liegt; sonst in der Folgewoche"
+                        :hint="
+                          $t('bookable.edit.blockPeriods.end-weekday-hint')
+                        "
                         persistent-hint
                         @change="
                           updateBlockPeriod(index, { endWeekday: $event })
@@ -708,9 +718,9 @@ export default {
                             background-color="accent"
                             filled
                             :value="blockPeriod.endTime"
-                            label="Endzeit *"
+                            :label="$t('bookable.edit.common.end-time')"
                             readonly
-                            suffix="Uhr"
+                            :suffix="$t('bookable.edit.common.clock')"
                             v-bind="attrs"
                             v-on="on"
                             hide-details="auto"
@@ -753,15 +763,14 @@ export default {
             mdi-calendar-sync
           </v-icon>
           <div class="text-h6 grey--text mb-2">
-            Noch keine Zeiträume definiert
+            {{ $t("bookable.edit.blockPeriods.empty") }}
           </div>
           <div class="text-body-2 grey--text text--darken-1 mb-4">
-            Fügen Sie Zeiträume hinzu, um wiederkehrende Buchungsfenster zu
-            definieren
+            {{ $t("bookable.edit.blockPeriods.empty-hint") }}
           </div>
           <v-btn small text color="primary" @click="addNewBlockPeriod">
             <v-icon left small>mdi-plus</v-icon>
-            Ersten Zeitraum hinzufügen
+            {{ $t("bookable.edit.blockPeriods.add-first") }}
           </v-btn>
         </div>
       </v-card-text>

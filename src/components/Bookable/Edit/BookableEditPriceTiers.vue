@@ -3,7 +3,7 @@
     <div class="d-flex justify-space-between align-center mb-3">
       <v-subheader class="pl-0">
         <v-icon small class="mr-2"> mdi-format-list-numbered </v-icon>
-        Preis-Kategorien
+        {{ $t("bookable.edit.priceTiers.title") }}
       </v-subheader>
       <v-btn
         small
@@ -12,17 +12,14 @@
         @click="addPriceCategory"
       >
         <v-icon left small>mdi-plus</v-icon>
-        Kategorie hinzufügen
+        {{ $t("bookable.edit.priceTiers.add") }}
       </v-btn>
     </div>
 
     <v-alert v-if="hasPriceCategories" color="info" dense text class="mb-4">
       <div class="d-flex align-center">
         <v-icon class="mr-3" color="info"> mdi-information-outline </v-icon>
-        <div>
-          <strong>Tipp:</strong> Die Kategorien werden in der angegebenen
-          Reihenfolge geprüft. Die erste passende Kategorie wird angewendet.
-        </div>
+        <div v-html="$t('bookable.edit.priceTiers.info')" />
       </div>
     </v-alert>
 
@@ -45,7 +42,11 @@
             <v-list-item-content>
               <v-list-item-title class="d-flex align-center mb-1">
                 <span class="text-h6 font-weight-bold mr-2">
-                  {{ formatPrice(priceCategory.priceEur) }} €
+                  {{
+                    $t("bookable.edit.priceTiers.price", {
+                      price: formatPrice(priceCategory.priceEur),
+                    })
+                  }}
                 </span>
                 <v-chip
                   v-if="priceCategory.fixedPrice"
@@ -72,7 +73,12 @@
                   color="primary"
                 >
                   <v-icon left x-small>mdi-calendar-week</v-icon>
-                  {{ priceCategory.weekdays.length }} Wochentag(e)
+                  {{
+                    $tc(
+                      "bookable.edit.priceTiers.weekdays-count",
+                      priceCategory.weekdays.length
+                    )
+                  }}
                 </v-chip>
 
                 <v-chip
@@ -84,7 +90,12 @@
                   color="red"
                 >
                   <v-icon left x-small>mdi-calendar-star</v-icon>
-                  {{ priceCategory.holidays.length }} Feiertag(e)
+                  {{
+                    $tc(
+                      "bookable.edit.priceTiers.holidays-count",
+                      priceCategory.holidays.length
+                    )
+                  }}
                 </v-chip>
               </v-list-item-subtitle>
             </v-list-item-content>
@@ -161,7 +172,7 @@
 
               <v-subheader class="pl-0">
                 <v-icon small class="mr-2">mdi-ruler</v-icon>
-                Gültigkeitsbereich
+                {{ $t("bookable.edit.priceTiers.range") }}
               </v-subheader>
               <v-row>
                 <v-col cols="12" md="6">
@@ -179,7 +190,7 @@
                     background-color="accent"
                     filled
                     dense
-                    label="Gültig ab"
+                    :label="$t('bookable.edit.priceTiers.start')"
                     type="number"
                     hide-details
                     :suffix="intervalSuffix"
@@ -201,7 +212,7 @@
                     background-color="accent"
                     filled
                     dense
-                    label="Gültig bis"
+                    :label="$t('bookable.edit.priceTiers.end')"
                     type="number"
                     hide-details
                     :suffix="intervalSuffix"
@@ -214,7 +225,7 @@
 
               <v-subheader class="pl-0">
                 <v-icon small class="mr-2"> mdi-calendar-clock </v-icon>
-                Zeitliche Einschränkungen
+                {{ $t("bookable.edit.priceTiers.restrictions") }}
               </v-subheader>
               <v-row>
                 <v-col cols="12" md="6">
@@ -222,7 +233,7 @@
                     background-color="accent"
                     filled
                     dense
-                    label="Wochentage"
+                    :label="$t('bookable.edit.priceTiers.weekdays')"
                     hide-details
                     :value="priceCategory.weekdays"
                     @change="updateCategory(idx, { weekdays: $event })"
@@ -246,8 +257,11 @@
                         v-if="index === 3 && priceCategory.weekdays.length > 3"
                         class="grey--text text-caption"
                       >
-                        (+{{ priceCategory.weekdays.length - 3 }}
-                        weitere)
+                        {{
+                          $t("bookable.edit.priceTiers.more", {
+                            count: priceCategory.weekdays.length - 3,
+                          })
+                        }}
                       </span>
                     </template>
                   </v-select>
@@ -262,7 +276,7 @@
                     chips
                     small-chips
                     clearable
-                    label="Feiertage"
+                    :label="$t('bookable.edit.priceTiers.holidays')"
                     hide-details
                     :items="availableHolidays"
                     item-text="name"
@@ -280,7 +294,7 @@
                           dense
                           hide-details
                           outlined
-                          label="Bundesland"
+                          :label="$t('bookable.edit.priceTiers.state')"
                           prepend-icon="mdi-filter"
                           @change="fetchHolidays"
                         />
@@ -301,8 +315,11 @@
                         v-if="index === 2 && priceCategory.holidays.length > 2"
                         class="grey--text text-caption"
                       >
-                        (+{{ priceCategory.holidays.length - 2 }}
-                        weitere)
+                        {{
+                          $t("bookable.edit.priceTiers.more", {
+                            count: priceCategory.holidays.length - 2,
+                          })
+                        }}
                       </span>
                     </template>
                   </v-combobox>
@@ -325,14 +342,14 @@
         mdi-cash-remove
       </v-icon>
       <div class="text-h6 grey--text mb-2">
-        Noch keine Preis-Kategorien definiert
+        {{ $t("bookable.edit.priceTiers.empty") }}
       </div>
       <div class="text-body-2 grey--text text--darken-1 mb-4">
-        Fügen Sie Kategorien hinzu, um unterschiedliche Preise zu definieren
+        {{ $t("bookable.edit.priceTiers.empty-hint") }}
       </div>
       <v-btn small text color="primary" @click="addPriceCategory">
         <v-icon left small>mdi-plus</v-icon>
-        Erste Kategorie hinzufügen
+        {{ $t("bookable.edit.priceTiers.add-first") }}
       </v-btn>
     </div>
   </div>
@@ -342,36 +359,30 @@
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
 import bookableEditing from "@/mixins/bookableEditing";
 import { isTierCategory } from "@/utils/bookableFlow";
+import { weekdayItems } from "@/utils/bookableWeekdays";
 
-const WEEKDAYS = [
-  { id: 1, name: "Montag", short: "Mo" },
-  { id: 2, name: "Dienstag", short: "Di" },
-  { id: 3, name: "Mittwoch", short: "Mi" },
-  { id: 4, name: "Donnerstag", short: "Do" },
-  { id: 5, name: "Freitag", short: "Fr" },
-  { id: 6, name: "Samstag", short: "Sa" },
-  { id: 0, name: "Sonntag", short: "So" },
-];
+/** The holiday calendars to choose from: nationwide (`null`) or a state. */
+const STATES = Object.freeze([
+  null,
+  "BB",
+  "BE",
+  "BW",
+  "BY",
+  "HB",
+  "HE",
+  "HH",
+  "MV",
+  "NI",
+  "NW",
+  "RP",
+  "SH",
+  "SL",
+  "SN",
+  "ST",
+  "TH",
+]);
 
-const STATES = [
-  { text: "Bundesweit", value: null },
-  { text: "Brandenburg", value: "BB" },
-  { text: "Berlin", value: "BE" },
-  { text: "Baden-Württemberg", value: "BW" },
-  { text: "Bayern", value: "BY" },
-  { text: "Hansestadt Bremen", value: "HB" },
-  { text: "Hessen", value: "HE" },
-  { text: "Hansestadt Hamburg", value: "HH" },
-  { text: "Mecklenburg Vorpommern", value: "MV" },
-  { text: "Niedersachsen", value: "NI" },
-  { text: "Nordrhein-Westfalen", value: "NW" },
-  { text: "Rheinland-Pfalz", value: "RP" },
-  { text: "Schleswig-Holstein", value: "SH" },
-  { text: "Saarland", value: "SL" },
-  { text: "Sachsen", value: "SN" },
-  { text: "Sachsen-Anhalt", value: "ST" },
-  { text: "Thüringen", value: "TH" },
-];
+const RANGE = "bookable.edit.priceTiers.ranges";
 
 /**
  * Tarife: the Staffel of price categories, each with its amount, its fixed
@@ -391,13 +402,20 @@ export default {
       )
         ? [0]
         : [],
-      weekdays: WEEKDAYS,
-      states: STATES,
       availableHolidays: [],
       selectedState: null,
     };
   },
   computed: {
+    weekdays() {
+      return weekdayItems((key) => this.$t(key));
+    },
+    states() {
+      return STATES.map((value) => ({
+        value,
+        text: this.$t(`bookable.edit.priceTiers.states.${value || "DE"}`),
+      }));
+    },
     priceCategories() {
       return this.bookable.priceCategories || [];
     },
@@ -419,12 +437,7 @@ export default {
         : this.$t("bookable.flow.price.amount");
     },
     intervalSuffix() {
-      const map = {
-        "per-hour": "Std.",
-        "per-day": "Tage",
-        "per-square-meter": "m²",
-      };
-      return map[this.bookable.priceType] || "Stück";
+      return this.$t(`bookable.edit.priceTiers.units.${this.priceType}`);
     },
   },
   watch: {
@@ -502,14 +515,15 @@ export default {
       const start = category.interval?.start ?? null;
       const end = category.interval?.end ?? null;
 
+      const unit = this.intervalSuffix;
       if (start !== null && end !== null) {
-        return `${start} - ${end} ${this.intervalSuffix}`;
+        return this.$t(`${RANGE}.both`, { start, end, unit });
       } else if (start !== null) {
-        return `ab ${start} ${this.intervalSuffix}`;
+        return this.$t(`${RANGE}.start`, { start, unit });
       } else if (end !== null) {
-        return `bis ${end} ${this.intervalSuffix}`;
+        return this.$t(`${RANGE}.end`, { end, unit });
       }
-      return "Keine Begrenzung";
+      return this.$t(`${RANGE}.none`);
     },
     formatPrice(price) {
       return parseFloat(price || 0).toFixed(2);

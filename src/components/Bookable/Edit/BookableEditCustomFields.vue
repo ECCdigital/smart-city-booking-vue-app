@@ -4,16 +4,15 @@ import ApiInstanceService from "@/services/api/ApiInstanceService";
 import { mapGetters } from "vuex";
 import bookableEditing from "@/mixins/bookableEditing";
 
-const ORIGIN_META = {
-  instance: {
-    originLabel: "Instanz",
-    originIcon: "mdi-home-outline",
-  },
-  tenant: {
-    originLabel: "Mandant",
-    originIcon: "mdi-domain",
-  },
+const ORIGIN_ICONS = {
+  instance: "mdi-home-outline",
+  tenant: "mdi-domain",
+  bookable: "mdi-book-open-page-variant",
 };
+
+const CONTEXT_COLORS = { checkout: "blue", catalog: "green", none: "grey" };
+
+const COPY = "bookable.edit.customFields";
 
 /**
  * Eigene Felder, whole: the values of the fields instance and tenant define
@@ -104,7 +103,7 @@ export default {
       const fallbackGroups = [];
       if (this.fetchedInstanceFields.length) {
         fallbackGroups.push({
-          ...ORIGIN_META.instance,
+          ...this.originMeta("instance"),
           fields: this.fetchedInstanceFields,
         });
       }
@@ -112,7 +111,7 @@ export default {
       const tenantFields = this.currentTenant?.bookableCustomFields || [];
       if (tenantFields.length) {
         fallbackGroups.push({
-          ...ORIGIN_META.tenant,
+          ...this.originMeta("tenant"),
           fields: tenantFields,
         });
       }
@@ -170,7 +169,7 @@ export default {
       return ["instance", "tenant"]
         .filter((origin) => grouped[origin]?.length)
         .map((origin) => ({
-          ...ORIGIN_META[origin],
+          ...this.originMeta(origin),
           fields: grouped[origin],
         }));
     },
@@ -210,46 +209,32 @@ export default {
       this.patch({ customFieldValues: values });
     },
     contextColor(context) {
-      const map = {
-        checkout: "blue",
-        catalog: "green",
-        none: "grey",
-      };
-      return map[context] || "grey";
+      return CONTEXT_COLORS[context] || "grey";
     },
     contextLabel(context) {
-      const map = {
-        checkout: "Buchungsprozess",
-        catalog: "Katalog",
-        none: "Intern",
-      };
-      return map[context] || context;
+      return CONTEXT_COLORS[context]
+        ? this.$t(`${COPY}.contexts.${context}`)
+        : context;
     },
     originLabel(origin) {
-      const map = {
-        instance: "Instanz",
-        tenant: "Mandant",
-        bookable: "Buchungsobjekt",
-      };
-      return map[origin] || origin;
+      return ORIGIN_ICONS[origin]
+        ? this.$t(`${COPY}.origins.${origin}`)
+        : origin;
     },
     originIcon(origin) {
-      const map = {
-        instance: "mdi-home-outline",
-        tenant: "mdi-domain",
-        bookable: "mdi-book-open-page-variant",
-      };
-      return map[origin] || "mdi-cube";
+      return ORIGIN_ICONS[origin] || "mdi-cube";
     },
     originTooltip(origin) {
-      const map = {
-        instance:
-          "Definiert auf Instanz-Ebene — gilt für alle Mandanten und Buchungsobjekte.",
-        tenant:
-          "Definiert auf Mandanten-Ebene — gilt für alle Buchungsobjekte dieses Mandanten.",
-        bookable: "Definiert speziell für dieses Buchungsobjekt.",
+      return ORIGIN_ICONS[origin]
+        ? this.$t(`${COPY}.origin-hints.${origin}`)
+        : "";
+    },
+    /** A group of inherited fields as `CustomFieldList` names it. */
+    originMeta(origin) {
+      return {
+        originLabel: this.originLabel(origin),
+        originIcon: this.originIcon(origin),
       };
-      return map[origin] || "";
     },
   },
 };
@@ -265,14 +250,14 @@ export default {
     >
       <v-tab>
         <v-icon left small>mdi-pencil-outline</v-icon>
-        Werte pflegen
+        {{ $t("bookable.edit.sections.customFieldsValues") }}
         <v-chip v-if="valueFieldCount" x-small class="ml-2" label>
           {{ valueFieldCount }}
         </v-chip>
       </v-tab>
       <v-tab>
         <v-icon left small>mdi-tune-variant</v-icon>
-        Felder definieren
+        {{ $t("bookable.edit.sections.customFieldsDefinitions") }}
         <v-chip v-if="ownDefinitionCount" x-small class="ml-2" label outlined>
           {{ ownDefinitionCount }}
         </v-chip>
@@ -283,11 +268,11 @@ export default {
       <v-tab-item>
         <div class="custom-fields-values">
           <p class="text-body-2 text--secondary mb-3">
-            Werte eintragen, die im Katalog oder intern angezeigt werden.
+            {{ $t("bookable.edit.customFields.values-hint") }}
           </p>
 
           <v-alert v-if="hasCheckoutFields" type="info" dense text class="mb-3">
-            Buchungsprozess-Felder füllt der Kunde bei der Buchung aus.
+            {{ $t("bookable.edit.customFields.checkout-hint") }}
           </v-alert>
 
           <v-card
@@ -299,15 +284,20 @@ export default {
               mdi-form-textbox
             </v-icon>
             <div class="text-subtitle-1 grey--text mb-2">
-              Noch keine Felder zum Ausfüllen
+              {{ $t("bookable.edit.customFields.empty") }}
             </div>
             <div class="text-body-2 grey--text mb-4">
-              Felder kommen von Instanz oder Mandant — oder du legst sie unter
-              „Felder definieren“ an.
+              {{
+                $t("bookable.edit.customFields.empty-hint-define", {
+                  definitions: $t(
+                    "bookable.edit.sections.customFieldsDefinitions"
+                  ),
+                })
+              }}
             </div>
             <v-btn color="primary" text @click="switchToDefinitions">
               <v-icon left small>mdi-plus-box-outline</v-icon>
-              Feld definieren
+              {{ $t("bookable.edit.customFields.define") }}
             </v-btn>
           </v-card>
 
@@ -429,7 +419,13 @@ export default {
                       <v-switch
                         v-else-if="field.inputType === 'boolean'"
                         :input-value="field.currentValue"
-                        :label="field.currentValue ? 'Ja' : 'Nein'"
+                        :label="
+                          $t(
+                            `bookable.edit.customFields.${
+                              field.currentValue ? 'yes' : 'no'
+                            }`
+                          )
+                        "
                         dense
                         hide-details
                         class="mt-0 pt-0"
@@ -449,7 +445,10 @@ export default {
                         :items="field.options || []"
                         item-text="caption"
                         item-value="value"
-                        :placeholder="field.placeholder || 'Auswählen…'"
+                        :placeholder="
+                          field.placeholder ||
+                          $t('bookable.edit.customFields.choose')
+                        "
                         :multiple="field.inputType === 'multiselect'"
                         :chips="field.inputType === 'multiselect'"
                         :deletable-chips="field.inputType === 'multiselect'"
@@ -476,16 +475,18 @@ export default {
 
       <v-tab-item>
         <p class="text-body-2 text--secondary mb-3">
-          Zusätzliche Felder nur für dieses Buchungsobjekt. Geerbte Felder sind
-          schreibgeschützt. Nach dem Speichern erscheinen neue Felder unter
-          „Werte pflegen“.
+          {{
+            $t("bookable.edit.customFields.definitions-hint", {
+              values: $t("bookable.edit.sections.customFieldsValues"),
+            })
+          }}
         </p>
 
         <v-card outlined class="section-card pa-4">
           <CustomFieldList
             :fields="bookable.customFieldDefinitions || []"
             :inherited-field-groups="inheritedFieldGroups"
-            own-fields-label="Eigene Felder auf Buchungsobjekt-Ebene"
+            :own-fields-label="$t('bookable.edit.customFields.own-fields')"
             hide-override
             @update:fields="onDefinitionsChanged"
           />
@@ -496,11 +497,11 @@ export default {
     <!-- Without „Felder definieren“: values only, no definition sub-tab -->
     <div v-else class="custom-fields-values">
       <p class="text-body-2 text--secondary mb-3">
-        Werte eintragen, die im Katalog oder intern angezeigt werden.
+        {{ $t("bookable.edit.customFields.values-hint") }}
       </p>
 
       <v-alert v-if="hasCheckoutFields" type="info" dense text class="mb-3">
-        Buchungsprozess-Felder füllt der Kunde bei der Buchung aus.
+        {{ $t("bookable.edit.customFields.checkout-hint") }}
       </v-alert>
 
       <v-card
@@ -512,10 +513,10 @@ export default {
           mdi-form-textbox
         </v-icon>
         <div class="text-subtitle-1 grey--text mb-2">
-          Noch keine Felder zum Ausfüllen
+          {{ $t("bookable.edit.customFields.empty") }}
         </div>
         <div class="text-body-2 grey--text">
-          Felder kommen von Instanz oder Mandant.
+          {{ $t("bookable.edit.customFields.empty-hint") }}
         </div>
       </v-card>
 
@@ -633,7 +634,13 @@ export default {
                   <v-switch
                     v-else-if="field.inputType === 'boolean'"
                     :input-value="field.currentValue"
-                    :label="field.currentValue ? 'Ja' : 'Nein'"
+                    :label="
+                      $t(
+                        `bookable.edit.customFields.${
+                          field.currentValue ? 'yes' : 'no'
+                        }`
+                      )
+                    "
                     dense
                     hide-details
                     class="mt-0 pt-0"
@@ -653,7 +660,10 @@ export default {
                     :items="field.options || []"
                     item-text="caption"
                     item-value="value"
-                    :placeholder="field.placeholder || 'Auswählen…'"
+                    :placeholder="
+                      field.placeholder ||
+                      $t('bookable.edit.customFields.choose')
+                    "
                     :multiple="field.inputType === 'multiselect'"
                     :chips="field.inputType === 'multiselect'"
                     :deletable-chips="field.inputType === 'multiselect'"

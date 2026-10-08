@@ -105,19 +105,3 @@ export function normalizeLeadTimeFields(bookable) {
 
   return bookable;
 }
-
-export function formatPreparationDuration(minutes) {
-  const value = Number(minutes);
-  if (!value || value <= 0) {
-    return "";
-  }
-  const hours = Math.floor(value / 60);
-  const mins = value % 60;
-  if (hours > 0 && mins > 0) {
-    return `${hours} Std. ${mins} Min.`;
-  }
-  if (hours > 0) {
-    return `${hours} Std.`;
-  }
-  return `${mins} Min.`;
-}

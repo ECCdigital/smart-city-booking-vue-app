@@ -15,17 +15,17 @@
               </slot>
             </v-list-item-subtitle>
           </v-list-item-content>
-          <v-list-item-action title="Nach oben verschieben">
+          <v-list-item-action :title="$t('bookable.edit.list.up')">
             <v-btn icon small @click="moveUp(i)" v-if="i > 0">
               <v-icon color="grey lighten-1"> mdi-chevron-up</v-icon>
             </v-btn>
           </v-list-item-action>
-          <v-list-item-action title="Nach unten verschieben">
+          <v-list-item-action :title="$t('bookable.edit.list.down')">
             <v-btn icon small @click="moveDown(i)" v-if="i < items.length - 1">
               <v-icon color="grey lighten-1"> mdi-chevron-down</v-icon>
             </v-btn>
           </v-list-item-action>
-          <v-list-item-action title="Löschen">
+          <v-list-item-action :title="$t('bookable.edit.common.remove')">
             <v-btn icon small @click="remove(i)">
               <v-icon color="grey lighten-1"> mdi-close</v-icon>
             </v-btn>
@@ -42,12 +42,12 @@
       class="font-italic text-center grey--text my-5"
       v-if="!items || items.length === 0"
     >
-      Es sind keine Einträge vorhanden.
+      {{ $t("bookable.edit.list.empty") }}
     </div>
 
     <v-autocomplete
       hide-details
-      placeholder="Ein weiteres Element Hinzufügen"
+      :placeholder="$t('bookable.edit.list.add-placeholder')"
       v-model="addItemValue"
       :items="unselectedItems"
       :item-value="itemValue"
@@ -77,7 +77,7 @@
       <template v-slot:append-outer>
         <v-btn small color="primary" @click="add">
           <v-icon left> mdi-plus</v-icon>
-          Hinzufügen
+          {{ $t("bookable.edit.common.add") }}
         </v-btn>
       </template>
     </v-autocomplete>

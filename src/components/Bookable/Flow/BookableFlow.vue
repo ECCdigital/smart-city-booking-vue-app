@@ -166,7 +166,7 @@
               data-test="flow-save"
               @click="$emit('save')"
             >
-              {{ $t("bookable.flow.save") }}
+              {{ $t("saveBar.save") }}
             </v-btn>
             <v-btn
               v-else

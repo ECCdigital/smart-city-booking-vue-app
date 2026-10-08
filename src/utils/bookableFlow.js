@@ -11,6 +11,7 @@
  * what the bookable holds.
  */
 
+import { typeNameKey } from "@/utils/bookables";
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import {
   handlesCapability,
@@ -29,7 +30,6 @@ import {
   shownAreas,
 } from "@/utils/bookableAreas";
 import { bookableIssues } from "@/utils/bookableValidation";
-import { getTypeText } from "@/utils/bookables";
 
 export const FLOW_STEPS = Object.freeze([
   "identity",
@@ -567,7 +567,8 @@ const IDENTITY_ROWS = [
     key: "type",
     label: "bookable.flow.identity.type",
     section: "general-admin",
-    value: (b) => asText(getTypeText(b.type)),
+    value: (b) =>
+      typeNameKey(b.type) ? asWord(typeNameKey(b.type)) : asText(b.type),
   },
   {
     key: "eventId",

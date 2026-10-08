@@ -212,7 +212,7 @@ export default {
         : [...FLOW_BOOKABLE_TYPES, this.bookable.type];
       return types.map((type) => ({
         value: type,
-        text: getTypeText(type),
+        text: getTypeText(type) || type,
         icon: getTypeIcon(type),
       }));
     },

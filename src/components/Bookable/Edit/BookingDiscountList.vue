@@ -106,8 +106,8 @@ export default {
       <v-btn
         icon
         small
-        :title="$t('bookable.flow.permission.remove')"
-        :aria-label="$t('bookable.flow.permission.remove')"
+        :title="$t('bookable.edit.common.remove')"
+        :aria-label="$t('bookable.edit.common.remove')"
         data-test="discount-remove"
         @click="remove(index)"
       >

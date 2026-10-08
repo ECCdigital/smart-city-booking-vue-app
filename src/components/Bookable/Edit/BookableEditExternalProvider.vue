@@ -13,17 +13,13 @@
         <div class="d-flex flex-column">
           <div class="text-subtitle-1 font-weight-bold mb-1">
             <v-icon left color="warning">mdi-alert-circle-outline</v-icon>
-            Empfehlung: Externe Datenquellen aktivieren
+            {{ $t("bookable.edit.externalProvider.recommendation") }}
           </div>
 
-          <div class="text-body-2 mb-3">
-            Sie nutzen Fahrradboxen über
-            <strong>ParkraumService</strong>. Buchungen können auch direkt über
-            ParkraumService erfolgen und werden in diesem System nicht
-            automatisch erfasst. Um Inkonsistenzen und Fehler bei
-            Doppelbuchungen zu vermeiden, empfehlen wir dringend, die folgenden
-            externen Datenquellen zu aktivieren:
-          </div>
+          <div
+            class="text-body-2 mb-3"
+            v-html="$t('bookable.edit.externalProvider.recommendation-text')"
+          />
 
           <v-row dense class="mb-2">
             <v-col
@@ -67,7 +63,7 @@
               @click="activateRecommendedIfbs"
             >
               <v-icon left small>mdi-lightning-bolt</v-icon>
-              Empfohlene Einstellungen übernehmen
+              {{ $t("bookable.edit.externalProvider.apply-recommended") }}
             </v-btn>
             <v-btn
               v-else-if="missingRecommendedHandles.length > 0"
@@ -77,7 +73,7 @@
               @click="activateMissingHandles"
             >
               <v-icon left small>mdi-plus-circle-outline</v-icon>
-              Fehlende Quellen aktivieren
+              {{ $t("bookable.edit.externalProvider.activate-missing") }}
             </v-btn>
             <v-btn
               small
@@ -85,7 +81,7 @@
               color="grey"
               @click="dismissIfbsRecommendation = true"
             >
-              Hinweis ausblenden
+              {{ $t("bookable.edit.externalProvider.dismiss") }}
             </v-btn>
           </div>
         </div>
@@ -102,7 +98,11 @@
         <v-card-title class="section-header pa-4">
           <v-icon class="mr-2">mdi-cloud-sync-outline</v-icon>
           <span class="text-h6 font-weight-bold">
-            Externe Datenquelle (ParkraumService)
+            {{
+              $t("bookable.edit.externalProvider.title", {
+                name: $t("bookable.edit.sections.accessLocksExternal"),
+              })
+            }}
           </span>
         </v-card-title>
         <v-divider />
@@ -119,10 +119,10 @@
             <template #label>
               <div>
                 <div class="font-weight-medium">
-                  Externe Preissteuerung aktivieren
+                  {{ $t("bookable.edit.externalProvider.switch") }}
                 </div>
                 <div class="text-caption text--secondary">
-                  Daten von ParkraumService beziehen statt manuell zu pflegen
+                  {{ $t("bookable.edit.externalProvider.switch-hint") }}
                 </div>
               </div>
             </template>
@@ -132,9 +132,7 @@
             <div v-if="externalProvider.active">
               <v-alert color="info" text dense border="left" class="mb-4">
                 <div class="text-body-2">
-                  Wählen Sie aus, welche Informationen extern bezogen werden
-                  sollen. Nicht ausgewählte Bereiche können weiterhin manuell
-                  gepflegt werden.
+                  {{ $t("bookable.edit.externalProvider.handles-hint") }}
                 </div>
               </v-alert>
 
@@ -155,10 +153,12 @@
                           <v-icon small class="mr-1" color="primary">
                             mdi-cash-multiple
                           </v-icon>
-                          Preise
+                          {{ handleLabel("pricing") }}
                         </div>
                         <div class="text-caption text--secondary">
-                          Preise vom Anbieter beziehen
+                          {{
+                            $t("bookable.edit.externalProvider.pricing-hint")
+                          }}
                         </div>
                       </div>
                     </template>
@@ -180,10 +180,14 @@
                           <v-icon small class="mr-1" color="primary">
                             mdi-calendar-check
                           </v-icon>
-                          Verfügbarkeit
+                          {{ handleLabel("availability") }}
                         </div>
                         <div class="text-caption text--secondary">
-                          Verfügbarkeit extern prüfen
+                          {{
+                            $t(
+                              "bookable.edit.externalProvider.availability-hint"
+                            )
+                          }}
                         </div>
                       </div>
                     </template>
@@ -205,10 +209,12 @@
                           <v-icon small class="mr-1" color="primary">
                             mdi-counter
                           </v-icon>
-                          Anzahl
+                          {{ handleLabel("maxAmount") }}
                         </div>
                         <div class="text-caption text--secondary">
-                          Max. Anzahl extern beziehen
+                          {{
+                            $t("bookable.edit.externalProvider.maxAmount-hint")
+                          }}
                         </div>
                       </div>
                     </template>
@@ -272,7 +278,11 @@
                             {{ row.icon }}
                           </v-icon>
                           <div class="text-h6 font-weight-bold">
-                            {{ formatPrice(row.priceEur) }} €
+                            {{
+                              $t("bookable.edit.priceTiers.price", {
+                                price: formatPrice(row.priceEur),
+                              })
+                            }}
                           </div>
                           <div class="text-caption text--secondary">
                             {{ $t(row.labelKey) }}
@@ -301,7 +311,11 @@
                                   {{ $t("bookable.externalPrice.serviceFee") }}
                                 </div>
                                 <div class="text-h6 font-weight-bold">
-                                  {{ formatPrice(externalServiceFee) }} €
+                                  {{
+                                    $t("bookable.edit.priceTiers.price", {
+                                      price: formatPrice(externalServiceFee),
+                                    })
+                                  }}
                                 </div>
                               </div>
                             </div>
@@ -349,6 +363,12 @@ import {
   IFBS_PROVIDER,
   providerHandles,
 } from "@/utils/bookableExternalProviders";
+
+const HANDLE_LABELS = Object.freeze({
+  availability: "bookable.flow.steps.availability.title",
+  maxAmount: "bookable.edit.sections.pricingAmount",
+  pricing: "bookable.edit.externalProvider.pricing",
+});
 
 const DEFAULT_EXTERNAL_PROVIDER = {
   active: false,
@@ -414,28 +434,15 @@ export default {
         : [];
 
       return [
-        {
-          handle: "availability",
-          label: "Verfügbarkeit",
-          hint: "Verhindert falsche Anzeigen von verfügbaren Zeiten",
-          active: handles.includes("availability"),
-          critical: true,
-        },
-        {
-          handle: "maxAmount",
-          label: "Max. Anzahl",
-          hint: "Korrekte Kapazität sicherstellen",
-          active: handles.includes("maxAmount"),
-          critical: true,
-        },
-        {
-          handle: "pricing",
-          label: "Preise",
-          hint: "Einheitliche Preisgestaltung",
-          active: handles.includes("pricing"),
-          critical: false,
-        },
-      ];
+        { handle: "availability", critical: true },
+        { handle: "maxAmount", critical: true },
+        { handle: "pricing", critical: false },
+      ].map((rec) => ({
+        ...rec,
+        label: this.handleLabel(rec.handle),
+        hint: this.$t(`bookable.edit.externalProvider.why.${rec.handle}`),
+        active: handles.includes(rec.handle),
+      }));
     },
     missingRecommendedHandles() {
       return this.ifbsRecommendations
@@ -480,6 +487,13 @@ export default {
     },
   },
   methods: {
+    /**
+     * What the provider may take over, named as the field it takes over:
+     * the Verfügbarkeit, the Anzahl, the prices.
+     */
+    handleLabel(handle) {
+      return this.$t(HANDLE_LABELS[handle]);
+    },
     findIfbsProvider() {
       return (
         this.bookable.externalProviders?.find(

@@ -24,7 +24,7 @@ export default {
     <div class="d-flex justify-end mb-3">
       <v-btn small color="primary" @click="$refs.list.add()">
         <v-icon left small>mdi-plus</v-icon>
-        {{ $t("bookable.areas.attachments.add") }}
+        {{ $t("bookable.edit.common.add") }}
       </v-btn>
     </div>
     <MediaAttachmentList

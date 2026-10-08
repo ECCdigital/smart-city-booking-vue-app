@@ -67,7 +67,9 @@ export function areaCard(key, extra = {}) {
 }
 
 /**
- * The tabs of the editing page, in order. A tab is either one component
+ * The tabs of the editing page, in order, each named by the i18n key
+ * `labelKey` - the key of the field or area it holds where it holds one. A
+ * tab is either one component
  * (`comp`) that draws its heading and sections itself, or a list of `cards`
  * that `BookableEditTab` frames under the tab's heading. A card:
  *
@@ -84,7 +86,7 @@ export function areaCard(key, extra = {}) {
 export const BOOKABLE_EDIT_TABS = Object.freeze([
   {
     key: "general",
-    label: "Allgemein",
+    labelKey: "bookable.edit.tabs.general",
     icon: "mdi-information-outline",
     // The Grunddaten, as the guided flow's step Identität shows them; their
     // two groups carry the anchors of the sections general-catalog and
@@ -100,7 +102,7 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
   },
   {
     key: "pricing",
-    label: "Preise & Kapazität",
+    labelKey: "bookable.edit.tabs.pricing",
     icon: "mdi-cash",
     // Preis and Anzahl, as the guided flow's steps „Preis“ and „Anzahl &
     // Kapazität“ ask them; the settings of ParkraumService are in
@@ -124,7 +126,7 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
   },
   {
     key: "bookingType",
-    label: "Buchungsart",
+    labelKey: "bookable.edit.sections.bookingTypeSelect",
     icon: "mdi-calendar-clock",
     cards: [
       {
@@ -140,25 +142,25 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
   },
   {
     key: "openingHours",
-    label: "Öffnungszeiten",
+    labelKey: "bookable.edit.cards.openingHours",
     icon: "mdi-clock-outline",
     comp: BookableEditOpeningHours,
   },
   {
     key: "accessLocks",
-    label: "Schließsysteme",
+    labelKey: "bookable.areas.accessLocks.title",
     icon: "mdi-lock-outline",
     cards: [areaCard("accessLocks")],
   },
   {
     key: "relatedBookables",
-    label: "Abhängigkeiten",
+    labelKey: "bookable.edit.tabs.relatedBookables",
     icon: "mdi-link-variant",
     cards: [areaCard("checkoutBookables"), areaCard("hierarchy")],
   },
   {
     key: "permissions",
-    label: "Berechtigungen",
+    labelKey: "bookable.edit.tabs.permissions",
     icon: "mdi-account-lock-outline",
     cards: [
       // „Wer darf buchen?“ and the Preisnachlass, the component of the
@@ -184,19 +186,19 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
   },
   {
     key: "attachments",
-    label: "Anhänge",
+    labelKey: "bookable.areas.attachments.title",
     icon: "mdi-paperclip",
     cards: [areaCard("attachments")],
   },
   {
     key: "customFields",
-    label: "Eigene Felder",
+    labelKey: "bookable.areas.customFields.title",
     icon: "mdi-form-textbox",
     cards: [areaCard("customFields", { sectionTarget: true })],
   },
   {
     key: "additional",
-    label: "Sonstiges",
+    labelKey: "bookable.edit.tabs.additional",
     icon: "mdi-dots-horizontal",
     cards: [areaCard("requiredFields"), areaCard("bookingNotes")],
   },

@@ -402,7 +402,7 @@ export default {
               <th>{{ $t("accessPoint.bookable.table.provider") }}</th>
               <th>{{ $t("accessPoint.bookable.table.grants") }}</th>
               <th class="text-right">
-                {{ $t("accessPoint.bookable.table.remove") }}
+                {{ $t("bookable.edit.common.remove") }}
               </th>
             </tr>
           </thead>
@@ -435,7 +435,7 @@ export default {
                   class="assignment-remove"
                   icon
                   small
-                  :aria-label="$t('accessPoint.bookable.table.remove')"
+                  :aria-label="$t('bookable.edit.common.remove')"
                   @click="removeAccessPoint(row.id)"
                 >
                   <v-icon small color="error">mdi-link-off</v-icon>

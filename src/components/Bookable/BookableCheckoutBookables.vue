@@ -15,7 +15,9 @@
               </v-list-item-title>
               <v-list-item-subtitle>
                 <slot name="detail" :itemObject="itemObject(item.bookableId)">
-                  <span>{{ itemObject(item.bookableId).type }}</span>
+                  <span>{{
+                    getTypeText(itemObject(item.bookableId).type)
+                  }}</span>
                 </slot>
               </v-list-item-subtitle>
             </v-list-item-content>
@@ -24,18 +26,18 @@
                 class="ml-6"
                 dense
                 :input-value="item.mandatory"
-                label="verpflichtend"
+                :label="$t('bookable.edit.list.mandatory')"
                 hide-details
                 data-test="checkout-mandatory"
                 @change="setMandatory(i, $event)"
               ></v-checkbox>
             </v-list-item-content>
-            <v-list-item-action title="Nach oben verschieben">
+            <v-list-item-action :title="$t('bookable.edit.list.up')">
               <v-btn icon small @click="moveUp(i)" v-if="i > 0">
                 <v-icon color="grey lighten-1"> mdi-chevron-up</v-icon>
               </v-btn>
             </v-list-item-action>
-            <v-list-item-action title="Nach unten verschieben">
+            <v-list-item-action :title="$t('bookable.edit.list.down')">
               <v-btn
                 icon
                 small
@@ -45,7 +47,7 @@
                 <v-icon color="grey lighten-1"> mdi-chevron-down</v-icon>
               </v-btn>
             </v-list-item-action>
-            <v-list-item-action title="Löschen">
+            <v-list-item-action :title="$t('bookable.edit.common.remove')">
               <v-btn icon small data-test="checkout-remove" @click="remove(i)">
                 <v-icon color="grey lighten-1"> mdi-close</v-icon>
               </v-btn>
@@ -60,12 +62,12 @@
       class="font-italic text-center grey--text my-5"
       v-if="!items || items.length === 0"
     >
-      Es sind keine Einträge vorhanden.
+      {{ $t("bookable.edit.list.empty") }}
     </div>
 
     <v-autocomplete
       hide-details
-      placeholder="Ein weiteres Element Hinzufügen"
+      :placeholder="$t('bookable.edit.list.add-placeholder')"
       v-model="addItemValue"
       :items="unselectedItems"
       item-value="id"
@@ -94,7 +96,7 @@
       <template v-slot:append-outer>
         <v-btn small color="primary" @click="add">
           <v-icon left> mdi-plus</v-icon>
-          Hinzufügen
+          {{ $t("bookable.edit.common.add") }}
         </v-btn>
       </template>
     </v-autocomplete>
@@ -102,7 +104,7 @@
 </template>
 
 <script>
-import { getTypeColor, getTypeIcon, getTypeText } from "../../utils/bookables";
+import { getTypeColor, getTypeIcon, getTypeText } from "@/utils/bookables";
 
 /** `items` with the entries at `a` and `b` swapped, as a new list. */
 function swapped(items, a, b) {

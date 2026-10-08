@@ -49,7 +49,7 @@ export default {
 
 <template>
   <div>
-    <BaseSection :title="tab.label" :icon="tab.icon" />
+    <BaseSection :title="$t(tab.labelKey)" :icon="tab.icon" />
     <template v-for="card in cards">
       <component
         :is="card.comp"

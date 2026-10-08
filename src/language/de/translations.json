@@ -5,6 +5,12 @@
     "stay": "Weiter bearbeiten",
     "discard": "Änderungen verwerfen"
   },
+  "saveBar": {
+    "label": "Änderungen speichern",
+    "cancel": "Abbrechen",
+    "restore": "Änderungen zurücksetzen",
+    "save": "Speichern"
+  },
   "logout": {
     "success": {
       "title": "Erfolgreich abgemeldet",
@@ -178,7 +184,6 @@
       "back": "Zurück",
       "next": "Weiter",
       "skip": "Überspringen",
-      "save": "Speichern",
       "save-hint": "Gespeichert wird erst hier. Ihre Eingaben bleiben erhalten, wenn Sie zur Bearbeitungsseite wechseln, und gehen erst verloren, wenn Sie das Buchungsobjekt verlassen.",
       "save-hint-new": "Gespeichert wird erst hier. Wer das Buchungsobjekt vorher verlässt, verliert die Eingaben.",
       "save-failed": "Das Buchungsobjekt konnte nicht gespeichert werden.",
@@ -380,8 +385,7 @@
         "discounts-not-paid": "Wirkt erst, sobald das Objekt einen Preis hat. Bis dahin bleiben die Einträge gespeichert.",
         "percent": "Preisnachlass in Prozent",
         "add-role": "Rolle hinzufügen",
-        "add-user": "Person hinzufügen",
-        "remove": "Entfernen"
+        "add-user": "Person hinzufügen"
       },
       "approval": {
         "question": "Wie werden eingehende Buchungen bestätigt?",
@@ -511,7 +515,19 @@
         "tooltip": "ID kopieren"
       },
       "untitled": "Unbenannt",
+      "id": "ID: {id}",
       "unsavedChanges": "Ungespeicherte Änderungen",
+      "tabs": {
+        "general": "Allgemein",
+        "pricing": "Preise & Kapazität",
+        "relatedBookables": "Abhängigkeiten",
+        "permissions": "Berechtigungen",
+        "additional": "Sonstiges"
+      },
+      "nav": {
+        "tabs": "Bereiche des Buchungsobjekts",
+        "sections": "Unterbereiche"
+      },
       "expertMode": {
         "label": "Experten-Modus",
         "simpleLabel": "Einfach-Modus"
@@ -538,6 +554,210 @@
         "buffer": "Puffer zwischen Buchungen",
         "openingHours": "Öffnungszeiten",
         "specialOpeningHours": "Sonderöffnungszeiten"
+      },
+      "externalProvider": {
+        "recommendation": "Empfehlung: Externe Datenquellen aktivieren",
+        "recommendation-text": "Sie nutzen Fahrradboxen über <strong>ParkraumService</strong>. Buchungen können auch direkt über ParkraumService erfolgen und werden in diesem System nicht automatisch erfasst. Um Inkonsistenzen und Fehler bei Doppelbuchungen zu vermeiden, empfehlen wir dringend, die folgenden externen Datenquellen zu aktivieren:",
+        "apply-recommended": "Empfohlene Einstellungen übernehmen",
+        "activate-missing": "Fehlende Quellen aktivieren",
+        "dismiss": "Hinweis ausblenden",
+        "title": "{name} (ParkraumService)",
+        "switch": "Externe Preissteuerung aktivieren",
+        "switch-hint": "Daten von ParkraumService beziehen statt manuell zu pflegen",
+        "handles-hint": "Wählen Sie aus, welche Informationen extern bezogen werden sollen. Nicht ausgewählte Bereiche können weiterhin manuell gepflegt werden.",
+        "pricing": "Preise",
+        "pricing-hint": "Preise vom Anbieter beziehen",
+        "availability-hint": "Verfügbarkeit extern prüfen",
+        "maxAmount-hint": "Anzahl vom Anbieter beziehen",
+        "why": {
+          "availability": "Verhindert falsche Anzeigen von verfügbaren Zeiten",
+          "maxAmount": "Korrekte Kapazität sicherstellen",
+          "pricing": "Einheitliche Preisgestaltung"
+        }
+      },
+      "list": {
+        "up": "Nach oben verschieben",
+        "down": "Nach unten verschieben",
+        "empty": "Es sind keine Einträge vorhanden.",
+        "add-placeholder": "Ein weiteres Buchungsobjekt hinzufügen",
+        "mandatory": "verpflichtend"
+      },
+      "customFields": {
+        "values-hint": "Werte eintragen, die im Katalog oder intern angezeigt werden.",
+        "checkout-hint": "Felder für den Buchungsprozess füllen Buchende bei der Buchung aus.",
+        "empty": "Noch keine Felder zum Ausfüllen",
+        "empty-hint": "Felder kommen von Instanz oder Mandant.",
+        "empty-hint-define": "Felder kommen von Instanz oder Mandant – oder Sie legen sie unter „{definitions}“ an.",
+        "define": "Feld definieren",
+        "definitions-hint": "Zusätzliche Felder nur für dieses Buchungsobjekt. Geerbte Felder sind schreibgeschützt. Nach dem Speichern erscheinen neue Felder unter „{values}“.",
+        "own-fields": "Eigene Felder auf Buchungsobjekt-Ebene",
+        "choose": "Auswählen…",
+        "yes": "Ja",
+        "no": "Nein",
+        "contexts": {
+          "checkout": "Buchungsprozess",
+          "catalog": "Katalog",
+          "none": "Intern"
+        },
+        "origins": {
+          "instance": "Instanz",
+          "tenant": "Mandant",
+          "bookable": "Buchungsobjekt"
+        },
+        "origin-hints": {
+          "instance": "Definiert auf Instanz-Ebene – gilt für alle Mandanten und Buchungsobjekte.",
+          "tenant": "Definiert auf Mandanten-Ebene – gilt für alle Buchungsobjekte dieses Mandanten.",
+          "bookable": "Definiert speziell für dieses Buchungsobjekt."
+        }
+      },
+      "priceTiers": {
+        "title": "Preis-Kategorien",
+        "add": "Kategorie hinzufügen",
+        "info": "<strong>Tipp:</strong> Die Kategorien werden in der angegebenen Reihenfolge geprüft. Die erste passende Kategorie wird angewendet.",
+        "price": "{price} €",
+        "weekdays-count": "{count} Wochentag | {count} Wochentage",
+        "holidays-count": "{count} Feiertag | {count} Feiertage",
+        "range": "Gültigkeitsbereich",
+        "start": "Gültig ab",
+        "end": "Gültig bis",
+        "restrictions": "Zeitliche Einschränkungen",
+        "weekdays": "Wochentage",
+        "holidays": "Feiertage",
+        "state": "Bundesland",
+        "more": "(+{count} weitere)",
+        "empty": "Noch keine Preis-Kategorien definiert",
+        "empty-hint": "Fügen Sie Kategorien hinzu, um unterschiedliche Preise zu definieren",
+        "add-first": "Erste Kategorie hinzufügen",
+        "units": {
+          "per-hour": "Std.",
+          "per-day": "Tage",
+          "per-item": "Stück",
+          "per-square-meter": "m²"
+        },
+        "ranges": {
+          "both": "{start} – {end} {unit}",
+          "start": "ab {start} {unit}",
+          "end": "bis {end} {unit}",
+          "none": "Keine Begrenzung"
+        },
+        "states": {
+          "DE": "Bundesweit",
+          "BB": "Brandenburg",
+          "BE": "Berlin",
+          "BW": "Baden-Württemberg",
+          "BY": "Bayern",
+          "HB": "Hansestadt Bremen",
+          "HE": "Hessen",
+          "HH": "Hansestadt Hamburg",
+          "MV": "Mecklenburg-Vorpommern",
+          "NI": "Niedersachsen",
+          "NW": "Nordrhein-Westfalen",
+          "RP": "Rheinland-Pfalz",
+          "SH": "Schleswig-Holstein",
+          "SL": "Saarland",
+          "SN": "Sachsen",
+          "ST": "Sachsen-Anhalt",
+          "TH": "Thüringen"
+        }
+      },
+      "weekdays-short": {
+        "1": "Mo",
+        "2": "Di",
+        "3": "Mi",
+        "4": "Do",
+        "5": "Fr",
+        "6": "Sa",
+        "0": "So"
+      },
+      "openingHours": {
+        "switch": "Öffnungszeiten aktivieren",
+        "switch-hint": "Wiederkehrende Öffnungszeiten für Wochentage",
+        "info": "<strong>Wichtig:</strong> Nur Wochentage mit definierten Öffnungszeiten sind buchbar. Alle anderen Tage gelten als geschlossen.",
+        "empty": "Noch keine Öffnungszeiten definiert",
+        "empty-hint": "Fügen Sie wiederkehrende Öffnungszeiten für Wochentage hinzu",
+        "add-first": "Erste Öffnungszeit hinzufügen",
+        "unavailable": "Öffnungszeiten nicht verfügbar",
+        "unavailable-hint": "Öffnungszeiten können nur für die Buchungsarten {schedule} und {timePeriod} definiert werden."
+      },
+      "specialOpeningHours": {
+        "switch": "Sonderöffnungszeiten aktivieren",
+        "switch-hint": "Abweichende Öffnungszeiten für einzelne Daten",
+        "info": "<strong>Tipp:</strong> Um einen Tag als geschlossen zu markieren, wählen Sie die gleiche Start- und Endzeit <span class=\"grey--text\">(z. B. 00:00 – 00:00)</span>",
+        "empty": "Noch keine Sonderöffnungszeiten definiert",
+        "empty-hint": "Fügen Sie abweichende Öffnungszeiten für einzelne Daten hinzu",
+        "add-first": "Erste Sonderöffnungszeit hinzufügen",
+        "no-date": "Kein Datum"
+      },
+      "leadTime": {
+        "switch": "Vorlaufzeit aktivieren",
+        "switch-hint": "Kurzfristige Buchungen verhindern (z. B. Schlüsselübergabe, Raumvorbereitung)",
+        "info": "Die Vorbereitungszeit muss vollständig innerhalb der Servicezeiten liegen – z. B. Freitag 18:00 → Montag 08:00 ist mit 2 Std. Vorbereitung nicht möglich.",
+        "preparation": "Vorbereitungszeit",
+        "equals": "Entspricht {duration}",
+        "service-hours": "Servicezeiten",
+        "service-hours-hint": "Wann die Vorbereitung stattfinden kann (unabhängig von Öffnungszeiten)",
+        "service-hours-empty": "Mindestens ein Servicezeiten-Fenster ist erforderlich.",
+        "service-hours-add": "Servicezeiten hinzufügen"
+      },
+      "buffer": {
+        "switch": "Puffer zwischen Buchungen aktivieren",
+        "switch-hint": "Mindestabstand vor und nach bestehenden Buchungen (z. B. Reinigung, Umräumen)",
+        "none": "Keiner",
+        "before": "Vor der Buchung",
+        "before-hint": "Zeit, die vor dem Terminbeginn blockiert wird",
+        "after": "Nach der Buchung",
+        "after-hint": "Zeit, die nach dem Terminende blockiert wird"
+      },
+      "common": {
+        "add": "Hinzufügen",
+        "weekdays": "Wochentag(e) *",
+        "start-time": "Startzeit *",
+        "end-time": "Endzeit *",
+        "clock": "Uhr",
+        "time-range": "{start} – {end} Uhr",
+        "no-days": "Keine Tage gewählt",
+        "no-time": "Zeit nicht gesetzt",
+        "hours": "Stunden",
+        "minutes": "Minuten",
+        "duration": "Dauer",
+        "quick-pick": "Schnellauswahl:",
+        "from": "Von *",
+        "to": "Bis *",
+        "date": "Datum *",
+        "cancel": "Abbrechen",
+        "ok": "OK",
+        "remove": "Entfernen",
+        "label-value": "{label}: {value}"
+      },
+      "weekdays": {
+        "1": "Montag",
+        "2": "Dienstag",
+        "3": "Mittwoch",
+        "4": "Donnerstag",
+        "5": "Freitag",
+        "6": "Samstag",
+        "0": "Sonntag"
+      },
+      "bookingDuration": {
+        "min": "Minimale Buchungsdauer",
+        "max": "Maximale Buchungsdauer"
+      },
+      "timePeriods": {
+        "empty": "Noch keine Zeitfenster definiert",
+        "empty-hint": "Fügen Sie Zeitfenster hinzu, um feste Buchungszeiten zu definieren",
+        "add-first": "Erstes Zeitfenster hinzufügen"
+      },
+      "blockPeriods": {
+        "info": "Öffnungszeiten und min./max. Buchungsdauer gelten bei Zeiträumen nicht. Zeiträume können über den Wochenwechsel hinausgehen (z. B. Fr 18:00 → Mo 08:00).",
+        "untitled": "Ohne Bezeichnung",
+        "when": "{days}, {start} – {end} Uhr",
+        "label": "Bezeichnung *",
+        "start-weekday": "Start-Wochentag *",
+        "end-weekday": "End-Wochentag *",
+        "end-weekday-hint": "Ende in derselben Woche, wenn der Tag nach dem Start liegt; sonst in der Folgewoche",
+        "empty": "Noch keine Zeiträume definiert",
+        "empty-hint": "Fügen Sie Zeiträume hinzu, um wiederkehrende Buchungsfenster zu definieren",
+        "add-first": "Ersten Zeitraum hinzufügen"
       }
     },
     "areas": {
@@ -597,7 +817,6 @@
         "title": "Anhänge",
         "hint": "Was Buchende bestätigen müssen und welche Unterlagen sie bekommen.",
         "summary": "{count} Anhang | {count} Anhänge",
-        "add": "Hinzufügen",
         "publicOnlyReason": "Dieses Buchungsobjekt ist öffentlich sichtbar — interne Medien können hier nicht gespeichert werden."
       },
       "customFields": {
@@ -2650,8 +2869,7 @@
         "point": "Zugangspunkt",
         "type": "Typ",
         "provider": "Anbieter",
-        "grants": "Was die Buchung bekommt",
-        "remove": "Entfernen"
+        "grants": "Was die Buchung bekommt"
       },
       "grants": {
         "door": "Geteilter Zugang im Buchungszeitraum",
