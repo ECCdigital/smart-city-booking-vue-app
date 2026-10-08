@@ -2,8 +2,8 @@
 import {
   formatPreparationDuration,
   hasBufferConfig,
-  normalizeLeadTimeFields,
 } from "@/utils/bookingLeadTime";
+import bookableEditing from "@/mixins/bookableEditing";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 const WEEKDAYS = [
@@ -31,9 +31,8 @@ const BUFFER_PRESET_MINUTES = [
 
 export default {
   name: "BookableEditLeadTime",
-  mixins: [bookableExpertMode],
+  mixins: [bookableEditing, bookableExpertMode],
   props: {
-    bookable: { type: Object, required: true },
     showBuffer: { type: Boolean, default: true },
   },
   data() {
@@ -48,114 +47,84 @@ export default {
     };
   },
   computed: {
-    model: {
-      get() {
-        return this.bookable;
-      },
-      set(val) {
-        this.$emit("update:bookable", { ...val });
-      },
-    },
     preparationDurationLabel() {
-      return formatPreparationDuration(this.model.preparationLeadTimeMinutes);
-    },
-    hasServiceHours() {
-      return (
-        Array.isArray(this.model.serviceHours) &&
-        this.model.serviceHours.length > 0
+      return formatPreparationDuration(
+        this.bookable.preparationLeadTimeMinutes
       );
     },
+    serviceHours() {
+      return Array.isArray(this.bookable.serviceHours)
+        ? this.bookable.serviceHours
+        : [];
+    },
+    hasServiceHours() {
+      return this.serviceHours.length > 0;
+    },
     leadTimeEnabled() {
-      return !!this.model.isLeadTimeRelated;
+      return !!this.bookable.isLeadTimeRelated;
     },
     bufferSwitchEnabled() {
-      return !!this.model.isBufferRelated;
-    },
-  },
-  created() {
-    this.applyLeadTimeStateFromModel();
-    this.timeStartMenu = this.model.serviceHours.map(() => false);
-    this.timeEndMenu = this.model.serviceHours.map(() => false);
-  },
-  watch: {
-    bookable(newBookable, oldBookable) {
-      if (newBookable !== oldBookable) {
-        this.applyLeadTimeStateFromModel();
-        this.syncTimeMenus();
-      }
+      return !!this.bookable.isBufferRelated;
     },
   },
   methods: {
-    applyLeadTimeStateFromModel() {
-      normalizeLeadTimeFields(this.model);
-      this.$set(this.model, "isLeadTimeRelated", this.model.isLeadTimeRelated);
-      this.$set(this.model, "isBufferRelated", this.model.isBufferRelated);
-    },
-    syncTimeMenus() {
-      const length = this.model.serviceHours?.length || 0;
-      if (
-        this.timeStartMenu.length !== length ||
-        this.timeEndMenu.length !== length
-      ) {
-        this.timeStartMenu = Array.from({ length }, () => false);
-        this.timeEndMenu = Array.from({ length }, () => false);
-      }
-    },
     setLeadTimeEnabled(enabled) {
-      const wasEnabled = this.leadTimeEnabled;
-      this.$set(this.model, "isLeadTimeRelated", enabled);
-      if (enabled) {
-        const minutes = Number(this.model.preparationLeadTimeMinutes);
-        if (!wasEnabled && (!Number.isFinite(minutes) || minutes <= 0)) {
-          this.model.preparationLeadTimeMinutes = 120;
-        }
-        if (!Array.isArray(this.model.serviceHours)) {
-          this.$set(this.model, "serviceHours", []);
-        }
-        if (this.model.serviceHours.length === 0) {
-          this.addServiceHours();
-        }
-      } else {
-        this.model.preparationLeadTimeMinutes = 0;
+      if (!enabled) {
+        this.patch({ isLeadTimeRelated: false, preparationLeadTimeMinutes: 0 });
+        return;
       }
-      this.emitUpdate();
+      const changes = { isLeadTimeRelated: true };
+      const minutes = Number(this.bookable.preparationLeadTimeMinutes);
+      if (
+        !this.leadTimeEnabled &&
+        (!Number.isFinite(minutes) || minutes <= 0)
+      ) {
+        changes.preparationLeadTimeMinutes = 120;
+      }
+      if (!this.hasServiceHours) {
+        changes.serviceHours = [this.newServiceHours()];
+        this.expandedItems.push(0);
+      }
+      this.patch(changes);
     },
     setBufferEnabled(enabled) {
-      const wasEnabled = this.bufferSwitchEnabled;
-      this.$set(this.model, "isBufferRelated", enabled);
-      if (enabled) {
-        if (!wasEnabled && !hasBufferConfig(this.model)) {
-          this.model.bufferTimeAfterMinutes = 30;
-        }
-      } else {
-        this.model.bufferTimeBeforeMinutes = null;
-        this.model.bufferTimeAfterMinutes = null;
+      if (!enabled) {
+        this.patch({
+          isBufferRelated: false,
+          bufferTimeBeforeMinutes: null,
+          bufferTimeAfterMinutes: null,
+        });
+        return;
       }
-      this.emitUpdate();
+      const changes = { isBufferRelated: true };
+      if (!this.bufferSwitchEnabled && !hasBufferConfig(this.bookable)) {
+        changes.bufferTimeAfterMinutes = 30;
+      }
+      this.patch(changes);
     },
-    emitUpdate() {
-      this.$emit("update:bookable", { ...this.model });
+    setPreparationMinutes(value) {
+      const minutes = parseFloat(value);
+      this.patch({
+        preparationLeadTimeMinutes: Number.isNaN(minutes) ? value : minutes,
+      });
     },
     applyPreset(minutes) {
-      this.model.preparationLeadTimeMinutes = minutes;
-      this.emitUpdate();
+      this.patch({ preparationLeadTimeMinutes: minutes });
     },
     displayBufferMinutes(value) {
       return value == null || value === "" ? "" : value;
     },
     setBufferMinutes(field, value) {
-      if (value === "" || value == null) {
-        this.model[field] = null;
-      } else {
-        const minutes = Number(value);
-        this.model[field] =
-          Number.isFinite(minutes) && minutes > 0 ? Math.floor(minutes) : null;
+      let minutes = null;
+      if (value !== "" && value != null) {
+        const number = Number(value);
+        minutes =
+          Number.isFinite(number) && number > 0 ? Math.floor(number) : null;
       }
-      this.emitUpdate();
+      this.patch({ [field]: minutes });
     },
     applyBufferPreset(field, minutes) {
-      this.model[field] = minutes > 0 ? minutes : null;
-      this.emitUpdate();
+      this.patch({ [field]: minutes > 0 ? minutes : null });
     },
     isBufferMinutesValid(value) {
       if (value == null || value === "") {
@@ -167,23 +136,36 @@ export default {
       );
     },
     bufferPresetActive(field, minutes) {
-      const current = Number(this.model[field]) || 0;
+      const current = Number(this.bookable[field]) || 0;
       return current === minutes;
     },
-    addServiceHours() {
-      const index = this.model.serviceHours.length;
-      this.timeStartMenu.push(false);
-      this.timeEndMenu.push(false);
-      this.model.serviceHours.push({
+    newServiceHours() {
+      return {
         weekdays: [1, 2, 3, 4, 5],
         startTime: "08:00",
         endTime: "18:00",
+      };
+    },
+    updateServiceHours(index, changes) {
+      this.patch({
+        serviceHours: this.serviceHours.map((entry, i) =>
+          i === index ? { ...entry, ...changes } : entry
+        ),
+      });
+    },
+    addServiceHours() {
+      const index = this.serviceHours.length;
+      this.timeStartMenu.push(false);
+      this.timeEndMenu.push(false);
+      this.patch({
+        serviceHours: [...this.serviceHours, this.newServiceHours()],
       });
       this.expandedItems.push(index);
-      this.emitUpdate();
     },
     removeServiceHours(index) {
-      this.model.serviceHours.splice(index, 1);
+      this.patch({
+        serviceHours: this.serviceHours.filter((_, i) => i !== index),
+      });
       this.timeStartMenu.splice(index, 1);
       this.timeEndMenu.splice(index, 1);
       this.expandedItems = this.expandedItems
@@ -191,22 +173,16 @@ export default {
         .map((expandedIndex) =>
           expandedIndex > index ? expandedIndex - 1 : expandedIndex
         );
-      this.emitUpdate();
     },
     removeWeekdays(index, weekdayId) {
-      const weekdays = this.model.serviceHours[index].weekdays;
-      weekdays.splice(weekdays.indexOf(weekdayId), 1);
-      this.emitUpdate();
+      this.updateServiceHours(index, {
+        weekdays: this.serviceHours[index].weekdays.filter(
+          (id) => id !== weekdayId
+        ),
+      });
     },
-    setStartTime(index, time) {
-      this.model.serviceHours[index].startTime = time;
-      this.timeStartMenu[index] = false;
-      this.emitUpdate();
-    },
-    setEndTime(index, time) {
-      this.model.serviceHours[index].endTime = time;
-      this.timeEndMenu[index] = false;
-      this.emitUpdate();
+    closeMenu(menus, index) {
+      this.$set(menus, index, false);
     },
     getWeekdayName(id) {
       const day = this.weekdays.find((entry) => entry.id === Number(id));
@@ -242,25 +218,25 @@ export default {
       }
 
       const leadTimeValid =
-        !this.model.isLeadTimeRelated ||
+        !this.bookable.isLeadTimeRelated ||
         (this.isPreparationMinutesValid() &&
-          this.model.serviceHours.length > 0 &&
-          this.model.serviceHours.every(
+          this.serviceHours.length > 0 &&
+          this.serviceHours.every(
             (entry) =>
               entry.weekdays?.length > 0 && entry.startTime && entry.endTime
           ));
 
       const bufferValid =
         !this.showBuffer ||
-        !this.model.isBufferRelated ||
-        (this.isBufferMinutesValid(this.model.bufferTimeBeforeMinutes) &&
-          this.isBufferMinutesValid(this.model.bufferTimeAfterMinutes) &&
-          hasBufferConfig(this.model));
+        !this.bookable.isBufferRelated ||
+        (this.isBufferMinutesValid(this.bookable.bufferTimeBeforeMinutes) &&
+          this.isBufferMinutesValid(this.bookable.bufferTimeAfterMinutes) &&
+          hasBufferConfig(this.bookable));
 
       return leadTimeValid && bufferValid;
     },
     isPreparationMinutesValid() {
-      const minutes = Number(this.model.preparationLeadTimeMinutes);
+      const minutes = Number(this.bookable.preparationLeadTimeMinutes);
       return !Number.isNaN(minutes) && minutes >= 0;
     },
     resetValidation() {
@@ -285,6 +261,7 @@ export default {
 
       <v-card-text class="pa-4">
         <v-switch
+          data-test="lead-time-switch"
           :input-value="leadTimeEnabled"
           color="primary"
           hide-details
@@ -325,7 +302,7 @@ export default {
                 type="number"
                 min="0"
                 suffix="Minuten"
-                v-model.number="model.preparationLeadTimeMinutes"
+                :value="bookable.preparationLeadTimeMinutes"
                 :hint="
                   preparationDurationLabel
                     ? `Entspricht ${preparationDurationLabel}`
@@ -341,7 +318,7 @@ export default {
                       Number(v) >= 0) ||
                     'Gültige Dauer erforderlich',
                 ]"
-                @input="emitUpdate"
+                @input="setPreparationMinutes"
               />
             </v-col>
             <v-col
@@ -356,14 +333,15 @@ export default {
               <v-chip
                 v-for="preset in presets"
                 :key="preset.value"
+                :data-test="`lead-time-preset-${preset.value}`"
                 small
                 class="mr-1 mb-1"
                 :color="
-                  model.preparationLeadTimeMinutes === preset.value
+                  bookable.preparationLeadTimeMinutes === preset.value
                     ? 'primary'
                     : undefined
                 "
-                :outlined="model.preparationLeadTimeMinutes !== preset.value"
+                :outlined="bookable.preparationLeadTimeMinutes !== preset.value"
                 @click="applyPreset(preset.value)"
               >
                 {{ preset.label }}
@@ -387,7 +365,7 @@ export default {
 
           <div v-if="hasServiceHours">
             <v-list two-line class="py-0">
-              <template v-for="(entry, index) in model.serviceHours">
+              <template v-for="(entry, index) in serviceHours">
                 <v-list-item
                   :key="`service-hours-${index}`"
                   class="service-hours-item elevation-1 mb-3 rounded"
@@ -420,7 +398,12 @@ export default {
 
                   <v-list-item-action>
                     <div class="d-flex align-center">
-                      <v-btn icon small @click.stop="removeServiceHours(index)">
+                      <v-btn
+                        icon
+                        small
+                        data-test="service-hours-remove"
+                        @click.stop="removeServiceHours(index)"
+                      >
                         <v-icon small>mdi-delete-outline</v-icon>
                       </v-btn>
                       <v-btn icon small>
@@ -453,7 +436,7 @@ export default {
                           :items="weekdays"
                           item-value="id"
                           item-text="name"
-                          v-model="entry.weekdays"
+                          :value="entry.weekdays"
                           multiple
                           chips
                           hide-selected
@@ -463,7 +446,9 @@ export default {
                               (v && v.length > 0) ||
                               'Mindestens ein Wochentag erforderlich',
                           ]"
-                          @change="emitUpdate"
+                          @change="
+                            updateServiceHours(index, { weekdays: $event })
+                          "
                         >
                           <template
                             v-slot:selection="{ attrs, item, select, selected }"
@@ -500,7 +485,7 @@ export default {
                               dense
                               background-color="accent"
                               filled
-                              v-model="entry.startTime"
+                              :value="entry.startTime"
                               label="Startzeit *"
                               readonly
                               suffix="Uhr"
@@ -514,10 +499,13 @@ export default {
                           </template>
                           <v-time-picker
                             v-if="timeStartMenu[index]"
-                            v-model="entry.startTime"
+                            :value="entry.startTime"
                             full-width
                             format="24hr"
-                            @click:minute="setStartTime(index, entry.startTime)"
+                            @input="
+                              updateServiceHours(index, { startTime: $event })
+                            "
+                            @click:minute="closeMenu(timeStartMenu, index)"
                           />
                         </v-menu>
                       </v-col>
@@ -537,7 +525,7 @@ export default {
                               dense
                               background-color="accent"
                               filled
-                              v-model="entry.endTime"
+                              :value="entry.endTime"
                               label="Endzeit *"
                               readonly
                               suffix="Uhr"
@@ -551,10 +539,13 @@ export default {
                           </template>
                           <v-time-picker
                             v-if="timeEndMenu[index]"
-                            v-model="entry.endTime"
+                            :value="entry.endTime"
                             full-width
                             format="24hr"
-                            @click:minute="setEndTime(index, entry.endTime)"
+                            @input="
+                              updateServiceHours(index, { endTime: $event })
+                            "
+                            @click:minute="closeMenu(timeEndMenu, index)"
                           />
                         </v-menu>
                       </v-col>
@@ -592,6 +583,7 @@ export default {
 
       <v-card-text class="pa-4">
         <v-switch
+          data-test="buffer-switch"
           :input-value="bufferSwitchEnabled"
           color="primary"
           hide-details
@@ -628,7 +620,8 @@ export default {
                 type="number"
                 min="0"
                 suffix="Minuten"
-                :value="displayBufferMinutes(model.bufferTimeBeforeMinutes)"
+                :value="displayBufferMinutes(bookable.bufferTimeBeforeMinutes)"
+                data-test="buffer-before"
                 hide-details="auto"
                 :rules="[
                   (v) =>
@@ -676,7 +669,8 @@ export default {
                 type="number"
                 min="0"
                 suffix="Minuten"
-                :value="displayBufferMinutes(model.bufferTimeAfterMinutes)"
+                :value="displayBufferMinutes(bookable.bufferTimeAfterMinutes)"
+                data-test="buffer-after"
                 hide-details="auto"
                 :rules="[
                   (v) =>
