@@ -324,6 +324,8 @@ import _ from "lodash";
 import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.vue";
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
+// PROTOTYPE #342: the booking-mode variants stand in for the tab „Buchungstyp“.
+import BookingModePrototype from "@/components/Bookable/Prototype342/BookingModePrototype.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
 import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
@@ -379,6 +381,7 @@ export default {
     BookableEditGeneral,
     BookableEditPrice,
     BookableEditBookingType,
+    BookingModePrototype,
     BookableEditOpeningHours,
     BookableEditAccessLocks,
     BookableEditPermissions,
@@ -429,7 +432,7 @@ export default {
           key: "bookingType",
           label: "Buchungstyp",
           icon: "mdi-calendar-clock",
-          comp: "BookableEditBookingType",
+          comp: "BookingModePrototype",
         },
         {
           key: "openingHours",

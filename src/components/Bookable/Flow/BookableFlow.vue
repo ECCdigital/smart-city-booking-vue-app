@@ -217,6 +217,8 @@
 <script>
 import BookableFlowIdentity from "@/components/Bookable/Flow/BookableFlowIdentity.vue";
 import BookableFlowAvailability from "@/components/Bookable/Flow/BookableFlowAvailability.vue";
+// PROTOTYPE #342: the booking-mode variants stand in for the step „Verfügbarkeit“.
+import BookingModePrototype from "@/components/Bookable/Prototype342/BookingModePrototype.vue";
 import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
 import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vue";
 import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
@@ -237,7 +239,7 @@ import {
 
 const STEP_COMPONENTS = {
   identity: "BookableFlowIdentity",
-  availability: "BookableFlowAvailability",
+  availability: "BookingModePrototype",
   price: "BookableFlowPrice",
   amount: "BookableFlowAmount",
   permission: "BookableFlowPermission",
@@ -278,6 +280,7 @@ export default {
   components: {
     BookableFlowIdentity,
     BookableFlowAvailability,
+    BookingModePrototype,
     BookableFlowPrice,
     BookableFlowAmount,
     BookableFlowPermission,
