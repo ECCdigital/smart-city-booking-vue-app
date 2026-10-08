@@ -4,6 +4,7 @@ import i18n from "@/language/index";
 import {
   accessOf,
   applyAccess,
+  applyPermitted,
   applyBookingMode,
   applyPriceBasis,
   applyPriceMode,
@@ -304,6 +305,49 @@ describe("access", () => {
     );
     expect(selected.requiresLogin).toBe(true);
     expect(selected.permittedRoles).toEqual(["r1"]);
+  });
+
+  it("keeps the account but drops the lists for „Alle mit Konto“", () => {
+    const signedIn = applyAccess(
+      bookable({ permittedRoles: ["r1"], permittedUsers: ["u1"] }),
+      "signedIn"
+    );
+
+    expect(signedIn).toMatchObject({
+      requiresLogin: true,
+      permittedRoles: [],
+      permittedUsers: [],
+    });
+  });
+
+  it("reads lists without the login requirement as „Nur ausgewählte“", () => {
+    expect(
+      accessOf(bookable({ requiresLogin: false, permittedUsers: ["u1"] }))
+    ).toBe("selected");
+  });
+});
+
+describe("permitted roles and people", () => {
+  it("sets the login requirement with a role or person named", () => {
+    const named = applyPermitted(bookable({ requiresLogin: false }), {
+      permittedRoles: ["r1"],
+    });
+
+    expect(named).toMatchObject({
+      requiresLogin: true,
+      permittedRoles: ["r1"],
+      permittedUsers: [],
+    });
+  });
+
+  it("leaves the login requirement once nobody is named any more", () => {
+    const emptied = applyPermitted(
+      bookable({ requiresLogin: true, permittedUsers: ["u1"] }),
+      { permittedUsers: [] }
+    );
+
+    expect(emptied.requiresLogin).toBe(true);
+    expect(emptied.permittedUsers).toEqual([]);
   });
 });
 
