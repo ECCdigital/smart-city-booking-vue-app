@@ -158,6 +158,7 @@
       "back": "Zurück",
       "next": "Weiter",
       "name-missing": "Ein Name fehlt noch",
+      "skip": "Überspringen",
       "save-only": "Nur speichern",
       "save-and-publish": {
         "free": "Speichern und veröffentlichen",
@@ -957,32 +958,9 @@
       "title": "Angebote bereitstellen",
       "open": "Angebote bereitstellen",
       "resume": "Einrichtung fortsetzen",
+      "first-bookable": "Erstes Buchungsobjekt anlegen",
       "exit": "Zur Verwaltung",
-      "back-to-wizard": "Zurück zur Einrichtung",
-      "return-banner": "Sie bearbeiten diese Angaben im Rahmen der geführten Einrichtung. Speichern Sie Ihre Änderungen, bevor Sie zurückkehren.",
       "load-failed": "Die Einrichtung konnte nicht geladen werden.",
-      "steps": {
-        "tenant": {
-          "label": "Mandant",
-          "hint-open": "Name und Kontakt",
-          "hint-done": "angelegt"
-        },
-        "offer": {
-          "label": "Buchungsobjekt",
-          "hint-open": "Angebot und Buchung",
-          "hint-done": "Entwurf vorhanden"
-        },
-        "setup": {
-          "label": "Einrichtung",
-          "hint-open": "optional",
-          "hint-done": "optional"
-        },
-        "overview": {
-          "label": "Übersicht",
-          "hint-open": "prüfen und abschließen",
-          "hint-done": "Wunsch gespeichert"
-        }
-      },
       "level": {
         "badge": "Aufsichtsstufe: {level}",
         "names": {
@@ -1014,107 +992,18 @@
         "cancel": "Abbrechen"
       },
       "offer": {
-        "intro": "Ein Buchungsobjekt ist, was gebucht werden kann – ein Raum, ein Gerät, ein Ticket. Typ und Titel sehen Buchende zuerst.",
-        "type": "Typ",
-        "name": "Titel",
-        "description": "Beschreibung (optional)",
-        "image": "Bild (optional)",
-        "booking": "Buchung",
-        "amount": "Wie viele davon gibt es?",
-        "amount-hint": "Die Anzahl, die gleichzeitig gebucht werden kann. Ein einzelner Raum ist 1 – auch wenn 20 Personen hineinpassen. Fünf gleiche Geräte sind 5.",
-        "confirmation": "Bestätigung",
-        "confirmation-manual": "Sie geben jede Buchung frei",
-        "confirmation-auto": "Buchungen sind sofort verbindlich",
-        "price-legend": "Preis",
-        "price-free": "Kostenlos",
-        "price-paid": "Kostenpflichtig",
-        "price": "Preis in Euro",
-        "price-type": "Abrechnung",
-        "price-types": {
-          "per-hour": "Pro Stunde",
-          "per-day": "Pro Tag",
-          "per-item": "Pro Buchung / Einheit"
-        },
-        "price-hint": "Weitere Preisregeln und Steuerangaben ergänzen Sie im Preisformular des Buchungsobjekts.",
-        "payment-hint": "Für kostenpflichtige Buchungen über die Plattform benötigen Sie einen eingerichteten Zahlungsweg. Sie können ihn im nächsten Schritt oder später einrichten.",
-        "availability-legend": "Verfügbarkeit",
-        "availability-always": "Keine zeitlichen Einschränkungen",
-        "availability-hours": "Öffnungszeiten festlegen",
-        "hours-hint": "Vereinfachtes Wochenmuster. Weitere Zeiten ergänzen Sie im Buchungsobjekt.",
-        "start-time": "Von",
-        "end-time": "Bis",
-        "unsaved-hint": "„Zur Verwaltung“ verlässt diesen Schritt. Noch nicht gespeicherte Eingaben gehen dabei verloren.",
-        "submit": "Entwurf speichern und weiter",
-        "save-failed": "Das Buchungsobjekt konnte nicht gespeichert werden.",
         "errors": {
-          "required": "Pflichtfeld",
-          "choice-required": "Bitte ausdrücklich wählen.",
-          "price-required": "Bitte einen Preis größer als 0 eingeben.",
-          "amount-invalid": "Bitte eine ganze Zahl eingeben; 0 heißt unbegrenzt.",
-          "opening-hours-invalid": "Bitte Tage und eine gültige Öffnungszeit wählen."
-        },
-        "section-offer": "Angebot",
-        "price-free-hint": "Buchungen kosten nichts. Ein Zahlungsweg ist nicht nötig.",
-        "price-paid-hint": "Sie legen einen Preis fest. Bezahlt wird über die Plattform.",
-        "availability-always-hint": "Rund um die Uhr, auch nachts und am Wochenende. Bestehende Buchungen werden berücksichtigt.",
-        "availability-hours-hint": "Nur an bestimmten Wochentagen und Uhrzeiten.",
-        "amount-less": "Eins weniger",
-        "amount-more": "Eins mehr",
-        "confirmation-hint": "Was passiert, wenn jemand dieses Objekt bucht?",
-        "confirmation-manual-hint": "Eine Buchung ist erst angefragt. Sie prüfen sie in der Verwaltung und bestätigen – vorher ist nichts verbindlich.",
-        "confirmation-auto-hint": "Wer bucht, hat gebucht. Sie werden benachrichtigt, müssen aber nichts freigeben.",
-        "amount-unlimited": "Unbegrenzt – es gibt keine feste Anzahl",
-        "amount-limit": "Feste Anzahl festlegen"
+          "required": "Pflichtfeld"
+        }
       },
       "setup": {
-        "title": "Weitere Einrichtung",
-        "intro": "Sie können diese Angaben jetzt ergänzen oder später in der Verwaltung bearbeiten.",
         "legal": "Rechtstexte",
         "legal-hint": "Optional. Fehlende Rechtstexte erzeugen keinen offenen Punkt im Bereitschafts-Check.",
         "legal-action": "Rechtstexte bearbeiten",
         "payment": "Zahlung",
         "payment-hint": "Für kostenpflichtige Plattform-Buchungen erforderlich. Die Einrichtung kann später erfolgen.",
         "payment-not-required": "Für das kostenlose Angebot ist kein Zahlungsweg erforderlich.",
-        "payment-action": "Zahlung einrichten",
-        "defaults": "Mail- und PDF-Vorlagen sowie Erstattungsregeln verwenden die bestehenden Vorgaben. Sie sind in der Verwaltung änderbar.",
-        "continue": "Zur Übersicht"
-      },
-      "overview": {
-        "summary": {
-          "offer": "Buchungsobjekt",
-          "price": "Preis",
-          "confirmation": "Bestätigung",
-          "availability": "Verfügbarkeit",
-          "amount": "Anzahl",
-          "unlimited": "Unbegrenzt"
-        },
-        "supplement": "Bei Bedarf ergänzen",
-        "edit-offer": "Buchungsobjekt bearbeiten",
-        "complete-failed": "Der Abschluss konnte nicht gespeichert werden.",
-        "action": {
-          "free": "Veröffentlichen",
-          "supervised": "Zur Prüfung einreichen",
-          "pending": "Veröffentlichung vormerken",
-          "declined": "Veröffentlichung vormerken"
-        },
-        "done": {
-          "free": {
-            "title": "Veröffentlicht",
-            "text": ""
-          },
-          "supervised": {
-            "title": "Zur Prüfung eingereicht",
-            "text": "Ihr Angebot wartet auf Prüfung. Bis zur Freigabe ist es öffentlich nicht sichtbar. Sie können es in der Verwaltung weiter bearbeiten."
-          },
-          "pending": {
-            "title": "Veröffentlichung vorgemerkt",
-            "text": "Ihr Veröffentlichungswunsch ist vorgemerkt. Der Mandant wartet auf die Freigabe durch den Betreiber; Sie können die Einrichtung fortsetzen."
-          },
-          "declined": {
-            "title": "Veröffentlichung vorgemerkt",
-            "text": "Der Veröffentlichungswunsch ist vorgemerkt. Der Mandant ist abgewiesen; solange das so bleibt, wird nichts veröffentlicht."
-          }
-        }
+        "payment-action": "Zahlung einrichten"
       },
       "verification": {
         "resend": "Bestätigungs-E-Mail erneut senden",
@@ -1132,16 +1021,6 @@
         "field": "Bitte prüfen Sie Ihre Angaben.",
         "mail-invalid": "Muss gültige E-Mail-Adresse sein.",
         "not-found": "Der angelegte Mandant konnte nicht geladen werden. Sie finden ihn unter „Meine Mandanten“."
-      },
-      "back": "Zurück",
-      "path": {
-        "count": "Schritt {index} von {total}"
-      },
-      "panel": {
-        "title": "Ihre Einrichtung",
-        "pending": "Schritt {index} – noch nicht angelegt.",
-        "supervision": "Aufsicht",
-        "note": "Sie können jederzeit unterbrechen – gespeicherte Angaben bleiben erhalten. „Einrichtung fortsetzen“ unter „Meine Mandanten“ führt hierher zurück."
       }
     },
     "list": {

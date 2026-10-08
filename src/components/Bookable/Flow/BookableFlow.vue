@@ -11,6 +11,14 @@
     />
 
     <template v-else>
+      <!-- The tenant's first bookable, right after its creation: the level
+           it started at stays in view (free shows none). -->
+      <OnboardingSupervisionNotice
+        v-if="onboarding"
+        :level="level"
+        class="bookable-flow__notice"
+      />
+
       <nav
         class="bookable-flow__progress"
         :aria-label="$t('bookable.flow.progress')"
@@ -95,6 +103,15 @@
           <v-icon left small>mdi-chevron-left</v-icon>
           {{ $t("bookable.flow.back") }}
         </v-btn>
+        <v-btn
+          v-if="onboarding"
+          text
+          color="primary"
+          data-test="flow-skip"
+          @click="$emit('skip')"
+        >
+          {{ $t("bookable.flow.skip") }}
+        </v-btn>
         <div class="flow-footer__right">
           <span
             v-if="!named"
@@ -153,6 +170,7 @@ import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vu
 import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
 import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
 import BookableFlowDone from "@/components/Bookable/Flow/BookableFlowDone.vue";
+import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
 import { FLOW_STEPS, hasName, publishVariant } from "@/utils/bookableFlow";
 
 const STEP_COMPONENTS = {
@@ -173,6 +191,7 @@ const STEP_COMPONENTS = {
  * editor answers with the outcome the confirmation shows.
  *
  * The steps can be visited in any order once the bookable has a name.
+ * Right after a tenant's creation the flow may be skipped (`skip`).
  */
 export default {
   name: "BookableFlow",
@@ -184,10 +203,13 @@ export default {
     BookableFlowPermission,
     BookableFlowApproval,
     BookableFlowDone,
+    OnboardingSupervisionNotice,
   },
   props: {
     bookable: { type: Object, required: true },
     isNew: { type: Boolean, default: false },
+    /** The first bookable of a tenant just created: it may be skipped. */
+    onboarding: { type: Boolean, default: false },
     level: { type: String, default: null },
     inProgress: { type: Boolean, default: false },
     saveFailed: { type: Boolean, default: false },
@@ -254,6 +276,10 @@ export default {
   max-width: 720px;
   margin: 0 auto;
   padding-bottom: var(--scb-space-6);
+}
+
+.bookable-flow__notice {
+  margin-bottom: var(--scb-space-4);
 }
 
 .bookable-flow__progress {

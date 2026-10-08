@@ -113,15 +113,15 @@
             </div>
             <div class="booking-row__aside">
               <v-btn
-                v-if="offersSetup(tenant.id)"
+                v-if="offersFirstBookable(tenant.id)"
                 text
                 small
                 color="primary"
                 class="tenant-home__resume"
-                data-test="resume-onboarding"
-                @click.stop="resumeOnboarding(tenant.id)"
+                data-test="first-bookable"
+                @click.stop="openFirstBookable(tenant.id)"
               >
-                {{ $t("tenant.onboarding.resume") }}
+                {{ $t("tenant.onboarding.first-bookable") }}
               </v-btn>
               <v-icon
                 v-if="!declinedMembership(tenant.id)"
@@ -258,7 +258,7 @@
                 </v-btn>
               </v-card-actions>
               <v-card-actions
-                v-if="offersSetup(tenant.id)"
+                v-if="offersFirstBookable(tenant.id)"
                 class="tenant-card__actions tenant-card__actions--secondary"
               >
                 <v-btn
@@ -267,10 +267,10 @@
                   block
                   color="primary"
                   class="tenant-home__resume"
-                  data-test="resume-onboarding"
-                  @click.stop="resumeOnboarding(tenant.id)"
+                  data-test="first-bookable"
+                  @click.stop="openFirstBookable(tenant.id)"
                 >
-                  {{ $t("tenant.onboarding.resume") }}
+                  {{ $t("tenant.onboarding.first-bookable") }}
                 </v-btn>
               </v-card-actions>
             </v-card>
@@ -326,6 +326,7 @@
 import AdminLayout from "@/layouts/Admin";
 import { mapActions, mapGetters } from "vuex";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiBookablesService from "@/services/api/ApiBookablesService";
 import PendingTenantInvitations from "@/components/Tenant/PendingTenantInvitations.vue";
 import PendingApprovals from "@/components/Tenant/PendingApprovals.vue";
 import SupervisionLevelChip from "@/components/Supervision/SupervisionLevelChip.vue";
@@ -334,6 +335,7 @@ import SearchBar from "@/components/commons/SearchBar.vue";
 import ToolbarRow from "@/components/commons/ToolbarRow.vue";
 import { isSafeInternalRedirect } from "@/utils/safeRedirect";
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
+import { firstBookableRoute } from "@/utils/tenantOnboarding";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 
 // The levels a card is marked with: the two that keep the tenant out of
@@ -377,9 +379,8 @@ export default {
       loading: false,
       search: "",
       view: readStoredView(),
-      // The ids of the own tenants whose setup is done: at least one offer
-      // with the publication wish, as the readiness check reports it.
-      setUpTenantIds: [],
+      // The ids of the own tenants known to have no bookable yet.
+      tenantIdsWithoutBookables: [],
     };
   },
   computed: {
@@ -442,7 +443,7 @@ export default {
     view(view) {
       storeView(view);
     },
-    tenants: { immediate: true, handler: "loadSetupState" },
+    tenants: { immediate: true, handler: "loadBookableState" },
   },
   methods: {
     ...mapActions({
@@ -486,39 +487,46 @@ export default {
       return TenantPermissionService.isTenantOwner(tenantId);
     },
     /**
-     * „Einrichtung fortsetzen“ is for an own tenant whose setup is not done.
-     * The wizard stores no progress; its done state is a stored publication
-     * wish, which the readiness check's "offers" criterion reports. Until
-     * that answer is in, or when it is refused, the setup stays offered.
-     * A declined tenant has no setup left, and no readiness to ask.
+     * „Erstes Buchungsobjekt anlegen“ is for an own tenant without a
+     * bookable (ECCdigital/tickets#326) - also when its onboarding skipped
+     * the guided flow. It shows once the list says so; a refused list shows
+     * nothing. A declined tenant has nothing left to create.
      */
-    offersSetup(tenantId) {
+    offersFirstBookable(tenantId) {
       return (
         this.isTenantOwner(tenantId) &&
         !this.declinedMembership(tenantId) &&
-        !this.setUpTenantIds.includes(tenantId)
+        this.tenantIdsWithoutBookables.includes(tenantId)
       );
     },
-    async loadSetupState() {
+    async loadBookableState() {
       const owned = this.tenants.filter(
         (tenant) =>
           this.isTenantOwner(tenant.id) && !this.declinedMembership(tenant.id)
       );
+      if (!owned.length) {
+        this.tenantIdsWithoutBookables = [];
+        return;
+      }
       const states = await Promise.all(
         owned.map(async (tenant) => {
           try {
-            const readiness = await ApiTenantService.getReadiness(tenant.id);
-            const offers = (readiness?.criteria || []).find(
-              (criterion) => criterion.key === "offers"
+            const response = await ApiBookablesService.getBookables(
+              tenant.id,
+              false
             );
-            return offers?.state === "fulfilled" ? tenant.id : null;
+            // Events stay in their own administration, their tickets too.
+            const own = (response?.data || []).filter(
+              (bookable) => !bookable.eventId
+            );
+            return own.length === 0 ? tenant.id : null;
           } catch (error) {
             console.error(error);
             return null;
           }
         })
       );
-      this.setUpTenantIds = states.filter(Boolean);
+      this.tenantIdsWithoutBookables = states.filter(Boolean);
     },
     isTenantMember(tenantId) {
       return TenantPermissionService.isTenantMember(tenantId);
@@ -527,11 +535,10 @@ export default {
       const level = this.supervisionLevelOf(tenantId);
       return MARKED_LEVELS.includes(level) ? level : null;
     },
-    resumeOnboarding(tenantId) {
-      this.$router.push({
-        name: "tenant-onboarding",
-        query: { tenant: tenantId },
-      });
+    /** The guided flow of a new bookable, in the tenant's administration. */
+    async openFirstBookable(tenantId) {
+      await this.select(tenantId);
+      this.$router.push(firstBookableRoute());
     },
     // The row's second line, as the instance's tenant list writes it.
     rowSubtitle(tenant) {

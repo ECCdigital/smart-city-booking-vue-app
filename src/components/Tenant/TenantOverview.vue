@@ -4,22 +4,6 @@
       <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
       <v-alert
-        v-if="onboardingReturnRoute"
-        type="info"
-        text
-        dense
-        data-test="onboarding-return"
-      >
-        <div class="d-flex align-center flex-wrap">
-          <span>{{ $t("tenant.onboarding.return-banner") }}</span>
-          <v-spacer />
-          <v-btn small color="primary" :to="onboardingReturnRoute">
-            {{ $t("tenant.onboarding.back-to-wizard") }}
-          </v-btn>
-        </div>
-      </v-alert>
-
-      <v-alert
         v-if="editsForeignTenant"
         type="info"
         text
@@ -172,7 +156,6 @@ import TenantEditBookables from "@/components/Tenant/Edit/TenantEditBookables.vu
 import CancellationTemplateDialog from "@/components/Tenant/CancellationTemplateDialog.vue";
 import { DEFAULT_PDF_BOOKING_LAYOUT } from "@/components/PDF/pdfBookingLayoutConstants.js";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
-import { onboardingReturnRoute } from "@/utils/tenantOnboarding";
 import {
   createLockAndAccessAppDefaults,
   findTenantApp,
@@ -390,9 +373,6 @@ export default {
         TenantPermissionService.isInstanceOwner() === true &&
         !TenantPermissionService.isTenantOwner(this.tenantId)
       );
-    },
-    onboardingReturnRoute() {
-      return onboardingReturnRoute(this.$route.query, this.tenant?.id);
     },
     currentComponent() {
       return this.visibleTabs[this.activeTab]?.comp || "TenantEditGeneral";

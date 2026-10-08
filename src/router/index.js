@@ -63,7 +63,7 @@ const routes = [
     name: "tenant-onboarding",
     component: lazyLoad("Management/TenantOnboarding"),
     meta: {
-      title: "Angebote bereitstellen",
+      title: "Mandant anlegen",
       requiresAuth: true,
       publicEntry: true,
       interfaceName: "dashboard",
