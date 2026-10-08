@@ -412,7 +412,7 @@ function identityRows(bookable, { eventTitlesById } = {}) {
     { label: label("type"), value: asText(getTypeText(bookable?.type)) },
     ...(bookable?.type === "ticket" ? [event] : []),
     {
-      label: label("image"),
+      label: label("images"),
       value: asWord(
         `${OVERVIEW}.values.${image ? "image-present" : "image-none"}`
       ),

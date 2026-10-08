@@ -26,6 +26,9 @@ vi.mock("@/services/api/ApiHolidaysService", () => ({
 vi.mock("@/services/api/ApiEventService", () => ({
   default: { getEvents: vi.fn().mockResolvedValue({ data: [] }) },
 }));
+vi.mock("@/services/api/ApiTagsService", () => ({
+  default: { getTags: vi.fn().mockResolvedValue({ data: [] }) },
+}));
 vi.mock("@/services/api/ApiRolesService", () => ({
   default: { getTenantRoles: vi.fn().mockResolvedValue({ data: [] }) },
 }));
@@ -190,6 +193,52 @@ describe("BookableEdit - the areas without a step", () => {
   });
 });
 
+describe("BookableEdit - Grunddaten", () => {
+  const subNav = (wrapper) =>
+    wrapper
+      .findAll(".bookable-edit-nav__section")
+      .wrappers.map((link) => link.text());
+  const cardTitles = (wrapper) =>
+    wrapper
+      .findAll(".page-content__editor .section-card .section-header")
+      .wrappers.map((title) => title.text());
+
+  it("frames the Grunddaten as one card, its two groups in the navigation", async () => {
+    const wrapper = await mountEdit({ id: "b1", tab: "general" });
+
+    expect(cardTitles(wrapper)).toEqual(["Grunddaten"]);
+    expect(subNav(wrapper)).toEqual([
+      "Das sehen Buchende im Katalog",
+      "Nur für die Verwaltung",
+    ]);
+    expect(wrapper.find("#be-section-general-catalog").exists()).toBe(true);
+    expect(wrapper.find("#be-section-general-admin").exists()).toBe(true);
+    expect(unsaved(wrapper)).toBe(false);
+  });
+
+  it("shows the same Grunddaten in the guided flow", async () => {
+    const wrapper = await mountEdit({ id: "b1", mode: "flow" });
+
+    expect(find(wrapper, "basics-catalog").exists()).toBe(true);
+    expect(find(wrapper, "basics-admin").text()).toContain(
+      "Wird beim Anlegen festgelegt."
+    );
+  });
+
+  it("keeps a title typed on the editing page in the guided flow", async () => {
+    const wrapper = await mountEdit({ id: "b1", tab: "general" });
+
+    await find(wrapper, "flow-title").find("input").setValue("Aula");
+    await find(wrapper, "flow-enter").trigger("click");
+    await flushPromises();
+
+    expect(find(wrapper, "flow-title").find("input").element.value).toBe(
+      "Aula"
+    );
+    expect(unsaved(wrapper)).toBe(true);
+  });
+});
+
 describe("BookableEdit - switching between the modes", () => {
   it("keeps what was typed on the editing page in the guided flow", async () => {
     const wrapper = await mountEdit({ id: "b1", tab: "pricing" });
@@ -264,7 +313,7 @@ describe("BookableEdit - expert options without expert mode", () => {
     const wrapper = await mountEdit({ id: "b1", tab: "relatedBookables" });
 
     expect(wrapper.find("#be-section-related-hierarchy").exists()).toBe(false);
-    expect(wrapper.find("#be-section-general-info").exists()).toBe(true);
+    expect(wrapper.find("#be-section-general-catalog").exists()).toBe(true);
   });
 
   it("hands the stored bookable to the tabs", async () => {
@@ -321,7 +370,7 @@ describe("BookableEdit - saving with issues", () => {
     await save(wrapper);
 
     expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
-    expect(wrapper.find("#be-section-general-info").exists()).toBe(true);
+    expect(wrapper.find("#be-section-general-catalog").exists()).toBe(true);
     expect(wrapper.text()).toContain(TITLE_MESSAGE);
   });
 

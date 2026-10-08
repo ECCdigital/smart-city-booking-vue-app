@@ -407,7 +407,7 @@ describe("overview", () => {
     expect(shown(blockOf("identity", bookable({ type: "room" })))).toEqual([
       ["Titel", "–"],
       ["Typ", "Raum"],
-      ["Bild", "keins"],
+      ["Bilder", "keins"],
       ["Standort", "–"],
       ["Merkmale", "–"],
     ]);
@@ -425,13 +425,13 @@ describe("overview", () => {
     expect(shown(blockOf("identity", item))).toEqual([
       ["Titel", "Großer Saal"],
       ["Typ", "Veranstaltungsort"],
-      ["Bild", "vorhanden"],
+      ["Bilder", "vorhanden"],
       ["Standort", "Markt 1, Rostock"],
       ["Merkmale", "WLAN, Beamer, Bühne, Küche +2"],
     ]);
     expect(
       shown(blockOf("identity", bookable({ imgUrl: "https://x/y.png" })))
-    ).toContainEqual(["Bild", "vorhanden"]);
+    ).toContainEqual(["Bilder", "vorhanden"]);
   });
 
   it("names the event of a ticket only, by its title or else its id", () => {
