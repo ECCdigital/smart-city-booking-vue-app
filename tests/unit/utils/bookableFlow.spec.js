@@ -21,7 +21,6 @@ import {
   timeModeOf,
   usesOpeningHours,
   warnsAboutAmount,
-  withPublication,
 } from "@/utils/bookableFlow";
 
 const category = (priceEur, overrides = {}) => ({
@@ -352,21 +351,11 @@ describe("permitted roles and people", () => {
 });
 
 describe("closing", () => {
-  it("words the action by supervision level and reads an unknown one as free", () => {
+  it("words the confirmation by supervision level and reads an unknown one as free", () => {
     expect(publishVariant("supervised")).toBe("supervised");
     expect(publishVariant("pending")).toBe("pending");
     expect(publishVariant(null)).toBe("free");
     expect(publishVariant("whatever")).toBe("free");
-  });
-
-  it("stores the publication wish only when publishing", () => {
-    const draft = bookable({ isPublic: false, isBookable: false });
-
-    expect(withPublication(draft, true)).toMatchObject({
-      isPublic: true,
-      isBookable: true,
-    });
-    expect(withPublication(draft, false)).toBe(draft);
   });
 });
 
@@ -453,6 +442,7 @@ describe("overview", () => {
       ["amount", true],
       ["permission", true],
       ["approval", true],
+      ["publication", true],
     ]);
     expect(blocks[1].rows).toEqual([]);
   });
@@ -461,7 +451,7 @@ describe("overview", () => {
     expect(shown(blockOf("identity", bookable({ type: "room" })))).toEqual([
       ["Titel", "–"],
       ["Typ", "Raum"],
-      ["Bild", "keins"],
+      ["Bilder", "keins"],
       ["Standort", "–"],
       ["Merkmale", "–"],
     ]);
@@ -479,13 +469,13 @@ describe("overview", () => {
     expect(shown(blockOf("identity", item))).toEqual([
       ["Titel", "Großer Saal"],
       ["Typ", "Veranstaltungsort"],
-      ["Bild", "vorhanden"],
+      ["Bilder", "vorhanden"],
       ["Standort", "Markt 1, Rostock"],
       ["Merkmale", "WLAN, Beamer, Bühne, Küche +2"],
     ]);
     expect(
       shown(blockOf("identity", bookable({ imgUrl: "https://x/y.png" })))
-    ).toContainEqual(["Bild", "vorhanden"]);
+    ).toContainEqual(["Bilder", "vorhanden"]);
   });
 
   it("names the event of a ticket only, by its title or else its id", () => {
@@ -636,6 +626,25 @@ describe("overview", () => {
     expect(
       shown(blockOf("approval", bookable({ autoCommitBooking: false })))
     ).toEqual([["Buchungen", "wird geprüft"]]);
+  });
+
+  it("names both switches of the publication with the field's words", () => {
+    expect(
+      shown(
+        blockOf("publication", bookable({ isBookable: true, isPublic: false }))
+      )
+    ).toEqual([
+      ["Buchbar", "ja"],
+      ["Im Katalog listen", "nein"],
+    ]);
+    expect(
+      shown(
+        blockOf("publication", bookable({ isBookable: false, isPublic: true }))
+      )
+    ).toEqual([
+      ["Buchbar", "nein"],
+      ["Im Katalog listen", "ja"],
+    ]);
   });
 
   it("names the booking type with the step's words", () => {

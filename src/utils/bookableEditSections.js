@@ -57,30 +57,19 @@ function handlesExternalPricing(bookable) {
  * expert option names it in `expertOption`.
  */
 const ALL_SECTIONS = [
+  // The two groups of the Grunddaten (BookableFlowIdentity), named as the
+  // groups themselves are.
   {
     tabKey: "general",
-    id: "general-info",
-    labelKey: "bookable.edit.sections.generalInfo",
+    id: "general-catalog",
+    labelKey: "bookable.flow.identity.catalog",
     type: "scroll",
   },
   {
     tabKey: "general",
-    id: "general-images",
-    labelKey: "bookable.edit.sections.generalImages",
+    id: "general-admin",
+    labelKey: "bookable.flow.identity.admin",
     type: "scroll",
-  },
-  {
-    tabKey: "general",
-    id: "general-booker-info",
-    labelKey: "bookable.edit.sections.generalBookerInfo",
-    type: "scroll",
-  },
-  {
-    tabKey: "general",
-    id: "general-tags",
-    labelKey: "bookable.edit.sections.generalTags",
-    type: "scroll",
-    expertOption: "tags",
   },
   {
     tabKey: "pricing",
