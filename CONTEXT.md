@@ -82,6 +82,14 @@ _Avoid_: Fehler, Validierungsfehler, Offene Punkte (those are the confirmation p
 How a bookable is booked in time, asked in both modes by up to three questions: Ohne Zeit, or for a time Freie Zeitwahl, Feste Zeitfenster, Zeiträume or Langzeit, the last as Ganze Wochen or Ganze Monate. Langzeit is only the answer that leads to the two, not a mode of its own.
 _Avoid_: Buchungstyp (Typ is Raum, Ressource or Ticket), Feste Zeiten, Wochenbuchung, Monatsbuchung, Zeitunabhängig
 
+**Anzahl** (admin: „Anzahl“):
+How many units of a bookable can be booked at the same time, asked in both modes as „Anzahl / Kapazität“: „Begrenzt“ with a whole number from 1, or „Unbegrenzt“, stored as empty. The backend reads empty and 0 alike as unlimited. A provider such as ParkraumService may report it instead.
+_Avoid_: Verfügbare Anzahl, Kapazität alone, Menge
+
+**Höchstmenge je Buchung** (admin: „Höchstmenge je Buchung“):
+How many units one booking may take at most, „Begrenzt“ from 1 or „Unbegrenzt“ (empty). It applies on top of the Anzahl, also where a provider reports the Anzahl, and is only asked where one booking could take more than one unit: unless the Anzahl is exactly 1.
+_Avoid_: Max. Anzahl, Maximalmenge, Höchstanzahl
+
 **Wer darf buchen?** (admin: „Wer darf buchen?“):
 Who may book a bookable, for every booking, also through a direct link: „Alle“ (no account), „Alle mit Konto“ or „Nur ausgewählte Rollen und Personen“ of the bookable's tenant. Naming a role or person needs an account with it; while nobody is named, every person with an account may book. It decides booking, not whether the bookable is listed (that is Veröffentlichung).
 _Avoid_: Zugang (Schließsysteme are the doors), Berechtigungen as the field's name (the tab keeps it), Anmeldepflicht, Jeder, Angemeldete Nutzer, Benutzer (say Personen), „zu sehen“
