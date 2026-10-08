@@ -1,0 +1,368 @@
+/**
+ * The guided flow of a bookable (ECCdigital/tickets#326), after the cloud
+ * variant: six steps over the same bookable the editor holds, saved once at
+ * the end. Pure: which steps there are, how each question reads from the
+ * bookable and lands on it, what the closing action is called by
+ * supervision level and which optional editor sections the confirmation
+ * links. The flow components only wire it to the page.
+ *
+ * Every answer is read from the bookable itself - the flow keeps no state of
+ * its own beyond the step - so leaving for the editor and coming back shows
+ * what the bookable holds.
+ */
+
+import { SUPERVISION_LEVELS } from "@/utils/supervision";
+import { providerHandles } from "@/utils/bookableExternalProviders";
+import {
+  getBookingMode,
+  getVisibleBookableEditSections,
+  getBookableEditSectionById,
+} from "@/utils/bookableEditSections";
+import { isBookableExpertOnlyTab } from "@/utils/bookableExpertMode";
+
+export const FLOW_STEPS = Object.freeze([
+  "identity",
+  "availability",
+  "price",
+  "amount",
+  "permission",
+  "approval",
+]);
+
+/** The bookable types a new bookable may take; events stay in their editor. */
+export const FLOW_BOOKABLE_TYPES = Object.freeze([
+  "room",
+  "event-location",
+  "resource",
+  "ticket",
+]);
+
+/** The editor route of each type - the flow is a mode of that editor. */
+export const BOOKABLE_EDIT_ROUTES = Object.freeze({
+  room: "room-edit",
+  resource: "resource-edit",
+  ticket: "ticket-edit",
+  "event-location": "location-edit",
+});
+
+export function editRouteOf(type) {
+  return BOOKABLE_EDIT_ROUTES[type] || "room-edit";
+}
+
+/** The query value that opens the editor in the guided flow. */
+export const FLOW_MODE = "flow";
+
+/** A new bookable is always created in the flow; an existing one on request. */
+export function isFlowMode({ bookableId, mode }) {
+  return !bookableId || mode === FLOW_MODE;
+}
+
+/** The first step needs a name before the rest can be reached. */
+export function hasName(bookable) {
+  return !!(bookable?.title || "").trim();
+}
+
+function externalProviderHandles(bookable, capability) {
+  return (bookable?.externalProviders || []).some((provider) =>
+    providerHandles(provider, capability)
+  );
+}
+
+export function handlesExternalAvailability(bookable) {
+  return externalProviderHandles(bookable, "availability");
+}
+
+export function handlesExternalPricing(bookable) {
+  return externalProviderHandles(bookable, "pricing");
+}
+
+// --- Verfügbarkeit ---------------------------------------------------------
+
+/**
+ * How the time is booked, as the booking type tab names it: `schedule`
+ * (Freie Zeitwahl), `timePeriod` (Feste Zeiten), `blockPeriod` (Zeiträume),
+ * `week` / `month` (Langzeit) or `independent` (ohne Zeit).
+ */
+export const bookingModeOf = getBookingMode;
+
+/** The flow's second question: the long range is one answer, weeks or months. */
+export function timeModeOf(bookable) {
+  const mode = bookingModeOf(bookable);
+  return mode === "week" || mode === "month" ? "longRange" : mode;
+}
+
+/**
+ * Sets the booking mode as the booking type tab does: one flag at a time,
+ * the long range with its unit. What belongs to another mode stays stored,
+ * as it does when the tab switches - the backend reads only the active one.
+ */
+export function applyBookingMode(bookable, mode) {
+  bookable.isScheduleRelated = mode === "schedule";
+  bookable.isTimePeriodRelated = mode === "timePeriod";
+  bookable.isBlockPeriodRelated = mode === "blockPeriod";
+  bookable.isLongRange = mode === "week" || mode === "month";
+  bookable.longRangeOptions = bookable.isLongRange ? { type: mode } : {};
+
+  if (mode === "blockPeriod") {
+    if (!Array.isArray(bookable.blockPeriods)) bookable.blockPeriods = [];
+    // A group booking is not offered for time ranges (booking type tab).
+    if (bookable.groupBooking?.enabled) bookable.groupBooking.enabled = false;
+  }
+  return bookable;
+}
+
+/**
+ * Opening hours and exceptions apply where a time is picked within a day -
+ * where the opening hours tab offers them.
+ */
+export function usesOpeningHours(bookable) {
+  return ["schedule", "timePeriod"].includes(bookingModeOf(bookable));
+}
+
+// --- Preis -----------------------------------------------------------------
+
+const toNumber = (value) =>
+  Number(typeof value === "string" ? value.replace(",", ".") : value) || 0;
+
+/** A category beyond the plain one: an interval, weekdays or holidays. */
+function isTierCategory(category) {
+  return (
+    (category?.interval &&
+      (category.interval.start != null || category.interval.end != null)) ||
+    category?.weekdays?.length > 0 ||
+    category?.holidays?.length > 0
+  );
+}
+
+/**
+ * `free` when nothing costs anything, `tiers` when the price editor would
+ * show graduated prices, `simple` otherwise - the same rule as the price
+ * tab's „Staffelpreise“ switch.
+ */
+export function priceModeOf(bookable) {
+  const categories = bookable?.priceCategories || [];
+  if (categories.length > 1 || categories.some(isTierCategory)) {
+    return "tiers";
+  }
+  return categories.some((category) => toNumber(category.priceEur) > 0)
+    ? "simple"
+    : "free";
+}
+
+export function isPaid(bookable) {
+  return (bookable?.priceCategories || []).some(
+    (category) => toNumber(category.priceEur) > 0
+  );
+}
+
+function plainCategory(priceEur, fixedPrice) {
+  return {
+    priceEur,
+    interval: { start: null, end: null },
+    fixedPrice: !!fixedPrice,
+    holidays: [],
+    weekdays: [],
+  };
+}
+
+/**
+ * The price unit the availability suggests when a price is set for the first
+ * time (cloud variant): a day for long ranges, an hour where a time is
+ * chosen, the item where none is.
+ */
+export function suggestedPriceType(bookable) {
+  const mode = bookingModeOf(bookable);
+  if (mode === "week" || mode === "month") return "per-day";
+  if (mode === "independent") return "per-item";
+  return "per-hour";
+}
+
+/**
+ * Lands the price mode on the bookable. Free keeps one category at 0 €;
+ * simple keeps the first category's amount; tiers starts from what is
+ * stored. Leaving free takes the unit the availability suggests.
+ */
+export function applyPriceMode(bookable, mode) {
+  const categories = bookable.priceCategories || [];
+  const first = categories[0] || plainCategory(0, false);
+  const wasFree = priceModeOf(bookable) === "free";
+
+  if (mode === "free") {
+    bookable.priceCategories = [plainCategory(0, false)];
+    return bookable;
+  }
+  if (wasFree) {
+    bookable.priceType = suggestedPriceType(bookable);
+  }
+  if (mode === "simple") {
+    bookable.priceCategories = [
+      plainCategory(toNumber(first.priceEur), first.fixedPrice),
+    ];
+  } else if (!categories.length) {
+    bookable.priceCategories = [plainCategory(0, false)];
+  }
+  return bookable;
+}
+
+/** `per-hour`, `per-day` or `fixed` - the item and the m² are both fixed. */
+export function priceBasisOf(bookable) {
+  return ["per-hour", "per-day"].includes(bookable?.priceType)
+    ? bookable.priceType
+    : "fixed";
+}
+
+/**
+ * Sets the basis of the price. A day counts started days in full, as the
+ * cloud variant sets it for a simple price; the fixed price keeps m² when
+ * it had it. Tiers keep their categories' own settings.
+ */
+export function applyPriceBasis(bookable, basis) {
+  if (basis === "fixed") {
+    if (bookable.priceType !== "per-square-meter") {
+      bookable.priceType = "per-item";
+    }
+  } else {
+    bookable.priceType = basis;
+  }
+  if (priceModeOf(bookable) === "simple" && bookable.priceCategories?.[0]) {
+    bookable.priceCategories[0].fixedPrice = basis === "per-day";
+  }
+  return bookable;
+}
+
+/**
+ * The sentence under a simple price: what an example booking costs, as the
+ * cloud variant explains it. The key below `bookable.flow.price.explain`
+ * and the amounts (net, in euros) its parameters need.
+ */
+export function priceExplanation(bookable) {
+  const category = bookable?.priceCategories?.[0];
+  const price = toNumber(category?.priceEur);
+  if (!(price > 0)) return { key: "none", amounts: {} };
+
+  const fixed = !!category.fixedPrice;
+  const mode = bookingModeOf(bookable);
+  switch (bookable.priceType) {
+  case "per-hour":
+    return { key: "per-hour", amounts: { total: price * 2.5 } };
+  case "per-day":
+    if (mode === "week")
+      return { key: "week", amounts: { total: price * 7 } };
+    if (mode === "month") {
+      return { key: "month", amounts: { low: price * 28, high: price * 31 } };
+    }
+    return fixed
+      ? { key: "per-day-full", amounts: { total: price * 3 } }
+      : { key: "per-day-exact", amounts: { total: (price * 6) / 24 } };
+  case "per-square-meter":
+    return fixed
+      ? { key: "once", amounts: { price } }
+      : { key: "per-square-meter", amounts: { price } };
+  default:
+    if (fixed) return { key: "once", amounts: { price } };
+    return toNumber(bookable.amount) === 1
+      ? { key: "per-item", amounts: { price } }
+      : { key: "per-items", amounts: { total: price * 3 } };
+  }
+}
+
+/** The VAT rates offered as chips; any other is typed. */
+export const VAT_RATES = Object.freeze([19, 7]);
+
+// --- Anzahl ----------------------------------------------------------------
+
+/** Empty or 0 is unlimited, as the price tab reads it. */
+export function isUnlimitedAmount(bookable) {
+  return !toNumber(bookable?.amount);
+}
+
+/** More than one unit of a room is rarely meant (cloud variant). */
+export function warnsAboutAmount(bookable) {
+  return (
+    ["room", "event-location"].includes(bookable?.type) &&
+    toNumber(bookable?.amount) > 1
+  );
+}
+
+// --- Berechtigung ----------------------------------------------------------
+
+/**
+ * Who may book: `everyone`, `signedIn` (an account is needed) or `selected`
+ * (named roles or users, which need an account too).
+ */
+export function accessOf(bookable) {
+  if (
+    bookable?.permittedRoles?.length > 0 ||
+    bookable?.permittedUsers?.length > 0
+  ) {
+    return "selected";
+  }
+  return bookable?.requiresLogin ? "signedIn" : "everyone";
+}
+
+export function applyAccess(bookable, access) {
+  bookable.requiresLogin = access !== "everyone";
+  if (access !== "selected") {
+    bookable.permittedRoles = [];
+    bookable.permittedUsers = [];
+  }
+  return bookable;
+}
+
+// --- Abschluss -------------------------------------------------------------
+
+/**
+ * The wording of the closing action by supervision level: free publishes,
+ * supervised submits for review, pending and declined note the wish. A
+ * missing or unknown level reads as free - wording only, the backend decides
+ * what becomes public.
+ */
+export function publishVariant(level) {
+  return Object.values(SUPERVISION_LEVELS).includes(level)
+    ? level
+    : SUPERVISION_LEVELS.FREE;
+}
+
+/**
+ * „Speichern und veröffentlichen“ stores the publication wish, as the
+ * guided setup did; „Nur speichern“ leaves it as it is - a published
+ * bookable stays published, a new one stays a draft.
+ */
+export function withPublication(bookable, publish) {
+  return publish ? { ...bookable, isPublic: true, isBookable: true } : bookable;
+}
+
+/**
+ * The optional sections of the cloud variant's confirmation, each pointing
+ * at the section of today's editor that holds it. Only what the editor
+ * offers in its current mode is linked.
+ */
+const OPTIONAL_SECTIONS = Object.freeze([
+  { key: "required-fields", sectionId: "additional-required-fields" },
+  { key: "attachments", tabKey: "attachments" },
+  { key: "notes", sectionId: "additional-notes" },
+  { key: "checkout", sectionId: "related-checkout" },
+  { key: "hierarchy", sectionId: "related-hierarchy" },
+  { key: "group-booking", sectionId: "permissions-group-booking" },
+  { key: "cancellation", sectionId: "permissions-cancellation" },
+]);
+
+export function optionalSections({ bookable, expertMode }) {
+  return OPTIONAL_SECTIONS.map((entry) => {
+    const section = entry.sectionId
+      ? getBookableEditSectionById(entry.sectionId)
+      : null;
+    return {
+      key: entry.key,
+      tabKey: section ? section.tabKey : entry.tabKey,
+      sectionId: entry.sectionId || null,
+    };
+  }).filter(({ tabKey, sectionId }) => {
+    if (!expertMode && isBookableExpertOnlyTab(tabKey)) return false;
+    if (!sectionId) return true;
+    return getVisibleBookableEditSections(tabKey, {
+      bookable,
+      expertMode,
+    }).some((section) => section.id === sectionId);
+  });
+}

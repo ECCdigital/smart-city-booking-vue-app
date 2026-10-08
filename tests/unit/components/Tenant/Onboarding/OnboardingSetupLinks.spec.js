@@ -31,4 +31,20 @@ describe("OnboardingSetupLinks", () => {
     expect(free.find("[data-test='setup-payment']").exists()).toBe(false);
     expect(free.text()).toContain("kein Zahlungsweg erforderlich");
   });
+
+  it("opens the forms without a way back outside the guided setup", () => {
+    const wrapper = mountLinks({ returnStep: null });
+
+    expect(wrapper.vm.formRoute("legal")).toEqual({
+      name: "tenant",
+      query: { tab: "legal" },
+    });
+  });
+
+  it("leaves payment out for a free offer when asked to", () => {
+    const free = mountLinks({ paid: false, paymentWhenPaidOnly: true });
+
+    expect(free.text()).not.toContain("Zahlung");
+    expect(free.find("[data-test='setup-legal']").exists()).toBe(true);
+  });
 });

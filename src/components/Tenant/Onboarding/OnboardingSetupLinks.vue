@@ -15,7 +15,7 @@
         </v-btn>
       </div>
     </div>
-    <div class="booking-row">
+    <div v-if="paid || !paymentWhenPaidOnly" class="booking-row">
       <div class="booking-row__main">
         <div class="booking-row__title">
           {{ $t("tenant.onboarding.setup.payment") }}
@@ -44,19 +44,24 @@
 
 <script>
 /**
- * Legal texts and payment stay in the existing tenant forms; the query names
- * the wizard step to return to (supervision spec §9). Drawn as hairline
- * rows: the topic on the left, the way to its form on the right.
+ * Legal texts and payment stay in the existing tenant forms; inside the
+ * guided setup the query names the wizard step to return to (supervision
+ * spec §9). Drawn as hairline rows: the topic on the left, the way to its
+ * form on the right.
  */
 export default {
   name: "OnboardingSetupLinks",
   props: {
     paid: { type: Boolean, default: false },
-    returnStep: { type: String, required: true },
+    // The guided bookable flow names payment only for a paid offer.
+    paymentWhenPaidOnly: { type: Boolean, default: false },
+    // Without a step there is no way back: the forms open on their own.
+    returnStep: { type: String, default: null },
     bookableId: { type: String, default: "" },
   },
   methods: {
     formRoute(tab) {
+      if (!this.returnStep) return { name: "tenant", query: { tab } };
       return {
         name: "tenant",
         query: {
