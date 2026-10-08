@@ -243,7 +243,7 @@ export default {
       @submit="submitChanges"
       @cancel="fetchTenant"
       show-restore
-      :disabled="hasUnsavedChanges"
+      :active="hasUnsavedChanges"
       :in-progress="inProgress"
     />
   </AdminLayout>

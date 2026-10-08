@@ -85,7 +85,7 @@
       @submit="submitChanges"
       @cancel="onRestoreChanges"
       show-restore
-      :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
+      :active="inProgress || isLoading || !validRoot || hasUnsavedChanges"
       :in-progress="inProgress"
     />
 
