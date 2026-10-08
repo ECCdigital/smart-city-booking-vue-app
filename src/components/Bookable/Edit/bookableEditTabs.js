@@ -2,7 +2,7 @@ import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
-import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
+import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
 import BookableEditAccessLocks from "@/components/Bookable/Edit/BookableEditAccessLocks.vue";
 import BookableEditCheckoutBookables from "@/components/Bookable/Edit/BookableEditCheckoutBookables.vue";
 import BookableEditHierarchy from "@/components/Bookable/Edit/BookableEditHierarchy.vue";
@@ -120,9 +120,15 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
     label: "Berechtigungen",
     icon: "mdi-account-lock-outline",
     cards: [
-      // Anmeldepflicht, Individuelle Berechtigungen and Preisrabatte, until
-      // „Wer darf buchen?“ takes their place.
-      { key: "permissions", comp: BookableEditPermissions, bare: true },
+      // „Wer darf buchen?“ and the Preisnachlass, the component of the
+      // guided flow's step under the step's title.
+      {
+        key: "permission",
+        comp: BookableFlowPermission,
+        titleKey: "bookable.flow.steps.permission.title",
+        icon: "mdi-account-check-outline",
+        section: "permissions-access",
+      },
       areaCard("groupBooking"),
       areaCard("cancellation"),
     ],

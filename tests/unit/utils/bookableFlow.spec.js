@@ -597,8 +597,10 @@ describe("overview", () => {
     const accessShown = (access) =>
       shown(blockOf("permission", applyAccess(bookable(), access)));
 
-    expect(accessShown("everyone")).toEqual([["Zugang", "Jeder"]]);
-    expect(accessShown("signedIn")).toEqual([["Zugang", "Angemeldete Nutzer"]]);
+    expect(accessShown("everyone")).toEqual([["Wer darf buchen?", "Alle"]]);
+    expect(accessShown("signedIn")).toEqual([
+      ["Wer darf buchen?", "Alle mit Konto"],
+    ]);
   });
 
   it("counts the roles and persons chosen", () => {
@@ -611,17 +613,19 @@ describe("overview", () => {
       );
 
     expect(counted(["r1", "r2"], ["u1"])).toEqual([
-      ["Zugang", "2 Rollen, 1 Person"],
+      ["Wer darf buchen?", "2 Rollen, 1 Person"],
     ]);
-    expect(counted(["r1"], [])).toEqual([["Zugang", "1 Rolle"]]);
-    expect(counted([], ["u1", "u2", "u3"])).toEqual([["Zugang", "3 Personen"]]);
+    expect(counted(["r1"], [])).toEqual([["Wer darf buchen?", "1 Rolle"]]);
+    expect(counted([], ["u1", "u2", "u3"])).toEqual([
+      ["Wer darf buchen?", "3 Personen"],
+    ]);
   });
 
   it("reads selected access with nobody named yet as signed-in users", () => {
     const item = applyAccess(bookable(), "selected");
 
     expect(shown(blockOf("permission", item))).toEqual([
-      ["Zugang", "Angemeldete Nutzer"],
+      ["Wer darf buchen?", "Alle mit Konto"],
     ]);
   });
 

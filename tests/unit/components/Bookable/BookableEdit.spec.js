@@ -181,6 +181,65 @@ describe("BookableEdit - the areas without a step", () => {
   });
 });
 
+describe("BookableEdit - Wer darf buchen?", () => {
+  const subNav = (wrapper) =>
+    wrapper
+      .findAll(".bookable-edit-nav__section")
+      .wrappers.map((link) => link.text());
+  const cardTitles = (wrapper) =>
+    wrapper
+      .findAll(".page-content__editor .section-card .section-header")
+      .wrappers.map((title) => title.text());
+
+  beforeEach(() => {
+    ApiBookablesService.createOrUpdateBookable.mockReset();
+    ApiBookablesService.createOrUpdateBookable.mockImplementation(
+      async (bookable) => ({ data: bookable })
+    );
+  });
+
+  it("frames the step's component as the first card of Berechtigungen", async () => {
+    const wrapper = await mountEdit({ id: "b1", tab: "permissions" });
+
+    expect(cardTitles(wrapper)[0]).toBe("Berechtigung");
+    expect(subNav(wrapper)).toEqual([
+      "Berechtigung",
+      "Preisnachlass",
+      "Serienbuchung",
+      "Stornierung",
+    ]);
+    expect(
+      wrapper
+        .find("#be-section-permissions-access")
+        .find("[data-test='permission']")
+        .exists()
+    ).toBe(true);
+    expect(wrapper.text()).not.toContain("Anmeldepflicht");
+    expect(wrapper.text()).not.toContain("Individuelle Berechtigungen");
+  });
+
+  it("saves the login with the lists the editing page shows as „Nur ausgewählte“", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "permissions" },
+      stored({ requiresLogin: false, permittedUsers: ["u1"] })
+    );
+
+    expect(find(wrapper, "access-selected").attributes("aria-checked")).toBe(
+      "true"
+    );
+
+    await find(wrapper, "save").trigger("click");
+    await flushPromises();
+
+    const [saved] =
+      ApiBookablesService.createOrUpdateBookable.mock.calls.at(-1);
+    expect(saved).toMatchObject({
+      requiresLogin: true,
+      permittedUsers: ["u1"],
+    });
+  });
+});
+
 describe("BookableEdit - switching between the modes", () => {
   it("keeps what was typed on the editing page in the guided flow", async () => {
     const wrapper = await mountEdit({ id: "b1", tab: "pricing" });

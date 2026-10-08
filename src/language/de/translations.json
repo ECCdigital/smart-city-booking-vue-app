@@ -330,23 +330,28 @@
       },
       "permission": {
         "who": "Wer darf buchen?",
-        "who-hint": "Bestimmt, wer dieses Objekt überhaupt buchen kann.",
+        "who-hint": "Gilt für jede Buchung, auch über einen direkten Link.",
         "access": {
-          "everyone": "Jeder",
-          "everyone-hint": "Ohne Konto buchbar, offen für alle.",
-          "signedIn": "Angemeldete Nutzer",
-          "signedIn-hint": "Konto nötig, aber jeder registrierte Nutzer darf buchen.",
-          "selected": "Bestimmte Rollen und Personen",
-          "selected-hint": "Nur ausgewählte Gruppen oder Personen – ein Konto ist dann automatisch nötig."
+          "everyone": "Alle",
+          "everyone-hint": "Auch ohne Anmeldung.",
+          "signedIn": "Alle mit Konto",
+          "signedIn-hint": "Wer bucht, meldet sich an.",
+          "selected": "Nur ausgewählte Rollen und Personen",
+          "selected-hint": "Nur sie können buchen, mit Konto."
         },
-        "selected-empty": "Solange niemand gewählt ist, darf jeder angemeldete Nutzer buchen. Wählen Sie Rollen oder Personen, um einzuschränken.",
+        "selected-empty": "Noch niemand gewählt. Bis dahin darf jede Person mit Konto buchen.",
         "users": "Personen",
         "roles": "Rollen",
-        "free": "Wer bucht kostenfrei?",
-        "free-hint": "Preis-Ausnahme: Diese Rollen oder Personen buchen günstiger oder ohne Zahlung – 100 % entspricht einer kostenfreien Buchung.",
-        "free-not-paid": "Dieses Objekt ist ohnehin kostenfrei – eine Ausnahme wirkt erst, sobald es einen Preis hat.",
-        "free-users": "Nachlass für Personen",
-        "free-roles": "Nachlass für Rollen"
+        "no-users": "Keine Personen beim Mandanten",
+        "no-roles": "Keine Rollen beim Mandanten",
+        "unknown": "Nicht mehr beim Mandanten",
+        "discounts": "Preisnachlass",
+        "discounts-hint": "Diese Rollen und Personen zahlen weniger, 100 % heißt kostenfrei. Trifft mehr als ein Eintrag zu, gilt der höchste.",
+        "discounts-not-paid": "Wirkt erst, sobald das Objekt einen Preis hat. Bis dahin bleiben die Einträge gespeichert.",
+        "percent": "Preisnachlass in Prozent",
+        "add-role": "Rolle hinzufügen",
+        "add-user": "Person hinzufügen",
+        "remove": "Entfernen"
       },
       "approval": {
         "question": "Wie werden eingehende Buchungen bestätigt?",
@@ -362,7 +367,7 @@
         "labels": {
           "availability": "Buchungsart",
           "amount": "Anzahl",
-          "permission": "Zugang",
+          "permission": "Wer darf buchen?",
           "approval": "Buchungen"
         },
         "values": {
@@ -527,9 +532,6 @@
         "bookingTypeBuffer": "Puffer",
         "openingHoursRegular": "Regulär",
         "openingHoursSpecial": "Sonder",
-        "permissionsLogin": "Anmeldepflicht",
-        "permissionsAccess": "Individuelle Rechte",
-        "permissionsDiscounts": "Rabatte",
         "customFieldsValues": "Werte pflegen",
         "customFieldsDefinitions": "Felder definieren"
       },
