@@ -74,7 +74,7 @@ describe("BookableEdit - loading", () => {
       unnormalized()
     );
 
-    for (const label of ["Buchungstyp", "Berechtigungen", "Öffnungszeiten"]) {
+    for (const label of ["Buchungsart", "Berechtigungen", "Öffnungszeiten"]) {
       await tab(wrapper, label).trigger("click");
       await flushPromises();
     }
@@ -178,6 +178,76 @@ describe("BookableEdit - the areas without a step", () => {
     const [saved] =
       ApiBookablesService.createOrUpdateBookable.mock.calls.at(-1);
     expect(saved.cancellationPolicy).toEqual({ userCancellable: false });
+  });
+});
+
+describe("BookableEdit - the Buchungsart", () => {
+  const external = () =>
+    stored({
+      isScheduleRelated: true,
+      externalProviders: [
+        { provider: "ifbs", active: true, handles: ["availability"] },
+      ],
+    });
+  const cardTitles = (wrapper) =>
+    wrapper
+      .findAll(".page-content__editor .section-card .section-header")
+      .wrappers.map((title) => title.text());
+
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it("asks the questions of the guided flow in the card „Buchungsart“ of its tab", async () => {
+    const wrapper = await mountEdit({ id: "b1", tab: "bookingType" });
+
+    expect(tab(wrapper, "Buchungsart")).toBeTruthy();
+    expect(tab(wrapper, "Buchungstyp")).toBeUndefined();
+    expect(cardTitles(wrapper)[0]).toBe("Buchungsart");
+    expect(find(wrapper, "booking-mode-time").exists()).toBe(true);
+    expect(wrapper.find("input[type='radio']").exists()).toBe(false);
+    expect(find(wrapper, "booking-duration-min").exists()).toBe(true);
+  });
+
+  it("hands an answer on and shows the sections of the chosen mode", async () => {
+    const wrapper = await mountEdit({ id: "b1", tab: "bookingType" });
+
+    await find(wrapper, "booking-mode-time-timePeriod").trigger("click");
+
+    expect(find(wrapper, "time-periods-add").exists()).toBe(true);
+    expect(find(wrapper, "booking-duration-min").exists()).toBe(false);
+    expect(unsaved(wrapper)).toBe(true);
+  });
+
+  it("jumps from the note of an external availability to the provider's setting", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "bookingType" },
+      external()
+    );
+
+    expect(find(wrapper, "booking-mode-timed").exists()).toBe(false);
+    expect(find(wrapper, "booking-duration-min").exists()).toBe(false);
+    await find(wrapper, "booking-mode-external-link").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query).toMatchObject({
+      tab: "pricing",
+      section: "pricing-external",
+    });
+  });
+
+  it("jumps there from the guided flow too, onto the editing page", async () => {
+    const wrapper = await mountEdit({ id: "b1", mode: "flow" }, external());
+
+    await find(wrapper, "flow-dot-availability").trigger("click");
+    await find(wrapper, "booking-mode-external-link").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query.mode).toBeUndefined();
+    expect(wrapper.vm.$route.query).toMatchObject({
+      tab: "pricing",
+      section: "pricing-external",
+    });
   });
 });
 

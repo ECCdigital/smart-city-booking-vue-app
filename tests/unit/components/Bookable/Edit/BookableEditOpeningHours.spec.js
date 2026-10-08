@@ -135,3 +135,17 @@ describe("BookableEditOpeningHours - Sonderöffnungszeiten", () => {
     expect(shows(wrapper)).toBe(true);
   });
 });
+
+describe("BookableEditOpeningHours - without a time of day", () => {
+  it("names the Buchungsart in use as its questions do", () => {
+    const { wrapper } = mountHours({
+      isScheduleRelated: false,
+      isLongRange: true,
+      longRangeOptions: { type: "month" },
+    });
+
+    expect(wrapper.text()).toContain("Buchungsart: Ganze Monate");
+    expect(wrapper.text()).toContain("Freie Zeitwahl und Feste Zeitfenster");
+    expect(wrapper.text()).not.toMatch(/Monatsbuchung|Buchungstyp/);
+  });
+});

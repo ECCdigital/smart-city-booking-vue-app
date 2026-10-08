@@ -1,11 +1,5 @@
-const BOOKING_MODE_LABELS = {
-  schedule: "Freie Zeitwahl",
-  timePeriod: "Feste Zeitfenster",
-  blockPeriod: "Zeiträume",
-  week: "Wochenbuchung",
-  month: "Monatsbuchung",
-  independent: "Zeitunabhängig",
-};
+import i18n from "@/language/index";
+import { bookingModeNameKey } from "@/utils/bookableEditSections";
 
 export const PRICE_TYPE_SUFFIX = {
   "per-hour": "/h",
@@ -81,7 +75,7 @@ function formatDurationMinutes(minutes) {
 
 function getBookingModeLabel(bookable) {
   const mode = getBookingMode(bookable);
-  const base = BOOKING_MODE_LABELS[mode] || BOOKING_MODE_LABELS.independent;
+  const base = i18n.t(bookingModeNameKey(bookable));
 
   if (mode === "schedule") {
     const parts = [];
@@ -471,7 +465,7 @@ export function getBookableOverviewTraits(bookable, options = {}) {
   traits.push(
     trait(
       "bookingMode",
-      "Buchung",
+      "Buchungsart",
       getBookingModeLabel(bookable),
       "bookingType",
       "mdi-calendar-clock"

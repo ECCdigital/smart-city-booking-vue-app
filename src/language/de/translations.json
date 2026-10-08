@@ -232,29 +232,30 @@
       },
       "availability": {
         "external-title": "Verfügbarkeit kommt von einem externen Anbieter",
-        "external-text": "Die Verfügbarkeit wird extern geführt. Deaktivieren Sie die externe Steuerung unter „Schließsysteme“, um sie hier selbst zu pflegen.",
+        "external-text": "Ein externer Anbieter führt die Verfügbarkeit dieses Buchungsobjekts. Um sie hier selbst zu pflegen, schalten Sie die externe Steuerung aus.",
+        "external-link": "Zur Einstellung",
         "timed": "Wird dieses Objekt für eine Zeit gebucht?",
         "timed-no": "Ohne Zeit",
         "timed-yes": "Für eine Zeit",
-        "untimed-info": "Buchende buchen eine feste Menge ohne Zeitauswahl. Die Kapazität steuern Sie über „Anzahl & Kapazität“.",
         "mode": "Wie wird die Zeit gebucht?",
         "modes": {
           "schedule": "Freie Zeitwahl",
-          "timePeriod": "Feste Zeiten",
+          "timePeriod": "Feste Zeitfenster",
           "blockPeriod": "Zeiträume",
           "longRange": "Langzeit"
         },
         "explain": {
+          "independent": "Buchende buchen eine Menge ohne Zeitauswahl.",
           "schedule": "Buchende suchen sich im Kalender einen freien Zeitpunkt und wählen die Dauer innerhalb der Grenzen.",
-          "timePeriod": "Sie geben feste Zeiten vor; Buchende wählen eine freie davon.",
+          "timePeriod": "Sie geben feste Zeitfenster vor, etwa montags 9–12 Uhr; Buchende wählen ein freies davon.",
           "blockPeriod": "Sie geben wiederkehrende, tagesübergreifende Zeiträume vor, etwa ein Wochenende; Buchende wählen einen davon.",
           "week": "Buchende buchen ganze Wochen am Stück.",
-          "month": "Buchende buchen ganze Monate am Stück."
+          "month": "Buchende buchen ganze Kalendermonate am Stück."
         },
         "long-range": "Wochen oder Monate?",
-        "long-range-week": "Wochen",
-        "long-range-month": "Monate",
-        "long-range-info": "Bei Langzeitbuchungen prüft das System keine Öffnungszeiten oder Ausnahmen – sie liegen naturgemäß außerhalb von Tagesfenstern."
+        "long-range-week": "Ganze Wochen",
+        "long-range-month": "Ganze Monate",
+        "long-range-info": "Bei ganzen Wochen und Monaten prüft das System keine Öffnungszeiten oder Ausnahmen."
       },
       "price": {
         "external-title": "Preise kommen von einem externen Anbieter",
@@ -519,7 +520,7 @@
         "pricingExternal": "Externe Datenquelle",
         "pricingBase": "Grundeinstellungen",
         "pricingTiers": "Preisgestaltung",
-        "bookingTypeSelect": "Auswahl",
+        "bookingTypeSelect": "Buchungsart",
         "bookingTypeDuration": "Dauer",
         "bookingTypeTimePeriods": "Zeitfenster",
         "bookingTypeBlockPeriods": "Zeiträume",

@@ -120,6 +120,7 @@
               :bookable="bookable"
               :is-new="isNew"
               @update:bookable="$emit('update:bookable', $event)"
+              @open-section="$emit('open-section', $event)"
             />
           </keep-alive>
         </div>

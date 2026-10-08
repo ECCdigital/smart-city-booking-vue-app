@@ -631,17 +631,19 @@ describe("overview", () => {
     ).toEqual([["Buchungen", "wird geprüft"]]);
   });
 
-  it("names the booking type with the step's words", () => {
+  it("names the Buchungsart with the names of its questions", () => {
     const typeOf = (mode) => {
       const item = applyBookingMode(bookable(), mode);
       return shown(blockOf("availability", item));
     };
 
     expect(typeOf("schedule")).toEqual([["Buchungsart", "Freie Zeitwahl"]]);
-    expect(typeOf("timePeriod")).toEqual([["Buchungsart", "Feste Zeiten"]]);
+    expect(typeOf("timePeriod")).toEqual([
+      ["Buchungsart", "Feste Zeitfenster"],
+    ]);
     expect(typeOf("blockPeriod")).toEqual([["Buchungsart", "Zeiträume"]]);
-    expect(typeOf("week")).toEqual([["Buchungsart", "Langzeit, Wochen"]]);
-    expect(typeOf("month")).toEqual([["Buchungsart", "Langzeit, Monate"]]);
+    expect(typeOf("week")).toEqual([["Buchungsart", "Ganze Wochen"]]);
+    expect(typeOf("month")).toEqual([["Buchungsart", "Ganze Monate"]]);
     expect(typeOf("independent")).toEqual([["Buchungsart", "Ohne Zeit"]]);
   });
 

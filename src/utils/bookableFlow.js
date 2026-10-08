@@ -14,6 +14,7 @@
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import { providerHandles } from "@/utils/bookableExternalProviders";
 import {
+  bookingModeNameKey,
   getBookingMode,
   getVisibleBookableEditSections,
   getBookableEditSectionById,
@@ -449,27 +450,13 @@ function identityRows(bookable, { eventTitlesById } = {}) {
 
 const EXTERNAL = asWord(`${OVERVIEW}.values.external`);
 
-/** The booking type in the step's words; the long range with its unit. */
-function bookingTypeValue(bookable) {
-  const availability = "bookable.flow.availability";
-  const mode = bookingModeOf(bookable);
-  if (mode === "independent") return asWord(`${availability}.timed-no`);
-  if (mode === "week" || mode === "month") {
-    return [
-      wordPart(`${availability}.modes.longRange`),
-      wordPart(`${availability}.long-range-${mode}`),
-    ];
-  }
-  return asWord(`${availability}.modes.${mode}`);
-}
-
 function availabilityRows(bookable) {
   return [
     {
       label: `${OVERVIEW}.labels.availability`,
       value: handlesExternalAvailability(bookable)
         ? EXTERNAL
-        : bookingTypeValue(bookable),
+        : asWord(bookingModeNameKey(bookable)),
     },
   ];
 }
