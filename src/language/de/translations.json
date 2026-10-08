@@ -557,6 +557,21 @@
         "titlesForbidden": "Titel der verknüpften Buchungsobjekte nicht abrufbar – Sie haben keinen Zugriff auf Buchungsobjekte."
       }
     },
+    "publication": {
+      "effect": {
+        "listed": "Das Buchungsobjekt steht im Katalog und ist buchbar.",
+        "direct-link": "Das Buchungsobjekt steht nicht im Katalog, ist aber per Direktlink buchbar.",
+        "listed-not-bookable": "Das Buchungsobjekt steht im Katalog, ist aber nicht buchbar.",
+        "hidden": "Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar.",
+        "after-approval": {
+          "listed": "Nach der Freigabe steht das Buchungsobjekt im Katalog und ist buchbar. Bis dahin ist es weder gelistet noch per Direktlink buchbar.",
+          "direct-link": "Nach der Freigabe ist das Buchungsobjekt per Direktlink buchbar, steht aber nicht im Katalog. Bis dahin ist es nicht per Direktlink buchbar.",
+          "listed-not-bookable": "Nach der Freigabe steht das Buchungsobjekt im Katalog, ist aber nicht buchbar. Bis dahin ist es nicht gelistet."
+        },
+        "pending": "Ihr Mandant wartet auf die Freigabe durch den Betreiber: Bis dahin steht das Buchungsobjekt nicht im Katalog und ist nicht buchbar.",
+        "declined": "Der Mandant ist abgewiesen: Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar."
+      }
+    },
     "externalPrice": {
       "title": "Preise vom Anbieter",
       "units": {
