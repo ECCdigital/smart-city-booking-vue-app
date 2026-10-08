@@ -1,3 +1,7 @@
+import { bookingModeOf, priceModeOf } from "@/utils/bookableFlow";
+import { IFBS_PROVIDER } from "@/utils/bookableExternalProviders";
+import { hasBufferConfig } from "@/utils/bookingLeadTime";
+
 const SESSION_STORAGE_KEY = "bookableEditExpertMode";
 
 /** Tabs hidden in simple (non-expert) mode */
@@ -58,6 +62,76 @@ export function setBookableExpertModeSession(enabled) {
   } catch (error) {
     // ignore persistence failures
   }
+}
+
+const nonEmpty = (list) => Array.isArray(list) && list.length > 0;
+
+// What the backend's schema gives a new bookable.
+const DEFAULT_REQUIRED_FIELDS = ["address", "zipCode", "city"];
+
+/**
+ * When a bookable uses an expert option: its stand differs from the one of a
+ * new bookable. One entry per option - a booking mode, a section or a tab.
+ */
+const USED = {
+  // Zeiträume, Ganze Wochen, Ganze Monate: the booking mode is this one.
+  blockPeriod: (bookable) => bookingModeOf(bookable) === "blockPeriod",
+  week: (bookable) => bookingModeOf(bookable) === "week",
+  month: (bookable) => bookingModeOf(bookable) === "month",
+  tiers: (bookable) => priceModeOf(bookable) === "tiers",
+  coupons: (bookable) => bookable.enableCoupons === false,
+  externalPrices: (bookable) =>
+    (bookable.externalProviders || []).some(
+      (provider) => provider?.provider === IFBS_PROVIDER && provider.active
+    ),
+  leadTime: (bookable) => bookable.isLeadTimeRelated === true,
+  // The switch counts as well as the minutes: switched on, it is no longer
+  // the stand of a new bookable.
+  buffer: (bookable) =>
+    bookable.isBufferRelated === true || hasBufferConfig(bookable),
+  specialOpeningHours: (bookable) =>
+    bookable.isSpecialOpeningHoursRelated === true ||
+    nonEmpty(bookable.specialOpeningHours),
+  tags: (bookable) => nonEmpty(bookable.tags),
+  bookingDiscounts: (bookable) =>
+    nonEmpty(bookable.bookingDiscounts?.users) ||
+    nonEmpty(bookable.bookingDiscounts?.roles),
+  accessLocks: (bookable) =>
+    nonEmpty(bookable.accessPointDetails?.accessPointIds),
+  checkoutBookables: (bookable) => nonEmpty(bookable.checkoutBookableIds),
+  hierarchy: (bookable) => nonEmpty(bookable.relatedBookableIds),
+  cancellation: (bookable) =>
+    bookable.cancellationPolicy?.userCancellable === false,
+  // In any order; missing is the backend's default.
+  requiredFields: (bookable) =>
+    Array.isArray(bookable.requiredFields) &&
+    (bookable.requiredFields.length !== DEFAULT_REQUIRED_FIELDS.length ||
+      DEFAULT_REQUIRED_FIELDS.some(
+        (field) => !bookable.requiredFields.includes(field)
+      )),
+  customFieldDefinitions: (bookable) =>
+    nonEmpty(bookable.customFieldDefinitions),
+};
+
+/** The expert options, by the key `expertOptionShown` knows them. */
+export const EXPERT_OPTIONS = Object.freeze(Object.keys(USED));
+
+/**
+ * Whether an expert option shows: always in expert mode, without it only
+ * while the stored or the current bookable uses it - so expert mode hides
+ * nothing a bookable relies on, and switching it off loses nothing unsaved.
+ * There is no locked option with a hint.
+ *
+ * @param {string} option A key of {@link EXPERT_OPTIONS}
+ * @param {{ expertMode: boolean, stored: ?object, current: ?object }} state
+ *   The mode, the bookable as loaded or last saved, and as edited now
+ * @returns {boolean}
+ */
+export function expertOptionShown(option, { expertMode, stored, current }) {
+  const used = USED[option];
+  if (!used) throw new Error(`Unknown expert option: ${option}`);
+  if (expertMode) return true;
+  return [stored, current].some((bookable) => !!bookable && used(bookable));
 }
 
 export function isBookableExpertOnlyTab(tabKey) {
