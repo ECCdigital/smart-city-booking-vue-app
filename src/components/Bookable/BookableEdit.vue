@@ -158,13 +158,6 @@
           :level="supervisionLevel"
           @update:bookable="onUpdateBookable"
         />
-
-        <BookableEditOverview
-          v-if="!flowMode && !$vuetify.breakpoint.lgAndUp"
-          variant="band"
-          :bookable="bookable"
-          @navigate-tab="goToTab"
-        />
       </div>
 
       <!-- The guided flow (ECCdigital/tickets#326) is a mode of this page:
@@ -296,12 +289,10 @@
           </keep-alive>
         </div>
 
+        <!-- The overview of the guided flow, the same here (ECCdigital/
+             tickets#364): each row leads to its field. -->
         <div v-if="$vuetify.breakpoint.lgAndUp" class="page-content__overview">
-          <BookableEditOverview
-            variant="sidebar"
-            :bookable="bookable"
-            @navigate-tab="goToTab"
-          />
+          <BookableFlowSummary :bookable="bookable" @go="openField" />
         </div>
       </div>
     </v-form>
@@ -337,7 +328,7 @@ import Bookable from "@/entities/bookable";
 import { normalizeBookable } from "@/utils/normalizeBookable";
 import { mapActions, mapGetters } from "vuex";
 import BookableEditStatus from "@/components/Bookable/Edit/BookableEditStatus.vue";
-import BookableEditOverview from "@/components/Bookable/Edit/BookableEditOverview.vue";
+import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
 import BookableEditTab from "@/components/Bookable/Edit/BookableEditTab.vue";
 import { BOOKABLE_EDIT_TABS } from "@/components/Bookable/Edit/bookableEditTabs";
 import ToastService from "@/services/ToastService";
@@ -367,6 +358,7 @@ import BookablePermissionService from "@/services/permissions/BookablePermission
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import { bookableIssues, firstIssue } from "@/utils/bookableValidation";
 import { areaAt, areaShown } from "@/utils/bookableAreas";
+import { revealField } from "@/utils/bookableFieldAnchor";
 
 // What the unsaved-changes snapshot leaves out. The review (glossary
 // "Prüfstatus") is the backend's alone and changes through its own actions,
@@ -377,7 +369,7 @@ export default {
   name: "BookableEdit",
   components: {
     BookableEditStatus,
-    BookableEditOverview,
+    BookableFlowSummary,
     SaveBar,
     UnsavedChangesDialog,
     BookableFlow,
@@ -704,6 +696,18 @@ export default {
         await this.leaveFlow();
       }
       this.$nextTick(() => this.goToTab(tabKey, sectionId || undefined));
+    },
+    /**
+     * A row of the overview on the editing page: the tab and section of its
+     * field, then the field itself (`{ tab, section, field }`). Without a
+     * tab the field lies in the status band - the Veröffentlichung.
+     */
+    async openField({ tab, section, field }) {
+      if (tab) this.goToTab(tab, section || undefined);
+      // After the tab has drawn and its section has scrolled into view.
+      await this.$nextTick();
+      await this.$nextTick();
+      revealField(this.$el, field);
     },
     /** „Zur Übersicht“: this bookable in the editor of its type. */
     toOverview() {

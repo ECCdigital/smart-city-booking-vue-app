@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises } from "@tests/unit/support/api";
 import {
+  resetViewportWidth,
+  setViewportWidth,
+} from "@tests/unit/support/viewport";
+import {
   editTab as tab,
   find,
   mountBookableEdit,
@@ -985,5 +989,136 @@ describe("BookableEdit - the confirmation leads to „Weitere Einstellungen“",
     expect(
       find(wrapper, "more-area-groupBooking-toggle").attributes("aria-expanded")
     ).toBe("true");
+  });
+});
+
+// ECCdigital/tickets#364: one overview beside the form in both modes, each
+// row leading to its field.
+describe("BookableEdit - the overview", () => {
+  let scrolled;
+
+  beforeEach(() => {
+    setViewportWidth(1264);
+    scrolled = [];
+    Element.prototype.scrollIntoView = function () {
+      scrolled.push(this);
+    };
+  });
+
+  afterEach(() => {
+    resetViewportWidth();
+    delete Element.prototype.scrollIntoView;
+  });
+
+  const mountWithOverview = (query, bookable, stubs = {}) =>
+    mountBookableEdit({
+      query,
+      bookable,
+      stubs: { BookableFlowSummary: false, ...stubs },
+    });
+  /** The field last scrolled to, by its anchor. */
+  const lastField = () =>
+    scrolled
+      .map((element) => element.getAttribute("data-field"))
+      .filter(Boolean)
+      .pop();
+
+  it("stands beside the form of the editing page, as in the flow", async () => {
+    const wrapper = await mountWithOverview({ id: "b1" }, stored());
+
+    const overview = find(wrapper, "flow-summary");
+    expect(overview.exists()).toBe(true);
+    expect(overview.text()).toContain("Wer darf buchen?");
+    // No step is current on the editing page, no tab marked.
+    expect(overview.find("[aria-current]").exists()).toBe(false);
+  });
+
+  it("leads a row to the tab of its field and there to the field", async () => {
+    const wrapper = await mountWithOverview({ id: "b1" }, stored());
+
+    await find(wrapper, "overview-row-confirmation").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query).toMatchObject({
+      tab: "permissions",
+      section: "permissions-confirmation",
+    });
+    expect(lastField()).toBe("confirmation");
+  });
+
+  it("leads a heading to the first field of its block", async () => {
+    const wrapper = await mountWithOverview({ id: "b1" }, stored());
+
+    await find(wrapper, "overview-heading-amount").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query.tab).toBe("pricing");
+    expect(lastField()).toBe("amount");
+  });
+
+  it("leads a row of the Veröffentlichung to the status band", async () => {
+    const wrapper = await mountWithOverview(
+      { id: "b1", tab: "pricing" },
+      stored(),
+      { BookableEditStatus: false }
+    );
+
+    await find(wrapper, "overview-row-isPublic").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query.tab).toBe("pricing");
+    expect(lastField()).toBe("isPublic");
+  });
+
+  it("leads „Nicht festgelegt“ of Weitere Einstellungen to the first area's tab", async () => {
+    const wrapper = await mountWithOverview(
+      { id: "b1" },
+      stored({ requiredFields: ["address", "zipCode", "city"] })
+    );
+
+    await find(wrapper, "overview-row-more").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query.tab).toBe("accessLocks");
+  });
+
+  it("leads a row in the flow to its step and there to the field", async () => {
+    const wrapper = await mountWithOverview(
+      { id: "b1", mode: "flow" },
+      stored()
+    );
+
+    await find(wrapper, "overview-row-maxAmountPerBooking").trigger("click");
+    await flushPromises();
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe(
+      "Anzahl & Kapazität"
+    );
+    expect(wrapper.vm.$route.query.mode).toBe("flow");
+    expect(lastField()).toBe("maxAmountPerBooking");
+  });
+
+  it("shows an issue of the check at its row, in both modes", async () => {
+    for (const mode of [undefined, "flow"]) {
+      const wrapper = await mountWithOverview(
+        { id: "b1", mode },
+        stored({ title: "" })
+      );
+
+      expect(
+        find(wrapper, "overview-row-title")
+          .find("[data-test='overview-issue']")
+          .text()
+      ).toBe("Bitte einen Titel eingeben.");
+    }
+  });
+
+  it("is gone below 1264px, in both modes", async () => {
+    setViewportWidth(1263);
+    for (const mode of [undefined, "flow"]) {
+      const wrapper = await mountWithOverview({ id: "b1", mode }, stored());
+
+      expect(find(wrapper, "flow-summary").exists()).toBe(false);
+    }
   });
 });

@@ -10,7 +10,7 @@
         {{ $t("bookable.flow.identity.catalog") }}
       </p>
 
-      <div class="bookable-basics__field">
+      <div class="bookable-basics__field" data-field="title">
         <v-text-field
           :value="bookable.title"
           :label="$t('bookable.flow.identity.title')"
@@ -39,7 +39,7 @@
         </div>
       </div>
 
-      <div class="bookable-basics__field">
+      <div class="bookable-basics__field" data-field="flags">
         <ChipCombobox
           :value="bookable.flags || []"
           :label="$t('bookable.flow.identity.flags')"
@@ -50,7 +50,7 @@
         />
       </div>
 
-      <div class="bookable-basics__field">
+      <div class="bookable-basics__field" data-field="images">
         <div class="bookable-basics__label">
           {{ $t("bookable.flow.identity.images") }}
         </div>
@@ -91,7 +91,7 @@
         </div>
       </div>
 
-      <div class="bookable-basics__field">
+      <div class="bookable-basics__field" data-field="location">
         <AddressLookup
           :value="location"
           :label="$t('bookable.flow.identity.location')"
@@ -113,7 +113,7 @@
         {{ $t("bookable.flow.identity.admin") }}
       </p>
 
-      <div class="bookable-basics__field">
+      <div class="bookable-basics__field" data-field="type">
         <v-select
           :value="bookable.type"
           :items="typeItems"
@@ -138,7 +138,7 @@
         </v-select>
       </div>
 
-      <div v-if="isTicket" class="bookable-basics__field">
+      <div v-if="isTicket" class="bookable-basics__field" data-field="eventId">
         <v-select
           :value="bookable.eventId"
           :items="events"
@@ -155,7 +155,7 @@
         />
       </div>
 
-      <div v-if="tagsShown" class="bookable-basics__field">
+      <div v-if="tagsShown" class="bookable-basics__field" data-field="tags">
         <ChipCombobox
           :value="bookable.tags || []"
           :items="tagsAvailable"

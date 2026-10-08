@@ -67,7 +67,7 @@ _Avoid_: Rolle
 ### Bookables
 
 **Übersicht** (admin: „Übersicht“):
-The card beside a bookable's form that recaps what the bookable holds and jumps to where each value is set. In the editor it is cut by tab, in the guided flow by step; there a step not yet visited reads „Noch offen“ and a value left empty „–“. It shows values, never how the bookable will look.
+The card beside a bookable's form that recaps what the bookable holds and leads to where each value is set. One overview in both modes, cut by the steps of the guided flow, each row named and valued as its field; a value left empty reads „Nicht festgelegt“, and in the guided flow a step not yet visited reads „Noch offen“. It shows values, never how the bookable will look.
 _Avoid_: Zusammenfassung, Vorschau (that is the storefront's job), Zwischenstand
 
 **Schrittliste**:

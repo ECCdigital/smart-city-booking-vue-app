@@ -206,12 +206,15 @@ export default {
     <v-card
       v-if="expertOptionShown('leadTime')"
       id="be-section-bookingType-lead-time"
+      data-field="leadTime"
       class="mt-4 section-card"
       outlined
     >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-timer-sand</v-icon>
-        <span class="text-h6 font-weight-bold">Vorlaufzeit</span>
+        <span class="text-h6 font-weight-bold">
+          {{ $t("bookable.edit.cards.leadTime") }}
+        </span>
       </v-card-title>
       <v-divider />
 
@@ -513,12 +516,15 @@ export default {
     <v-card
       v-if="showBuffer && expertOptionShown('buffer')"
       id="be-section-bookingType-buffer"
+      data-field="buffer"
       class="mt-4 section-card"
       outlined
     >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-calendar-clock</v-icon>
-        <span class="text-h6 font-weight-bold">Puffer zwischen Buchungen</span>
+        <span class="text-h6 font-weight-bold">
+          {{ $t("bookable.edit.cards.buffer") }}
+        </span>
       </v-card-title>
       <v-divider />
 

@@ -1,6 +1,6 @@
 <template>
   <div class="bookable-permission" data-test="permission">
-    <div class="bookable-permission__part">
+    <div class="bookable-permission__part" data-field="access">
       <div class="bookable-permission__question">
         <v-icon small>mdi-account-check-outline</v-icon>
         {{ $t("bookable.flow.permission.who") }}
@@ -121,6 +121,7 @@
       :id="discountsElementId"
       class="bookable-permission__part bookable-permission__part--ruled"
       data-test="discounts"
+      data-field="bookingDiscounts"
     >
       <div class="bookable-permission__question">
         <v-icon small>mdi-ticket-percent-outline</v-icon>

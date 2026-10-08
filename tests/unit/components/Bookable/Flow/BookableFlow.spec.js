@@ -393,10 +393,10 @@ describe("BookableFlow on a wide screen", () => {
     expect(blockOf(wrapper, "identity").text()).toContain("Großer Saal");
   });
 
-  it("goes to the step of a block clicked", async () => {
+  it("goes to the step of a block whose heading is clicked", async () => {
     const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
 
-    await blockOf(wrapper, "approval").trigger("click");
+    await find(wrapper, "overview-heading-approval").trigger("click");
 
     expect(find(wrapper, "flow-title-heading").text()).toBe("Bestätigung");
     expect(blockOf(wrapper, "approval").text()).toContain("Manuell bestätigen");
@@ -408,9 +408,63 @@ describe("BookableFlow on a wide screen", () => {
   it("goes to the step of a block clicked, also without a title", async () => {
     const wrapper = mountFlow();
 
-    await blockOf(wrapper, "price").trigger("click");
+    await find(wrapper, "overview-heading-price").trigger("click");
 
     expect(find(wrapper, "flow-title-heading").text()).toBe("Preis");
+  });
+
+  // ECCdigital/tickets#364: a row leads to its step and there to its field.
+  it("goes to the field of a row clicked, in its step", async () => {
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = function () {
+      scrolled(this);
+    };
+    const wrapper = mountFlow({
+      bookable: bookable({ id: "b1", title: "Saal" }),
+      isNew: false,
+    });
+
+    await find(wrapper, "overview-row-maxAmountPerBooking").trigger("click");
+    await wrapper.vm.$nextTick();
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe(
+      "Anzahl & Kapazität"
+    );
+    const [field] = scrolled.mock.calls[scrolled.mock.calls.length - 1];
+    expect(field.getAttribute("data-field")).toBe("maxAmountPerBooking");
+    delete Element.prototype.scrollIntoView;
+  });
+
+  it("opens the area of a row of Weitere Einstellungen", async () => {
+    const reveal = vi.fn();
+    const wrapper = mountComponent(BookableFlow, {
+      propsData: {
+        bookable: bookable({
+          id: "b1",
+          title: "Saal",
+          checkoutBookableIds: ["b2"],
+        }),
+        isNew: false,
+      },
+      stubs: {
+        ...STUBS,
+        BookableFlowMore: {
+          name: "BookableFlowMore",
+          methods: { reveal },
+          render(h) {
+            return h("div", { attrs: { "data-test": "stub-more" } });
+          },
+        },
+      },
+    });
+
+    await find(wrapper, "overview-row-checkoutBookables").trigger("click");
+    await wrapper.vm.$nextTick();
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe(
+      "Weitere Einstellungen"
+    );
+    expect(reveal).toHaveBeenCalledWith("checkoutBookables");
   });
 
   it("shows only the confirmation once there is an outcome", () => {

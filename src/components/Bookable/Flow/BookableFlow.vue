@@ -188,9 +188,10 @@
       <BookableFlowSummary
         v-if="showOverview"
         class="bookable-flow__summary"
-        :blocks="summaryBlocks"
+        :bookable="bookable"
+        :visited="visited"
         :current="step"
-        @go="goTo(steps.indexOf($event))"
+        @go="openField"
       />
     </template>
   </div>
@@ -208,11 +209,8 @@ import BookableFlowMore from "@/components/Bookable/Flow/BookableFlowMore.vue";
 import BookableFlowDone from "@/components/Bookable/Flow/BookableFlowDone.vue";
 import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
 import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
-import { FLOW_STEPS, overviewBlocks } from "@/utils/bookableFlow";
-import {
-  cachedEventTitlesById,
-  loadEventTitlesById,
-} from "@/utils/eventTitles";
+import { FLOW_STEPS } from "@/utils/bookableFlow";
+import { revealField } from "@/utils/bookableFieldAnchor";
 
 const STEP_COMPONENTS = {
   identity: "BookableFlowIdentity",
@@ -286,7 +284,6 @@ export default {
     return {
       steps: FLOW_STEPS,
       ...startingPoint(this.isNew),
-      eventTitlesById: cachedEventTitlesById() || {},
     };
   },
   computed: {
@@ -311,23 +308,8 @@ export default {
     showStepList() {
       return this.showOverview && this.$vuetify.breakpoint.xl;
     },
-    summaryBlocks() {
-      return overviewBlocks(this.bookable, {
-        visited: this.visited,
-        eventTitlesById: this.eventTitlesById,
-      });
-    },
-    needsEventTitles() {
-      return this.showOverview && this.bookable.type === "ticket";
-    },
   },
   watch: {
-    needsEventTitles: {
-      immediate: true,
-      async handler(needed) {
-        if (needed) this.eventTitlesById = await loadEventTitlesById();
-      },
-    },
     // „Weiteres Buchungsobjekt anlegen“ starts over on the same page.
     outcome(outcome) {
       if (!outcome) Object.assign(this, startingPoint(this.isNew));
@@ -347,6 +329,14 @@ export default {
     openStep(step, area = null) {
       this.goTo(this.steps.indexOf(step));
       if (area) this.$nextTick(() => this.$refs.step?.reveal?.(area));
+    },
+    /**
+     * A row of the overview: its step, there its area of „Weitere
+     * Einstellungen“ or its field (`{ step, field, area }`).
+     */
+    openField({ step, field, area }) {
+      this.openStep(step, area);
+      if (field) this.$nextTick(() => revealField(this.$el, field));
     },
     goTo(idx) {
       if (idx < 0 || idx >= this.steps.length) return;

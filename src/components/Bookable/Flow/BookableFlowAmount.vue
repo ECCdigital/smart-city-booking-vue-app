@@ -4,6 +4,7 @@
       class="bookable-amount__box"
       :class="{ 'bookable-amount__box--warning': warns }"
       data-test="flow-amount-box"
+      data-field="amount"
     >
       <div class="bookable-amount__question">
         <v-icon small>mdi-layers-outline</v-icon>
@@ -72,6 +73,7 @@
       v-if="showsMax"
       class="bookable-amount__box"
       data-test="flow-max-amount"
+      data-field="maxAmountPerBooking"
     >
       <div class="bookable-amount__question">
         <v-icon small>mdi-cart-arrow-down</v-icon>

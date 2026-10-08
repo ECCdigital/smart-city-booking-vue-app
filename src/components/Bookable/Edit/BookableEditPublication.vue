@@ -15,6 +15,7 @@
         color="primary"
         class="publication__switch"
         data-test="publication-bookable"
+        data-field="isBookable"
         @change="patch({ isBookable: $event === true })"
       />
       <v-switch
@@ -27,6 +28,7 @@
         color="primary"
         class="publication__switch"
         data-test="publication-public"
+        data-field="isPublic"
         @change="patch({ isPublic: $event === true })"
       />
     </div>

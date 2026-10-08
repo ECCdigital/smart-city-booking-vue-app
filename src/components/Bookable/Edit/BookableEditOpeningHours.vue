@@ -183,6 +183,7 @@ export default {
       <!-- Regular Opening Hours -->
       <v-card
         id="be-section-openingHours-regular"
+        data-field="openingHours"
         class="mb-6 section-card"
         outlined
       >
@@ -191,7 +192,9 @@ export default {
         >
           <div>
             <v-icon class="mr-2">mdi-store-clock-outline</v-icon>
-            <span class="text-h6 font-weight-bold">Öffnungszeiten</span>
+            <span class="text-h6 font-weight-bold">
+              {{ $t("bookable.edit.cards.openingHours") }}
+            </span>
           </div>
           <v-btn
             v-if="bookable.isOpeningHoursRelated"
@@ -484,6 +487,7 @@ export default {
       <v-card
         v-if="expertOptionShown('specialOpeningHours')"
         id="be-section-openingHours-special"
+        data-field="specialOpeningHours"
         class="mb-6 section-card"
         outlined
       >
@@ -492,7 +496,9 @@ export default {
         >
           <div>
             <v-icon class="mr-2">mdi-calendar-star</v-icon>
-            <span class="text-h6 font-weight-bold"> Sonderöffnungszeiten </span>
+            <span class="text-h6 font-weight-bold">
+              {{ $t("bookable.edit.cards.specialOpeningHours") }}
+            </span>
           </div>
           <v-btn
             v-if="bookable.isSpecialOpeningHoursRelated"

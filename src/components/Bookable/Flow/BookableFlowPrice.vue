@@ -1,5 +1,5 @@
 <template>
-  <div class="bookable-price" data-test="flow-price">
+  <div class="bookable-price" data-test="flow-price" data-field="price">
     <div
       v-if="external"
       class="bookable-price__note bookable-price__note--warning"
@@ -119,7 +119,7 @@
 
         <!-- Mehrwertsteuer is one number: 19 % and 7 % set it, any other is
              typed, „aus“ is 0 %. -->
-        <div class="bookable-price__box" data-test="flow-vat">
+        <div class="bookable-price__box" data-test="flow-vat" data-field="vat">
           <div data-test="flow-vat-switch">
             <v-switch
               :input-value="vatOn"
@@ -202,7 +202,11 @@
           </div>
         </div>
 
-        <div v-if="expertOptionShown('coupons')" data-test="flow-coupons">
+        <div
+          v-if="expertOptionShown('coupons')"
+          data-test="flow-coupons"
+          data-field="coupons"
+        >
           <v-switch
             :input-value="couponsOn"
             dense

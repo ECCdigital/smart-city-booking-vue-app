@@ -186,6 +186,7 @@ export default {
   <div v-if="!external">
     <v-card
       id="be-section-bookingType-duration"
+      data-field="bookingDuration"
       class="mt-4 section-card"
       v-if="bookingType === 'schedule'"
     >
@@ -194,7 +195,9 @@ export default {
       >
         <div>
           <v-icon class="mr-2">mdi-timer-outline</v-icon>
-          <span class="text-h6 font-weight-bold">Buchungsdauer</span>
+          <span class="text-h6 font-weight-bold">
+            {{ $t("bookable.edit.cards.bookingDuration") }}
+          </span>
         </div>
       </v-card-title>
       <v-divider />
@@ -242,6 +245,7 @@ export default {
 
     <v-card
       id="be-section-bookingType-time-periods"
+      data-field="timePeriods"
       class="mt-4 section-card"
       v-if="bookingType === 'timePeriod'"
       outlined
@@ -251,7 +255,9 @@ export default {
       >
         <div>
           <v-icon class="mr-2">mdi-clock-outline</v-icon>
-          <span class="text-h6 font-weight-bold">Feste Zeitfenster</span>
+          <span class="text-h6 font-weight-bold">
+            {{ $t("bookable.edit.cards.timePeriods") }}
+          </span>
         </div>
         <v-btn
           small
@@ -478,6 +484,7 @@ export default {
 
     <v-card
       id="be-section-bookingType-block-periods"
+      data-field="blockPeriods"
       class="mt-4 section-card"
       v-if="bookingType === 'blockPeriod'"
       outlined
@@ -487,7 +494,9 @@ export default {
       >
         <div>
           <v-icon class="mr-2">mdi-calendar-sync</v-icon>
-          <span class="text-h6 font-weight-bold">Zeiträume</span>
+          <span class="text-h6 font-weight-bold">
+            {{ $t("bookable.edit.cards.blockPeriods") }}
+          </span>
         </div>
         <v-btn
           small

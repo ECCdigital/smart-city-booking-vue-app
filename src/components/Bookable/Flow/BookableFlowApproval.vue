@@ -1,5 +1,9 @@
 <template>
-  <div class="bookable-confirmation" data-test="confirmation">
+  <div
+    class="bookable-confirmation"
+    data-test="confirmation"
+    data-field="confirmation"
+  >
     <div
       class="bookable-confirmation__question"
       data-test="confirmation-question"

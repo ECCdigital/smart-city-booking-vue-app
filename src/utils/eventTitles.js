@@ -3,8 +3,7 @@ import store from "@/store";
 
 /*
  * The titles of the current tenant's events by id, for naming a ticket's
- * event. Shared by the editor's overview and the guided flow's overview so
- * both ask once per tenant. A failed load is not kept: the next call asks
+ * event in the overview of both modes, asked once per tenant. A failed load is not kept: the next call asks
  * again.
  */
 let eventTitlesCache = null;

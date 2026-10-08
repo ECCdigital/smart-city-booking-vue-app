@@ -100,7 +100,7 @@ export default {
 </script>
 
 <template>
-  <div class="booking-mode" data-test="booking-mode">
+  <div class="booking-mode" data-test="booking-mode" data-field="bookingMode">
     <div
       v-if="external"
       class="booking-mode__note booking-mode__note--warning"
