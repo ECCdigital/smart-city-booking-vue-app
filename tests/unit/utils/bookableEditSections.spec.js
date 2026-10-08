@@ -65,25 +65,51 @@ describe("bookableEditSections - the pricing tab", () => {
 });
 
 describe("bookableEditSections - expert options", () => {
+  const relatedIds = (shown) =>
+    getVisibleBookableEditSections("relatedBookables", {
+      bookable: {},
+      shown,
+    }).map((section) => section.id);
+
+  it("offers the section of an expert option that shows", () => {
+    expect(relatedIds((option) => option === "hierarchy")).toEqual([
+      "related-hierarchy",
+    ]);
+  });
+
+  it("leaves out the section of an expert option that does not show", () => {
+    expect(relatedIds(() => false)).toEqual([]);
+  });
+
+  it("offers every section without a rule, as expert mode does", () => {
+    expect(relatedIds(undefined)).toEqual([
+      "related-checkout",
+      "related-hierarchy",
+    ]);
+  });
+});
+
+describe("bookableEditSections - Grunddaten", () => {
   const generalIds = (shown) =>
     getVisibleBookableEditSections("general", { bookable: {}, shown }).map(
       (section) => section.id
     );
 
-  it("offers the section of an expert option that shows", () => {
-    expect(generalIds((option) => option === "tags")).toContain("general-tags");
+  it("has the two groups of the Grunddaten, with or without expert mode", () => {
+    const groups = ["general-catalog", "general-admin"];
+    expect(generalIds(() => false)).toEqual(groups);
+    expect(generalIds(undefined)).toEqual(groups);
   });
 
-  it("leaves out the section of an expert option that does not show", () => {
-    expect(generalIds(() => false)).toEqual([
-      "general-info",
-      "general-images",
-      "general-booker-info",
+  it("names them as the groups do", () => {
+    expect(
+      getVisibleBookableEditSections("general", { bookable: {} }).map(
+        (section) => section.labelKey
+      )
+    ).toEqual([
+      "bookable.flow.identity.catalog",
+      "bookable.flow.identity.admin",
     ]);
-  });
-
-  it("offers every section without a rule, as expert mode does", () => {
-    expect(generalIds(undefined)).toContain("general-tags");
   });
 });
 

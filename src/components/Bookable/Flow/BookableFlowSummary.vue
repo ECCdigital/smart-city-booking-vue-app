@@ -58,6 +58,7 @@ const ICONS = {
   amount: "mdi-counter",
   permission: "mdi-account-key-outline",
   approval: "mdi-check-decagram-outline",
+  publication: "mdi-storefront-outline",
 };
 
 /**

@@ -1,4 +1,4 @@
-import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.vue";
+import BookableFlowIdentity from "@/components/Bookable/Flow/BookableFlowIdentity.vue";
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
 import BookableEditBookingMode from "@/components/Bookable/Edit/BookableEditBookingMode.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
@@ -84,7 +84,17 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
     key: "general",
     label: "Allgemein",
     icon: "mdi-information-outline",
-    comp: BookableEditGeneral,
+    // The Grunddaten, as the guided flow's step Identität shows them; their
+    // two groups carry the anchors of the sections general-catalog and
+    // general-admin themselves.
+    cards: [
+      {
+        key: "basics",
+        comp: BookableFlowIdentity,
+        titleKey: "bookable.flow.identity.heading",
+        icon: "mdi-information-outline",
+      },
+    ],
   },
   {
     key: "pricing",
