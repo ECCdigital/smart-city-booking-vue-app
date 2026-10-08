@@ -12,7 +12,7 @@ const BOOKING_MODE_LABELS = {
   independent: "Zeitunabhängig",
 };
 
-const PRICE_TYPE_SUFFIX = {
+export const PRICE_TYPE_SUFFIX = {
   "per-hour": "/h",
   "per-day": "/Tag",
   "per-square-meter": "/m²",
@@ -32,7 +32,7 @@ const WEEKDAYS = {
   0: { short: "So.", long: "Sonntag" },
 };
 
-function formatCurrency(value) {
+export function formatCurrency(value) {
   const num = Number(value);
   if (Number.isNaN(num)) return "0,00 €";
   return (

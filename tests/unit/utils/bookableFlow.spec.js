@@ -361,17 +361,17 @@ describe("optionalSections", () => {
 
 describe("overview", () => {
   // A block as the overview shows it: label and value in German, „–“ empty.
+  // A list of values reads joined by commas.
+  const valueText = (value) => {
+    if (value === null) return "–";
+    if (Array.isArray(value)) return value.map(valueText).join(", ");
+    if (value.text !== undefined) return value.text;
+    return value.count === undefined
+      ? i18n.t(value.key, value.params)
+      : i18n.tc(value.key, value.count, value.params);
+  };
   const shown = ({ rows }) =>
-    rows.map(({ label, value }) => {
-      if (value === null) return [i18n.t(label), "–"];
-      if (value.text !== undefined) return [i18n.t(label), value.text];
-      return [
-        i18n.t(label),
-        value.count === undefined
-          ? i18n.t(value.key, value.params)
-          : i18n.tc(value.key, value.count, value.params),
-      ];
-    });
+    rows.map(({ label, value }) => [i18n.t(label), valueText(value)]);
   const blockOf = (step, item, options = {}) =>
     overviewBlocks(item, { visited: [step], ...options }).find(
       (block) => block.step === step
@@ -446,12 +446,105 @@ describe("overview", () => {
     ).not.toContain("Veranstaltung");
   });
 
+  it("names a free price „Kostenfrei“, without VAT or coupons", () => {
+    expect(shown(blockOf("price", bookable()))).toEqual([
+      ["Preis", "Kostenfrei"],
+    ]);
+  });
+
+  it("names a simple price with its unit, the VAT rate and coupons", () => {
+    const item = bookable({
+      priceCategories: [category(25)],
+      priceType: "per-hour",
+      priceValueAddedTax: 19,
+      enableCoupons: true,
+    });
+
+    expect(shown(blockOf("price", item))).toEqual([
+      ["Preis", "25,00 €/h"],
+      ["Mehrwertsteuer", "19 %"],
+      ["Gutscheine", "ja"],
+    ]);
+  });
+
+  it("names a price without VAT „ohne“ and coupons off „nein“", () => {
+    const item = bookable({
+      priceCategories: [category("12,5")],
+      priceType: "per-item",
+      priceValueAddedTax: 0,
+      enableCoupons: false,
+    });
+
+    expect(shown(blockOf("price", item))).toEqual([
+      ["Preis", "12,50 €/Stk."],
+      ["Mehrwertsteuer", "ohne"],
+      ["Gutscheine", "nein"],
+    ]);
+  });
+
+  it("counts the tiers instead of naming an amount", () => {
+    const tiers = (categories) =>
+      shown(blockOf("price", bookable({ priceCategories: categories })))[0];
+    const weekend = category(30, { weekdays: [0, 6] });
+
+    expect(tiers([category(10), category(20), weekend])).toEqual([
+      "Preis",
+      "3 Tarife",
+    ]);
+    expect(tiers([weekend])).toEqual(["Preis", "1 Tarif"]);
+  });
+
+  it("says „extern gesteuert“ when a provider handles the prices", () => {
+    const item = bookable({
+      priceCategories: [category(25)],
+      externalProviders: [
+        { provider: "ifbs", active: true, handles: ["pricing"] },
+      ],
+    });
+
+    expect(shown(blockOf("price", item))).toEqual([
+      ["Preis", "extern gesteuert"],
+    ]);
+  });
+
   it("names the amount or „Unbegrenzt“", () => {
     expect(shown(blockOf("amount", bookable({ amount: 3 })))).toEqual([
       ["Anzahl", "3"],
     ]);
     expect(shown(blockOf("amount", bookable({ amount: null })))).toEqual([
       ["Anzahl", "Unbegrenzt"],
+    ]);
+  });
+
+  it("names who may book as the step does", () => {
+    const accessShown = (access) =>
+      shown(blockOf("permission", applyAccess(bookable(), access)));
+
+    expect(accessShown("everyone")).toEqual([["Zugang", "Jeder"]]);
+    expect(accessShown("signedIn")).toEqual([["Zugang", "Angemeldete Nutzer"]]);
+  });
+
+  it("counts the roles and persons chosen", () => {
+    const counted = (permittedRoles, permittedUsers) =>
+      shown(
+        blockOf(
+          "permission",
+          bookable({ requiresLogin: true, permittedRoles, permittedUsers })
+        )
+      );
+
+    expect(counted(["r1", "r2"], ["u1"])).toEqual([
+      ["Zugang", "2 Rollen, 1 Person"],
+    ]);
+    expect(counted(["r1"], [])).toEqual([["Zugang", "1 Rolle"]]);
+    expect(counted([], ["u1", "u2", "u3"])).toEqual([["Zugang", "3 Personen"]]);
+  });
+
+  it("reads selected access with nobody named yet as signed-in users", () => {
+    const item = applyAccess(bookable(), "selected");
+
+    expect(shown(blockOf("permission", item))).toEqual([
+      ["Zugang", "Angemeldete Nutzer"],
     ]);
   });
 
@@ -464,17 +557,29 @@ describe("overview", () => {
     ).toEqual([["Buchungen", "wird geprüft"]]);
   });
 
-  it("shows Verfügbarkeit, Preis and Berechtigung by their title only for now", () => {
-    const blocks = overviewBlocks(bookable({ title: "Saal" }), {
-      visited: ["availability", "price", "permission"],
+  it("names the booking type with the step's words", () => {
+    const typeOf = (mode) => {
+      const item = applyBookingMode(bookable(), mode);
+      return shown(blockOf("availability", item));
+    };
+
+    expect(typeOf("schedule")).toEqual([["Buchungsart", "Freie Zeitwahl"]]);
+    expect(typeOf("timePeriod")).toEqual([["Buchungsart", "Feste Zeiten"]]);
+    expect(typeOf("blockPeriod")).toEqual([["Buchungsart", "Zeiträume"]]);
+    expect(typeOf("week")).toEqual([["Buchungsart", "Langzeit, Wochen"]]);
+    expect(typeOf("month")).toEqual([["Buchungsart", "Langzeit, Monate"]]);
+    expect(typeOf("independent")).toEqual([["Buchungsart", "Ohne Zeit"]]);
+  });
+
+  it("says „extern gesteuert“ when a provider handles the availability", () => {
+    const item = bookable({
+      externalProviders: [
+        { provider: "ifbs", active: true, handles: ["availability"] },
+      ],
     });
 
-    expect(
-      blocks.filter(({ open }) => !open).map(({ step, rows }) => [step, rows])
-    ).toEqual([
-      ["availability", []],
-      ["price", []],
-      ["permission", []],
+    expect(shown(blockOf("availability", item))).toEqual([
+      ["Buchungsart", "extern gesteuert"],
     ]);
   });
 });
