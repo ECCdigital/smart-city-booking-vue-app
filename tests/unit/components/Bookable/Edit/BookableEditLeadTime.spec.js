@@ -112,3 +112,43 @@ describe("BookableEditLeadTime", () => {
     expect(lastPatch(patches)).toEqual({ bufferTimeBeforeMinutes: 10 });
   });
 });
+
+describe("BookableEditLeadTime - without expert mode", () => {
+  const simple = (overrides, saved) =>
+    mountEditing(BookableEditLeadTime, {
+      bookable: bookable(overrides),
+      saved: saved && bookable(saved),
+      propsData: { showBuffer: true },
+      expertMode: false,
+    }).wrapper;
+
+  it("shows Vorlaufzeit while it is active, without Puffer unused", () => {
+    const wrapper = simple({
+      isLeadTimeRelated: true,
+      preparationLeadTimeMinutes: 60,
+      serviceHours: [SERVICE_HOURS],
+    });
+
+    expect(find(wrapper, "lead-time-switch").exists()).toBe(true);
+    expect(find(wrapper, "buffer-switch").exists()).toBe(false);
+  });
+
+  it("shows Puffer while it is set, without Vorlaufzeit unused", () => {
+    const wrapper = simple({
+      isBufferRelated: true,
+      bufferTimeAfterMinutes: 15,
+    });
+
+    expect(find(wrapper, "buffer-switch").exists()).toBe(true);
+    expect(find(wrapper, "lead-time-switch").exists()).toBe(false);
+  });
+
+  it("keeps Vorlaufzeit switched off while the stored bookable has it", () => {
+    const wrapper = simple(
+      { isLeadTimeRelated: false },
+      { isLeadTimeRelated: true, serviceHours: [SERVICE_HOURS] }
+    );
+
+    expect(find(wrapper, "lead-time-switch").exists()).toBe(true);
+  });
+});

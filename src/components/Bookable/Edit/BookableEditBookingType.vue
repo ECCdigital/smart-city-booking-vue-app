@@ -3,8 +3,6 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import BookableEditLeadTime from "@/components/Bookable/Edit/BookableEditLeadTime.vue";
 import { v4 as uuidv4 } from "uuid";
 import bookableEditing from "@/mixins/bookableEditing";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
-import { isBookableExpertOnlyBookingType } from "@/utils/bookableExpertMode";
 import { applyBookingMode, bookingModeOf } from "@/utils/bookableFlow";
 
 /** What `v-model.number` keeps: a number where the input reads as one. */
@@ -16,7 +14,7 @@ function toNumber(value) {
 export default {
   name: "BookableEditBookingType",
   components: { BaseSection, BookableEditLeadTime },
-  mixins: [bookableEditing, bookableExpertMode],
+  mixins: [bookableEditing],
   props: {
     // Inside the guided flow, which asks for the booking type itself: only
     // the settings of the chosen type are shown.
@@ -44,13 +42,9 @@ export default {
   },
   computed: {
     bookingTypeSupportsLeadTime() {
-      return (
-        this.expertMode &&
-        ["schedule", "timePeriod", "blockPeriod"].includes(this.bookingType)
+      return ["schedule", "timePeriod", "blockPeriod"].includes(
+        this.bookingType
       );
-    },
-    isExpertBookingTypeActive() {
-      return isBookableExpertOnlyBookingType(this.bookingType);
     },
     bookingType() {
       return bookingModeOf(this.bookable);
@@ -282,16 +276,6 @@ export default {
         Wählen Sie aus, wie Kunden dieses Objekt buchen können.
       </v-alert>
 
-      <v-alert
-        v-if="!embedded && !expertMode && isExpertBookingTypeActive"
-        color="info"
-        dense
-        text
-        class="mb-4"
-      >
-        {{ $t("bookable.edit.expertMode.bookingTypeExpertOnly") }}
-      </v-alert>
-
       <div v-if="!embedded" id="be-section-bookingType-select">
         <v-radio-group :value="bookingType" @change="setBookingType">
           <v-radio value="schedule" class="mb-3">
@@ -323,12 +307,7 @@ export default {
             </template>
           </v-radio>
 
-          <v-radio
-            v-if="expertMode || bookingType === 'week'"
-            value="week"
-            class="mb-3"
-            :disabled="!expertMode"
-          >
+          <v-radio v-if="expertOptionShown('week')" value="week" class="mb-3">
             <template v-slot:label>
               <div>
                 <div class="font-weight-bold">
@@ -342,12 +321,7 @@ export default {
             </template>
           </v-radio>
 
-          <v-radio
-            v-if="expertMode || bookingType === 'month'"
-            value="month"
-            class="mb-3"
-            :disabled="!expertMode"
-          >
+          <v-radio v-if="expertOptionShown('month')" value="month" class="mb-3">
             <template v-slot:label>
               <div>
                 <div class="font-weight-bold">
@@ -362,10 +336,9 @@ export default {
           </v-radio>
 
           <v-radio
-            v-if="expertMode || bookingType === 'blockPeriod'"
+            v-if="expertOptionShown('blockPeriod')"
             value="blockPeriod"
             class="mb-3"
-            :disabled="!expertMode"
           >
             <template v-slot:label>
               <div>
@@ -447,7 +420,7 @@ export default {
       </v-card>
 
       <BookableEditLeadTime
-        v-if="expertMode && bookingType === 'schedule'"
+        v-if="bookingType === 'schedule'"
         ref="leadTime"
         :bookable="bookable"
         :show-buffer="true"
@@ -698,7 +671,7 @@ export default {
       </v-card>
 
       <BookableEditLeadTime
-        v-if="expertMode && bookingType === 'timePeriod'"
+        v-if="bookingType === 'timePeriod'"
         ref="leadTime"
         :bookable="bookable"
         :show-buffer="false"
@@ -1008,7 +981,7 @@ export default {
       </v-card>
 
       <BookableEditLeadTime
-        v-if="expertMode && bookingType === 'blockPeriod'"
+        v-if="bookingType === 'blockPeriod'"
         ref="leadTime"
         :bookable="bookable"
         :show-buffer="false"

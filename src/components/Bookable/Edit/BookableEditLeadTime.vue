@@ -4,7 +4,6 @@ import {
   hasBufferConfig,
 } from "@/utils/bookingLeadTime";
 import bookableEditing from "@/mixins/bookableEditing";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 const WEEKDAYS = [
   { id: 1, name: "Montag", short: "Mo" },
@@ -31,7 +30,7 @@ const BUFFER_PRESET_MINUTES = [
 
 export default {
   name: "BookableEditLeadTime",
-  mixins: [bookableEditing, bookableExpertMode],
+  mixins: [bookableEditing],
   props: {
     showBuffer: { type: Boolean, default: true },
   },
@@ -209,9 +208,6 @@ export default {
       return this.expandedItems.includes(index);
     },
     async validate() {
-      if (!this.expertMode) {
-        return true;
-      }
       const formValid = this.$refs.form ? this.$refs.form.validate() : true;
       if (!formValid) {
         return false;
@@ -247,8 +243,9 @@ export default {
 </script>
 
 <template>
-  <v-form v-if="expertMode" ref="form" v-model="valid">
+  <v-form ref="form" v-model="valid">
     <v-card
+      v-if="expertOptionShown('leadTime')"
       id="be-section-bookingType-lead-time"
       class="mt-4 section-card"
       outlined
@@ -570,7 +567,7 @@ export default {
     </v-card>
 
     <v-card
-      v-if="showBuffer"
+      v-if="showBuffer && expertOptionShown('buffer')"
       id="be-section-bookingType-buffer"
       class="mt-4 section-card"
       outlined

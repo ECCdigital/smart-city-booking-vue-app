@@ -156,3 +156,51 @@ describe("BookableEditBookingType", () => {
     expect(handedIn).toEqual(stored);
   });
 });
+
+describe("BookableEditBookingType - expert booking modes", () => {
+  const radio = (wrapper, mode) => wrapper.find(`input[value='${mode}']`);
+  const simple = (overrides) =>
+    mountEditing(BookableEditBookingType, {
+      bookable: bookable(overrides),
+      expertMode: false,
+      stubs: STUBS,
+    }).wrapper;
+
+  it("offers the expert mode in use, and not the others", () => {
+    const wrapper = simple({
+      isScheduleRelated: false,
+      isLongRange: true,
+      longRangeOptions: { type: "week" },
+    });
+
+    expect(radio(wrapper, "week").exists()).toBe(true);
+    expect(radio(wrapper, "week").attributes("disabled")).toBeUndefined();
+    expect(radio(wrapper, "month").exists()).toBe(false);
+    expect(radio(wrapper, "blockPeriod").exists()).toBe(false);
+  });
+
+  it("offers no expert mode while none is in use", () => {
+    const wrapper = simple({ isScheduleRelated: true });
+
+    for (const mode of ["week", "month", "blockPeriod"]) {
+      expect(radio(wrapper, mode).exists()).toBe(false);
+    }
+  });
+
+  it("says nothing about expert mode", () => {
+    const wrapper = simple({
+      isScheduleRelated: false,
+      isBlockPeriodRelated: true,
+    });
+
+    expect(wrapper.text()).not.toContain("Experten-Modus");
+  });
+
+  it("offers every mode in expert mode", () => {
+    const { wrapper } = mountType({ isScheduleRelated: true });
+
+    for (const mode of ["week", "month", "blockPeriod"]) {
+      expect(radio(wrapper, mode).exists()).toBe(true);
+    }
+  });
+});
