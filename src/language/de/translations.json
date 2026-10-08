@@ -336,6 +336,21 @@
         "manual": "Manuell prüfen",
         "manual-hint": "Das System prüft weiterhin alles; buchen kann man nur, wenn alle Angaben passen. Die Buchung kommt aber als ausstehend in Ihre Buchungsliste – Sie geben sie frei oder lehnen ab."
       },
+      "overview": {
+        "title": "Übersicht",
+        "open": "Noch offen",
+        "empty": "–",
+        "labels": {
+          "amount": "Anzahl",
+          "approval": "Buchungen"
+        },
+        "values": {
+          "image-present": "vorhanden",
+          "image-none": "keins",
+          "approval-auto": "automatisch bestätigt",
+          "approval-manual": "wird geprüft"
+        }
+      },
       "done": {
         "published": {
           "free": {

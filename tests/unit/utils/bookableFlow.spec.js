@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import Bookable from "@/entities/bookable";
+import i18n from "@/language/index";
 import {
   accessOf,
   applyAccess,
@@ -10,6 +11,7 @@ import {
   isFlowMode,
   isUnlimitedAmount,
   optionalSections,
+  overviewBlocks,
   priceBasisOf,
   priceExplanation,
   priceModeOf,
@@ -354,5 +356,125 @@ describe("optionalSections", () => {
       tabKey: "attachments",
       sectionId: null,
     });
+  });
+});
+
+describe("overview", () => {
+  // A block as the overview shows it: label and value in German, „–“ empty.
+  const shown = ({ rows }) =>
+    rows.map(({ label, value }) => {
+      if (value === null) return [i18n.t(label), "–"];
+      if (value.text !== undefined) return [i18n.t(label), value.text];
+      return [
+        i18n.t(label),
+        value.count === undefined
+          ? i18n.t(value.key, value.params)
+          : i18n.tc(value.key, value.count, value.params),
+      ];
+    });
+  const blockOf = (step, item, options = {}) =>
+    overviewBlocks(item, { visited: [step], ...options }).find(
+      (block) => block.step === step
+    );
+
+  it("gives one block per step, open until the step was visited", () => {
+    const blocks = overviewBlocks(bookable({ title: "Saal" }), {
+      visited: ["identity"],
+    });
+
+    expect(blocks.map(({ step, open }) => [step, open])).toEqual([
+      ["identity", false],
+      ["availability", true],
+      ["price", true],
+      ["amount", true],
+      ["permission", true],
+      ["approval", true],
+    ]);
+    expect(blocks[1].rows).toEqual([]);
+  });
+
+  it("shows a value left empty as „–“", () => {
+    expect(shown(blockOf("identity", bookable({ type: "room" })))).toEqual([
+      ["Titel", "–"],
+      ["Typ", "Raum"],
+      ["Bild", "keins"],
+      ["Standort", "–"],
+      ["Merkmale", "–"],
+    ]);
+  });
+
+  it("names the identity as the step sets it, the image as present", () => {
+    const item = bookable({
+      title: " Großer Saal ",
+      type: "event-location",
+      images: [{ id: "m1" }],
+      location: { display_address: "Markt 1, Rostock", lat: 1, lng: 2 },
+      flags: ["WLAN", "Beamer", "Bühne", "Küche", "Garderobe", "Parkplatz"],
+    });
+
+    expect(shown(blockOf("identity", item))).toEqual([
+      ["Titel", "Großer Saal"],
+      ["Typ", "Veranstaltungsort"],
+      ["Bild", "vorhanden"],
+      ["Standort", "Markt 1, Rostock"],
+      ["Merkmale", "WLAN, Beamer, Bühne, Küche +2"],
+    ]);
+    expect(
+      shown(blockOf("identity", bookable({ imgUrl: "https://x/y.png" })))
+    ).toContainEqual(["Bild", "vorhanden"]);
+  });
+
+  it("names the event of a ticket only, by its title or else its id", () => {
+    const ticket = bookable({ type: "ticket", eventId: "e1" });
+
+    expect(
+      shown(
+        blockOf("identity", ticket, { eventTitlesById: { e1: "Sommerfest" } })
+      )
+    ).toContainEqual(["Veranstaltung", "Sommerfest"]);
+    expect(shown(blockOf("identity", ticket))).toContainEqual([
+      "Veranstaltung",
+      "e1",
+    ]);
+    expect(
+      shown(blockOf("identity", bookable({ type: "ticket" })))
+    ).toContainEqual(["Veranstaltung", "–"]);
+    expect(
+      shown(blockOf("identity", bookable({ type: "room", eventId: "e1" }))).map(
+        ([label]) => label
+      )
+    ).not.toContain("Veranstaltung");
+  });
+
+  it("names the amount or „Unbegrenzt“", () => {
+    expect(shown(blockOf("amount", bookable({ amount: 3 })))).toEqual([
+      ["Anzahl", "3"],
+    ]);
+    expect(shown(blockOf("amount", bookable({ amount: null })))).toEqual([
+      ["Anzahl", "Unbegrenzt"],
+    ]);
+  });
+
+  it("says whether bookings are confirmed automatically or reviewed", () => {
+    expect(
+      shown(blockOf("approval", bookable({ autoCommitBooking: true })))
+    ).toEqual([["Buchungen", "automatisch bestätigt"]]);
+    expect(
+      shown(blockOf("approval", bookable({ autoCommitBooking: false })))
+    ).toEqual([["Buchungen", "wird geprüft"]]);
+  });
+
+  it("shows Verfügbarkeit, Preis and Berechtigung by their title only for now", () => {
+    const blocks = overviewBlocks(bookable({ title: "Saal" }), {
+      visited: ["availability", "price", "permission"],
+    });
+
+    expect(
+      blocks.filter(({ open }) => !open).map(({ step, rows }) => [step, rows])
+    ).toEqual([
+      ["availability", []],
+      ["price", []],
+      ["permission", []],
+    ]);
   });
 });
