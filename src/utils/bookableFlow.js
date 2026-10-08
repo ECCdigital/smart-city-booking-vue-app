@@ -545,6 +545,30 @@ function priceRows(bookable) {
 }
 
 /**
+ * Anzahl & Kapazität: the Anzahl, and the Höchstmenge je Buchung where the
+ * step asks for it, by the step's name and words.
+ */
+function amountRows(bookable) {
+  const rows = [
+    {
+      label: `${OVERVIEW}.labels.amount`,
+      value: isUnlimitedAmount(bookable)
+        ? asWord("bookable.flow.amount.unlimited")
+        : asText(toNumber(bookable.amount)),
+    },
+  ];
+  if (showsMaxAmount(bookable)) {
+    rows.push({
+      label: "bookable.flow.amount.max-title",
+      value: isUnlimitedMaxAmount(bookable)
+        ? asWord("bookable.flow.amount.unlimited")
+        : asText(String(bookable.maxAmountPerBooking)),
+    });
+  }
+  return rows;
+}
+
+/**
  * Who may book in the step's words. Selected access with nobody named yet
  * reads as signed-in users, as the step explains it.
  */
@@ -584,25 +608,7 @@ const OVERVIEW_ROWS = {
   identity: identityRows,
   availability: availabilityRows,
   price: priceRows,
-  amount: (bookable) => [
-    {
-      label: `${OVERVIEW}.labels.amount`,
-      value: isUnlimitedAmount(bookable)
-        ? asWord("bookable.flow.amount.unlimited")
-        : asText(toNumber(bookable.amount)),
-    },
-    // Where the step asks for it, by the step's name and words.
-    ...(showsMaxAmount(bookable)
-      ? [
-          {
-            label: "bookable.flow.amount.max-title",
-            value: isUnlimitedMaxAmount(bookable)
-              ? asWord("bookable.flow.amount.unlimited")
-              : asText(String(bookable.maxAmountPerBooking)),
-          },
-        ]
-      : []),
-  ],
+  amount: amountRows,
   permission: permissionRows,
   // The Bestätigung by its name and the words of its tiles.
   approval: (bookable) => [
