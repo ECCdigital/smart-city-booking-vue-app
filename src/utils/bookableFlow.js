@@ -1,10 +1,10 @@
 /**
  * The guided flow of a bookable (ECCdigital/tickets#326), after the cloud
- * variant: six steps over the same bookable the editor holds, saved once at
+ * variant: the steps over the same bookable the editor holds, saved once at
  * the end. Pure: which steps there are, how each question reads from the
- * bookable and lands on it, what the closing action is called by
- * supervision level and which optional editor sections the confirmation
- * links. The flow components only wire it to the page.
+ * bookable and lands on it, how the confirmation is worded by supervision
+ * level and which optional editor sections it links. The flow components
+ * only wire it to the page.
  *
  * Every answer is read from the bookable itself - the flow keeps no state of
  * its own beyond the step - so leaving for the editor and coming back shows
@@ -34,6 +34,8 @@ export const FLOW_STEPS = Object.freeze([
   "amount",
   "permission",
   "approval",
+  // Always last: what becomes public is the final question (#362).
+  "publication",
 ]);
 
 /** The bookable types a new bookable may take; events stay in their editor. */
@@ -326,7 +328,7 @@ export function applyAccess(bookable, access) {
 // --- Abschluss -------------------------------------------------------------
 
 /**
- * The wording of the closing action by supervision level: free publishes,
+ * The wording of the confirmation by supervision level: free publishes,
  * supervised submits for review, pending and declined note the wish. A
  * missing or unknown level reads as free - wording only, the backend decides
  * what becomes public.
@@ -335,15 +337,6 @@ export function publishVariant(level) {
   return Object.values(SUPERVISION_LEVELS).includes(level)
     ? level
     : SUPERVISION_LEVELS.FREE;
-}
-
-/**
- * „Speichern und veröffentlichen“ stores the publication wish, as the
- * guided setup did; „Nur speichern“ leaves it as it is - a published
- * bookable stays published, a new one stays a draft.
- */
-export function withPublication(bookable, publish) {
-  return publish ? { ...bookable, isPublic: true, isBookable: true } : bookable;
 }
 
 /**
@@ -553,6 +546,15 @@ const OVERVIEW_ROWS = {
       ),
     },
   ],
+  // The two switches by the labels of the fields themselves.
+  publication: (bookable) =>
+    [
+      ["isBookable", "bookable.publication.bookable.label"],
+      ["isPublic", "bookable.publication.public.label"],
+    ].map(([field, label]) => ({
+      label,
+      value: asWord(`${OVERVIEW}.values.${bookable?.[field] ? "yes" : "no"}`),
+    })),
 };
 
 /**

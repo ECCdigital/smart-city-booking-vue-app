@@ -38,8 +38,17 @@ vi.mock("@/services/permissions/BookablePermissionService", () => ({
 vi.mock("@/services/api/ApiInstanceService", () => ({
   default: { getBookableCustomFields: vi.fn().mockResolvedValue([]) },
 }));
+vi.mock("@/services/permissions/TenantPermissionService", () => ({
+  default: {
+    reviewViewer: vi.fn(() => ({ tenantOwner: true, instanceOwner: false })),
+  },
+}));
 
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import { FLOW_STEPS } from "@/utils/bookableFlow";
+
+// The flow's last step, whatever steps come before it.
+const lastStep = FLOW_STEPS[FLOW_STEPS.length - 1];
 
 const mountEdit = (query, bookable) => mountBookableEdit({ query, bookable });
 
@@ -354,8 +363,8 @@ describe("BookableEdit - saving with issues", () => {
       stored({ title: "" })
     );
 
-    await find(wrapper, "flow-dot-approval").trigger("click");
-    await save(wrapper, "flow-save-only");
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await save(wrapper, "flow-save");
 
     expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
     expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
@@ -371,5 +380,135 @@ describe("BookableEdit - saving with issues", () => {
     await find(wrapper, "flow-next").trigger("click");
 
     expect(find(wrapper, "flow-title-heading").text()).toBe("Verfügbarkeit");
+  });
+});
+
+describe("BookableEdit - publication", () => {
+  const COMBINATIONS = [
+    [true, true],
+    [true, false],
+    [false, true],
+    [false, false],
+  ];
+
+  beforeEach(() => {
+    ApiBookablesService.createOrUpdateBookable.mockReset();
+    ApiBookablesService.createOrUpdateBookable.mockImplementation(
+      async (bookable) => ({ data: bookable })
+    );
+  });
+
+  const sent = () =>
+    ApiBookablesService.createOrUpdateBookable.mock.calls.slice(-1)[0][0];
+  const publicationOf = ({ isBookable, isPublic }) => ({
+    isBookable,
+    isPublic,
+  });
+
+  const saveFlow = async (wrapper) => {
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await find(wrapper, "flow-save").trigger("click");
+    await flushPromises();
+  };
+
+  const flip = async (wrapper, test) => {
+    await find(wrapper, test).find("input").trigger("click");
+    await wrapper.vm.$nextTick();
+  };
+
+  it.each(COMBINATIONS)(
+    "keeps Buchbar %s and Im Katalog %s through loading and saving the editing page",
+    async (isBookable, isPublic) => {
+      const wrapper = await mountEdit(
+        { id: "b1" },
+        stored({ isBookable, isPublic })
+      );
+
+      await find(wrapper, "save").trigger("click");
+      await flushPromises();
+
+      expect(publicationOf(sent())).toEqual({ isBookable, isPublic });
+      expect(unsaved(wrapper)).toBe(false);
+    }
+  );
+
+  it.each(COMBINATIONS)(
+    "keeps Buchbar %s and Im Katalog %s through loading and saving the guided flow",
+    async (isBookable, isPublic) => {
+      const wrapper = await mountEdit(
+        { id: "b1", mode: "flow" },
+        stored({ isBookable, isPublic })
+      );
+
+      await saveFlow(wrapper);
+
+      expect(publicationOf(sent())).toEqual({ isBookable, isPublic });
+      expect(find(wrapper, "flow-done-title").text()).toBe("Gespeichert");
+    }
+  );
+
+  it("shows the publication in the status band of the editing page", async () => {
+    const wrapper = await mountBookableEdit({
+      query: { id: "b1" },
+      bookable: stored({ isBookable: true, isPublic: false }),
+      stubs: { BookableEditStatus: false },
+    });
+
+    await flip(wrapper, "publication-public");
+
+    expect(find(wrapper, "publication-effect").text()).toBe(
+      "Das Buchungsobjekt steht im Katalog und ist buchbar."
+    );
+    expect(unsaved(wrapper)).toBe(true);
+    await find(wrapper, "save").trigger("click");
+    await flushPromises();
+    expect(publicationOf(sent())).toEqual({ isBookable: true, isPublic: true });
+  });
+
+  it("starts a new bookable with both switches off, whatever the template says", async () => {
+    ApiBookablesService.getBookableTemplate.mockResolvedValue({
+      data: { tenantId: "t1", isBookable: true, isPublic: true },
+    });
+    const wrapper = await mountEdit({}, undefined);
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+
+    expect(find(wrapper, "publication-effect").text()).toBe(
+      "Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar."
+    );
+  });
+
+  it("confirms the publication the switches made, not a button", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", mode: "flow" },
+      stored({ isBookable: false, isPublic: false })
+    );
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await flip(wrapper, "publication-bookable");
+    await flip(wrapper, "publication-public");
+    await saveFlow(wrapper);
+
+    expect(publicationOf(sent())).toEqual({ isBookable: true, isPublic: true });
+    expect(find(wrapper, "flow-done-title").text()).toBe("Veröffentlicht");
+  });
+
+  it("confirms a withdrawn publication as saved, not published", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", mode: "flow" },
+      stored({ isBookable: true, isPublic: true })
+    );
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await flip(wrapper, "publication-public");
+    await saveFlow(wrapper);
+
+    expect(publicationOf(sent())).toEqual({
+      isBookable: true,
+      isPublic: false,
+    });
+    expect(find(wrapper, "flow-done-title").text()).toBe(
+      "Als Entwurf gespeichert"
+    );
   });
 });

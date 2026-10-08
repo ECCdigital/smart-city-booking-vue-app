@@ -178,13 +178,7 @@
       "back": "Zurück",
       "next": "Weiter",
       "skip": "Überspringen",
-      "save-only": "Nur speichern",
-      "save-and-publish": {
-        "free": "Speichern und veröffentlichen",
-        "supervised": "Speichern und zur Prüfung einreichen",
-        "pending": "Speichern und Veröffentlichung vormerken",
-        "declined": "Speichern und Veröffentlichung vormerken"
-      },
+      "save": "Speichern",
       "save-hint": "Gespeichert wird erst hier. Wer den Ablauf vorher verlässt, verliert die Angaben.",
       "save-failed": "Das Buchungsobjekt konnte nicht gespeichert werden.",
       "steps": {
@@ -211,6 +205,10 @@
         "approval": {
           "title": "Freigabe",
           "why": "Sollen Buchungen automatisch freigegeben werden oder erst nach Ihrer Prüfung?"
+        },
+        "publication": {
+          "title": "Veröffentlichung",
+          "why": "Ob Buchende das Objekt im Katalog finden und ob sie es buchen können – beides lässt sich einzeln einstellen."
         }
       },
       "identity": {

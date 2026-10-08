@@ -8,13 +8,19 @@ import {
 import ApiEventService from "@/services/api/ApiEventService";
 import Bookable from "@/entities/bookable";
 import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
+import { FLOW_STEPS } from "@/utils/bookableFlow";
 
 vi.mock("@/services/api/ApiEventService", () => ({
   default: { getEvents: vi.fn() },
 }));
+vi.mock("@/services/permissions/TenantPermissionService", () => ({
+  default: {
+    reviewViewer: vi.fn(() => ({ tenantOwner: true, instanceOwner: false })),
+  },
+}));
 
-// The steps with their own API calls and editors are stood in for; amount
-// and approval are drawn for real.
+// The steps with their own API calls and editors are stood in for; amount,
+// approval and publication are drawn for real.
 const stepStub = (name) => ({
   name,
   render(h) {
@@ -42,8 +48,9 @@ const mountFlow = (propsData = {}) =>
 
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
 
+// „Weiter“ until there is none: robust to steps added before the last.
 async function walkToLastStep(wrapper) {
-  for (let step = 0; step < 5; step += 1) {
+  while (find(wrapper, "flow-next").exists()) {
     await find(wrapper, "flow-next").trigger("click");
   }
 }
@@ -95,27 +102,50 @@ describe("BookableFlow", () => {
     expect(changed).toEqual({ autoCommitBooking: true });
   });
 
-  it("saves only at the end, with or without the publication wish", async () => {
+  // ECCdigital/tickets#362: one „Speichern“; what becomes public is the
+  // publication step's switches, not a variant of the button.
+  it("saves only at the end, with one „Speichern“", async () => {
     const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
 
-    expect(find(wrapper, "flow-save-only").exists()).toBe(false);
+    expect(find(wrapper, "flow-save").exists()).toBe(false);
     await walkToLastStep(wrapper);
 
-    await find(wrapper, "flow-save-only").trigger("click");
-    await find(wrapper, "flow-save-publish").trigger("click");
+    const buttons = find(wrapper, "flow-footer-actions").findAll("button");
+    expect(buttons.wrappers.map((button) => button.text())).toEqual([
+      "Speichern",
+    ]);
+    await find(wrapper, "flow-save").trigger("click");
 
-    expect(wrapper.emitted("save")).toEqual([[false], [true]]);
+    expect(wrapper.emitted("save")).toEqual([[]]);
   });
 
-  it.each([
-    [null, "Speichern und veröffentlichen"],
-    ["supervised", "Speichern und zur Prüfung einreichen"],
-    ["pending", "Speichern und Veröffentlichung vormerken"],
-  ])("words the closing action for the level %s", async (level, label) => {
-    const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }), level });
+  it("ends with the publication, both switches as the bookable has them", async () => {
+    const wrapper = mountFlow({
+      bookable: bookable({ title: "Saal", isBookable: true, isPublic: false }),
+    });
     await walkToLastStep(wrapper);
 
-    expect(find(wrapper, "flow-save-publish").text()).toBe(label);
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Veröffentlichung");
+    expect(find(wrapper, "publication-question").text()).toBe(
+      "Wer kann das Buchungsobjekt finden und buchen?"
+    );
+    expect(find(wrapper, "publication-effect").text()).toBe(
+      "Das Buchungsobjekt steht nicht im Katalog, ist aber per Direktlink buchbar."
+    );
+  });
+
+  it("hands the publication the tenant's level and its patches on", async () => {
+    const wrapper = mountFlow({
+      bookable: bookable({ title: "Saal" }),
+      level: "supervised",
+    });
+    await walkToLastStep(wrapper);
+
+    expect(find(wrapper, "publication-wish-hint").exists()).toBe(true);
+    await find(wrapper, "publication-public").find("input").trigger("click");
+
+    const [changed] = wrapper.emitted("update:bookable").slice(-1)[0];
+    expect(changed).toEqual({ isPublic: true });
   });
 
   it("names a failed save beside the buttons", async () => {
@@ -263,6 +293,7 @@ describe("BookableFlow on a wide screen", () => {
       "flow-summary-amount",
       "flow-summary-permission",
       "flow-summary-approval",
+      "flow-summary-publication",
     ]);
     [
       "Identität",
@@ -271,21 +302,22 @@ describe("BookableFlow on a wide screen", () => {
       "Anzahl & Kapazität",
       "Berechtigung",
       "Freigabe",
+      "Veröffentlichung",
     ].forEach((title, idx) => expect(blocks[idx].text()).toContain(title));
   });
 
-  it("shows the identity with values and the other five steps as open", async () => {
+  it("shows the identity with values and the other steps as open", async () => {
     const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
 
     expect(blockOf(wrapper, "identity").text()).toContain("Saal");
     expect(blockOf(wrapper, "identity").attributes("aria-current")).toBe(
       "step"
     );
-    expect(openBlocks(wrapper)).toHaveLength(5);
+    expect(openBlocks(wrapper)).toHaveLength(FLOW_STEPS.length - 1);
 
     await find(wrapper, "flow-next").trigger("click");
 
-    expect(openBlocks(wrapper)).toHaveLength(4);
+    expect(openBlocks(wrapper)).toHaveLength(FLOW_STEPS.length - 2);
     expect(blockOf(wrapper, "availability").text()).not.toContain("Noch offen");
     expect(blockOf(wrapper, "availability").attributes("aria-current")).toBe(
       "step"
@@ -361,7 +393,7 @@ describe("BookableFlow on a wide screen", () => {
     });
 
     expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
-    expect(openBlocks(wrapper)).toHaveLength(5);
+    expect(openBlocks(wrapper)).toHaveLength(FLOW_STEPS.length - 1);
   });
 
   it("names the event of a ticket by its title", async () => {
@@ -399,6 +431,7 @@ describe("BookableFlow on an extra wide screen", () => {
       "Anzahl & Kapazität",
       "Berechtigung",
       "Freigabe",
+      "Veröffentlichung",
     ].forEach((title) => expect(list.text()).toContain(title));
     expect(entryOf(wrapper, "identity").attributes("aria-current")).toBe(
       "step"
