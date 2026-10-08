@@ -5,6 +5,7 @@ import BookableTypeChip from "@/components/commons/BookableTypeChip.vue";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import { isForbiddenError } from "@/services/api/apiErrorMessage";
 import SortableList from "@/components/SortableList.vue";
+import bookableEditing from "@/mixins/bookableEditing";
 
 export default {
   name: "BookableEditRelatedBookables",
@@ -14,6 +15,7 @@ export default {
     BookableCheckoutBookables,
     BaseSection,
   },
+  mixins: [bookableEditing],
   props: {
     bookable: { type: Object, required: true },
   },
@@ -63,7 +65,12 @@ export default {
 <template>
   <v-form ref="form" v-model="valid">
     <BaseSection title="Abhängigkeiten" icon="mdi-link-variant" />
-    <v-card id="be-section-related-checkout" class="mb-6 section-card" outlined>
+    <v-card
+      v-if="expertOptionShown('checkoutBookables')"
+      id="be-section-related-checkout"
+      class="mb-6 section-card"
+      outlined
+    >
       <v-card-title class="section-header pa-4">
         <v-icon small class="mr-2">mdi-cart-plus</v-icon>
         Zusätzliche Buchungsoptionen
@@ -91,6 +98,7 @@ export default {
     </v-card>
 
     <v-card
+      v-if="expertOptionShown('hierarchy')"
       id="be-section-related-hierarchy"
       class="mb-6 section-card"
       outlined

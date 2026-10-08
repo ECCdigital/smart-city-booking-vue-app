@@ -6,12 +6,12 @@ import { tenantUserOptions } from "@/utils/tenantUsers";
 import UserRoleSelector from "@/components/commons/UserRoleSelector.vue";
 import BookingDiscountEditor from "@/components/Bookable/Edit/BookingDiscountEditor.vue";
 import { mapGetters } from "vuex";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
+import bookableEditing from "@/mixins/bookableEditing";
 
 export default {
   name: "BookableEditPermissions",
   components: { BookingDiscountEditor, UserRoleSelector, BaseSection },
-  mixins: [bookableExpertMode],
+  mixins: [bookableEditing],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -173,7 +173,10 @@ export default {
       </v-card-text>
     </v-card>
 
-    <div v-if="expertMode" id="be-section-permissions-discounts">
+    <div
+      v-if="expertOptionShown('bookingDiscounts')"
+      id="be-section-permissions-discounts"
+    >
       <BaseSection title="Preisrabatte" icon="mdi-ticket-percent-outline" />
 
       <p class="mb-4 text-caption" style="max-width: 700px">
@@ -295,7 +298,7 @@ export default {
     </v-card>
 
     <v-card
-      v-if="expertMode"
+      v-if="expertOptionShown('cancellation')"
       id="be-section-permissions-cancellation"
       class="mb-6 section-card"
       outlined

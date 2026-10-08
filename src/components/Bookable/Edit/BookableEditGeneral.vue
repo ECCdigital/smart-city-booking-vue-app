@@ -5,13 +5,13 @@ import MediaReferenceList from "@/components/Media/MediaReferenceList.vue";
 import debounce from "lodash/debounce";
 import ApiEventService from "@/services/api/ApiEventService";
 import AddressLookup from "@/components/commons/AddressLookup.vue";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
+import bookableEditing from "@/mixins/bookableEditing";
 import { externalReferenceOf } from "@/utils/mediaReference";
 
 export default {
   name: "BookableEditGeneral",
   components: { AddressLookup, MediaReferenceList, Tiptap, BaseSection },
-  mixins: [bookableExpertMode],
+  mixins: [bookableEditing],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -254,7 +254,7 @@ export default {
     </v-card>
 
     <v-card
-      v-if="expertMode"
+      v-if="expertOptionShown('tags')"
       id="be-section-general-tags"
       class="mb-6 section-card"
       outlined

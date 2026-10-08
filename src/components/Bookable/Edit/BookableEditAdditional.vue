@@ -1,12 +1,12 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import Tiptap from "@/components/Tiptap.vue";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
+import bookableEditing from "@/mixins/bookableEditing";
 
 export default {
   name: "BookableEditAdditional",
   components: { Tiptap, BaseSection },
-  mixins: [bookableExpertMode],
+  mixins: [bookableEditing],
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
@@ -106,7 +106,7 @@ export default {
     <BaseSection title="Sonstiges" icon="mdi-dots-horizontal" />
 
     <v-card
-      v-if="expertMode"
+      v-if="expertOptionShown('requiredFields')"
       id="be-section-additional-required-fields"
       class="mb-6 section-card"
       outlined

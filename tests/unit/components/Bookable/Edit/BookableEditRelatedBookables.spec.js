@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
+import { mountEditing } from "@tests/unit/support/bookableEditing";
 import { flushPromises, forbiddenError } from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiBookablesService", () => ({
@@ -72,5 +73,42 @@ describe("BookableEditRelatedBookables", () => {
     });
     const wrapper = await mountSection();
     expect(wrapper.vm.bookablesWithoutSelf.map((b) => b.id)).toEqual(["b2"]);
+  });
+});
+
+describe("BookableEditRelatedBookables - without expert mode", () => {
+  const sections = async (overrides, saved) => {
+    ApiBookablesService.getBookables.mockResolvedValue({ data: [] });
+    const bookable = (changes) => ({
+      id: "b1",
+      checkoutBookableIds: [],
+      relatedBookableIds: [],
+      ...changes,
+    });
+    const { wrapper } = mountEditing(BookableEditRelatedBookables, {
+      bookable: bookable(overrides),
+      saved: saved && bookable(saved),
+      expertMode: false,
+      stubs: { BookableCheckoutBookables: true, SortableList: true },
+    });
+    await flushPromises();
+    return {
+      checkout: wrapper.find("#be-section-related-checkout").exists(),
+      hierarchy: wrapper.find("#be-section-related-hierarchy").exists(),
+    };
+  };
+
+  it("shows Zusatzobjekte in use without the unused Hierarchie", async () => {
+    expect(await sections({ checkoutBookableIds: ["b2"] })).toEqual({
+      checkout: true,
+      hierarchy: false,
+    });
+  });
+
+  it("shows Hierarchie in use without the unused Zusatzobjekte", async () => {
+    expect(await sections({}, { relatedBookableIds: ["b3"] })).toEqual({
+      checkout: false,
+      hierarchy: true,
+    });
   });
 });

@@ -3,7 +3,7 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import CustomFieldList from "@/components/CustomFields/CustomFieldList.vue";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import { mapGetters } from "vuex";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
+import bookableEditing from "@/mixins/bookableEditing";
 
 const ORIGIN_META = {
   instance: {
@@ -19,7 +19,7 @@ const ORIGIN_META = {
 export default {
   name: "BookableEditCustomFields",
   components: { BaseSection, CustomFieldList },
-  mixins: [bookableExpertMode],
+  mixins: [bookableEditing],
   props: {
     bookable: { type: Object, required: true },
     sectionTarget: { type: String, default: null },
@@ -36,6 +36,9 @@ export default {
     ...mapGetters({
       currentTenant: "tenants/currentTenant",
     }),
+    definitionsShown() {
+      return this.expertOptionShown("customFieldDefinitions");
+    },
     groupedFields() {
       const fields = this.bookable.customFields || [];
       const values = this.bookable.customFieldValues || [];
@@ -114,8 +117,8 @@ export default {
     },
   },
   watch: {
-    expertMode(enabled) {
-      if (!enabled) {
+    definitionsShown(shown) {
+      if (!shown) {
         this.activeView = 0;
       }
     },
@@ -144,7 +147,7 @@ export default {
   },
   methods: {
     goToSection(sectionId) {
-      if (sectionId === "customFields-definitions" && this.expertMode) {
+      if (sectionId === "customFields-definitions" && this.definitionsShown) {
         this.activeView = 1;
         return;
       }
@@ -189,7 +192,7 @@ export default {
       });
     },
     switchToDefinitions() {
-      if (!this.expertMode) return;
+      if (!this.definitionsShown) return;
       this.activeView = 1;
     },
     updateFieldValue(fieldId, newValue) {
@@ -267,7 +270,7 @@ export default {
   <v-form ref="form" v-model="valid">
     <BaseSection title="Eigene Felder" icon="mdi-form-textbox">
       <v-tabs
-        v-if="expertMode"
+        v-if="definitionsShown"
         v-model="activeView"
         class="mb-4 custom-fields-tabs"
         grow
@@ -288,7 +291,7 @@ export default {
         </v-tab>
       </v-tabs>
 
-      <v-tabs-items v-if="expertMode" v-model="activeView">
+      <v-tabs-items v-if="definitionsShown" v-model="activeView">
         <v-tab-item>
           <div class="custom-fields-values">
             <p class="text-body-2 text--secondary mb-3">
@@ -508,7 +511,7 @@ export default {
         </v-tab-item>
       </v-tabs-items>
 
-      <!-- Simple mode: values only, no definition sub-tab -->
+      <!-- Without „Felder definieren“: values only, no definition sub-tab -->
       <div v-else class="custom-fields-values">
         <p class="text-body-2 text--secondary mb-3">
           Werte eintragen, die im Katalog oder intern angezeigt werden.
@@ -530,8 +533,7 @@ export default {
             Noch keine Felder zum Ausfüllen
           </div>
           <div class="text-body-2 grey--text">
-            Felder kommen von Instanz oder Mandant. Eigene Felder kannst du im
-            Experten-Modus unter „Felder definieren“ anlegen.
+            Felder kommen von Instanz oder Mandant.
           </div>
         </v-card>
 
