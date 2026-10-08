@@ -23,6 +23,7 @@ import {
   usesOpeningHours,
   warnsAboutAmount,
 } from "@/utils/bookableFlow";
+import { expertOptionShown } from "@/utils/bookableExpertMode";
 
 const category = (priceEur, overrides = {}) => ({
   priceEur,
@@ -505,18 +506,25 @@ describe("FLOW_STEPS", () => {
   });
 });
 
+// A row as the overview shows it: the parts of a value read joined by
+// commas, none as „Nicht festgelegt“; a param may be a part itself.
+const partText = (part) => {
+  if (part.type === "text") return part.text;
+  if (part.type === "plural") return i18n.tc(part.key, part.count);
+  const params = Object.fromEntries(
+    Object.entries(part.params || {}).map(([name, param]) => [
+      name,
+      param && param.type ? partText(param) : param,
+    ])
+  );
+  return i18n.t(part.key, params);
+};
+const valueText = (parts) =>
+  parts.length ? parts.map(partText).join(", ") : "Nicht festgelegt";
+
 describe("overview", () => {
-  // A block as the overview shows it: label and value in German, „–“ empty.
-  // The parts of a value read joined by commas.
-  const partText = (part) => {
-    if (part.type === "text") return part.text;
-    if (part.type === "plural") return i18n.tc(part.key, part.count);
-    return i18n.t(part.key, part.params);
-  };
-  const valueText = (parts) =>
-    parts.length ? parts.map(partText).join(", ") : "–";
   const shown = ({ rows }) =>
-    rows.map(({ label, value }) => [i18n.t(label), valueText(value)]);
+    rows.map(({ label, value }) => [label && i18n.t(label), valueText(value)]);
   const blockOf = (step, item, options = {}) =>
     overviewBlocks(item, { visited: [step], ...options }).find(
       (block) => block.step === step
@@ -540,35 +548,38 @@ describe("overview", () => {
     expect(blocks[1].rows).toEqual([]);
   });
 
-  it("shows a value left empty as „–“", () => {
+  it("shows a value left empty as „Nicht festgelegt“", () => {
     expect(shown(blockOf("identity", bookable({ type: "room" })))).toEqual([
-      ["Titel", "–"],
+      ["Titel", "Nicht festgelegt"],
+      ["Merkmale", "Nicht festgelegt"],
+      ["Bilder", "Nicht festgelegt"],
+      ["Standort", "Nicht festgelegt"],
       ["Typ", "Raum"],
-      ["Bilder", "keins"],
-      ["Standort", "–"],
-      ["Merkmale", "–"],
+      ["Interne Tags", "Nicht festgelegt"],
     ]);
   });
 
-  it("names the identity as the step sets it, the image as present", () => {
+  it("names the identity as the step sets it, the images counted", () => {
     const item = bookable({
       title: " Großer Saal ",
       type: "event-location",
       images: [{ id: "m1" }],
       location: { display_address: "Markt 1, Rostock", lat: 1, lng: 2 },
       flags: ["WLAN", "Beamer", "Bühne", "Küche", "Garderobe", "Parkplatz"],
+      tags: ["intern"],
     });
 
     expect(shown(blockOf("identity", item))).toEqual([
       ["Titel", "Großer Saal"],
-      ["Typ", "Veranstaltungsort"],
-      ["Bilder", "vorhanden"],
-      ["Standort", "Markt 1, Rostock"],
       ["Merkmale", "WLAN, Beamer, Bühne, Küche +2"],
+      ["Bilder", "1 Bild"],
+      ["Standort", "Markt 1, Rostock"],
+      ["Typ", "Veranstaltungsort"],
+      ["Interne Tags", "intern"],
     ]);
     expect(
       shown(blockOf("identity", bookable({ imgUrl: "https://x/y.png" })))
-    ).toContainEqual(["Bilder", "vorhanden"]);
+    ).toContainEqual(["Bilder", "1 Bild"]);
   });
 
   it("names the event of a ticket only, by its title or else its id", () => {
@@ -585,7 +596,7 @@ describe("overview", () => {
     ]);
     expect(
       shown(blockOf("identity", bookable({ type: "ticket" })))
-    ).toContainEqual(["Veranstaltung", "–"]);
+    ).toContainEqual(["Veranstaltung", "Nicht festgelegt"]);
     expect(
       shown(blockOf("identity", bookable({ type: "room", eventId: "e1" }))).map(
         ([label]) => label
@@ -688,12 +699,26 @@ describe("overview", () => {
 
   it("names the amount or „Unbegrenzt“", () => {
     expect(shown(blockOf("amount", bookable({ amount: 3 })))).toEqual([
-      ["Anzahl", "3"],
+      ["Anzahl / Kapazität", "3"],
       ["Höchstmenge je Buchung", "Unbegrenzt"],
     ]);
     expect(shown(blockOf("amount", bookable({ amount: null })))).toEqual([
-      ["Anzahl", "Unbegrenzt"],
+      ["Anzahl / Kapazität", "Unbegrenzt"],
       ["Höchstmenge je Buchung", "Unbegrenzt"],
+    ]);
+  });
+
+  it("says „extern gesteuert“ when a provider handles the amount", () => {
+    const item = bookable({
+      amount: 3,
+      externalProviders: [
+        { provider: "ifbs", active: true, handles: ["maxAmount"] },
+      ],
+    });
+
+    expect(shown(blockOf("amount", item))[0]).toEqual([
+      "Anzahl / Kapazität",
+      "extern gesteuert",
     ]);
   });
 
@@ -702,19 +727,20 @@ describe("overview", () => {
       shown(blockOf("amount", bookable({ amount, maxAmountPerBooking })));
 
     expect(rows(10, 2)).toEqual([
-      ["Anzahl", "10"],
+      ["Anzahl / Kapazität", "10"],
       ["Höchstmenge je Buchung", "2"],
     ]);
-    expect(rows(1, null)).toEqual([["Anzahl", "1"]]);
+    expect(rows(1, null)).toEqual([["Anzahl / Kapazität", "1"]]);
   });
 
   it("names who may book as the step does", () => {
     const accessShown = (access) =>
       shown(blockOf("permission", applyAccess(bookable(), access)));
 
-    expect(accessShown("everyone")).toEqual([["Wer darf buchen?", "Alle"]]);
-    expect(accessShown("signedIn")).toEqual([
-      ["Wer darf buchen?", "Alle mit Konto"],
+    expect(accessShown("everyone")[0]).toEqual(["Wer darf buchen?", "Alle"]);
+    expect(accessShown("signedIn")[0]).toEqual([
+      "Wer darf buchen?",
+      "Alle mit Konto",
     ]);
   });
 
@@ -725,22 +751,25 @@ describe("overview", () => {
           "permission",
           bookable({ requiresLogin: true, permittedRoles, permittedUsers })
         )
-      );
+      )[0];
 
     expect(counted(["r1", "r2"], ["u1"])).toEqual([
-      ["Wer darf buchen?", "2 Rollen, 1 Person"],
+      "Wer darf buchen?",
+      "2 Rollen, 1 Person",
     ]);
-    expect(counted(["r1"], [])).toEqual([["Wer darf buchen?", "1 Rolle"]]);
+    expect(counted(["r1"], [])).toEqual(["Wer darf buchen?", "1 Rolle"]);
     expect(counted([], ["u1", "u2", "u3"])).toEqual([
-      ["Wer darf buchen?", "3 Personen"],
+      "Wer darf buchen?",
+      "3 Personen",
     ]);
   });
 
   it("reads selected access with nobody named yet as signed-in users", () => {
     const item = applyAccess(bookable(), "selected");
 
-    expect(shown(blockOf("permission", item))).toEqual([
-      ["Wer darf buchen?", "Alle mit Konto"],
+    expect(shown(blockOf("permission", item))[0]).toEqual([
+      "Wer darf buchen?",
+      "Alle mit Konto",
     ]);
   });
 
@@ -775,17 +804,15 @@ describe("overview", () => {
   it("names the Buchungsart with the names of its questions", () => {
     const typeOf = (mode) => {
       const item = applyBookingMode(bookable(), mode);
-      return shown(blockOf("availability", item));
+      return shown(blockOf("availability", item))[0];
     };
 
-    expect(typeOf("schedule")).toEqual([["Buchungsart", "Freie Zeitwahl"]]);
-    expect(typeOf("timePeriod")).toEqual([
-      ["Buchungsart", "Feste Zeitfenster"],
-    ]);
-    expect(typeOf("blockPeriod")).toEqual([["Buchungsart", "Zeiträume"]]);
-    expect(typeOf("week")).toEqual([["Buchungsart", "Ganze Wochen"]]);
-    expect(typeOf("month")).toEqual([["Buchungsart", "Ganze Monate"]]);
-    expect(typeOf("independent")).toEqual([["Buchungsart", "Ohne Zeit"]]);
+    expect(typeOf("schedule")).toEqual(["Buchungsart", "Freie Zeitwahl"]);
+    expect(typeOf("timePeriod")).toEqual(["Buchungsart", "Feste Zeitfenster"]);
+    expect(typeOf("blockPeriod")).toEqual(["Buchungsart", "Zeiträume"]);
+    expect(typeOf("week")).toEqual(["Buchungsart", "Ganze Wochen"]);
+    expect(typeOf("month")).toEqual(["Buchungsart", "Ganze Monate"]);
+    expect(typeOf("independent")).toEqual(["Buchungsart", "Ohne Zeit"]);
   });
 
   it("says „extern gesteuert“ when a provider handles the availability", () => {
@@ -795,8 +822,13 @@ describe("overview", () => {
       ],
     });
 
-    expect(shown(blockOf("availability", item))).toEqual([
-      ["Buchungsart", "extern gesteuert"],
+    const rows = shown(blockOf("availability", item));
+    expect(rows[0]).toEqual(["Buchungsart", "extern gesteuert"]);
+    // The sections of a mode do not show; the opening hours keep their tab.
+    expect(rows.map(([label]) => label)).toEqual([
+      "Buchungsart",
+      "Öffnungszeiten",
+      "Sonderöffnungszeiten",
     ]);
   });
 
@@ -813,9 +845,234 @@ describe("overview", () => {
     ]);
   });
 
-  it("says no area is in use with an empty value", () => {
+  it("says „Nicht festgelegt“ alone while no area is in use", () => {
     const item = bookable({ requiredFields: ["address", "zipCode", "city"] });
 
-    expect(shown(blockOf("more", item))).toEqual([["Genutzte Bereiche", "–"]]);
+    expect(shown(blockOf("more", item))).toEqual([[null, "Nicht festgelegt"]]);
+  });
+});
+
+describe("overview: the way to each field", () => {
+  const rowsOf = (item, options = {}) =>
+    overviewBlocks(item, options).flatMap(({ rows }) => rows);
+  const rowOf = (item, key, options) =>
+    rowsOf(item, options).find((row) => row.key === key);
+
+  it("leads every row to its field: the tab and section, the step", () => {
+    const item = bookable({ title: "Saal", type: "room" });
+
+    expect(rowOf(item, "title").target).toEqual({
+      step: "identity",
+      tab: "general",
+      section: "general-catalog",
+      field: "title",
+      area: null,
+    });
+    expect(rowOf(item, "price").target).toEqual({
+      step: "price",
+      tab: "pricing",
+      section: "pricing-price",
+      field: "price",
+      area: null,
+    });
+    expect(rowOf(item, "confirmation").target).toEqual({
+      step: "approval",
+      tab: "permissions",
+      section: "permissions-confirmation",
+      field: "confirmation",
+      area: null,
+    });
+  });
+
+  it("leads a row of the Veröffentlichung to the status band: no tab", () => {
+    expect(rowOf(bookable(), "isPublic").target).toEqual({
+      step: "publication",
+      tab: null,
+      section: null,
+      field: "isPublic",
+      area: null,
+    });
+  });
+
+  it("leads a heading to the first row of its block, also while open", () => {
+    const blocks = overviewBlocks(bookable({ title: "Saal" }), {
+      visited: ["identity"],
+    });
+    const price = blocks.find(({ step }) => step === "price");
+
+    expect(price.open).toBe(true);
+    expect(price.target).toEqual({
+      step: "price",
+      tab: "pricing",
+      section: "pricing-price",
+      field: "price",
+      area: null,
+    });
+  });
+
+  it("leads an area of Weitere Einstellungen to its card and its row", () => {
+    const item = bookable({ checkoutBookableIds: ["b2"] });
+
+    expect(rowOf(item, "checkoutBookables").target).toEqual({
+      step: "more",
+      tab: "relatedBookables",
+      section: "related-checkout",
+      field: null,
+      area: "checkoutBookables",
+    });
+  });
+
+  it("leads „Nicht festgelegt“ of Weitere Einstellungen to the first area that shows", () => {
+    const item = bookable({ requiredFields: ["address", "zipCode", "city"] });
+    const simple = (option) =>
+      expertOptionShown(option, { expertMode: false, current: item });
+
+    expect(rowOf(item, "more").target).toEqual({
+      step: "more",
+      tab: "accessLocks",
+      section: null,
+      field: null,
+      area: null,
+    });
+    // Without expert mode the expert areas stand aside: Serienbuchung.
+    expect(rowOf(item, "more", { shown: simple }).target).toMatchObject({
+      step: "more",
+      tab: "permissions",
+      section: "permissions-group-booking",
+    });
+  });
+});
+
+describe("overview: expert options", () => {
+  const labelsOf = (item, expertMode) =>
+    overviewBlocks(item, {
+      shown: (option) =>
+        expertOptionShown(option, { expertMode, stored: item, current: item }),
+    }).flatMap(({ rows }) => rows.map(({ label }) => label && i18n.t(label)));
+  const paid = (overrides) =>
+    bookable({
+      priceCategories: [category(25)],
+      requiredFields: ["address", "zipCode", "city"],
+      ...overrides,
+    });
+
+  it("shows an unused expert option only in expert mode", () => {
+    const expert = ["Interne Tags", "Rabattcodes", "Vorlaufzeit"];
+    const more = ["Puffer zwischen Buchungen", "Sonderöffnungszeiten"];
+
+    expect(labelsOf(paid(), true)).toEqual(
+      expect.arrayContaining([...expert, ...more, "Preisnachlass"])
+    );
+    [...expert, ...more, "Preisnachlass"].forEach((label) =>
+      expect(labelsOf(paid(), false)).not.toContain(label)
+    );
+  });
+
+  it("shows a used expert option without expert mode, as the field does", () => {
+    const item = paid({
+      tags: ["intern"],
+      enableCoupons: false,
+      isLeadTimeRelated: true,
+      preparationLeadTimeMinutes: 120,
+      bookingDiscounts: {
+        roles: [{ roleId: "r1", discountPercent: 10 }],
+        users: [],
+      },
+    });
+
+    expect(labelsOf(item, false)).toEqual(
+      expect.arrayContaining([
+        "Interne Tags",
+        "Rabattcodes",
+        "Vorlaufzeit",
+        "Preisnachlass",
+      ])
+    );
+  });
+});
+
+describe("overview: the settings of the Buchungsart", () => {
+  const rows = (overrides) =>
+    overviewBlocks(bookable(overrides))
+      .find(({ step }) => step === "availability")
+      .rows.map(({ label, value }) => [i18n.t(label), valueText(value)]);
+
+  it("names Buchungsdauer, Vorlaufzeit, Puffer and the opening hours", () => {
+    expect(
+      rows({
+        minBookingDuration: 1,
+        maxBookingDuration: 4,
+        isLeadTimeRelated: true,
+        preparationLeadTimeMinutes: 1440,
+        isBufferRelated: true,
+        bufferTimeBeforeMinutes: 30,
+        bufferTimeAfterMinutes: 0,
+        isOpeningHoursRelated: true,
+        openingHours: [{ weekdays: [1], startTime: "08:00", endTime: "18:00" }],
+      })
+    ).toEqual([
+      ["Buchungsart", "Freie Zeitwahl"],
+      ["Buchungsdauer", "1 bis 4 Stunden"],
+      ["Vorlaufzeit", "1 Tag"],
+      ["Puffer zwischen Buchungen", "30 Min. vor der Buchung"],
+      ["Öffnungszeiten", "1 Eintrag"],
+      ["Sonderöffnungszeiten", "Nicht festgelegt"],
+    ]);
+  });
+
+  it("counts the Zeitfenster and the Zeiträume of their mode", () => {
+    const timePeriod = { weekdays: [1], startTime: "09:00", endTime: "12:00" };
+
+    expect(
+      rows({
+        isScheduleRelated: false,
+        isTimePeriodRelated: true,
+        timePeriods: [timePeriod, timePeriod],
+      })
+    ).toContainEqual(["Feste Zeitfenster", "2 Zeitfenster"]);
+    expect(
+      rows({ isScheduleRelated: false, isBlockPeriodRelated: true })
+    ).toContainEqual(["Zeiträume", "Nicht festgelegt"]);
+  });
+});
+
+describe("overview: issues at their row", () => {
+  const issuesOf = (item) =>
+    Object.fromEntries(
+      overviewBlocks(item)
+        .flatMap(({ rows }) => rows)
+        .filter(({ issues }) => issues.length)
+        .map(({ key, issues }) => [key, issues])
+    );
+
+  it("puts an issue of the check at the row of its field", () => {
+    expect(
+      issuesOf(bookable({ title: " ", maxAmountPerBooking: 0, amount: 4 }))
+    ).toEqual({
+      title: ["bookable.validation.title"],
+      maxAmountPerBooking: ["bookable.validation.maxAmountPerBooking"],
+    });
+  });
+
+  it("puts an issue of a field without a row at the first row of its step", () => {
+    const item = bookable({
+      title: "Saal",
+      requiredFields: ["address", "zipCode", "city"],
+      accessPointDetails: {
+        active: true,
+        accessBuffer: { before: -5, after: 0 },
+        accessPointIds: [],
+      },
+    });
+
+    expect(issuesOf(item)).toEqual({
+      more: ["accessPoint.bookable.buffer.invalid"],
+    });
+  });
+
+  it("shows no issue in a block still open", () => {
+    const blocks = overviewBlocks(bookable({ title: "" }), { visited: [] });
+
+    expect(blocks.every(({ rows }) => rows.length === 0)).toBe(true);
   });
 });

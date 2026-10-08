@@ -390,21 +390,14 @@
         "manual-hint": "Jede Buchung kommt als angefragt in Ihre Buchungsliste. Sie bestätigen sie oder lehnen sie ab."
       },
       "more": {
-        "unused": "Nicht genutzt",
-        "used": "Genutzte Bereiche"
+        "unused": "Nicht genutzt"
       },
       "overview": {
         "title": "Übersicht",
         "open": "Noch offen",
-        "empty": "–",
-        "labels": {
-          "availability": "Buchungsart",
-          "amount": "Anzahl",
-          "permission": "Wer darf buchen?"
-        },
+        "empty": "Nicht festgelegt",
         "values": {
-          "image-present": "vorhanden",
-          "image-none": "keins",
+          "images": "{count} Bild | {count} Bilder",
           "external": "extern gesteuert",
           "tiers": "{count} Tarif | {count} Tarife",
           "once": "{price} für die ganze Buchung",
@@ -414,7 +407,18 @@
           "yes": "ja",
           "no": "nein",
           "roles": "{count} Rolle | {count} Rollen",
-          "users": "{count} Person | {count} Personen"
+          "users": "{count} Person | {count} Personen",
+          "days": "{count} Tag | {count} Tage",
+          "hours": "{count} Std. | {count} Std.",
+          "minutes": "{count} Min. | {count} Min.",
+          "hours-range": "{min} bis {max} Stunden",
+          "hours-min": "ab {min} Stunden",
+          "hours-max": "bis {max} Stunden",
+          "time-periods": "{count} Zeitfenster | {count} Zeitfenster",
+          "block-periods": "{count} Zeitraum | {count} Zeiträume",
+          "entries": "{count} Eintrag | {count} Einträge",
+          "buffer-before": "{duration} vor der Buchung",
+          "buffer-after": "{duration} nach der Buchung"
         }
       },
       "done": {
@@ -512,7 +516,6 @@
         "label": "Experten-Modus",
         "simpleLabel": "Einfach-Modus"
       },
-      "openEvent": "Veranstaltung in neuem Tab öffnen",
       "sections": {
         "pricingAmount": "Anzahl",
         "accessLocksExternal": "Externe Datenquelle",
@@ -527,8 +530,14 @@
         "customFieldsValues": "Werte pflegen",
         "customFieldsDefinitions": "Felder definieren"
       },
-      "overview": {
-        "titlesForbidden": "Titel der verknüpften Buchungsobjekte nicht abrufbar – Sie haben keinen Zugriff auf Buchungsobjekte."
+      "cards": {
+        "bookingDuration": "Buchungsdauer",
+        "timePeriods": "Feste Zeitfenster",
+        "blockPeriods": "Zeiträume",
+        "leadTime": "Vorlaufzeit",
+        "buffer": "Puffer zwischen Buchungen",
+        "openingHours": "Öffnungszeiten",
+        "specialOpeningHours": "Sonderöffnungszeiten"
       }
     },
     "areas": {

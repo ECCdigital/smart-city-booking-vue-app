@@ -12,20 +12,24 @@
  */
 
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
-import { providerHandles } from "@/utils/bookableExternalProviders";
+import {
+  handlesCapability,
+  providerHandles,
+} from "@/utils/bookableExternalProviders";
 import {
   bookingModeNameKey,
+  getBookableEditSectionById,
   getBookingMode,
+  isBookableEditSectionVisible,
 } from "@/utils/bookableEditSections";
-import { BOOKABLE_AREAS, areaSummary, areaUsed } from "@/utils/bookableAreas";
-import { getTypeText } from "@/utils/bookables";
 import {
-  PRICE_TYPE_SUFFIX,
-  formatCurrency,
-  getLocationLabel,
-  joinList,
-  truncate,
-} from "@/utils/bookableOverview";
+  BOOKABLE_AREAS,
+  areaSummary,
+  areaUsed,
+  shownAreas,
+} from "@/utils/bookableAreas";
+import { bookableIssues } from "@/utils/bookableValidation";
+import { getTypeText } from "@/utils/bookables";
 
 export const FLOW_STEPS = Object.freeze([
   "identity",
@@ -428,12 +432,19 @@ export function publishVariant(level) {
 
 // --- Übersicht -------------------------------------------------------------
 
+/*
+ * The one overview beside the form, in both modes (ECCdigital/tickets#364):
+ * a block per step, its rows named and valued as the fields themselves, each
+ * row with the way to its field.
+ */
+
 const OVERVIEW = "bookable.flow.overview";
+const VALUES = `${OVERVIEW}.values`;
 
 /*
  * A row's value is a list of parts, read joined by commas; no part reads
- * „–“. A part is ready text, an i18n key with its params, or a plural key
- * with its count.
+ * „Nicht festgelegt“. A part is ready text, an i18n key with its params, or
+ * a plural key with its count. A param may be a part itself.
  */
 const textPart = (text) => ({ type: "text", text: String(text) });
 const wordPart = (key, params) => ({ type: "word", key, params });
@@ -443,8 +454,51 @@ const pluralPart = (key, count) => ({ type: "plural", key, count });
 const asText = (text) => (text ? [textPart(text)] : []);
 /** A value of one i18n key. */
 const asWord = (key, params) => [wordPart(key, params)];
+/** A value of a count; none is no part. */
+const asCount = (key, count) => (count > 0 ? [pluralPart(key, count)] : []);
 
-/** The event of a ticket by its title, as the editor's overview resolves it. */
+const listOf = (value) => (Array.isArray(value) ? value : []);
+
+/** The price with the unit of its Preisart, as „25,00 €/h“. */
+const PRICE_TYPE_SUFFIX = Object.freeze({
+  "per-hour": "/h",
+  "per-day": "/Tag",
+  "per-square-meter": "/m²",
+  "per-item": "/Stk.",
+});
+
+function formatCurrency(value) {
+  const num = Number(value);
+  if (Number.isNaN(num)) return "0,00 €";
+  return `${num.toLocaleString("de-DE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} €`;
+}
+
+function truncate(text, maxLength = 64) {
+  const normalized = String(text ?? "").trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength - 1)}…`;
+}
+
+/** Up to four entries, the rest as „+n“. */
+function joinList(items, maxItems = 4) {
+  const clean = listOf(items)
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+  if (clean.length <= maxItems) return clean.join(", ");
+  return `${clean.slice(0, maxItems).join(", ")} +${clean.length - maxItems}`;
+}
+
+function locationLabel(bookable) {
+  const location = bookable?.location;
+  if (!location) return "";
+  if (typeof location === "string") return truncate(location);
+  return truncate(location.display_address || "");
+}
+
+/** The event of a ticket by its title, else by its id. */
 function eventLabel(bookable, eventTitlesById = {}) {
   if (!bookable?.eventId) return "";
   return (
@@ -453,201 +507,461 @@ function eventLabel(bookable, eventTitlesById = {}) {
   );
 }
 
-function identityRows(bookable, { eventTitlesById } = {}) {
-  const label = (field) => `bookable.flow.identity.${field}`;
-  const image = bookable?.images?.length > 0 || bookable?.imgUrl;
-  const event = {
-    label: label("event"),
-    value: asText(eventLabel(bookable, eventTitlesById)),
-  };
-  return [
-    { label: label("title"), value: asText(truncate(bookable?.title)) },
-    { label: label("type"), value: asText(getTypeText(bookable?.type)) },
-    ...(bookable?.type === "ticket" ? [event] : []),
-    {
-      label: label("images"),
-      value: asWord(
-        `${OVERVIEW}.values.${image ? "image-present" : "image-none"}`
+/** Minutes as whole days, hours or minutes. */
+function durationPart(minutes) {
+  const value = toNumber(minutes);
+  if (value > 0 && value % 1440 === 0) {
+    return pluralPart(`${VALUES}.days`, value / 1440);
+  }
+  if (value > 0 && value % 60 === 0) {
+    return pluralPart(`${VALUES}.hours`, value / 60);
+  }
+  return pluralPart(`${VALUES}.minutes`, value);
+}
+
+const EXTERNAL = asWord(`${VALUES}.external`);
+const UNLIMITED = asWord("bookable.flow.amount.unlimited");
+const yesNo = (on) => asWord(`${VALUES}.${on ? "yes" : "no"}`);
+
+// --- the rows per step ---
+
+/*
+ * A row: `key` (also the name of its field's anchor, `data-field`), the
+ * i18n key of its `label`, its `value`, the `section` of the editing page
+ * that holds the field, the `fields` whose issues it shows and, where it
+ * shows only sometimes, `when` and the expert `option`.
+ */
+
+const IDENTITY_ROWS = [
+  {
+    key: "title",
+    label: "bookable.flow.identity.title",
+    section: "general-catalog",
+    fields: ["title"],
+    value: (b) => asText(truncate(b.title)),
+  },
+  {
+    key: "flags",
+    label: "bookable.flow.identity.flags",
+    section: "general-catalog",
+    value: (b) => asText(joinList(b.flags)),
+  },
+  {
+    key: "images",
+    label: "bookable.flow.identity.images",
+    section: "general-catalog",
+    // The legacy cover counts until images are chosen.
+    value: (b) =>
+      asCount(
+        `${VALUES}.images`,
+        listOf(b.images).length || (b.imgUrl ? 1 : 0)
       ),
-    },
-    { label: label("location"), value: asText(getLocationLabel(bookable)) },
-    { label: label("flags"), value: asText(joinList(bookable?.flags)) },
-  ];
+  },
+  {
+    key: "location",
+    label: "bookable.flow.identity.location",
+    section: "general-catalog",
+    value: (b) => asText(locationLabel(b)),
+  },
+  {
+    key: "type",
+    label: "bookable.flow.identity.type",
+    section: "general-admin",
+    value: (b) => asText(getTypeText(b.type)),
+  },
+  {
+    key: "eventId",
+    label: "bookable.flow.identity.event",
+    section: "general-admin",
+    when: (b) => b.type === "ticket",
+    value: (b, { eventTitlesById }) => asText(eventLabel(b, eventTitlesById)),
+  },
+  {
+    key: "tags",
+    label: "bookable.flow.identity.tags",
+    section: "general-admin",
+    option: "tags",
+    value: (b) => asText(joinList(b.tags)),
+  },
+];
+
+const CARDS = "bookable.edit.cards";
+
+/** Buchungsdauer in hours, as the fields take it. */
+function durationValue(bookable) {
+  const min = toNumber(bookable.minBookingDuration);
+  const max = toNumber(bookable.maxBookingDuration);
+  if (min > 0 && max > 0) return asWord(`${VALUES}.hours-range`, { min, max });
+  if (min > 0) return asWord(`${VALUES}.hours-min`, { min });
+  if (max > 0) return asWord(`${VALUES}.hours-max`, { max });
+  return [];
 }
 
-const EXTERNAL = asWord(`${OVERVIEW}.values.external`);
-
-function availabilityRows(bookable) {
+/** Puffer before and after, each where set. */
+function bufferValue(bookable) {
+  if (!bookable.isBufferRelated) return [];
   return [
-    {
-      label: `${OVERVIEW}.labels.availability`,
-      value: handlesExternalAvailability(bookable)
-        ? EXTERNAL
-        : asWord(bookingModeNameKey(bookable)),
-    },
-  ];
+    ["before", bookable.bufferTimeBeforeMinutes],
+    ["after", bookable.bufferTimeAfterMinutes],
+  ]
+    .filter(([, minutes]) => toNumber(minutes) > 0)
+    .map(([side, minutes]) =>
+      wordPart(`${VALUES}.buffer-${side}`, { duration: durationPart(minutes) })
+    );
 }
+
+const AVAILABILITY_ROWS = [
+  {
+    key: "bookingMode",
+    label: "bookable.edit.sections.bookingTypeSelect",
+    section: "bookingType-select",
+    value: (b) =>
+      handlesExternalAvailability(b) ? EXTERNAL : asWord(bookingModeNameKey(b)),
+  },
+  {
+    key: "bookingDuration",
+    label: `${CARDS}.bookingDuration`,
+    section: "bookingType-duration",
+    value: durationValue,
+  },
+  {
+    key: "timePeriods",
+    label: `${CARDS}.timePeriods`,
+    section: "bookingType-time-periods",
+    fields: ["timePeriods"],
+    value: (b) =>
+      asCount(`${VALUES}.time-periods`, listOf(b.timePeriods).length),
+  },
+  {
+    key: "blockPeriods",
+    label: `${CARDS}.blockPeriods`,
+    section: "bookingType-block-periods",
+    fields: ["blockPeriods"],
+    value: (b) =>
+      asCount(`${VALUES}.block-periods`, listOf(b.blockPeriods).length),
+  },
+  {
+    key: "leadTime",
+    label: `${CARDS}.leadTime`,
+    section: "bookingType-lead-time",
+    fields: ["preparationLeadTimeMinutes", "serviceHours"],
+    value: (b) =>
+      b.isLeadTimeRelated && toNumber(b.preparationLeadTimeMinutes) > 0
+        ? [durationPart(b.preparationLeadTimeMinutes)]
+        : [],
+  },
+  {
+    key: "buffer",
+    label: `${CARDS}.buffer`,
+    section: "bookingType-buffer",
+    fields: ["bufferTimeBeforeMinutes", "bufferTimeAfterMinutes"],
+    value: bufferValue,
+  },
+  {
+    key: "openingHours",
+    label: `${CARDS}.openingHours`,
+    section: "openingHours-regular",
+    fields: ["openingHours"],
+    value: (b) =>
+      b.isOpeningHoursRelated
+        ? asCount(`${VALUES}.entries`, listOf(b.openingHours).length)
+        : [],
+  },
+  {
+    key: "specialOpeningHours",
+    label: `${CARDS}.specialOpeningHours`,
+    section: "openingHours-special",
+    fields: ["specialOpeningHours"],
+    value: (b) =>
+      b.isSpecialOpeningHoursRelated
+        ? asCount(`${VALUES}.entries`, listOf(b.specialOpeningHours).length)
+        : [],
+  },
+];
 
 /**
- * A simple price's amount with its unit, as the editor's overview formats
- * it; a fixed price that holds once per booking, or an hour price as
- * Tagespauschale, in the words of the price.
+ * A simple price's amount with its unit; a fixed price that holds once per
+ * booking, or an hour price as Tagespauschale, in the words of the price.
  */
 function simpleAmountValue(bookable) {
   const category = bookable.priceCategories[0];
   const amount = formatCurrency(toNumber(category.priceEur));
   if (oncePerBooking(bookable)) {
-    return asWord(`${OVERVIEW}.values.once`, { price: amount });
+    return asWord(`${VALUES}.once`, { price: amount });
   }
   if (bookable.priceType === "per-hour" && category.fixedPrice) {
-    return asWord(`${OVERVIEW}.values.daily-flat`, { price: amount });
+    return asWord(`${VALUES}.daily-flat`, { price: amount });
   }
   return asText(`${amount}${PRICE_TYPE_SUFFIX[bookable.priceType] || ""}`);
 }
 
-/** Tiers by their number. */
-function tiersValue(bookable) {
-  const count = bookable.priceCategories.length;
-  return [pluralPart(`${OVERVIEW}.values.tiers`, count)];
-}
-
-function vatValue(bookable) {
-  const rate = toNumber(bookable.priceValueAddedTax);
-  if (!(rate > 0)) return asWord(`${OVERVIEW}.values.vat-none`);
-  return asWord(`${OVERVIEW}.values.vat-rate`, {
-    rate: rate.toLocaleString("de-DE"),
-  });
-}
-
-/**
- * The price as the step labels its mode choice; with a price, the VAT rate
- * and whether coupons apply, as the step sets them.
- */
-function priceRows(bookable) {
-  const price = "bookable.flow.price";
-  const label = "bookable.flow.steps.price.title";
-  if (handlesExternalPricing(bookable)) return [{ label, value: EXTERNAL }];
-
+function priceValue(bookable) {
+  if (handlesExternalPricing(bookable)) return EXTERNAL;
   const mode = priceModeOf(bookable);
-  if (mode === "free") return [{ label, value: asWord(`${price}.modes.free`) }];
-
-  const amount =
-    mode === "tiers" ? tiersValue(bookable) : simpleAmountValue(bookable);
-  const coupons = bookable.enableCoupons !== false ? "yes" : "no";
-  return [
-    { label, value: amount },
-    { label: `${price}.vat`, value: vatValue(bookable) },
-    {
-      label: `${price}.coupons`,
-      value: asWord(`${OVERVIEW}.values.${coupons}`),
-    },
-  ];
-}
-
-/**
- * Anzahl & Kapazität: the Anzahl, and the Höchstmenge je Buchung where the
- * step asks for it, by the step's name and words.
- */
-function amountRows(bookable) {
-  const rows = [
-    {
-      label: `${OVERVIEW}.labels.amount`,
-      value: isUnlimitedAmount(bookable)
-        ? asWord("bookable.flow.amount.unlimited")
-        : asText(toNumber(bookable.amount)),
-    },
-  ];
-  if (showsMaxAmount(bookable)) {
-    rows.push({
-      label: "bookable.flow.amount.max-title",
-      value: isUnlimitedMaxAmount(bookable)
-        ? asWord("bookable.flow.amount.unlimited")
-        : asText(String(bookable.maxAmountPerBooking)),
-    });
+  if (mode === "free") return asWord("bookable.flow.price.modes.free");
+  if (mode === "tiers") {
+    return asCount(`${VALUES}.tiers`, bookable.priceCategories.length);
   }
-  return rows;
+  return simpleAmountValue(bookable);
 }
 
-/**
- * Who may book in the step's words. Selected access with nobody named yet
- * reads as signed-in users, as the step explains it.
- */
-function permissionRows(bookable) {
-  const access = accessOf(bookable);
-  const chosen = [
-    pluralPart(`${OVERVIEW}.values.roles`, bookable.permittedRoles?.length),
-    pluralPart(`${OVERVIEW}.values.users`, bookable.permittedUsers?.length),
-  ].filter(({ count }) => count > 0);
-  return [
-    {
-      label: `${OVERVIEW}.labels.permission`,
-      value:
-        access === "selected"
-          ? chosen
-          : asWord(`bookable.flow.permission.access.${access}`),
+/** VAT and Rabattcodes belong to a price the bookable sets itself. */
+const ownPrice = (b) => !handlesExternalPricing(b) && priceModeOf(b) !== "free";
+
+const PRICE_ROWS = [
+  {
+    key: "price",
+    label: "bookable.flow.steps.price.title",
+    section: "pricing-price",
+    fields: ["priceCategories"],
+    value: priceValue,
+  },
+  {
+    key: "vat",
+    label: "bookable.flow.price.vat",
+    section: "pricing-price",
+    when: ownPrice,
+    value: (b) => {
+      const rate = toNumber(b.priceValueAddedTax);
+      if (!(rate > 0)) return asWord(`${VALUES}.vat-none`);
+      return asWord(`${VALUES}.vat-rate`, {
+        rate: rate.toLocaleString("de-DE"),
+      });
     },
-  ];
-}
+  },
+  {
+    key: "coupons",
+    label: "bookable.flow.price.coupons",
+    section: "pricing-price",
+    option: "coupons",
+    when: ownPrice,
+    // Never stored reads as on, as the backend takes it.
+    value: (b) => yesNo(b.enableCoupons !== false),
+  },
+];
 
-/** The rows of each visited block. */
-/**
- * Weitere Einstellungen: a row per area in use, its summary as the value;
- * none in use reads as one empty row.
- */
-function moreRows(bookable) {
-  const rows = BOOKABLE_AREAS.filter(({ key }) => areaUsed(key, bookable)).map(
-    ({ key, titleKey }) => ({
-      label: titleKey,
-      value: areaSummary(key, bookable),
-    })
-  );
-  return rows.length ? rows : [{ label: "bookable.flow.more.used", value: [] }];
-}
+const AMOUNT_ROWS = [
+  {
+    key: "amount",
+    label: "bookable.flow.amount.title",
+    section: "pricing-amount",
+    value: (b) => {
+      if (handlesCapability(b, "maxAmount")) return EXTERNAL;
+      return isUnlimitedAmount(b) ? UNLIMITED : asText(toNumber(b.amount));
+    },
+  },
+  {
+    key: "maxAmountPerBooking",
+    label: "bookable.flow.amount.max-title",
+    section: "pricing-amount",
+    fields: ["maxAmountPerBooking"],
+    when: showsMaxAmount,
+    value: (b) =>
+      isUnlimitedMaxAmount(b) ? UNLIMITED : asText(b.maxAmountPerBooking),
+  },
+];
 
-const OVERVIEW_ROWS = {
-  identity: identityRows,
-  availability: availabilityRows,
-  price: priceRows,
-  amount: amountRows,
-  permission: permissionRows,
-  // The Bestätigung by its name and the words of its tiles.
-  approval: (bookable) => [
-    {
-      label: "bookable.flow.steps.approval.title",
-      value: asWord(
-        `bookable.flow.approval.${
-          bookable?.autoCommitBooking ? "auto" : "manual"
-        }`
+/** Roles and people, counted. */
+const namedValue = (roles, users) => [
+  ...asCount(`${VALUES}.roles`, listOf(roles).length),
+  ...asCount(`${VALUES}.users`, listOf(users).length),
+];
+
+const PERMISSION_ROWS = [
+  {
+    key: "access",
+    label: "bookable.flow.permission.who",
+    section: "permissions-access",
+    // Selected with nobody named yet reads as „Alle mit Konto“, as the
+    // backend lets them book.
+    value: (b) => {
+      const access = accessOf(b);
+      return access === "selected"
+        ? namedValue(b.permittedRoles, b.permittedUsers)
+        : asWord(`bookable.flow.permission.access.${access}`);
+    },
+  },
+  {
+    key: "bookingDiscounts",
+    label: "bookable.flow.permission.discounts",
+    section: "permissions-discounts",
+    fields: ["bookingDiscounts"],
+    value: (b) =>
+      namedValue(b.bookingDiscounts?.roles, b.bookingDiscounts?.users),
+  },
+];
+
+const APPROVAL_ROWS = [
+  {
+    key: "confirmation",
+    label: "bookable.flow.steps.approval.title",
+    section: "permissions-confirmation",
+    // The words of its tiles; anything but on is „Manuell bestätigen“.
+    value: (b) =>
+      asWord(
+        `bookable.flow.approval.${b.autoCommitBooking ? "auto" : "manual"}`
       ),
-    },
-  ],
-  more: moreRows,
-  // The two switches by the labels of the fields themselves.
-  publication: (bookable) =>
-    [
-      ["isBookable", "bookable.publication.bookable.label"],
-      ["isPublic", "bookable.publication.public.label"],
-    ].map(([field, label]) => ({
-      label,
-      value: asWord(`${OVERVIEW}.values.${bookable?.[field] ? "yes" : "no"}`),
-    })),
+  },
+];
+
+// The Veröffentlichung lies in the status band of the editing page: no tab.
+const PUBLICATION_ROWS = [
+  ["isBookable", "bookable.publication.bookable.label"],
+  ["isPublic", "bookable.publication.public.label"],
+].map(([key, label]) => ({
+  key,
+  label,
+  section: null,
+  value: (b) => yesNo(b[key] === true),
+}));
+
+const STEP_ROWS = {
+  identity: IDENTITY_ROWS,
+  availability: AVAILABILITY_ROWS,
+  price: PRICE_ROWS,
+  amount: AMOUNT_ROWS,
+  permission: PERMISSION_ROWS,
+  approval: APPROVAL_ROWS,
+  publication: PUBLICATION_ROWS,
 };
 
+// The fields of an area's issues, by area.
+const AREA_FIELDS = { accessLocks: ["accessPointDetails"] };
+
+const target = (
+  step,
+  { tab = null, section = null, field = null, area = null }
+) => ({
+  step,
+  tab,
+  section,
+  field,
+  area,
+});
+
 /**
- * The overview beside the flow on a wide screen (ECCdigital/tickets#331):
- * one block per step, in the flow's order. A step not visited yet is open
- * and has no rows. A visited one has rows of `{ label, value }`: the label
- * an i18n key, the value a list of parts read joined by commas, each
- * `{ type: "text", text }`, `{ type: "word", key, params }` or
- * `{ type: "plural", key, count }`; an empty list reads „–“.
+ * Weitere Einstellungen: a row per area in use, its summary as the value,
+ * leading to the area. None in use is one row „Nicht festgelegt“, leading
+ * on the editing page to the first area that shows, in the order of the
+ * tabs, and in the flow to the step.
  */
-export function overviewBlocks(bookable, { visited = [], ...options } = {}) {
-  return FLOW_STEPS.map((step) => {
-    const open = !visited.includes(step);
+function moreRows(bookable, { shown }) {
+  const rows = BOOKABLE_AREAS.filter(({ key }) => areaUsed(key, bookable)).map(
+    ({ key, titleKey, tabKey, sectionId }) => ({
+      key,
+      label: titleKey,
+      value: areaSummary(key, bookable),
+      fields: AREA_FIELDS[key] || [],
+      target: target("more", { tab: tabKey, section: sectionId, area: key }),
+    })
+  );
+  if (rows.length) return rows;
+  const [first] = shownAreas(shown);
+  return [
+    {
+      key: "more",
+      label: null,
+      value: [],
+      fields: [],
+      target: target("more", {
+        tab: first ? first.tabKey : null,
+        section: first ? first.sectionId : null,
+      }),
+    },
+  ];
+}
+
+function stepRows(step, bookable, options) {
+  if (step === "more") return moreRows(bookable, options);
+  const { shown } = options;
+  return STEP_ROWS[step]
+    .filter(
+      (row) =>
+        (!row.section ||
+          isBookableEditSectionVisible(row.section, { bookable, shown })) &&
+        (!row.option || shown(row.option)) &&
+        (!row.when || row.when(bookable))
+    )
+    .map((row) => ({
+      key: row.key,
+      label: row.label,
+      value: row.value(bookable, options),
+      fields: row.fields || [],
+      target: target(step, {
+        tab: row.section
+          ? getBookableEditSectionById(row.section).tabKey
+          : null,
+        section: row.section,
+        field: row.key,
+      }),
+    }));
+}
+
+const everyOption = () => true;
+
+/**
+ * The overview beside the form, the same in both modes: one block per step,
+ * in the flow's order. Each block has `target`, the way to its first row,
+ * and `rows` of `{ key, label, value, target, issues }`:
+ *
+ * - `label` an i18n key (`null` for the lone row of Weitere Einstellungen),
+ *   `value` a list of parts read joined by commas, each `{ type: "text",
+ *   text }`, `{ type: "word", key, params }` or `{ type: "plural", key,
+ *   count }`; an empty list reads „Nicht festgelegt“;
+ * - `target` `{ step, tab, section, field, area }`: the step of the flow,
+ *   the tab and section of the editing page (no tab: the status band), the
+ *   anchor of the field (`data-field`) and the area of Weitere Einstellungen;
+ * - `issues` the messages of `bookableIssues` for the row's fields. An issue
+ *   of a field without a row stands at the first row of its step.
+ *
+ * Expert options show by `shown(option)`, the expert-mode rule as the caller
+ * asks it - every option by default. In the flow a step not `visited` yet is
+ * `open` and shows no rows; by default every step was.
+ */
+export function overviewBlocks(
+  bookable,
+  { visited = FLOW_STEPS, shown = everyOption, eventTitlesById = {} } = {}
+) {
+  const options = { shown, eventTitlesById };
+  const issues = bookableIssues(bookable, { shown });
+  const blocks = FLOW_STEPS.map((step) => {
+    const rows = stepRows(step, bookable, options).map((row) => ({
+      ...row,
+      issues: issues
+        .filter((issue) => row.fields.includes(issue.field))
+        .map((issue) => issue.message),
+    }));
     return {
       step,
-      open,
-      rows: open ? [] : OVERVIEW_ROWS[step](bookable, options),
+      open: !visited.includes(step),
+      target: rows[0].target,
+      rows,
     };
   });
+
+  // An issue whose field has no row stands at the first row of its step.
+  issues
+    .filter(
+      (issue) =>
+        !blocks.some((block) =>
+          block.rows.some((row) => row.fields.includes(issue.field))
+        )
+    )
+    .forEach((issue) => {
+      const block = blocks.find(({ step }) => step === issue.step);
+      if (block) block.rows[0].issues.push(issue.message);
+    });
+
+  // What a row shows; `fields` only placed its issues.
+  const shownRow = ({ key, label, value, target, issues }) => ({
+    key,
+    label,
+    value,
+    target,
+    issues,
+  });
+  return blocks.map(({ rows, ...block }) => ({
+    ...block,
+    rows: block.open ? [] : rows.map(shownRow),
+  }));
 }
