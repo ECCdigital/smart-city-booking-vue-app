@@ -74,6 +74,10 @@ _Avoid_: Zusammenfassung, Vorschau (that is the storefront's job), Zwischenstand
 The guided flow's progress on large screens: the six steps by title with their state (done, current, upcoming) in a column on the left, clickable like the dots it replaces. It answers „Wo bin ich?“; the Übersicht answers „Was habe ich eingegeben?“.
 _Avoid_: Stepper, Navigation (that is the editor's section nav), Punkte (those are the small-screen form)
 
+**Meldung**:
+What the check of a bookable says under one field when its value would be refused, such as „Bitte einen Titel eingeben.“. A field shows it once it was left, and every field shows it after a refused save. It never locks „Speichern“, „Weiter“ or a tab.
+_Avoid_: Fehler, Validierungsfehler, Offene Punkte (those are the confirmation page's list after the save)
+
 ### SSO
 
 **Adresse**:

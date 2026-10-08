@@ -37,7 +37,9 @@ Whether an expert option shows - a booking mode, a section or a tab - is decided
 
 ### The check is pure (#340, point 6)
 
-What blocks a save is decided by one pure module over the bookable, mirroring what the backend refuses and naming that reason per rule, independent of which components are mounted. Its messages at the fields come from the same rules. (Built by ECCdigital/tickets#354; until then the tabs' own forms still check.)
+What blocks a save is decided by one pure module over the bookable, `src/utils/bookableValidation.js`, mirroring what the backend refuses or evaluates and naming that reason per rule, independent of which components are mounted: it checks every section that shows, by the expert-mode rule and the section's own condition. Its messages at the fields (glossary „Meldung“) come from the same rules: a component takes `fieldRules.<name>` from `bookableEditing`. A new rule needs a reason in the backend, or one its clarification gives explicitly.
+
+„Speichern“ is never locked by a check, and neither are „Weiter“ or the change of tab or step. A save with issues saves nothing, reveals every message and opens the first tab or step with an issue (each issue names its tab, section and step). Components have no form of their own; the one `v-form` of `BookableEdit` only reveals the messages. (Built by ECCdigital/tickets#354.)
 
 ## Consequences
 
