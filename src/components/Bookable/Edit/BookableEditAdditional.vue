@@ -10,7 +10,6 @@ export default {
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
-      valid: true,
       availableFields: [
         {
           id: "phone",
@@ -102,7 +101,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <BaseSection title="Sonstiges" icon="mdi-dots-horizontal" />
 
     <v-card
@@ -227,7 +226,7 @@ export default {
         <Tiptap v-model="model.bookingNotes" label="Buchungshinweise"></Tiptap>
       </v-card-text>
     </v-card>
-  </v-form>
+  </div>
 </template>
 
 <style scoped>

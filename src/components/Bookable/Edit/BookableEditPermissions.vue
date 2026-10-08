@@ -15,7 +15,6 @@ export default {
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
-      valid: true,
       availableUsers: [],
       availableRoles: [],
     };
@@ -102,12 +101,6 @@ export default {
         this.availableUsers = [];
       }
     },
-    async validate() {
-      return this.$refs.form ? this.$refs.form.validate() : true;
-    },
-    resetValidation() {
-      this.$refs.form?.resetValidation();
-    },
   },
   mounted() {
     this.fetchRoles();
@@ -117,7 +110,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <BaseSection title="Berechtigungen" icon="mdi-account-lock-outline" />
 
     <v-card
@@ -321,5 +314,5 @@ export default {
         </p>
       </v-card-text>
     </v-card>
-  </v-form>
+  </div>
 </template>

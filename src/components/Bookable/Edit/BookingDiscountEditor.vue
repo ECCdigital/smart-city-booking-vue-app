@@ -1,4 +1,6 @@
 <script>
+import { bookableRules } from "@/utils/bookableValidation";
+
 /**
  * One list of price exceptions (users or roles). It never changes `items`:
  * every change goes out as the rebuilt list (`update:items`).
@@ -72,15 +74,11 @@ export default {
     addSelectLabel() {
       return this.type === "user" ? "Benutzer" : "Rolle";
     },
+    // The rule of the Preisnachlass in `bookableValidation`.
     discountRules() {
-      return [
-        (value) =>
-          (value !== "" && value !== null && value !== undefined) ||
-          "Pflichtfeld",
-        (value) => Number.isInteger(Number(value)) || "Ganzzahl erforderlich",
-        (value) =>
-          (value >= 0 && value <= 100) || "Wert muss zwischen 0 und 100 liegen",
-      ];
+      return bookableRules("discountPercent", (key, params) =>
+        this.$t(key, params)
+      );
     },
     idRules() {
       return [(value) => !!value || "Pflichtfeld"];

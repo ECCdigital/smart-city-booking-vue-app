@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { expertOptionShown } from "@/utils/bookableExpertMode";
+import { BOOKABLE_RULE_NAMES, bookableRules } from "@/utils/bookableValidation";
 
 /**
  * A component that edits the bookable `BookableEdit` holds, in either mode:
@@ -14,6 +15,10 @@ import { expertOptionShown } from "@/utils/bookableExpertMode";
  * rule of the expert-mode module over the mode and the stored bookable that
  * `BookableEdit` provides, and the bookable as edited. Outside `BookableEdit`
  * expert mode is on.
+ *
+ * A field takes its rules from `fieldRules.<name>`: the rules of
+ * `bookableValidation`, which the save checks too, with German messages
+ * (glossary „Meldung“).
  */
 export default {
   inject: {
@@ -23,6 +28,16 @@ export default {
   },
   props: {
     bookable: { type: Object, required: true },
+  },
+  computed: {
+    /** The rules of `bookableValidation` by name, as a field takes them. */
+    fieldRules() {
+      const translate = (key, params) => this.$t(key, params);
+      return BOOKABLE_RULE_NAMES.reduce(
+        (rules, name) => ({ ...rules, [name]: bookableRules(name, translate) }),
+        {}
+      );
+    },
   },
   methods: {
     /** Whether the expert option `option` shows, by the expert-mode rule. */

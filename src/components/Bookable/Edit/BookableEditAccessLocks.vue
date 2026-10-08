@@ -23,7 +23,6 @@ export default {
   components: { BookableEditAccessPoints },
   props: {
     bookable: { type: Object, required: true },
-    validRoot: { type: Boolean, default: true },
   },
   computed: {
     // The same gate the editor itself uses. Someone who may not write this
@@ -57,13 +56,6 @@ export default {
   methods: {
     onChildUpdate(updated) {
       this.$emit("update:bookable", updated);
-    },
-    validate() {
-      const child = this.$refs.access;
-      return child?.validate ? child.validate() : true;
-    },
-    resetValidation() {
-      this.$refs.access?.resetValidation?.();
     },
   },
 };

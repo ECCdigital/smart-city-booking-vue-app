@@ -8,8 +8,10 @@ import {
   isLockerAccessPoint,
 } from "@/utilities/access-points";
 import { mapGetters } from "vuex";
-
-const MAX_BUFFER_MINUTES = 1440;
+import {
+  ACCESS_BUFFER_MAX_MINUTES as MAX_BUFFER_MINUTES,
+  bookableRules,
+} from "@/utils/bookableValidation";
 
 /**
  * An access point as both the table and the picker show it: what it is called,
@@ -63,7 +65,6 @@ export default {
   },
   data() {
     return {
-      valid: true,
       accessPoints: [],
       loading: false,
       loadError: "",
@@ -83,19 +84,11 @@ export default {
     selectedIds() {
       return this.accessPointDetails.accessPointIds || [];
     },
+    // The rule of the access buffer in `bookableValidation`.
     bufferRules() {
-      return [
-        (v) => {
-          if (v === "" || v === null || v === undefined) return true;
-          const num = Number(v);
-          return (
-            (Number.isInteger(num) && num >= 0 && num <= MAX_BUFFER_MINUTES) ||
-            this.$t("accessPoint.bookable.buffer.invalid", {
-              max: MAX_BUFFER_MINUTES,
-            })
-          );
-        },
-      ];
+      return bookableRules("accessBuffer", (key, params) =>
+        this.$t(key, params)
+      );
     },
     // One row per assigned id, in the order the bookable stores them. Ids
     // without an access point are not rows - they are named separately, so
@@ -151,12 +144,6 @@ export default {
     },
   },
   methods: {
-    validate() {
-      return this.$refs.form ? this.$refs.form.validate() : true;
-    },
-    resetValidation() {
-      if (this.$refs.form) this.$refs.form.resetValidation();
-    },
     patchDetails(patch) {
       this.$emit("update:bookable", {
         ...this.bookable,
@@ -226,7 +213,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <v-card flat class="pa-0">
       <!-- Buffer -->
       <div>
@@ -471,7 +458,7 @@ export default {
         </v-simple-table>
       </div>
     </v-card>
-  </v-form>
+  </div>
 </template>
 
 <style scoped>

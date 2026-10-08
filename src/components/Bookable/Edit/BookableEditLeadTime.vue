@@ -36,7 +36,6 @@ export default {
   },
   data() {
     return {
-      valid: true,
       weekdays: WEEKDAYS,
       presets: PRESET_MINUTES,
       bufferPresets: BUFFER_PRESET_MINUTES,
@@ -125,15 +124,6 @@ export default {
     applyBufferPreset(field, minutes) {
       this.patch({ [field]: minutes > 0 ? minutes : null });
     },
-    isBufferMinutesValid(value) {
-      if (value == null || value === "") {
-        return true;
-      }
-      const minutes = Number(value);
-      return (
-        Number.isFinite(minutes) && minutes >= 0 && Number.isInteger(minutes)
-      );
-    },
     bufferPresetActive(field, minutes) {
       const current = Number(this.bookable[field]) || 0;
       return current === minutes;
@@ -207,43 +197,12 @@ export default {
     isExpanded(index) {
       return this.expandedItems.includes(index);
     },
-    async validate() {
-      const formValid = this.$refs.form ? this.$refs.form.validate() : true;
-      if (!formValid) {
-        return false;
-      }
-
-      const leadTimeValid =
-        !this.bookable.isLeadTimeRelated ||
-        (this.isPreparationMinutesValid() &&
-          this.serviceHours.length > 0 &&
-          this.serviceHours.every(
-            (entry) =>
-              entry.weekdays?.length > 0 && entry.startTime && entry.endTime
-          ));
-
-      const bufferValid =
-        !this.showBuffer ||
-        !this.bookable.isBufferRelated ||
-        (this.isBufferMinutesValid(this.bookable.bufferTimeBeforeMinutes) &&
-          this.isBufferMinutesValid(this.bookable.bufferTimeAfterMinutes) &&
-          hasBufferConfig(this.bookable));
-
-      return leadTimeValid && bufferValid;
-    },
-    isPreparationMinutesValid() {
-      const minutes = Number(this.bookable.preparationLeadTimeMinutes);
-      return !Number.isNaN(minutes) && minutes >= 0;
-    },
-    resetValidation() {
-      this.$refs.form?.resetValidation();
-    },
   },
 };
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <v-card
       v-if="expertOptionShown('leadTime')"
       id="be-section-bookingType-lead-time"
@@ -307,14 +266,7 @@ export default {
                 "
                 persistent-hint
                 hide-details="auto"
-                :rules="[
-                  (v) =>
-                    (v !== '' &&
-                      v != null &&
-                      !Number.isNaN(Number(v)) &&
-                      Number(v) >= 0) ||
-                    'Gültige Dauer erforderlich',
-                ]"
+                :rules="fieldRules.leadTimeMinutes"
                 @input="setPreparationMinutes"
               />
             </v-col>
@@ -438,11 +390,7 @@ export default {
                           chips
                           hide-selected
                           hide-details="auto"
-                          :rules="[
-                            (v) =>
-                              (v && v.length > 0) ||
-                              'Mindestens ein Wochentag erforderlich',
-                          ]"
+                          :rules="fieldRules.weekdays"
                           @change="
                             updateServiceHours(index, { weekdays: $event })
                           "
@@ -489,9 +437,7 @@ export default {
                               v-bind="attrs"
                               v-on="on"
                               hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Startzeit ist erforderlich',
-                              ]"
+                              :rules="fieldRules.startTime"
                             />
                           </template>
                           <v-time-picker
@@ -529,9 +475,7 @@ export default {
                               v-bind="attrs"
                               v-on="on"
                               hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Endzeit ist erforderlich',
-                              ]"
+                              :rules="fieldRules.endTime"
                             />
                           </template>
                           <v-time-picker
@@ -620,11 +564,7 @@ export default {
                 :value="displayBufferMinutes(bookable.bufferTimeBeforeMinutes)"
                 data-test="buffer-before"
                 hide-details="auto"
-                :rules="[
-                  (v) =>
-                    isBufferMinutesValid(v) ||
-                    'Gültige Dauer erforderlich (0 oder positive Ganzzahl)',
-                ]"
+                :rules="fieldRules.bufferMinutes"
                 @input="setBufferMinutes('bufferTimeBeforeMinutes', $event)"
               />
               <div class="d-flex flex-wrap mt-2">
@@ -669,11 +609,7 @@ export default {
                 :value="displayBufferMinutes(bookable.bufferTimeAfterMinutes)"
                 data-test="buffer-after"
                 hide-details="auto"
-                :rules="[
-                  (v) =>
-                    isBufferMinutesValid(v) ||
-                    'Gültige Dauer erforderlich (0 oder positive Ganzzahl)',
-                ]"
+                :rules="fieldRules.bufferMinutes"
                 @input="setBufferMinutes('bufferTimeAfterMinutes', $event)"
               />
               <div class="d-flex flex-wrap mt-2">
@@ -705,7 +641,7 @@ export default {
         </template>
       </v-card-text>
     </v-card>
-  </v-form>
+  </div>
 </template>
 
 <style scoped>

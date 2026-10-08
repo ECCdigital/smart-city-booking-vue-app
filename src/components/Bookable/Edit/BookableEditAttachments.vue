@@ -9,9 +9,7 @@ export default {
     bookable: { type: Object, required: true },
   },
   data() {
-    return {
-      valid: true,
-    };
+    return {};
   },
   computed: {
     model: {
@@ -35,7 +33,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <BaseSection title="Anhänge" icon="mdi-paperclip" />
 
     <v-card class="mb-6 section-card" outlined>
@@ -62,5 +60,5 @@ export default {
         />
       </v-card-text>
     </v-card>
-  </v-form>
+  </div>
 </template>

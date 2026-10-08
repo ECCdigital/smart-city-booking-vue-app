@@ -21,7 +21,6 @@ export default {
   },
   data() {
     return {
-      valid: true,
       bookables: [],
       bookablesForbidden: false,
     };
@@ -63,7 +62,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <BaseSection title="Abhängigkeiten" icon="mdi-link-variant" />
     <v-card
       v-if="expertOptionShown('checkoutBookables')"
@@ -269,5 +268,5 @@ export default {
         </v-row>
       </v-card-text>
     </v-card>
-  </v-form>
+  </div>
 </template>

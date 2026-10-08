@@ -26,7 +26,6 @@ export default {
   },
   data() {
     return {
-      valid: true,
       activeView: 0,
       expandedOrigins: [0],
       fetchedInstanceFields: [],
@@ -155,12 +154,6 @@ export default {
         this.activeView = 0;
       }
     },
-    async validate() {
-      return this.$refs.form ? this.$refs.form.validate() : true;
-    },
-    resetValidation() {
-      this.$refs.form?.resetValidation();
-    },
     groupFieldsByOrigin(fields) {
       const grouped = {};
       for (const field of fields) {
@@ -267,7 +260,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <BaseSection title="Eigene Felder" icon="mdi-form-textbox">
       <v-tabs
         v-if="definitionsShown"
@@ -696,7 +689,7 @@ export default {
         </v-expansion-panels>
       </div>
     </BaseSection>
-  </v-form>
+  </div>
 </template>
 
 <style scoped>

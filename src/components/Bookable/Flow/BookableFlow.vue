@@ -18,7 +18,7 @@
          column, so the kept-alive step survives a resize. -->
     <template v-else>
       <!-- From xl the steps stand as a list left, in place of the dots; the
-           same state, lock and jump as the dots. -->
+           same state and jump as the dots. -->
       <nav
         v-if="showStepList"
         class="bookable-flow__steps"
@@ -31,7 +31,6 @@
           type="button"
           class="bookable-flow__entry"
           :class="`bookable-flow__entry--${stepState(idx)}`"
-          :disabled="locked(idx)"
           :aria-current="idx === index ? 'step' : null"
           :data-test="`flow-steps-${step}`"
           @click="goTo(idx)"
@@ -78,7 +77,6 @@
             type="button"
             class="bookable-flow__dot"
             :class="`bookable-flow__dot--${stepState(idx)}`"
-            :disabled="locked(idx)"
             :aria-current="idx === index ? 'step' : null"
             :aria-label="
               $t('bookable.flow.step-label', {
@@ -157,18 +155,11 @@
             {{ $t("bookable.flow.skip") }}
           </v-btn>
           <div class="flow-footer__right">
-            <span
-              v-if="!named"
-              class="flow-field__hint mt-0"
-              data-test="flow-name-missing"
-            >
-              {{ $t("bookable.flow.name-missing") }}
-            </span>
             <template v-if="last">
               <v-btn
                 outlined
                 color="primary"
-                :disabled="!named || inProgress"
+                :disabled="inProgress"
                 data-test="flow-save-only"
                 @click="$emit('save', false)"
               >
@@ -177,7 +168,6 @@
               <v-btn
                 color="primary"
                 depressed
-                :disabled="!named"
                 :loading="inProgress"
                 data-test="flow-save-publish"
                 @click="$emit('save', true)"
@@ -190,7 +180,6 @@
               v-else
               color="primary"
               depressed
-              :disabled="!named"
               data-test="flow-next"
               @click="goTo(index + 1)"
             >
@@ -227,7 +216,6 @@ import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.
 import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
 import {
   FLOW_STEPS,
-  hasName,
   overviewBlocks,
   publishVariant,
 } from "@/utils/bookableFlow";
@@ -266,7 +254,9 @@ function startingPoint(isNew) {
  * editor to save, once, with or without the publication wish, and the
  * editor answers with the outcome the confirmation shows.
  *
- * The steps can be visited in any order once the bookable has a name.
+ * The steps can be visited in any order; „Weiter“ never holds. What the
+ * backend would refuse is checked on save (`bookableValidation`), and
+ * `BookableEdit` opens the first step with an issue (`openStep`).
  * Right after a tenant's creation the flow may be skipped (`skip`).
  *
  * From Vuetify's lg (1264px) the column stands left with the overview of
@@ -315,9 +305,6 @@ export default {
     last() {
       return this.index === this.steps.length - 1;
     },
-    named() {
-      return hasName(this.bookable);
-    },
     variant() {
       return publishVariant(this.level);
     },
@@ -352,18 +339,17 @@ export default {
     },
   },
   methods: {
-    /** Without a name only the identity can be reached. */
-    locked(idx) {
-      return idx > 0 && !this.named;
-    },
     /** `current`, `done` or `upcoming`, for the dots and the step list. */
     stepState(idx) {
       if (idx === this.index) return "current";
       return this.done.includes(this.steps[idx]) ? "done" : "upcoming";
     },
+    /** Opens the step `step`, as its dot does: a refused save asks for it. */
+    openStep(step) {
+      this.goTo(this.steps.indexOf(step));
+    },
     goTo(idx) {
       if (idx < 0 || idx >= this.steps.length) return;
-      if (this.locked(idx)) return;
       if (idx > this.index && !this.done.includes(this.step)) {
         this.done.push(this.step);
       }
@@ -445,17 +431,12 @@ export default {
     color var(--scb-motion-fast);
 }
 
-.bookable-flow__entry:hover:not(:disabled) {
+.bookable-flow__entry:hover {
   background-color: var(--scb-hover-tint);
 }
 
 .bookable-flow__entry:focus-visible {
   box-shadow: inset 0 0 0 2px var(--v-primary-base);
-}
-
-.bookable-flow__entry:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
 }
 
 .bookable-flow__entry--current {
@@ -532,11 +513,6 @@ export default {
 
 .bookable-flow__dot:focus-visible {
   box-shadow: 0 0 0 2px var(--v-primary-base);
-}
-
-.bookable-flow__dot:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
 }
 
 /* An entry's badge takes the colours of its dot. */

@@ -76,11 +76,6 @@ export function isFlowMode({ bookableId, mode }) {
   return !bookableId || mode === FLOW_MODE;
 }
 
-/** The first step needs a name before the rest can be reached. */
-export function hasName(bookable) {
-  return !!(bookable?.title || "").trim();
-}
-
 function externalProviderHandles(bookable, capability) {
   return (bookable?.externalProviders || []).some((provider) =>
     providerHandles(provider, capability)

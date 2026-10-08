@@ -15,7 +15,6 @@ export default {
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
-      valid: false,
       tagsAvailable: [],
       flagsAvailable: [],
       events: [],
@@ -69,12 +68,6 @@ export default {
     }, 200);
   },
   methods: {
-    async validate() {
-      return this.$refs.form ? this.$refs.form.validate() : true;
-    },
-    resetValidation() {
-      this.$refs.form?.resetValidation();
-    },
     async fetchEvents() {
       await ApiEventService.getEvents().then((result) => {
         console.log("Fetched events for bookable edit:", result);
@@ -114,7 +107,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <BaseSection title="Allgemein" icon="mdi-information-outline" />
 
     <v-card id="be-section-general-info" class="mb-6 section-card" outlined>
@@ -149,7 +142,8 @@ export default {
               filled
               dense
               label="Bezeichnung"
-              hide-details
+              hide-details="auto"
+              :rules="fieldRules.title"
               v-model="model.title"
             ></v-text-field>
           </v-col>
@@ -299,5 +293,5 @@ export default {
         </v-combobox>
       </v-card-text>
     </v-card>
-  </v-form>
+  </div>
 </template>

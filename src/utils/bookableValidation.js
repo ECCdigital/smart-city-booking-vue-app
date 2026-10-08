@@ -116,6 +116,9 @@ const RULES = Object.freeze({
   ],
 });
 
+/** The names `bookableRules` knows. */
+export const BOOKABLE_RULE_NAMES = Object.freeze(Object.keys(RULES));
+
 /**
  * Where an issue of a top-level field is fixed: the tab and section of the
  * editing page, the step of the guided flow (`null` where it has none).
