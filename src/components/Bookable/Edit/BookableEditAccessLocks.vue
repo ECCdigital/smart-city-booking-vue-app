@@ -2,9 +2,11 @@
 import BookableEditAccessPoints from "@/components/Bookable/Edit/BookableEditAccessPoints.vue";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { defaultAccessPointDetails } from "@/utilities/access-points";
+import bookableEditing from "@/mixins/bookableEditing";
 
 /**
- * The access tab of the bookable editor.
+ * Schließsysteme: the access points a booking opens. The area as the editing
+ * page frames it in a card and the step „Weitere Einstellungen“ in a row.
  *
  * It used to offer three provider cards - smart door lock, locker, bike box -
  * each with its own configuration below it. Since the locker fold a locker
@@ -21,10 +23,7 @@ import { defaultAccessPointDetails } from "@/utilities/access-points";
 export default {
   name: "BookableEditAccessLocks",
   components: { BookableEditAccessPoints },
-  props: {
-    bookable: { type: Object, required: true },
-    validRoot: { type: Boolean, default: true },
-  },
+  mixins: [bookableEditing],
   computed: {
     // The same gate the editor itself uses. Someone who may not write this
     // bookable may not hand out access to it either.
@@ -40,8 +39,7 @@ export default {
         return !!this.accessPointDetails.active;
       },
       set(active) {
-        this.$emit("update:bookable", {
-          ...this.bookable,
+        this.patch({
           accessPointDetails: {
             ...defaultAccessPointDetails(),
             ...this.accessPointDetails,
@@ -54,33 +52,25 @@ export default {
       return (this.accessPointDetails.accessPointIds || []).length;
     },
   },
-  methods: {
-    onChildUpdate(updated) {
-      this.$emit("update:bookable", updated);
-    },
-    validate() {
-      const child = this.$refs.access;
-      return child?.validate ? child.validate() : true;
-    },
-    resetValidation() {
-      this.$refs.access?.resetValidation?.();
-    },
-  },
 };
 </script>
 
 <template>
   <div>
-    <div class="d-flex align-center mb-1">
-      <v-icon color="primary" class="mr-2">mdi-shield-key-outline</v-icon>
-      <span class="text-h6">{{ $t("accessPoint.bookable.title") }}</span>
+    <div class="d-flex align-start mb-4">
+      <div class="text-body-2 text--secondary">
+        {{ $t("accessPoint.bookable.intro") }}
+      </div>
       <v-spacer />
-      <v-chip small label outlined :color="assignedCount ? 'success' : 'grey'">
+      <v-chip
+        small
+        label
+        outlined
+        class="ml-4 flex-shrink-0"
+        :color="assignedCount ? 'success' : 'grey'"
+      >
         {{ $t("accessPoint.bookable.assignedCount", { count: assignedCount }) }}
       </v-chip>
-    </div>
-    <div class="text-body-2 text--secondary mb-4">
-      {{ $t("accessPoint.bookable.intro") }}
     </div>
 
     <v-alert v-if="!showAccess" dense text type="info" class="mb-0">
@@ -103,9 +93,8 @@ export default {
 
       <template v-if="active">
         <BookableEditAccessPoints
-          ref="access"
           :bookable="bookable"
-          @update:bookable="onChildUpdate"
+          @update:bookable="$emit('update:bookable', $event)"
         />
       </template>
     </template>

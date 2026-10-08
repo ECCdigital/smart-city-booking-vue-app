@@ -2613,7 +2613,6 @@
       }
     },
     "bookable": {
-      "title": "Zugang & Schließsysteme",
       "intro": "Ordnen Sie diesem Buchungsobjekt Türen und Schließfachanlagen zu. Angelegt und eingerichtet werden sie zentral beim Mandanten.",
       "assignedCount": "{count} zugeordnet",
       "activate": "Zugang aktivieren",

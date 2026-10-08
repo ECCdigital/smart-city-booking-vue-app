@@ -4,6 +4,8 @@ import BookableEditAccessLocks from "@/components/Bookable/Edit/BookableEditAcce
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import { mountComponent } from "@tests/unit/support/mount";
+import { mountEditing } from "@tests/unit/support/bookableEditing";
+import { toggleSwitch } from "@tests/unit/support/vuetify";
 import { flushPromises } from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiAccessPointService", () => ({
@@ -88,5 +90,66 @@ describe("BookableEditAccessLocks", () => {
     expect(
       wrapper.findAll("input").wrappers.map((i) => i.element.value)
     ).not.toContain("3");
+  });
+});
+
+describe("BookableEditAccessLocks (Schließsysteme) on bookableEditing", () => {
+  beforeEach(() => {
+    ApiAccessPointService.getAccessPoints.mockResolvedValue({
+      data: [{ id: "ap-door", type: "door", label: "Haupteingang" }],
+    });
+  });
+
+  const mountArea = async (accessPointDetails) => {
+    const mounted = mountEditing(BookableEditAccessLocks, {
+      store: store(),
+      bookable: { id: "b1", title: "Saal", amount: 3, accessPointDetails },
+    });
+    await flushPromises();
+    return mounted;
+  };
+
+  it("changes nothing when it mounts", async () => {
+    const { patches, bookable, stored } = await mountArea({
+      active: true,
+      accessBuffer: { before: 0, after: 0 },
+      accessPointIds: ["ap-door"],
+    });
+
+    expect(patches).toEqual([]);
+    expect(bookable).toEqual(stored);
+  });
+
+  it("switches access on with only the access point details", async () => {
+    const { wrapper, patches, bookable, stored } = await mountArea(undefined);
+
+    await toggleSwitch(wrapper, undefined);
+
+    expect(patches).toHaveLength(1);
+    expect(Object.keys(patches[0])).toEqual(["accessPointDetails"]);
+    expect(patches[0].accessPointDetails.active).toBe(true);
+    expect(bookable).toEqual(stored);
+  });
+
+  it("hands on an assignment as a patch of the access point details", async () => {
+    const { wrapper, patches } = await mountArea({
+      active: true,
+      accessBuffer: { before: 0, after: 0 },
+      accessPointIds: [],
+    });
+
+    await wrapper.find("button.assign-button").trigger("click");
+    await wrapper.vm.$nextTick();
+    await wrapper.find(".assign-option").trigger("click");
+
+    expect(patches).toEqual([
+      {
+        accessPointDetails: {
+          active: true,
+          accessBuffer: { before: 0, after: 0 },
+          accessPointIds: ["ap-door"],
+        },
+      },
+    ]);
   });
 });

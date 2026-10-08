@@ -8,6 +8,7 @@ import {
   isLockerAccessPoint,
 } from "@/utilities/access-points";
 import { mapGetters } from "vuex";
+import bookableEditing from "@/mixins/bookableEditing";
 
 const MAX_BUFFER_MINUTES = 1440;
 
@@ -58,9 +59,7 @@ function toRow(accessPoint) {
  */
 export default {
   name: "BookableEditAccessPoints",
-  props: {
-    bookable: { type: Object, required: true },
-  },
+  mixins: [bookableEditing],
   data() {
     return {
       valid: true,
@@ -157,10 +156,9 @@ export default {
     resetValidation() {
       if (this.$refs.form) this.$refs.form.resetValidation();
     },
-    patchDetails(patch) {
-      this.$emit("update:bookable", {
-        ...this.bookable,
-        accessPointDetails: { ...this.accessPointDetails, ...patch },
+    patchDetails(changes) {
+      this.patch({
+        accessPointDetails: { ...this.accessPointDetails, ...changes },
       });
     },
     async fetchAccessPoints() {

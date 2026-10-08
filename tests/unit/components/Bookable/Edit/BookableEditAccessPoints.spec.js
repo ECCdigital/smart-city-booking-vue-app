@@ -171,6 +171,16 @@ describe("BookableEditAccessPoints", () => {
     ]);
   });
 
+  it("hands on only the access point details", async () => {
+    const wrapper = await mountPoints({ accessPoints: [DOOR] });
+
+    await wrapper.find("button.assign-button").trigger("click");
+    await wrapper.vm.$nextTick();
+    await wrapper.find(".assign-option").trigger("click");
+
+    expect(Object.keys(lastUpdate(wrapper))).toEqual(["accessPointDetails"]);
+  });
+
   it("removes an assignment", async () => {
     const wrapper = await mountPoints({
       accessPoints: [DOOR, LOCKER],
