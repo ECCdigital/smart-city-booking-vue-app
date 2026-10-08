@@ -5,7 +5,9 @@ export default {
   name: "SaveBar",
   props: {
     inProgress: { type: Boolean, required: true },
-    disabled: { type: Boolean, required: true },
+    // Lit and clickable: there is something to save or restore. The page
+    // decides what that is, usually its unsaved changes.
+    active: { type: Boolean, required: true },
     showCancel: { type: Boolean, default: false },
     showRestore: { type: Boolean, default: false },
     anchorEl: {
@@ -137,7 +139,7 @@ export default {
     <div
       class="save-bar"
       :style="{
-        boxShadow: !disabled
+        boxShadow: !active
           ? '0 0 10px rgba(0, 0, 0, 0.2)'
           : `0 0 15px ${primaryColor}66`,
         transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
@@ -159,7 +161,7 @@ export default {
         </v-btn>
         <v-btn
           v-if="showRestore"
-          :disabled="inProgress || !disabled"
+          :disabled="inProgress || !active"
           text
           class="save-bar-btn"
           @click="cancelChanges"
@@ -170,7 +172,7 @@ export default {
           color="primary"
           class="save-bar-btn save-bar-btn--primary"
           :loading="inProgress"
-          :disabled="inProgress || !disabled"
+          :disabled="inProgress || !active"
           @click="submitChanges"
         >
           Speichern

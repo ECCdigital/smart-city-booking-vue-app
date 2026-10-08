@@ -13,7 +13,6 @@ export default {
 
   data() {
     return {
-      valid: false,
       weekdays: [
         { id: 1, name: "Montag", short: "Mo" },
         { id: 2, name: "Dienstag", short: "Di" },
@@ -171,7 +170,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <BaseSection
       v-if="!embedded"
       title="Öffnungszeiten"
@@ -339,11 +338,7 @@ export default {
                             chips
                             hide-selected
                             hide-details="auto"
-                            :rules="[
-                              (v) =>
-                                (v && v.length > 0) ||
-                                'Mindestens ein Wochentag erforderlich',
-                            ]"
+                            :rules="fieldRules.weekdays"
                           >
                             <template
                               v-slot:selection="{
@@ -394,9 +389,7 @@ export default {
                                 v-bind="attrs"
                                 v-on="on"
                                 hide-details="auto"
-                                :rules="[
-                                  (v) => !!v || 'Startzeit ist erforderlich',
-                                ]"
+                                :rules="fieldRules.startTime"
                               ></v-text-field>
                             </template>
                             <v-time-picker
@@ -436,9 +429,7 @@ export default {
                                 v-bind="attrs"
                                 v-on="on"
                                 hide-details="auto"
-                                :rules="[
-                                  (v) => !!v || 'Endzeit ist erforderlich',
-                                ]"
+                                :rules="fieldRules.endTime"
                               ></v-text-field>
                             </template>
                             <v-time-picker
@@ -658,9 +649,7 @@ export default {
                                 readonly
                                 v-bind="attrs"
                                 v-on="on"
-                                :rules="[
-                                  (v) => !!v || 'Datum ist erforderlich',
-                                ]"
+                                :rules="fieldRules.date"
                               ></v-text-field>
                             </template>
                             <v-date-picker
@@ -719,9 +708,7 @@ export default {
                                 v-bind="attrs"
                                 v-on="on"
                                 hide-details="auto"
-                                :rules="[
-                                  (v) => !!v || 'Startzeit ist erforderlich',
-                                ]"
+                                :rules="fieldRules.startTime"
                               ></v-text-field>
                             </template>
                             <v-time-picker
@@ -763,9 +750,7 @@ export default {
                                 v-bind="attrs"
                                 v-on="on"
                                 hide-details="auto"
-                                :rules="[
-                                  (v) => !!v || 'Endzeit ist erforderlich',
-                                ]"
+                                :rules="fieldRules.endTime"
                               ></v-text-field>
                             </template>
                             <v-time-picker
@@ -845,7 +830,7 @@ export default {
         }}
       </v-chip>
     </div>
-  </v-form>
+  </div>
 </template>
 
 <style scoped>

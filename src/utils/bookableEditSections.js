@@ -268,6 +268,16 @@ export function getVisibleBookableEditSections(tabKey, ctx) {
   );
 }
 
+/**
+ * Whether the section `sectionId` shows for the bookable - by its expert
+ * option and its own condition, as the nav reads it. `bookableValidation`
+ * checks a section only while it shows.
+ */
+export function isBookableEditSectionVisible(sectionId, ctx) {
+  const section = getBookableEditSectionById(sectionId);
+  return !!section && isSectionVisible(section, ctx || {});
+}
+
 export function getBookableEditSectionById(sectionId) {
   return ALL_SECTIONS.find((section) => section.id === sectionId) || null;
 }

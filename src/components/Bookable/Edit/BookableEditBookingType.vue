@@ -4,6 +4,7 @@ import BookableEditLeadTime from "@/components/Bookable/Edit/BookableEditLeadTim
 import { v4 as uuidv4 } from "uuid";
 import bookableEditing from "@/mixins/bookableEditing";
 import { applyBookingMode, bookingModeOf } from "@/utils/bookableFlow";
+import { blockPeriodTooShort } from "@/utils/bookableValidation";
 
 /** What `v-model.number` keeps: a number where the input reads as one. */
 function toNumber(value) {
@@ -22,7 +23,6 @@ export default {
   },
   data() {
     return {
-      valid: false,
       weekdays: [
         { id: 1, name: "Montag", short: "Mo" },
         { id: 2, name: "Dienstag", short: "Di" },
@@ -41,11 +41,6 @@ export default {
     };
   },
   computed: {
-    bookingTypeSupportsLeadTime() {
-      return ["schedule", "timePeriod", "blockPeriod"].includes(
-        this.bookingType
-      );
-    },
     bookingType() {
       return bookingModeOf(this.bookable);
     },
@@ -58,6 +53,7 @@ export default {
   },
   methods: {
     toNumber,
+    blockPeriodTooShort,
     setBookingType(mode) {
       this.apply((next) => applyBookingMode(next, mode));
     },
@@ -77,30 +73,6 @@ export default {
     },
     closeMenu(menus, index) {
       this.$set(menus, index, false);
-    },
-    async validate() {
-      const formValid = this.$refs.form ? this.$refs.form.validate() : true;
-      if (!formValid) {
-        return false;
-      }
-      if (this.bookingTypeSupportsLeadTime && this.$refs.leadTime) {
-        const leadTimeValid = await this.$refs.leadTime.validate();
-        if (!leadTimeValid) {
-          return false;
-        }
-      }
-      if (this.bookingType !== "blockPeriod") {
-        return true;
-      }
-      if (!this.blockPeriods.length) {
-        return false;
-      }
-      return this.blockPeriods.every(
-        (blockPeriod) => this.getBlockPeriodDurationMinutes(blockPeriod) > 0
-      );
-    },
-    resetValidation() {
-      this.$refs.form?.resetValidation();
     },
     addNewBlockPeriod() {
       const index = this.blockPeriods.length;
@@ -128,63 +100,6 @@ export default {
         return "Keine Tage gewählt";
       }
       return `${start} – ${end}`;
-    },
-    parseTimeToMinutes(time) {
-      if (!time || typeof time !== "string") {
-        return NaN;
-      }
-      const [hours, minutes] = time.split(":").map(Number);
-      if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-        return NaN;
-      }
-      return hours * 60 + minutes;
-    },
-    isBlockPeriodComplete(blockPeriod) {
-      const { startWeekday, endWeekday, startTime, endTime } = blockPeriod;
-      return (
-        startWeekday != null && endWeekday != null && !!startTime && !!endTime
-      );
-    },
-    getBlockPeriodDurationMinutes(blockPeriod) {
-      if (!this.isBlockPeriodComplete(blockPeriod)) {
-        return 0;
-      }
-
-      const startDay = Number(blockPeriod.startWeekday);
-      const endDay = Number(blockPeriod.endWeekday);
-      const startMinutes = this.parseTimeToMinutes(blockPeriod.startTime);
-      const endMinutes = this.parseTimeToMinutes(blockPeriod.endTime);
-
-      if (
-        Number.isNaN(startDay) ||
-        Number.isNaN(endDay) ||
-        Number.isNaN(startMinutes) ||
-        Number.isNaN(endMinutes)
-      ) {
-        return 0;
-      }
-
-      let daySpan;
-      if (endDay > startDay) {
-        daySpan = endDay - startDay;
-      } else if (endDay < startDay) {
-        daySpan = 7 - startDay + endDay;
-      } else if (endMinutes <= startMinutes) {
-        daySpan = 7;
-      } else {
-        daySpan = 0;
-      }
-
-      return daySpan * 24 * 60 + endMinutes - startMinutes;
-    },
-    revalidateBlockPeriodForm() {
-      this.$nextTick(() => {
-        this.$refs.form?.validate();
-      });
-    },
-    setBlockPeriod(index, changes) {
-      this.updateBlockPeriod(index, changes);
-      this.revalidateBlockPeriodForm();
     },
     removeBlockPeriod(index) {
       this.patch({
@@ -265,7 +180,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <component
       :is="embedded ? 'div' : 'BaseSection'"
       title="Buchungstyp"
@@ -421,7 +336,6 @@ export default {
 
       <BookableEditLeadTime
         v-if="bookingType === 'schedule'"
-        ref="leadTime"
         :bookable="bookable"
         :show-buffer="true"
         @update:bookable="$emit('update:bookable', $event)"
@@ -531,11 +445,7 @@ export default {
                           chips
                           hide-selected
                           hide-details="auto"
-                          :rules="[
-                            (v) =>
-                              (v && v.length > 0) ||
-                              'Mindestens ein Wochentag erforderlich',
-                          ]"
+                          :rules="fieldRules.weekdays"
                           @change="
                             updateTimePeriod(index, { weekdays: $event })
                           "
@@ -582,9 +492,7 @@ export default {
                               v-bind="attrs"
                               v-on="on"
                               hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Startzeit ist erforderlich',
-                              ]"
+                              :rules="fieldRules.startTime"
                             ></v-text-field>
                           </template>
                           <v-time-picker
@@ -622,9 +530,7 @@ export default {
                               v-bind="attrs"
                               v-on="on"
                               hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Endzeit ist erforderlich',
-                              ]"
+                              :rules="fieldRules.endTime"
                             ></v-text-field>
                           </template>
                           <v-time-picker
@@ -672,7 +578,6 @@ export default {
 
       <BookableEditLeadTime
         v-if="bookingType === 'timePeriod'"
-        ref="leadTime"
         :bookable="bookable"
         :show-buffer="false"
         @update:bookable="$emit('update:bookable', $event)"
@@ -718,7 +623,7 @@ export default {
             text
             class="mb-4"
           >
-            Mindestens ein Zeitraum ist erforderlich.
+            {{ $t("bookable.validation.blockPeriods") }}
           </v-alert>
 
           <div v-if="blockPeriods.length > 0">
@@ -803,10 +708,7 @@ export default {
                           :value="blockPeriod.label"
                           @input="updateBlockPeriod(index, { label: $event })"
                           hide-details="auto"
-                          :rules="[
-                            (v) =>
-                              !!v?.trim() || 'Bezeichnung ist erforderlich',
-                          ]"
+                          :rules="fieldRules.label"
                         />
                       </v-col>
                     </v-row>
@@ -824,13 +726,9 @@ export default {
                           :value="blockPeriod.startWeekday"
                           hide-details="auto"
                           @change="
-                            setBlockPeriod(index, { startWeekday: $event })
+                            updateBlockPeriod(index, { startWeekday: $event })
                           "
-                          :rules="[
-                            (v) =>
-                              (v !== null && v !== undefined) ||
-                              'Start-Wochentag ist erforderlich',
-                          ]"
+                          :rules="fieldRules.startWeekday"
                         />
                       </v-col>
                       <v-col cols="12" md="6">
@@ -855,9 +753,7 @@ export default {
                               v-bind="attrs"
                               v-on="on"
                               hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Startzeit ist erforderlich',
-                              ]"
+                              :rules="fieldRules.startTime"
                             />
                           </template>
                           <v-time-picker
@@ -866,7 +762,7 @@ export default {
                             full-width
                             format="24hr"
                             @input="
-                              setBlockPeriod(index, { startTime: $event })
+                              updateBlockPeriod(index, { startTime: $event })
                             "
                             @click:minute="closeMenu(blockTimeStartMenu, index)"
                           />
@@ -889,13 +785,9 @@ export default {
                           hint="Ende in derselben Woche, wenn der Tag nach dem Start liegt; sonst in der Folgewoche"
                           persistent-hint
                           @change="
-                            setBlockPeriod(index, { endWeekday: $event })
+                            updateBlockPeriod(index, { endWeekday: $event })
                           "
-                          :rules="[
-                            (v) =>
-                              (v !== null && v !== undefined) ||
-                              'End-Wochentag ist erforderlich',
-                          ]"
+                          :rules="fieldRules.endWeekday"
                         />
                       </v-col>
                       <v-col cols="12" md="6">
@@ -920,9 +812,7 @@ export default {
                               v-bind="attrs"
                               v-on="on"
                               hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Endzeit ist erforderlich',
-                              ]"
+                              :rules="fieldRules.endTime"
                             />
                           </template>
                           <v-time-picker
@@ -930,22 +820,19 @@ export default {
                             :value="blockPeriod.endTime"
                             full-width
                             format="24hr"
-                            @input="setBlockPeriod(index, { endTime: $event })"
+                            @input="
+                              updateBlockPeriod(index, { endTime: $event })
+                            "
                             @click:minute="closeMenu(blockTimeEndMenu, index)"
                           />
                         </v-menu>
                       </v-col>
                     </v-row>
 
-                    <v-row
-                      v-if="
-                        isBlockPeriodComplete(blockPeriod) &&
-                        getBlockPeriodDurationMinutes(blockPeriod) <= 0
-                      "
-                    >
+                    <v-row v-if="blockPeriodTooShort(blockPeriod)">
                       <v-col cols="12">
                         <div class="text-caption error--text">
-                          Die Buchungsdauer muss größer als null sein.
+                          {{ $t("bookable.validation.blockPeriodDuration") }}
                         </div>
                       </v-col>
                     </v-row>
@@ -982,13 +869,12 @@ export default {
 
       <BookableEditLeadTime
         v-if="bookingType === 'blockPeriod'"
-        ref="leadTime"
         :bookable="bookable"
         :show-buffer="false"
         @update:bookable="$emit('update:bookable', $event)"
       />
     </component>
-  </v-form>
+  </div>
 </template>
 
 <style scoped>

@@ -21,7 +21,6 @@ export default {
   props: { bookable: { type: Object, required: true } },
   data() {
     return {
-      valid: true,
       availableUsers: [],
       availableRoles: [],
     };
@@ -94,12 +93,6 @@ export default {
         this.availableUsers = [];
       }
     },
-    async validate() {
-      return this.$refs.form ? this.$refs.form.validate() : true;
-    },
-    resetValidation() {
-      this.$refs.form?.resetValidation();
-    },
   },
   mounted() {
     this.fetchRoles();
@@ -109,7 +102,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <v-card
       id="be-section-permissions-login"
       class="mb-6 section-card"
@@ -194,5 +187,5 @@ export default {
         hint="Gewähren Sie <strong>allen Benutzern einer Rolle</strong> einen Preisnachlass auf dieses Buchungsobjekt."
       />
     </div>
-  </v-form>
+  </div>
 </template>

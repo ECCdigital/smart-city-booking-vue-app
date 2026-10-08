@@ -842,7 +842,7 @@
       "
       :scroll-root="scrollRoot"
       :in-progress="inProgress"
-      :disabled="
+      :active="
         inProgress ||
         !valid ||
         bookableItems.length === 0 ||

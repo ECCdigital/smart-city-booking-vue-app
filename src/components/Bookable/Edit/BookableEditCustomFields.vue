@@ -31,7 +31,6 @@ export default {
   },
   data() {
     return {
-      valid: true,
       activeView: 0,
       expandedOrigins: [0],
       fetchedInstanceFields: [],
@@ -160,12 +159,6 @@ export default {
         this.activeView = 0;
       }
     },
-    async validate() {
-      return this.$refs.form ? this.$refs.form.validate() : true;
-    },
-    resetValidation() {
-      this.$refs.form?.resetValidation();
-    },
     groupFieldsByOrigin(fields) {
       const grouped = {};
       for (const field of fields) {
@@ -263,436 +256,424 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
-    <div>
-      <v-tabs
-        v-if="definitionsShown"
-        v-model="activeView"
-        class="mb-4 custom-fields-tabs"
-        grow
-      >
-        <v-tab>
-          <v-icon left small>mdi-pencil-outline</v-icon>
-          Werte pflegen
-          <v-chip v-if="valueFieldCount" x-small class="ml-2" label>
-            {{ valueFieldCount }}
-          </v-chip>
-        </v-tab>
-        <v-tab>
-          <v-icon left small>mdi-tune-variant</v-icon>
-          Felder definieren
-          <v-chip v-if="ownDefinitionCount" x-small class="ml-2" label outlined>
-            {{ ownDefinitionCount }}
-          </v-chip>
-        </v-tab>
-      </v-tabs>
+  <div>
+    <v-tabs
+      v-if="definitionsShown"
+      v-model="activeView"
+      class="mb-4 custom-fields-tabs"
+      grow
+    >
+      <v-tab>
+        <v-icon left small>mdi-pencil-outline</v-icon>
+        Werte pflegen
+        <v-chip v-if="valueFieldCount" x-small class="ml-2" label>
+          {{ valueFieldCount }}
+        </v-chip>
+      </v-tab>
+      <v-tab>
+        <v-icon left small>mdi-tune-variant</v-icon>
+        Felder definieren
+        <v-chip v-if="ownDefinitionCount" x-small class="ml-2" label outlined>
+          {{ ownDefinitionCount }}
+        </v-chip>
+      </v-tab>
+    </v-tabs>
 
-      <v-tabs-items v-if="definitionsShown" v-model="activeView">
-        <v-tab-item>
-          <div class="custom-fields-values">
-            <p class="text-body-2 text--secondary mb-3">
-              Werte eintragen, die im Katalog oder intern angezeigt werden.
-            </p>
-
-            <v-alert
-              v-if="hasCheckoutFields"
-              type="info"
-              dense
-              text
-              class="mb-3"
-            >
-              Buchungsprozess-Felder füllt der Kunde bei der Buchung aus.
-            </v-alert>
-
-            <v-card
-              v-if="groupedFields.length === 0"
-              outlined
-              class="section-card pa-6 text-center"
-            >
-              <v-icon size="48" color="grey lighten-1" class="mb-3">
-                mdi-form-textbox
-              </v-icon>
-              <div class="text-subtitle-1 grey--text mb-2">
-                Noch keine Felder zum Ausfüllen
-              </div>
-              <div class="text-body-2 grey--text mb-4">
-                Felder kommen von Instanz oder Mandant — oder du legst sie unter
-                „Felder definieren“ an.
-              </div>
-              <v-btn color="primary" text @click="switchToDefinitions">
-                <v-icon left small>mdi-plus-box-outline</v-icon>
-                Feld definieren
-              </v-btn>
-            </v-card>
-
-            <v-expansion-panels
-              v-else
-              v-model="expandedOrigins"
-              multiple
-              flat
-              class="values-panels"
-            >
-              <v-expansion-panel
-                v-for="group in groupedFields"
-                :key="'values-' + group.origin"
-                class="section-card mb-2"
-              >
-                <v-expansion-panel-header class="origin-header py-2 px-3">
-                  <div class="d-flex align-center">
-                    <v-icon small class="mr-2">{{
-                      originIcon(group.origin)
-                    }}</v-icon>
-                    <span class="subtitle-2 font-weight-bold">
-                      {{ originLabel(group.origin) }}
-                    </span>
-                    <v-chip x-small label class="ml-2">
-                      {{ group.fields.length }}
-                    </v-chip>
-                    <v-tooltip bottom>
-                      <template v-slot:activator="{ on, attrs }">
-                        <v-icon
-                          x-small
-                          class="ml-1"
-                          color="grey"
-                          v-bind="attrs"
-                          v-on="on"
-                        >
-                          mdi-information-outline
-                        </v-icon>
-                      </template>
-                      <span>{{ originTooltip(group.origin) }}</span>
-                    </v-tooltip>
-                  </div>
-                </v-expansion-panel-header>
-
-                <v-expansion-panel-content class="px-0 pb-0">
-                  <v-divider />
-                  <div
-                    v-for="(field, fIndex) in group.fields"
-                    :key="field.id"
-                    class="field-row px-3 py-2"
-                    :class="{ 'field-row--border': fIndex > 0 }"
-                  >
-                    <v-row dense align="center">
-                      <v-col cols="12" sm="5" class="field-row-label py-1">
-                        <div class="d-flex align-center flex-wrap">
-                          <span class="body-2 font-weight-medium mr-2">
-                            {{ field.caption }}
-                          </span>
-                          <v-chip
-                            x-small
-                            :color="contextColor(field.context)"
-                            dark
-                            label
-                          >
-                            {{ contextLabel(field.context) }}
-                          </v-chip>
-                        </div>
-                      </v-col>
-
-                      <v-col cols="12" sm="7" class="field-row-input py-1">
-                        <v-text-field
-                          v-if="field.inputType === 'string'"
-                          :value="field.currentValue"
-                          :placeholder="field.placeholder || ''"
-                          background-color="accent"
-                          filled
-                          dense
-                          hide-details
-                          clearable
-                          @input="updateFieldValue(field.id, $event)"
-                          @click:clear="clearFieldValue(field.id)"
-                        />
-
-                        <v-textarea
-                          v-else-if="field.inputType === 'text'"
-                          :value="field.currentValue"
-                          :placeholder="field.placeholder || ''"
-                          background-color="accent"
-                          filled
-                          dense
-                          hide-details
-                          rows="2"
-                          auto-grow
-                          clearable
-                          @input="updateFieldValue(field.id, $event)"
-                          @click:clear="clearFieldValue(field.id)"
-                        />
-
-                        <v-text-field
-                          v-else-if="field.inputType === 'numeric'"
-                          :value="field.currentValue"
-                          :placeholder="field.placeholder || ''"
-                          type="number"
-                          background-color="accent"
-                          filled
-                          dense
-                          hide-details
-                          clearable
-                          @input="
-                            updateFieldValue(
-                              field.id,
-                              $event !== '' && $event !== null
-                                ? Number($event)
-                                : null
-                            )
-                          "
-                          @click:clear="clearFieldValue(field.id)"
-                        />
-
-                        <v-switch
-                          v-else-if="field.inputType === 'boolean'"
-                          :input-value="field.currentValue"
-                          :label="field.currentValue ? 'Ja' : 'Nein'"
-                          dense
-                          hide-details
-                          class="mt-0 pt-0"
-                          @change="updateFieldValue(field.id, $event)"
-                        />
-
-                        <v-select
-                          v-else-if="
-                            field.inputType === 'select' ||
-                            field.inputType === 'multiselect'
-                          "
-                          :value="
-                            field.inputType === 'multiselect'
-                              ? field.currentValue || []
-                              : field.currentValue
-                          "
-                          :items="field.options || []"
-                          item-text="caption"
-                          item-value="value"
-                          :placeholder="field.placeholder || 'Auswählen…'"
-                          :multiple="field.inputType === 'multiselect'"
-                          :chips="field.inputType === 'multiselect'"
-                          :deletable-chips="field.inputType === 'multiselect'"
-                          background-color="accent"
-                          filled
-                          dense
-                          hide-details
-                          clearable
-                          :menu-props="{
-                            offsetY: true,
-                            offsetOverflow: true,
-                          }"
-                          @input="updateFieldValue(field.id, $event)"
-                          @click:clear="clearFieldValue(field.id)"
-                        />
-                      </v-col>
-                    </v-row>
-                  </div>
-                </v-expansion-panel-content>
-              </v-expansion-panel>
-            </v-expansion-panels>
-          </div>
-        </v-tab-item>
-
-        <v-tab-item>
+    <v-tabs-items v-if="definitionsShown" v-model="activeView">
+      <v-tab-item>
+        <div class="custom-fields-values">
           <p class="text-body-2 text--secondary mb-3">
-            Zusätzliche Felder nur für dieses Buchungsobjekt. Geerbte Felder
-            sind schreibgeschützt. Nach dem Speichern erscheinen neue Felder
-            unter „Werte pflegen“.
+            Werte eintragen, die im Katalog oder intern angezeigt werden.
           </p>
 
-          <v-card outlined class="section-card pa-4">
-            <CustomFieldList
-              :fields="bookable.customFieldDefinitions || []"
-              :inherited-field-groups="inheritedFieldGroups"
-              own-fields-label="Eigene Felder auf Buchungsobjekt-Ebene"
-              hide-override
-              @update:fields="onDefinitionsChanged"
-            />
-          </v-card>
-        </v-tab-item>
-      </v-tabs-items>
+          <v-alert v-if="hasCheckoutFields" type="info" dense text class="mb-3">
+            Buchungsprozess-Felder füllt der Kunde bei der Buchung aus.
+          </v-alert>
 
-      <!-- Without „Felder definieren“: values only, no definition sub-tab -->
-      <div v-else class="custom-fields-values">
+          <v-card
+            v-if="groupedFields.length === 0"
+            outlined
+            class="section-card pa-6 text-center"
+          >
+            <v-icon size="48" color="grey lighten-1" class="mb-3">
+              mdi-form-textbox
+            </v-icon>
+            <div class="text-subtitle-1 grey--text mb-2">
+              Noch keine Felder zum Ausfüllen
+            </div>
+            <div class="text-body-2 grey--text mb-4">
+              Felder kommen von Instanz oder Mandant — oder du legst sie unter
+              „Felder definieren“ an.
+            </div>
+            <v-btn color="primary" text @click="switchToDefinitions">
+              <v-icon left small>mdi-plus-box-outline</v-icon>
+              Feld definieren
+            </v-btn>
+          </v-card>
+
+          <v-expansion-panels
+            v-else
+            v-model="expandedOrigins"
+            multiple
+            flat
+            class="values-panels"
+          >
+            <v-expansion-panel
+              v-for="group in groupedFields"
+              :key="'values-' + group.origin"
+              class="section-card mb-2"
+            >
+              <v-expansion-panel-header class="origin-header py-2 px-3">
+                <div class="d-flex align-center">
+                  <v-icon small class="mr-2">{{
+                    originIcon(group.origin)
+                  }}</v-icon>
+                  <span class="subtitle-2 font-weight-bold">
+                    {{ originLabel(group.origin) }}
+                  </span>
+                  <v-chip x-small label class="ml-2">
+                    {{ group.fields.length }}
+                  </v-chip>
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-icon
+                        x-small
+                        class="ml-1"
+                        color="grey"
+                        v-bind="attrs"
+                        v-on="on"
+                      >
+                        mdi-information-outline
+                      </v-icon>
+                    </template>
+                    <span>{{ originTooltip(group.origin) }}</span>
+                  </v-tooltip>
+                </div>
+              </v-expansion-panel-header>
+
+              <v-expansion-panel-content class="px-0 pb-0">
+                <v-divider />
+                <div
+                  v-for="(field, fIndex) in group.fields"
+                  :key="field.id"
+                  class="field-row px-3 py-2"
+                  :class="{ 'field-row--border': fIndex > 0 }"
+                >
+                  <v-row dense align="center">
+                    <v-col cols="12" sm="5" class="field-row-label py-1">
+                      <div class="d-flex align-center flex-wrap">
+                        <span class="body-2 font-weight-medium mr-2">
+                          {{ field.caption }}
+                        </span>
+                        <v-chip
+                          x-small
+                          :color="contextColor(field.context)"
+                          dark
+                          label
+                        >
+                          {{ contextLabel(field.context) }}
+                        </v-chip>
+                      </div>
+                    </v-col>
+
+                    <v-col cols="12" sm="7" class="field-row-input py-1">
+                      <v-text-field
+                        v-if="field.inputType === 'string'"
+                        :value="field.currentValue"
+                        :placeholder="field.placeholder || ''"
+                        background-color="accent"
+                        filled
+                        dense
+                        hide-details
+                        clearable
+                        @input="updateFieldValue(field.id, $event)"
+                        @click:clear="clearFieldValue(field.id)"
+                      />
+
+                      <v-textarea
+                        v-else-if="field.inputType === 'text'"
+                        :value="field.currentValue"
+                        :placeholder="field.placeholder || ''"
+                        background-color="accent"
+                        filled
+                        dense
+                        hide-details
+                        rows="2"
+                        auto-grow
+                        clearable
+                        @input="updateFieldValue(field.id, $event)"
+                        @click:clear="clearFieldValue(field.id)"
+                      />
+
+                      <v-text-field
+                        v-else-if="field.inputType === 'numeric'"
+                        :value="field.currentValue"
+                        :placeholder="field.placeholder || ''"
+                        type="number"
+                        background-color="accent"
+                        filled
+                        dense
+                        hide-details
+                        clearable
+                        @input="
+                          updateFieldValue(
+                            field.id,
+                            $event !== '' && $event !== null
+                              ? Number($event)
+                              : null
+                          )
+                        "
+                        @click:clear="clearFieldValue(field.id)"
+                      />
+
+                      <v-switch
+                        v-else-if="field.inputType === 'boolean'"
+                        :input-value="field.currentValue"
+                        :label="field.currentValue ? 'Ja' : 'Nein'"
+                        dense
+                        hide-details
+                        class="mt-0 pt-0"
+                        @change="updateFieldValue(field.id, $event)"
+                      />
+
+                      <v-select
+                        v-else-if="
+                          field.inputType === 'select' ||
+                          field.inputType === 'multiselect'
+                        "
+                        :value="
+                          field.inputType === 'multiselect'
+                            ? field.currentValue || []
+                            : field.currentValue
+                        "
+                        :items="field.options || []"
+                        item-text="caption"
+                        item-value="value"
+                        :placeholder="field.placeholder || 'Auswählen…'"
+                        :multiple="field.inputType === 'multiselect'"
+                        :chips="field.inputType === 'multiselect'"
+                        :deletable-chips="field.inputType === 'multiselect'"
+                        background-color="accent"
+                        filled
+                        dense
+                        hide-details
+                        clearable
+                        :menu-props="{
+                          offsetY: true,
+                          offsetOverflow: true,
+                        }"
+                        @input="updateFieldValue(field.id, $event)"
+                        @click:clear="clearFieldValue(field.id)"
+                      />
+                    </v-col>
+                  </v-row>
+                </div>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
+        </div>
+      </v-tab-item>
+
+      <v-tab-item>
         <p class="text-body-2 text--secondary mb-3">
-          Werte eintragen, die im Katalog oder intern angezeigt werden.
+          Zusätzliche Felder nur für dieses Buchungsobjekt. Geerbte Felder sind
+          schreibgeschützt. Nach dem Speichern erscheinen neue Felder unter
+          „Werte pflegen“.
         </p>
 
-        <v-alert v-if="hasCheckoutFields" type="info" dense text class="mb-3">
-          Buchungsprozess-Felder füllt der Kunde bei der Buchung aus.
-        </v-alert>
-
-        <v-card
-          v-if="groupedFields.length === 0"
-          outlined
-          class="section-card pa-6 text-center"
-        >
-          <v-icon size="48" color="grey lighten-1" class="mb-3">
-            mdi-form-textbox
-          </v-icon>
-          <div class="text-subtitle-1 grey--text mb-2">
-            Noch keine Felder zum Ausfüllen
-          </div>
-          <div class="text-body-2 grey--text">
-            Felder kommen von Instanz oder Mandant.
-          </div>
+        <v-card outlined class="section-card pa-4">
+          <CustomFieldList
+            :fields="bookable.customFieldDefinitions || []"
+            :inherited-field-groups="inheritedFieldGroups"
+            own-fields-label="Eigene Felder auf Buchungsobjekt-Ebene"
+            hide-override
+            @update:fields="onDefinitionsChanged"
+          />
         </v-card>
+      </v-tab-item>
+    </v-tabs-items>
 
-        <v-expansion-panels
-          v-else
-          v-model="expandedOrigins"
-          multiple
-          flat
-          class="values-panels"
+    <!-- Without „Felder definieren“: values only, no definition sub-tab -->
+    <div v-else class="custom-fields-values">
+      <p class="text-body-2 text--secondary mb-3">
+        Werte eintragen, die im Katalog oder intern angezeigt werden.
+      </p>
+
+      <v-alert v-if="hasCheckoutFields" type="info" dense text class="mb-3">
+        Buchungsprozess-Felder füllt der Kunde bei der Buchung aus.
+      </v-alert>
+
+      <v-card
+        v-if="groupedFields.length === 0"
+        outlined
+        class="section-card pa-6 text-center"
+      >
+        <v-icon size="48" color="grey lighten-1" class="mb-3">
+          mdi-form-textbox
+        </v-icon>
+        <div class="text-subtitle-1 grey--text mb-2">
+          Noch keine Felder zum Ausfüllen
+        </div>
+        <div class="text-body-2 grey--text">
+          Felder kommen von Instanz oder Mandant.
+        </div>
+      </v-card>
+
+      <v-expansion-panels
+        v-else
+        v-model="expandedOrigins"
+        multiple
+        flat
+        class="values-panels"
+      >
+        <v-expansion-panel
+          v-for="group in groupedFields"
+          :key="'simple-values-' + group.origin"
+          class="section-card mb-2"
         >
-          <v-expansion-panel
-            v-for="group in groupedFields"
-            :key="'simple-values-' + group.origin"
-            class="section-card mb-2"
-          >
-            <v-expansion-panel-header class="origin-header py-2 px-3">
-              <div class="d-flex align-center">
-                <v-icon small class="mr-2">{{
-                  originIcon(group.origin)
-                }}</v-icon>
-                <span class="subtitle-2 font-weight-bold">
-                  {{ originLabel(group.origin) }}
-                </span>
-                <v-chip x-small label class="ml-2">
-                  {{ group.fields.length }}
-                </v-chip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-icon
+          <v-expansion-panel-header class="origin-header py-2 px-3">
+            <div class="d-flex align-center">
+              <v-icon small class="mr-2">{{ originIcon(group.origin) }}</v-icon>
+              <span class="subtitle-2 font-weight-bold">
+                {{ originLabel(group.origin) }}
+              </span>
+              <v-chip x-small label class="ml-2">
+                {{ group.fields.length }}
+              </v-chip>
+              <v-tooltip bottom>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-icon
+                    x-small
+                    class="ml-1"
+                    color="grey"
+                    v-bind="attrs"
+                    v-on="on"
+                  >
+                    mdi-information-outline
+                  </v-icon>
+                </template>
+                <span>{{ originTooltip(group.origin) }}</span>
+              </v-tooltip>
+            </div>
+          </v-expansion-panel-header>
+
+          <v-expansion-panel-content class="px-0 pb-0">
+            <v-divider />
+            <div
+              v-for="(field, fIndex) in group.fields"
+              :key="field.id"
+              class="field-row px-3 py-2"
+              :class="{ 'field-row--border': fIndex > 0 }"
+            >
+              <v-row dense align="center">
+                <v-col cols="12" sm="5" class="field-row-label py-1">
+                  <div class="d-flex align-center flex-wrap">
+                    <span class="body-2 font-weight-medium mr-2">
+                      {{ field.caption }}
+                    </span>
+                    <v-chip
                       x-small
-                      class="ml-1"
-                      color="grey"
-                      v-bind="attrs"
-                      v-on="on"
+                      :color="contextColor(field.context)"
+                      dark
+                      label
                     >
-                      mdi-information-outline
-                    </v-icon>
-                  </template>
-                  <span>{{ originTooltip(group.origin) }}</span>
-                </v-tooltip>
-              </div>
-            </v-expansion-panel-header>
+                      {{ contextLabel(field.context) }}
+                    </v-chip>
+                  </div>
+                </v-col>
 
-            <v-expansion-panel-content class="px-0 pb-0">
-              <v-divider />
-              <div
-                v-for="(field, fIndex) in group.fields"
-                :key="field.id"
-                class="field-row px-3 py-2"
-                :class="{ 'field-row--border': fIndex > 0 }"
-              >
-                <v-row dense align="center">
-                  <v-col cols="12" sm="5" class="field-row-label py-1">
-                    <div class="d-flex align-center flex-wrap">
-                      <span class="body-2 font-weight-medium mr-2">
-                        {{ field.caption }}
-                      </span>
-                      <v-chip
-                        x-small
-                        :color="contextColor(field.context)"
-                        dark
-                        label
-                      >
-                        {{ contextLabel(field.context) }}
-                      </v-chip>
-                    </div>
-                  </v-col>
+                <v-col cols="12" sm="7" class="field-row-input py-1">
+                  <v-text-field
+                    v-if="field.inputType === 'string'"
+                    :value="field.currentValue"
+                    :placeholder="field.placeholder || ''"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details
+                    clearable
+                    @input="updateFieldValue(field.id, $event)"
+                    @click:clear="clearFieldValue(field.id)"
+                  />
 
-                  <v-col cols="12" sm="7" class="field-row-input py-1">
-                    <v-text-field
-                      v-if="field.inputType === 'string'"
-                      :value="field.currentValue"
-                      :placeholder="field.placeholder || ''"
-                      background-color="accent"
-                      filled
-                      dense
-                      hide-details
-                      clearable
-                      @input="updateFieldValue(field.id, $event)"
-                      @click:clear="clearFieldValue(field.id)"
-                    />
+                  <v-textarea
+                    v-else-if="field.inputType === 'text'"
+                    :value="field.currentValue"
+                    :placeholder="field.placeholder || ''"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details
+                    rows="2"
+                    auto-grow
+                    clearable
+                    @input="updateFieldValue(field.id, $event)"
+                    @click:clear="clearFieldValue(field.id)"
+                  />
 
-                    <v-textarea
-                      v-else-if="field.inputType === 'text'"
-                      :value="field.currentValue"
-                      :placeholder="field.placeholder || ''"
-                      background-color="accent"
-                      filled
-                      dense
-                      hide-details
-                      rows="2"
-                      auto-grow
-                      clearable
-                      @input="updateFieldValue(field.id, $event)"
-                      @click:clear="clearFieldValue(field.id)"
-                    />
+                  <v-text-field
+                    v-else-if="field.inputType === 'numeric'"
+                    :value="field.currentValue"
+                    :placeholder="field.placeholder || ''"
+                    type="number"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details
+                    clearable
+                    @input="
+                      updateFieldValue(
+                        field.id,
+                        $event !== '' && $event !== null ? Number($event) : null
+                      )
+                    "
+                    @click:clear="clearFieldValue(field.id)"
+                  />
 
-                    <v-text-field
-                      v-else-if="field.inputType === 'numeric'"
-                      :value="field.currentValue"
-                      :placeholder="field.placeholder || ''"
-                      type="number"
-                      background-color="accent"
-                      filled
-                      dense
-                      hide-details
-                      clearable
-                      @input="
-                        updateFieldValue(
-                          field.id,
-                          $event !== '' && $event !== null
-                            ? Number($event)
-                            : null
-                        )
-                      "
-                      @click:clear="clearFieldValue(field.id)"
-                    />
+                  <v-switch
+                    v-else-if="field.inputType === 'boolean'"
+                    :input-value="field.currentValue"
+                    :label="field.currentValue ? 'Ja' : 'Nein'"
+                    dense
+                    hide-details
+                    class="mt-0 pt-0"
+                    @change="updateFieldValue(field.id, $event)"
+                  />
 
-                    <v-switch
-                      v-else-if="field.inputType === 'boolean'"
-                      :input-value="field.currentValue"
-                      :label="field.currentValue ? 'Ja' : 'Nein'"
-                      dense
-                      hide-details
-                      class="mt-0 pt-0"
-                      @change="updateFieldValue(field.id, $event)"
-                    />
-
-                    <v-select
-                      v-else-if="
-                        field.inputType === 'select' ||
-                        field.inputType === 'multiselect'
-                      "
-                      :value="
-                        field.inputType === 'multiselect'
-                          ? field.currentValue || []
-                          : field.currentValue
-                      "
-                      :items="field.options || []"
-                      item-text="caption"
-                      item-value="value"
-                      :placeholder="field.placeholder || 'Auswählen…'"
-                      :multiple="field.inputType === 'multiselect'"
-                      :chips="field.inputType === 'multiselect'"
-                      :deletable-chips="field.inputType === 'multiselect'"
-                      background-color="accent"
-                      filled
-                      dense
-                      hide-details
-                      clearable
-                      :menu-props="{ offsetY: true, offsetOverflow: true }"
-                      @input="updateFieldValue(field.id, $event)"
-                      @click:clear="clearFieldValue(field.id)"
-                    />
-                  </v-col>
-                </v-row>
-              </div>
-            </v-expansion-panel-content>
-          </v-expansion-panel>
-        </v-expansion-panels>
-      </div>
+                  <v-select
+                    v-else-if="
+                      field.inputType === 'select' ||
+                      field.inputType === 'multiselect'
+                    "
+                    :value="
+                      field.inputType === 'multiselect'
+                        ? field.currentValue || []
+                        : field.currentValue
+                    "
+                    :items="field.options || []"
+                    item-text="caption"
+                    item-value="value"
+                    :placeholder="field.placeholder || 'Auswählen…'"
+                    :multiple="field.inputType === 'multiselect'"
+                    :chips="field.inputType === 'multiselect'"
+                    :deletable-chips="field.inputType === 'multiselect'"
+                    background-color="accent"
+                    filled
+                    dense
+                    hide-details
+                    clearable
+                    :menu-props="{ offsetY: true, offsetOverflow: true }"
+                    @input="updateFieldValue(field.id, $event)"
+                    @click:clear="clearFieldValue(field.id)"
+                  />
+                </v-col>
+              </v-row>
+            </div>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+      </v-expansion-panels>
     </div>
-  </v-form>
+  </div>
 </template>
 
 <style scoped>

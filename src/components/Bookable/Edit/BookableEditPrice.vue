@@ -1,5 +1,5 @@
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <BaseSection v-if="!tiersOnly" title="Preise & Kapazität" icon="mdi-cash" />
 
     <v-expand-transition>
@@ -422,7 +422,7 @@
                 "
                 :persistent-hint="maxAmountPerBookingUnlimited"
                 :value="bookable.maxAmountPerBooking"
-                :rules="maxAmountPerBookingRules"
+                :rules="fieldRules.maxAmountPerBooking"
                 :suffix="amountSuffix"
                 @input="setMaxAmountPerBooking"
               />
@@ -542,8 +542,9 @@
                   filled
                   dense
                   label="Preis (netto)"
-                  hide-details
+                  hide-details="auto"
                   data-test="price-simple"
+                  :rules="fieldRules.price"
                   :value="priceCategories[0].priceEur"
                   @input="updateCategory(0, { priceEur: $event })"
                   prefix="€"
@@ -725,9 +726,7 @@
                               prefix="€"
                               type="number"
                               step="0.01"
-                              :rules="[
-                                (v) => v !== '' || 'Preis ist erforderlich',
-                              ]"
+                              :rules="fieldRules.price"
                             />
                           </v-col>
 
@@ -952,7 +951,7 @@
         </v-card-text>
       </v-card>
     </template>
-  </v-form>
+  </div>
 </template>
 
 <script>
@@ -1011,7 +1010,6 @@ export default {
       // tier list still looks like a single price. Lost on unmount, as it
       // may be: the switch then reads the categories again.
       graduatedChoice: null,
-      valid: false,
       expandedCategories: graduatedCategories(this.bookable.priceCategories)
         ? [0]
         : [],
@@ -1102,18 +1100,6 @@ export default {
     },
     maxAmountPerBookingUnlimited() {
       return this.bookable.maxAmountPerBooking == null;
-    },
-    // Empty is unlimited and saved as null; the backend refuses anything
-    // but a whole number from 1.
-    maxAmountPerBookingRules() {
-      return [
-        (v) =>
-          v === null ||
-          v === undefined ||
-          v === "" ||
-          (Number.isInteger(Number(v)) && Number(v) >= 1) ||
-          this.$t("bookable.edit.maxAmountPerBooking.invalid"),
-      ];
     },
     // Why there is nothing to preview: the prices route reads the stored
     // bookable, so it has nothing to say before the first save.
@@ -1278,12 +1264,6 @@ export default {
           this.missingRecommendedHandles
         ),
       });
-    },
-    async validate() {
-      return this.$refs.form ? this.$refs.form.validate() : true;
-    },
-    resetValidation() {
-      this.$refs.form?.resetValidation();
     },
     /** Empty is unlimited and saved as null; a number stays a number. */
     setMaxAmountPerBooking(value) {

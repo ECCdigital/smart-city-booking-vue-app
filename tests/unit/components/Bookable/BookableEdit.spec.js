@@ -278,3 +278,98 @@ describe("BookableEdit - expert options without expert mode", () => {
     expect(find(wrapper, "special-opening-hours-switch").exists()).toBe(true);
   });
 });
+
+describe("BookableEdit - saving with issues", () => {
+  const TITLE_MESSAGE = "Bitte einen Titel eingeben.";
+  const MAX_AMOUNT_MESSAGE =
+    "Bitte eine ganze Zahl ab 1 eingeben oder Unbegrenzt wählen.";
+
+  beforeEach(() => {
+    ApiBookablesService.createOrUpdateBookable.mockReset();
+    ApiBookablesService.createOrUpdateBookable.mockImplementation(
+      async (bookable) => ({ data: bookable })
+    );
+    // jsdom does not scroll; the way to a section ends in it.
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    delete Element.prototype.scrollIntoView;
+  });
+
+  const save = async (wrapper, test = "save") => {
+    await find(wrapper, test).trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+  };
+
+  it("saves nothing and opens the first tab with an issue", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "openingHours" },
+      stored({ title: " ", maxAmountPerBooking: 0 })
+    );
+
+    await save(wrapper);
+
+    expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
+    expect(wrapper.find("#be-section-general-info").exists()).toBe(true);
+    expect(wrapper.text()).toContain(TITLE_MESSAGE);
+  });
+
+  it("shows every message after a refused save, also in a tab opened later", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "general" },
+      stored({ title: "", maxAmountPerBooking: 0 })
+    );
+
+    await save(wrapper);
+    await tab(wrapper, "Preise & Kapazität").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain(MAX_AMOUNT_MESSAGE);
+  });
+
+  it("saves once the issue is gone", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "pricing" },
+      stored({ maxAmountPerBooking: 0 })
+    );
+
+    await save(wrapper);
+    expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain(MAX_AMOUNT_MESSAGE);
+
+    await wrapper.find(".max-amount-per-booking input").setValue("2");
+    await save(wrapper);
+
+    expect(ApiBookablesService.createOrUpdateBookable).toHaveBeenCalledWith(
+      expect.objectContaining({ maxAmountPerBooking: 2 })
+    );
+  });
+
+  it("saves nothing in the guided flow and opens the first step with an issue", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", mode: "flow" },
+      stored({ title: "" })
+    );
+
+    await find(wrapper, "flow-dot-approval").trigger("click");
+    await save(wrapper, "flow-save-only");
+
+    expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
+    expect(wrapper.text()).toContain(TITLE_MESSAGE);
+  });
+
+  it("goes on in the guided flow without a title", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", mode: "flow" },
+      stored({ title: "" })
+    );
+
+    await find(wrapper, "flow-next").trigger("click");
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Verfügbarkeit");
+  });
+});

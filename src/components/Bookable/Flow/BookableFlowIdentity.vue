@@ -12,9 +12,10 @@
         :placeholder="$t('bookable.flow.identity.title-placeholder')"
         outlined
         dense
-        hide-details
+        hide-details="auto"
         autofocus
         data-test="flow-title"
+        :rules="fieldRules.title"
         @input="patch({ title: $event })"
       />
     </div>

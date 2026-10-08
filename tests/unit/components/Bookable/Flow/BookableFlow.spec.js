@@ -49,14 +49,18 @@ async function walkToLastStep(wrapper) {
 }
 
 describe("BookableFlow", () => {
-  it("starts with the identity and holds the way on until there is a name", () => {
+  // „Weiter“ never holds (ECCdigital/tickets#354): a missing title is a
+  // message at its field once the save is refused, not a lock.
+  it("starts with the identity and goes on without a name", async () => {
     const wrapper = mountFlow();
     expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
-    expect(find(wrapper, "flow-name-missing").exists()).toBe(true);
-    expect(find(wrapper, "flow-next").attributes("disabled")).toBeDefined();
+    expect(find(wrapper, "flow-next").attributes("disabled")).toBeUndefined();
     expect(
       find(wrapper, "flow-dot-price").attributes("disabled")
-    ).toBeDefined();
+    ).toBeUndefined();
+
+    await find(wrapper, "flow-next").trigger("click");
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Verfügbarkeit");
   });
 
   it("goes on step by step once named and marks the steps left behind", async () => {
@@ -318,16 +322,12 @@ describe("BookableFlow on a wide screen", () => {
     );
   });
 
-  it("holds in the identity without a title and names what is missing", async () => {
+  it("goes to the step of a block clicked, also without a title", async () => {
     const wrapper = mountFlow();
 
     await blockOf(wrapper, "price").trigger("click");
 
-    expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
-    expect(find(wrapper, "flow-name-missing").text()).toBe(
-      "Ein Name fehlt noch"
-    );
-    expect(openBlocks(wrapper)).toHaveLength(5);
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Preis");
   });
 
   it("shows only the confirmation once there is an outcome", () => {
@@ -421,17 +421,13 @@ describe("BookableFlow on an extra wide screen", () => {
     expect(entryOf(wrapper, "availability").text()).toContain("offen");
   });
 
-  it("holds in the identity without a title, as the dots do", async () => {
+  it("goes to the step clicked in the list, also without a title", async () => {
     const wrapper = mountFlow();
 
-    expect(entryOf(wrapper, "identity").attributes("disabled")).toBeUndefined();
-    expect(entryOf(wrapper, "price").attributes("disabled")).toBeDefined();
+    expect(entryOf(wrapper, "price").attributes("disabled")).toBeUndefined();
     await entryOf(wrapper, "price").trigger("click");
 
-    expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
-    expect(find(wrapper, "flow-name-missing").text()).toBe(
-      "Ein Name fehlt noch"
-    );
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Preis");
   });
 
   it("switches between list and dots with the window, keeping the step", async () => {

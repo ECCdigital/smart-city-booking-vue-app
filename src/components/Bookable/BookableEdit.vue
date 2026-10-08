@@ -1,6 +1,8 @@
 <template>
   <div class="page-content" ref="contentCol">
-    <v-form ref="rootForm" v-model="validRoot" class="page-content__form">
+    <!-- Not a gate: the save asks bookableValidation. The form only reveals
+         every field's message after a refused save. -->
+    <v-form ref="rootForm" class="page-content__form">
       <div class="page-content__top">
         <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
@@ -165,6 +167,7 @@
            always created in it. -->
       <BookableFlow
         v-if="flowMode && bookable.tenantId"
+        ref="flow"
         :bookable="bookable"
         :is-new="!bookableID"
         :onboarding="$route.query.onboarding === '1'"
@@ -279,7 +282,6 @@
               :is="activeTabComp"
               :key="activeTabKey"
               :bookable="bookable"
-              :valid-root.sync="validRoot"
               v-bind="activeTabExtraProps"
               @update:bookable="onUpdateBookable"
               @navigate-tab="goToTab"
@@ -303,10 +305,10 @@
         $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
       "
       :scroll-root="scrollRoot"
-      @submit="createOrUpdate()"
+      @submit="save"
       @cancel="onRestoreChanges"
       show-restore
-      :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
+      :active="hasUnsavedChanges"
       :in-progress="inProgress"
     />
 
@@ -335,6 +337,7 @@ import ToastService from "@/services/ToastService";
 import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
 import {
   FLOW_MODE,
+  FLOW_STEPS,
   editRouteOf,
   isFlowMode,
   listRouteOf,
@@ -355,6 +358,7 @@ import {
 } from "@/utils/bookableEditSections";
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
+import { bookableIssues, firstIssue } from "@/utils/bookableValidation";
 
 // What the unsaved-changes snapshot leaves out. The review (glossary
 // "Prüfstatus") is the backend's alone and changes through its own actions,
@@ -387,7 +391,9 @@ export default {
       scrollRoot: null,
       isLoading: false,
       inProgress: false,
-      validRoot: true,
+      // Set by a refused save: every field shows its message from then on,
+      // also in a tab or step opened later, until the next save goes through.
+      messagesRevealed: false,
       activeTabKey: "general",
       activeSectionId: null,
       sectionTarget: null,
@@ -519,6 +525,8 @@ export default {
       const discard = await this.confirmDiscardChanges();
       if (discard) {
         await this.init();
+        this.messagesRevealed = false;
+        this.$refs.rootForm?.resetValidation();
       }
     },
     /** The expert-mode rule, as the components ask it. */
@@ -539,6 +547,44 @@ export default {
       }
       return true;
     },
+    /** „Speichern“ of the editing page. */
+    async save() {
+      if (this.refuseSave()) return;
+      await this.createOrUpdate();
+    },
+    /**
+     * Whether the bookable has issues the backend would refuse. If so,
+     * nothing is saved: every message shows, and the first tab - or in the
+     * guided flow the first step - with an issue opens.
+     */
+    refuseSave() {
+      const issues = bookableIssues(this.bookable, {
+        shown: this.expertOptionShown,
+      });
+      if (!issues.length) return false;
+
+      this.revealMessages();
+      const tabs = this.visibleTabs.map((tab) => tab.key);
+      if (this.flowMode) {
+        const issue = firstIssue(issues, FLOW_STEPS, "step");
+        if (issue.step) {
+          this.$refs.flow.openStep(issue.step);
+        } else {
+          // No step of its own yet: the tab of the editing page.
+          const { tab, section } = firstIssue(issues, tabs, "tab");
+          this.openSection({ tabKey: tab, sectionId: section });
+        }
+      } else {
+        const { tab, section } = firstIssue(issues, tabs, "tab");
+        this.goToTab(tab, section || undefined);
+      }
+      return true;
+    },
+    /** Every field shows its message, now and in what opens later. */
+    revealMessages() {
+      this.messagesRevealed = true;
+      this.$nextTick(() => this.$refs.rootForm?.validate());
+    },
     /** Saves `payload` (the bookable as edited); `true` when it was stored. */
     async createOrUpdate(payload = this.bookable) {
       try {
@@ -556,6 +602,7 @@ export default {
         }
 
         this.takeSnapshot();
+        this.messagesRevealed = false;
         if (!this.bookableID) {
           await this.addToast(
             ToastService.createToast("bookable.create.success", "success")
@@ -599,6 +646,7 @@ export default {
      * publication wish; „Nur speichern“ leaves the publication as it is.
      */
     async saveFlow(publish) {
+      if (this.refuseSave()) return;
       const isNew = !this.bookableID;
       const wasPublic = this.bookable.isPublic === true;
       this.flowSaveFailed = false;
@@ -883,6 +931,14 @@ export default {
   },
   mounted() {
     this.scrollRoot = this.$el.closest(".admin-page__body--scroll");
+    // A tab or step that mounts after a refused save registers its fields
+    // with the form: they show their messages at once, like the others.
+    this.$watch(
+      () => this.$refs.rootForm?.inputs.length,
+      () => {
+        if (this.messagesRevealed) this.revealMessages();
+      }
+    );
   },
 };
 </script>

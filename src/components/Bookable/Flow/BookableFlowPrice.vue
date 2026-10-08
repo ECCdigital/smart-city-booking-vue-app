@@ -89,8 +89,9 @@
               suffix="€"
               outlined
               dense
-              hide-details
+              hide-details="auto"
               data-test="flow-price-amount"
+              :rules="fieldRules.price"
               @input="setCategory({ priceEur: $event })"
             />
             <div class="flow-field__hint" data-test="flow-price-explain">
