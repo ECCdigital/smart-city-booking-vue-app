@@ -152,7 +152,12 @@
           </div>
         </div>
 
-        <BookableEditStatus v-if="!flowMode" :bookable="bookable" />
+        <BookableEditStatus
+          v-if="!flowMode"
+          :bookable="bookable"
+          :level="supervisionLevel"
+          @update:bookable="onUpdateBookable"
+        />
 
         <BookableEditOverview
           v-if="!flowMode && !$vuetify.breakpoint.lgAndUp"
@@ -431,7 +436,8 @@ export default {
       });
     },
     // The sign-in's level, else the admin DTO's - as the pending banner
-    // reads it. It words the flow's closing action.
+    // reads it. The publication reads it in both modes, the confirmation
+    // words its outcome by it.
     supervisionLevel() {
       const tenantId = this.bookable.tenantId || this.currentTenant?.id;
       return this.supervisionLevelOf(tenantId) ?? this.adminSupervisionLevel;

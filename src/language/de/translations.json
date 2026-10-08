@@ -534,14 +534,6 @@
         "customFieldsDefinitions": "Felder definieren"
       },
       "status": {
-        "bookable": {
-          "label": "Buchbar",
-          "tooltip": "Kunde/Nutzer kann das Objekt über den Checkout buchen."
-        },
-        "public": {
-          "label": "Öffentlich",
-          "tooltip": "Buchungsobjekt wird durch Webschnittstellen im Katalog oder auf eigenen Webseiten ausgeliefert."
-        },
         "manualApproval": {
           "label": "Manuelle Freigabe",
           "tooltip": "Eine Buchung muss vom Administrator freigegeben werden."
@@ -658,6 +650,16 @@
       }
     },
     "publication": {
+      "question": "Wer kann das Buchungsobjekt finden und buchen?",
+      "bookable": {
+        "label": "Buchbar",
+        "hint": "Buchende können es im Checkout buchen."
+      },
+      "public": {
+        "label": "Im Katalog listen",
+        "hint": "Es steht im Katalog und auf eingebundenen Webseiten."
+      },
+      "submits-on-save": "Beim Speichern wird das Angebot zur Prüfung eingereicht.",
       "effect": {
         "listed": "Das Buchungsobjekt steht im Katalog und ist buchbar.",
         "direct-link": "Das Buchungsobjekt steht nicht im Katalog, ist aber per Direktlink buchbar.",
