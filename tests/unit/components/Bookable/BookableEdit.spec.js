@@ -14,6 +14,7 @@ vi.mock("@/services/api/ApiBookablesService", () => ({
     getBookableTemplate: vi.fn(),
     createOrUpdateBookable: vi.fn(),
     getBookablePrices: vi.fn(),
+    getBookables: vi.fn().mockResolvedValue({ data: [] }),
   },
 }));
 vi.mock("@/services/api/ApiAccessPointService", () => ({
@@ -156,6 +157,23 @@ describe("BookableEdit - expert options without expert mode", () => {
 
     expect(tab(wrapper, "Abhängigkeiten")).toBeDefined();
     expect(tab(wrapper, "Schließsysteme")).toBeUndefined();
+  });
+
+  it("opens a linked tab of an expert option in use", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "relatedBookables" },
+      stored({ relatedBookableIds: ["b3"] })
+    );
+
+    expect(wrapper.find("#be-section-related-hierarchy").exists()).toBe(true);
+    expect(wrapper.find("#be-section-related-checkout").exists()).toBe(false);
+  });
+
+  it("opens the first tab for a linked tab of unused expert options", async () => {
+    const wrapper = await mountEdit({ id: "b1", tab: "relatedBookables" });
+
+    expect(wrapper.find("#be-section-related-hierarchy").exists()).toBe(false);
+    expect(wrapper.find("#be-section-general-info").exists()).toBe(true);
   });
 
   it("hands the stored bookable to the tabs", async () => {

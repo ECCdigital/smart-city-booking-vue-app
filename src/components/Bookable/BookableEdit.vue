@@ -747,6 +747,9 @@ export default {
       }
 
       this.takeSnapshot();
+      // Only now: whether a tab of expert options shows depends on the
+      // bookable.
+      this.resolveTabFromQuery();
     },
     /**
      * What „Ungespeicherte Änderungen“ compares against: the bookable as
@@ -955,7 +958,6 @@ export default {
   },
   mounted() {
     this.scrollRoot = this.$el.closest(".admin-page__body--scroll");
-    this.resolveTabFromQuery();
   },
 };
 </script>
