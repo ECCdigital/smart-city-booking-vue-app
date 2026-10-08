@@ -63,20 +63,6 @@ export const AREAS = [
     summary: () => "Buchende können nicht selbst stornieren",
   },
   {
-    key: "required-fields",
-    title: "Pflichtfelder",
-    hint: "Welche Kontaktangaben Buchende im Checkout machen müssen.",
-    comp: "BookableEditAdditional",
-    sectionId: "be-section-additional-required-fields",
-    expertOnly: true,
-    stepB: "approval",
-    // A new bookable already carries address, zip code and city (#339:
-    // „genutzt“ = deviates from a new bookable, not „not empty“).
-    used: (b) =>
-      [...(b.requiredFields || [])].sort().join() !== "address,city,zipCode",
-    summary: (b) => `${len(b.requiredFields)} Pflichtfeld(er)`,
-  },
-  {
     key: "attachments",
     title: "Anhänge",
     hint: "Was Buchende bestätigen müssen und welche Unterlagen sie bekommen.",
@@ -102,6 +88,20 @@ export const AREAS = [
       `${(b.customFields || []).filter((f) => f.hasValue).length} von ${len(
         b.customFields
       )} Feldern gefüllt`,
+  },
+  {
+    key: "required-fields",
+    title: "Pflichtfelder",
+    hint: "Welche Kontaktangaben Buchende im Checkout machen müssen.",
+    comp: "BookableEditAdditional",
+    sectionId: "be-section-additional-required-fields",
+    expertOnly: true,
+    stepB: "approval",
+    // A new bookable already carries address, zip code and city (#339:
+    // „genutzt“ = deviates from a new bookable, not „not empty“).
+    used: (b) =>
+      [...(b.requiredFields || [])].sort().join() !== "address,city,zipCode",
+    summary: (b) => `${len(b.requiredFields)} Pflichtfeld(er)`,
   },
   // Not named in the question of #346, but the editor-only rest of
   // „Sonstiges“: shown to ask whether it belongs here or to the basics.
