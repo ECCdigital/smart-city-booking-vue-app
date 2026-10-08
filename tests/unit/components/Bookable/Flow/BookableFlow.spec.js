@@ -116,15 +116,15 @@ describe("BookableFlow", () => {
 
     await find(wrapper, "flow-dot-approval").trigger("click");
 
-    expect(find(wrapper, "flow-title-heading").text()).toBe("Freigabe");
-    expect(find(wrapper, "flow-approval").exists()).toBe(true);
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Bestätigung");
+    expect(find(wrapper, "confirmation").exists()).toBe(true);
   });
 
   it("hands every change of a step to the editor", async () => {
     const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
     await find(wrapper, "flow-dot-approval").trigger("click");
 
-    await find(wrapper, "flow-approval-auto").trigger("click");
+    await find(wrapper, "confirmation-auto").trigger("click");
 
     const [changed] = wrapper.emitted("update:bookable").slice(-1)[0];
     expect(changed).toEqual({ autoCommitBooking: true });
@@ -329,7 +329,7 @@ describe("BookableFlow on a wide screen", () => {
       "Preis",
       "Anzahl & Kapazität",
       "Berechtigung",
-      "Freigabe",
+      "Bestätigung",
       "Veröffentlichung",
     ].forEach((title, idx) => expect(blocks[idx].text()).toContain(title));
   });
@@ -359,7 +359,7 @@ describe("BookableFlow on a wide screen", () => {
     });
 
     expect(openBlocks(wrapper)).toHaveLength(0);
-    expect(blockOf(wrapper, "approval").text()).toContain("wird geprüft");
+    expect(blockOf(wrapper, "approval").text()).toContain("Manuell bestätigen");
   });
 
   it("shows a new value as soon as the bookable changes", async () => {
@@ -375,8 +375,8 @@ describe("BookableFlow on a wide screen", () => {
 
     await blockOf(wrapper, "approval").trigger("click");
 
-    expect(find(wrapper, "flow-title-heading").text()).toBe("Freigabe");
-    expect(blockOf(wrapper, "approval").text()).toContain("wird geprüft");
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Bestätigung");
+    expect(blockOf(wrapper, "approval").text()).toContain("Manuell bestätigen");
     expect(find(wrapper, "flow-dot-identity").classes()).toContain(
       "bookable-flow__dot--done"
     );
@@ -458,7 +458,7 @@ describe("BookableFlow on an extra wide screen", () => {
       "Preis",
       "Anzahl & Kapazität",
       "Berechtigung",
-      "Freigabe",
+      "Bestätigung",
       "Veröffentlichung",
     ].forEach((title) => expect(list.text()).toContain(title));
     expect(entryOf(wrapper, "identity").attributes("aria-current")).toBe(

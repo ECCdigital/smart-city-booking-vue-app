@@ -333,6 +333,7 @@ describe("BookableEdit - Wer darf buchen?", () => {
     expect(subNav(wrapper)).toEqual([
       "Berechtigung",
       "Preisnachlass",
+      "Bestätigung",
       "Serienbuchung",
       "Stornierung",
     ]);
@@ -365,6 +366,77 @@ describe("BookableEdit - Wer darf buchen?", () => {
       requiresLogin: true,
       permittedUsers: ["u1"],
     });
+  });
+});
+
+describe("BookableEdit - Bestätigung", () => {
+  const cardTitles = (wrapper) =>
+    wrapper
+      .findAll(".page-content__editor .section-card .section-header")
+      .wrappers.map((title) => title.text());
+  const sent = () =>
+    ApiBookablesService.createOrUpdateBookable.mock.calls.at(-1)[0];
+
+  beforeEach(() => {
+    ApiBookablesService.createOrUpdateBookable.mockReset();
+    ApiBookablesService.createOrUpdateBookable.mockImplementation(
+      async (bookable) => ({ data: bookable })
+    );
+  });
+
+  it("frames the component as the card after „Wer darf buchen?“ in Berechtigungen", async () => {
+    const wrapper = await mountEdit({ id: "b1", tab: "permissions" });
+
+    expect(cardTitles(wrapper).slice(0, 2)).toEqual([
+      "Berechtigung",
+      "Bestätigung",
+    ]);
+    expect(
+      wrapper
+        .find("#be-section-permissions-confirmation")
+        .find("[data-test='confirmation']")
+        .exists()
+    ).toBe(true);
+  });
+
+  it("saves the choice of the card", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "permissions" },
+      stored({ autoCommitBooking: false })
+    );
+
+    await find(wrapper, "confirmation-auto").trigger("click");
+    expect(unsaved(wrapper)).toBe(true);
+    await find(wrapper, "save").trigger("click");
+    await flushPromises();
+
+    expect(sent()).toMatchObject({ autoCommitBooking: true });
+  });
+
+  it("asks the same in the guided flow's step Bestätigung", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", mode: "flow" },
+      stored({ autoCommitBooking: true })
+    );
+
+    await find(wrapper, "flow-dot-approval").trigger("click");
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Bestätigung");
+    expect(find(wrapper, "confirmation-auto").attributes("aria-checked")).toBe(
+      "true"
+    );
+  });
+
+  it("leaves the status band to the publication", async () => {
+    const wrapper = await mountBookableEdit({
+      query: { id: "b1" },
+      bookable: stored({ autoCommitBooking: false }),
+      stubs: { BookableEditStatus: false },
+    });
+
+    expect(find(wrapper, "publication").exists()).toBe(true);
+    expect(wrapper.text()).not.toContain("Manuelle Freigabe");
+    expect(find(wrapper, "confirmation").exists()).toBe(false);
   });
 });
 

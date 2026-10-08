@@ -4,6 +4,7 @@ import BookableEditBookingMode from "@/components/Bookable/Edit/BookableEditBook
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
 import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
+import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
 import BookableEditAccessLocks from "@/components/Bookable/Edit/BookableEditAccessLocks.vue";
 import BookableEditCheckoutBookables from "@/components/Bookable/Edit/BookableEditCheckoutBookables.vue";
 import BookableEditHierarchy from "@/components/Bookable/Edit/BookableEditHierarchy.vue";
@@ -149,6 +150,14 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
         titleKey: "bookable.flow.steps.permission.title",
         icon: "mdi-account-check-outline",
         section: "permissions-access",
+      },
+      // The Bestätigung, after „Wer darf buchen?“ as in the guided flow.
+      {
+        key: "confirmation",
+        comp: BookableFlowApproval,
+        titleKey: "bookable.flow.steps.approval.title",
+        icon: "mdi-check-decagram-outline",
+        section: "permissions-confirmation",
       },
       areaCard("groupBooking"),
       areaCard("cancellation"),

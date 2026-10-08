@@ -172,6 +172,12 @@ const ALL_SECTIONS = [
   },
   {
     tabKey: "permissions",
+    id: "permissions-confirmation",
+    labelKey: "bookable.flow.steps.approval.title",
+    type: "scroll",
+  },
+  {
+    tabKey: "permissions",
     id: "permissions-group-booking",
     labelKey: "bookable.areas.groupBooking.title",
     type: "scroll",
