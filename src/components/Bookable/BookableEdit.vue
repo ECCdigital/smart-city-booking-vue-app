@@ -328,8 +328,7 @@ import SaveBar from "@/components/commons/SaveBar.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
 import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import Bookable from "@/entities/bookable";
-import { normalizeLeadTimeFields } from "@/utils/bookingLeadTime";
-import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
+import { normalizeBookable } from "@/utils/normalizeBookable";
 import { mapActions, mapGetters } from "vuex";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
 import BookableEditAccessLocks from "@/components/Bookable/Edit/BookableEditAccessLocks.vue";
@@ -610,9 +609,7 @@ export default {
         const response = await ApiBookablesService.createOrUpdateBookable(
           payload
         );
-        this.bookable = normalizeBookingDiscounts(
-          normalizeLeadTimeFields(_.cloneDeep(response.data))
-        );
+        this.bookable = normalizeBookable(response.data);
 
         if (!this.bookableID) {
           const query = { ...this.$route.query, id: this.bookable.id };
@@ -621,12 +618,7 @@ export default {
           this.$router.replace({ query });
         }
 
-        // Match init(): snapshot the normalized bookable, not raw response.data
-        const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
-
-        this.originalSnapshot = JSON.stringify({
-          bookable: bookableClean,
-        });
+        this.takeSnapshot();
         if (!this.bookableID) {
           await this.addToast(
             ToastService.createToast("bookable.create.success", "success")
@@ -730,41 +722,45 @@ export default {
         const response = await ApiBookablesService.getBookableTemplate(
           this.currentTenant.id
         );
-        this.bookable = normalizeLeadTimeFields(
-          new Bookable(response.data).toPlain()
-        );
-        normalizeBookingDiscounts(this.bookable);
-        this.bookable.type = this.type;
-        this.bookable.isTimePeriodRelated = false;
-        this.bookable.isBlockPeriodRelated = false;
-        this.bookable.isLongRange = false;
-        this.bookable.longRangeOptions = {};
-        // Tickets default to time-independent; other bookables to free time selection
-        this.bookable.isScheduleRelated = this.type !== "ticket";
+        this.bookable = normalizeBookable({
+          ...new Bookable(response.data).toPlain(),
+          type: this.type,
+          isTimePeriodRelated: false,
+          isBlockPeriodRelated: false,
+          isLongRange: false,
+          longRangeOptions: {},
+          // Tickets default to time-independent; other bookables to free time selection
+          isScheduleRelated: this.type !== "ticket",
+        });
       }
 
-      this.$nextTick(() => {
-        const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
-        this.originalSnapshot = JSON.stringify({
-          bookable: bookableClean,
-        });
+      this.takeSnapshot();
+    },
+    /**
+     * What „Ungespeicherte Änderungen“ compares against: the bookable as
+     * normalized on load or after the save, so the normalization never reads
+     * as an edit.
+     */
+    takeSnapshot() {
+      const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
+      this.originalSnapshot = JSON.stringify({
+        bookable: bookableClean,
       });
     },
     async fetchBookable(bookableId) {
       try {
         this.isLoading = true;
         const response = await ApiBookablesService.getBookable(bookableId);
-        this.bookable = normalizeBookingDiscounts(
-          normalizeLeadTimeFields(_.cloneDeep(response.data))
-        );
+        this.bookable = normalizeBookable(response.data);
       } catch (err) {
         console.error("Error fetching bookable:", err);
       } finally {
         this.isLoading = false;
       }
     },
-    onUpdateBookable(updatedBookable) {
-      this.bookable = { ...this.bookable, ...updatedBookable };
+    /** A partial patch: only the changed top-level fields, merged flat. */
+    onUpdateBookable(changes) {
+      this.bookable = { ...this.bookable, ...changes };
     },
     goToTab(key, sectionId) {
       if (!this.expertMode && isBookableExpertOnlyTab(key)) {
