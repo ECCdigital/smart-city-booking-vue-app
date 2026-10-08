@@ -141,7 +141,7 @@ describe("BookableEditAccessPoints", () => {
 
     const row = rows(wrapper).at(0);
     expect(row.text()).toMatch(/Tür/);
-    expect(row.text()).toMatch(/Geteilter Zugang/);
+    expect(row.text()).toMatch(/im Buchungszeitraum mit anderen geteilt/);
   });
 
   it("offers only unassigned access points in the picker and assigns one", async () => {

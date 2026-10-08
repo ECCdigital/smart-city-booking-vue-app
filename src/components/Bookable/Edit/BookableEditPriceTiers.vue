@@ -3,7 +3,7 @@
     <div class="d-flex justify-space-between align-center mb-3">
       <v-subheader class="pl-0">
         <v-icon small class="mr-2"> mdi-format-list-numbered </v-icon>
-        {{ $t("bookable.edit.priceTiers.title") }}
+        {{ $t("bookable.flow.price.modes.tiers") }}
       </v-subheader>
       <v-btn
         small

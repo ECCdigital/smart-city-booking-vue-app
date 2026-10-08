@@ -4,7 +4,7 @@ import { switchByLabel, toggleSwitch } from "@tests/unit/support/vuetify";
 import Bookable from "@/entities/bookable";
 import BookableEditCancellation from "@/components/Bookable/Edit/BookableEditCancellation.vue";
 
-const SELF = "Benutzer dürfen ihre Buchungen selbst stornieren";
+const SELF = "Buchende dürfen ihre Buchungen selbst stornieren";
 
 const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t1", title: "Saal", ...overrides }).toPlain();

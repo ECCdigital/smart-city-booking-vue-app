@@ -97,6 +97,74 @@ async function mountTab(tab, overrides) {
   return wrapper;
 }
 
+/** Each tab, and the sections a tab shows only for some data. */
+const TAB_CASES = [
+  ["general", {}],
+  ["pricing", {}],
+  [
+    "pricing",
+    {
+      priceType: "per-day",
+      priceCategories: [{ priceEur: 10, interval: { start: null, end: null } }],
+    },
+  ],
+  [
+    "pricing",
+    {
+      priceCategories: [
+        { priceEur: 10, interval: { start: 0, end: 2 }, fixedPrice: false },
+        { priceEur: 8, interval: { start: 2, end: null }, fixedPrice: false },
+      ],
+    },
+  ],
+  [
+    "bookingType",
+    {
+      isScheduleRelated: true,
+      isLeadTimeRelated: true,
+      preparationLeadTimeMinutes: 90,
+      serviceHours: [{ weekdays: [1], ...time }],
+      isBufferRelated: true,
+      bufferTimeBeforeMinutes: 15,
+    },
+  ],
+  [
+    "bookingType",
+    {
+      isScheduleRelated: false,
+      isTimePeriodRelated: true,
+      timePeriods: [{ weekdays: [1, 2], ...time }, { weekdays: [] }],
+    },
+  ],
+  [
+    "bookingType",
+    {
+      isScheduleRelated: false,
+      isBlockPeriodRelated: true,
+      blockPeriods: [
+        { id: "p1", label: "", startWeekday: 5, endWeekday: 1, ...time },
+      ],
+    },
+  ],
+  ["bookingType", { isScheduleRelated: false, blockPeriods: [] }],
+  [
+    "openingHours",
+    {
+      isOpeningHoursRelated: true,
+      openingHours: [{ weekdays: [1], ...time }],
+      isSpecialOpeningHoursRelated: true,
+      specialOpeningHours: [{ date: "2026-12-24", ...time }],
+    },
+  ],
+  ["openingHours", { isScheduleRelated: false }],
+  ["accessLocks", {}],
+  ["relatedBookables", {}],
+  ["permissions", {}],
+  ["attachments", {}],
+  ["customFields", {}],
+  ["additional", {}],
+];
+
 describe("BookableEdit - every fixed text from the catalogue", () => {
   beforeEach(() => {
     setViewportWidth(1264);
@@ -108,70 +176,15 @@ describe("BookableEdit - every fixed text from the catalogue", () => {
     resetViewportWidth();
   });
 
-  it.each([
-    ["general", {}],
-    ["pricing", {}],
-    [
-      "pricing",
-      {
-        priceCategories: [
-          { priceEur: 10, interval: { start: 0, end: 2 }, fixedPrice: false },
-          { priceEur: 8, interval: { start: 2, end: null }, fixedPrice: false },
-        ],
-      },
-    ],
-    [
-      "bookingType",
-      {
-        isScheduleRelated: true,
-        isLeadTimeRelated: true,
-        preparationLeadTimeMinutes: 90,
-        serviceHours: [{ weekdays: [1], ...time }],
-        isBufferRelated: true,
-        bufferTimeBeforeMinutes: 15,
-      },
-    ],
-    [
-      "bookingType",
-      {
-        isScheduleRelated: false,
-        isTimePeriodRelated: true,
-        timePeriods: [{ weekdays: [1, 2], ...time }, { weekdays: [] }],
-      },
-    ],
-    [
-      "bookingType",
-      {
-        isScheduleRelated: false,
-        isBlockPeriodRelated: true,
-        blockPeriods: [
-          { id: "p1", label: "", startWeekday: 5, endWeekday: 1, ...time },
-        ],
-      },
-    ],
-    ["bookingType", { isScheduleRelated: false, blockPeriods: [] }],
-    [
-      "openingHours",
-      {
-        isOpeningHoursRelated: true,
-        openingHours: [{ weekdays: [1], ...time }],
-        isSpecialOpeningHoursRelated: true,
-        specialOpeningHours: [{ date: "2026-12-24", ...time }],
-      },
-    ],
-    ["openingHours", { isScheduleRelated: false }],
-    ["accessLocks", {}],
-    ["relatedBookables", {}],
-    ["permissions", {}],
-    ["attachments", {}],
-    ["customFields", {}],
-    ["additional", {}],
-  ])("reads no built-in text at the tab „%s“", async (tab, overrides) => {
-    const wrapper = await mountTab(tab, overrides);
+  it.each(TAB_CASES)(
+    "reads no built-in text at the tab „%s“",
+    async (tab, overrides) => {
+      const wrapper = await mountTab(tab, overrides);
 
-    expect(find(wrapper, "flow-summary").exists()).toBe(true);
-    expect(unmarkedTexts(wrapper.element)).toEqual([]);
-  });
+      expect(find(wrapper, "flow-summary").exists()).toBe(true);
+      expect(unmarkedTexts(wrapper.element)).toEqual([]);
+    }
+  );
 
   it("reads no built-in text at the settings of ParkraumService", async () => {
     ApiAccessPointService.getAccessPoints.mockResolvedValue({
@@ -244,5 +257,111 @@ describe("BookableEdit - every fixed text from the catalogue", () => {
     await flushPromises();
 
     expect(unmarkedTexts(wrapper.element).filter((t) => t !== "1")).toEqual([]);
+  });
+});
+
+/*
+ * The words the unification retired (ECCdigital/tickets#348, the glossary's
+ * „nicht verwenden“) read nowhere in either mode. „Zugangspunkt“, „Rabattcodes“
+ * and „Freigabe durch den Betreiber“ (the decision on the Prüfstatus) stay.
+ */
+const RETIRED = [
+  /\bZugang\b/,
+  /\bRabatte?\b/,
+  /\bPreisrabatt/,
+  /\bBenutzer/,
+  /\bFreigabe\b(?! durch)/,
+  /\bEditor\b/,
+  /(?<!geführte[nmr]? )\bAblauf\b/i,
+  /Zur Übersicht/,
+  /Gutschein/,
+  /Anmeldepflicht/,
+  /Angemeldete Nutzer/,
+  /\bÖffentlich\b/,
+  /\bStorno\b/,
+  /Pflichtangaben/,
+  /Zusatzoption/,
+  /Dokumente & Einwilligungen/,
+  /Hinweise zur Buchung/,
+  /Buchungstyp/,
+  /Verfügbare Anzahl/,
+  /Max\. Anzahl/,
+  /Pauschalpreis/,
+  /Staffelpreis/,
+  /Feste Zeiten\b/,
+  /Wochenbuchung/,
+  /Monatsbuchung/,
+  /Zeitunabhängig/,
+  /Manuell prüfen/,
+];
+
+const retiredIn = (text) =>
+  RETIRED.filter((word) => word.test(text)).map((word) => word.source);
+
+/** A bookable that uses every area, so each shows its copy. */
+const everyArea = {
+  checkoutBookableIds: [{ bookableId: "2", mandatory: true }],
+  relatedBookableIds: ["3"],
+  groupBooking: { enabled: true, permittedRoles: [] },
+  cancellationPolicy: { userCancellable: false },
+  attachments: [{ id: "a1", type: "agreement", title: "AGB" }],
+  requiredFields: ["phone"],
+  bookingNotes: "<p>Schlüssel abholen</p>",
+  accessPointDetails: { active: true, accessPointIds: ["ap1"] },
+  bookingDiscounts: { roles: [{ roleId: "r1", discount: 10 }], users: [] },
+  enableCoupons: false,
+  autoCommitBooking: false,
+};
+
+describe("BookableEdit - no retired word in either mode", () => {
+  beforeEach(() => setViewportWidth(1264));
+  afterEach(() => resetViewportWidth());
+
+  it.each(TAB_CASES)("reads none at the tab „%s“", async (tab, overrides) => {
+    const wrapper = await mountTab(tab, { ...everyArea, ...overrides });
+
+    expect(retiredIn(wrapper.text())).toEqual([]);
+  });
+
+  it("reads none in a step of the guided flow", async () => {
+    const wrapper = await mountBookableEdit({
+      query: { id: "42", mode: "flow" },
+      bookable: bookable(everyArea),
+      stubs: {
+        BookableFlowSummary: false,
+        MediaAttachmentList: stub("MediaAttachmentList"),
+      },
+    });
+
+    for (const step of FLOW_STEPS) {
+      await find(wrapper, `flow-dot-${step}`).trigger("click");
+      await flushPromises();
+      expect([step, ...retiredIn(wrapper.text())]).toEqual([step]);
+    }
+  });
+
+  it("reads none on the confirmation", async () => {
+    ApiBookablesService.createOrUpdateBookable.mockImplementation(
+      async (saved) => ({ data: saved })
+    );
+    const wrapper = await mountBookableEdit({
+      query: { id: "42", mode: "flow" },
+      bookable: bookable({
+        ...everyArea,
+        title: "1",
+        isBookable: true,
+        isPublic: true,
+      }),
+      stubs: { TenantReadinessCheck: stub("TenantReadinessCheck") },
+    });
+    await find(
+      wrapper,
+      `flow-dot-${FLOW_STEPS[FLOW_STEPS.length - 1]}`
+    ).trigger("click");
+    await find(wrapper, "flow-save").trigger("click");
+    await flushPromises();
+
+    expect(find(wrapper, "flow-done-leave").exists()).toBe(true);
+    expect(retiredIn(wrapper.text())).toEqual([]);
   });
 });

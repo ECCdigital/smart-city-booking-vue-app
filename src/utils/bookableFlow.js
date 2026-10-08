@@ -459,13 +459,6 @@ const asCount = (key, count) => (count > 0 ? [pluralPart(key, count)] : []);
 
 const listOf = (value) => (Array.isArray(value) ? value : []);
 
-/** The price with the unit of its Preisart, as „25,00 €/h“. */
-const PRICE_TYPE_SUFFIX = Object.freeze({
-  "per-hour": "/h",
-  "per-day": "/Tag",
-  "per-square-meter": "/m²",
-  "per-item": "/Stk.",
-});
 
 function formatCurrency(value) {
   const num = Number(value);
@@ -693,7 +686,13 @@ function simpleAmountValue(bookable) {
   if (bookable.priceType === "per-hour" && category.fixedPrice) {
     return asWord(`${VALUES}.daily-flat`, { price: amount });
   }
-  return asText(`${amount}${PRICE_TYPE_SUFFIX[bookable.priceType] || ""}`);
+  // The price with the unit of its Preisart, as „25,00 €/h“.
+  if (PRICE_TYPES.includes(bookable.priceType)) {
+    return asWord(`${VALUES}.price-per.${bookable.priceType}`, {
+      price: amount,
+    });
+  }
+  return asText(amount);
 }
 
 function priceValue(bookable) {

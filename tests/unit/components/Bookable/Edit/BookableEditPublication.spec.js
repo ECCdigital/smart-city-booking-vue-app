@@ -134,7 +134,7 @@ describe("BookableEditPublication", () => {
 
     expect(find(wrapper, "review-status").text()).toBe("Prüfung ausstehend");
     expect(effect(wrapper)).toContain(
-      "Nach der Freigabe steht das Buchungsobjekt im Katalog und ist buchbar."
+      "Nach der Freigabe durch den Betreiber steht das Buchungsobjekt im Katalog und ist buchbar."
     );
     expect(find(wrapper, "review-effect").exists()).toBe(false);
     expect(find(wrapper, "publication-wish-hint").text()).toContain(
@@ -157,10 +157,10 @@ describe("BookableEditPublication", () => {
   });
 
   it.each([
-    ["supervised", "braucht zusätzlich eine Freigabe"],
+    ["supervised", "braucht zusätzlich eine Freigabe durch den Betreiber"],
     [
       "pending",
-      "Der Veröffentlichungswunsch wird vorgemerkt; bis zur Freigabe durch den Betreiber wird nichts öffentlich",
+      "wartet auf die Freigabe durch den Betreiber: Der Veröffentlichungswunsch wird vorgemerkt; bis dahin wird nichts öffentlich",
     ],
     ["declined", "abgewiesen: Der Veröffentlichungswunsch wird vorgemerkt"],
   ])(

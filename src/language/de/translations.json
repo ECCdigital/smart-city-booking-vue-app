@@ -190,11 +190,11 @@
       "steps": {
         "identity": {
           "title": "Identität",
-          "why": "Name, Typ und Bild – daran erkennen Buchende das Objekt und Sie es später selbst wieder."
+          "why": "Titel, Typ und Bilder – daran erkennen Buchende das Objekt und Sie es später selbst wieder."
         },
         "availability": {
           "title": "Verfügbarkeit",
-          "why": "Wie Buchende Zeit wählen – Kalender, feste Zeiten, Langzeit oder keine Zeitauswahl. Der Kern der Buchung."
+          "why": "Wie Buchende Zeit wählen – frei im Kalender, in festen Zeitfenstern, in Zeiträumen, als Langzeit oder ohne Zeit. Der Kern der Buchung."
         },
         "price": {
           "title": "Preis",
@@ -407,6 +407,12 @@
           "tiers": "{count} Tarif | {count} Tarife",
           "once": "{price} für die ganze Buchung",
           "daily-flat": "{price} Tagespauschale",
+          "price-per": {
+            "per-hour": "{price}/h",
+            "per-day": "{price}/Tag",
+            "per-item": "{price}/Stk.",
+            "per-square-meter": "{price}/m²"
+          },
           "vat-rate": "{rate} %",
           "vat-none": "ohne",
           "yes": "ja",
@@ -434,7 +440,7 @@
           },
           "supervised": {
             "title": "Zur Prüfung eingereicht",
-            "text": "Ihr Angebot wartet auf Prüfung. Bis zur Freigabe ist es öffentlich nicht sichtbar."
+            "text": "Ihr Angebot wartet auf Prüfung. Bis zur Freigabe durch den Betreiber ist es öffentlich nicht sichtbar."
           },
           "pending": {
             "title": "Veröffentlichung vorgemerkt",
@@ -601,9 +607,8 @@
         }
       },
       "priceTiers": {
-        "title": "Preis-Kategorien",
-        "add": "Kategorie hinzufügen",
-        "info": "<strong>Tipp:</strong> Die Kategorien werden in der angegebenen Reihenfolge geprüft. Die erste passende Kategorie wird angewendet.",
+        "add": "Tarif hinzufügen",
+        "info": "<strong>Tipp:</strong> Die Tarife werden in der angegebenen Reihenfolge geprüft. Der erste passende Tarif gilt.",
         "price": "{price} €",
         "weekdays-count": "{count} Wochentag | {count} Wochentage",
         "holidays-count": "{count} Feiertag | {count} Feiertage",
@@ -615,9 +620,9 @@
         "holidays": "Feiertage",
         "state": "Bundesland",
         "more": "(+{count} weitere)",
-        "empty": "Noch keine Preis-Kategorien definiert",
-        "empty-hint": "Fügen Sie Kategorien hinzu, um unterschiedliche Preise zu definieren",
-        "add-first": "Erste Kategorie hinzufügen",
+        "empty": "Noch keine Tarife definiert",
+        "empty-hint": "Fügen Sie Tarife hinzu, um unterschiedliche Preise festzulegen",
+        "add-first": "Ersten Tarif hinzufügen",
         "units": {
           "per-hour": "Std.",
           "per-day": "Tage",
@@ -789,8 +794,8 @@
         "summaryRoles": "nur für {count} Rolle | nur für {count} Rollen",
         "allow": "Serienbuchung erlauben",
         "notWithBlockPeriods": "Serienbuchungen sind bei Zeiträumen nicht verfügbar.",
-        "explanation": "Serienbuchungen ermöglichen es Benutzern, mehrere Termine in einer Buchungsserie zusammenzufassen. Dadurch können z.B. wöchentliche Meetings oder Kurse mit mehreren Terminen einfacher gebucht und verwaltet werden.",
-        "rolesNote": "<strong>Hinweis:</strong> Sie können die Möglichkeit zur Erstellung von Buchungsserien weiter einschränken, indem Sie nur bestimmten Rollen die Berechtigung dazu erteilen. Benutzer ohne diese Berechtigung können weiterhin einzelne Termine buchen, aber keine Serien erstellen.",
+        "explanation": "Serienbuchungen ermöglichen es Buchenden, mehrere Termine in einer Buchungsserie zusammenzufassen. Dadurch können z. B. wöchentliche Meetings oder Kurse mit mehreren Terminen einfacher gebucht und verwaltet werden.",
+        "rolesNote": "<strong>Hinweis:</strong> Sie können die Möglichkeit zur Erstellung von Buchungsserien weiter einschränken, indem Sie nur bestimmten Rollen die Berechtigung dazu erteilen. Personen ohne diese Berechtigung können weiterhin einzelne Termine buchen, aber keine Serien erstellen.",
         "roles": "Rollen, die eine Buchungsserie erstellen dürfen",
         "noRoles": "Keine Rollen verfügbar"
       },
@@ -798,8 +803,8 @@
         "title": "Stornierung",
         "hint": "Ob Buchende selbst absagen können.",
         "summary": "Nur durch die Verwaltung",
-        "userCancellable": "Benutzer dürfen ihre Buchungen selbst stornieren",
-        "explanation": "Wenn aktiviert, können Benutzer ihre eigenen Buchungen stornieren. Andernfalls ist eine Stornierung nur durch Administratoren möglich."
+        "userCancellable": "Buchende dürfen ihre Buchungen selbst stornieren",
+        "explanation": "Wenn aktiviert, können Buchende ihre eigenen Buchungen stornieren. Andernfalls ist eine Stornierung nur durch die Verwaltung möglich."
       },
       "attachments": {
         "title": "Anhänge",
@@ -828,19 +833,19 @@
           },
           "company": {
             "name": "Firma",
-            "description": "Firmenname des Kunden"
+            "description": "Firmenname der Buchenden"
           },
           "address": {
             "name": "Straße & Hausnummer",
-            "description": "Adressangaben des Kunden"
+            "description": "Adressangaben der Buchenden"
           },
           "zipCode": {
             "name": "Postleitzahl",
-            "description": "Adressangaben des Kunden"
+            "description": "Adressangaben der Buchenden"
           },
           "city": {
             "name": "Stadt",
-            "description": "Adressangaben des Kunden"
+            "description": "Adressangaben der Buchenden"
           },
           "comment": {
             "name": "Kommentar",
@@ -870,9 +875,9 @@
         "listed-not-bookable": "Das Buchungsobjekt steht im Katalog, ist aber nicht buchbar.",
         "hidden": "Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar.",
         "after-approval": {
-          "listed": "Nach der Freigabe steht das Buchungsobjekt im Katalog und ist buchbar. Bis dahin ist es weder gelistet noch per Direktlink buchbar.",
-          "direct-link": "Nach der Freigabe ist das Buchungsobjekt per Direktlink buchbar, steht aber nicht im Katalog. Bis dahin ist es nicht per Direktlink buchbar.",
-          "listed-not-bookable": "Nach der Freigabe steht das Buchungsobjekt im Katalog, ist aber nicht buchbar. Bis dahin ist es nicht gelistet."
+          "listed": "Nach der Freigabe durch den Betreiber steht das Buchungsobjekt im Katalog und ist buchbar. Bis dahin ist es weder gelistet noch per Direktlink buchbar.",
+          "direct-link": "Nach der Freigabe durch den Betreiber ist das Buchungsobjekt per Direktlink buchbar, steht aber nicht im Katalog. Bis dahin ist es nicht per Direktlink buchbar.",
+          "listed-not-bookable": "Nach der Freigabe durch den Betreiber steht das Buchungsobjekt im Katalog, ist aber nicht buchbar. Bis dahin ist es nicht gelistet."
         },
         "pending": "Ihr Mandant wartet auf die Freigabe durch den Betreiber: Bis dahin steht das Buchungsobjekt nicht im Katalog und ist nicht buchbar.",
         "declined": "Der Mandant ist abgewiesen: Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar."
@@ -2845,7 +2850,7 @@
     "bookable": {
       "intro": "Ordnen Sie diesem Buchungsobjekt Türen und Schließfachanlagen zu. Angelegt und eingerichtet werden sie zentral beim Mandanten.",
       "assignedCount": "{count} zugeordnet",
-      "activate": "Zugang aktivieren",
+      "activate": "Schließsysteme aktivieren",
       "activateHint": "Buchende erhalten für die zugeordneten Zugangspunkte zeitbasierte Berechtigungen und können sie aus der Buchung heraus bedienen.",
       "writeForbidden": "Ihnen fehlt die Berechtigung, dieses Buchungsobjekt zu ändern. Die Zuordnung von Zugangspunkten lässt sich deshalb hier nicht bearbeiten.",
       "reload": "Neu laden",
@@ -2860,7 +2865,7 @@
         "grants": "Was die Buchung bekommt"
       },
       "grants": {
-        "door": "Geteilter Zugang im Buchungszeitraum",
+        "door": "Die Tür, im Buchungszeitraum mit anderen geteilt",
         "locker": "Je gebuchter Einheit ein Fach, vom Anbieter zugeteilt"
       },
       "manageHint": "Zugangspunkte werden zentral unter Mandant → „Zutritt & Schließsysteme“ angelegt und bearbeitet – inklusive Anbieter, Modus und QR-Code. Hier ordnen Sie nur zu, welche davon dieses Buchungsobjekt nutzt.",
@@ -3073,8 +3078,8 @@
         "declined": "Der Mandant ist abgewiesen: Das Angebot ist weder gelistet noch per Direktlink buchbar."
       },
       "wish-hint": {
-        "supervised": "Ihr Mandant ist beaufsichtigt: Der Veröffentlichungswunsch allein veröffentlicht nichts, das Angebot braucht zusätzlich eine Freigabe.",
-        "pending": "Ihr Mandant wartet auf die Freigabe: Der Veröffentlichungswunsch wird vorgemerkt; bis zur Freigabe durch den Betreiber wird nichts öffentlich.",
+        "supervised": "Ihr Mandant ist beaufsichtigt: Der Veröffentlichungswunsch allein veröffentlicht nichts, das Angebot braucht zusätzlich eine Freigabe durch den Betreiber.",
+        "pending": "Ihr Mandant wartet auf die Freigabe durch den Betreiber: Der Veröffentlichungswunsch wird vorgemerkt; bis dahin wird nichts öffentlich.",
         "declined": "Der Mandant ist abgewiesen: Der Veröffentlichungswunsch wird vorgemerkt, veröffentlicht aber nichts."
       },
       "unsaved": "Speichern Sie das Angebot, um es zur Prüfung einzureichen.",
