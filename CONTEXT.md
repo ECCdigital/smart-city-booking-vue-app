@@ -78,6 +78,10 @@ _Avoid_: Stepper, Navigation (that is the editor's section nav), Punkte (those a
 What the check of a bookable says under one field when its value would be refused, such as „Bitte einen Titel eingeben.“. A field shows it once it was left, and every field shows it after a refused save. It never locks „Speichern“, „Weiter“ or a tab.
 _Avoid_: Fehler, Validierungsfehler, Offene Punkte (those are the confirmation page's list after the save)
 
+**Buchungsart** (admin: „Buchungsart“):
+How a bookable is booked in time, asked in both modes by up to three questions: Ohne Zeit, or for a time Freie Zeitwahl, Feste Zeitfenster, Zeiträume or Langzeit, the last as Ganze Wochen or Ganze Monate. Langzeit is only the answer that leads to the two, not a mode of its own.
+_Avoid_: Buchungstyp (Typ is Raum, Ressource or Ticket), Feste Zeiten, Wochenbuchung, Monatsbuchung, Zeitunabhängig
+
 ### SSO
 
 **Adresse**:
