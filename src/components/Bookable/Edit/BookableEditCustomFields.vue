@@ -1,5 +1,4 @@
 <script>
-import BaseSection from "@/components/commons/BaseSection.vue";
 import CustomFieldList from "@/components/CustomFields/CustomFieldList.vue";
 import ApiInstanceService from "@/services/api/ApiInstanceService";
 import { mapGetters } from "vuex";
@@ -16,9 +15,15 @@ const ORIGIN_META = {
   },
 };
 
+/**
+ * Eigene Felder, whole: the values of the fields instance and tenant define
+ * for bookables, and - by the expert-mode rule - „Felder definieren“ for
+ * fields of this bookable only. The area as the editing page frames it in a
+ * card and the step „Weitere Einstellungen“ in a row.
+ */
 export default {
   name: "BookableEditCustomFields",
-  components: { BaseSection, CustomFieldList },
+  components: { CustomFieldList },
   mixins: [bookableEditing],
   props: {
     bookable: { type: Object, required: true },
@@ -186,10 +191,7 @@ export default {
       }
     },
     onDefinitionsChanged(fields) {
-      this.$emit("update:bookable", {
-        ...this.bookable,
-        customFieldDefinitions: fields,
-      });
+      this.patch({ customFieldDefinitions: fields });
     },
     switchToDefinitions() {
       if (!this.definitionsShown) return;
@@ -205,20 +207,14 @@ export default {
         values.push({ fieldId, value: newValue });
       }
 
-      this.$emit("update:bookable", {
-        ...this.bookable,
-        customFieldValues: values,
-      });
+      this.patch({ customFieldValues: values });
     },
     clearFieldValue(fieldId) {
       const values = (this.bookable.customFieldValues || []).filter(
         (v) => v.fieldId !== fieldId
       );
 
-      this.$emit("update:bookable", {
-        ...this.bookable,
-        customFieldValues: values,
-      });
+      this.patch({ customFieldValues: values });
     },
     contextColor(context) {
       const map = {
@@ -268,7 +264,7 @@ export default {
 
 <template>
   <v-form ref="form" v-model="valid">
-    <BaseSection title="Eigene Felder" icon="mdi-form-textbox">
+    <div>
       <v-tabs
         v-if="definitionsShown"
         v-model="activeView"
@@ -695,7 +691,7 @@ export default {
           </v-expansion-panel>
         </v-expansion-panels>
       </div>
-    </BaseSection>
+    </div>
   </v-form>
 </template>
 
