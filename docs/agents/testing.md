@@ -43,7 +43,9 @@ const wrapper = mountComponent(MyComponent, { propsData: { … } });
 
 `mountComponent` gives every mount its own Vuetify instance and its own host element inside `data-app`, and registers the wrapper for teardown — a global `afterEach` destroys it, so specs do not clean up themselves. A component that needs a store gets one through `options.store` (`new Vuex.Store(…)`); Vuex is already installed on Vue.
 
-`mountComponent` also hands every mount the app's i18n instance, so `$t` in a template resolves against the real German catalogue and a spec asserting on UI copy fails when the key is missing.
+`mountComponent` also hands every mount the app's i18n instance, so `$t` in a template resolves against the real German catalogue. A key the catalogue lacks fails the spec that asked for it, whatever it asserts: `tests/unit/support/missingKeys.js` records every missing key and the global `afterEach` throws.
+
+`tests/unit/support/pseudoLocale.js` checks that a page takes all its copy from the catalogue: `usePseudoLocale()` renders from a copy of the catalogue with every text marked (‹so›), `unmarkedTexts(element)` lists the texts and read attributes with a letter outside the marks - text built into a component - and `restoreLocale()` goes back to German. Keep the data of such a spec free of letters, so only the page's own copy reads. See `tests/unit/components/Bookable/BookableEditCopy.spec.js`.
 
 Vitest resolves `vue` to the **runtime-only** build. A component double therefore needs a `render` function — a `template` string does not compile:
 
