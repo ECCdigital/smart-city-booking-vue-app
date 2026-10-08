@@ -49,7 +49,10 @@ export default {
     },
     async fetchRoles() {
       try {
-        const result = await ApiRolesService.getTenantRoles(true);
+        const result = await ApiRolesService.getTenantRoles(
+          true,
+          this.bookable.tenantId
+        );
         this.availableRoles = result?.data || [];
       } catch (error) {
         console.error("Error fetching roles:", error);
