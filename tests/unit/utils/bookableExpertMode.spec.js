@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import Bookable from "@/entities/bookable";
-import { expertOptionShown } from "@/utils/bookableExpertMode";
+import {
+  expertOptionShown,
+  expertOptionUsed,
+} from "@/utils/bookableExpertMode";
 
 // A new bookable as BookableEdit creates it: the stand every option is
 // compared with. Pflichtfelder default as the backend's schema does.
@@ -168,5 +171,12 @@ describe("expertOptionShown - the unit is the whole option", () => {
         current: fresh(USED.tags),
       })
     ).toBe(true);
+  });
+});
+
+describe("expertOptionUsed", () => {
+  it.each(Object.keys(USED))("%s is used as the table says", (option) => {
+    expect(expertOptionUsed(option, fresh(USED[option]))).toBe(true);
+    expect(expertOptionUsed(option, fresh(UNUSED[option]))).toBe(false);
   });
 });

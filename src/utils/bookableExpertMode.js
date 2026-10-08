@@ -115,10 +115,23 @@ export const EXPERT_OPTIONS = Object.freeze(Object.keys(USED));
  * @returns {boolean}
  */
 export function expertOptionShown(option, { expertMode, stored, current }) {
-  const used = USED[option];
-  if (!used) throw new Error(`Unknown expert option: ${option}`);
+  const used = usedOf(option);
   if (expertMode) return true;
   return [stored, current].some((bookable) => !!bookable && used(bookable));
+}
+
+/**
+ * Whether `bookable` uses the expert option - for what reads „genutzt“ by
+ * the same table, like the areas of Weitere Einstellungen.
+ */
+export function expertOptionUsed(option, bookable) {
+  return !!bookable && usedOf(option)(bookable);
+}
+
+function usedOf(option) {
+  const used = USED[option];
+  if (!used) throw new Error(`Unknown expert option: ${option}`);
+  return used;
 }
 
 /**
