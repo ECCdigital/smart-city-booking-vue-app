@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { expertOptionShown } from "@/utils/bookableExpertMode";
 
 /**
  * A component that edits the bookable `BookableEdit` holds, in either mode:
@@ -8,12 +9,30 @@ import _ from "lodash";
  * changes hint see it the same way in both modes. A deeper field changes by
  * rebuilding its top-level value. See
  * docs/adr/0002-one-field-one-component-one-rule.md.
+ *
+ * Whether an expert option shows, it asks `expertOptionShown(option)`: the
+ * rule of the expert-mode module over the mode and the stored bookable that
+ * `BookableEdit` provides, and the bookable as edited. Outside `BookableEdit`
+ * expert mode is on.
  */
 export default {
+  inject: {
+    bookableExpertMode: {
+      default: () => ({ enabled: true, stored: null }),
+    },
+  },
   props: {
     bookable: { type: Object, required: true },
   },
   methods: {
+    /** Whether the expert option `option` shows, by the expert-mode rule. */
+    expertOptionShown(option) {
+      return expertOptionShown(option, {
+        expertMode: this.bookableExpertMode.enabled !== false,
+        stored: this.bookableExpertMode.stored,
+        current: this.bookable,
+      });
+    },
     /** Hands on `changes`: the new values of top-level fields, by name. */
     patch(changes) {
       this.$emit("update:bookable", { ...changes });

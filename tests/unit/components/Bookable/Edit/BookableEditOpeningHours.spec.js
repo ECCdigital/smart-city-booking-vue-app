@@ -98,3 +98,40 @@ describe("BookableEditOpeningHours", () => {
     expect(handedIn).toEqual(stored);
   });
 });
+
+describe("BookableEditOpeningHours - Sonderöffnungszeiten", () => {
+  const special = {
+    isSpecialOpeningHoursRelated: true,
+    specialOpeningHours: [SPECIAL],
+  };
+  const shows = (wrapper) =>
+    find(wrapper, "special-opening-hours-switch").exists();
+
+  it("shows them in use without expert mode", () => {
+    const { wrapper } = mountEditing(BookableEditOpeningHours, {
+      bookable: bookable(special),
+      expertMode: false,
+    });
+
+    expect(shows(wrapper)).toBe(true);
+  });
+
+  it("leaves them out unused without expert mode", () => {
+    const { wrapper } = mountEditing(BookableEditOpeningHours, {
+      bookable: bookable(),
+      expertMode: false,
+    });
+
+    expect(shows(wrapper)).toBe(false);
+  });
+
+  it("keeps them while the stored bookable still uses them", () => {
+    const { wrapper } = mountEditing(BookableEditOpeningHours, {
+      bookable: bookable(),
+      saved: bookable(special),
+      expertMode: false,
+    });
+
+    expect(shows(wrapper)).toBe(true);
+  });
+});

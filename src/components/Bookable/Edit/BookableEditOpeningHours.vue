@@ -1,12 +1,11 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import bookableEditing from "@/mixins/bookableEditing";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 export default {
   name: "BookableEditOpeningHours",
   components: { BaseSection },
-  mixins: [bookableEditing, bookableExpertMode],
+  mixins: [bookableEditing],
   props: {
     // Inside the guided flow, which titles the step itself.
     embedded: { type: Boolean, default: false },
@@ -490,7 +489,7 @@ export default {
 
       <!-- Special Opening Hours -->
       <v-card
-        v-if="expertMode"
+        v-if="expertOptionShown('specialOpeningHours')"
         id="be-section-openingHours-special"
         class="mb-6 section-card"
         outlined
