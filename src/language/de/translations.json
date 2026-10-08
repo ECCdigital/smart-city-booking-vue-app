@@ -505,10 +505,7 @@
       "unsavedChanges": "Ungespeicherte Änderungen",
       "expertMode": {
         "label": "Experten-Modus",
-        "simpleLabel": "Einfach-Modus",
-        "graduatedPricesActive": "Staffelpreise sind konfiguriert. Zum Bearbeiten den Experten-Modus aktivieren.",
-        "bookingTypeExpertOnly": "Dieser Buchungstyp ist nur im Experten-Modus auswählbar bzw. änderbar.",
-        "traitBadge": "Experten"
+        "simpleLabel": "Einfach-Modus"
       },
       "maxAmountPerBooking": {
         "label": "Höchstmenge je Buchung",

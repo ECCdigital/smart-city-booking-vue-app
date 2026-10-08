@@ -4,13 +4,6 @@ import { hasBufferConfig } from "@/utils/bookingLeadTime";
 
 const SESSION_STORAGE_KEY = "bookableEditExpertMode";
 
-/** Booking types only selectable in expert mode */
-export const BOOKABLE_EXPERT_ONLY_BOOKING_TYPES = [
-  "week",
-  "month",
-  "blockPeriod",
-];
-
 function getExpertModeEnvRaw() {
   return process.env.VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT;
 }
@@ -144,23 +137,4 @@ const EXPERT_TABS = {
 export function expertTabShown(tabKey, shown) {
   const options = EXPERT_TABS[tabKey];
   return !options || options.some((option) => shown(option));
-}
-
-export function isBookableExpertOnlyBookingType(bookingType) {
-  return BOOKABLE_EXPERT_ONLY_BOOKING_TYPES.includes(bookingType);
-}
-
-/** Overview trait keys that represent expert-only configuration */
-export const BOOKABLE_EXPERT_OVERVIEW_TRAIT_KEYS = [
-  "tags",
-  "specialOpeningHours",
-  "lockerSystems",
-  "checkoutOptions",
-  "relatedBookables",
-  "discounts",
-  "cancellation",
-];
-
-export function isBookableExpertOverviewTraitKey(traitKey) {
-  return BOOKABLE_EXPERT_OVERVIEW_TRAIT_KEYS.includes(traitKey);
 }

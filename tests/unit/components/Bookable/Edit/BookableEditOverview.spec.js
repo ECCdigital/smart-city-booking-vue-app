@@ -20,7 +20,7 @@ const NOTICE = "Titel der verknüpften Buchungsobjekte nicht abrufbar";
  * rest. `titles` is what `getBookables` does: an array resolves, an error
  * rejects.
  */
-async function mountOverview(bookable, titles) {
+async function mountOverview(bookable, titles, provide) {
   vi.resetModules();
 
   const ApiBookablesService = (
@@ -40,6 +40,7 @@ async function mountOverview(bookable, titles) {
   ).default;
   const wrapper = mountComponent(component, {
     propsData: { bookable, variant: "sidebar" },
+    provide,
   });
   await flushPromises();
   await wrapper.vm.$nextTick();
@@ -80,5 +81,22 @@ describe("BookableEditOverview", () => {
     );
     expect(wrapper.text()).not.toContain(NOTICE);
     expect(wrapper.text()).toContain("Second room");
+  });
+});
+
+describe("BookableEditOverview - without expert mode", () => {
+  it("leads to an expert option in use like to any other, unmarked", async () => {
+    const bookable = { id: "b1", tags: ["Saal"] };
+    const wrapper = await mountOverview(bookable, [], {
+      bookableExpertMode: { enabled: false, stored: bookable },
+    });
+
+    const row = wrapper
+      .findAll(".overview-row")
+      .wrappers.find((candidate) => candidate.text().includes("Interne Tags"));
+    await row.trigger("click");
+
+    expect(row.text()).not.toContain("Experten");
+    expect(wrapper.emitted("navigate-tab")).toEqual([["general"]]);
   });
 });

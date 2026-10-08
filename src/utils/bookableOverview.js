@@ -1,8 +1,3 @@
-import {
-  isBookableExpertOnlyBookingType,
-  isBookableExpertOverviewTraitKey,
-} from "@/utils/bookableExpertMode";
-
 const BOOKING_MODE_LABELS = {
   schedule: "Freie Zeitwahl",
   timePeriod: "Feste Zeitfenster",
@@ -323,23 +318,10 @@ function formatBookableRefList(refs, titlesById = {}, maxItems = 2) {
   return joinList(labels, maxItems);
 }
 
-function hasGraduatedPrices(bookable) {
-  const categories = bookable?.priceCategories || [];
-  const priced = getPricedCategories(bookable);
-  if (priced.length > 1) return true;
-  return categories.some(
-    (cat) =>
-      cat?.interval?.start != null ||
-      cat?.interval?.end != null ||
-      (Array.isArray(cat?.weekdays) && cat.weekdays.length > 0) ||
-      (Array.isArray(cat?.holidays) && cat.holidays.length > 0)
-  );
-}
-
 /**
- * @returns {{ key: string, label: string, value: string, tabKey: string, icon: string, expert: boolean }|null}
+ * @returns {{ key: string, label: string, value: string, tabKey: string, icon: string }|null}
  */
-function trait(key, label, value, tabKey, icon, expert = false) {
+function trait(key, label, value, tabKey, icon) {
   if (value == null || value === "") return null;
   return {
     key,
@@ -347,7 +329,6 @@ function trait(key, label, value, tabKey, icon, expert = false) {
     value,
     tabKey,
     icon,
-    expert: expert || isBookableExpertOverviewTraitKey(key),
   };
 }
 
@@ -424,14 +405,12 @@ function getAccessPointsLabel(bookable) {
  *   bookableTitlesById?: Record<string, string>,
  *   eventTitlesById?: Record<string, string>,
  * }} [options]
- * @returns {Array<{ key: string, label: string, value: string, tabKey: string, icon: string, expert: boolean, openRoute?: object }>}
+ * @returns {Array<{ key: string, label: string, value: string, tabKey: string, icon: string, openRoute?: object }>}
  */
 export function getBookableOverviewTraits(bookable, options = {}) {
   const titlesById = options.bookableTitlesById || {};
   const eventTitlesById = options.eventTitlesById || {};
   const traits = [];
-  const bookingMode = getBookingMode(bookable);
-
   const title = truncate(bookable?.title, 64);
   if (title) {
     traits.push(
@@ -495,20 +474,12 @@ export function getBookableOverviewTraits(bookable, options = {}) {
       "Buchung",
       getBookingModeLabel(bookable),
       "bookingType",
-      "mdi-calendar-clock",
-      isBookableExpertOnlyBookingType(bookingMode)
+      "mdi-calendar-clock"
     )
   );
 
   traits.push(
-    trait(
-      "price",
-      "Preis",
-      getPriceLabel(bookable),
-      "pricing",
-      "mdi-cash",
-      hasIfbsPricing(bookable) || hasGraduatedPrices(bookable)
-    )
+    trait("price", "Preis", getPriceLabel(bookable), "pricing", "mdi-cash")
   );
 
   if (bookable?.amount != null && bookable.amount !== "") {

@@ -24,7 +24,6 @@
           :class="{
             'overview-row--block': isLongTrait(trait),
             'overview-row--static': !isTraitNavigable(trait),
-            'overview-row--expert': isExpertTraitHint(trait),
           }"
           @click="onTraitActivate(trait)"
         >
@@ -33,12 +32,6 @@
             <span class="overview-row__label text--secondary">{{
               trait.label
             }}</span>
-            <span
-              v-if="isExpertTraitHint(trait)"
-              class="overview-row__expert-badge"
-            >
-              {{ $t("bookable.edit.expertMode.traitBadge") }}
-            </span>
           </div>
           <span class="overview-row__value" :title="trait.value">
             {{ trait.value }}
@@ -74,18 +67,11 @@
           class="ma-1"
           :class="{
             'overview-chip--static': !isTraitNavigable(trait),
-            'overview-chip--expert': isExpertTraitHint(trait),
           }"
           @click="onTraitActivate(trait)"
         >
           <v-icon left x-small>{{ trait.icon }}</v-icon>
           {{ trait.label }}: {{ trait.value }}
-          <span
-            v-if="isExpertTraitHint(trait)"
-            class="overview-chip__expert-badge"
-          >
-            {{ $t("bookable.edit.expertMode.traitBadge") }}
-          </span>
           <v-btn
             v-if="trait.openRoute"
             icon
@@ -106,19 +92,12 @@
         class="overview-band-detail"
         :class="{
           'overview-band-detail--static': !isTraitNavigable(trait),
-          'overview-band-detail--expert': isExpertTraitHint(trait),
         }"
         @click="onTraitActivate(trait)"
       >
         <v-icon x-small class="mr-1">{{ trait.icon }}</v-icon>
         <span class="font-weight-medium mr-1">{{ trait.label }}:</span>
         <span>{{ trait.value }}</span>
-        <span
-          v-if="isExpertTraitHint(trait)"
-          class="overview-band-detail__expert-badge"
-        >
-          {{ $t("bookable.edit.expertMode.traitBadge") }}
-        </span>
         <v-btn
           v-if="trait.openRoute"
           icon
@@ -148,7 +127,6 @@ import {
   cachedEventTitlesById,
   loadEventTitlesById,
 } from "@/utils/eventTitles";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
 
 let bookableTitlesCache = null;
 let bookableTitlesPromise = null;
@@ -189,7 +167,6 @@ function loadBookableTitlesById() {
 
 export default {
   name: "BookableEditOverview",
-  mixins: [bookableExpertMode],
   props: {
     bookable: {
       type: Object,
@@ -256,14 +233,8 @@ export default {
         (trait.value && trait.value.length > 48)
       );
     },
-    isExpertTraitHint(trait) {
-      return !this.expertMode && !!trait.expert;
-    },
     isTraitNavigable(trait) {
-      if (trait.navigable === false) {
-        return false;
-      }
-      return this.expertMode || !trait.expert;
+      return trait.navigable !== false;
     },
     onTraitActivate(trait) {
       if (!this.isTraitNavigable(trait)) {
@@ -327,10 +298,6 @@ export default {
   cursor: default;
 }
 
-.overview-row--expert {
-  opacity: 0.85;
-}
-
 .overview-row__head {
   display: flex;
   align-items: center;
@@ -350,22 +317,6 @@ export default {
 .overview-row__label {
   font-size: var(--scb-font-size-xs);
   line-height: var(--scb-line-height-tight);
-}
-
-.overview-row__expert-badge,
-.overview-chip__expert-badge,
-.overview-band-detail__expert-badge {
-  margin-left: 6px;
-  padding: 0 5px;
-  border-radius: var(--scb-radius-badge);
-  font-size: 0.625rem;
-  font-weight: var(--scb-font-weight-semibold);
-  letter-spacing: 0.02em;
-  line-height: var(--scb-line-height-base);
-  text-transform: uppercase;
-  color: var(--v-warning-base);
-  background-color: var(--scb-warning-tint);
-  white-space: nowrap;
 }
 
 .overview-row__value {
@@ -405,10 +356,6 @@ export default {
   cursor: default;
 }
 
-.overview-band-chips .overview-chip--expert {
-  opacity: 0.85;
-}
-
 .overview-band-detail {
   display: block;
   width: 100%;
@@ -431,9 +378,5 @@ export default {
 
 .overview-band-detail--static {
   cursor: default;
-}
-
-.overview-band-detail--expert {
-  opacity: 0.9;
 }
 </style>
