@@ -184,24 +184,5 @@ describe("BookableFlowAvailability", () => {
   });
 });
 
-describe("BookableFlowAmount", () => {
-  it("counts from one and stores unlimited as empty", async () => {
-    const wrapper = mountStep(BookableFlowAmount, { amount: 1 });
-
-    await find(wrapper, "flow-amount-more").trigger("click");
-    expect(lastChange(wrapper).amount).toBe(2);
-
-    await find(wrapper, "flow-amount-mode-unlimited").trigger("click");
-    expect(lastChange(wrapper).amount).toBeNull();
-  });
-
-  it("questions more than one unit of a room", () => {
-    const wrapper = mountStep(BookableFlowAmount, { type: "room", amount: 3 });
-
-    expect(find(wrapper, "flow-amount-warning").text()).toContain(
-      "Mehr als eine Einheit für einen Raum"
-    );
-  });
-});
-
+// BookableFlowAmount (Anzahl & Kapazität) has its own spec.
 // BookableFlowPermission („Wer darf buchen?“) has its own spec.

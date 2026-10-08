@@ -95,6 +95,17 @@ describe("BookableEdit - loading", () => {
     expect(unsaved(wrapper)).toBe(false);
   });
 
+  it("shows an Anzahl of 0 as „Unbegrenzt“ in the card „Anzahl“", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "pricing" },
+      unnormalized()
+    );
+
+    expect(
+      find(wrapper, "flow-amount-mode-unlimited").attributes("aria-checked")
+    ).toBe("true");
+  });
+
   it("saves the bookable as the editor normalized it", async () => {
     ApiBookablesService.createOrUpdateBookable.mockImplementation(
       async (bookable) => ({ data: { ...unnormalized(), ...bookable } })
@@ -264,6 +275,44 @@ describe("BookableEdit - the price in both modes", () => {
     expect(
       find(wrapper, "more-area-accessLocks-toggle").attributes("aria-expanded")
     ).toBe("true");
+  });
+
+  it("asks for Anzahl and Höchstmenge in the card „Anzahl“ and the step „Anzahl & Kapazität“", async () => {
+    const page = await mountEdit(
+      { id: "b1", tab: "pricing" },
+      stored({ amount: 10, maxAmountPerBooking: 2 })
+    );
+    const flow = await mountEdit(
+      { id: "b1", mode: "flow" },
+      stored({ amount: 10, maxAmountPerBooking: 2 })
+    );
+    await find(flow, "flow-dot-amount").trigger("click");
+    await flushPromises();
+
+    for (const wrapper of [page, flow]) {
+      expect(find(wrapper, "flow-amount-input").element.value).toBe("10");
+      expect(find(wrapper, "flow-max-amount-input").element.value).toBe("2");
+    }
+  });
+
+  it("jumps from the note of an external Anzahl to Schließsysteme", async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "pricing" },
+      stored({
+        externalProviders: [
+          { provider: "ifbs", active: true, handles: ["maxAmount"] },
+        ],
+      })
+    );
+
+    await find(wrapper, "flow-amount-external-link").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query).toMatchObject({
+      tab: "accessLocks",
+      section: "pricing-external",
+    });
   });
 
   it("asks the same questions in the step „Preis“", async () => {
@@ -712,7 +761,7 @@ describe("BookableEdit - saving with issues", () => {
     expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
     expect(wrapper.text()).toContain(MAX_AMOUNT_MESSAGE);
 
-    await wrapper.find(".max-amount-per-booking input").setValue("2");
+    await find(wrapper, "flow-max-amount-input").setValue("2");
     await save(wrapper);
 
     expect(ApiBookablesService.createOrUpdateBookable).toHaveBeenCalledWith(

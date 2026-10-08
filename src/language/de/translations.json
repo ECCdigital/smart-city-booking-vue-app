@@ -349,10 +349,13 @@
         "less": "weniger",
         "more": "mehr",
         "unit": "Einheit | Einheiten",
+        "unit-square-meter": "m²",
         "unlimited-hint": "Es gibt keine feste Anzahl – jede Buchung wird angenommen, die zu den Zeiten passt.",
         "room-warning": "Mehr als eine Einheit für einen Raum – sicher?",
-        "external": "Die Anzahl kommt von einem externen Anbieter.",
-        "max-title": "Höchstmenge je Buchung"
+        "external-title": "Anzahl kommt von einem externen Anbieter",
+        "external-text": "ParkraumService führt die Anzahl dieses Buchungsobjekts. Um sie hier selbst zu pflegen, nehmen Sie die Anzahl in der Einstellung heraus. Die Höchstmenge je Buchung gilt zusätzlich.",
+        "max-title": "Höchstmenge je Buchung",
+        "max-unlimited-hint": "Eine Buchung darf alle freien Einheiten nehmen."
       },
       "permission": {
         "who": "Wer darf buchen?",
@@ -508,10 +511,6 @@
       "expertMode": {
         "label": "Experten-Modus",
         "simpleLabel": "Einfach-Modus"
-      },
-      "maxAmountPerBooking": {
-        "label": "Höchstmenge je Buchung",
-        "unlimited": "Höchstmenge ist unbegrenzt!"
       },
       "openEvent": "Veranstaltung in neuem Tab öffnen",
       "sections": {
