@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises } from "@tests/unit/support/api";
 import {
   editTab as tab,
@@ -127,5 +127,54 @@ describe("BookableEdit - switching between the modes", () => {
       .wrappers.map((input) => input.element.value);
     expect(values).toContain("5");
     expect(unsaved(wrapper)).toBe(true);
+  });
+});
+
+describe("BookableEdit - expert options without expert mode", () => {
+  beforeEach(() => {
+    vi.stubEnv("VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT", "false");
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    sessionStorage.clear();
+  });
+
+  it("leaves out the tabs of unused expert options", async () => {
+    const wrapper = await mountEdit({ id: "b1" }, stored());
+
+    expect(tab(wrapper, "Schließsysteme")).toBeUndefined();
+    expect(tab(wrapper, "Abhängigkeiten")).toBeUndefined();
+  });
+
+  it("shows the tab of an expert option the bookable uses", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1" },
+      stored({ checkoutBookableIds: ["b2"] })
+    );
+
+    expect(tab(wrapper, "Abhängigkeiten")).toBeDefined();
+    expect(tab(wrapper, "Schließsysteme")).toBeUndefined();
+  });
+
+  it("hands the stored bookable to the tabs", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "openingHours" },
+      stored({
+        isOpeningHoursRelated: true,
+        isSpecialOpeningHoursRelated: true,
+        specialOpeningHours: [{ date: "2026-12-24", startTime: "08:00" }],
+      })
+    );
+
+    // Emptied and switched off without saving: the stored bookable still
+    // uses them.
+    await find(wrapper, "special-opening-hours-remove").trigger("click");
+    await find(wrapper, "special-opening-hours-switch")
+      .find("input")
+      .trigger("click");
+
+    expect(find(wrapper, "special-opening-hours-switch").exists()).toBe(true);
   });
 });

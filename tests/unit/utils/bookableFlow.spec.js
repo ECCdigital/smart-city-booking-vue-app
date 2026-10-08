@@ -327,12 +327,13 @@ describe("closing", () => {
 });
 
 describe("optionalSections", () => {
-  it("links every optional section in expert mode", () => {
-    expect(
-      optionalSections({ bookable: bookable(), expertMode: true }).map(
-        (section) => section.key
-      )
-    ).toEqual([
+  const keys = (shown) =>
+    optionalSections({ bookable: bookable(), shown }).map(
+      (section) => section.key
+    );
+
+  it("links every optional section while every expert option shows", () => {
+    expect(keys(() => true)).toEqual([
       "required-fields",
       "attachments",
       "notes",
@@ -343,18 +344,27 @@ describe("optionalSections", () => {
     ]);
   });
 
-  it("links only what the simple editor offers", () => {
-    expect(
-      optionalSections({ bookable: bookable(), expertMode: false }).map(
-        (section) => section.key
-      )
-    ).toEqual(["attachments", "notes", "group-booking"]);
+  it("leaves out the expert options that do not show", () => {
+    expect(keys(() => false)).toEqual([
+      "attachments",
+      "notes",
+      "group-booking",
+    ]);
+  });
+
+  it("links an expert option that shows, without the rest of its tab", () => {
+    expect(keys((option) => option === "hierarchy")).toEqual([
+      "attachments",
+      "notes",
+      "hierarchy",
+      "group-booking",
+    ]);
   });
 
   it("points each link at its tab and section", () => {
     const [requiredFields, attachments] = optionalSections({
       bookable: bookable(),
-      expertMode: true,
+      shown: () => true,
     });
 
     expect(requiredFields).toEqual({

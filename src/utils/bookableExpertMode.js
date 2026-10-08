@@ -4,12 +4,6 @@ import { hasBufferConfig } from "@/utils/bookingLeadTime";
 
 const SESSION_STORAGE_KEY = "bookableEditExpertMode";
 
-/** Tabs hidden in simple (non-expert) mode */
-export const BOOKABLE_EXPERT_ONLY_TAB_KEYS = [
-  "accessLocks",
-  "relatedBookables",
-];
-
 /** Booking types only selectable in expert mode */
 export const BOOKABLE_EXPERT_ONLY_BOOKING_TYPES = [
   "week",
@@ -134,8 +128,22 @@ export function expertOptionShown(option, { expertMode, stored, current }) {
   return [stored, current].some((bookable) => !!bookable && used(bookable));
 }
 
-export function isBookableExpertOnlyTab(tabKey) {
-  return BOOKABLE_EXPERT_ONLY_TAB_KEYS.includes(tabKey);
+/**
+ * The tabs of the editing page that hold expert options only, with their
+ * options: such a tab shows while one of them does.
+ */
+const EXPERT_TABS = {
+  accessLocks: ["accessLocks"],
+  relatedBookables: ["checkoutBookables", "hierarchy"],
+};
+
+/**
+ * Whether a tab of the editing page shows, given `shown(option)` - the rule
+ * as the caller asks it, e.g. `BookableEdit.expertOptionShown`.
+ */
+export function expertTabShown(tabKey, shown) {
+  const options = EXPERT_TABS[tabKey];
+  return !options || options.some((option) => shown(option));
 }
 
 export function isBookableExpertOnlyBookingType(bookingType) {

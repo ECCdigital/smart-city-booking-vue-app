@@ -51,7 +51,10 @@ function handlesExternalPricing(bookable) {
   );
 }
 
-/** All known sections (labelKey → i18n bookable.edit.sections.*) */
+/**
+ * All known sections (labelKey → i18n bookable.edit.sections.*). A section
+ * that is an expert option names it in `expertOption`.
+ */
 const ALL_SECTIONS = [
   {
     tabKey: "general",
@@ -76,14 +79,14 @@ const ALL_SECTIONS = [
     id: "general-tags",
     labelKey: "bookable.edit.sections.generalTags",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "tags",
   },
   {
     tabKey: "pricing",
     id: "pricing-external",
     labelKey: "bookable.edit.sections.pricingExternal",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "externalPrices",
   },
   {
     tabKey: "pricing",
@@ -126,14 +129,14 @@ const ALL_SECTIONS = [
     id: "bookingType-lead-time",
     labelKey: "bookable.edit.sections.bookingTypeLeadTime",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "leadTime",
   },
   {
     tabKey: "bookingType",
     id: "bookingType-buffer",
     labelKey: "bookable.edit.sections.bookingTypeBuffer",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "buffer",
   },
   {
     tabKey: "openingHours",
@@ -146,7 +149,7 @@ const ALL_SECTIONS = [
     id: "openingHours-special",
     labelKey: "bookable.edit.sections.openingHoursSpecial",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "specialOpeningHours",
   },
   {
     tabKey: "permissions",
@@ -165,7 +168,7 @@ const ALL_SECTIONS = [
     id: "permissions-discounts",
     labelKey: "bookable.edit.sections.permissionsDiscounts",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "bookingDiscounts",
   },
   {
     tabKey: "permissions",
@@ -178,7 +181,7 @@ const ALL_SECTIONS = [
     id: "permissions-cancellation",
     labelKey: "bookable.edit.sections.permissionsCancellation",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "cancellation",
   },
   {
     tabKey: "customFields",
@@ -193,26 +196,28 @@ const ALL_SECTIONS = [
     labelKey: "bookable.edit.sections.customFieldsDefinitions",
     type: "subTab",
     subTab: 1,
-    expertOnly: true,
+    expertOption: "customFieldDefinitions",
   },
   {
     tabKey: "relatedBookables",
     id: "related-checkout",
     labelKey: "bookable.edit.sections.relatedCheckout",
     type: "scroll",
+    expertOption: "checkoutBookables",
   },
   {
     tabKey: "relatedBookables",
     id: "related-hierarchy",
     labelKey: "bookable.edit.sections.relatedHierarchy",
     type: "scroll",
+    expertOption: "hierarchy",
   },
   {
     tabKey: "additional",
     id: "additional-required-fields",
     labelKey: "bookable.edit.sections.additionalRequiredFields",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "requiredFields",
   },
   {
     tabKey: "additional",
@@ -222,8 +227,10 @@ const ALL_SECTIONS = [
   },
 ];
 
-function isSectionVisible(section, { bookable, expertMode }) {
-  if (section.expertOnly && !expertMode) {
+const everyOption = () => true;
+
+function isSectionVisible(section, { bookable, shown = everyOption }) {
+  if (section.expertOption && !shown(section.expertOption)) {
     return false;
   }
 
@@ -248,7 +255,9 @@ function isSectionVisible(section, { bookable, expertMode }) {
 
 /**
  * @param {string} tabKey
- * @param {{ bookable: object, expertMode: boolean }} ctx
+ * @param {{ bookable: object, shown?: function(string): boolean }} ctx
+ *   `shown(option)` is the expert-mode rule as the caller asks it (e.g.
+ *   `BookableEdit.expertOptionShown`); without it every option shows.
  * @returns {Array<object>}
  */
 export function getVisibleBookableEditSections(tabKey, ctx) {

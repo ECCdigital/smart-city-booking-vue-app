@@ -88,7 +88,7 @@
 <script>
 import TenantReadinessCheck from "@/components/Tenant/TenantReadinessCheck.vue";
 import OnboardingSetupLinks from "@/components/Tenant/Onboarding/OnboardingSetupLinks.vue";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
+import bookableEditing from "@/mixins/bookableEditing";
 import { isPaid, optionalSections, publishVariant } from "@/utils/bookableFlow";
 
 /**
@@ -99,9 +99,8 @@ import { isPaid, optionalSections, publishVariant } from "@/utils/bookableFlow";
 export default {
   name: "BookableFlowDone",
   components: { TenantReadinessCheck, OnboardingSetupLinks },
-  mixins: [bookableExpertMode],
+  mixins: [bookableEditing],
   props: {
-    bookable: { type: Object, required: true },
     /** `published`, `draft` (a new bookable kept back) or `kept`. */
     outcome: { type: String, required: true },
     level: { type: String, default: null },
@@ -121,7 +120,7 @@ export default {
     sections() {
       return optionalSections({
         bookable: this.bookable,
-        expertMode: this.expertMode,
+        shown: this.expertOptionShown,
       });
     },
   },

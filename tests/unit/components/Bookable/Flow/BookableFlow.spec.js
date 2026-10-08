@@ -194,6 +194,26 @@ describe("BookableFlow", () => {
       });
     });
 
+    it("links the expert options in use without expert mode, no others", () => {
+      const saved = bookable({
+        id: "b1",
+        title: "Saal",
+        cancellationPolicy: { userCancellable: false },
+        requiredFields: ["address", "zipCode", "city"],
+      });
+      const wrapper = mountComponent(BookableFlow, {
+        propsData: { bookable: saved, isNew: false, outcome: "draft" },
+        provide: { bookableExpertMode: { enabled: false, stored: saved } },
+        stubs: STUBS,
+      });
+
+      expect(find(wrapper, "flow-section-cancellation").exists()).toBe(true);
+      expect(find(wrapper, "flow-section-hierarchy").exists()).toBe(false);
+      expect(find(wrapper, "flow-section-required-fields").exists()).toBe(
+        false
+      );
+    });
+
     it("leads on to another bookable or to the overview", async () => {
       const wrapper = mountDone({ outcome: "published" });
 

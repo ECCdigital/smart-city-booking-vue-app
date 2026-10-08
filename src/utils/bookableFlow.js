@@ -18,7 +18,6 @@ import {
   getVisibleBookableEditSections,
   getBookableEditSectionById,
 } from "@/utils/bookableEditSections";
-import { isBookableExpertOnlyTab } from "@/utils/bookableExpertMode";
 import { getTypeText } from "@/utils/bookables";
 import {
   PRICE_TYPE_SUFFIX,
@@ -355,7 +354,8 @@ export function withPublication(bookable, publish) {
 /**
  * The optional sections of the cloud variant's confirmation, each pointing
  * at the section of today's editor that holds it. Only what the editor
- * offers in its current mode is linked.
+ * offers is linked: an expert option as `shown(option)` - the expert-mode
+ * rule - says.
  */
 const OPTIONAL_SECTIONS = Object.freeze([
   { key: "required-fields", sectionId: "additional-required-fields" },
@@ -367,7 +367,7 @@ const OPTIONAL_SECTIONS = Object.freeze([
   { key: "cancellation", sectionId: "permissions-cancellation" },
 ]);
 
-export function optionalSections({ bookable, expertMode }) {
+export function optionalSections({ bookable, shown }) {
   return OPTIONAL_SECTIONS.map((entry) => {
     const section = entry.sectionId
       ? getBookableEditSectionById(entry.sectionId)
@@ -378,12 +378,10 @@ export function optionalSections({ bookable, expertMode }) {
       sectionId: entry.sectionId || null,
     };
   }).filter(({ tabKey, sectionId }) => {
-    if (!expertMode && isBookableExpertOnlyTab(tabKey)) return false;
     if (!sectionId) return true;
-    return getVisibleBookableEditSections(tabKey, {
-      bookable,
-      expertMode,
-    }).some((section) => section.id === sectionId);
+    return getVisibleBookableEditSections(tabKey, { bookable, shown }).some(
+      (section) => section.id === sectionId
+    );
   });
 }
 

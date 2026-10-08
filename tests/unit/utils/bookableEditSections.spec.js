@@ -2,10 +2,9 @@ import { describe, expect, it } from "vitest";
 import { getVisibleBookableEditSections } from "@/utils/bookableEditSections";
 
 function sectionIds(bookable) {
-  return getVisibleBookableEditSections("pricing", {
-    bookable,
-    expertMode: true,
-  }).map((section) => section.id);
+  return getVisibleBookableEditSections("pricing", { bookable }).map(
+    (section) => section.id
+  );
 }
 
 function bookable(externalProviders) {
@@ -59,5 +58,28 @@ describe("bookableEditSections - the pricing tab", () => {
         bookable([{ provider: "ifbs", active: false, handles: ["pricing"] }])
       )
     ).toContain("pricing-tiers");
+  });
+});
+
+describe("bookableEditSections - expert options", () => {
+  const generalIds = (shown) =>
+    getVisibleBookableEditSections("general", { bookable: {}, shown }).map(
+      (section) => section.id
+    );
+
+  it("offers the section of an expert option that shows", () => {
+    expect(generalIds((option) => option === "tags")).toContain("general-tags");
+  });
+
+  it("leaves out the section of an expert option that does not show", () => {
+    expect(generalIds(() => false)).toEqual([
+      "general-info",
+      "general-images",
+      "general-booker-info",
+    ]);
+  });
+
+  it("offers every section without a rule, as expert mode does", () => {
+    expect(generalIds(undefined)).toContain("general-tags");
   });
 });

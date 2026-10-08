@@ -349,9 +349,10 @@ import {
   withPublication,
 } from "@/utils/bookableFlow";
 import {
+  expertOptionShown,
+  expertTabShown,
   getInitialBookableExpertMode,
   isBookableExpertModeConfigured,
-  isBookableExpertOnlyTab,
   setBookableExpertModeSession,
 } from "@/utils/bookableExpertMode";
 import {
@@ -408,8 +409,11 @@ export default {
       activeTabKey: "general",
       activeSectionId: null,
       sectionTarget: null,
+      // What the components ask the expert-mode rule with: the mode and the
+      // bookable as loaded or last saved (`takeSnapshot`).
       expertModeContext: {
         enabled: getInitialBookableExpertMode(),
+        stored: null,
       },
       tabs: [
         {
@@ -521,11 +525,11 @@ export default {
       return listRouteOf(this.type);
     },
     visibleTabs() {
-      const tabs = this.tabs.filter((tab) => this.isTabVisible(tab));
-      if (this.expertMode) {
-        return tabs;
-      }
-      return tabs.filter((tab) => !isBookableExpertOnlyTab(tab.key));
+      return this.tabs.filter(
+        (tab) =>
+          this.isTabVisible(tab) &&
+          expertTabShown(tab.key, this.expertOptionShown)
+      );
     },
     tabsRenderKey() {
       return this.expertMode ? "expert" : "simple";
@@ -545,7 +549,7 @@ export default {
     sectionContext() {
       return {
         bookable: this.bookable,
-        expertMode: this.expertMode,
+        shown: this.expertOptionShown,
       };
     },
     activeTabSections() {
@@ -591,6 +595,14 @@ export default {
       if (discard) {
         await this.init();
       }
+    },
+    /** The expert-mode rule, as the components ask it. */
+    expertOptionShown(option) {
+      return expertOptionShown(option, {
+        expertMode: this.expertMode,
+        stored: this.expertModeContext.stored,
+        current: this.bookable,
+      });
     },
     isTabVisible(tab) {
       if (!tab.permission) return true;
@@ -746,6 +758,7 @@ export default {
       this.originalSnapshot = JSON.stringify({
         bookable: bookableClean,
       });
+      this.expertModeContext.stored = _.cloneDeep(this.bookable);
     },
     async fetchBookable(bookableId) {
       try {
@@ -763,9 +776,6 @@ export default {
       this.bookable = { ...this.bookable, ...changes };
     },
     goToTab(key, sectionId) {
-      if (!this.expertMode && isBookableExpertOnlyTab(key)) {
-        return;
-      }
       if (!this.visibleTabs.some((tab) => tab.key === key)) {
         return;
       }
