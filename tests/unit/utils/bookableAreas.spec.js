@@ -5,6 +5,7 @@ import {
   areaShown,
   areaSummary,
   areaUsed,
+  shownAreas,
 } from "@/utils/bookableAreas";
 
 // A new bookable as BookableEdit creates it: the stand every area is
@@ -222,4 +223,19 @@ describe("areaShown", () => {
       expect(areaShown(key, () => false)).toBe(true);
     }
   );
+});
+
+describe("shownAreas", () => {
+  it("lists the areas that show, in the order of the tabs", () => {
+    const keys = (shown) => shownAreas(shown).map((area) => area.key);
+
+    expect(keys(() => true)).toHaveLength(9);
+    expect(keys((option) => option === "cancellation")).toEqual([
+      "groupBooking",
+      "cancellation",
+      "attachments",
+      "customFields",
+      "bookingNotes",
+    ]);
+  });
 });

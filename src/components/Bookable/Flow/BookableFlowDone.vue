@@ -40,7 +40,7 @@
       </v-card-text>
     </v-card>
 
-    <template v-if="sections.length">
+    <template v-if="areas.length">
       <div class="flow-done__heading">
         {{ $t("bookable.flow.done.optional") }}
         <span class="flow-field__hint">
@@ -49,19 +49,19 @@
       </div>
       <div class="flow-done__sections" data-test="flow-done-sections">
         <button
-          v-for="section in sections"
-          :key="section.key"
+          v-for="area in areas"
+          :key="area.key"
           type="button"
           class="flow-done__section"
-          :data-test="`flow-section-${section.key}`"
-          @click="$emit('open-section', section)"
+          :data-test="`flow-done-area-${area.key}`"
+          @click="$emit('open-area', area.key)"
         >
           <span class="flow-done__section-title">
-            {{ $t(`bookable.flow.done.sections.${section.key}.title`) }}
+            {{ $t(area.titleKey) }}
             <v-icon small>mdi-chevron-right</v-icon>
           </span>
           <span class="flow-field__hint mt-0">
-            {{ $t(`bookable.flow.done.sections.${section.key}.hint`) }}
+            {{ $t(area.hintKey) }}
           </span>
         </button>
       </div>
@@ -89,12 +89,14 @@
 import TenantReadinessCheck from "@/components/Tenant/TenantReadinessCheck.vue";
 import OnboardingSetupLinks from "@/components/Tenant/Onboarding/OnboardingSetupLinks.vue";
 import bookableEditing from "@/mixins/bookableEditing";
-import { isPaid, optionalSections, publishVariant } from "@/utils/bookableFlow";
+import { isPaid, publishVariant } from "@/utils/bookableFlow";
+import { shownAreas } from "@/utils/bookableAreas";
 
 /**
  * After the save: what became of the publication, the readiness check, the
  * open points legal texts and payment (payment for a paid offer only), the
- * optional sections of today's editor and the ways on. Nothing here blocks.
+ * areas of „Weitere Einstellungen“ - each a link to its row in that step
+ * (`open-area`) - and the ways on. Nothing here blocks.
  */
 export default {
   name: "BookableFlowDone",
@@ -117,11 +119,8 @@ export default {
     paid() {
       return isPaid(this.bookable);
     },
-    sections() {
-      return optionalSections({
-        bookable: this.bookable,
-        shown: this.expertOptionShown,
-      });
+    areas() {
+      return shownAreas(this.expertOptionShown);
     },
   },
 };

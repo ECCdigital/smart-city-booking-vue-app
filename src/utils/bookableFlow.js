@@ -1,10 +1,10 @@
 /**
  * The guided flow of a bookable (ECCdigital/tickets#326), after the cloud
- * variant: six steps over the same bookable the editor holds, saved once at
- * the end. Pure: which steps there are, how each question reads from the
+ * variant: steps over the same bookable the editor holds, saved once at the
+ * end. Pure: which steps there are, how each question reads from the
  * bookable and lands on it, what the closing action is called by
- * supervision level and which optional editor sections the confirmation
- * links. The flow components only wire it to the page.
+ * supervision level and what the overview shows per step. The flow
+ * components only wire it to the page.
  *
  * Every answer is read from the bookable itself - the flow keeps no state of
  * its own beyond the step - so leaving for the editor and coming back shows
@@ -13,11 +13,8 @@
 
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import { providerHandles } from "@/utils/bookableExternalProviders";
-import {
-  getBookingMode,
-  getVisibleBookableEditSections,
-  getBookableEditSectionById,
-} from "@/utils/bookableEditSections";
+import { getBookingMode } from "@/utils/bookableEditSections";
+import { BOOKABLE_AREAS, areaSummary, areaUsed } from "@/utils/bookableAreas";
 import { getTypeText } from "@/utils/bookables";
 import {
   PRICE_TYPE_SUFFIX,
@@ -34,6 +31,7 @@ export const FLOW_STEPS = Object.freeze([
   "amount",
   "permission",
   "approval",
+  "more",
 ]);
 
 /** The bookable types a new bookable may take; events stay in their editor. */
@@ -346,40 +344,6 @@ export function withPublication(bookable, publish) {
   return publish ? { ...bookable, isPublic: true, isBookable: true } : bookable;
 }
 
-/**
- * The optional sections of the cloud variant's confirmation, each pointing
- * at the section of today's editor that holds it. Only what the editor
- * offers is linked: an expert option as `shown(option)` - the expert-mode
- * rule - says.
- */
-const OPTIONAL_SECTIONS = Object.freeze([
-  { key: "required-fields", sectionId: "additional-required-fields" },
-  { key: "attachments", tabKey: "attachments" },
-  { key: "notes", sectionId: "additional-notes" },
-  { key: "checkout", sectionId: "related-checkout" },
-  { key: "hierarchy", sectionId: "related-hierarchy" },
-  { key: "group-booking", sectionId: "permissions-group-booking" },
-  { key: "cancellation", sectionId: "permissions-cancellation" },
-]);
-
-export function optionalSections({ bookable, shown }) {
-  return OPTIONAL_SECTIONS.map((entry) => {
-    const section = entry.sectionId
-      ? getBookableEditSectionById(entry.sectionId)
-      : null;
-    return {
-      key: entry.key,
-      tabKey: section ? section.tabKey : entry.tabKey,
-      sectionId: entry.sectionId || null,
-    };
-  }).filter(({ tabKey, sectionId }) => {
-    if (!sectionId) return true;
-    return getVisibleBookableEditSections(tabKey, { bookable, shown }).some(
-      (section) => section.id === sectionId
-    );
-  });
-}
-
 // --- Übersicht -------------------------------------------------------------
 
 const OVERVIEW = "bookable.flow.overview";
@@ -530,6 +494,20 @@ function permissionRows(bookable) {
 }
 
 /** The rows of each visited block. */
+/**
+ * Weitere Einstellungen: a row per area in use, its summary as the value;
+ * none in use reads as one empty row.
+ */
+function moreRows(bookable) {
+  const rows = BOOKABLE_AREAS.filter(({ key }) => areaUsed(key, bookable)).map(
+    ({ key, titleKey }) => ({
+      label: titleKey,
+      value: areaSummary(key, bookable),
+    })
+  );
+  return rows.length ? rows : [{ label: "bookable.flow.more.used", value: [] }];
+}
+
 const OVERVIEW_ROWS = {
   identity: identityRows,
   availability: availabilityRows,
@@ -553,6 +531,7 @@ const OVERVIEW_ROWS = {
       ),
     },
   ],
+  more: moreRows,
 };
 
 /**

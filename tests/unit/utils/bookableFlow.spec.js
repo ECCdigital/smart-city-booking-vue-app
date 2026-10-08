@@ -7,11 +7,11 @@ import {
   applyBookingMode,
   applyPriceBasis,
   applyPriceMode,
+  FLOW_STEPS,
   editRouteOf,
   isFlowMode,
   listRouteOf,
   isUnlimitedAmount,
-  optionalSections,
   overviewBlocks,
   priceBasisOf,
   priceExplanation,
@@ -326,57 +326,19 @@ describe("closing", () => {
   });
 });
 
-describe("optionalSections", () => {
-  const keys = (shown) =>
-    optionalSections({ bookable: bookable(), shown }).map(
-      (section) => section.key
-    );
-
-  it("links every optional section while every expert option shows", () => {
-    expect(keys(() => true)).toEqual([
-      "required-fields",
-      "attachments",
-      "notes",
-      "checkout",
-      "hierarchy",
-      "group-booking",
-      "cancellation",
+describe("FLOW_STEPS", () => {
+  // Weitere Einstellungen comes right after Bestätigung, before the
+  // publication (ECCdigital/tickets#363); later steps may follow it.
+  it("runs from the identity to „Weitere Einstellungen“", () => {
+    expect(FLOW_STEPS.slice(0, 7)).toEqual([
+      "identity",
+      "availability",
+      "price",
+      "amount",
+      "permission",
+      "approval",
+      "more",
     ]);
-  });
-
-  it("leaves out the expert options that do not show", () => {
-    expect(keys(() => false)).toEqual([
-      "attachments",
-      "notes",
-      "group-booking",
-    ]);
-  });
-
-  it("links an expert option that shows, without the rest of its tab", () => {
-    expect(keys((option) => option === "hierarchy")).toEqual([
-      "attachments",
-      "notes",
-      "hierarchy",
-      "group-booking",
-    ]);
-  });
-
-  it("points each link at its tab and section", () => {
-    const [requiredFields, attachments] = optionalSections({
-      bookable: bookable(),
-      shown: () => true,
-    });
-
-    expect(requiredFields).toEqual({
-      key: "required-fields",
-      tabKey: "additional",
-      sectionId: "additional-required-fields",
-    });
-    expect(attachments).toEqual({
-      key: "attachments",
-      tabKey: "attachments",
-      sectionId: null,
-    });
   });
 });
 
@@ -402,13 +364,9 @@ describe("overview", () => {
       visited: ["identity"],
     });
 
-    expect(blocks.map(({ step, open }) => [step, open])).toEqual([
-      ["identity", false],
-      ["availability", true],
-      ["price", true],
-      ["amount", true],
-      ["permission", true],
-      ["approval", true],
+    expect(blocks.map(({ step }) => step)).toEqual(FLOW_STEPS);
+    expect(blocks.filter(({ open }) => !open).map(({ step }) => step)).toEqual([
+      "identity",
     ]);
     expect(blocks[1].rows).toEqual([]);
   });
@@ -614,5 +572,24 @@ describe("overview", () => {
     expect(shown(blockOf("availability", item))).toEqual([
       ["Buchungsart", "extern gesteuert"],
     ]);
+  });
+
+  it("lists the areas in use under „Weitere Einstellungen“, with their summary", () => {
+    const item = bookable({
+      requiredFields: ["address", "zipCode", "city"],
+      checkoutBookableIds: ["b2", "b3"],
+      groupBooking: { enabled: true, permittedRoles: [] },
+    });
+
+    expect(shown(blockOf("more", item))).toEqual([
+      ["Zusatzobjekte", "2 Zusatzobjekte"],
+      ["Serienbuchung", "Erlaubt"],
+    ]);
+  });
+
+  it("says no area is in use with an empty value", () => {
+    const item = bookable({ requiredFields: ["address", "zipCode", "city"] });
+
+    expect(shown(blockOf("more", item))).toEqual([["Genutzte Bereiche", "–"]]);
   });
 });

@@ -8,13 +8,14 @@ import {
 import ApiEventService from "@/services/api/ApiEventService";
 import Bookable from "@/entities/bookable";
 import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
+import { FLOW_STEPS } from "@/utils/bookableFlow";
 
 vi.mock("@/services/api/ApiEventService", () => ({
   default: { getEvents: vi.fn() },
 }));
 
 // The steps with their own API calls and editors are stood in for; amount
-// and approval are drawn for real.
+// and approval are drawn for real. „Weitere Einstellungen“ has its own spec.
 const stepStub = (name) => ({
   name,
   render(h) {
@@ -27,6 +28,7 @@ const STUBS = {
   BookableFlowAvailability: stepStub("BookableFlowAvailability"),
   BookableFlowPrice: stepStub("BookableFlowPrice"),
   BookableFlowPermission: stepStub("BookableFlowPermission"),
+  BookableFlowMore: stepStub("BookableFlowMore"),
   TenantReadinessCheck: stepStub("TenantReadinessCheck"),
   RouterLink: true,
 };
@@ -42,8 +44,9 @@ const mountFlow = (propsData = {}) =>
 
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
 
+// „Weiter“ until the last step, however many steps there are.
 async function walkToLastStep(wrapper) {
-  for (let step = 0; step < 5; step += 1) {
+  while (find(wrapper, "flow-next").exists()) {
     await find(wrapper, "flow-next").trigger("click");
   }
 }
@@ -93,6 +96,21 @@ describe("BookableFlow", () => {
 
     const [changed] = wrapper.emitted("update:bookable").slice(-1)[0];
     expect(changed).toEqual({ autoCommitBooking: true });
+  });
+
+  // ECCdigital/tickets#363: optional, right after Bestätigung.
+  it("goes through „Weitere Einstellungen“ after the approval without input", async () => {
+    const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
+    await find(wrapper, "flow-dot-approval").trigger("click");
+
+    await find(wrapper, "flow-next").trigger("click");
+    expect(find(wrapper, "flow-title-heading").text()).toBe(
+      "Weitere Einstellungen"
+    );
+    expect(find(wrapper, "stub-BookableFlowMore").exists()).toBe(true);
+
+    await walkToLastStep(wrapper);
+    expect(wrapper.emitted("update:bookable")).toBeUndefined();
   });
 
   it("saves only at the end, with or without the publication wish", async () => {
@@ -186,16 +204,17 @@ describe("BookableFlow", () => {
       expect(find(paid, "setup-payment").exists()).toBe(true);
     });
 
-    it("opens an optional section of the editor", async () => {
+    it("links each area to its row in „Weitere Einstellungen“", async () => {
       const wrapper = mountDone({ outcome: "draft" });
+      const link = find(wrapper, "flow-done-area-bookingNotes");
+      expect(link.text()).toContain("Buchungshinweise");
+      expect(link.text()).toContain(
+        "Kurze Hinweise im Checkout und in der Bestätigungsmail."
+      );
 
-      await find(wrapper, "flow-section-notes").trigger("click");
+      await link.trigger("click");
 
-      expect(wrapper.emitted("open-section")[0][0]).toEqual({
-        key: "notes",
-        tabKey: "additional",
-        sectionId: "additional-notes",
-      });
+      expect(wrapper.emitted("open-area")).toEqual([["bookingNotes"]]);
     });
 
     it("links the expert options in use without expert mode, no others", () => {
@@ -211,11 +230,12 @@ describe("BookableFlow", () => {
         stubs: STUBS,
       });
 
-      expect(find(wrapper, "flow-section-cancellation").exists()).toBe(true);
-      expect(find(wrapper, "flow-section-hierarchy").exists()).toBe(false);
-      expect(find(wrapper, "flow-section-required-fields").exists()).toBe(
+      expect(find(wrapper, "flow-done-area-cancellation").exists()).toBe(true);
+      expect(find(wrapper, "flow-done-area-hierarchy").exists()).toBe(false);
+      expect(find(wrapper, "flow-done-area-requiredFields").exists()).toBe(
         false
       );
+      expect(find(wrapper, "flow-done-area-groupBooking").exists()).toBe(true);
     });
 
     it("leads on to another bookable or to the overview", async () => {
@@ -256,14 +276,9 @@ describe("BookableFlow on a wide screen", () => {
     expect(find(wrapper, "flow-steps").exists()).toBe(false);
     expect(find(wrapper, "flow-summary").text()).toContain("Übersicht");
     const blocks = wrapper.findAll("[data-test^='flow-summary-']").wrappers;
-    expect(blocks.map((block) => block.attributes("data-test"))).toEqual([
-      "flow-summary-identity",
-      "flow-summary-availability",
-      "flow-summary-price",
-      "flow-summary-amount",
-      "flow-summary-permission",
-      "flow-summary-approval",
-    ]);
+    expect(blocks.map((block) => block.attributes("data-test"))).toEqual(
+      FLOW_STEPS.map((step) => `flow-summary-${step}`)
+    );
     [
       "Identität",
       "Verfügbarkeit",
@@ -271,21 +286,22 @@ describe("BookableFlow on a wide screen", () => {
       "Anzahl & Kapazität",
       "Berechtigung",
       "Freigabe",
+      "Weitere Einstellungen",
     ].forEach((title, idx) => expect(blocks[idx].text()).toContain(title));
   });
 
-  it("shows the identity with values and the other five steps as open", async () => {
+  it("shows the identity with values and the other steps as open", async () => {
     const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
 
     expect(blockOf(wrapper, "identity").text()).toContain("Saal");
     expect(blockOf(wrapper, "identity").attributes("aria-current")).toBe(
       "step"
     );
-    expect(openBlocks(wrapper)).toHaveLength(5);
+    expect(openBlocks(wrapper)).toHaveLength(FLOW_STEPS.length - 1);
 
     await find(wrapper, "flow-next").trigger("click");
 
-    expect(openBlocks(wrapper)).toHaveLength(4);
+    expect(openBlocks(wrapper)).toHaveLength(FLOW_STEPS.length - 2);
     expect(blockOf(wrapper, "availability").text()).not.toContain("Noch offen");
     expect(blockOf(wrapper, "availability").attributes("aria-current")).toBe(
       "step"
@@ -361,7 +377,7 @@ describe("BookableFlow on a wide screen", () => {
     });
 
     expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
-    expect(openBlocks(wrapper)).toHaveLength(5);
+    expect(openBlocks(wrapper)).toHaveLength(FLOW_STEPS.length - 1);
   });
 
   it("names the event of a ticket by its title", async () => {
@@ -399,6 +415,7 @@ describe("BookableFlow on an extra wide screen", () => {
       "Anzahl & Kapazität",
       "Berechtigung",
       "Freigabe",
+      "Weitere Einstellungen",
     ].forEach((title) => expect(list.text()).toContain(title));
     expect(entryOf(wrapper, "identity").attributes("aria-current")).toBe(
       "step"
