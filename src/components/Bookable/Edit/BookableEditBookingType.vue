@@ -2,15 +2,22 @@
 import BaseSection from "@/components/commons/BaseSection.vue";
 import BookableEditLeadTime from "@/components/Bookable/Edit/BookableEditLeadTime.vue";
 import { v4 as uuidv4 } from "uuid";
+import bookableEditing from "@/mixins/bookableEditing";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
 import { isBookableExpertOnlyBookingType } from "@/utils/bookableExpertMode";
+import { applyBookingMode, bookingModeOf } from "@/utils/bookableFlow";
+
+/** What `v-model.number` keeps: a number where the input reads as one. */
+function toNumber(value) {
+  const number = parseFloat(value);
+  return Number.isNaN(number) ? value : number;
+}
 
 export default {
   name: "BookableEditBookingType",
   components: { BaseSection, BookableEditLeadTime },
-  mixins: [bookableExpertMode],
+  mixins: [bookableEditing, bookableExpertMode],
   props: {
-    bookable: { type: Object, required: true },
     // Inside the guided flow, which asks for the booking type itself: only
     // the settings of the chosen type are shown.
     embedded: { type: Boolean, default: false },
@@ -35,39 +42,7 @@ export default {
       expandedBlockItems: [],
     };
   },
-  created() {
-    if (!Array.isArray(this.model.blockPeriods)) {
-      this.model.blockPeriods = [];
-    }
-    this.model.blockPeriods.forEach((blockPeriod) => {
-      if (!blockPeriod.id) {
-        blockPeriod.id = uuidv4();
-      }
-    });
-  },
   computed: {
-    model: {
-      get() {
-        return this.bookable;
-      },
-      set(val) {
-        this.$emit("update:bookable", { ...val });
-      },
-    },
-    isLongRangeWeek() {
-      return (
-        this.model.isLongRange &&
-        this.model.longRangeOptions &&
-        this.model.longRangeOptions.type === "week"
-      );
-    },
-    isLongRangeMonth() {
-      return (
-        this.model.isLongRange &&
-        this.model.longRangeOptions &&
-        this.model.longRangeOptions.type === "month"
-      );
-    },
     bookingTypeSupportsLeadTime() {
       return (
         this.expertMode &&
@@ -77,52 +52,38 @@ export default {
     isExpertBookingTypeActive() {
       return isBookableExpertOnlyBookingType(this.bookingType);
     },
-    bookingType: {
-      get() {
-        if (this.model.isScheduleRelated) return "schedule";
-        if (this.model.isTimePeriodRelated) return "timePeriod";
-        if (this.model.isBlockPeriodRelated) return "blockPeriod";
-        if (this.isLongRangeWeek) return "week";
-        if (this.isLongRangeMonth) return "month";
-        return "independent";
-      },
-      set(value) {
-        this.model.isScheduleRelated = false;
-        this.model.isTimePeriodRelated = false;
-        this.model.isBlockPeriodRelated = false;
-        this.model.longRangeOptions = {};
-        this.model.isLongRange = false;
-
-        switch (value) {
-          case "schedule":
-            this.model.isScheduleRelated = true;
-            break;
-          case "timePeriod":
-            this.model.isTimePeriodRelated = true;
-            break;
-          case "blockPeriod":
-            this.model.isBlockPeriodRelated = true;
-            if (!Array.isArray(this.model.blockPeriods)) {
-              this.model.blockPeriods = [];
-            }
-            // Permissions tab may be unmounted (keep-alive); disable here on type change.
-            if (this.model.groupBooking?.enabled) {
-              this.model.groupBooking.enabled = false;
-            }
-            break;
-          case "week":
-            this.model.longRangeOptions = { type: "week" };
-            this.model.isLongRange = true;
-            break;
-          case "month":
-            this.model.longRangeOptions = { type: "month" };
-            this.model.isLongRange = true;
-            break;
-        }
-      },
+    bookingType() {
+      return bookingModeOf(this.bookable);
+    },
+    timePeriods() {
+      return this.bookable.timePeriods || [];
+    },
+    blockPeriods() {
+      return this.bookable.blockPeriods || [];
     },
   },
   methods: {
+    toNumber,
+    setBookingType(mode) {
+      this.apply((next) => applyBookingMode(next, mode));
+    },
+    updateTimePeriod(index, changes) {
+      this.patch({
+        timePeriods: this.timePeriods.map((period, i) =>
+          i === index ? { ...period, ...changes } : period
+        ),
+      });
+    },
+    updateBlockPeriod(index, changes) {
+      this.patch({
+        blockPeriods: this.blockPeriods.map((period, i) =>
+          i === index ? { ...period, ...changes } : period
+        ),
+      });
+    },
+    closeMenu(menus, index) {
+      this.$set(menus, index, false);
+    },
     async validate() {
       const formValid = this.$refs.form ? this.$refs.form.validate() : true;
       if (!formValid) {
@@ -137,30 +98,32 @@ export default {
       if (this.bookingType !== "blockPeriod") {
         return true;
       }
-      if (!this.model.blockPeriods?.length) {
+      if (!this.blockPeriods.length) {
         return false;
       }
-      return this.model.blockPeriods.every(
+      return this.blockPeriods.every(
         (blockPeriod) => this.getBlockPeriodDurationMinutes(blockPeriod) > 0
       );
     },
     resetValidation() {
       this.$refs.form?.resetValidation();
     },
-    generateBlockPeriodId() {
-      return uuidv4();
-    },
     addNewBlockPeriod() {
-      const index = this.model.blockPeriods.length;
+      const index = this.blockPeriods.length;
       this.blockTimeStartMenu.push(false);
       this.blockTimeEndMenu.push(false);
-      this.model.blockPeriods.push({
-        id: this.generateBlockPeriodId(),
-        label: "",
-        startWeekday: null,
-        startTime: null,
-        endWeekday: null,
-        endTime: null,
+      this.patch({
+        blockPeriods: [
+          ...this.blockPeriods,
+          {
+            id: uuidv4(),
+            label: "",
+            startWeekday: null,
+            startTime: null,
+            endWeekday: null,
+            endTime: null,
+          },
+        ],
       });
       this.expandedBlockItems.push(index);
     },
@@ -225,18 +188,14 @@ export default {
         this.$refs.form?.validate();
       });
     },
-    setBlockEndTime(index, time) {
-      this.model.blockPeriods[index].endTime = time;
-      this.blockTimeEndMenu[index] = false;
-      this.revalidateBlockPeriodForm();
-    },
-    setBlockStartTime(index, time) {
-      this.model.blockPeriods[index].startTime = time;
-      this.blockTimeStartMenu[index] = false;
+    setBlockPeriod(index, changes) {
+      this.updateBlockPeriod(index, changes);
       this.revalidateBlockPeriodForm();
     },
     removeBlockPeriod(index) {
-      this.model.blockPeriods.splice(index, 1);
+      this.patch({
+        blockPeriods: this.blockPeriods.filter((_, i) => i !== index),
+      });
       this.blockTimeStartMenu.splice(index, 1);
       this.blockTimeEndMenu.splice(index, 1);
       this.expandedBlockItems = this.expandedBlockItems
@@ -257,13 +216,14 @@ export default {
       return this.expandedBlockItems.includes(index);
     },
     addNewTimePeriod() {
-      const index = this.model.timePeriods.length;
+      const index = this.timePeriods.length;
       this.timeStartMenu.push(false);
       this.timeEndMenu.push(false);
-      this.model.timePeriods.push({
-        weekdays: [],
-        startTime: null,
-        endTime: null,
+      this.patch({
+        timePeriods: [
+          ...this.timePeriods,
+          { weekdays: [], startTime: null, endTime: null },
+        ],
       });
       this.expandedItems.push(index);
     },
@@ -282,21 +242,14 @@ export default {
         .join(", ");
     },
     removeWeekdays(index, item) {
-      this.model.timePeriods[index].weekdays.splice(
-        this.model.timePeriods[index].weekdays.indexOf(item),
-        1
-      );
-    },
-    setEndTime(index, time) {
-      this.model.timePeriods[index].endTime = time;
-      this.timeEndMenu[index] = false;
-    },
-    setStartTime(index, time) {
-      this.model.timePeriods[index].startTime = time;
-      this.timeStartMenu[index] = false;
+      this.updateTimePeriod(index, {
+        weekdays: this.timePeriods[index].weekdays.filter((id) => id !== item),
+      });
     },
     removeTimePeriod(index) {
-      this.model.timePeriods.splice(index, 1);
+      this.patch({
+        timePeriods: this.timePeriods.filter((_, i) => i !== index),
+      });
       this.timeStartMenu.splice(index, 1);
       this.timeEndMenu.splice(index, 1);
       const idx = this.expandedItems.indexOf(index);
@@ -340,7 +293,7 @@ export default {
       </v-alert>
 
       <div v-if="!embedded" id="be-section-bookingType-select">
-        <v-radio-group v-model="bookingType">
+        <v-radio-group :value="bookingType" @change="setBookingType">
           <v-radio value="schedule" class="mb-3">
             <template v-slot:label>
               <div>
@@ -466,7 +419,9 @@ export default {
                 background-color="accent"
                 filled
                 label="Minimale Buchungsdauer"
-                v-model.number="model.minBookingDuration"
+                data-test="booking-duration-min"
+                :value="bookable.minBookingDuration"
+                @input="patch({ minBookingDuration: toNumber($event) })"
                 suffix="Stunden"
                 type="number"
                 min="0"
@@ -478,7 +433,9 @@ export default {
                 background-color="accent"
                 filled
                 label="Maximale Buchungsdauer"
-                v-model.number="model.maxBookingDuration"
+                data-test="booking-duration-max"
+                :value="bookable.maxBookingDuration"
+                @input="patch({ maxBookingDuration: toNumber($event) })"
                 suffix="Stunden"
                 type="number"
                 min="0"
@@ -492,9 +449,9 @@ export default {
       <BookableEditLeadTime
         v-if="expertMode && bookingType === 'schedule'"
         ref="leadTime"
-        :bookable="model"
+        :bookable="bookable"
         :show-buffer="true"
-        @update:bookable="model = $event"
+        @update:bookable="$emit('update:bookable', $event)"
       />
 
       <v-card
@@ -510,7 +467,12 @@ export default {
             <v-icon class="mr-2">mdi-clock-outline</v-icon>
             <span class="text-h6 font-weight-bold">Feste Zeitfenster</span>
           </div>
-          <v-btn small color="primary" @click="addNewTimePeriod">
+          <v-btn
+            small
+            color="primary"
+            data-test="time-periods-add"
+            @click="addNewTimePeriod"
+          >
             <v-icon left small>mdi-plus</v-icon>
             Hinzufügen
           </v-btn>
@@ -518,9 +480,9 @@ export default {
         <v-divider />
 
         <v-card-text class="pa-4">
-          <div v-if="model.timePeriods.length > 0">
+          <div v-if="timePeriods.length > 0">
             <v-list two-line class="py-0">
-              <template v-for="(timePeriod, index) in model.timePeriods">
+              <template v-for="(timePeriod, index) in timePeriods">
                 <v-list-item
                   :key="`period-${index}`"
                   class="time-period-item elevation-1 mb-3 rounded"
@@ -591,7 +553,7 @@ export default {
                           :items="weekdays"
                           item-value="id"
                           item-text="name"
-                          v-model="timePeriod.weekdays"
+                          :value="timePeriod.weekdays"
                           multiple
                           chips
                           hide-selected
@@ -601,6 +563,9 @@ export default {
                               (v && v.length > 0) ||
                               'Mindestens ein Wochentag erforderlich',
                           ]"
+                          @change="
+                            updateTimePeriod(index, { weekdays: $event })
+                          "
                         >
                           <template
                             v-slot:selection="{ attrs, item, select, selected }"
@@ -637,7 +602,7 @@ export default {
                               dense
                               background-color="accent"
                               filled
-                              v-model="timePeriod.startTime"
+                              :value="timePeriod.startTime"
                               label="Startzeit *"
                               readonly
                               suffix="Uhr"
@@ -651,11 +616,12 @@ export default {
                           </template>
                           <v-time-picker
                             v-if="timeStartMenu[index]"
-                            v-model="timePeriod.startTime"
+                            :value="timePeriod.startTime"
                             full-width
-                            @click:minute="
-                              setStartTime(index, timePeriod.startTime)
+                            @input="
+                              updateTimePeriod(index, { startTime: $event })
                             "
+                            @click:minute="closeMenu(timeStartMenu, index)"
                             format="24hr"
                           ></v-time-picker>
                         </v-menu>
@@ -676,7 +642,7 @@ export default {
                               dense
                               background-color="accent"
                               filled
-                              v-model="timePeriod.endTime"
+                              :value="timePeriod.endTime"
                               label="Endzeit *"
                               readonly
                               suffix="Uhr"
@@ -690,11 +656,12 @@ export default {
                           </template>
                           <v-time-picker
                             v-if="timeEndMenu[index]"
-                            v-model="timePeriod.endTime"
+                            :value="timePeriod.endTime"
                             full-width
-                            @click:minute="
-                              setEndTime(index, timePeriod.endTime)
+                            @input="
+                              updateTimePeriod(index, { endTime: $event })
                             "
+                            @click:minute="closeMenu(timeEndMenu, index)"
                             format="24hr"
                           ></v-time-picker>
                         </v-menu>
@@ -704,7 +671,7 @@ export default {
                 </v-expand-transition>
 
                 <v-divider
-                  v-if="index < model.timePeriods.length - 1"
+                  v-if="index < timePeriods.length - 1"
                   :key="`divider-${index}`"
                   class="my-2"
                 />
@@ -733,9 +700,9 @@ export default {
       <BookableEditLeadTime
         v-if="expertMode && bookingType === 'timePeriod'"
         ref="leadTime"
-        :bookable="model"
+        :bookable="bookable"
         :show-buffer="false"
-        @update:bookable="model = $event"
+        @update:bookable="$emit('update:bookable', $event)"
       />
 
       <v-card
@@ -751,7 +718,12 @@ export default {
             <v-icon class="mr-2">mdi-calendar-sync</v-icon>
             <span class="text-h6 font-weight-bold">Zeiträume</span>
           </div>
-          <v-btn small color="primary" @click="addNewBlockPeriod">
+          <v-btn
+            small
+            color="primary"
+            data-test="block-periods-add"
+            @click="addNewBlockPeriod"
+          >
             <v-icon left small>mdi-plus</v-icon>
             Hinzufügen
           </v-btn>
@@ -767,7 +739,7 @@ export default {
           </v-alert>
 
           <v-alert
-            v-if="model.blockPeriods.length === 0"
+            v-if="blockPeriods.length === 0"
             type="warning"
             dense
             text
@@ -776,9 +748,9 @@ export default {
             Mindestens ein Zeitraum ist erforderlich.
           </v-alert>
 
-          <div v-if="model.blockPeriods.length > 0">
+          <div v-if="blockPeriods.length > 0">
             <v-list two-line class="py-0">
-              <template v-for="(blockPeriod, index) in model.blockPeriods">
+              <template v-for="(blockPeriod, index) in blockPeriods">
                 <v-list-item
                   :key="`block-period-${blockPeriod.id}`"
                   class="time-period-item elevation-1 mb-3 rounded"
@@ -819,7 +791,12 @@ export default {
 
                   <v-list-item-action>
                     <div class="d-flex align-center">
-                      <v-btn icon small @click.stop="removeBlockPeriod(index)">
+                      <v-btn
+                        icon
+                        small
+                        data-test="block-period-remove"
+                        @click.stop="removeBlockPeriod(index)"
+                      >
                         <v-icon small>mdi-delete-outline</v-icon>
                       </v-btn>
                       <v-btn icon small>
@@ -849,7 +826,9 @@ export default {
                           background-color="accent"
                           filled
                           label="Bezeichnung *"
-                          v-model="blockPeriod.label"
+                          data-test="block-period-label"
+                          :value="blockPeriod.label"
+                          @input="updateBlockPeriod(index, { label: $event })"
                           hide-details="auto"
                           :rules="[
                             (v) =>
@@ -869,9 +848,11 @@ export default {
                           :items="weekdays"
                           item-value="id"
                           item-text="name"
-                          v-model="blockPeriod.startWeekday"
+                          :value="blockPeriod.startWeekday"
                           hide-details="auto"
-                          @change="revalidateBlockPeriodForm"
+                          @change="
+                            setBlockPeriod(index, { startWeekday: $event })
+                          "
                           :rules="[
                             (v) =>
                               (v !== null && v !== undefined) ||
@@ -894,7 +875,7 @@ export default {
                               dense
                               background-color="accent"
                               filled
-                              v-model="blockPeriod.startTime"
+                              :value="blockPeriod.startTime"
                               label="Startzeit *"
                               readonly
                               suffix="Uhr"
@@ -908,12 +889,13 @@ export default {
                           </template>
                           <v-time-picker
                             v-if="blockTimeStartMenu[index]"
-                            v-model="blockPeriod.startTime"
+                            :value="blockPeriod.startTime"
                             full-width
                             format="24hr"
-                            @click:minute="
-                              setBlockStartTime(index, blockPeriod.startTime)
+                            @input="
+                              setBlockPeriod(index, { startTime: $event })
                             "
+                            @click:minute="closeMenu(blockTimeStartMenu, index)"
                           />
                         </v-menu>
                       </v-col>
@@ -929,11 +911,13 @@ export default {
                           :items="weekdays"
                           item-value="id"
                           item-text="name"
-                          v-model="blockPeriod.endWeekday"
+                          :value="blockPeriod.endWeekday"
                           hide-details="auto"
                           hint="Ende in derselben Woche, wenn der Tag nach dem Start liegt; sonst in der Folgewoche"
                           persistent-hint
-                          @change="revalidateBlockPeriodForm"
+                          @change="
+                            setBlockPeriod(index, { endWeekday: $event })
+                          "
                           :rules="[
                             (v) =>
                               (v !== null && v !== undefined) ||
@@ -956,7 +940,7 @@ export default {
                               dense
                               background-color="accent"
                               filled
-                              v-model="blockPeriod.endTime"
+                              :value="blockPeriod.endTime"
                               label="Endzeit *"
                               readonly
                               suffix="Uhr"
@@ -970,12 +954,11 @@ export default {
                           </template>
                           <v-time-picker
                             v-if="blockTimeEndMenu[index]"
-                            v-model="blockPeriod.endTime"
+                            :value="blockPeriod.endTime"
                             full-width
                             format="24hr"
-                            @click:minute="
-                              setBlockEndTime(index, blockPeriod.endTime)
-                            "
+                            @input="setBlockPeriod(index, { endTime: $event })"
+                            @click:minute="closeMenu(blockTimeEndMenu, index)"
                           />
                         </v-menu>
                       </v-col>
@@ -997,7 +980,7 @@ export default {
                 </v-expand-transition>
 
                 <v-divider
-                  v-if="index < model.blockPeriods.length - 1"
+                  v-if="index < blockPeriods.length - 1"
                   :key="`block-divider-${blockPeriod.id}`"
                   class="my-2"
                 />
@@ -1027,9 +1010,9 @@ export default {
       <BookableEditLeadTime
         v-if="expertMode && bookingType === 'blockPeriod'"
         ref="leadTime"
-        :bookable="model"
+        :bookable="bookable"
         :show-buffer="false"
-        @update:bookable="model = $event"
+        @update:bookable="$emit('update:bookable', $event)"
       />
     </component>
   </v-form>
