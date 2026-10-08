@@ -323,6 +323,8 @@ import ApiBookablesService from "@/services/api/ApiBookablesService";
 import _ from "lodash";
 import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.vue";
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
+// PROTOTYPE #343: the price variants stand in for the tab „Preise & Kapazität“.
+import PricePrototype from "@/components/Bookable/Prototype343/PricePrototype.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
@@ -378,6 +380,7 @@ export default {
     UnsavedChangesDialog,
     BookableEditGeneral,
     BookableEditPrice,
+    PricePrototype,
     BookableEditBookingType,
     BookableEditOpeningHours,
     BookableEditAccessLocks,
@@ -423,7 +426,7 @@ export default {
           key: "pricing",
           label: "Preise & Kapazität",
           icon: "mdi-cash",
-          comp: "BookableEditPrice",
+          comp: "PricePrototype",
         },
         {
           key: "bookingType",

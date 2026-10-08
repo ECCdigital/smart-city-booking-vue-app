@@ -219,6 +219,11 @@ import BookableFlowIdentity from "@/components/Bookable/Flow/BookableFlowIdentit
 import BookableFlowAvailability from "@/components/Bookable/Flow/BookableFlowAvailability.vue";
 import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
 import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vue";
+// PROTOTYPE #343: the price variants stand in for the steps „Preis“ and „Anzahl & Kapazität“.
+import {
+  PricePrototypePrice,
+  PricePrototypeAmount,
+} from "@/components/Bookable/Prototype343/steps";
 import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
 import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
 import BookableFlowDone from "@/components/Bookable/Flow/BookableFlowDone.vue";
@@ -238,8 +243,8 @@ import {
 const STEP_COMPONENTS = {
   identity: "BookableFlowIdentity",
   availability: "BookableFlowAvailability",
-  price: "BookableFlowPrice",
-  amount: "BookableFlowAmount",
+  price: "PricePrototypePrice",
+  amount: "PricePrototypeAmount",
   permission: "BookableFlowPermission",
   approval: "BookableFlowApproval",
 };
@@ -280,6 +285,8 @@ export default {
     BookableFlowAvailability,
     BookableFlowPrice,
     BookableFlowAmount,
+    PricePrototypePrice,
+    PricePrototypeAmount,
     BookableFlowPermission,
     BookableFlowApproval,
     BookableFlowDone,
