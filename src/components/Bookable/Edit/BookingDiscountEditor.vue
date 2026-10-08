@@ -197,17 +197,13 @@ export default {
       );
     },
     setPercent(index, value) {
-      const percent = parseFloat(value);
+      const number = parseFloat(value);
+      const discountPercent = Number.isNaN(number) ? value : number;
       this.$emit(
         "update:items",
-        this.safeItems.map((entry, i) =>
-          i === index
-            ? {
-                ...entry,
-                discountPercent: Number.isNaN(percent) ? value : percent,
-              }
-            : entry
-        )
+        this.safeItems.map((entry, i) => {
+          return i === index ? { ...entry, discountPercent } : entry;
+        })
       );
     },
   },
