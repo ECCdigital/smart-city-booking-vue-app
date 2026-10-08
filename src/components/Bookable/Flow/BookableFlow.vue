@@ -103,14 +103,6 @@
         </nav>
 
         <header class="bookable-flow__header">
-          <div class="bookable-flow__count" data-test="flow-count">
-            {{
-              $t("bookable.flow.count", {
-                index: index + 1,
-                total: steps.length,
-              })
-            }}
-          </div>
           <h2 class="bookable-flow__title" data-test="flow-title-heading">
             {{ $t(`bookable.flow.steps.${step}.title`) }}
           </h2>
@@ -386,7 +378,7 @@ export default {
 
 <style scoped>
 .bookable-flow {
-  max-width: 720px;
+  max-width: var(--scb-editor-width-max);
   margin: 0 auto;
   padding-bottom: var(--scb-space-6);
 }
@@ -402,7 +394,7 @@ export default {
 .bookable-flow--with-overview .bookable-flow__column {
   flex: 1 1 auto;
   min-width: 0;
-  max-width: 720px;
+  max-width: var(--scb-editor-width-max);
 }
 
 /* The side columns stick and scroll in themselves, as the editor's section
@@ -429,7 +421,8 @@ export default {
   padding: 2px 0;
 }
 
-/* An entry looks like a tab of the editor's section nav, its 10px too. */
+/* An entry looks like a tab of the editor's section nav: the current one
+   is a tinted pill, with no bar at its left edge. */
 .bookable-flow__entry {
   display: flex;
   align-items: center;
@@ -437,10 +430,9 @@ export default {
   width: 100%;
   min-height: var(--scb-nav-item-height);
   margin: 0;
-  padding: var(--scb-space-2) var(--scb-space-3) var(--scb-space-2) 10px;
+  padding: var(--scb-space-2) var(--scb-space-3);
   border: 0;
-  border-left: 3px solid transparent;
-  border-radius: 0 var(--scb-radius-control) var(--scb-radius-control) 0;
+  border-radius: var(--scb-radius-control);
   background: transparent;
   color: var(--scb-text);
   font: inherit;
@@ -449,7 +441,7 @@ export default {
   cursor: pointer;
   outline: none;
   transition: background-color var(--scb-motion-fast),
-    color var(--scb-motion-fast), border-color var(--scb-motion-fast);
+    color var(--scb-motion-fast);
 }
 
 .bookable-flow__entry:hover:not(:disabled) {
@@ -467,7 +459,6 @@ export default {
 
 .bookable-flow__entry--current {
   color: var(--v-primary-base);
-  border-left-color: var(--v-primary-base);
   background-color: var(--scb-selected-tint);
   font-weight: var(--scb-font-weight-medium);
 }
@@ -583,16 +574,9 @@ export default {
   margin-bottom: var(--scb-space-4);
 }
 
-.bookable-flow__count {
-  font-size: var(--scb-font-size-xs);
-  font-weight: var(--scb-font-weight-semibold);
-  letter-spacing: var(--scb-letter-spacing-caption);
-  text-transform: uppercase;
-  color: var(--v-primary-base);
-}
-
 .bookable-flow__title {
-  margin: 2px 0 0;
+  margin: 0;
+
   font-size: 1.25rem;
   font-weight: var(--scb-font-weight-semibold);
   line-height: var(--scb-line-height-tight);

@@ -9,6 +9,7 @@ import {
   applyPriceMode,
   editRouteOf,
   isFlowMode,
+  listRouteOf,
   isUnlimitedAmount,
   optionalSections,
   overviewBlocks,
@@ -51,6 +52,16 @@ describe("editRouteOf", () => {
     expect(editRouteOf("event-location")).toBe("location-edit");
     expect(editRouteOf("resource")).toBe("resource-edit");
     expect(editRouteOf("ticket")).toBe("ticket-edit");
+  });
+});
+
+describe("listRouteOf", () => {
+  it("names the list route of each type, rooms for an unknown one", () => {
+    expect(listRouteOf("room")).toBe("rooms");
+    expect(listRouteOf("event-location")).toBe("event-locations");
+    expect(listRouteOf("resource")).toBe("resources");
+    expect(listRouteOf("ticket")).toBe("tickets");
+    expect(listRouteOf("other")).toBe("rooms");
   });
 });
 

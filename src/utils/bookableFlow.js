@@ -57,6 +57,18 @@ export function editRouteOf(type) {
   return BOOKABLE_EDIT_ROUTES[type] || "room-edit";
 }
 
+/** The list each type is created from; the flow's way back from a new one. */
+export const BOOKABLE_LIST_ROUTES = Object.freeze({
+  room: "rooms",
+  resource: "resources",
+  ticket: "tickets",
+  "event-location": "event-locations",
+});
+
+export function listRouteOf(type) {
+  return BOOKABLE_LIST_ROUTES[type] || "rooms";
+}
+
 /** The query value that opens the editor in the guided flow. */
 export const FLOW_MODE = "flow";
 

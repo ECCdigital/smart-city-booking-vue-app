@@ -126,7 +126,6 @@ export default {
 .flow-summary__block--current,
 .flow-summary__block--current:hover {
   background-color: var(--scb-selected-tint-faint);
-  box-shadow: inset 3px 0 0 var(--v-primary-base);
 }
 
 .flow-summary__title {

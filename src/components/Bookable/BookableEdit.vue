@@ -4,7 +4,95 @@
       <div class="page-content__top">
         <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
-        <div class="page-content__meta mb-2">
+        <!-- The guided flow's bar stands in for this row, the page title and
+             the status band: the way back, the bookable and the switches,
+             each over its column of the flow. -->
+        <header
+          v-if="flowMode"
+          class="flow-bar"
+          :class="{ 'flow-bar--steps': flowStepColumn }"
+          data-test="flow-bar"
+        >
+          <div class="flow-bar__back">
+            <v-btn
+              v-if="bookableID && !flowOutcome"
+              small
+              text
+              class="flow-bar__back-btn"
+              data-test="flow-leave"
+              @click="leaveFlow"
+            >
+              <v-icon left small>mdi-arrow-left</v-icon>
+              {{ $t("bookable.flow.leave") }}
+            </v-btn>
+            <v-btn
+              v-else-if="!bookableID"
+              small
+              text
+              class="flow-bar__back-btn"
+              :to="{ name: listRoute }"
+              data-test="flow-to-list"
+            >
+              <v-icon left small>mdi-arrow-left</v-icon>
+              {{ $t(`bookable.flow.bar.list.${type}`) }}
+            </v-btn>
+          </div>
+          <div class="flow-bar__object">
+            <h1 class="flow-bar__name" data-test="flow-bar-name">
+              <template v-if="!bookableID && !bookable.title">
+                {{ $t(`bookable.flow.bar.new.${bookable.type || type}`) }}
+              </template>
+              <template v-else>
+                <span class="flow-bar__type">
+                  {{ $t(`editBookables.types.${bookable.type || type}`) }}
+                </span>
+                <span class="flow-bar__title">
+                  {{ bookable.title || $t("bookable.edit.untitled") }}
+                </span>
+              </template>
+            </h1>
+            <!-- The ID, to copy, as the editor's row shows it. -->
+            <v-tooltip v-if="bookableID" bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <span
+                  class="bookable-id-copy flow-bar__id text--secondary"
+                  v-bind="attrs"
+                  v-on="on"
+                  data-test="flow-bar-id"
+                  @click="copyBookableId"
+                >
+                  <span class="bookable-id-text">ID: {{ bookableID }}</span>
+                  <v-icon x-small class="ml-1 flex-shrink-0">
+                    mdi-content-copy
+                  </v-icon>
+                </span>
+              </template>
+              <span>{{ $t("bookable.edit.copyId.tooltip") }}</span>
+            </v-tooltip>
+          </div>
+          <div class="flow-bar__actions">
+            <v-switch
+              v-if="expertModeToggleVisible"
+              :input-value="expertMode"
+              dense
+              hide-details
+              class="mt-0 pt-0 expert-mode-switch"
+              :label="$t('bookable.edit.expertMode.label')"
+              @change="setExpertMode"
+            />
+            <v-chip
+              v-if="hasUnsavedChanges"
+              color="warning"
+              text-color="black"
+              small
+              label
+            >
+              {{ $t("bookable.edit.unsavedChanges") }}
+            </v-chip>
+          </div>
+        </header>
+
+        <div v-else class="page-content__meta mb-2">
           <div class="page-content__meta-info text--secondary">
             <v-tooltip bottom v-if="bookableID">
               <template v-slot:activator="{ on, attrs }">
@@ -30,7 +118,7 @@
           </div>
           <div class="page-content__meta-actions">
             <v-btn
-              v-if="bookableID && !flowMode"
+              v-if="bookableID"
               small
               text
               color="primary"
@@ -40,18 +128,6 @@
             >
               <v-icon left small>mdi-format-list-checks</v-icon>
               {{ $t("bookable.flow.enter") }}
-            </v-btn>
-            <v-btn
-              v-if="bookableID && flowMode && !flowOutcome"
-              small
-              text
-              color="primary"
-              class="page-content__flow-switch"
-              data-test="flow-leave"
-              @click="leaveFlow"
-            >
-              <v-icon left small>mdi-view-dashboard-outline</v-icon>
-              {{ $t("bookable.flow.leave") }}
             </v-btn>
             <v-switch
               v-if="expertModeToggleVisible"
@@ -74,7 +150,7 @@
           </div>
         </div>
 
-        <BookableEditStatus :bookable="bookable" />
+        <BookableEditStatus v-if="!flowMode" :bookable="bookable" />
 
         <BookableEditOverview
           v-if="!flowMode && !$vuetify.breakpoint.lgAndUp"
@@ -270,6 +346,7 @@ import {
   FLOW_MODE,
   editRouteOf,
   isFlowMode,
+  listRouteOf,
   withPublication,
 } from "@/utils/bookableFlow";
 import {
@@ -433,6 +510,16 @@ export default {
     },
     expertModeToggleVisible() {
       return isBookableExpertModeConfigured();
+    },
+    // The flow's bar follows the flow's step list (BookableFlow: from xl, not
+    // on the confirmation), so the name starts over the step column.
+    flowStepColumn() {
+      return !this.flowOutcome && this.$vuetify.breakpoint.xl;
+    },
+
+    /** The list a new bookable came from, by the page's type. */
+    listRoute() {
+      return listRouteOf(this.type);
     },
     visibleTabs() {
       const tabs = this.tabs.filter((tab) => this.isTabVisible(tab));
@@ -914,6 +1001,100 @@ export default {
   gap: var(--scb-space-2);
 }
 
+/* The guided flow's bar: one line across the page, closed by a rule, as wide
+   as the editor's row - the actions end at the right edge. From xl the back
+   cell is as wide as the step list, so the name starts over the step column;
+   below that the line is plain. */
+.flow-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--scb-gap-columns);
+  min-height: 40px;
+  margin-bottom: var(--scb-space-4);
+  padding-bottom: var(--scb-space-2);
+  border-bottom: 1px solid var(--scb-rule);
+}
+
+.flow-bar__back {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.flow-bar--steps .flow-bar__back {
+  min-width: var(--scb-nav-width-min);
+  max-width: var(--scb-nav-width-max);
+}
+
+/* Flush with the step list below; the page body clips what reaches past
+   its left edge, so no negative margin here. */
+.flow-bar__back-btn {
+  margin-left: 0;
+  color: var(--scb-text-muted);
+}
+
+.flow-bar__object {
+  display: flex;
+  align-items: baseline;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: var(--scb-space-4);
+}
+
+.flow-bar__name {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: var(--scb-font-weight-semibold);
+  line-height: var(--scb-line-height-tight);
+  color: var(--scb-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow-bar__id {
+  flex: 0 1 auto;
+  font-size: var(--scb-font-size-sm);
+}
+
+.flow-bar__type {
+  margin-right: var(--scb-space-2);
+  font-size: var(--scb-font-size-sm);
+  font-weight: normal;
+  color: var(--scb-text-muted);
+}
+
+.flow-bar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  gap: var(--scb-space-2);
+  margin-left: auto;
+}
+
+@media (max-width: 599px) {
+  .flow-bar {
+    flex-wrap: wrap;
+    gap: var(--scb-space-2) var(--scb-space-3);
+  }
+
+  .flow-bar__object {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    order: 3;
+    gap: var(--scb-space-1) var(--scb-space-3);
+  }
+
+  .flow-bar__name {
+    flex: 1 1 100%;
+    white-space: normal;
+  }
+}
+
 .bookable-id-text {
   min-width: 0;
   overflow: hidden;
@@ -950,23 +1131,24 @@ export default {
   margin-bottom: var(--scb-space-2);
 }
 
+/* The active tab is a tinted pill, with no bar at its left edge - as the
+   guided flow's step list. */
 .bookable-edit-nav__tab {
   display: flex;
   align-items: center;
   width: 100%;
   min-height: var(--scb-nav-item-height);
   margin: 0;
-  padding: var(--scb-space-2) var(--scb-space-3) var(--scb-space-2) 10px;
+  padding: var(--scb-space-2) var(--scb-space-3);
   border: 0;
-  border-left: 3px solid transparent;
-  border-radius: 0 var(--scb-radius-control) var(--scb-radius-control) 0;
+  border-radius: var(--scb-radius-control);
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
   transition: background-color var(--scb-motion-fast),
-    color var(--scb-motion-fast), border-color var(--scb-motion-fast);
+    color var(--scb-motion-fast);
 }
 
 .bookable-edit-nav__tab:hover {
@@ -975,7 +1157,6 @@ export default {
 
 .bookable-edit-nav__tab--active {
   color: var(--v-primary-base);
-  border-left-color: var(--v-primary-base);
   background-color: var(--scb-selected-tint);
   font-weight: var(--scb-font-weight-medium);
 }
@@ -1004,7 +1185,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  margin: 2px 0 0 22px;
+  margin: 2px 0 0 24px;
   padding: 2px 0 2px var(--scb-space-3);
   border-left: 1px solid var(--scb-surface-border);
 }
@@ -1085,9 +1266,11 @@ export default {
   color: var(--v-primary-base);
 }
 
+/* As wide as the guided flow's step column, at most. */
 .page-content__editor {
   flex: 1 1 auto;
   min-width: 0;
+  max-width: var(--scb-editor-width-max);
   padding-bottom: var(--scb-save-bar-clearance);
 }
 

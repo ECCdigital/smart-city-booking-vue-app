@@ -64,6 +64,16 @@ _Avoid_: berechtigt (that is Reichweite, a different question)
 How far an admin's read on bookings reaches at the current tenant: *any* (instance owner, tenant owner, `manageBookings.readAny`) or *own* (every other member). Decides only how a 404 is worded on a Buchungsseite, since the backend answers 404 alike for gone and out of reach.
 _Avoid_: Rolle
 
+### Bookables
+
+**Übersicht** (admin: „Übersicht“):
+The card beside a bookable's form that recaps what the bookable holds and jumps to where each value is set. In the editor it is cut by tab, in the guided flow by step; there a step not yet visited reads „Noch offen“ and a value left empty „–“. It shows values, never how the bookable will look.
+_Avoid_: Zusammenfassung, Vorschau (that is the storefront's job), Zwischenstand
+
+**Schrittliste**:
+The guided flow's progress on large screens: the six steps by title with their state (done, current, upcoming) in a column on the left, clickable like the dots it replaces. It answers „Wo bin ich?“; the Übersicht answers „Was habe ich eingegeben?“.
+_Avoid_: Stepper, Navigation (that is the editor's section nav), Punkte (those are the small-screen form)
+
 ### SSO
 
 **Adresse**:

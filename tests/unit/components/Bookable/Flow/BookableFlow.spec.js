@@ -51,8 +51,6 @@ async function walkToLastStep(wrapper) {
 describe("BookableFlow", () => {
   it("starts with the identity and holds the way on until there is a name", () => {
     const wrapper = mountFlow();
-
-    expect(find(wrapper, "flow-count").text()).toBe("Schritt 1 von 6");
     expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
     expect(find(wrapper, "flow-name-missing").exists()).toBe(true);
     expect(find(wrapper, "flow-next").attributes("disabled")).toBeDefined();
@@ -65,8 +63,6 @@ describe("BookableFlow", () => {
     const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
 
     await find(wrapper, "flow-next").trigger("click");
-
-    expect(find(wrapper, "flow-count").text()).toBe("Schritt 2 von 6");
     expect(find(wrapper, "flow-title-heading").text()).toBe("Verfügbarkeit");
     expect(find(wrapper, "flow-dot-identity").classes()).toContain(
       "bookable-flow__dot--done"
@@ -388,7 +384,6 @@ describe("BookableFlow on an extra wide screen", () => {
     expect(entryOf(wrapper, "identity").attributes("aria-current")).toBe(
       "step"
     );
-    expect(find(wrapper, "flow-count").text()).toBe("Schritt 1 von 6");
     expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
   });
 
@@ -398,8 +393,6 @@ describe("BookableFlow on an extra wide screen", () => {
     expect(entryOf(wrapper, "price").text()).toContain("offen");
 
     await entryOf(wrapper, "price").trigger("click");
-
-    expect(find(wrapper, "flow-count").text()).toBe("Schritt 3 von 6");
     expect(find(wrapper, "flow-title-heading").text()).toBe("Preis");
     expect(entryOf(wrapper, "price").attributes("aria-current")).toBe("step");
     expect(entryOf(wrapper, "identity").attributes("aria-current")).toBe(

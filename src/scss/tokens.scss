@@ -102,6 +102,9 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-panel-width-narrow: 320px; // ... below $scb-bp-md
   --scb-overview-width: 300px; // the bookable editor's overview
   --scb-overview-width-max: 320px;
+  // The main column of the bookable editor and of its guided flow.
+  --scb-editor-width-max: 880px;
+
   --scb-nav-width-min: 196px; // the bookable editor's section nav
   --scb-nav-width-max: 228px;
   --scb-save-bar-clearance: calc(
