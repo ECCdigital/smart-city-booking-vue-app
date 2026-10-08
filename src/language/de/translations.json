@@ -582,6 +582,23 @@
     },
     "select": {
       "forbidden": "Keine Auswahl möglich – Sie haben keinen Zugriff auf Buchungsobjekte."
+    },
+    "validation": {
+      "title": "Bitte einen Titel eingeben.",
+      "price": "Bitte einen Preis eingeben.",
+      "maxAmountPerBooking": "Bitte eine ganze Zahl ab 1 eingeben oder Unbegrenzt wählen.",
+      "discountPercent": "Bitte eine ganze Zahl von 0 bis 100 eingeben.",
+      "weekdays": "Mindestens ein Wochentag erforderlich",
+      "startTime": "Startzeit ist erforderlich",
+      "endTime": "Endzeit ist erforderlich",
+      "date": "Datum ist erforderlich",
+      "label": "Bezeichnung ist erforderlich",
+      "startWeekday": "Start-Wochentag ist erforderlich",
+      "endWeekday": "End-Wochentag ist erforderlich",
+      "blockPeriods": "Mindestens ein Zeitraum ist erforderlich.",
+      "blockPeriodDuration": "Die Buchungsdauer muss größer als null sein.",
+      "leadTimeMinutes": "Gültige Dauer erforderlich",
+      "bufferMinutes": "Gültige Dauer erforderlich (0 oder mehr Minuten)"
     }
   },
   "event": {
