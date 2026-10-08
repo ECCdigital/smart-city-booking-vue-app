@@ -79,6 +79,7 @@ export default {
   methods: {
     valueText(value) {
       if (value === null) return this.$t("bookable.flow.overview.empty");
+      if (Array.isArray(value)) return value.map(this.valueText).join(", ");
       if (value.text !== undefined) return value.text;
       return value.count === undefined
         ? this.$t(value.key, value.params)

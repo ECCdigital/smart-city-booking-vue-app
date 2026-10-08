@@ -346,12 +346,22 @@
         "open": "Noch offen",
         "empty": "–",
         "labels": {
+          "availability": "Buchungsart",
           "amount": "Anzahl",
+          "permission": "Zugang",
           "approval": "Buchungen"
         },
         "values": {
           "image-present": "vorhanden",
           "image-none": "keins",
+          "external": "extern gesteuert",
+          "tiers": "{count} Tarif | {count} Tarife",
+          "vat-rate": "{rate} %",
+          "vat-none": "ohne",
+          "yes": "ja",
+          "no": "nein",
+          "roles": "{count} Rolle | {count} Rollen",
+          "users": "{count} Person | {count} Personen",
           "approval-auto": "automatisch bestätigt",
           "approval-manual": "wird geprüft"
         }

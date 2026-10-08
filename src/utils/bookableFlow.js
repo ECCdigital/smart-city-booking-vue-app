@@ -20,7 +20,13 @@ import {
 } from "@/utils/bookableEditSections";
 import { isBookableExpertOnlyTab } from "@/utils/bookableExpertMode";
 import { getTypeText } from "@/utils/bookables";
-import { getLocationLabel, joinList, truncate } from "@/utils/bookableOverview";
+import {
+  PRICE_TYPE_SUFFIX,
+  formatCurrency,
+  getLocationLabel,
+  joinList,
+  truncate,
+} from "@/utils/bookableOverview";
 
 export const FLOW_STEPS = Object.freeze([
   "identity",
@@ -407,14 +413,102 @@ function identityRows(bookable, { eventTitlesById } = {}) {
   ];
 }
 
+const EXTERNAL = { key: `${OVERVIEW}.values.external` };
+
+/** The booking type in the step's words; the long range with its unit. */
+function bookingTypeValue(bookable) {
+  const words = "bookable.flow.availability";
+  const mode = bookingModeOf(bookable);
+  if (mode === "independent") return { key: `${words}.timed-no` };
+  if (mode === "week" || mode === "month") {
+    return [
+      { key: `${words}.modes.longRange` },
+      { key: `${words}.long-range-${mode}` },
+    ];
+  }
+  return { key: `${words}.modes.${mode}` };
+}
+
+function availabilityRows(bookable) {
+  return [
+    {
+      label: `${OVERVIEW}.labels.availability`,
+      value: handlesExternalAvailability(bookable)
+        ? EXTERNAL
+        : bookingTypeValue(bookable),
+    },
+  ];
+}
+
 /**
- * The rows of each visited block. Verfügbarkeit, Preis and Berechtigung show
- * their title only until ECCdigital/tickets#332 gives them rows.
+ * A simple price's amount with its unit, as the editor's overview formats
+ * it; tiers by their number.
  */
+function amountValue(bookable) {
+  const categories = bookable.priceCategories;
+  if (priceModeOf(bookable) === "tiers") {
+    return { key: `${OVERVIEW}.values.tiers`, count: categories.length };
+  }
+  const amount = formatCurrency(toNumber(categories[0].priceEur));
+  return asText(`${amount}${PRICE_TYPE_SUFFIX[bookable.priceType] || ""}`);
+}
+
+function vatValue(bookable) {
+  const rate = toNumber(bookable.priceValueAddedTax);
+  if (!(rate > 0)) return { key: `${OVERVIEW}.values.vat-none` };
+  const params = { rate: rate.toLocaleString("de-DE") };
+  return { key: `${OVERVIEW}.values.vat-rate`, params };
+}
+
+/**
+ * The price as the step labels its mode choice; with a price, the VAT rate
+ * and whether coupons apply, as the step sets them.
+ */
+function priceRows(bookable) {
+  const words = "bookable.flow.price";
+  const label = "bookable.flow.steps.price.title";
+  if (handlesExternalPricing(bookable)) return [{ label, value: EXTERNAL }];
+  if (priceModeOf(bookable) === "free") {
+    return [{ label, value: { key: `${words}.modes.free` } }];
+  }
+
+  const coupons = bookable.enableCoupons !== false ? "yes" : "no";
+  return [
+    { label, value: amountValue(bookable) },
+    { label: `${words}.vat`, value: vatValue(bookable) },
+    {
+      label: `${words}.coupons`,
+      value: { key: `${OVERVIEW}.values.${coupons}` },
+    },
+  ];
+}
+
+/**
+ * Who may book in the step's words. Selected access with nobody named yet
+ * reads as signed-in users, as the step explains it.
+ */
+function permissionRows(bookable) {
+  const access = accessOf(bookable);
+  const counted = [
+    { key: `${OVERVIEW}.values.roles`, count: bookable.permittedRoles?.length },
+    { key: `${OVERVIEW}.values.users`, count: bookable.permittedUsers?.length },
+  ].filter(({ count }) => count > 0);
+  return [
+    {
+      label: `${OVERVIEW}.labels.permission`,
+      value:
+        access === "selected"
+          ? counted
+          : { key: `bookable.flow.permission.access.${access}` },
+    },
+  ];
+}
+
+/** The rows of each visited block. */
 const OVERVIEW_ROWS = {
   identity: identityRows,
-  availability: () => [],
-  price: () => [],
+  availability: availabilityRows,
+  price: priceRows,
   amount: (bookable) => [
     {
       label: `${OVERVIEW}.labels.amount`,
@@ -423,7 +517,7 @@ const OVERVIEW_ROWS = {
         : asText(toNumber(bookable.amount)),
     },
   ],
-  permission: () => [],
+  permission: permissionRows,
   approval: (bookable) => [
     {
       label: `${OVERVIEW}.labels.approval`,
@@ -441,7 +535,8 @@ const OVERVIEW_ROWS = {
  * one block per step, in the flow's order. A step not visited yet is open
  * and has no rows. A visited one has rows of `{ label, value }`: the label
  * an i18n key, the value `{ text }` (ready), `{ key, params?, count? }`
- * (an i18n key, `count` for a plural) or `null` for „–“.
+ * (an i18n key, `count` for a plural), a list of these (read joined by
+ * commas) or `null` for „–“.
  */
 export function overviewBlocks(bookable, { visited = [], ...options } = {}) {
   return FLOW_STEPS.map((step) => {
