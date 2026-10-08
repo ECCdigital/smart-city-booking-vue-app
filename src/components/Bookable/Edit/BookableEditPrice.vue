@@ -111,12 +111,12 @@
 
         <v-card-text class="pa-4">
           <v-switch
-            v-model="externalProvider.active"
+            :input-value="externalProvider.active"
             dense
             hide-details
             color="primary"
             class="mt-0 mb-4"
-            @change="onExternalProviderChanged"
+            @change="setProviderActive"
           >
             <template #label>
               <div>
@@ -143,13 +143,13 @@
               <v-row>
                 <v-col cols="12" md="4">
                   <v-checkbox
-                    v-model="externalProvider.handles"
+                    :input-value="externalProvider.handles"
                     value="pricing"
                     dense
                     hide-details
                     color="primary"
                     class="mt-0"
-                    @change="onExternalProviderChanged"
+                    @change="setProviderHandles"
                   >
                     <template #label>
                       <div>
@@ -168,13 +168,13 @@
                 </v-col>
                 <v-col cols="12" md="4">
                   <v-checkbox
-                    v-model="externalProvider.handles"
+                    :input-value="externalProvider.handles"
                     value="availability"
                     dense
                     hide-details
                     color="primary"
                     class="mt-0"
-                    @change="onExternalProviderChanged"
+                    @change="setProviderHandles"
                   >
                     <template #label>
                       <div>
@@ -193,13 +193,13 @@
                 </v-col>
                 <v-col cols="12" md="4">
                   <v-checkbox
-                    v-model="externalProvider.handles"
+                    :input-value="externalProvider.handles"
                     value="maxAmount"
                     dense
                     hide-details
                     color="primary"
                     class="mt-0"
-                    @change="onExternalProviderChanged"
+                    @change="setProviderHandles"
                   >
                     <template #label>
                       <div>
@@ -360,7 +360,8 @@
                 <v-switch
                   dense
                   hide-details
-                  v-model="model.enableCoupons"
+                  :input-value="bookable.enableCoupons"
+                  @change="patch({ enableCoupons: !!$event })"
                   color="primary"
                 >
                   <template v-slot:label>
@@ -387,9 +388,11 @@
                 filled
                 dense
                 label="Verfügbare Anzahl"
-                :hint="!model.amount ? 'Anzahl ist unbegrenzt!' : ''"
-                :persistent-hint="!model.amount"
-                v-model="model.amount"
+                :hint="!bookable.amount ? 'Anzahl ist unbegrenzt!' : ''"
+                :persistent-hint="!bookable.amount"
+                data-test="price-amount"
+                :value="bookable.amount"
+                @input="patch({ amount: $event })"
                 :disabled="handlesMaxAmount"
                 :suffix="amountSuffix"
               />
@@ -413,10 +416,10 @@
                     : ''
                 "
                 :persistent-hint="maxAmountPerBookingUnlimited"
-                v-model.number="model.maxAmountPerBooking"
+                :value="bookable.maxAmountPerBooking"
                 :rules="maxAmountPerBookingRules"
                 :suffix="amountSuffix"
-                @input="checkNull('maxAmountPerBooking')"
+                @input="setMaxAmountPerBooking"
               />
             </v-col>
 
@@ -428,7 +431,8 @@
                 label="Preisart"
                 hide-details
                 :disabled="handlesPricing"
-                v-model="model.priceType"
+                :value="bookable.priceType"
+                @change="patch({ priceType: $event })"
                 :items="priceTypes"
                 item-text="name"
                 item-value="id"
@@ -443,7 +447,8 @@
                 label="MwSt."
                 hide-details
                 :disabled="handlesPricing"
-                v-model="model.priceValueAddedTax"
+                :value="bookable.priceValueAddedTax"
+                @input="patch({ priceValueAddedTax: $event })"
                 suffix="%"
               />
             </v-col>
@@ -475,7 +480,9 @@
             <v-row>
               <v-col cols="12">
                 <v-switch
-                  v-model="useGraduatedPrices"
+                  data-test="price-graduated-switch"
+                  :input-value="useGraduatedPrices"
+                  @change="setGraduatedPrices"
                   dense
                   hide-details
                   color="primary"
@@ -495,9 +502,9 @@
                           class="ml-2"
                           label
                         >
-                          {{ model.priceCategories.length }}
+                          {{ priceCategories.length }}
                           {{
-                            model.priceCategories.length === 1
+                            priceCategories.length === 1
                               ? "Kategorie"
                               : "Kategorien"
                           }}
@@ -526,7 +533,7 @@
             {{ $t("bookable.edit.expertMode.graduatedPricesActive") }}
           </v-alert>
 
-          <div v-if="!useGraduatedPrices && model.priceCategories[0]">
+          <div v-if="!useGraduatedPrices && priceCategories[0]">
             <v-row align="center">
               <v-col cols="12" md="6">
                 <v-text-field
@@ -535,7 +542,9 @@
                   dense
                   label="Preis (netto)"
                   hide-details
-                  v-model="model.priceCategories[0].priceEur"
+                  data-test="price-simple"
+                  :value="priceCategories[0].priceEur"
+                  @input="updateCategory(0, { priceEur: $event })"
                   prefix="€"
                   type="number"
                   step="0.01"
@@ -544,7 +553,8 @@
 
               <v-col cols="12" md="6">
                 <v-switch
-                  v-model="model.priceCategories[0].fixedPrice"
+                  :input-value="priceCategories[0].fixedPrice"
+                  @change="updateCategory(0, { fixedPrice: !!$event })"
                   dense
                   hide-details
                   color="primary"
@@ -569,7 +579,12 @@
                   <v-icon small class="mr-2"> mdi-format-list-numbered </v-icon>
                   Preis-Kategorien
                 </v-subheader>
-                <v-btn small color="primary" @click="addPriceCategory">
+                <v-btn
+                  small
+                  color="primary"
+                  data-test="price-category-add"
+                  @click="addPriceCategory"
+                >
                   <v-icon left small>mdi-plus</v-icon>
                   Kategorie hinzufügen
                 </v-btn>
@@ -596,9 +611,7 @@
 
               <div v-if="hasPriceCategories">
                 <v-list two-line class="py-0">
-                  <template
-                    v-for="(priceCategory, idx) in model.priceCategories"
-                  >
+                  <template v-for="(priceCategory, idx) in priceCategories">
                     <v-list-item
                       :key="`price-${idx}`"
                       class="price-category-item elevation-1 mb-3 rounded"
@@ -674,7 +687,7 @@
                             small
                             @click.stop="removePriceCategory(idx)"
                             color="error"
-                            :disabled="model.priceCategories.length <= 1"
+                            :disabled="priceCategories.length <= 1"
                           >
                             <v-icon small>mdi-delete-outline</v-icon>
                           </v-btn>
@@ -706,7 +719,8 @@
                               dense
                               label="Preis (netto) *"
                               hide-details="auto"
-                              v-model="priceCategory.priceEur"
+                              :value="priceCategory.priceEur"
+                              @input="updateCategory(idx, { priceEur: $event })"
                               prefix="€"
                               type="number"
                               step="0.01"
@@ -718,7 +732,10 @@
 
                           <v-col cols="12" md="8">
                             <v-switch
-                              v-model="priceCategory.fixedPrice"
+                              :input-value="priceCategory.fixedPrice"
+                              @change="
+                                updateCategory(idx, { fixedPrice: !!$event })
+                              "
                               dense
                               hide-details
                               color="primary"
@@ -747,7 +764,16 @@
                         <v-row>
                           <v-col cols="12" md="6">
                             <v-text-field
-                              v-model="priceCategory.interval.start"
+                              data-test="price-category-start"
+                              :value="priceCategory.interval.start"
+                              @input="
+                                updateCategory(idx, {
+                                  interval: {
+                                    ...priceCategory.interval,
+                                    start: $event,
+                                  },
+                                })
+                              "
                               background-color="accent"
                               filled
                               dense
@@ -760,7 +786,16 @@
                           </v-col>
                           <v-col cols="12" md="6">
                             <v-text-field
-                              v-model="priceCategory.interval.end"
+                              data-test="price-category-end"
+                              :value="priceCategory.interval.end"
+                              @input="
+                                updateCategory(idx, {
+                                  interval: {
+                                    ...priceCategory.interval,
+                                    end: $event,
+                                  },
+                                })
+                              "
                               background-color="accent"
                               filled
                               dense
@@ -789,7 +824,10 @@
                               dense
                               label="Wochentage"
                               hide-details
-                              v-model="priceCategory.weekdays"
+                              :value="priceCategory.weekdays"
+                              @change="
+                                updateCategory(idx, { weekdays: $event })
+                              "
                               multiple
                               chips
                               small-chips
@@ -834,7 +872,10 @@
                               :items="availableHolidays"
                               item-text="name"
                               item-value="date"
-                              v-model="priceCategory.holidays"
+                              :value="priceCategory.holidays"
+                              @change="
+                                updateCategory(idx, { holidays: $event })
+                              "
                             >
                               <template v-slot:prepend-item>
                                 <v-list-item ripple>
@@ -881,7 +922,7 @@
                     </v-expand-transition>
 
                     <v-divider
-                      v-if="idx < model.priceCategories.length - 1"
+                      v-if="idx < priceCategories.length - 1"
                       :key="`divider-${idx}`"
                       class="my-2"
                     />
@@ -915,9 +956,10 @@
 
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
-import debounce from "lodash/debounce";
+import _ from "lodash";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
+import bookableEditing from "@/mixins/bookableEditing";
 import bookableExpertMode from "@/mixins/bookableExpertMode";
 import externalPrices from "@/mixins/externalPrices";
 import {
@@ -936,21 +978,43 @@ const DEFAULT_EXTERNAL_PROVIDER = {
   },
 };
 
+/**
+ * Graduated prices, as the categories show them: more than one, or one with
+ * a range, weekdays or holidays.
+ */
+function graduatedCategories(categories) {
+  const cats = categories || [];
+  return (
+    cats.length > 1 ||
+    cats.some(
+      (c) =>
+        c.interval?.start !== null ||
+        c.interval?.end !== null ||
+        (c.weekdays && c.weekdays.length > 0) ||
+        (c.holidays && c.holidays.length > 0)
+    )
+  );
+}
+
 export default {
   name: "BookableEditPrice",
   components: { BaseSection },
-  mixins: [bookableExpertMode, externalPrices],
+  mixins: [bookableEditing, bookableExpertMode, externalPrices],
   props: {
-    bookable: { type: Object, required: true },
     // Inside the guided flow, which asks for free, simple or tiered prices,
     // the unit and the VAT itself: only the graduated price editor.
     tiersOnly: { type: Boolean, default: false },
   },
   data() {
     return {
-      useGraduatedPrices: false,
+      // „Staffelpreise“ switched on before the categories show it - a fresh
+      // tier list still looks like a single price. Lost on unmount, as it
+      // may be: the switch then reads the categories again.
+      graduatedChoice: null,
       valid: false,
-      expandedCategories: [],
+      expandedCategories: graduatedCategories(this.bookable.priceCategories)
+        ? [0]
+        : [],
       accessPoints: [],
       priceError: null,
       priceTypes: [
@@ -990,20 +1054,18 @@ export default {
         { text: "Thüringen", value: "TH" },
       ],
       dismissIfbsRecommendation: false,
-      // Detached fallback for read/v-model before the provider is persisted.
-      _ifbsProviderFallback: JSON.parse(
-        JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)
-      ),
     };
   },
   computed: {
-    model: {
-      get() {
-        return this.bookable;
-      },
-      set(val) {
-        this._emitDebounced(val);
-      },
+    priceCategories() {
+      return this.bookable.priceCategories || [];
+    },
+    useGraduatedPrices() {
+      return (
+        this.tiersOnly ||
+        graduatedCategories(this.priceCategories) ||
+        this.graduatedChoice === true
+      );
     },
     /**
      * The locker system of the provider this bookable hands out - an access
@@ -1024,7 +1086,7 @@ export default {
       return this.ifbsAccessPoint !== null;
     },
     externalProvider() {
-      return this.findIfbsProvider() || this._ifbsProviderFallback;
+      return this.findIfbsProvider() || DEFAULT_EXTERNAL_PROVIDER;
     },
     handlesPricing() {
       return providerHandles(this.externalProvider, "pricing");
@@ -1036,10 +1098,10 @@ export default {
       return providerHandles(this.externalProvider, "maxAmount");
     },
     amountSuffix() {
-      return amountUnit(this.model);
+      return amountUnit(this.bookable);
     },
     maxAmountPerBookingUnlimited() {
-      return this.model.maxAmountPerBooking == null;
+      return this.bookable.maxAmountPerBooking == null;
     },
     // Empty is unlimited and saved as null; the backend refuses anything
     // but a whole number from 1.
@@ -1064,12 +1126,10 @@ export default {
         "per-day": "Tage",
         "per-square-meter": "m²",
       };
-      return map[this.model.priceType] || "Stück";
+      return map[this.bookable.priceType] || "Stück";
     },
     hasPriceCategories() {
-      return (
-        this.model.priceCategories && this.model.priceCategories.length > 0
-      );
+      return this.priceCategories.length > 0;
     },
     ifbsRecommendations() {
       const handles = this.externalProvider.active
@@ -1120,18 +1180,10 @@ export default {
       return criticalMissing;
     },
   },
-  created() {
-    this._emitDebounced = debounce((val) => {
-      this.$emit("update:bookable", { ...val });
-    }, 200);
-  },
   watch: {
     "bookable.id": {
       immediate: true,
       handler() {
-        this._ifbsProviderFallback = JSON.parse(
-          JSON.stringify(DEFAULT_EXTERNAL_PROVIDER)
-        );
         this.fetchHolidays();
         this.fetchAccessPoints();
       },
@@ -1153,47 +1205,11 @@ export default {
     externalPricesUnavailableReason() {
       this.fetchExternalPrices();
     },
-    bookable: {
-      immediate: true,
-      handler(val) {
-        if (!val?.priceCategories) return;
-        const cats = val.priceCategories;
-        this.useGraduatedPrices =
-          this.tiersOnly ||
-          cats.length > 1 ||
-          cats.some(
-            (c) =>
-              c.interval?.start !== null ||
-              c.interval?.end !== null ||
-              (c.weekdays && c.weekdays.length > 0) ||
-              (c.holidays && c.holidays.length > 0)
-          );
-      },
-    },
-    useGraduatedPrices(enabled) {
-      if (!enabled) {
-        const first = this.model.priceCategories[0] || {};
-        this.$set(this.model, "priceCategories", [
-          {
-            priceEur: first.priceEur || 0,
-            interval: { start: null, end: null },
-            fixedPrice: first.fixedPrice || false,
-            holidays: [],
-            weekdays: [],
-          },
-        ]);
-        this._emitDebounced({ ...this.model });
-      } else {
-        if (this.hasPriceCategories) {
-          this.expandedCategories = [0];
-        }
-      }
-    },
   },
   methods: {
     findIfbsProvider() {
       return (
-        this.model.externalProviders?.find(
+        this.bookable.externalProviders?.find(
           (p) => p.provider === IFBS_PROVIDER
         ) || null
       );
@@ -1220,71 +1236,48 @@ export default {
         this.accessPoints = [];
       }
     },
-    ensureExternalProviderExists() {
-      const existing = this.findIfbsProvider();
-      if (existing) {
-        return existing;
-      }
-
-      if (!this.model.externalProviders) {
-        this.$set(this.model, "externalProviders", []);
-      }
-
-      // Persist current fallback state (may already include UI edits via v-model).
-      const provider = JSON.parse(JSON.stringify(this._ifbsProviderFallback));
-      this.model.externalProviders.push(provider);
-      this.syncExternalProviderConfig();
-      this._emitDebounced({ ...this.model });
-      return provider;
-    },
-    // What the provider prices against: the location behind the assigned
-    // locker system, and the bookable's own capacity.
-    syncExternalProviderConfig() {
+    /**
+     * Hands on the provider with `changes` as the rebuilt list of providers,
+     * pointed at what it prices against: the location behind the assigned
+     * locker system, and the bookable's own capacity.
+     */
+    saveProvider(changes) {
+      const current = this.findIfbsProvider();
+      const next = {
+        ..._.cloneDeep(current || DEFAULT_EXTERNAL_PROVIDER),
+        ...changes,
+      };
       const accessPoint = this.ifbsAccessPoint;
-      const provider = this.findIfbsProvider();
-      if (!accessPoint || !provider) return;
-
-      const locationId = accessPoint.externalId;
-      const amount = Number(this.model.amount) || 1;
-
-      if (
-        provider.config?.locationId === locationId &&
-        provider.config?.amount === amount
-      ) {
-        return;
+      if (accessPoint) {
+        next.config = {
+          locationId: accessPoint.externalId,
+          amount: Number(this.bookable.amount) || 1,
+        };
       }
-
-      this.$set(provider, "config", { locationId, amount });
-      this._emitDebounced({ ...this.model });
+      const providers = [...(this.bookable.externalProviders || [])];
+      const index = providers.indexOf(current);
+      providers.splice(index < 0 ? providers.length : index, 1, next);
+      this.patch({ externalProviders: providers });
     },
-    onExternalProviderChanged() {
-      this.ensureExternalProviderExists();
-      this.syncExternalProviderConfig();
-      this._emitDebounced({ ...this.model });
+    setProviderActive(active) {
+      this.saveProvider({ active: !!active });
+    },
+    setProviderHandles(handles) {
+      this.saveProvider({ handles: handles || [] });
     },
     activateRecommendedIfbs() {
-      const provider = this.ensureExternalProviderExists();
-
-      provider.active = true;
-      this.$set(provider, "handles", ["availability", "maxAmount", "pricing"]);
-      this.syncExternalProviderConfig();
-
-      this._emitDebounced({ ...this.model });
-      this.fetchExternalPrices();
-    },
-
-    activateMissingHandles() {
-      const provider = this.ensureExternalProviderExists();
-      const current = provider.handles || [];
-
-      this.missingRecommendedHandles.forEach((handle) => {
-        if (!current.includes(handle)) {
-          current.push(handle);
-        }
+      this.saveProvider({
+        active: true,
+        handles: ["availability", "maxAmount", "pricing"],
       });
-
-      this.$set(provider, "handles", [...current]);
-      this._emitDebounced({ ...this.model });
+    },
+    activateMissingHandles() {
+      this.saveProvider({
+        handles: _.union(
+          this.externalProvider.handles || [],
+          this.missingRecommendedHandles
+        ),
+      });
     },
     async validate() {
       return this.$refs.form ? this.$refs.form.validate() : true;
@@ -1292,19 +1285,47 @@ export default {
     resetValidation() {
       this.$refs.form?.resetValidation();
     },
-    checkNull(path) {
-      const keys = path.split(".");
-      let obj = this.model;
-      for (let i = 0; i < keys.length - 1; i++) {
-        obj = obj[keys[i]];
+    /** Empty is unlimited and saved as null; a number stays a number. */
+    setMaxAmountPerBooking(value) {
+      if (value === "" || value == null) {
+        this.patch({ maxAmountPerBooking: null });
+        return;
       }
-      const lastKey = keys[keys.length - 1];
-      if (obj[lastKey] === "") {
-        obj[lastKey] = null;
+      const number = parseFloat(value);
+      this.patch({
+        maxAmountPerBooking: Number.isNaN(number) ? value : number,
+      });
+    },
+    updateCategory(index, changes) {
+      this.patch({
+        priceCategories: this.priceCategories.map((category, i) =>
+          i === index ? { ...category, ...changes } : category
+        ),
+      });
+    },
+    setGraduatedPrices(enabled) {
+      this.graduatedChoice = !!enabled;
+      if (enabled) {
+        if (this.hasPriceCategories) this.expandedCategories = [0];
+        return;
       }
+      const first = this.priceCategories[0] || {};
+      this.patch({
+        priceCategories: [
+          {
+            priceEur: first.priceEur || 0,
+            interval: { start: null, end: null },
+            fixedPrice: first.fixedPrice || false,
+            holidays: [],
+            weekdays: [],
+          },
+        ],
+      });
     },
     removePriceCategory(index) {
-      this.model.priceCategories.splice(index, 1);
+      this.patch({
+        priceCategories: this.priceCategories.filter((_, i) => i !== index),
+      });
       const expandIdx = this.expandedCategories.indexOf(index);
       if (expandIdx > -1) {
         this.expandedCategories.splice(expandIdx, 1);
@@ -1348,19 +1369,23 @@ export default {
       }
     },
     addPriceCategory() {
-      const last =
-        this.model.priceCategories[this.model.priceCategories.length - 1];
-      this.model.priceCategories.push({
-        priceEur: 0,
-        interval: {
-          start: last ? last.interval.end : null,
-          end: null,
-        },
-        fixedPrice: false,
-        holidays: [],
-        weekdays: [],
+      const last = this.priceCategories[this.priceCategories.length - 1];
+      this.patch({
+        priceCategories: [
+          ...this.priceCategories,
+          {
+            priceEur: 0,
+            interval: {
+              start: last ? last.interval.end : null,
+              end: null,
+            },
+            fixedPrice: false,
+            holidays: [],
+            weekdays: [],
+          },
+        ],
       });
-      this.expandedCategories.push(this.model.priceCategories.length - 1);
+      this.expandedCategories.push(this.priceCategories.length);
     },
     toggleExpand(index) {
       const idx = this.expandedCategories.indexOf(index);
@@ -1393,11 +1418,6 @@ export default {
     formatPrice(price) {
       return parseFloat(price || 0).toFixed(2);
     },
-  },
-  beforeCreate() {
-    this._emitDebounced = debounce((val) => {
-      this.$emit("update:bookable", { ...val });
-    }, 200);
   },
 };
 </script>

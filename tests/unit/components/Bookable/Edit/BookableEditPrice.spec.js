@@ -3,7 +3,7 @@ import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue"
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import ApiHolidaysService from "@/services/api/ApiHolidaysService";
-import { mountComponent } from "@tests/unit/support/mount";
+import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
 import { flushPromises, forbiddenError } from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiAccessPointService", () => ({
@@ -92,9 +92,14 @@ async function mountPrice({
     ApiBookablesService.getBookablePrices.mockResolvedValue({ data: prices });
   }
 
-  const wrapper = mountComponent(BookableEditPrice, {
-    propsData: { bookable: bookable(overrides) },
+  // Hosted as BookableEdit hosts it: every patch lands in the next prop.
+  const mounted = mountEditing(BookableEditPrice, {
+    bookable: bookable(overrides),
   });
+  const { wrapper } = mounted;
+  wrapper.patches = mounted.patches;
+  wrapper.handedIn = mounted.bookable;
+  wrapper.stored = mounted.stored;
   await flushPromises();
   await wrapper.vm.$nextTick();
   return wrapper;
@@ -315,5 +320,148 @@ describe("BookableEditPrice - Höchstmenge je Buchung", () => {
 
     const perSquareMeter = await mountPrice({ priceType: "per-square-meter" });
     expect(field(perSquareMeter).text()).toContain("m²");
+  });
+});
+
+/**
+ * Every change goes out at once as a patch of the top-level fields it
+ * changed; the bookable prop itself stays as it was handed in.
+ */
+describe("BookableEditPrice - changes as partial patches", () => {
+  beforeEach(() => {
+    ApiHolidaysService.getHolidays.mockResolvedValue({ data: [] });
+  });
+
+  const tiers = [
+    {
+      priceEur: 10,
+      interval: { start: null, end: 2 },
+      fixedPrice: false,
+      holidays: [],
+      weekdays: [],
+    },
+    {
+      priceEur: 8,
+      interval: { start: 2, end: null },
+      fixedPrice: false,
+      holidays: [],
+      weekdays: [],
+    },
+  ];
+
+  const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
+
+  it("changes nothing when it mounts, with tiers or without", async () => {
+    for (const priceCategories of [undefined, tiers]) {
+      const wrapper = await mountPrice(
+        priceCategories ? { priceCategories } : {}
+      );
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      expect(wrapper.patches).toEqual([]);
+      expect(wrapper.handedIn).toEqual(wrapper.stored);
+    }
+  });
+
+  it("hands on the amount at once", async () => {
+    const wrapper = await mountPrice({ externalProviders: [] });
+
+    await find(wrapper, "price-amount").find("input").setValue("7");
+
+    expect(lastPatch(wrapper.patches)).toEqual({ amount: "7" });
+    expect(wrapper.handedIn).toEqual(wrapper.stored);
+  });
+
+  it("hands on a simple price as the rebuilt categories", async () => {
+    const wrapper = await mountPrice({ externalProviders: [] });
+
+    await find(wrapper, "price-simple").find("input").setValue("12");
+
+    expect(lastPatch(wrapper.patches)).toEqual({
+      priceCategories: [
+        {
+          priceEur: "12",
+          interval: { start: null, end: null },
+          fixedPrice: false,
+          holidays: [],
+          weekdays: [],
+        },
+      ],
+    });
+    expect(wrapper.handedIn).toEqual(wrapper.stored);
+  });
+
+  it("hands on a changed tier as the rebuilt categories", async () => {
+    const wrapper = await mountPrice({
+      externalProviders: [],
+      priceCategories: tiers,
+    });
+
+    await find(wrapper, "price-category-start").find("input").setValue("1");
+
+    expect(lastPatch(wrapper.patches)).toEqual({
+      priceCategories: [
+        { ...tiers[0], interval: { start: "1", end: 2 } },
+        tiers[1],
+      ],
+    });
+    expect(wrapper.handedIn).toEqual(wrapper.stored);
+  });
+
+  it("adds a tier after the last one", async () => {
+    const wrapper = await mountPrice({
+      externalProviders: [],
+      priceCategories: tiers,
+    });
+
+    await find(wrapper, "price-category-add").trigger("click");
+
+    expect(lastPatch(wrapper.patches).priceCategories).toEqual([
+      ...tiers,
+      {
+        priceEur: 0,
+        interval: { start: null, end: null },
+        fixedPrice: false,
+        holidays: [],
+        weekdays: [],
+      },
+    ]);
+    expect(wrapper.handedIn).toEqual(wrapper.stored);
+  });
+
+  it("folds the tiers into the first price when they are switched off", async () => {
+    const wrapper = await mountPrice({
+      externalProviders: [],
+      priceCategories: tiers,
+    });
+
+    await find(wrapper, "price-graduated-switch")
+      .find("input")
+      .trigger("click");
+
+    expect(lastPatch(wrapper.patches)).toEqual({
+      priceCategories: [
+        {
+          priceEur: 10,
+          interval: { start: null, end: null },
+          fixedPrice: false,
+          holidays: [],
+          weekdays: [],
+        },
+      ],
+    });
+    expect(find(wrapper, "price-simple").exists()).toBe(true);
+  });
+
+  it("keeps the tiers switched on before a second tier is there", async () => {
+    const wrapper = await mountPrice({ externalProviders: [] });
+
+    await find(wrapper, "price-graduated-switch")
+      .find("input")
+      .trigger("click");
+    await find(wrapper, "price-amount").find("input").setValue("7");
+
+    expect(find(wrapper, "price-category-add").exists()).toBe(true);
+    expect(wrapper.patches).toEqual([{ amount: "7" }]);
   });
 });
