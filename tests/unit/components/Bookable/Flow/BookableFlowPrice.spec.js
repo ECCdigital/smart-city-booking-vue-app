@@ -332,20 +332,33 @@ describe("BookableFlowPrice - Rabattcodes", () => {
 });
 
 describe("BookableFlowPrice - prices of ParkraumService", () => {
+  const external = {
+    priceType: "per-hour",
+    priceCategories: [category(10)],
+    externalProviders: [
+      { provider: "ifbs", active: true, handles: ["pricing"] },
+    ],
+  };
+
   it("shows only the note while the provider handles the prices", () => {
-    const { wrapper } = mountPrice({
-      priceType: "per-hour",
-      priceCategories: [category(10)],
-      externalProviders: [
-        { provider: "ifbs", active: true, handles: ["pricing"] },
-      ],
-    });
+    const { wrapper } = mountPrice(external);
 
     expect(find(wrapper, "flow-price-external").text()).toContain(
-      "Schließsysteme"
+      "Preise kommen von einem externen Anbieter"
     );
     expect(find(wrapper, "flow-price-mode").exists()).toBe(false);
     expect(find(wrapper, "flow-price-amount").exists()).toBe(false);
     expect(wrapper.text()).not.toContain("Empfohlene Einstellungen");
+  });
+
+  it("jumps from the note to the provider's setting in Schließsysteme", async () => {
+    const { wrapper, patches } = mountPrice(external);
+
+    await find(wrapper, "flow-price-external-link").trigger("click");
+
+    expect(wrapper.emitted("open-section")).toEqual([
+      [{ tabKey: "accessLocks", sectionId: "pricing-external" }],
+    ]);
+    expect(patches).toEqual([]);
   });
 });

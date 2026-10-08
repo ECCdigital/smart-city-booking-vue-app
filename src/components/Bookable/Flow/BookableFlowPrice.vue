@@ -8,7 +8,18 @@
       <div class="bookable-price__note-title">
         {{ $t("bookable.flow.price.external-title") }}
       </div>
-      {{ $t("bookable.flow.price.external-text") }}
+      <p class="mb-2">
+        {{ $t("bookable.flow.price.external-text") }}
+      </p>
+      <button
+        type="button"
+        class="bookable-price__link"
+        data-test="flow-price-external-link"
+        @click="$emit('open-section', { ...externalSetting })"
+      >
+        {{ $t("bookable.flow.availability.external-link") }}
+        <v-icon small color="primary">mdi-arrow-right</v-icon>
+      </button>
     </div>
 
     <template v-else>
@@ -232,6 +243,7 @@ import {
   priceExplanation,
   priceModeOf,
 } from "@/utils/bookableFlow";
+import { EXTERNAL_PROVIDER_SETTING } from "@/utils/bookableEditSections";
 
 const euro = (value) =>
   Number(value || 0).toLocaleString("de-DE", {
@@ -252,8 +264,9 @@ const toNumber = (value) =>
  * The form is read from the categories by `priceModeOf`; a chosen one is
  * kept only while they cannot show it yet (a simple price at 0 € looks
  * free, a fresh tier list simple), and losing that choice costs nothing.
- * Where ParkraumService handles the prices only its note shows; its
- * settings are the Schließsysteme's.
+ * Where ParkraumService handles the prices only its note shows, with a jump
+ * to its settings in Schließsysteme (`open-section`, which every frame
+ * forwards).
  */
 export default {
   name: "BookableFlowPrice",
@@ -266,6 +279,7 @@ export default {
       // While the rate is typed, an emptied field is not yet „aus“.
       vatTyping: false,
       vatRates: VAT_RATES,
+      externalSetting: EXTERNAL_PROVIDER_SETTING,
     };
   },
   computed: {
@@ -407,6 +421,24 @@ export default {
 .bookable-price__note-title {
   margin-bottom: 2px;
   font-weight: var(--scb-font-weight-semibold);
+}
+
+.bookable-price__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--scb-space-1);
+  padding: 0;
+  font: inherit;
+  font-weight: var(--scb-font-weight-semibold);
+  color: var(--scb-text-link);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.bookable-price__link:hover,
+.bookable-price__link:focus-visible {
+  text-decoration: underline;
 }
 
 .bookable-price__switch {

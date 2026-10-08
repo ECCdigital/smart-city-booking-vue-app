@@ -221,6 +221,26 @@ describe("BookableEdit - the price in both modes", () => {
     );
   });
 
+  it("jumps from the note of external prices to Schließsysteme", async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "pricing" },
+      stored({
+        externalProviders: [
+          { provider: "ifbs", active: true, handles: ["pricing"] },
+        ],
+      })
+    );
+
+    await find(wrapper, "flow-price-external-link").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query).toMatchObject({
+      tab: "accessLocks",
+      section: "pricing-external",
+    });
+  });
+
   it("asks the same questions in the step „Preis“", async () => {
     const wrapper = await mountEdit(
       { id: "b1", tab: "pricing", mode: "flow" },

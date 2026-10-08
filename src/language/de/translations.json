@@ -268,7 +268,7 @@
       },
       "price": {
         "external-title": "Preise kommen von einem externen Anbieter",
-        "external-text": "Die Preise führt ParkraumService. Schalten Sie die externen Preise unter „Schließsysteme“ aus, um sie hier selbst zu pflegen.",
+        "external-text": "ParkraumService führt die Preise dieses Buchungsobjekts. Um sie hier selbst zu pflegen, schalten Sie die externen Preise in der Einstellung aus.",
         "modes": {
           "free": "Kostenfrei",
           "simple": "Einfacher Preis",
