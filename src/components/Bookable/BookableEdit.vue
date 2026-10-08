@@ -366,6 +366,7 @@ import {
 import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import { bookableIssues, firstIssue } from "@/utils/bookableValidation";
+import { areaAt, areaShown } from "@/utils/bookableAreas";
 
 // What the unsaved-changes snapshot leaves out. The review (glossary
 // "Prüfstatus") is the backend's alone and changes through its own actions,
@@ -686,8 +687,22 @@ export default {
       await this.$nextTick();
       this.$refs.flow.openStep("more", key);
     },
+    /**
+     * A place of the editing page, `{ tabKey, sectionId }`. In the guided
+     * flow a place inside a shown area stays in the flow, at that area of
+     * „Weitere Einstellungen“ - the settings of ParkraumService that the
+     * notes of external availability and prices jump to lie in
+     * Schließsysteme. Any other place leaves the flow for its tab.
+     */
     async openSection({ tabKey, sectionId }) {
-      if (this.flowMode) await this.leaveFlow();
+      if (this.flowMode) {
+        const area = areaAt({ tabKey, sectionId });
+        if (area && areaShown(area, this.expertOptionShown)) {
+          this.$refs.flow.openStep("more", area);
+          return;
+        }
+        await this.leaveFlow();
+      }
       this.$nextTick(() => this.goToTab(tabKey, sectionId || undefined));
     },
     /** „Zur Übersicht“: this bookable in the editor of its type. */

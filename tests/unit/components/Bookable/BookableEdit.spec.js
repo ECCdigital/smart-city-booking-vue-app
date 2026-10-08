@@ -242,6 +242,30 @@ describe("BookableEdit - the price in both modes", () => {
     });
   });
 
+  it("jumps from the note in the step „Preis“ to Schließsysteme in „Weitere Einstellungen“", async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const wrapper = await mountEdit(
+      { id: "b1", mode: "flow" },
+      stored({
+        externalProviders: [
+          { provider: "ifbs", active: true, handles: ["pricing"] },
+        ],
+      })
+    );
+
+    await find(wrapper, "flow-dot-price").trigger("click");
+    await find(wrapper, "flow-price-external-link").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query.mode).toBe("flow");
+    expect(find(wrapper, "flow-title-heading").text()).toBe(
+      "Weitere Einstellungen"
+    );
+    expect(
+      find(wrapper, "more-area-accessLocks-toggle").attributes("aria-expanded")
+    ).toBe("true");
+  });
+
   it("asks the same questions in the step „Preis“", async () => {
     const wrapper = await mountEdit(
       { id: "b1", tab: "pricing", mode: "flow" },
@@ -359,18 +383,20 @@ describe("BookableEdit - the Buchungsart", () => {
     });
   });
 
-  it("jumps there from the guided flow too, onto the editing page", async () => {
+  it("jumps there from the guided flow too, to Schließsysteme in „Weitere Einstellungen“", async () => {
     const wrapper = await mountEdit({ id: "b1", mode: "flow" }, external());
 
     await find(wrapper, "flow-dot-availability").trigger("click");
     await find(wrapper, "booking-mode-external-link").trigger("click");
     await flushPromises();
 
-    expect(wrapper.vm.$route.query.mode).toBeUndefined();
-    expect(wrapper.vm.$route.query).toMatchObject({
-      tab: "accessLocks",
-      section: "pricing-external",
-    });
+    expect(wrapper.vm.$route.query.mode).toBe("flow");
+    expect(find(wrapper, "flow-title-heading").text()).toBe(
+      "Weitere Einstellungen"
+    );
+    expect(
+      find(wrapper, "more-area-accessLocks-toggle").attributes("aria-expanded")
+    ).toBe("true");
   });
 });
 
@@ -508,6 +534,28 @@ describe("BookableEdit - expert options without expert mode", () => {
 
     expect(wrapper.find("#be-section-related-hierarchy").exists()).toBe(false);
     expect(wrapper.find("#be-section-general-catalog").exists()).toBe(true);
+  });
+
+  it("leaves the guided flow for a setting whose area is left out", async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const wrapper = await mountEdit(
+      { id: "b1", mode: "flow" },
+      stored({
+        isScheduleRelated: true,
+        externalProviders: [
+          { provider: "ifbs", active: true, handles: ["availability"] },
+        ],
+      })
+    );
+
+    await find(wrapper, "flow-dot-availability").trigger("click");
+    await find(wrapper, "booking-mode-external-link").trigger("click");
+    await flushPromises();
+
+    // Without expert mode an unused Schließsysteme has no row; the editing
+    // page leaves its tab out too and opens the first.
+    expect(wrapper.vm.$route.query.mode).toBeUndefined();
+    expect(find(wrapper, "flow-more").exists()).toBe(false);
   });
 
   it("hands the stored bookable to the tabs", async () => {

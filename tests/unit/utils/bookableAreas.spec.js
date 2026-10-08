@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import Bookable from "@/entities/bookable";
 import {
   BOOKABLE_AREAS,
+  areaAt,
   areaShown,
   areaSummary,
   areaUsed,
@@ -237,5 +238,31 @@ describe("shownAreas", () => {
       "customFields",
       "bookingNotes",
     ]);
+  });
+});
+
+describe("areaAt", () => {
+  it("finds the area of a section, or of the whole tab", () => {
+    expect(
+      areaAt({ tabKey: "permissions", sectionId: "permissions-cancellation" })
+    ).toBe("cancellation");
+    expect(areaAt({ tabKey: "attachments", sectionId: null })).toBe(
+      "attachments"
+    );
+  });
+
+  it("places the settings of ParkraumService in Schließsysteme", () => {
+    expect(
+      areaAt({ tabKey: "accessLocks", sectionId: "pricing-external" })
+    ).toBe("accessLocks");
+  });
+
+  it("finds none outside the areas", () => {
+    expect(
+      areaAt({ tabKey: "permissions", sectionId: "permissions-discounts" })
+    ).toBeNull();
+    expect(
+      areaAt({ tabKey: "pricing", sectionId: "pricing-price" })
+    ).toBeNull();
   });
 });

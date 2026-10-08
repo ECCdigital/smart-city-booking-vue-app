@@ -224,3 +224,19 @@ export function areaShown(key, shown) {
 export function shownAreas(shown) {
   return BOOKABLE_AREAS.filter((entry) => areaShown(entry.key, shown));
 }
+
+/**
+ * The key of the area a place of the editing page lies in, given as
+ * `{ tabKey, sectionId }` like `BookableEdit.openSection` takes it: the area
+ * of that section, or the area that is the whole tab - so the settings of
+ * ParkraumService (`pricing-external`, in Schließsysteme) lie in
+ * `accessLocks`. `null` for a place outside the areas.
+ */
+export function areaAt({ tabKey, sectionId = null }) {
+  const found = BOOKABLE_AREAS.find(
+    (entry) =>
+      entry.tabKey === tabKey &&
+      (entry.sectionId === null || entry.sectionId === sectionId)
+  );
+  return found ? found.key : null;
+}
