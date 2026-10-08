@@ -86,7 +86,6 @@ import FlowSegmented from "@/components/Bookable/Flow/FlowSegmented.vue";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
 import bookableEditing from "@/mixins/bookableEditing";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
 import {
   applyBookingMode,
   bookingModeOf,
@@ -108,7 +107,7 @@ export default {
     BookableEditBookingType,
     BookableEditOpeningHours,
   },
-  mixins: [bookableEditing, bookableExpertMode],
+  mixins: [bookableEditing],
   computed: {
     external() {
       return handlesExternalAvailability(this.bookable);
@@ -141,19 +140,19 @@ export default {
     },
     modeOptions() {
       const modes = ["schedule", "timePeriod"];
-      if (this.expertMode || this.timeMode === "blockPeriod") {
-        modes.push("blockPeriod");
-      }
-      if (this.expertMode || this.timeMode === "longRange") {
-        modes.push("longRange");
-      }
+      if (this.expertOptionShown("blockPeriod")) modes.push("blockPeriod");
+      if (this.longRangeModes.length) modes.push("longRange");
       return modes.map((value) => ({
         value,
         label: this.$t(`bookable.flow.availability.modes.${value}`),
       }));
     },
+    // Each its own expert option: one in use shows without the other.
+    longRangeModes() {
+      return ["week", "month"].filter((mode) => this.expertOptionShown(mode));
+    },
     longRangeOptions() {
-      return ["week", "month"].map((value) => ({
+      return this.longRangeModes.map((value) => ({
         value,
         label: this.$t(`bookable.flow.availability.long-range-${value}`),
       }));
@@ -169,7 +168,9 @@ export default {
     },
     setTimeMode(timeMode) {
       if (timeMode === this.timeMode) return;
-      this.setMode(timeMode === "longRange" ? "week" : timeMode);
+      this.setMode(
+        timeMode === "longRange" ? this.longRangeModes[0] : timeMode
+      );
     },
   },
 };

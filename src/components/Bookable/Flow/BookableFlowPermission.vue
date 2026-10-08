@@ -39,8 +39,12 @@
     </div>
 
     <!-- Price exceptions are the editor's discounts, as in the permissions
-         tab; expert mode only, as there. -->
-    <div v-if="expertMode" class="flow-rule" data-test="flow-free-booking">
+         tab; an expert option, as there. -->
+    <div
+      v-if="expertOptionShown('bookingDiscounts')"
+      class="flow-rule"
+      data-test="flow-free-booking"
+    >
       <div class="flow-question">
         <v-icon small>mdi-ticket-percent-outline</v-icon>
         {{ $t("bookable.flow.permission.free") }}
@@ -80,7 +84,6 @@ import BookingDiscountEditor from "@/components/Bookable/Edit/BookingDiscountEdi
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import bookableEditing from "@/mixins/bookableEditing";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
 import { tenantUserOptions } from "@/utils/tenantUsers";
 import { accessOf, applyAccess, isPaid } from "@/utils/bookableFlow";
 
@@ -98,7 +101,7 @@ export default {
     UserRoleSelector,
     BookingDiscountEditor,
   },
-  mixins: [bookableEditing, bookableExpertMode],
+  mixins: [bookableEditing],
   data() {
     return {
       selectedChosen: false,

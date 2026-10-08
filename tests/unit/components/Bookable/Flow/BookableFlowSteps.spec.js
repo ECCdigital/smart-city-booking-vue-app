@@ -42,11 +42,12 @@ const STUBS = {
 const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t1", title: "Saal", ...overrides }).toPlain();
 
-// A step as BookableEdit hosts it: every patch lands in the next prop.
+// A step as BookableEdit hosts it: every patch lands in the next prop, the
+// bookable handed in is the stored one.
 const editing = (component, overrides, expertMode = true) =>
   mountEditing(component, {
     bookable: bookable(overrides),
-    provide: { bookableExpertMode: { enabled: expertMode } },
+    expertMode,
     stubs: STUBS,
   });
 
@@ -170,7 +171,7 @@ describe("BookableFlowAvailability", () => {
     expect(lastChange(wrapper).longRangeOptions).toEqual({ type: "month" });
   });
 
-  it("offers Zeiträume and Langzeit in expert mode only", () => {
+  it("offers Zeiträume and Langzeit unused in expert mode only", () => {
     const simple = mountStep(
       BookableFlowAvailability,
       { isScheduleRelated: true },
@@ -183,6 +184,49 @@ describe("BookableFlowAvailability", () => {
       isScheduleRelated: true,
     });
     expect(find(expert, "flow-time-mode-longRange").exists()).toBe(true);
+    expect(find(expert, "flow-time-mode-blockPeriod").exists()).toBe(true);
+  });
+
+  it("offers the expert mode in use without expert mode, not the others", () => {
+    const months = mountStep(
+      BookableFlowAvailability,
+      {
+        isScheduleRelated: false,
+        isLongRange: true,
+        longRangeOptions: { type: "month" },
+      },
+      false
+    );
+    expect(find(months, "flow-time-mode-longRange").exists()).toBe(true);
+    expect(find(months, "flow-long-range-month").exists()).toBe(true);
+    expect(find(months, "flow-long-range-week").exists()).toBe(false);
+    expect(find(months, "flow-time-mode-blockPeriod").exists()).toBe(false);
+
+    const periods = mountStep(
+      BookableFlowAvailability,
+      { isScheduleRelated: false, isBlockPeriodRelated: true },
+      false
+    );
+    expect(find(periods, "flow-time-mode-blockPeriod").exists()).toBe(true);
+    expect(find(periods, "flow-time-mode-longRange").exists()).toBe(false);
+  });
+
+  it("goes back to the long range in use, not to another", async () => {
+    // Stored with months, switched to Freie Zeitwahl without saving.
+    const { wrapper, patches } = mountEditing(BookableFlowAvailability, {
+      bookable: bookable({ isScheduleRelated: true }),
+      saved: bookable({
+        isScheduleRelated: false,
+        isLongRange: true,
+        longRangeOptions: { type: "month" },
+      }),
+      expertMode: false,
+      stubs: STUBS,
+    });
+
+    await find(wrapper, "flow-time-mode-longRange").trigger("click");
+
+    expect(lastPatch(patches).longRangeOptions).toEqual({ type: "month" });
   });
 
   it("leaves an externally handled availability alone", () => {
@@ -267,10 +311,38 @@ describe("BookableFlowPrice", () => {
     ).toBe("true");
   });
 
-  it("offers tiers in expert mode only", () => {
+  it("offers tiers unused in expert mode only", () => {
     const wrapper = mountStep(BookableFlowPrice, {}, false);
 
     expect(find(wrapper, "flow-price-mode-tiers").exists()).toBe(false);
+  });
+
+  it("offers tiers in use without expert mode", () => {
+    const wrapper = mountStep(
+      BookableFlowPrice,
+      {
+        priceCategories: [
+          { priceEur: 10, interval: { start: null, end: 2 }, weekdays: [] },
+          { priceEur: 8, interval: { start: 2, end: null }, weekdays: [] },
+        ],
+      },
+      false
+    );
+
+    expect(find(wrapper, "flow-price-mode-tiers").exists()).toBe(true);
+  });
+
+  it("shows Rabattcodes without expert mode while they are switched off", () => {
+    const paid = { priceCategories: [{ priceEur: 10, interval: {} }] };
+    const off = mountStep(
+      BookableFlowPrice,
+      { ...paid, enableCoupons: false },
+      false
+    );
+    const on = mountStep(BookableFlowPrice, paid, false);
+
+    expect(find(off, "flow-coupons").exists()).toBe(true);
+    expect(find(on, "flow-coupons").exists()).toBe(false);
   });
 });
 
@@ -361,6 +433,23 @@ describe("BookableFlowPermission", () => {
       { bookingDiscounts: { users: [], roles: discounts.roles } },
     ]);
     expect(handedIn).toEqual(stored);
+  });
+
+  it("shows Preisnachlass without expert mode while it is set", () => {
+    const set = mountStep(
+      BookableFlowPermission,
+      {
+        bookingDiscounts: {
+          users: [],
+          roles: [{ roleId: "r1", discountPercent: 50 }],
+        },
+      },
+      false
+    );
+    const unset = mountStep(BookableFlowPermission, {}, false);
+
+    expect(find(set, "flow-free-booking").exists()).toBe(true);
+    expect(find(unset, "flow-free-booking").exists()).toBe(false);
   });
 
   it("names price exceptions only once there is a price", () => {

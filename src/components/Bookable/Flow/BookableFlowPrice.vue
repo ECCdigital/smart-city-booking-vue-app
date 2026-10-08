@@ -224,7 +224,7 @@
         </div>
 
         <v-switch
-          v-if="expertMode"
+          v-if="expertOptionShown('coupons')"
           :input-value="bookable.enableCoupons !== false"
           dense
           hide-details
@@ -254,7 +254,6 @@
 import FlowSegmented from "@/components/Bookable/Flow/FlowSegmented.vue";
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
 import bookableEditing from "@/mixins/bookableEditing";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
 import {
   VAT_RATES,
   applyPriceBasis,
@@ -283,7 +282,7 @@ const euro = (value) =>
 export default {
   name: "BookableFlowPrice",
   components: { FlowSegmented, BookableEditPrice },
-  mixins: [bookableEditing, bookableExpertMode],
+  mixins: [bookableEditing],
   data() {
     return {
       chosenMode: null,
@@ -350,7 +349,9 @@ export default {
     },
     modeOptions() {
       const modes = ["free", "simple"];
-      if (this.expertMode || this.mode === "tiers") modes.push("tiers");
+      if (this.expertOptionShown("tiers") || this.mode === "tiers") {
+        modes.push("tiers");
+      }
       return modes.map((value) => ({
         value,
         label: this.$t(`bookable.flow.price.modes.${value}`),
