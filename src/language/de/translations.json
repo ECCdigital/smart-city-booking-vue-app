@@ -155,6 +155,11 @@
       "count": "Schritt {index} von {total}",
       "step-label": "Schritt {index}: {title}",
       "done-label": "Abschluss",
+      "step-state": {
+        "done": "erledigt",
+        "current": "aktuell",
+        "upcoming": "offen"
+      },
       "back": "Zurück",
       "next": "Weiter",
       "name-missing": "Ein Name fehlt noch",
@@ -335,6 +340,32 @@
         "auto-hint": "Das System prüft alle Angaben. Passt alles, wird die Buchung sofort erstellt und als freigegeben bestätigt – ohne Ihr Zutun.",
         "manual": "Manuell prüfen",
         "manual-hint": "Das System prüft weiterhin alles; buchen kann man nur, wenn alle Angaben passen. Die Buchung kommt aber als ausstehend in Ihre Buchungsliste – Sie geben sie frei oder lehnen ab."
+      },
+      "overview": {
+        "title": "Übersicht",
+        "open": "Noch offen",
+        "empty": "–",
+        "labels": {
+          "availability": "Buchungsart",
+          "amount": "Anzahl",
+          "permission": "Zugang",
+          "approval": "Buchungen"
+        },
+        "values": {
+          "image-present": "vorhanden",
+          "image-none": "keins",
+          "external": "extern gesteuert",
+          "tiers": "{count} Tarif | {count} Tarife",
+          "once": "{price} für die ganze Buchung",
+          "vat-rate": "{rate} %",
+          "vat-none": "ohne",
+          "yes": "ja",
+          "no": "nein",
+          "roles": "{count} Rolle | {count} Rollen",
+          "users": "{count} Person | {count} Personen",
+          "approval-auto": "automatisch bestätigt",
+          "approval-manual": "wird geprüft"
+        }
       },
       "done": {
         "published": {

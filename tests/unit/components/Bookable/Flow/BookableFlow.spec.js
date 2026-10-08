@@ -1,7 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
+import { flushPromises } from "@tests/unit/support/api";
+import {
+  resetViewportWidth,
+  setViewportWidth,
+} from "@tests/unit/support/viewport";
+import ApiEventService from "@/services/api/ApiEventService";
 import Bookable from "@/entities/bookable";
 import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
+
+vi.mock("@/services/api/ApiEventService", () => ({
+  default: { getEvents: vi.fn() },
+}));
 
 // The steps with their own API calls and editors are stood in for; amount
 // and approval are drawn for real.
@@ -198,5 +208,251 @@ describe("BookableFlow", () => {
       expect(wrapper.emitted("another")).toHaveLength(1);
       expect(wrapper.emitted("overview")).toHaveLength(1);
     });
+  });
+});
+
+describe("BookableFlow on a wide screen", () => {
+  beforeEach(() => setViewportWidth(1264));
+  afterEach(() => resetViewportWidth());
+
+  const blockOf = (wrapper, step) => find(wrapper, `flow-summary-${step}`);
+  const openBlocks = (wrapper) =>
+    wrapper
+      .findAll("[data-test^='flow-summary-']")
+      .filter((block) => block.text().includes("Noch offen"));
+
+  it("keeps today's column without an overview below 1264px", () => {
+    setViewportWidth(1263);
+    const wrapper = mountFlow();
+
+    expect(find(wrapper, "flow-progress").exists()).toBe(true);
+    expect(find(wrapper, "flow-summary").exists()).toBe(false);
+    expect(find(wrapper, "flow-steps").exists()).toBe(false);
+  });
+
+  it("puts the overview beside the step from 1264px, the dots above it", () => {
+    const wrapper = mountFlow();
+
+    expect(find(wrapper, "flow-progress").exists()).toBe(true);
+    expect(find(wrapper, "flow-steps").exists()).toBe(false);
+    expect(find(wrapper, "flow-summary").text()).toContain("Übersicht");
+    const blocks = wrapper.findAll("[data-test^='flow-summary-']").wrappers;
+    expect(blocks.map((block) => block.attributes("data-test"))).toEqual([
+      "flow-summary-identity",
+      "flow-summary-availability",
+      "flow-summary-price",
+      "flow-summary-amount",
+      "flow-summary-permission",
+      "flow-summary-approval",
+    ]);
+    [
+      "Identität",
+      "Verfügbarkeit",
+      "Preis",
+      "Anzahl & Kapazität",
+      "Berechtigung",
+      "Freigabe",
+    ].forEach((title, idx) => expect(blocks[idx].text()).toContain(title));
+  });
+
+  it("shows the identity with values and the other five steps as open", async () => {
+    const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
+
+    expect(blockOf(wrapper, "identity").text()).toContain("Saal");
+    expect(blockOf(wrapper, "identity").attributes("aria-current")).toBe(
+      "step"
+    );
+    expect(openBlocks(wrapper)).toHaveLength(5);
+
+    await find(wrapper, "flow-next").trigger("click");
+
+    expect(openBlocks(wrapper)).toHaveLength(4);
+    expect(blockOf(wrapper, "availability").text()).not.toContain("Noch offen");
+    expect(blockOf(wrapper, "availability").attributes("aria-current")).toBe(
+      "step"
+    );
+  });
+
+  it("shows an existing bookable without an open step", () => {
+    const wrapper = mountFlow({
+      bookable: bookable({ id: "b1", title: "Saal" }),
+      isNew: false,
+    });
+
+    expect(openBlocks(wrapper)).toHaveLength(0);
+    expect(blockOf(wrapper, "approval").text()).toContain("wird geprüft");
+  });
+
+  it("shows a new value as soon as the bookable changes", async () => {
+    const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
+
+    await wrapper.setProps({ bookable: bookable({ title: "Großer Saal" }) });
+
+    expect(blockOf(wrapper, "identity").text()).toContain("Großer Saal");
+  });
+
+  it("goes to the step of a block clicked", async () => {
+    const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
+
+    await blockOf(wrapper, "approval").trigger("click");
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Freigabe");
+    expect(blockOf(wrapper, "approval").text()).toContain("wird geprüft");
+    expect(find(wrapper, "flow-dot-identity").classes()).toContain(
+      "bookable-flow__dot--done"
+    );
+  });
+
+  it("holds in the identity without a title and names what is missing", async () => {
+    const wrapper = mountFlow();
+
+    await blockOf(wrapper, "price").trigger("click");
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
+    expect(find(wrapper, "flow-name-missing").text()).toBe(
+      "Ein Name fehlt noch"
+    );
+    expect(openBlocks(wrapper)).toHaveLength(5);
+  });
+
+  it("shows only the confirmation once there is an outcome", () => {
+    setViewportWidth(1904);
+    const wrapper = mountFlow({
+      bookable: bookable({ id: "b1", title: "Saal" }),
+      outcome: "published",
+    });
+
+    expect(find(wrapper, "flow-done-title").exists()).toBe(true);
+    expect(find(wrapper, "flow-summary").exists()).toBe(false);
+    expect(find(wrapper, "flow-steps").exists()).toBe(false);
+  });
+
+  it("starts over with open steps for another bookable", async () => {
+    const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
+    await blockOf(wrapper, "approval").trigger("click");
+    await wrapper.setProps({
+      bookable: bookable({ id: "b1", title: "Saal" }),
+      isNew: false,
+      outcome: "published",
+    });
+
+    // „Weiteres Buchungsobjekt anlegen“: the editor drops the outcome and
+    // hands in a new bookable.
+    await find(wrapper, "flow-another").trigger("click");
+    await wrapper.setProps({
+      bookable: bookable(),
+      isNew: true,
+      outcome: null,
+    });
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
+    expect(openBlocks(wrapper)).toHaveLength(5);
+  });
+
+  it("names the event of a ticket by its title", async () => {
+    ApiEventService.getEvents.mockResolvedValue({
+      data: [{ id: "e1", information: { name: "Sommerfest" } }],
+    });
+    const wrapper = mountFlow({
+      bookable: bookable({ type: "ticket", title: "Eintritt", eventId: "e1" }),
+    });
+    await flushPromises();
+
+    expect(blockOf(wrapper, "identity").text()).toContain("Sommerfest");
+  });
+});
+
+describe("BookableFlow on an extra wide screen", () => {
+  beforeEach(() => setViewportWidth(1904));
+  afterEach(() => resetViewportWidth());
+
+  const entryOf = (wrapper, step) => find(wrapper, `flow-steps-${step}`);
+
+  it("puts the step list left instead of the dots, the overview beside the step", () => {
+    const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
+
+    expect(find(wrapper, "flow-progress").exists()).toBe(false);
+    expect(find(wrapper, "flow-summary").exists()).toBe(true);
+    const list = find(wrapper, "flow-steps");
+    expect(list.element.tagName).toBe("NAV");
+    expect(list.attributes("aria-label")).toBe("Fortschritt");
+    expect(list.text()).toContain("Abschluss");
+    [
+      "Identität",
+      "Verfügbarkeit",
+      "Preis",
+      "Anzahl & Kapazität",
+      "Berechtigung",
+      "Freigabe",
+    ].forEach((title) => expect(list.text()).toContain(title));
+    expect(entryOf(wrapper, "identity").attributes("aria-current")).toBe(
+      "step"
+    );
+    expect(find(wrapper, "flow-count").text()).toBe("Schritt 1 von 6");
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
+  });
+
+  it("goes to the step clicked in the list and marks the one left as done", async () => {
+    const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
+    expect(entryOf(wrapper, "identity").text()).toContain("aktuell");
+    expect(entryOf(wrapper, "price").text()).toContain("offen");
+
+    await entryOf(wrapper, "price").trigger("click");
+
+    expect(find(wrapper, "flow-count").text()).toBe("Schritt 3 von 6");
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Preis");
+    expect(entryOf(wrapper, "price").attributes("aria-current")).toBe("step");
+    expect(entryOf(wrapper, "identity").attributes("aria-current")).toBe(
+      undefined
+    );
+    expect(entryOf(wrapper, "identity").text()).toContain("erledigt");
+    expect(entryOf(wrapper, "availability").text()).toContain("offen");
+  });
+
+  it("holds in the identity without a title, as the dots do", async () => {
+    const wrapper = mountFlow();
+
+    expect(entryOf(wrapper, "identity").attributes("disabled")).toBeUndefined();
+    expect(entryOf(wrapper, "price").attributes("disabled")).toBeDefined();
+    await entryOf(wrapper, "price").trigger("click");
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Identität");
+    expect(find(wrapper, "flow-name-missing").text()).toBe(
+      "Ein Name fehlt noch"
+    );
+  });
+
+  it("switches between list and dots with the window, keeping the step", async () => {
+    vi.useFakeTimers();
+    try {
+      const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
+      await entryOf(wrapper, "availability").trigger("click");
+      const step = find(wrapper, "stub-BookableFlowAvailability").element;
+
+      setViewportWidth(1903);
+      window.dispatchEvent(new Event("resize"));
+      vi.advanceTimersByTime(200);
+      await wrapper.vm.$nextTick();
+
+      expect(find(wrapper, "flow-steps").exists()).toBe(false);
+      expect(find(wrapper, "flow-progress").exists()).toBe(true);
+      expect(find(wrapper, "flow-dot-identity").classes()).toContain(
+        "bookable-flow__dot--done"
+      );
+      expect(find(wrapper, "stub-BookableFlowAvailability").element).toBe(step);
+
+      setViewportWidth(1904);
+      window.dispatchEvent(new Event("resize"));
+      vi.advanceTimersByTime(200);
+      await wrapper.vm.$nextTick();
+
+      expect(find(wrapper, "flow-progress").exists()).toBe(false);
+      expect(entryOf(wrapper, "availability").attributes("aria-current")).toBe(
+        "step"
+      );
+      expect(find(wrapper, "stub-BookableFlowAvailability").element).toBe(step);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

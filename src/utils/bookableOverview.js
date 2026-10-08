@@ -12,7 +12,7 @@ const BOOKING_MODE_LABELS = {
   independent: "Zeitunabhängig",
 };
 
-const PRICE_TYPE_SUFFIX = {
+export const PRICE_TYPE_SUFFIX = {
   "per-hour": "/h",
   "per-day": "/Tag",
   "per-square-meter": "/m²",
@@ -32,7 +32,7 @@ const WEEKDAYS = {
   0: { short: "So.", long: "Sonntag" },
 };
 
-function formatCurrency(value) {
+export function formatCurrency(value) {
   const num = Number(value);
   if (Number.isNaN(num)) return "0,00 €";
   return (
@@ -43,7 +43,7 @@ function formatCurrency(value) {
   );
 }
 
-function truncate(text, maxLength = 64) {
+export function truncate(text, maxLength = 64) {
   if (!text) return "";
   const normalized = String(text).trim();
   if (!normalized) return "";
@@ -51,7 +51,7 @@ function truncate(text, maxLength = 64) {
   return `${normalized.slice(0, maxLength - 1)}…`;
 }
 
-function getLocationLabel(bookable) {
+export function getLocationLabel(bookable) {
   const loc = bookable?.location;
   if (!loc) return "";
   if (typeof loc === "string") return truncate(loc);
@@ -283,7 +283,7 @@ function formatSpecialOpeningHoursSummary(specialOpeningHours, maxItems = 3) {
   return `${parts.slice(0, maxItems).join(", ")} +${parts.length - maxItems}`;
 }
 
-function joinList(items, maxItems = 4) {
+export function joinList(items, maxItems = 4) {
   if (!Array.isArray(items) || !items.length) return "";
   const clean = items.map((item) => String(item).trim()).filter(Boolean);
   if (!clean.length) return "";
