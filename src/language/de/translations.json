@@ -155,6 +155,11 @@
       "count": "Schritt {index} von {total}",
       "step-label": "Schritt {index}: {title}",
       "done-label": "Abschluss",
+      "step-state": {
+        "done": "erledigt",
+        "current": "aktuell",
+        "upcoming": "offen"
+      },
       "back": "Zurück",
       "next": "Weiter",
       "name-missing": "Ein Name fehlt noch",
