@@ -56,6 +56,34 @@ async function walkToLastStep(wrapper) {
 }
 
 describe("BookableFlow", () => {
+  it("hands on a step's jump to a section of the editing page", async () => {
+    const target = { tabKey: "pricing", sectionId: "pricing-external" };
+    const wrapper = mountComponent(BookableFlow, {
+      propsData: { bookable: bookable(), isNew: true },
+      stubs: {
+        ...STUBS,
+        BookableFlowAvailability: {
+          name: "BookableFlowAvailability",
+          render(h) {
+            return h(
+              "button",
+              {
+                attrs: { "data-test": "step-jump" },
+                on: { click: () => this.$emit("open-section", target) },
+              },
+              "Zur Einstellung"
+            );
+          },
+        },
+      },
+    });
+
+    await find(wrapper, "flow-next").trigger("click");
+    await find(wrapper, "step-jump").trigger("click");
+
+    expect(wrapper.emitted("open-section")).toEqual([[target]]);
+  });
+
   // „Weiter“ never holds (ECCdigital/tickets#354): a missing title is a
   // message at its field once the save is refused, not a lock.
   it("starts with the identity and goes on without a name", async () => {

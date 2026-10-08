@@ -1,6 +1,7 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import bookableEditing from "@/mixins/bookableEditing";
+import { bookingModeNameKey } from "@/utils/bookableEditSections";
 
 export default {
   name: "BookableEditOpeningHours",
@@ -55,6 +56,7 @@ export default {
     },
   },
   methods: {
+    bookingModeNameKey,
     updateOpeningHours(index, changes) {
       this.patch({
         openingHours: this.openingHours.map((entry, i) =>
@@ -815,19 +817,12 @@ export default {
         Öffnungszeiten nicht verfügbar
       </div>
       <div class="text-body-2 grey--text text--darken-1">
-        Öffnungszeiten können nur für zeitabhängige Buchungstypen
+        Öffnungszeiten können nur für die Buchungsarten
         <br />
-        (Freie Zeitwahl oder feste Zeitfenster) definiert werden.
+        Freie Zeitwahl und Feste Zeitfenster definiert werden.
       </div>
       <v-chip small class="mt-4" color="grey lighten-3">
-        Aktueller Typ:
-        {{
-          bookingType === "week"
-            ? "Wochenbuchung"
-            : bookingType === "month"
-            ? "Monatsbuchung"
-            : "Zeitunabhängig"
-        }}
+        Buchungsart: {{ $t(bookingModeNameKey(bookable)) }}
       </v-chip>
     </div>
   </div>

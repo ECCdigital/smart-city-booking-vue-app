@@ -121,6 +121,7 @@
               :is-new="isNew"
               v-bind="stepProps"
               @update:bookable="$emit('update:bookable', $event)"
+              @open-section="$emit('open-section', $event)"
             />
           </keep-alive>
         </div>

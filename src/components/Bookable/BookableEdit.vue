@@ -290,6 +290,7 @@
               v-bind="activeTabExtraProps"
               @update:bookable="onUpdateBookable"
               @navigate-tab="goToTab"
+              @open-section="openSection"
             />
           </keep-alive>
         </div>
@@ -676,7 +677,7 @@ export default {
       return this.$router.replace({ query });
     },
     async openSection({ tabKey, sectionId }) {
-      await this.leaveFlow();
+      if (this.flowMode) await this.leaveFlow();
       this.$nextTick(() => this.goToTab(tabKey, sectionId || undefined));
     },
     /** „Zur Übersicht“: this bookable in the editor of its type. */

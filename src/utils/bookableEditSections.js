@@ -5,6 +5,7 @@
 
 import {
   IFBS_PROVIDER,
+  handlesCapability,
   providerHandles,
 } from "@/utils/bookableExternalProviders";
 
@@ -23,6 +24,20 @@ export function getBookingMode(bookable) {
     if (type === "week" || type === "month") return type;
   }
   return "independent";
+}
+
+/**
+ * The Buchungsart by the names of its questions: Freie Zeitwahl, Feste
+ * Zeitfenster, Zeiträume, Ganze Wochen, Ganze Monate or Ohne Zeit.
+ */
+export function bookingModeNameKey(bookable) {
+  const availability = "bookable.flow.availability";
+  const mode = getBookingMode(bookable);
+  if (mode === "independent") return `${availability}.timed-no`;
+  if (mode === "week" || mode === "month") {
+    return `${availability}.long-range-${mode}`;
+  }
+  return `${availability}.modes.${mode}`;
 }
 
 /**
@@ -219,8 +234,12 @@ function isSectionVisible(section, { bookable, shown = everyOption }) {
     return false;
   }
 
-  const mode = getBookingMode(bookable);
-  const isTimeWindowMode = mode === "schedule" || mode === "timePeriod";
+  const bookingMode = getBookingMode(bookable);
+  const isTimeWindowMode =
+    bookingMode === "schedule" || bookingMode === "timePeriod";
+  // Where a provider handles the availability, the Buchungsart shows only
+  // its note and none of the sections of a mode.
+  const mode = handlesCapability(bookable, "availability") ? null : bookingMode;
   const visibilityById = {
     "pricing-external": () => declaresExternalProvider(bookable),
     "pricing-tiers": () => !handlesExternalPricing(bookable),
@@ -272,3 +291,13 @@ export function getBookableEditSectionById(sectionId) {
 export function shouldShowBookableEditSectionNav(tabKey, ctx) {
   return getVisibleBookableEditSections(tabKey, ctx).length >= 2;
 }
+
+/**
+ * Where an external provider is set up, as `{ tabKey, sectionId }` for
+ * `BookableEdit.openSection`: the jump of the note that a provider handles
+ * the availability. Follows the section wherever its tab is.
+ */
+export const EXTERNAL_PROVIDER_SETTING = Object.freeze({
+  tabKey: getBookableEditSectionById("pricing-external").tabKey,
+  sectionId: "pricing-external",
+});

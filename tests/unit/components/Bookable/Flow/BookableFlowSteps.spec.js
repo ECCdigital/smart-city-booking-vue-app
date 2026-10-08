@@ -121,121 +121,66 @@ describe("the steps of the guided flow", () => {
 });
 
 describe("BookableFlowAvailability", () => {
-  it("asks whether a time is booked and books none without the editor's sections", () => {
+  it("asks for the Buchungsart with the component of the editing page", () => {
     const wrapper = mountStep(BookableFlowAvailability, {
       isScheduleRelated: false,
-    });
-
-    expect(find(wrapper, "flow-timed-no").attributes("aria-checked")).toBe(
-      "true"
-    );
-    expect(find(wrapper, "flow-untimed").exists()).toBe(true);
-    expect(find(wrapper, "stub-BookableEditBookingType").exists()).toBe(false);
-  });
-
-  it("starts a timed bookable with the free choice of time", async () => {
-    const wrapper = mountStep(BookableFlowAvailability, {
-      isScheduleRelated: false,
-    });
-
-    await find(wrapper, "flow-timed-yes").trigger("click");
-
-    expect(wrapper.props("bookable")).toMatchObject({
-      isScheduleRelated: true,
-      isLongRange: false,
-    });
-  });
-
-  it("shows the editor's settings and opening hours for the chosen type", () => {
-    const wrapper = mountStep(BookableFlowAvailability, {
-      isScheduleRelated: true,
     });
 
     expect(
-      wrapper.findComponent({ name: "BookableEditBookingType" }).props()
+      wrapper.findComponent({ name: "BookableEditBookingMode" }).exists()
+    ).toBe(true);
+    expect(find(wrapper, "booking-mode-timed").exists()).toBe(true);
+    expect(find(wrapper, "stub-BookableEditBookingType").exists()).toBe(false);
+    expect(find(wrapper, "stub-BookableEditOpeningHours").exists()).toBe(false);
+  });
+
+  it("hands on an answer as the component's patch", async () => {
+    const wrapper = mountStep(BookableFlowAvailability, {
+      isScheduleRelated: false,
+    });
+
+    await find(wrapper, "booking-mode-timed-yes").trigger("click");
+
+    expect(lastChange(wrapper)).toMatchObject({ isScheduleRelated: true });
+  });
+
+  it("follows with the sections of the chosen mode and the opening hours", () => {
+    const wrapper = mountStep(BookableFlowAvailability, {
+      isScheduleRelated: true,
+    });
+
+    expect(find(wrapper, "stub-BookableEditBookingType").exists()).toBe(true);
+    expect(
+      wrapper.findComponent({ name: "BookableEditOpeningHours" }).props()
     ).toMatchObject({ embedded: true });
-    expect(find(wrapper, "stub-BookableEditOpeningHours").exists()).toBe(true);
   });
 
-  it("asks weeks or months for the long range", async () => {
+  it("shows no opening hours for the long range", () => {
+    const wrapper = mountStep(BookableFlowAvailability, {
+      isScheduleRelated: false,
+      isLongRange: true,
+      longRangeOptions: { type: "week" },
+    });
+
+    expect(find(wrapper, "stub-BookableEditOpeningHours").exists()).toBe(false);
+  });
+
+  it("shows only the note for an external availability and hands on its jump", async () => {
     const wrapper = mountStep(BookableFlowAvailability, {
       isScheduleRelated: true,
-    });
-
-    await find(wrapper, "flow-time-mode-longRange").trigger("click");
-    expect(lastChange(wrapper).longRangeOptions).toEqual({ type: "week" });
-
-    await find(wrapper, "flow-long-range-month").trigger("click");
-    expect(lastChange(wrapper).longRangeOptions).toEqual({ type: "month" });
-  });
-
-  it("offers Zeiträume and Langzeit unused in expert mode only", () => {
-    const simple = mountStep(
-      BookableFlowAvailability,
-      { isScheduleRelated: true },
-      false
-    );
-    expect(find(simple, "flow-time-mode-longRange").exists()).toBe(false);
-    expect(find(simple, "flow-time-mode-blockPeriod").exists()).toBe(false);
-
-    const expert = mountStep(BookableFlowAvailability, {
-      isScheduleRelated: true,
-    });
-    expect(find(expert, "flow-time-mode-longRange").exists()).toBe(true);
-    expect(find(expert, "flow-time-mode-blockPeriod").exists()).toBe(true);
-  });
-
-  it("offers the expert mode in use without expert mode, not the others", () => {
-    const months = mountStep(
-      BookableFlowAvailability,
-      {
-        isScheduleRelated: false,
-        isLongRange: true,
-        longRangeOptions: { type: "month" },
-      },
-      false
-    );
-    expect(find(months, "flow-time-mode-longRange").exists()).toBe(true);
-    expect(find(months, "flow-long-range-month").exists()).toBe(true);
-    expect(find(months, "flow-long-range-week").exists()).toBe(false);
-    expect(find(months, "flow-time-mode-blockPeriod").exists()).toBe(false);
-
-    const periods = mountStep(
-      BookableFlowAvailability,
-      { isScheduleRelated: false, isBlockPeriodRelated: true },
-      false
-    );
-    expect(find(periods, "flow-time-mode-blockPeriod").exists()).toBe(true);
-    expect(find(periods, "flow-time-mode-longRange").exists()).toBe(false);
-  });
-
-  it("goes back to the long range in use, not to another", async () => {
-    // Stored with months, switched to Freie Zeitwahl without saving.
-    const { wrapper, patches } = mountEditing(BookableFlowAvailability, {
-      bookable: bookable({ isScheduleRelated: true }),
-      saved: bookable({
-        isScheduleRelated: false,
-        isLongRange: true,
-        longRangeOptions: { type: "month" },
-      }),
-      expertMode: false,
-      stubs: STUBS,
-    });
-
-    await find(wrapper, "flow-time-mode-longRange").trigger("click");
-
-    expect(lastPatch(patches).longRangeOptions).toEqual({ type: "month" });
-  });
-
-  it("leaves an externally handled availability alone", () => {
-    const wrapper = mountStep(BookableFlowAvailability, {
       externalProviders: [
         { provider: "ifbs", active: true, handles: ["availability"] },
       ],
     });
 
-    expect(wrapper.text()).toContain("externen Anbieter");
-    expect(find(wrapper, "flow-timed").exists()).toBe(false);
+    expect(find(wrapper, "booking-mode-external").exists()).toBe(true);
+    expect(find(wrapper, "stub-BookableEditBookingType").exists()).toBe(false);
+    expect(find(wrapper, "stub-BookableEditOpeningHours").exists()).toBe(false);
+
+    await find(wrapper, "booking-mode-external-link").trigger("click");
+    expect(wrapper.emitted("open-section")).toEqual([
+      [{ tabKey: "pricing", sectionId: "pricing-external" }],
+    ]);
   });
 });
 
