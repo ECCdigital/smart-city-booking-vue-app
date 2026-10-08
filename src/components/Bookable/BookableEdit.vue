@@ -334,6 +334,8 @@ import { mapActions, mapGetters } from "vuex";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
 import BookableEditAccessLocks from "@/components/Bookable/Edit/BookableEditAccessLocks.vue";
 import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
+// PROTOTYPE #344: the permission variants stand in for the tab „Berechtigungen“.
+import PermPrototype from "@/components/Bookable/Prototype344/PermPrototype.vue";
 import BookableEditRelatedBookables from "@/components/Bookable/Edit/BookableEditRelatedBookables.vue";
 import BookableEditAttachments from "@/components/Bookable/Edit/BookableEditAttachments.vue";
 import BookableEditAdditional from "@/components/Bookable/Edit/BookableEditAdditional.vue";
@@ -382,6 +384,7 @@ export default {
     BookableEditOpeningHours,
     BookableEditAccessLocks,
     BookableEditPermissions,
+    PermPrototype,
     BookableEditRelatedBookables,
     BookableEditAttachments,
     BookableEditAdditional,
@@ -453,7 +456,7 @@ export default {
           key: "permissions",
           label: "Berechtigungen",
           icon: "mdi-account-lock-outline",
-          comp: "BookableEditPermissions",
+          comp: "PermPrototype",
         },
         {
           key: "attachments",
