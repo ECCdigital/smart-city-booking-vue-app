@@ -41,7 +41,7 @@
             <span v-else>{{ idx + 1 }}</span>
           </span>
           <span class="bookable-flow__entry-title">
-            {{ $t(`bookable.flow.steps.${step}.title`) }}
+            {{ stepTitle(step) }}
           </span>
           <span class="d-sr-only">
             {{ $t(`bookable.flow.step-state.${stepState(idx)}`) }}
@@ -83,7 +83,7 @@
             :aria-label="
               $t('bookable.flow.step-label', {
                 index: idx + 1,
-                title: $t(`bookable.flow.steps.${step}.title`),
+                title: stepTitle(step),
               })
             "
             :data-test="`flow-dot-${step}`"
@@ -104,10 +104,10 @@
 
         <header class="bookable-flow__header">
           <h2 class="bookable-flow__title" data-test="flow-title-heading">
-            {{ $t(`bookable.flow.steps.${step}.title`) }}
+            {{ stepTitle(step) }}
           </h2>
           <p class="bookable-flow__why">
-            {{ $t(`bookable.flow.steps.${step}.why`) }}
+            {{ stepWhy(step) }}
           </p>
         </header>
 
@@ -120,9 +120,20 @@
               :key="step"
               :bookable="bookable"
               :is-new="isNew"
+              v-bind="stepProps"
               @update:bookable="$emit('update:bookable', $event)"
+              @toggle="togglePicked"
             />
           </keep-alive>
+          <!-- PROTOTYPE #346: variant B sorts the areas into the steps. -->
+          <StepExtrasB
+            v-if="protoVariant === 'B'"
+            :key="`extras-${step}`"
+            :step="step"
+            :step-title="stepTitle(step)"
+            :bookable="bookable"
+            @update:bookable="$emit('update:bookable', $event)"
+          />
         </div>
 
         <v-alert
@@ -211,6 +222,7 @@
         @go="goTo(steps.indexOf($event))"
       />
     </template>
+    <PrototypeSwitcher :variants="protoVariants" :current="protoVariant" />
   </div>
 </template>
 
@@ -223,6 +235,18 @@ import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermi
 import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
 import BookableFlowDone from "@/components/Bookable/Flow/BookableFlowDone.vue";
 import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
+// PROTOTYPE #346: the areas only the editor has, in the flow.
+import StepMoreA from "@/components/Bookable/Prototype346/StepMoreA.vue";
+import StepExtrasB from "@/components/Bookable/Prototype346/StepExtrasB.vue";
+import StepPickC from "@/components/Bookable/Prototype346/StepPickC.vue";
+import AreaStepC from "@/components/Bookable/Prototype346/AreaStepC.vue";
+import PublishStub from "@/components/Bookable/Prototype346/PublishStub.vue";
+import PrototypeSwitcher from "@/components/Bookable/Prototype346/PrototypeSwitcher.vue";
+import {
+  AREAS,
+  PROTO_STEPS,
+  areaByKey,
+} from "@/components/Bookable/Prototype346/areas346";
 import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
 import {
   FLOW_STEPS,
@@ -242,7 +266,17 @@ const STEP_COMPONENTS = {
   amount: "BookableFlowAmount",
   permission: "BookableFlowPermission",
   approval: "BookableFlowApproval",
+  more: "StepMoreA",
+  pick: "StepPickC",
+  publish: "PublishStub",
 };
+
+const PROTO_VARIANTS = [
+  { key: "A", name: "Ein Schritt „Weitere Einstellungen“" },
+  { key: "B", name: "In die Schritte einsortiert" },
+  { key: "C", name: "Eigene Schritte zum Zuschalten" },
+  { key: "0", name: "Heute" },
+];
 
 /**
  * Where the flow starts, and starts over: at the identity. A step is done
@@ -285,6 +319,12 @@ export default {
     BookableFlowDone,
     BookableFlowSummary,
     OnboardingSupervisionNotice,
+    StepMoreA,
+    StepExtrasB,
+    StepPickC,
+    AreaStepC,
+    PublishStub,
+    PrototypeSwitcher,
   },
   props: {
     bookable: { type: Object, required: true },
@@ -299,16 +339,45 @@ export default {
   },
   data() {
     return {
-      steps: FLOW_STEPS,
+      protoVariants: PROTO_VARIANTS,
+      // Variant C: the areas chosen as steps; used ones from the start.
+      picked: AREAS.filter((area) => area.used(this.bookable)).map(
+        (area) => area.key
+      ),
       ...startingPoint(this.isNew),
       eventTitlesById: cachedEventTitlesById() || {},
     };
   },
   computed: {
+    protoVariant() {
+      const key = String(this.$route.query.variant || "A").toUpperCase();
+      return PROTO_VARIANTS.some((v) => v.key === key) ? key : "A";
+    },
+    steps() {
+      if (this.protoVariant === "0") return FLOW_STEPS;
+      if (this.protoVariant === "A") return [...FLOW_STEPS, "more", "publish"];
+      if (this.protoVariant === "B") return [...FLOW_STEPS, "publish"];
+      return [
+        ...FLOW_STEPS,
+        "pick",
+        ...AREAS.filter((a) => this.picked.includes(a.key)).map(
+          (a) => `area:${a.key}`
+        ),
+        "publish",
+      ];
+    },
+    stepProps() {
+      if (this.step === "pick") return { picked: this.picked };
+      if (this.step.startsWith("area:")) {
+        return { areaKey: this.step.slice(5) };
+      }
+      return {};
+    },
     step() {
       return this.steps[this.index];
     },
     stepComponent() {
+      if (this.step.startsWith("area:")) return "AreaStepC";
       return STEP_COMPONENTS[this.step];
     },
     last() {
@@ -339,6 +408,9 @@ export default {
     },
   },
   watch: {
+    protoVariant() {
+      this.index = Math.min(this.index, this.steps.length - 1);
+    },
     needsEventTitles: {
       immediate: true,
       async handler(needed) {
@@ -351,6 +423,25 @@ export default {
     },
   },
   methods: {
+    stepTitle(step) {
+      if (step.startsWith("area:")) return areaByKey(step.slice(5)).title;
+      if (PROTO_STEPS[step]) return PROTO_STEPS[step].title;
+      return this.$t(`bookable.flow.steps.${step}.title`);
+    },
+    stepWhy(step) {
+      if (step.startsWith("area:")) {
+        return `${
+          areaByKey(step.slice(5)).hint
+        } Optional, gewählt im Schritt „Was gehört noch dazu?“.`;
+      }
+      if (PROTO_STEPS[step]) return PROTO_STEPS[step].why;
+      return this.$t(`bookable.flow.steps.${step}.why`);
+    },
+    togglePicked(key) {
+      const at = this.picked.indexOf(key);
+      if (at >= 0) this.picked.splice(at, 1);
+      else this.picked.push(key);
+    },
     /** Without a name only the identity can be reached. */
     locked(idx) {
       return idx > 0 && !this.named;
