@@ -532,14 +532,8 @@
         "permissionsLogin": "Anmeldepflicht",
         "permissionsAccess": "Individuelle Rechte",
         "permissionsDiscounts": "Rabatte",
-        "permissionsGroupBooking": "Serienbuchung",
-        "permissionsCancellation": "Storno",
         "customFieldsValues": "Werte pflegen",
-        "customFieldsDefinitions": "Felder definieren",
-        "relatedCheckout": "Zusatzoptionen",
-        "relatedHierarchy": "Hierarchie",
-        "additionalRequiredFields": "Pflichtfelder",
-        "additionalNotes": "Buchungshinweise"
+        "customFieldsDefinitions": "Felder definieren"
       },
       "status": {
         "bookable": {

@@ -52,8 +52,9 @@ function handlesExternalPricing(bookable) {
 }
 
 /**
- * All known sections (labelKey → i18n bookable.edit.sections.*). A section
- * that is an expert option names it in `expertOption`.
+ * All known sections (labelKey → i18n bookable.edit.sections.*, or the title
+ * of the area the section is - `bookable.areas.*`). A section that is an
+ * expert option names it in `expertOption`.
  */
 const ALL_SECTIONS = [
   {
@@ -173,13 +174,13 @@ const ALL_SECTIONS = [
   {
     tabKey: "permissions",
     id: "permissions-group-booking",
-    labelKey: "bookable.edit.sections.permissionsGroupBooking",
+    labelKey: "bookable.areas.groupBooking.title",
     type: "scroll",
   },
   {
     tabKey: "permissions",
     id: "permissions-cancellation",
-    labelKey: "bookable.edit.sections.permissionsCancellation",
+    labelKey: "bookable.areas.cancellation.title",
     type: "scroll",
     expertOption: "cancellation",
   },
@@ -201,28 +202,28 @@ const ALL_SECTIONS = [
   {
     tabKey: "relatedBookables",
     id: "related-checkout",
-    labelKey: "bookable.edit.sections.relatedCheckout",
+    labelKey: "bookable.areas.checkoutBookables.title",
     type: "scroll",
     expertOption: "checkoutBookables",
   },
   {
     tabKey: "relatedBookables",
     id: "related-hierarchy",
-    labelKey: "bookable.edit.sections.relatedHierarchy",
+    labelKey: "bookable.areas.hierarchy.title",
     type: "scroll",
     expertOption: "hierarchy",
   },
   {
     tabKey: "additional",
     id: "additional-required-fields",
-    labelKey: "bookable.edit.sections.additionalRequiredFields",
+    labelKey: "bookable.areas.requiredFields.title",
     type: "scroll",
     expertOption: "requiredFields",
   },
   {
     tabKey: "additional",
     id: "additional-notes",
-    labelKey: "bookable.edit.sections.additionalNotes",
+    labelKey: "bookable.areas.bookingNotes.title",
     type: "scroll",
   },
 ];
