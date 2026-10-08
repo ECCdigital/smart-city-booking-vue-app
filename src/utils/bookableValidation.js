@@ -121,7 +121,8 @@ export const BOOKABLE_RULE_NAMES = Object.freeze(Object.keys(RULES));
 
 /**
  * Where an issue of a top-level field is fixed: the tab and section of the
- * editing page, the step of the guided flow (`null` where it has none).
+ * editing page, the step of the guided flow (`null` where it has none) and,
+ * in the step „Weitere Einstellungen“, its area.
  */
 const PLACES = Object.freeze({
   title: { tab: "general", section: "general-catalog", step: "identity" },
@@ -176,8 +177,13 @@ const PLACES = Object.freeze({
     section: "openingHours-special",
     step: "availability",
   },
-  // Schließsysteme have no step in the guided flow yet.
-  accessPointDetails: { tab: "accessLocks", section: null, step: null },
+  // Schließsysteme: an area of „Weitere Einstellungen“ in the guided flow.
+  accessPointDetails: {
+    tab: "accessLocks",
+    section: null,
+    step: "more",
+    area: "accessLocks",
+  },
 });
 
 const MINUTES_PER_DAY = 24 * 60;
@@ -260,7 +266,9 @@ function refusal(name, value) {
  *   is the expert-mode rule as the caller asks it (`expertOptionShown`);
  *   without it every option shows.
  * @returns {Array<{field: string, message: string, tab: string,
- *   section: ?string, step: ?string}>} The issues, empty while it is fine.
+ *   section: ?string, step: ?string, area?: string}>} The issues, empty
+ *   while it is fine. `area` names the area of the step „Weitere
+ *   Einstellungen“ (`bookableAreas`) that holds the field.
  */
 export function bookableIssues(bookable, { shown = everyOption } = {}) {
   const found = [];

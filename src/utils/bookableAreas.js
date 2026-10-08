@@ -216,3 +216,11 @@ export function areaShown(key, shown) {
   const { option } = areaOf(key);
   return !option || shown(option);
 }
+
+/**
+ * The areas that show, given `shown(option)`, in the order of the tabs: the
+ * rows of the step „Weitere Einstellungen“ and the links to it.
+ */
+export function shownAreas(shown) {
+  return BOOKABLE_AREAS.filter((entry) => areaShown(entry.key, shown));
+}

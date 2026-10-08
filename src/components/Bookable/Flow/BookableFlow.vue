@@ -9,7 +9,7 @@
       :bookable="bookable"
       :outcome="outcome"
       :level="level"
-      @open-section="$emit('open-section', $event)"
+      @open-area="$emit('open-area', $event)"
       @another="$emit('another')"
       @overview="$emit('overview')"
     />
@@ -117,6 +117,7 @@
             <component
               :is="stepComponent"
               :key="step"
+              ref="step"
               :bookable="bookable"
               :is-new="isNew"
               v-bind="stepProps"
@@ -203,6 +204,7 @@ import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vu
 import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
 import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
 import BookableEditPublication from "@/components/Bookable/Edit/BookableEditPublication.vue";
+import BookableFlowMore from "@/components/Bookable/Flow/BookableFlowMore.vue";
 import BookableFlowDone from "@/components/Bookable/Flow/BookableFlowDone.vue";
 import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
 import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
@@ -219,6 +221,7 @@ const STEP_COMPONENTS = {
   amount: "BookableFlowAmount",
   permission: "BookableFlowPermission",
   approval: "BookableFlowApproval",
+  more: "BookableFlowMore",
   publication: "BookableEditPublication",
 };
 
@@ -262,6 +265,7 @@ export default {
     BookableFlowAmount,
     BookableFlowPermission,
     BookableFlowApproval,
+    BookableFlowMore,
     BookableEditPublication,
     BookableFlowDone,
     BookableFlowSummary,
@@ -335,9 +339,14 @@ export default {
       if (idx === this.index) return "current";
       return this.done.includes(this.steps[idx]) ? "done" : "upcoming";
     },
-    /** Opens the step `step`, as its dot does: a refused save asks for it. */
-    openStep(step) {
+    /**
+     * Opens the step `step`, as its dot does: a refused save asks for it.
+     * With `area`, the step „Weitere Einstellungen“ opens that area too - a
+     * link of the confirmation leads there.
+     */
+    openStep(step, area = null) {
       this.goTo(this.steps.indexOf(step));
+      if (area) this.$nextTick(() => this.$refs.step?.reveal?.(area));
     },
     goTo(idx) {
       if (idx < 0 || idx >= this.steps.length) return;

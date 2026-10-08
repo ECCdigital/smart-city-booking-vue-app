@@ -183,6 +183,7 @@
         @update:bookable="onUpdateBookable"
         @save="saveFlow"
         @open-section="openSection"
+        @open-area="openArea"
         @another="createAnother"
         @overview="toOverview"
         @skip="skipFlow"
@@ -575,7 +576,7 @@ export default {
       if (this.flowMode) {
         const issue = firstIssue(issues, FLOW_STEPS, "step");
         if (issue.step) {
-          this.$refs.flow.openStep(issue.step);
+          this.$refs.flow.openStep(issue.step, issue.area);
         } else {
           // No step of its own yet: the tab of the editing page.
           const { tab, section } = firstIssue(issues, tabs, "tab");
@@ -675,6 +676,15 @@ export default {
       delete query.mode;
       this.flowOutcome = null;
       return this.$router.replace({ query });
+    },
+    /**
+     * A link of the confirmation: back into the flow, at the area `key` of
+     * „Weitere Einstellungen“. The flow starts over once the outcome is gone.
+     */
+    async openArea(key) {
+      this.flowOutcome = null;
+      await this.$nextTick();
+      this.$refs.flow.openStep("more", key);
     },
     async openSection({ tabKey, sectionId }) {
       if (this.flowMode) await this.leaveFlow();
