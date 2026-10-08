@@ -38,7 +38,7 @@
               <span class="flow-summary__label">{{ $t(row.label) }}</span>
               <span
                 class="flow-summary__value"
-                :class="{ 'flow-summary__value--empty': row.value === null }"
+                :class="{ 'flow-summary__value--empty': !row.value.length }"
               >
                 {{ valueText(row.value) }}
               </span>
@@ -77,13 +77,15 @@ export default {
     return { icons: ICONS };
   },
   methods: {
-    valueText(value) {
-      if (value === null) return this.$t("bookable.flow.overview.empty");
-      if (Array.isArray(value)) return value.map(this.valueText).join(", ");
-      if (value.text !== undefined) return value.text;
-      return value.count === undefined
-        ? this.$t(value.key, value.params)
-        : this.$tc(value.key, value.count, value.params);
+    /** The parts of a row's value, joined by commas; none reads „–“. */
+    valueText(parts) {
+      if (!parts.length) return this.$t("bookable.flow.overview.empty");
+      return parts.map(this.partText).join(", ");
+    },
+    partText(part) {
+      if (part.type === "text") return part.text;
+      if (part.type === "plural") return this.$tc(part.key, part.count);
+      return this.$t(part.key, part.params);
     },
   },
 };

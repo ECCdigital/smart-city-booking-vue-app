@@ -379,8 +379,19 @@ export function optionalSections({ bookable, expertMode }) {
 
 const OVERVIEW = "bookable.flow.overview";
 
-/** A value as ready text; nothing to show is `null`, which reads „–“. */
-const asText = (value) => (value ? { text: String(value) } : null);
+/*
+ * A row's value is a list of parts, read joined by commas; no part reads
+ * „–“. A part is ready text, an i18n key with its params, or a plural key
+ * with its count.
+ */
+const textPart = (text) => ({ type: "text", text: String(text) });
+const wordPart = (key, params) => ({ type: "word", key, params });
+const pluralPart = (key, count) => ({ type: "plural", key, count });
+
+/** A value of ready text; nothing to show is no part. */
+const asText = (text) => (text ? [textPart(text)] : []);
+/** A value of one i18n key. */
+const asWord = (key, params) => [wordPart(key, params)];
 
 /** The event of a ticket by its title, as the editor's overview resolves it. */
 function eventLabel(bookable, eventTitlesById = {}) {
@@ -404,29 +415,29 @@ function identityRows(bookable, { eventTitlesById } = {}) {
     ...(bookable?.type === "ticket" ? [event] : []),
     {
       label: label("image"),
-      value: {
-        key: `${OVERVIEW}.values.${image ? "image-present" : "image-none"}`,
-      },
+      value: asWord(
+        `${OVERVIEW}.values.${image ? "image-present" : "image-none"}`
+      ),
     },
     { label: label("location"), value: asText(getLocationLabel(bookable)) },
     { label: label("flags"), value: asText(joinList(bookable?.flags)) },
   ];
 }
 
-const EXTERNAL = { key: `${OVERVIEW}.values.external` };
+const EXTERNAL = asWord(`${OVERVIEW}.values.external`);
 
 /** The booking type in the step's words; the long range with its unit. */
 function bookingTypeValue(bookable) {
-  const words = "bookable.flow.availability";
+  const availability = "bookable.flow.availability";
   const mode = bookingModeOf(bookable);
-  if (mode === "independent") return { key: `${words}.timed-no` };
+  if (mode === "independent") return asWord(`${availability}.timed-no`);
   if (mode === "week" || mode === "month") {
     return [
-      { key: `${words}.modes.longRange` },
-      { key: `${words}.long-range-${mode}` },
+      wordPart(`${availability}.modes.longRange`),
+      wordPart(`${availability}.long-range-${mode}`),
     ];
   }
-  return { key: `${words}.modes.${mode}` };
+  return asWord(`${availability}.modes.${mode}`);
 }
 
 function availabilityRows(bookable) {
@@ -442,22 +453,29 @@ function availabilityRows(bookable) {
 
 /**
  * A simple price's amount with its unit, as the editor's overview formats
- * it; tiers by their number.
+ * it; a fixed price that holds once per booking in the step's words.
  */
-function amountValue(bookable) {
-  const categories = bookable.priceCategories;
-  if (priceModeOf(bookable) === "tiers") {
-    return { key: `${OVERVIEW}.values.tiers`, count: categories.length };
+function simpleAmountValue(bookable) {
+  const category = bookable.priceCategories[0];
+  const amount = formatCurrency(toNumber(category.priceEur));
+  if (priceBasisOf(bookable) === "fixed" && category.fixedPrice) {
+    return asWord(`${OVERVIEW}.values.once`, { price: amount });
   }
-  const amount = formatCurrency(toNumber(categories[0].priceEur));
   return asText(`${amount}${PRICE_TYPE_SUFFIX[bookable.priceType] || ""}`);
+}
+
+/** Tiers by their number. */
+function tiersValue(bookable) {
+  const count = bookable.priceCategories.length;
+  return [pluralPart(`${OVERVIEW}.values.tiers`, count)];
 }
 
 function vatValue(bookable) {
   const rate = toNumber(bookable.priceValueAddedTax);
-  if (!(rate > 0)) return { key: `${OVERVIEW}.values.vat-none` };
-  const params = { rate: rate.toLocaleString("de-DE") };
-  return { key: `${OVERVIEW}.values.vat-rate`, params };
+  if (!(rate > 0)) return asWord(`${OVERVIEW}.values.vat-none`);
+  return asWord(`${OVERVIEW}.values.vat-rate`, {
+    rate: rate.toLocaleString("de-DE"),
+  });
 }
 
 /**
@@ -465,20 +483,22 @@ function vatValue(bookable) {
  * and whether coupons apply, as the step sets them.
  */
 function priceRows(bookable) {
-  const words = "bookable.flow.price";
+  const price = "bookable.flow.price";
   const label = "bookable.flow.steps.price.title";
   if (handlesExternalPricing(bookable)) return [{ label, value: EXTERNAL }];
-  if (priceModeOf(bookable) === "free") {
-    return [{ label, value: { key: `${words}.modes.free` } }];
-  }
 
+  const mode = priceModeOf(bookable);
+  if (mode === "free") return [{ label, value: asWord(`${price}.modes.free`) }];
+
+  const amount =
+    mode === "tiers" ? tiersValue(bookable) : simpleAmountValue(bookable);
   const coupons = bookable.enableCoupons !== false ? "yes" : "no";
   return [
-    { label, value: amountValue(bookable) },
-    { label: `${words}.vat`, value: vatValue(bookable) },
+    { label, value: amount },
+    { label: `${price}.vat`, value: vatValue(bookable) },
     {
-      label: `${words}.coupons`,
-      value: { key: `${OVERVIEW}.values.${coupons}` },
+      label: `${price}.coupons`,
+      value: asWord(`${OVERVIEW}.values.${coupons}`),
     },
   ];
 }
@@ -489,17 +509,17 @@ function priceRows(bookable) {
  */
 function permissionRows(bookable) {
   const access = accessOf(bookable);
-  const counted = [
-    { key: `${OVERVIEW}.values.roles`, count: bookable.permittedRoles?.length },
-    { key: `${OVERVIEW}.values.users`, count: bookable.permittedUsers?.length },
+  const chosen = [
+    pluralPart(`${OVERVIEW}.values.roles`, bookable.permittedRoles?.length),
+    pluralPart(`${OVERVIEW}.values.users`, bookable.permittedUsers?.length),
   ].filter(({ count }) => count > 0);
   return [
     {
       label: `${OVERVIEW}.labels.permission`,
       value:
         access === "selected"
-          ? counted
-          : { key: `bookable.flow.permission.access.${access}` },
+          ? chosen
+          : asWord(`bookable.flow.permission.access.${access}`),
     },
   ];
 }
@@ -513,7 +533,7 @@ const OVERVIEW_ROWS = {
     {
       label: `${OVERVIEW}.labels.amount`,
       value: isUnlimitedAmount(bookable)
-        ? { key: "bookable.flow.amount.unlimited" }
+        ? asWord("bookable.flow.amount.unlimited")
         : asText(toNumber(bookable.amount)),
     },
   ],
@@ -521,11 +541,11 @@ const OVERVIEW_ROWS = {
   approval: (bookable) => [
     {
       label: `${OVERVIEW}.labels.approval`,
-      value: {
-        key: `${OVERVIEW}.values.${
+      value: asWord(
+        `${OVERVIEW}.values.${
           bookable?.autoCommitBooking ? "approval-auto" : "approval-manual"
-        }`,
-      },
+        }`
+      ),
     },
   ],
 };
@@ -534,9 +554,9 @@ const OVERVIEW_ROWS = {
  * The overview beside the flow on a wide screen (ECCdigital/tickets#331):
  * one block per step, in the flow's order. A step not visited yet is open
  * and has no rows. A visited one has rows of `{ label, value }`: the label
- * an i18n key, the value `{ text }` (ready), `{ key, params?, count? }`
- * (an i18n key, `count` for a plural), a list of these (read joined by
- * commas) or `null` for „–“.
+ * an i18n key, the value a list of parts read joined by commas, each
+ * `{ type: "text", text }`, `{ type: "word", key, params }` or
+ * `{ type: "plural", key, count }`; an empty list reads „–“.
  */
 export function overviewBlocks(bookable, { visited = [], ...options } = {}) {
   return FLOW_STEPS.map((step) => {

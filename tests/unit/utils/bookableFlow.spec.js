@@ -361,15 +361,14 @@ describe("optionalSections", () => {
 
 describe("overview", () => {
   // A block as the overview shows it: label and value in German, „–“ empty.
-  // A list of values reads joined by commas.
-  const valueText = (value) => {
-    if (value === null) return "–";
-    if (Array.isArray(value)) return value.map(valueText).join(", ");
-    if (value.text !== undefined) return value.text;
-    return value.count === undefined
-      ? i18n.t(value.key, value.params)
-      : i18n.tc(value.key, value.count, value.params);
+  // The parts of a value read joined by commas.
+  const partText = (part) => {
+    if (part.type === "text") return part.text;
+    if (part.type === "plural") return i18n.tc(part.key, part.count);
+    return i18n.t(part.key, part.params);
   };
+  const valueText = (parts) =>
+    parts.length ? parts.map(partText).join(", ") : "–";
   const shown = ({ rows }) =>
     rows.map(({ label, value }) => [i18n.t(label), valueText(value)]);
   const blockOf = (step, item, options = {}) =>
@@ -479,6 +478,19 @@ describe("overview", () => {
       ["Preis", "12,50 €/Stk."],
       ["Mehrwertsteuer", "ohne"],
       ["Gutscheine", "nein"],
+    ]);
+  });
+
+  it("names a fixed price that holds once per booking as the step does", () => {
+    const item = bookable({
+      priceCategories: [category(25, { fixedPrice: true })],
+      priceType: "per-item",
+      amount: 10,
+    });
+
+    expect(shown(blockOf("price", item))[0]).toEqual([
+      "Preis",
+      "25,00 € für die ganze Buchung",
     ]);
   });
 
