@@ -19,6 +19,8 @@ import {
   getBookableEditSectionById,
 } from "@/utils/bookableEditSections";
 import { isBookableExpertOnlyTab } from "@/utils/bookableExpertMode";
+import { getTypeText } from "@/utils/bookables";
+import { getLocationLabel, joinList, truncate } from "@/utils/bookableOverview";
 
 export const FLOW_STEPS = Object.freeze([
   "identity",
@@ -364,5 +366,90 @@ export function optionalSections({ bookable, expertMode }) {
       bookable,
       expertMode,
     }).some((section) => section.id === sectionId);
+  });
+}
+
+// --- Übersicht -------------------------------------------------------------
+
+const OVERVIEW = "bookable.flow.overview";
+
+/** A value as ready text; nothing to show is `null`, which reads „–“. */
+const asText = (value) => (value ? { text: String(value) } : null);
+
+/** The event of a ticket by its title, as the editor's overview resolves it. */
+function eventLabel(bookable, eventTitlesById = {}) {
+  if (!bookable?.eventId) return "";
+  return (
+    truncate(eventTitlesById[bookable.eventId]) ||
+    truncate(String(bookable.eventId), 32)
+  );
+}
+
+function identityRows(bookable, { eventTitlesById } = {}) {
+  const label = (field) => `bookable.flow.identity.${field}`;
+  const image = bookable?.images?.length > 0 || bookable?.imgUrl;
+  const event = {
+    label: label("event"),
+    value: asText(eventLabel(bookable, eventTitlesById)),
+  };
+  return [
+    { label: label("title"), value: asText(truncate(bookable?.title)) },
+    { label: label("type"), value: asText(getTypeText(bookable?.type)) },
+    ...(bookable?.type === "ticket" ? [event] : []),
+    {
+      label: label("image"),
+      value: {
+        key: `${OVERVIEW}.values.${image ? "image-present" : "image-none"}`,
+      },
+    },
+    { label: label("location"), value: asText(getLocationLabel(bookable)) },
+    { label: label("flags"), value: asText(joinList(bookable?.flags)) },
+  ];
+}
+
+/**
+ * The rows of each visited block. Verfügbarkeit, Preis and Berechtigung show
+ * their title only until ECCdigital/tickets#332 gives them rows.
+ */
+const OVERVIEW_ROWS = {
+  identity: identityRows,
+  availability: () => [],
+  price: () => [],
+  amount: (bookable) => [
+    {
+      label: `${OVERVIEW}.labels.amount`,
+      value: isUnlimitedAmount(bookable)
+        ? { key: "bookable.flow.amount.unlimited" }
+        : asText(toNumber(bookable.amount)),
+    },
+  ],
+  permission: () => [],
+  approval: (bookable) => [
+    {
+      label: `${OVERVIEW}.labels.approval`,
+      value: {
+        key: `${OVERVIEW}.values.${
+          bookable?.autoCommitBooking ? "approval-auto" : "approval-manual"
+        }`,
+      },
+    },
+  ],
+};
+
+/**
+ * The overview beside the flow on a wide screen (ECCdigital/tickets#331):
+ * one block per step, in the flow's order. A step not visited yet is open
+ * and has no rows. A visited one has rows of `{ label, value }`: the label
+ * an i18n key, the value `{ text }` (ready), `{ key, params?, count? }`
+ * (an i18n key, `count` for a plural) or `null` for „–“.
+ */
+export function overviewBlocks(bookable, { visited = [], ...options } = {}) {
+  return FLOW_STEPS.map((step) => {
+    const open = !visited.includes(step);
+    return {
+      step,
+      open,
+      rows: open ? [] : OVERVIEW_ROWS[step](bookable, options),
+    };
   });
 }
