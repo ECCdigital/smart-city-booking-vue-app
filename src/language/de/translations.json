@@ -523,10 +523,6 @@
       },
       "openEvent": "Veranstaltung in neuem Tab öffnen",
       "sections": {
-        "generalInfo": "Allgemeine Infos",
-        "generalImages": "Bilder",
-        "generalBookerInfo": "Infos für Buchende",
-        "generalTags": "Interne Tags",
         "pricingExternal": "Externe Datenquelle",
         "pricingBase": "Grundeinstellungen",
         "pricingTiers": "Preisgestaltung",
