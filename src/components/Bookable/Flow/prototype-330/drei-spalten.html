@@ -1,0 +1,419 @@
+<!doctype html>
+<!--
+  PROTOTYP, Wegwerf-Code (ECCdigital/tickets#330, Karte #328).
+  Klickfreier Entwurf des geführten Ablaufs ab 1264px: drei Spalten wie der
+  Editor. Jeder Bildschirm ist ein iframe in echter Breite (1280 oder
+  1920 CSS-px), verkleinert dargestellt; die Maße in Magenta misst die
+  Seite selbst aus dem Layout. `?screen=<id>` zeigt einen Bildschirm in
+  Originalgröße.
+  Nachgebaut nach BookableFlow.vue, BookableEdit.vue, BookableEditOverview.vue,
+  tokens.scss, Admin.vue und Navbar.vue (Stand 08.10.2026). Kein Teil der App.
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Prototyp #330: Drei Spalten im geführten Ablauf</title>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --mark: #c2007a; --ink: #1f2328; --soft: #57606a; --line: #d0d7de; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Work Sans", system-ui, sans-serif; color: var(--ink); background: #eef0f2; }
+  .sheet { max-width: 1240px; margin: 0 auto; padding: 32px 24px 80px; }
+  .sheet h1 { font-size: 26px; font-weight: 600; margin: 0 0 6px; }
+  .sheet .lead { color: var(--soft); max-width: 72ch; line-height: 1.5; margin: 0 0 24px; font-size: 15px; }
+  .throwaway { display: inline-block; font-size: 12px; font-weight: 600; color: var(--mark); border: 1px solid var(--mark); border-radius: 4px; padding: 1px 6px; margin-bottom: 12px; }
+  .questions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 28px; padding: 0; list-style: none; counter-reset: q; }
+  .questions li { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; font-size: 14px; line-height: 1.45; counter-increment: q; }
+  .questions li::before { content: "Frage " counter(q); display: block; font-size: 12px; font-weight: 600; color: var(--mark); margin-bottom: 4px; }
+  .questions b { font-weight: 600; }
+  table.measure { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 13px; margin-bottom: 12px; }
+  table.measure th, table.measure td { padding: 7px 10px; text-align: right; border-bottom: 1px solid #eaeef2; white-space: nowrap; }
+  table.measure th:first-child, table.measure td:first-child { text-align: left; }
+  table.measure thead th { font-weight: 600; background: #f6f8fa; color: var(--soft); font-size: 12px; }
+  table.measure td.num { font-variant-numeric: tabular-nums; }
+  table.measure td.warn { color: #9a3412; font-weight: 600; }
+  .tablenote { font-size: 13px; color: var(--soft); line-height: 1.5; margin: 0 0 36px; max-width: 90ch; }
+  section.group { margin-top: 40px; }
+  section.group > h2 { font-size: 19px; font-weight: 600; margin: 0 0 4px; }
+  section.group > p { margin: 0 0 16px; color: var(--soft); font-size: 14px; line-height: 1.5; max-width: 80ch; }
+  figure.frame { margin: 0 0 28px; }
+  figure.frame figcaption { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; font-size: 14px; }
+  figure.frame figcaption b { font-weight: 600; }
+  figure.frame figcaption span { color: var(--soft); }
+  figure.frame figcaption a { margin-left: auto; font-size: 13px; color: #0969da; }
+  .stage { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .stage iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .dims { position: absolute; inset: 0; pointer-events: none; }
+  .dim { position: absolute; height: 18px; border-left: 1px solid var(--mark); border-right: 1px solid var(--mark); }
+  .dim::before { content: ""; position: absolute; left: 0; right: 0; top: 9px; border-top: 1px solid var(--mark); }
+  .dim span { position: absolute; left: 50%; top: 0; transform: translateX(-50%); background: var(--mark); color: #fff; font-size: 11px; font-weight: 600; line-height: 18px; padding: 0 5px; border-radius: 3px; white-space: nowrap; }
+  .dim.slack { border-color: #8c959f; }
+  .dim.slack::before { border-top: 1px dashed #8c959f; }
+  .dim.slack span { background: #6e7781; }
+  .fold { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--mark); }
+  .fold span { position: absolute; right: 6px; top: -17px; font-size: 11px; color: var(--mark); background: rgba(255,255,255,.9); padding: 0 4px; }
+</style>
+</head>
+<body>
+<script>
+/* ---------- Bildschirm: die App nachgebaut ---------------------------- */
+
+const SCREEN_CSS = `
+:root{--primary:#0099DB;--accent:#e5f5fc;--warning:#FB8C00;
+--scb-surface:#fff;--scb-surface-border:rgba(0,0,0,.12);--scb-surface-tint:rgba(0,0,0,.03);
+--scb-rule:rgba(0,0,0,.06);--scb-rule-strong:rgba(0,0,0,.08);--scb-hover-tint:rgba(0,0,0,.04);
+--scb-selected-tint:color-mix(in srgb,var(--primary) 8%,transparent);
+--scb-selected-tint-faint:color-mix(in srgb,var(--primary) 5%,transparent);
+--scb-text:rgba(0,0,0,.87);--scb-text-muted:rgba(0,0,0,.6);--scb-text-caption:rgba(0,0,0,.45);
+--scb-radius-surface:8px;--scb-radius-control:4px;
+--nav-w:196px;--nav-w-max:228px;--ov-w:300px;--ov-w-max:320px;--step-max:880px}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Work Sans",sans-serif;font-size:14px;color:var(--scb-text);background:#fff;-webkit-font-smoothing:antialiased}
+.mdi::before{font-size:inherit}
+.bar{position:fixed;top:0;left:0;right:0;height:64px;background:#f5f5f5;display:flex;align-items:center;padding:0 16px;gap:16px;z-index:3}
+.bar .logo{font-weight:700;font-size:20px;color:var(--primary);letter-spacing:-.01em}
+.bar .sp{flex:1}
+.bar .mdi{font-size:24px;color:rgba(0,0,0,.54)}
+.drawer{position:fixed;top:64px;bottom:0;left:0;width:256px;background:#fff;border-right:1px solid rgba(0,0,0,.12);padding:8px 8px}
+.tenant{background:var(--accent);border-radius:28px;height:40px;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:13px;margin:0 0 8px}
+.tenant .mdi{font-size:20px;color:rgba(0,0,0,.54)} .tenant .sp{flex:1}
+.drawer .item{display:flex;align-items:center;gap:20px;height:40px;padding:0 12px;border-radius:20px;font-size:13px;font-weight:500;color:rgba(0,0,0,.87)}
+.drawer .item .mdi{font-size:20px;color:rgba(0,0,0,.54)}
+.drawer .item.on{background:var(--scb-selected-tint);color:var(--primary)} .drawer .item.on .mdi{color:var(--primary)}
+.main{margin-left:256px;padding:76px 12px 24px 12px}
+.page-h{font-size:24px;font-weight:700;margin:0;padding-bottom:12px}
+.body{padding-right:12px}
+.meta{display:flex;justify-content:flex-end;margin-bottom:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;border-radius:4px;font:inherit;font-size:14px;font-weight:500;border:0;background:transparent;color:var(--scb-text)}
+.btn.small{height:28px;padding:0 10px;font-size:13px}
+.btn.pri{background:var(--primary);color:#fff}
+.btn .mdi{font-size:18px}
+/* Fluss */
+.count{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--primary)}
+.title{margin:2px 0 0;font-size:1.25rem;font-weight:600;line-height:1.3}
+.why{margin:4px 0 0;font-size:13px;line-height:1.4;color:var(--scb-text-muted)}
+.fhead{margin-bottom:16px}
+.panel{padding:20px;background:var(--scb-surface);border:1px solid var(--scb-surface-border);border-radius:var(--scb-radius-surface)}
+.field{margin-bottom:20px}
+.q{margin-bottom:8px;font-size:14px;font-weight:600;line-height:1.4}
+.hint{margin-top:4px;font-size:12px;line-height:1.4;color:var(--scb-text-muted)}
+.seg{display:flex;width:100%;overflow:hidden;border:1px solid var(--scb-surface-border);border-radius:4px}
+.seg div{flex:1 1 0;min-width:0;padding:8px 12px;font-size:13px;line-height:1.4;color:var(--scb-text-muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg div+div{border-left:1px solid var(--scb-surface-border)}
+.seg div.on{font-weight:600;color:#fff;background:var(--primary)}
+.note{padding:12px 16px;font-size:13px;line-height:1.4;background:var(--scb-selected-tint-faint);border-radius:4px;margin:0 0 20px}
+.inline{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 12px;border:1px solid rgba(0,0,0,.12);border-radius:12px;font-size:12px}
+.chip.on{color:var(--primary);border-color:currentColor;background:var(--scb-selected-tint)}
+.tf{position:relative;height:40px;border:1px solid rgba(0,0,0,.38);border-radius:4px;display:flex;align-items:center;padding:0 12px;font-size:14px}
+.tf label{position:absolute;left:8px;top:-8px;background:#fff;padding:0 4px;font-size:12px;color:var(--scb-text-muted)}
+.tf.empty label{top:11px;font-size:14px;left:11px}
+.tf .v{flex:1} .tf .suf{color:var(--scb-text-muted)}
+.sw{display:flex;align-items:flex-start;gap:12px}
+.sw .track{flex:none;position:relative;width:36px;height:14px;border-radius:7px;background:rgba(0,0,0,.38);margin-top:5px}
+.sw .track::after{content:"";position:absolute;top:-3px;left:-2px;width:20px;height:20px;border-radius:50%;background:#fafafa;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw.on .track{background:color-mix(in srgb,var(--primary) 50%,transparent)}
+.sw.on .track::after{left:18px;background:var(--primary)}
+.box{margin-top:20px;padding:16px;border:1px solid var(--scb-surface-border);border-radius:8px}
+.sum{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:16px;padding-top:12px;font-size:13px;color:var(--scb-text-muted);border-top:1px solid var(--scb-rule)}
+.total{font-size:1.25rem;font-weight:600;color:var(--primary)} .total small{font-size:12px;font-weight:400;color:var(--scb-text-muted)}
+.foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--scb-rule)}
+/* Heute: Punkte-Leiste, Spalte bis 720px */
+.today{max-width:720px;margin:0 auto;padding-bottom:24px}
+.dots{display:flex;align-items:center;gap:8px;margin:8px 0 20px}
+.dot{flex:none;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+.dot.cur{background:var(--primary);color:#fff}.dot.done{background:var(--scb-selected-tint);color:var(--primary)}.dot.up{background:var(--scb-surface-tint);color:var(--scb-text-muted)}
+.dots .line{flex:1;height:1px;background:var(--scb-rule)}
+/* Drei Spalten */
+.three{display:flex;align-items:flex-start;gap:16px}
+.three[data-align=center]{justify-content:center}
+.three[data-align=pin] .ov{margin-left:auto}
+.steps{flex:0 0 auto;min-width:var(--nav-w);max-width:var(--nav-w-max);padding:2px 0;position:sticky;top:0}
+.s{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:8px 12px 8px 10px;border-left:3px solid transparent;border-radius:0 4px 4px 0;font-size:14px;line-height:1.25;white-space:nowrap}
+.s .b{flex:none;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
+.s.done .b{background:var(--scb-selected-tint);color:var(--primary)}
+.s.up .b{background:var(--scb-surface-tint);color:var(--scb-text-muted)}
+.s.up{color:var(--scb-text-muted)}
+.s.cur{color:var(--primary);border-left-color:var(--primary);background:var(--scb-selected-tint);font-weight:500}
+.s.cur .b{background:var(--primary);color:#fff}
+.s.flag{color:var(--scb-text-caption);margin-top:6px;border-top:1px solid var(--scb-rule);border-radius:0;padding-top:12px}
+.s.flag .b{background:transparent;color:var(--scb-text-caption);font-size:15px}
+.step{flex:1 1 auto;min-width:0;max-width:var(--step-max);padding-bottom:24px}
+.ov{flex:0 0 var(--ov-w);max-width:var(--ov-w-max);position:sticky;top:0;border:1px solid var(--scb-surface-border);border-radius:8px;background:#fff}
+.ov-h{display:flex;align-items:center;gap:10px;min-height:52px;padding:14px 16px;font-size:15px;font-weight:600;border-bottom:1px solid var(--scb-rule-strong)}
+.ov-h .mdi{font-size:20px;color:rgba(0,0,0,.54)}
+.ov-b{padding:8px}
+.blk{padding:8px 8px 8px;border-radius:4px}
+.blk+.blk{margin-top:2px}
+.blk.cur{background:var(--scb-selected-tint-faint);box-shadow:inset 3px 0 0 var(--primary)}
+.blk-t{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--scb-text-muted);margin-bottom:4px}
+.blk.cur .blk-t{color:var(--primary)}
+.blk-t .mdi{font-size:14px}
+.row{display:flex;align-items:baseline;padding:2px 0 2px 20px;font-size:13px;line-height:1.35}
+.row .l{flex:0 0 42%;font-size:12px;color:var(--scb-text-muted);padding-right:8px}
+.row .v{flex:1;font-weight:500;min-width:0;word-break:break-word}
+.row .v.dash{color:var(--scb-text-caption);font-weight:400}
+.open{padding:0 0 2px 20px;font-size:13px;color:var(--scb-text-caption)}
+`;
+
+const STEPS = [
+  ["identity", "Identität", "mdi-card-account-details-outline"],
+  ["availability", "Verfügbarkeit", "mdi-calendar-clock-outline"],
+  ["price", "Preis", "mdi-cash"],
+  ["amount", "Anzahl & Kapazität", "mdi-counter"],
+  ["permission", "Berechtigung", "mdi-account-key-outline"],
+  ["approval", "Freigabe", "mdi-check-decagram-outline"],
+];
+
+// Zwei Stände desselben Raums, beide im Schritt Preis (Index 2).
+const STATES = {
+  leer: {
+    done: ["identity"],
+    price: { amount: "", vat: false },
+    blocks: {
+      identity: [["Name", "Großer Saal"], ["Typ", "Raum"], ["Bild", "–"], ["Standort", "–"], ["Tags", "–"]],
+      availability: null,
+      price: [["Preis", "– € pro Stunde"], ["MwSt", "–"], ["Gutscheine", "ja"]],
+    },
+  },
+  halb: {
+    done: ["identity", "availability"],
+    price: { amount: "45,00", vat: true },
+    blocks: {
+      identity: [["Name", "Großer Saal"], ["Typ", "Raum"], ["Bild", "vorhanden"], ["Standort", "Rathaus, Neuer Markt 1, 18055 Rostock"], ["Tags", "Saal, barrierefrei"]],
+      availability: [["Buchungsart", "Freie Zeitwahl"]],
+      price: [["Preis", "45,00 € pro Stunde"], ["MwSt", "19 %"], ["Gutscheine", "ja"]],
+    },
+  },
+};
+
+function priceStep(st) {
+  const p = st.price;
+  const amount = p.amount
+    ? `<div class="tf"><label>${p.vat ? "Was kostet es? (netto)" : "Was kostet es?"}</label><span class="v">${p.amount}</span><span class="suf">€</span></div>`
+    : `<div class="tf empty"><label>Was kostet es?</label><span class="v"></span><span class="suf">€</span></div>`;
+  const explain = p.amount
+    ? "Gerechnet wird minutengenau – eine Buchung über 2,5 Stunden kostet 112,50 €."
+    : "Ohne Betrag bleibt die Buchung kostenfrei.";
+  const vat = p.vat
+    ? `<div class="sw on"><span class="track"></span><div><div class="q" style="margin:0">Mehrwertsteuer</div><div class="hint" style="margin:0">Auf den Betrag kommt Mehrwertsteuer.</div></div></div>
+       <div class="inline" style="margin-top:12px"><span class="chip on">19 %</span><span class="chip">7 %</span><span class="chip">anderer Satz</span></div>
+       <div class="sum"><span>45,00 € netto + 19 % MwSt.</span><span class="total">53,55 € <small>brutto</small></span></div>`
+    : `<div class="sw"><span class="track"></span><div><div class="q" style="margin:0">Mehrwertsteuer</div><div class="hint" style="margin:0">Der Betrag ist der Endpreis.</div></div></div>`;
+  return `
+    <div class="field"><div class="seg"><div>Kostenfrei</div><div class="on">Einfacher Preis</div></div></div>
+    ${p.amount ? "" : `<p class="note">Vorbelegt, weil Buchende im Kalender eine Zeit wählen – Sie können das ändern.</p>`}
+    <div class="field"><div class="q">Wonach richtet sich der Preis?</div>
+      <div class="seg"><div class="on">Pro Stunde</div><div>Pro Tag</div><div>Fester Preis</div></div></div>
+    <div class="field">${amount}<div class="hint">${explain}</div></div>
+    <div class="box">${vat}</div>`;
+}
+
+function stepHead() {
+  return `<header class="fhead"><div class="count">Schritt 3 von 6</div><h2 class="title">Preis</h2>
+    <p class="why">Was Buchende zahlen. Kostenfrei ist eine vollwertige Antwort.</p></header>`;
+}
+
+function footer() {
+  return `<div class="foot"><button class="btn"><i class="mdi mdi-chevron-left"></i>Zurück</button>
+    <button class="btn pri">Weiter<i class="mdi mdi-chevron-right"></i></button></div>`;
+}
+
+function stateOf(st, key, idx) {
+  if (idx === 2) return "cur";
+  return st.done.includes(key) ? "done" : "up";
+}
+
+function stepList(st) {
+  const items = STEPS.map(([key, title], idx) => {
+    const s = stateOf(st, key, idx);
+    const badge = s === "done" ? `<i class="mdi mdi-check"></i>` : idx + 1;
+    return `<div class="s ${s}"><span class="b">${badge}</span>${title}</div>`;
+  }).join("");
+  return `<nav class="steps" data-m="nav">${items}<div class="s flag"><span class="b"><i class="mdi mdi-flag-outline"></i></span>Abschluss</div></nav>`;
+}
+
+function overview(st) {
+  const blocks = STEPS.map(([key, title, icon], idx) => {
+    const rows = st.blocks[key];
+    const body = rows
+      ? rows.map(([l, v]) => `<div class="row"><span class="l">${l}</span><span class="v${v === "–" ? " dash" : ""}">${v}</span></div>`).join("")
+      : `<div class="open">Noch offen</div>`;
+    return `<div class="blk${idx === 2 ? " cur" : ""}"><div class="blk-t"><i class="mdi ${icon}"></i>${title}</div>${body}</div>`;
+  }).join("");
+  return `<aside class="ov" data-m="ov"><div class="ov-h"><i class="mdi mdi-clipboard-text-outline"></i>Übersicht</div><div class="ov-b">${blocks}</div></aside>`;
+}
+
+function chrome(inner) {
+  const nav = [["mdi-view-dashboard-outline", "Übersicht"], ["mdi-calendar-check-outline", "Buchungen"], ["mdi-cube-outline", "Buchungsobjekte", true], ["mdi-ticket-outline", "Veranstaltungen"], ["mdi-ticket-percent-outline", "Gutscheine"], ["mdi-account-multiple-outline", "Benutzer"], ["mdi-cog-outline", "Einstellungen"]]
+    .map(([i, t, on]) => `<div class="item${on ? " on" : ""}"><i class="mdi ${i}"></i>${t}</div>`).join("");
+  return `<header class="bar"><i class="mdi mdi-menu"></i><span class="logo">Raumfinder</span><span class="sp"></span><i class="mdi mdi-moon-waxing-crescent"></i><i class="mdi mdi-bell-outline"></i><i class="mdi mdi-account-circle"></i></header>
+    <aside class="drawer"><div class="tenant"><i class="mdi mdi-home-account"></i><span>Hansestadt Rostock</span><span class="sp"></span><i class="mdi mdi-menu-down"></i></div>${nav}</aside>
+    <main class="main"><h1 class="page-h">Raum erstellen</h1><div class="body" data-m="body">${inner}</div></main>`;
+}
+
+function screenHtml(cfg) {
+  const st = STATES[cfg.state];
+  let inner;
+  if (cfg.layout === "today") {
+    const dots = STEPS.map(([key], idx) => {
+      const s = stateOf(st, key, idx);
+      return `<span class="dot ${s}">${s === "done" ? `<i class="mdi mdi-check"></i>` : idx + 1}</span>`;
+    }).join("");
+    inner = `<div class="today" data-m="step"><nav class="dots">${dots}<span class="line"></span><span class="dot up"><i class="mdi mdi-flag-outline"></i></span></nav>
+      ${stepHead()}<div class="panel" data-m="panel">${priceStep(st)}</div>${footer()}</div>`;
+  } else {
+    const vars = cfg.sides === "schmal"
+      ? "--nav-w:172px;--nav-w-max:172px;--ov-w:264px;--ov-w-max:264px;"
+      : "";
+    inner = `<div class="three" data-align="${cfg.align}" style="${vars}--step-max:${cfg.stepMax}px">
+      ${stepList(st)}
+      <div class="step" data-m="step">${stepHead()}<div class="panel" data-m="panel">${priceStep(st)}</div>${footer()}</div>
+      ${overview(st)}</div>`;
+  }
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+    <style>${SCREEN_CSS}</style></head><body>${chrome(inner)}</body></html>`;
+}
+
+/* ---------- Die Bildschirme ------------------------------------------ */
+
+const SCREENS = [
+  { id: "heute-1280", group: "g1280", w: 1280, vh: 800, layout: "today", state: "halb", title: "Heute bei 1280px", sub: "Punkte-Leiste, Spalte bis 720px, zentriert. Zum Vergleich." },
+  { id: "1280-leer", group: "g1280", w: 1280, vh: 800, layout: "three", state: "leer", sides: "editor", align: "left", stepMax: 880, title: "1280px, leer", sub: "Nur der Name steht; Verfügbarkeit übersprungen. Seitenspalten mit den Tokens des Editors." },
+  { id: "1280-halb", group: "g1280", w: 1280, vh: 800, layout: "three", state: "halb", sides: "editor", align: "left", stepMax: 880, title: "1280px, halb ausgefüllt", sub: "Identität und Verfügbarkeit erledigt. Tokens des Editors." },
+  { id: "1280-halb-schmal", group: "g1280", w: 1280, vh: 800, layout: "three", state: "halb", sides: "schmal", align: "left", stepMax: 880, title: "1280px, halb, eigene schmale Seitenspalten", sub: "Schrittliste 172px, Übersicht 264px statt 196 und 300." },
+  { id: "1920-leer-links", group: "g1920", w: 1920, vh: 1080, layout: "three", state: "leer", sides: "editor", align: "left", stepMax: 880, title: "1920px, leer, bündig links", sub: "Alle drei Spalten links, der Rest bleibt rechts frei." },
+  { id: "1920-halb-links", group: "g1920", w: 1920, vh: 1080, layout: "three", state: "halb", sides: "editor", align: "left", stepMax: 880, title: "1920px, halb, A: bündig links", sub: "Die Übersicht hängt am Schritt, der Rest bleibt rechts frei." },
+  { id: "1920-halb-rand", group: "g1920", w: 1920, vh: 1080, layout: "three", state: "halb", sides: "editor", align: "pin", stepMax: 880, title: "1920px, halb, B: Übersicht am rechten Rand", sub: "Wie die Übersicht im Editor; die Lücke liegt zwischen Schritt und Übersicht." },
+  { id: "1920-halb-mitte", group: "g1920", w: 1920, vh: 1080, layout: "three", state: "halb", sides: "editor", align: "center", stepMax: 880, title: "1920px, halb, C: als Ganzes zentriert", sub: "Der Rest verteilt sich links und rechts." },
+  { id: "1920-halb-720", group: "g880", w: 1920, vh: 1080, layout: "three", state: "halb", sides: "editor", align: "left", stepMax: 720, title: "1920px, halb, Schritt bis 720px", sub: "Wie heute die Spalte; zum Vergleich mit A (bis 880px)." },
+];
+
+const GROUPS = [
+  ["g1280", "1280px: der Laptop", "Mit der App-Navigation (256px) bleiben für den Ablauf 988px. Drei Spalten machen den Schritt hier schmaler als heute: 460px statt 720px. Ist die App-Navigation zugeklappt, sind es 716px."],
+  ["g1920", "1920px: Ausrichtung (Frage 1)", "Ab 1700px Fensterbreite erreicht der Schritt seine 880px (mit Tokens des Editors und offener App-Navigation), und es bleibt Platz übrig. A, B und C verteilen ihn verschieden. Darunter sehen alle drei gleich aus."],
+  ["g880", "1920px: reichen 880px? (Frage 3)", "Der Betrag und die Leisten wachsen heute mit der Spalte; bei 880px werden sie sehr breit."],
+];
+
+/* ---------- Messen und zeichnen --------------------------------------- */
+
+function measure(doc) {
+  const r = (sel) => { const el = doc.querySelector(`[data-m="${sel}"]`); return el ? el.getBoundingClientRect() : null; };
+  const body = r("body"), nav = r("nav"), step = r("step"), ov = r("ov"), panel = doc.querySelector('[data-m="panel"]');
+  const cs = panel ? getComputedStyle(panel) : null;
+  const panelInner = panel ? panel.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2 : null;
+  return { body, nav, step, ov, panelInner };
+}
+
+function drawDims(fig, cfg, m, scale) {
+  const layer = fig.querySelector(".dims");
+  layer.innerHTML = "";
+  const y = (m.step.top - 26) * scale;
+  const add = (left, width, label, cls = "") => {
+    if (width < 1) return;
+    const d = document.createElement("div");
+    d.className = "dim " + cls;
+    d.style.left = left * scale + "px";
+    d.style.width = width * scale + "px";
+    d.style.top = y + "px";
+    d.innerHTML = `<span>${label}</span>`;
+    layer.appendChild(d);
+  };
+  const px = (n) => Math.round(n) + "px";
+  if (m.nav) add(m.nav.left, m.nav.width, px(m.nav.width));
+  add(m.step.left, m.step.width, "Schritt " + px(m.step.width));
+  if (m.ov) add(m.ov.left, m.ov.width, px(m.ov.width));
+  // freier Platz innerhalb der Inhaltsfläche
+  const first = m.nav ? m.nav : m.step;
+  const last = m.ov ? m.ov : m.step;
+  add(m.body.left, first.left - m.body.left, "frei " + px(first.left - m.body.left), "slack");
+  if (m.ov) add(m.step.right, m.ov.left - m.step.right - 32, "frei " + px(m.ov.left - m.step.right - 32), "slack"); // ohne die zwei Spaltenabstände
+  add(last.right, m.body.right - last.right - 12, "frei " + px(m.body.right - last.right - 12), "slack");
+  // Unterkante des Bildschirms
+  const f = document.createElement("div");
+  f.className = "fold";
+  f.style.top = cfg.vh * scale + "px";
+  f.innerHTML = `<span>Unterkante bei ${cfg.w}×${cfg.vh}</span>`;
+  layer.appendChild(f);
+}
+
+const results = {};
+
+function mount(fig, cfg) {
+  const stage = fig.querySelector(".stage");
+  const iframe = document.createElement("iframe");
+  iframe.width = cfg.w;
+  iframe.srcdoc = screenHtml(cfg);
+  stage.insertBefore(iframe, stage.firstChild);
+  const fit = () => {
+    const doc = iframe.contentDocument;
+    if (!doc || !doc.body) return;
+    const h = Math.max(cfg.vh, doc.documentElement.scrollHeight);
+    iframe.height = h;
+    const scale = stage.clientWidth / cfg.w;
+    iframe.style.transform = `scale(${scale})`;
+    stage.style.height = h * scale + "px";
+    const m = measure(doc);
+    if (!m.step) return;
+    drawDims(fig, cfg, m, scale);
+    results[cfg.id] = m;
+    renderTable();
+  };
+  iframe.addEventListener("load", () => {
+    fit();
+    iframe.contentDocument.fonts.ready.then(() => setTimeout(fit, 50));
+  });
+  window.addEventListener("resize", fit);
+}
+
+function renderTable() {
+  const tbody = document.querySelector("#measure tbody");
+  tbody.innerHTML = SCREENS.map((s) => {
+    const m = results[s.id];
+    if (!m) return "";
+    const n = (v) => (v == null ? "–" : Math.round(v));
+    const slack = m.body.width - 12 - (m.nav ? m.nav.width + 16 : 0) - m.step.width - (m.ov ? m.ov.width + 16 : 0);
+    const narrow = m.step.width < 720;
+    return `<tr><td>${s.title}</td><td class="num">${n(m.body.width - 12)}</td><td class="num">${m.nav ? n(m.nav.width) : "–"}</td>
+      <td class="num ${narrow ? "warn" : ""}">${n(m.step.width)}</td><td class="num ${m.panelInner < 600 ? "warn" : ""}">${n(m.panelInner)}</td>
+      <td class="num">${m.ov ? n(m.ov.width) : "–"}</td><td class="num">${n(slack)}</td></tr>`;
+  }).join("");
+}
+
+/* ---------- Seite ------------------------------------------------------ */
+
+const single = new URLSearchParams(location.search).get("screen");
+if (single) {
+  const cfg = SCREENS.find((s) => s.id === single) || SCREENS[0];
+  document.open();
+  document.write(screenHtml(cfg));
+  document.close();
+} else {
+  const groups = GROUPS.map(([g, h, p]) => {
+    const figs = SCREENS.filter((s) => s.group === g).map((s) => `
+      <figure class="frame" data-id="${s.id}"><figcaption><b>${s.title}</b><span>${s.sub}</span><a href="?screen=${s.id}">Originalgröße</a></figcaption>
+      <div class="stage"><div class="dims"></div></div></figure>`).join("");
+    return `<section class="group"><h2>${h}</h2><p>${p}</p>${figs}</section>`;
+  }).join("");
+  document.body.insertAdjacentHTML("beforeend", `
+  <div class="sheet">
+    <span class="throwaway">Prototyp, Wegwerf-Code</span>
+    <h1>Geführter Ablauf ab 1264px: drei Spalten</h1>
+    <p class="lead">Klärung „Entwurf des Drei-Spalten-Layouts bei 1280px und 1920px“ (ECCdigital/tickets#330). Schrittliste links, Schritt in der Mitte, Übersicht rechts, gezeigt am Schritt Preis. Jeder Bildschirm ist in echter Breite gerechnet und verkleinert; die Maße in Magenta misst die Seite aus dem Layout.</p>
+    <ul class="questions">
+      <li><b>Ausrichtung ab 1904px:</b> bündig links wie der Editor oder als Ganzes zentriert?</li>
+      <li><b>Breiten der Seitenspalten:</b> die Tokens des Editors (196–228px links, 300–320px rechts) oder eigene?</li>
+      <li><b>Schrittbreite:</b> reichen 880px für Preis und Verfügbarkeit, oder bleibt der Schritt enger?</li>
+    </ul>
+    <table class="measure" id="measure"><thead><tr><th>Bildschirm</th><th>Inhaltsfläche</th><th>Schrittliste</th><th>Schritt</th><th>Feldbreite im Schritt</th><th>Übersicht</th><th>frei</th></tr></thead><tbody></tbody></table>
+    <p class="tablenote">Inhaltsfläche: was rechts der App-Navigation (256px) nach den Rändern der Seite bleibt. Feldbreite: der Schritt ohne den Innenabstand des Panels, so breit werden Leisten und Betrag. Rot: der Schritt ist schmaler als die 720px von heute, oder die Felder schmaler als 600px. Gemessen ohne sichtbare Scrollleiste (macOS); unter Windows nimmt sie dem Schritt rund 15px mehr.</p>
+    ${groups}
+  </div>`);
+  document.querySelectorAll("figure.frame").forEach((fig) => mount(fig, SCREENS.find((s) => s.id === fig.dataset.id)));
+}
+</script>
+</body>
+</html>
