@@ -3,8 +3,8 @@
  * variant: the steps over the same bookable the editor holds, saved once at
  * the end. Pure: which steps there are, how each question reads from the
  * bookable and lands on it, how the confirmation is worded by supervision
- * level and which optional editor sections it links. The flow components
- * only wire it to the page.
+ * level and what the overview shows per step. The flow components only
+ * wire it to the page.
  *
  * Every answer is read from the bookable itself - the flow keeps no state of
  * its own beyond the step - so leaving for the editor and coming back shows
@@ -16,9 +16,8 @@ import { providerHandles } from "@/utils/bookableExternalProviders";
 import {
   bookingModeNameKey,
   getBookingMode,
-  getVisibleBookableEditSections,
-  getBookableEditSectionById,
 } from "@/utils/bookableEditSections";
+import { BOOKABLE_AREAS, areaSummary, areaUsed } from "@/utils/bookableAreas";
 import { getTypeText } from "@/utils/bookables";
 import {
   PRICE_TYPE_SUFFIX,
@@ -35,6 +34,7 @@ export const FLOW_STEPS = Object.freeze([
   "amount",
   "permission",
   "approval",
+  "more",
   // Always last: what becomes public is the final question (#362).
   "publication",
 ]);
@@ -404,40 +404,6 @@ export function publishVariant(level) {
     : SUPERVISION_LEVELS.FREE;
 }
 
-/**
- * The optional sections of the cloud variant's confirmation, each pointing
- * at the section of today's editor that holds it. Only what the editor
- * offers is linked: an expert option as `shown(option)` - the expert-mode
- * rule - says.
- */
-const OPTIONAL_SECTIONS = Object.freeze([
-  { key: "required-fields", sectionId: "additional-required-fields" },
-  { key: "attachments", tabKey: "attachments" },
-  { key: "notes", sectionId: "additional-notes" },
-  { key: "checkout", sectionId: "related-checkout" },
-  { key: "hierarchy", sectionId: "related-hierarchy" },
-  { key: "group-booking", sectionId: "permissions-group-booking" },
-  { key: "cancellation", sectionId: "permissions-cancellation" },
-]);
-
-export function optionalSections({ bookable, shown }) {
-  return OPTIONAL_SECTIONS.map((entry) => {
-    const section = entry.sectionId
-      ? getBookableEditSectionById(entry.sectionId)
-      : null;
-    return {
-      key: entry.key,
-      tabKey: section ? section.tabKey : entry.tabKey,
-      sectionId: entry.sectionId || null,
-    };
-  }).filter(({ tabKey, sectionId }) => {
-    if (!sectionId) return true;
-    return getVisibleBookableEditSections(tabKey, { bookable, shown }).some(
-      (section) => section.id === sectionId
-    );
-  });
-}
-
 // --- Übersicht -------------------------------------------------------------
 
 const OVERVIEW = "bookable.flow.overview";
@@ -578,6 +544,20 @@ function permissionRows(bookable) {
 }
 
 /** The rows of each visited block. */
+/**
+ * Weitere Einstellungen: a row per area in use, its summary as the value;
+ * none in use reads as one empty row.
+ */
+function moreRows(bookable) {
+  const rows = BOOKABLE_AREAS.filter(({ key }) => areaUsed(key, bookable)).map(
+    ({ key, titleKey }) => ({
+      label: titleKey,
+      value: areaSummary(key, bookable),
+    })
+  );
+  return rows.length ? rows : [{ label: "bookable.flow.more.used", value: [] }];
+}
+
 const OVERVIEW_ROWS = {
   identity: identityRows,
   availability: availabilityRows,
@@ -601,6 +581,7 @@ const OVERVIEW_ROWS = {
       ),
     },
   ],
+  more: moreRows,
   // The two switches by the labels of the fields themselves.
   publication: (bookable) =>
     [

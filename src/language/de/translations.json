@@ -206,6 +206,10 @@
           "title": "Freigabe",
           "why": "Sollen Buchungen automatisch freigegeben werden oder erst nach Ihrer Prüfung?"
         },
+        "more": {
+          "title": "Weitere Einstellungen",
+          "why": "Was die Bearbeitungsseite sonst noch kann. Alles hier ist optional, „Weiter“ geht ohne Eingabe."
+        },
         "publication": {
           "title": "Veröffentlichung",
           "why": "Ob Buchende das Objekt im Katalog finden und ob sie es buchen können – beides lässt sich einzeln einstellen."
@@ -381,6 +385,10 @@
         "manual": "Manuell prüfen",
         "manual-hint": "Das System prüft weiterhin alles; buchen kann man nur, wenn alle Angaben passen. Die Buchung kommt aber als ausstehend in Ihre Buchungsliste – Sie geben sie frei oder lehnen ab."
       },
+      "more": {
+        "unused": "Nicht genutzt",
+        "used": "Genutzte Bereiche"
+      },
       "overview": {
         "title": "Übersicht",
         "open": "Noch offen",
@@ -439,36 +447,6 @@
         "open-points-hint": "Nichts davon ist Pflicht. Sie können es jetzt oder später in den Einstellungen des Mandanten ergänzen.",
         "optional": "Weitere Einstellungen",
         "optional-note": "optional",
-        "sections": {
-          "required-fields": {
-            "title": "Pflichtangaben",
-            "hint": "Welche Kontaktangaben Buchende im Checkout machen müssen."
-          },
-          "attachments": {
-            "title": "Dokumente & Einwilligungen",
-            "hint": "Was Buchende bestätigen müssen und welche Unterlagen sie bekommen."
-          },
-          "notes": {
-            "title": "Hinweise zur Buchung",
-            "hint": "Kurze Hinweise im Checkout und in der Bestätigungsmail."
-          },
-          "checkout": {
-            "title": "Zusatzobjekte",
-            "hint": "Zusatzbuchungen, die im Checkout mit angeboten werden."
-          },
-          "hierarchy": {
-            "title": "Hierarchie",
-            "hint": "Teil-von-Beziehungen zu anderen Objekten."
-          },
-          "group-booking": {
-            "title": "Serienbuchung",
-            "hint": "Wiederkehrende Buchungen erlauben."
-          },
-          "cancellation": {
-            "title": "Stornierung",
-            "hint": "Ob Buchende selbst absagen können."
-          }
-        },
         "another": "Weiteres Buchungsobjekt anlegen",
         "overview": "Zur Übersicht"
       }

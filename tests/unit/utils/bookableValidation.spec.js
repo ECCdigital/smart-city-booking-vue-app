@@ -302,7 +302,7 @@ describe("bookableValidation - the rules of the shared sections", () => {
     ]);
   });
 
-  it("checks the buffer of the Schließsysteme while they are switched on", () => {
+  it("checks the buffer of the Schließsysteme while they are switched on, in their area of „Weitere Einstellungen“", () => {
     const accessPointDetails = {
       active: false,
       accessBuffer: { before: 2000, after: 0 },
@@ -317,7 +317,8 @@ describe("bookableValidation - the rules of the shared sections", () => {
         field: "accessPointDetails",
         tab: "accessLocks",
         section: null,
-        step: null,
+        step: "more",
+        area: "accessLocks",
       }),
     ]);
   });

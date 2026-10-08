@@ -4,6 +4,7 @@ import {
   editTab as tab,
   find,
   mountBookableEdit,
+  stub,
   showsUnsavedChanges as unsaved,
   storedBookable as stored,
 } from "@tests/unit/support/bookableEdit";
@@ -613,6 +614,31 @@ describe("BookableEdit - saving with issues", () => {
     expect(wrapper.text()).toContain(TITLE_MESSAGE);
   });
 
+  it("opens the Schließsysteme in „Weitere Einstellungen“ for an issue there", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", mode: "flow" },
+      stored({
+        accessPointDetails: {
+          active: true,
+          accessBuffer: { before: -1, after: 0 },
+          accessPointIds: [],
+        },
+      })
+    );
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await save(wrapper, "flow-save");
+    await wrapper.vm.$nextTick();
+
+    expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
+    expect(find(wrapper, "flow-title-heading").text()).toBe(
+      "Weitere Einstellungen"
+    );
+    expect(
+      find(wrapper, "more-area-accessLocks-toggle").attributes("aria-expanded")
+    ).toBe("true");
+  });
+
   it("goes on in the guided flow without a title", async () => {
     const wrapper = await mountEdit(
       { id: "b1", mode: "flow" },
@@ -752,5 +778,43 @@ describe("BookableEdit - publication", () => {
     expect(find(wrapper, "flow-done-title").text()).toBe(
       "Als Entwurf gespeichert"
     );
+  });
+});
+
+describe("BookableEdit - the confirmation leads to „Weitere Einstellungen“", () => {
+  beforeEach(() => {
+    ApiBookablesService.createOrUpdateBookable.mockReset();
+    ApiBookablesService.createOrUpdateBookable.mockImplementation(
+      async (bookable) => ({ data: bookable })
+    );
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    delete Element.prototype.scrollIntoView;
+  });
+
+  it("opens the step at the area linked, in the guided flow", async () => {
+    const wrapper = await mountBookableEdit({
+      query: { id: "b1", mode: "flow" },
+      stubs: { TenantReadinessCheck: stub("TenantReadinessCheck") },
+    });
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await find(wrapper, "flow-save").trigger("click");
+    await flushPromises();
+    expect(find(wrapper, "flow-done").exists()).toBe(true);
+
+    await find(wrapper, "flow-done-area-groupBooking").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(find(wrapper, "flow-done").exists()).toBe(false);
+    expect(wrapper.vm.$route.query.mode).toBe("flow");
+    expect(find(wrapper, "flow-title-heading").text()).toBe(
+      "Weitere Einstellungen"
+    );
+    expect(
+      find(wrapper, "more-area-groupBooking-toggle").attributes("aria-expanded")
+    ).toBe("true");
   });
 });

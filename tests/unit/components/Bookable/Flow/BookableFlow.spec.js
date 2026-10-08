@@ -20,7 +20,8 @@ vi.mock("@/services/permissions/TenantPermissionService", () => ({
 }));
 
 // The steps with their own API calls and editors are stood in for; amount,
-// approval and publication are drawn for real.
+// approval and publication are drawn for real. „Weitere Einstellungen“ has
+// its own spec.
 const stepStub = (name) => ({
   name,
   render(h) {
@@ -33,6 +34,7 @@ const STUBS = {
   BookableFlowAvailability: stepStub("BookableFlowAvailability"),
   BookableFlowPrice: stepStub("BookableFlowPrice"),
   BookableFlowPermission: stepStub("BookableFlowPermission"),
+  BookableFlowMore: stepStub("BookableFlowMore"),
   TenantReadinessCheck: stepStub("TenantReadinessCheck"),
   RouterLink: true,
 };
@@ -128,6 +130,23 @@ describe("BookableFlow", () => {
 
     const [changed] = wrapper.emitted("update:bookable").slice(-1)[0];
     expect(changed).toEqual({ autoCommitBooking: true });
+  });
+
+  // ECCdigital/tickets#363: optional, between Bestätigung and
+  // Veröffentlichung.
+  it("goes through „Weitere Einstellungen“ after the approval without input", async () => {
+    const wrapper = mountFlow({ bookable: bookable({ title: "Saal" }) });
+    await find(wrapper, "flow-dot-approval").trigger("click");
+
+    await find(wrapper, "flow-next").trigger("click");
+    expect(find(wrapper, "flow-title-heading").text()).toBe(
+      "Weitere Einstellungen"
+    );
+    expect(find(wrapper, "stub-BookableFlowMore").exists()).toBe(true);
+
+    await find(wrapper, "flow-next").trigger("click");
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Veröffentlichung");
+    expect(wrapper.emitted("update:bookable")).toBeUndefined();
   });
 
   // ECCdigital/tickets#362: one „Speichern“; what becomes public is the
@@ -244,16 +263,17 @@ describe("BookableFlow", () => {
       expect(find(paid, "setup-payment").exists()).toBe(true);
     });
 
-    it("opens an optional section of the editor", async () => {
+    it("links each area to its row in „Weitere Einstellungen“", async () => {
       const wrapper = mountDone({ outcome: "draft" });
+      const link = find(wrapper, "flow-done-area-bookingNotes");
+      expect(link.text()).toContain("Buchungshinweise");
+      expect(link.text()).toContain(
+        "Kurze Hinweise im Checkout und in der Bestätigungsmail."
+      );
 
-      await find(wrapper, "flow-section-notes").trigger("click");
+      await link.trigger("click");
 
-      expect(wrapper.emitted("open-section")[0][0]).toEqual({
-        key: "notes",
-        tabKey: "additional",
-        sectionId: "additional-notes",
-      });
+      expect(wrapper.emitted("open-area")).toEqual([["bookingNotes"]]);
     });
 
     it("links the expert options in use without expert mode, no others", () => {
@@ -269,11 +289,12 @@ describe("BookableFlow", () => {
         stubs: STUBS,
       });
 
-      expect(find(wrapper, "flow-section-cancellation").exists()).toBe(true);
-      expect(find(wrapper, "flow-section-hierarchy").exists()).toBe(false);
-      expect(find(wrapper, "flow-section-required-fields").exists()).toBe(
+      expect(find(wrapper, "flow-done-area-cancellation").exists()).toBe(true);
+      expect(find(wrapper, "flow-done-area-hierarchy").exists()).toBe(false);
+      expect(find(wrapper, "flow-done-area-requiredFields").exists()).toBe(
         false
       );
+      expect(find(wrapper, "flow-done-area-groupBooking").exists()).toBe(true);
     });
 
     it("leads on to another bookable or to the overview", async () => {
@@ -321,6 +342,7 @@ describe("BookableFlow on a wide screen", () => {
       "flow-summary-amount",
       "flow-summary-permission",
       "flow-summary-approval",
+      "flow-summary-more",
       "flow-summary-publication",
     ]);
     [
@@ -330,6 +352,7 @@ describe("BookableFlow on a wide screen", () => {
       "Anzahl & Kapazität",
       "Berechtigung",
       "Freigabe",
+      "Weitere Einstellungen",
       "Veröffentlichung",
     ].forEach((title, idx) => expect(blocks[idx].text()).toContain(title));
   });
@@ -459,6 +482,7 @@ describe("BookableFlow on an extra wide screen", () => {
       "Anzahl & Kapazität",
       "Berechtigung",
       "Freigabe",
+      "Weitere Einstellungen",
       "Veröffentlichung",
     ].forEach((title) => expect(list.text()).toContain(title));
     expect(entryOf(wrapper, "identity").attributes("aria-current")).toBe(
