@@ -125,7 +125,7 @@ export const BOOKABLE_RULE_NAMES = Object.freeze(Object.keys(RULES));
  * in the step „Weitere Einstellungen“, its area.
  */
 const PLACES = Object.freeze({
-  title: { tab: "general", section: "general-info", step: "identity" },
+  title: { tab: "general", section: "general-catalog", step: "identity" },
   priceCategories: { tab: "pricing", section: "pricing-tiers", step: "price" },
   maxAmountPerBooking: {
     tab: "pricing",

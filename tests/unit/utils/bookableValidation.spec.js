@@ -86,7 +86,7 @@ describe("bookableValidation - the rules of the spec", () => {
         field: "title",
         message: "bookable.validation.title",
         tab: "general",
-        section: "general-info",
+        section: "general-catalog",
         step: "identity",
       },
     ]);
