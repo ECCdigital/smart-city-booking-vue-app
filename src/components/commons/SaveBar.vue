@@ -149,7 +149,9 @@ export default {
         <v-icon color="primary" class="save-bar-icon mr-2"
           >mdi-content-save</v-icon
         >
-        <span class="save-bar-label mr-4">{{ $t("saveBar.label") }}</span>
+        <span class="save-bar-label mr-4">{{
+          $t("actions.save-changes")
+        }}</span>
         <v-spacer />
         <v-btn
           v-if="showCancel"
@@ -157,7 +159,7 @@ export default {
           class="save-bar-btn"
           @click="cancelChanges"
         >
-          {{ $t("saveBar.cancel") }}
+          {{ $t("actions.cancel") }}
         </v-btn>
         <v-btn
           v-if="showRestore"
@@ -166,7 +168,7 @@ export default {
           class="save-bar-btn"
           @click="cancelChanges"
         >
-          {{ $t("saveBar.restore") }}
+          {{ $t("actions.restore") }}
         </v-btn>
         <v-btn
           color="primary"
@@ -175,7 +177,7 @@ export default {
           :disabled="inProgress || !active"
           @click="submitChanges"
         >
-          {{ $t("saveBar.save") }}
+          {{ $t("actions.save") }}
         </v-btn>
       </div>
     </div>

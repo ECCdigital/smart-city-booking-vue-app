@@ -627,7 +627,7 @@ const AVAILABILITY_ROWS = [
   },
   {
     key: "timePeriods",
-    label: `${CARDS}.timePeriods`,
+    label: "bookable.flow.availability.modes.timePeriod",
     section: "bookingType-time-periods",
     fields: ["timePeriods"],
     value: (b) =>
@@ -635,7 +635,7 @@ const AVAILABILITY_ROWS = [
   },
   {
     key: "blockPeriods",
-    label: `${CARDS}.blockPeriods`,
+    label: "bookable.flow.availability.modes.blockPeriod",
     section: "bookingType-block-periods",
     fields: ["blockPeriods"],
     value: (b) =>

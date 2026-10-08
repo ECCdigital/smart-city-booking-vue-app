@@ -251,7 +251,7 @@ export default {
         <div>
           <v-icon class="mr-2">mdi-clock-outline</v-icon>
           <span class="text-h6 font-weight-bold">
-            {{ $t("bookable.edit.cards.timePeriods") }}
+            {{ $t("bookable.flow.availability.modes.timePeriod") }}
           </span>
         </div>
         <v-btn
@@ -496,7 +496,7 @@ export default {
         <div>
           <v-icon class="mr-2">mdi-calendar-sync</v-icon>
           <span class="text-h6 font-weight-bold">
-            {{ $t("bookable.edit.cards.blockPeriods") }}
+            {{ $t("bookable.flow.availability.modes.blockPeriod") }}
           </span>
         </div>
         <v-btn

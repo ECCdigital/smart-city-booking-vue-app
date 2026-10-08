@@ -671,7 +671,7 @@ export default {
                                   $set(specialOpeningHoursDateMenu, idx, false)
                                 "
                               >
-                                {{ $t("bookable.edit.common.cancel") }}
+                                {{ $t("actions.cancel") }}
                               </v-btn>
                               <v-btn
                                 text

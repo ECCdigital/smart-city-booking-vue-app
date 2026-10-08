@@ -161,6 +161,33 @@ describe("BookableEdit - the areas without a step", () => {
     ]);
   });
 
+  it.each([
+    [
+      "bookingType",
+      {
+        isLeadTimeRelated: true,
+        isBufferRelated: true,
+        bufferTimeAfterMinutes: 30,
+      },
+    ],
+    ["bookingType", { isScheduleRelated: false, isTimePeriodRelated: true }],
+    ["bookingType", { isScheduleRelated: false, isBlockPeriodRelated: true }],
+    ["openingHours", {}],
+  ])(
+    "names each section of the tab „%s“ in its navigation as its card",
+    async (tabKey, overrides) => {
+      const wrapper = await mountEdit(
+        { id: "b1", tab: tabKey },
+        stored(overrides)
+      );
+
+      const titles = wrapper
+        .findAll(".page-content__editor .section-header .text-h6")
+        .wrappers.map((title) => title.text());
+      expect(subNav(wrapper)).toEqual(titles);
+    }
+  );
+
   it("changes nothing when the tabs of areas open", async () => {
     const wrapper = await mountEdit(
       { id: "b1", tab: "general" },

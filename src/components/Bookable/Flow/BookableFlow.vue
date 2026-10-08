@@ -166,7 +166,7 @@
               data-test="flow-save"
               @click="$emit('save')"
             >
-              {{ $t("saveBar.save") }}
+              {{ $t("actions.save") }}
             </v-btn>
             <v-btn
               v-else

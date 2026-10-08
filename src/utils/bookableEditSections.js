@@ -56,9 +56,10 @@ function declaresExternalProvider(bookable) {
 }
 
 /**
- * All known sections (labelKey → i18n bookable.edit.sections.*, or the title
- * of the area the section is - `bookable.areas.*`). A section that is an
- * expert option names it in `expertOption`.
+ * All known sections. `labelKey` names a section in the navigation with the
+ * key of the card or area it is - the same key its heading reads, so the
+ * navigation and the card say the same. A section that is an expert option
+ * names it in `expertOption`.
  */
 const ALL_SECTIONS = [
   // The two groups of the Grunddaten (BookableFlowIdentity), named as the
@@ -105,45 +106,45 @@ const ALL_SECTIONS = [
   {
     tabKey: "bookingType",
     id: "bookingType-duration",
-    labelKey: "bookable.edit.sections.bookingTypeDuration",
+    labelKey: "bookable.edit.cards.bookingDuration",
     type: "scroll",
   },
   {
     tabKey: "bookingType",
     id: "bookingType-time-periods",
-    labelKey: "bookable.edit.sections.bookingTypeTimePeriods",
+    labelKey: "bookable.flow.availability.modes.timePeriod",
     type: "scroll",
   },
   {
     tabKey: "bookingType",
     id: "bookingType-block-periods",
-    labelKey: "bookable.edit.sections.bookingTypeBlockPeriods",
+    labelKey: "bookable.flow.availability.modes.blockPeriod",
     type: "scroll",
   },
   {
     tabKey: "bookingType",
     id: "bookingType-lead-time",
-    labelKey: "bookable.edit.sections.bookingTypeLeadTime",
+    labelKey: "bookable.edit.cards.leadTime",
     type: "scroll",
     expertOption: "leadTime",
   },
   {
     tabKey: "bookingType",
     id: "bookingType-buffer",
-    labelKey: "bookable.edit.sections.bookingTypeBuffer",
+    labelKey: "bookable.edit.cards.buffer",
     type: "scroll",
     expertOption: "buffer",
   },
   {
     tabKey: "openingHours",
     id: "openingHours-regular",
-    labelKey: "bookable.edit.sections.openingHoursRegular",
+    labelKey: "bookable.edit.cards.openingHours",
     type: "scroll",
   },
   {
     tabKey: "openingHours",
     id: "openingHours-special",
-    labelKey: "bookable.edit.sections.openingHoursSpecial",
+    labelKey: "bookable.edit.cards.specialOpeningHours",
     type: "scroll",
     expertOption: "specialOpeningHours",
   },

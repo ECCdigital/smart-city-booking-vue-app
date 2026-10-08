@@ -42,7 +42,7 @@
 
     <template v-if="areas.length">
       <div class="flow-done__heading">
-        {{ $t("bookable.flow.done.optional") }}
+        {{ $t("bookable.flow.steps.more.title") }}
         <span class="flow-field__hint">
           – {{ $t("bookable.flow.done.optional-note") }}
         </span>

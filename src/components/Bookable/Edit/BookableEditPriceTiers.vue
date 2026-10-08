@@ -436,8 +436,13 @@ export default {
         ? this.$t("bookable.flow.price.amount-net")
         : this.$t("bookable.flow.price.amount");
     },
+    // The unit of the Preisart; m² as the Anzahl counts it.
     intervalSuffix() {
-      return this.$t(`bookable.edit.priceTiers.units.${this.priceType}`);
+      return this.$t(
+        this.priceType === "per-square-meter"
+          ? "bookable.flow.amount.unit-square-meter"
+          : `bookable.edit.priceTiers.units.${this.priceType}`
+      );
     },
   },
   watch: {

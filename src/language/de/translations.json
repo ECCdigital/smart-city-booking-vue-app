@@ -5,11 +5,11 @@
     "stay": "Weiter bearbeiten",
     "discard": "Änderungen verwerfen"
   },
-  "saveBar": {
-    "label": "Änderungen speichern",
+  "actions": {
+    "save": "Speichern",
     "cancel": "Abbrechen",
-    "restore": "Änderungen zurücksetzen",
-    "save": "Speichern"
+    "save-changes": "Änderungen speichern",
+    "restore": "Änderungen zurücksetzen"
   },
   "logout": {
     "success": {
@@ -455,7 +455,6 @@
         },
         "open-points": "Offene Punkte",
         "open-points-hint": "Nichts davon ist Pflicht. Sie können es jetzt oder später in den Einstellungen des Mandanten ergänzen.",
-        "optional": "Weitere Einstellungen",
         "optional-note": "optional",
         "another": "Weiteres Buchungsobjekt anlegen"
       }
@@ -536,20 +535,11 @@
         "pricingAmount": "Anzahl",
         "accessLocksExternal": "Externe Datenquelle",
         "bookingTypeSelect": "Buchungsart",
-        "bookingTypeDuration": "Dauer",
-        "bookingTypeTimePeriods": "Zeitfenster",
-        "bookingTypeBlockPeriods": "Zeiträume",
-        "bookingTypeLeadTime": "Vorlaufzeit",
-        "bookingTypeBuffer": "Puffer",
-        "openingHoursRegular": "Regulär",
-        "openingHoursSpecial": "Sonder",
         "customFieldsValues": "Werte pflegen",
         "customFieldsDefinitions": "Felder definieren"
       },
       "cards": {
         "bookingDuration": "Buchungsdauer",
-        "timePeriods": "Feste Zeitfenster",
-        "blockPeriods": "Zeiträume",
         "leadTime": "Vorlaufzeit",
         "buffer": "Puffer zwischen Buchungen",
         "openingHours": "Öffnungszeiten",
@@ -631,8 +621,7 @@
         "units": {
           "per-hour": "Std.",
           "per-day": "Tage",
-          "per-item": "Stück",
-          "per-square-meter": "m²"
+          "per-item": "Stück"
         },
         "ranges": {
           "both": "{start} – {end} {unit}",
@@ -724,7 +713,6 @@
         "from": "Von *",
         "to": "Bis *",
         "date": "Datum *",
-        "cancel": "Abbrechen",
         "ok": "OK",
         "remove": "Entfernen",
         "label-value": "{label}: {value}"
