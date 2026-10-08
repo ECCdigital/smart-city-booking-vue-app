@@ -106,11 +106,29 @@ export function timeModeOf(bookable) {
 }
 
 /**
- * Sets the booking mode as the booking type tab does: one flag at a time,
- * the long range with its unit. What belongs to another mode stays stored,
- * as it does when the tab switches - the backend reads only the active one.
+ * The modes an answer to the questions of the Buchungsart stands for, the
+ * one it sets first in front: „Für eine Zeit“ (`timed`) Freie Zeitwahl,
+ * „Langzeit“ (`longRange`) Ganze Wochen.
  */
-export function applyBookingMode(bookable, mode) {
+const BOOKING_ANSWERS = Object.freeze({
+  timed: ["schedule"],
+  longRange: ["week", "month"],
+});
+
+/**
+ * Sets the Buchungsart from an answer to its questions, in both modes: a mode
+ * (`schedule`, `timePeriod`, `blockPeriod`, `week`, `month`, `independent`)
+ * or `timed` / `longRange`, which set their first mode among `offered` - all
+ * of them by default; „Langzeit“ sets Ganze Monate only where Ganze Wochen is
+ * not offered. One flag at a time, the long range with its unit. What belongs
+ * to another mode stays stored - the backend reads only the active one -
+ * and Zeiträume turn the Serienbuchung off.
+ */
+export function applyBookingMode(bookable, answer, offered = null) {
+  const modes = BOOKING_ANSWERS[answer];
+  const mode = modes
+    ? modes.find((m) => !offered || offered.includes(m)) || modes[0]
+    : answer;
   bookable.isScheduleRelated = mode === "schedule";
   bookable.isTimePeriodRelated = mode === "timePeriod";
   bookable.isBlockPeriodRelated = mode === "blockPeriod";
@@ -119,7 +137,7 @@ export function applyBookingMode(bookable, mode) {
 
   if (mode === "blockPeriod") {
     if (!Array.isArray(bookable.blockPeriods)) bookable.blockPeriods = [];
-    // A group booking is not offered for time ranges (booking type tab).
+    // Zeiträume offer no Serienbuchung.
     if (bookable.groupBooking?.enabled) bookable.groupBooking.enabled = false;
   }
   return bookable;

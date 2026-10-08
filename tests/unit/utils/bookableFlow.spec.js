@@ -98,6 +98,47 @@ describe("availability", () => {
     expect(next.isTimePeriodRelated).toBe(true);
   });
 
+  it("sets Freie Zeitwahl first for „Für eine Zeit“", () => {
+    const next = applyBookingMode(
+      bookable({ isScheduleRelated: false }),
+      "timed"
+    );
+
+    expect(next.isScheduleRelated).toBe(true);
+    expect(next.isLongRange).toBe(false);
+  });
+
+  it("sets Ganze Wochen first for „Langzeit“, Ganze Monate where only they are offered", () => {
+    expect(
+      applyBookingMode(bookable({ isScheduleRelated: true }), "longRange")
+        .longRangeOptions
+    ).toEqual({ type: "week" });
+    expect(
+      applyBookingMode(bookable({ isScheduleRelated: true }), "longRange", [
+        "month",
+      ]).longRangeOptions
+    ).toEqual({ type: "month" });
+  });
+
+  it("keeps what belongs to the other booking modes", () => {
+    const periods = [{ weekdays: [1], startTime: "09:00", endTime: "12:00" }];
+    const blocks = [{ id: "b1", label: "Wochenende" }];
+    const next = applyBookingMode(
+      bookable({
+        isTimePeriodRelated: true,
+        timePeriods: periods,
+        blockPeriods: blocks,
+        minBookingDuration: 2,
+      }),
+      "independent"
+    );
+
+    expect(next.timePeriods).toEqual(periods);
+    expect(next.blockPeriods).toEqual(blocks);
+    expect(next.minBookingDuration).toBe(2);
+    expect(next.isTimePeriodRelated).toBe(false);
+  });
+
   it("turns off the group booking for time ranges, as the booking type tab does", () => {
     const next = applyBookingMode(
       bookable({ groupBooking: { enabled: true, permittedRoles: [] } }),
