@@ -31,6 +31,10 @@ A component holds what it derives from the bookable, plus fleeting state whose l
 
 No component changes the bookable when it mounts. What the editor needs in shape is done once by the pure `normalizeBookable` (`src/utils/normalizeBookable.js`) in `BookableEdit` - on load and after a save, before the unsaved-changes snapshot - so the normalization never reads as an edit.
 
+### Expert options follow one rule (#339, built by #353)
+
+Whether an expert option shows - a booking mode, a section or a tab - is decided by the pure `expertOptionShown(option, { expertMode, stored, current })` in `src/utils/bookableExpertMode.js`: always in expert mode, without it only while the stored or the current bookable uses it, its stand differing from a new bookable's. `BookableEdit` provides the bookable as loaded or last saved with the mode; a component asks `expertOptionShown(option)` from `bookableEditing` and has no `v-if="expertMode"` of its own. Sections, tabs and the flow's optional areas take the same rule as `shown(option)`. There is no locked option with a hint.
+
 ### The check is pure (#340, point 6)
 
 What blocks a save is decided by one pure module over the bookable, mirroring what the backend refuses and naming that reason per rule, independent of which components are mounted. Its messages at the fields come from the same rules. (Built by ECCdigital/tickets#354; until then the tabs' own forms still check.)
