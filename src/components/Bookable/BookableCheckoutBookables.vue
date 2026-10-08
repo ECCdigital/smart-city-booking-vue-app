@@ -2,7 +2,10 @@
   <div>
     <v-list>
       <template v-for="(item, i) in items">
-        <div v-if="itemObject(item.bookableId) !== undefined">
+        <div
+          v-if="itemObject(item.bookableId) !== undefined"
+          :key="item.bookableId"
+        >
           <v-list-item :key="item.bookableId">
             <v-list-item-content>
               <v-list-item-title>
@@ -20,9 +23,11 @@
               <v-checkbox
                 class="ml-6"
                 dense
-                v-model="item.mandatory"
+                :input-value="item.mandatory"
                 label="verpflichtend"
                 hide-details
+                data-test="checkout-mandatory"
+                @change="setMandatory(i, $event)"
               ></v-checkbox>
             </v-list-item-content>
             <v-list-item-action title="Nach oben verschieben">
@@ -41,7 +46,7 @@
               </v-btn>
             </v-list-item-action>
             <v-list-item-action title="Löschen">
-              <v-btn icon small @click="remove(i)">
+              <v-btn icon small data-test="checkout-remove" @click="remove(i)">
                 <v-icon color="grey lighten-1"> mdi-close</v-icon>
               </v-btn>
             </v-list-item-action>
@@ -99,6 +104,13 @@
 <script>
 import { getTypeColor, getTypeIcon, getTypeText } from "../../utils/bookables";
 
+/** `items` with the entries at `a` and `b` swapped, as a new list. */
+function swapped(items, a, b) {
+  const next = [...items];
+  [next[a], next[b]] = [next[b], next[a]];
+  return next;
+}
+
 export default {
   name: "BookableCheckoutBookables",
   props: {
@@ -121,26 +133,34 @@ export default {
     getTypeColor,
     getTypeText,
     getTypeIcon,
+    // The list is the parent's: every change goes out as a new list.
+    emitItems(items) {
+      this.$emit("update:items", items);
+    },
     moveUp(index) {
-      if (index > 0) {
-        const item = this.items[index];
-        this.items.splice(index, 1);
-        this.items.splice(index - 1, 0, item);
-      }
+      if (index > 0) this.emitItems(swapped(this.items, index - 1, index));
     },
     moveDown(index) {
       if (index < this.items.length - 1) {
-        const item = this.items[index];
-        this.items.splice(index, 1);
-        this.items.splice(index + 1, 0, item);
+        this.emitItems(swapped(this.items, index, index + 1));
       }
     },
     remove(index) {
-      this.items.splice(index, 1);
+      this.emitItems(this.items.filter((_, i) => i !== index));
+    },
+    setMandatory(index, mandatory) {
+      this.emitItems(
+        this.items.map((item, i) =>
+          i === index ? { ...item, mandatory: !!mandatory } : item
+        )
+      );
     },
     add() {
       if (this.addItemValue != null) {
-        this.items.push({ bookableId: this.addItemValue, mandatory: false });
+        this.emitItems([
+          ...this.items,
+          { bookableId: this.addItemValue, mandatory: false },
+        ]);
         this.addItemValue = null;
       }
     },
@@ -152,7 +172,7 @@ export default {
   computed: {
     unselectedItems() {
       return this.availableItems.filter(
-        (item) => !this.items.includes(item.id)
+        (item) => !this.items.some((entry) => entry.bookableId === item.id)
       );
     },
   },
