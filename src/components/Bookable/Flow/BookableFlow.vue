@@ -17,6 +17,46 @@
     <!-- One structure at every width: the breakpoint only adds the side
          column, so the kept-alive step survives a resize. -->
     <template v-else>
+      <!-- From xl the steps stand as a list left, in place of the dots; the
+           same state, lock and jump as the dots. -->
+      <nav
+        v-if="extraWide"
+        class="bookable-flow__steps"
+        :aria-label="$t('bookable.flow.progress')"
+        data-test="flow-steps"
+      >
+        <button
+          v-for="(step, idx) in steps"
+          :key="step"
+          type="button"
+          class="bookable-flow__entry"
+          :class="`bookable-flow__entry--${dotState(idx)}`"
+          :disabled="locked(idx)"
+          :aria-current="idx === index ? 'step' : null"
+          :data-test="`flow-steps-${step}`"
+          @click="goTo(idx)"
+        >
+          <span class="bookable-flow__badge" aria-hidden="true">
+            <v-icon v-if="dotState(idx) === 'done'" x-small>mdi-check</v-icon>
+            <span v-else>{{ idx + 1 }}</span>
+          </span>
+          <span class="bookable-flow__entry-title">
+            {{ $t(`bookable.flow.steps.${step}.title`) }}
+          </span>
+          <span class="d-sr-only">
+            {{ $t(`bookable.flow.step-state.${dotState(idx)}`) }}
+          </span>
+        </button>
+        <div class="bookable-flow__entry bookable-flow__entry--flag">
+          <span class="bookable-flow__badge" aria-hidden="true">
+            <v-icon x-small>mdi-flag-outline</v-icon>
+          </span>
+          <span class="bookable-flow__entry-title">
+            {{ $t("bookable.flow.done-label") }}
+          </span>
+        </div>
+      </nav>
+
       <div class="bookable-flow__column">
         <!-- The tenant's first bookable, right after its creation: the level
              it started at stays in view (free shows none). -->
@@ -27,6 +67,7 @@
         />
 
         <nav
+          v-if="!extraWide"
           class="bookable-flow__progress"
           :aria-label="$t('bookable.flow.progress')"
           data-test="flow-progress"
@@ -37,7 +78,7 @@
             type="button"
             class="bookable-flow__dot"
             :class="`bookable-flow__dot--${dotState(idx)}`"
-            :disabled="idx > 0 && !named"
+            :disabled="locked(idx)"
             :aria-current="idx === index ? 'step' : null"
             :aria-label="
               $t('bookable.flow.step-label', {
@@ -220,7 +261,9 @@ const STEP_COMPONENTS = {
  * Right after a tenant's creation the flow may be skipped (`skip`).
  *
  * From Vuetify's lg (1264px) the column stands left with the overview of
- * the bookable beside it (ECCdigital/tickets#331).
+ * the bookable beside it (ECCdigital/tickets#331); from xl (1904px) the
+ * steps stand as a list left of it, in place of the dots (ECCdigital/
+ * tickets#333).
  */
 export default {
   name: "BookableFlow",
@@ -278,6 +321,10 @@ export default {
     wide() {
       return !this.outcome && this.$vuetify.breakpoint.lgAndUp;
     },
+    /** From Vuetify's xl the step list stands left, in place of the dots. */
+    extraWide() {
+      return this.wide && this.$vuetify.breakpoint.xl;
+    },
     summaryBlocks() {
       return overviewBlocks(this.bookable, {
         visited: this.visited,
@@ -322,13 +369,17 @@ export default {
         console.error(error);
       }
     },
+    /** Without a name only the identity can be reached. */
+    locked(idx) {
+      return idx > 0 && !this.named;
+    },
     dotState(idx) {
       if (idx === this.index) return "current";
       return this.done.includes(this.steps[idx]) ? "done" : "upcoming";
     },
     goTo(idx) {
       if (idx < 0 || idx >= this.steps.length) return;
-      if (idx > 0 && !this.named) return;
+      if (this.locked(idx)) return;
       if (idx > this.index && !this.done.includes(this.step)) {
         this.done.push(this.step);
       }
@@ -372,6 +423,111 @@ export default {
   max-height: calc(100vh - var(--scb-app-bar-height));
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+/* Sticks and scrolls in itself as the editor's section nav does. */
+.bookable-flow__steps {
+  flex: 0 0 auto;
+  min-width: var(--scb-nav-width-min);
+  max-width: var(--scb-nav-width-max);
+  padding: 2px 0;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - var(--scb-app-bar-height));
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* An entry looks like a tab of the editor's section nav. */
+.bookable-flow__entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--scb-nav-item-height);
+  margin: 0;
+  padding: var(--scb-space-2) var(--scb-space-3) var(--scb-space-2) 10px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 0 var(--scb-radius-control) var(--scb-radius-control) 0;
+  background: transparent;
+  color: var(--scb-text);
+  font: inherit;
+  font-size: var(--scb-font-size-md);
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: background-color var(--scb-motion-fast),
+    color var(--scb-motion-fast), border-color var(--scb-motion-fast);
+}
+
+.bookable-flow__entry:hover:not(:disabled) {
+  background-color: var(--scb-hover-tint);
+}
+
+.bookable-flow__entry:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--v-primary-base);
+}
+
+.bookable-flow__entry:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.bookable-flow__entry--current {
+  color: var(--v-primary-base);
+  border-left-color: var(--v-primary-base);
+  background-color: var(--scb-selected-tint);
+  font-weight: var(--scb-font-weight-medium);
+}
+
+.bookable-flow__entry--upcoming {
+  color: var(--scb-text-muted);
+}
+
+.bookable-flow__entry--flag {
+  margin-top: 6px;
+  padding-top: var(--scb-space-3);
+  border-top: 1px solid var(--scb-rule);
+  border-radius: 0;
+  color: var(--scb-text-caption);
+  cursor: default;
+}
+
+.bookable-flow__badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: var(--scb-font-size-caption);
+  border-radius: 50%;
+  color: var(--scb-text-muted);
+  background-color: var(--scb-surface-tint);
+}
+
+.bookable-flow__badge .v-icon {
+  color: inherit;
+}
+
+.bookable-flow__entry--done .bookable-flow__badge {
+  color: var(--v-primary-base);
+  background-color: var(--scb-selected-tint);
+}
+
+.bookable-flow__entry--current .bookable-flow__badge {
+  color: #fff;
+  background-color: var(--v-primary-base);
+}
+
+.bookable-flow__entry-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bookable-flow__notice {
@@ -480,7 +636,8 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bookable-flow__dot {
+  .bookable-flow__dot,
+  .bookable-flow__entry {
     transition: none;
   }
 }
