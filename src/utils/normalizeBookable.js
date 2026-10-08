@@ -31,6 +31,13 @@ export function normalizeBookable(stored) {
     period.id ? period : { ...period, id: uuidv4() }
   );
 
+  // Zeiträume book no series, as `applyBookingMode` has it. A bookable
+  // stored with both is read that way - before, Serienbuchung's tab
+  // switched it off when it mounted.
+  if (bookable.isBlockPeriodRelated && bookable.groupBooking?.enabled) {
+    bookable.groupBooking = { ...bookable.groupBooking, enabled: false };
+  }
+
   if (!bookable.cancellationPolicy) {
     bookable.cancellationPolicy = { userCancellable: true };
   }

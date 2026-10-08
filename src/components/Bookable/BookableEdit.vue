@@ -323,25 +323,17 @@
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import _ from "lodash";
-import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.vue";
-import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
-import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
 import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import Bookable from "@/entities/bookable";
 import { normalizeBookable } from "@/utils/normalizeBookable";
 import { mapActions, mapGetters } from "vuex";
-import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
-import BookableEditAccessLocks from "@/components/Bookable/Edit/BookableEditAccessLocks.vue";
-import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
-import BookableEditRelatedBookables from "@/components/Bookable/Edit/BookableEditRelatedBookables.vue";
-import BookableEditAttachments from "@/components/Bookable/Edit/BookableEditAttachments.vue";
-import BookableEditAdditional from "@/components/Bookable/Edit/BookableEditAdditional.vue";
 import BookableEditStatus from "@/components/Bookable/Edit/BookableEditStatus.vue";
 import BookableEditOverview from "@/components/Bookable/Edit/BookableEditOverview.vue";
+import BookableEditTab from "@/components/Bookable/Edit/BookableEditTab.vue";
+import { BOOKABLE_EDIT_TABS } from "@/components/Bookable/Edit/bookableEditTabs";
 import ToastService from "@/services/ToastService";
-import BookableEditCustomFields from "@/components/Bookable/Edit/BookableEditCustomFields.vue";
 import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
 import {
   FLOW_MODE,
@@ -380,16 +372,6 @@ export default {
     BookableEditOverview,
     SaveBar,
     UnsavedChangesDialog,
-    BookableEditGeneral,
-    BookableEditPrice,
-    BookableEditBookingType,
-    BookableEditOpeningHours,
-    BookableEditAccessLocks,
-    BookableEditPermissions,
-    BookableEditRelatedBookables,
-    BookableEditAttachments,
-    BookableEditAdditional,
-    BookableEditCustomFields,
     BookableFlow,
   },
   mixins: [unsavedChangesGuard],
@@ -421,68 +403,8 @@ export default {
         enabled: getInitialBookableExpertMode(),
         stored: null,
       },
-      tabs: [
-        {
-          key: "general",
-          label: "Allgemein",
-          icon: "mdi-information-outline",
-          comp: "BookableEditGeneral",
-        },
-        {
-          key: "pricing",
-          label: "Preise & Kapazität",
-          icon: "mdi-cash",
-          comp: "BookableEditPrice",
-        },
-        {
-          key: "bookingType",
-          label: "Buchungstyp",
-          icon: "mdi-calendar-clock",
-          comp: "BookableEditBookingType",
-        },
-        {
-          key: "openingHours",
-          label: "Öffnungszeiten",
-          icon: "mdi-clock-outline",
-          comp: "BookableEditOpeningHours",
-        },
-        {
-          key: "accessLocks",
-          label: "Schließsysteme",
-          icon: "mdi-lock-outline",
-          comp: "BookableEditAccessLocks",
-        },
-        {
-          key: "relatedBookables",
-          label: "Abhängigkeiten",
-          icon: "mdi-link-variant",
-          comp: "BookableEditRelatedBookables",
-        },
-        {
-          key: "permissions",
-          label: "Berechtigungen",
-          icon: "mdi-account-lock-outline",
-          comp: "BookableEditPermissions",
-        },
-        {
-          key: "attachments",
-          label: "Anhänge",
-          icon: "mdi-paperclip",
-          comp: "BookableEditAttachments",
-        },
-        {
-          key: "customFields",
-          label: "Eigene Felder",
-          icon: "mdi-form-textbox",
-          comp: "BookableEditCustomFields",
-        },
-        {
-          key: "additional",
-          label: "Sonstiges",
-          icon: "mdi-dots-horizontal",
-          comp: "BookableEditAdditional",
-        },
-      ],
+      // The tabs and what they are made of; frozen, so not reactive.
+      tabs: BOOKABLE_EDIT_TABS,
       originalSnapshot: {
         bookable: {},
       },
@@ -546,11 +468,16 @@ export default {
       );
       return index >= 0 ? index : 0;
     },
-    activeTabComp() {
-      const current = this.visibleTabs.find(
-        (tab) => tab.key === this.activeTabKey
+    activeTab() {
+      return (
+        this.visibleTabs.find((tab) => tab.key === this.activeTabKey) ||
+        this.visibleTabs[0]
       );
-      return current?.comp || this.visibleTabs[0]?.comp;
+    },
+    // A tab of cards is framed by BookableEditTab, any other is its `comp`.
+    activeTabComp() {
+      if (!this.activeTab) return null;
+      return this.activeTab.cards ? BookableEditTab : this.activeTab.comp;
     },
     sectionContext() {
       return {
@@ -571,10 +498,8 @@ export default {
       );
     },
     activeTabExtraProps() {
-      if (this.activeTabKey === "customFields") {
-        return { sectionTarget: this.sectionTarget };
-      }
-      return {};
+      if (!this.activeTab?.cards) return {};
+      return { tab: this.activeTab, sectionTarget: this.sectionTarget };
     },
     hasUnsavedChanges() {
       if (
