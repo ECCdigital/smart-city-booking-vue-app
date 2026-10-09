@@ -190,13 +190,7 @@
             </v-btn>
           </div>
           <p v-if="last" class="flow-footer__note" data-test="flow-save-hint">
-            {{
-              $t(
-                isNew
-                  ? "bookable.flow.save-hint-new"
-                  : "bookable.flow.save-hint"
-              )
-            }}
+            {{ $t("bookable.flow.save-hint") }}
           </p>
         </div>
       </div>

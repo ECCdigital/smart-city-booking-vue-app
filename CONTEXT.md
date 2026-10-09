@@ -73,7 +73,7 @@ The mode that shows all of a bookable's fields at once, in tabs of section cards
 _Avoid_: Editor, Bearbeitungsmodus, Alle Einstellungen
 
 **Geführter Ablauf** (admin: „Zum geführten Ablauf“):
-The mode that asks for the same fields step by step, one question per panel, saved once with „Speichern“ in the last step. A new bookable is always created here. Inputs survive switching between the two modes and are lost only when the bookable is left unsaved.
+The mode that asks for the same fields step by step, one question per panel, saved once with „Speichern“ in the last step. A new bookable starts here. Inputs survive switching between the two modes and are lost only when the bookable is left unsaved.
 _Avoid_: Ablauf alone, Onboarding, Wizard, Geführt bearbeiten, Zur Übersicht (the button now names the mode it leads to)
 
 **Übersicht** (admin: „Übersicht“):

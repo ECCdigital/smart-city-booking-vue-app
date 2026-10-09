@@ -17,7 +17,7 @@
         >
           <div class="flow-bar__back">
             <v-btn
-              v-if="bookableID && !flowOutcome"
+              v-if="!flowOutcome"
               small
               text
               class="flow-bar__back-btn"
@@ -26,17 +26,6 @@
             >
               <v-icon left small>mdi-arrow-left</v-icon>
               {{ $t("bookable.flow.leave") }}
-            </v-btn>
-            <v-btn
-              v-else-if="!bookableID"
-              small
-              text
-              class="flow-bar__back-btn"
-              :to="{ name: listRoute }"
-              data-test="flow-to-list"
-            >
-              <v-icon left small>mdi-arrow-left</v-icon>
-              {{ $t(`bookable.flow.bar.list.${type}`) }}
             </v-btn>
           </div>
           <div class="flow-bar__object">
@@ -126,7 +115,6 @@
           </div>
           <div class="page-content__meta-actions">
             <v-btn
-              v-if="bookableID"
               small
               text
               color="primary"
@@ -175,8 +163,8 @@
       </div>
 
       <!-- The guided flow (ECCdigital/tickets#326) is a mode of this page:
-           the same bookable, saved once at its end. A new bookable is
-           always created in it. -->
+           the same bookable, saved once at its end. A new bookable
+           starts in it. -->
       <BookableFlow
         v-if="flowMode && bookable.tenantId"
         ref="flow"
@@ -352,9 +340,9 @@ import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
 import {
   FLOW_MODE,
   FLOW_STEPS,
+  PAGE_MODE,
   editRouteOf,
   isFlowMode,
-  listRouteOf,
 } from "@/utils/bookableFlow";
 import { publicationOutcome } from "@/utils/bookablePublication";
 import {
@@ -468,11 +456,6 @@ export default {
     flowStepColumn() {
       return !this.flowOutcome && this.$vuetify.breakpoint.xl;
     },
-
-    /** The list a new bookable came from, by the page's type. */
-    listRoute() {
-      return listRouteOf(this.type);
-    },
     visibleTabs() {
       return this.tabs.filter((tab) =>
         expertTabShown(tab.key, this.expertOptionShown)
@@ -585,6 +568,8 @@ export default {
     },
     /** Saves `payload` (the bookable as edited); `true` when it was stored. */
     async createOrUpdate(payload = this.bookable) {
+      // Read before the save: a created bookable puts its id in the route.
+      const created = !this.bookableID;
       try {
         this.inProgress = true;
         const response = await ApiBookablesService.createOrUpdateBookable(
@@ -592,16 +577,18 @@ export default {
         );
         this.bookable = normalizeBookable(response.data);
 
-        if (!this.bookableID) {
+        if (created) {
           const query = { ...this.$route.query, id: this.bookable.id };
-          // A bookable created in the flow stays in it for the confirmation.
+          // A bookable created in the flow stays in it for the confirmation,
+          // one created on the editing page stays there.
           if (this.flowMode) query.mode = FLOW_MODE;
+          else delete query.mode;
           this.$router.replace({ query });
         }
 
         this.takeSnapshot();
         this.messagesRevealed = false;
-        if (!this.bookableID) {
+        if (created) {
           await this.addToast(
             ToastService.createToast("bookable.create.success", "success")
           );
@@ -625,7 +612,7 @@ export default {
             type: "error",
             timeout: 8000,
           });
-        } else if (!this.bookableID) {
+        } else if (created) {
           await this.addToast(
             ToastService.createToast("bookable.create.error", "error")
           );
@@ -660,14 +647,18 @@ export default {
       );
     },
     enterFlow() {
-      this.$router.replace({
-        query: { ...this.$route.query, mode: FLOW_MODE },
-      });
+      const query = { ...this.$route.query };
+      // A new bookable is in the flow unless its editing page is asked for.
+      if (this.bookableID) query.mode = FLOW_MODE;
+      else delete query.mode;
+      this.$router.replace({ query });
     },
     /** Back to the editor; what the flow changed stays unsaved, not lost. */
     leaveFlow() {
       const query = { ...this.$route.query };
-      delete query.mode;
+      // A new bookable starts in the flow, so its editing page is asked for.
+      if (this.bookableID) delete query.mode;
+      else query.mode = PAGE_MODE;
       this.flowOutcome = null;
       return this.$router.replace({ query });
     },
