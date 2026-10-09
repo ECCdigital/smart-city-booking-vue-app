@@ -163,12 +163,6 @@
           "resource": "Neues Objekt",
           "ticket": "Neues Ticket",
           "event-location": "Neuer Veranstaltungsort"
-        },
-        "list": {
-          "room": "Räume",
-          "resource": "Geräte & Weiteres",
-          "ticket": "Tickets",
-          "event-location": "Veranstaltungsorte"
         }
       },
 

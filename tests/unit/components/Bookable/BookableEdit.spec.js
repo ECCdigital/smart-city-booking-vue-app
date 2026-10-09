@@ -691,6 +691,92 @@ describe("BookableEdit - switching between the modes", () => {
     );
   });
 
+  describe("of a new bookable", () => {
+    const mountNew = async (options = {}) => {
+      ApiBookablesService.getBookableTemplate.mockResolvedValue({
+        data: stored({ id: undefined }),
+      });
+      return mountBookableEdit({ query: {}, ...options });
+    };
+
+    // The template's title, the first input of both modes.
+    const titleInput = (wrapper) =>
+      wrapper
+        .findAll("input")
+        .wrappers.find((input) => input.element.value === "Saal");
+    const inputValues = (wrapper) =>
+      wrapper.findAll("input").wrappers.map((input) => input.element.value);
+
+    it("leaves the guided flow for the editing page with what was typed", async () => {
+      const wrapper = await mountNew();
+
+      await titleInput(wrapper).setValue("Probe");
+      const leave = find(wrapper, "flow-leave");
+      expect(leave.text()).toBe("Zur Bearbeitungsseite");
+      await leave.trigger("click");
+      await flushPromises();
+
+      expect(find(wrapper, "flow-bar").exists()).toBe(false);
+      expect(inputValues(wrapper)).toContain("Probe");
+      expect(unsaved(wrapper)).toBe(true);
+    });
+
+    it("goes back from its editing page to the guided flow with what was typed", async () => {
+      const wrapper = await mountNew();
+      await find(wrapper, "flow-leave").trigger("click");
+      await flushPromises();
+
+      await titleInput(wrapper).setValue("Probe");
+      const enter = find(wrapper, "flow-enter");
+      expect(enter.text()).toBe("Zum geführten Ablauf");
+      await enter.trigger("click");
+      await flushPromises();
+
+      expect(find(wrapper, "flow-bar").exists()).toBe(true);
+      expect(inputValues(wrapper)).toContain("Probe");
+      expect(unsaved(wrapper)).toBe(true);
+    });
+
+    it("is saved on its editing page with a toast and stays there, without the flow's confirmation", async () => {
+      ApiBookablesService.createOrUpdateBookable.mockImplementation(
+        async (bookable) => ({ data: { ...bookable, id: "b9" } })
+      );
+      const toasts = [];
+      const wrapper = await mountNew({
+        bookable: stored({ id: "b9", title: "Probe" }),
+        toasts,
+      });
+      await find(wrapper, "flow-leave").trigger("click");
+      await flushPromises();
+
+      await titleInput(wrapper).setValue("Probe");
+      await find(wrapper, "save").trigger("click");
+      await flushPromises();
+
+      expect(toasts.map((toast) => toast.title)).toEqual([
+        "Erfolgreich erstellt",
+      ]);
+      expect(wrapper.vm.$route.query.id).toBe("b9");
+      expect(wrapper.vm.$route.query.mode).toBeUndefined();
+      expect(find(wrapper, "flow-bar").exists()).toBe(false);
+      expect(find(wrapper, "flow-done-state").exists()).toBe(false);
+      expect(wrapper.text()).toContain("ID: b9");
+      expect(inputValues(wrapper)).toContain("Probe");
+      expect(unsaved(wrapper)).toBe(false);
+    });
+
+    it("starts in the guided flow even after the editing page was used", async () => {
+      const first = await mountNew();
+      await find(first, "flow-leave").trigger("click");
+      await flushPromises();
+      first.destroy();
+
+      const wrapper = await mountNew();
+
+      expect(find(wrapper, "flow-bar").exists()).toBe(true);
+    });
+  });
+
   it("leads from the confirmation „Zur Bearbeitungsseite“ to the editing page", async () => {
     ApiBookablesService.createOrUpdateBookable.mockImplementation(
       async (bookable) => ({ data: bookable })

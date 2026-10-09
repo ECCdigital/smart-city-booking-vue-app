@@ -12,7 +12,6 @@ import {
   FLOW_STEPS,
   editRouteOf,
   isFlowMode,
-  listRouteOf,
   isUnlimitedAmount,
   isUnlimitedMaxAmount,
   overviewBlocks,
@@ -38,8 +37,13 @@ const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t1", ...overrides }).toPlain();
 
 describe("isFlowMode", () => {
-  it("creates every new bookable in the flow", () => {
+  it("starts every new bookable in the flow", () => {
     expect(isFlowMode({ bookableId: undefined, mode: undefined })).toBe(true);
+  });
+
+  it("shows a new bookable on the editing page when it is asked for", () => {
+    expect(isFlowMode({ bookableId: undefined, mode: "page" })).toBe(false);
+    expect(isFlowMode({ bookableId: undefined, mode: "flow" })).toBe(true);
   });
 
   it("opens an existing bookable in the editor unless the flow is asked for", () => {
@@ -54,16 +58,6 @@ describe("editRouteOf", () => {
     expect(editRouteOf("event-location")).toBe("location-edit");
     expect(editRouteOf("resource")).toBe("resource-edit");
     expect(editRouteOf("ticket")).toBe("ticket-edit");
-  });
-});
-
-describe("listRouteOf", () => {
-  it("names the list route of each type, rooms for an unknown one", () => {
-    expect(listRouteOf("room")).toBe("rooms");
-    expect(listRouteOf("event-location")).toBe("event-locations");
-    expect(listRouteOf("resource")).toBe("resources");
-    expect(listRouteOf("ticket")).toBe("tickets");
-    expect(listRouteOf("other")).toBe("rooms");
   });
 });
 
