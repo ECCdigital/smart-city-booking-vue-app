@@ -290,7 +290,7 @@
           "title": "Gespeichert",
           "text": "Ihre Änderungen sind gespeichert. An der Veröffentlichung hat sich nichts geändert."
         },
-        "payment-missing": "Für dieses kostenpflichtige Buchungsobjekt ist noch keine Zahlung eingerichtet. Buchende können es so nicht bezahlen.",
+        "payment-missing": "Für dieses kostenpflichtige Buchungsobjekt ist noch keine Zahlung eingerichtet.",
         "optional-note": "optional",
         "another": "Weiteres Buchungsobjekt anlegen"
       }

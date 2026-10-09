@@ -293,8 +293,9 @@ describe("BookableFlow", () => {
 
         expect(ApiTenantService.getReadiness).toHaveBeenCalledWith("t1");
         const hint = find(wrapper, "flow-done-payment-missing");
-        expect(hint.text()).toContain(
-          "Für dieses kostenpflichtige Buchungsobjekt ist noch keine Zahlung eingerichtet."
+        // One line (ECCdigital/tickets#370): one sentence and the link.
+        expect(hint.text().replace(/\s+/g, " ")).toBe(
+          "Für dieses kostenpflichtige Buchungsobjekt ist noch keine Zahlung eingerichtet. Zahlung einrichten"
         );
         const link = hint.findComponent({ name: "RouterLink" });
         expect(link.text()).toBe("Zahlung einrichten");
