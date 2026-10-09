@@ -1384,9 +1384,7 @@
         "phone": "Telefonnummer",
         "website": "Website",
         "location": "Anschrift",
-        "created-hint": "Der Mandant ist angelegt. Kontaktangaben ändern Sie in den Mandanten-Einstellungen.",
         "submit": "Mandant anlegen",
-        "continue": "Weiter",
         "contact": "Kontakt",
         "cancel": "Abbrechen"
       },
