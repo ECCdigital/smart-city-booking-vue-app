@@ -616,7 +616,6 @@ describe("BookableEdit - Bestätigung", () => {
     const wrapper = await mountBookableEdit({
       query: { id: "b1" },
       bookable: stored({ autoCommitBooking: false }),
-      stubs: { BookableEditStatus: false },
     });
 
     expect(find(wrapper, "publication").exists()).toBe(true);
@@ -1074,7 +1073,6 @@ describe("BookableEdit - publication", () => {
     const wrapper = await mountBookableEdit({
       query: { id: "b1" },
       bookable: stored({ isBookable: true, isPublic: false }),
-      stubs: { BookableEditStatus: false },
     });
 
     await flip(wrapper, "publication-public");
@@ -1365,8 +1363,7 @@ describe("BookableEdit - the overview", () => {
   it("leads a row of the Veröffentlichung to the status band", async () => {
     const wrapper = await mountWithOverview(
       { id: "b1", tab: "pricing" },
-      stored(),
-      { BookableEditStatus: false }
+      stored()
     );
 
     await find(wrapper, "overview-row-isPublic").trigger("click");

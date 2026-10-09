@@ -87,7 +87,6 @@ async function mountTab(tab, overrides) {
     query: { id: "42", tab },
     bookable: bookable(overrides),
     stubs: {
-      BookableEditStatus: false,
       BookableFlowSummary: false,
       SaveBar: false,
       MediaAttachmentList: stub("MediaAttachmentList"),

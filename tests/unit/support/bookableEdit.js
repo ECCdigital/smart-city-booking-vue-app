@@ -28,7 +28,6 @@ export const stub = (name) => ({
 // The frame is under test, not the panels around the field: those with their
 // own API calls or permission checks stand aside.
 export const BOOKABLE_EDIT_STUBS = {
-  BookableEditStatus: stub("BookableEditStatus"),
   BookableFlowSummary: stub("BookableFlowSummary"),
   // The bar's own look is SaveBar's spec; here it only saves.
   SaveBar: {

@@ -158,12 +158,20 @@
           </div>
         </div>
 
-        <BookableEditStatus
+        <!-- The status band: the Veröffentlichung, the same component as
+             the flow's last step. -->
+        <v-sheet
           v-if="!flowMode"
-          :bookable="bookable"
-          :level="supervisionLevel"
-          @update:bookable="onUpdateBookable"
-        />
+          class="mb-4 px-4 py-3 status-band"
+          rounded
+          data-test="status-band"
+        >
+          <BookableEditPublication
+            :bookable="bookable"
+            :level="supervisionLevel"
+            @update:bookable="onUpdateBookable"
+          />
+        </v-sheet>
       </div>
 
       <!-- The guided flow (ECCdigital/tickets#326) is a mode of this page:
@@ -334,7 +342,7 @@ import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import Bookable from "@/entities/bookable";
 import { normalizeBookable } from "@/utils/normalizeBookable";
 import { mapActions, mapGetters } from "vuex";
-import BookableEditStatus from "@/components/Bookable/Edit/BookableEditStatus.vue";
+import BookableEditPublication from "@/components/Bookable/Edit/BookableEditPublication.vue";
 import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
 import BookableEditTab from "@/components/Bookable/Edit/BookableEditTab.vue";
 import { BOOKABLE_EDIT_TABS } from "@/components/Bookable/Edit/bookableEditTabs";
@@ -375,7 +383,7 @@ const SNAPSHOT_IGNORED = ["customFields", "review"];
 export default {
   name: "BookableEdit",
   components: {
-    BookableEditStatus,
+    BookableEditPublication,
     BookableFlowSummary,
     SaveBar,
     UnsavedChangesDialog,
@@ -968,6 +976,12 @@ export default {
 </script>
 
 <style scoped>
+.status-band {
+  transition: transform var(--scb-motion-base),
+    box-shadow var(--scb-motion-base);
+  background-color: var(--scb-surface-raised) !important;
+}
+
 /* The page scrolls as one, as the booking editor does: the scrollbar sits at
    the right edge of the page body, and the navigation and the overview stick
    to the top while the sections pass by. */
