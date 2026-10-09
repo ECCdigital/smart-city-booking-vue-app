@@ -31,7 +31,7 @@
       >
         <v-icon color="primary">{{ tile.icon }}</v-icon>
         <span class="next-steps__tile-title">{{ $t(tile.titleKey) }}</span>
-        <span class="next-steps__tile-hint">{{ $t(tile.hintKey) }}</span>
+        <span class="next-steps__hint">{{ $t(tile.hintKey) }}</span>
       </router-link>
     </div>
 
@@ -46,7 +46,7 @@
       </v-card-title>
       <v-divider />
       <v-card-text>
-        <p class="flow-field__hint mt-0">{{ $t("tenant.readiness.hint") }}</p>
+        <p class="next-steps__hint">{{ $t("tenant.readiness.hint") }}</p>
         <TenantReadinessCheck :tenant-id="tenant.id" hide-title />
       </v-card-text>
     </v-card>
@@ -194,7 +194,7 @@ export default {
   color: var(--scb-text);
 }
 
-.next-steps__tile-hint {
+.next-steps__hint {
   font-size: var(--scb-font-size-xs);
   line-height: var(--scb-line-height-base);
   color: var(--scb-text-muted);
