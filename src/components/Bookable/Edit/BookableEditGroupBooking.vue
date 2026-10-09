@@ -59,7 +59,7 @@ export default {
     <v-alert v-if="blockPeriods" color="info" dense text class="mt-3 mb-0">
       {{ $t("bookable.areas.groupBooking.notWithBlockPeriods") }}
     </v-alert>
-    <p v-else class="mb-3 mt-5 text-caption" style="max-width: 700px">
+    <p v-else class="mb-3 mt-5 text-caption">
       {{ $t("bookable.areas.groupBooking.explanation") }}
     </p>
     <v-row v-if="groupBooking.enabled" class="mt-4">

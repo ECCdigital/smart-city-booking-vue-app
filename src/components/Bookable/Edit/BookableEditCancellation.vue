@@ -37,7 +37,7 @@ export default {
       :input-value="policy.userCancellable"
       @change="setUserCancellable"
     ></v-switch>
-    <p class="mb-0 mt-3 text-caption" style="max-width: 700px">
+    <p class="mb-0 mt-3 text-caption">
       {{ $t("bookable.areas.cancellation.explanation") }}
     </p>
   </div>

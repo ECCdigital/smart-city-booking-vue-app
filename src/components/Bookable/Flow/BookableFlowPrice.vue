@@ -470,7 +470,7 @@ export default {
 }
 
 .bookable-price__total {
-  font-size: 1.25rem;
+  font-size: var(--scb-font-size-lead);
   font-weight: var(--scb-font-weight-semibold);
   color: var(--v-primary-base);
 }

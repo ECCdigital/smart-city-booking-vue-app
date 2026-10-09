@@ -1,17 +1,18 @@
 <template>
   <div class="flow-counter" :data-test="`${testId}-counter`">
-    <v-btn
-      icon
-      small
-      outlined
-      class="flow-counter__step"
-      :disabled="number <= 1"
-      :aria-label="$t('bookable.flow.amount.less')"
-      :data-test="`${testId}-less`"
-      @click="$emit('input', Math.max(1, Math.floor(number) - 1))"
-    >
-      <v-icon small>mdi-minus</v-icon>
-    </v-btn>
+    <span class="flow-counter__beside">
+      <v-btn
+        icon
+        small
+        outlined
+        :disabled="number <= 1"
+        :aria-label="$t('bookable.flow.amount.less')"
+        :data-test="`${testId}-less`"
+        @click="$emit('input', Math.max(1, Math.floor(number) - 1))"
+      >
+        <v-icon small>mdi-minus</v-icon>
+      </v-btn>
+    </span>
     <v-text-field
       :value="value"
       type="number"
@@ -27,18 +28,19 @@
       @input="$emit('input', $event)"
       @blur="$emit('leave')"
     />
-    <v-btn
-      icon
-      small
-      outlined
-      class="flow-counter__step"
-      :aria-label="$t('bookable.flow.amount.more')"
-      :data-test="`${testId}-more`"
-      @click="$emit('input', Math.max(1, Math.floor(number) + 1))"
-    >
-      <v-icon small>mdi-plus</v-icon>
-    </v-btn>
-    <span class="flow-counter__unit">{{ unit }}</span>
+    <span class="flow-counter__beside">
+      <v-btn
+        icon
+        small
+        outlined
+        :aria-label="$t('bookable.flow.amount.more')"
+        :data-test="`${testId}-more`"
+        @click="$emit('input', Math.max(1, Math.floor(number) + 1))"
+      >
+        <v-icon small>mdi-plus</v-icon>
+      </v-btn>
+    </span>
+    <span class="flow-counter__beside flow-counter__unit">{{ unit }}</span>
   </div>
 </template>
 
@@ -75,8 +77,10 @@ export default {
 }
 
 /* Level with the dense field, whose Meldung may open beneath it. */
-.flow-counter__step {
-  margin-top: 6px;
+.flow-counter__beside {
+  display: flex;
+  align-items: center;
+  height: var(--scb-field-height-dense);
 }
 
 .flow-counter__field {
@@ -108,7 +112,6 @@ export default {
 }
 
 .flow-counter__unit {
-  margin-top: 10px;
   font-size: var(--scb-font-size-sm);
   color: var(--scb-text-muted);
 }

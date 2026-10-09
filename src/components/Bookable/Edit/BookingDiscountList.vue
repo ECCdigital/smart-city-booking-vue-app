@@ -103,16 +103,18 @@ export default {
         hide-details="auto"
         @input="setPercent(index, $event)"
       />
-      <v-btn
-        icon
-        small
-        :title="$t('bookable.edit.common.remove')"
-        :aria-label="$t('bookable.edit.common.remove')"
-        data-test="discount-remove"
-        @click="remove(index)"
-      >
-        <v-icon small>mdi-close</v-icon>
-      </v-btn>
+      <span class="discount-list__action">
+        <v-btn
+          icon
+          small
+          :title="$t('bookable.edit.common.remove')"
+          :aria-label="$t('bookable.edit.common.remove')"
+          data-test="discount-remove"
+          @click="remove(index)"
+        >
+          <v-icon small>mdi-close</v-icon>
+        </v-btn>
+      </span>
     </div>
     <v-autocomplete
       :key="addKey"
@@ -168,7 +170,7 @@ export default {
   flex: 1 1 auto;
   flex-direction: column;
   justify-content: center;
-  min-height: 40px;
+  min-height: var(--scb-field-height-dense);
   min-width: 0;
   font-size: var(--scb-font-size-sm);
   color: var(--scb-text);
@@ -183,8 +185,11 @@ export default {
   flex: 0 0 120px;
 }
 
-.discount-list__row .v-btn {
-  margin-top: 6px;
+/* Level with the dense field, whose Meldung may open beneath it. */
+.discount-list__action {
+  display: flex;
+  align-items: center;
+  height: var(--scb-field-height-dense);
 }
 
 .discount-list__add {
