@@ -1,0 +1,4 @@
+# Build output, as in the ignorePatterns of .eslintrc.js. Prettier 2 does not
+# read .gitignore, so without this format:check fails after npm run build.
+dist/
+public/cdn/
