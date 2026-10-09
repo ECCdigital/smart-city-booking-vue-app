@@ -1,32 +1,30 @@
 <script>
-import BaseSection from "@/components/commons/BaseSection.vue";
 import BookableEditLeadTime from "@/components/Bookable/Edit/BookableEditLeadTime.vue";
 import { v4 as uuidv4 } from "uuid";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
-import { isBookableExpertOnlyBookingType } from "@/utils/bookableExpertMode";
+import bookableEditing from "@/mixins/bookableEditing";
+import { closeMenu } from "@/utils/timeMenus";
+import { bookingModeOf } from "@/utils/bookableBookingMode";
+import { blockPeriodTooShort } from "@/utils/bookableValidation";
+import { weekdayItems } from "@/utils/bookableWeekdays";
 
+/** What `v-model.number` keeps: a number where the input reads as one. */
+function toNumber(value) {
+  const number = parseFloat(value);
+  return Number.isNaN(number) ? value : number;
+}
+
+/**
+ * The sections of the chosen Buchungsart, in both modes: Buchungsdauer,
+ * Feste Zeitfenster or Zeiträume, with Vorlaufzeit and Puffer. The
+ * Buchungsart itself is `BookableEditBookingMode`; the frame puts it above.
+ * Where a provider handles the availability, nothing shows.
+ */
 export default {
   name: "BookableEditBookingType",
-  components: { BaseSection, BookableEditLeadTime },
-  mixins: [bookableExpertMode],
-  props: {
-    bookable: { type: Object, required: true },
-    // Inside the guided flow, which asks for the booking type itself: only
-    // the settings of the chosen type are shown.
-    embedded: { type: Boolean, default: false },
-  },
+  components: { BookableEditLeadTime },
+  mixins: [bookableEditing],
   data() {
     return {
-      valid: false,
-      weekdays: [
-        { id: 1, name: "Montag", short: "Mo" },
-        { id: 2, name: "Dienstag", short: "Di" },
-        { id: 3, name: "Mittwoch", short: "Mi" },
-        { id: 4, name: "Donnerstag", short: "Do" },
-        { id: 5, name: "Freitag", short: "Fr" },
-        { id: 6, name: "Samstag", short: "Sa" },
-        { id: 0, name: "Sonntag", short: "So" },
-      ],
       timeEndMenu: [],
       timeStartMenu: [],
       expandedItems: [],
@@ -35,132 +33,57 @@ export default {
       expandedBlockItems: [],
     };
   },
-  created() {
-    if (!Array.isArray(this.model.blockPeriods)) {
-      this.model.blockPeriods = [];
-    }
-    this.model.blockPeriods.forEach((blockPeriod) => {
-      if (!blockPeriod.id) {
-        blockPeriod.id = uuidv4();
-      }
-    });
-  },
   computed: {
-    model: {
-      get() {
-        return this.bookable;
-      },
-      set(val) {
-        this.$emit("update:bookable", { ...val });
-      },
+    weekdays() {
+      return weekdayItems((key) => this.$t(key));
     },
-    isLongRangeWeek() {
-      return (
-        this.model.isLongRange &&
-        this.model.longRangeOptions &&
-        this.model.longRangeOptions.type === "week"
-      );
+    bookingType() {
+      return bookingModeOf(this.bookable);
     },
-    isLongRangeMonth() {
-      return (
-        this.model.isLongRange &&
-        this.model.longRangeOptions &&
-        this.model.longRangeOptions.type === "month"
-      );
+    external() {
+      return this.providerTakesOver("availability");
     },
-    bookingTypeSupportsLeadTime() {
-      return (
-        this.expertMode &&
-        ["schedule", "timePeriod", "blockPeriod"].includes(this.bookingType)
-      );
+    timePeriods() {
+      return this.bookable.timePeriods || [];
     },
-    isExpertBookingTypeActive() {
-      return isBookableExpertOnlyBookingType(this.bookingType);
-    },
-    bookingType: {
-      get() {
-        if (this.model.isScheduleRelated) return "schedule";
-        if (this.model.isTimePeriodRelated) return "timePeriod";
-        if (this.model.isBlockPeriodRelated) return "blockPeriod";
-        if (this.isLongRangeWeek) return "week";
-        if (this.isLongRangeMonth) return "month";
-        return "independent";
-      },
-      set(value) {
-        this.model.isScheduleRelated = false;
-        this.model.isTimePeriodRelated = false;
-        this.model.isBlockPeriodRelated = false;
-        this.model.longRangeOptions = {};
-        this.model.isLongRange = false;
-
-        switch (value) {
-          case "schedule":
-            this.model.isScheduleRelated = true;
-            break;
-          case "timePeriod":
-            this.model.isTimePeriodRelated = true;
-            break;
-          case "blockPeriod":
-            this.model.isBlockPeriodRelated = true;
-            if (!Array.isArray(this.model.blockPeriods)) {
-              this.model.blockPeriods = [];
-            }
-            // Permissions tab may be unmounted (keep-alive); disable here on type change.
-            if (this.model.groupBooking?.enabled) {
-              this.model.groupBooking.enabled = false;
-            }
-            break;
-          case "week":
-            this.model.longRangeOptions = { type: "week" };
-            this.model.isLongRange = true;
-            break;
-          case "month":
-            this.model.longRangeOptions = { type: "month" };
-            this.model.isLongRange = true;
-            break;
-        }
-      },
+    blockPeriods() {
+      return this.bookable.blockPeriods || [];
     },
   },
   methods: {
-    async validate() {
-      const formValid = this.$refs.form ? this.$refs.form.validate() : true;
-      if (!formValid) {
-        return false;
-      }
-      if (this.bookingTypeSupportsLeadTime && this.$refs.leadTime) {
-        const leadTimeValid = await this.$refs.leadTime.validate();
-        if (!leadTimeValid) {
-          return false;
-        }
-      }
-      if (this.bookingType !== "blockPeriod") {
-        return true;
-      }
-      if (!this.model.blockPeriods?.length) {
-        return false;
-      }
-      return this.model.blockPeriods.every(
-        (blockPeriod) => this.getBlockPeriodDurationMinutes(blockPeriod) > 0
-      );
+    toNumber,
+    blockPeriodTooShort,
+    updateTimePeriod(index, changes) {
+      this.patch({
+        timePeriods: this.timePeriods.map((period, i) =>
+          i === index ? { ...period, ...changes } : period
+        ),
+      });
     },
-    resetValidation() {
-      this.$refs.form?.resetValidation();
+    updateBlockPeriod(index, changes) {
+      this.patch({
+        blockPeriods: this.blockPeriods.map((period, i) =>
+          i === index ? { ...period, ...changes } : period
+        ),
+      });
     },
-    generateBlockPeriodId() {
-      return uuidv4();
-    },
+    closeMenu,
     addNewBlockPeriod() {
-      const index = this.model.blockPeriods.length;
+      const index = this.blockPeriods.length;
       this.blockTimeStartMenu.push(false);
       this.blockTimeEndMenu.push(false);
-      this.model.blockPeriods.push({
-        id: this.generateBlockPeriodId(),
-        label: "",
-        startWeekday: null,
-        startTime: null,
-        endWeekday: null,
-        endTime: null,
+      this.patch({
+        blockPeriods: [
+          ...this.blockPeriods,
+          {
+            id: uuidv4(),
+            label: "",
+            startWeekday: null,
+            startTime: null,
+            endWeekday: null,
+            endTime: null,
+          },
+        ],
       });
       this.expandedBlockItems.push(index);
     },
@@ -168,75 +91,14 @@ export default {
       const start = this.getWeekdayName(blockPeriod.startWeekday);
       const end = this.getWeekdayName(blockPeriod.endWeekday);
       if (!start || !end) {
-        return "Keine Tage gewählt";
+        return this.$t("bookable.edit.common.no-days");
       }
       return `${start} – ${end}`;
     },
-    parseTimeToMinutes(time) {
-      if (!time || typeof time !== "string") {
-        return NaN;
-      }
-      const [hours, minutes] = time.split(":").map(Number);
-      if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-        return NaN;
-      }
-      return hours * 60 + minutes;
-    },
-    isBlockPeriodComplete(blockPeriod) {
-      const { startWeekday, endWeekday, startTime, endTime } = blockPeriod;
-      return (
-        startWeekday != null && endWeekday != null && !!startTime && !!endTime
-      );
-    },
-    getBlockPeriodDurationMinutes(blockPeriod) {
-      if (!this.isBlockPeriodComplete(blockPeriod)) {
-        return 0;
-      }
-
-      const startDay = Number(blockPeriod.startWeekday);
-      const endDay = Number(blockPeriod.endWeekday);
-      const startMinutes = this.parseTimeToMinutes(blockPeriod.startTime);
-      const endMinutes = this.parseTimeToMinutes(blockPeriod.endTime);
-
-      if (
-        Number.isNaN(startDay) ||
-        Number.isNaN(endDay) ||
-        Number.isNaN(startMinutes) ||
-        Number.isNaN(endMinutes)
-      ) {
-        return 0;
-      }
-
-      let daySpan;
-      if (endDay > startDay) {
-        daySpan = endDay - startDay;
-      } else if (endDay < startDay) {
-        daySpan = 7 - startDay + endDay;
-      } else if (endMinutes <= startMinutes) {
-        daySpan = 7;
-      } else {
-        daySpan = 0;
-      }
-
-      return daySpan * 24 * 60 + endMinutes - startMinutes;
-    },
-    revalidateBlockPeriodForm() {
-      this.$nextTick(() => {
-        this.$refs.form?.validate();
-      });
-    },
-    setBlockEndTime(index, time) {
-      this.model.blockPeriods[index].endTime = time;
-      this.blockTimeEndMenu[index] = false;
-      this.revalidateBlockPeriodForm();
-    },
-    setBlockStartTime(index, time) {
-      this.model.blockPeriods[index].startTime = time;
-      this.blockTimeStartMenu[index] = false;
-      this.revalidateBlockPeriodForm();
-    },
     removeBlockPeriod(index) {
-      this.model.blockPeriods.splice(index, 1);
+      this.patch({
+        blockPeriods: this.blockPeriods.filter((_, i) => i !== index),
+      });
       this.blockTimeStartMenu.splice(index, 1);
       this.blockTimeEndMenu.splice(index, 1);
       this.expandedBlockItems = this.expandedBlockItems
@@ -257,13 +119,14 @@ export default {
       return this.expandedBlockItems.includes(index);
     },
     addNewTimePeriod() {
-      const index = this.model.timePeriods.length;
+      const index = this.timePeriods.length;
       this.timeStartMenu.push(false);
       this.timeEndMenu.push(false);
-      this.model.timePeriods.push({
-        weekdays: [],
-        startTime: null,
-        endTime: null,
+      this.patch({
+        timePeriods: [
+          ...this.timePeriods,
+          { weekdays: [], startTime: null, endTime: null },
+        ],
       });
       this.expandedItems.push(index);
     },
@@ -272,7 +135,7 @@ export default {
         return "";
       }
       const day = this.weekdays.find((d) => d.id === Number(id));
-      return day ? day.name.substring(0, 2) : "";
+      return day ? day.short : "";
     },
     getWeekdayNamesFormatted(weekdays) {
       if (!weekdays || weekdays.length === 0) return "";
@@ -282,21 +145,14 @@ export default {
         .join(", ");
     },
     removeWeekdays(index, item) {
-      this.model.timePeriods[index].weekdays.splice(
-        this.model.timePeriods[index].weekdays.indexOf(item),
-        1
-      );
-    },
-    setEndTime(index, time) {
-      this.model.timePeriods[index].endTime = time;
-      this.timeEndMenu[index] = false;
-    },
-    setStartTime(index, time) {
-      this.model.timePeriods[index].startTime = time;
-      this.timeStartMenu[index] = false;
+      this.updateTimePeriod(index, {
+        weekdays: this.timePeriods[index].weekdays.filter((id) => id !== item),
+      });
     },
     removeTimePeriod(index) {
-      this.model.timePeriods.splice(index, 1);
+      this.patch({
+        timePeriods: this.timePeriods.filter((_, i) => i !== index),
+      });
       this.timeStartMenu.splice(index, 1);
       this.timeEndMenu.splice(index, 1);
       const idx = this.expandedItems.indexOf(index);
@@ -318,721 +174,611 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
-    <component
-      :is="embedded ? 'div' : 'BaseSection'"
-      title="Buchungstyp"
-      icon="mdi-calendar-clock"
+  <div v-if="!external">
+    <v-card
+      id="be-section-bookingType-duration"
+      data-field="bookingDuration"
+      class="mt-4 section-card"
+      v-if="bookingType === 'schedule'"
     >
-      <v-alert v-if="!embedded" color="info" dense text class="mb-4">
-        <v-icon class="mr-3" color="info"> mdi-information-outline </v-icon>
-        Wählen Sie aus, wie Kunden dieses Objekt buchen können.
-      </v-alert>
-
-      <v-alert
-        v-if="!embedded && !expertMode && isExpertBookingTypeActive"
-        color="info"
-        dense
-        text
-        class="mb-4"
+      <v-card-title
+        class="section-header pa-4 d-flex justify-space-between align-center"
       >
-        {{ $t("bookable.edit.expertMode.bookingTypeExpertOnly") }}
-      </v-alert>
+        <div>
+          <v-icon class="mr-2">mdi-timer-outline</v-icon>
+          <span class="text-h6 font-weight-bold">
+            {{ $t("bookable.edit.cards.bookingDuration") }}
+          </span>
+        </div>
+      </v-card-title>
+      <v-divider />
 
-      <div v-if="!embedded" id="be-section-bookingType-select">
-        <v-radio-group v-model="bookingType">
-          <v-radio value="schedule" class="mb-3">
-            <template v-slot:label>
-              <div>
-                <div class="font-weight-bold">
-                  <v-icon small class="mr-2">mdi-calendar-range</v-icon>
-                  Freie Zeitwahl
-                </div>
-                <div class="text-caption text--secondary mt-1">
-                  Kunden können Start- und Endzeitpunkt frei wählen
-                </div>
-              </div>
-            </template>
-          </v-radio>
+      <v-card-text class="pa-4">
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-text-field
+              background-color="accent"
+              filled
+              :label="$t('bookable.edit.bookingDuration.min')"
+              data-test="booking-duration-min"
+              :value="bookable.minBookingDuration"
+              @input="patch({ minBookingDuration: toNumber($event) })"
+              :suffix="$t('bookable.edit.common.hours')"
+              type="number"
+              min="0"
+              hide-details
+            ></v-text-field>
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              background-color="accent"
+              filled
+              :label="$t('bookable.edit.bookingDuration.max')"
+              data-test="booking-duration-max"
+              :value="bookable.maxBookingDuration"
+              @input="patch({ maxBookingDuration: toNumber($event) })"
+              :suffix="$t('bookable.edit.common.hours')"
+              type="number"
+              min="0"
+              hide-details
+            ></v-text-field>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
 
-          <v-radio value="timePeriod" class="mb-3">
-            <template v-slot:label>
-              <div>
-                <div class="font-weight-bold">
-                  <v-icon small class="mr-2">mdi-clock-outline</v-icon>
-                  Feste Zeitfenster
-                </div>
-                <div class="text-caption text--secondary mt-1">
-                  Vordefinierte, buchbare Zeitfenster (z.B. Montags 09:00 -
-                  12:00)
-                </div>
-              </div>
-            </template>
-          </v-radio>
+    <BookableEditLeadTime
+      v-if="bookingType === 'schedule'"
+      :bookable="bookable"
+      :show-buffer="true"
+      @update:bookable="$emit('update:bookable', $event)"
+    />
 
-          <v-radio
-            v-if="expertMode || bookingType === 'week'"
-            value="week"
-            class="mb-3"
-            :disabled="!expertMode"
-          >
-            <template v-slot:label>
-              <div>
-                <div class="font-weight-bold">
-                  <v-icon small class="mr-2">mdi-calendar-week</v-icon>
-                  Wochenbuchung
-                </div>
-                <div class="text-caption text--secondary mt-1">
-                  Buchung für komplette Wochen
-                </div>
-              </div>
-            </template>
-          </v-radio>
-
-          <v-radio
-            v-if="expertMode || bookingType === 'month'"
-            value="month"
-            class="mb-3"
-            :disabled="!expertMode"
-          >
-            <template v-slot:label>
-              <div>
-                <div class="font-weight-bold">
-                  <v-icon small class="mr-2">mdi-calendar-month</v-icon>
-                  Monatsbuchung
-                </div>
-                <div class="text-caption text--secondary mt-1">
-                  Buchung für komplette Kalendermonate
-                </div>
-              </div>
-            </template>
-          </v-radio>
-
-          <v-radio
-            v-if="expertMode || bookingType === 'blockPeriod'"
-            value="blockPeriod"
-            class="mb-3"
-            :disabled="!expertMode"
-          >
-            <template v-slot:label>
-              <div>
-                <div class="font-weight-bold">
-                  <v-icon small class="mr-2">mdi-calendar-sync</v-icon>
-                  Zeiträume
-                </div>
-                <div class="text-caption text--secondary mt-1">
-                  Wiederkehrende, tagesübergreifende Buchungsfenster (z. B.
-                  Wochenende, Arbeitswoche)
-                </div>
-              </div>
-            </template>
-          </v-radio>
-
-          <v-radio value="independent">
-            <template v-slot:label>
-              <div>
-                <div class="font-weight-bold">
-                  <v-icon small class="mr-2">mdi-clock-remove-outline</v-icon>
-                  Zeitunabhängig
-                </div>
-                <div class="text-caption text--secondary mt-1">
-                  Keine zeitlichen Einschränkungen
-                </div>
-              </div>
-            </template>
-          </v-radio>
-        </v-radio-group>
-      </div>
-
-      <v-card
-        id="be-section-bookingType-duration"
-        class="mt-4 section-card"
-        v-if="bookingType === 'schedule'"
+    <v-card
+      id="be-section-bookingType-time-periods"
+      data-field="timePeriods"
+      class="mt-4 section-card"
+      v-if="bookingType === 'timePeriod'"
+      outlined
+    >
+      <v-card-title
+        class="section-header pa-4 d-flex justify-space-between align-center"
       >
-        <v-card-title
-          class="section-header pa-4 d-flex justify-space-between align-center"
+        <div>
+          <v-icon class="mr-2">mdi-clock-outline</v-icon>
+          <span class="text-h6 font-weight-bold">
+            {{ $t("bookable.availability.modes.timePeriod") }}
+          </span>
+        </div>
+        <v-btn
+          small
+          color="primary"
+          data-test="time-periods-add"
+          @click="addNewTimePeriod"
         >
-          <div>
-            <v-icon class="mr-2">mdi-timer-outline</v-icon>
-            <span class="text-h6 font-weight-bold">Buchungsdauer</span>
-          </div>
-        </v-card-title>
-        <v-divider />
+          <v-icon left small>mdi-plus</v-icon>
+          {{ $t("bookable.edit.common.add") }}
+        </v-btn>
+      </v-card-title>
+      <v-divider />
 
-        <v-card-text class="pa-4">
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-text-field
-                background-color="accent"
-                filled
-                label="Minimale Buchungsdauer"
-                v-model.number="model.minBookingDuration"
-                suffix="Stunden"
-                type="number"
-                min="0"
-                hide-details
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-text-field
-                background-color="accent"
-                filled
-                label="Maximale Buchungsdauer"
-                v-model.number="model.maxBookingDuration"
-                suffix="Stunden"
-                type="number"
-                min="0"
-                hide-details
-              ></v-text-field>
-            </v-col>
-          </v-row>
-        </v-card-text>
-      </v-card>
+      <v-card-text class="pa-4">
+        <div v-if="timePeriods.length > 0">
+          <v-list two-line class="py-0">
+            <template v-for="(timePeriod, index) in timePeriods">
+              <v-list-item
+                :key="`period-${index}`"
+                class="time-period-item elevation-1 mb-3 rounded"
+                @click="toggleExpand(index)"
+              >
+                <v-list-item-avatar>
+                  <v-avatar
+                    :color="timePeriod.weekdays.length > 0 ? 'primary' : 'grey'"
+                    size="40"
+                  >
+                    <v-icon dark small>mdi-clock-outline</v-icon>
+                  </v-avatar>
+                </v-list-item-avatar>
 
-      <BookableEditLeadTime
-        v-if="expertMode && bookingType === 'schedule'"
-        ref="leadTime"
-        :bookable="model"
-        :show-buffer="true"
-        @update:bookable="model = $event"
-      />
+                <v-list-item-content>
+                  <v-list-item-title class="d-flex align-center">
+                    <span class="font-weight-medium">
+                      {{
+                        getWeekdayNamesFormatted(timePeriod.weekdays) ||
+                        $t("bookable.edit.common.no-days")
+                      }}
+                    </span>
+                  </v-list-item-title>
+                  <v-list-item-subtitle class="d-flex align-center flex-wrap">
+                    <v-icon small class="mr-1">mdi-clock-outline</v-icon>
+                    <span v-if="timePeriod.startTime && timePeriod.endTime">
+                      {{
+                        $t("bookable.edit.common.time-range", {
+                          start: timePeriod.startTime,
+                          end: timePeriod.endTime,
+                        })
+                      }}
+                    </span>
+                    <span v-else class="grey--text">{{
+                      $t("bookable.edit.common.no-time")
+                    }}</span>
+                  </v-list-item-subtitle>
+                </v-list-item-content>
 
-      <v-card
-        id="be-section-bookingType-time-periods"
-        class="mt-4 section-card"
-        v-if="bookingType === 'timePeriod'"
-        outlined
-      >
-        <v-card-title
-          class="section-header pa-4 d-flex justify-space-between align-center"
-        >
-          <div>
-            <v-icon class="mr-2">mdi-clock-outline</v-icon>
-            <span class="text-h6 font-weight-bold">Feste Zeitfenster</span>
-          </div>
-          <v-btn small color="primary" @click="addNewTimePeriod">
-            <v-icon left small>mdi-plus</v-icon>
-            Hinzufügen
-          </v-btn>
-        </v-card-title>
-        <v-divider />
-
-        <v-card-text class="pa-4">
-          <div v-if="model.timePeriods.length > 0">
-            <v-list two-line class="py-0">
-              <template v-for="(timePeriod, index) in model.timePeriods">
-                <v-list-item
-                  :key="`period-${index}`"
-                  class="time-period-item elevation-1 mb-3 rounded"
-                  @click="toggleExpand(index)"
-                >
-                  <v-list-item-avatar>
-                    <v-avatar
-                      :color="
-                        timePeriod.weekdays.length > 0 ? 'primary' : 'grey'
-                      "
-                      size="40"
-                    >
-                      <v-icon dark small>mdi-clock-outline</v-icon>
-                    </v-avatar>
-                  </v-list-item-avatar>
-
-                  <v-list-item-content>
-                    <v-list-item-title class="d-flex align-center">
-                      <span class="font-weight-medium">
+                <v-list-item-action>
+                  <div class="d-flex align-center">
+                    <v-btn icon small @click.stop="removeTimePeriod(index)">
+                      <v-icon small>mdi-delete-outline</v-icon>
+                    </v-btn>
+                    <v-btn icon small>
+                      <v-icon>
                         {{
-                          getWeekdayNamesFormatted(timePeriod.weekdays) ||
-                          "Keine Tage gewählt"
+                          isExpanded(index)
+                            ? "mdi-chevron-up"
+                            : "mdi-chevron-down"
                         }}
-                      </span>
-                    </v-list-item-title>
-                    <v-list-item-subtitle class="d-flex align-center flex-wrap">
-                      <v-icon small class="mr-1">mdi-clock-outline</v-icon>
-                      <span v-if="timePeriod.startTime && timePeriod.endTime">
-                        {{ timePeriod.startTime }} - {{ timePeriod.endTime }}
-                        Uhr
-                      </span>
-                      <span v-else class="grey--text">Zeit nicht gesetzt</span>
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
+                      </v-icon>
+                    </v-btn>
+                  </div>
+                </v-list-item-action>
+              </v-list-item>
 
-                  <v-list-item-action>
-                    <div class="d-flex align-center">
-                      <v-btn icon small @click.stop="removeTimePeriod(index)">
-                        <v-icon small>mdi-delete-outline</v-icon>
-                      </v-btn>
-                      <v-btn icon small>
-                        <v-icon>
-                          {{
-                            isExpanded(index)
-                              ? "mdi-chevron-up"
-                              : "mdi-chevron-down"
-                          }}
-                        </v-icon>
-                      </v-btn>
-                    </div>
-                  </v-list-item-action>
-                </v-list-item>
-
-                <v-expand-transition :key="`expand-${index}`">
-                  <v-card
-                    v-show="isExpanded(index)"
-                    flat
-                    class="mx-3 mb-3 pa-4 time-period-card"
-                    color="grey lighten-5"
-                  >
-                    <v-row>
-                      <v-col cols="12">
-                        <v-select
-                          dense
-                          background-color="accent"
-                          filled
-                          label="Wochentag(e) *"
-                          :items="weekdays"
-                          item-value="id"
-                          item-text="name"
-                          v-model="timePeriod.weekdays"
-                          multiple
-                          chips
-                          hide-selected
-                          hide-details="auto"
-                          :rules="[
-                            (v) =>
-                              (v && v.length > 0) ||
-                              'Mindestens ein Wochentag erforderlich',
-                          ]"
-                        >
-                          <template
-                            v-slot:selection="{ attrs, item, select, selected }"
-                          >
-                            <v-chip
-                              v-bind="attrs"
-                              :input-value="selected"
-                              close
-                              small
-                              color="secondary"
-                              @click="select"
-                              @click:close="removeWeekdays(index, item.id)"
-                            >
-                              <strong>{{ item.name }}</strong>
-                            </v-chip>
-                          </template>
-                        </v-select>
-                      </v-col>
-                    </v-row>
-
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-menu
-                          v-model="timeStartMenu[index]"
-                          :close-on-content-click="false"
-                          :nudge-right="40"
-                          transition="scale-transition"
-                          offset-y
-                          max-width="290px"
-                          min-width="290px"
-                        >
-                          <template v-slot:activator="{ on, attrs }">
-                            <v-text-field
-                              dense
-                              background-color="accent"
-                              filled
-                              v-model="timePeriod.startTime"
-                              label="Startzeit *"
-                              readonly
-                              suffix="Uhr"
-                              v-bind="attrs"
-                              v-on="on"
-                              hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Startzeit ist erforderlich',
-                              ]"
-                            ></v-text-field>
-                          </template>
-                          <v-time-picker
-                            v-if="timeStartMenu[index]"
-                            v-model="timePeriod.startTime"
-                            full-width
-                            @click:minute="
-                              setStartTime(index, timePeriod.startTime)
-                            "
-                            format="24hr"
-                          ></v-time-picker>
-                        </v-menu>
-                      </v-col>
-
-                      <v-col cols="12" md="6">
-                        <v-menu
-                          v-model="timeEndMenu[index]"
-                          :close-on-content-click="false"
-                          :nudge-right="40"
-                          transition="scale-transition"
-                          offset-y
-                          max-width="290px"
-                          min-width="290px"
-                        >
-                          <template v-slot:activator="{ on, attrs }">
-                            <v-text-field
-                              dense
-                              background-color="accent"
-                              filled
-                              v-model="timePeriod.endTime"
-                              label="Endzeit *"
-                              readonly
-                              suffix="Uhr"
-                              v-bind="attrs"
-                              v-on="on"
-                              hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Endzeit ist erforderlich',
-                              ]"
-                            ></v-text-field>
-                          </template>
-                          <v-time-picker
-                            v-if="timeEndMenu[index]"
-                            v-model="timePeriod.endTime"
-                            full-width
-                            @click:minute="
-                              setEndTime(index, timePeriod.endTime)
-                            "
-                            format="24hr"
-                          ></v-time-picker>
-                        </v-menu>
-                      </v-col>
-                    </v-row>
-                  </v-card>
-                </v-expand-transition>
-
-                <v-divider
-                  v-if="index < model.timePeriods.length - 1"
-                  :key="`divider-${index}`"
-                  class="my-2"
-                />
-              </template>
-            </v-list>
-          </div>
-
-          <div v-else class="text-center py-8">
-            <v-icon large color="grey lighten-1" class="mb-2">
-              mdi-clock-outline
-            </v-icon>
-            <div class="text-h6 grey--text mb-2">
-              Noch keine Zeitfenster definiert
-            </div>
-            <div class="text-body-2 grey--text text--darken-1 mb-4">
-              Fügen Sie Zeitfenster hinzu, um feste Buchungszeiten zu definieren
-            </div>
-            <v-btn small text color="primary" @click="addNewTimePeriod">
-              <v-icon left small>mdi-plus</v-icon>
-              Erstes Zeitfenster hinzufügen
-            </v-btn>
-          </div>
-        </v-card-text>
-      </v-card>
-
-      <BookableEditLeadTime
-        v-if="expertMode && bookingType === 'timePeriod'"
-        ref="leadTime"
-        :bookable="model"
-        :show-buffer="false"
-        @update:bookable="model = $event"
-      />
-
-      <v-card
-        id="be-section-bookingType-block-periods"
-        class="mt-4 section-card"
-        v-if="bookingType === 'blockPeriod'"
-        outlined
-      >
-        <v-card-title
-          class="section-header pa-4 d-flex justify-space-between align-center"
-        >
-          <div>
-            <v-icon class="mr-2">mdi-calendar-sync</v-icon>
-            <span class="text-h6 font-weight-bold">Zeiträume</span>
-          </div>
-          <v-btn small color="primary" @click="addNewBlockPeriod">
-            <v-icon left small>mdi-plus</v-icon>
-            Hinzufügen
-          </v-btn>
-        </v-card-title>
-        <v-divider />
-
-        <v-card-text class="pa-4">
-          <v-alert color="info" dense text class="mb-4">
-            <v-icon class="mr-3" color="info">mdi-information-outline</v-icon>
-            Öffnungszeiten und min./max. Buchungsdauer gelten bei Zeiträumen
-            nicht. Zeiträume können über den Wochenwechsel hinausgehen (z. B. Fr
-            18:00 → Mo 08:00).
-          </v-alert>
-
-          <v-alert
-            v-if="model.blockPeriods.length === 0"
-            type="warning"
-            dense
-            text
-            class="mb-4"
-          >
-            Mindestens ein Zeitraum ist erforderlich.
-          </v-alert>
-
-          <div v-if="model.blockPeriods.length > 0">
-            <v-list two-line class="py-0">
-              <template v-for="(blockPeriod, index) in model.blockPeriods">
-                <v-list-item
-                  :key="`block-period-${blockPeriod.id}`"
-                  class="time-period-item elevation-1 mb-3 rounded"
-                  @click="toggleBlockExpand(index)"
+              <v-expand-transition :key="`expand-${index}`">
+                <v-card
+                  v-show="isExpanded(index)"
+                  flat
+                  class="mx-3 mb-3 pa-4 time-period-card"
+                  color="grey lighten-5"
                 >
-                  <v-list-item-avatar>
-                    <v-avatar
-                      :color="blockPeriod.label ? 'primary' : 'grey'"
-                      size="40"
-                    >
-                      <v-icon dark small>mdi-calendar-sync</v-icon>
-                    </v-avatar>
-                  </v-list-item-avatar>
-
-                  <v-list-item-content>
-                    <v-list-item-title class="d-flex align-center">
-                      <span class="font-weight-medium">
-                        {{ blockPeriod.label || "Ohne Bezeichnung" }}
-                      </span>
-                    </v-list-item-title>
-                    <v-list-item-subtitle class="d-flex align-center flex-wrap">
-                      <v-icon small class="mr-1">mdi-clock-outline</v-icon>
-                      <span
-                        v-if="
-                          blockPeriod.startTime &&
-                          blockPeriod.endTime &&
-                          blockPeriod.startWeekday != null &&
-                          blockPeriod.endWeekday != null
-                        "
+                  <v-row>
+                    <v-col cols="12">
+                      <v-select
+                        dense
+                        background-color="accent"
+                        filled
+                        :label="$t('bookable.edit.common.weekdays')"
+                        :items="weekdays"
+                        item-value="id"
+                        item-text="name"
+                        :value="timePeriod.weekdays"
+                        multiple
+                        chips
+                        hide-selected
+                        hide-details="auto"
+                        :rules="fieldRules.weekdays"
+                        @change="updateTimePeriod(index, { weekdays: $event })"
                       >
-                        {{ getBlockPeriodWeekdayRange(blockPeriod) }},
-                        {{ blockPeriod.startTime }} – {{ blockPeriod.endTime }}
-                        Uhr
-                      </span>
-                      <span v-else class="grey--text">Zeit nicht gesetzt</span>
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
+                        <template
+                          v-slot:selection="{ attrs, item, select, selected }"
+                        >
+                          <v-chip
+                            v-bind="attrs"
+                            :input-value="selected"
+                            close
+                            small
+                            color="secondary"
+                            @click="select"
+                            @click:close="removeWeekdays(index, item.id)"
+                          >
+                            <strong>{{ item.name }}</strong>
+                          </v-chip>
+                        </template>
+                      </v-select>
+                    </v-col>
+                  </v-row>
 
-                  <v-list-item-action>
-                    <div class="d-flex align-center">
-                      <v-btn icon small @click.stop="removeBlockPeriod(index)">
-                        <v-icon small>mdi-delete-outline</v-icon>
-                      </v-btn>
-                      <v-btn icon small>
-                        <v-icon>
-                          {{
-                            isBlockExpanded(index)
-                              ? "mdi-chevron-up"
-                              : "mdi-chevron-down"
-                          }}
-                        </v-icon>
-                      </v-btn>
-                    </div>
-                  </v-list-item-action>
-                </v-list-item>
+                  <v-row>
+                    <v-col cols="12" md="6">
+                      <v-menu
+                        v-model="timeStartMenu[index]"
+                        :close-on-content-click="false"
+                        :nudge-right="40"
+                        transition="scale-transition"
+                        offset-y
+                        max-width="290px"
+                        min-width="290px"
+                      >
+                        <template v-slot:activator="{ on, attrs }">
+                          <v-text-field
+                            dense
+                            background-color="accent"
+                            filled
+                            :value="timePeriod.startTime"
+                            :label="$t('bookable.edit.common.start-time')"
+                            readonly
+                            :suffix="$t('bookable.edit.common.clock')"
+                            v-bind="attrs"
+                            v-on="on"
+                            hide-details="auto"
+                            :rules="fieldRules.startTime"
+                          ></v-text-field>
+                        </template>
+                        <v-time-picker
+                          v-if="timeStartMenu[index]"
+                          :value="timePeriod.startTime"
+                          full-width
+                          @input="
+                            updateTimePeriod(index, { startTime: $event })
+                          "
+                          @click:minute="closeMenu(timeStartMenu, index)"
+                          format="24hr"
+                        ></v-time-picker>
+                      </v-menu>
+                    </v-col>
 
-                <v-expand-transition :key="`block-expand-${blockPeriod.id}`">
-                  <v-card
-                    v-show="isBlockExpanded(index)"
-                    flat
-                    class="mx-3 mb-3 pa-4 time-period-card"
-                    color="grey lighten-5"
+                    <v-col cols="12" md="6">
+                      <v-menu
+                        v-model="timeEndMenu[index]"
+                        :close-on-content-click="false"
+                        :nudge-right="40"
+                        transition="scale-transition"
+                        offset-y
+                        max-width="290px"
+                        min-width="290px"
+                      >
+                        <template v-slot:activator="{ on, attrs }">
+                          <v-text-field
+                            dense
+                            background-color="accent"
+                            filled
+                            :value="timePeriod.endTime"
+                            :label="$t('bookable.edit.common.end-time')"
+                            readonly
+                            :suffix="$t('bookable.edit.common.clock')"
+                            v-bind="attrs"
+                            v-on="on"
+                            hide-details="auto"
+                            :rules="fieldRules.endTime"
+                          ></v-text-field>
+                        </template>
+                        <v-time-picker
+                          v-if="timeEndMenu[index]"
+                          :value="timePeriod.endTime"
+                          full-width
+                          @input="updateTimePeriod(index, { endTime: $event })"
+                          @click:minute="closeMenu(timeEndMenu, index)"
+                          format="24hr"
+                        ></v-time-picker>
+                      </v-menu>
+                    </v-col>
+                  </v-row>
+                </v-card>
+              </v-expand-transition>
+
+              <v-divider
+                v-if="index < timePeriods.length - 1"
+                :key="`divider-${index}`"
+                class="my-2"
+              />
+            </template>
+          </v-list>
+        </div>
+
+        <div v-else class="text-center py-8">
+          <v-icon large color="grey lighten-1" class="mb-2">
+            mdi-clock-outline
+          </v-icon>
+          <div class="text-h6 grey--text mb-2">
+            {{ $t("bookable.edit.timePeriods.empty") }}
+          </div>
+          <div class="text-body-2 grey--text text--darken-1 mb-4">
+            {{ $t("bookable.edit.timePeriods.empty-hint") }}
+          </div>
+          <v-btn small text color="primary" @click="addNewTimePeriod">
+            <v-icon left small>mdi-plus</v-icon>
+            {{ $t("bookable.edit.timePeriods.add-first") }}
+          </v-btn>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <BookableEditLeadTime
+      v-if="bookingType === 'timePeriod'"
+      :bookable="bookable"
+      :show-buffer="false"
+      @update:bookable="$emit('update:bookable', $event)"
+    />
+
+    <v-card
+      id="be-section-bookingType-block-periods"
+      data-field="blockPeriods"
+      class="mt-4 section-card"
+      v-if="bookingType === 'blockPeriod'"
+      outlined
+    >
+      <v-card-title
+        class="section-header pa-4 d-flex justify-space-between align-center"
+      >
+        <div>
+          <v-icon class="mr-2">mdi-calendar-sync</v-icon>
+          <span class="text-h6 font-weight-bold">
+            {{ $t("bookable.availability.modes.blockPeriod") }}
+          </span>
+        </div>
+        <v-btn
+          small
+          color="primary"
+          data-test="block-periods-add"
+          @click="addNewBlockPeriod"
+        >
+          <v-icon left small>mdi-plus</v-icon>
+          {{ $t("bookable.edit.common.add") }}
+        </v-btn>
+      </v-card-title>
+      <v-divider />
+
+      <v-card-text class="pa-4">
+        <v-alert color="info" dense text class="mb-4">
+          <v-icon class="mr-3" color="info">mdi-information-outline</v-icon>
+          {{ $t("bookable.edit.blockPeriods.info") }}
+        </v-alert>
+
+        <v-alert
+          v-if="blockPeriods.length === 0"
+          type="warning"
+          dense
+          text
+          class="mb-4"
+        >
+          {{ $t("bookable.validation.blockPeriods") }}
+        </v-alert>
+
+        <div v-if="blockPeriods.length > 0">
+          <v-list two-line class="py-0">
+            <template v-for="(blockPeriod, index) in blockPeriods">
+              <v-list-item
+                :key="`block-period-${blockPeriod.id}`"
+                class="time-period-item elevation-1 mb-3 rounded"
+                @click="toggleBlockExpand(index)"
+              >
+                <v-list-item-avatar>
+                  <v-avatar
+                    :color="blockPeriod.label ? 'primary' : 'grey'"
+                    size="40"
                   >
-                    <v-row>
-                      <v-col cols="12">
-                        <v-text-field
-                          dense
-                          background-color="accent"
-                          filled
-                          label="Bezeichnung *"
-                          v-model="blockPeriod.label"
-                          hide-details="auto"
-                          :rules="[
-                            (v) =>
-                              !!v?.trim() || 'Bezeichnung ist erforderlich',
-                          ]"
-                        />
-                      </v-col>
-                    </v-row>
+                    <v-icon dark small>mdi-calendar-sync</v-icon>
+                  </v-avatar>
+                </v-list-item-avatar>
 
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-select
-                          dense
-                          background-color="accent"
-                          filled
-                          label="Start-Wochentag *"
-                          :items="weekdays"
-                          item-value="id"
-                          item-text="name"
-                          v-model="blockPeriod.startWeekday"
-                          hide-details="auto"
-                          @change="revalidateBlockPeriodForm"
-                          :rules="[
-                            (v) =>
-                              (v !== null && v !== undefined) ||
-                              'Start-Wochentag ist erforderlich',
-                          ]"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-menu
-                          v-model="blockTimeStartMenu[index]"
-                          :close-on-content-click="false"
-                          :nudge-right="40"
-                          transition="scale-transition"
-                          offset-y
-                          max-width="290px"
-                          min-width="290px"
-                        >
-                          <template v-slot:activator="{ on, attrs }">
-                            <v-text-field
-                              dense
-                              background-color="accent"
-                              filled
-                              v-model="blockPeriod.startTime"
-                              label="Startzeit *"
-                              readonly
-                              suffix="Uhr"
-                              v-bind="attrs"
-                              v-on="on"
-                              hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Startzeit ist erforderlich',
-                              ]"
-                            />
-                          </template>
-                          <v-time-picker
-                            v-if="blockTimeStartMenu[index]"
-                            v-model="blockPeriod.startTime"
-                            full-width
-                            format="24hr"
-                            @click:minute="
-                              setBlockStartTime(index, blockPeriod.startTime)
-                            "
-                          />
-                        </v-menu>
-                      </v-col>
-                    </v-row>
-
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-select
-                          dense
-                          background-color="accent"
-                          filled
-                          label="End-Wochentag *"
-                          :items="weekdays"
-                          item-value="id"
-                          item-text="name"
-                          v-model="blockPeriod.endWeekday"
-                          hide-details="auto"
-                          hint="Ende in derselben Woche, wenn der Tag nach dem Start liegt; sonst in der Folgewoche"
-                          persistent-hint
-                          @change="revalidateBlockPeriodForm"
-                          :rules="[
-                            (v) =>
-                              (v !== null && v !== undefined) ||
-                              'End-Wochentag ist erforderlich',
-                          ]"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-menu
-                          v-model="blockTimeEndMenu[index]"
-                          :close-on-content-click="false"
-                          :nudge-right="40"
-                          transition="scale-transition"
-                          offset-y
-                          max-width="290px"
-                          min-width="290px"
-                        >
-                          <template v-slot:activator="{ on, attrs }">
-                            <v-text-field
-                              dense
-                              background-color="accent"
-                              filled
-                              v-model="blockPeriod.endTime"
-                              label="Endzeit *"
-                              readonly
-                              suffix="Uhr"
-                              v-bind="attrs"
-                              v-on="on"
-                              hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Endzeit ist erforderlich',
-                              ]"
-                            />
-                          </template>
-                          <v-time-picker
-                            v-if="blockTimeEndMenu[index]"
-                            v-model="blockPeriod.endTime"
-                            full-width
-                            format="24hr"
-                            @click:minute="
-                              setBlockEndTime(index, blockPeriod.endTime)
-                            "
-                          />
-                        </v-menu>
-                      </v-col>
-                    </v-row>
-
-                    <v-row
+                <v-list-item-content>
+                  <v-list-item-title class="d-flex align-center">
+                    <span class="font-weight-medium">
+                      {{
+                        blockPeriod.label ||
+                        $t("bookable.edit.blockPeriods.untitled")
+                      }}
+                    </span>
+                  </v-list-item-title>
+                  <v-list-item-subtitle class="d-flex align-center flex-wrap">
+                    <v-icon small class="mr-1">mdi-clock-outline</v-icon>
+                    <span
                       v-if="
-                        isBlockPeriodComplete(blockPeriod) &&
-                        getBlockPeriodDurationMinutes(blockPeriod) <= 0
+                        blockPeriod.startTime &&
+                        blockPeriod.endTime &&
+                        blockPeriod.startWeekday != null &&
+                        blockPeriod.endWeekday != null
                       "
                     >
-                      <v-col cols="12">
-                        <div class="text-caption error--text">
-                          Die Buchungsdauer muss größer als null sein.
-                        </div>
-                      </v-col>
-                    </v-row>
-                  </v-card>
-                </v-expand-transition>
+                      {{
+                        $t("bookable.edit.blockPeriods.when", {
+                          days: getBlockPeriodWeekdayRange(blockPeriod),
+                          start: blockPeriod.startTime,
+                          end: blockPeriod.endTime,
+                        })
+                      }}
+                    </span>
+                    <span v-else class="grey--text">{{
+                      $t("bookable.edit.common.no-time")
+                    }}</span>
+                  </v-list-item-subtitle>
+                </v-list-item-content>
 
-                <v-divider
-                  v-if="index < model.blockPeriods.length - 1"
-                  :key="`block-divider-${blockPeriod.id}`"
-                  class="my-2"
-                />
-              </template>
-            </v-list>
+                <v-list-item-action>
+                  <div class="d-flex align-center">
+                    <v-btn
+                      icon
+                      small
+                      data-test="block-period-remove"
+                      @click.stop="removeBlockPeriod(index)"
+                    >
+                      <v-icon small>mdi-delete-outline</v-icon>
+                    </v-btn>
+                    <v-btn icon small>
+                      <v-icon>
+                        {{
+                          isBlockExpanded(index)
+                            ? "mdi-chevron-up"
+                            : "mdi-chevron-down"
+                        }}
+                      </v-icon>
+                    </v-btn>
+                  </div>
+                </v-list-item-action>
+              </v-list-item>
+
+              <v-expand-transition :key="`block-expand-${blockPeriod.id}`">
+                <v-card
+                  v-show="isBlockExpanded(index)"
+                  flat
+                  class="mx-3 mb-3 pa-4 time-period-card"
+                  color="grey lighten-5"
+                >
+                  <v-row>
+                    <v-col cols="12">
+                      <v-text-field
+                        dense
+                        background-color="accent"
+                        filled
+                        :label="$t('bookable.edit.blockPeriods.label')"
+                        data-test="block-period-label"
+                        :value="blockPeriod.label"
+                        @input="updateBlockPeriod(index, { label: $event })"
+                        hide-details="auto"
+                        :rules="fieldRules.label"
+                      />
+                    </v-col>
+                  </v-row>
+
+                  <v-row>
+                    <v-col cols="12" md="6">
+                      <v-select
+                        dense
+                        background-color="accent"
+                        filled
+                        :label="$t('bookable.edit.blockPeriods.start-weekday')"
+                        :items="weekdays"
+                        item-value="id"
+                        item-text="name"
+                        :value="blockPeriod.startWeekday"
+                        hide-details="auto"
+                        @change="
+                          updateBlockPeriod(index, { startWeekday: $event })
+                        "
+                        :rules="fieldRules.startWeekday"
+                      />
+                    </v-col>
+                    <v-col cols="12" md="6">
+                      <v-menu
+                        v-model="blockTimeStartMenu[index]"
+                        :close-on-content-click="false"
+                        :nudge-right="40"
+                        transition="scale-transition"
+                        offset-y
+                        max-width="290px"
+                        min-width="290px"
+                      >
+                        <template v-slot:activator="{ on, attrs }">
+                          <v-text-field
+                            dense
+                            background-color="accent"
+                            filled
+                            :value="blockPeriod.startTime"
+                            :label="$t('bookable.edit.common.start-time')"
+                            readonly
+                            :suffix="$t('bookable.edit.common.clock')"
+                            v-bind="attrs"
+                            v-on="on"
+                            hide-details="auto"
+                            :rules="fieldRules.startTime"
+                          />
+                        </template>
+                        <v-time-picker
+                          v-if="blockTimeStartMenu[index]"
+                          :value="blockPeriod.startTime"
+                          full-width
+                          format="24hr"
+                          @input="
+                            updateBlockPeriod(index, { startTime: $event })
+                          "
+                          @click:minute="closeMenu(blockTimeStartMenu, index)"
+                        />
+                      </v-menu>
+                    </v-col>
+                  </v-row>
+
+                  <v-row>
+                    <v-col cols="12" md="6">
+                      <v-select
+                        dense
+                        background-color="accent"
+                        filled
+                        :label="$t('bookable.edit.blockPeriods.end-weekday')"
+                        :items="weekdays"
+                        item-value="id"
+                        item-text="name"
+                        :value="blockPeriod.endWeekday"
+                        hide-details="auto"
+                        :hint="
+                          $t('bookable.edit.blockPeriods.end-weekday-hint')
+                        "
+                        persistent-hint
+                        @change="
+                          updateBlockPeriod(index, { endWeekday: $event })
+                        "
+                        :rules="fieldRules.endWeekday"
+                      />
+                    </v-col>
+                    <v-col cols="12" md="6">
+                      <v-menu
+                        v-model="blockTimeEndMenu[index]"
+                        :close-on-content-click="false"
+                        :nudge-right="40"
+                        transition="scale-transition"
+                        offset-y
+                        max-width="290px"
+                        min-width="290px"
+                      >
+                        <template v-slot:activator="{ on, attrs }">
+                          <v-text-field
+                            dense
+                            background-color="accent"
+                            filled
+                            :value="blockPeriod.endTime"
+                            :label="$t('bookable.edit.common.end-time')"
+                            readonly
+                            :suffix="$t('bookable.edit.common.clock')"
+                            v-bind="attrs"
+                            v-on="on"
+                            hide-details="auto"
+                            :rules="fieldRules.endTime"
+                          />
+                        </template>
+                        <v-time-picker
+                          v-if="blockTimeEndMenu[index]"
+                          :value="blockPeriod.endTime"
+                          full-width
+                          format="24hr"
+                          @input="updateBlockPeriod(index, { endTime: $event })"
+                          @click:minute="closeMenu(blockTimeEndMenu, index)"
+                        />
+                      </v-menu>
+                    </v-col>
+                  </v-row>
+
+                  <v-row v-if="blockPeriodTooShort(blockPeriod)">
+                    <v-col cols="12">
+                      <div class="text-caption error--text">
+                        {{ $t("bookable.validation.blockPeriodDuration") }}
+                      </div>
+                    </v-col>
+                  </v-row>
+                </v-card>
+              </v-expand-transition>
+
+              <v-divider
+                v-if="index < blockPeriods.length - 1"
+                :key="`block-divider-${blockPeriod.id}`"
+                class="my-2"
+              />
+            </template>
+          </v-list>
+        </div>
+
+        <div v-else class="text-center py-8">
+          <v-icon large color="grey lighten-1" class="mb-2">
+            mdi-calendar-sync
+          </v-icon>
+          <div class="text-h6 grey--text mb-2">
+            {{ $t("bookable.edit.blockPeriods.empty") }}
           </div>
-
-          <div v-else class="text-center py-8">
-            <v-icon large color="grey lighten-1" class="mb-2">
-              mdi-calendar-sync
-            </v-icon>
-            <div class="text-h6 grey--text mb-2">
-              Noch keine Zeiträume definiert
-            </div>
-            <div class="text-body-2 grey--text text--darken-1 mb-4">
-              Fügen Sie Zeiträume hinzu, um wiederkehrende Buchungsfenster zu
-              definieren
-            </div>
-            <v-btn small text color="primary" @click="addNewBlockPeriod">
-              <v-icon left small>mdi-plus</v-icon>
-              Ersten Zeitraum hinzufügen
-            </v-btn>
+          <div class="text-body-2 grey--text text--darken-1 mb-4">
+            {{ $t("bookable.edit.blockPeriods.empty-hint") }}
           </div>
-        </v-card-text>
-      </v-card>
+          <v-btn small text color="primary" @click="addNewBlockPeriod">
+            <v-icon left small>mdi-plus</v-icon>
+            {{ $t("bookable.edit.blockPeriods.add-first") }}
+          </v-btn>
+        </div>
+      </v-card-text>
+    </v-card>
 
-      <BookableEditLeadTime
-        v-if="expertMode && bookingType === 'blockPeriod'"
-        ref="leadTime"
-        :bookable="model"
-        :show-buffer="false"
-        @update:bookable="model = $event"
-      />
-    </component>
-  </v-form>
+    <BookableEditLeadTime
+      v-if="bookingType === 'blockPeriod'"
+      :bookable="bookable"
+      :show-buffer="false"
+      @update:bookable="$emit('update:bookable', $event)"
+    />
+  </div>
 </template>
 
 <style scoped>

@@ -1,6 +1,8 @@
 <template>
   <div class="page-content" ref="contentCol">
-    <v-form ref="rootForm" v-model="validRoot" class="page-content__form">
+    <!-- Not a gate: the save asks bookableValidation. The form only reveals
+         every field's message after a refused save. -->
+    <v-form ref="rootForm" class="page-content__form">
       <div class="page-content__top">
         <v-progress-linear :active="isLoading" indeterminate color="primary" />
 
@@ -61,7 +63,9 @@
                   data-test="flow-bar-id"
                   @click="copyBookableId"
                 >
-                  <span class="bookable-id-text">ID: {{ bookableID }}</span>
+                  <span class="bookable-id-text">{{
+                    $t("bookable.edit.id", { id: bookableID })
+                  }}</span>
                   <v-icon x-small class="ml-1 flex-shrink-0">
                     mdi-content-copy
                   </v-icon>
@@ -102,7 +106,9 @@
                   v-on="on"
                   @click="copyBookableId"
                 >
-                  <span class="bookable-id-text">ID: {{ bookableID }}</span>
+                  <span class="bookable-id-text">{{
+                    $t("bookable.edit.id", { id: bookableID })
+                  }}</span>
                   <v-icon x-small class="ml-1 flex-shrink-0">
                     mdi-content-copy
                   </v-icon>
@@ -110,7 +116,9 @@
               </template>
               <span>{{ $t("bookable.edit.copyId.tooltip") }}</span>
             </v-tooltip>
-            <span v-else class="bookable-id-text">ID: -</span>
+            <span v-else class="bookable-id-text">{{
+              $t("bookable.edit.id", { id: "-" })
+            }}</span>
             <span class="page-content__meta-sep mx-1">•</span>
             <span class="page-content__meta-title">
               {{ bookable.title || $t("bookable.edit.untitled") }}
@@ -150,14 +158,20 @@
           </div>
         </div>
 
-        <BookableEditStatus v-if="!flowMode" :bookable="bookable" />
-
-        <BookableEditOverview
-          v-if="!flowMode && !$vuetify.breakpoint.lgAndUp"
-          variant="band"
-          :bookable="bookable"
-          @navigate-tab="goToTab"
-        />
+        <!-- The status band: the Veröffentlichung, the same component as
+             the flow's last step. -->
+        <v-sheet
+          v-if="!flowMode"
+          class="mb-4 px-4 py-3 status-band"
+          rounded
+          data-test="status-band"
+        >
+          <BookableEditPublication
+            :bookable="bookable"
+            :level="supervisionLevel"
+            @update:bookable="onUpdateBookable"
+          />
+        </v-sheet>
       </div>
 
       <!-- The guided flow (ECCdigital/tickets#326) is a mode of this page:
@@ -165,6 +179,7 @@
            always created in it. -->
       <BookableFlow
         v-if="flowMode && bookable.tenantId"
+        ref="flow"
         :bookable="bookable"
         :is-new="!bookableID"
         :onboarding="$route.query.onboarding === '1'"
@@ -175,8 +190,9 @@
         @update:bookable="onUpdateBookable"
         @save="saveFlow"
         @open-section="openSection"
+        @open-area="openArea"
         @another="createAnother"
-        @overview="toOverview"
+        @leave="toEditingPage"
         @skip="skipFlow"
       />
 
@@ -186,7 +202,7 @@
             v-if="$vuetify.breakpoint.mdAndUp"
             :key="tabsRenderKey"
             class="bookable-edit-nav"
-            aria-label="Buchungsobjekt-Bereiche"
+            :aria-label="$t('bookable.edit.nav.tabs')"
           >
             <div
               v-for="t in visibleTabs"
@@ -207,7 +223,9 @@
                 <v-icon small class="bookable-edit-nav__tab-icon">
                   {{ t.icon }}
                 </v-icon>
-                <span class="bookable-edit-nav__tab-label">{{ t.label }}</span>
+                <span class="bookable-edit-nav__tab-label">{{
+                  $t(t.labelKey)
+                }}</span>
               </button>
 
               <div
@@ -246,14 +264,14 @@
                 style="text-transform: none"
               >
                 <v-icon left small>{{ t.icon }}</v-icon>
-                {{ t.label }}
+                {{ $t(t.labelKey) }}
               </v-tab>
             </v-tabs>
             <div
               v-if="showSectionNav"
               class="bookable-edit-nav__subnav"
               role="navigation"
-              aria-label="Unterbereiche"
+              :aria-label="$t('bookable.edit.nav.sections')"
             >
               <button
                 v-for="section in activeTabSections"
@@ -274,25 +292,22 @@
 
         <div class="page-content__editor" ref="editorScroll">
           <keep-alive>
-            <component
-              v-if="activeTabComp && bookable.tenantId"
-              :is="activeTabComp"
+            <BookableEditTab
+              v-if="activeTab && bookable.tenantId"
               :key="activeTabKey"
+              :tab="activeTab"
               :bookable="bookable"
-              :valid-root.sync="validRoot"
-              v-bind="activeTabExtraProps"
+              :section-target="sectionTarget"
               @update:bookable="onUpdateBookable"
-              @navigate-tab="goToTab"
+              @open-section="openSection"
             />
           </keep-alive>
         </div>
 
+        <!-- The overview of the guided flow, the same here (ECCdigital/
+             tickets#364): each row leads to its field. -->
         <div v-if="$vuetify.breakpoint.lgAndUp" class="page-content__overview">
-          <BookableEditOverview
-            variant="sidebar"
-            :bookable="bookable"
-            @navigate-tab="goToTab"
-          />
+          <BookableFlowSummary :bookable="bookable" @go="openField" />
         </div>
       </div>
     </v-form>
@@ -303,10 +318,10 @@
         $refs.contentCol && ($refs.contentCol.$el || $refs.contentCol)
       "
       :scroll-root="scrollRoot"
-      @submit="createOrUpdate()"
+      @submit="save"
       @cancel="onRestoreChanges"
       show-restore
-      :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
+      :active="hasUnsavedChanges"
       :in-progress="inProgress"
     />
 
@@ -321,38 +336,32 @@
 <script>
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import _ from "lodash";
-import BookableEditGeneral from "@/components/Bookable/Edit/BookableEditGeneral.vue";
-import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
-import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import SaveBar from "@/components/commons/SaveBar.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
 import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
 import Bookable from "@/entities/bookable";
-import { normalizeLeadTimeFields } from "@/utils/bookingLeadTime";
-import { normalizeBookingDiscounts } from "@/utils/bookingDiscounts";
+import { normalizeBookable } from "@/utils/normalizeBookable";
 import { mapActions, mapGetters } from "vuex";
-import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
-import BookableEditAccessLocks from "@/components/Bookable/Edit/BookableEditAccessLocks.vue";
-import BookableEditPermissions from "@/components/Bookable/Edit/BookableEditPermissions.vue";
-import BookableEditRelatedBookables from "@/components/Bookable/Edit/BookableEditRelatedBookables.vue";
-import BookableEditAttachments from "@/components/Bookable/Edit/BookableEditAttachments.vue";
-import BookableEditAdditional from "@/components/Bookable/Edit/BookableEditAdditional.vue";
-import BookableEditStatus from "@/components/Bookable/Edit/BookableEditStatus.vue";
-import BookableEditOverview from "@/components/Bookable/Edit/BookableEditOverview.vue";
+import BookableEditPublication from "@/components/Bookable/Edit/BookableEditPublication.vue";
+import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
+import BookableEditTab from "@/components/Bookable/Edit/BookableEditTab.vue";
+import { BOOKABLE_EDIT_TABS } from "@/components/Bookable/Edit/bookableEditTabs";
 import ToastService from "@/services/ToastService";
-import BookableEditCustomFields from "@/components/Bookable/Edit/BookableEditCustomFields.vue";
+import { createTenantAccessPoints } from "@/services/TenantAccessPoints";
 import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
 import {
   FLOW_MODE,
+  FLOW_STEPS,
   editRouteOf,
   isFlowMode,
   listRouteOf,
-  withPublication,
 } from "@/utils/bookableFlow";
+import { publicationOutcome } from "@/utils/bookablePublication";
 import {
+  expertOptionShownIn,
+  expertTabShown,
   getInitialBookableExpertMode,
   isBookableExpertModeConfigured,
-  isBookableExpertOnlyTab,
   setBookableExpertModeSession,
 } from "@/utils/bookableExpertMode";
 import {
@@ -361,8 +370,10 @@ import {
   getVisibleBookableEditSections,
   shouldShowBookableEditSectionNav,
 } from "@/utils/bookableEditSections";
-import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
+import { bookableIssues, firstIssue } from "@/utils/bookableValidation";
+import { areaAt, areaShown } from "@/utils/bookableAreas";
+import { revealField } from "@/utils/bookableFieldAnchor";
 
 // What the unsaved-changes snapshot leaves out. The review (glossary
 // "Prüfstatus") is the backend's alone and changes through its own actions,
@@ -372,21 +383,12 @@ const SNAPSHOT_IGNORED = ["customFields", "review"];
 export default {
   name: "BookableEdit",
   components: {
-    BookableEditStatus,
-    BookableEditOverview,
+    BookableEditPublication,
+    BookableFlowSummary,
     SaveBar,
     UnsavedChangesDialog,
-    BookableEditGeneral,
-    BookableEditPrice,
-    BookableEditBookingType,
-    BookableEditOpeningHours,
-    BookableEditAccessLocks,
-    BookableEditPermissions,
-    BookableEditRelatedBookables,
-    BookableEditAttachments,
-    BookableEditAdditional,
-    BookableEditCustomFields,
     BookableFlow,
+    BookableEditTab,
   },
   mixins: [unsavedChangesGuard],
   props: {
@@ -398,6 +400,9 @@ export default {
   provide() {
     return {
       bookableExpertMode: this.expertModeContext,
+      // Read once per page: Schließsysteme assigns from it, and what
+      // ParkraumService takes over depends on its assigned locker system.
+      bookableAccessPoints: this.accessPoints,
     };
   },
   data() {
@@ -405,75 +410,21 @@ export default {
       scrollRoot: null,
       isLoading: false,
       inProgress: false,
-      validRoot: true,
+      // Set by a refused save: every field shows its message from then on,
+      // also in a tab or step opened later, until the next save goes through.
+      messagesRevealed: false,
       activeTabKey: "general",
       activeSectionId: null,
       sectionTarget: null,
+      // What the components ask the expert-mode rule with: the mode and the
+      // bookable as loaded or last saved (`takeSnapshot`).
+      accessPoints: createTenantAccessPoints(),
       expertModeContext: {
         enabled: getInitialBookableExpertMode(),
+        stored: null,
       },
-      tabs: [
-        {
-          key: "general",
-          label: "Allgemein",
-          icon: "mdi-information-outline",
-          comp: "BookableEditGeneral",
-        },
-        {
-          key: "pricing",
-          label: "Preise & Kapazität",
-          icon: "mdi-cash",
-          comp: "BookableEditPrice",
-        },
-        {
-          key: "bookingType",
-          label: "Buchungstyp",
-          icon: "mdi-calendar-clock",
-          comp: "BookableEditBookingType",
-        },
-        {
-          key: "openingHours",
-          label: "Öffnungszeiten",
-          icon: "mdi-clock-outline",
-          comp: "BookableEditOpeningHours",
-        },
-        {
-          key: "accessLocks",
-          label: "Schließsysteme",
-          icon: "mdi-lock-outline",
-          comp: "BookableEditAccessLocks",
-        },
-        {
-          key: "relatedBookables",
-          label: "Abhängigkeiten",
-          icon: "mdi-link-variant",
-          comp: "BookableEditRelatedBookables",
-        },
-        {
-          key: "permissions",
-          label: "Berechtigungen",
-          icon: "mdi-account-lock-outline",
-          comp: "BookableEditPermissions",
-        },
-        {
-          key: "attachments",
-          label: "Anhänge",
-          icon: "mdi-paperclip",
-          comp: "BookableEditAttachments",
-        },
-        {
-          key: "customFields",
-          label: "Eigene Felder",
-          icon: "mdi-form-textbox",
-          comp: "BookableEditCustomFields",
-        },
-        {
-          key: "additional",
-          label: "Sonstiges",
-          icon: "mdi-dots-horizontal",
-          comp: "BookableEditAdditional",
-        },
-      ],
+      // The tabs and what they are made of; frozen, so not reactive.
+      tabs: BOOKABLE_EDIT_TABS,
       originalSnapshot: {
         bookable: {},
       },
@@ -500,7 +451,8 @@ export default {
       });
     },
     // The sign-in's level, else the admin DTO's - as the pending banner
-    // reads it. It words the flow's closing action.
+    // reads it. The publication reads it in both modes, the confirmation
+    // words its outcome by it.
     supervisionLevel() {
       const tenantId = this.bookable.tenantId || this.currentTenant?.id;
       return this.supervisionLevelOf(tenantId) ?? this.adminSupervisionLevel;
@@ -522,11 +474,9 @@ export default {
       return listRouteOf(this.type);
     },
     visibleTabs() {
-      const tabs = this.tabs.filter((tab) => this.isTabVisible(tab));
-      if (this.expertMode) {
-        return tabs;
-      }
-      return tabs.filter((tab) => !isBookableExpertOnlyTab(tab.key));
+      return this.tabs.filter((tab) =>
+        expertTabShown(tab.key, this.expertOptionShown)
+      );
     },
     tabsRenderKey() {
       return this.expertMode ? "expert" : "simple";
@@ -537,16 +487,17 @@ export default {
       );
       return index >= 0 ? index : 0;
     },
-    activeTabComp() {
-      const current = this.visibleTabs.find(
-        (tab) => tab.key === this.activeTabKey
+    activeTab() {
+      return (
+        this.visibleTabs.find((tab) => tab.key === this.activeTabKey) ||
+        this.visibleTabs[0]
       );
-      return current?.comp || this.visibleTabs[0]?.comp;
     },
     sectionContext() {
       return {
         bookable: this.bookable,
-        expertMode: this.expertMode,
+        shown: this.expertOptionShown,
+        accessPoints: this.accessPoints.list,
       };
     },
     activeTabSections() {
@@ -560,12 +511,6 @@ export default {
         this.activeTabKey,
         this.sectionContext
       );
-    },
-    activeTabExtraProps() {
-      if (this.activeTabKey === "customFields") {
-        return { sectionTarget: this.sectionTarget };
-      }
-      return {};
     },
     hasUnsavedChanges() {
       if (
@@ -591,17 +536,52 @@ export default {
       const discard = await this.confirmDiscardChanges();
       if (discard) {
         await this.init();
+        this.messagesRevealed = false;
+        this.$refs.rootForm?.resetValidation();
       }
     },
-    isTabVisible(tab) {
-      if (!tab.permission) return true;
-      if (tab.permission === "manageBookables") {
-        if (!this.bookable?.id) {
-          return BookablePermissionService.allowCreate();
+    /** The expert-mode rule, as the components ask it. */
+    expertOptionShown(option) {
+      return expertOptionShownIn(this.expertModeContext, this.bookable)(option);
+    },
+    /** „Speichern“ of the editing page. */
+    async save() {
+      if (this.refuseSave()) return;
+      await this.createOrUpdate();
+    },
+    /**
+     * Whether the bookable has issues the backend would refuse. If so,
+     * nothing is saved: every message shows, and the first tab - or in the
+     * guided flow the first step - with an issue opens.
+     */
+    refuseSave() {
+      const issues = bookableIssues(this.bookable, {
+        shown: this.expertOptionShown,
+        accessPoints: this.accessPoints.list,
+      });
+      if (!issues.length) return false;
+
+      this.revealMessages();
+      const tabs = this.visibleTabs.map((tab) => tab.key);
+      if (this.flowMode) {
+        const issue = firstIssue(issues, FLOW_STEPS, "step");
+        if (issue.step) {
+          this.$refs.flow.openStep(issue.step, issue.area);
+        } else {
+          // No step of its own yet: the tab of the editing page.
+          const { tab, section } = firstIssue(issues, tabs, "tab");
+          this.openSection({ tabKey: tab, sectionId: section });
         }
-        return BookablePermissionService.allowUpdate(this.bookable);
+      } else {
+        const { tab, section } = firstIssue(issues, tabs, "tab");
+        this.goToTab(tab, section || undefined);
       }
       return true;
+    },
+    /** Every field shows its message, now and in what opens later. */
+    revealMessages() {
+      this.messagesRevealed = true;
+      this.$nextTick(() => this.$refs.rootForm?.validate());
     },
     /** Saves `payload` (the bookable as edited); `true` when it was stored. */
     async createOrUpdate(payload = this.bookable) {
@@ -610,9 +590,7 @@ export default {
         const response = await ApiBookablesService.createOrUpdateBookable(
           payload
         );
-        this.bookable = normalizeBookingDiscounts(
-          normalizeLeadTimeFields(_.cloneDeep(response.data))
-        );
+        this.bookable = normalizeBookable(response.data);
 
         if (!this.bookableID) {
           const query = { ...this.$route.query, id: this.bookable.id };
@@ -621,12 +599,8 @@ export default {
           this.$router.replace({ query });
         }
 
-        // Match init(): snapshot the normalized bookable, not raw response.data
-        const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
-
-        this.originalSnapshot = JSON.stringify({
-          bookable: bookableClean,
-        });
+        this.takeSnapshot();
+        this.messagesRevealed = false;
         if (!this.bookableID) {
           await this.addToast(
             ToastService.createToast("bookable.create.success", "success")
@@ -666,25 +640,24 @@ export default {
       }
     },
     /**
-     * The flow's single save. „Speichern und veröffentlichen“ stores the
-     * publication wish; „Nur speichern“ leaves the publication as it is.
+     * The flow's one „Speichern“: the bookable as edited, its publication as
+     * the step „Veröffentlichung“ set it. The confirmation reads its outcome
+     * from the saved fields against the ones stored before.
      */
-    async saveFlow(publish) {
-      const isNew = !this.bookableID;
-      const wasPublic = this.bookable.isPublic === true;
+    async saveFlow() {
+      if (this.refuseSave()) return;
+      const before = this.bookableID ? this.expertModeContext.stored : null;
       this.flowSaveFailed = false;
-      const saved = await this.createOrUpdate(
-        withPublication(this.bookable, publish)
-      );
+      const saved = await this.createOrUpdate();
       if (!saved) {
         this.flowSaveFailed = true;
         return;
       }
-      if (publish) {
-        this.flowOutcome = "published";
-      } else {
-        this.flowOutcome = !isNew && wasPublic ? "kept" : "draft";
-      }
+      this.flowOutcome = publicationOutcome(
+        this.bookable,
+        before,
+        this.supervisionLevel
+      );
     },
     enterFlow() {
       this.$router.replace({
@@ -698,12 +671,50 @@ export default {
       this.flowOutcome = null;
       return this.$router.replace({ query });
     },
+    /**
+     * A link of the confirmation: back into the flow, at the area `key` of
+     * „Weitere Einstellungen“. The flow starts over once the outcome is gone.
+     */
+    async openArea(key) {
+      this.flowOutcome = null;
+      await this.$nextTick();
+      this.$refs.flow.openStep("more", key);
+    },
+    /**
+     * A place of the editing page, `{ tabKey, sectionId }`. In the guided
+     * flow a place inside a shown area stays in the flow, at that area of
+     * „Weitere Einstellungen“ - the settings of ParkraumService that the
+     * notes of external availability and prices jump to lie in
+     * Schließsysteme. Any other place leaves the flow for its tab.
+     */
     async openSection({ tabKey, sectionId }) {
-      await this.leaveFlow();
+      if (this.flowMode) {
+        const area = areaAt({ tabKey, sectionId });
+        if (area && areaShown(area, this.expertOptionShown)) {
+          this.$refs.flow.openStep("more", area);
+          return;
+        }
+        await this.leaveFlow();
+      }
       this.$nextTick(() => this.goToTab(tabKey, sectionId || undefined));
     },
-    /** „Zur Übersicht“: this bookable in the editor of its type. */
-    toOverview() {
+    /**
+     * A row of the overview on the editing page: the tab and section of its
+     * field, then the field itself (`{ tab, section, field }`). Without a
+     * tab the field lies in the status band - the Veröffentlichung.
+     */
+    async openField({ tab, section, field }) {
+      if (tab) this.goToTab(tab, section || undefined);
+      // After the tab has drawn and its section has scrolled into view.
+      await this.$nextTick();
+      await this.$nextTick();
+      revealField(this.$el, field);
+    },
+    /**
+     * The confirmation's „Zur Bearbeitungsseite“: this bookable on the
+     * editing page of its type.
+     */
+    toEditingPage() {
       const name = editRouteOf(this.bookable.type);
       if (name === this.$route.name) {
         this.leaveFlow();
@@ -730,63 +741,64 @@ export default {
         const response = await ApiBookablesService.getBookableTemplate(
           this.currentTenant.id
         );
-        this.bookable = normalizeLeadTimeFields(
-          new Bookable(response.data).toPlain()
-        );
-        normalizeBookingDiscounts(this.bookable);
-        this.bookable.type = this.type;
-        this.bookable.isTimePeriodRelated = false;
-        this.bookable.isBlockPeriodRelated = false;
-        this.bookable.isLongRange = false;
-        this.bookable.longRangeOptions = {};
-        // Tickets default to time-independent; other bookables to free time selection
-        this.bookable.isScheduleRelated = this.type !== "ticket";
-      }
-
-      this.$nextTick(() => {
-        const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
-        this.originalSnapshot = JSON.stringify({
-          bookable: bookableClean,
+        this.bookable = normalizeBookable({
+          ...new Bookable(response.data).toPlain(),
+          type: this.type,
+          isTimePeriodRelated: false,
+          isBlockPeriodRelated: false,
+          isLongRange: false,
+          longRangeOptions: {},
+          // Tickets default to time-independent; other bookables to free time selection
+          isScheduleRelated: this.type !== "ticket",
+          // Nothing is published unasked: both switches start off (#362).
+          isBookable: false,
+          isPublic: false,
         });
+      }
+      await this.accessPoints.load(
+        this.bookable.tenantId || this.currentTenant?.id
+      );
+
+      this.takeSnapshot();
+      // Only now: whether a tab of expert options shows depends on the
+      // bookable, and a section of ParkraumService on its access points.
+      this.resolveTabFromQuery();
+    },
+    /**
+     * What „Ungespeicherte Änderungen“ compares against: the bookable as
+     * normalized on load or after the save, so the normalization never reads
+     * as an edit.
+     */
+    takeSnapshot() {
+      const bookableClean = _.omit(this.bookable, SNAPSHOT_IGNORED);
+      this.originalSnapshot = JSON.stringify({
+        bookable: bookableClean,
       });
+      this.expertModeContext.stored = _.cloneDeep(this.bookable);
     },
     async fetchBookable(bookableId) {
       try {
         this.isLoading = true;
         const response = await ApiBookablesService.getBookable(bookableId);
-        this.bookable = normalizeBookingDiscounts(
-          normalizeLeadTimeFields(_.cloneDeep(response.data))
-        );
+        this.bookable = normalizeBookable(response.data);
       } catch (err) {
         console.error("Error fetching bookable:", err);
       } finally {
         this.isLoading = false;
       }
     },
-    onUpdateBookable(updatedBookable) {
-      this.bookable = { ...this.bookable, ...updatedBookable };
+    /** A partial patch: only the changed top-level fields, merged flat. */
+    onUpdateBookable(changes) {
+      this.bookable = { ...this.bookable, ...changes };
     },
     goToTab(key, sectionId) {
-      if (!this.expertMode && isBookableExpertOnlyTab(key)) {
-        return;
-      }
       if (!this.visibleTabs.some((tab) => tab.key === key)) {
         return;
       }
 
       const nextSectionId = sectionId || null;
-      if (nextSectionId) {
-        const section = getBookableEditSectionById(nextSectionId);
-        if (!section || section.tabKey !== key) {
-          return;
-        }
-        const visible = getVisibleBookableEditSections(
-          key,
-          this.sectionContext
-        );
-        if (!visible.some((item) => item.id === nextSectionId)) {
-          return;
-        }
+      if (nextSectionId && !this.sectionShownIn(key, nextSectionId)) {
+        return;
       }
 
       this.activeTabKey = key;
@@ -801,6 +813,17 @@ export default {
           this.applySectionNavigation(nextSectionId);
         });
       }
+    },
+    /** Whether the section `sectionId` lies in the tab `tabKey` and shows. */
+    sectionShownIn(tabKey, sectionId) {
+      const section = getBookableEditSectionById(sectionId);
+      return (
+        !!section &&
+        section.tabKey === tabKey &&
+        getVisibleBookableEditSections(tabKey, this.sectionContext).some(
+          (item) => item.id === sectionId
+        )
+      );
     },
     onTabChange(index) {
       const tab = this.visibleTabs[index];
@@ -883,19 +906,10 @@ export default {
       }
 
       const querySection = this.$route.query.section || null;
-      const section = querySection
-        ? getBookableEditSectionById(querySection)
-        : null;
-      let nextSectionId = null;
-      if (section && section.tabKey === nextTabKey) {
-        const visible = getVisibleBookableEditSections(
-          nextTabKey,
-          this.sectionContext
-        );
-        if (visible.some((item) => item.id === querySection)) {
-          nextSectionId = querySection;
-        }
-      }
+      const nextSectionId =
+        querySection && this.sectionShownIn(nextTabKey, querySection)
+          ? querySection
+          : null;
 
       this.activeTabKey = nextTabKey;
       this.activeSectionId = nextSectionId;
@@ -949,12 +963,25 @@ export default {
   },
   mounted() {
     this.scrollRoot = this.$el.closest(".admin-page__body--scroll");
-    this.resolveTabFromQuery();
+    // A tab or step that mounts after a refused save registers its fields
+    // with the form: they show their messages at once, like the others.
+    this.$watch(
+      () => this.$refs.rootForm?.inputs.length,
+      () => {
+        if (this.messagesRevealed) this.revealMessages();
+      }
+    );
   },
 };
 </script>
 
 <style scoped>
+.status-band {
+  transition: transform var(--scb-motion-base),
+    box-shadow var(--scb-motion-base);
+  background-color: var(--scb-surface-raised) !important;
+}
+
 /* The page scrolls as one, as the booking editor does: the scrollbar sits at
    the right edge of the page body, and the navigation and the overview stick
    to the top while the sections pass by. */

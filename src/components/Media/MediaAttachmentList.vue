@@ -75,7 +75,8 @@
               <v-row>
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="attachment.title"
+                    :value="attachment.title"
+                    @input="setField(attachment, 'title', $event)"
                     dense
                     background-color="accent"
                     filled
@@ -86,7 +87,8 @@
                 </v-col>
                 <v-col cols="12" md="6">
                   <v-select
-                    v-model="attachment.type"
+                    :value="attachment.type"
+                    @change="setField(attachment, 'type', $event)"
                     dense
                     background-color="accent"
                     filled
@@ -118,7 +120,8 @@
               <v-row>
                 <v-col cols="12">
                   <v-text-field
-                    v-model="attachment.caption"
+                    :value="attachment.caption"
+                    @input="setField(attachment, 'caption', $event)"
                     dense
                     background-color="accent"
                     filled
@@ -134,7 +137,8 @@
               <v-row>
                 <v-col cols="12" sm="4">
                   <v-switch
-                    v-model="attachment.show"
+                    :input-value="attachment.show"
+                    @change="setField(attachment, 'show', !!$event)"
                     dense
                     label="Im Buchungsprozess anzeigen"
                     hide-details
@@ -143,7 +147,8 @@
                 </v-col>
                 <v-col cols="12" sm="4">
                   <v-switch
-                    v-model="attachment.required"
+                    :input-value="attachment.required"
+                    @change="setField(attachment, 'required', !!$event)"
                     dense
                     label="Muss akzeptiert werden"
                     hide-details
@@ -152,7 +157,8 @@
                 </v-col>
                 <v-col cols="12" sm="4">
                   <v-switch
-                    v-model="attachment.mailAttach"
+                    :input-value="attachment.mailAttach"
+                    @change="setField(attachment, 'mailAttach', !!$event)"
                     dense
                     label="In E-Mail anhängen"
                     hide-details
@@ -287,8 +293,20 @@ export default {
       return attachment.reference || attachment.url || null;
     },
     setReference(attachment, reference) {
-      this.$set(attachment, "reference", reference);
-      this.$set(attachment, "url", "");
+      this.update(attachment, { reference, url: "" });
+    },
+    setField(attachment, field, value) {
+      this.update(attachment, { [field]: value });
+    },
+    // The list is the caller's: a change goes out as a new list with the
+    // attachment rebuilt, nothing is changed in place.
+    update(attachment, changes) {
+      this.$emit(
+        "input",
+        this.attachments.map((entry) =>
+          entry.id === attachment.id ? { ...entry, ...changes } : entry
+        )
+      );
     },
     getTypeIcon(type) {
       return TYPE_ICONS[type] || "mdi-file";

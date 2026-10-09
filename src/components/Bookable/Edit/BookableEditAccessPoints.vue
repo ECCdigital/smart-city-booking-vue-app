@@ -1,5 +1,4 @@
 <script>
-import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import AccessPointPermissionService from "@/services/permissions/AccessPointPermissionService";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
@@ -8,8 +7,11 @@ import {
   isLockerAccessPoint,
 } from "@/utilities/access-points";
 import { mapGetters } from "vuex";
-
-const MAX_BUFFER_MINUTES = 1440;
+import bookableEditing from "@/mixins/bookableEditing";
+import {
+  ACCESS_BUFFER_MAX_MINUTES as MAX_BUFFER_MINUTES,
+  bookableRules,
+} from "@/utils/bookableValidation";
 
 /**
  * An access point as both the table and the picker show it: what it is called,
@@ -58,22 +60,34 @@ function toRow(accessPoint) {
  */
 export default {
   name: "BookableEditAccessPoints",
-  props: {
-    bookable: { type: Object, required: true },
-  },
+  mixins: [bookableEditing],
   data() {
     return {
-      valid: true,
-      accessPoints: [],
-      loading: false,
-      loadError: "",
       pickerOpen: false,
     };
   },
   computed: {
     ...mapGetters({
-      tenantId: "tenants/currentTenantId",
+      currentTenantId: "tenants/currentTenantId",
     }),
+    tenantId() {
+      return this.bookable.tenantId || this.currentTenantId;
+    },
+    // The tenant's list as the editing page reads it once.
+    accessPoints() {
+      return this.bookableAccessPoints.list;
+    },
+    loading() {
+      return this.bookableAccessPoints.loading;
+    },
+    loadError() {
+      const { error } = this.bookableAccessPoints;
+      if (!error) return "";
+      return formatAccessPointErrorMessage(error, {
+        fallbackKey: "accessPoint.management.errors.loadFailed",
+        forbiddenKey: "accessPoint.bookable.readForbidden",
+      });
+    },
     accessPointDetails() {
       return this.bookable.accessPointDetails || {};
     },
@@ -83,19 +97,11 @@ export default {
     selectedIds() {
       return this.accessPointDetails.accessPointIds || [];
     },
+    // The rule of the access buffer in `bookableValidation`.
     bufferRules() {
-      return [
-        (v) => {
-          if (v === "" || v === null || v === undefined) return true;
-          const num = Number(v);
-          return (
-            (Number.isInteger(num) && num >= 0 && num <= MAX_BUFFER_MINUTES) ||
-            this.$t("accessPoint.bookable.buffer.invalid", {
-              max: MAX_BUFFER_MINUTES,
-            })
-          );
-        },
-      ];
+      return bookableRules("accessBuffer", (key, params) =>
+        this.$t(key, params)
+      );
     },
     // One row per assigned id, in the order the bookable stores them. Ids
     // without an access point are not rows - they are named separately, so
@@ -145,43 +151,19 @@ export default {
   watch: {
     tenantId: {
       immediate: true,
-      handler() {
-        this.fetchAccessPoints();
+      handler(tenantId) {
+        this.bookableAccessPoints.load(tenantId);
       },
     },
   },
   methods: {
-    validate() {
-      return this.$refs.form ? this.$refs.form.validate() : true;
-    },
-    resetValidation() {
-      if (this.$refs.form) this.$refs.form.resetValidation();
-    },
-    patchDetails(patch) {
-      this.$emit("update:bookable", {
-        ...this.bookable,
-        accessPointDetails: { ...this.accessPointDetails, ...patch },
+    patchDetails(changes) {
+      this.patch({
+        accessPointDetails: { ...this.accessPointDetails, ...changes },
       });
     },
-    async fetchAccessPoints() {
-      if (!this.tenantId) return;
-
-      this.loading = true;
-      this.loadError = "";
-      try {
-        const response = await ApiAccessPointService.getAccessPoints(
-          this.tenantId
-        );
-        this.accessPoints = response.data || [];
-      } catch (error) {
-        this.accessPoints = [];
-        this.loadError = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.errors.loadFailed",
-          forbiddenKey: "accessPoint.bookable.readForbidden",
-        });
-      } finally {
-        this.loading = false;
-      }
+    reloadAccessPoints() {
+      this.bookableAccessPoints.load(this.tenantId, { force: true });
     },
     /**
      * What a booking gets at this access point. At a locker system it gets one
@@ -226,7 +208,7 @@ export default {
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
+  <div>
     <v-card flat class="pa-0">
       <!-- Buffer -->
       <div>
@@ -297,7 +279,7 @@ export default {
               color="primary"
               :loading="loading"
               :disabled="loading"
-              @click="fetchAccessPoints"
+              @click="reloadAccessPoints"
             >
               <v-icon left small>mdi-refresh</v-icon>
               {{ $t("accessPoint.bookable.reload") }}
@@ -417,7 +399,7 @@ export default {
               <th>{{ $t("accessPoint.bookable.table.provider") }}</th>
               <th>{{ $t("accessPoint.bookable.table.grants") }}</th>
               <th class="text-right">
-                {{ $t("accessPoint.bookable.table.remove") }}
+                {{ $t("bookable.edit.common.remove") }}
               </th>
             </tr>
           </thead>
@@ -450,7 +432,7 @@ export default {
                   class="assignment-remove"
                   icon
                   small
-                  :aria-label="$t('accessPoint.bookable.table.remove')"
+                  :aria-label="$t('bookable.edit.common.remove')"
                   @click="removeAccessPoint(row.id)"
                 >
                   <v-icon small color="error">mdi-link-off</v-icon>
@@ -471,7 +453,7 @@ export default {
         </v-simple-table>
       </div>
     </v-card>
-  </v-form>
+  </div>
 </template>
 
 <style scoped>

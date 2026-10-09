@@ -842,13 +842,7 @@
       "
       :scroll-root="scrollRoot"
       :in-progress="inProgress"
-      :disabled="
-        inProgress ||
-        !valid ||
-        bookableItems.length === 0 ||
-        isCreateMode ||
-        hasUnsavedChanges
-      "
+      :active="saveCalledFor"
       show-restore
       @submit="submitChanges"
       @cancel="resetChanges"
@@ -1166,6 +1160,20 @@ export default {
         "Mindestens ein Buchungsobjekt hat eine Vorlaufzeit konfiguriert. " +
         "Bei manuellen Buchungen wird diese Regel nicht geprüft – sie gilt nur im " +
         "öffentlichen Checkout."
+      );
+    },
+    /**
+     * Whether the SaveBar calls for „Speichern“: with unsaved changes, for
+     * a new booking, and also while the booking is invalid or has no item -
+     * the save then says what is missing - or a save runs.
+     */
+    saveCalledFor() {
+      return (
+        this.inProgress ||
+        !this.valid ||
+        this.bookableItems.length === 0 ||
+        this.isCreateMode ||
+        this.hasUnsavedChanges
       );
     },
     hasUnsavedChanges() {

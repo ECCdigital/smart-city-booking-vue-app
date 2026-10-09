@@ -40,28 +40,28 @@
       </v-card-text>
     </v-card>
 
-    <template v-if="sections.length">
+    <template v-if="areas.length">
       <div class="flow-done__heading">
-        {{ $t("bookable.flow.done.optional") }}
+        {{ $t("bookable.flow.steps.more.title") }}
         <span class="flow-field__hint">
           – {{ $t("bookable.flow.done.optional-note") }}
         </span>
       </div>
       <div class="flow-done__sections" data-test="flow-done-sections">
         <button
-          v-for="section in sections"
-          :key="section.key"
+          v-for="area in areas"
+          :key="area.key"
           type="button"
           class="flow-done__section"
-          :data-test="`flow-section-${section.key}`"
-          @click="$emit('open-section', section)"
+          :data-test="`flow-done-area-${area.key}`"
+          @click="$emit('open-area', area.key)"
         >
           <span class="flow-done__section-title">
-            {{ $t(`bookable.flow.done.sections.${section.key}.title`) }}
+            {{ $t(area.titleKey) }}
             <v-icon small>mdi-chevron-right</v-icon>
           </span>
           <span class="flow-field__hint mt-0">
-            {{ $t(`bookable.flow.done.sections.${section.key}.hint`) }}
+            {{ $t(area.hintKey) }}
           </span>
         </button>
       </div>
@@ -75,11 +75,11 @@
       <v-btn
         color="primary"
         depressed
-        data-test="flow-overview"
-        @click="$emit('overview')"
+        data-test="flow-done-leave"
+        @click="$emit('leave')"
       >
         <v-icon left small>mdi-view-grid-outline</v-icon>
-        {{ $t("bookable.flow.done.overview") }}
+        {{ $t("bookable.flow.leave") }}
       </v-btn>
     </div>
   </div>
@@ -88,41 +88,43 @@
 <script>
 import TenantReadinessCheck from "@/components/Tenant/TenantReadinessCheck.vue";
 import OnboardingSetupLinks from "@/components/Tenant/Onboarding/OnboardingSetupLinks.vue";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
-import { isPaid, optionalSections, publishVariant } from "@/utils/bookableFlow";
+import bookableEditing from "@/mixins/bookableEditing";
+import { isPaid, publishVariant } from "@/utils/bookableFlow";
+import { shownAreas } from "@/utils/bookableAreas";
+
+const PUBLIC_OUTCOMES = ["published", "direct-link", "listed-not-bookable"];
 
 /**
  * After the save: what became of the publication, the readiness check, the
  * open points legal texts and payment (payment for a paid offer only), the
- * optional sections of today's editor and the ways on. Nothing here blocks.
+ * areas of „Weitere Einstellungen“ - each a link to its row in that step
+ * (`open-area`) - and the ways on. Nothing here blocks.
  */
 export default {
   name: "BookableFlowDone",
   components: { TenantReadinessCheck, OnboardingSetupLinks },
-  mixins: [bookableExpertMode],
+  mixins: [bookableEditing],
   props: {
-    bookable: { type: Object, required: true },
-    /** `published`, `draft` (a new bookable kept back) or `kept`. */
+    /** What became of the publication: `publicationOutcome`. */
     outcome: { type: String, required: true },
     level: { type: String, default: null },
   },
   computed: {
+    // Something is public now: it is listed or bookable.
     published() {
-      return this.outcome === "published";
+      return PUBLIC_OUTCOMES.includes(this.outcome);
     },
+    // A wish noted for later is worded by the tenant's level.
     stateKey() {
-      return this.published
-        ? `bookable.flow.done.published.${publishVariant(this.level)}`
+      return this.outcome === "noted"
+        ? `bookable.flow.done.noted.${publishVariant(this.level)}`
         : `bookable.flow.done.${this.outcome}`;
     },
     paid() {
       return isPaid(this.bookable);
     },
-    sections() {
-      return optionalSections({
-        bookable: this.bookable,
-        expertMode: this.expertMode,
-      });
+    areas() {
+      return shownAreas(this.expertOptionShown);
     },
   },
 };

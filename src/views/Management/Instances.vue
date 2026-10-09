@@ -66,7 +66,7 @@
         @submit="submitChanges"
         @cancel="onRestoreChanges"
         show-restore
-        :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
+        :active="saveCalledFor"
         :in-progress="inProgress"
       />
 
@@ -222,6 +222,19 @@ export default {
     ...mapGetters({}),
     currentComponent() {
       return this.tabs[this.activeTab]?.comp || "InstanceEditGeneral";
+    },
+    /**
+     * Whether the SaveBar calls for „Speichern“: with unsaved changes, and
+     * also while the form is invalid - the save then says what is wrong -
+     * or still loads or saves.
+     */
+    saveCalledFor() {
+      return (
+        this.inProgress ||
+        this.isLoading ||
+        !this.validRoot ||
+        this.hasUnsavedChanges
+      );
     },
     hasUnsavedChanges() {
       if (

@@ -1,13 +1,7 @@
-export function supportsLeadTime(bookable) {
-  return (
-    bookable?.isScheduleRelated === true ||
-    bookable?.isTimePeriodRelated === true ||
-    bookable?.isBlockPeriodRelated === true
-  );
-}
+import { usesLeadTime } from "@/utils/bookableBookingMode";
 
 export function hasLeadTimeConfig(bookable) {
-  if (!supportsLeadTime(bookable)) {
+  if (!usesLeadTime(bookable)) {
     return false;
   }
   const minutes = Number(bookable.preparationLeadTimeMinutes);
@@ -53,7 +47,7 @@ export function normalizeLeadTimeFields(bookable) {
   if (!bookable) {
     return bookable;
   }
-  const leadTimeSupported = supportsLeadTime(bookable);
+  const leadTimeSupported = usesLeadTime(bookable);
   const bufferSupported = bookable?.isScheduleRelated === true;
 
   if (!Array.isArray(bookable.serviceHours)) {
@@ -104,20 +98,4 @@ export function normalizeLeadTimeFields(bookable) {
   }
 
   return bookable;
-}
-
-export function formatPreparationDuration(minutes) {
-  const value = Number(minutes);
-  if (!value || value <= 0) {
-    return "";
-  }
-  const hours = Math.floor(value / 60);
-  const mins = value % 60;
-  if (hours > 0 && mins > 0) {
-    return `${hours} Std. ${mins} Min.`;
-  }
-  if (hours > 0) {
-    return `${hours} Std.`;
-  }
-  return `${mins} Min.`;
 }

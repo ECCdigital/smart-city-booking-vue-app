@@ -4,98 +4,60 @@
  */
 
 import {
-  IFBS_PROVIDER,
-  providerHandles,
+  ifbsLockerOf,
+  providerTakesOver,
 } from "@/utils/bookableExternalProviders";
+import {
+  bookingModeOf,
+  isLeadTimeMode,
+  isTimeWindowMode,
+} from "@/utils/bookableBookingMode";
 
 export function bookableEditSectionElementId(sectionId) {
   return `be-section-${sectionId}`;
 }
 
-/** The booking type of the bookable, as the booking type tab names it. */
-export function getBookingMode(bookable) {
-  if (!bookable) return "independent";
-  if (bookable.isScheduleRelated) return "schedule";
-  if (bookable.isTimePeriodRelated) return "timePeriod";
-  if (bookable.isBlockPeriodRelated) return "blockPeriod";
-  if (bookable.isLongRange) {
-    const type = bookable.longRangeOptions?.type;
-    if (type === "week" || type === "month") return type;
-  }
-  return "independent";
-}
-
 /**
- * Whether the bookable declares the external data source the pricing tab
- * configures.
- *
- * Since the locker fold the bookable no longer says which of its access points
- * is a locker system - the ids alone do not, and resolving them needs the
- * tenant's access point list, which this module cannot load. The declaration
- * is the part of that section that does live on the bookable, so it is what
- * the anchor keys on.
+ * All known sections. `labelKey` names a section in the navigation with the
+ * key of the card or area it is - the same key its heading reads, so the
+ * navigation and the card say the same. A section that is an expert option
+ * names it in `expertOption`.
  */
-function declaresExternalProvider(bookable) {
-  return (bookable?.externalProviders || []).some(
-    (provider) => provider?.provider === IFBS_PROVIDER
-  );
-}
-
-function handlesExternalPricing(bookable) {
-  const providers = bookable?.externalProviders;
-  if (!Array.isArray(providers)) return false;
-  return providers.some(
-    (provider) =>
-      provider?.provider === IFBS_PROVIDER &&
-      providerHandles(provider, "pricing")
-  );
-}
-
-/** All known sections (labelKey → i18n bookable.edit.sections.*) */
 const ALL_SECTIONS = [
+  // The two groups of the Grunddaten (BookableEditIdentity), named as the
+  // groups themselves are.
   {
     tabKey: "general",
-    id: "general-info",
-    labelKey: "bookable.edit.sections.generalInfo",
+    id: "general-catalog",
+    labelKey: "bookable.identity.catalog",
     type: "scroll",
   },
   {
     tabKey: "general",
-    id: "general-images",
-    labelKey: "bookable.edit.sections.generalImages",
+    id: "general-admin",
+    labelKey: "bookable.identity.admin",
     type: "scroll",
-  },
-  {
-    tabKey: "general",
-    id: "general-booker-info",
-    labelKey: "bookable.edit.sections.generalBookerInfo",
-    type: "scroll",
-  },
-  {
-    tabKey: "general",
-    id: "general-tags",
-    labelKey: "bookable.edit.sections.generalTags",
-    type: "scroll",
-    expertOnly: true,
   },
   {
     tabKey: "pricing",
+    id: "pricing-price",
+    labelKey: "bookable.flow.steps.price.title",
+    type: "scroll",
+  },
+  {
+    tabKey: "pricing",
+    id: "pricing-amount",
+    labelKey: "bookable.edit.sections.pricingAmount",
+    type: "scroll",
+  },
+  // The settings of ParkraumService, part of Schließsysteme; the id stays
+  // what links to it have known.
+  {
+    tabKey: "accessLocks",
     id: "pricing-external",
-    labelKey: "bookable.edit.sections.pricingExternal",
+    labelKey: "bookable.edit.sections.accessLocksExternal",
     type: "scroll",
-    expertOnly: true,
-  },
-  {
-    tabKey: "pricing",
-    id: "pricing-base",
-    labelKey: "bookable.edit.sections.pricingBase",
-    type: "scroll",
-  },
-  {
-    tabKey: "pricing",
-    id: "pricing-tiers",
-    labelKey: "bookable.edit.sections.pricingTiers",
-    type: "scroll",
+    expertOption: "externalPrices",
   },
   {
     tabKey: "bookingType",
@@ -106,79 +68,80 @@ const ALL_SECTIONS = [
   {
     tabKey: "bookingType",
     id: "bookingType-duration",
-    labelKey: "bookable.edit.sections.bookingTypeDuration",
+    labelKey: "bookable.edit.cards.bookingDuration",
     type: "scroll",
   },
   {
     tabKey: "bookingType",
     id: "bookingType-time-periods",
-    labelKey: "bookable.edit.sections.bookingTypeTimePeriods",
+    labelKey: "bookable.availability.modes.timePeriod",
     type: "scroll",
   },
   {
     tabKey: "bookingType",
     id: "bookingType-block-periods",
-    labelKey: "bookable.edit.sections.bookingTypeBlockPeriods",
+    labelKey: "bookable.availability.modes.blockPeriod",
     type: "scroll",
   },
   {
     tabKey: "bookingType",
     id: "bookingType-lead-time",
-    labelKey: "bookable.edit.sections.bookingTypeLeadTime",
+    labelKey: "bookable.edit.cards.leadTime",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "leadTime",
   },
   {
     tabKey: "bookingType",
     id: "bookingType-buffer",
-    labelKey: "bookable.edit.sections.bookingTypeBuffer",
+    labelKey: "bookable.edit.cards.buffer",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "buffer",
   },
   {
     tabKey: "openingHours",
     id: "openingHours-regular",
-    labelKey: "bookable.edit.sections.openingHoursRegular",
+    labelKey: "bookable.edit.cards.openingHours",
     type: "scroll",
   },
   {
     tabKey: "openingHours",
     id: "openingHours-special",
-    labelKey: "bookable.edit.sections.openingHoursSpecial",
+    labelKey: "bookable.edit.cards.specialOpeningHours",
     type: "scroll",
-    expertOnly: true,
-  },
-  {
-    tabKey: "permissions",
-    id: "permissions-login",
-    labelKey: "bookable.edit.sections.permissionsLogin",
-    type: "scroll",
+    expertOption: "specialOpeningHours",
   },
   {
     tabKey: "permissions",
     id: "permissions-access",
-    labelKey: "bookable.edit.sections.permissionsAccess",
+    labelKey: "bookable.permission.who",
     type: "scroll",
   },
   {
+    // Inside the card of „Wer darf buchen?“ (BookableEditPermission).
     tabKey: "permissions",
     id: "permissions-discounts",
-    labelKey: "bookable.edit.sections.permissionsDiscounts",
+    labelKey: "bookable.permission.discounts",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "bookingDiscounts",
+  },
+  {
+    tabKey: "permissions",
+    id: "permissions-confirmation",
+    labelKey: "bookable.flow.steps.approval.title",
+    type: "scroll",
   },
   {
     tabKey: "permissions",
     id: "permissions-group-booking",
-    labelKey: "bookable.edit.sections.permissionsGroupBooking",
+    labelKey: "bookable.areas.groupBooking.title",
     type: "scroll",
   },
   {
     tabKey: "permissions",
     id: "permissions-cancellation",
-    labelKey: "bookable.edit.sections.permissionsCancellation",
+    labelKey: "bookable.areas.cancellation.title",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "cancellation",
   },
   {
     tabKey: "customFields",
@@ -193,53 +156,63 @@ const ALL_SECTIONS = [
     labelKey: "bookable.edit.sections.customFieldsDefinitions",
     type: "subTab",
     subTab: 1,
-    expertOnly: true,
+    expertOption: "customFieldDefinitions",
   },
   {
     tabKey: "relatedBookables",
     id: "related-checkout",
-    labelKey: "bookable.edit.sections.relatedCheckout",
+    labelKey: "bookable.areas.checkoutBookables.title",
     type: "scroll",
+    expertOption: "checkoutBookables",
   },
   {
     tabKey: "relatedBookables",
     id: "related-hierarchy",
-    labelKey: "bookable.edit.sections.relatedHierarchy",
+    labelKey: "bookable.areas.hierarchy.title",
     type: "scroll",
+    expertOption: "hierarchy",
   },
   {
     tabKey: "additional",
     id: "additional-required-fields",
-    labelKey: "bookable.edit.sections.additionalRequiredFields",
+    labelKey: "bookable.areas.requiredFields.title",
     type: "scroll",
-    expertOnly: true,
+    expertOption: "requiredFields",
   },
   {
     tabKey: "additional",
     id: "additional-notes",
-    labelKey: "bookable.edit.sections.additionalNotes",
+    labelKey: "bookable.areas.bookingNotes.title",
     type: "scroll",
   },
 ];
 
-function isSectionVisible(section, { bookable, expertMode }) {
-  if (section.expertOnly && !expertMode) {
+const everyOption = () => true;
+
+function isSectionVisible(
+  section,
+  { bookable, shown = everyOption, accessPoints = [] }
+) {
+  if (section.expertOption && !shown(section.expertOption)) {
     return false;
   }
 
-  const mode = getBookingMode(bookable);
-  const isTimeWindowMode = mode === "schedule" || mode === "timePeriod";
+  const bookingMode = bookingModeOf(bookable);
+  // Where a provider handles the availability, the Buchungsart shows only
+  // its note and none of the sections of a mode.
+  const mode = providerTakesOver(bookable, "availability", accessPoints)
+    ? null
+    : bookingMode;
   const visibilityById = {
-    "pricing-external": () => declaresExternalProvider(bookable),
-    "pricing-tiers": () => !handlesExternalPricing(bookable),
+    // The settings of ParkraumService belong to its assigned locker system.
+    "pricing-external": () => ifbsLockerOf(bookable, accessPoints) !== null,
     "bookingType-duration": () => mode === "schedule",
     "bookingType-time-periods": () => mode === "timePeriod",
     "bookingType-block-periods": () => mode === "blockPeriod",
-    "bookingType-lead-time": () =>
-      ["schedule", "timePeriod", "blockPeriod"].includes(mode),
+    "bookingType-lead-time": () => isLeadTimeMode(mode),
     "bookingType-buffer": () => mode === "schedule",
-    "openingHours-regular": () => isTimeWindowMode,
-    "openingHours-special": () => isTimeWindowMode,
+    "openingHours-regular": () => isTimeWindowMode(bookingMode),
+    "openingHours-special": () => isTimeWindowMode(bookingMode),
   };
 
   const check = visibilityById[section.id];
@@ -248,7 +221,12 @@ function isSectionVisible(section, { bookable, expertMode }) {
 
 /**
  * @param {string} tabKey
- * @param {{ bookable: object, expertMode: boolean }} ctx
+ * @param {{ bookable: object, shown?: function(string): boolean,
+ *   accessPoints?: Array<object> }} ctx
+ *   `shown(option)` is the expert-mode rule as the caller asks it (e.g.
+ *   `BookableEdit.expertOptionShown`); without it every option shows.
+ *   `accessPoints` are the tenant's: what ParkraumService takes over and
+ *   where its settings show depend on its assigned locker system.
  * @returns {Array<object>}
  */
 export function getVisibleBookableEditSections(tabKey, ctx) {
@@ -256,6 +234,16 @@ export function getVisibleBookableEditSections(tabKey, ctx) {
     (section) =>
       section.tabKey === tabKey && isSectionVisible(section, ctx || {})
   );
+}
+
+/**
+ * Whether the section `sectionId` shows for the bookable - by its expert
+ * option and its own condition, as the nav reads it. `bookableValidation`
+ * checks a section only while it shows.
+ */
+export function isBookableEditSectionVisible(sectionId, ctx) {
+  const section = getBookableEditSectionById(sectionId);
+  return !!section && isSectionVisible(section, ctx || {});
 }
 
 export function getBookableEditSectionById(sectionId) {
@@ -268,3 +256,14 @@ export function getBookableEditSectionById(sectionId) {
 export function shouldShowBookableEditSectionNav(tabKey, ctx) {
   return getVisibleBookableEditSections(tabKey, ctx).length >= 2;
 }
+
+/**
+ * Where an external provider is set up, as `{ tabKey, sectionId }` for
+ * `BookableEdit.openSection`: the jump of the notes that a provider handles
+ * the availability or the prices - the settings of ParkraumService in
+ * Schließsysteme. Follows the section wherever its tab is.
+ */
+export const EXTERNAL_PROVIDER_SETTING = Object.freeze({
+  tabKey: getBookableEditSectionById("pricing-external").tabKey,
+  sectionId: "pricing-external",
+});

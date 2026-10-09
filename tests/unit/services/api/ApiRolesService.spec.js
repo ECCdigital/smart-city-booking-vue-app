@@ -48,4 +48,12 @@ describe("ApiRolesService", () => {
       "api/t1/roles?public=true"
     );
   });
+
+  it("reads the roles of another tenant than the current one", async () => {
+    await ApiRolesService.getTenantRoles(true, "t2");
+
+    expect(global.ApiClient.get).toHaveBeenCalledWith(
+      "api/t2/roles?public=true"
+    );
+  });
 });
