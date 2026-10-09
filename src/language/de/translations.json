@@ -290,7 +290,7 @@
           "title": "Gespeichert",
           "text": "Ihre Änderungen sind gespeichert. An der Veröffentlichung hat sich nichts geändert."
         },
-        "payment-missing": "Für dieses kostenpflichtige Buchungsobjekt ist noch keine Zahlung eingerichtet. Buchende können es so nicht bezahlen.",
+        "payment-missing": "Für dieses kostenpflichtige Buchungsobjekt ist noch keine Zahlung eingerichtet.",
         "optional-note": "optional",
         "another": "Weiteres Buchungsobjekt anlegen"
       }
@@ -1401,7 +1401,6 @@
         "legal-action": "Rechtstexte bearbeiten",
         "payment": "Zahlung",
         "payment-hint": "Für kostenpflichtige Plattform-Buchungen erforderlich. Die Einrichtung kann später erfolgen.",
-        "payment-not-required": "Für das kostenlose Angebot ist kein Zahlungsweg erforderlich.",
         "payment-action": "Zahlung einrichten"
       },
       "verification": {

@@ -22,7 +22,7 @@
       <v-icon small color="warning">mdi-alert-outline</v-icon>
       <span>
         {{ $t("bookable.flow.done.payment-missing") }}
-        <router-link :to="{ name: 'tenant', query: { tab: 'payments' } }">
+        <router-link :to="paymentRoute">
           {{ $t("tenant.onboarding.setup.payment-action") }}
         </router-link>
       </span>
@@ -79,6 +79,8 @@ import TenantPermissionService from "@/services/permissions/TenantPermissionServ
 import bookableEditing from "@/mixins/bookableEditing";
 import { isPaid, publishVariant } from "@/utils/bookableFlow";
 import { shownAreas } from "@/utils/bookableAreas";
+import { isCriterionMissing } from "@/utils/tenantReadiness";
+import { tenantTabRoute } from "@/utils/tenantOnboarding";
 
 const PUBLIC_OUTCOMES = ["published", "direct-link", "listed-not-bookable"];
 
@@ -114,6 +116,7 @@ export default {
     areas() {
       return shownAreas(this.expertOptionShown);
     },
+    paymentRoute: () => tenantTabRoute("payments"),
   },
   // Shown anew for every outcome, so it asks once per save.
   created() {
@@ -128,10 +131,7 @@ export default {
       if (!TenantPermissionService.allowReadiness(tenantId)) return;
       try {
         const readiness = await ApiTenantService.getReadiness(tenantId);
-        this.paymentMissing = (readiness?.criteria || []).some(
-          (criterion) =>
-            criterion.key === "payment" && criterion.state === "missing"
-        );
+        this.paymentMissing = isCriterionMissing(readiness, "payment");
       } catch (error) {
         // Without an answer the line stays away; the save itself succeeded.
         console.error(error);

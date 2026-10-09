@@ -76,6 +76,19 @@ export function isFlowMode({ bookableId, mode }) {
   return bookableId ? mode === FLOW_MODE : mode !== PAGE_MODE;
 }
 
+/**
+ * The route query that shows the bookable of `query` (its `id`) in the flow
+ * or on its editing page - `isFlowMode` read backwards. The default mode is
+ * left out of the address.
+ */
+export function withMode(query, flow) {
+  const next = { ...query };
+  delete next.mode;
+  if (next.id && flow) next.mode = FLOW_MODE;
+  if (!next.id && !flow) next.mode = PAGE_MODE;
+  return next;
+}
+
 // --- Verfügbarkeit ---------------------------------------------------------
 
 /** The flow's second question: the long range is one answer, weeks or months. */

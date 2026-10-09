@@ -58,8 +58,7 @@
       </v-card-title>
       <v-divider />
       <v-card-text>
-        <!-- A tenant's payment serves its paid offers. -->
-        <OnboardingSetupLinks paid />
+        <OnboardingSetupLinks />
       </v-card-text>
     </v-card>
 
@@ -141,7 +140,7 @@ export default {
 }
 
 .next-steps__created {
-  font-size: 1.25rem;
+  font-size: var(--scb-font-size-lead);
   font-weight: 700;
   line-height: var(--scb-line-height-tight);
 }

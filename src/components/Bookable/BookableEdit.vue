@@ -336,11 +336,10 @@ import ToastService from "@/services/ToastService";
 import { createTenantAccessPoints } from "@/services/TenantAccessPoints";
 import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
 import {
-  FLOW_MODE,
   FLOW_STEPS,
-  PAGE_MODE,
   editRouteOf,
   isFlowMode,
+  withMode,
 } from "@/utils/bookableFlow";
 import { publicationOutcome } from "@/utils/bookablePublication";
 import {
@@ -576,11 +575,12 @@ export default {
         this.bookable = normalizeBookable(response.data);
 
         if (created) {
-          const query = { ...this.$route.query, id: this.bookable.id };
           // A bookable created in the flow stays in it for the confirmation,
           // one created on the editing page stays there.
-          if (this.flowMode) query.mode = FLOW_MODE;
-          else delete query.mode;
+          const query = withMode(
+            { ...this.$route.query, id: this.bookable.id },
+            this.flowMode
+          );
           this.$router.replace({ query });
         }
 
@@ -645,20 +645,14 @@ export default {
       );
     },
     enterFlow() {
-      const query = { ...this.$route.query };
-      // A new bookable is in the flow unless its editing page is asked for.
-      if (this.bookableID) query.mode = FLOW_MODE;
-      else delete query.mode;
-      this.$router.replace({ query });
+      this.$router.replace({ query: withMode(this.$route.query, true) });
     },
     /** Back to the editor; what the flow changed stays unsaved, not lost. */
     leaveFlow() {
-      const query = { ...this.$route.query };
-      // A new bookable starts in the flow, so its editing page is asked for.
-      if (this.bookableID) delete query.mode;
-      else query.mode = PAGE_MODE;
       this.flowOutcome = null;
-      return this.$router.replace({ query });
+      return this.$router.replace({
+        query: withMode(this.$route.query, false),
+      });
     },
     /**
      * A link of the confirmation: back into the flow, at the area `key` of

@@ -9,6 +9,7 @@ import {
   isFormallyValidMail,
   showsSupervisionNotice,
   tenantCreationError,
+  tenantTabRoute,
 } from "@/utils/tenantOnboarding";
 
 describe("supervision levels", () => {
@@ -177,5 +178,14 @@ describe("contactPrefill", () => {
 describe("firstBookableRoute", () => {
   it("opens the guided flow of a new bookable", () => {
     expect(firstBookableRoute()).toEqual({ name: "room-edit" });
+  });
+});
+
+describe("tenantTabRoute", () => {
+  it("opens the tenant settings at a tab, on their own", () => {
+    expect(tenantTabRoute("payments")).toEqual({
+      name: "tenant",
+      query: { tab: "payments" },
+    });
   });
 });

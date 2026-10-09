@@ -123,3 +123,11 @@ export function contactPrefill(user) {
 export function firstBookableRoute() {
   return { name: "room-edit" };
 }
+
+/**
+ * The tenant settings at the tab `tab` (`legal`, `payments`), opened on their
+ * own: without a way back.
+ */
+export function tenantTabRoute(tab) {
+  return { name: "tenant", query: { tab } };
+}
