@@ -14,31 +14,19 @@
       </div>
     </v-sheet>
 
-    <v-card outlined class="section-card flow-done__card">
-      <v-card-title class="section-header">
-        <v-icon>mdi-clipboard-check-outline</v-icon>
-        <span>{{ $t("tenant.readiness.title") }}</span>
-      </v-card-title>
-      <v-divider />
-      <v-card-text>
-        <p class="flow-field__hint mt-0">{{ $t("tenant.readiness.hint") }}</p>
-        <TenantReadinessCheck :tenant-id="bookable.tenantId" hide-title />
-      </v-card-text>
-    </v-card>
-
-    <v-card outlined class="section-card flow-done__card">
-      <v-card-title class="section-header">
-        <v-icon>mdi-format-list-checks</v-icon>
-        <span>{{ $t("bookable.flow.done.open-points") }}</span>
-      </v-card-title>
-      <v-divider />
-      <v-card-text>
-        <p class="flow-field__hint mt-0">
-          {{ $t("bookable.flow.done.open-points-hint") }}
-        </p>
-        <OnboardingSetupLinks :paid="paid" payment-when-paid-only />
-      </v-card-text>
-    </v-card>
+    <p
+      v-if="paymentMissing"
+      class="flow-done__payment"
+      data-test="flow-done-payment-missing"
+    >
+      <v-icon small color="warning">mdi-alert-outline</v-icon>
+      <span>
+        {{ $t("bookable.flow.done.payment-missing") }}
+        <router-link :to="{ name: 'tenant', query: { tab: 'payments' } }">
+          {{ $t("tenant.onboarding.setup.payment-action") }}
+        </router-link>
+      </span>
+    </p>
 
     <template v-if="areas.length">
       <div class="flow-done__heading">
@@ -86,8 +74,8 @@
 </template>
 
 <script>
-import TenantReadinessCheck from "@/components/Tenant/TenantReadinessCheck.vue";
-import OnboardingSetupLinks from "@/components/Tenant/Onboarding/OnboardingSetupLinks.vue";
+import ApiTenantService from "@/services/api/ApiTenantService";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 import bookableEditing from "@/mixins/bookableEditing";
 import { isPaid, publishVariant } from "@/utils/bookableFlow";
 import { shownAreas } from "@/utils/bookableAreas";
@@ -95,19 +83,22 @@ import { shownAreas } from "@/utils/bookableAreas";
 const PUBLIC_OUTCOMES = ["published", "direct-link", "listed-not-bookable"];
 
 /**
- * After the save: what became of the publication, the readiness check, the
- * open points legal texts and payment (payment for a paid offer only), the
- * areas of „Weitere Einstellungen“ - each a link to its row in that step
- * (`open-area`) - and the ways on. Nothing here blocks.
+ * After the save: what became of the publication, the areas of „Weitere
+ * Einstellungen“ - each a link to its row in that step (`open-area`) - and
+ * the ways on. Nothing of the tenant: its readiness and setup are on
+ * „Nächste Schritte“ - except one line when a paid bookable meets a tenant
+ * without payment, because bookers could not pay for it. Nothing here blocks.
  */
 export default {
   name: "BookableFlowDone",
-  components: { TenantReadinessCheck, OnboardingSetupLinks },
   mixins: [bookableEditing],
   props: {
     /** What became of the publication: `publicationOutcome`. */
     outcome: { type: String, required: true },
     level: { type: String, default: null },
+  },
+  data() {
+    return { paymentMissing: false };
   },
   computed: {
     // Something is public now: it is listed or bookable.
@@ -120,11 +111,31 @@ export default {
         ? `bookable.flow.done.noted.${publishVariant(this.level)}`
         : `bookable.flow.done.${this.outcome}`;
     },
-    paid() {
-      return isPaid(this.bookable);
-    },
     areas() {
       return shownAreas(this.expertOptionShown);
+    },
+  },
+  // Shown anew for every outcome, so it asks once per save.
+  created() {
+    this.checkPayment();
+  },
+  methods: {
+    // The Bereitschafts-Check knows whether the tenant takes payments; only a
+    // paid bookable asks, and only who may read the check.
+    async checkPayment() {
+      const tenantId = this.bookable.tenantId;
+      if (!isPaid(this.bookable)) return;
+      if (!TenantPermissionService.allowReadiness(tenantId)) return;
+      try {
+        const readiness = await ApiTenantService.getReadiness(tenantId);
+        this.paymentMissing = (readiness?.criteria || []).some(
+          (criterion) =>
+            criterion.key === "payment" && criterion.state === "missing"
+        );
+      } catch (error) {
+        // Without an answer the line stays away; the save itself succeeded.
+        console.error(error);
+      }
     },
   },
 };
@@ -152,8 +163,12 @@ export default {
   color: var(--scb-text-muted);
 }
 
-.flow-done__card {
-  margin-bottom: var(--scb-gap-cards);
+.flow-done__payment {
+  display: flex;
+  align-items: baseline;
+  gap: var(--scb-space-2);
+  margin: 0 0 var(--scb-gap-cards);
+  font-size: var(--scb-font-size-sm);
 }
 
 .flow-done__heading {

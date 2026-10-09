@@ -351,7 +351,6 @@ describe("BookableEdit - no retired word in either mode", () => {
         isBookable: true,
         isPublic: true,
       }),
-      stubs: { TenantReadinessCheck: stub("TenantReadinessCheck") },
     });
     await find(
       wrapper,

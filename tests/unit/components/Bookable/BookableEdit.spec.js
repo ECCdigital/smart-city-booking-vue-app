@@ -8,7 +8,6 @@ import {
   editTab as tab,
   find,
   mountBookableEdit,
-  stub,
   showsUnsavedChanges as unsaved,
   storedBookable as stored,
 } from "@tests/unit/support/bookableEdit";
@@ -797,7 +796,6 @@ describe("BookableEdit - switching between the modes", () => {
     );
     const wrapper = await mountBookableEdit({
       query: { id: "b1", mode: "flow" },
-      stubs: { TenantReadinessCheck: stub("TenantReadinessCheck") },
     });
     await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
     await find(wrapper, "flow-save").trigger("click");
@@ -1257,7 +1255,6 @@ describe("BookableEdit - publication under supervision", () => {
       query,
       bookable,
       level: "supervised",
-      stubs: { TenantReadinessCheck: stub("TenantReadinessCheck") },
     });
   const saveFlow = async (wrapper) => {
     await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
@@ -1374,7 +1371,6 @@ describe("BookableEdit - the confirmation leads to „Weitere Einstellungen“",
   it("opens the step at the area linked, in the guided flow", async () => {
     const wrapper = await mountBookableEdit({
       query: { id: "b1", mode: "flow" },
-      stubs: { TenantReadinessCheck: stub("TenantReadinessCheck") },
     });
     await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
     await find(wrapper, "flow-save").trigger("click");
