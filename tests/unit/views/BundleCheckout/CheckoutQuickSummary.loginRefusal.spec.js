@@ -65,12 +65,20 @@ async function mountFinalCheck() {
   return { wrapper, addToast };
 }
 
-async function submit(wrapper) {
-  const button = wrapper
+// ECCdigital/tickets#63: one label for every completion, whether the offer
+// is committed at once or only requested.
+const SUBMIT_LABEL = "Zahlungspflichtig buchen";
+
+function submitButton(wrapper) {
+  const buttons = wrapper
     .findAll("button")
-    .filter((b) => b.text().includes("Buchung abschließen"))
-    .at(0);
-  await button.trigger("click");
+    .filter((b) => b.text() === SUBMIT_LABEL);
+  expect(buttons, `one button "${SUBMIT_LABEL}"`).toHaveLength(1);
+  return buttons.at(0);
+}
+
+async function submit(wrapper) {
+  await submitButton(wrapper).trigger("click");
   await flushPromises();
 }
 
