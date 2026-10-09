@@ -291,8 +291,7 @@
           "title": "Gespeichert",
           "text": "Ihre Änderungen sind gespeichert. An der Veröffentlichung hat sich nichts geändert."
         },
-        "open-points": "Offene Punkte",
-        "open-points-hint": "Nichts davon ist Pflicht. Sie können es jetzt oder später in den Einstellungen des Mandanten ergänzen.",
+        "payment-missing": "Für dieses kostenpflichtige Buchungsobjekt ist noch keine Zahlung eingerichtet. Buchende können es so nicht bezahlen.",
         "optional-note": "optional",
         "another": "Weiteres Buchungsobjekt anlegen"
       }
