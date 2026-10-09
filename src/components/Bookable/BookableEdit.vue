@@ -170,7 +170,6 @@
         ref="flow"
         :bookable="bookable"
         :is-new="!bookableID"
-        :onboarding="$route.query.onboarding === '1'"
         :level="supervisionLevel"
         :in-progress="inProgress"
         :save-failed="flowSaveFailed"
@@ -181,7 +180,6 @@
         @open-area="openArea"
         @another="createAnother"
         @leave="toEditingPage"
-        @skip="skipFlow"
       />
 
       <div v-else-if="!flowMode" class="page-content__main">
@@ -713,13 +711,6 @@ export default {
       }
       this.flowOutcome = null;
       this.$router.push({ name, query: { id: this.bookable.id } });
-    },
-    /**
-     * The onboarding's first bookable left for later: the start page, whose
-     * „Erstes Buchungsobjekt anlegen“ opens the flow again.
-     */
-    skipFlow() {
-      this.$router.push({ name: "dashboard" });
     },
     /** „Weiteres Buchungsobjekt anlegen“: a new one of the same type. */
     createAnother() {
