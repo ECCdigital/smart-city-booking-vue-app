@@ -15,20 +15,16 @@
         </v-btn>
       </div>
     </div>
-    <div v-if="paid || !paymentWhenPaidOnly" class="booking-row">
+    <div class="booking-row">
       <div class="booking-row__main">
         <div class="booking-row__title">
           {{ $t("tenant.onboarding.setup.payment") }}
         </div>
         <div class="booking-row__subtitle setup-links__subtitle">
-          {{
-            paid
-              ? $t("tenant.onboarding.setup.payment-hint")
-              : $t("tenant.onboarding.setup.payment-not-required")
-          }}
+          {{ $t("tenant.onboarding.setup.payment-hint") }}
         </div>
       </div>
-      <div v-if="paid" class="booking-row__aside">
+      <div class="booking-row__aside">
         <v-btn
           small
           outlined
@@ -50,11 +46,6 @@
  */
 export default {
   name: "OnboardingSetupLinks",
-  props: {
-    paid: { type: Boolean, default: false },
-    // The guided bookable flow names payment only for a paid offer.
-    paymentWhenPaidOnly: { type: Boolean, default: false },
-  },
   methods: {
     formRoute(tab) {
       return { name: "tenant", query: { tab } };

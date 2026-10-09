@@ -58,8 +58,7 @@
       </v-card-title>
       <v-divider />
       <v-card-text>
-        <!-- A tenant's payment serves its paid offers. -->
-        <OnboardingSetupLinks paid />
+        <OnboardingSetupLinks />
       </v-card-text>
     </v-card>
 
