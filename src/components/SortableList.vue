@@ -1,20 +1,21 @@
 <template>
   <div>
     <v-list>
-      <template v-for="{ item, i } in knownItems">
+      <template v-for="{ entry, object, i } in shownEntries">
         <v-list-item :key="`item-${i}`">
           <v-list-item-content>
             <v-list-item-title>
-              <slot name="text" :itemObject="itemObject(item)">
-                <span>{{ itemObject(item)[itemText] }}</span>
+              <slot name="text" :itemObject="object">
+                <span>{{ object[itemText] }}</span>
               </slot>
             </v-list-item-title>
             <v-list-item-subtitle>
-              <slot name="detail" :itemObject="itemObject(item)">
-                <span>{{ itemObject(item)[itemDetail] }}</span>
+              <slot name="detail" :itemObject="object">
+                <span>{{ object[itemDetail] }}</span>
               </slot>
             </v-list-item-subtitle>
           </v-list-item-content>
+          <slot name="entry" :entry="entry" :index="i" />
           <v-list-item-action :title="$t('bookable.edit.list.up')">
             <v-btn icon small @click="moveUp(i)" v-if="i > 0">
               <v-icon color="grey lighten-1"> mdi-chevron-up</v-icon>
@@ -26,7 +27,12 @@
             </v-btn>
           </v-list-item-action>
           <v-list-item-action :title="$t('bookable.edit.common.remove')">
-            <v-btn icon small @click="remove(i)">
+            <v-btn
+              icon
+              small
+              :data-test="`${testId}-remove`"
+              @click="remove(i)"
+            >
               <v-icon color="grey lighten-1"> mdi-close</v-icon>
             </v-btn>
           </v-list-item-action>
@@ -94,9 +100,28 @@ function swapped(items, a, b) {
   return next;
 }
 
+/**
+ * An ordered list of entries that each point at one of `availableItems`:
+ * up, down, remove, and a picker to add one not listed yet. The list is the
+ * parent's - every change goes out as `update:items` with the new list.
+ *
+ * An entry is the item's id (`itemValue`) by default; `entryId` reads the id
+ * from an entry of another shape and `newEntry` builds one for an added id.
+ * The slot `entry` adds controls of an entry beside its name.
+ */
 export default {
   name: "SortableList",
-  props: ["items", "availableItems", "itemValue", "itemText", "itemDetail"],
+  props: {
+    items: { type: Array, default: () => [] },
+    availableItems: { type: Array, default: () => [] },
+    itemValue: { type: String, default: "id" },
+    itemText: { type: String, default: "title" },
+    itemDetail: { type: String, default: null },
+    entryId: { type: Function, default: (entry) => entry },
+    newEntry: { type: Function, default: (id) => id },
+    /** The prefix of the `data-test` hooks. */
+    testId: { type: String, default: "sortable" },
+  },
 
   data() {
     return {
@@ -108,7 +133,6 @@ export default {
     getTypeIcon,
     getTypeText,
     getTypeColor,
-    // The list is the parent's: every change goes out as a new list.
     emitItems(items) {
       this.$emit("update:items", items);
     },
@@ -125,7 +149,7 @@ export default {
     },
     add() {
       if (this.addItemValue != null) {
-        this.emitItems([...this.items, this.addItemValue]);
+        this.emitItems([...this.items, this.newEntry(this.addItemValue)]);
         this.addItemValue = null;
       }
     },
@@ -135,15 +159,20 @@ export default {
   },
 
   computed: {
-    // The entries with an object to show, each with its place in `items`.
-    knownItems() {
-      return (this.items || [])
-        .map((item, i) => ({ item, i }))
-        .filter(({ item }) => this.itemObject(item) !== undefined);
+    // The entries with an item to show, each with its place in `items`.
+    shownEntries() {
+      return this.items
+        .map((entry, i) => ({
+          entry,
+          object: this.itemObject(this.entryId(entry)),
+          i,
+        }))
+        .filter(({ object }) => object !== undefined);
     },
     unselectedItems() {
+      const listed = this.items.map((entry) => this.entryId(entry));
       return this.availableItems.filter(
-        (item) => !this.items.includes(item[this.itemValue])
+        (item) => !listed.includes(item[this.itemValue])
       );
     },
   },
