@@ -74,13 +74,13 @@ export function expressionForField(variable, field) {
   const name = variable.name;
   const plain = `{{${name}}}`;
   switch (field) {
-  case "url":
-    return variable.kind === "url" ? plain : `{{urlEncode ${name}}}`;
-  case "line":
-  case "subject":
-    return isSingleLineExpression(variable.expr) ? variable.expr : plain;
-  default:
-    return variable.expr || plain;
+    case "url":
+      return variable.kind === "url" ? plain : `{{urlEncode ${name}}}`;
+    case "line":
+    case "subject":
+      return isSingleLineExpression(variable.expr) ? variable.expr : plain;
+    default:
+      return variable.expr || plain;
   }
 }
 

@@ -12,7 +12,7 @@ const mutations = {
   },
   STOP(state, name) {
     if (state.queue.includes(name)) {
-      state.queue = state.queue.filter(item => item !== name);
+      state.queue = state.queue.filter((item) => item !== name);
     }
   },
 };
@@ -27,7 +27,7 @@ const actions = {
 };
 
 const getters = {
-  isLoading: state => !_.isEmpty(state.queue),
+  isLoading: (state) => !_.isEmpty(state.queue),
 };
 
 export default {

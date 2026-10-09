@@ -148,26 +148,26 @@ export default {
               ? valA === valB
                 ? 0
                 : valA
-                  ? 1
-                  : -1
+                ? 1
+                : -1
               : valA === valB
-                ? 0
-                : valA
-                  ? -1
-                  : 1;
+              ? 0
+              : valA
+              ? -1
+              : 1;
           }
           const dateA =
             valA instanceof Date
               ? valA
               : typeof valA === "string" && !isNaN(Date.parse(valA))
-                ? new Date(valA)
-                : null;
+              ? new Date(valA)
+              : null;
           const dateB =
             valB instanceof Date
               ? valB
               : typeof valB === "string" && !isNaN(Date.parse(valB))
-                ? new Date(valB)
-                : null;
+              ? new Date(valB)
+              : null;
           if (dateA && dateB) {
             return this.sortDir === "asc" ? dateA - dateB : dateB - dateA;
           }

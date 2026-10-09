@@ -15,7 +15,10 @@ let channel = null;
 let endingSession = false;
 
 function getChannel() {
-  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") {
+  if (
+    typeof window === "undefined" ||
+    typeof BroadcastChannel === "undefined"
+  ) {
     return null;
   }
   if (!channel) {

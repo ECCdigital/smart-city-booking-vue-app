@@ -1,9 +1,5 @@
 <template>
-  <div
-    class="block-item"
-    :class="{ selected }"
-    @click.stop="$emit('select')"
-  >
+  <div class="block-item" :class="{ selected }" @click.stop="$emit('select')">
     <div class="block-controls" v-if="selected">
       <v-btn icon x-small class="drag-handle" title="Verschieben">
         <v-icon x-small>mdi-drag</v-icon>

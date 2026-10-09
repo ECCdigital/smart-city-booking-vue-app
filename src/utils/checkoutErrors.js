@@ -15,11 +15,7 @@ function resolveCheckoutMessageKey(reason) {
     return null;
   }
 
-  const candidates = [
-    reason,
-    `checkout.${reason}`,
-    `checkout.error.${reason}`,
-  ];
+  const candidates = [reason, `checkout.${reason}`, `checkout.error.${reason}`];
   for (const key of candidates) {
     if (i18n.te(`${key}.message`)) {
       return key;

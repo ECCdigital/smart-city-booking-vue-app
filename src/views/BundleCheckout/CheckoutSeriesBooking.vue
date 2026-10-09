@@ -281,13 +281,7 @@
 
         <v-expand-transition>
           <div v-if="progress.loading" class="mt-6">
-            <v-alert
-              type="info"
-              color="primary"
-              outlined
-              dense
-              class="mb-3"
-            >
+            <v-alert type="info" color="primary" outlined dense class="mb-3">
               <div class="d-flex align-center">
                 <v-progress-circular
                   indeterminate
@@ -296,9 +290,7 @@
                   color="primary"
                   class="mr-3"
                 ></v-progress-circular>
-                <span>
-                  Serie wird erstellt &amp; geprüft… Bitte warten.
-                </span>
+                <span> Serie wird erstellt &amp; geprüft… Bitte warten. </span>
               </div>
             </v-alert>
             <v-progress-linear
@@ -314,8 +306,6 @@
         </v-expand-transition>
       </v-card-text>
     </v-card>
-
-
   </div>
 </template>
 

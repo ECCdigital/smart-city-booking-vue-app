@@ -1016,7 +1016,9 @@
           "steps": {
             "realm": { "title": "Realm anlegen" },
             "webClient": { "title": "Web-Client anlegen" },
-            "addresses": { "title": "Rücksprungadressen und Web Origins eintragen" },
+            "addresses": {
+              "title": "Rücksprungadressen und Web Origins eintragen"
+            },
             "audience": { "title": "Audience-Mapper anlegen" },
             "apiClient": { "title": "API-Client anlegen" },
             "roles": { "title": "Client-Rollen zuordnen" },

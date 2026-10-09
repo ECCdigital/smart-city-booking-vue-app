@@ -35,7 +35,6 @@
       <v-col cols="12" sm="8" md="6" lg="4">
         <v-card outlined class="rounded-sm">
           <v-card-text class="text-center">
-
             <!-- Textfeld mit Minus/Plus-Buttons -->
             <v-text-field
               class="mb-3 mt-3"
@@ -61,7 +60,6 @@
                 </v-btn>
               </template>
             </v-text-field>
-
           </v-card-text>
         </v-card>
       </v-col>

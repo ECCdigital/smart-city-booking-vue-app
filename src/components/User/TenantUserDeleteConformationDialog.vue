@@ -6,14 +6,17 @@
         <span class="text-h5">Benutzer löschen</span>
       </v-card-title>
       <v-card-text>
-          <span class="text-h6">
-          Sind Sie sicher, dass Sie den Benutzer <strong>{{toDelete}}</strong> löschen wollen?
-          </span>
+        <span class="text-h6">
+          Sind Sie sicher, dass Sie den Benutzer
+          <strong>{{ toDelete }}</strong> löschen wollen?
+        </span>
       </v-card-text>
       <v-card-actions>
-        <v-spacer/>
+        <v-spacer />
         <v-col class="shrink">
-          <v-btn color="primary" :loading="inProgress" @click="onDelete">Ja</v-btn>
+          <v-btn color="primary" :loading="inProgress" @click="onDelete"
+            >Ja</v-btn
+          >
         </v-col>
         <v-col class="shrink">
           <v-btn outlined @click="closeDialog">Nein</v-btn>
@@ -34,12 +37,12 @@ export default {
     toDelete: {
       type: Object,
       required: true,
-    }
+    },
   },
   data() {
     return {
-      inProgress: false
-    }
+      inProgress: false,
+    };
   },
   computed: {
     openDialog: {
@@ -50,16 +53,14 @@ export default {
   },
   methods: {
     closeDialog() {
-      this.$emit("close")
+      this.$emit("close");
     },
     async onDelete() {
       this.inProgress = true;
       this.closeDialog();
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

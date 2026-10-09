@@ -88,10 +88,7 @@ class DirectAuthTransport {
       return Promise.reject(error);
     }
 
-    if (
-      !originalRequest.url?.includes("/auth/refresh") &&
-      this.refreshToken
-    ) {
+    if (!originalRequest.url?.includes("/auth/refresh") && this.refreshToken) {
       if (this.isRefreshing) {
         return new Promise((resolve, reject) => {
           this.addRefreshSubscriber((newToken) => {
