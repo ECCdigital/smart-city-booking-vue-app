@@ -53,6 +53,11 @@ export function setBookableExpertModeSession(enabled) {
 
 const nonEmpty = (list) => Array.isArray(list) && list.length > 0;
 
+const ifbsProviderOn = (bookable) =>
+  (bookable.externalProviders || []).some(
+    (provider) => provider?.provider === IFBS_PROVIDER && provider.active
+  );
+
 // What the backend's schema gives a new bookable.
 const DEFAULT_REQUIRED_FIELDS = ["address", "zipCode", "city"];
 
@@ -67,10 +72,7 @@ const USED = {
   month: (bookable) => bookingModeOf(bookable) === "month",
   tiers: (bookable) => priceModeOf(bookable) === "tiers",
   coupons: (bookable) => bookable.enableCoupons === false,
-  externalPrices: (bookable) =>
-    (bookable.externalProviders || []).some(
-      (provider) => provider?.provider === IFBS_PROVIDER && provider.active
-    ),
+  externalPrices: (bookable) => ifbsProviderOn(bookable),
   leadTime: (bookable) => bookable.isLeadTimeRelated === true,
   // The switch counts as well as the minutes: switched on, it is no longer
   // the stand of a new bookable.
@@ -83,8 +85,11 @@ const USED = {
   bookingDiscounts: (bookable) =>
     nonEmpty(bookable.bookingDiscounts?.users) ||
     nonEmpty(bookable.bookingDiscounts?.roles),
+  // The settings of ParkraumService lie here too: switched on, they are in
+  // use, so the place the notes of its fields lead to shows.
   accessLocks: (bookable) =>
-    nonEmpty(bookable.accessPointDetails?.accessPointIds),
+    nonEmpty(bookable.accessPointDetails?.accessPointIds) ||
+    ifbsProviderOn(bookable),
   checkoutBookables: (bookable) => nonEmpty(bookable.checkoutBookableIds),
   hierarchy: (bookable) => nonEmpty(bookable.relatedBookableIds),
   cancellation: (bookable) =>

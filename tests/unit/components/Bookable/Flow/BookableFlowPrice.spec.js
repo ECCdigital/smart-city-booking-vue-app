@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import Bookable from "@/entities/bookable";
 import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
+import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
 import { flushPromises } from "@tests/unit/support/api";
 
@@ -37,6 +38,7 @@ function mountPrice(overrides = {}, { expertMode = true, prepare } = {}) {
   const mounted = mountEditing(BookableFlowPrice, {
     bookable: handedIn,
     expertMode,
+    accessPoints: [IFBS_LOCKER],
   });
   return mounted;
 }
@@ -335,10 +337,15 @@ describe("BookableFlowPrice - prices of ParkraumService", () => {
   const external = {
     priceType: "per-hour",
     priceCategories: [category(10)],
-    externalProviders: [
-      { provider: "ifbs", active: true, handles: ["pricing"] },
-    ],
+    ...takenOverBy(["pricing"]),
   };
+
+  it("asks for the price while the provider's locker system is not assigned", () => {
+    const { wrapper } = mountPrice({ ...external, accessPointDetails: null });
+
+    expect(find(wrapper, "flow-price-external").exists()).toBe(false);
+    expect(find(wrapper, "flow-price-mode").exists()).toBe(true);
+  });
 
   it("shows only the note while the provider handles the prices", () => {
     const { wrapper } = mountPrice(external);

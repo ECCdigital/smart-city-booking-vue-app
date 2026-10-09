@@ -4,7 +4,6 @@ import bookableEditing from "@/mixins/bookableEditing";
 import {
   applyBookingMode,
   bookingModeOf,
-  handlesExternalAvailability,
   timeModeOf,
 } from "@/utils/bookableFlow";
 import { EXTERNAL_PROVIDER_SETTING } from "@/utils/bookableEditSections";
@@ -29,7 +28,7 @@ export default {
   mixins: [bookableEditing],
   computed: {
     external() {
-      return handlesExternalAvailability(this.bookable);
+      return this.providerTakesOver("availability");
     },
     bookingMode() {
       return bookingModeOf(this.bookable);

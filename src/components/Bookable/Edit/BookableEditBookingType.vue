@@ -2,10 +2,7 @@
 import BookableEditLeadTime from "@/components/Bookable/Edit/BookableEditLeadTime.vue";
 import { v4 as uuidv4 } from "uuid";
 import bookableEditing from "@/mixins/bookableEditing";
-import {
-  bookingModeOf,
-  handlesExternalAvailability,
-} from "@/utils/bookableFlow";
+import { bookingModeOf } from "@/utils/bookableFlow";
 import { blockPeriodTooShort } from "@/utils/bookableValidation";
 import { weekdayItems } from "@/utils/bookableWeekdays";
 
@@ -43,7 +40,7 @@ export default {
       return bookingModeOf(this.bookable);
     },
     external() {
-      return handlesExternalAvailability(this.bookable);
+      return this.providerTakesOver("availability");
     },
     timePeriods() {
       return this.bookable.timePeriods || [];

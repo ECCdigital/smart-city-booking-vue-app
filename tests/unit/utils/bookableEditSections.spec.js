@@ -3,11 +3,13 @@ import {
   EXTERNAL_PROVIDER_SETTING,
   getVisibleBookableEditSections,
 } from "@/utils/bookableEditSections";
+import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 
-function sectionIds(bookable, tabKey = "pricing") {
-  return getVisibleBookableEditSections(tabKey, { bookable }).map(
-    (section) => section.id
-  );
+function sectionIds(bookable, tabKey = "pricing", accessPoints = []) {
+  return getVisibleBookableEditSections(tabKey, {
+    bookable,
+    accessPoints,
+  }).map((section) => section.id);
 }
 
 function bookable(externalProviders) {
@@ -15,7 +17,7 @@ function bookable(externalProviders) {
     id: "b1",
     accessPointDetails: {
       active: true,
-      accessPointIds: ["ap-ifbs"],
+      accessPointIds: [IFBS_LOCKER.id],
     },
     externalProviders,
   };
@@ -43,26 +45,24 @@ describe("bookableEditSections - the pricing tab", () => {
 });
 
 /**
- * The settings of ParkraumService belong to the assigned locker system.
- * Since the locker fold the bookable no longer says which of its access
- * points is a locker system - that needs the tenant's access point list,
- * which this module cannot load. What it can read is the provider the
- * settings declare, so that is what the anchor keys on.
+ * The settings of ParkraumService belong to the assigned locker system: they
+ * show where the tenant's access points name an assigned one, as the panel
+ * in Schließsysteme does.
  */
 describe("bookableEditSections - ParkraumService in Schließsysteme", () => {
-  it("offers its settings once a provider is declared", () => {
-    expect(
-      sectionIds(bookable([{ provider: "ifbs", handles: [] }]), "accessLocks")
-    ).toContain("pricing-external");
+  it("offers its settings once its locker system is assigned", () => {
+    expect(sectionIds(bookable([]), "accessLocks", [IFBS_LOCKER])).toContain(
+      "pricing-external"
+    );
   });
 
-  it("leaves them out for a bookable with no provider at all", () => {
-    expect(sectionIds(bookable([]), "accessLocks")).not.toContain(
-      "pricing-external"
-    );
-    expect(sectionIds({ id: "b1" }, "accessLocks")).not.toContain(
-      "pricing-external"
-    );
+  it("leaves them out without an assigned locker system", () => {
+    expect(
+      sectionIds(bookable([{ provider: "ifbs", handles: [] }]), "accessLocks")
+    ).not.toContain("pricing-external");
+    expect(
+      sectionIds({ id: "b1" }, "accessLocks", [IFBS_LOCKER])
+    ).not.toContain("pricing-external");
   });
 
   it("no longer offers them in the pricing tab", () => {
@@ -125,6 +125,7 @@ describe("bookableEditSections - the Buchungsart tab", () => {
   const ids = (overrides) =>
     getVisibleBookableEditSections("bookingType", {
       bookable: { isScheduleRelated: true, ...overrides },
+      accessPoints: [IFBS_LOCKER],
     }).map((section) => section.id);
 
   it("shows the Buchungsart above the sections of the chosen mode", () => {
@@ -137,13 +138,13 @@ describe("bookableEditSections - the Buchungsart tab", () => {
   });
 
   it("keeps only the Buchungsart, with its note, when a provider handles the availability", () => {
+    expect(ids(takenOverBy(["availability"]))).toEqual(["bookingType-select"]);
+  });
+
+  it("keeps the sections of the mode while no locker system is assigned", () => {
     expect(
-      ids({
-        externalProviders: [
-          { provider: "ifbs", active: true, handles: ["availability"] },
-        ],
-      })
-    ).toEqual(["bookingType-select"]);
+      ids({ ...takenOverBy(["availability"]), accessPointDetails: null })
+    ).toContain("bookingType-duration");
   });
 });
 

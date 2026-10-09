@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
+import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import Bookable from "@/entities/bookable";
 import BookableFlowAvailability from "@/components/Bookable/Flow/BookableFlowAvailability.vue";
 import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
@@ -46,6 +47,7 @@ const editing = (component, overrides, expertMode = true) =>
   mountEditing(component, {
     bookable: bookable(overrides),
     expertMode,
+    accessPoints: [IFBS_LOCKER],
     stubs: STUBS,
   });
 
@@ -168,9 +170,7 @@ describe("BookableFlowAvailability", () => {
   it("shows only the note for an external availability and hands on its jump", async () => {
     const wrapper = mountStep(BookableFlowAvailability, {
       isScheduleRelated: true,
-      externalProviders: [
-        { provider: "ifbs", active: true, handles: ["availability"] },
-      ],
+      ...takenOverBy(["availability"]),
     });
 
     expect(find(wrapper, "booking-mode-external").exists()).toBe(true);

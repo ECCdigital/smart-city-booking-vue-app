@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
 import Bookable from "@/entities/bookable";
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
@@ -20,6 +21,7 @@ const mountType = (overrides, { expertMode = true } = {}) =>
   mountEditing(BookableEditBookingType, {
     bookable: bookable(overrides),
     provide: { bookableExpertMode: { enabled: expertMode } },
+    accessPoints: [IFBS_LOCKER],
     stubs: STUBS,
   });
 
@@ -64,9 +66,7 @@ describe("BookableEditBookingType", () => {
   it("shows nothing where a provider handles the availability", () => {
     const { wrapper } = mountType({
       isScheduleRelated: true,
-      externalProviders: [
-        { provider: "ifbs", active: true, handles: ["availability"] },
-      ],
+      ...takenOverBy(["availability"]),
     });
 
     expect(find(wrapper, "booking-duration-min").exists()).toBe(false);

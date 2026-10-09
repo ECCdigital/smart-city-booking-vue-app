@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import Bookable from "@/entities/bookable";
 import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vue";
 import { normalizeBookable } from "@/utils/normalizeBookable";
+import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
 import { flushPromises } from "@tests/unit/support/api";
 
@@ -16,7 +17,10 @@ const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t1", title: "Saal", ...overrides }).toPlain();
 
 const mountAmount = (overrides = {}) =>
-  mountEditing(BookableFlowAmount, { bookable: bookable(overrides) });
+  mountEditing(BookableFlowAmount, {
+    bookable: bookable(overrides),
+    accessPoints: [IFBS_LOCKER],
+  });
 
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
 const checked = (wrapper, test) =>
@@ -24,11 +28,7 @@ const checked = (wrapper, test) =>
 const text = (wrapper, test) =>
   find(wrapper, test).text().replace(/\s+/g, " ").trim();
 
-const IFBS_AMOUNT = {
-  provider: "ifbs",
-  active: true,
-  handles: ["maxAmount"],
-};
+const IFBS_AMOUNT = takenOverBy(["maxAmount"]);
 
 describe("BookableFlowAmount - mounting", () => {
   it.each([
@@ -254,7 +254,7 @@ describe("BookableFlowAmount - Anzahl from a provider", () => {
   it("shows only the note instead of the Anzahl", () => {
     const { wrapper } = mountAmount({
       amount: 4,
-      externalProviders: [IFBS_AMOUNT],
+      ...IFBS_AMOUNT,
     });
 
     expect(text(wrapper, "flow-amount-external")).toContain(
@@ -265,7 +265,7 @@ describe("BookableFlowAmount - Anzahl from a provider", () => {
   });
 
   it("jumps to the provider's setting", async () => {
-    const { wrapper } = mountAmount({ externalProviders: [IFBS_AMOUNT] });
+    const { wrapper } = mountAmount(IFBS_AMOUNT);
 
     await find(wrapper, "flow-amount-external-link").trigger("click");
 
@@ -278,7 +278,7 @@ describe("BookableFlowAmount - Anzahl from a provider", () => {
     const { wrapper, patches } = mountAmount({
       amount: 4,
       maxAmountPerBooking: 2,
-      externalProviders: [IFBS_AMOUNT],
+      ...IFBS_AMOUNT,
     });
 
     const input = find(wrapper, "flow-max-amount-input");
@@ -291,7 +291,10 @@ describe("BookableFlowAmount - Anzahl from a provider", () => {
   it("asks for the Anzahl again when the provider entry is inactive", () => {
     const { wrapper } = mountAmount({
       amount: 4,
-      externalProviders: [{ ...IFBS_AMOUNT, active: false }],
+      ...IFBS_AMOUNT,
+      externalProviders: [
+        { ...IFBS_AMOUNT.externalProviders[0], active: false },
+      ],
     });
 
     expect(find(wrapper, "flow-amount-external").exists()).toBe(false);

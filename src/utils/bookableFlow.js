@@ -13,10 +13,7 @@
 
 import { typeNameKey } from "@/utils/bookables";
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
-import {
-  handlesCapability,
-  providerHandles,
-} from "@/utils/bookableExternalProviders";
+import { providerTakesOver } from "@/utils/bookableExternalProviders";
 import {
   bookingModeNameKey,
   getBookableEditSectionById,
@@ -81,20 +78,6 @@ export const FLOW_MODE = "flow";
 /** A new bookable is always created in the flow; an existing one on request. */
 export function isFlowMode({ bookableId, mode }) {
   return !bookableId || mode === FLOW_MODE;
-}
-
-function externalProviderHandles(bookable, capability) {
-  return (bookable?.externalProviders || []).some((provider) =>
-    providerHandles(provider, capability)
-  );
-}
-
-export function handlesExternalAvailability(bookable) {
-  return externalProviderHandles(bookable, "availability");
-}
-
-export function handlesExternalPricing(bookable) {
-  return externalProviderHandles(bookable, "pricing");
 }
 
 // --- Verfügbarkeit ---------------------------------------------------------
@@ -609,8 +592,10 @@ const AVAILABILITY_ROWS = [
     key: "bookingMode",
     label: "bookable.edit.sections.bookingTypeSelect",
     section: "bookingType-select",
-    value: (b) =>
-      handlesExternalAvailability(b) ? EXTERNAL : asWord(bookingModeNameKey(b)),
+    value: (b, { accessPoints }) =>
+      providerTakesOver(b, "availability", accessPoints)
+        ? EXTERNAL
+        : asWord(bookingModeNameKey(b)),
   },
   {
     key: "bookingDuration",
@@ -695,8 +680,8 @@ function simpleAmountValue(bookable) {
   return asText(amount);
 }
 
-function priceValue(bookable) {
-  if (handlesExternalPricing(bookable)) return EXTERNAL;
+function priceValue(bookable, { accessPoints }) {
+  if (providerTakesOver(bookable, "pricing", accessPoints)) return EXTERNAL;
   const mode = priceModeOf(bookable);
   if (mode === "free") return asWord("bookable.flow.price.modes.free");
   if (mode === "tiers") {
@@ -706,7 +691,8 @@ function priceValue(bookable) {
 }
 
 /** VAT and Rabattcodes belong to a price the bookable sets itself. */
-const ownPrice = (b) => !handlesExternalPricing(b) && priceModeOf(b) !== "free";
+const ownPrice = (b, { accessPoints }) =>
+  !providerTakesOver(b, "pricing", accessPoints) && priceModeOf(b) !== "free";
 
 const PRICE_ROWS = [
   {
@@ -745,8 +731,8 @@ const AMOUNT_ROWS = [
     key: "amount",
     label: "bookable.flow.amount.title",
     section: "pricing-amount",
-    value: (b) => {
-      if (handlesCapability(b, "maxAmount")) return EXTERNAL;
+    value: (b, { accessPoints }) => {
+      if (providerTakesOver(b, "maxAmount", accessPoints)) return EXTERNAL;
       return isUnlimitedAmount(b) ? UNLIMITED : asText(toNumber(b.amount));
     },
   },
@@ -873,14 +859,18 @@ function moreRows(bookable, { shown }) {
 
 function stepRows(step, bookable, options) {
   if (step === "more") return moreRows(bookable, options);
-  const { shown } = options;
+  const { shown, accessPoints } = options;
   return STEP_ROWS[step]
     .filter(
       (row) =>
         (!row.section ||
-          isBookableEditSectionVisible(row.section, { bookable, shown })) &&
+          isBookableEditSectionVisible(row.section, {
+            bookable,
+            shown,
+            accessPoints,
+          })) &&
         (!row.option || shown(row.option)) &&
-        (!row.when || row.when(bookable))
+        (!row.when || row.when(bookable, options))
     )
     .map((row) => ({
       key: row.key,
@@ -915,15 +905,21 @@ const everyOption = () => true;
  *   of a field without a row stands at the first row of its step.
  *
  * Expert options show by `shown(option)`, the expert-mode rule as the caller
- * asks it - every option by default. In the flow a step not `visited` yet is
+ * asks it - every option by default. What ParkraumService takes over reads
+ * from the tenant's `accessPoints` (none by default: nothing). In the flow a step not `visited` yet is
  * `open` and shows no rows; by default every step was.
  */
 export function overviewBlocks(
   bookable,
-  { visited = FLOW_STEPS, shown = everyOption, eventTitlesById = {} } = {}
+  {
+    visited = FLOW_STEPS,
+    shown = everyOption,
+    eventTitlesById = {},
+    accessPoints = [],
+  } = {}
 ) {
-  const options = { shown, eventTitlesById };
-  const issues = bookableIssues(bookable, { shown });
+  const options = { shown, eventTitlesById, accessPoints };
+  const issues = bookableIssues(bookable, { shown, accessPoints });
   const blocks = FLOW_STEPS.map((step) => {
     const rows = stepRows(step, bookable, options).map((row) => ({
       ...row,

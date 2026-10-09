@@ -4,8 +4,8 @@
  */
 
 import {
-  IFBS_PROVIDER,
-  handlesCapability,
+  ifbsLockerOf,
+  providerTakesOver,
 } from "@/utils/bookableExternalProviders";
 
 export function bookableEditSectionElementId(sectionId) {
@@ -37,22 +37,6 @@ export function bookingModeNameKey(bookable) {
     return `${availability}.long-range-${mode}`;
   }
   return `${availability}.modes.${mode}`;
-}
-
-/**
- * Whether the bookable declares the external data source Schließsysteme
- * configures.
- *
- * Since the locker fold the bookable no longer says which of its access points
- * is a locker system - the ids alone do not, and resolving them needs the
- * tenant's access point list, which this module cannot load. The declaration
- * is the part of that section that does live on the bookable, so it is what
- * the anchor keys on.
- */
-function declaresExternalProvider(bookable) {
-  return (bookable?.externalProviders || []).some(
-    (provider) => provider?.provider === IFBS_PROVIDER
-  );
 }
 
 /**
@@ -227,7 +211,10 @@ const ALL_SECTIONS = [
 
 const everyOption = () => true;
 
-function isSectionVisible(section, { bookable, shown = everyOption }) {
+function isSectionVisible(
+  section,
+  { bookable, shown = everyOption, accessPoints = [] }
+) {
   if (section.expertOption && !shown(section.expertOption)) {
     return false;
   }
@@ -237,9 +224,12 @@ function isSectionVisible(section, { bookable, shown = everyOption }) {
     bookingMode === "schedule" || bookingMode === "timePeriod";
   // Where a provider handles the availability, the Buchungsart shows only
   // its note and none of the sections of a mode.
-  const mode = handlesCapability(bookable, "availability") ? null : bookingMode;
+  const mode = providerTakesOver(bookable, "availability", accessPoints)
+    ? null
+    : bookingMode;
   const visibilityById = {
-    "pricing-external": () => declaresExternalProvider(bookable),
+    // The settings of ParkraumService belong to its assigned locker system.
+    "pricing-external": () => ifbsLockerOf(bookable, accessPoints) !== null,
     "bookingType-duration": () => mode === "schedule",
     "bookingType-time-periods": () => mode === "timePeriod",
     "bookingType-block-periods": () => mode === "blockPeriod",
@@ -256,9 +246,12 @@ function isSectionVisible(section, { bookable, shown = everyOption }) {
 
 /**
  * @param {string} tabKey
- * @param {{ bookable: object, shown?: function(string): boolean }} ctx
+ * @param {{ bookable: object, shown?: function(string): boolean,
+ *   accessPoints?: Array<object> }} ctx
  *   `shown(option)` is the expert-mode rule as the caller asks it (e.g.
  *   `BookableEdit.expertOptionShown`); without it every option shows.
+ *   `accessPoints` are the tenant's: what ParkraumService takes over and
+ *   where its settings show depend on its assigned locker system.
  * @returns {Array<object>}
  */
 export function getVisibleBookableEditSections(tabKey, ctx) {

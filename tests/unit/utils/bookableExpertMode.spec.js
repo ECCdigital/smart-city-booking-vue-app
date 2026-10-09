@@ -118,6 +118,19 @@ const UNUSED = {
   customFieldDefinitions: { customFieldDefinitions: [] },
 };
 
+describe("expertOptionUsed - Schließsysteme", () => {
+  // The settings of ParkraumService lie in Schließsysteme: switched on, the
+  // area is in use, so its tab and row show where the notes lead to.
+  it("is used while ParkraumService is on, without an access point", () => {
+    expect(
+      expertOptionUsed(
+        "accessLocks",
+        fresh({ externalProviders: USED.externalPrices.externalProviders })
+      )
+    ).toBe(true);
+  });
+});
+
 describe("expertOptionShown - used, per option", () => {
   it.each(Object.keys(USED))(
     "%s shows while the stored bookable uses it",

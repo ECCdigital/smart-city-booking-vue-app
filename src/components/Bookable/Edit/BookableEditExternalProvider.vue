@@ -356,11 +356,11 @@
 
 <script>
 import _ from "lodash";
-import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import bookableEditing from "@/mixins/bookableEditing";
 import externalPrices from "@/mixins/externalPrices";
 import {
   IFBS_PROVIDER,
+  ifbsLockerOf,
   providerHandles,
 } from "@/utils/bookableExternalProviders";
 
@@ -393,7 +393,6 @@ export default {
   mixins: [bookableEditing, externalPrices],
   data() {
     return {
-      accessPoints: [],
       priceError: null,
       dismissIfbsRecommendation: false,
     };
@@ -405,14 +404,7 @@ export default {
      * `externalId` is the location the provider prices and books against.
      */
     ifbsAccessPoint() {
-      const details = this.bookable?.accessPointDetails;
-      if (details?.active !== true) return null;
-      const ids = details.accessPointIds || [];
-      return (
-        this.accessPoints.find(
-          (point) => point.provider === IFBS_PROVIDER && ids.includes(point.id)
-        ) || null
-      );
+      return ifbsLockerOf(this.bookable, this.bookableAccessPoints.list);
     },
     isIfbsActive() {
       return this.ifbsAccessPoint !== null;
@@ -462,10 +454,10 @@ export default {
     },
   },
   watch: {
-    "bookable.id": {
+    "bookable.tenantId": {
       immediate: true,
-      handler() {
-        this.fetchAccessPoints();
+      handler(tenantId) {
+        this.bookableAccessPoints.load(tenantId);
       },
     },
     isIfbsActive: {
@@ -500,27 +492,6 @@ export default {
           (p) => p.provider === IFBS_PROVIDER
         ) || null
       );
-    },
-    /**
-     * The tenant's access points, so that the assigned ids can say which of
-     * them is a locker system of the provider. A bookable only ever
-     * references access points by id since the fold.
-     */
-    async fetchAccessPoints() {
-      try {
-        const response = await ApiAccessPointService.getAccessPoints(
-          this.bookable?.tenantId
-        );
-        this.accessPoints = response.data || [];
-      } catch (error) {
-        // Without the list the settings cannot tell that a locker system is
-        // assigned and stay away; the assignment above reports the failure.
-        console.error(
-          `Could not read the access points of tenant ${this.bookable?.tenantId}`,
-          error
-        );
-        this.accessPoints = [];
-      }
     },
     /**
      * Hands on the provider with `changes` as the rebuilt list of providers,

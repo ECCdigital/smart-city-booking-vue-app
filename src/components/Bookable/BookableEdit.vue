@@ -340,6 +340,7 @@ import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.
 import BookableEditTab from "@/components/Bookable/Edit/BookableEditTab.vue";
 import { BOOKABLE_EDIT_TABS } from "@/components/Bookable/Edit/bookableEditTabs";
 import ToastService from "@/services/ToastService";
+import { createTenantAccessPoints } from "@/services/TenantAccessPoints";
 import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
 import {
   FLOW_MODE,
@@ -392,6 +393,9 @@ export default {
   provide() {
     return {
       bookableExpertMode: this.expertModeContext,
+      // Read once per page: Schließsysteme assigns from it, and what
+      // ParkraumService takes over depends on its assigned locker system.
+      bookableAccessPoints: this.accessPoints,
     };
   },
   data() {
@@ -407,6 +411,7 @@ export default {
       sectionTarget: null,
       // What the components ask the expert-mode rule with: the mode and the
       // bookable as loaded or last saved (`takeSnapshot`).
+      accessPoints: createTenantAccessPoints(),
       expertModeContext: {
         enabled: getInitialBookableExpertMode(),
         stored: null,
@@ -492,6 +497,7 @@ export default {
       return {
         bookable: this.bookable,
         shown: this.expertOptionShown,
+        accessPoints: this.accessPoints.list,
       };
     },
     activeTabSections() {
@@ -569,6 +575,7 @@ export default {
     refuseSave() {
       const issues = bookableIssues(this.bookable, {
         shown: this.expertOptionShown,
+        accessPoints: this.accessPoints.list,
       });
       if (!issues.length) return false;
 
@@ -762,10 +769,13 @@ export default {
           isPublic: false,
         });
       }
+      await this.accessPoints.load(
+        this.bookable.tenantId || this.currentTenant?.id
+      );
 
       this.takeSnapshot();
       // Only now: whether a tab of expert options shows depends on the
-      // bookable.
+      // bookable, and a section of ParkraumService on its access points.
       this.resolveTabFromQuery();
     },
     /**

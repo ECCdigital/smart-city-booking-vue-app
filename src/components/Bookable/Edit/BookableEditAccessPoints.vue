@@ -1,5 +1,4 @@
 <script>
-import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import AccessPointPermissionService from "@/services/permissions/AccessPointPermissionService";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import {
@@ -64,16 +63,31 @@ export default {
   mixins: [bookableEditing],
   data() {
     return {
-      accessPoints: [],
-      loading: false,
-      loadError: "",
       pickerOpen: false,
     };
   },
   computed: {
     ...mapGetters({
-      tenantId: "tenants/currentTenantId",
+      currentTenantId: "tenants/currentTenantId",
     }),
+    tenantId() {
+      return this.bookable.tenantId || this.currentTenantId;
+    },
+    // The tenant's list as the editing page reads it once.
+    accessPoints() {
+      return this.bookableAccessPoints.list;
+    },
+    loading() {
+      return this.bookableAccessPoints.loading;
+    },
+    loadError() {
+      const { error } = this.bookableAccessPoints;
+      if (!error) return "";
+      return formatAccessPointErrorMessage(error, {
+        fallbackKey: "accessPoint.management.errors.loadFailed",
+        forbiddenKey: "accessPoint.bookable.readForbidden",
+      });
+    },
     accessPointDetails() {
       return this.bookable.accessPointDetails || {};
     },
@@ -137,8 +151,8 @@ export default {
   watch: {
     tenantId: {
       immediate: true,
-      handler() {
-        this.fetchAccessPoints();
+      handler(tenantId) {
+        this.bookableAccessPoints.load(tenantId);
       },
     },
   },
@@ -148,25 +162,8 @@ export default {
         accessPointDetails: { ...this.accessPointDetails, ...changes },
       });
     },
-    async fetchAccessPoints() {
-      if (!this.tenantId) return;
-
-      this.loading = true;
-      this.loadError = "";
-      try {
-        const response = await ApiAccessPointService.getAccessPoints(
-          this.tenantId
-        );
-        this.accessPoints = response.data || [];
-      } catch (error) {
-        this.accessPoints = [];
-        this.loadError = formatAccessPointErrorMessage(error, {
-          fallbackKey: "accessPoint.management.errors.loadFailed",
-          forbiddenKey: "accessPoint.bookable.readForbidden",
-        });
-      } finally {
-        this.loading = false;
-      }
+    reloadAccessPoints() {
+      this.bookableAccessPoints.load(this.tenantId, { force: true });
     },
     /**
      * What a booking gets at this access point. At a locker system it gets one
@@ -282,7 +279,7 @@ export default {
               color="primary"
               :loading="loading"
               :disabled="loading"
-              @click="fetchAccessPoints"
+              @click="reloadAccessPoints"
             >
               <v-icon left small>mdi-refresh</v-icon>
               {{ $t("accessPoint.bookable.reload") }}

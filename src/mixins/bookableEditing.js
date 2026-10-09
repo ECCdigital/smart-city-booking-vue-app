@@ -1,5 +1,7 @@
 import _ from "lodash";
+import { createTenantAccessPoints } from "@/services/TenantAccessPoints";
 import { expertOptionShown } from "@/utils/bookableExpertMode";
+import { providerTakesOver } from "@/utils/bookableExternalProviders";
 import { BOOKABLE_RULE_NAMES, bookableRules } from "@/utils/bookableValidation";
 
 /**
@@ -16,6 +18,11 @@ import { BOOKABLE_RULE_NAMES, bookableRules } from "@/utils/bookableValidation";
  * `BookableEdit` provides, and the bookable as edited. Outside `BookableEdit`
  * expert mode is on.
  *
+ * Whether ParkraumService takes a field away, it asks
+ * `providerTakesOver(capability)`: over the tenant's access points that
+ * `BookableEdit` reads once and provides (`TenantAccessPoints`); outside it a
+ * component has a list of its own, which it reads only when it loads it.
+ *
  * A field takes its rules from `fieldRules.<name>`: the rules of
  * `bookableValidation`, which the save checks too, with German messages
  * (glossary „Meldung“).
@@ -24,6 +31,9 @@ export default {
   inject: {
     bookableExpertMode: {
       default: () => ({ enabled: true, stored: null }),
+    },
+    bookableAccessPoints: {
+      default: () => createTenantAccessPoints(),
     },
   },
   props: {
@@ -47,6 +57,17 @@ export default {
         stored: this.bookableExpertMode.stored,
         current: this.bookable,
       });
+    },
+    /**
+     * Whether ParkraumService takes `capability` (`pricing`, `availability`,
+     * `maxAmount`) away from the bookable, so the field shows only its note.
+     */
+    providerTakesOver(capability) {
+      return providerTakesOver(
+        this.bookable,
+        capability,
+        this.bookableAccessPoints.list
+      );
     },
     /** Hands on `changes`: the new values of top-level fields, by name. */
     patch(changes) {

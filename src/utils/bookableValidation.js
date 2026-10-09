@@ -16,7 +16,7 @@
  */
 
 import { isBookableEditSectionVisible } from "@/utils/bookableEditSections";
-import { handlesCapability } from "@/utils/bookableExternalProviders";
+import { providerTakesOver } from "@/utils/bookableExternalProviders";
 
 const message = (name) => `bookable.validation.${name}`;
 
@@ -263,15 +263,19 @@ function refusal(name, value) {
  * page's nav reads it - whether or not its component is mounted.
  *
  * @param {Object} bookable - The bookable as `BookableEdit` holds it.
- * @param {{ shown?: function(string): boolean }} [options] - `shown(option)`
- *   is the expert-mode rule as the caller asks it (`expertOptionShown`);
- *   without it every option shows.
+ * @param {{ shown?: function(string): boolean, accessPoints?: Array<Object> }}
+ *   [options] - `shown(option)` is the expert-mode rule as the caller asks
+ *   it (`expertOptionShown`); without it every option shows. `accessPoints`
+ *   are the tenant's, for what ParkraumService takes over.
  * @returns {Array<{field: string, message: string, tab: string,
  *   section: ?string, step: ?string, area?: string}>} The issues, empty
  *   while it is fine. `area` names the area of the step „Weitere
  *   Einstellungen“ (`bookableAreas`) that holds the field.
  */
-export function bookableIssues(bookable, { shown = everyOption } = {}) {
+export function bookableIssues(
+  bookable,
+  { shown = everyOption, accessPoints = [] } = {}
+) {
   const found = [];
   const add = (field, keys) =>
     [...new Set(keys.filter(Boolean))].forEach((key) =>
@@ -293,12 +297,12 @@ export function bookableIssues(bookable, { shown = everyOption } = {}) {
       )
     );
   const sectionShows = (id) =>
-    isBookableEditSectionVisible(id, { bookable, shown });
+    isBookableEditSectionVisible(id, { bookable, shown, accessPoints });
   const times = { startTime: "startTime", endTime: "endTime" };
 
   check("title", "title", [bookable.title]);
   // Where ParkraumService handles the prices, the price shows only its note.
-  if (!handlesCapability(bookable, "pricing")) {
+  if (!providerTakesOver(bookable, "pricing", accessPoints)) {
     checkEntries("priceCategories", bookable.priceCategories, {
       priceEur: "price",
     });

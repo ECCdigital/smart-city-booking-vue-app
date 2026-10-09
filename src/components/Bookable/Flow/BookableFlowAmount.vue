@@ -109,7 +109,6 @@ import FlowCounter from "@/components/Bookable/Flow/FlowCounter.vue";
 import FlowSegmented from "@/components/Bookable/Flow/FlowSegmented.vue";
 import bookableEditing from "@/mixins/bookableEditing";
 import { EXTERNAL_PROVIDER_SETTING } from "@/utils/bookableEditSections";
-import { handlesCapability } from "@/utils/bookableExternalProviders";
 import {
   isUnlimitedAmount,
   isUnlimitedMaxAmount,
@@ -144,7 +143,7 @@ export default {
   },
   computed: {
     external() {
-      return handlesCapability(this.bookable, "maxAmount");
+      return this.providerTakesOver("maxAmount");
     },
     amountLimited() {
       return !isUnlimitedAmount(this.bookable) || this.typing.amount;

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
 import Bookable from "@/entities/bookable";
 import BookableEditBookingMode from "@/components/Bookable/Edit/BookableEditBookingMode.vue";
@@ -19,6 +20,7 @@ const mountMode = (overrides, { expertMode = true, saved } = {}) =>
     bookable: bookable(overrides),
     expertMode,
     saved: saved && bookable(saved),
+    accessPoints: [IFBS_LOCKER],
   });
 
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
@@ -200,11 +202,7 @@ describe("BookableEditBookingMode without expert mode", () => {
 });
 
 describe("BookableEditBookingMode with an external availability", () => {
-  const external = {
-    externalProviders: [
-      { provider: "ifbs", active: true, handles: ["availability"] },
-    ],
-  };
+  const external = takenOverBy(["availability"]);
 
   it("shows only the note, without naming a place", () => {
     const { wrapper } = mountMode(external);

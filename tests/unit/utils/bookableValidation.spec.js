@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import Bookable from "@/entities/bookable";
 import {
   bookableIssues,
@@ -111,11 +112,23 @@ describe("bookableValidation - the rules of the spec", () => {
 
   it("leaves the prices to ParkraumService while it handles them", () => {
     const priceCategories = [{ priceEur: "", interval: {} }];
-    const externalProviders = [
-      { provider: "ifbs", active: true, handles: ["pricing"] },
-    ];
 
-    expect(issuesOf({ priceCategories, externalProviders })).toEqual([]);
+    expect(
+      issuesOf(
+        { priceCategories, ...takenOverBy(["pricing"]) },
+        { accessPoints: [IFBS_LOCKER] }
+      )
+    ).toEqual([]);
+  });
+
+  // A declaration without its locker system leaves the price to the
+  // bookable, as the editor shows it.
+  it("checks the prices while the provider's locker system is not assigned", () => {
+    const priceCategories = [{ priceEur: "", interval: {} }];
+
+    expect(issuesOf({ priceCategories, ...takenOverBy(["pricing"]) })).toEqual([
+      expect.objectContaining({ field: "priceCategories" }),
+    ]);
   });
 
   it("finds an invalid Höchstmenge je Buchung", () => {

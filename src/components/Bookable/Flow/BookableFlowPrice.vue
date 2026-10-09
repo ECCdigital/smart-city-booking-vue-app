@@ -243,7 +243,6 @@ import {
   applyPriceMode,
   applyPriceType,
   bookingModeOf,
-  handlesExternalPricing,
   priceExplanation,
   priceModeOf,
 } from "@/utils/bookableFlow";
@@ -295,7 +294,7 @@ export default {
       return this.chosenMode && unshown ? this.chosenMode : stored;
     },
     external() {
-      return handlesExternalPricing(this.bookable);
+      return this.providerTakesOver("pricing");
     },
     bookingMode() {
       return bookingModeOf(this.bookable);

@@ -120,6 +120,7 @@ export default {
         ...(this.visited ? { visited: this.visited } : {}),
         shown: this.expertOptionShown,
         eventTitlesById: this.eventTitlesById,
+        accessPoints: this.bookableAccessPoints.list,
       });
     },
     needsEventTitles() {

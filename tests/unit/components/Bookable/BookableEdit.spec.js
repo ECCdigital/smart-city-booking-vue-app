@@ -12,6 +12,7 @@ import {
   showsUnsavedChanges as unsaved,
   storedBookable as stored,
 } from "@tests/unit/support/bookableEdit";
+import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 
 vi.mock("@/services/api/ApiBookablesService", () => ({
   default: {
@@ -53,6 +54,7 @@ vi.mock("@/services/permissions/TenantPermissionService", () => ({
 }));
 
 import ApiBookablesService from "@/services/api/ApiBookablesService";
+import ApiAccessPointService from "@/services/api/ApiAccessPointService";
 import { FLOW_STEPS } from "@/utils/bookableFlow";
 
 // The flow's last step, whatever steps come before it.
@@ -266,13 +268,12 @@ describe("BookableEdit - the price in both modes", () => {
 
   it("jumps from the note of external prices to Schließsysteme", async () => {
     Element.prototype.scrollIntoView = vi.fn();
+    ApiAccessPointService.getAccessPoints.mockResolvedValue({
+      data: [IFBS_LOCKER],
+    });
     const wrapper = await mountEdit(
       { id: "b1", tab: "pricing" },
-      stored({
-        externalProviders: [
-          { provider: "ifbs", active: true, handles: ["pricing"] },
-        ],
-      })
+      stored(takenOverBy(["pricing"]))
     );
 
     await find(wrapper, "flow-price-external-link").trigger("click");
@@ -286,13 +287,12 @@ describe("BookableEdit - the price in both modes", () => {
 
   it("jumps from the note in the step „Preis“ to Schließsysteme in „Weitere Einstellungen“", async () => {
     Element.prototype.scrollIntoView = vi.fn();
+    ApiAccessPointService.getAccessPoints.mockResolvedValue({
+      data: [IFBS_LOCKER],
+    });
     const wrapper = await mountEdit(
       { id: "b1", mode: "flow" },
-      stored({
-        externalProviders: [
-          { provider: "ifbs", active: true, handles: ["pricing"] },
-        ],
-      })
+      stored(takenOverBy(["pricing"]))
     );
 
     await find(wrapper, "flow-dot-price").trigger("click");
@@ -328,13 +328,12 @@ describe("BookableEdit - the price in both modes", () => {
 
   it("jumps from the note of an external Anzahl to Schließsysteme", async () => {
     Element.prototype.scrollIntoView = vi.fn();
+    ApiAccessPointService.getAccessPoints.mockResolvedValue({
+      data: [IFBS_LOCKER],
+    });
     const wrapper = await mountEdit(
       { id: "b1", tab: "pricing" },
-      stored({
-        externalProviders: [
-          { provider: "ifbs", active: true, handles: ["maxAmount"] },
-        ],
-      })
+      stored(takenOverBy(["maxAmount"]))
     );
 
     await find(wrapper, "flow-amount-external-link").trigger("click");
@@ -410,12 +409,7 @@ describe("BookableEdit - Grunddaten", () => {
 
 describe("BookableEdit - the Buchungsart", () => {
   const external = () =>
-    stored({
-      isScheduleRelated: true,
-      externalProviders: [
-        { provider: "ifbs", active: true, handles: ["availability"] },
-      ],
-    });
+    stored({ isScheduleRelated: true, ...takenOverBy(["availability"]) });
   const cardTitles = (wrapper) =>
     wrapper
       .findAll(".page-content__editor .section-card .section-header")
@@ -423,6 +417,9 @@ describe("BookableEdit - the Buchungsart", () => {
 
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn();
+    ApiAccessPointService.getAccessPoints.mockResolvedValue({
+      data: [IFBS_LOCKER],
+    });
   });
 
   it("asks the questions of the guided flow in the card „Buchungsart“ of its tab", async () => {
@@ -700,6 +697,112 @@ describe("BookableEdit - switching between the modes", () => {
   });
 });
 
+describe("BookableEdit - ParkraumService takes over a field", () => {
+  // ParkraumService handles the prices; `locker` assigns its locker system.
+  const taken = ({ locker = true } = {}) =>
+    stored({
+      ...takenOverBy(["pricing"]),
+      ...(locker ? {} : { accessPointDetails: null }),
+    });
+
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+    ApiAccessPointService.getAccessPoints.mockResolvedValue({
+      data: [IFBS_LOCKER],
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    sessionStorage.clear();
+  });
+
+  const withoutExpertMode = () => {
+    vi.stubEnv("VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT", "false");
+    sessionStorage.clear();
+  };
+
+  it("keeps the price editable while no locker system of the provider is assigned", async () => {
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "pricing" },
+      taken({ locker: false })
+    );
+
+    expect(find(wrapper, "flow-price-external").exists()).toBe(false);
+    expect(find(wrapper, "flow-price-mode-simple").exists()).toBe(true);
+  });
+
+  it("shows Schließsysteme without expert mode while the provider is on", async () => {
+    withoutExpertMode();
+    const wrapper = await mountEdit({ id: "b1" }, taken({ locker: false }));
+
+    expect(tab(wrapper, "Schließsysteme")).toBeDefined();
+  });
+
+  it("lands on the provider's setting from the note, without expert mode", async () => {
+    withoutExpertMode();
+    const wrapper = await mountEdit({ id: "b1", tab: "pricing" }, taken());
+
+    await find(wrapper, "flow-price-external-link").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query).toMatchObject({
+      tab: "accessLocks",
+      section: "pricing-external",
+    });
+    expect(wrapper.find("#be-section-pricing-external").exists()).toBe(true);
+  });
+
+  it("lands on the provider's setting from the step „Preis“, without expert mode", async () => {
+    withoutExpertMode();
+    const wrapper = await mountEdit({ id: "b1", mode: "flow" }, taken());
+
+    await find(wrapper, "flow-dot-price").trigger("click");
+    await find(wrapper, "flow-price-external-link").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.vm.$route.query.mode).toBe("flow");
+    expect(
+      find(wrapper, "more-area-accessLocks-toggle").attributes("aria-expanded")
+    ).toBe("true");
+    expect(wrapper.find("#be-section-pricing-external").exists()).toBe(true);
+  });
+
+  it("reads the tenant's access points once for the whole page", async () => {
+    ApiAccessPointService.getAccessPoints.mockClear();
+    await mountEdit({ id: "b1", tab: "accessLocks" }, taken());
+
+    expect(ApiAccessPointService.getAccessPoints).toHaveBeenCalledTimes(1);
+    expect(ApiAccessPointService.getAccessPoints).toHaveBeenCalledWith("t1");
+  });
+
+  it("checks the prices on save while no locker system is assigned", async () => {
+    ApiBookablesService.createOrUpdateBookable.mockReset();
+    const wrapper = await mountEdit(
+      { id: "b1", tab: "general" },
+      stored({
+        ...takenOverBy(["pricing"]),
+        accessPointDetails: null,
+        priceCategories: [
+          {
+            priceEur: "",
+            interval: { start: null, end: null },
+            fixedPrice: false,
+            holidays: [],
+            weekdays: [],
+          },
+        ],
+      })
+    );
+
+    await find(wrapper, "save").trigger("click");
+    await flushPromises();
+
+    expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
+    expect(wrapper.vm.$route.query.tab).toBe("pricing");
+  });
+});
+
 describe("BookableEdit - expert options without expert mode", () => {
   beforeEach(() => {
     vi.stubEnv("VUE_APP_BOOKABLE_EXPERT_MODE_DEFAULT", "false");
@@ -743,28 +846,6 @@ describe("BookableEdit - expert options without expert mode", () => {
 
     expect(wrapper.find("#be-section-related-hierarchy").exists()).toBe(false);
     expect(wrapper.find("#be-section-general-catalog").exists()).toBe(true);
-  });
-
-  it("leaves the guided flow for a setting whose area is left out", async () => {
-    Element.prototype.scrollIntoView = vi.fn();
-    const wrapper = await mountEdit(
-      { id: "b1", mode: "flow" },
-      stored({
-        isScheduleRelated: true,
-        externalProviders: [
-          { provider: "ifbs", active: true, handles: ["availability"] },
-        ],
-      })
-    );
-
-    await find(wrapper, "flow-dot-availability").trigger("click");
-    await find(wrapper, "booking-mode-external-link").trigger("click");
-    await flushPromises();
-
-    // Without expert mode an unused Schließsysteme has no row; the editing
-    // page leaves its tab out too and opens the first.
-    expect(wrapper.vm.$route.query.mode).toBeUndefined();
-    expect(find(wrapper, "flow-more").exists()).toBe(false);
   });
 
   it("hands the stored bookable to the tabs", async () => {

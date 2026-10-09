@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import Bookable from "@/entities/bookable";
 import i18n from "@/language/index";
 import {
@@ -526,9 +527,11 @@ describe("overview", () => {
   const shown = ({ rows }) =>
     rows.map(({ label, value }) => [label && i18n.t(label), valueText(value)]);
   const blockOf = (step, item, options = {}) =>
-    overviewBlocks(item, { visited: [step], ...options }).find(
-      (block) => block.step === step
-    );
+    overviewBlocks(item, {
+      visited: [step],
+      accessPoints: [IFBS_LOCKER],
+      ...options,
+    }).find((block) => block.step === step);
 
   it("gives one block per step, open until the step was visited", () => {
     const blocks = overviewBlocks(bookable({ title: "Saal" }), {
@@ -687,9 +690,7 @@ describe("overview", () => {
   it("says „extern gesteuert“ when a provider handles the prices", () => {
     const item = bookable({
       priceCategories: [category(25)],
-      externalProviders: [
-        { provider: "ifbs", active: true, handles: ["pricing"] },
-      ],
+      ...takenOverBy(["pricing"]),
     });
 
     expect(shown(blockOf("price", item))).toEqual([
@@ -711,9 +712,7 @@ describe("overview", () => {
   it("says „extern gesteuert“ when a provider handles the amount", () => {
     const item = bookable({
       amount: 3,
-      externalProviders: [
-        { provider: "ifbs", active: true, handles: ["maxAmount"] },
-      ],
+      ...takenOverBy(["maxAmount"]),
     });
 
     expect(shown(blockOf("amount", item))[0]).toEqual([
@@ -816,11 +815,7 @@ describe("overview", () => {
   });
 
   it("says „extern gesteuert“ when a provider handles the availability", () => {
-    const item = bookable({
-      externalProviders: [
-        { provider: "ifbs", active: true, handles: ["availability"] },
-      ],
-    });
+    const item = bookable(takenOverBy(["availability"]));
 
     const rows = shown(blockOf("availability", item));
     expect(rows[0]).toEqual(["Buchungsart", "extern gesteuert"]);
