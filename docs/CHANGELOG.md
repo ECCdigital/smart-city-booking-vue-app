@@ -14,6 +14,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Added
 
+-   The members page opens its invite dialog by link (ECCdigital/tickets#369): `/tenant/members?invite=1`, where the tile „Nutzer einladen“ of the next steps after a tenant's creation leads. The page drops the query as soon as the dialog is open, so closing it shows the page as usual and a reload does not open it again; any other way in shows the page as before
 -   Guided flow of a bookable from 1904px (Vuetify `xl`, ECCdigital/tickets#333): a sticky list of the six steps stands left in place of the dots, with the same state, lock and jump, and the flow reads in three columns — step list, step, „Übersicht“
 -   The guided flow's „Übersicht“ shows Verfügbarkeit, Preis and Berechtigung too, in the steps' words (ECCdigital/tickets#332); „extern gesteuert“ where a provider handles availability or prices
 -   „Übersicht“ beside the guided flow of a bookable from 1264px (Vuetify `lg`, ECCdigital/tickets#331): a sticky block per step shows its values once visited, „Noch offen“ before, and a click goes to the step. Below 1264px and on the confirmation nothing changes
