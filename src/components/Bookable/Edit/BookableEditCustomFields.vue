@@ -25,7 +25,6 @@ export default {
   components: { CustomFieldList },
   mixins: [bookableEditing],
   props: {
-    bookable: { type: Object, required: true },
     sectionTarget: { type: String, default: null },
   },
   data() {
@@ -61,22 +60,11 @@ export default {
         };
       });
 
-      const groups = {};
-      for (const field of mapped) {
-        const origin = field._origin || "unknown";
-        if (!groups[origin]) {
-          groups[origin] = [];
-        }
-        groups[origin].push(field);
-      }
-
-      const originOrder = ["instance", "tenant", "bookable"];
-      return originOrder
-        .filter((key) => groups[key]?.length)
-        .map((key) => ({
-          origin: key,
-          fields: groups[key],
-        }));
+      return this.groupFieldsByOrigin(mapped, [
+        "instance",
+        "tenant",
+        "bookable",
+      ]);
     },
     valueFieldCount() {
       return this.groupedFields.reduce(
@@ -94,9 +82,8 @@ export default {
     },
     inheritedFieldGroups() {
       const fromBookable = this.groupFieldsByOrigin(
-        (this.bookable.customFields || []).filter(
-          (field) => field._origin && field._origin !== "bookable"
-        )
+        this.bookable.customFields || [],
+        ["instance", "tenant"]
       );
       if (fromBookable.length) return fromBookable;
 
@@ -158,20 +145,15 @@ export default {
         this.activeView = 0;
       }
     },
-    groupFieldsByOrigin(fields) {
-      const grouped = {};
-      for (const field of fields) {
-        const origin = field._origin;
-        if (!grouped[origin]) grouped[origin] = [];
-        grouped[origin].push(field);
-      }
-
-      return ["instance", "tenant"]
-        .filter((origin) => grouped[origin]?.length)
+    /** `fields` grouped by where they are defined, in the order `origins`. */
+    groupFieldsByOrigin(fields, origins) {
+      return origins
         .map((origin) => ({
+          origin,
           ...this.originMeta(origin),
-          fields: grouped[origin],
-        }));
+          fields: fields.filter((field) => field._origin === origin),
+        }))
+        .filter((group) => group.fields.length);
     },
     async loadFallbackInheritedFields() {
       try {
