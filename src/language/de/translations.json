@@ -218,7 +218,7 @@
         },
         "publication": {
           "title": "Veröffentlichung",
-          "why": "Ob Buchende das Objekt im Katalog finden und ob sie es buchen können – beides lässt sich einzeln einstellen."
+          "why": "Ob das Objekt öffentlich angezeigt wird und ob Buchende es buchen können – beides lässt sich einzeln einstellen."
         }
       },
       "more": {
@@ -262,15 +262,15 @@
       "done": {
         "published": {
           "title": "Veröffentlicht",
-          "text": "Das Buchungsobjekt steht im Katalog und ist buchbar."
+          "text": "Das Buchungsobjekt wird öffentlich angezeigt und ist buchbar."
         },
         "direct-link": {
           "title": "Per Direktlink buchbar",
-          "text": "Das Buchungsobjekt steht nicht im Katalog, ist aber per Direktlink buchbar."
+          "text": "Das Buchungsobjekt wird nicht öffentlich angezeigt, ist aber per Direktlink buchbar."
         },
         "listed-not-bookable": {
-          "title": "Im Katalog gelistet",
-          "text": "Das Buchungsobjekt steht im Katalog, ist aber nicht buchbar."
+          "title": "Öffentlich angezeigt",
+          "text": "Das Buchungsobjekt wird öffentlich angezeigt, ist aber nicht buchbar."
         },
         "submitted": {
           "title": "Zur Prüfung eingereicht",
@@ -878,24 +878,24 @@
         "hint": "Buchende können es im Checkout buchen."
       },
       "public": {
-        "label": "Im Katalog listen",
-        "hint": "Es steht im Katalog und auf eingebundenen Webseiten."
+        "label": "Öffentlich anzeigen",
+        "hint": "Erscheint im Katalog und auf eingebundenen Webseiten (HTML- und JS-Schnittstelle)."
       },
       "submits-on-save": "Beim Speichern wird das Angebot zur Prüfung eingereicht.",
       "effect": {
-        "listed": "Das Buchungsobjekt steht im Katalog und ist buchbar.",
-        "direct-link": "Das Buchungsobjekt steht nicht im Katalog, ist aber per Direktlink buchbar.",
-        "listed-not-bookable": "Das Buchungsobjekt steht im Katalog, ist aber nicht buchbar.",
-        "hidden": "Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar.",
+        "listed": "Das Buchungsobjekt wird öffentlich angezeigt und ist buchbar.",
+        "direct-link": "Das Buchungsobjekt wird nicht öffentlich angezeigt, ist aber per Direktlink buchbar.",
+        "listed-not-bookable": "Das Buchungsobjekt wird öffentlich angezeigt, ist aber nicht buchbar.",
+        "hidden": "Das Buchungsobjekt wird nicht öffentlich angezeigt und ist nicht buchbar.",
         "after-approval": {
-          "listed": "Nach der Freigabe durch den Betreiber steht das Buchungsobjekt im Katalog und ist buchbar. Bis dahin ist es weder gelistet noch per Direktlink buchbar.",
-          "direct-link": "Nach der Freigabe durch den Betreiber ist das Buchungsobjekt per Direktlink buchbar, steht aber nicht im Katalog. Bis dahin ist es nicht per Direktlink buchbar.",
-          "listed-not-bookable": "Nach der Freigabe durch den Betreiber steht das Buchungsobjekt im Katalog, ist aber nicht buchbar. Bis dahin ist es nicht gelistet."
+          "listed": "Nach der Freigabe durch den Betreiber wird das Buchungsobjekt öffentlich angezeigt und ist buchbar. Bis dahin wird es weder angezeigt noch ist es per Direktlink buchbar.",
+          "direct-link": "Nach der Freigabe durch den Betreiber ist das Buchungsobjekt per Direktlink buchbar, wird aber nicht öffentlich angezeigt. Bis dahin ist es nicht per Direktlink buchbar.",
+          "listed-not-bookable": "Nach der Freigabe durch den Betreiber wird das Buchungsobjekt öffentlich angezeigt, ist aber nicht buchbar. Bis dahin wird es nicht angezeigt."
         },
-        "pending": "Ihr Mandant wartet auf die Freigabe durch den Betreiber: Bis dahin steht das Buchungsobjekt nicht im Katalog und ist nicht buchbar.",
-        "unsubmitted": "Ohne Freigabe durch den Betreiber ist das Buchungsobjekt nicht per Direktlink buchbar. Zur Prüfung eingereicht wird es beim Speichern nur mit „Im Katalog listen“.",
-        "rejected": "Der Betreiber hat das Angebot abgelehnt: Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar.",
-        "declined": "Der Mandant ist abgewiesen: Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar."
+        "pending": "Ihr Mandant wartet auf die Freigabe durch den Betreiber: Bis dahin wird das Buchungsobjekt nicht öffentlich angezeigt und ist nicht buchbar.",
+        "unsubmitted": "Ohne Freigabe durch den Betreiber ist das Buchungsobjekt nicht per Direktlink buchbar. Zur Prüfung eingereicht wird es beim Speichern nur mit „Öffentlich anzeigen“.",
+        "rejected": "Der Betreiber hat das Angebot abgelehnt: Das Buchungsobjekt wird nicht öffentlich angezeigt und ist nicht buchbar.",
+        "declined": "Der Mandant ist abgewiesen: Das Buchungsobjekt wird nicht öffentlich angezeigt und ist nicht buchbar."
       }
     },
     "externalPrice": {

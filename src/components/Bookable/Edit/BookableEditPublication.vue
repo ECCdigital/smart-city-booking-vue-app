@@ -8,29 +8,45 @@
       <v-switch
         :input-value="bookable.isBookable === true"
         :label="$t('bookable.publication.bookable.label')"
-        :hint="$t('bookable.publication.bookable.hint')"
-        persistent-hint
-        inset
-        dense
+        hide-details
         color="primary"
         class="publication__switch"
         data-test="publication-bookable"
         data-field="isBookable"
         @change="patch({ isBookable: $event === true })"
-      />
+      >
+        <template v-slot:label>
+          <div>
+            <div class="font-weight-medium">
+              {{ $t("bookable.publication.bookable.label") }}
+            </div>
+            <div class="text-caption text--secondary">
+              {{ $t("bookable.publication.bookable.hint") }}
+            </div>
+          </div>
+        </template>
+      </v-switch>
       <v-switch
         :input-value="bookable.isPublic === true"
         :label="$t('bookable.publication.public.label')"
-        :hint="$t('bookable.publication.public.hint')"
-        persistent-hint
-        inset
-        dense
+        hide-details
         color="primary"
         class="publication__switch"
         data-test="publication-public"
         data-field="isPublic"
         @change="patch({ isPublic: $event === true })"
-      />
+      >
+        <template v-slot:label>
+          <div>
+            <div class="font-weight-medium">
+              {{ $t("bookable.publication.public.label") }}
+            </div>
+            <div class="text-caption text--secondary">
+              {{ $t("bookable.publication.public.hint") }}
+            </div>
+          </div>
+        </template>
+      </v-switch>
     </div>
 
     <p class="publication__effect" data-test="publication-effect">

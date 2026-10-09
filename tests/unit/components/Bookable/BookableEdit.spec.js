@@ -1078,7 +1078,7 @@ describe("BookableEdit - publication", () => {
     await flip(wrapper, "publication-public");
 
     expect(find(wrapper, "publication-effect").text()).toBe(
-      "Das Buchungsobjekt steht im Katalog und ist buchbar."
+      "Das Buchungsobjekt wird öffentlich angezeigt und ist buchbar."
     );
     expect(unsaved(wrapper)).toBe(true);
     await find(wrapper, "save").trigger("click");
@@ -1095,7 +1095,7 @@ describe("BookableEdit - publication", () => {
     await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
 
     expect(find(wrapper, "publication-effect").text()).toBe(
-      "Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar."
+      "Das Buchungsobjekt wird nicht öffentlich angezeigt und ist nicht buchbar."
     );
   });
 
@@ -1188,7 +1188,7 @@ describe("BookableEdit - publication under supervision", () => {
     answerAsTheBackend();
   });
 
-  it("says that saving submits only with „Im Katalog listen“", async () => {
+  it("says that saving submits only with „Öffentlich anzeigen“", async () => {
     const wrapper = await supervised(
       { id: "b1", mode: "flow" },
       stored({ isBookable: false, isPublic: false })

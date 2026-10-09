@@ -20,7 +20,7 @@ import BookableEditPublication from "@/components/Bookable/Edit/BookableEditPubl
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
 
 const BUCHBAR = "Buchbar";
-const IM_KATALOG = "Im Katalog listen";
+const OEFFENTLICH = "Öffentlich anzeigen";
 const SUBMITS = "Beim Speichern wird das Angebot zur Prüfung eingereicht.";
 
 const bookable = (overrides = {}) =>
@@ -56,7 +56,7 @@ describe("BookableEditPublication", () => {
       "Wer kann das Buchungsobjekt finden und buchen?"
     );
     expect(isOn(wrapper, BUCHBAR)).toBe(true);
-    expect(isOn(wrapper, IM_KATALOG)).toBe(false);
+    expect(isOn(wrapper, OEFFENTLICH)).toBe(false);
   });
 
   it("hands on each switch on its own, as a partial patch", async () => {
@@ -69,7 +69,7 @@ describe("BookableEditPublication", () => {
       isBookable: true,
     });
 
-    await toggleSwitch(wrapper, IM_KATALOG);
+    await toggleSwitch(wrapper, OEFFENTLICH);
     expect(lastPatch(patches)).toEqual({ isPublic: true });
 
     await toggleSwitch(wrapper, BUCHBAR);
@@ -77,25 +77,29 @@ describe("BookableEditPublication", () => {
 
     expect(handedIn).toEqual(stored);
     expect(isOn(wrapper, BUCHBAR)).toBe(false);
-    expect(isOn(wrapper, IM_KATALOG)).toBe(true);
+    expect(isOn(wrapper, OEFFENTLICH)).toBe(true);
   });
 
   it.each([
-    [true, true, "Das Buchungsobjekt steht im Katalog und ist buchbar."],
+    [
+      true,
+      true,
+      "Das Buchungsobjekt wird öffentlich angezeigt und ist buchbar.",
+    ],
     [
       true,
       false,
-      "Das Buchungsobjekt steht nicht im Katalog, ist aber per Direktlink buchbar.",
+      "Das Buchungsobjekt wird nicht öffentlich angezeigt, ist aber per Direktlink buchbar.",
     ],
     [
       false,
       true,
-      "Das Buchungsobjekt steht im Katalog, ist aber nicht buchbar.",
+      "Das Buchungsobjekt wird öffentlich angezeigt, ist aber nicht buchbar.",
     ],
     [
       false,
       false,
-      "Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar.",
+      "Das Buchungsobjekt wird nicht öffentlich angezeigt und ist nicht buchbar.",
     ],
   ])(
     "says for a free tenant with Buchbar %s and Im Katalog %s what follows",
@@ -109,10 +113,10 @@ describe("BookableEditPublication", () => {
   it("follows the switches with its line at once", async () => {
     const { wrapper } = mountPublication({ isBookable: true });
 
-    await toggleSwitch(wrapper, IM_KATALOG);
+    await toggleSwitch(wrapper, OEFFENTLICH);
 
     expect(effect(wrapper)).toBe(
-      "Das Buchungsobjekt steht im Katalog und ist buchbar."
+      "Das Buchungsobjekt wird öffentlich angezeigt und ist buchbar."
     );
   });
 
@@ -134,7 +138,7 @@ describe("BookableEditPublication", () => {
 
     expect(find(wrapper, "review-status").text()).toBe("Prüfung ausstehend");
     expect(effect(wrapper)).toContain(
-      "Nach der Freigabe durch den Betreiber steht das Buchungsobjekt im Katalog und ist buchbar."
+      "Nach der Freigabe durch den Betreiber wird das Buchungsobjekt öffentlich angezeigt und ist buchbar."
     );
     expect(find(wrapper, "review-effect").exists()).toBe(false);
     expect(find(wrapper, "publication-wish-hint").text()).toContain(
@@ -150,7 +154,7 @@ describe("BookableEditPublication", () => {
     });
     expect(wrapper.text()).not.toContain(SUBMITS);
 
-    await toggleSwitch(wrapper, IM_KATALOG);
+    await toggleSwitch(wrapper, OEFFENTLICH);
 
     expect(find(wrapper, "publication-submits").text()).toBe(SUBMITS);
     expect(find(wrapper, "review-unsaved").exists()).toBe(false);

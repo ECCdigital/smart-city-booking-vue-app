@@ -15,7 +15,7 @@ const publication = (isBookable, isPublic, status = null) => ({
 });
 
 describe("publicationEffectKey", () => {
-  // The four combinations of „Buchbar“ and „Im Katalog listen“, where no
+  // The four combinations of „Buchbar“ and „Öffentlich anzeigen“, where no
   // review stands in the way.
   it.each([
     [true, true, "listed"],

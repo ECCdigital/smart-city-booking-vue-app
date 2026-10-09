@@ -773,7 +773,7 @@ describe("overview", () => {
       )
     ).toEqual([
       ["Buchbar", "ja"],
-      ["Im Katalog listen", "nein"],
+      ["Öffentlich anzeigen", "nein"],
     ]);
     expect(
       shown(
@@ -781,7 +781,7 @@ describe("overview", () => {
       )
     ).toEqual([
       ["Buchbar", "nein"],
-      ["Im Katalog listen", "ja"],
+      ["Öffentlich anzeigen", "ja"],
     ]);
   });
 

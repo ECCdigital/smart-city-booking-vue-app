@@ -177,7 +177,7 @@ describe("BookableFlow", () => {
       "Wer kann das Buchungsobjekt finden und buchen?"
     );
     expect(find(wrapper, "publication-effect").text()).toBe(
-      "Das Buchungsobjekt steht nicht im Katalog, ist aber per Direktlink buchbar."
+      "Das Buchungsobjekt wird nicht öffentlich angezeigt, ist aber per Direktlink buchbar."
     );
   });
 
@@ -231,7 +231,7 @@ describe("BookableFlow", () => {
     it.each([
       ["published", null, "Veröffentlicht"],
       ["direct-link", null, "Per Direktlink buchbar"],
-      ["listed-not-bookable", null, "Im Katalog gelistet"],
+      ["listed-not-bookable", null, "Öffentlich angezeigt"],
       ["submitted", "supervised", "Zur Prüfung eingereicht"],
       ["in-review", "supervised", "In Prüfung"],
       ["noted", "pending", "Veröffentlichung vorgemerkt"],
