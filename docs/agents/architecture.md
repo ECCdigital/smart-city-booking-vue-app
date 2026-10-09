@@ -75,15 +75,13 @@ Instance (global deployment config, loaded at bootstrap)
 
 ## Guided setup (tenant onboarding)
 
-`/onboarding` (`src/views/Management/TenantOnboarding.vue`) leads from the shortened tenant creation to the first bookable: tenant → bookable → optional legal texts/payment → overview with the readiness check.
+`/onboarding` (`src/views/Management/TenantOnboarding.vue`) is the shortened tenant creation (`Onboarding/OnboardingTenantStep.vue`). The creation replaces the address with `?tenant=<id>`, which shows the tenant's Nächste Schritte (`Onboarding/OnboardingNextSteps.vue`); a reload shows them again.
 
-- Drawn as the booking page is (`docs/agents/design-tokens.md`): `Onboarding/OnboardingPath.vue` is the headline over the segmented path (reachable steps are tabs, `input` reports the step), the step components render section cards, `Onboarding/OnboardingPanel.vue` is the sticky facts panel beside every step, and `Onboarding/OnboardingChoiceTiles.vue` is the radio group behind the two deliberate choices. The steps emit `submit` / `back`; „Zur Verwaltung“ is the view's toolbar
-- Form rules, the mapping onto a `Bookable` and the reading of creation errors are pure functions in `src/utils/tenantOnboarding.js`; the view only wires them to the API services
-- No stored wizard progress: every step saves through the regular API, `?tenant=` resumes from current data — price and availability included, the stored values are the selected tiles. The detour to `/tenant?tab=legal|payments` (which shows a way back via `onboardingStep`) returns to the step it left; any other entry resumes at the bookable. `amount: 0` is the unlimited amount, as the bookable editor reads it
-- The closing action only stores the publication wish (`isPublic`); its wording follows `tenant.supervisionLevel` (`free` / `supervised` / `pending` / `declined`), the backend submits a first wish for review on its own. `free` shows no supervision texts
-- The readiness check (`TenantReadinessCheck.vue`, `GET api/tenants/:tenant/readiness`) is information, never a gate. Both owner levels see the same answer (`TenantPermissionService.allowReadiness`): the wizard overview, the tab „Bereitschaft“ of the tenant settings (`Edit/TenantEditReadiness.vue`) and `TenantReadinessDialog.vue` in the instance's tenant list. Nothing is cached — every opening asks the backend again
-- Bookable types are the existing four (`room`, `event-location`, `resource`, `ticket`); `event-location` is the value both this app and the backend entity use — the `location` in the backend's Mongoose enum is not enforced and nothing is converted
-- Events stay in the regular administration
+- Nächste Schritte are plain links, none back to the creation: tiles to the tenant settings, the members (invite dialog open, `?invite=1`) and a new bookable in the guided flow, the readiness check, legal texts and payment (`Onboarding/OnboardingSetupLinks.vue`, `/tenant?tab=legal|payments` on their own) and „Zur Startseite“. The first bookable is guided like any other
+- Section cards on the design tokens (`docs/agents/design-tokens.md`); „Zur Verwaltung“ is the view's toolbar before the creation
+- The supervision level is shown before and after the creation (`Onboarding/OnboardingSupervisionNotice.vue`); `free` shows no supervision texts
+- The creation contract, the reading of creation errors and the routes on are pure functions in `src/utils/tenantOnboarding.js`; the view only wires them to the API services
+- The readiness check (`TenantReadinessCheck.vue`, `GET api/tenants/:tenant/readiness`, states read in `src/utils/tenantReadiness.js`) is information, never a gate. Both owner levels see the same answer (`TenantPermissionService.allowReadiness`): on Nächste Schritte, in the tab „Bereitschaft“ of the tenant settings (`Edit/TenantEditReadiness.vue`) and in `TenantReadinessDialog.vue` of the instance's tenant list. The guided flow's confirmation (`Bookable/Flow/BookableFlowDone.vue`) shows no check; for a paid bookable it names a `missing` criterion `payment` in one line. Nothing is cached — every opening asks the backend again
 
 ## Review queue (tenant supervision)
 

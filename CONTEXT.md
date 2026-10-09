@@ -73,7 +73,7 @@ The mode that shows all of a bookable's fields at once, in tabs of section cards
 _Avoid_: Editor, Bearbeitungsmodus, Alle Einstellungen
 
 **Geführter Ablauf** (admin: „Zum geführten Ablauf“):
-The mode that asks for the same fields step by step, one question per panel, saved once with „Speichern“ in the last step. A new bookable is always created here. Inputs survive switching between the two modes and are lost only when the bookable is left unsaved.
+The mode that asks for the same fields step by step, one question per panel, saved once with „Speichern“ in the last step. A new bookable starts here. Inputs survive switching between the two modes and are lost only when the bookable is left unsaved.
 _Avoid_: Ablauf alone, Onboarding, Wizard, Geführt bearbeiten, Zur Übersicht (the button now names the mode it leads to)
 
 **Übersicht** (admin: „Übersicht“):
@@ -86,7 +86,7 @@ _Avoid_: Stepper, Navigation (that is the editing page's tabs and sections), Pun
 
 **Meldung**:
 What the check of a bookable says under one field when its value would be refused, such as „Bitte einen Titel eingeben.“. A field shows it once it was left, and every field shows it after a refused save. It never locks „Speichern“, „Weiter“ or a tab.
-_Avoid_: Fehler, Validierungsfehler, Offene Punkte (those are the confirmation page's list after the save)
+_Avoid_: Fehler, Validierungsfehler, Offene Punkte (those are a tenant's open criteria in the readiness check on Nächste Schritte)
 
 **Grunddaten** (admin: „Grunddaten“):
 The fields that say what a bookable is, in two groups: „Das sehen Buchende im Katalog“ (**Titel**, Beschreibung, **Merkmale**, **Bilder**, **Standort**) and „Nur für die Verwaltung“ (Typ, Veranstaltung of a ticket, **Interne Tags**). Merkmale are short advantages beside the description; Interne Tags filter and group in the administration and are never shown to bookers. The Typ (Raum, Gerät / Weiteres, Ticket, Veranstaltungsort) is chosen only when the bookable is created.
@@ -139,6 +139,12 @@ _Avoid_: Öffentlich alone, Sichtbar, Im Katalog listen (the switch covers more 
 **Weitere Einstellungen** (admin: „Weitere Einstellungen“):
 The optional step of the guided flow before the Veröffentlichung that reaches every area the editing page has beyond the steps, one row per **Bereich** in the order of the tabs: **Schließsysteme**, **Zusatzobjekte**, **Hierarchie**, **Serienbuchung**, **Stornierung**, **Anhänge**, **Eigene Felder**, **Pflichtfelder**, **Buchungshinweise**. A row shows „Nicht genutzt“ or a summary and opens to the same component as the area's card on the editing page; a Bereich has this one name in the row, the card, the navigation, the Übersicht and on the confirmation.
 _Avoid_: Optionale Bereiche, Zusatzoptionen (say Zusatzobjekte), Zugang & Schließsysteme, Zugang, Storno, Stornierungsrichtlinie, Pflichtangaben, Dokumente & Einwilligungen (say Anhänge; a booking's Dokumente are a different thing), Hinweise zur Buchung, Zusätzliche Buchungsoptionen
+
+### Tenants
+
+**Nächste Schritte** (admin: „Wie geht es weiter?“):
+The page after a tenant's creation under `/onboarding?tenant=<id>`, with three equal ways on: the tenant's settings, inviting users and the first bookable. Below them stand the tenant's readiness check, legal texts and payment, at the end „Zur Startseite“. It offers, it leads nowhere by itself, and no way leads back to it.
+_Avoid_: Erfolgsseite, Onboarding-Abschluss, Bestätigung (that is the page after saving in the guided flow)
 
 ### SSO
 

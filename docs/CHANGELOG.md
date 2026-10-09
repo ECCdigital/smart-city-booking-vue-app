@@ -14,6 +14,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Added
 
+-   „Nutzer einladen“ on „Nächste Schritte“ opens the members page with its invite dialog open (ECCdigital/tickets#369, `/tenant/members?invite=1`); a reload does not open it again
 -   Guided flow of a bookable from 1904px (Vuetify `xl`, ECCdigital/tickets#333): a sticky list of the six steps stands left in place of the dots, with the same state, lock and jump, and the flow reads in three columns — step list, step, „Übersicht“
 -   The guided flow's „Übersicht“ shows Verfügbarkeit, Preis and Berechtigung too, in the steps' words (ECCdigital/tickets#332); „extern gesteuert“ where a provider handles availability or prices
 -   „Übersicht“ beside the guided flow of a bookable from 1264px (Vuetify `lg`, ECCdigital/tickets#331): a sticky block per step shows its values once visited, „Noch offen“ before, and a click goes to the step. Below 1264px and on the confirmation nothing changes
@@ -130,6 +131,9 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Changed
 
+-   „Nächste Schritte“ replace the onboarding's detour (ECCdigital/tickets#367, ECCdigital/tickets#371): creating a tenant under `/onboarding` leads to `/onboarding?tenant=<id>`, with tiles to the tenant settings, the members and a first bookable, the readiness check, legal texts and payment. The first bookable is guided like any other; `?onboarding=1`, „Überspringen“ and the way back from the tenant forms are gone
+-   A new bookable switches between the guided flow and the editing page too (ECCdigital/tickets#368, `?mode=page`); inputs survive both ways, and saved on the editing page it stays there
+-   The guided flow's confirmation shows only the bookable (ECCdigital/tickets#370); readiness check, legal texts and payment stand on „Nächste Schritte“. A paid bookable whose tenant has no payment gets one line with „Zahlung einrichten“
 -   Words of a bookable's two modes (ECCdigital/tickets#365): they are the „Bearbeitungsseite“ and the „Geführter Ablauf“, every fixed text comes from the catalogue, one term has one key, and no retired word reads in either mode (glossary `CONTEXT.md`). Specs fail on a missing catalogue key, and a pseudo locale finds built-in text
 -   „Übersicht“ of a bookable (ECCdigital/tickets#364): both modes show one overview beside the form, cut by the steps, each row named and valued as its field and leading to it; check messages stand at their row. `BookableEditOverview`, `bookableOverview.js` and the band of chips below 1264px are gone
 -   „Veröffentlichung“ of a bookable (ECCdigital/tickets#362): two independent switches, „Buchbar“ and „Öffentlich anzeigen“ (was „Öffentlich“; catalogue and the HTML/JS web interface), in the status band and as the flow's last step, with a line beneath that says what follows - under supervision only what saving really submits. The flow has one „Speichern“, its confirmation says what happened (submitted, published, by Direktlink only, draft …), and a new bookable starts with both switches off

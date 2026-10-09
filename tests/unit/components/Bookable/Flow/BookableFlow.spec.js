@@ -6,6 +6,8 @@ import {
   setViewportWidth,
 } from "@tests/unit/support/viewport";
 import ApiEventService from "@/services/api/ApiEventService";
+import ApiTenantService from "@/services/api/ApiTenantService";
+import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 import Bookable from "@/entities/bookable";
 import BookableFlow from "@/components/Bookable/Flow/BookableFlow.vue";
 import { FLOW_STEPS } from "@/utils/bookableFlow";
@@ -13,9 +15,13 @@ import { FLOW_STEPS } from "@/utils/bookableFlow";
 vi.mock("@/services/api/ApiEventService", () => ({
   default: { getEvents: vi.fn() },
 }));
+vi.mock("@/services/api/ApiTenantService", () => ({
+  default: { getReadiness: vi.fn() },
+}));
 vi.mock("@/services/permissions/TenantPermissionService", () => ({
   default: {
     reviewViewer: vi.fn(() => ({ tenantOwner: true, instanceOwner: false })),
+    allowReadiness: vi.fn(() => true),
   },
 }));
 
@@ -35,8 +41,13 @@ const STUBS = {
   BookableEditPrice: stepStub("BookableEditPrice"),
   BookableEditPermission: stepStub("BookableEditPermission"),
   BookableFlowMore: stepStub("BookableFlowMore"),
-  TenantReadinessCheck: stepStub("TenantReadinessCheck"),
-  RouterLink: true,
+  RouterLink: {
+    name: "RouterLink",
+    props: ["to"],
+    render(h) {
+      return h("a", this.$slots.default);
+    },
+  },
 };
 
 const bookable = (overrides = {}) =>
@@ -206,19 +217,11 @@ describe("BookableFlow", () => {
     );
   });
 
-  it("lets the onboarding skip the first bookable and keeps its level in view", async () => {
-    const wrapper = mountFlow({ onboarding: true, level: "supervised" });
+  it("guides a new bookable under supervision without skip or supervision notice", () => {
+    const wrapper = mountFlow({ level: "supervised" });
 
-    expect(find(wrapper, "supervision-notice").text()).toContain(
-      "beaufsichtigt"
-    );
-    await find(wrapper, "flow-skip").trigger("click");
-
-    expect(wrapper.emitted("skip")).toHaveLength(1);
-  });
-
-  it("offers no skip outside the onboarding", () => {
-    expect(find(mountFlow(), "flow-skip").exists()).toBe(false);
+    expect(find(wrapper, "flow-skip").exists()).toBe(false);
+    expect(find(wrapper, "supervision-notice").exists()).toBe(false);
   });
 
   describe("after the save", () => {
@@ -247,21 +250,102 @@ describe("BookableFlow", () => {
       }
     );
 
-    it("shows the readiness check and names payment for a paid offer only", () => {
-      const free = mountDone({ outcome: "draft" });
-      expect(find(free, "stub-TenantReadinessCheck").exists()).toBe(true);
-      expect(find(free, "setup-legal").exists()).toBe(true);
-      expect(free.text()).not.toContain("Zahlung");
+    it("shows nothing of the tenant: no readiness check, no legal texts", () => {
+      const wrapper = mountDone({ outcome: "draft" });
 
-      const paid = mountFlow({
-        bookable: bookable({
+      expect(find(wrapper, "readiness-check").exists()).toBe(false);
+      expect(find(wrapper, "setup-links").exists()).toBe(false);
+      expect(wrapper.text()).not.toContain("Rechtstexte");
+    });
+
+    describe("for a paid bookable", () => {
+      const paidBookable = () =>
+        bookable({
           id: "b1",
           title: "Saal",
           priceCategories: [{ priceEur: 12 }],
-        }),
-        outcome: "draft",
+        });
+      const readiness = (paymentState) => ({
+        checkedAt: "2026-10-09T08:00:00.000Z",
+        criteria: [
+          { key: "legal", state: "missing" },
+          { key: "payment", state: paymentState },
+        ],
       });
-      expect(find(paid, "setup-payment").exists()).toBe(true);
+      const mountPaid = async () => {
+        const wrapper = mountFlow({
+          bookable: paidBookable(),
+          outcome: "draft",
+        });
+        await flushPromises();
+        return wrapper;
+      };
+
+      beforeEach(() => {
+        ApiTenantService.getReadiness.mockReset();
+        TenantPermissionService.allowReadiness.mockReturnValue(true);
+      });
+
+      it("points to the tenant's payment settings while payment is missing", async () => {
+        ApiTenantService.getReadiness.mockResolvedValue(readiness("missing"));
+
+        const wrapper = await mountPaid();
+
+        expect(ApiTenantService.getReadiness).toHaveBeenCalledWith("t1");
+        const hint = find(wrapper, "flow-done-payment-missing");
+        // One line (ECCdigital/tickets#370): one sentence and the link.
+        expect(hint.text().replace(/\s+/g, " ")).toBe(
+          "Für dieses kostenpflichtige Buchungsobjekt ist noch keine Zahlung eingerichtet. Zahlung einrichten"
+        );
+        const link = hint.findComponent({ name: "RouterLink" });
+        expect(link.text()).toBe("Zahlung einrichten");
+        expect(link.props("to")).toEqual({
+          name: "tenant",
+          query: { tab: "payments" },
+        });
+      });
+
+      it("says nothing once payment is set up", async () => {
+        ApiTenantService.getReadiness.mockResolvedValue(readiness("fulfilled"));
+
+        const wrapper = await mountPaid();
+
+        expect(ApiTenantService.getReadiness).toHaveBeenCalledWith("t1");
+        expect(find(wrapper, "flow-done-payment-missing").exists()).toBe(false);
+      });
+
+      it("says nothing without access to the readiness check", async () => {
+        TenantPermissionService.allowReadiness.mockReturnValue(false);
+
+        const wrapper = await mountPaid();
+
+        expect(TenantPermissionService.allowReadiness).toHaveBeenCalledWith(
+          "t1"
+        );
+        expect(ApiTenantService.getReadiness).not.toHaveBeenCalled();
+        expect(find(wrapper, "flow-done-payment-missing").exists()).toBe(false);
+      });
+
+      it("says nothing when the readiness check fails", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        ApiTenantService.getReadiness.mockRejectedValue(new Error("down"));
+
+        const wrapper = await mountPaid();
+
+        expect(find(wrapper, "flow-done-payment-missing").exists()).toBe(false);
+        console.error.mockRestore();
+      });
+    });
+
+    it("says nothing of payment for a free bookable, without asking", async () => {
+      ApiTenantService.getReadiness.mockReset();
+
+      const wrapper = mountDone({ outcome: "published" });
+      await flushPromises();
+
+      expect(ApiTenantService.getReadiness).not.toHaveBeenCalled();
+      expect(find(wrapper, "flow-done-payment-missing").exists()).toBe(false);
+      expect(wrapper.text()).not.toContain("Zahlung");
     });
 
     it("links each area to its row in „Weitere Einstellungen“", async () => {

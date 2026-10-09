@@ -12,9 +12,6 @@
         </p>
         <slot name="notice" />
 
-        <v-alert v-if="created" type="success" text dense>
-          {{ $t("tenant.onboarding.tenant.created-hint") }}
-        </v-alert>
         <v-alert
           v-if="errorText"
           type="error"
@@ -71,7 +68,6 @@
           v-model="form.name"
           :label="$t('tenant.onboarding.tenant.name')"
           :rules="rules.required"
-          :disabled="created"
           :error-messages="fieldError('name')"
           autofocus
           outlined
@@ -87,7 +83,6 @@
               v-model="form.contactName"
               :label="$t('tenant.onboarding.tenant.contact-name')"
               :rules="rules.required"
-              :disabled="created"
               :error-messages="fieldError('contactName')"
               outlined
               dense
@@ -99,7 +94,6 @@
               v-model="form.mail"
               :label="$t('tenant.onboarding.tenant.mail')"
               :rules="rules.mail"
-              :disabled="created"
               :error-messages="fieldError('mail')"
               type="email"
               outlined
@@ -108,15 +102,11 @@
             />
           </v-col>
         </v-row>
-        <p v-if="!created" class="onboarding-step__fine">
+        <p class="onboarding-step__fine">
           {{ $t("tenant.onboarding.tenant.prefill-hint") }}
         </p>
 
-        <v-expansion-panels
-          v-if="!created"
-          flat
-          class="onboarding-step__optional"
-        >
+        <v-expansion-panels flat class="onboarding-step__optional">
           <v-expansion-panel>
             <v-expansion-panel-header class="px-0">
               {{ $t("tenant.onboarding.tenant.optional") }}
@@ -176,11 +166,7 @@
         :loading="inProgress"
         data-test="tenant-submit"
       >
-        {{
-          created
-            ? $t("tenant.onboarding.tenant.continue")
-            : $t("tenant.onboarding.tenant.submit")
-        }}
+        {{ $t("tenant.onboarding.tenant.submit") }}
         <v-icon right small>mdi-arrow-right</v-icon>
       </v-btn>
     </div>
@@ -202,7 +188,6 @@ import { rateLimitMessage } from "@/utils/rateLimit";
 export default {
   name: "OnboardingTenantStep",
   props: {
-    tenant: { type: Object, default: null },
     prefill: { type: Object, default: () => ({}) },
     inProgress: { type: Boolean, default: false },
     error: { type: Object, default: null },
@@ -215,20 +200,19 @@ export default {
     intro: { type: String, default: "" },
     /**
      * The step as the body of a dialog: the actions sit in the card and
-     * offer a cancel, and the submit is the creation, not a "continue".
+     * offer a cancel.
      */
     dialog: { type: Boolean, default: false },
   },
   data() {
-    const source = this.tenant || this.prefill;
     return {
       form: {
-        name: this.tenant?.name || "",
-        contactName: source.contactName || "",
-        mail: source.mail || "",
-        phone: this.tenant?.phone || "",
-        website: this.tenant?.website || "",
-        location: this.tenant?.location || "",
+        name: "",
+        contactName: this.prefill.contactName || "",
+        mail: this.prefill.mail || "",
+        phone: "",
+        website: "",
+        location: "",
       },
       rules: {
         required: [
@@ -245,9 +229,6 @@ export default {
     };
   },
   computed: {
-    created() {
-      return !!this.tenant;
-    },
     /**
      * The way to the missing verification proof the refusal names: the
      * verification mail of a local account, or a new sign-in at the identity
@@ -276,10 +257,6 @@ export default {
       return key ? [this.$t(key)] : [];
     },
     submit() {
-      if (this.created) {
-        this.$emit("continue");
-        return;
-      }
       if (!this.$refs.form.validate()) return;
       this.$emit("submit", { ...this.form });
     },

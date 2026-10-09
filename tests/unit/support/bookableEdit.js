@@ -48,8 +48,11 @@ export const BOOKABLE_EDIT_STUBS = {
   Tiptap: stub("Tiptap"),
 };
 
-/** The store `BookableEdit` reads; `level` is the tenant's Aufsichtsstufe. */
-export function bookableEditStore({ level = null } = {}) {
+/**
+ * The store `BookableEdit` reads; `level` is the tenant's Aufsichtsstufe,
+ * `toasts` collects the toasts it shows.
+ */
+export function bookableEditStore({ level = null, toasts = [] } = {}) {
   return new Vuex.Store({
     modules: {
       tenants: {
@@ -64,7 +67,10 @@ export function bookableEditStore({ level = null } = {}) {
         namespaced: true,
         getters: { supervisionLevelOf: () => () => level },
       },
-      toasts: { namespaced: true, actions: { add: () => {} } },
+      toasts: {
+        namespaced: true,
+        actions: { add: (context, toast) => toasts.push(toast) },
+      },
     },
   });
 }
@@ -83,7 +89,8 @@ export const storedBookable = (overrides = {}) =>
  * Mounts BookableEdit on `/edit?…query` with `bookable` as the stored one.
  * `{ id: "b1", mode: "flow" }` opens the guided flow, `{ id: "b1", tab }`
  * a tab of the editing page; without `id` a new bookable is created from
- * `getBookableTemplate`, which the spec answers.
+ * `getBookableTemplate`, which the spec answers. The toasts it shows land
+ * in `toasts`.
  */
 export async function mountBookableEdit({
   query = { id: "b1" },
@@ -91,6 +98,7 @@ export async function mountBookableEdit({
   type = "room",
   stubs = {},
   level = null,
+  toasts = [],
 } = {}) {
   ApiBookablesService.getBookable.mockResolvedValue({ data: bookable });
   const router = new VueRouter({
@@ -101,7 +109,7 @@ export async function mountBookableEdit({
   const wrapper = mountComponent(BookableEdit, {
     localVue,
     router,
-    store: bookableEditStore({ level }),
+    store: bookableEditStore({ level, toasts }),
     propsData: { type },
     stubs: { ...BOOKABLE_EDIT_STUBS, ...stubs },
   });

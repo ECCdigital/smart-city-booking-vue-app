@@ -12,7 +12,6 @@ import {
   FLOW_STEPS,
   editRouteOf,
   isFlowMode,
-  listRouteOf,
   isUnlimitedAmount,
   isUnlimitedMaxAmount,
   overviewBlocks,
@@ -22,6 +21,7 @@ import {
   showsMaxAmount,
   timeModeOf,
   warnsAboutAmount,
+  withMode,
 } from "@/utils/bookableFlow";
 import { expertOptionShown } from "@/utils/bookableExpertMode";
 
@@ -38,13 +38,46 @@ const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t1", ...overrides }).toPlain();
 
 describe("isFlowMode", () => {
-  it("creates every new bookable in the flow", () => {
+  it("starts every new bookable in the flow", () => {
     expect(isFlowMode({ bookableId: undefined, mode: undefined })).toBe(true);
+  });
+
+  it("shows a new bookable on the editing page when it is asked for", () => {
+    expect(isFlowMode({ bookableId: undefined, mode: "page" })).toBe(false);
+    expect(isFlowMode({ bookableId: undefined, mode: "flow" })).toBe(true);
   });
 
   it("opens an existing bookable in the editor unless the flow is asked for", () => {
     expect(isFlowMode({ bookableId: "b1", mode: undefined })).toBe(false);
     expect(isFlowMode({ bookableId: "b1", mode: "flow" })).toBe(true);
+  });
+});
+
+describe("withMode", () => {
+  it("asks for the mode that is not the default and leaves the default out", () => {
+    expect(withMode({ mode: "flow" }, false)).toEqual({ mode: "page" });
+    expect(withMode({ mode: "page" }, true)).toEqual({});
+    expect(withMode({ id: "b1" }, true)).toEqual({ id: "b1", mode: "flow" });
+    expect(withMode({ id: "b1", mode: "flow" }, false)).toEqual({ id: "b1" });
+  });
+
+  it("reads back as the mode it was asked for, new or existing", () => {
+    for (const id of [undefined, "b1"]) {
+      for (const flow of [true, false]) {
+        const query = withMode({ id, mode: "page" }, flow);
+        expect(isFlowMode({ bookableId: query.id, mode: query.mode })).toBe(
+          flow
+        );
+      }
+    }
+  });
+
+  it("keeps the rest of the query", () => {
+    expect(withMode({ id: "b1", tab: "x" }, true)).toEqual({
+      id: "b1",
+      tab: "x",
+      mode: "flow",
+    });
   });
 });
 
@@ -54,16 +87,6 @@ describe("editRouteOf", () => {
     expect(editRouteOf("event-location")).toBe("location-edit");
     expect(editRouteOf("resource")).toBe("resource-edit");
     expect(editRouteOf("ticket")).toBe("ticket-edit");
-  });
-});
-
-describe("listRouteOf", () => {
-  it("names the list route of each type, rooms for an unknown one", () => {
-    expect(listRouteOf("room")).toBe("rooms");
-    expect(listRouteOf("event-location")).toBe("event-locations");
-    expect(listRouteOf("resource")).toBe("resources");
-    expect(listRouteOf("ticket")).toBe("tickets");
-    expect(listRouteOf("other")).toBe("rooms");
   });
 });
 

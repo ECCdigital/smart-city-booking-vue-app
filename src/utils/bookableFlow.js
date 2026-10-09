@@ -62,24 +62,31 @@ export function editRouteOf(type) {
   return BOOKABLE_EDIT_ROUTES[type] || "room-edit";
 }
 
-/** The list each type is created from; the flow's way back from a new one. */
-export const BOOKABLE_LIST_ROUTES = Object.freeze({
-  room: "rooms",
-  resource: "resources",
-  ticket: "tickets",
-  "event-location": "event-locations",
-});
-
-export function listRouteOf(type) {
-  return BOOKABLE_LIST_ROUTES[type] || "rooms";
-}
-
 /** The query value that opens the editor in the guided flow. */
 export const FLOW_MODE = "flow";
 
-/** A new bookable is always created in the flow; an existing one on request. */
+/** The query value that opens a new bookable on the editing page. */
+export const PAGE_MODE = "page";
+
+/**
+ * A new bookable starts in the flow and leaves it only on request; an
+ * existing one opens on the editing page and enters the flow on request.
+ */
 export function isFlowMode({ bookableId, mode }) {
-  return !bookableId || mode === FLOW_MODE;
+  return bookableId ? mode === FLOW_MODE : mode !== PAGE_MODE;
+}
+
+/**
+ * The route query that shows the bookable of `query` (its `id`) in the flow
+ * or on its editing page - `isFlowMode` read backwards. The default mode is
+ * left out of the address.
+ */
+export function withMode(query, flow) {
+  const next = { ...query };
+  delete next.mode;
+  if (next.id && flow) next.mode = FLOW_MODE;
+  if (!next.id && !flow) next.mode = PAGE_MODE;
+  return next;
 }
 
 // --- Verfügbarkeit ---------------------------------------------------------

@@ -117,11 +117,17 @@ export function contactPrefill(user) {
 }
 
 /**
- * The guided flow of a new bookable, the tenant's first one. From the
- * onboarding it may be skipped, which the `onboarding` query tells the flow.
+ * The guided flow of a new bookable, the tenant's first one - guided like
+ * any other (ECCdigital/tickets#371).
  */
-export function firstBookableRoute({ onboarding = false } = {}) {
-  return onboarding
-    ? { name: "room-edit", query: { onboarding: "1" } }
-    : { name: "room-edit" };
+export function firstBookableRoute() {
+  return { name: "room-edit" };
+}
+
+/**
+ * The tenant settings at the tab `tab` (`legal`, `payments`), opened on their
+ * own: without a way back.
+ */
+export function tenantTabRoute(tab) {
+  return { name: "tenant", query: { tab } };
 }

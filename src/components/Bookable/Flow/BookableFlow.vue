@@ -57,14 +57,6 @@
       </nav>
 
       <div class="bookable-flow__column">
-        <!-- The tenant's first bookable, right after its creation: the level
-             it started at stays in view (free shows none). -->
-        <OnboardingSupervisionNotice
-          v-if="onboarding"
-          :level="level"
-          class="bookable-flow__notice"
-        />
-
         <nav
           v-if="!showStepList"
           class="bookable-flow__progress"
@@ -158,15 +150,6 @@
             <v-icon left small>mdi-chevron-left</v-icon>
             {{ $t("bookable.flow.back") }}
           </v-btn>
-          <v-btn
-            v-if="onboarding"
-            text
-            color="primary"
-            data-test="flow-skip"
-            @click="$emit('skip')"
-          >
-            {{ $t("bookable.flow.skip") }}
-          </v-btn>
           <div class="flow-footer__right" data-test="flow-footer-actions">
             <v-btn
               v-if="last"
@@ -190,13 +173,7 @@
             </v-btn>
           </div>
           <p v-if="last" class="flow-footer__note" data-test="flow-save-hint">
-            {{
-              $t(
-                isNew
-                  ? "bookable.flow.save-hint-new"
-                  : "bookable.flow.save-hint"
-              )
-            }}
+            {{ $t("bookable.flow.save-hint") }}
           </p>
         </div>
       </div>
@@ -224,7 +201,6 @@ import BookableEditPublication from "@/components/Bookable/Edit/BookableEditPubl
 import BookableFlowMore from "@/components/Bookable/Flow/BookableFlowMore.vue";
 import BookableFlowDone from "@/components/Bookable/Flow/BookableFlowDone.vue";
 import BookableFlowSummary from "@/components/Bookable/Flow/BookableFlowSummary.vue";
-import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
 import { FLOW_STEPS } from "@/utils/bookableFlow";
 import { revealField } from "@/utils/bookableFieldAnchor";
 
@@ -268,7 +244,6 @@ function startingPoint(isNew) {
  * The steps can be visited in any order; „Weiter“ never holds. What the
  * backend would refuse is checked on save (`bookableValidation`), and
  * `BookableEdit` opens the first step with an issue (`openStep`).
- * Right after a tenant's creation the flow may be skipped (`skip`).
  *
  * From Vuetify's lg (1264px) the column stands left with the overview of
  * the bookable beside it (ECCdigital/tickets#331); from xl (1904px) the
@@ -288,13 +263,10 @@ export default {
     BookableEditPublication,
     BookableFlowDone,
     BookableFlowSummary,
-    OnboardingSupervisionNotice,
   },
   props: {
     bookable: { type: Object, required: true },
     isNew: { type: Boolean, default: false },
-    /** The first bookable of a tenant just created: it may be skipped. */
-    onboarding: { type: Boolean, default: false },
     level: { type: String, default: null },
     inProgress: { type: Boolean, default: false },
     saveFailed: { type: Boolean, default: false },
@@ -498,10 +470,6 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.bookable-flow__notice {
-  margin-bottom: var(--scb-space-4);
 }
 
 .bookable-flow__progress {
