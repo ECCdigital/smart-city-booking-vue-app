@@ -230,11 +230,11 @@ import {
   VAT_RATES,
   applyPriceMode,
   applyPriceType,
-  bookingModeOf,
   priceExplanation,
   priceModeOf,
 } from "@/utils/bookableFlow";
 import { EXTERNAL_PROVIDER_SETTING } from "@/utils/bookableEditSections";
+import { bookingModeOf } from "@/utils/bookableBookingMode";
 
 const euro = (value) =>
   Number(value || 0).toLocaleString("de-DE", {

@@ -1,4 +1,5 @@
-import { bookingModeOf, priceModeOf } from "@/utils/bookableFlow";
+import { priceModeOf } from "@/utils/bookableFlow";
+import { bookingModeOf } from "@/utils/bookableBookingMode";
 import { IFBS_PROVIDER } from "@/utils/bookableExternalProviders";
 import { hasBufferConfig } from "@/utils/bookingLeadTime";
 

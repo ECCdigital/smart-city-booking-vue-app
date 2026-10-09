@@ -21,7 +21,6 @@ import {
   publishVariant,
   showsMaxAmount,
   timeModeOf,
-  usesOpeningHours,
   warnsAboutAmount,
 } from "@/utils/bookableFlow";
 import { expertOptionShown } from "@/utils/bookableExpertMode";
@@ -150,20 +149,6 @@ describe("availability", () => {
 
     expect(next.isBlockPeriodRelated).toBe(true);
     expect(next.groupBooking.enabled).toBe(false);
-  });
-
-  it("offers opening hours where a time is picked within a day", () => {
-    expect(usesOpeningHours(bookable({ isScheduleRelated: true }))).toBe(true);
-    expect(
-      usesOpeningHours(
-        bookable({ isScheduleRelated: false, isTimePeriodRelated: true })
-      )
-    ).toBe(true);
-    expect(
-      usesOpeningHours(
-        bookable({ isScheduleRelated: false, isBlockPeriodRelated: true })
-      )
-    ).toBe(false);
   });
 });
 

@@ -7,36 +7,14 @@ import {
   ifbsLockerOf,
   providerTakesOver,
 } from "@/utils/bookableExternalProviders";
+import {
+  bookingModeOf,
+  isLeadTimeMode,
+  isTimeWindowMode,
+} from "@/utils/bookableBookingMode";
 
 export function bookableEditSectionElementId(sectionId) {
   return `be-section-${sectionId}`;
-}
-
-/** The booking type of the bookable, as the booking type tab names it. */
-export function getBookingMode(bookable) {
-  if (!bookable) return "independent";
-  if (bookable.isScheduleRelated) return "schedule";
-  if (bookable.isTimePeriodRelated) return "timePeriod";
-  if (bookable.isBlockPeriodRelated) return "blockPeriod";
-  if (bookable.isLongRange) {
-    const type = bookable.longRangeOptions?.type;
-    if (type === "week" || type === "month") return type;
-  }
-  return "independent";
-}
-
-/**
- * The Buchungsart by the names of its questions: Freie Zeitwahl, Feste
- * Zeitfenster, Zeiträume, Ganze Wochen, Ganze Monate or Ohne Zeit.
- */
-export function bookingModeNameKey(bookable) {
-  const availability = "bookable.flow.availability";
-  const mode = getBookingMode(bookable);
-  if (mode === "independent") return `${availability}.timed-no`;
-  if (mode === "week" || mode === "month") {
-    return `${availability}.long-range-${mode}`;
-  }
-  return `${availability}.modes.${mode}`;
 }
 
 /**
@@ -219,9 +197,7 @@ function isSectionVisible(
     return false;
   }
 
-  const bookingMode = getBookingMode(bookable);
-  const isTimeWindowMode =
-    bookingMode === "schedule" || bookingMode === "timePeriod";
+  const bookingMode = bookingModeOf(bookable);
   // Where a provider handles the availability, the Buchungsart shows only
   // its note and none of the sections of a mode.
   const mode = providerTakesOver(bookable, "availability", accessPoints)
@@ -233,11 +209,10 @@ function isSectionVisible(
     "bookingType-duration": () => mode === "schedule",
     "bookingType-time-periods": () => mode === "timePeriod",
     "bookingType-block-periods": () => mode === "blockPeriod",
-    "bookingType-lead-time": () =>
-      ["schedule", "timePeriod", "blockPeriod"].includes(mode),
+    "bookingType-lead-time": () => isLeadTimeMode(mode),
     "bookingType-buffer": () => mode === "schedule",
-    "openingHours-regular": () => isTimeWindowMode,
-    "openingHours-special": () => isTimeWindowMode,
+    "openingHours-regular": () => isTimeWindowMode(bookingMode),
+    "openingHours-special": () => isTimeWindowMode(bookingMode),
   };
 
   const check = visibilityById[section.id];

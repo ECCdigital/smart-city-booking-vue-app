@@ -2,7 +2,8 @@
 import BookableEditLeadTime from "@/components/Bookable/Edit/BookableEditLeadTime.vue";
 import { v4 as uuidv4 } from "uuid";
 import bookableEditing from "@/mixins/bookableEditing";
-import { bookingModeOf } from "@/utils/bookableFlow";
+import { closeMenu } from "@/utils/timeMenus";
+import { bookingModeOf } from "@/utils/bookableBookingMode";
 import { blockPeriodTooShort } from "@/utils/bookableValidation";
 import { weekdayItems } from "@/utils/bookableWeekdays";
 
@@ -66,9 +67,7 @@ export default {
         ),
       });
     },
-    closeMenu(menus, index) {
-      this.$set(menus, index, false);
-    },
+    closeMenu,
     addNewBlockPeriod() {
       const index = this.blockPeriods.length;
       this.blockTimeStartMenu.push(false);

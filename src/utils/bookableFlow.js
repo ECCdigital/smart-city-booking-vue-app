@@ -15,11 +15,13 @@ import { typeNameKey } from "@/utils/bookables";
 import { SUPERVISION_LEVELS } from "@/utils/supervision";
 import { providerTakesOver } from "@/utils/bookableExternalProviders";
 import {
-  bookingModeNameKey,
   getBookableEditSectionById,
-  getBookingMode,
   isBookableEditSectionVisible,
 } from "@/utils/bookableEditSections";
+import {
+  bookingModeNameKey,
+  bookingModeOf,
+} from "@/utils/bookableBookingMode";
 import {
   BOOKABLE_AREAS,
   areaSummary,
@@ -82,13 +84,6 @@ export function isFlowMode({ bookableId, mode }) {
 
 // --- Verfügbarkeit ---------------------------------------------------------
 
-/**
- * How the time is booked, as the booking type tab names it: `schedule`
- * (Freie Zeitwahl), `timePeriod` (Feste Zeiten), `blockPeriod` (Zeiträume),
- * `week` / `month` (Langzeit) or `independent` (ohne Zeit).
- */
-export const bookingModeOf = getBookingMode;
-
 /** The flow's second question: the long range is one answer, weeks or months. */
 export function timeModeOf(bookable) {
   const mode = bookingModeOf(bookable);
@@ -131,14 +126,6 @@ export function applyBookingMode(bookable, answer, offered = null) {
     if (bookable.groupBooking?.enabled) bookable.groupBooking.enabled = false;
   }
   return bookable;
-}
-
-/**
- * Opening hours and exceptions apply where a time is picked within a day -
- * where the opening hours tab offers them.
- */
-export function usesOpeningHours(bookable) {
-  return ["schedule", "timePeriod"].includes(bookingModeOf(bookable));
 }
 
 // --- Preis -----------------------------------------------------------------

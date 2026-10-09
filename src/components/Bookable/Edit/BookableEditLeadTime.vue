@@ -1,6 +1,7 @@
 <script>
 import { hasBufferConfig } from "@/utils/bookingLeadTime";
 import bookableEditing from "@/mixins/bookableEditing";
+import { closeMenu } from "@/utils/timeMenus";
 import { weekdayItems } from "@/utils/bookableWeekdays";
 
 const PRESET_MINUTES = [30, 60, 120, 240];
@@ -176,9 +177,7 @@ export default {
         ),
       });
     },
-    closeMenu(menus, index) {
-      this.$set(menus, index, false);
-    },
+    closeMenu,
     getWeekdayName(id) {
       const day = this.weekdays.find((entry) => entry.id === Number(id));
       return day ? day.short : "";

@@ -1,7 +1,11 @@
 <script>
 import BaseSection from "@/components/commons/BaseSection.vue";
 import bookableEditing from "@/mixins/bookableEditing";
-import { bookingModeNameKey } from "@/utils/bookableEditSections";
+import {
+  bookingModeNameKey,
+  usesOpeningHours,
+} from "@/utils/bookableBookingMode";
+import { closeMenu } from "@/utils/timeMenus";
 import { weekdayItems } from "@/utils/bookableWeekdays";
 
 export default {
@@ -36,12 +40,8 @@ export default {
     specialOpeningHours() {
       return this.bookable.specialOpeningHours || [];
     },
-    bookingType() {
-      if (this.bookable.isScheduleRelated) return "schedule";
-      if (this.bookable.isTimePeriodRelated) return "timePeriod";
-      if (this.bookable.isBlockPeriodRelated) return "blockPeriod";
-      if (this.bookable.isLongRange) return this.bookable.longRangeOptions.type;
-      return "independent";
+    applies() {
+      return usesOpeningHours(this.bookable);
     },
     hasOpeningHours() {
       return this.openingHours.length > 0;
@@ -66,9 +66,7 @@ export default {
         ),
       });
     },
-    closeMenu(menus, index) {
-      this.$set(menus, index, false);
-    },
+    closeMenu,
     removeOpeningHoursWeekdays(index, item) {
       this.updateOpeningHours(index, {
         weekdays: this.openingHours[index].weekdays.filter((id) => id !== item),
@@ -174,7 +172,7 @@ export default {
       icon="mdi-clock-outline"
     />
 
-    <div v-if="bookingType === 'schedule' || bookingType === 'timePeriod'">
+    <div v-if="applies">
       <!-- Regular Opening Hours -->
       <v-card
         id="be-section-openingHours-regular"

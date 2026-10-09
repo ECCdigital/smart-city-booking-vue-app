@@ -1,11 +1,8 @@
 <script>
 import FlowSegmented from "@/components/Bookable/Flow/FlowSegmented.vue";
 import bookableEditing from "@/mixins/bookableEditing";
-import {
-  applyBookingMode,
-  bookingModeOf,
-  timeModeOf,
-} from "@/utils/bookableFlow";
+import { applyBookingMode, timeModeOf } from "@/utils/bookableFlow";
+import { bookingModeOf } from "@/utils/bookableBookingMode";
 import { EXTERNAL_PROVIDER_SETTING } from "@/utils/bookableEditSections";
 
 const LONG_RANGE_MODES = ["week", "month"];

@@ -31,7 +31,7 @@ import BookableEditBookingMode from "@/components/Bookable/Edit/BookableEditBook
 import BookableEditBookingType from "@/components/Bookable/Edit/BookableEditBookingType.vue";
 import BookableEditOpeningHours from "@/components/Bookable/Edit/BookableEditOpeningHours.vue";
 import bookableEditing from "@/mixins/bookableEditing";
-import { bookingModeOf, usesOpeningHours } from "@/utils/bookableFlow";
+import { usesLeadTime, usesOpeningHours } from "@/utils/bookableBookingMode";
 
 /**
  * Step 2, Verfügbarkeit: the Buchungsart (`BookableEditBookingMode`, the
@@ -50,10 +50,9 @@ export default {
     external() {
       return this.providerTakesOver("availability");
     },
+    // The modes with settings of their own beneath the Buchungsart.
     showsTypeSettings() {
-      return ["schedule", "timePeriod", "blockPeriod"].includes(
-        bookingModeOf(this.bookable)
-      );
+      return usesLeadTime(this.bookable);
     },
     showsOpeningHours() {
       return usesOpeningHours(this.bookable);
