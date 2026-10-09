@@ -140,6 +140,12 @@ _Avoid_: Öffentlich alone, Sichtbar, Im Katalog listen (the switch covers more 
 The optional step of the guided flow before the Veröffentlichung that reaches every area the editing page has beyond the steps, one row per **Bereich** in the order of the tabs: **Schließsysteme**, **Zusatzobjekte**, **Hierarchie**, **Serienbuchung**, **Stornierung**, **Anhänge**, **Eigene Felder**, **Pflichtfelder**, **Buchungshinweise**. A row shows „Nicht genutzt“ or a summary and opens to the same component as the area's card on the editing page; a Bereich has this one name in the row, the card, the navigation, the Übersicht and on the confirmation.
 _Avoid_: Optionale Bereiche, Zusatzoptionen (say Zusatzobjekte), Zugang & Schließsysteme, Zugang, Storno, Stornierungsrichtlinie, Pflichtangaben, Dokumente & Einwilligungen (say Anhänge; a booking's Dokumente are a different thing), Hinweise zur Buchung, Zusätzliche Buchungsoptionen
 
+### Tenants
+
+**Nächste Schritte** (admin: „Wie geht es weiter?“):
+The page after a tenant's creation under `/onboarding?tenant=<id>`, with three equal ways on: the tenant's settings, inviting users and the first bookable. Below them stand the tenant's readiness check, legal texts and payment, at the end „Zur Startseite“. It offers, it leads nowhere by itself, and no way leads back to it.
+_Avoid_: Erfolgsseite, Onboarding-Abschluss, Bestätigung (that is the page after saving in the guided flow)
+
 ### SSO
 
 **Adresse**:

@@ -1377,11 +1377,20 @@
         "phone": "Telefonnummer",
         "website": "Website",
         "location": "Anschrift",
-        "created-hint": "Der Mandant ist angelegt. Kontaktangaben ändern Sie in den Mandanten-Einstellungen.",
         "submit": "Mandant anlegen",
-        "continue": "Weiter",
         "contact": "Kontakt",
         "cancel": "Abbrechen"
+      },
+      "next": {
+        "created": "Mandant {name} ist angelegt",
+        "title": "Wie geht es weiter?",
+        "settings": "Mandanten-Einstellungen erweitern",
+        "settings-hint": "Kontaktangaben, Rechtstexte, Zahlung und weitere Angaben des Mandanten ergänzen.",
+        "invite": "Nutzer einladen",
+        "invite-hint": "Weitere Personen einladen, die den Mandanten mit Ihnen verwalten.",
+        "bookable-hint": "Schritt für Schritt im geführten Ablauf, zum Beispiel einen Raum oder ein Gerät.",
+        "setup": "Rechtstexte und Zahlung",
+        "home": "Zur Startseite"
       },
       "offer": {
         "errors": {

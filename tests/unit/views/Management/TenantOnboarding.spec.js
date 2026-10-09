@@ -8,6 +8,7 @@ vi.mock("@/services/api/ApiTenantService", () => ({
     getTenants: vi.fn(),
     getTenant: vi.fn(),
     createTenant: vi.fn(),
+    getReadiness: vi.fn(),
   },
 }));
 vi.mock("@/services/api/ApiInstanceService", () => ({
@@ -17,7 +18,10 @@ vi.mock("@/services/api/ApiAuthService", () => ({
   default: { resendVerification: vi.fn() },
 }));
 vi.mock("@/services/permissions/TenantPermissionService", () => ({
-  default: { isInstanceOwner: () => instanceOwner },
+  default: {
+    isInstanceOwner: () => instanceOwner,
+    allowReadiness: () => true,
+  },
 }));
 vi.mock("@/layouts/Admin", () => ({
   default: {
@@ -43,6 +47,7 @@ const tenantOf = (supervisionLevel) => ({
 
 let instanceOwner;
 let push;
+let replace;
 let selected;
 let nextUrl;
 
@@ -82,7 +87,7 @@ function mountWizard(query = {}) {
   return mountComponent(TenantOnboarding, {
     store,
     stubs: { RouterLink: true },
-    mocks: { $router: { push }, $route: { query } },
+    mocks: { $router: { push, replace }, $route: { query } },
   });
 }
 
@@ -97,6 +102,7 @@ beforeEach(() => {
   window.scrollTo = vi.fn();
   instanceOwner = false;
   push = vi.fn();
+  replace = vi.fn().mockResolvedValue();
   selected = null;
   nextUrl = null;
 
@@ -104,6 +110,7 @@ beforeEach(() => {
     tenantInitialSupervisionLevel: "free",
   });
   ApiTenantService.getTenant.mockResolvedValue({ data: tenantOf("free") });
+  ApiTenantService.getReadiness.mockResolvedValue({ criteria: [] });
 });
 
 describe("TenantOnboarding — creating the tenant", () => {
@@ -136,7 +143,7 @@ describe("TenantOnboarding — creating the tenant", () => {
     expect(ApiTenantService.createTenant).not.toHaveBeenCalled();
   });
 
-  it("creates the tenant, selects it and leads into the flow of its first bookable", async () => {
+  it("creates the tenant, selects it and shows the next steps in place of the form", async () => {
     ApiTenantService.getTenants
       .mockResolvedValueOnce({ data: [] })
       .mockResolvedValueOnce({ data: [{ id: "t-1", name: "Verein" }] });
@@ -155,10 +162,10 @@ describe("TenantOnboarding — creating the tenant", () => {
       })
     );
     expect(selected).toBe("t-1");
-    expect(push).toHaveBeenCalledWith({
-      name: "room-edit",
-      query: { onboarding: "1" },
-    });
+    expect(replace).toHaveBeenCalledWith({ query: { tenant: "t-1" } });
+    expect(push).not.toHaveBeenCalled();
+    expect(find(wrapper, "tenant-step").exists()).toBe(false);
+    expect(find(wrapper, "next-steps").text()).toContain("Wie geht es weiter?");
   });
 
   it("shows when a new attempt is possible after the creation limit", async () => {
@@ -341,22 +348,24 @@ describe("TenantOnboarding — supervision level before the creation", () => {
   });
 });
 
-describe("TenantOnboarding — a created tenant", () => {
-  it("shows the tenant as created and leads on to its first bookable", async () => {
+describe("TenantOnboarding — the next steps of a created tenant", () => {
+  it("shows the next steps again on a reload, without the form", async () => {
     const wrapper = mountWizard({ tenant: "t-1" });
     await flushPromises();
 
     expect(selected).toBe("t-1");
-    expect(find(wrapper, "tenant-name").find("input").element.value).toBe(
-      "Verein"
-    );
-    await find(wrapper, "tenant-step").trigger("submit");
+    expect(ApiTenantService.getTenant).toHaveBeenCalledWith("t-1");
+    expect(find(wrapper, "tenant-step").exists()).toBe(false);
+    expect(find(wrapper, "next-steps").text()).toContain("Wie geht es weiter?");
+    expect(push).not.toHaveBeenCalled();
+  });
 
-    expect(ApiTenantService.createTenant).not.toHaveBeenCalled();
-    expect(push).toHaveBeenCalledWith({
-      name: "room-edit",
-      query: { onboarding: "1" },
-    });
+  it("leaves the way out to the next steps' own exit", async () => {
+    const wrapper = mountWizard({ tenant: "t-1" });
+    await flushPromises();
+
+    expect(find(wrapper, "exit").exists()).toBe(false);
+    expect(find(wrapper, "next-home").exists()).toBe(true);
   });
 
   it.each([
