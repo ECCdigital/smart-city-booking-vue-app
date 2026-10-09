@@ -494,12 +494,19 @@ describe("BookableEdit - Wer darf buchen?", () => {
     );
   });
 
+  // The question is the frame's: the card's heading on the editing page,
+  // the step's question in the flow - once, not again in the component.
+  const times = (wrapper, text) => wrapper.text().split(text).length - 1;
+
   it("frames the step's component as the first card of Berechtigungen", async () => {
     const wrapper = await mountEdit({ id: "b1", tab: "permissions" });
 
-    expect(cardTitles(wrapper)[0]).toBe("Berechtigung");
+    expect(cardTitles(wrapper)[0]).toBe("Wer darf buchen?");
+    expect(
+      times(wrapper.find("#be-section-permissions-access"), "Wer darf buchen?")
+    ).toBe(1);
     expect(subNav(wrapper)).toEqual([
-      "Berechtigung",
+      "Wer darf buchen?",
       "Preisnachlass",
       "Bestätigung",
       "Serienbuchung",
@@ -513,6 +520,16 @@ describe("BookableEdit - Wer darf buchen?", () => {
     ).toBe(true);
     expect(wrapper.text()).not.toContain("Anmeldepflicht");
     expect(wrapper.text()).not.toContain("Individuelle Berechtigungen");
+  });
+
+  it("asks „Wer darf buchen?“ once in the step Berechtigung", async () => {
+    const wrapper = await mountEdit({ id: "b1", mode: "flow" });
+
+    await find(wrapper, "flow-dot-permission").trigger("click");
+
+    expect(find(wrapper, "flow-title-heading").text()).toBe("Berechtigung");
+    expect(find(wrapper, "flow-step-question").text()).toBe("Wer darf buchen?");
+    expect(times(find(wrapper, "flow-panel"), "Wer darf buchen?")).toBe(1);
   });
 
   it("saves the login with the lists the editing page shows as „Nur ausgewählte“", async () => {
@@ -556,7 +573,7 @@ describe("BookableEdit - Bestätigung", () => {
     const wrapper = await mountEdit({ id: "b1", tab: "permissions" });
 
     expect(cardTitles(wrapper).slice(0, 2)).toEqual([
-      "Berechtigung",
+      "Wer darf buchen?",
       "Bestätigung",
     ]);
     expect(

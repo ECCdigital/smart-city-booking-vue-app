@@ -112,7 +112,17 @@
         <!-- Kept alive as a cache only: a step reads everything from the
              bookable, and a choice it cannot show yet (Tarife, Bestimmte
              Rollen) may be lost when it unmounts. -->
-        <div :class="{ 'bookable-flow__panel': step !== 'amount' }">
+        <div
+          :class="{ 'bookable-flow__panel': step !== 'amount' }"
+          data-test="flow-panel"
+        >
+          <p
+            v-if="stepQuestion"
+            class="flow-question"
+            data-test="flow-step-question"
+          >
+            {{ $t(stepQuestion) }}
+          </p>
           <keep-alive>
             <component
               :is="stepComponent"
@@ -218,6 +228,11 @@ import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/Onboardi
 import { FLOW_STEPS } from "@/utils/bookableFlow";
 import { revealField } from "@/utils/bookableFieldAnchor";
 
+/** The question of a step whose component asks none itself, by step. */
+const STEP_QUESTIONS = {
+  permission: "bookable.flow.permission.who",
+};
+
 const STEP_COMPONENTS = {
   identity: "BookableFlowIdentity",
   availability: "BookableFlowAvailability",
@@ -303,6 +318,11 @@ export default {
       return this.index === this.steps.length - 1;
     },
     /** What a step takes beside the bookable and `isNew`. */
+    // The question the panel asks, where the step's component leaves it to
+    // the frame - as the card's heading does on the editing page.
+    stepQuestion() {
+      return STEP_QUESTIONS[this.step] || null;
+    },
     stepProps() {
       return this.step === "publication" ? { level: this.level } : {};
     },

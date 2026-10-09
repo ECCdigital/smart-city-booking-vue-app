@@ -95,10 +95,11 @@ describe("BookableFlowPermission („Wer darf buchen?“ and Preisnachlass)", ()
     expect(handed).toEqual(stored);
   });
 
-  it("asks „Wer darf buchen?“ with three tiles, each with a hint", async () => {
+  // The question is the frame's: the card's heading, the step's question.
+  it("offers three tiles, each with a hint, and leaves the question to its frame", async () => {
     const { wrapper } = await mountPermission();
 
-    expect(wrapper.text()).toContain("Wer darf buchen?");
+    expect(wrapper.text()).not.toContain("Wer darf buchen?");
     expect(wrapper.text()).toContain(
       "Gilt für jede Buchung, auch über einen direkten Link."
     );

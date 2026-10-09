@@ -99,7 +99,7 @@ describe("BookableEditTab - a tab of the editing page made of cards", () => {
       "Schließsysteme",
       "Zusatzobjekte",
       "Hierarchie",
-      "Berechtigung",
+      "Wer darf buchen?",
       "Bestätigung",
       "Serienbuchung",
       "Stornierung",
@@ -114,7 +114,7 @@ describe("BookableEditTab - a tab of the editing page made of cards", () => {
     const { wrapper } = mountTab("permissions");
     const card = wrapper.find("#be-section-permissions-access");
 
-    expect(card.find(".section-header").text()).toBe("Berechtigung");
+    expect(card.find(".section-header").text()).toBe("Wer darf buchen?");
     expect(
       card.find("[data-test='area-BookableFlowPermission']").exists()
     ).toBe(true);
@@ -170,7 +170,7 @@ describe("BookableEditTab - without expert mode", () => {
 
   it("leaves out the unused expert areas", () => {
     expect(shown("permissions")).toEqual([
-      "Berechtigung",
+      "Wer darf buchen?",
       "Bestätigung",
       "Serienbuchung",
     ]);
@@ -185,7 +185,12 @@ describe("BookableEditTab - without expert mode", () => {
       shown("permissions", {
         cancellationPolicy: { userCancellable: false },
       })
-    ).toEqual(["Berechtigung", "Bestätigung", "Serienbuchung", "Stornierung"]);
+    ).toEqual([
+      "Wer darf buchen?",
+      "Bestätigung",
+      "Serienbuchung",
+      "Stornierung",
+    ]);
   });
 
   it("always shows Serienbuchung, Anhänge, Eigene Felder and Buchungshinweise", () => {
@@ -194,7 +199,7 @@ describe("BookableEditTab - without expert mode", () => {
         shown(key)
       )
     ).toEqual([
-      ["Berechtigung", "Bestätigung", "Serienbuchung"],
+      ["Wer darf buchen?", "Bestätigung", "Serienbuchung"],
       ["Anhänge"],
       ["Eigene Felder"],
       ["Buchungshinweise"],

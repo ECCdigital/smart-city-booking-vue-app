@@ -135,7 +135,7 @@ const ALL_SECTIONS = [
   {
     tabKey: "permissions",
     id: "permissions-access",
-    labelKey: "bookable.flow.steps.permission.title",
+    labelKey: "bookable.flow.permission.who",
     type: "scroll",
   },
   {

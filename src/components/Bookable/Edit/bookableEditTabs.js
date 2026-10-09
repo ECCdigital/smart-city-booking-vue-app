@@ -164,11 +164,11 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
     icon: "mdi-account-lock-outline",
     cards: [
       // „Wer darf buchen?“ and the Preisnachlass, the component of the
-      // guided flow's step under the step's title.
+      // guided flow's step; the card's heading is the step's question.
       {
         key: "permission",
         comp: BookableFlowPermission,
-        titleKey: "bookable.flow.steps.permission.title",
+        titleKey: "bookable.flow.permission.who",
         icon: "mdi-account-check-outline",
         section: "permissions-access",
       },

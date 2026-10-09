@@ -1,10 +1,6 @@
 <template>
   <div class="bookable-permission" data-test="permission">
     <div class="bookable-permission__part" data-field="access">
-      <div class="bookable-permission__question">
-        <v-icon small>mdi-account-check-outline</v-icon>
-        {{ $t("bookable.flow.permission.who") }}
-      </div>
       <p class="bookable-permission__hint">
         {{ $t("bookable.flow.permission.who-hint") }}
       </p>
