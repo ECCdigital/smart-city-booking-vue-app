@@ -1,7 +1,8 @@
 <template>
   <AdminLayout scroll-body class="onboarding-page">
     <template #page-header>
-      <div class="onboarding-page__toolbar">
+      <!-- The next steps end in their own way out. -->
+      <div v-if="!tenant" class="onboarding-page__toolbar">
         <v-btn
           text
           small
@@ -21,8 +22,9 @@
     </v-alert>
 
     <div v-else class="onboarding-page__main">
+      <OnboardingNextSteps v-if="tenant" :tenant="tenant" />
       <OnboardingTenantStep
-        :tenant="tenant"
+        v-else
         :prefill="contactPrefill"
         :in-progress="inProgress"
         :error="tenantError"
@@ -31,10 +33,9 @@
         @submit="createTenant"
         @resend-verification="resendVerification"
         @sso-login="ssoLogin"
-        @continue="toFirstBookable"
       >
         <template #notice>
-          <OnboardingSupervisionNotice :level="level" />
+          <OnboardingSupervisionNotice :level="initialLevel" />
         </template>
       </OnboardingTenantStep>
     </div>
@@ -51,12 +52,12 @@ import Tenant from "@/entities/tenant";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 import OnboardingTenantStep from "@/components/Tenant/Onboarding/OnboardingTenantStep.vue";
 import OnboardingSupervisionNotice from "@/components/Tenant/Onboarding/OnboardingSupervisionNotice.vue";
+import OnboardingNextSteps from "@/components/Tenant/Onboarding/OnboardingNextSteps.vue";
 import {
   ONBOARDING_PATH,
   SUPERVISION_LEVELS,
   contactPrefill,
   findCreatedTenant,
-  firstBookableRoute,
   tenantCreationError,
 } from "@/utils/tenantOnboarding";
 import { rateLimitOf } from "@/utils/rateLimit";
@@ -64,11 +65,11 @@ import { rateLimitOf } from "@/utils/rateLimit";
 /**
  * The onboarding of a new tenant (ECCdigital/tickets#326): only what the
  * tenant needs, and the tenant is created - done, whatever comes after. The
- * first bookable follows in the guided bookable flow, which may be skipped.
- * The supervision is as before: the level the tenant starts at is shown
- * before and after the creation, and the way on is open at every level.
+ * supervision is as before: the level the tenant starts at is shown before
+ * and after the creation, and the way on is open at every level.
  *
- * `?tenant=` shows a created tenant, with the way on to its first bookable.
+ * `?tenant=` shows a created tenant's Nächste Schritte (ECCdigital/tickets#367);
+ * the creation replaces the address with it, so a reload shows them again.
  */
 export default {
   name: "TenantOnboarding",
@@ -76,6 +77,7 @@ export default {
     AdminLayout,
     OnboardingTenantStep,
     OnboardingSupervisionNotice,
+    OnboardingNextSteps,
   },
   data() {
     return {
@@ -83,6 +85,7 @@ export default {
       loadFailed: false,
       inProgress: false,
       tenant: null,
+      /** Before the creation: the level the new tenant is about to start at. */
       initialLevel: null,
       tenantError: null,
       verificationMail: null,
@@ -91,10 +94,6 @@ export default {
   },
   computed: {
     ...mapGetters({ user: "user/getUser" }),
-    /** Before the creation: the level the new tenant is about to start at. */
-    level() {
-      return this.tenant ? this.tenant.supervisionLevel : this.initialLevel;
-    },
     contactPrefill() {
       return contactPrefill(this.user);
     },
@@ -160,32 +159,42 @@ export default {
     exit() {
       this.$router.push({ name: "dashboard" });
     },
-    toFirstBookable() {
-      this.$router.push(firstBookableRoute({ onboarding: true }));
-    },
     async createTenant(form) {
       this.inProgress = true;
       this.tenantError = null;
       this.verificationMail = null;
+      let created;
       try {
         const before = (await ApiTenantService.getTenants(true)).data;
         await ApiTenantService.createTenant(new Tenant(form));
         const after = (await ApiTenantService.getTenants(true)).data;
         await this.setTenants(after);
 
-        const created = findCreatedTenant(before, after, form.name);
+        created = findCreatedTenant(before, after, form.name);
         if (!created) {
           this.tenantError = { key: "not-found" };
           return;
         }
         await this.selectTenant(created.id);
-        // The navigation refreshes the user, whose permissions now carry
-        // the new tenant; the flow then creates its first bookable.
-        this.toFirstBookable();
       } catch (error) {
         this.tenantError = tenantCreationError(error);
+        return;
       } finally {
         this.inProgress = false;
+      }
+      await this.showNextSteps(created.id);
+    },
+    /**
+     * The navigation refreshes the user, whose permissions now carry the new
+     * tenant; the tenant's own record carries its level, the list does not.
+     */
+    async showNextSteps(tenantId) {
+      try {
+        await this.$router.replace({ query: { tenant: tenantId } });
+        this.tenant = (await ApiTenantService.getTenant(tenantId)).data;
+      } catch (error) {
+        console.error(error);
+        this.loadFailed = true;
       }
     },
   },
