@@ -20,8 +20,12 @@ export default {
   computed: {
     aStyle() {
       const radius = Number.isFinite(this.block.radius) ? this.block.radius : 4;
-      const px = Number.isFinite(this.block.paddingX) ? this.block.paddingX : 20;
-      const py = Number.isFinite(this.block.paddingY) ? this.block.paddingY : 12;
+      const px = Number.isFinite(this.block.paddingX)
+        ? this.block.paddingX
+        : 20;
+      const py = Number.isFinite(this.block.paddingY)
+        ? this.block.paddingY
+        : 12;
       const style = {
         display: "inline-block",
         padding: `${py}px ${px}px`,

@@ -30,7 +30,10 @@ const actions = {
           commit("SET_SKIP_STATUS_CONFIRMATION", { statusKey, skip });
         });
       } catch (error) {
-        console.error("Failed to parse skipStatusChangeConfirmations from localStorage:", error);
+        console.error(
+          "Failed to parse skipStatusChangeConfirmations from localStorage:",
+          error
+        );
       }
     }
   },

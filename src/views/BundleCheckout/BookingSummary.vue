@@ -10,8 +10,8 @@
 
     <h1>Zusammenfassung</h1>
     <p>
-      Bitte prüfen Sie Ihre Buchung und stellen Sie sicher, dass alle Daten korrekt
-      sind.
+      Bitte prüfen Sie Ihre Buchung und stellen Sie sicher, dass alle Daten
+      korrekt sind.
     </p>
 
     <h2 class="mt-10 mb-2">Kontaktdaten</h2>
@@ -56,7 +56,9 @@
       <v-col class="text-right"> Preis </v-col>
     </v-row>
     <v-row v-for="(item, index) in [leadItem, ...subsequentItems]" :key="index">
-      <v-col v-if="item.bookable" class="col-6"> {{ item.bookable.title }} </v-col>
+      <v-col v-if="item.bookable" class="col-6">
+        {{ item.bookable.title }}
+      </v-col>
       <v-col v-if="item.bookable" class="text-right"> {{ item.amount }} </v-col>
       <v-col v-if="item.bookable" class="text-right">
         {{

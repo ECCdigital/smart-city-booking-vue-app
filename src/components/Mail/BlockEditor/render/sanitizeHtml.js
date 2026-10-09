@@ -44,7 +44,10 @@ const ALLOWED_ATTRS = {
 function isSafeUrl(value) {
   if (!value) return false;
   const trimmed = String(value).trim().toLowerCase();
-  if (trimmed.startsWith("javascript:") || trimmed.startsWith("data:text/html")) {
+  if (
+    trimmed.startsWith("javascript:") ||
+    trimmed.startsWith("data:text/html")
+  ) {
     return false;
   }
   return true;

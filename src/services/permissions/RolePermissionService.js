@@ -7,7 +7,7 @@ class RolePermissionService {
   }
 
   static isInstanceOwner() {
-    return user.state.data.permissions.instanceOwner
+    return user.state.data.permissions.instanceOwner;
   }
 
   static allowCreate() {
@@ -17,7 +17,7 @@ class RolePermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
     return permissions.manageRoles.create;
   }
 
@@ -28,7 +28,7 @@ class RolePermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
     return (
       permissions.manageRoles.updateAny ||
       (permissions.manageRoles.updateOwn && RolePermissionService.isOwner(role))
@@ -42,7 +42,7 @@ class RolePermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
     return (
       permissions.manageRoles.deleteAny ||
       (permissions.manageRoles.deleteOwn && RolePermissionService.isOwner(role))

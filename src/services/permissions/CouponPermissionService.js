@@ -7,7 +7,7 @@ class CouponPermissionService {
   }
 
   static isInstanceOwner() {
-    return user.state.data.permissions.instanceOwner
+    return user.state.data.permissions.instanceOwner;
   }
 
   static allowCreate() {
@@ -17,7 +17,7 @@ class CouponPermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return permissions.manageBookings.create;
   }
@@ -29,7 +29,7 @@ class CouponPermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return (
       permissions.manageBookings.updateAny ||
@@ -45,7 +45,7 @@ class CouponPermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return (
       permissions.manageBookings.deleteAny ||
