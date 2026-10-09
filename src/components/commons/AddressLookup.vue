@@ -85,9 +85,7 @@ export default {
         this.searchQuery.length >= 3 &&
         !this.loading &&
         // Nicht anzeigen wenn Query exakt einem Ergebnis entspricht
-        !this.suggestions.some(
-          (s) => s.display_address === this.searchQuery
-        )
+        !this.suggestions.some((s) => s.display_address === this.searchQuery)
       );
     },
 
@@ -304,20 +302,20 @@ export default {
       // Normale Auswahl
       const locationData = item.isLegacy
         ? {
-          coordinates: item.coordinates,
-          display_address: item.display_address,
-          address: item.address || null,
-          meta: {
-            source: "legacy",
-            fetched_at: new Date().toISOString(),
-          },
-        }
+            coordinates: item.coordinates,
+            display_address: item.display_address,
+            address: item.address || null,
+            meta: {
+              source: "legacy",
+              fetched_at: new Date().toISOString(),
+            },
+          }
         : {
-          coordinates: item.coordinates,
-          display_address: item.display_address,
-          address: item.address,
-          meta: item.meta,
-        };
+            coordinates: item.coordinates,
+            display_address: item.display_address,
+            address: item.address,
+            meta: item.meta,
+          };
 
       this.originalDisplayAddress = item.display_address;
       this.$emit("input", locationData);

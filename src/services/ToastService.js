@@ -1,4 +1,5 @@
 import i18n from "../language/index";
+import { bookingValidationText } from "@/services/api/apiErrorMessage";
 
 export default {
   createToast(key, type, timeout = 5000, params) {
@@ -10,16 +11,12 @@ export default {
     };
   },
   createBookingValidationToast(detail, timeout = 5000) {
-    const key = `booking.validation.${detail.field}.${detail.code}`;
     const fallback = "booking.validation.fallback";
 
-    const title = i18n.te(`${key}.title`)
-      ? i18n.t(`${key}.title`, detail.params)
-      : i18n.t(`${fallback}.title`);
-
-    const message = i18n.te(`${key}.message`)
-      ? i18n.t(`${key}.message`, detail.params)
-      : i18n.t(`${fallback}.message`);
+    const title =
+      bookingValidationText(detail, "title") ?? i18n.t(`${fallback}.title`);
+    const message =
+      bookingValidationText(detail, "message") ?? i18n.t(`${fallback}.message`);
 
     return {
       title,

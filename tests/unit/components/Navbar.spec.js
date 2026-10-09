@@ -105,6 +105,19 @@ beforeEach(() => {
 });
 
 describe("Navbar", () => {
+  describe("the instance logo", () => {
+    // A dark logo all but vanished on the dark app bar
+    // (ECCdigital/tickets#276). The plate is light under .theme--dark and
+    // transparent in the light theme, the one the logos are made for.
+    it("sits on the logo plate", async () => {
+      const wrapper = await mountNavbar();
+      const logo = wrapper.find("img[alt='Smart City Booking']");
+
+      expect(logo.attributes("src")).toBe("/app-logo.png");
+      expect(logo.classes()).toContain("navbar-logo");
+    });
+  });
+
   describe("the badge of the Prüfliste", () => {
     it("sums the counters of both registers", async () => {
       const wrapper = await mountNavbar();

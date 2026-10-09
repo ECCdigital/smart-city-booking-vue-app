@@ -40,9 +40,9 @@ function buildPageTemplate(kind, innerHtml) {
 function buildDocument(title, bodyHtml, pageTemplates = {}) {
   return (
     "<!doctype html>\n" +
-    "<html lang=\"de\">\n" +
+    '<html lang="de">\n' +
     "  <head>\n" +
-    "    <meta charset=\"utf-8\" />\n" +
+    '    <meta charset="utf-8" />\n' +
     `    <title>${title}</title>\n` +
     "    <style>" +
     COMMON_STYLES +
@@ -59,10 +59,10 @@ function buildDocument(title, bodyHtml, pageTemplates = {}) {
 
 function makeDefaultPageFooter(documentLabel) {
   return (
-    "<div style=\"display: flex; justify-content: space-between\">" +
+    '<div style="display: flex; justify-content: space-between">' +
     `<span>${documentLabel}</span>` +
-    "<span>Seite <span class=\"pageNumber\"></span> von " +
-    "<span class=\"totalPages\"></span></span>" +
+    '<span>Seite <span class="pageNumber"></span> von ' +
+    '<span class="totalPages"></span></span>' +
     "</div>"
   );
 }
@@ -114,7 +114,10 @@ export function applyPdfPageTemplates(html, pageTemplates = {}) {
 
   const stripped = text
     .replace(/<template\s+data-pdf-header\b[^>]*>[\s\S]*?<\/template>\s*/gi, "")
-    .replace(/<template\s+data-pdf-footer\b[^>]*>[\s\S]*?<\/template>\s*/gi, "");
+    .replace(
+      /<template\s+data-pdf-footer\b[^>]*>[\s\S]*?<\/template>\s*/gi,
+      ""
+    );
 
   if (!headerHtml && !footerHtml) {
     return stripped;
@@ -127,14 +130,18 @@ export function applyPdfPageTemplates(html, pageTemplates = {}) {
   const bodyMatch = stripped.match(/<body[^>]*>/i);
   if (!bodyMatch) return stripped;
   const insertAt = bodyMatch.index + bodyMatch[0].length;
-  return stripped.slice(0, insertAt) + "\n" + injection + stripped.slice(insertAt);
+  return (
+    stripped.slice(0, insertAt) + "\n" + injection + stripped.slice(insertAt)
+  );
 }
 
 function chip(name, label, triple = false) {
   const wrapper = triple ? `{{{${name}}}}` : `{{${name}}}`;
   const safeLabel = String(label || name).replace(/"/g, "&quot;");
   return (
-    `<span data-variable="${name}" data-triple="${triple ? "true" : "false"}" ` +
+    `<span data-variable="${name}" data-triple="${
+      triple ? "true" : "false"
+    }" ` +
     `data-label="${safeLabel}" class="mail-variable-chip" contenteditable="false">${wrapper}</span>`
   );
 }
@@ -150,7 +157,10 @@ function makeReceiptDefaultBlocks() {
             {
               type: "text",
               html:
-                `<p>Belegnummer: ${chip("receiptNumber", "Belegnummer")}<br />` +
+                `<p>Belegnummer: ${chip(
+                  "receiptNumber",
+                  "Belegnummer"
+                )}<br />` +
                 `Buchungsdatum: ${chip("bookingDate", "Buchungsdatum")}</p>`,
               align: "left",
             },
@@ -177,8 +187,7 @@ function makeReceiptDefaultBlocks() {
             },
             {
               type: "text",
-              html:
-                "<p style=\"color:#888;font-size:12px;\">Dieses Schreiben wurde maschinell erstellt und ist ohne Unterschrift gültig.</p>",
+              html: '<p style="color:#888;font-size:12px;">Dieses Schreiben wurde maschinell erstellt und ist ohne Unterschrift gültig.</p>',
               align: "left",
             },
           ],
@@ -198,8 +207,7 @@ function makeInvoiceDefaultBlocks() {
           blocks: [
             {
               type: "rawHtml",
-              html:
-                "<div class=\"meta\">Rechnungsnummer: {{invoiceNumber}}<br />{{location}}, {{invoiceDate}}</div>",
+              html: '<div class="meta">Rechnungsnummer: {{invoiceNumber}}<br />{{location}}, {{invoiceDate}}</div>',
             },
             {
               type: "rawHtml",
@@ -215,8 +223,14 @@ function makeInvoiceDefaultBlocks() {
               type: "text",
               html:
                 "<p>Sehr geehrte Damen und Herren,<br />" +
-                `vielen Dank für Ihre Buchung. Bitte überweisen Sie den Betrag innerhalb von ${chip("daysUntilPaymentDue", "Zahlungsfrist (Tage)")} Tagen ` +
-                `mit dem Verwendungszweck <strong>${chip("purposeOfPayment", "Verwendungszweck")}</strong> ` +
+                `vielen Dank für Ihre Buchung. Bitte überweisen Sie den Betrag innerhalb von ${chip(
+                  "daysUntilPaymentDue",
+                  "Zahlungsfrist (Tage)"
+                )} Tagen ` +
+                `mit dem Verwendungszweck <strong>${chip(
+                  "purposeOfPayment",
+                  "Verwendungszweck"
+                )}</strong> ` +
                 "auf folgendes Konto:</p>",
               align: "left",
             },
@@ -224,8 +238,7 @@ function makeInvoiceDefaultBlocks() {
               type: "callout",
               variant: "info",
               title: "Bankverbindung",
-              html:
-                "<p>{{bank}}<br />IBAN: {{iban}}<br />BIC: {{bic}}</p>",
+              html: "<p>{{bank}}<br />IBAN: {{iban}}<br />BIC: {{bic}}</p>",
             },
             {
               type: "text",
@@ -240,14 +253,15 @@ function makeInvoiceDefaultBlocks() {
             },
             {
               type: "text",
-              html:
-                `<p><strong>Gesamtbetrag: ${chip("totalAmount", "Gesamtbetrag")} €</strong></p>`,
+              html: `<p><strong>Gesamtbetrag: ${chip(
+                "totalAmount",
+                "Gesamtbetrag"
+              )} €</strong></p>`,
               align: "right",
             },
             {
               type: "text",
-              html:
-                "<p style=\"color:#888;font-size:12px;\">Dieses Schreiben wurde maschinell erstellt und ist ohne Unterschrift gültig.</p>",
+              html: '<p style="color:#888;font-size:12px;">Dieses Schreiben wurde maschinell erstellt und ist ohne Unterschrift gültig.</p>',
               align: "left",
             },
           ],
@@ -270,7 +284,7 @@ function makeCancellationDefaultBlocks() {
             {
               type: "rawHtml",
               html:
-                "<div class=\"meta\">Stornobelegnummer: {{cancellationNumber}}<br />" +
+                '<div class="meta">Stornobelegnummer: {{cancellationNumber}}<br />' +
                 "Ursprüngliche Rechnungsnummer: {{originalInvoiceNumber}}<br />" +
                 "{{location}}, {{cancellationDate}}</div>",
             },
@@ -288,8 +302,14 @@ function makeCancellationDefaultBlocks() {
               type: "text",
               html:
                 "<p>Sehr geehrte Damen und Herren,<br /><br />" +
-                `hiermit stornieren wir die Rechnung mit der Nummer <strong>${chip("originalInvoiceNumber", "Original-Rechnungsnummer")}</strong> vom ` +
-                `${chip("originalInvoiceDate", "Original-Rechnungsdatum")}. Die nachfolgend aufgeführten Positionen werden Ihnen ` +
+                `hiermit stornieren wir die Rechnung mit der Nummer <strong>${chip(
+                  "originalInvoiceNumber",
+                  "Original-Rechnungsnummer"
+                )}</strong> vom ` +
+                `${chip(
+                  "originalInvoiceDate",
+                  "Original-Rechnungsdatum"
+                )}. Die nachfolgend aufgeführten Positionen werden Ihnen ` +
                 "{{#if isFullRefund}}in voller Höhe{{else}}anteilig gemäß der nachfolgenden Berechnung{{/if}} gutgeschrieben.</p>",
               align: "left",
             },
@@ -297,7 +317,7 @@ function makeCancellationDefaultBlocks() {
               type: "rawHtml",
               html:
                 "{{#if cancellationReason}}" +
-                "<div class=\"cancellation-note\">" +
+                '<div class="cancellation-note">' +
                 "<strong>Grund der Stornierung:</strong> {{cancellationReason}}" +
                 "</div>" +
                 "{{/if}}",
@@ -305,7 +325,7 @@ function makeCancellationDefaultBlocks() {
             {
               type: "rawHtml",
               html:
-                "<div class=\"cancellation-note\">" +
+                '<div class="cancellation-note">' +
                 "<strong>Berechnung der Erstattung:</strong><br />" +
                 "Stornierungszeitpunkt: {{cancellationDate}}<br />" +
                 "{{#if refundCalculations}}" +
@@ -324,7 +344,7 @@ function makeCancellationDefaultBlocks() {
               type: "rawHtml",
               html:
                 "{{#if alreadyPaid}}" +
-                "<div class=\"refund-note\">" +
+                '<div class="refund-note">' +
                 "Der bereits gezahlte Betrag in Höhe von <strong>{{refundAmount}}</strong> wird Ihnen erstattet." +
                 "{{#if hasCancellationFee}} Der einbehaltene Betrag beläuft sich auf <strong>{{cancellationFee}}</strong>.{{/if}}" +
                 "</div>" +
@@ -343,14 +363,15 @@ function makeCancellationDefaultBlocks() {
             },
             {
               type: "text",
-              html:
-                `<p>Bei Rückfragen zu dieser Stornorechnung wenden Sie sich bitte unter Angabe der Stornobelegnummer <strong>${chip("cancellationNumber", "Stornobelegnummer")}</strong> an uns.</p>`,
+              html: `<p>Bei Rückfragen zu dieser Stornorechnung wenden Sie sich bitte unter Angabe der Stornobelegnummer <strong>${chip(
+                "cancellationNumber",
+                "Stornobelegnummer"
+              )}</strong> an uns.</p>`,
               align: "left",
             },
             {
               type: "text",
-              html:
-                "<p style=\"color:#888;font-size:12px;\">Dieses Schreiben wurde maschinell erstellt und ist ohne Unterschrift gültig.</p>",
+              html: '<p style="color:#888;font-size:12px;">Dieses Schreiben wurde maschinell erstellt und ist ohne Unterschrift gültig.</p>',
               align: "left",
             },
           ],
@@ -410,7 +431,7 @@ export const PDF_TEMPLATE_CATALOG = {
       return buildDocument(
         "Rechnung {{invoiceNumber}}",
         bodyHtml,
-        pageTemplates || {},
+        pageTemplates || {}
       );
     },
     defaultPageTemplates() {
@@ -442,15 +463,13 @@ export const PDF_TEMPLATE_CATALOG = {
       return buildDocument(
         "Stornorechnung {{cancellationNumber}}",
         bodyHtml,
-        pageTemplates || {},
+        pageTemplates || {}
       );
     },
     defaultPageTemplates() {
       return {
         headerHtml: "",
-        footerHtml: makeDefaultPageFooter(
-          "{{title}} {{cancellationNumber}}",
-        ),
+        footerHtml: makeDefaultPageFooter("{{title}} {{cancellationNumber}}"),
       };
     },
     defaultBlocks: makeCancellationDefaultBlocks,
@@ -500,10 +519,10 @@ export function findMissingRequiredVariables(html, requiredVariables) {
     }
     const satisfied =
       (requirement.variables || []).some((name) =>
-        variableRegex(name).test(text),
+        variableRegex(name).test(text)
       ) ||
       (requirement.partials || []).some((name) =>
-        partialRegex(name).test(text),
+        partialRegex(name).test(text)
       );
     if (!satisfied) result.push(requirement.label);
   });
@@ -524,9 +543,9 @@ export function decodeHandlebarsEntities(html) {
       .replace(/&nbsp;/g, " ")
       .replace(/&gt;/g, ">")
       .replace(/&lt;/g, "<")
-      .replace(/&quot;/g, "\"")
+      .replace(/&quot;/g, '"')
       .replace(/&#0?39;/g, "'")
-      .replace(/&amp;/g, "&"),
+      .replace(/&amp;/g, "&")
   );
 }
 
@@ -540,13 +559,13 @@ export function decodeHandlebarsEntities(html) {
 export function stripVariableChips(html) {
   return String(html || "").replace(
     /<span[^>]*\bdata-variable\b[^>]*>([\s\S]*?)<\/span>/gi,
-    "$1",
+    "$1"
   );
 }
 
 export function getRequiredVariableLabels(requiredVariables) {
   return (requiredVariables || []).map((requirement) =>
-    typeof requirement === "string" ? requirement : requirement.label,
+    typeof requirement === "string" ? requirement : requirement.label
   );
 }
 

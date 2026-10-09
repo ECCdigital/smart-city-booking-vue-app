@@ -5,7 +5,9 @@ export default {
   name: "SaveBar",
   props: {
     inProgress: { type: Boolean, required: true },
-    disabled: { type: Boolean, required: true },
+    // Lit and clickable: there is something to save or restore. The page
+    // decides what that is, usually its unsaved changes.
+    active: { type: Boolean, required: true },
     showCancel: { type: Boolean, default: false },
     showRestore: { type: Boolean, default: false },
     anchorEl: {
@@ -137,7 +139,7 @@ export default {
     <div
       class="save-bar"
       :style="{
-        boxShadow: !disabled
+        boxShadow: !active
           ? '0 0 10px rgba(0, 0, 0, 0.2)'
           : `0 0 15px ${primaryColor}66`,
         transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
@@ -147,7 +149,9 @@ export default {
         <v-icon color="primary" class="save-bar-icon mr-2"
           >mdi-content-save</v-icon
         >
-        <span class="save-bar-label mr-4">Änderungen speichern</span>
+        <span class="save-bar-label mr-4">{{
+          $t("actions.save-changes")
+        }}</span>
         <v-spacer />
         <v-btn
           v-if="showCancel"
@@ -155,25 +159,25 @@ export default {
           class="save-bar-btn"
           @click="cancelChanges"
         >
-          Abbrechen
+          {{ $t("actions.cancel") }}
         </v-btn>
         <v-btn
           v-if="showRestore"
-          :disabled="inProgress || !disabled"
+          :disabled="inProgress || !active"
           text
           class="save-bar-btn"
           @click="cancelChanges"
         >
-          Änderungen zurücksetzen
+          {{ $t("actions.restore") }}
         </v-btn>
         <v-btn
           color="primary"
           class="save-bar-btn save-bar-btn--primary"
           :loading="inProgress"
-          :disabled="inProgress || !disabled"
+          :disabled="inProgress || !active"
           @click="submitChanges"
         >
-          Speichern
+          {{ $t("actions.save") }}
         </v-btn>
       </div>
     </div>

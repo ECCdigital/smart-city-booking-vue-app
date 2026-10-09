@@ -56,7 +56,11 @@
 
           <v-divider class="mb-3" />
 
-          <v-tabs v-model="activeTab" background-color="transparent" class="mb-3">
+          <v-tabs
+            v-model="activeTab"
+            background-color="transparent"
+            class="mb-3"
+          >
             <v-tab>
               <v-icon left small>mdi-view-grid-outline</v-icon>
               Visuell
@@ -274,8 +278,8 @@
           <div class="text-caption grey--text">
             Einleitung
             {{ Math.round((currentIntroSize / 1024) * 10) / 10 }} KB · Abschluss
-            {{ Math.round((currentAfterSize / 1024) * 10) / 10 }} KB · max. 50 KB
-            je Bereich
+            {{ Math.round((currentAfterSize / 1024) * 10) / 10 }} KB · max. 50
+            KB je Bereich
           </div>
           <v-spacer />
           <v-btn text @click="onClose">abbrechen</v-btn>
@@ -326,7 +330,10 @@ import {
   hasAggregatedSample,
   sampleValuesFor,
 } from "./mailVariableCatalog.js";
-import { buildSnippetPreviewExtrasHtml, sampleBookingPeriod } from "./snippetPreviewExtras.js";
+import {
+  buildSnippetPreviewExtrasHtml,
+  sampleBookingPeriod,
+} from "./snippetPreviewExtras.js";
 
 export default {
   name: "SnippetEditorDialog",
@@ -698,7 +705,7 @@ export default {
         return this.simpleVarReplace(snippetHtml);
       } catch (e) {
         return (
-          "<div style=\"padding:16px;color:#b71c1c;font-family:sans-serif;\">" +
+          '<div style="padding:16px;color:#b71c1c;font-family:sans-serif;">' +
           `<strong>Vorschau-Fehler im Snippet:</strong> ${String(
             e.message || e
           )}` +

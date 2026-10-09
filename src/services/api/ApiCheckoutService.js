@@ -17,9 +17,7 @@ export default {
       couponCode,
       bookWithoutDiscount,
       checkoutId: checkoutID,
-      ...(excludeBookingIds?.length
-        ? { excludeBookingIds }
-        : {}),
+      ...(excludeBookingIds?.length ? { excludeBookingIds } : {}),
     });
   },
   checkout(tenant, payload, simulate = true) {

@@ -350,12 +350,17 @@ export default {
       try {
         await downloadQrCode(accessPoint, format, this.tenantId);
       } catch (error) {
-        await this.addToast(
-          ToastService.createToast(
+        // The toast names a reason the backend gives - a missing store-front
+        // address, say - and keeps the general sentence for everything else.
+        await this.addToast({
+          ...ToastService.createToast(
             "accessPoint.management.toasts.qrFailed",
             "error"
-          )
-        );
+          ),
+          message: formatAccessPointErrorMessage(error, {
+            fallbackKey: "accessPoint.management.toasts.qrFailed.message",
+          }),
+        });
       } finally {
         this.downloadingId = "";
       }
@@ -500,6 +505,7 @@ export default {
               <v-list-item
                 v-for="format in qrFormats"
                 :key="format"
+                :class="`download-qr-${format}`"
                 link
                 :disabled="downloadingId === `${item.id}-${format}`"
                 @click="downloadQr(item, format)"

@@ -8,7 +8,7 @@ function ensureVisibleEmptyParagraphs(html) {
   if (!html) return html;
   return String(html).replace(
     /<p(\s[^>]*)?>\s*(?:<br\s*\/?>\s*)*<\/p>/gi,
-    (match, attrs = "") => `<p${attrs}><br></p>`,
+    (match, attrs = "") => `<p${attrs}><br></p>`
   );
 }
 
@@ -36,7 +36,7 @@ function enhanceEmailImages(html) {
       if (/\balt\s*=/i.test(attrs)) {
         attrs = attrs.replace(
           /\balt\s*=\s*"[^"]*"/i,
-          `alt="${escapeHtmlAttr(alt)}"`,
+          `alt="${escapeHtmlAttr(alt)}"`
         );
       } else {
         attrs += ` alt="${escapeHtmlAttr(alt)}"`;
@@ -190,19 +190,33 @@ function commonStyles(theme, options = {}) {
   const footerColor = options.footerColor || "#888";
   const gutter = getContentGutter(theme);
   return `
-    body{margin:0;padding:0;background:${theme.backgroundColor || "#f5f5f5"};font-family:${family};color:${theme.textColor || "#222"};font-size:14px;line-height:1.5;}
+    body{margin:0;padding:0;background:${
+      theme.backgroundColor || "#f5f5f5"
+    };font-family:${family};color:${
+    theme.textColor || "#222"
+  };font-size:14px;line-height:1.5;}
     .wrapper{max-width:600px;margin:0 auto;padding:${t.wrapperPaddingY} 0;}
     .logo{width:${logoMaxWidth}px;max-width:100%;height:auto;display:block;margin:0 ${gutter} 12px;border:0;outline:none;text-decoration:none;}
     .header{margin-left:${gutter};margin-right:${gutter};}
-    .footer{text-align:${footerAlign};font-size:12px;color:${footerColor};margin-top:16px;padding:12px ${gutter} 0;${t.footerBorder}}
+    .footer{text-align:${footerAlign};font-size:12px;color:${footerColor};margin-top:16px;padding:12px ${gutter} 0;${
+    t.footerBorder
+  }}
     .footer img{max-width:100%;height:auto;display:block;margin:8px 0;border:0;outline:none;text-decoration:none;}
     .footer p,.header p{margin:0 0 8px;min-height:1.2em;}
     .footer a{color:${primary};}
     .accent{color:${primary};}
-    .info-box{padding:12px;border-radius:${t.infoBoxRadius};background:${t.infoBoxBackground};margin:12px 0;${t.infoBoxBorder}}
-    h1{color:${primary};margin:0 0 16px;font-size:${t.h1FontSize};font-weight:${t.h1Weight};${t.h1Extra}${t.h1Border}}
-    h2{color:${t.h2Color};font-size:${t.h2FontSize};font-weight:${t.h2Weight};${t.h2Extra}}
-    h3{color:${t.h3Color};font-size:${t.h3FontSize};font-weight:${t.h3Weight};${t.h3Extra}}
+    .info-box{padding:12px;border-radius:${t.infoBoxRadius};background:${
+    t.infoBoxBackground
+  };margin:12px 0;${t.infoBoxBorder}}
+    h1{color:${primary};margin:0 0 16px;font-size:${t.h1FontSize};font-weight:${
+    t.h1Weight
+  };${t.h1Extra}${t.h1Border}}
+    h2{color:${t.h2Color};font-size:${t.h2FontSize};font-weight:${t.h2Weight};${
+    t.h2Extra
+  }}
+    h3{color:${t.h3Color};font-size:${t.h3FontSize};font-weight:${t.h3Weight};${
+    t.h3Extra
+  }}
   `;
 }
 
@@ -272,27 +286,39 @@ function getShadowStyle(theme) {
 function bodyAttrs(theme) {
   const bg = theme.backgroundColor || "#f5f5f5";
   const color = theme.textColor || "#222222";
-  return `bgcolor="${bg}" style="margin:0;padding:0;background:${bg};font-family:${fontFamily(theme)};color:${color};font-size:14px;line-height:1.5;"`;
+  return `bgcolor="${bg}" style="margin:0;padding:0;background:${bg};font-family:${fontFamily(
+    theme
+  )};color:${color};font-size:14px;line-height:1.5;"`;
 }
 
 function wrapperStyle(theme) {
   const t = getPresetTokens(theme);
-  return `max-width:${getWrapperWidth(theme)}px;margin:0 auto;padding:${t.wrapperPaddingY} 0;background:${theme.backgroundColor || "#f5f5f5"};`;
+  return `max-width:${getWrapperWidth(theme)}px;margin:0 auto;padding:${
+    t.wrapperPaddingY
+  } 0;background:${theme.backgroundColor || "#f5f5f5"};`;
 }
 
 function cardStyle(theme) {
   const t = getPresetTokens(theme);
-  return `background:${t.cardBackground};border-radius:${t.cardRadius};padding:${t.cardPadding};${t.cardBorder}${t.cardTopAccent}${getShadowStyle(theme)}`;
+  return `background:${t.cardBackground};border-radius:${
+    t.cardRadius
+  };padding:${t.cardPadding};${t.cardBorder}${t.cardTopAccent}${getShadowStyle(
+    theme
+  )}`;
 }
 
 function headingStyle(theme) {
   const t = getPresetTokens(theme);
-  return `color:${theme.primaryColor || "#1976d2"};margin:0 0 16px;font-size:${t.h1FontSize};font-weight:${t.h1Weight};${t.h1Extra}${t.h1Border}`;
+  return `color:${theme.primaryColor || "#1976d2"};margin:0 0 16px;font-size:${
+    t.h1FontSize
+  };font-weight:${t.h1Weight};${t.h1Extra}${t.h1Border}`;
 }
 
 function headerBlockStyle(theme) {
   const gutter = getContentGutter(theme);
-  return `${getPresetTokens(theme).headerBlock}margin-left:${gutter};margin-right:${gutter};`;
+  return `${
+    getPresetTokens(theme).headerBlock
+  }margin-left:${gutter};margin-right:${gutter};`;
 }
 
 function footerStyle(theme, options = {}) {
@@ -312,12 +338,17 @@ function logoBlock(theme) {
 
 function headerBlock(theme) {
   if (!theme.headerHtml) return "";
-  return `<div class="header" style="${headerBlockStyle(theme)}">${prepareHeaderFooterHtml(theme.headerHtml)}</div>`;
+  return `<div class="header" style="${headerBlockStyle(
+    theme
+  )}">${prepareHeaderFooterHtml(theme.headerHtml)}</div>`;
 }
 
 function footerBlock(theme, options = {}) {
   if (!theme.footerHtml) return "";
-  return `<div class="footer" style="${footerStyle(theme, options)}">${prepareHeaderFooterHtml(theme.footerHtml)}</div>`;
+  return `<div class="footer" style="${footerStyle(
+    theme,
+    options
+  )}">${prepareHeaderFooterHtml(theme.footerHtml)}</div>`;
 }
 
 function renderGenericMail(theme) {
@@ -362,7 +393,9 @@ function renderReceipt(theme) {
   <style>
     ${commonStyles(theme)}
     .receipt-data{margin-bottom:12px;color:#555;font-size:13px;}
-    .receipt-address{font-size:13px;${opts.showRecipientTopRight ? "text-align:right;" : ""}}
+    .receipt-address{font-size:13px;${
+      opts.showRecipientTopRight ? "text-align:right;" : ""
+    }}
     .booking-detail{border-collapse:collapse;width:100%;}
     .booking-detail td,.booking-detail th{padding:8px;border-bottom:1px solid #ddd;}
     .total-row{font-weight:bold;}
@@ -378,7 +411,9 @@ function renderReceipt(theme) {
         Buchungsdatum: {{bookingDate}}
       </p>
       <p class="receipt-address">{{{receiptAddress}}}</p>
-      <h1 style="${headingStyle(theme)}">${opts.title || "Ihr Zahlungsbeleg"}</h1>
+      <h1 style="${headingStyle(theme)}">${
+    opts.title || "Ihr Zahlungsbeleg"
+  }</h1>
       <p>
         {{#if isAggregated}}
           Hiermit bestätigen wir den vollständigen Zahlungseingang für die folgenden Buchungen:
@@ -421,19 +456,19 @@ function renderInvoice(theme) {
       <h1 style="${headingStyle(theme)}">Rechnung</h1>
       <p>${opts.greeting ? opts.greeting.replace(/\n/g, "<br/>") : ""}</p>
       ${
-  opts.showPaymentDeadline
-    ? "<p>Bitte überweisen Sie den Betrag innerhalb von <strong>{{daysUntilPaymentDue}} Tagen</strong> mit dem Verwendungszweck <strong>{{purposeOfPayment}}</strong> auf folgendes Konto:</p>"
-    : ""
-}
+        opts.showPaymentDeadline
+          ? "<p>Bitte überweisen Sie den Betrag innerhalb von <strong>{{daysUntilPaymentDue}} Tagen</strong> mit dem Verwendungszweck <strong>{{purposeOfPayment}}</strong> auf folgendes Konto:</p>"
+          : ""
+      }
       ${
-  opts.showBankDetails
-    ? `<div class="info-box">
+        opts.showBankDetails
+          ? `<div class="info-box">
               {{bank}}<br/>
               IBAN: {{iban}}<br/>
               BIC: {{bic}}
             </div>`
-    : ""
-}
+          : ""
+      }
       <p>Buchungsnummer: {{bookingId}}<br/>
       Zeitraum: {{bookingPeriod}}</p>
       {{{mainContent}}}
@@ -481,14 +516,14 @@ function renderCancellation(theme) {
         </div>
       {{/if}}
       ${
-  opts.showRefundBlock
-    ? `{{#if alreadyPaid}}
+        opts.showRefundBlock
+          ? `{{#if alreadyPaid}}
               <div class="refund-note">
                 Der bereits gezahlte Betrag in Höhe von <strong>{{refundAmount}}</strong> wird Ihnen erstattet<br/>
               </div>
             {{/if}}`
-    : ""
-}
+          : ""
+      }
       {{{mainContent}}}
     </div>
     ${footerBlock(theme)}
@@ -499,15 +534,15 @@ function renderCancellation(theme) {
 
 export function renderThemeToHtml(theme, templateType) {
   switch (templateType) {
-  case "genericMailTemplate":
-    return renderGenericMail(theme);
-  case "receiptTemplate":
-    return renderReceipt(theme);
-  case "invoiceTemplate":
-    return renderInvoice(theme);
-  case "cancellationTemplate":
-    return renderCancellation(theme);
-  default:
-    return "";
+    case "genericMailTemplate":
+      return renderGenericMail(theme);
+    case "receiptTemplate":
+      return renderReceipt(theme);
+    case "invoiceTemplate":
+      return renderInvoice(theme);
+    case "cancellationTemplate":
+      return renderCancellation(theme);
+    default:
+      return "";
   }
 }

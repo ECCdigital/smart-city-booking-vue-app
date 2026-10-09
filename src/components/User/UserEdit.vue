@@ -730,9 +730,7 @@
                                 <v-icon small color="red" class="mr-2">
                                   mdi-ticket-percent
                                 </v-icon>
-                                <span class="font-weight-medium"
-                                  >Rabatte</span
-                                >
+                                <span class="font-weight-medium">Rabatte</span>
                               </div>
                               <v-simple-table dense class="permission-table">
                                 <template v-slot:default>
@@ -944,7 +942,6 @@
                   </div>
                 </v-card-text>
               </v-card>
-
             </v-tab-item>
           </v-tabs-items>
         </v-card-text>

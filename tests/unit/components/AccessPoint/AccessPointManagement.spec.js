@@ -9,7 +9,11 @@ import {
 } from "@tests/unit/support/search";
 
 vi.mock("@/services/api/ApiAccessPointService", () => ({
-  default: { getAccessPoints: vi.fn(), deleteAccessPoint: vi.fn() },
+  default: {
+    getAccessPoints: vi.fn(),
+    deleteAccessPoint: vi.fn(),
+    getQrCode: vi.fn(),
+  },
 }));
 vi.mock("@/services/api/ApiAccessAppsService", () => ({
   default: { getProviders: vi.fn() },
@@ -99,6 +103,8 @@ const PROVIDERS = [
   { id: "pareva", title: "Pareva", providerCapabilities: [] },
 ];
 
+const addToast = vi.fn();
+
 async function mountManagement() {
   const store = new Vuex.Store({
     modules: {
@@ -106,7 +112,7 @@ async function mountManagement() {
         namespaced: true,
         getters: { currentTenantId: () => "tenant-1" },
       },
-      toasts: { namespaced: true, actions: { add: vi.fn() } },
+      toasts: { namespaced: true, actions: { add: addToast } },
     },
   });
   const wrapper = mountComponent(AccessPointManagement, { store });
@@ -408,6 +414,81 @@ describe("AccessPointManagement", () => {
       const dialog = wrapper.findComponent({ name: "AccessPointDeleteDialog" });
       expect(dialog.props("runningBookings")).toEqual([]);
       expect(dialog.props("bookingsUnreadable")).toBe(true);
+    });
+  });
+
+  /**
+   * The QR code encodes the store-front address of the instance. Without
+   * `STORE_FRONT_URL` the backend answers `503 store_front_url_missing`
+   * (tickets#272), in the blob body the download asked for - and the toast
+   * names the missing configuration instead of a bare failure.
+   */
+  describe("the QR code of a door", () => {
+    function blobError(status, body) {
+      const error = new Error(`Request failed with status code ${status}`);
+      error.response = {
+        status,
+        data: new Blob([JSON.stringify(body)], { type: "application/json" }),
+      };
+      return error;
+    }
+
+    it("names the missing store-front address of the instance", async () => {
+      ApiAccessPointService.getAccessPoints.mockResolvedValue({
+        data: [DOOR],
+      });
+      ApiAccessPointService.getQrCode.mockRejectedValue(
+        blobError(503, {
+          error: "BaseError",
+          code: "store_front_url_missing",
+          statusCode: 503,
+          params: {},
+        })
+      );
+
+      const wrapper = await mountManagement();
+      await clickRowAction(wrapper, "Haupteingang", ".download-qr-pdf");
+      await flushPromises();
+
+      expect(ApiAccessPointService.getQrCode).toHaveBeenCalledWith(
+        "ap-door",
+        "pdf",
+        "tenant-1"
+      );
+      expect(addToast).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "error",
+          message:
+            "Für diese Instanz ist keine Adresse der Storefront eingerichtet (STORE_FRONT_URL), der QR-Code lässt sich deshalb nicht erzeugen. Bitte wenden Sie sich an den Betrieb.",
+        })
+      );
+    });
+
+    it("keeps the general failure for any other error", async () => {
+      ApiAccessPointService.getAccessPoints.mockResolvedValue({
+        data: [DOOR],
+      });
+      ApiAccessPointService.getQrCode.mockRejectedValue(
+        blobError(500, {
+          error: "InternalError",
+          code: "internal_error",
+          statusCode: 500,
+        })
+      );
+
+      const wrapper = await mountManagement();
+      await clickRowAction(wrapper, "Haupteingang", ".download-qr-svg");
+      await flushPromises();
+
+      expect(addToast).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: "error",
+          title: "QR-Code fehlgeschlagen",
+          message: "Der QR-Code konnte nicht erzeugt werden.",
+        })
+      );
     });
   });
 });

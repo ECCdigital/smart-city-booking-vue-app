@@ -213,6 +213,16 @@ function buttonLabelled(wrapper, label) {
     .filter((button) => button.text().includes(label)).wrappers[0];
 }
 
+/** The value beside „Zahlungsstatus“ in the Zahlung block. */
+function paymentStatus(wrapper) {
+  const fact = wrapper
+    .find(".booking-page__payment")
+    .findAll(".booking-fact")
+    .filter((f) => f.find(".booking-fact__label").text() === "Zahlungsstatus")
+    .at(0);
+  return fact.find(".booking-fact__value").text();
+}
+
 describe("BookingPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -403,6 +413,39 @@ describe("BookingPage", () => {
       });
     });
 
+    // From backend 4.3.1 on a booking without a series answers 200 with
+    // `null`; an older backend answers 404. Neither is an error.
+    it.each([
+      [
+        "200 with null",
+        () =>
+          ApiGroupBookingService.getGroupBookingByBooking.mockResolvedValue({
+            data: null,
+          }),
+      ],
+      [
+        "404",
+        () =>
+          ApiGroupBookingService.getGroupBookingByBooking.mockRejectedValue(
+            lifecycleError(404, "group_booking_not_found")
+          ),
+      ],
+    ])(
+      "a booking without a series (%s) reads „Serie: keine“ and logs nothing",
+      async (_answer, answerWith) => {
+        answerWith();
+        const { wrapper } = mountPage();
+        await settle(wrapper);
+
+        const fact = wrapper
+          .findAll(".booking-fact")
+          .filter((f) => f.text().startsWith("Serie")).wrappers[0];
+        expect(fact.find(".booking-fact__value").text()).toBe("keine");
+        expect(wrapper.find(".booking-page__series").exists()).toBe(false);
+        expect(console.error).not.toHaveBeenCalled();
+      }
+    );
+
     it("„Link kopieren“ copies the address and reads „Link kopiert“ for two seconds", async () => {
       const writeText = vi.fn(() => Promise.resolve());
       Object.defineProperty(navigator, "clipboard", {
@@ -537,7 +580,7 @@ describe("BookingPage", () => {
 
       const payment = wrapper.find(".booking-page__payment").text();
       expect(payment).toMatch(/25,00\s€/);
-      expect(payment).toContain("Nein");
+      expect(paymentStatus(wrapper)).toBe("Nicht bezahlt");
       expect(payment).toContain("Bar");
       expect(payment).toContain("Manuelle Zahlung");
 
@@ -546,6 +589,22 @@ describe("BookingPage", () => {
       expect(details).toContain("Selbststornierung erlaubt");
       expect(details).toContain("Serie");
     });
+
+    it.each([
+      ["confirmed", { priceEur: 25 }, "Bezahlt"],
+      ["payment_due", { priceEur: 25 }, "Nicht bezahlt"],
+      ["confirmed", { priceEur: 0 }, "Kostenfrei"],
+    ])(
+      "names the Zahlungsstatus of a booking at %s %o as %s, not Ja/Nein",
+      async (status, extra, word) => {
+        ApiBookingService.getBooking.mockResolvedValue({
+          data: booking({ status, ...extra }),
+        });
+        const { wrapper } = mountPage();
+        await settle(wrapper);
+        expect(paymentStatus(wrapper)).toBe(word);
+      }
+    );
 
     it("offers the Zahlungslink while an online payment is pending, and the refund audit once cancelled", async () => {
       ApiBookingService.getBooking.mockResolvedValue({
@@ -581,6 +640,35 @@ describe("BookingPage", () => {
       expect(payment).not.toContain("Zahlungslink");
       expect(payment).toContain("Erstattung bei Stornierung");
       expect(payment).toMatch(/20,00\s€/);
+    });
+
+    it("counts no days before the start in the refund audit of a booking without a time span", async () => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking({
+          status: "cancelled",
+          timeBegin: null,
+          timeEnd: null,
+          // as the backend stored it before 4.3.1: counted from 01.01.1970
+          cancellationRefund: {
+            originalAmountEur: 25,
+            refundAmountEur: 25,
+            cancellationFeeEur: 0,
+            suggestedRefundPercentage: 100,
+            appliedRefundPercentage: 100,
+            daysBeforeStart: -20728,
+          },
+        }),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      const policy = wrapper
+        .find(".booking-page__payment .cancellation-refund-panel__policy")
+        .text();
+      expect(policy).toBe(
+        "Die Buchung hat keinen Zeitraum. Die Mandantenregel schlägt 100 % Erstattung vor."
+      );
+      expect(wrapper.text()).not.toContain("-20728");
     });
 
     it("shows the refund state under the refund audit and reloads after the tick", async () => {

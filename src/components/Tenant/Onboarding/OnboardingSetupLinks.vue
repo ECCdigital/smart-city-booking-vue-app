@@ -10,7 +10,7 @@
         </div>
       </div>
       <div class="booking-row__aside">
-        <v-btn small outlined :to="formRoute('legal')" data-test="setup-legal">
+        <v-btn small outlined :to="legalRoute" data-test="setup-legal">
           {{ $t("tenant.onboarding.setup.legal-action") }}
         </v-btn>
       </div>
@@ -21,20 +21,11 @@
           {{ $t("tenant.onboarding.setup.payment") }}
         </div>
         <div class="booking-row__subtitle setup-links__subtitle">
-          {{
-            paid
-              ? $t("tenant.onboarding.setup.payment-hint")
-              : $t("tenant.onboarding.setup.payment-not-required")
-          }}
+          {{ $t("tenant.onboarding.setup.payment-hint") }}
         </div>
       </div>
-      <div v-if="paid" class="booking-row__aside">
-        <v-btn
-          small
-          outlined
-          :to="formRoute('payments')"
-          data-test="setup-payment"
-        >
+      <div class="booking-row__aside">
+        <v-btn small outlined :to="paymentRoute" data-test="setup-payment">
           {{ $t("tenant.onboarding.setup.payment-action") }}
         </v-btn>
       </div>
@@ -43,29 +34,18 @@
 </template>
 
 <script>
+import { tenantTabRoute } from "@/utils/tenantOnboarding";
+
 /**
- * Legal texts and payment stay in the existing tenant forms; the query names
- * the wizard step to return to (supervision spec §9). Drawn as hairline
- * rows: the topic on the left, the way to its form on the right.
+ * Legal texts and payment stay in the existing tenant forms, which open on
+ * their own (supervision spec §9). Drawn as hairline rows: the topic on the
+ * left, the way to its form on the right.
  */
 export default {
   name: "OnboardingSetupLinks",
-  props: {
-    paid: { type: Boolean, default: false },
-    returnStep: { type: String, required: true },
-    bookableId: { type: String, default: "" },
-  },
-  methods: {
-    formRoute(tab) {
-      return {
-        name: "tenant",
-        query: {
-          tab,
-          onboardingStep: this.returnStep,
-          onboardingBookable: this.bookableId,
-        },
-      };
-    },
+  computed: {
+    legalRoute: () => tenantTabRoute("legal"),
+    paymentRoute: () => tenantTabRoute("payments"),
   },
 };
 </script>

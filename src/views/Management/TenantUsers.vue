@@ -332,6 +332,7 @@ import TenantInviteUserDialog from "@/components/Tenant/TenantInviteUserDialog.v
 import ApiChallengeService from "@/services/api/ApiChallengeService";
 import TenantUserDetailDialog from "@/components/Tenant/TenantUserDetailsDialog.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
+import { INVITE_QUERY } from "@/utils/tenantUsers";
 
 export default {
   components: {
@@ -507,6 +508,16 @@ export default {
       if (key === "status") this.statusFilter = selection;
       if (key === "owner") this.ownerOnly = selection.length > 0;
       if (key === "role") this.roleFilter = selection;
+    },
+
+    // `?invite` (see `inviteMembersRoute`) opens the invite dialog once: the
+    // query goes right away, so a reload shows the page as usual.
+    openInviteFromLink() {
+      if (!(INVITE_QUERY in this.$route.query)) return;
+      this.showInviteDialog = true;
+      const query = { ...this.$route.query };
+      delete query[INVITE_QUERY];
+      this.$router.replace({ query });
     },
 
     openUserDetail(user) {
@@ -1142,6 +1153,7 @@ export default {
   },
 
   async created() {
+    this.openInviteFromLink();
     await this.fetchRoles();
     await this.fetchTenantUsers();
     await this.fetchInvitations();

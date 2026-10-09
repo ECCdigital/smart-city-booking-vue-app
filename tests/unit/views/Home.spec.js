@@ -7,7 +7,11 @@ import { typeSearch } from "@tests/unit/support/search";
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: {
     getTenants: vi.fn(async () => ({ data: [] })),
-    getReadiness: vi.fn((tenantId) => readiness(tenantId)),
+  },
+}));
+vi.mock("@/services/api/ApiBookablesService", () => ({
+  default: {
+    getBookables: vi.fn((tenantId) => bookables(tenantId)),
   },
 }));
 vi.mock("@/services/permissions/TenantPermissionService", () => ({
@@ -57,15 +61,10 @@ let memberTenantIds;
 // The supervision the sign-in names per membership (`permissions.tenants[]`).
 let memberships;
 let instanceOwner;
-// The readiness answer per tenant; the default is a tenant without offers.
-let readiness;
+// The bookables per tenant; the default is a tenant without any.
+let bookables;
 
-function readinessWithOffers(state) {
-  return Promise.resolve({
-    checkedAt: "2026-09-22T08:00:00.000Z",
-    criteria: [{ key: "offers", state }],
-  });
-}
+const bookablesAre = (list) => () => Promise.resolve({ data: list });
 
 function mountHome() {
   const store = new Vuex.Store({
@@ -119,7 +118,7 @@ beforeEach(() => {
   redirect = null;
   ownedTenantIds = [];
   memberTenantIds = ["tenant-a"];
-  readiness = () => readinessWithOffers("missing");
+  bookables = bookablesAre([]);
   tenants = [TENANT_A];
   memberships = [];
   instanceOwner = false;
@@ -171,53 +170,60 @@ describe("Home — picking a tenant", () => {
   });
 });
 
-describe("Home — guided setup", () => {
-  it("offers to resume the setup on a tenant the user owns", async () => {
+describe("Home — the first bookable", () => {
+  it("opens the guided flow of a new bookable on an own tenant without one", async () => {
     ownedTenantIds = ["tenant-a"];
-    const wrapper = mountHome();
-
-    await wrapper.find("[data-test='resume-onboarding']").trigger("click");
-
-    expect(push).toHaveBeenCalledWith({
-      name: "tenant-onboarding",
-      query: { tenant: "tenant-a" },
-    });
-    expect(selected).toBeNull();
-  });
-
-  it("offers no setup on a tenant of someone else", () => {
-    const wrapper = mountHome();
-
-    expect(wrapper.find("[data-test='resume-onboarding']").exists()).toBe(
-      false
-    );
-  });
-
-  it("offers no setup on an own tenant that already has an offer with the publication wish", async () => {
-    ownedTenantIds = ["tenant-a"];
-    readiness = () => readinessWithOffers("fulfilled");
     const wrapper = mountHome();
     await flushPromises();
 
-    expect(wrapper.find("[data-test='resume-onboarding']").exists()).toBe(
-      false
-    );
+    const action = wrapper.find("[data-test='first-bookable']");
+    expect(action.text()).toBe("Erstes Buchungsobjekt anlegen");
+    await action.trigger("click");
+    await flushPromises();
+
+    expect(selected).toBe("tenant-a");
+    expect(push).toHaveBeenCalledWith({ name: "room-edit" });
   });
 
-  it("keeps offering the setup while the readiness is unknown or refused", async () => {
-    ownedTenantIds = ["tenant-a"];
-    readiness = () => Promise.reject(new Error("down"));
+  it("offers nothing on a tenant of someone else", async () => {
     const wrapper = mountHome();
     await flushPromises();
 
-    expect(wrapper.find("[data-test='resume-onboarding']").exists()).toBe(true);
+    expect(wrapper.find("[data-test='first-bookable']").exists()).toBe(false);
   });
 
-  it("asks the readiness of the own tenants only", async () => {
+  it("offers nothing on an own tenant that has a bookable, draft or not", async () => {
+    ownedTenantIds = ["tenant-a"];
+    bookables = bookablesAre([{ id: "b1", isPublic: false }]);
+    const wrapper = mountHome();
+    await flushPromises();
+
+    expect(wrapper.find("[data-test='first-bookable']").exists()).toBe(false);
+  });
+
+  it("counts the tickets of an event as the event's, not as a bookable", async () => {
+    ownedTenantIds = ["tenant-a"];
+    bookables = bookablesAre([{ id: "t1", eventId: "e1" }]);
+    const wrapper = mountHome();
+    await flushPromises();
+
+    expect(wrapper.find("[data-test='first-bookable']").exists()).toBe(true);
+  });
+
+  it("offers nothing while the bookables cannot be read", async () => {
+    ownedTenantIds = ["tenant-a"];
+    bookables = () => Promise.reject(new Error("down"));
+    const wrapper = mountHome();
+    await flushPromises();
+
+    expect(wrapper.find("[data-test='first-bookable']").exists()).toBe(false);
+  });
+
+  it("asks the bookables of the own tenants only", async () => {
     tenants = [TENANT_A, TENANT_B];
     ownedTenantIds = ["tenant-a"];
-    const asked = vi.fn(() => readinessWithOffers("missing"));
-    readiness = asked;
+    const asked = vi.fn(bookablesAre([]));
+    bookables = asked;
     mountHome();
     await flushPromises();
 
@@ -258,18 +264,17 @@ describe("Home — grid or list", () => {
     expect(push).toHaveBeenCalledWith({ name: "bookings" });
   });
 
-  it("offers the setup in a row too, without picking the tenant", async () => {
+  it("offers the first bookable in a row too", async () => {
     ownedTenantIds = ["tenant-a"];
     const wrapper = mountHome();
+    await flushPromises();
     await wrapper.find("[data-test='view-list']").trigger("click");
 
-    await wrapper.find("[data-test='resume-onboarding']").trigger("click");
+    await wrapper.find("[data-test='first-bookable']").trigger("click");
+    await flushPromises();
 
-    expect(push).toHaveBeenCalledWith({
-      name: "tenant-onboarding",
-      query: { tenant: "tenant-a" },
-    });
-    expect(selected).toBeNull();
+    expect(selected).toBe("tenant-a");
+    expect(push).toHaveBeenCalledWith({ name: "room-edit" });
   });
 
   it("keeps the chosen view for the next visit", async () => {
@@ -444,15 +449,13 @@ describe("Home — a declined tenant", () => {
     expect(selected).toBeNull();
   });
 
-  it("offers no setup and asks no readiness of it", async () => {
-    const asked = vi.fn(() => readinessWithOffers("missing"));
-    readiness = asked;
+  it("offers no first bookable and asks no bookables of it", async () => {
+    const asked = vi.fn(bookablesAre([]));
+    bookables = asked;
     const wrapper = mountHome();
     await flushPromises();
 
-    expect(wrapper.find("[data-test='resume-onboarding']").exists()).toBe(
-      false
-    );
+    expect(wrapper.find("[data-test='first-bookable']").exists()).toBe(false);
     expect(asked).not.toHaveBeenCalled();
   });
 

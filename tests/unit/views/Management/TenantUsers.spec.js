@@ -1,13 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import Vuex from "vuex";
+import VueRouter from "vue-router";
+import { createLocalVue } from "@vue/test-utils";
+import { mountComponent } from "@tests/unit/support/mount";
+import { flushPromises } from "@tests/unit/support/api";
 import i18n from "@/language/index";
 import TenantUsers from "@/views/Management/TenantUsers.vue";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { inviteMembersRoute } from "@/utils/tenantUsers";
 
 vi.mock("@/services/api/ApiTenantService", () => ({
   default: {
     addTenantUser: vi.fn(),
     addTenantOwner: vi.fn(),
     getTenantUsers: vi.fn(),
+    getTenant: vi.fn(),
+  },
+}));
+vi.mock("@/services/api/ApiRolesService", () => ({
+  default: { getTenantRoles: vi.fn(async () => ({ data: [] })) },
+}));
+vi.mock("@/services/api/ApiInvitationService", () => ({
+  default: { getTenantInvitations: vi.fn(async () => ({ data: [] })) },
+}));
+vi.mock("@/services/api/ApiChallengeService", () => ({
+  default: { getChallenges: vi.fn(async () => ({ data: [] })) },
+}));
+vi.mock("@/layouts/Admin.vue", () => ({
+  default: {
+    name: "AdminLayout",
+    render(h) {
+      return h("div", this.$slots.default);
+    },
   },
 }));
 
@@ -58,5 +82,122 @@ describe("TenantUsers.addUserDirectly", () => {
     expect(addToast.mock.calls[0][0].title).toBe(
       i18n.t("tenant.addUser.error.something-wrong.title")
     );
+  });
+});
+
+const localVue = createLocalVue();
+localVue.use(VueRouter);
+
+const stub = (name) => ({
+  name,
+  render(h) {
+    return h("div");
+  },
+});
+
+// The dialog's own form is its spec; here it is open or not, and closes.
+const InviteDialog = {
+  name: "TenantInviteUserDialog",
+  props: { open: Boolean },
+  render(h) {
+    if (!this.open) return null;
+    return h("div", { attrs: { "data-test": "invite-dialog" } }, [
+      h(
+        "button",
+        {
+          attrs: { "data-test": "invite-close" },
+          on: { click: () => this.$emit("close") },
+        },
+        "Schließen"
+      ),
+    ]);
+  },
+};
+
+function membersStore() {
+  return new Vuex.Store({
+    modules: {
+      loading: {
+        namespaced: true,
+        getters: { isLoading: () => false },
+        actions: { start: () => {}, stop: () => {} },
+      },
+      tenants: {
+        namespaced: true,
+        getters: { currentTenantId: () => "t1" },
+      },
+      toasts: { namespaced: true, actions: { add: () => {} } },
+    },
+  });
+}
+
+function membersRouter() {
+  return new VueRouter({
+    mode: "abstract",
+    routes: [
+      { path: "/tenant/members", name: "user", component: stub("Page") },
+    ],
+  });
+}
+
+/** Opens the members page at `router`'s route, as a load or reload does. */
+async function openMembersPage(router) {
+  const wrapper = mountComponent(TenantUsers, {
+    localVue,
+    router,
+    store: membersStore(),
+    stubs: {
+      TenantInviteUserDialog: InviteDialog,
+      TenantUserDetailDialog: stub("TenantUserDetailDialog"),
+      SearchBar: stub("SearchBar"),
+    },
+  });
+  await flushPromises();
+  return wrapper;
+}
+
+const inviteDialog = (wrapper) => wrapper.find("[data-test='invite-dialog']");
+
+describe("TenantUsers, invited in by link", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiTenantService.getTenantUsers.mockResolvedValue({
+      users: [],
+      userDetails: [],
+    });
+    ApiTenantService.getTenant.mockResolvedValue({ data: {} });
+  });
+
+  it("opens the invite dialog straight away", async () => {
+    const router = membersRouter();
+    await router.push(inviteMembersRoute());
+
+    const wrapper = await openMembersPage(router);
+
+    expect(inviteDialog(wrapper).exists()).toBe(true);
+  });
+
+  it("shows the page as usual once closed, and a reload leaves it closed", async () => {
+    const router = membersRouter();
+    await router.push(inviteMembersRoute());
+    const wrapper = await openMembersPage(router);
+
+    await wrapper.find("[data-test='invite-close']").trigger("click");
+
+    expect(inviteDialog(wrapper).exists()).toBe(false);
+    expect(wrapper.text()).toContain("Mitglied einladen");
+
+    const reloaded = await openMembersPage(router);
+
+    expect(inviteDialog(reloaded).exists()).toBe(false);
+  });
+
+  it("opens no dialog on any other way in", async () => {
+    const router = membersRouter();
+    await router.push({ name: "user" });
+
+    const wrapper = await openMembersPage(router);
+
+    expect(inviteDialog(wrapper).exists()).toBe(false);
   });
 });

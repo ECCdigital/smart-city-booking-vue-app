@@ -17,7 +17,10 @@ function prune() {
   }
 }
 
-function savePkceSession(state, { codeVerifier, redirect, silent, redirectUri }) {
+function savePkceSession(
+  state,
+  { codeVerifier, redirect, silent, redirectUri }
+) {
   prune();
   store.set(String(state), {
     codeVerifier,

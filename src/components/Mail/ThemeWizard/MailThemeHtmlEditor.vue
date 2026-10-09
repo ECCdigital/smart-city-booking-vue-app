@@ -4,7 +4,9 @@
       {{ label }}
     </div>
     <v-card outlined class="rounded-sm" elevation="0" v-if="editor">
-      <v-sheet class="toolbar grey lighten-4 pa-1 d-flex flex-wrap align-center">
+      <v-sheet
+        class="toolbar grey lighten-4 pa-1 d-flex flex-wrap align-center"
+      >
         <v-menu offset-y bottom :close-on-content-click="true">
           <template v-slot:activator="{ on, attrs }">
             <v-btn
@@ -211,7 +213,7 @@ function ensureVisibleEmptyParagraphs(html) {
   if (!html) return html;
   return String(html).replace(
     /<p(\s[^>]*)?>\s*(?:<br\s*\/?>\s*)*<\/p>/gi,
-    (match, attrs = "") => `<p${attrs}><br></p>`,
+    (match, attrs = "") => `<p${attrs}><br></p>`
   );
 }
 
@@ -326,21 +328,21 @@ export default {
     },
     currentFontSizeLabel() {
       const opt = this.fontSizeOptions.find(
-        (item) => item.value === this.currentFontSize,
+        (item) => item.value === this.currentFontSize
       );
       if (!opt || !opt.value) return "Aa";
       return opt.value.replace("px", "");
     },
     currentLineHeightLabel() {
       const opt = this.lineHeightOptions.find(
-        (item) => item.value === this.currentLineHeight,
+        (item) => item.value === this.currentLineHeight
       );
       if (!opt || !opt.value) return "LH";
       return opt.value;
     },
     currentImageWidthLabel() {
       const opt = this.imageWidthOptions.find(
-        (item) => item.value === this.currentImageWidth,
+        (item) => item.value === this.currentImageWidth
       );
       if (!opt || !opt.value) return "Auto";
       return `${opt.value}px`;
@@ -395,7 +397,8 @@ export default {
       ],
       onUpdate: () => {
         const html = ensureVisibleEmptyParagraphs(this.editor.getHTML());
-        const empty = html === "<p><br></p>" || html === "<p></p>" || html === "";
+        const empty =
+          html === "<p><br></p>" || html === "<p></p>" || html === "";
         this.$emit("input", empty ? "" : html);
         this.selectionTick += 1;
       },
@@ -410,7 +413,11 @@ export default {
   methods: {
     onFontSizeChange(value) {
       if (!this.editor) return;
-      this.editor.chain().focus().setFontSize(value || null).run();
+      this.editor
+        .chain()
+        .focus()
+        .setFontSize(value || null)
+        .run();
       this.selectionTick += 1;
     },
     onLineHeightChange(value) {
@@ -435,7 +442,7 @@ export default {
       const previous = this.editor.getAttributes("image").alt || "Bild";
       const alt = window.prompt(
         "Alternativtext (wird angezeigt, wenn der Empfänger Bilder blockiert)",
-        previous,
+        previous
       );
       if (alt === null) return;
       const nextAlt = alt.trim() || "Bild";
@@ -470,16 +477,18 @@ export default {
       }
       const altRaw = window.prompt(
         "Alternativtext (sichtbar wenn Bilder blockiert sind)",
-        "",
+        ""
       );
       if (altRaw === null) return;
       const alt = altRaw.trim() || "Bild";
       const widthRaw = window.prompt(
         "Bildbreite in px (leer = automatisch)",
-        "200",
+        "200"
       );
       if (widthRaw === null) return;
-      const width = widthRaw.trim() ? widthRaw.trim().replace(/px$/i, "") : null;
+      const width = widthRaw.trim()
+        ? widthRaw.trim().replace(/px$/i, "")
+        : null;
       this.editor
         .chain()
         .focus()
