@@ -86,7 +86,7 @@ _Avoid_: Stepper, Navigation (that is the editing page's tabs and sections), Pun
 
 **Meldung**:
 What the check of a bookable says under one field when its value would be refused, such as „Bitte einen Titel eingeben.“. A field shows it once it was left, and every field shows it after a refused save. It never locks „Speichern“, „Weiter“ or a tab.
-_Avoid_: Fehler, Validierungsfehler, Offene Punkte (those are the confirmation page's list after the save)
+_Avoid_: Fehler, Validierungsfehler, Offene Punkte (those are a tenant's open criteria in the readiness check on Nächste Schritte)
 
 **Grunddaten** (admin: „Grunddaten“):
 The fields that say what a bookable is, in two groups: „Das sehen Buchende im Katalog“ (**Titel**, Beschreibung, **Merkmale**, **Bilder**, **Standort**) and „Nur für die Verwaltung“ (Typ, Veranstaltung of a ticket, **Interne Tags**). Merkmale are short advantages beside the description; Interne Tags filter and group in the administration and are never shown to bookers. The Typ (Raum, Gerät / Weiteres, Ticket, Veranstaltungsort) is chosen only when the bookable is created.
