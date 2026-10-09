@@ -879,7 +879,7 @@
       },
       "public": {
         "label": "Öffentlich anzeigen",
-        "hint": "Erscheint im Katalog und auf eingebundenen Webseiten (HTML- und JS-Schnittstelle)."
+        "hint": "Erscheint im Katalog und auf eingebundenen Webseiten."
       },
       "submits-on-save": "Beim Speichern wird das Angebot zur Prüfung eingereicht.",
       "effect": {
