@@ -27,7 +27,7 @@ export default new Vuex.Store({
     authStore,
     theme,
     userPreferences,
-    viewedNotifications
+    viewedNotifications,
   },
   actions: {
     reset({ dispatch }) {
@@ -41,6 +41,6 @@ export default new Vuex.Store({
       dispatch("authStore/reset");
       dispatch("theme/reset");
       dispatch("viewedNotifications/reset");
-    }
-  }
+    },
+  },
 });

@@ -1,9 +1,9 @@
 # ADR 0002: One field, one component, one rule for the bookable
 
-- **Status:** Accepted
-- **Date:** 2026-10-08
-- **Origin:** ECCdigital/tickets#337 (map), #352 (this record), #340 (component interface, points 1, 3 and 6)
-- **Numbering:** 0001 was the ADR on the optional Admin BFF, removed from the repo but still linked from `AGENTS.md`; its number is not reused.
+-   **Status:** Accepted
+-   **Date:** 2026-10-08
+-   **Origin:** ECCdigital/tickets#337 (map), #352 (this record), #340 (component interface, points 1, 3 and 6)
+-   **Numbering:** 0001 was the ADR on the optional Admin BFF, removed from the repo but still linked from `AGENTS.md`; its number is not reused.
 
 ## Context
 
@@ -19,9 +19,9 @@ Every field of the bookable has exactly one component, one label and one rule, t
 
 A component that changes the bookable uses the mixin `src/mixins/bookableEditing.js`:
 
-- prop `bookable` - read only, never changed in place;
-- `patch(changes)` - emits `update:bookable` with only the changed top-level fields;
-- `apply(fn)` - runs a rule that sets a bookable in place (`applyBookingMode`, `applyAccess`, …) on a deep copy and emits the top-level fields it changed.
+-   prop `bookable` - read only, never changed in place;
+-   `patch(changes)` - emits `update:bookable` with only the changed top-level fields;
+-   `apply(fn)` - runs a rule that sets a bookable in place (`applyBookingMode`, `applyAccess`, …) on a deep copy and emits the top-level fields it changed.
 
 A deeper field changes by rebuilding its top-level value (a new `priceCategories` list, a new `bookingDiscounts` object). Changes go out at once, without debounce. `BookableEdit` merges every patch flat into its bookable. There is no `model` computed with a setter.
 
@@ -43,6 +43,6 @@ What blocks a save is decided by one pure module over the bookable, `src/utils/b
 
 ## Consequences
 
-- A component spec mounts the component with a bookable, drives the DOM and asserts the patch (`tests/unit/support/bookableEditing.js` hosts it as `BookableEdit` does). One spec covers both modes, because the component knows no mode.
-- Switching between the modes keeps unsaved input: both read the one bookable in `BookableEdit`.
-- Components that still use a `model` setter or change the prop in place are moved onto the mixin by the tickets of the map that rebuild them.
+-   A component spec mounts the component with a bookable, drives the DOM and asserts the patch (`tests/unit/support/bookableEditing.js` hosts it as `BookableEdit` does). One spec covers both modes, because the component knows no mode.
+-   Switching between the modes keeps unsaved input: both read the one bookable in `BookableEdit`.
+-   Components that still use a `model` setter or change the prop in place are moved onto the mixin by the tickets of the map that rebuild them.

@@ -8,129 +8,129 @@
         </p>
         <p class="calendar-print-header__meta">Erstellt am {{ printDate }}</p>
       </div>
-    <v-toolbar flat dense class="no-print">
-      <v-btn icon class="no-print" @click="$refs.calendar.prev()">
-        <v-icon>mdi-chevron-left</v-icon>
-      </v-btn>
+      <v-toolbar flat dense class="no-print">
+        <v-btn icon class="no-print" @click="$refs.calendar.prev()">
+          <v-icon>mdi-chevron-left</v-icon>
+        </v-btn>
 
-      <v-btn text class="no-print" @click="setToday">Heute</v-btn>
+        <v-btn text class="no-print" @click="setToday">Heute</v-btn>
 
-      <v-btn icon class="no-print" @click="$refs.calendar.next()">
-        <v-icon>mdi-chevron-right</v-icon>
-      </v-btn>
+        <v-btn icon class="no-print" @click="$refs.calendar.next()">
+          <v-icon>mdi-chevron-right</v-icon>
+        </v-btn>
 
-      <v-toolbar-title class="mx-4">
-        {{ calendarTitle }}
-      </v-toolbar-title>
+        <v-toolbar-title class="mx-4">
+          {{ calendarTitle }}
+        </v-toolbar-title>
 
-      <v-spacer></v-spacer>
+        <v-spacer></v-spacer>
 
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on, attrs }">
-          <v-btn
-            icon
-            class="no-print mr-1"
-            v-bind="attrs"
-            v-on="on"
-            :disabled="loading"
-            @click="printCalendar"
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn
+              icon
+              class="no-print mr-1"
+              v-bind="attrs"
+              v-on="on"
+              :disabled="loading"
+              @click="printCalendar"
+            >
+              <v-icon>mdi-printer</v-icon>
+            </v-btn>
+          </template>
+          <span>Kalender drucken / als PDF speichern</span>
+        </v-tooltip>
+
+        <v-btn-toggle v-model="type" dense color="secondary" class="no-print">
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                value="day"
+                :title="'Tagesansicht'"
+                v-bind="attrs"
+                v-on="on"
+                :color="type === 'day' ? 'secondary' : ''"
+                :class="type === 'day' ? 'active-button' : ''"
+              >
+                <v-icon>mdi-calendar</v-icon>
+              </v-btn>
+            </template>
+            <span>Tagesansicht</span>
+          </v-tooltip>
+
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                value="week"
+                :title="'Wochenansicht'"
+                v-bind="attrs"
+                v-on="on"
+                :color="type === 'week' ? 'secondary' : ''"
+                :class="type === 'week' ? 'active-button' : ''"
+              >
+                <v-icon>mdi-calendar-week</v-icon>
+              </v-btn>
+            </template>
+            <span>Wochenansicht</span>
+          </v-tooltip>
+
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                value="month"
+                :title="'Monatsansicht'"
+                v-bind="attrs"
+                v-on="on"
+                :color="type === 'month' ? 'secondary' : ''"
+                :class="type === 'month' ? 'active-button' : ''"
+              >
+                <v-icon>mdi-calendar-month</v-icon>
+              </v-btn>
+            </template>
+            <span>Monatsansicht</span>
+          </v-tooltip>
+        </v-btn-toggle>
+      </v-toolbar>
+      <v-progress-linear
+        class="no-print"
+        indeterminate
+        v-if="loading === true"
+      ></v-progress-linear>
+      <v-calendar
+        class="my-calendar elevation-1"
+        :class="{ 'my-calendar--month': type === 'month' }"
+        :type="type"
+        ref="calendar"
+        v-model="focus"
+        color="primary"
+        locale="de"
+        weekdays="1,2,3,4,5,6,0"
+        :events="events"
+        :event-height="calendarEventHeight"
+        :event-name="getEventName"
+        event-overlap-mode="stack"
+        event-color="primary"
+        @click:event="showEvent"
+      >
+        <template v-slot:event="{ event, eventSummary }">
+          <div
+            v-if="type === 'month'"
+            class="booking-calendar-event booking-calendar-event--month"
           >
-            <v-icon>mdi-printer</v-icon>
-          </v-btn>
+            <div class="booking-calendar-event__line">
+              <span class="booking-calendar-event__time">{{
+                formatEventTimeRange(event.start, event.end)
+              }}</span>
+              <span class="booking-calendar-event__user">{{ event.user }}</span>
+            </div>
+            <div v-if="event.company" class="booking-calendar-event__company">
+              {{ event.company }}
+            </div>
+            <div class="booking-calendar-event__bookable">{{ event.name }}</div>
+          </div>
+          <div v-else v-html="eventSummary()"></div>
         </template>
-        <span>Kalender drucken / als PDF speichern</span>
-      </v-tooltip>
-
-      <v-btn-toggle v-model="type" dense color="secondary" class="no-print">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on, attrs }">
-            <v-btn
-              value="day"
-              :title="'Tagesansicht'"
-              v-bind="attrs"
-              v-on="on"
-              :color="type === 'day' ? 'secondary' : ''"
-              :class="type === 'day' ? 'active-button' : ''"
-            >
-              <v-icon>mdi-calendar</v-icon>
-            </v-btn>
-          </template>
-          <span>Tagesansicht</span>
-        </v-tooltip>
-
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on, attrs }">
-            <v-btn
-              value="week"
-              :title="'Wochenansicht'"
-              v-bind="attrs"
-              v-on="on"
-              :color="type === 'week' ? 'secondary' : ''"
-              :class="type === 'week' ? 'active-button' : ''"
-            >
-              <v-icon>mdi-calendar-week</v-icon>
-            </v-btn>
-          </template>
-          <span>Wochenansicht</span>
-        </v-tooltip>
-
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on, attrs }">
-            <v-btn
-              value="month"
-              :title="'Monatsansicht'"
-              v-bind="attrs"
-              v-on="on"
-              :color="type === 'month' ? 'secondary' : ''"
-              :class="type === 'month' ? 'active-button' : ''"
-            >
-              <v-icon>mdi-calendar-month</v-icon>
-            </v-btn>
-          </template>
-          <span>Monatsansicht</span>
-        </v-tooltip>
-      </v-btn-toggle>
-    </v-toolbar>
-    <v-progress-linear
-      class="no-print"
-      indeterminate
-      v-if="loading === true"
-    ></v-progress-linear>
-    <v-calendar
-      class="my-calendar elevation-1"
-      :class="{ 'my-calendar--month': type === 'month' }"
-      :type="type"
-      ref="calendar"
-      v-model="focus"
-      color="primary"
-      locale="de"
-      weekdays="1,2,3,4,5,6,0"
-      :events="events"
-      :event-height="calendarEventHeight"
-      :event-name="getEventName"
-      event-overlap-mode="stack"
-      event-color="primary"
-      @click:event="showEvent"
-    >
-      <template v-slot:event="{ event, eventSummary }">
-        <div
-          v-if="type === 'month'"
-          class="booking-calendar-event booking-calendar-event--month"
-        >
-          <div class="booking-calendar-event__line">
-            <span class="booking-calendar-event__time">{{
-              formatEventTimeRange(event.start, event.end)
-            }}</span>
-            <span class="booking-calendar-event__user">{{ event.user }}</span>
-          </div>
-          <div v-if="event.company" class="booking-calendar-event__company">
-            {{ event.company }}
-          </div>
-          <div class="booking-calendar-event__bookable">{{ event.name }}</div>
-        </div>
-        <div v-else v-html="eventSummary()"></div>
-      </template>
-    </v-calendar>
+      </v-calendar>
     </div>
     <v-menu
       v-model="selectedOpen"
@@ -146,10 +146,7 @@
           <v-list-item-subtitle class="ml-2 mb-2"
             ><strong>{{ selectedEvent.user }}</strong>
           </v-list-item-subtitle>
-          <v-list-item-subtitle
-            v-if="selectedEvent.company"
-            class="ml-2 mb-2"
-          >
+          <v-list-item-subtitle v-if="selectedEvent.company" class="ml-2 mb-2">
             Firma: <strong>{{ selectedEvent.company }}</strong>
           </v-list-item-subtitle>
           <v-list-item-subtitle class="ml-2 mb-2"
@@ -350,15 +347,21 @@ export default {
     getEventName(event) {
       const input = event.input || event;
       const lines = [
-        `<span class="booking-calendar-event__user">${this.escapeHtml(input.user)}</span>`,
+        `<span class="booking-calendar-event__user">${this.escapeHtml(
+          input.user
+        )}</span>`,
       ];
       if (input.company) {
         lines.push(
-          `<span class="booking-calendar-event__company">${this.escapeHtml(input.company)}</span>`
+          `<span class="booking-calendar-event__company">${this.escapeHtml(
+            input.company
+          )}</span>`
         );
       }
       lines.push(
-        `<span class="booking-calendar-event__bookable">${this.escapeHtml(input.name)}</span>`
+        `<span class="booking-calendar-event__bookable">${this.escapeHtml(
+          input.name
+        )}</span>`
       );
       return lines.join("<br>");
     },
@@ -404,7 +407,9 @@ export default {
       });
     },
     getPrintDocumentTitle() {
-      const viewLabel = { day: "Tag", week: "Woche", month: "Monat" }[this.type];
+      const viewLabel = { day: "Tag", week: "Woche", month: "Monat" }[
+        this.type
+      ];
       const period = this.sanitizeForFilename(this.calendarTitle || "Kalender");
       return `Buchungen-Kalender-${viewLabel}-${period}`;
     },
@@ -490,7 +495,6 @@ export default {
     font-size: 0.82em;
     opacity: 0.9;
   }
-
 }
 
 .my-calendar--month {
@@ -622,7 +626,9 @@ export default {
     }
 
     .v-calendar-weekly__day.v-present .v-calendar-weekly__day-label .v-btn,
-    .v-calendar-daily_head-day.v-present .v-calendar-daily_head-day-label .v-btn {
+    .v-calendar-daily_head-day.v-present
+      .v-calendar-daily_head-day-label
+      .v-btn {
       background-color: transparent !important;
       color: inherit !important;
       box-shadow: none !important;

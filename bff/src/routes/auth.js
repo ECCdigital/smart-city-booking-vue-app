@@ -446,7 +446,12 @@ router.get("/me", async (req, res) => {
       if (me.status === 401) {
         clearAuthCookies(res);
       }
-      return sendBackendError(res, me.status, me.data, "Failed to get user info");
+      return sendBackendError(
+        res,
+        me.status,
+        me.data,
+        "Failed to get user info"
+      );
     }
 
     return res.json({ success: true, data: me.data });

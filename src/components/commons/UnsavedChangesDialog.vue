@@ -1,5 +1,10 @@
 <template>
-  <v-dialog :value="value" max-width="480" persistent @input="$emit('input', $event)">
+  <v-dialog
+    :value="value"
+    max-width="480"
+    persistent
+    @input="$emit('input', $event)"
+  >
     <v-card>
       <v-card-title class="text-h6">
         {{ $t("unsavedChangesLeave.title") }}

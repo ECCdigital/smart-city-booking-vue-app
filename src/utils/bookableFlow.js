@@ -18,10 +18,7 @@ import {
   getBookableEditSectionById,
   isBookableEditSectionVisible,
 } from "@/utils/bookableEditSections";
-import {
-  bookingModeNameKey,
-  bookingModeOf,
-} from "@/utils/bookableBookingMode";
+import { bookingModeNameKey, bookingModeOf } from "@/utils/bookableBookingMode";
 import {
   BOOKABLE_AREAS,
   areaSummary,
@@ -272,29 +269,29 @@ export function priceExplanation(bookable) {
   const fixed = !!category.fixedPrice;
   const mode = bookingModeOf(bookable);
   switch (bookable.priceType) {
-  case "per-hour":
-    // Tagespauschale: no time factor, once per touched calendar day.
-    return fixed
-      ? { key: "per-hour-daily", amounts: { total: price * 3 } }
-      : { key: "per-hour", amounts: { total: price * 2.5 } };
-  case "per-day":
-    if (mode === "week")
-      return { key: "week", amounts: { total: price * 7 } };
-    if (mode === "month") {
-      return { key: "month", amounts: { low: price * 28, high: price * 31 } };
-    }
-    return fixed
-      ? { key: "per-day-full", amounts: { total: price * 3 } }
-      : { key: "per-day-exact", amounts: { total: (price * 6) / 24 } };
-  case "per-square-meter":
-    return fixed
-      ? { key: "once", amounts: { price } }
-      : { key: "per-square-meter", amounts: { price } };
-  default:
-    if (fixed) return { key: "once", amounts: { price } };
-    return toNumber(bookable.amount) === 1
-      ? { key: "per-item", amounts: { price } }
-      : { key: "per-items", amounts: { total: price * 3 } };
+    case "per-hour":
+      // Tagespauschale: no time factor, once per touched calendar day.
+      return fixed
+        ? { key: "per-hour-daily", amounts: { total: price * 3 } }
+        : { key: "per-hour", amounts: { total: price * 2.5 } };
+    case "per-day":
+      if (mode === "week")
+        return { key: "week", amounts: { total: price * 7 } };
+      if (mode === "month") {
+        return { key: "month", amounts: { low: price * 28, high: price * 31 } };
+      }
+      return fixed
+        ? { key: "per-day-full", amounts: { total: price * 3 } }
+        : { key: "per-day-exact", amounts: { total: (price * 6) / 24 } };
+    case "per-square-meter":
+      return fixed
+        ? { key: "once", amounts: { price } }
+        : { key: "per-square-meter", amounts: { price } };
+    default:
+      if (fixed) return { key: "once", amounts: { price } };
+      return toNumber(bookable.amount) === 1
+        ? { key: "per-item", amounts: { price } }
+        : { key: "per-items", amounts: { total: price * 3 } };
   }
 }
 
@@ -435,7 +432,6 @@ const asWord = (key, params) => [wordPart(key, params)];
 const asCount = (key, count) => (count > 0 ? [pluralPart(key, count)] : []);
 
 const listOf = (value) => (Array.isArray(value) ? value : []);
-
 
 function formatCurrency(value) {
   const num = Number(value);

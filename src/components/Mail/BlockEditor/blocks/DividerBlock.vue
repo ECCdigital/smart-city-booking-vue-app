@@ -13,7 +13,9 @@ export default {
   },
   computed: {
     wrapperStyle() {
-      const py = Number.isFinite(this.block.paddingY) ? this.block.paddingY : 12;
+      const py = Number.isFinite(this.block.paddingY)
+        ? this.block.paddingY
+        : 12;
       return { padding: `${py}px 6px` };
     },
     hrStyle() {

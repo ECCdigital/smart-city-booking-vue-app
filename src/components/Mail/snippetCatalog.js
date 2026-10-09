@@ -20,7 +20,6 @@ export function afterSnippetKey(key) {
   return `${key}${AFTER_SNIPPET_SUFFIX}`;
 }
 
-
 function v(name, label) {
   return (
     `<span data-variable="${name}" data-triple="false" ` +

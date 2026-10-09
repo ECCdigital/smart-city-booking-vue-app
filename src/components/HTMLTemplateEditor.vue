@@ -490,7 +490,6 @@ export default {
     loadDefaultTemplate() {
       const template = this.defaultTemplate || this.getBuiltInDefaultTemplate();
 
-
       this.internalTemplate = template;
       this.onTemplateChange();
       this.$emit("default-loaded");
@@ -539,7 +538,6 @@ export default {
     },
 
     clearTemplate() {
-
       this.internalTemplate = "";
       this.onTemplateChange();
       this.$emit("cleared");

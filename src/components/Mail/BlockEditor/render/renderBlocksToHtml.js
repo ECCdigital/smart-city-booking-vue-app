@@ -18,7 +18,9 @@ function joinStyle(parts) {
 function renderText(block) {
   const align = block.align || "left";
   const color = block.color || DEFAULTS.textColor;
-  const bg = block.background ? `background:${escapeAttr(block.background)};` : "";
+  const bg = block.background
+    ? `background:${escapeAttr(block.background)};`
+    : "";
   const padding = block.background ? "padding:12px 16px;" : "";
   const fontSizePx = resolveFontSizePx(block.fontSize);
   const style = joinStyle([
@@ -44,16 +46,16 @@ function renderHeading(block) {
     `font-size:${sizePx}px;`,
     "line-height:1.3;",
   ]);
-  return `<h${level} style="${style}">${escapeText(block.text || "")}</h${level}>`;
+  return `<h${level} style="${style}">${escapeText(
+    block.text || ""
+  )}</h${level}>`;
 }
 
 function renderImage(block) {
   const src = block.src ? escapeAttr(block.src) : "";
   if (!src) return "";
   const alt = escapeAttr(block.alt || "");
-  const width = block.width
-    ? `width="${Number(block.width)}"`
-    : "";
+  const width = block.width ? `width="${Number(block.width)}"` : "";
   const align = block.align || "left";
   const wrapperStyle = `text-align:${escapeAttr(align)};`;
   const imgStyle =
@@ -94,9 +96,7 @@ function renderButton(block) {
     `border-radius:${radius}px;`,
   ]);
   const tableStyle = fullWidth ? "width:100%;" : "";
-  const targetAttrs = isMailOrTel
-    ? ""
-    : " target=\"_blank\" rel=\"noopener\"";
+  const targetAttrs = isMailOrTel ? "" : ' target="_blank" rel="noopener"';
   return (
     `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="${escapeAttr(
       align
@@ -129,7 +129,9 @@ function renderCallout(block) {
   }[variant] || { border: "#666", bg: "#f5f5f5", color: "#222" };
 
   const titleHtml = block.title
-    ? `<div style="font-weight:600; margin-bottom:4px;">${escapeText(block.title)}</div>`
+    ? `<div style="font-weight:600; margin-bottom:4px;">${escapeText(
+        block.title
+      )}</div>`
     : "";
   const bodyHtml = sanitizeHtml(block.html || "");
   const style = joinStyle([
@@ -146,7 +148,11 @@ function renderQuote(block) {
   const align = block.align || "left";
   const color = block.color || "#555";
   const text = escapeText(block.text || "");
-  const cite = block.cite ? `<footer style="margin-top:6px; font-size:12px; opacity:0.7;">— ${escapeText(block.cite)}</footer>` : "";
+  const cite = block.cite
+    ? `<footer style="margin-top:6px; font-size:12px; opacity:0.7;">— ${escapeText(
+        block.cite
+      )}</footer>`
+    : "";
   const style = joinStyle([
     "margin:0;",
     "padding:8px 16px;",
@@ -161,10 +167,7 @@ function renderQuote(block) {
 function renderList(block) {
   const tag = block.ordered ? "ol" : "ul";
   const items = (block.items || [])
-    .map(
-      (item) =>
-        `<li style="margin:4px 0;">${sanitizeHtml(item || "")}</li>`
-    )
+    .map((item) => `<li style="margin:4px 0;">${sanitizeHtml(item || "")}</li>`)
     .join("");
   return `<${tag} style="padding-left:20px; margin:0 0 12px;">${items}</${tag}>`;
 }
@@ -175,28 +178,28 @@ function renderRawHtml(block) {
 
 function renderContentBlock(block) {
   switch (block.type) {
-  case "text":
-    return renderText(block);
-  case "heading":
-    return renderHeading(block);
-  case "image":
-    return renderImage(block);
-  case "button":
-    return renderButton(block);
-  case "divider":
-    return renderDivider(block);
-  case "spacer":
-    return renderSpacer(block);
-  case "callout":
-    return renderCallout(block);
-  case "quote":
-    return renderQuote(block);
-  case "list":
-    return renderList(block);
-  case "rawHtml":
-    return renderRawHtml(block);
-  default:
-    return "";
+    case "text":
+      return renderText(block);
+    case "heading":
+      return renderHeading(block);
+    case "image":
+      return renderImage(block);
+    case "button":
+      return renderButton(block);
+    case "divider":
+      return renderDivider(block);
+    case "spacer":
+      return renderSpacer(block);
+    case "callout":
+      return renderCallout(block);
+    case "quote":
+      return renderQuote(block);
+    case "list":
+      return renderList(block);
+    case "rawHtml":
+      return renderRawHtml(block);
+    default:
+      return "";
   }
 }
 
@@ -214,9 +217,10 @@ function renderColumn(column, opts = {}) {
 }
 
 function renderRow(block) {
-  const columns = block.columns && block.columns.length ? block.columns : [
-    { width: 12, blocks: [] },
-  ];
+  const columns =
+    block.columns && block.columns.length
+      ? block.columns
+      : [{ width: 12, blocks: [] }];
   const bg = block.background
     ? `background:${escapeAttr(block.background)};`
     : "";
@@ -225,10 +229,7 @@ function renderRow(block) {
     bg,
     paddingY ? `padding:${paddingY}px 0;` : "",
   ]);
-  const tableStyle = joinStyle([
-    "width:100%;",
-    "border-collapse:collapse;",
-  ]);
+  const tableStyle = joinStyle(["width:100%;", "border-collapse:collapse;"]);
   const singleColumn = columns.length === 1;
   const cells = columns
     .map((col) => renderColumn(col, { singleColumn }))
@@ -295,8 +296,7 @@ export function createDefaultBlocks() {
             {
               id: cryptoRandomId(),
               type: "text",
-              html:
-                "<p>Hallo,</p><p>vielen Dank für Ihre Buchung im <strong>{{tenantName}}</strong>.</p>",
+              html: "<p>Hallo,</p><p>vielen Dank für Ihre Buchung im <strong>{{tenantName}}</strong>.</p>",
               align: "left",
             },
           ],

@@ -3,21 +3,37 @@
     <v-dialog v-model="sequentialDialog" max-width="750">
       <v-card v-if="filteredNotifications.length > 0">
         <v-card-title class="headline">
-          <span  v-if="filteredNotifications.length > 1" class="ml-4"> Benachrichtigung {{ currentNotificationIndex + 1 }} von {{ filteredNotifications.length }}</span>
+          <span v-if="filteredNotifications.length > 1" class="ml-4">
+            Benachrichtigung {{ currentNotificationIndex + 1 }} von
+            {{ filteredNotifications.length }}</span
+          >
           <v-spacer></v-spacer>
           <v-btn icon @click="sequentialDialog = false">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
         <v-card-text>
-          <div v-if="filteredNotifications[currentNotificationIndex]" v-html="filteredNotifications[currentNotificationIndex].message"></div>
+          <div
+            v-if="filteredNotifications[currentNotificationIndex]"
+            v-html="filteredNotifications[currentNotificationIndex].message"
+          ></div>
         </v-card-text>
         <v-card-actions v-if="filteredNotifications.length > 1">
-          <v-btn text :disabled="currentNotificationIndex === 0" @click="previousNotification">
+          <v-btn
+            text
+            :disabled="currentNotificationIndex === 0"
+            @click="previousNotification"
+          >
             <v-icon>mdi-chevron-left</v-icon> Previous
           </v-btn>
           <v-spacer></v-spacer>
-          <v-btn text :disabled="currentNotificationIndex >= filteredNotifications.length - 1" @click="nextNotification">
+          <v-btn
+            text
+            :disabled="
+              currentNotificationIndex >= filteredNotifications.length - 1
+            "
+            @click="nextNotification"
+          >
             Next <v-icon>mdi-chevron-right</v-icon>
           </v-btn>
         </v-card-actions>
@@ -51,14 +67,15 @@ export default {
       markAsViewed: "viewedNotifications/markAsViewed",
     }),
     markNotificationsAsViewed() {
-      this.filteredNotifications.forEach(notification => {
+      this.filteredNotifications.forEach((notification) => {
         if (notification.id) {
           this.markAsViewed(notification.id);
         }
       });
     },
     markCurrentNotificationAsViewed() {
-      const notification = this.filteredNotifications[this.currentNotificationIndex];
+      const notification =
+        this.filteredNotifications[this.currentNotificationIndex];
       if (notification && notification.id) {
         this.markAsViewed(notification.id);
       }
@@ -68,7 +85,10 @@ export default {
       this.markCurrentNotificationAsViewed();
     },
     nextNotification() {
-      if (this.currentNotificationIndex < this.filteredNotifications.length - 1) {
+      if (
+        this.currentNotificationIndex <
+        this.filteredNotifications.length - 1
+      ) {
         this.currentNotificationIndex++;
         this.markCurrentNotificationAsViewed();
       } else {
@@ -116,8 +136,9 @@ export default {
     },
 
     unviewedNotifications() {
-      return this.filteredNotifications.filter(notification =>
-        !notification.id || !this.isNotificationViewed(notification.id)
+      return this.filteredNotifications.filter(
+        (notification) =>
+          !notification.id || !this.isNotificationViewed(notification.id)
       );
     },
   },

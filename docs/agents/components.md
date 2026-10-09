@@ -4,36 +4,36 @@
 
 Components are grouped by domain under `src/components/`:
 
-| Folder | Domain |
-|--------|--------|
-| `Booking/` | Booking list, edit, dialogs, kanban |
-| `Bookable/` | Bookable configuration (rooms, resources, …) |
-| `Tenant/` | Tenant settings, mail, invoices |
-| `Instance/` | Instance-level config, rule engine |
-| `Mail/` | Mail templates, block editor |
-| `PDF/` | PDF template editor and preview |
-| `Auth/` | Login cards, Keycloak |
-| `commons/` | Shared UI (SaveBar, toasts, selectors, `AppList`) |
-| `Checkout/` | Checkout calendar and shared checkout UI |
-| `Coupon/`, `Role/`, `User/`, `Files/`, … | Other domain areas |
+| Folder                                   | Domain                                            |
+| ---------------------------------------- | ------------------------------------------------- |
+| `Booking/`                               | Booking list, edit, dialogs, kanban               |
+| `Bookable/`                              | Bookable configuration (rooms, resources, …)      |
+| `Tenant/`                                | Tenant settings, mail, invoices                   |
+| `Instance/`                              | Instance-level config, rule engine                |
+| `Mail/`                                  | Mail templates, block editor                      |
+| `PDF/`                                   | PDF template editor and preview                   |
+| `Auth/`                                  | Login cards, Keycloak                             |
+| `commons/`                               | Shared UI (SaveBar, toasts, selectors, `AppList`) |
+| `Checkout/`                              | Checkout calendar and shared checkout UI          |
+| `Coupon/`, `Role/`, `User/`, `Files/`, … | Other domain areas                                |
 
 ## Shared list
 
 `src/components/commons/AppList.vue` is the one list surface: hairline rows on a grid of named columns, in the vocabulary of the section card and the booking page. New lists use it instead of `v-simple-table` / `v-data-table`, and existing tables move onto it one at a time (the supervision history was first).
 
-- The caller owns the data and hands in `items`, `loading`, `errorMessage`, and the server page (`page`, `pageSize`, `total`); the list asks for another page with `update:page` and another try with `retry`.
-- `columns` is `[{ key, label, width, align }]`; `width` is a grid track (`"76px"`, `"minmax(160px, 1.5fr)"`). A `cell.<key>` scoped slot draws a cell, the `toolbar` slot holds filters and the reload.
-- Below 959px the grid folds into stacked rows with the column name before each cell.
+-   The caller owns the data and hands in `items`, `loading`, `errorMessage`, and the server page (`page`, `pageSize`, `total`); the list asks for another page with `update:page` and another try with `retry`.
+-   `columns` is `[{ key, label, width, align }]`; `width` is a grid track (`"76px"`, `"minmax(160px, 1.5fr)"`). A `cell.<key>` scoped slot draws a cell, the `toolbar` slot holds filters and the reload.
+-   Below 959px the grid folds into stacked rows with the column name before each cell.
 
 ## Shared search bar
 
 `src/components/commons/SearchBar.vue` is the one search of every list (ECCdigital/tickets#54). A page does not draw a `v-text-field` for searching.
 
-- `v-model` is the query, handed on 300 ms after the last keystroke; the cross and an emptied field hand on `""` at once. What the page searches stays the page's business.
-- `fields` names what the page searches, for the placeholder „Suchen nach <fields> …“ — a translation key, e.g. `$t('bookable.list.search')`.
-- `filters` are the sections of the filter card behind the funnel (`FilterCard.vue`, shape in `src/utils/filterSections.js`: multiple choice as rows, single choice as rows or `segmented`); a change comes back as `filter(key, selection)`. No `filters`, no funnel.
-- The `actions` slot is the row beneath the band. A page puts `ToolbarRow` there (ECCdigital/tickets#57): `views` (`[{ value, label, icon }]`, `:view.sync`) as tabs on the left, `sortOptions` (`[{ text, value }]`, `:sort-by.sync`, `:sort-dir.sync`) and its own `actions` slot on the right, each in its fixed place. A further action is a `ToolbarAction` (icon, label, `active` for a switch, `menu` for a menu opener); the creation is no action of the row but the floating button bottom right. A page with nothing for the row leaves the slot out.
-- Attributes such as `data-test` land on the input. Specs type through `typeSearch()` and open the card through `openFilterCard()` from `tests/unit/support/search.js`.
+-   `v-model` is the query, handed on 300 ms after the last keystroke; the cross and an emptied field hand on `""` at once. What the page searches stays the page's business.
+-   `fields` names what the page searches, for the placeholder „Suchen nach <fields> …“ — a translation key, e.g. `$t('bookable.list.search')`.
+-   `filters` are the sections of the filter card behind the funnel (`FilterCard.vue`, shape in `src/utils/filterSections.js`: multiple choice as rows, single choice as rows or `segmented`); a change comes back as `filter(key, selection)`. No `filters`, no funnel.
+-   The `actions` slot is the row beneath the band. A page puts `ToolbarRow` there (ECCdigital/tickets#57): `views` (`[{ value, label, icon }]`, `:view.sync`) as tabs on the left, `sortOptions` (`[{ text, value }]`, `:sort-by.sync`, `:sort-dir.sync`) and its own `actions` slot on the right, each in its fixed place. A further action is a `ToolbarAction` (icon, label, `active` for a switch, `menu` for a menu opener); the creation is no action of the row but the floating button bottom right. A page with nothing for the row leaves the slot out.
+-   Attributes such as `data-test` land on the input. Specs type through `typeSearch()` and open the card through `openFilterCard()` from `tests/unit/support/search.js`.
 
 `Search.vue` wraps it for the bookable and coupon lists (Fuse search over `keys`, tags, sorting); its `actions` slot goes on into the row's (the events' iCal export).
 
@@ -48,36 +48,38 @@ Follow the Options API pattern used throughout the project:
 import ApiBookingService from "@/services/api/ApiBookingService";
 
 export default {
-  name: "MyComponent",
-  props: {
-    bookingId: { type: String, required: true },
-  },
-  data() {
-    return {
-      booking: null,
-      loading: false,
-    };
-  },
-  async created() {
-    await this.loadBooking();
-  },
-  methods: {
-    async loadBooking() {
-      this.loading = true;
-      try {
-        this.booking = await ApiBookingService.getBooking(this.bookingId);
-      } finally {
-        this.loading = false;
-      }
+    name: "MyComponent",
+    props: {
+        bookingId: { type: String, required: true },
     },
-  },
+    data() {
+        return {
+            booking: null,
+            loading: false,
+        };
+    },
+    async created() {
+        await this.loadBooking();
+    },
+    methods: {
+        async loadBooking() {
+            this.loading = true;
+            try {
+                this.booking = await ApiBookingService.getBooking(
+                    this.bookingId
+                );
+            } finally {
+                this.loading = false;
+            }
+        },
+    },
 };
 </script>
 
 <template>
-  <v-card :loading="loading">
-    <!-- content -->
-  </v-card>
+    <v-card :loading="loading">
+        <!-- content -->
+    </v-card>
 </template>
 
 <style scoped>
@@ -87,20 +89,20 @@ export default {
 
 ## Views
 
-- Views correspond to router entries in `src/router/index.js`
-- Use layouts (`src/layouts/Admin.vue`, `Default.vue`, `Form.vue`) via route `meta` or parent routes
-- Lazy-load heavy views with the existing `lazyLoad()` helper where appropriate
-- Route `meta` fields: `requiresAuth`, `interfaceName`, `public`, `title`
+-   Views correspond to router entries in `src/router/index.js`
+-   Use layouts (`src/layouts/Admin.vue`, `Default.vue`, `Form.vue`) via route `meta` or parent routes
+-   Lazy-load heavy views with the existing `lazyLoad()` helper where appropriate
+-   Route `meta` fields: `requiresAuth`, `interfaceName`, `public`, `title`
 
 ## i18n
 
-- Use `$t('key')` in templates for user-visible text
-- Add new keys to `src/language/de/translations.json`
-- Keep key names descriptive and nested by feature area
+-   Use `$t('key')` in templates for user-visible text
+-   Add new keys to `src/language/de/translations.json`
+-   Keep key names descriptive and nested by feature area
 
 ```vue
 <template>
-  <v-btn>{{ $t('booking.save') }}</v-btn>
+    <v-btn>{{ $t("booking.save") }}</v-btn>
 </template>
 ```
 
@@ -109,10 +111,7 @@ export default {
 Hide or disable actions based on permission services:
 
 ```vue
-<v-btn
-  v-if="canEdit"
-  @click="editBooking"
->
+<v-btn v-if="canEdit" @click="editBooking">
   {{ $t('booking.edit') }}
 </v-btn>
 ```
@@ -153,32 +152,32 @@ happens, coupling the checkboxes in the UI is the fastest answer.
 
 ## Dialogs
 
-- Confirmation dialogs follow the naming pattern `*ConformationDialog.vue` (existing convention)
-- Emit `confirm` / `cancel` events; parent handles the actual API call
-- Use `v-dialog` with `persistent` for destructive actions
+-   Confirmation dialogs follow the naming pattern `*ConformationDialog.vue` (existing convention)
+-   Emit `confirm` / `cancel` events; parent handles the actual API call
+-   Use `v-dialog` with `persistent` for destructive actions
 
 ## Forms
 
-- Complex forms use `vee-validate` v3 where already established in the file
-- Use `SaveBar` (`src/components/commons/SaveBar.vue`) for sticky save/cancel bars on edit pages
-- Validate before submit; show field errors inline
+-   Complex forms use `vee-validate` v3 where already established in the file
+-   Use `SaveBar` (`src/components/commons/SaveBar.vue`) for sticky save/cancel bars on edit pages
+-   Validate before submit; show field errors inline
 
 ## State
 
-- **Page-local state** → `data()` in the component
-- **Shared across components** → Vuex module (`mapState`, `mapGetters`, `mapActions`)
-- **Persisted preferences** → `userPreferences` Vuex module or `PersistenceService`
+-   **Page-local state** → `data()` in the component
+-   **Shared across components** → Vuex module (`mapState`, `mapGetters`, `mapActions`)
+-   **Persisted preferences** → `userPreferences` Vuex module or `PersistenceService`
 
 ## Styling
 
-- Global styles in `src/scss/` — don't duplicate variables
-- Component styles: `<style scoped>` preferred
-- Use Vuetify utility classes and theme colors before custom CSS
-- Theme colors come from env vars (`VUE_APP_PRIMARY_COLOR`, etc.) applied at build/runtime
+-   Global styles in `src/scss/` — don't duplicate variables
+-   Component styles: `<style scoped>` preferred
+-   Use Vuetify utility classes and theme colors before custom CSS
+-   Theme colors come from env vars (`VUE_APP_PRIMARY_COLOR`, etc.) applied at build/runtime
 
 ## What to avoid
 
-- Business logic-heavy components — extract to services or utils
-- Direct `axios` calls in components
-- Inline German strings instead of `$t()` keys
-- New component folders that don't match the domain grouping
+-   Business logic-heavy components — extract to services or utils
+-   Direct `axios` calls in components
+-   Inline German strings instead of `$t()` keys
+-   New component folders that don't match the domain grouping

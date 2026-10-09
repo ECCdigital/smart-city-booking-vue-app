@@ -38,21 +38,25 @@ export const FontSize = Extension.create({
   },
 
   addCommands() {
-    const setFontSize = (fontSize) => ({ chain }) => {
-      if (!fontSize) {
+    const setFontSize =
+      (fontSize) =>
+      ({ chain }) => {
+        if (!fontSize) {
+          return chain()
+            .setMark("textStyle", { fontSize: null })
+            .removeEmptyTextStyle()
+            .run();
+        }
+        return chain().setMark("textStyle", { fontSize }).run();
+      };
+    const unsetFontSize =
+      () =>
+      ({ chain }) => {
         return chain()
           .setMark("textStyle", { fontSize: null })
           .removeEmptyTextStyle()
           .run();
-      }
-      return chain().setMark("textStyle", { fontSize }).run();
-    };
-    const unsetFontSize = () => ({ chain }) => {
-      return chain()
-        .setMark("textStyle", { fontSize: null })
-        .removeEmptyTextStyle()
-        .run();
-    };
+      };
     return { setFontSize, unsetFontSize };
   },
 });

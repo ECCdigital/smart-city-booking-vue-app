@@ -299,7 +299,6 @@ export default {
 </script>
 
 <style scoped>
-
 .catalog-settings {
   max-width: 1000px;
   margin: 0 auto;
@@ -320,5 +319,4 @@ export default {
   font-weight: 600;
   font-size: 1.1rem;
 }
-
 </style>

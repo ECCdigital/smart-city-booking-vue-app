@@ -13,12 +13,7 @@
       @change="$emit('input', $event)"
     >
       <v-row dense>
-        <v-col
-          v-for="option in options"
-          :key="option.value"
-          cols="12"
-          md="4"
-        >
+        <v-col v-for="option in options" :key="option.value" cols="12" md="4">
           <v-card
             class="pdf-layout-picker__card"
             :class="{
@@ -62,13 +57,12 @@
         Buchungs-Metadaten in der Positionstabelle
       </div>
       <p class="pdf-layout-picker__meta-text caption text--secondary mb-0">
-        In Belegen, Rechnungen und Stornorechnungen werden neben den
-        Positionen automatisch <strong>Buchungs-Metadaten</strong> angezeigt
-        — z.&nbsp;B. Nummer, Zeitraum oder Zahlungsart. Mit den Schaltern
-        legen Sie fest, welche dieser Infos <em>in der eingebauten Tabelle</em>
+        In Belegen, Rechnungen und Stornorechnungen werden neben den Positionen
+        automatisch <strong>Buchungs-Metadaten</strong> angezeigt — z.&nbsp;B.
+        Nummer, Zeitraum oder Zahlungsart. Mit den Schaltern legen Sie fest,
+        welche dieser Infos <em>in der eingebauten Tabelle</em>
         erscheinen. Deaktivieren Sie Felder, wenn Sie sie stattdessen im
-        Fließtext der Vorlage platzieren möchten, damit nichts doppelt
-        steht.
+        Fließtext der Vorlage platzieren möchten, damit nichts doppelt steht.
       </p>
       <p class="pdf-layout-picker__meta-vars caption text--secondary mt-2 mb-0">
         Ausgeblendete Felder bleiben als Template-Variablen verfügbar.
@@ -91,11 +85,7 @@
               :outlined="!normalizedTableMeta[option.key]"
               @click="toggleMeta(option.key)"
             >
-              <v-icon
-                v-if="normalizedTableMeta[option.key]"
-                left
-                small
-              >
+              <v-icon v-if="normalizedTableMeta[option.key]" left small>
                 mdi-check
               </v-icon>
               {{ option.shortLabel }}
@@ -210,9 +200,7 @@ export default {
   border-radius: 8px !important;
   cursor: pointer;
   height: 100%;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .pdf-layout-picker__card--active {
