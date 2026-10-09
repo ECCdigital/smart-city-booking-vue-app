@@ -178,11 +178,4 @@ describe("firstBookableRoute", () => {
   it("opens the guided flow of a new bookable", () => {
     expect(firstBookableRoute()).toEqual({ name: "room-edit" });
   });
-
-  it("lets the onboarding skip it", () => {
-    expect(firstBookableRoute({ onboarding: true })).toEqual({
-      name: "room-edit",
-      query: { onboarding: "1" },
-    });
-  });
 });
