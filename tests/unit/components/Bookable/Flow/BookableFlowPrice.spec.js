@@ -286,10 +286,41 @@ describe("BookableFlowPrice - Mehrwertsteuer", () => {
   it("stores „aus“ as 0 %", async () => {
     const { wrapper, patches } = mountPrice(paid(7));
 
-    await find(wrapper, "flow-vat-switch").find("input").trigger("click");
+    await find(wrapper, "flow-vat-0").trigger("click");
 
     expect(lastPatch(patches)).toEqual({ priceValueAddedTax: 0 });
-    expect(find(wrapper, "flow-vat-rate").exists()).toBe(false);
+  });
+
+  // One number, no switch: the quick choices and the field side by side,
+  // whatever the rate.
+  it.each([19, 7, 0, 10.7])(
+    "offers 19 %, 7 %, „aus“ and the number at %s %",
+    (rate) => {
+      const { wrapper } = mountPrice(paid(rate));
+
+      expect(find(wrapper, "flow-vat-switch").exists()).toBe(false);
+      expect(
+        ["19", "7", "0"].map((choice) =>
+          find(wrapper, `flow-vat-${choice}`).text()
+        )
+      ).toEqual(["19 %", "7 %", "aus"]);
+      expect(find(wrapper, "flow-vat-rate").find("input").element.value).toBe(
+        String(rate)
+      );
+    }
+  );
+
+  it("marks the choice the number is", () => {
+    const selected = (rate) =>
+      ["19", "7", "0"].filter((choice) =>
+        find(mountPrice(paid(rate)).wrapper, `flow-vat-${choice}`).classes(
+          "primary--text"
+        )
+      );
+
+    expect(selected(19)).toEqual(["19"]);
+    expect(selected(0)).toEqual(["0"]);
+    expect(selected(10.7)).toEqual([]);
   });
 
   it("shows the gross sum", () => {

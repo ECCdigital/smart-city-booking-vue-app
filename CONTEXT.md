@@ -97,7 +97,7 @@ How a bookable is booked in time, asked in both modes by up to three questions: 
 _Avoid_: Buchungstyp (Typ is Raum, Gerät / Weiteres, Ticket or Veranstaltungsort), Verfügbarkeit as the field's name (the step keeps it), Feste Zeiten, Wochenbuchung, Monatsbuchung, Zeitunabhängig
 
 **Preis** (admin: „Preis“):
-What a booking costs, in one of three forms: **Kostenfrei** (no payment step at checkout), **Einfacher Preis** (one amount) or **Tarife** (a Staffel of amounts the backend checks in order, the first that fits applies). The amount follows „Wonach richtet sich der Preis?“: Pro Stunde, Pro Tag, Stück or m², reckoned as the backend does. Mehrwertsteuer is a number with 19 % and 7 % as shortcuts.
+What a booking costs, in one of three forms: **Kostenfrei** (no payment step at checkout), **Einfacher Preis** (one amount) or **Tarife** (a Staffel of amounts the backend checks in order, the first that fits applies). The amount follows „Wonach richtet sich der Preis?“: Pro Stunde, Pro Tag, Stück or m², reckoned as the backend does. Mehrwertsteuer is one number, with the shortcuts 19 %, 7 % and „aus“ (0 %) beside its field.
 _Avoid_: Preisart as a word on screen (the question asks it), Fester Preis as a basis, Pauschalpreis, Staffelpreise, Preis-Kategorien (each entry is a Tarif)
 
 **Tagespauschale** (admin: „Tagespauschale“):

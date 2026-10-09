@@ -120,33 +120,19 @@
         <!-- Mehrwertsteuer is one number: 19 % and 7 % set it, any other is
              typed, „aus“ is 0 %. -->
         <div class="bookable-price__box" data-test="flow-vat" data-field="vat">
-          <div data-test="flow-vat-switch">
-            <v-switch
-              :input-value="vatOn"
-              dense
-              hide-details
-              class="mt-0 pt-0"
-              @change="setVat($event ? 19 : 0)"
-            >
-              <template #label>
-                <div>
-                  <div class="bookable-price__question mb-0">
-                    {{ $t("bookable.flow.price.vat") }}
-                  </div>
-                  <div class="bookable-price__hint mt-0">
-                    {{
-                      vatOn
-                        ? $t("bookable.flow.price.vat-on")
-                        : $t("bookable.flow.price.vat-off")
-                    }}
-                  </div>
-                </div>
-              </template>
-            </v-switch>
+          <div class="bookable-price__question mb-0">
+            {{ $t("bookable.flow.price.vat") }}
           </div>
-          <div v-if="vatOn" class="bookable-price__inline mt-3">
+          <div class="bookable-price__hint mt-0">
+            {{
+              vatOn
+                ? $t("bookable.flow.price.vat-on")
+                : $t("bookable.flow.price.vat-off")
+            }}
+          </div>
+          <div class="bookable-price__inline mt-3">
             <v-chip
-              v-for="rate in vatRates"
+              v-for="rate in vatChoices"
               :key="rate"
               small
               outlined
@@ -154,7 +140,11 @@
               :data-test="`flow-vat-${rate}`"
               @click="setVat(rate)"
             >
-              {{ rate }} %
+              {{
+                rate > 0
+                  ? `${rate} %`
+                  : $t("bookable.flow.price.vat-none-choice")
+              }}
             </v-chip>
             <div class="bookable-price__vat-rate" data-test="flow-vat-rate">
               <v-text-field
@@ -168,8 +158,6 @@
                 outlined
                 dense
                 hide-details
-                @focus="vatTyping = true"
-                @blur="vatTyping = false"
                 @input="setVat"
               />
             </div>
@@ -279,9 +267,8 @@ export default {
     return {
       chosenMode: null,
       prefilled: false,
-      // While the rate is typed, an emptied field is not yet „aus“.
-      vatTyping: false,
-      vatRates: VAT_RATES,
+      // 19 %, 7 % and „aus“, the shortcuts of the one number.
+      vatChoices: [...VAT_RATES, 0],
       externalSetting: EXTERNAL_PROVIDER_SETTING,
     };
   },
@@ -320,7 +307,7 @@ export default {
       return toNumber(this.bookable.priceValueAddedTax);
     },
     vatOn() {
-      return this.vatRate > 0 || this.vatTyping;
+      return this.vatRate > 0;
     },
     amountLabel() {
       return this.vatRate > 0

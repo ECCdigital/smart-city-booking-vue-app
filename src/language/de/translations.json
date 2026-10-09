@@ -340,6 +340,7 @@
         "vat-on": "Auf den Betrag kommt Mehrwertsteuer.",
         "vat-off": "Der Betrag ist der Endpreis.",
         "vat-rate": "Steuersatz",
+        "vat-none-choice": "aus",
         "vat-summary": "{net} netto + {rate} % MwSt.",
         "vat-none": "Ohne Steueraufschlag",
         "gross": "brutto",
