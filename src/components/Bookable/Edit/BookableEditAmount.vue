@@ -11,27 +11,13 @@
         {{ $t("bookable.amount.title") }}
       </div>
 
-      <div
+      <BookableExternalNote
         v-if="external"
-        class="bookable-amount__note bookable-amount__note--warning"
-        data-test="flow-amount-external"
-      >
-        <div class="bookable-amount__note-title">
-          {{ $t("bookable.amount.external-title") }}
-        </div>
-        <p class="mb-2">
-          {{ $t("bookable.amount.external-text") }}
-        </p>
-        <button
-          type="button"
-          class="bookable-amount__link"
-          data-test="flow-amount-external-link"
-          @click="$emit('open-section', { ...externalSetting })"
-        >
-          {{ $t("bookable.availability.external-link") }}
-          <v-icon small color="primary">mdi-arrow-right</v-icon>
-        </button>
-      </div>
+        :title="$t('bookable.amount.external-title')"
+        :text="$t('bookable.amount.external-text')"
+        test-id="flow-amount-external"
+        @open-section="$emit('open-section', $event)"
+      />
 
       <template v-else>
         <FlowSegmented
@@ -108,7 +94,7 @@
 import FlowCounter from "@/components/Bookable/Flow/FlowCounter.vue";
 import FlowSegmented from "@/components/Bookable/Flow/FlowSegmented.vue";
 import bookableEditing from "@/mixins/bookableEditing";
-import { EXTERNAL_PROVIDER_SETTING } from "@/utils/bookableEditSections";
+import BookableExternalNote from "@/components/Bookable/Edit/BookableExternalNote.vue";
 import {
   isUnlimitedAmount,
   isUnlimitedMaxAmount,
@@ -133,12 +119,11 @@ const isEmpty = (value) => value == null || String(value).trim() === "";
  */
 export default {
   name: "BookableEditAmount",
-  components: { FlowCounter, FlowSegmented },
+  components: { FlowCounter, FlowSegmented, BookableExternalNote },
   mixins: [bookableEditing],
   data() {
     return {
       typing: { amount: false, max: false },
-      externalSetting: EXTERNAL_PROVIDER_SETTING,
     };
   },
   computed: {
@@ -262,42 +247,5 @@ export default {
   margin: var(--scb-space-3) 0 0;
   font-size: var(--scb-font-size-sm);
   color: var(--scb-text);
-}
-
-.bookable-amount__note {
-  padding: var(--scb-space-3) var(--scb-space-4);
-  font-size: var(--scb-font-size-sm);
-  line-height: var(--scb-line-height-base);
-  color: var(--scb-text);
-  background-color: var(--scb-selected-tint-faint);
-  border-radius: var(--scb-radius-control);
-}
-
-.bookable-amount__note--warning {
-  background-color: var(--scb-warning-tint);
-  border: 1px solid var(--v-warning-base);
-}
-
-.bookable-amount__note-title {
-  margin-bottom: 2px;
-  font-weight: var(--scb-font-weight-semibold);
-}
-
-.bookable-amount__link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--scb-space-1);
-  padding: 0;
-  font: inherit;
-  font-weight: var(--scb-font-weight-semibold);
-  color: var(--scb-text-link);
-  background: none;
-  border: 0;
-  cursor: pointer;
-}
-
-.bookable-amount__link:hover,
-.bookable-amount__link:focus-visible {
-  text-decoration: underline;
 }
 </style>

@@ -3,7 +3,7 @@ import FlowSegmented from "@/components/Bookable/Flow/FlowSegmented.vue";
 import bookableEditing from "@/mixins/bookableEditing";
 import { applyBookingMode, timeModeOf } from "@/utils/bookableFlow";
 import { bookingModeOf } from "@/utils/bookableBookingMode";
-import { EXTERNAL_PROVIDER_SETTING } from "@/utils/bookableEditSections";
+import BookableExternalNote from "@/components/Bookable/Edit/BookableExternalNote.vue";
 
 const LONG_RANGE_MODES = ["week", "month"];
 
@@ -21,7 +21,7 @@ const LONG_RANGE_MODES = ["week", "month"];
  */
 export default {
   name: "BookableEditBookingMode",
-  components: { FlowSegmented },
+  components: { FlowSegmented, BookableExternalNote },
   mixins: [bookableEditing],
   computed: {
     external() {
@@ -88,36 +88,19 @@ export default {
       if (mode === this.bookingMode) return;
       this.choose(mode);
     },
-    openSetting() {
-      this.$emit("open-section", { ...EXTERNAL_PROVIDER_SETTING });
-    },
   },
 };
 </script>
 
 <template>
   <div class="booking-mode" data-test="booking-mode" data-field="bookingMode">
-    <div
+    <BookableExternalNote
       v-if="external"
-      class="booking-mode__note booking-mode__note--warning"
-      data-test="booking-mode-external"
-    >
-      <div class="booking-mode__note-title">
-        {{ $t("bookable.availability.external-title") }}
-      </div>
-      <p class="mb-2">
-        {{ $t("bookable.availability.external-text") }}
-      </p>
-      <button
-        type="button"
-        class="booking-mode__link"
-        data-test="booking-mode-external-link"
-        @click="openSetting"
-      >
-        {{ $t("bookable.availability.external-link") }}
-        <v-icon small color="primary">mdi-arrow-right</v-icon>
-      </button>
-    </div>
+      :title="$t('bookable.availability.external-title')"
+      :text="$t('bookable.availability.external-text')"
+      test-id="booking-mode-external"
+      @open-section="$emit('open-section', $event)"
+    />
 
     <template v-else>
       <div class="booking-mode__question">
@@ -201,34 +184,5 @@ export default {
   color: var(--scb-text);
   background-color: var(--scb-selected-tint-faint);
   border-radius: var(--scb-radius-control);
-}
-
-.booking-mode__note--warning {
-  margin-top: 0;
-  background-color: var(--scb-warning-tint);
-  border: 1px solid var(--v-warning-base);
-}
-
-.booking-mode__note-title {
-  margin-bottom: 2px;
-  font-weight: var(--scb-font-weight-semibold);
-}
-
-.booking-mode__link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--scb-space-1);
-  padding: 0;
-  font: inherit;
-  font-weight: var(--scb-font-weight-semibold);
-  color: var(--scb-text-link);
-  background: none;
-  border: 0;
-  cursor: pointer;
-}
-
-.booking-mode__link:hover,
-.booking-mode__link:focus-visible {
-  text-decoration: underline;
 }
 </style>

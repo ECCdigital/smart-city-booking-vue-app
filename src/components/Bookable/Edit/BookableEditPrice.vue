@@ -1,26 +1,12 @@
 <template>
   <div class="bookable-price" data-test="flow-price" data-field="price">
-    <div
+    <BookableExternalNote
       v-if="external"
-      class="bookable-price__note bookable-price__note--warning"
-      data-test="flow-price-external"
-    >
-      <div class="bookable-price__note-title">
-        {{ $t("bookable.price.external-title") }}
-      </div>
-      <p class="mb-2">
-        {{ $t("bookable.price.external-text") }}
-      </p>
-      <button
-        type="button"
-        class="bookable-price__link"
-        data-test="flow-price-external-link"
-        @click="$emit('open-section', { ...externalSetting })"
-      >
-        {{ $t("bookable.availability.external-link") }}
-        <v-icon small color="primary">mdi-arrow-right</v-icon>
-      </button>
-    </div>
+      :title="$t('bookable.price.external-title')"
+      :text="$t('bookable.price.external-text')"
+      test-id="flow-price-external"
+      @open-section="$emit('open-section', $event)"
+    />
 
     <template v-else>
       <div class="bookable-price__field">
@@ -229,7 +215,7 @@ import {
   priceExplanation,
   priceModeOf,
 } from "@/utils/bookableFlow";
-import { EXTERNAL_PROVIDER_SETTING } from "@/utils/bookableEditSections";
+import BookableExternalNote from "@/components/Bookable/Edit/BookableExternalNote.vue";
 import { bookingModeOf } from "@/utils/bookableBookingMode";
 
 const euro = (value) =>
@@ -257,7 +243,7 @@ const toNumber = (value) =>
  */
 export default {
   name: "BookableEditPrice",
-  components: { FlowSegmented, BookableEditPriceTiers },
+  components: { FlowSegmented, BookableEditPriceTiers, BookableExternalNote },
   mixins: [bookableEditing],
   data() {
     return {
@@ -265,7 +251,6 @@ export default {
       prefilled: false,
       // 19 %, 7 % and „aus“, the shortcuts of the one number.
       vatChoices: [...VAT_RATES, 0],
-      externalSetting: EXTERNAL_PROVIDER_SETTING,
     };
   },
   computed: {
@@ -397,34 +382,6 @@ export default {
   color: var(--scb-text);
   background-color: var(--scb-selected-tint-faint);
   border-radius: var(--scb-radius-control);
-}
-
-.bookable-price__note--warning {
-  background-color: var(--scb-warning-tint);
-  border: 1px solid var(--v-warning-base);
-}
-
-.bookable-price__note-title {
-  margin-bottom: 2px;
-  font-weight: var(--scb-font-weight-semibold);
-}
-
-.bookable-price__link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--scb-space-1);
-  padding: 0;
-  font: inherit;
-  font-weight: var(--scb-font-weight-semibold);
-  color: var(--scb-text-link);
-  background: none;
-  border: 0;
-  cursor: pointer;
-}
-
-.bookable-price__link:hover,
-.bookable-price__link:focus-visible {
-  text-decoration: underline;
 }
 
 .bookable-price__switch {
