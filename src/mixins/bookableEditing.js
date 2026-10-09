@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { createTenantAccessPoints } from "@/services/TenantAccessPoints";
-import { expertOptionShown } from "@/utils/bookableExpertMode";
+import { expertOptionShownIn } from "@/utils/bookableExpertMode";
 import { providerTakesOver } from "@/utils/bookableExternalProviders";
 import { BOOKABLE_RULE_NAMES, bookableRules } from "@/utils/bookableValidation";
 
@@ -52,11 +52,10 @@ export default {
   methods: {
     /** Whether the expert option `option` shows, by the expert-mode rule. */
     expertOptionShown(option) {
-      return expertOptionShown(option, {
-        expertMode: this.bookableExpertMode.enabled !== false,
-        stored: this.bookableExpertMode.stored,
-        current: this.bookable,
-      });
+      return expertOptionShownIn(
+        this.bookableExpertMode,
+        this.bookable
+      )(option);
     },
     /**
      * Whether ParkraumService takes `capability` (`pricing`, `availability`,

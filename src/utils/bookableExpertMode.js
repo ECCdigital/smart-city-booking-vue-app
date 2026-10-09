@@ -124,6 +124,21 @@ export function expertOptionShown(option, { expertMode, stored, current }) {
 }
 
 /**
+ * The rule as the parts of `BookableEdit` ask it, `shown(option)`: over the
+ * mode and the stored bookable of `context` - what `BookableEdit` provides
+ * as `bookableExpertMode`, `{ enabled, stored }` - and the bookable as
+ * edited, `current`.
+ */
+export function expertOptionShownIn({ enabled, stored }, current) {
+  return (option) =>
+    expertOptionShown(option, {
+      expertMode: enabled !== false,
+      stored,
+      current,
+    });
+}
+
+/**
  * Whether `bookable` uses the expert option - for what reads „genutzt“ by
  * the same table, like the areas of Weitere Einstellungen.
  */

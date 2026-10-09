@@ -350,7 +350,7 @@ import {
 } from "@/utils/bookableFlow";
 import { publicationOutcome } from "@/utils/bookablePublication";
 import {
-  expertOptionShown,
+  expertOptionShownIn,
   expertTabShown,
   getInitialBookableExpertMode,
   isBookableExpertModeConfigured,
@@ -362,7 +362,6 @@ import {
   getVisibleBookableEditSections,
   shouldShowBookableEditSectionNav,
 } from "@/utils/bookableEditSections";
-import BookablePermissionService from "@/services/permissions/BookablePermissionService";
 import { formatAccessPointErrorMessage } from "@/utilities/access-point-errors";
 import { bookableIssues, firstIssue } from "@/utils/bookableValidation";
 import { areaAt, areaShown } from "@/utils/bookableAreas";
@@ -467,10 +466,8 @@ export default {
       return listRouteOf(this.type);
     },
     visibleTabs() {
-      return this.tabs.filter(
-        (tab) =>
-          this.isTabVisible(tab) &&
-          expertTabShown(tab.key, this.expertOptionShown)
+      return this.tabs.filter((tab) =>
+        expertTabShown(tab.key, this.expertOptionShown)
       );
     },
     tabsRenderKey() {
@@ -537,21 +534,7 @@ export default {
     },
     /** The expert-mode rule, as the components ask it. */
     expertOptionShown(option) {
-      return expertOptionShown(option, {
-        expertMode: this.expertMode,
-        stored: this.expertModeContext.stored,
-        current: this.bookable,
-      });
-    },
-    isTabVisible(tab) {
-      if (!tab.permission) return true;
-      if (tab.permission === "manageBookables") {
-        if (!this.bookable?.id) {
-          return BookablePermissionService.allowCreate();
-        }
-        return BookablePermissionService.allowUpdate(this.bookable);
-      }
-      return true;
+      return expertOptionShownIn(this.expertModeContext, this.bookable)(option);
     },
     /** „Speichern“ of the editing page. */
     async save() {
@@ -806,18 +789,8 @@ export default {
       }
 
       const nextSectionId = sectionId || null;
-      if (nextSectionId) {
-        const section = getBookableEditSectionById(nextSectionId);
-        if (!section || section.tabKey !== key) {
-          return;
-        }
-        const visible = getVisibleBookableEditSections(
-          key,
-          this.sectionContext
-        );
-        if (!visible.some((item) => item.id === nextSectionId)) {
-          return;
-        }
+      if (nextSectionId && !this.sectionShownIn(key, nextSectionId)) {
+        return;
       }
 
       this.activeTabKey = key;
@@ -832,6 +805,17 @@ export default {
           this.applySectionNavigation(nextSectionId);
         });
       }
+    },
+    /** Whether the section `sectionId` lies in the tab `tabKey` and shows. */
+    sectionShownIn(tabKey, sectionId) {
+      const section = getBookableEditSectionById(sectionId);
+      return (
+        !!section &&
+        section.tabKey === tabKey &&
+        getVisibleBookableEditSections(tabKey, this.sectionContext).some(
+          (item) => item.id === sectionId
+        )
+      );
     },
     onTabChange(index) {
       const tab = this.visibleTabs[index];
@@ -914,19 +898,10 @@ export default {
       }
 
       const querySection = this.$route.query.section || null;
-      const section = querySection
-        ? getBookableEditSectionById(querySection)
-        : null;
-      let nextSectionId = null;
-      if (section && section.tabKey === nextTabKey) {
-        const visible = getVisibleBookableEditSections(
-          nextTabKey,
-          this.sectionContext
-        );
-        if (visible.some((item) => item.id === querySection)) {
-          nextSectionId = querySection;
-        }
-      }
+      const nextSectionId =
+        querySection && this.sectionShownIn(nextTabKey, querySection)
+          ? querySection
+          : null;
 
       this.activeTabKey = nextTabKey;
       this.activeSectionId = nextSectionId;
