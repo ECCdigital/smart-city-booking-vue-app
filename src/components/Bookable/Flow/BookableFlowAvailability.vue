@@ -18,7 +18,6 @@
       <div v-if="showsOpeningHours" class="flow-rule">
         <BookableEditOpeningHours
           :bookable="bookable"
-          embedded
           @update:bookable="$emit('update:bookable', $event)"
         />
       </div>

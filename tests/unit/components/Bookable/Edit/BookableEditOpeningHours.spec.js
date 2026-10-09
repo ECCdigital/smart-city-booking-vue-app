@@ -18,37 +18,38 @@ const bookable = (overrides = {}) =>
     ...overrides,
   }).toPlain();
 
-const mountHours = (overrides, embedded = false) =>
+const mountHours = (overrides) =>
   mountEditing(BookableEditOpeningHours, {
     bookable: bookable(overrides),
-    propsData: { embedded },
     provide: { bookableExpertMode: { enabled: true } },
   });
 
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
 
 describe("BookableEditOpeningHours", () => {
-  it("changes nothing when it mounts, in either mode", async () => {
-    for (const embedded of [false, true]) {
-      const {
-        wrapper,
-        patches,
-        bookable: handedIn,
-        stored,
-      } = mountHours(
-        {
-          isOpeningHoursRelated: true,
-          openingHours: [OPENING_HOURS],
-          isSpecialOpeningHoursRelated: true,
-          specialOpeningHours: [SPECIAL],
-        },
-        embedded
-      );
-      await wrapper.vm.$nextTick();
+  it("changes nothing when it mounts", async () => {
+    const {
+      wrapper,
+      patches,
+      bookable: handedIn,
+      stored,
+    } = mountHours({
+      isOpeningHoursRelated: true,
+      openingHours: [OPENING_HOURS],
+      isSpecialOpeningHoursRelated: true,
+      specialOpeningHours: [SPECIAL],
+    });
+    await wrapper.vm.$nextTick();
 
-      expect(patches).toEqual([]);
-      expect(handedIn).toEqual(stored);
-    }
+    expect(patches).toEqual([]);
+    expect(handedIn).toEqual(stored);
+  });
+
+  // The frame titles it: the tab on the editing page, the step in the flow.
+  it("draws no heading of its own", () => {
+    const { wrapper } = mountHours();
+
+    expect(wrapper.findComponent({ name: "BaseSection" }).exists()).toBe(false);
   });
 
   it("switches the opening hours on", async () => {

@@ -23,7 +23,7 @@ vi.mock("@/services/api/ApiEventService", () => ({
 
 const editorStub = (name) => ({
   name,
-  props: { bookable: Object, embedded: Boolean },
+  props: { bookable: Object },
   render(h) {
     return h("div", { attrs: { "data-test": `stub-${name}` } });
   },
@@ -153,8 +153,8 @@ describe("BookableFlowAvailability", () => {
 
     expect(find(wrapper, "stub-BookableEditBookingType").exists()).toBe(true);
     expect(
-      wrapper.findComponent({ name: "BookableEditOpeningHours" }).props()
-    ).toMatchObject({ embedded: true });
+      wrapper.findComponent({ name: "BookableEditOpeningHours" }).exists()
+    ).toBe(true);
   });
 
   it("shows no opening hours for the long range", () => {

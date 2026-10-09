@@ -1,5 +1,4 @@
 <script>
-import BaseSection from "@/components/commons/BaseSection.vue";
 import bookableEditing from "@/mixins/bookableEditing";
 import {
   bookingModeNameKey,
@@ -10,12 +9,7 @@ import { weekdayItems } from "@/utils/bookableWeekdays";
 
 export default {
   name: "BookableEditOpeningHours",
-  components: { BaseSection },
   mixins: [bookableEditing],
-  props: {
-    // Inside the guided flow, which titles the step itself.
-    embedded: { type: Boolean, default: false },
-  },
 
   data() {
     return {
@@ -166,12 +160,6 @@ export default {
 
 <template>
   <div>
-    <BaseSection
-      v-if="!embedded"
-      :title="$t('bookable.edit.cards.openingHours')"
-      icon="mdi-clock-outline"
-    />
-
     <div v-if="applies">
       <!-- Regular Opening Hours -->
       <v-card

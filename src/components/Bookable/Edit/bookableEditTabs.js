@@ -69,9 +69,8 @@ export function areaCard(key, extra = {}) {
 /**
  * The tabs of the editing page, in order, each named by the i18n key
  * `labelKey` - the key of the field or area it holds where it holds one. A
- * tab is either one component
- * (`comp`) that draws its heading and sections itself, or a list of `cards`
- * that `BookableEditTab` frames under the tab's heading. A card:
+ * tab is a list of `cards` that `BookableEditTab` frames under the tab's
+ * heading. A card:
  *
  * - `key`, `comp`: its name in the tab and its component, on `bookableEditing`;
  * - `titleKey`, `icon`: the card's heading;
@@ -80,8 +79,6 @@ export function areaCard(key, extra = {}) {
  * - `option`: the expert option it is, shown by `expertOptionShown`;
  * - `bare`: drawn without a card, for a component with cards of its own;
  * - `sectionTarget`: hands on the sub-section to open (`?section=`).
- *
- * A tab becomes cards one ticket at a time: a ticket edits only its entry.
  */
 export const BOOKABLE_EDIT_TABS = Object.freeze([
   {
@@ -144,7 +141,10 @@ export const BOOKABLE_EDIT_TABS = Object.freeze([
     key: "openingHours",
     labelKey: "bookable.edit.cards.openingHours",
     icon: "mdi-clock-outline",
-    comp: BookableEditOpeningHours,
+    // Öffnungszeiten and Sonderöffnungszeiten draw their cards themselves.
+    cards: [
+      { key: "openingHours", comp: BookableEditOpeningHours, bare: true },
+    ],
   },
   {
     key: "accessLocks",

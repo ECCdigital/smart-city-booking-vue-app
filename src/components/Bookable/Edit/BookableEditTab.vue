@@ -26,6 +26,7 @@ export default {
       return getVisibleBookableEditSections(this.tab.key, {
         bookable: this.bookable,
         shown: this.expertOptionShown,
+        accessPoints: this.bookableAccessPoints.list,
       }).map((section) => section.id);
     },
     cards() {

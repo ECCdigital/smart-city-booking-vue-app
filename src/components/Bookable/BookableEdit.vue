@@ -284,14 +284,13 @@
 
         <div class="page-content__editor" ref="editorScroll">
           <keep-alive>
-            <component
-              v-if="activeTabComp && bookable.tenantId"
-              :is="activeTabComp"
+            <BookableEditTab
+              v-if="activeTab && bookable.tenantId"
               :key="activeTabKey"
+              :tab="activeTab"
               :bookable="bookable"
-              v-bind="activeTabExtraProps"
+              :section-target="sectionTarget"
               @update:bookable="onUpdateBookable"
-              @navigate-tab="goToTab"
               @open-section="openSection"
             />
           </keep-alive>
@@ -382,6 +381,7 @@ export default {
     SaveBar,
     UnsavedChangesDialog,
     BookableFlow,
+    BookableEditTab,
   },
   mixins: [unsavedChangesGuard],
   props: {
@@ -488,11 +488,6 @@ export default {
         this.visibleTabs[0]
       );
     },
-    // A tab of cards is framed by BookableEditTab, any other is its `comp`.
-    activeTabComp() {
-      if (!this.activeTab) return null;
-      return this.activeTab.cards ? BookableEditTab : this.activeTab.comp;
-    },
     sectionContext() {
       return {
         bookable: this.bookable,
@@ -511,10 +506,6 @@ export default {
         this.activeTabKey,
         this.sectionContext
       );
-    },
-    activeTabExtraProps() {
-      if (!this.activeTab?.cards) return {};
-      return { tab: this.activeTab, sectionTarget: this.sectionTarget };
     },
     hasUnsavedChanges() {
       if (
