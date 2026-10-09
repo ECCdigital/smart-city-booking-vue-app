@@ -75,7 +75,7 @@ Instance (global deployment config, loaded at bootstrap)
 
 ## Guided setup (tenant onboarding)
 
-`/onboarding` (`src/views/Management/TenantOnboarding.vue`) leads from the shortened tenant creation to the first bookable: tenant → bookable → optional legal texts/payment → overview with the readiness check.
+`/onboarding` (`src/views/Management/TenantOnboarding.vue`) is the shortened tenant creation. The creation replaces the address with `?tenant=<id>`, which shows the tenant's Nächste Schritte (`Onboarding/OnboardingNextSteps.vue`): plain links to the tenant settings, the members and a first bookable in the guided flow, the readiness check, legal texts and payment, and „Zur Startseite“.
 
 - Drawn as the booking page is (`docs/agents/design-tokens.md`): `Onboarding/OnboardingPath.vue` is the headline over the segmented path (reachable steps are tabs, `input` reports the step), the step components render section cards, `Onboarding/OnboardingPanel.vue` is the sticky facts panel beside every step, and `Onboarding/OnboardingChoiceTiles.vue` is the radio group behind the two deliberate choices. The steps emit `submit` / `back`; „Zur Verwaltung“ is the view's toolbar
 - Form rules, the mapping onto a `Bookable` and the reading of creation errors are pure functions in `src/utils/tenantOnboarding.js`; the view only wires them to the API services
