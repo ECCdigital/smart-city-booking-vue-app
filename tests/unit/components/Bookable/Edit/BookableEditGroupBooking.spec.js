@@ -118,3 +118,19 @@ describe("BookableEditGroupBooking (Serienbuchung)", () => {
     );
   });
 });
+
+describe("BookableEditGroupBooking - the roles of the bookable's tenant", () => {
+  it("reads the roles again when the bookable's tenant changes", async () => {
+    ApiRolesService.getTenantRoles.mockClear();
+    ApiRolesService.getTenantRoles.mockResolvedValue({ data: [] });
+    const { wrapper } = await mountArea(ON);
+
+    await wrapper.setProps({ bookable: bookable({ ...ON, tenantId: "t2" }) });
+    await flushPromises();
+
+    expect(ApiRolesService.getTenantRoles.mock.calls).toEqual([
+      [true, "t1"],
+      [true, "t2"],
+    ]);
+  });
+});

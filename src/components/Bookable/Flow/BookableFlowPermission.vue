@@ -163,9 +163,9 @@
 import _ from "lodash";
 import OnboardingChoiceTiles from "@/components/Tenant/Onboarding/OnboardingChoiceTiles.vue";
 import BookingDiscountList from "@/components/Bookable/Edit/BookingDiscountList.vue";
-import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import bookableEditing from "@/mixins/bookableEditing";
+import tenantRoles from "@/mixins/tenantRoles";
 import { tenantUserOptions } from "@/utils/tenantUsers";
 import { bookableEditSectionElementId } from "@/utils/bookableEditSections";
 import {
@@ -194,11 +194,10 @@ const ACCESS = ["everyone", "signedIn", "selected"];
 export default {
   name: "BookableFlowPermission",
   components: { OnboardingChoiceTiles, BookingDiscountList },
-  mixins: [bookableEditing],
+  mixins: [bookableEditing, tenantRoles],
   data() {
     return {
       chosenAccess: null,
-      roles: [],
       people: [],
     };
   },
@@ -232,7 +231,7 @@ export default {
       };
     },
     roleOptions() {
-      const known = this.roles.map((role) => ({
+      const known = this.tenantRoles.map((role) => ({
         id: role.id,
         label: role.name || role.id,
       }));
@@ -274,7 +273,7 @@ export default {
     },
   },
   watch: {
-    tenantId: { immediate: true, handler: "load" },
+    tenantId: { immediate: true, handler: "loadPeople" },
   },
   methods: {
     setAccess(access) {
@@ -296,24 +295,8 @@ export default {
       const text = `${item.label} ${item.sub || ""}`.toLowerCase();
       return text.includes((query || "").toLowerCase());
     },
-    load() {
-      if (!this.tenantId) return;
-      this.loadRoles();
-      this.loadPeople();
-    },
-    async loadRoles() {
-      try {
-        const response = await ApiRolesService.getTenantRoles(
-          true,
-          this.tenantId
-        );
-        this.roles = response?.data || [];
-      } catch (error) {
-        console.error(error);
-        this.roles = [];
-      }
-    },
     async loadPeople() {
+      if (!this.tenantId) return;
       try {
         const response = await ApiTenantService.getTenantUsers(this.tenantId);
         this.people = tenantUserOptions(response);

@@ -1,6 +1,6 @@
 <script>
-import ApiRolesService from "@/services/api/ApiRolesService";
 import bookableEditing from "@/mixins/bookableEditing";
+import tenantRoles from "@/mixins/tenantRoles";
 
 /**
  * Serienbuchung: whether bookers may book a series of dates at once, and
@@ -11,12 +11,7 @@ import bookableEditing from "@/mixins/bookableEditing";
  */
 export default {
   name: "BookableEditGroupBooking",
-  mixins: [bookableEditing],
-  data() {
-    return {
-      availableRoles: [],
-    };
-  },
+  mixins: [bookableEditing, tenantRoles],
   computed: {
     groupBooking() {
       return this.bookable.groupBooking || { enabled: false };
@@ -45,23 +40,8 @@ export default {
       this.setRoles(this.permittedRoles.filter((id) => id !== role));
     },
     roleName(id) {
-      return this.availableRoles.find((role) => role.id === id)?.name;
+      return this.tenantRoles.find((role) => role.id === id)?.name;
     },
-    async fetchRoles() {
-      try {
-        const result = await ApiRolesService.getTenantRoles(
-          true,
-          this.bookable.tenantId
-        );
-        this.availableRoles = result?.data || [];
-      } catch (error) {
-        console.error("Error fetching roles:", error);
-        this.availableRoles = [];
-      }
-    },
-  },
-  mounted() {
-    this.fetchRoles();
   },
 };
 </script>
@@ -93,7 +73,7 @@ export default {
 
         <v-combobox
           :value="permittedRoles"
-          :items="availableRoles"
+          :items="tenantRoles"
           :label="$t('bookable.areas.groupBooking.roles')"
           item-text="name"
           item-value="id"
