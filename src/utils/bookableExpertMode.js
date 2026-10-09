@@ -106,16 +106,13 @@ const USED = {
     nonEmpty(bookable.customFieldDefinitions),
 };
 
-/** The expert options, by the key `expertOptionShown` knows them. */
-export const EXPERT_OPTIONS = Object.freeze(Object.keys(USED));
-
 /**
  * Whether an expert option shows: always in expert mode, without it only
  * while the stored or the current bookable uses it - so expert mode hides
  * nothing a bookable relies on, and switching it off loses nothing unsaved.
  * There is no locked option with a hint.
  *
- * @param {string} option A key of {@link EXPERT_OPTIONS}
+ * @param {string} option An expert option, a key of the table above
  * @param {{ expertMode: boolean, stored: ?object, current: ?object }} state
  *   The mode, the bookable as loaded or last saved, and as edited now
  * @returns {boolean}

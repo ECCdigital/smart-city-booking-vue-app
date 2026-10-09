@@ -176,7 +176,7 @@ export const PRICE_TYPES = Object.freeze([
  * What `fixedPrice` starts as for a Preisart: on for a day price (started
  * days count in full), off for the others.
  */
-export function defaultFixedPrice(priceType) {
+function defaultFixedPrice(priceType) {
   return priceType === "per-day";
 }
 

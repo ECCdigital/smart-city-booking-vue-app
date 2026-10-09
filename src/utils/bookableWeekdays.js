@@ -1,5 +1,5 @@
 /** Weekday ids as the backend stores them, Monday first; Sunday is 0. */
-export const WEEKDAY_IDS = Object.freeze([1, 2, 3, 4, 5, 6, 0]);
+const WEEKDAY_IDS = Object.freeze([1, 2, 3, 4, 5, 6, 0]);
 
 /**
  * The weekdays as the editing components offer them: `{ id, name, short }`,
