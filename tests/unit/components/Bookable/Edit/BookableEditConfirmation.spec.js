@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mountEditing } from "@tests/unit/support/bookableEditing";
 import Bookable from "@/entities/bookable";
-import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
+import BookableEditConfirmation from "@/components/Bookable/Edit/BookableEditConfirmation.vue";
 
 // The Bestätigung (`autoCommitBooking`), one component for the editing
 // page's card and the guided flow's step (ECCdigital/tickets#361). It knows
@@ -11,13 +11,13 @@ const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t1", title: "Saal", ...overrides }).toPlain();
 
 const mountConfirmation = (overrides) =>
-  mountEditing(BookableFlowApproval, { bookable: bookable(overrides) });
+  mountEditing(BookableEditConfirmation, { bookable: bookable(overrides) });
 
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
 const checked = (wrapper, value) =>
   find(wrapper, `confirmation-${value}`).attributes("aria-checked") === "true";
 
-describe("BookableFlowApproval - Bestätigung", () => {
+describe("BookableEditConfirmation - Bestätigung", () => {
   it("asks how incoming bookings are confirmed, with two tiles", () => {
     const { wrapper } = mountConfirmation();
 

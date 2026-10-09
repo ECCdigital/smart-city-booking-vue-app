@@ -805,8 +805,8 @@ export default {
       <div class="text-body-2 grey--text text--darken-1">
         {{
           $t("bookable.edit.openingHours.unavailable-hint", {
-            schedule: $t("bookable.flow.availability.modes.schedule"),
-            timePeriod: $t("bookable.flow.availability.modes.timePeriod"),
+            schedule: $t("bookable.availability.modes.schedule"),
+            timePeriod: $t("bookable.availability.modes.timePeriod"),
           })
         }}
       </div>

@@ -30,10 +30,10 @@ const stepStub = (name) => ({
 });
 
 const STUBS = {
-  BookableFlowIdentity: stepStub("BookableFlowIdentity"),
+  BookableEditIdentity: stepStub("BookableEditIdentity"),
   BookableFlowAvailability: stepStub("BookableFlowAvailability"),
-  BookableFlowPrice: stepStub("BookableFlowPrice"),
-  BookableFlowPermission: stepStub("BookableFlowPermission"),
+  BookableEditPrice: stepStub("BookableEditPrice"),
+  BookableEditPermission: stepStub("BookableEditPermission"),
   BookableFlowMore: stepStub("BookableFlowMore"),
   TenantReadinessCheck: stepStub("TenantReadinessCheck"),
   RouterLink: true,

@@ -8,7 +8,7 @@
     >
       <div class="bookable-amount__question">
         <v-icon small>mdi-layers-outline</v-icon>
-        {{ $t("bookable.flow.amount.title") }}
+        {{ $t("bookable.amount.title") }}
       </div>
 
       <div
@@ -17,10 +17,10 @@
         data-test="flow-amount-external"
       >
         <div class="bookable-amount__note-title">
-          {{ $t("bookable.flow.amount.external-title") }}
+          {{ $t("bookable.amount.external-title") }}
         </div>
         <p class="mb-2">
-          {{ $t("bookable.flow.amount.external-text") }}
+          {{ $t("bookable.amount.external-text") }}
         </p>
         <button
           type="button"
@@ -28,7 +28,7 @@
           data-test="flow-amount-external-link"
           @click="$emit('open-section', { ...externalSetting })"
         >
-          {{ $t("bookable.flow.availability.external-link") }}
+          {{ $t("bookable.availability.external-link") }}
           <v-icon small color="primary">mdi-arrow-right</v-icon>
         </button>
       </div>
@@ -37,7 +37,7 @@
         <FlowSegmented
           :value="amountLimited ? 'limited' : 'unlimited'"
           :options="limitOptions"
-          :label="$t('bookable.flow.amount.title')"
+          :label="$t('bookable.amount.title')"
           test-id="flow-amount-mode"
           @input="setAmountLimited($event === 'limited')"
         />
@@ -45,14 +45,14 @@
           v-if="amountLimited"
           class="bookable-amount__counter"
           :value="amountValue"
-          :label="$t('bookable.flow.amount.title')"
+          :label="$t('bookable.amount.title')"
           :unit="unitOf(amountValue)"
           test-id="flow-amount"
           @input="typeAmount"
           @leave="typing.amount = false"
         />
         <p v-else class="bookable-amount__hint">
-          {{ $t("bookable.flow.amount.unlimited-hint") }}
+          {{ $t("bookable.amount.unlimited-hint") }}
         </p>
 
         <p
@@ -61,7 +61,7 @@
           data-test="flow-amount-warning"
         >
           <v-icon small color="warning">mdi-alert-outline</v-icon>
-          {{ $t("bookable.flow.amount.room-warning") }}
+          {{ $t("bookable.amount.room-warning") }}
         </p>
       </template>
     </div>
@@ -77,12 +77,12 @@
     >
       <div class="bookable-amount__question">
         <v-icon small>mdi-cart-arrow-down</v-icon>
-        {{ $t("bookable.flow.amount.max-title") }}
+        {{ $t("bookable.amount.max-title") }}
       </div>
       <FlowSegmented
         :value="maxLimited ? 'limited' : 'unlimited'"
         :options="limitOptions"
-        :label="$t('bookable.flow.amount.max-title')"
+        :label="$t('bookable.amount.max-title')"
         test-id="flow-max-amount-mode"
         @input="setMaxLimited($event === 'limited')"
       />
@@ -90,7 +90,7 @@
         v-if="maxLimited"
         class="bookable-amount__counter"
         :value="maxValue"
-        :label="$t('bookable.flow.amount.max-title')"
+        :label="$t('bookable.amount.max-title')"
         :unit="unitOf(maxValue)"
         :rules="fieldRules.maxAmountPerBooking"
         test-id="flow-max-amount"
@@ -98,7 +98,7 @@
         @leave="typing.max = false"
       />
       <p v-else class="bookable-amount__hint">
-        {{ $t("bookable.flow.amount.max-unlimited-hint") }}
+        {{ $t("bookable.amount.max-unlimited-hint") }}
       </p>
     </div>
   </div>
@@ -132,7 +132,7 @@ const isEmpty = (value) => value == null || String(value).trim() === "";
  * „Begrenzt“, though the bookable already reads unlimited.
  */
 export default {
-  name: "BookableFlowAmount",
+  name: "BookableEditAmount",
   components: { FlowCounter, FlowSegmented },
   mixins: [bookableEditing],
   data() {
@@ -170,15 +170,15 @@ export default {
     limitOptions() {
       return ["limited", "unlimited"].map((value) => ({
         value,
-        label: this.$t(`bookable.flow.amount.${value}`),
+        label: this.$t(`bookable.amount.${value}`),
       }));
     },
   },
   methods: {
     unitOf(count) {
       return this.bookable.priceType === "per-square-meter"
-        ? this.$t("bookable.flow.amount.unit-square-meter")
-        : this.$tc("bookable.flow.amount.unit", Number(count) || 0);
+        ? this.$t("bookable.amount.unit-square-meter")
+        : this.$tc("bookable.amount.unit", Number(count) || 0);
     },
     setAmountLimited(limited) {
       this.typing.amount = false;

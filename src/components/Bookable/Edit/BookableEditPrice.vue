@@ -6,10 +6,10 @@
       data-test="flow-price-external"
     >
       <div class="bookable-price__note-title">
-        {{ $t("bookable.flow.price.external-title") }}
+        {{ $t("bookable.price.external-title") }}
       </div>
       <p class="mb-2">
-        {{ $t("bookable.flow.price.external-text") }}
+        {{ $t("bookable.price.external-text") }}
       </p>
       <button
         type="button"
@@ -17,7 +17,7 @@
         data-test="flow-price-external-link"
         @click="$emit('open-section', { ...externalSetting })"
       >
-        {{ $t("bookable.flow.availability.external-link") }}
+        {{ $t("bookable.availability.external-link") }}
         <v-icon small color="primary">mdi-arrow-right</v-icon>
       </button>
     </div>
@@ -38,7 +38,7 @@
         class="bookable-price__note mb-0"
         data-test="flow-free"
       >
-        {{ $t("bookable.flow.price.free-info") }}
+        {{ $t("bookable.price.free-info") }}
       </p>
 
       <template v-else>
@@ -48,8 +48,8 @@
           data-test="flow-prefilled"
         >
           {{
-            $t("bookable.flow.price.prefilled", {
-              reason: $t(`bookable.flow.price.reasons.${bookingMode}`),
+            $t("bookable.price.prefilled", {
+              reason: $t(`bookable.price.reasons.${bookingMode}`),
             })
           }}
         </p>
@@ -66,7 +66,7 @@
             @input="setType"
           />
           <div v-if="mode === 'tiers'" class="bookable-price__hint">
-            {{ $t("bookable.flow.price.type-tiers-hint") }}
+            {{ $t("bookable.price.type-tiers-hint") }}
           </div>
         </div>
 
@@ -121,13 +121,11 @@
              typed, „aus“ is 0 %. -->
         <div class="bookable-price__box" data-test="flow-vat" data-field="vat">
           <div class="bookable-price__question mb-0">
-            {{ $t("bookable.flow.price.vat") }}
+            {{ $t("bookable.price.vat") }}
           </div>
           <div class="bookable-price__hint mt-0">
             {{
-              vatOn
-                ? $t("bookable.flow.price.vat-on")
-                : $t("bookable.flow.price.vat-off")
+              vatOn ? $t("bookable.price.vat-on") : $t("bookable.price.vat-off")
             }}
           </div>
           <div class="bookable-price__inline mt-3">
@@ -141,15 +139,13 @@
               @click="setVat(rate)"
             >
               {{
-                rate > 0
-                  ? `${rate} %`
-                  : $t("bookable.flow.price.vat-none-choice")
+                rate > 0 ? `${rate} %` : $t("bookable.price.vat-none-choice")
               }}
             </v-chip>
             <div class="bookable-price__vat-rate" data-test="flow-vat-rate">
               <v-text-field
                 :value="bookable.priceValueAddedTax"
-                :label="$t('bookable.flow.price.vat-rate')"
+                :label="$t('bookable.price.vat-rate')"
                 type="number"
                 min="0"
                 max="100"
@@ -170,11 +166,11 @@
             <span>
               {{
                 vatOn
-                  ? $t("bookable.flow.price.vat-summary", {
+                  ? $t("bookable.price.vat-summary", {
                       net: euro(price),
                       rate: vatRate.toLocaleString("de-DE"),
                     })
-                  : $t("bookable.flow.price.vat-none")
+                  : $t("bookable.price.vat-none")
               }}
             </span>
             <span class="bookable-price__total">
@@ -182,8 +178,8 @@
               <span class="bookable-price__hint">
                 {{
                   vatOn
-                    ? $t("bookable.flow.price.gross")
-                    : $t("bookable.flow.price.final")
+                    ? $t("bookable.price.gross")
+                    : $t("bookable.price.final")
                 }}
               </span>
             </span>
@@ -204,12 +200,12 @@
           >
             <template #label>
               <div>
-                <div>{{ $t("bookable.flow.price.coupons") }}</div>
+                <div>{{ $t("bookable.price.coupons") }}</div>
                 <div class="bookable-price__hint mt-0">
                   {{
                     couponsOn
-                      ? $t("bookable.flow.price.coupons-on")
-                      : $t("bookable.flow.price.coupons-off")
+                      ? $t("bookable.price.coupons-on")
+                      : $t("bookable.price.coupons-off")
                   }}
                 </div>
               </div>
@@ -260,7 +256,7 @@ const toNumber = (value) =>
  * forwards).
  */
 export default {
-  name: "BookableFlowPrice",
+  name: "BookableEditPrice",
   components: { FlowSegmented, BookableEditPriceTiers },
   mixins: [bookableEditing],
   data() {
@@ -296,12 +292,12 @@ export default {
       const type = PRICE_TYPES.includes(this.bookable.priceType)
         ? this.bookable.priceType
         : "per-item";
-      return `bookable.flow.price.fixed.${type}`;
+      return `bookable.price.fixed.${type}`;
     },
     typeQuestion() {
       return this.mode === "tiers"
-        ? this.$t("bookable.flow.price.type-tiers")
-        : this.$t("bookable.flow.price.type");
+        ? this.$t("bookable.price.type-tiers")
+        : this.$t("bookable.price.type");
     },
     vatRate() {
       return toNumber(this.bookable.priceValueAddedTax);
@@ -311,8 +307,8 @@ export default {
     },
     amountLabel() {
       return this.vatRate > 0
-        ? this.$t("bookable.flow.price.amount-net")
-        : this.$t("bookable.flow.price.amount");
+        ? this.$t("bookable.price.amount-net")
+        : this.$t("bookable.price.amount");
     },
     gross() {
       return this.price * (1 + this.vatRate / 100);
@@ -326,7 +322,7 @@ export default {
       Object.keys(amounts).forEach((name) => {
         params[name] = euro(amounts[name]);
       });
-      return this.$t(`bookable.flow.price.explain.${key}`, params);
+      return this.$t(`bookable.price.explain.${key}`, params);
     },
     modeOptions() {
       const modes = ["free", "simple"];
@@ -335,13 +331,13 @@ export default {
       }
       return modes.map((value) => ({
         value,
-        label: this.$t(`bookable.flow.price.modes.${value}`),
+        label: this.$t(`bookable.price.modes.${value}`),
       }));
     },
     typeOptions() {
       return PRICE_TYPES.map((value) => ({
         value,
-        label: this.$t(`bookable.flow.price.types.${value}`),
+        label: this.$t(`bookable.price.types.${value}`),
       }));
     },
   },

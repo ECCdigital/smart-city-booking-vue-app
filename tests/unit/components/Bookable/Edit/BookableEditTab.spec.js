@@ -28,8 +28,8 @@ const AREAS = [
   "BookableEditAccessLocks",
   "BookableEditCheckoutBookables",
   "BookableEditHierarchy",
-  "BookableFlowPermission",
-  "BookableFlowApproval",
+  "BookableEditPermission",
+  "BookableEditConfirmation",
   "BookableEditGroupBooking",
   "BookableEditCancellation",
   "BookableEditAttachments",
@@ -116,7 +116,7 @@ describe("BookableEditTab - a tab of the editing page made of cards", () => {
 
     expect(card.find(".section-header").text()).toBe("Wer darf buchen?");
     expect(
-      card.find("[data-test='area-BookableFlowPermission']").exists()
+      card.find("[data-test='area-BookableEditPermission']").exists()
     ).toBe(true);
     expect(
       card.element.compareDocumentPosition(
@@ -130,9 +130,9 @@ describe("BookableEditTab - a tab of the editing page made of cards", () => {
     const card = wrapper.find("#be-section-permissions-confirmation");
 
     expect(card.find(".section-header").text()).toBe("Bestätigung");
-    expect(card.find("[data-test='area-BookableFlowApproval']").exists()).toBe(
-      true
-    );
+    expect(
+      card.find("[data-test='area-BookableEditConfirmation']").exists()
+    ).toBe(true);
     expect(
       wrapper
         .find("#be-section-permissions-access")

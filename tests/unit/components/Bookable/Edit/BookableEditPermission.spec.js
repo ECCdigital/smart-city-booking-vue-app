@@ -11,7 +11,7 @@ vi.mock("@/services/api/ApiTenantService", () => ({
   default: { getTenantUsers: vi.fn() },
 }));
 
-import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
+import BookableEditPermission from "@/components/Bookable/Edit/BookableEditPermission.vue";
 import ApiRolesService from "@/services/api/ApiRolesService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 
@@ -23,7 +23,7 @@ const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t2", title: "Saal", ...overrides }).toPlain();
 
 async function mountPermission(overrides, { expertMode = true, saved } = {}) {
-  const mounted = mountEditing(BookableFlowPermission, {
+  const mounted = mountEditing(BookableEditPermission, {
     bookable: bookable(overrides),
     expertMode,
     saved: saved && bookable(saved),
@@ -63,7 +63,7 @@ async function pick(wrapper, label, entry) {
 const labels = (wrapper, selector) =>
   wrapper.findAll(selector).wrappers.map((entry) => entry.text());
 
-describe("BookableFlowPermission („Wer darf buchen?“ and Preisnachlass)", () => {
+describe("BookableEditPermission („Wer darf buchen?“ and Preisnachlass)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     ApiRolesService.getTenantRoles.mockResolvedValue({
@@ -244,7 +244,7 @@ describe("BookableFlowPermission („Wer darf buchen?“ and Preisnachlass)", ()
   });
 });
 
-describe("BookableFlowPermission - Preisnachlass", () => {
+describe("BookableEditPermission - Preisnachlass", () => {
   const DISCOUNTS = {
     users: [{ userId: "anna@example.org", discountPercent: 50 }],
     roles: [{ roleId: "r1", discountPercent: 100 }],

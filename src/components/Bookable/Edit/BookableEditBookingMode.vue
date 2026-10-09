@@ -41,10 +41,10 @@ export default {
     },
     timedOptions() {
       return [
-        { value: "no", label: this.$t("bookable.flow.availability.timed-no") },
+        { value: "no", label: this.$t("bookable.availability.timed-no") },
         {
           value: "yes",
-          label: this.$t("bookable.flow.availability.timed-yes"),
+          label: this.$t("bookable.availability.timed-yes"),
         },
       ];
     },
@@ -54,7 +54,7 @@ export default {
       if (this.longRangeModes.length) modes.push("longRange");
       return modes.map((value) => ({
         value,
-        label: this.$t(`bookable.flow.availability.modes.${value}`),
+        label: this.$t(`bookable.availability.modes.${value}`),
       }));
     },
     longRangeModes() {
@@ -63,7 +63,7 @@ export default {
     longRangeOptions() {
       return this.longRangeModes.map((value) => ({
         value,
-        label: this.$t(`bookable.flow.availability.long-range-${value}`),
+        label: this.$t(`bookable.availability.long-range-${value}`),
       }));
     },
   },
@@ -103,10 +103,10 @@ export default {
       data-test="booking-mode-external"
     >
       <div class="booking-mode__note-title">
-        {{ $t("bookable.flow.availability.external-title") }}
+        {{ $t("bookable.availability.external-title") }}
       </div>
       <p class="mb-2">
-        {{ $t("bookable.flow.availability.external-text") }}
+        {{ $t("bookable.availability.external-text") }}
       </p>
       <button
         type="button"
@@ -114,7 +114,7 @@ export default {
         data-test="booking-mode-external-link"
         @click="openSetting"
       >
-        {{ $t("bookable.flow.availability.external-link") }}
+        {{ $t("bookable.availability.external-link") }}
         <v-icon small color="primary">mdi-arrow-right</v-icon>
       </button>
     </div>
@@ -122,12 +122,12 @@ export default {
     <template v-else>
       <div class="booking-mode__question">
         <div class="booking-mode__label">
-          {{ $t("bookable.flow.availability.timed") }}
+          {{ $t("bookable.availability.timed") }}
         </div>
         <FlowSegmented
           :value="timed ? 'yes' : 'no'"
           :options="timedOptions"
-          :label="$t('bookable.flow.availability.timed')"
+          :label="$t('bookable.availability.timed')"
           test-id="booking-mode-timed"
           @input="setTimed"
         />
@@ -135,12 +135,12 @@ export default {
 
       <div v-if="timed" class="booking-mode__question">
         <div class="booking-mode__label">
-          {{ $t("bookable.flow.availability.mode") }}
+          {{ $t("bookable.availability.mode") }}
         </div>
         <FlowSegmented
           :value="timeMode"
           :options="timeModeOptions"
-          :label="$t('bookable.flow.availability.mode')"
+          :label="$t('bookable.availability.mode')"
           test-id="booking-mode-time"
           @input="setTimeMode"
         />
@@ -148,26 +148,26 @@ export default {
 
       <div v-if="longRange" class="booking-mode__question">
         <div class="booking-mode__label">
-          {{ $t("bookable.flow.availability.long-range") }}
+          {{ $t("bookable.availability.long-range") }}
         </div>
         <FlowSegmented
           :value="bookingMode"
           :options="longRangeOptions"
-          :label="$t('bookable.flow.availability.long-range')"
+          :label="$t('bookable.availability.long-range')"
           test-id="booking-mode-long-range"
           @input="setLongRange"
         />
       </div>
 
       <p class="booking-mode__explain" data-test="booking-mode-explain">
-        {{ $t(`bookable.flow.availability.explain.${bookingMode}`) }}
+        {{ $t(`bookable.availability.explain.${bookingMode}`) }}
       </p>
       <p
         v-if="longRange"
         class="booking-mode__note"
         data-test="booking-mode-long-range-info"
       >
-        {{ $t("bookable.flow.availability.long-range-info") }}
+        {{ $t("bookable.availability.long-range-info") }}
       </p>
     </template>
   </div>

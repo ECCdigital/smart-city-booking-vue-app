@@ -91,7 +91,7 @@ export default {
       <v-text-field
         class="discount-list__percent"
         :value="row.entry.discountPercent"
-        :aria-label="$t('bookable.flow.permission.percent')"
+        :aria-label="$t('bookable.permission.percent')"
         :rules="rules"
         type="number"
         min="0"

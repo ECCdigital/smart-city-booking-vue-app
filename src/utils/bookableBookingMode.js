@@ -38,7 +38,7 @@ export function bookingModeOf(bookable) {
  * Zeitfenster, Zeiträume, Ganze Wochen, Ganze Monate or Ohne Zeit.
  */
 export function bookingModeNameKey(bookable) {
-  const availability = "bookable.flow.availability";
+  const availability = "bookable.availability";
   const mode = bookingModeOf(bookable);
   if (mode === "independent") return `${availability}.timed-no`;
   if (mode === "week" || mode === "month") {

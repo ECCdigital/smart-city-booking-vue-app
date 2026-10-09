@@ -3,7 +3,7 @@
     <div class="d-flex justify-space-between align-center mb-3">
       <v-subheader class="pl-0">
         <v-icon small class="mr-2"> mdi-format-list-numbered </v-icon>
-        {{ $t("bookable.flow.price.modes.tiers") }}
+        {{ $t("bookable.price.modes.tiers") }}
       </v-subheader>
       <v-btn
         small
@@ -426,21 +426,21 @@ export default {
       return this.bookable.priceType || "per-item";
     },
     fixedLabel() {
-      return this.$t(`bookable.flow.price.fixed.${this.priceType}.label`);
+      return this.$t(`bookable.price.fixed.${this.priceType}.label`);
     },
     fixedHint() {
-      return this.$t(`bookable.flow.price.fixed.${this.priceType}.hint`);
+      return this.$t(`bookable.price.fixed.${this.priceType}.hint`);
     },
     amountLabel() {
       return Number(this.bookable.priceValueAddedTax) > 0
-        ? this.$t("bookable.flow.price.amount-net")
-        : this.$t("bookable.flow.price.amount");
+        ? this.$t("bookable.price.amount-net")
+        : this.$t("bookable.price.amount");
     },
     // The unit of the Preisart; m² as the Anzahl counts it.
     intervalSuffix() {
       return this.$t(
         this.priceType === "per-square-meter"
-          ? "bookable.flow.amount.unit-square-meter"
+          ? "bookable.amount.unit-square-meter"
           : `bookable.edit.priceTiers.units.${this.priceType}`
       );
     },

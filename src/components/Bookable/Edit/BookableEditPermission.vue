@@ -2,12 +2,12 @@
   <div class="bookable-permission" data-test="permission">
     <div class="bookable-permission__part" data-field="access">
       <p class="bookable-permission__hint">
-        {{ $t("bookable.flow.permission.who-hint") }}
+        {{ $t("bookable.permission.who-hint") }}
       </p>
       <OnboardingChoiceTiles
         :value="access"
         :options="accessOptions"
-        :label="$t('bookable.flow.permission.who')"
+        :label="$t('bookable.permission.who')"
         test-id="access"
         @input="setAccess"
       />
@@ -23,7 +23,7 @@
         class="bookable-permission__note"
         data-test="selected-empty"
       >
-        {{ $t("bookable.flow.permission.selected-empty") }}
+        {{ $t("bookable.permission.selected-empty") }}
       </p>
       <div data-test="permitted-roles" class="mb-4">
         <v-autocomplete
@@ -31,8 +31,8 @@
           :items="roleOptions"
           item-text="label"
           item-value="id"
-          :label="$t('bookable.flow.permission.roles')"
-          :no-data-text="$t('bookable.flow.permission.no-roles')"
+          :label="$t('bookable.permission.roles')"
+          :no-data-text="$t('bookable.permission.no-roles')"
           prepend-inner-icon="mdi-account-group"
           multiple
           hide-selected
@@ -73,8 +73,8 @@
           item-text="label"
           item-value="id"
           :filter="matchesPerson"
-          :label="$t('bookable.flow.permission.users')"
-          :no-data-text="$t('bookable.flow.permission.no-users')"
+          :label="$t('bookable.permission.users')"
+          :no-data-text="$t('bookable.permission.no-users')"
           prepend-inner-icon="mdi-account"
           multiple
           hide-selected
@@ -121,26 +121,26 @@
     >
       <div class="bookable-permission__question">
         <v-icon small>mdi-ticket-percent-outline</v-icon>
-        {{ $t("bookable.flow.permission.discounts") }}
+        {{ $t("bookable.permission.discounts") }}
       </div>
       <p class="bookable-permission__hint">
-        {{ $t("bookable.flow.permission.discounts-hint") }}
+        {{ $t("bookable.permission.discounts-hint") }}
       </p>
       <p
         v-if="!paid"
         class="bookable-permission__note"
         data-test="discounts-not-paid"
       >
-        {{ $t("bookable.flow.permission.discounts-not-paid") }}
+        {{ $t("bookable.permission.discounts-not-paid") }}
       </p>
       <BookingDiscountList
         :items="discounts.roles"
         id-key="roleId"
         :options="roleOptions"
-        :label="$t('bookable.flow.permission.roles')"
+        :label="$t('bookable.permission.roles')"
         icon="mdi-account-group"
-        :add-label="$t('bookable.flow.permission.add-role')"
-        :no-data-text="$t('bookable.flow.permission.no-roles')"
+        :add-label="$t('bookable.permission.add-role')"
+        :no-data-text="$t('bookable.permission.no-roles')"
         :rules="fieldRules.discountPercent"
         @update:items="setDiscounts('roles', $event)"
       />
@@ -148,10 +148,10 @@
         :items="discounts.users"
         id-key="userId"
         :options="userOptions"
-        :label="$t('bookable.flow.permission.users')"
+        :label="$t('bookable.permission.users')"
         icon="mdi-account"
-        :add-label="$t('bookable.flow.permission.add-user')"
-        :no-data-text="$t('bookable.flow.permission.no-users')"
+        :add-label="$t('bookable.permission.add-user')"
+        :no-data-text="$t('bookable.permission.no-users')"
         :rules="fieldRules.discountPercent"
         @update:items="setDiscounts('users', $event)"
       />
@@ -192,7 +192,7 @@ const ACCESS = ["everyone", "signedIn", "selected"];
  * on a free bookable, where it acts once there is a price.
  */
 export default {
-  name: "BookableFlowPermission",
+  name: "BookableEditPermission",
   components: { OnboardingChoiceTiles, BookingDiscountList },
   mixins: [bookableEditing, tenantRoles],
   data() {
@@ -211,8 +211,8 @@ export default {
     accessOptions() {
       return ACCESS.map((value) => ({
         value,
-        label: this.$t(`bookable.flow.permission.access.${value}`),
-        description: this.$t(`bookable.flow.permission.access.${value}-hint`),
+        label: this.$t(`bookable.permission.access.${value}`),
+        description: this.$t(`bookable.permission.access.${value}-hint`),
       }));
     },
     permittedRoles() {
@@ -260,7 +260,7 @@ export default {
       );
     },
     unknownHint() {
-      return this.$t("bookable.flow.permission.unknown");
+      return this.$t("bookable.permission.unknown");
     },
     paid() {
       return isPaid(this.bookable);

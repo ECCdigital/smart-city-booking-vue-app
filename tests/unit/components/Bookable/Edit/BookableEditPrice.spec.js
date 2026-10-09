@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import Bookable from "@/entities/bookable";
-import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
+import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
 import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
 import { flushPromises } from "@tests/unit/support/api";
@@ -35,7 +35,7 @@ const TIERS = [
 function mountPrice(overrides = {}, { expertMode = true, prepare } = {}) {
   const handedIn = bookable(overrides);
   if (prepare) prepare(handedIn);
-  const mounted = mountEditing(BookableFlowPrice, {
+  const mounted = mountEditing(BookableEditPrice, {
     bookable: handedIn,
     expertMode,
     accessPoints: [IFBS_LOCKER],
@@ -49,7 +49,7 @@ const checked = (wrapper, test) =>
 const text = (wrapper, test) =>
   find(wrapper, test).text().replace(/\s+/g, " ").trim();
 
-describe("BookableFlowPrice - the price form", () => {
+describe("BookableEditPrice - the price form", () => {
   it("starts free and says so", () => {
     const { wrapper } = mountPrice();
 
@@ -138,7 +138,7 @@ describe("BookableFlowPrice - the price form", () => {
   });
 });
 
-describe("BookableFlowPrice - the Preisart", () => {
+describe("BookableEditPrice - the Preisart", () => {
   const paid = (priceType, fixedPrice = false) => ({
     priceType,
     priceCategories: [category(20, { fixedPrice })],
@@ -223,7 +223,7 @@ describe("BookableFlowPrice - the Preisart", () => {
   });
 });
 
-describe("BookableFlowPrice - the amount", () => {
+describe("BookableEditPrice - the amount", () => {
   it("hands on a typed amount as the rebuilt categories", async () => {
     const { wrapper, patches } = mountPrice({
       priceType: "per-hour",
@@ -254,7 +254,7 @@ describe("BookableFlowPrice - the amount", () => {
   });
 });
 
-describe("BookableFlowPrice - Mehrwertsteuer", () => {
+describe("BookableEditPrice - Mehrwertsteuer", () => {
   const paid = (rate) => ({
     priceType: "per-hour",
     priceValueAddedTax: rate,
@@ -330,7 +330,7 @@ describe("BookableFlowPrice - Mehrwertsteuer", () => {
   });
 });
 
-describe("BookableFlowPrice - Rabattcodes", () => {
+describe("BookableEditPrice - Rabattcodes", () => {
   const paid = { priceType: "per-hour", priceCategories: [category(10)] };
 
   it("shows a value never stored as switched on, as the backend treats it", () => {
@@ -364,7 +364,7 @@ describe("BookableFlowPrice - Rabattcodes", () => {
   });
 });
 
-describe("BookableFlowPrice - prices of ParkraumService", () => {
+describe("BookableEditPrice - prices of ParkraumService", () => {
   const external = {
     priceType: "per-hour",
     priceCategories: [category(10)],

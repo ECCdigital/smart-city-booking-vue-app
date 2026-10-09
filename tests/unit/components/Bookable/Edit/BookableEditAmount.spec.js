@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import Bookable from "@/entities/bookable";
-import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vue";
+import BookableEditAmount from "@/components/Bookable/Edit/BookableEditAmount.vue";
 import { normalizeBookable } from "@/utils/normalizeBookable";
 import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
@@ -17,7 +17,7 @@ const bookable = (overrides = {}) =>
   new Bookable({ tenantId: "t1", title: "Saal", ...overrides }).toPlain();
 
 const mountAmount = (overrides = {}) =>
-  mountEditing(BookableFlowAmount, {
+  mountEditing(BookableEditAmount, {
     bookable: bookable(overrides),
     accessPoints: [IFBS_LOCKER],
   });
@@ -30,7 +30,7 @@ const text = (wrapper, test) =>
 
 const IFBS_AMOUNT = takenOverBy(["maxAmount"]);
 
-describe("BookableFlowAmount - mounting", () => {
+describe("BookableEditAmount - mounting", () => {
   it.each([
     ["an unlimited", { amount: null }],
     ["a zero", { amount: 0 }],
@@ -61,7 +61,7 @@ describe("BookableFlowAmount - mounting", () => {
   });
 });
 
-describe("BookableFlowAmount - Anzahl", () => {
+describe("BookableEditAmount - Anzahl", () => {
   it("shows an Anzahl of 0 as „Unbegrenzt“, saved as null", () => {
     const { wrapper, bookable: handedIn } = mountAmount({ amount: 0 });
 
@@ -160,7 +160,7 @@ describe("BookableFlowAmount - Anzahl", () => {
   });
 });
 
-describe("BookableFlowAmount - Höchstmenge je Buchung", () => {
+describe("BookableEditAmount - Höchstmenge je Buchung", () => {
   it.each([
     ["the Anzahl is unlimited", { amount: null }, true],
     ["the Anzahl is more than 1", { amount: 3 }, true],
@@ -250,7 +250,7 @@ describe("BookableFlowAmount - Höchstmenge je Buchung", () => {
   });
 });
 
-describe("BookableFlowAmount - Anzahl from a provider", () => {
+describe("BookableEditAmount - Anzahl from a provider", () => {
   it("shows only the note instead of the Anzahl", () => {
     const { wrapper } = mountAmount({
       amount: 4,

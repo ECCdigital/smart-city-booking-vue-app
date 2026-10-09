@@ -214,12 +214,12 @@
 </template>
 
 <script>
-import BookableFlowIdentity from "@/components/Bookable/Flow/BookableFlowIdentity.vue";
+import BookableEditIdentity from "@/components/Bookable/Edit/BookableEditIdentity.vue";
 import BookableFlowAvailability from "@/components/Bookable/Flow/BookableFlowAvailability.vue";
-import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
-import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vue";
-import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
-import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
+import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
+import BookableEditAmount from "@/components/Bookable/Edit/BookableEditAmount.vue";
+import BookableEditPermission from "@/components/Bookable/Edit/BookableEditPermission.vue";
+import BookableEditConfirmation from "@/components/Bookable/Edit/BookableEditConfirmation.vue";
 import BookableEditPublication from "@/components/Bookable/Edit/BookableEditPublication.vue";
 import BookableFlowMore from "@/components/Bookable/Flow/BookableFlowMore.vue";
 import BookableFlowDone from "@/components/Bookable/Flow/BookableFlowDone.vue";
@@ -230,16 +230,16 @@ import { revealField } from "@/utils/bookableFieldAnchor";
 
 /** The question of a step whose component asks none itself, by step. */
 const STEP_QUESTIONS = {
-  permission: "bookable.flow.permission.who",
+  permission: "bookable.permission.who",
 };
 
 const STEP_COMPONENTS = {
-  identity: "BookableFlowIdentity",
+  identity: "BookableEditIdentity",
   availability: "BookableFlowAvailability",
-  price: "BookableFlowPrice",
-  amount: "BookableFlowAmount",
-  permission: "BookableFlowPermission",
-  approval: "BookableFlowApproval",
+  price: "BookableEditPrice",
+  amount: "BookableEditAmount",
+  permission: "BookableEditPermission",
+  approval: "BookableEditConfirmation",
   more: "BookableFlowMore",
   publication: "BookableEditPublication",
 };
@@ -278,12 +278,12 @@ function startingPoint(isNew) {
 export default {
   name: "BookableFlow",
   components: {
-    BookableFlowIdentity,
+    BookableEditIdentity,
     BookableFlowAvailability,
-    BookableFlowPrice,
-    BookableFlowAmount,
-    BookableFlowPermission,
-    BookableFlowApproval,
+    BookableEditPrice,
+    BookableEditAmount,
+    BookableEditPermission,
+    BookableEditConfirmation,
     BookableFlowMore,
     BookableEditPublication,
     BookableFlowDone,

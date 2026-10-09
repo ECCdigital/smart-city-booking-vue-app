@@ -6,7 +6,7 @@
         small
         outlined
         :disabled="number <= 1"
-        :aria-label="$t('bookable.flow.amount.less')"
+        :aria-label="$t('bookable.amount.less')"
         :data-test="`${testId}-less`"
         @click="$emit('input', Math.max(1, Math.floor(number) - 1))"
       >
@@ -33,7 +33,7 @@
         icon
         small
         outlined
-        :aria-label="$t('bookable.flow.amount.more')"
+        :aria-label="$t('bookable.amount.more')"
         :data-test="`${testId}-more`"
         @click="$emit('input', Math.max(1, Math.floor(number) + 1))"
       >

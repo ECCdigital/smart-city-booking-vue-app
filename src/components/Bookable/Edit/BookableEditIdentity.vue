@@ -7,15 +7,15 @@
     >
       <p class="bookable-basics__caption">
         <v-icon small>mdi-eye-outline</v-icon>
-        {{ $t("bookable.flow.identity.catalog") }}
+        {{ $t("bookable.identity.catalog") }}
       </p>
 
       <div class="bookable-basics__field" data-field="title">
         <v-text-field
           :value="bookable.title"
-          :label="$t('bookable.flow.identity.title')"
-          :placeholder="$t('bookable.flow.identity.title-placeholder')"
-          :hint="$t('bookable.flow.identity.title-hint')"
+          :label="$t('bookable.identity.title')"
+          :placeholder="$t('bookable.identity.title-placeholder')"
+          :hint="$t('bookable.identity.title-hint')"
           :rules="fieldRules.title"
           :autofocus="isNew"
           persistent-hint
@@ -30,21 +30,21 @@
       <div class="bookable-basics__field">
         <Tiptap
           :value="bookable.description"
-          :label="$t('bookable.flow.identity.description')"
+          :label="$t('bookable.identity.description')"
           :min-height="180"
           @input="patch({ description: $event })"
         />
         <div class="bookable-basics__hint">
-          {{ $t("bookable.flow.identity.description-hint") }}
+          {{ $t("bookable.identity.description-hint") }}
         </div>
       </div>
 
       <div class="bookable-basics__field" data-field="flags">
         <ChipCombobox
           :value="bookable.flags || []"
-          :label="$t('bookable.flow.identity.flags')"
-          :hint="$t('bookable.flow.identity.flags-hint')"
-          :empty-text="$t('bookable.flow.identity.chips-empty')"
+          :label="$t('bookable.identity.flags')"
+          :hint="$t('bookable.identity.flags-hint')"
+          :empty-text="$t('bookable.identity.chips-empty')"
           data-test="flow-flags"
           @change="patch({ flags: $event })"
         />
@@ -52,7 +52,7 @@
 
       <div class="bookable-basics__field" data-field="images">
         <div class="bookable-basics__label">
-          {{ $t("bookable.flow.identity.images") }}
+          {{ $t("bookable.identity.images") }}
         </div>
         <v-alert
           v-if="legacyCoverUrl"
@@ -62,11 +62,11 @@
           class="text-caption"
           data-test="legacy-cover"
         >
-          {{ $t("bookable.flow.identity.legacy-cover") }}
+          {{ $t("bookable.identity.legacy-cover") }}
           <span class="font-weight-medium bookable-basics__url">
             {{ legacyCoverUrl }}
           </span>
-          {{ $t("bookable.flow.identity.legacy-cover-active") }}
+          {{ $t("bookable.identity.legacy-cover-active") }}
           <div class="mt-2">
             <v-btn
               x-small
@@ -76,29 +76,29 @@
               @click="adoptLegacyCover"
             >
               <v-icon x-small left>mdi-image-move</v-icon>
-              {{ $t("bookable.flow.identity.legacy-cover-adopt") }}
+              {{ $t("bookable.identity.legacy-cover-adopt") }}
             </v-btn>
           </div>
         </v-alert>
         <MediaReferenceList
           :value="images"
           :public-only="!!bookable.isPublic"
-          :public-only-reason="$t('bookable.flow.identity.images-public-only')"
+          :public-only-reason="$t('bookable.identity.images-public-only')"
           @input="patch({ images: $event })"
         />
         <div class="bookable-basics__hint">
-          {{ $t("bookable.flow.identity.images-hint") }}
+          {{ $t("bookable.identity.images-hint") }}
         </div>
       </div>
 
       <div class="bookable-basics__field" data-field="location">
         <AddressLookup
           :value="location"
-          :label="$t('bookable.flow.identity.location')"
+          :label="$t('bookable.identity.location')"
           @input="patch({ location: $event })"
         />
         <div class="bookable-basics__hint bookable-basics__hint--tight">
-          {{ $t("bookable.flow.identity.location-hint") }}
+          {{ $t("bookable.identity.location-hint") }}
         </div>
       </div>
     </section>
@@ -110,18 +110,18 @@
     >
       <p class="bookable-basics__caption">
         <v-icon small>mdi-eye-off-outline</v-icon>
-        {{ $t("bookable.flow.identity.admin") }}
+        {{ $t("bookable.identity.admin") }}
       </p>
 
       <div class="bookable-basics__field" data-field="type">
         <v-select
           :value="bookable.type"
           :items="typeItems"
-          :label="$t('bookable.flow.identity.type')"
+          :label="$t('bookable.identity.type')"
           :hint="
             isNew
-              ? $t('bookable.flow.identity.type-hint')
-              : $t('bookable.flow.identity.type-fixed')
+              ? $t('bookable.identity.type-hint')
+              : $t('bookable.identity.type-fixed')
           "
           :readonly="!isNew"
           :append-icon="isNew ? '$dropdown' : ''"
@@ -144,8 +144,8 @@
           :items="events"
           item-value="id"
           item-text="information.name"
-          :label="$t('bookable.flow.identity.event')"
-          :hint="$t('bookable.flow.identity.event-hint')"
+          :label="$t('bookable.identity.event')"
+          :hint="$t('bookable.identity.event-hint')"
           persistent-hint
           clearable
           outlined
@@ -159,9 +159,9 @@
         <ChipCombobox
           :value="bookable.tags || []"
           :items="tagsAvailable"
-          :label="$t('bookable.flow.identity.tags')"
-          :hint="$t('bookable.flow.identity.tags-hint')"
-          :empty-text="$t('bookable.flow.identity.chips-empty')"
+          :label="$t('bookable.identity.tags')"
+          :hint="$t('bookable.identity.tags-hint')"
+          :empty-text="$t('bookable.identity.chips-empty')"
           data-test="flow-tags"
           @change="patch({ tags: $event })"
         />
@@ -196,7 +196,7 @@ import { externalReferenceOf } from "@/utils/mediaReference";
  * own tenant, not the one currently selected.
  */
 export default {
-  name: "BookableFlowIdentity",
+  name: "BookableEditIdentity",
   components: { Tiptap, MediaReferenceList, AddressLookup, ChipCombobox },
   mixins: [bookableEditing],
   props: {

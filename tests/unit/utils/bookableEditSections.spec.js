@@ -114,10 +114,7 @@ describe("bookableEditSections - Grunddaten", () => {
       getVisibleBookableEditSections("general", { bookable: {} }).map(
         (section) => section.labelKey
       )
-    ).toEqual([
-      "bookable.flow.identity.catalog",
-      "bookable.flow.identity.admin",
-    ]);
+    ).toEqual(["bookable.identity.catalog", "bookable.identity.admin"]);
   });
 });
 

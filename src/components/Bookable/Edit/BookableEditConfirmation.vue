@@ -9,12 +9,12 @@
       data-test="confirmation-question"
     >
       <v-icon small>mdi-check-decagram-outline</v-icon>
-      {{ $t("bookable.flow.approval.question") }}
+      {{ $t("bookable.confirmation.question") }}
     </div>
     <OnboardingChoiceTiles
       :value="value"
       :options="options"
-      :label="$t('bookable.flow.approval.question')"
+      :label="$t('bookable.confirmation.question')"
       test-id="confirmation"
       @input="patch({ autoCommitBooking: $event === 'auto' })"
     />
@@ -38,7 +38,7 @@ import bookableEditing from "@/mixins/bookableEditing";
  * rule.
  */
 export default {
-  name: "BookableFlowApproval",
+  name: "BookableEditConfirmation",
   components: { OnboardingChoiceTiles },
   mixins: [bookableEditing],
   computed: {
@@ -48,8 +48,8 @@ export default {
     options() {
       return ["auto", "manual"].map((value) => ({
         value,
-        label: this.$t(`bookable.flow.approval.${value}`),
-        description: this.$t(`bookable.flow.approval.${value}-hint`),
+        label: this.$t(`bookable.confirmation.${value}`),
+        description: this.$t(`bookable.confirmation.${value}-hint`),
       }));
     },
   },

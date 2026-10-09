@@ -13,7 +13,7 @@ A bookable is edited in two modes of `BookableEdit`: the editing page (Bearbeitu
 
 ### One field, one component, one rule
 
-Every field of the bookable has exactly one component, one label and one rule, the same in both modes. The mode only draws the frame around it: a section card with a heading in a tab on the editing page, the panel of a step with its question in the guided flow. The frame passes no heights or variants into the component. A new field follows this from the start.
+Every field of the bookable has exactly one component, one label and one rule, the same in both modes. The mode only draws the frame around it: a section card with a heading in a tab on the editing page, the panel of a step with its question in the guided flow. The frame passes no heights or variants into the component, and the component names no mode: a component of a field lives in `src/components/Bookable/Edit/` as `BookableEdit<Field>` and reads its copy from `bookable.<field>.*`, whichever mode frames it; only the flow's own frame (`BookableFlow`, its steps' wrappers, the confirmation) and the overview it brought to both modes (`BookableFlowSummary`) keep `BookableFlow*` and `bookable.flow.*`. A new field follows this from the start.
 
 ### Changes are partial patches (#340, point 1)
 

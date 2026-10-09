@@ -253,7 +253,7 @@ export function applyPriceMode(bookable, mode) {
  * share of 24 hours, and `fixedPrice` drops that factor, so each touched day
  * costs the price once. Item and m² ignore the duration; with `fixedPrice`
  * they ignore the booked quantity too. The key below
- * `bookable.flow.price.explain` and the amounts (net, in euros) its
+ * `bookable.price.explain` and the amounts (net, in euros) its
  * parameters need. The examples: 2.5 hours, Friday 14:00 to Sunday 12:00
  * (three touched days), 6 hours, 3 items.
  */
@@ -483,7 +483,7 @@ function durationPart(minutes) {
 }
 
 const EXTERNAL = asWord(`${VALUES}.external`);
-const UNLIMITED = asWord("bookable.flow.amount.unlimited");
+const UNLIMITED = asWord("bookable.amount.unlimited");
 const yesNo = (on) => asWord(`${VALUES}.${on ? "yes" : "no"}`);
 
 // --- the rows per step ---
@@ -498,20 +498,20 @@ const yesNo = (on) => asWord(`${VALUES}.${on ? "yes" : "no"}`);
 const IDENTITY_ROWS = [
   {
     key: "title",
-    label: "bookable.flow.identity.title",
+    label: "bookable.identity.title",
     section: "general-catalog",
     fields: ["title"],
     value: (b) => asText(truncate(b.title)),
   },
   {
     key: "flags",
-    label: "bookable.flow.identity.flags",
+    label: "bookable.identity.flags",
     section: "general-catalog",
     value: (b) => asText(joinList(b.flags)),
   },
   {
     key: "images",
-    label: "bookable.flow.identity.images",
+    label: "bookable.identity.images",
     section: "general-catalog",
     // The legacy cover counts until images are chosen.
     value: (b) =>
@@ -522,27 +522,27 @@ const IDENTITY_ROWS = [
   },
   {
     key: "location",
-    label: "bookable.flow.identity.location",
+    label: "bookable.identity.location",
     section: "general-catalog",
     value: (b) => asText(locationLabel(b)),
   },
   {
     key: "type",
-    label: "bookable.flow.identity.type",
+    label: "bookable.identity.type",
     section: "general-admin",
     value: (b) =>
       typeNameKey(b.type) ? asWord(typeNameKey(b.type)) : asText(b.type),
   },
   {
     key: "eventId",
-    label: "bookable.flow.identity.event",
+    label: "bookable.identity.event",
     section: "general-admin",
     when: (b) => b.type === "ticket",
     value: (b, { eventTitlesById }) => asText(eventLabel(b, eventTitlesById)),
   },
   {
     key: "tags",
-    label: "bookable.flow.identity.tags",
+    label: "bookable.identity.tags",
     section: "general-admin",
     option: "tags",
     value: (b) => asText(joinList(b.tags)),
@@ -592,7 +592,7 @@ const AVAILABILITY_ROWS = [
   },
   {
     key: "timePeriods",
-    label: "bookable.flow.availability.modes.timePeriod",
+    label: "bookable.availability.modes.timePeriod",
     section: "bookingType-time-periods",
     fields: ["timePeriods"],
     value: (b) =>
@@ -600,7 +600,7 @@ const AVAILABILITY_ROWS = [
   },
   {
     key: "blockPeriods",
-    label: "bookable.flow.availability.modes.blockPeriod",
+    label: "bookable.availability.modes.blockPeriod",
     section: "bookingType-block-periods",
     fields: ["blockPeriods"],
     value: (b) =>
@@ -670,7 +670,7 @@ function simpleAmountValue(bookable) {
 function priceValue(bookable, { accessPoints }) {
   if (providerTakesOver(bookable, "pricing", accessPoints)) return EXTERNAL;
   const mode = priceModeOf(bookable);
-  if (mode === "free") return asWord("bookable.flow.price.modes.free");
+  if (mode === "free") return asWord("bookable.price.modes.free");
   if (mode === "tiers") {
     return asCount(`${VALUES}.tiers`, bookable.priceCategories.length);
   }
@@ -691,7 +691,7 @@ const PRICE_ROWS = [
   },
   {
     key: "vat",
-    label: "bookable.flow.price.vat",
+    label: "bookable.price.vat",
     section: "pricing-price",
     when: ownPrice,
     value: (b) => {
@@ -704,7 +704,7 @@ const PRICE_ROWS = [
   },
   {
     key: "coupons",
-    label: "bookable.flow.price.coupons",
+    label: "bookable.price.coupons",
     section: "pricing-price",
     option: "coupons",
     when: ownPrice,
@@ -716,7 +716,7 @@ const PRICE_ROWS = [
 const AMOUNT_ROWS = [
   {
     key: "amount",
-    label: "bookable.flow.amount.title",
+    label: "bookable.amount.title",
     section: "pricing-amount",
     value: (b, { accessPoints }) => {
       if (providerTakesOver(b, "maxAmount", accessPoints)) return EXTERNAL;
@@ -725,7 +725,7 @@ const AMOUNT_ROWS = [
   },
   {
     key: "maxAmountPerBooking",
-    label: "bookable.flow.amount.max-title",
+    label: "bookable.amount.max-title",
     section: "pricing-amount",
     fields: ["maxAmountPerBooking"],
     when: showsMaxAmount,
@@ -743,7 +743,7 @@ const namedValue = (roles, users) => [
 const PERMISSION_ROWS = [
   {
     key: "access",
-    label: "bookable.flow.permission.who",
+    label: "bookable.permission.who",
     section: "permissions-access",
     // Selected with nobody named yet reads as „Alle mit Konto“, as the
     // backend lets them book.
@@ -751,12 +751,12 @@ const PERMISSION_ROWS = [
       const access = accessOf(b);
       return access === "selected"
         ? namedValue(b.permittedRoles, b.permittedUsers)
-        : asWord(`bookable.flow.permission.access.${access}`);
+        : asWord(`bookable.permission.access.${access}`);
     },
   },
   {
     key: "bookingDiscounts",
-    label: "bookable.flow.permission.discounts",
+    label: "bookable.permission.discounts",
     section: "permissions-discounts",
     fields: ["bookingDiscounts"],
     value: (b) =>
@@ -772,7 +772,7 @@ const APPROVAL_ROWS = [
     // The words of its tiles; anything but on is „Manuell bestätigen“.
     value: (b) =>
       asWord(
-        `bookable.flow.approval.${b.autoCommitBooking ? "auto" : "manual"}`
+        `bookable.confirmation.${b.autoCommitBooking ? "auto" : "manual"}`
       ),
   },
 ];

@@ -3,11 +3,11 @@ import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
 import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import Bookable from "@/entities/bookable";
 import BookableFlowAvailability from "@/components/Bookable/Flow/BookableFlowAvailability.vue";
-import BookableFlowPrice from "@/components/Bookable/Flow/BookableFlowPrice.vue";
-import BookableFlowAmount from "@/components/Bookable/Flow/BookableFlowAmount.vue";
-import BookableFlowPermission from "@/components/Bookable/Flow/BookableFlowPermission.vue";
-import BookableFlowApproval from "@/components/Bookable/Flow/BookableFlowApproval.vue";
-import BookableFlowIdentity from "@/components/Bookable/Flow/BookableFlowIdentity.vue";
+import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
+import BookableEditAmount from "@/components/Bookable/Edit/BookableEditAmount.vue";
+import BookableEditPermission from "@/components/Bookable/Edit/BookableEditPermission.vue";
+import BookableEditConfirmation from "@/components/Bookable/Edit/BookableEditConfirmation.vue";
+import BookableEditIdentity from "@/components/Bookable/Edit/BookableEditIdentity.vue";
 
 vi.mock("@/services/api/ApiRolesService", () => ({
   default: { getTenantRoles: vi.fn().mockResolvedValue({ data: [] }) },
@@ -62,12 +62,12 @@ const lastChange = (wrapper) => lastPatch(wrapper.patches);
 
 describe("the steps of the guided flow", () => {
   it.each([
-    ["identity", BookableFlowIdentity],
+    ["identity", BookableEditIdentity],
     ["availability", BookableFlowAvailability],
-    ["price", BookableFlowPrice],
-    ["amount", BookableFlowAmount],
-    ["permission", BookableFlowPermission],
-    ["approval", BookableFlowApproval],
+    ["price", BookableEditPrice],
+    ["amount", BookableEditAmount],
+    ["permission", BookableEditPermission],
+    ["approval", BookableEditConfirmation],
   ])("change nothing when the %s step mounts", async (_, component) => {
     const {
       wrapper,
@@ -87,7 +87,7 @@ describe("the steps of the guided flow", () => {
       patches,
       bookable: handedIn,
       stored,
-    } = editing(BookableFlowApproval);
+    } = editing(BookableEditConfirmation);
 
     await find(wrapper, "confirmation-auto").trigger("click");
 
@@ -96,7 +96,7 @@ describe("the steps of the guided flow", () => {
   });
 
   it("hands on the title as it is typed", async () => {
-    const { wrapper, patches } = editing(BookableFlowIdentity);
+    const { wrapper, patches } = editing(BookableEditIdentity);
 
     await find(wrapper, "flow-title").find("input").setValue("Aula");
 
@@ -109,7 +109,7 @@ describe("the steps of the guided flow", () => {
       patches,
       bookable: handedIn,
       stored,
-    } = editing(BookableFlowPermission, {
+    } = editing(BookableEditPermission, {
       requiresLogin: true,
       permittedRoles: ["r1"],
       permittedUsers: [],
@@ -184,5 +184,5 @@ describe("BookableFlowAvailability", () => {
   });
 });
 
-// BookableFlowAmount (Anzahl & Kapazität) has its own spec.
-// BookableFlowPermission („Wer darf buchen?“) has its own spec.
+// BookableEditAmount (Anzahl & Kapazität) has its own spec.
+// BookableEditPermission („Wer darf buchen?“) has its own spec.

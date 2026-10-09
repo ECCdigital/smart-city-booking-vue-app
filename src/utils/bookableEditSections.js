@@ -24,18 +24,18 @@ export function bookableEditSectionElementId(sectionId) {
  * names it in `expertOption`.
  */
 const ALL_SECTIONS = [
-  // The two groups of the Grunddaten (BookableFlowIdentity), named as the
+  // The two groups of the Grunddaten (BookableEditIdentity), named as the
   // groups themselves are.
   {
     tabKey: "general",
     id: "general-catalog",
-    labelKey: "bookable.flow.identity.catalog",
+    labelKey: "bookable.identity.catalog",
     type: "scroll",
   },
   {
     tabKey: "general",
     id: "general-admin",
-    labelKey: "bookable.flow.identity.admin",
+    labelKey: "bookable.identity.admin",
     type: "scroll",
   },
   {
@@ -74,13 +74,13 @@ const ALL_SECTIONS = [
   {
     tabKey: "bookingType",
     id: "bookingType-time-periods",
-    labelKey: "bookable.flow.availability.modes.timePeriod",
+    labelKey: "bookable.availability.modes.timePeriod",
     type: "scroll",
   },
   {
     tabKey: "bookingType",
     id: "bookingType-block-periods",
-    labelKey: "bookable.flow.availability.modes.blockPeriod",
+    labelKey: "bookable.availability.modes.blockPeriod",
     type: "scroll",
   },
   {
@@ -113,14 +113,14 @@ const ALL_SECTIONS = [
   {
     tabKey: "permissions",
     id: "permissions-access",
-    labelKey: "bookable.flow.permission.who",
+    labelKey: "bookable.permission.who",
     type: "scroll",
   },
   {
-    // Inside the card of „Wer darf buchen?“ (BookableFlowPermission).
+    // Inside the card of „Wer darf buchen?“ (BookableEditPermission).
     tabKey: "permissions",
     id: "permissions-discounts",
-    labelKey: "bookable.flow.permission.discounts",
+    labelKey: "bookable.permission.discounts",
     type: "scroll",
     expertOption: "bookingDiscounts",
   },

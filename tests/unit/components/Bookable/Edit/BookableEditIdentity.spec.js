@@ -3,7 +3,7 @@ import { mountEditing } from "@tests/unit/support/bookableEditing";
 import { flushPromises } from "@tests/unit/support/api";
 import { chooseOption } from "@tests/unit/support/vuetify";
 import Bookable from "@/entities/bookable";
-import BookableFlowIdentity from "@/components/Bookable/Flow/BookableFlowIdentity.vue";
+import BookableEditIdentity from "@/components/Bookable/Edit/BookableEditIdentity.vue";
 
 vi.mock("@/services/api/ApiEventService", () => ({
   default: { getEvents: vi.fn() },
@@ -42,7 +42,7 @@ const bookable = (overrides = {}) =>
 
 /** The Grunddaten as BookableEdit hosts them, in either mode. */
 const mountBasics = ({ isNew = false, expertMode, saved, ...overrides } = {}) =>
-  mountEditing(BookableFlowIdentity, {
+  mountEditing(BookableEditIdentity, {
     bookable: bookable(overrides),
     expertMode,
     saved: saved && bookable(saved),
@@ -52,7 +52,7 @@ const mountBasics = ({ isNew = false, expertMode, saved, ...overrides } = {}) =>
 
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
 
-describe("BookableFlowIdentity - the Grunddaten in two groups", () => {
+describe("BookableEditIdentity - the Grunddaten in two groups", () => {
   beforeEach(() => {
     ApiEventService.getEvents.mockReset();
     ApiEventService.getEvents.mockResolvedValue({ data: [] });
@@ -107,7 +107,7 @@ describe("BookableFlowIdentity - the Grunddaten in two groups", () => {
   });
 });
 
-describe("BookableFlowIdentity - Titel", () => {
+describe("BookableEditIdentity - Titel", () => {
   const leaveTitle = async (wrapper, value) => {
     const input = find(wrapper, "flow-title").find("input");
     await input.setValue(value);
@@ -136,7 +136,7 @@ describe("BookableFlowIdentity - Titel", () => {
   });
 });
 
-describe("BookableFlowIdentity - Typ and Veranstaltung", () => {
+describe("BookableEditIdentity - Typ and Veranstaltung", () => {
   beforeEach(() => {
     ApiEventService.getEvents.mockReset();
     ApiEventService.getEvents.mockResolvedValue({
@@ -207,7 +207,7 @@ describe("BookableFlowIdentity - Typ and Veranstaltung", () => {
   });
 });
 
-describe("BookableFlowIdentity - Merkmale and Interne Tags", () => {
+describe("BookableEditIdentity - Merkmale and Interne Tags", () => {
   beforeEach(() => {
     ApiEventService.getEvents.mockResolvedValue({ data: [] });
     ApiTagsService.getTags.mockReset();
@@ -294,7 +294,7 @@ describe("BookableFlowIdentity - Merkmale and Interne Tags", () => {
   });
 });
 
-describe("BookableFlowIdentity - Bilder", () => {
+describe("BookableEditIdentity - Bilder", () => {
   beforeEach(() => {
     ApiEventService.getEvents.mockResolvedValue({ data: [] });
     ApiTagsService.getTags.mockResolvedValue({ data: [] });

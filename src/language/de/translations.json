@@ -221,180 +221,6 @@
           "why": "Ob Buchende das Objekt im Katalog finden und ob sie es buchen können – beides lässt sich einzeln einstellen."
         }
       },
-      "identity": {
-        "catalog": "Das sehen Buchende im Katalog",
-        "admin": "Nur für die Verwaltung",
-        "heading": "Grunddaten",
-        "title": "Titel",
-        "title-placeholder": "z. B. Großer Saal",
-        "title-hint": "Daran erkennen Buchende das Objekt im Katalog und Sie es in den Listen der Verwaltung.",
-        "description": "Beschreibung",
-        "description-hint": "Steht auf der Objektseite im Katalog: was das Objekt bietet und was Buchende wissen sollten.",
-        "flags": "Merkmale",
-        "flags-hint": "Kurze Vorteile neben der Beschreibung, z. B. „WLAN inklusive“. Knapp halten.",
-        "chips-empty": "Eingeben und mit Enter übernehmen",
-        "images": "Bilder",
-        "images-hint": "Das erste Bild ist das Titelbild im Katalog. Aus der Mediathek wählen, neu hochladen oder extern verlinken.",
-        "images-public-only": "Dieses Buchungsobjekt ist öffentlich sichtbar, interne Medien können hier nicht gespeichert werden.",
-        "legacy-cover": "Das bisherige Titelbild liegt noch in der alten Dateiablage:",
-        "legacy-cover-active": "Es bleibt aktiv, bis hier Bilder aus der Mediathek zugeordnet werden.",
-        "legacy-cover-adopt": "Als Bild übernehmen",
-        "location": "Standort",
-        "location-hint": "Wo Buchende hin müssen. Wird die Adresse gefunden, erscheint sie auf der Objektseite auf der Karte.",
-        "type": "Typ",
-        "type-hint": "Bestimmt Darstellung und Icon im Katalog. Lässt sich nach dem Anlegen nicht mehr ändern.",
-        "type-fixed": "Wird beim Anlegen festgelegt.",
-        "event": "Veranstaltung",
-        "event-hint": "Verknüpft das Ticket mit einer Veranstaltung des Mandanten, dem das Ticket gehört.",
-        "tags": "Interne Tags",
-        "tags-hint": "Zum Filtern und Gruppieren in der Verwaltung. Buchende sehen sie nicht."
-      },
-      "availability": {
-        "external-title": "Verfügbarkeit kommt von einem externen Anbieter",
-        "external-text": "Ein externer Anbieter führt die Verfügbarkeit dieses Buchungsobjekts. Um sie hier selbst zu pflegen, schalten Sie die externe Steuerung aus.",
-        "external-link": "Zur Einstellung",
-        "timed": "Wird dieses Objekt für eine Zeit gebucht?",
-        "timed-no": "Ohne Zeit",
-        "timed-yes": "Für eine Zeit",
-        "mode": "Wie wird die Zeit gebucht?",
-        "modes": {
-          "schedule": "Freie Zeitwahl",
-          "timePeriod": "Feste Zeitfenster",
-          "blockPeriod": "Zeiträume",
-          "longRange": "Langzeit"
-        },
-        "explain": {
-          "independent": "Buchende buchen eine Menge ohne Zeitauswahl.",
-          "schedule": "Buchende suchen sich im Kalender einen freien Zeitpunkt und wählen die Dauer innerhalb der Grenzen.",
-          "timePeriod": "Sie geben feste Zeitfenster vor, etwa montags 9–12 Uhr; Buchende wählen ein freies davon.",
-          "blockPeriod": "Sie geben wiederkehrende, tagesübergreifende Zeiträume vor, etwa ein Wochenende; Buchende wählen einen davon.",
-          "week": "Buchende buchen ganze Wochen am Stück.",
-          "month": "Buchende buchen ganze Kalendermonate am Stück."
-        },
-        "long-range": "Wochen oder Monate?",
-        "long-range-week": "Ganze Wochen",
-        "long-range-month": "Ganze Monate",
-        "long-range-info": "Bei ganzen Wochen und Monaten prüft das System keine Öffnungszeiten oder Ausnahmen."
-      },
-      "price": {
-        "external-title": "Preise kommen von einem externen Anbieter",
-        "external-text": "ParkraumService führt die Preise dieses Buchungsobjekts. Um sie hier selbst zu pflegen, schalten Sie die externen Preise in der Einstellung aus.",
-        "modes": {
-          "free": "Kostenfrei",
-          "simple": "Einfacher Preis",
-          "tiers": "Tarife"
-        },
-        "free-info": "Dieses Objekt ist kostenfrei buchbar – im Checkout gibt es keinen Zahlungsschritt.",
-        "prefilled": "Vorbelegt, {reason} – Sie können das ändern.",
-        "reasons": {
-          "week": "weil Buchende ganze Wochen buchen",
-          "month": "weil Buchende ganze Monate buchen",
-          "schedule": "weil Buchende im Kalender eine Zeit wählen",
-          "timePeriod": "weil die festen Zeiten eine Dauer haben",
-          "blockPeriod": "weil die Zeiträume eine Dauer haben",
-          "independent": "weil hier keine Zeit gewählt wird"
-        },
-        "amount": "Was kostet es?",
-        "amount-net": "Was kostet es? (netto)",
-        "type": "Wonach richtet sich der Preis?",
-        "type-tiers": "Wonach richten sich die Tarife?",
-        "type-tiers-hint": "Bestimmt die Schwellen der Staffel und was Buchende im Katalog lesen.",
-        "types": {
-          "per-hour": "Pro Stunde",
-          "per-day": "Pro Tag",
-          "per-item": "Stück",
-          "per-square-meter": "m²"
-        },
-        "fixed": {
-          "per-hour": {
-            "label": "Tagespauschale",
-            "hint": "Jeder angefangene Tag kostet den Preis einmal, egal wie viele Stunden."
-          },
-          "per-day": {
-            "label": "Angefangene Tage zählen voll",
-            "hint": "Jeder angefangene Tag kostet den vollen Preis. Aus: anteilig nach Minuten."
-          },
-          "per-item": {
-            "label": "Gilt einmal je Buchung",
-            "hint": "Sonderfall: Die gebuchte Menge multipliziert den Preis dann nicht."
-          },
-          "per-square-meter": {
-            "label": "Gilt einmal je Buchung",
-            "hint": "Sonderfall: Die gebuchte Fläche multipliziert den Preis dann nicht."
-          }
-        },
-        "explain": {
-          "none": "Ohne Betrag bleibt die Buchung kostenfrei.",
-          "per-hour": "Gerechnet wird minutengenau – eine Buchung über 2,5 Stunden kostet {total}.",
-          "per-hour-daily": "Jeder angefangene Tag zählt einmal – Freitag 14:00 bis Sonntag 12:00 sind 3 Tage: {total}.",
-          "per-day-full": "Jeder angefangene Tag zählt voll – Freitag 14:00 bis Sonntag 12:00 sind 3 Tage: {total}.",
-          "per-day-exact": "Gerechnet wird minutengenau – 6 Stunden kosten {total}.",
-          "week": "Eine Woche sind 7 Tage: {total}.",
-          "month": "Ein Monat sind je nach Monat 28 bis 31 Tage: {low} bis {high}.",
-          "once": "{price} für die ganze Buchung – Dauer und Menge spielen keine Rolle.",
-          "per-item": "Die Dauer spielt keine Rolle – jede Buchung kostet {price}.",
-          "per-items": "Die Dauer spielt keine Rolle: 3 Stück kosten {total}.",
-          "per-square-meter": "Die Dauer spielt keine Rolle – {price} je m²."
-        },
-        "vat": "Mehrwertsteuer",
-        "vat-on": "Auf den Betrag kommt Mehrwertsteuer.",
-        "vat-off": "Der Betrag ist der Endpreis.",
-        "vat-rate": "Steuersatz",
-        "vat-none-choice": "aus",
-        "vat-summary": "{net} netto + {rate} % MwSt.",
-        "vat-none": "Ohne Steueraufschlag",
-        "gross": "brutto",
-        "final": "Endpreis",
-        "coupons": "Rabattcodes",
-        "coupons-on": "Buchende können im Checkout einen Rabattcode einlösen.",
-        "coupons-off": "Buchende können keinen Rabattcode einlösen."
-      },
-      "amount": {
-        "title": "Anzahl / Kapazität",
-        "limited": "Begrenzt",
-        "unlimited": "Unbegrenzt",
-        "less": "weniger",
-        "more": "mehr",
-        "unit": "Einheit | Einheiten",
-        "unit-square-meter": "m²",
-        "unlimited-hint": "Es gibt keine feste Anzahl – jede Buchung wird angenommen, die zu den Zeiten passt.",
-        "room-warning": "Mehr als eine Einheit für einen Raum – sicher?",
-        "external-title": "Anzahl kommt von einem externen Anbieter",
-        "external-text": "ParkraumService führt die Anzahl dieses Buchungsobjekts. Um sie hier selbst zu pflegen, nehmen Sie die Anzahl in der Einstellung heraus. Die Höchstmenge je Buchung gilt zusätzlich.",
-        "max-title": "Höchstmenge je Buchung",
-        "max-unlimited-hint": "Eine Buchung darf alle freien Einheiten nehmen."
-      },
-      "permission": {
-        "who": "Wer darf buchen?",
-        "who-hint": "Gilt für jede Buchung, auch über einen direkten Link.",
-        "access": {
-          "everyone": "Alle",
-          "everyone-hint": "Auch ohne Anmeldung.",
-          "signedIn": "Alle mit Konto",
-          "signedIn-hint": "Wer bucht, meldet sich an.",
-          "selected": "Nur ausgewählte Rollen und Personen",
-          "selected-hint": "Nur sie können buchen, mit Konto."
-        },
-        "selected-empty": "Noch niemand gewählt. Bis dahin darf jede Person mit Konto buchen.",
-        "users": "Personen",
-        "roles": "Rollen",
-        "no-users": "Keine Personen beim Mandanten",
-        "no-roles": "Keine Rollen beim Mandanten",
-        "unknown": "Nicht mehr beim Mandanten",
-        "discounts": "Preisnachlass",
-        "discounts-hint": "Diese Rollen und Personen zahlen weniger, 100 % heißt kostenfrei. Trifft mehr als ein Eintrag zu, gilt der höchste.",
-        "discounts-not-paid": "Wirkt erst, sobald das Objekt einen Preis hat. Bis dahin bleiben die Einträge gespeichert.",
-        "percent": "Preisnachlass in Prozent",
-        "add-role": "Rolle hinzufügen",
-        "add-user": "Person hinzufügen"
-      },
-      "approval": {
-        "question": "Wie werden eingehende Buchungen bestätigt?",
-        "auto": "Automatisch",
-        "auto-hint": "Passt alles, ist eine Buchung ohne Ihr Zutun angenommen. Kostet sie etwas, wartet sie nur noch auf die Zahlung.",
-        "manual": "Manuell bestätigen",
-        "manual-hint": "Jede Buchung kommt als angefragt in Ihre Buchungsliste. Sie bestätigen sie oder lehnen sie ab."
-      },
       "more": {
         "unused": "Nicht genutzt"
       },
@@ -477,6 +303,180 @@
         "optional-note": "optional",
         "another": "Weiteres Buchungsobjekt anlegen"
       }
+    },
+    "identity": {
+      "catalog": "Das sehen Buchende im Katalog",
+      "admin": "Nur für die Verwaltung",
+      "heading": "Grunddaten",
+      "title": "Titel",
+      "title-placeholder": "z. B. Großer Saal",
+      "title-hint": "Daran erkennen Buchende das Objekt im Katalog und Sie es in den Listen der Verwaltung.",
+      "description": "Beschreibung",
+      "description-hint": "Steht auf der Objektseite im Katalog: was das Objekt bietet und was Buchende wissen sollten.",
+      "flags": "Merkmale",
+      "flags-hint": "Kurze Vorteile neben der Beschreibung, z. B. „WLAN inklusive“. Knapp halten.",
+      "chips-empty": "Eingeben und mit Enter übernehmen",
+      "images": "Bilder",
+      "images-hint": "Das erste Bild ist das Titelbild im Katalog. Aus der Mediathek wählen, neu hochladen oder extern verlinken.",
+      "images-public-only": "Dieses Buchungsobjekt ist öffentlich sichtbar, interne Medien können hier nicht gespeichert werden.",
+      "legacy-cover": "Das bisherige Titelbild liegt noch in der alten Dateiablage:",
+      "legacy-cover-active": "Es bleibt aktiv, bis hier Bilder aus der Mediathek zugeordnet werden.",
+      "legacy-cover-adopt": "Als Bild übernehmen",
+      "location": "Standort",
+      "location-hint": "Wo Buchende hin müssen. Wird die Adresse gefunden, erscheint sie auf der Objektseite auf der Karte.",
+      "type": "Typ",
+      "type-hint": "Bestimmt Darstellung und Icon im Katalog. Lässt sich nach dem Anlegen nicht mehr ändern.",
+      "type-fixed": "Wird beim Anlegen festgelegt.",
+      "event": "Veranstaltung",
+      "event-hint": "Verknüpft das Ticket mit einer Veranstaltung des Mandanten, dem das Ticket gehört.",
+      "tags": "Interne Tags",
+      "tags-hint": "Zum Filtern und Gruppieren in der Verwaltung. Buchende sehen sie nicht."
+    },
+    "availability": {
+      "external-title": "Verfügbarkeit kommt von einem externen Anbieter",
+      "external-text": "Ein externer Anbieter führt die Verfügbarkeit dieses Buchungsobjekts. Um sie hier selbst zu pflegen, schalten Sie die externe Steuerung aus.",
+      "external-link": "Zur Einstellung",
+      "timed": "Wird dieses Objekt für eine Zeit gebucht?",
+      "timed-no": "Ohne Zeit",
+      "timed-yes": "Für eine Zeit",
+      "mode": "Wie wird die Zeit gebucht?",
+      "modes": {
+        "schedule": "Freie Zeitwahl",
+        "timePeriod": "Feste Zeitfenster",
+        "blockPeriod": "Zeiträume",
+        "longRange": "Langzeit"
+      },
+      "explain": {
+        "independent": "Buchende buchen eine Menge ohne Zeitauswahl.",
+        "schedule": "Buchende suchen sich im Kalender einen freien Zeitpunkt und wählen die Dauer innerhalb der Grenzen.",
+        "timePeriod": "Sie geben feste Zeitfenster vor, etwa montags 9–12 Uhr; Buchende wählen ein freies davon.",
+        "blockPeriod": "Sie geben wiederkehrende, tagesübergreifende Zeiträume vor, etwa ein Wochenende; Buchende wählen einen davon.",
+        "week": "Buchende buchen ganze Wochen am Stück.",
+        "month": "Buchende buchen ganze Kalendermonate am Stück."
+      },
+      "long-range": "Wochen oder Monate?",
+      "long-range-week": "Ganze Wochen",
+      "long-range-month": "Ganze Monate",
+      "long-range-info": "Bei ganzen Wochen und Monaten prüft das System keine Öffnungszeiten oder Ausnahmen."
+    },
+    "price": {
+      "external-title": "Preise kommen von einem externen Anbieter",
+      "external-text": "ParkraumService führt die Preise dieses Buchungsobjekts. Um sie hier selbst zu pflegen, schalten Sie die externen Preise in der Einstellung aus.",
+      "modes": {
+        "free": "Kostenfrei",
+        "simple": "Einfacher Preis",
+        "tiers": "Tarife"
+      },
+      "free-info": "Dieses Objekt ist kostenfrei buchbar – im Checkout gibt es keinen Zahlungsschritt.",
+      "prefilled": "Vorbelegt, {reason} – Sie können das ändern.",
+      "reasons": {
+        "week": "weil Buchende ganze Wochen buchen",
+        "month": "weil Buchende ganze Monate buchen",
+        "schedule": "weil Buchende im Kalender eine Zeit wählen",
+        "timePeriod": "weil die festen Zeiten eine Dauer haben",
+        "blockPeriod": "weil die Zeiträume eine Dauer haben",
+        "independent": "weil hier keine Zeit gewählt wird"
+      },
+      "amount": "Was kostet es?",
+      "amount-net": "Was kostet es? (netto)",
+      "type": "Wonach richtet sich der Preis?",
+      "type-tiers": "Wonach richten sich die Tarife?",
+      "type-tiers-hint": "Bestimmt die Schwellen der Staffel und was Buchende im Katalog lesen.",
+      "types": {
+        "per-hour": "Pro Stunde",
+        "per-day": "Pro Tag",
+        "per-item": "Stück",
+        "per-square-meter": "m²"
+      },
+      "fixed": {
+        "per-hour": {
+          "label": "Tagespauschale",
+          "hint": "Jeder angefangene Tag kostet den Preis einmal, egal wie viele Stunden."
+        },
+        "per-day": {
+          "label": "Angefangene Tage zählen voll",
+          "hint": "Jeder angefangene Tag kostet den vollen Preis. Aus: anteilig nach Minuten."
+        },
+        "per-item": {
+          "label": "Gilt einmal je Buchung",
+          "hint": "Sonderfall: Die gebuchte Menge multipliziert den Preis dann nicht."
+        },
+        "per-square-meter": {
+          "label": "Gilt einmal je Buchung",
+          "hint": "Sonderfall: Die gebuchte Fläche multipliziert den Preis dann nicht."
+        }
+      },
+      "explain": {
+        "none": "Ohne Betrag bleibt die Buchung kostenfrei.",
+        "per-hour": "Gerechnet wird minutengenau – eine Buchung über 2,5 Stunden kostet {total}.",
+        "per-hour-daily": "Jeder angefangene Tag zählt einmal – Freitag 14:00 bis Sonntag 12:00 sind 3 Tage: {total}.",
+        "per-day-full": "Jeder angefangene Tag zählt voll – Freitag 14:00 bis Sonntag 12:00 sind 3 Tage: {total}.",
+        "per-day-exact": "Gerechnet wird minutengenau – 6 Stunden kosten {total}.",
+        "week": "Eine Woche sind 7 Tage: {total}.",
+        "month": "Ein Monat sind je nach Monat 28 bis 31 Tage: {low} bis {high}.",
+        "once": "{price} für die ganze Buchung – Dauer und Menge spielen keine Rolle.",
+        "per-item": "Die Dauer spielt keine Rolle – jede Buchung kostet {price}.",
+        "per-items": "Die Dauer spielt keine Rolle: 3 Stück kosten {total}.",
+        "per-square-meter": "Die Dauer spielt keine Rolle – {price} je m²."
+      },
+      "vat": "Mehrwertsteuer",
+      "vat-on": "Auf den Betrag kommt Mehrwertsteuer.",
+      "vat-off": "Der Betrag ist der Endpreis.",
+      "vat-rate": "Steuersatz",
+      "vat-none-choice": "aus",
+      "vat-summary": "{net} netto + {rate} % MwSt.",
+      "vat-none": "Ohne Steueraufschlag",
+      "gross": "brutto",
+      "final": "Endpreis",
+      "coupons": "Rabattcodes",
+      "coupons-on": "Buchende können im Checkout einen Rabattcode einlösen.",
+      "coupons-off": "Buchende können keinen Rabattcode einlösen."
+    },
+    "amount": {
+      "title": "Anzahl / Kapazität",
+      "limited": "Begrenzt",
+      "unlimited": "Unbegrenzt",
+      "less": "weniger",
+      "more": "mehr",
+      "unit": "Einheit | Einheiten",
+      "unit-square-meter": "m²",
+      "unlimited-hint": "Es gibt keine feste Anzahl – jede Buchung wird angenommen, die zu den Zeiten passt.",
+      "room-warning": "Mehr als eine Einheit für einen Raum – sicher?",
+      "external-title": "Anzahl kommt von einem externen Anbieter",
+      "external-text": "ParkraumService führt die Anzahl dieses Buchungsobjekts. Um sie hier selbst zu pflegen, nehmen Sie die Anzahl in der Einstellung heraus. Die Höchstmenge je Buchung gilt zusätzlich.",
+      "max-title": "Höchstmenge je Buchung",
+      "max-unlimited-hint": "Eine Buchung darf alle freien Einheiten nehmen."
+    },
+    "permission": {
+      "who": "Wer darf buchen?",
+      "who-hint": "Gilt für jede Buchung, auch über einen direkten Link.",
+      "access": {
+        "everyone": "Alle",
+        "everyone-hint": "Auch ohne Anmeldung.",
+        "signedIn": "Alle mit Konto",
+        "signedIn-hint": "Wer bucht, meldet sich an.",
+        "selected": "Nur ausgewählte Rollen und Personen",
+        "selected-hint": "Nur sie können buchen, mit Konto."
+      },
+      "selected-empty": "Noch niemand gewählt. Bis dahin darf jede Person mit Konto buchen.",
+      "users": "Personen",
+      "roles": "Rollen",
+      "no-users": "Keine Personen beim Mandanten",
+      "no-roles": "Keine Rollen beim Mandanten",
+      "unknown": "Nicht mehr beim Mandanten",
+      "discounts": "Preisnachlass",
+      "discounts-hint": "Diese Rollen und Personen zahlen weniger, 100 % heißt kostenfrei. Trifft mehr als ein Eintrag zu, gilt der höchste.",
+      "discounts-not-paid": "Wirkt erst, sobald das Objekt einen Preis hat. Bis dahin bleiben die Einträge gespeichert.",
+      "percent": "Preisnachlass in Prozent",
+      "add-role": "Rolle hinzufügen",
+      "add-user": "Person hinzufügen"
+    },
+    "confirmation": {
+      "question": "Wie werden eingehende Buchungen bestätigt?",
+      "auto": "Automatisch",
+      "auto-hint": "Passt alles, ist eine Buchung ohne Ihr Zutun angenommen. Kostet sie etwas, wartet sie nur noch auf die Zahlung.",
+      "manual": "Manuell bestätigen",
+      "manual-hint": "Jede Buchung kommt als angefragt in Ihre Buchungsliste. Sie bestätigen sie oder lehnen sie ab."
     },
     "delete": {
       "success": {
