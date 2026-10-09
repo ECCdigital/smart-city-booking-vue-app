@@ -98,7 +98,7 @@ describe("OnboardingNextSteps", () => {
       ])
     ).toEqual([
       ["next-tile-settings", "/tenant"],
-      ["next-tile-invite", "/tenant/members"],
+      ["next-tile-invite", "/tenant/members?invite=1"],
       ["next-tile-bookable", "/rooms/edit"],
     ]);
     expect(find(wrapper, "next-tile-settings").text()).toContain(

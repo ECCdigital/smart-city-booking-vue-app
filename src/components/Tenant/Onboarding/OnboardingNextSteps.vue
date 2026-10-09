@@ -77,6 +77,7 @@ import OnboardingSetupLinks from "@/components/Tenant/Onboarding/OnboardingSetup
 import TenantReadinessCheck from "@/components/Tenant/TenantReadinessCheck.vue";
 import TenantPermissionService from "@/services/permissions/TenantPermissionService";
 import { firstBookableRoute } from "@/utils/tenantOnboarding";
+import { inviteMembersRoute } from "@/utils/tenantUsers";
 
 // The ways on, equal in rank; none leads back here.
 const TILES = Object.freeze([
@@ -90,7 +91,7 @@ const TILES = Object.freeze([
   {
     key: "invite",
     icon: "mdi-account-plus-outline",
-    to: { name: "user" },
+    to: inviteMembersRoute(),
     titleKey: "tenant.onboarding.next.invite",
     hintKey: "tenant.onboarding.next.invite-hint",
   },
