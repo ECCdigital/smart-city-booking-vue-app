@@ -91,6 +91,23 @@ describe("formatAccessPointErrorMessage", () => {
       );
     });
 
+    it("names a provider the backend does not know", () => {
+      const error = apiError(400, {
+        message: "validation_failed",
+        details: [
+          {
+            field: "provider",
+            code: "unknown_provider",
+            params: { provider: "dummy" },
+          },
+        ],
+      });
+
+      expect(formatAccessPointErrorMessage(error)).toBe(
+        "Den Anbieter „dummy“ gibt es nicht. Bitte prüfen Sie die Schreibweise oder wählen Sie einen Anbieter aus der Liste."
+      );
+    });
+
     /**
      * An older backend may name an Öffnungsart this UI has no label for; the
      * raw value is still something the admin can quote.

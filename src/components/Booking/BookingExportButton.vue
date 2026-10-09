@@ -60,7 +60,11 @@ export default {
 
         { header: "Endpreis (brutto in EUR)", key: "Preis", width: 20 },
         { header: "End-MwSt (EUR)", key: "MwSt", width: 15 },
-        { header: "Grundpreis (brutto in EUR)", key: "regularPreis", width: 15 },
+        {
+          header: "Grundpreis (brutto in EUR)",
+          key: "regularPreis",
+          width: 15,
+        },
         { header: "Grund-MwSt (EUR)", key: "regularMwSt", width: 15 },
 
         { header: "Bezahlt", key: "Bezahlt", width: 12 },
@@ -143,7 +147,9 @@ export default {
         new Blob([buffer], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
-        `buchungen-${this.tenant}-${this.formatDate(Date.now()).split(",")[0]}.xlsx`
+        `buchungen-${this.tenant}-${
+          this.formatDate(Date.now()).split(",")[0]
+        }.xlsx`
       );
     },
     async exportIcal() {
@@ -168,7 +174,9 @@ export default {
         link.href = url;
         link.setAttribute(
           "download",
-          `buchungen-${this.tenant}-${this.formatDate(Date.now()).split(",")[0]}.ics`
+          `buchungen-${this.tenant}-${
+            this.formatDate(Date.now()).split(",")[0]
+          }.ics`
         );
         document.body.appendChild(link);
         link.click();
@@ -189,25 +197,25 @@ export default {
     },
     getBookableType(type) {
       switch (type) {
-      case "room":
-        return "Raum";
-      case "event-location":
-        return "Veranstaltungsort";
-      case "resource":
-        return "Gerät";
-      case "event":
-        return "Veranstaltung";
-      case "ticket":
-        return "Ticket";
-      default:
-        return "";
+        case "room":
+          return "Raum";
+        case "event-location":
+          return "Veranstaltungsort";
+        case "resource":
+          return "Gerät";
+        case "event":
+          return "Veranstaltung";
+        case "ticket":
+          return "Ticket";
+        default:
+          return "";
       }
     },
     getDescription(description) {
       if (!description) return "";
       return description.replace(/<[^>]*>/g, "");
     },
-    getRegularGrossPriceSum(booking){
+    getRegularGrossPriceSum(booking) {
       let regularGrossPrice = 0;
       if (booking.bookableItems && booking.bookableItems.length > 0) {
         booking.bookableItems.forEach((item) => {
@@ -218,12 +226,13 @@ export default {
       }
       return regularGrossPrice;
     },
-    getRegularVatIncludedSum(booking){
+    getRegularVatIncludedSum(booking) {
       let regularVatIncluded = 0;
       if (booking.bookableItems && booking.bookableItems.length > 0) {
         booking.bookableItems.forEach((item) => {
           if (item.regularGrossPriceEur && item.regularPriceEur) {
-            regularVatIncluded += (item.regularGrossPriceEur - item.regularPriceEur);
+            regularVatIncluded +=
+              item.regularGrossPriceEur - item.regularPriceEur;
           }
         });
       }
@@ -231,36 +240,36 @@ export default {
     },
     getPaymentMethod(method) {
       switch (method) {
-      case "CASH":
-        return "Bar";
-      case "TRANSFER":
-        return "Überweisung";
-      case "CREDIT_CARD":
-        return "Kreditkarte";
-      case "DEBIT_CARD":
-        return "EC-Karte";
-      case "PAYPAL":
-        return "PayPal";
-      case "OTHER":
-        return "Sonstiges";
-      case "GIROPAY":
-        return "Giropay";
-      case "APPLE_PAY":
-        return "Apple Pay";
-      case "GOOGLE_PAY":
-        return "Google Pay";
-      case "EPS":
-        return "EPS";
-      case "IDEAL":
-        return "iDEAL";
-      case "MAESTRO":
-        return "Maestro";
-      case "PAYDIRECT":
-        return "paydirekt";
-      case "SOFORT":
-        return "SOFORT-Überweisung";
-      case "BLUECODE":
-        return "Bluecode";
+        case "CASH":
+          return "Bar";
+        case "TRANSFER":
+          return "Überweisung";
+        case "CREDIT_CARD":
+          return "Kreditkarte";
+        case "DEBIT_CARD":
+          return "EC-Karte";
+        case "PAYPAL":
+          return "PayPal";
+        case "OTHER":
+          return "Sonstiges";
+        case "GIROPAY":
+          return "Giropay";
+        case "APPLE_PAY":
+          return "Apple Pay";
+        case "GOOGLE_PAY":
+          return "Google Pay";
+        case "EPS":
+          return "EPS";
+        case "IDEAL":
+          return "iDEAL";
+        case "MAESTRO":
+          return "Maestro";
+        case "PAYDIRECT":
+          return "paydirekt";
+        case "SOFORT":
+          return "SOFORT-Überweisung";
+        case "BLUECODE":
+          return "Bluecode";
       }
       return method || "";
     },

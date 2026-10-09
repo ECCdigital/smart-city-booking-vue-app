@@ -62,6 +62,7 @@
 
 <script>
 import ApiTenantService from "@/services/api/ApiTenantService";
+import { criterionColor } from "@/utils/tenantReadiness";
 
 /**
  * The readiness check (glossary "Bereitschafts-Check"): what the backend
@@ -117,10 +118,7 @@ export default {
       const key = `tenant.readiness.criteria.${criterion.key}`;
       return this.$te(key) ? this.$t(key) : criterion.key;
     },
-    stateColor(state) {
-      if (state === "fulfilled") return "success";
-      return state === "missing" ? "warning" : "grey";
-    },
+    stateColor: criterionColor,
   },
 };
 </script>

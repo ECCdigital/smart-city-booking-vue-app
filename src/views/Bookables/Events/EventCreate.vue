@@ -195,10 +195,14 @@ export default {
         .then(() => this.refreshReview())
         .finally(() => {
           this.formHasChanged = false;
-          this.addToast(ToastService.createToast("event.update.success", "success"));
+          this.addToast(
+            ToastService.createToast("event.update.success", "success")
+          );
         })
-        .catch(error => {
-          this.addToast(ToastService.createToast("errors.something-wrong", "error"));
+        .catch((error) => {
+          this.addToast(
+            ToastService.createToast("errors.something-wrong", "error")
+          );
           console.log(error);
         });
     },
@@ -223,7 +227,8 @@ export default {
     },
     async allowSetPublic() {
       const eventCountCheck = await ApiEventService.publicEventCountCheck();
-      this.allowPublic = (eventCountCheck || this.isPublic) && !this.isSimpleEvent;
+      this.allowPublic =
+        (eventCountCheck || this.isPublic) && !this.isSimpleEvent;
     },
   },
 

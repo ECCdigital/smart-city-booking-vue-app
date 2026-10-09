@@ -122,6 +122,26 @@ describe("SupervisionHistoryList", () => {
     expect(review).toContain("kein Prüfstatus → ausstehend");
   });
 
+  it("names the offer by its title instead of its id", async () => {
+    ApiSupervisionService.getTenantHistory.mockResolvedValue(
+      page([{ ...REVIEW, offerTitle: "Großer Saal" }])
+    );
+    const wrapper = await mountList({ tenantId: "t-1" });
+
+    const review = rowTexts(wrapper)[0];
+    expect(review).toContain("Buchungsobjekt Großer Saal");
+    expect(review).not.toContain("b-7");
+  });
+
+  it("falls back to the id of an offer that has no title any more", async () => {
+    ApiSupervisionService.getTenantHistory.mockResolvedValue(
+      page([{ ...REVIEW, offerTitle: null }])
+    );
+    const wrapper = await mountList({ tenantId: "t-1" });
+
+    expect(rowTexts(wrapper)[0]).toContain("Buchungsobjekt b-7");
+  });
+
   it("reads the instance-wide history without a tenant and names tenant and migration", async () => {
     const wrapper = await mountList({
       instanceWide: true,

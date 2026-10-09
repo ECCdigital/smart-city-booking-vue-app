@@ -30,3 +30,15 @@ export function tenantUserOptions(response) {
       };
     });
 }
+
+/** The query that opens the invite dialog on the members page. */
+export const INVITE_QUERY = "invite";
+
+/**
+ * The members page with its invite dialog open (ECCdigital/tickets#369). The
+ * page drops the query once it opened the dialog, so a reload does not open it
+ * again.
+ */
+export function inviteMembersRoute() {
+  return { name: "user", query: { [INVITE_QUERY]: "1" } };
+}

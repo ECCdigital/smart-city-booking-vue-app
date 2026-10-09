@@ -16,7 +16,9 @@
       :tenant="tenant"
       @input="onText"
     />
-    <footer v-if="block.cite" class="mt-1 text-caption">— {{ block.cite }}</footer>
+    <footer v-if="block.cite" class="mt-1 text-caption">
+      — {{ block.cite }}
+    </footer>
   </blockquote>
 </template>
 

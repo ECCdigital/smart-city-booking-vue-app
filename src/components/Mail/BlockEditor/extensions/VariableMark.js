@@ -107,7 +107,10 @@ const VariableNode = Node.create({
         },
         props: {
           decorations(state) {
-            return warningDecorations(state.doc, this.getState(state).warningFor);
+            return warningDecorations(
+              state.doc,
+              this.getState(state).warningFor
+            );
           },
         },
       }),
@@ -119,27 +122,27 @@ const VariableNode = Node.create({
       /** `warningFor(name)` returns the warning text for a chip, or "" for none. */
       setMailVariableWarnings:
         (warningFor) =>
-          ({ tr, dispatch }) => {
-            if (dispatch) tr.setMeta(warningsKey, warningFor);
-            return true;
-          },
+        ({ tr, dispatch }) => {
+          if (dispatch) tr.setMeta(warningsKey, warningFor);
+          return true;
+        },
       insertMailVariable:
         (name, options = {}) =>
-          ({ chain }) => {
-            return chain()
-              .focus()
-              .insertContent({
-                type: this.name,
-                attrs: {
-                  name,
-                  triple: !!options.triple,
-                  label: options.label || "",
-                  expr: options.expr || "",
-                },
-              })
-              .insertContent(" ")
-              .run();
-          },
+        ({ chain }) => {
+          return chain()
+            .focus()
+            .insertContent({
+              type: this.name,
+              attrs: {
+                name,
+                triple: !!options.triple,
+                label: options.label || "",
+                expr: options.expr || "",
+              },
+            })
+            .insertContent(" ")
+            .run();
+        },
     };
   },
 });

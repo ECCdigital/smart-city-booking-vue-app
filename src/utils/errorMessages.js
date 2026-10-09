@@ -1,5 +1,8 @@
+import { withDivergingBookings } from "@/services/api/apiErrorMessage";
+
 export const GROUP_BOOKING_ERROR_MESSAGES = {
-  CONTACT_DETAILS_MISMATCH: "Die Buchungen haben unterschiedliche Kontaktdaten.",
+  CONTACT_DETAILS_MISMATCH:
+    "Die Buchungen haben unterschiedliche Kontaktdaten.",
   OWNER_MISMATCH: "Den Buchungen sind unterschiedliche Personen zugewiesen.",
   STATUS_MISMATCH: "Die Buchungen haben unterschiedliche Status.",
   PAYMENT_PROVIDER_MISMATCH:
@@ -20,8 +23,16 @@ const ERROR_MESSAGES = {
   UNKNOWN_ERROR: "Ein unbekannter Fehler ist aufgetreten.",
 };
 
-export function getGroupBookingErrorMessage(code) {
-  return GROUP_BOOKING_ERROR_MESSAGES[code] || ERROR_MESSAGES.UNKNOWN_ERROR;
+/**
+ * The message of a group's consistency error. `STATUS_MISMATCH` carries the
+ * members that deviate from the first in `meta.bookingIds`; they are named the
+ * way the lifecycle's 409 names them.
+ */
+export function getGroupBookingErrorMessage(code, meta) {
+  return withDivergingBookings(
+    GROUP_BOOKING_ERROR_MESSAGES[code] || ERROR_MESSAGES.UNKNOWN_ERROR,
+    meta?.bookingIds
+  );
 }
 
 export function getBookingErrorMessage(code) {

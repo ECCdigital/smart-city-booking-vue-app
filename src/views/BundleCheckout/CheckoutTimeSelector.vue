@@ -24,9 +24,9 @@
       <h2>Buchungszeitraum</h2>
       <p>
         {{
-          selectionType === 'block-period'
-            ? 'Bitte wählen Sie einen verfügbaren Zeitraum aus.'
-            : 'Bitte wählen Sie den Zeitraum für Ihre Buchung.'
+          selectionType === "block-period"
+            ? "Bitte wählen Sie einen verfügbaren Zeitraum aus."
+            : "Bitte wählen Sie den Zeitraum für Ihre Buchung."
         }}
       </p>
 
@@ -101,7 +101,7 @@
               v-model="timeBeginModel"
               full-width
               format="24hr"
-              :allowed-minutes="[0,5,10,15,20,25,30,35,40,45,50,55]"
+              :allowed-minutes="[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]"
               @click:minute="$refs.timeBeginMenuRef.save(timeBeginModel)"
             />
           </v-menu>
@@ -129,7 +129,7 @@
                 v-mask="'##.##.####'"
                 inputmode="numeric"
                 placeholder="DD.MM.YYYY"
-                :rules="validationRules.dateBegin"
+                :rules="validationRules.dateEnd"
                 @click:prepend="dateEndMenu = true"
                 @change="$refs.dateEndMenu.save(dateEndModel)"
               />
@@ -180,7 +180,7 @@
               :max="maxBookingTime"
               full-width
               format="24hr"
-              :allowed-minutes="[0,5,10,15,20,25,30,35,40,45,50,55]"
+              :allowed-minutes="[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]"
               @click:minute="$refs.timeEndMenuRef.save(timeEndModel)"
             />
           </v-menu>
@@ -283,6 +283,11 @@ import CheckoutCalendar from "@/components/Checkout/CheckoutCalendar.vue";
 import CheckoutTimePeriodPicker from "@/components/Checkout/CheckoutTimePeriodPicker.vue";
 import CheckoutBlockPeriodPicker from "@/components/Checkout/CheckoutBlockPeriodPicker.vue";
 import TimezoneWarning from "@/components/TimezoneWarning.vue";
+import {
+  dateBeforeTodayMessage,
+  isBeforeToday,
+  todayIso,
+} from "@/utils/checkoutDates";
 
 export default {
   name: "CheckoutTimeSelector",
@@ -353,20 +358,22 @@ export default {
         dateBegin: [
           (v) => !!v || "Bitte wählen Sie ein Datum aus",
           (v) => !!this.parseDeToIso(v) || "Ungültiges Datum",
+          (v) =>
+            !isBeforeToday(this.parseDeToIso(v)) || dateBeforeTodayMessage(),
         ],
         dateEnd: [
           (v) => !!v || "Bitte wählen Sie ein Datum aus",
           (v) => !!this.parseDeToIso(v) || "Ungültiges Datum",
-          () =>
+          (v) =>
+            !isBeforeToday(this.parseDeToIso(v)) || dateBeforeTodayMessage(),
+          (v) =>
             !this.dateBeginModel ||
-            !this.dateEndModel ||
-            this.dateEndModel >= this.dateBeginModel ||
+            this.parseDeToIso(v) >= this.dateBeginModel ||
             "Enddatum muss nach dem Startdatum liegen",
         ],
         time: [
           (v) => !!v || "Pflichtfeld",
-          (v) =>
-            this.isValidTime(v) || "Ungültige Zeit",
+          (v) => this.isValidTime(v) || "Ungültige Zeit",
         ],
       },
     };
@@ -456,7 +463,7 @@ export default {
       },
       set(v) {
         const iso = this.parseDeToIso(v);
-        if (iso) this.dateBeginModel = iso;
+        if (iso && !isBeforeToday(iso)) this.dateBeginModel = iso;
       },
     },
 
@@ -466,7 +473,7 @@ export default {
       },
       set(v) {
         const iso = this.parseDeToIso(v);
-        if (iso) this.dateEndModel = iso;
+        if (iso && !isBeforeToday(iso)) this.dateEndModel = iso;
       },
     },
     isNextButtonDisabled() {
@@ -477,7 +484,9 @@ export default {
     },
     timestampBegin() {
       if (!this.dateBeginModel || !this.timeBeginModel) return null;
-      return new Date(`${this.dateBeginModel}T${this.timeBeginModel}:00`).getTime();
+      return new Date(
+        `${this.dateBeginModel}T${this.timeBeginModel}:00`
+      ).getTime();
     },
 
     timestampEnd() {
@@ -539,7 +548,7 @@ export default {
       });
     },
     minBookingDate() {
-      return new Date().toISOString().split("T")[0];
+      return todayIso();
     },
     selectionType() {
       if (this.leadItem.bookable?.isBlockPeriodRelated === true) {

@@ -254,12 +254,13 @@ export default {
       };
       return { from: label(row.from), to: label(row.to) };
     },
-    // The history row carries the offer's type and id, no title.
+    // The offer by its type and current title (`offerTitle`); an offer that
+    // is gone, or a backend without the field, shows by its id.
     offerLabel(row) {
       if (!row.offerType && !row.offerId) return "";
       const typeKey = offerTypeLabelKey(row.offerType);
       const type = typeKey ? this.$t(typeKey) : row.offerType;
-      return [type, row.offerId].filter(Boolean).join(" ");
+      return [type, row.offerTitle || row.offerId].filter(Boolean).join(" ");
     },
   },
 };

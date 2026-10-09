@@ -436,6 +436,36 @@ describe("Bookings", () => {
   });
 
   /**
+   * „Buchung erstellen“ is there only for whom the API lets create a
+   * booking (`manageBookings.create`, tenant owner, instance owner);
+   * everyone else would run into a 403.
+   */
+  describe("Buchung erstellen", () => {
+    const createButton = (wrapper) =>
+      wrapper
+        .findAll(".v-btn")
+        .wrappers.find((button) => button.text() === "Buchung erstellen");
+
+    it("is offered to whom may create a booking", async () => {
+      const { wrapper } = await mountBookings({});
+
+      expect(createButton(wrapper)).toBeDefined();
+      expect(createButton(wrapper).classes()).not.toContain("v-btn--disabled");
+    });
+
+    it("is not there without the right to create a booking", async () => {
+      BookingPermissionService.allowCreate.mockReturnValue(false);
+      try {
+        const { wrapper } = await mountBookings({});
+
+        expect(createButton(wrapper)).toBeUndefined();
+      } finally {
+        BookingPermissionService.allowCreate.mockReturnValue(true);
+      }
+    });
+  });
+
+  /**
    * The refund filter (glossary „Erstattungsstand“): offen and erfolgt as a
    * checkbox list beside the states, narrowing every view - for the
    * Reichweite *any* only, since under *own* the bookings come without it.

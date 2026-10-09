@@ -91,14 +91,14 @@ export function registerPdfRuntime(Handlebars) {
 
   registerHelperIfMissing("eq", (a, b) => a === b);
   registerHelperIfMissing("formatDateTime", (value) =>
-    value ? formatDateTime(value) : "–",
+    value ? formatDateTime(value) : "–"
   );
   registerHelperIfMissing("formatDate", (value) =>
-    value ? formatDate(value) : "–",
+    value ? formatDate(value) : "–"
   );
   registerHelperIfMissing("formatCurrency", (value) => formatCurrency(value));
   registerHelperIfMissing("formatNegativeCurrency", (value) =>
-    formatNegativeCurrency(value),
+    formatNegativeCurrency(value)
   );
   registerHelperIfMissing("formatAmount", (value) => formatAmount(value));
   registerHelperIfMissing("payMethod", (value) => translatePayMethod(value));

@@ -38,7 +38,10 @@ async function getKeycloakConfig() {
 }
 
 function getKeycloakEndpoints(serverUrl, realm) {
-  const base = `${String(serverUrl).replace(/\/$/, "")}/realms/${realm}/protocol/openid-connect`;
+  const base = `${String(serverUrl).replace(
+    /\/$/,
+    ""
+  )}/realms/${realm}/protocol/openid-connect`;
   return {
     authorization: `${base}/auth`,
     token: `${base}/token`,
@@ -61,7 +64,9 @@ async function keycloakFormPost(url, params) {
     });
   } catch (error) {
     if (error instanceof BackendUnreachableError) {
-      const timedOut = new Error(error.cause?.message || "Keycloak request timed out");
+      const timedOut = new Error(
+        error.cause?.message || "Keycloak request timed out"
+      );
       timedOut.status = 504;
       throw timedOut;
     }
@@ -94,11 +99,7 @@ async function exchangeCodeForTokens({
   return data;
 }
 
-async function refreshKeycloakTokens({
-  endpoints,
-  clientId,
-  refreshToken,
-}) {
+async function refreshKeycloakTokens({ endpoints, clientId, refreshToken }) {
   const response = await keycloakFormPost(endpoints.token, {
     grant_type: "refresh_token",
     client_id: clientId,
@@ -107,7 +108,9 @@ async function refreshKeycloakTokens({
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(data.error_description || "Keycloak refresh failed");
+    const error = new Error(
+      data.error_description || "Keycloak refresh failed"
+    );
     error.status = response.status;
     error.data = data;
     throw error;
@@ -115,11 +118,7 @@ async function refreshKeycloakTokens({
   return data;
 }
 
-async function revokeKeycloakSession({
-  endpoints,
-  clientId,
-  refreshToken,
-}) {
+async function revokeKeycloakSession({ endpoints, clientId, refreshToken }) {
   const response = await keycloakFormPost(endpoints.logout, {
     client_id: clientId,
     refresh_token: refreshToken,
@@ -152,10 +151,7 @@ async function buildBrowserLogoutUrl({ postLogoutRedirectUri }) {
   const endpoints = getKeycloakEndpoints(config.serverUrl, config.realm);
   const logoutUrl = new URL(endpoints.logout);
   logoutUrl.searchParams.set("client_id", config.publicClient);
-  logoutUrl.searchParams.set(
-    "post_logout_redirect_uri",
-    postLogoutRedirectUri
-  );
+  logoutUrl.searchParams.set("post_logout_redirect_uri", postLogoutRedirectUri);
   return logoutUrl.toString();
 }
 
