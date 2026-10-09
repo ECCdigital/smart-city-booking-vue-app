@@ -10,7 +10,7 @@
         </div>
       </div>
       <div class="booking-row__aside">
-        <v-btn small outlined :to="formRoute('legal')" data-test="setup-legal">
+        <v-btn small outlined :to="legalRoute" data-test="setup-legal">
           {{ $t("tenant.onboarding.setup.legal-action") }}
         </v-btn>
       </div>
@@ -25,12 +25,7 @@
         </div>
       </div>
       <div class="booking-row__aside">
-        <v-btn
-          small
-          outlined
-          :to="formRoute('payments')"
-          data-test="setup-payment"
-        >
+        <v-btn small outlined :to="paymentRoute" data-test="setup-payment">
           {{ $t("tenant.onboarding.setup.payment-action") }}
         </v-btn>
       </div>
@@ -39,6 +34,8 @@
 </template>
 
 <script>
+import { tenantTabRoute } from "@/utils/tenantOnboarding";
+
 /**
  * Legal texts and payment stay in the existing tenant forms, which open on
  * their own (supervision spec §9). Drawn as hairline rows: the topic on the
@@ -46,10 +43,9 @@
  */
 export default {
   name: "OnboardingSetupLinks",
-  methods: {
-    formRoute(tab) {
-      return { name: "tenant", query: { tab } };
-    },
+  computed: {
+    legalRoute: () => tenantTabRoute("legal"),
+    paymentRoute: () => tenantTabRoute("payments"),
   },
 };
 </script>
