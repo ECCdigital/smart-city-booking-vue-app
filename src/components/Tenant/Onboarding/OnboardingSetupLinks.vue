@@ -44,10 +44,9 @@
 
 <script>
 /**
- * Legal texts and payment stay in the existing tenant forms; inside the
- * guided setup the query names the wizard step to return to (supervision
- * spec §9). Drawn as hairline rows: the topic on the left, the way to its
- * form on the right.
+ * Legal texts and payment stay in the existing tenant forms, which open on
+ * their own (supervision spec §9). Drawn as hairline rows: the topic on the
+ * left, the way to its form on the right.
  */
 export default {
   name: "OnboardingSetupLinks",
@@ -55,21 +54,10 @@ export default {
     paid: { type: Boolean, default: false },
     // The guided bookable flow names payment only for a paid offer.
     paymentWhenPaidOnly: { type: Boolean, default: false },
-    // Without a step there is no way back: the forms open on their own.
-    returnStep: { type: String, default: null },
-    bookableId: { type: String, default: "" },
   },
   methods: {
     formRoute(tab) {
-      if (!this.returnStep) return { name: "tenant", query: { tab } };
-      return {
-        name: "tenant",
-        query: {
-          tab,
-          onboardingStep: this.returnStep,
-          onboardingBookable: this.bookableId,
-        },
-      };
+      return { name: "tenant", query: { tab } };
     },
   },
 };

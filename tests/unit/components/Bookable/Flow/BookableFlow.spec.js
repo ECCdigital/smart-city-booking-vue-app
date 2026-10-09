@@ -217,19 +217,11 @@ describe("BookableFlow", () => {
     );
   });
 
-  it("lets the onboarding skip the first bookable and keeps its level in view", async () => {
-    const wrapper = mountFlow({ onboarding: true, level: "supervised" });
+  it("guides a new bookable under supervision without skip or supervision notice", () => {
+    const wrapper = mountFlow({ level: "supervised" });
 
-    expect(find(wrapper, "supervision-notice").text()).toContain(
-      "beaufsichtigt"
-    );
-    await find(wrapper, "flow-skip").trigger("click");
-
-    expect(wrapper.emitted("skip")).toHaveLength(1);
-  });
-
-  it("offers no skip outside the onboarding", () => {
-    expect(find(mountFlow(), "flow-skip").exists()).toBe(false);
+    expect(find(wrapper, "flow-skip").exists()).toBe(false);
+    expect(find(wrapper, "supervision-notice").exists()).toBe(false);
   });
 
   describe("after the save", () => {

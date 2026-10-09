@@ -775,6 +775,19 @@ describe("BookableEdit - switching between the modes", () => {
 
       expect(find(wrapper, "flow-bar").exists()).toBe(true);
     });
+
+    // The tenant's first bookable is guided like any other, even from an
+    // old link of the onboarding (ECCdigital/tickets#371).
+    it("offers no skip and no supervision notice, even with `?onboarding=1`", async () => {
+      const wrapper = await mountNew({
+        query: { onboarding: "1" },
+        level: "supervised",
+      });
+
+      expect(find(wrapper, "flow-bar").exists()).toBe(true);
+      expect(find(wrapper, "flow-skip").exists()).toBe(false);
+      expect(find(wrapper, "supervision-notice").exists()).toBe(false);
+    });
   });
 
   it("leads from the confirmation „Zur Bearbeitungsseite“ to the editing page", async () => {
