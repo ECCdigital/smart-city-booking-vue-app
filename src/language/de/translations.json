@@ -179,7 +179,6 @@
       "next": "Weiter",
       "skip": "Überspringen",
       "save-hint": "Gespeichert wird erst hier. Ihre Eingaben bleiben erhalten, wenn Sie zur Bearbeitungsseite wechseln, und gehen erst verloren, wenn Sie das Buchungsobjekt verlassen.",
-      "save-hint-new": "Gespeichert wird erst hier. Wer das Buchungsobjekt vorher verlässt, verliert die Eingaben.",
       "save-failed": "Das Buchungsobjekt konnte nicht gespeichert werden.",
       "steps": {
         "identity": {

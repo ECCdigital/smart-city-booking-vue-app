@@ -677,7 +677,7 @@ describe("BookableEdit - switching between the modes", () => {
     );
   });
 
-  it("says at the save of a new bookable only that leaving it loses the inputs", async () => {
+  it("says the same at the save of a new bookable", async () => {
     ApiBookablesService.getBookableTemplate.mockResolvedValue({
       data: stored({ id: undefined }),
     });
@@ -686,8 +686,9 @@ describe("BookableEdit - switching between the modes", () => {
     await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
 
     expect(find(wrapper, "flow-save-hint").text()).toBe(
-      "Gespeichert wird erst hier. Wer das Buchungsobjekt vorher verlässt, " +
-        "verliert die Eingaben."
+      "Gespeichert wird erst hier. Ihre Eingaben bleiben erhalten, wenn Sie " +
+        "zur Bearbeitungsseite wechseln, und gehen erst verloren, wenn Sie " +
+        "das Buchungsobjekt verlassen."
     );
   });
 
