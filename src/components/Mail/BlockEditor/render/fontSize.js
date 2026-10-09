@@ -21,7 +21,10 @@ export function resolveFontSizePx(value) {
   if (value == null || value === "") {
     return DEFAULT_FONT_SIZE_PX;
   }
-  if (typeof value === "string" && Object.prototype.hasOwnProperty.call(LEGACY_FONT_SIZE, value)) {
+  if (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(LEGACY_FONT_SIZE, value)
+  ) {
     return LEGACY_FONT_SIZE[value];
   }
   const n = typeof value === "number" ? value : Number(value);

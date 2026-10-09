@@ -13,11 +13,11 @@ This repository contains the **Admin UI** for administration, configuration, and
 
 ## Ecosystem
 
-| Component | Repository | Role |
-|-----------|------------|------|
-| **Backend API** | [smart-city-booking-backend](https://github.com/ECCdigital/smart-city-booking-backend) | REST API, auth, bookings, tenants |
-| **Storefront** | [smart-city-booking-store-front](https://github.com/ECCdigital/smart-city-booking-store-front) | Public booking UI — connects to the API (v4) |
-| **Admin UI** | [smart-city-booking-vue-app](https://github.com/ECCdigital/smart-city-booking-vue-app) | Administration, configuration, and JS web interface for embedding |
+| Component       | Repository                                                                                     | Role                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **Backend API** | [smart-city-booking-backend](https://github.com/ECCdigital/smart-city-booking-backend)         | REST API, auth, bookings, tenants                                 |
+| **Storefront**  | [smart-city-booking-store-front](https://github.com/ECCdigital/smart-city-booking-store-front) | Public booking UI — connects to the API (v4)                      |
+| **Admin UI**    | [smart-city-booking-vue-app](https://github.com/ECCdigital/smart-city-booking-vue-app)         | Administration, configuration, and JS web interface for embedding |
 
 ```
 ┌─────────────────┐     ┌──────────────────────┐     ┌──────────────────┐
@@ -39,19 +39,19 @@ More details: [smart-city-booking-backend/docs/architecture.md](https://github.c
 
 ## Versions & Branches
 
-| Branch | Purpose |
-|--------|---------|
-| newest `version/<major>.<minor>.x` | Target of all work and pull requests; the next minor release is tagged here |
-| older `version/<major>.<minor>.x` | Fixes for a line that is still maintained; its patches are tagged here |
-| `develop` | Default branch; follows the newest `version/…` branch, gets nothing directly |
-| `version/3.x` | v3 (LTS): maintenance and security fixes |
+| Branch                             | Purpose                                                                      |
+| ---------------------------------- | ---------------------------------------------------------------------------- |
+| newest `version/<major>.<minor>.x` | Target of all work and pull requests; the next minor release is tagged here  |
+| older `version/<major>.<minor>.x`  | Fixes for a line that is still maintained; its patches are tagged here       |
+| `develop`                          | Default branch; follows the newest `version/…` branch, gets nothing directly |
+| `version/3.x`                      | v3 (LTS): maintenance and security fixes                                     |
 
-- **Work and pull requests** go to the newest `version/<major>.<minor>.x`.
-- **Fixes** go to the oldest maintained branch that has the bug and are merged forward regularly, branch by branch, up to the newest.
-- **Maintained** are the `version/<major>.<minor>.x` branches of the current major version. A line that is no longer maintained loses its branch; its tags stay.
-- **Opening a pull request:** GitHub proposes `develop` as the base. Switch it by hand to the `version/…` branch named above.
-- **`develop`** is brought up to the newest `version/…` branch by hand: when new branches are cut, and at every release candidate and release of the newest version. A patch of an older version does not move it; the fix arrives with the next catch-up.
-- **Tags:** every release `v<major>.<minor>.<patch>` is tagged on its `version/<major>.<minor>.x`. v3: tags `v3.x.x` from `version/3.x`.
+-   **Work and pull requests** go to the newest `version/<major>.<minor>.x`.
+-   **Fixes** go to the oldest maintained branch that has the bug and are merged forward regularly, branch by branch, up to the newest.
+-   **Maintained** are the `version/<major>.<minor>.x` branches of the current major version. A line that is no longer maintained loses its branch; its tags stay.
+-   **Opening a pull request:** GitHub proposes `develop` as the base. Switch it by hand to the `version/…` branch named above.
+-   **`develop`** is brought up to the newest `version/…` branch by hand: when new branches are cut, and at every release candidate and release of the newest version. A patch of an older version does not move it; the fix arrives with the next catch-up.
+-   **Tags:** every release `v<major>.<minor>.<patch>` is tagged on its `version/<major>.<minor>.x`. v3: tags `v3.x.x` from `version/3.x`.
 
 The newest branch: `git branch -r --list 'origin/version/[0-9]*.[0-9]*.x' --sort=-v:refname | head -1`.
 
@@ -63,10 +63,10 @@ Breaking changes: [smart-city-booking-backend/docs/CHANGELOG.md](https://github.
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v20+ (LTS recommended)
-- [npm](https://www.npmjs.com/) v10+
-- [Docker](https://www.docker.com/) v20+ (optional, for container deployments)
-- A running [backend API](https://github.com/ECCdigital/smart-city-booking-backend) instance
+-   [Node.js](https://nodejs.org/) v20+ (LTS recommended)
+-   [npm](https://www.npmjs.com/) v10+
+-   [Docker](https://www.docker.com/) v20+ (optional, for container deployments)
+-   A running [backend API](https://github.com/ECCdigital/smart-city-booking-backend) instance
 
 ### Installation
 
@@ -105,28 +105,28 @@ cp .env-example .env
 
 Then adjust at least the following values:
 
-| Variable | Description | Example |
-| -------- | ----------- | ------- |
-| `VUE_APP_SERVER_BASE_URL` | Base URL of the backend API | `https://api.my-city.de` |
-| `VUE_APP_AUTH_MODE` | Auth transport: `direct` (default) or opt-in `bff` | `direct` |
-| `VUE_APP_BFF_BASE_URL` | Admin BFF base when `AUTH_MODE=bff` *(optional)* | `/admin/api` |
-| `VUE_APP_NAME` | Application title shown in the browser | `My City – Booking Platform` |
-| `VUE_APP_IS_PRODUCTION` | Enable production mode | `true` |
-| `VUE_APP_CONTACT_ADDRESS` | Contact address (footer / imprint) | `City Office, Main St. 1, 12345 Sample City` |
-| `VUE_APP_CONTACT_URL` | Link to the contact page | `https://www.my-city.de/contact` |
-| `VUE_APP_ALLOWED_EXT_DEFAULT` | Allowed file extensions for uploads | `pdf,doc,docx,xls,xlsx` |
-| `VUE_APP_ALLOWED_EXT_IMAGES` | Allowed file extensions for images | `jpg,jpeg,png,svg` |
-| `VUE_APP_PRIMARY_COLOR` | Primary color (light theme, hex) | `#1976D2` |
-| `VUE_APP_USERSNAP_API_KEY` | API key for the Usersnap feedback tool *(optional)* | |
+| Variable                      | Description                                         | Example                                      |
+| ----------------------------- | --------------------------------------------------- | -------------------------------------------- |
+| `VUE_APP_SERVER_BASE_URL`     | Base URL of the backend API                         | `https://api.my-city.de`                     |
+| `VUE_APP_AUTH_MODE`           | Auth transport: `direct` (default) or opt-in `bff`  | `direct`                                     |
+| `VUE_APP_BFF_BASE_URL`        | Admin BFF base when `AUTH_MODE=bff` _(optional)_    | `/admin/api`                                 |
+| `VUE_APP_NAME`                | Application title shown in the browser              | `My City – Booking Platform`                 |
+| `VUE_APP_IS_PRODUCTION`       | Enable production mode                              | `true`                                       |
+| `VUE_APP_CONTACT_ADDRESS`     | Contact address (footer / imprint)                  | `City Office, Main St. 1, 12345 Sample City` |
+| `VUE_APP_CONTACT_URL`         | Link to the contact page                            | `https://www.my-city.de/contact`             |
+| `VUE_APP_ALLOWED_EXT_DEFAULT` | Allowed file extensions for uploads                 | `pdf,doc,docx,xls,xlsx`                      |
+| `VUE_APP_ALLOWED_EXT_IMAGES`  | Allowed file extensions for images                  | `jpg,jpeg,png,svg`                           |
+| `VUE_APP_PRIMARY_COLOR`       | Primary color (light theme, hex)                    | `#1976D2`                                    |
+| `VUE_APP_USERSNAP_API_KEY`    | API key for the Usersnap feedback tool _(optional)_ |                                              |
 
 > **Note:** All `VUE_APP_*` variables are embedded into the static files at **build time**. Any change requires a new build — unless you use the Docker image, which substitutes environment variables at container startup.
 
 ### Auth modes
 
-| Setup | Config | When to use |
-| ----- | ------ | ----------- |
-| **Direct (default)** | unset or `VUE_APP_AUTH_MODE=direct` | Simple / Open-Source installs — SPA calls the API with Bearer tokens (current behaviour) |
-| **BFF (opt-in)** | `VUE_APP_AUTH_MODE=bff` + Admin BFF process | Shared login session with Storefront on the same origin (`/` + `/admin`) via HttpOnly cookies |
+| Setup                | Config                                      | When to use                                                                                   |
+| -------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Direct (default)** | unset or `VUE_APP_AUTH_MODE=direct`         | Simple / Open-Source installs — SPA calls the API with Bearer tokens (current behaviour)      |
+| **BFF (opt-in)**     | `VUE_APP_AUTH_MODE=bff` + Admin BFF process | Shared login session with Storefront on the same origin (`/` + `/admin`) via HttpOnly cookies |
 
 One deploy uses one mode. The backend API stays Bearer-only either way. Contract (cookies, env, acceptance criteria): [docs/adr/0001-optional-admin-bff-shared-session.md](docs/adr/0001-optional-admin-bff-shared-session.md).
 
@@ -138,9 +138,9 @@ The optional Admin BFF lives in [`bff/`](bff/). Run locally with `npm run bff:de
 
 Enabling the Admin BFF is **not required** for Open-Source or simple installs. Stay on Direct mode unless Admin and Storefront share one browser origin and you want one login for both.
 
-| If you… | Do this |
-| ------- | ------- |
-| Run Admin alone (or Admin + Storefront on different hosts) | Keep Direct (default) — no BFF |
+| If you…                                                         | Do this                                                                                                          |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Run Admin alone (or Admin + Storefront on different hosts)      | Keep Direct (default) — no BFF                                                                                   |
 | Deploy Storefront at `/` and Admin at `/admin` on the same site | Opt in: `VUE_APP_AUTH_MODE=bff`, run Admin BFF, follow [shared-session-deploy.md](docs/shared-session-deploy.md) |
 
 Hardening notes (CSRF, no tokens in JS): [docs/bff-hardening.md](docs/bff-hardening.md). Smoke checklists: [docs/bff-smoke-tests.md](docs/bff-smoke-tests.md).
@@ -161,10 +161,10 @@ The source lives in
 [`src/js-web-interface/booking-manager-js.js`](src/js-web-interface/booking-manager-js.js).
 During the build it is minified to `booking-manager.min.js`:
 
-| Command | Output location | Purpose |
-| ------- | --------------- | ------- |
-| `npm run build` | `./dist/cdn/current/booking-manager.min.js` | Production build (served as CDN) |
-| `npm run test-build` | `./public/cdn/current/booking-manager.min.js` | Local testing |
+| Command              | Output location                               | Purpose                          |
+| -------------------- | --------------------------------------------- | -------------------------------- |
+| `npm run build`      | `./dist/cdn/current/booking-manager.min.js`   | Production build (served as CDN) |
+| `npm run test-build` | `./public/cdn/current/booking-manager.min.js` | Local testing                    |
 
 When the frontend is deployed, the script is therefore reachable under
 `https://<your-frontend-host>/cdn/current/booking-manager.min.js`.
@@ -186,18 +186,18 @@ unminified source during development):
 
 ```html
 <script>
-  const bm = new BookingManager();
+    const bm = new BookingManager();
 
-  // Base URL of the backend API (same value as VUE_APP_SERVER_BASE_URL)
-  bm.url = "https://api.my-city.de";
+    // Base URL of the backend API (same value as VUE_APP_SERVER_BASE_URL)
+    bm.url = "https://api.my-city.de";
 
-  // Tenant identifier of the tenant you want to embed the booking manager for
-  bm.tenant = "my-tenant";
+    // Tenant identifier of the tenant you want to embed the booking manager for
+    bm.tenant = "my-tenant";
 
-  // Initialize once the page has finished loading
-  window.addEventListener("load", () => {
-    bm.init();
-  });
+    // Initialize once the page has finished loading
+    window.addEventListener("load", () => {
+        bm.init();
+    });
 </script>
 ```
 
@@ -213,15 +213,15 @@ attributes. You can use the **class** variants multiple times on the same page;
 the `id` variants are kept for backwards compatibility and should only appear
 once.
 
-| Element (class / id) | Configuration attributes | Description |
-| -------------------- | ------------------------ | ----------- |
-| `.bm-bookable-list` | `data-type` (filter by type, optional), `data-ids` (comma-separated IDs, optional) | Renders a list of bookable objects. |
-| `.bm-bookable-item` | `data-id` (fixed ID) **or** `data-id-param` (read ID from URL query parameter) | Renders the detail view of a single bookable object. |
-| `.bm-event-list` | `data-ids` (comma-separated IDs, optional) | Renders a list of events. |
-| `.bm-event-item` | `data-id` (fixed ID) **or** `data-id-param` (read ID from URL query parameter) | Renders the detail view of a single event. |
-| `.bm-calendar` | `data-view` (`dayGridMonth` \| `timeGridWeek` \| …, default `dayGridMonth`) | Calendar showing all events. |
-| `.bm-occupancy-calendar` | `data-id` (comma-separated bookable IDs), `data-view` (default `dayGridMonth`) | Calendar showing the occupancy of the given bookable object(s). |
-| `.bm-availability-calendar` | `data-id` (comma-separated bookable IDs), `data-view` (default `dayGridMonth`) | Calendar showing when the given bookable object(s) are **not** available. |
+| Element (class / id)        | Configuration attributes                                                           | Description                                                               |
+| --------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `.bm-bookable-list`         | `data-type` (filter by type, optional), `data-ids` (comma-separated IDs, optional) | Renders a list of bookable objects.                                       |
+| `.bm-bookable-item`         | `data-id` (fixed ID) **or** `data-id-param` (read ID from URL query parameter)     | Renders the detail view of a single bookable object.                      |
+| `.bm-event-list`            | `data-ids` (comma-separated IDs, optional)                                         | Renders a list of events.                                                 |
+| `.bm-event-item`            | `data-id` (fixed ID) **or** `data-id-param` (read ID from URL query parameter)     | Renders the detail view of a single event.                                |
+| `.bm-calendar`              | `data-view` (`dayGridMonth` \| `timeGridWeek` \| …, default `dayGridMonth`)        | Calendar showing all events.                                              |
+| `.bm-occupancy-calendar`    | `data-id` (comma-separated bookable IDs), `data-view` (default `dayGridMonth`)     | Calendar showing the occupancy of the given bookable object(s).           |
+| `.bm-availability-calendar` | `data-id` (comma-separated bookable IDs), `data-view` (default `dayGridMonth`)     | Calendar showing when the given bookable object(s) are **not** available. |
 
 **Example – list and detail page:**
 
@@ -244,24 +244,24 @@ calling `init()`:
 
 ```html
 <script>
-  const bm = new BookingManager();
-  bm.url = "https://api.my-city.de";
-  bm.tenant = "my-tenant";
+    const bm = new BookingManager();
+    bm.url = "https://api.my-city.de";
+    bm.tenant = "my-tenant";
 
-  // Link template for calendar events ({id} is replaced with the event id)
-  bm.calendarHref = "https://my-city.de/event?id={id}";
+    // Link template for calendar events ({id} is replaced with the event id)
+    bm.calendarHref = "https://my-city.de/event?id={id}";
 
-  // Extra FullCalendar options, merged into the default configuration
-  bm.calendar = {
-    locale: "de",
-    headerToolbar: {
-      left: "prev,next today",
-      center: "title",
-      right: "dayGridMonth,timeGridWeek",
-    },
-  };
+    // Extra FullCalendar options, merged into the default configuration
+    bm.calendar = {
+        locale: "de",
+        headerToolbar: {
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek",
+        },
+    };
 
-  window.addEventListener("load", () => bm.init());
+    window.addEventListener("load", () => bm.init());
 </script>
 ```
 
@@ -269,10 +269,10 @@ The loading indicator of the calendars can be styled via CSS custom properties:
 
 ```css
 :root {
-  --bm-calendar-loading-bg: rgba(255, 255, 255, 0.8);
-  --bm-calendar-loading-color: #333;
-  --bm-calendar-loading-opacity: 0.6;
-  --bm-calendar-primary-color: #3498db;
+    --bm-calendar-loading-bg: rgba(255, 255, 255, 0.8);
+    --bm-calendar-loading-color: #333;
+    --bm-calendar-loading-opacity: 0.6;
+    --bm-calendar-primary-color: #3498db;
 }
 ```
 
@@ -287,16 +287,16 @@ nginx configuration, and Docker deployment.
 
 ## Available npm Scripts
 
-| Script | Description |
-| ------ | ----------- |
-| `npm run serve` | Dev server with hot-reload |
-| `npm run build` | Production build to `./dist` incl. minified JS web interface |
-| `npm start` | Serve in production mode (Node, 4 GB heap) |
-| `npm run test-build` | Build JS web interface to `./public/cdn` for local testing |
-| `npm run format:check` | Prettier – check formatting |
-| `npm run format:write` | Prettier – apply formatting |
-| `npm run lint:check` | ESLint – report problems |
-| `npm run lint:fix` | ESLint – auto-fix problems |
+| Script                 | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
+| `npm run serve`        | Dev server with hot-reload                                   |
+| `npm run build`        | Production build to `./dist` incl. minified JS web interface |
+| `npm start`            | Serve in production mode (Node, 4 GB heap)                   |
+| `npm run test-build`   | Build JS web interface to `./public/cdn` for local testing   |
+| `npm run format:check` | Prettier – check formatting                                  |
+| `npm run format:write` | Prettier – apply formatting                                  |
+| `npm run lint:check`   | ESLint – report problems                                     |
+| `npm run lint:fix`     | ESLint – auto-fix problems                                   |
 
 ---
 
@@ -308,51 +308,51 @@ For backend deployment (Docker, secrets, process management), see [smart-city-bo
 
 1. **Install dependencies:**
 
-   ```bash
-   npm ci
-   ```
+    ```bash
+    npm ci
+    ```
 
 2. **Create a production build:**
 
-   ```bash
-   npm run build
-   ```
+    ```bash
+    npm run build
+    ```
 
-   This generates fully static files (HTML, CSS, JS) in the `./dist` directory that can be served by any web server.
+    This generates fully static files (HTML, CSS, JS) in the `./dist` directory that can be served by any web server.
 
 3. **Serve via web server:**
 
-   Copy the contents of `./dist` to the document root of your web server (e.g. nginx, Apache, Caddy). Since this is a Vue SPA, the server must be configured to fall back to `index.html` for all routes.
+    Copy the contents of `./dist` to the document root of your web server (e.g. nginx, Apache, Caddy). Since this is a Vue SPA, the server must be configured to fall back to `index.html` for all routes.
 
-   **Example – nginx:**
+    **Example – nginx:**
 
-   ```nginx
-   server {
-       listen       80;
-       server_name  booking.my-city.de;
-       root         /var/www/smart-city-booking;
-       index        index.html;
+    ```nginx
+    server {
+        listen       80;
+        server_name  booking.my-city.de;
+        root         /var/www/smart-city-booking;
+        index        index.html;
 
-       location / {
-           try_files $uri $uri/ /index.html;
-       }
-   }
-   ```
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+    }
+    ```
 
 ### Option 2 – Docker
 
 The included `Dockerfile` builds **one image** for all instances:
 
-1. **UI builder** – Node 18: production Vue build  
-2. **BFF deps** – Node 20: Admin BFF `node_modules` (bundled into the image, not started by default)  
+1. **UI builder** – Node 18: production Vue build
+2. **BFF deps** – Node 20: Admin BFF `node_modules` (bundled into the image, not started by default)
 3. **Runtime** – nginx-alpine + Node: serves the SPA; optionally starts the embedded BFF
 
 At container start, `docker-entrypoint.sh` + `substitute_environment_variables.sh` inject env vars. Auth mode is chosen **per deploy** via env — same image tag everywhere.
 
-| Mode | Env | What runs in the container |
-|------|-----|----------------------------|
-| **Direct (default)** | unset / `VUE_APP_AUTH_MODE=direct` | nginx + SPA only (as before) |
-| **BFF** | `VUE_APP_AUTH_MODE=bff` | nginx + SPA + embedded BFF on `:3001`; nginx proxies `/admin/api` → BFF |
+| Mode                 | Env                                | What runs in the container                                              |
+| -------------------- | ---------------------------------- | ----------------------------------------------------------------------- |
+| **Direct (default)** | unset / `VUE_APP_AUTH_MODE=direct` | nginx + SPA only (as before)                                            |
+| **BFF**              | `VUE_APP_AUTH_MODE=bff`            | nginx + SPA + embedded BFF on `:3001`; nginx proxies `/admin/api` → BFF |
 
 **Build the image** (unchanged; `docker-publish` workflow uses the same `Dockerfile`):
 
@@ -388,28 +388,27 @@ docker run -d \
   smart-city-booking-frontend
 ```
 
-| Extra BFF env | Purpose |
-|---------------|---------|
+| Extra BFF env                      | Purpose                                                                      |
+| ---------------------------------- | ---------------------------------------------------------------------------- |
 | `PUBLIC_ORIGIN` / `PUBLIC_ORIGINS` | Comma-separated browser origin allowlist (OIDC redirect + CSRF); both merged |
-| `API_BASE_URL` | Backend for BFF (defaults to `VUE_APP_SERVER_BASE_URL`) |
-| `ADMIN_BFF_ENABLED=false` | Force Direct process layout even if you only want SPA flags differently |
-| `ADMIN_BFF_UPSTREAM` | Point nginx at an **external** BFF instead of the embedded one |
+| `API_BASE_URL`                     | Backend for BFF (defaults to `VUE_APP_SERVER_BASE_URL`)                      |
+| `ADMIN_BFF_ENABLED=false`          | Force Direct process layout even if you only want SPA flags differently      |
+| `ADMIN_BFF_UPSTREAM`               | Point nginx at an **external** BFF instead of the embedded one               |
 
 > **Advantage:** One published image (`docker-publish`); per instance only env differs. No second image required for BFF mode.
 
-**Docker Compose:** see [`docker-compose.bff.example.yml`](docker-compose.bff.example.yml).
----
+## **Docker Compose:** see [`docker-compose.bff.example.yml`](docker-compose.bff.example.yml).
 
 ## Documentation
 
-| Topic | Description |
-|-------|-------------|
-| [Architecture](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/architecture.md) | System components, data flow, version lines |
-| [Web Integration](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/web-integration.md) | Embed bookables & events in existing websites (JS web interface) |
-| [Deployment](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/deployment.md) | Production setup, Docker, operations |
-| [API Reference](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/api/README.md) | Endpoints, permissions, examples |
-| [Authentication](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/api/authentication.md) | Auth routes and JWT configuration |
-| [Changelog](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/CHANGELOG.md) | Version history and breaking changes |
+| Topic                                                                                                              | Description                                                      |
+| ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| [Architecture](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/architecture.md)         | System components, data flow, version lines                      |
+| [Web Integration](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/web-integration.md)   | Embed bookables & events in existing websites (JS web interface) |
+| [Deployment](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/deployment.md)             | Production setup, Docker, operations                             |
+| [API Reference](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/api/README.md)          | Endpoints, permissions, examples                                 |
+| [Authentication](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/api/authentication.md) | Auth routes and JWT configuration                                |
+| [Changelog](https://github.com/ECCdigital/smart-city-booking-backend/blob/develop/docs/CHANGELOG.md)               | Version history and breaking changes                             |
 
 ---
 

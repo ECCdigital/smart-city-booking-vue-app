@@ -1,66 +1,38 @@
 <script>
-import BaseSection from "@/components/commons/BaseSection.vue";
 import MediaAttachmentList from "@/components/Media/MediaAttachmentList.vue";
+import bookableEditing from "@/mixins/bookableEditing";
 
+/**
+ * Anhänge: the documents bookers get with the booking, and those they must
+ * accept. The area as the editing page frames it in a card and the step
+ * „Weitere Einstellungen“ in a row.
+ */
 export default {
   name: "BookableEditAttachments",
-  components: { MediaAttachmentList, BaseSection },
-  props: {
-    bookable: { type: Object, required: true },
-  },
-  data() {
-    return {
-      valid: true,
-    };
-  },
+  components: { MediaAttachmentList },
+  mixins: [bookableEditing],
   computed: {
-    model: {
-      get() {
-        return this.bookable;
-      },
-      set(val) {
-        this.$emit("update:bookable", { ...val });
-      },
-    },
-    attachments: {
-      get() {
-        return this.model.attachments || [];
-      },
-      set(value) {
-        this.$set(this.model, "attachments", value);
-      },
+    attachments() {
+      return this.bookable.attachments || [];
     },
   },
 };
 </script>
 
 <template>
-  <v-form ref="form" v-model="valid">
-    <BaseSection title="Anhänge" icon="mdi-paperclip" />
-
-    <v-card class="mb-6 section-card" outlined>
-      <v-card-title
-        class="section-header pa-4 d-flex justify-space-between align-center"
-      >
-        <div>
-          <v-icon class="mr-2">mdi-paperclip</v-icon>
-          <span class="text-h6 font-weight-bold">Anhänge verwalten</span>
-        </div>
-        <v-btn small color="primary" @click="$refs.list.add()">
-          <v-icon left small>mdi-plus</v-icon>
-          Hinzufügen
-        </v-btn>
-      </v-card-title>
-      <v-divider></v-divider>
-
-      <v-card-text class="pa-4">
-        <MediaAttachmentList
-          ref="list"
-          v-model="attachments"
-          :public-only="!!model.isPublic"
-          public-only-reason="Dieses Buchungsobjekt ist öffentlich sichtbar — interne Medien können hier nicht gespeichert werden."
-        />
-      </v-card-text>
-    </v-card>
-  </v-form>
+  <div>
+    <div class="d-flex justify-end mb-3">
+      <v-btn small color="primary" @click="$refs.list.add()">
+        <v-icon left small>mdi-plus</v-icon>
+        {{ $t("bookable.edit.common.add") }}
+      </v-btn>
+    </div>
+    <MediaAttachmentList
+      ref="list"
+      :value="attachments"
+      :public-only="!!bookable.isPublic"
+      :public-only-reason="$t('bookable.areas.attachments.publicOnlyReason')"
+      @input="patch({ attachments: $event })"
+    />
+  </div>
 </template>

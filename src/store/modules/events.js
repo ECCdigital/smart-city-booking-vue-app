@@ -62,7 +62,7 @@ const defaultState = {
   images: [],
   format: 0,
   isPublic: false,
-}
+};
 const state = {
   form: JSON.parse(JSON.stringify(defaultState)),
   // The review (glossary "Prüfstatus") of the loaded event. It is the
@@ -89,13 +89,21 @@ const mutations = {
     state.form.attendees.priceCategories.push(payload);
   },
   REMOVE_EVENT_CATEGORY(state, id) {
-    state.form.attendees.priceCategories = state.form.attendees.priceCategories.filter(category => category.id !== id);
+    state.form.attendees.priceCategories =
+      state.form.attendees.priceCategories.filter(
+        (category) => category.id !== id
+      );
   },
   REMOVE_SPEAKER(state, id) {
-    state.form.eventOrganizer.speakers = state.form.eventOrganizer.speakers.filter(referent => referent.id !== id);
+    state.form.eventOrganizer.speakers =
+      state.form.eventOrganizer.speakers.filter(
+        (referent) => referent.id !== id
+      );
   },
   REMOVE_SCHEDULE(state, id) {
-    state.form.schedules = state.form.schedules.filter(schedule => schedule.id !== id);
+    state.form.schedules = state.form.schedules.filter(
+      (schedule) => schedule.id !== id
+    );
   },
   RESTORE(state, payload) {
     const { review = null, ...form } = payload;
@@ -111,14 +119,16 @@ const mutations = {
   },
   UPDATE_SCHEDULES_FOR_DAY(state, payload) {
     // add schedules to the day
-    const day = state.form.schedules.find(day => day.id === payload.dayId);
+    const day = state.form.schedules.find((day) => day.id === payload.dayId);
     day.schedules.push(payload);
   },
   REMOVE_SCHEDULE_FROM_DAY(state, payload) {
     // remove schedule from the day
-    const day = state.form.schedules.find(day => day.id === payload.dayId);
-    day.schedules = day.schedules.filter(schedule => schedule.id !== payload.id);
-  }
+    const day = state.form.schedules.find((day) => day.id === payload.dayId);
+    day.schedules = day.schedules.filter(
+      (schedule) => schedule.id !== payload.id
+    );
+  },
 };
 
 const actions = {
@@ -160,7 +170,7 @@ const actions = {
   },
   reset({ commit }) {
     commit("CLEAR");
-  }
+  },
 };
 
 const getters = {

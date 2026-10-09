@@ -130,12 +130,22 @@ function getConflictMessage(data) {
     message = i18n.t(GENERIC_CONFLICT_KEY);
   }
 
-  if (Array.isArray(params.bookingIds) && params.bookingIds.length > 0) {
-    message += ` ${i18n.t(DIVERGING_BOOKINGS_KEY, {
-      ids: params.bookingIds.join(", "),
-    })}`;
+  return withDivergingBookings(message, params.bookingIds);
+}
+
+/**
+ * A message with the members of a group that deviate from its state named
+ * after it („Betroffene Buchungen: …“), as the 409 of a group transition and
+ * the 200 `STATUS_MISMATCH` of its consistency check send them; the message
+ * alone without any.
+ */
+export function withDivergingBookings(message, bookingIds) {
+  if (!Array.isArray(bookingIds) || bookingIds.length === 0) {
+    return message;
   }
-  return message;
+  return `${message} ${i18n.t(DIVERGING_BOOKINGS_KEY, {
+    ids: bookingIds.join(", "),
+  })}`;
 }
 
 /**
@@ -211,6 +221,40 @@ export function isLockBusyError(error) {
 export function shouldRefetch(error) {
   const status = error?.response?.status;
   return status === 409 || status === 404;
+}
+
+/**
+ * The text of one detail of a booking's 400 `ValidationError`
+ * (`booking.validation.<field>.<code>.<part>`, `part` being `title` or
+ * `message`), or `null` when the table has no entry for it. The booking form's
+ * toasts and the transitions' reasons both read it here.
+ */
+export function bookingValidationText(detail, part) {
+  const key = `booking.validation.${detail?.field}.${detail?.code}.${part}`;
+  return i18n.te(key) ? i18n.t(key, detail.params) : null;
+}
+
+/**
+ * The reasons of a booking's 400 `ValidationError` (`details[]` with field and
+ * code): the stored booking does not pass the backend's schema, so a
+ * transition could not write it. Each detail reads as the title of the booking
+ * form's validation table, a field without one by its name. Any other error
+ * has none.
+ */
+export function getBookingValidationReasons(error) {
+  const data = error?.response?.data;
+  if (
+    error?.response?.status !== 400 ||
+    data?.error !== "ValidationError" ||
+    !Array.isArray(data.details)
+  ) {
+    return [];
+  }
+  return data.details.map(
+    (detail) =>
+      bookingValidationText(detail, "title") ??
+      i18n.t("booking.validation-reason-unknown", { field: detail.field })
+  );
 }
 
 /**

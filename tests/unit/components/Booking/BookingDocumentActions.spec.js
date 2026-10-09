@@ -374,6 +374,38 @@ describe("BookingDocumentActions", () => {
       expect(wrapper.emitted("reload")).toBeUndefined();
     });
 
+    it("names the deviating members when a group invoice is refused for their state", async () => {
+      ApiGroupBookingService.generateGroupInvoice.mockResolvedValue({
+        success: false,
+        errors: [
+          {
+            code: "STATUS_MISMATCH",
+            meta: { status: "confirmed", bookingIds: ["bk-2"] },
+          },
+        ],
+      });
+      const { wrapper } = mountActions({
+        booking: booking({ paymentProvider: "invoice" }),
+        groupBooking: { id: "grp-1", bookingIds: ["bk-1", "bk-2"] },
+      });
+
+      await clickEntry(
+        wrapper,
+        ".booking-document-actions__invoice",
+        "versenden"
+      );
+      await wrapper.vm.$nextTick();
+      wrapper
+        .findComponent({ name: "GroupBookingCreateInvoice" })
+        .vm.$emit("create-group-invoice");
+      await flushPromises();
+      await wrapper.vm.$nextTick();
+
+      expect(group(wrapper, "invoices").find(".v-alert").text()).toBe(
+        "Die Buchungen haben unterschiedliche Status. Betroffene Buchungen: bk-2"
+      );
+    });
+
     it("asks a series member for a single or aggregated invoice, and creates the Sammelrechnung", async () => {
       ApiGroupBookingService.generateGroupInvoice.mockResolvedValue({
         success: true,

@@ -1,0 +1,5 @@
+# Formatting-only commits, skipped by `git blame` with
+# `git config blame.ignoreRevsFile .git-blame-ignore-revs` (GitHub does so on its own).
+
+# style: format all files with Prettier (ECCdigital/tickets#424)
+ce777bf85651602535c600d2c40d6e900a252735

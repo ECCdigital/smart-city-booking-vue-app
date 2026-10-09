@@ -3,7 +3,10 @@ import store from "@/store";
 export default {
   testConnection(tenantID, credentials = {}, provider = "nuki") {
     const t = tenantID || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`/api/${t}/access-apps/${provider}/test`, credentials);
+    return ApiClient.post(
+      `/api/${t}/access-apps/${provider}/test`,
+      credentials
+    );
   },
   getProviders(tenantID) {
     const t = tenantID || store.getters["tenants/currentTenantId"];
@@ -15,9 +18,12 @@ export default {
   },
   registerWebhook(tenantID, callbackUrl, provider = "nuki") {
     const t = tenantID || store.getters["tenants/currentTenantId"];
-    return ApiClient.post(`/api/${t}/access-apps/${provider}/webhook/register`, {
-      callbackUrl,
-    });
+    return ApiClient.post(
+      `/api/${t}/access-apps/${provider}/webhook/register`,
+      {
+        callbackUrl,
+      }
+    );
   },
   unregisterWebhook(tenantID, notificationId, provider = "nuki") {
     const t = tenantID || store.getters["tenants/currentTenantId"];

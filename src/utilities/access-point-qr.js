@@ -1,4 +1,5 @@
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
+import { unpackBlobErrorBody } from "@/services/api/apiErrorMessage";
 
 export const QR_FORMATS = Object.freeze(["pdf", "svg", "png"]);
 
@@ -26,13 +27,21 @@ function parseFilename(disposition, accessPoint, format) {
  * @param {string} format `pdf` (A4 template), `svg` or `png`
  * @param {string} [tenant] Tenant id, defaults to the selected tenant
  * @returns {Promise<void>} Resolves once the download has been triggered
+ * @throws The request's error, its body unpacked from the Blob the download
+ *   asked for, so a caller can read the reason (e.g. a missing
+ *   `STORE_FRONT_URL`, `503 store_front_url_missing`)
  */
 export async function downloadQrCode(accessPoint, format, tenant) {
-  const response = await ApiAccessPointService.getQrCode(
-    accessPoint.id,
-    format,
-    tenant
-  );
+  let response;
+  try {
+    response = await ApiAccessPointService.getQrCode(
+      accessPoint.id,
+      format,
+      tenant
+    );
+  } catch (error) {
+    throw await unpackBlobErrorBody(error);
+  }
 
   const blob = new Blob([response.data], {
     type: CONTENT_TYPES[format] || "application/octet-stream",

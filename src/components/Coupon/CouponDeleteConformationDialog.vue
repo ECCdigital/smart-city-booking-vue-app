@@ -39,12 +39,12 @@ export default {
     toDelete: {
       type: Object,
       required: true,
-    }
+    },
   },
   data() {
     return {
-      inProgress: false
-    }
+      inProgress: false,
+    };
   },
   computed: {
     openDialog: {
@@ -55,15 +55,18 @@ export default {
   },
   methods: {
     closeDialog() {
-      this.$emit("close")
+      this.$emit("close");
     },
     async onDelete() {
       this.inProgress = true;
-      await ApiCouponService.deleteCoupon(this.toDelete.tenant, this.toDelete.id);
+      await ApiCouponService.deleteCoupon(
+        this.toDelete.tenant,
+        this.toDelete.id
+      );
       this.inProgress = false;
       this.closeDialog();
-    }
-  }
+    },
+  },
 };
 </script>
 

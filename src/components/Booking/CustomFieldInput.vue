@@ -34,10 +34,7 @@
       v-else-if="field.inputType === 'numeric'"
       :value="value"
       @input="
-        $emit(
-          'input',
-          $event !== '' && $event !== null ? Number($event) : null
-        )
+        $emit('input', $event !== '' && $event !== null ? Number($event) : null)
       "
       :label="fieldLabel"
       :placeholder="field.placeholder || ''"

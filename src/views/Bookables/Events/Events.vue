@@ -56,7 +56,9 @@
                     <v-icon small>mdi-rss</v-icon>
                   </v-list-item-icon>
                   <v-list-item-content>
-                    <v-list-item-title> iCal-Feed abonnieren </v-list-item-title>
+                    <v-list-item-title>
+                      iCal-Feed abonnieren
+                    </v-list-item-title>
                   </v-list-item-content>
                 </v-list-item>
               </v-list>

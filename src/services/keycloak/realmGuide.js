@@ -151,16 +151,16 @@ function addressOf(app, input) {
   const origin = known(input.origin);
   const redirects = input.placeholder
     ? {
-      redirectUris: [placeholder("bffRedirectUri")],
-      postLogoutRedirectUris: [
-        placeholder("bffPostLogoutRedirectUri"),
-        { ...placeholder("bffSwitchUserRedirectUri"), switchUser: true },
-      ],
-    }
+        redirectUris: [placeholder("bffRedirectUri")],
+        postLogoutRedirectUris: [
+          placeholder("bffPostLogoutRedirectUri"),
+          { ...placeholder("bffSwitchUserRedirectUri"), switchUser: true },
+        ],
+      }
     : {
-      redirectUris: (input.redirectUris || []).map(entry),
-      postLogoutRedirectUris: (input.postLogoutRedirectUris || []).map(entry),
-    };
+        redirectUris: (input.redirectUris || []).map(entry),
+        postLogoutRedirectUris: (input.postLogoutRedirectUris || []).map(entry),
+      };
   const address = { app, origin, ...redirects, webOrigins: [origin] };
   return {
     ...address,
@@ -294,10 +294,10 @@ function rolesStep({ webClient }, roleMapping) {
       { id: "roleMappingReplacesRoles", type: "warning" },
       roles.length
         ? {
-          id: "createClientRoles",
-          type: "info",
-          params: { webClient: webClient.text },
-        }
+            id: "createClientRoles",
+            type: "info",
+            params: { webClient: webClient.text },
+          }
         : { id: "noKeycloakRoles", type: "info" },
       { id: "rolesScope", type: "info" },
     ],

@@ -240,10 +240,10 @@ describe("EventCreate", () => {
   });
 
   it.each([
-    ["supervised", "braucht zusätzlich eine Freigabe"],
+    ["supervised", "braucht zusätzlich eine Freigabe durch den Betreiber"],
     [
       "pending",
-      "Der Veröffentlichungswunsch wird vorgemerkt; bis zur Freigabe durch den Betreiber wird nichts öffentlich",
+      "wartet auf die Freigabe durch den Betreiber: Der Veröffentlichungswunsch wird vorgemerkt; bis dahin wird nichts öffentlich",
     ],
     ["declined", "abgewiesen: Der Veröffentlichungswunsch wird vorgemerkt"],
   ])(

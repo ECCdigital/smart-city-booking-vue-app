@@ -3,14 +3,18 @@ import PersistenceService from "@/services/PersistenceService";
 const namespaced = true;
 
 const state = {
-  viewedIds: PersistenceService.getFromLocalStorage("viewedNotifications") || [],
+  viewedIds:
+    PersistenceService.getFromLocalStorage("viewedNotifications") || [],
 };
 
 const mutations = {
   ADD_VIEWED_NOTIFICATION(state, notificationId) {
     if (!state.viewedIds.includes(notificationId)) {
       state.viewedIds.push(notificationId);
-      PersistenceService.writeToLocalStorage("viewedNotifications", state.viewedIds);
+      PersistenceService.writeToLocalStorage(
+        "viewedNotifications",
+        state.viewedIds
+      );
     }
   },
   RESET(state) {
@@ -25,7 +29,7 @@ const actions = {
   },
   reset({ commit }) {
     commit("RESET");
-  }
+  },
 };
 
 const getters = {

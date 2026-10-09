@@ -75,10 +75,7 @@
 </template>
 
 <script>
-import {
-  SNIPPET_CATALOG,
-  afterSnippetKey,
-} from "./snippetCatalog.js";
+import { SNIPPET_CATALOG, afterSnippetKey } from "./snippetCatalog.js";
 import SnippetEditorDialog from "./SnippetEditorDialog.vue";
 import AppPanel from "@/components/AppPanel.vue";
 

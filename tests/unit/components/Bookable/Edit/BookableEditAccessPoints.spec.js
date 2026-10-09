@@ -141,7 +141,7 @@ describe("BookableEditAccessPoints", () => {
 
     const row = rows(wrapper).at(0);
     expect(row.text()).toMatch(/Tür/);
-    expect(row.text()).toMatch(/Geteilter Zugang/);
+    expect(row.text()).toMatch(/im Buchungszeitraum mit anderen geteilt/);
   });
 
   it("offers only unassigned access points in the picker and assigns one", async () => {
@@ -169,6 +169,16 @@ describe("BookableEditAccessPoints", () => {
       DOOR.id,
       LOCKER.id,
     ]);
+  });
+
+  it("hands on only the access point details", async () => {
+    const wrapper = await mountPoints({ accessPoints: [DOOR] });
+
+    await wrapper.find("button.assign-button").trigger("click");
+    await wrapper.vm.$nextTick();
+    await wrapper.find(".assign-option").trigger("click");
+
+    expect(Object.keys(lastUpdate(wrapper))).toEqual(["accessPointDetails"]);
   });
 
   it("removes an assignment", async () => {

@@ -38,6 +38,7 @@ vi.mock("@/components/Checkout/CheckoutCalendar.vue", () => ({
 import BookingEdit from "@/components/Booking/BookingEdit.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
 import ApiTenantService from "@/services/api/ApiTenantService";
+import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 
 const CONFLICT_IN_CANCELLED =
   "Die Buchung ist inzwischen in einem anderen Zustand (Storniert).";
@@ -357,6 +358,50 @@ describe("BookingEdit", () => {
       expect(inlineError(wrapper).exists()).toBe(false);
       expect(wrapper.emitted("reload")).toHaveLength(1);
       expect(wrapper.emitted("saved")).toBeUndefined();
+    });
+  });
+
+  /**
+   * The staff books backwards (ECCdigital/tickets#188). The form validates
+   * over the self-booking's validation, which refuses a begin in the past;
+   * for the staff that is no conflict. The backend names a conflict first.
+   */
+  describe("the availability of a backwards booking", () => {
+    function refusal(data, status = 400) {
+      return Object.assign(new Error("refused"), {
+        response: { status, data },
+      });
+    }
+
+    function summary(wrapper) {
+      return wrapper.findComponent({ name: "BookingEditSummary" }).text();
+    }
+
+    it("shows no conflict for a begin in the past", async () => {
+      ApiCheckoutService.validateCheckoutItem.mockRejectedValue(
+        refusal({ error: "checkout.time_in_past", checkoutId: "c1" })
+      );
+      const { wrapper } = await mountEdit({ booking: draft() });
+
+      await wrapper.vm.validateAllBookableItems();
+      await flushPromises();
+
+      expect(summary(wrapper)).toContain("Kein Konflikt erkannt");
+      expect(wrapper.text()).not.toContain("bereits belegt");
+    });
+
+    it("still warns of a conflict", async () => {
+      const message = "Raum 1 ist im gewählten Zeitraum nicht verfügbar.";
+      ApiCheckoutService.validateCheckoutItem.mockRejectedValue(
+        refusal({ error: message }, 409)
+      );
+      const { wrapper } = await mountEdit({ booking: draft() });
+
+      await wrapper.vm.validateAllBookableItems();
+      await flushPromises();
+
+      expect(summary(wrapper)).toContain(message);
+      expect(wrapper.text()).toContain("bereits belegt");
     });
   });
 });

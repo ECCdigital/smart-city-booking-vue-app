@@ -1,0 +1,178 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import Vuex from "vuex";
+import { mountComponent } from "@tests/unit/support/mount";
+import {
+  flushPromises,
+  serverError,
+  unauthorizedError,
+} from "@tests/unit/support/api";
+import ApiAuthService from "@/services/api/ApiAuthService";
+import ApiCheckoutService from "@/services/api/ApiCheckoutService";
+import ApiBookablesService from "@/services/api/ApiBookablesService";
+import ApiPaymentService from "@/services/api/ApiPaymentService";
+import CheckoutGroupBooking from "@/views/BundleCheckout/CheckoutGroupBooking.vue";
+
+vi.mock("@/services/api/ApiAuthService", () => ({
+  default: { me: vi.fn() },
+}));
+vi.mock("@/services/api/ApiCheckoutService", () => ({
+  default: { groupCheckout: vi.fn(), validateCheckoutItem: vi.fn() },
+}));
+vi.mock("@/services/api/ApiBookablesService", () => ({
+  default: { getPublicBookable: vi.fn() },
+}));
+vi.mock("@/services/api/ApiTenantService", () => ({
+  default: { getTenantActivePaymentApps: vi.fn(async () => ({ data: [] })) },
+}));
+vi.mock("@/services/api/ApiPaymentService", () => ({
+  default: { payments: vi.fn() },
+}));
+vi.mock("@/services/api/ApiCouponService", () => ({ default: {} }));
+
+const { stub } = vi.hoisted(() => ({
+  stub: (name) => ({ default: { name, render: (h) => h("div") } }),
+}));
+vi.mock("@/views/BundleCheckout/CheckoutSeriesBooking.vue", () =>
+  stub("CheckoutSeriesBooking")
+);
+vi.mock("@/views/BundleCheckout/CheckoutContactDetails.vue", () =>
+  stub("CheckoutContactDetails")
+);
+vi.mock("@/views/BundleCheckout/CheckoutPaymentProvider.vue", () =>
+  stub("CheckoutPaymentProvider")
+);
+vi.mock("@/views/BundleCheckout/CheckoutGroupBookingSummary.vue", () =>
+  stub("CheckoutGroupBookingSummary")
+);
+vi.mock("@/views/BundleCheckout/AdditionalBookables.vue", () =>
+  stub("AdditionalBookables")
+);
+vi.mock("@/views/BundleCheckout/BookingSidebar.vue", () =>
+  stub("BookingSidebar")
+);
+
+/**
+ * ECCdigital/tickets#123: the group checkout has no step „Anmeldung“ of its
+ * own. When the backend refuses the completion for want of a sign-in, it
+ * says so and goes back to the single checkout of the offer, whose first
+ * step offers the login. Before, it failed without a word.
+ */
+
+const BOOKABLE = {
+  id: "b1",
+  title: "Werkstatt",
+  requiresLogin: true,
+  permittedUsers: [],
+  permittedRoles: [],
+  priceType: "per-item",
+  checkoutBookableIds: [],
+};
+
+async function mountGroupCheckout(query = {}) {
+  const addToast = vi.fn();
+  const push = vi.fn();
+  const store = new Vuex.Store({
+    modules: {
+      user: { namespaced: true, getters: { getUser: () => null } },
+      toasts: { namespaced: true, actions: { add: addToast } },
+    },
+  });
+  const wrapper = mountComponent(CheckoutGroupBooking, {
+    store,
+    mocks: {
+      $route: { query: { tenant: "t1", id: "b1", ...query } },
+      $router: { push },
+    },
+  });
+  await flushPromises();
+  wrapper.setData({ currentStep: wrapper.vm.steps.length });
+  await flushPromises();
+  return { wrapper, addToast, push };
+}
+
+async function performCheckout(wrapper) {
+  wrapper
+    .findComponent({ name: "CheckoutGroupBookingSummary" })
+    .vm.$emit("perform-checkout");
+  await flushPromises();
+}
+
+describe("CheckoutGroupBooking — completion refused for want of a sign-in", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    ApiAuthService.me.mockRejectedValue(unauthorizedError({}));
+    ApiBookablesService.getPublicBookable.mockResolvedValue({
+      data: BOOKABLE,
+    });
+  });
+
+  it("names the sign-in and goes back to the single checkout, which offers it", async () => {
+    ApiCheckoutService.groupCheckout.mockRejectedValue(unauthorizedError());
+    const { wrapper, addToast, push } = await mountGroupCheckout();
+
+    await performCheckout(wrapper);
+
+    expect(addToast).toHaveBeenCalledTimes(1);
+    expect(addToast.mock.calls[0][1]).toMatchObject({
+      title: "Anmeldung erforderlich",
+      type: "error",
+    });
+    expect(push).toHaveBeenCalledWith({
+      name: "checkout",
+      query: { id: "b1", tenant: "t1", login: "1" },
+    });
+  });
+
+  it("keeps the time of the first booking on the way back", async () => {
+    ApiCheckoutService.groupCheckout.mockRejectedValue(unauthorizedError());
+    const { wrapper, push } = await mountGroupCheckout({
+      timeBegin: "1767261600000",
+      timeEnd: "1767265200000",
+    });
+
+    await performCheckout(wrapper);
+
+    expect(push).toHaveBeenCalledWith({
+      name: "checkout",
+      query: {
+        id: "b1",
+        tenant: "t1",
+        login: "1",
+        start: "1767261600000",
+        end: "1767265200000",
+      },
+    });
+  });
+
+  it("stays where it is on any other refusal", async () => {
+    ApiCheckoutService.groupCheckout.mockRejectedValue(serverError(409));
+    const { wrapper, push } = await mountGroupCheckout();
+
+    await performCheckout(wrapper);
+
+    expect(ApiCheckoutService.groupCheckout).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("stays where it is on a 401 during the payment, so the series is not sent twice", async () => {
+    ApiCheckoutService.groupCheckout.mockResolvedValue({
+      status: 200,
+      data: {
+        bookingIds: ["bk1"],
+        bookings: [{ id: "bk1", status: "payment_due" }],
+      },
+    });
+    ApiPaymentService.payments.mockRejectedValue(unauthorizedError({}));
+    const { wrapper, addToast, push } = await mountGroupCheckout();
+
+    await performCheckout(wrapper);
+
+    expect(ApiPaymentService.payments).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
+    expect(addToast).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ title: "Anmeldung erforderlich" })
+    );
+  });
+});

@@ -22,7 +22,10 @@ export default {
   writeToLocalStorage(key, value) {
     if (TypeService.isSet(value)) {
       // Only stringify non string values and stringified number
-      localStorage.setItem(key, !_.isString(value) || !isNaN(value) ? JSON.stringify(value) : value);
+      localStorage.setItem(
+        key,
+        !_.isString(value) || !isNaN(value) ? JSON.stringify(value) : value
+      );
     }
   },
   removeFromLocalStorage(key) {

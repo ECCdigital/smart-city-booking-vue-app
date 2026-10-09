@@ -1,319 +1,402 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import Bookable from "@/entities/bookable";
 import BookableEditPrice from "@/components/Bookable/Edit/BookableEditPrice.vue";
-import ApiAccessPointService from "@/services/api/ApiAccessPointService";
-import ApiBookablesService from "@/services/api/ApiBookablesService";
-import ApiHolidaysService from "@/services/api/ApiHolidaysService";
-import { mountComponent } from "@tests/unit/support/mount";
-import { flushPromises, forbiddenError } from "@tests/unit/support/api";
-
-vi.mock("@/services/api/ApiAccessPointService", () => ({
-  default: { getAccessPoints: vi.fn() },
-}));
-
-vi.mock("@/services/api/ApiBookablesService", () => ({
-  default: { getBookablePrices: vi.fn() },
-}));
+import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
+import { mountEditing, lastPatch } from "@tests/unit/support/bookableEditing";
+import { flushPromises } from "@tests/unit/support/api";
 
 vi.mock("@/services/api/ApiHolidaysService", () => ({
-  default: { getHolidays: vi.fn() },
+  default: { getHolidays: vi.fn().mockResolvedValue({ data: [] }) },
 }));
 
-const IFBS_SYSTEM = {
-  id: "ap-ifbs",
-  type: "locker",
-  provider: "ifbs",
-  label: "Fahrradboxen Bahnhof",
-  externalId: "loc-42",
-};
+/**
+ * Preis, the one component of both modes: the editing page frames it as the
+ * card „Preis“ in „Preise & Kapazität“, the guided flow as the step „Preis“.
+ * It knows no mode, so each case here covers both.
+ */
 
-const DOOR = {
-  id: "ap-door",
-  type: "door",
-  provider: "nuki",
-  label: "Haupteingang",
-  externalId: "lock-1",
-};
+const category = (priceEur, overrides = {}) => ({
+  priceEur,
+  interval: { start: null, end: null },
+  fixedPrice: false,
+  holidays: [],
+  weekdays: [],
+  ...overrides,
+});
 
-const EXTERNAL_PRICES = [
-  { priceEur: 1.5, unit: "hour", external: true },
-  { priceEur: 9, unit: "day", external: true },
-  { priceEur: 2.5, unit: "service-fee", external: true },
+const bookable = (overrides = {}) =>
+  new Bookable({ tenantId: "t1", title: "Saal", ...overrides }).toPlain();
+
+const TIERS = [
+  category(10, { interval: { start: null, end: 2 } }),
+  category(8, { interval: { start: 2, end: null } }),
 ];
 
-function bookable(overrides = {}) {
-  return {
-    id: "b1",
-    tenantId: "t1",
-    amount: 4,
-    isPublic: true,
-    priceType: "per-hour",
-    priceEur: 0,
-    priceValueAddedTax: 19,
-    priceCategories: [
-      {
-        priceEur: 0,
-        interval: { start: null, end: null },
-        fixedPrice: false,
-        holidays: [],
-        weekdays: [],
-      },
-    ],
-    accessPointDetails: {
-      active: true,
-      accessBuffer: { before: 0, after: 0 },
-      accessPointIds: ["ap-ifbs"],
-    },
-    externalProviders: [
-      {
-        active: true,
-        provider: "ifbs",
-        handles: ["pricing", "availability", "maxAmount"],
-        config: { locationId: "loc-42", amount: 4 },
-      },
-    ],
-    ...overrides,
-  };
+function mountPrice(overrides = {}, { expertMode = true, prepare } = {}) {
+  const handedIn = bookable(overrides);
+  if (prepare) prepare(handedIn);
+  const mounted = mountEditing(BookableEditPrice, {
+    bookable: handedIn,
+    expertMode,
+    accessPoints: [IFBS_LOCKER],
+  });
+  return mounted;
 }
 
-async function mountPrice({
-  accessPoints = [IFBS_SYSTEM, DOOR],
-  prices = EXTERNAL_PRICES,
-  pricesError = null,
-  ...overrides
-} = {}) {
-  ApiAccessPointService.getAccessPoints.mockReset();
-  ApiBookablesService.getBookablePrices.mockReset();
-  ApiAccessPointService.getAccessPoints.mockResolvedValue({
-    data: accessPoints,
-  });
-  if (pricesError) {
-    ApiBookablesService.getBookablePrices.mockRejectedValue(pricesError);
-  } else {
-    ApiBookablesService.getBookablePrices.mockResolvedValue({ data: prices });
-  }
+const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
+const checked = (wrapper, test) =>
+  find(wrapper, test).attributes("aria-checked") === "true";
+const text = (wrapper, test) =>
+  find(wrapper, test).text().replace(/\s+/g, " ").trim();
 
-  const wrapper = mountComponent(BookableEditPrice, {
-    propsData: { bookable: bookable(overrides) },
-  });
-  await flushPromises();
-  await wrapper.vm.$nextTick();
-  return wrapper;
-}
+describe("BookableEditPrice - the price form", () => {
+  it("starts free and says so", () => {
+    const { wrapper } = mountPrice();
 
-function tiles(wrapper) {
-  return wrapper
-    .findAll(".external-price-tier")
-    .wrappers.map((tile) => tile.text().replace(/\s+/g, " ").trim());
-}
-
-/**
- * Since 4.3.x the provider's prices are the flat array `/bookables/:id/prices`
- * answers. The `/locker/*` facade with its per-location price record is gone,
- * and so are the two figures only that facade ever carried: the location's
- * total capacity and its buffer.
- */
-describe("BookableEditPrice - the provider's prices", () => {
-  beforeEach(() => {
-    ApiHolidaysService.getHolidays.mockResolvedValue({ data: [] });
+    expect(checked(wrapper, "flow-price-mode-free")).toBe(true);
+    expect(find(wrapper, "flow-free").exists()).toBe(true);
   });
 
-  it("reads the prices of the bookable, not of a locker location", async () => {
-    await mountPrice();
+  it("changes nothing when it mounts", async () => {
+    const {
+      wrapper,
+      patches,
+      bookable: handedIn,
+      stored,
+    } = mountPrice({
+      priceType: "per-hour",
+      priceCategories: TIERS,
+    });
+    await flushPromises();
+    await wrapper.vm.$nextTick();
 
-    expect(ApiBookablesService.getBookablePrices).toHaveBeenCalledWith(
-      "b1",
-      "t1"
-    );
+    expect(patches).toEqual([]);
+    expect(handedIn).toEqual(stored);
   });
 
-  it("shows one tile per rate the provider answered", async () => {
-    const wrapper = await mountPrice();
+  it("reads the form from the bookable alone, a missing bound being no tier", () => {
+    const legacy = mountPrice({
+      priceCategories: [category(10, { interval: { start: undefined } })],
+    });
+    const tiers = mountPrice({ priceCategories: TIERS });
 
-    const rendered = tiles(wrapper);
-    expect(rendered).toHaveLength(2);
-    expect(rendered[0]).toContain("pro Stunde");
-    expect(rendered[0]).toContain("1.50");
-    expect(rendered[1]).toContain("pro Tag");
+    expect(checked(legacy.wrapper, "flow-price-mode-simple")).toBe(true);
+    expect(checked(tiers.wrapper, "flow-price-mode-tiers")).toBe(true);
   });
 
-  it("leaves out a rate the provider does not charge", async () => {
-    const wrapper = await mountPrice({
-      prices: [{ priceEur: 1.5, unit: "hour", external: true }],
+  it("reads the form again when the bookable changes elsewhere", async () => {
+    const { wrapper } = mountPrice();
+
+    await wrapper.setProps({
+      bookable: bookable({
+        priceType: "per-hour",
+        priceCategories: [category(10)],
+      }),
     });
 
-    expect(tiles(wrapper)).toHaveLength(1);
+    expect(checked(wrapper, "flow-price-mode-simple")).toBe(true);
   });
 
-  it("shows the service fee of the array answer", async () => {
-    const wrapper = await mountPrice();
+  it("keeps a chosen simple price while it is still 0 €", async () => {
+    const { wrapper } = mountPrice({ isScheduleRelated: true });
 
-    const fee = wrapper.find(".external-price-fee");
-    expect(fee.exists()).toBe(true);
-    expect(fee.text()).toContain("Servicegebühr");
-    expect(fee.text()).toContain("2.50");
+    await find(wrapper, "flow-price-mode-simple").trigger("click");
+
+    expect(checked(wrapper, "flow-price-mode-simple")).toBe(true);
   });
 
-  it("leaves the fee out when the provider charges none", async () => {
-    const wrapper = await mountPrice({
-      prices: [{ priceEur: 1.5, unit: "hour", external: true }],
+  it("prefills the Preisart from the Buchungsart when leaving free", async () => {
+    const { wrapper, patches } = mountPrice({ isScheduleRelated: true });
+
+    await find(wrapper, "flow-price-mode-simple").trigger("click");
+
+    expect(lastPatch(patches).priceType).toBe("per-hour");
+    expect(text(wrapper, "flow-prefilled")).toContain(
+      "Vorbelegt, weil Buchende im Kalender eine Zeit wählen"
+    );
+  });
+
+  it("offers Tarife unused in expert mode only, and in use always", () => {
+    const unused = mountPrice({}, { expertMode: false });
+    const used = mountPrice({ priceCategories: TIERS }, { expertMode: false });
+
+    expect(find(unused.wrapper, "flow-price-mode-tiers").exists()).toBe(false);
+    expect(find(used.wrapper, "flow-price-mode-tiers").exists()).toBe(true);
+  });
+
+  it("edits Tarife as the Staffel instead of one amount", async () => {
+    const { wrapper } = mountPrice({
+      priceType: "per-hour",
+      priceCategories: [category(10)],
     });
 
-    expect(wrapper.find(".external-price-fee").exists()).toBe(false);
-  });
+    await find(wrapper, "flow-price-mode-tiers").trigger("click");
 
-  it("says so when the prices cannot be read", async () => {
-    const wrapper = await mountPrice({ pricesError: forbiddenError() });
-
-    expect(wrapper.find(".external-price-error").text()).toContain(
-      "Preise konnten nicht"
-    );
-    expect(wrapper.find(".external-price-tier").exists()).toBe(false);
-  });
-
-  // The prices route answers a hidden bookable to whoever may read it, and
-  // the editor is opened by such a reader - so a bookable that is not yet
-  // listed previews its provider's prices like a public one.
-  it("asks for a hidden bookable as for a public one", async () => {
-    const wrapper = await mountPrice({ isPublic: false });
-
-    expect(ApiBookablesService.getBookablePrices).toHaveBeenCalledWith(
-      "b1",
-      "t1"
-    );
-    expect(tiles(wrapper)).toHaveLength(2);
-    expect(wrapper.find(".external-price-empty").exists()).toBe(false);
-  });
-
-  it("names the save instead of asking for an unsaved bookable", async () => {
-    const wrapper = await mountPrice({ id: undefined });
-
-    expect(ApiBookablesService.getBookablePrices).not.toHaveBeenCalled();
-    expect(wrapper.find(".external-price-empty").text()).toContain(
-      "gespeichert"
-    );
+    expect(find(wrapper, "price-tiers").exists()).toBe(true);
+    expect(find(wrapper, "flow-price-amount").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Wonach richten sich die Tarife?");
   });
 });
 
-/**
- * A locker system is an access point since the fold, so what makes the panel
- * relevant is an assigned access point of the provider - not the derived
- * `lockerDetails` the bookable still carries.
- */
-describe("BookableEditPrice - when the panel applies", () => {
-  beforeEach(() => {
-    ApiHolidaysService.getHolidays.mockResolvedValue({ data: [] });
+describe("BookableEditPrice - the Preisart", () => {
+  const paid = (priceType, fixedPrice = false) => ({
+    priceType,
+    priceCategories: [category(20, { fixedPrice })],
   });
 
-  it("shows the panel for an assigned locker system of the provider", async () => {
-    const wrapper = await mountPrice();
+  it("offers the four Preisarten of the backend, without „Fester Preis“", () => {
+    const { wrapper } = mountPrice(paid("per-item"));
 
-    expect(wrapper.find("#be-section-pricing-external").exists()).toBe(true);
+    expect(text(wrapper, "flow-price-type")).toBe(
+      "Pro Stunde Pro Tag Stück m²"
+    );
+    expect(checked(wrapper, "flow-price-type-per-item")).toBe(true);
   });
 
-  it("stays away when only doors are assigned", async () => {
-    const wrapper = await mountPrice({
-      accessPointDetails: {
-        active: true,
-        accessBuffer: { before: 0, after: 0 },
-        accessPointIds: ["ap-door"],
-      },
+  it("shows an hour price with fixedPrice as „Tagespauschale“", () => {
+    const { wrapper } = mountPrice(paid("per-hour", true));
+
+    const fixed = find(wrapper, "flow-price-fixed");
+    expect(fixed.text()).toContain("Tagespauschale");
+    expect(fixed.text()).toContain(
+      "Jeder angefangene Tag kostet den Preis einmal"
+    );
+    expect(fixed.find("input").attributes("aria-checked")).toBe("true");
+  });
+
+  it.each([
+    ["per-day", "Angefangene Tage zählen voll", "anteilig nach Minuten"],
+    ["per-item", "Gilt einmal je Buchung", "gebuchte Menge"],
+    ["per-square-meter", "Gilt einmal je Buchung", "gebuchte Fläche"],
+  ])("names the fixed price of %s by what it does", (type, label, hint) => {
+    const { wrapper } = mountPrice(paid(type));
+
+    const fixed = find(wrapper, "flow-price-fixed");
+    expect(fixed.text()).toContain(label);
+    expect(fixed.text()).toContain(hint);
+  });
+
+  it("offers the fixed price for a single unit too", () => {
+    const { wrapper } = mountPrice({ ...paid("per-item"), amount: 1 });
+
+    expect(find(wrapper, "flow-price-fixed").exists()).toBe(true);
+  });
+
+  it("sets the fixed price to the new Preisart's default on a change", async () => {
+    const { wrapper, patches } = mountPrice(paid("per-hour", true));
+
+    await find(wrapper, "flow-price-type-per-item").trigger("click");
+    expect(lastPatch(patches)).toEqual({
+      priceType: "per-item",
+      priceCategories: [category(20, { fixedPrice: false })],
     });
 
-    expect(wrapper.find("#be-section-pricing-external").exists()).toBe(false);
-    expect(ApiBookablesService.getBookablePrices).not.toHaveBeenCalled();
+    await find(wrapper, "flow-price-type-per-day").trigger("click");
+    expect(lastPatch(patches)).toEqual({
+      priceType: "per-day",
+      priceCategories: [category(20, { fixedPrice: true })],
+    });
   });
 
-  it("ignores a locker system the bookable does not reference", async () => {
-    const wrapper = await mountPrice({
-      accessPointDetails: {
-        active: true,
-        accessBuffer: { before: 0, after: 0 },
-        accessPointIds: [],
-      },
+  it("hands on the fixed price as the rebuilt categories", async () => {
+    const {
+      wrapper,
+      patches,
+      bookable: handedIn,
+      stored,
+    } = mountPrice(paid("per-hour"));
+
+    await find(wrapper, "flow-price-fixed").find("input").trigger("click");
+
+    expect(lastPatch(patches)).toEqual({
+      priceCategories: [category(20, { fixedPrice: true })],
+    });
+    expect(handedIn).toEqual(stored);
+  });
+
+  it("explains the price as the backend reckons it", () => {
+    const hourly = mountPrice(paid("per-hour"));
+    const daily = mountPrice(paid("per-hour", true));
+
+    expect(text(hourly.wrapper, "flow-price-explain")).toContain("50,00");
+    expect(text(daily.wrapper, "flow-price-explain")).toContain("60,00");
+  });
+});
+
+describe("BookableEditPrice - the amount", () => {
+  it("hands on a typed amount as the rebuilt categories", async () => {
+    const { wrapper, patches } = mountPrice({
+      priceType: "per-hour",
+      priceCategories: [category(10)],
     });
 
-    expect(wrapper.find("#be-section-pricing-external").exists()).toBe(false);
+    await find(wrapper, "flow-price-amount").find("input").setValue("12.5");
+
+    expect(lastPatch(patches)).toEqual({
+      priceCategories: [category("12.5")],
+    });
   });
 
-  it("points the provider at the assigned locker system when switched on", async () => {
-    const wrapper = await mountPrice({ externalProviders: [] });
+  it("asks for a price once the field is left empty", async () => {
+    const { wrapper } = mountPrice({
+      priceType: "per-hour",
+      priceCategories: [category(10)],
+    });
 
-    await wrapper
-      .find("#be-section-pricing-external input[role='switch']")
-      .trigger("click");
+    const input = find(wrapper, "flow-price-amount").find("input");
+    await input.setValue("");
+    await input.trigger("blur");
     await flushPromises();
 
-    expect(wrapper.props("bookable").externalProviders[0].config).toEqual({
-      locationId: "loc-42",
-      amount: 4,
-    });
+    expect(text(wrapper, "flow-price-amount")).toContain(
+      "Bitte einen Preis eingeben."
+    );
   });
 });
 
-/**
- * The Höchstmenge je Buchung sits beside the capacity and limits one booking
- * of the bookable. Empty is unlimited and is saved as null - the backend
- * refuses an empty string or 0. A provider handling `maxAmount` locks the
- * capacity, not this field: both limits apply.
- */
-describe("BookableEditPrice - Höchstmenge je Buchung", () => {
-  beforeEach(() => {
-    ApiHolidaysService.getHolidays.mockResolvedValue({ data: [] });
+describe("BookableEditPrice - Mehrwertsteuer", () => {
+  const paid = (rate) => ({
+    priceType: "per-hour",
+    priceValueAddedTax: rate,
+    priceCategories: [category(10)],
   });
 
-  function field(wrapper) {
-    return wrapper.find(".max-amount-per-booking");
-  }
+  it("sets 19 % and 7 % as shortcuts of the one number", async () => {
+    const { wrapper, patches } = mountPrice(paid(19));
 
-  it("says the Höchstmenge is unlimited while it is empty", async () => {
-    const wrapper = await mountPrice({ maxAmountPerBooking: null });
+    await find(wrapper, "flow-vat-7").trigger("click");
+    expect(lastPatch(patches)).toEqual({ priceValueAddedTax: 7 });
 
-    expect(field(wrapper).text()).toContain("Höchstmenge je Buchung");
-    expect(field(wrapper).text()).toContain("Höchstmenge ist unbegrenzt!");
-    expect(field(wrapper).find("input").element.value).toBe("");
+    await find(wrapper, "flow-vat-19").trigger("click");
+    expect(lastPatch(patches)).toEqual({ priceValueAddedTax: 19 });
   });
 
-  it("stays editable while the provider handles maxAmount", async () => {
-    const wrapper = await mountPrice();
+  it("takes any other rate as a number, without a field of its own", async () => {
+    const { wrapper, patches } = mountPrice(paid(19));
 
-    expect(field(wrapper).find("input").attributes("disabled")).toBe(undefined);
+    expect(wrapper.text()).not.toContain("anderer Satz");
+    await find(wrapper, "flow-vat-rate").find("input").setValue("10.7");
+
+    expect(lastPatch(patches)).toEqual({ priceValueAddedTax: 10.7 });
+    expect(find(wrapper, "flow-vat-rate").find("input").element.value).toBe(
+      "10.7"
+    );
   });
 
-  it("keeps a typed limit as a number", async () => {
-    const wrapper = await mountPrice({ maxAmountPerBooking: null });
+  it("stores „aus“ as 0 %", async () => {
+    const { wrapper, patches } = mountPrice(paid(7));
 
-    await field(wrapper).find("input").setValue("3");
+    await find(wrapper, "flow-vat-0").trigger("click");
 
-    expect(wrapper.props("bookable").maxAmountPerBooking).toBe(3);
-    expect(field(wrapper).text()).not.toContain("unbegrenzt");
+    expect(lastPatch(patches)).toEqual({ priceValueAddedTax: 0 });
   });
 
-  it("saves an emptied field as null, not as an empty string", async () => {
-    const wrapper = await mountPrice({ maxAmountPerBooking: 3 });
+  // One number, no switch: the quick choices and the field side by side,
+  // whatever the rate.
+  it.each([19, 7, 0, 10.7])(
+    "offers 19 %, 7 %, „aus“ and the number at %s %",
+    (rate) => {
+      const { wrapper } = mountPrice(paid(rate));
 
-    await field(wrapper).find("input").setValue("");
-
-    expect(wrapper.props("bookable").maxAmountPerBooking).toBeNull();
-    expect(field(wrapper).text()).toContain("Höchstmenge ist unbegrenzt!");
-  });
-
-  it("refuses 0 and a fraction", async () => {
-    const wrapper = await mountPrice({ maxAmountPerBooking: null });
-
-    for (const value of ["0", "2.5"]) {
-      await field(wrapper).find("input").setValue(value);
-      await flushPromises();
-      expect(field(wrapper).text()).toContain(
-        "Bitte eine ganze Zahl ab 1 eingeben"
+      expect(find(wrapper, "flow-vat-switch").exists()).toBe(false);
+      expect(
+        ["19", "7", "0"].map((choice) =>
+          find(wrapper, `flow-vat-${choice}`).text()
+        )
+      ).toEqual(["19 %", "7 %", "aus"]);
+      expect(find(wrapper, "flow-vat-rate").find("input").element.value).toBe(
+        String(rate)
       );
     }
+  );
+
+  it("marks the choice the number is", () => {
+    const selected = (rate) =>
+      ["19", "7", "0"].filter((choice) =>
+        find(mountPrice(paid(rate)).wrapper, `flow-vat-${choice}`).classes(
+          "primary--text"
+        )
+      );
+
+    expect(selected(19)).toEqual(["19"]);
+    expect(selected(0)).toEqual(["0"]);
+    expect(selected(10.7)).toEqual([]);
   });
 
-  it("names the unit of the price type", async () => {
-    const perItem = await mountPrice({ priceType: "per-item" });
-    expect(field(perItem).text()).toContain("Stück");
+  it("shows the gross sum", () => {
+    const { wrapper } = mountPrice(paid(19));
 
-    const perSquareMeter = await mountPrice({ priceType: "per-square-meter" });
-    expect(field(perSquareMeter).text()).toContain("m²");
+    expect(text(wrapper, "flow-vat-summary")).toContain("11,90");
+  });
+});
+
+describe("BookableEditPrice - Rabattcodes", () => {
+  const paid = { priceType: "per-hour", priceCategories: [category(10)] };
+
+  it("shows a value never stored as switched on, as the backend treats it", () => {
+    const { wrapper } = mountPrice(paid, {
+      prepare: (handedIn) => delete handedIn.enableCoupons,
+    });
+
+    const coupons = find(wrapper, "flow-coupons");
+    expect(coupons.text()).toContain("Rabattcodes");
+    expect(coupons.text()).not.toContain("Gutschein");
+    expect(coupons.find("input").attributes("aria-checked")).toBe("true");
+  });
+
+  it("shows them without expert mode only while switched off", () => {
+    const off = mountPrice(
+      { ...paid, enableCoupons: false },
+      { expertMode: false }
+    );
+    const on = mountPrice(paid, { expertMode: false });
+
+    expect(find(off.wrapper, "flow-coupons").exists()).toBe(true);
+    expect(find(on.wrapper, "flow-coupons").exists()).toBe(false);
+  });
+
+  it("hands on the switch", async () => {
+    const { wrapper, patches } = mountPrice(paid);
+
+    await find(wrapper, "flow-coupons").find("input").trigger("click");
+
+    expect(patches).toEqual([{ enableCoupons: false }]);
+  });
+});
+
+describe("BookableEditPrice - prices of ParkraumService", () => {
+  const external = {
+    priceType: "per-hour",
+    priceCategories: [category(10)],
+    ...takenOverBy(["pricing"]),
+  };
+
+  it("asks for the price while the provider's locker system is not assigned", () => {
+    const { wrapper } = mountPrice({ ...external, accessPointDetails: null });
+
+    expect(find(wrapper, "flow-price-external").exists()).toBe(false);
+    expect(find(wrapper, "flow-price-mode").exists()).toBe(true);
+  });
+
+  it("shows only the note while the provider handles the prices", () => {
+    const { wrapper } = mountPrice(external);
+
+    expect(find(wrapper, "flow-price-external").text()).toContain(
+      "Preise kommen von einem externen Anbieter"
+    );
+    expect(find(wrapper, "flow-price-mode").exists()).toBe(false);
+    expect(find(wrapper, "flow-price-amount").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Empfohlene Einstellungen");
+  });
+
+  it("jumps from the note to the provider's setting in Schließsysteme", async () => {
+    const { wrapper, patches } = mountPrice(external);
+
+    await find(wrapper, "flow-price-external-link").trigger("click");
+
+    expect(wrapper.emitted("open-section")).toEqual([
+      [{ tabKey: "accessLocks", sectionId: "pricing-external" }],
+    ]);
+    expect(patches).toEqual([]);
   });
 });

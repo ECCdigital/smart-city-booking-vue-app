@@ -78,6 +78,7 @@
     </div>
 
     <v-btn
+      v-if="BookingPermissionService.allowCreate()"
       color="primary"
       fixed
       large
@@ -85,7 +86,6 @@
       right
       rounded
       :to="{ name: 'booking-create' }"
-      :disabled="!BookingPermissionService.allowCreate()"
     >
       <v-icon>mdi-plus</v-icon>Buchung erstellen
     </v-btn>

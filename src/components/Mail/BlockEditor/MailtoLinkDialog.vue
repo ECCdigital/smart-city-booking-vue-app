@@ -1,18 +1,12 @@
 <template>
-  <v-dialog
-    :value="open"
-    max-width="480"
-    persistent
-    @input="onDialogInput"
-  >
+  <v-dialog :value="open" max-width="480" persistent @input="onDialogInput">
     <v-card>
-      <v-card-title class="subtitle-1">
-        E-Mail-Link
-      </v-card-title>
+      <v-card-title class="subtitle-1"> E-Mail-Link </v-card-title>
       <v-card-text>
         <div class="text-caption grey--text mb-3">
           Empfänger als feste Adresse oder mit Variablen, z.&nbsp;B.
-          <code>{{ supportEmailExample }}</code>.
+          <code>{{ supportEmailExample }}</code
+          >.
         </div>
 
         <MailVariableTextField

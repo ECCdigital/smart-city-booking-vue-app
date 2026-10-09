@@ -15,7 +15,7 @@
       </v-col>
     </v-row>
 
-    <v-expansion-panels  multiple >
+    <v-expansion-panels multiple>
       <v-expansion-panel
         v-for="(c, idx) in localChallenges"
         :key="c.key + '-' + idx"

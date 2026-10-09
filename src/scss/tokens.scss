@@ -16,7 +16,7 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
 :root {
   // --- Shape ---------------------------------------------------------------
   --scb-radius-surface: 8px; // cards, dialogs, panels, tables
-  --scb-radius-control: 4px; // rows, nav items, the id-copy chip
+  --scb-radius-control: 4px; // rows, nav items, the id-copy chip, the logo plate
   --scb-radius-badge: 3px; // the "Experte" badge
   --scb-radius-pill: 16px; // the section sub-navigation links
   --scb-radius-popover: 14px; // the filter card behind the search funnel
@@ -27,6 +27,10 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-surface-tint: rgba(0, 0, 0, 0.03); // section header strip, item hover
   --scb-surface-tint-faint: rgba(0, 0, 0, 0.02); // expansion-panel header
   --scb-surface-raised: var(--v-accent-base, #f5f5f5); // status / price tiles
+  // Behind the instance logo in the app bar (Navbar): none in the light
+  // theme, the one the logos are made for.
+  --scb-logo-plate: transparent;
+  --scb-logo-plate-padding: 0;
 
   // --- Rules (hairlines) ----------------------------------------------------
   --scb-rule: rgba(0, 0, 0, 0.06); // between rows and facts
@@ -57,6 +61,8 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-text-muted: rgba(0, 0, 0, 0.6); // labels, subtitles, nav sections
   --scb-text-caption: rgba(0, 0, 0, 0.45); // small-caps captions
   --scb-text-hover: rgba(0, 0, 0, 0.87); // a muted item under the pointer
+  // A link in the theme colour: the booking number in the booking list.
+  --scb-text-link: var(--v-primary-base);
 
   // --- Type scale -----------------------------------------------------------
   --scb-font-size-caption: 11px; // small-caps captions
@@ -64,6 +70,7 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-font-size-sm: 13px; // facts, rows, nav sections, overview values
   --scb-font-size-md: 14px; // nav tabs
   --scb-font-size-header: 15px; // the section header strip
+  --scb-font-size-lead: 20px; // a sum that leads, the Preis's gross amount
   --scb-font-weight-medium: 500;
   --scb-font-weight-semibold: 600;
   --scb-letter-spacing-caption: 0.08em;
@@ -88,6 +95,8 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-section-header-height: 52px;
   --scb-row-height: 44px; // hairline rows, expansion-panel headers
   --scb-nav-item-height: 40px;
+  // A dense outlined field (Vuetify): what buttons and text beside it centre on.
+  --scb-field-height-dense: 40px;
   --scb-search-height: 48px; // the search band of every list (toolbar.scss)
   --scb-form-width: 520px; // a form card on a page of its own (AuthPage)
   --scb-icon-size-header: 20px;
@@ -96,6 +105,9 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-panel-width-narrow: 320px; // ... below $scb-bp-md
   --scb-overview-width: 300px; // the bookable editor's overview
   --scb-overview-width-max: 320px;
+  // The main column of the bookable editor and of its guided flow.
+  --scb-editor-width-max: 880px;
+
   --scb-nav-width-min: 196px; // the bookable editor's section nav
   --scb-nav-width-max: 228px;
   --scb-save-bar-clearance: calc(
@@ -133,6 +145,9 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-surface-tint: rgba(255, 255, 255, 0.05);
   --scb-surface-tint-faint: rgba(255, 255, 255, 0.03);
   --scb-surface-raised: rgba(255, 255, 255, 0.05);
+  // A light plate, so a dark logo does not vanish on the dark app bar.
+  --scb-logo-plate: #fff;
+  --scb-logo-plate-padding: var(--scb-space-1) var(--scb-space-2);
 
   --scb-rule: rgba(255, 255, 255, 0.12);
   --scb-rule-strong: rgba(255, 255, 255, 0.1);
@@ -159,6 +174,10 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-text-muted: rgba(255, 255, 255, 0.7);
   --scb-text-caption: rgba(255, 255, 255, 0.55);
   --scb-text-hover: rgba(255, 255, 255, 0.92);
+  // The theme colour with 65 % white: any primary, even black, keeps at
+  // least 5:1 on the dark surfaces (#1e1e1e, the accent #282828), also
+  // under a row's hover tint.
+  --scb-text-link: color-mix(in srgb, var(--v-primary-base) 35%, #fff);
 
   --scb-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
   --scb-shadow-popover: 0 12px 40px rgba(0, 0, 0, 0.5);

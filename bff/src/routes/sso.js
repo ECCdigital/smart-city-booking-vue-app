@@ -69,7 +69,11 @@ function resolvePending(req) {
 
   const fromCookies = getPendingSsoCookies(req);
   if (fromCookies.accessToken) {
-    return { ...fromCookies, ticket: ticket ? String(ticket) : null, fromStore: false };
+    return {
+      ...fromCookies,
+      ticket: ticket ? String(ticket) : null,
+      fromStore: false,
+    };
   }
 
   return null;
@@ -471,7 +475,9 @@ router.get("/change-user", async (req, res) => {
       }
     }
 
-    const ssoLoginUrl = `${getSsoLoginUri(requireRequestOrigin(req))}?redirect=${encodeURIComponent(redirect)}`;
+    const ssoLoginUrl = `${getSsoLoginUri(
+      requireRequestOrigin(req)
+    )}?redirect=${encodeURIComponent(redirect)}`;
     const logoutUrl = new URL(endpoints.logout);
     logoutUrl.searchParams.set("client_id", config.publicClient);
     logoutUrl.searchParams.set("post_logout_redirect_uri", ssoLoginUrl);

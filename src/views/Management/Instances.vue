@@ -66,7 +66,7 @@
         @submit="submitChanges"
         @cancel="onRestoreChanges"
         show-restore
-        :disabled="inProgress || isLoading || !validRoot || hasUnsavedChanges"
+        :active="saveCalledFor"
         :in-progress="inProgress"
       />
 
@@ -223,6 +223,19 @@ export default {
     currentComponent() {
       return this.tabs[this.activeTab]?.comp || "InstanceEditGeneral";
     },
+    /**
+     * Whether the SaveBar calls for „Speichern“: with unsaved changes, and
+     * also while the form is invalid - the save then says what is wrong -
+     * or still loads or saves.
+     */
+    saveCalledFor() {
+      return (
+        this.inProgress ||
+        this.isLoading ||
+        !this.validRoot ||
+        this.hasUnsavedChanges
+      );
+    },
     hasUnsavedChanges() {
       if (
         this.isLoading ||
@@ -278,10 +291,10 @@ export default {
 
       merged.roleMapping.roles = Array.isArray(merged.roleMapping.roles)
         ? merged.roleMapping.roles.map((r) => ({
-          tenantId: r.tenantId ?? null,
-          keycloakRole: r.keycloakRole ?? "",
-          tenantRoleId: r.tenantRoleId ?? null,
-        }))
+            tenantId: r.tenantId ?? null,
+            keycloakRole: r.keycloakRole ?? "",
+            tenantRoleId: r.tenantRoleId ?? null,
+          }))
         : [];
 
       return merged;

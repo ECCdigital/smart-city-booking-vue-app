@@ -1,189 +1,167 @@
 <script>
-import {
-  formatPreparationDuration,
-  hasBufferConfig,
-  normalizeLeadTimeFields,
-} from "@/utils/bookingLeadTime";
-import bookableExpertMode from "@/mixins/bookableExpertMode";
+import { hasBufferConfig } from "@/utils/bookingLeadTime";
+import bookableEditing from "@/mixins/bookableEditing";
+import { closeMenu } from "@/utils/timeMenus";
+import { weekdayItems } from "@/utils/bookableWeekdays";
 
-const WEEKDAYS = [
-  { id: 1, name: "Montag", short: "Mo" },
-  { id: 2, name: "Dienstag", short: "Di" },
-  { id: 3, name: "Mittwoch", short: "Mi" },
-  { id: 4, name: "Donnerstag", short: "Do" },
-  { id: 5, name: "Freitag", short: "Fr" },
-  { id: 6, name: "Samstag", short: "Sa" },
-  { id: 0, name: "Sonntag", short: "So" },
-];
+const PRESET_MINUTES = [30, 60, 120, 240];
 
-const PRESET_MINUTES = [
-  { label: "30 Min.", value: 30 },
-  { label: "1 Std.", value: 60 },
-  { label: "2 Std.", value: 120 },
-  { label: "4 Std.", value: 240 },
-];
+const BUFFER_PRESET_MINUTES = [0, 15, 30];
 
-const BUFFER_PRESET_MINUTES = [
-  { label: "Keiner", value: 0 },
-  { label: "15 Min.", value: 15 },
-  { label: "30 Min.", value: 30 },
-];
+const VALUES = "bookable.flow.overview.values";
 
 export default {
   name: "BookableEditLeadTime",
-  mixins: [bookableExpertMode],
+  mixins: [bookableEditing],
   props: {
-    bookable: { type: Object, required: true },
     showBuffer: { type: Boolean, default: true },
   },
   data() {
     return {
-      valid: true,
-      weekdays: WEEKDAYS,
-      presets: PRESET_MINUTES,
-      bufferPresets: BUFFER_PRESET_MINUTES,
       timeStartMenu: [],
       timeEndMenu: [],
       expandedItems: [],
     };
   },
   computed: {
-    model: {
-      get() {
-        return this.bookable;
-      },
-      set(val) {
-        this.$emit("update:bookable", { ...val });
-      },
+    weekdays() {
+      return weekdayItems((key) => this.$t(key));
+    },
+    // The quick picks, named as the overview names a duration.
+    presets() {
+      return PRESET_MINUTES.map((value) => ({
+        value,
+        label: this.durationLabel(value),
+      }));
+    },
+    bufferPresets() {
+      return BUFFER_PRESET_MINUTES.map((value) => ({
+        value,
+        label: value
+          ? this.durationLabel(value)
+          : this.$t("bookable.edit.buffer.none"),
+      }));
     },
     preparationDurationLabel() {
-      return formatPreparationDuration(this.model.preparationLeadTimeMinutes);
+      const minutes = Number(this.bookable.preparationLeadTimeMinutes);
+      return minutes > 0 ? this.durationLabel(minutes) : "";
+    },
+    serviceHours() {
+      return Array.isArray(this.bookable.serviceHours)
+        ? this.bookable.serviceHours
+        : [];
     },
     hasServiceHours() {
-      return (
-        Array.isArray(this.model.serviceHours) &&
-        this.model.serviceHours.length > 0
-      );
+      return this.serviceHours.length > 0;
     },
     leadTimeEnabled() {
-      return !!this.model.isLeadTimeRelated;
+      return !!this.bookable.isLeadTimeRelated;
     },
     bufferSwitchEnabled() {
-      return !!this.model.isBufferRelated;
-    },
-  },
-  created() {
-    this.applyLeadTimeStateFromModel();
-    this.timeStartMenu = this.model.serviceHours.map(() => false);
-    this.timeEndMenu = this.model.serviceHours.map(() => false);
-  },
-  watch: {
-    bookable(newBookable, oldBookable) {
-      if (newBookable !== oldBookable) {
-        this.applyLeadTimeStateFromModel();
-        this.syncTimeMenus();
-      }
+      return !!this.bookable.isBufferRelated;
     },
   },
   methods: {
-    applyLeadTimeStateFromModel() {
-      normalizeLeadTimeFields(this.model);
-      this.$set(this.model, "isLeadTimeRelated", this.model.isLeadTimeRelated);
-      this.$set(this.model, "isBufferRelated", this.model.isBufferRelated);
-    },
-    syncTimeMenus() {
-      const length = this.model.serviceHours?.length || 0;
-      if (
-        this.timeStartMenu.length !== length ||
-        this.timeEndMenu.length !== length
-      ) {
-        this.timeStartMenu = Array.from({ length }, () => false);
-        this.timeEndMenu = Array.from({ length }, () => false);
-      }
+    /** Minutes as „1 Std. 30 Min.“, in the overview's words. */
+    durationLabel(minutes) {
+      const hours = Math.floor(minutes / 60);
+      const rest = minutes % 60;
+      return [
+        hours > 0 ? this.$tc(`${VALUES}.hours`, hours) : "",
+        rest > 0 || hours === 0 ? this.$tc(`${VALUES}.minutes`, rest) : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
     },
     setLeadTimeEnabled(enabled) {
-      const wasEnabled = this.leadTimeEnabled;
-      this.$set(this.model, "isLeadTimeRelated", enabled);
-      if (enabled) {
-        const minutes = Number(this.model.preparationLeadTimeMinutes);
-        if (!wasEnabled && (!Number.isFinite(minutes) || minutes <= 0)) {
-          this.model.preparationLeadTimeMinutes = 120;
-        }
-        if (!Array.isArray(this.model.serviceHours)) {
-          this.$set(this.model, "serviceHours", []);
-        }
-        if (this.model.serviceHours.length === 0) {
-          this.addServiceHours();
-        }
-      } else {
-        this.model.preparationLeadTimeMinutes = 0;
+      if (!enabled) {
+        this.patch({ isLeadTimeRelated: false, preparationLeadTimeMinutes: 0 });
+        return;
       }
-      this.emitUpdate();
+      const changes = { isLeadTimeRelated: true };
+      const minutes = Number(this.bookable.preparationLeadTimeMinutes);
+      if (
+        !this.leadTimeEnabled &&
+        (!Number.isFinite(minutes) || minutes <= 0)
+      ) {
+        changes.preparationLeadTimeMinutes = 120;
+      }
+      if (!this.hasServiceHours) {
+        changes.serviceHours = [this.newServiceHours()];
+        this.expandedItems.push(0);
+      }
+      this.patch(changes);
     },
     setBufferEnabled(enabled) {
-      const wasEnabled = this.bufferSwitchEnabled;
-      this.$set(this.model, "isBufferRelated", enabled);
-      if (enabled) {
-        if (!wasEnabled && !hasBufferConfig(this.model)) {
-          this.model.bufferTimeAfterMinutes = 30;
-        }
-      } else {
-        this.model.bufferTimeBeforeMinutes = null;
-        this.model.bufferTimeAfterMinutes = null;
+      if (!enabled) {
+        this.patch({
+          isBufferRelated: false,
+          bufferTimeBeforeMinutes: null,
+          bufferTimeAfterMinutes: null,
+        });
+        return;
       }
-      this.emitUpdate();
+      const changes = { isBufferRelated: true };
+      if (!this.bufferSwitchEnabled && !hasBufferConfig(this.bookable)) {
+        changes.bufferTimeAfterMinutes = 30;
+      }
+      this.patch(changes);
     },
-    emitUpdate() {
-      this.$emit("update:bookable", { ...this.model });
+    setPreparationMinutes(value) {
+      const minutes = parseFloat(value);
+      this.patch({
+        preparationLeadTimeMinutes: Number.isNaN(minutes) ? value : minutes,
+      });
     },
     applyPreset(minutes) {
-      this.model.preparationLeadTimeMinutes = minutes;
-      this.emitUpdate();
+      this.patch({ preparationLeadTimeMinutes: minutes });
     },
     displayBufferMinutes(value) {
       return value == null || value === "" ? "" : value;
     },
     setBufferMinutes(field, value) {
-      if (value === "" || value == null) {
-        this.model[field] = null;
-      } else {
-        const minutes = Number(value);
-        this.model[field] =
-          Number.isFinite(minutes) && minutes > 0 ? Math.floor(minutes) : null;
+      let minutes = null;
+      if (value !== "" && value != null) {
+        const number = Number(value);
+        minutes =
+          Number.isFinite(number) && number > 0 ? Math.floor(number) : null;
       }
-      this.emitUpdate();
+      this.patch({ [field]: minutes });
     },
     applyBufferPreset(field, minutes) {
-      this.model[field] = minutes > 0 ? minutes : null;
-      this.emitUpdate();
-    },
-    isBufferMinutesValid(value) {
-      if (value == null || value === "") {
-        return true;
-      }
-      const minutes = Number(value);
-      return (
-        Number.isFinite(minutes) && minutes >= 0 && Number.isInteger(minutes)
-      );
+      this.patch({ [field]: minutes > 0 ? minutes : null });
     },
     bufferPresetActive(field, minutes) {
-      const current = Number(this.model[field]) || 0;
+      const current = Number(this.bookable[field]) || 0;
       return current === minutes;
     },
-    addServiceHours() {
-      const index = this.model.serviceHours.length;
-      this.timeStartMenu.push(false);
-      this.timeEndMenu.push(false);
-      this.model.serviceHours.push({
+    newServiceHours() {
+      return {
         weekdays: [1, 2, 3, 4, 5],
         startTime: "08:00",
         endTime: "18:00",
+      };
+    },
+    updateServiceHours(index, changes) {
+      this.patch({
+        serviceHours: this.serviceHours.map((entry, i) =>
+          i === index ? { ...entry, ...changes } : entry
+        ),
+      });
+    },
+    addServiceHours() {
+      const index = this.serviceHours.length;
+      this.timeStartMenu.push(false);
+      this.timeEndMenu.push(false);
+      this.patch({
+        serviceHours: [...this.serviceHours, this.newServiceHours()],
       });
       this.expandedItems.push(index);
-      this.emitUpdate();
     },
     removeServiceHours(index) {
-      this.model.serviceHours.splice(index, 1);
+      this.patch({
+        serviceHours: this.serviceHours.filter((_, i) => i !== index),
+      });
       this.timeStartMenu.splice(index, 1);
       this.timeEndMenu.splice(index, 1);
       this.expandedItems = this.expandedItems
@@ -191,23 +169,15 @@ export default {
         .map((expandedIndex) =>
           expandedIndex > index ? expandedIndex - 1 : expandedIndex
         );
-      this.emitUpdate();
     },
     removeWeekdays(index, weekdayId) {
-      const weekdays = this.model.serviceHours[index].weekdays;
-      weekdays.splice(weekdays.indexOf(weekdayId), 1);
-      this.emitUpdate();
+      this.updateServiceHours(index, {
+        weekdays: this.serviceHours[index].weekdays.filter(
+          (id) => id !== weekdayId
+        ),
+      });
     },
-    setStartTime(index, time) {
-      this.model.serviceHours[index].startTime = time;
-      this.timeStartMenu[index] = false;
-      this.emitUpdate();
-    },
-    setEndTime(index, time) {
-      this.model.serviceHours[index].endTime = time;
-      this.timeEndMenu[index] = false;
-      this.emitUpdate();
-    },
+    closeMenu,
     getWeekdayName(id) {
       const day = this.weekdays.find((entry) => entry.id === Number(id));
       return day ? day.short : "";
@@ -232,59 +202,30 @@ export default {
     isExpanded(index) {
       return this.expandedItems.includes(index);
     },
-    async validate() {
-      if (!this.expertMode) {
-        return true;
-      }
-      const formValid = this.$refs.form ? this.$refs.form.validate() : true;
-      if (!formValid) {
-        return false;
-      }
-
-      const leadTimeValid =
-        !this.model.isLeadTimeRelated ||
-        (this.isPreparationMinutesValid() &&
-          this.model.serviceHours.length > 0 &&
-          this.model.serviceHours.every(
-            (entry) =>
-              entry.weekdays?.length > 0 && entry.startTime && entry.endTime
-          ));
-
-      const bufferValid =
-        !this.showBuffer ||
-        !this.model.isBufferRelated ||
-        (this.isBufferMinutesValid(this.model.bufferTimeBeforeMinutes) &&
-          this.isBufferMinutesValid(this.model.bufferTimeAfterMinutes) &&
-          hasBufferConfig(this.model));
-
-      return leadTimeValid && bufferValid;
-    },
-    isPreparationMinutesValid() {
-      const minutes = Number(this.model.preparationLeadTimeMinutes);
-      return !Number.isNaN(minutes) && minutes >= 0;
-    },
-    resetValidation() {
-      this.$refs.form?.resetValidation();
-    },
   },
 };
 </script>
 
 <template>
-  <v-form v-if="expertMode" ref="form" v-model="valid">
+  <div>
     <v-card
+      v-if="expertOptionShown('leadTime')"
       id="be-section-bookingType-lead-time"
+      data-field="leadTime"
       class="mt-4 section-card"
       outlined
     >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-timer-sand</v-icon>
-        <span class="text-h6 font-weight-bold">Vorlaufzeit</span>
+        <span class="text-h6 font-weight-bold">
+          {{ $t("bookable.edit.cards.leadTime") }}
+        </span>
       </v-card-title>
       <v-divider />
 
       <v-card-text class="pa-4">
         <v-switch
+          data-test="lead-time-switch"
           :input-value="leadTimeEnabled"
           color="primary"
           hide-details
@@ -293,10 +234,11 @@ export default {
         >
           <template v-slot:label>
             <div>
-              <div class="font-weight-medium">Vorlaufzeit aktivieren</div>
+              <div class="font-weight-medium">
+                {{ $t("bookable.edit.leadTime.switch") }}
+              </div>
               <div class="text-caption text--secondary">
-                Kurzfristige Buchungen verhindern (z. B. Schlüsselübergabe,
-                Raumvorbereitung)
+                {{ $t("bookable.edit.leadTime.switch-hint") }}
               </div>
             </div>
           </template>
@@ -309,39 +251,34 @@ export default {
             <v-icon class="mr-2" color="info" small>
               mdi-information-outline
             </v-icon>
-            Die Vorbereitungszeit muss vollständig innerhalb der Servicezeiten
-            liegen – z. B. Freitag 18:00 → Montag 08:00 ist mit 2 Std.
-            Vorbereitung nicht möglich.
+            {{ $t("bookable.edit.leadTime.info") }}
           </v-alert>
 
-          <div class="text-subtitle-2 mb-2">Vorbereitungszeit</div>
+          <div class="text-subtitle-2 mb-2">
+            {{ $t("bookable.edit.leadTime.preparation") }}
+          </div>
           <v-row dense>
             <v-col cols="12" sm="6" md="4">
               <v-text-field
                 background-color="accent"
                 filled
                 dense
-                label="Dauer"
+                :label="$t('bookable.edit.common.duration')"
                 type="number"
                 min="0"
-                suffix="Minuten"
-                v-model.number="model.preparationLeadTimeMinutes"
+                :suffix="$t('bookable.edit.common.minutes')"
+                :value="bookable.preparationLeadTimeMinutes"
                 :hint="
                   preparationDurationLabel
-                    ? `Entspricht ${preparationDurationLabel}`
+                    ? $t('bookable.edit.leadTime.equals', {
+                        duration: preparationDurationLabel,
+                      })
                     : ''
                 "
                 persistent-hint
                 hide-details="auto"
-                :rules="[
-                  (v) =>
-                    (v !== '' &&
-                      v != null &&
-                      !Number.isNaN(Number(v)) &&
-                      Number(v) >= 0) ||
-                    'Gültige Dauer erforderlich',
-                ]"
-                @input="emitUpdate"
+                :rules="fieldRules.leadTimeMinutes"
+                @input="setPreparationMinutes"
               />
             </v-col>
             <v-col
@@ -350,20 +287,21 @@ export default {
               md="8"
               class="d-flex align-center flex-wrap"
             >
-              <span class="text-caption text--secondary mr-2"
-                >Schnellauswahl:</span
-              >
+              <span class="text-caption text--secondary mr-2">{{
+                $t("bookable.edit.common.quick-pick")
+              }}</span>
               <v-chip
                 v-for="preset in presets"
                 :key="preset.value"
+                :data-test="`lead-time-preset-${preset.value}`"
                 small
                 class="mr-1 mb-1"
                 :color="
-                  model.preparationLeadTimeMinutes === preset.value
+                  bookable.preparationLeadTimeMinutes === preset.value
                     ? 'primary'
                     : undefined
                 "
-                :outlined="model.preparationLeadTimeMinutes !== preset.value"
+                :outlined="bookable.preparationLeadTimeMinutes !== preset.value"
                 @click="applyPreset(preset.value)"
               >
                 {{ preset.label }}
@@ -373,21 +311,22 @@ export default {
 
           <div class="d-flex align-center justify-space-between mt-4 mb-2">
             <div>
-              <div class="text-subtitle-2">Servicezeiten</div>
+              <div class="text-subtitle-2">
+                {{ $t("bookable.edit.leadTime.service-hours") }}
+              </div>
               <div class="text-caption text--secondary">
-                Wann die Vorbereitung stattfinden kann (unabhängig von
-                Öffnungszeiten)
+                {{ $t("bookable.edit.leadTime.service-hours-hint") }}
               </div>
             </div>
             <v-btn small color="primary" @click="addServiceHours">
               <v-icon left small>mdi-plus</v-icon>
-              Hinzufügen
+              {{ $t("bookable.edit.common.add") }}
             </v-btn>
           </div>
 
           <div v-if="hasServiceHours">
             <v-list two-line class="py-0">
-              <template v-for="(entry, index) in model.serviceHours">
+              <template v-for="(entry, index) in serviceHours">
                 <v-list-item
                   :key="`service-hours-${index}`"
                   class="service-hours-item elevation-1 mb-3 rounded"
@@ -406,21 +345,33 @@ export default {
                     <v-list-item-title class="font-weight-medium">
                       {{
                         getWeekdayNamesFormatted(entry.weekdays) ||
-                        "Keine Tage gewählt"
+                        $t("bookable.edit.common.no-days")
                       }}
                     </v-list-item-title>
                     <v-list-item-subtitle>
                       <v-icon small class="mr-1">mdi-clock-outline</v-icon>
                       <span v-if="entry.startTime && entry.endTime">
-                        {{ entry.startTime }} – {{ entry.endTime }} Uhr
+                        {{
+                          $t("bookable.edit.common.time-range", {
+                            start: entry.startTime,
+                            end: entry.endTime,
+                          })
+                        }}
                       </span>
-                      <span v-else class="grey--text">Zeit nicht gesetzt</span>
+                      <span v-else class="grey--text">{{
+                        $t("bookable.edit.common.no-time")
+                      }}</span>
                     </v-list-item-subtitle>
                   </v-list-item-content>
 
                   <v-list-item-action>
                     <div class="d-flex align-center">
-                      <v-btn icon small @click.stop="removeServiceHours(index)">
+                      <v-btn
+                        icon
+                        small
+                        data-test="service-hours-remove"
+                        @click.stop="removeServiceHours(index)"
+                      >
                         <v-icon small>mdi-delete-outline</v-icon>
                       </v-btn>
                       <v-btn icon small>
@@ -449,21 +400,19 @@ export default {
                           dense
                           background-color="accent"
                           filled
-                          label="Wochentag(e) *"
+                          :label="$t('bookable.edit.common.weekdays')"
                           :items="weekdays"
                           item-value="id"
                           item-text="name"
-                          v-model="entry.weekdays"
+                          :value="entry.weekdays"
                           multiple
                           chips
                           hide-selected
                           hide-details="auto"
-                          :rules="[
-                            (v) =>
-                              (v && v.length > 0) ||
-                              'Mindestens ein Wochentag erforderlich',
-                          ]"
-                          @change="emitUpdate"
+                          :rules="fieldRules.weekdays"
+                          @change="
+                            updateServiceHours(index, { weekdays: $event })
+                          "
                         >
                           <template
                             v-slot:selection="{ attrs, item, select, selected }"
@@ -500,24 +449,25 @@ export default {
                               dense
                               background-color="accent"
                               filled
-                              v-model="entry.startTime"
-                              label="Startzeit *"
+                              :value="entry.startTime"
+                              :label="$t('bookable.edit.common.start-time')"
                               readonly
-                              suffix="Uhr"
+                              :suffix="$t('bookable.edit.common.clock')"
                               v-bind="attrs"
                               v-on="on"
                               hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Startzeit ist erforderlich',
-                              ]"
+                              :rules="fieldRules.startTime"
                             />
                           </template>
                           <v-time-picker
                             v-if="timeStartMenu[index]"
-                            v-model="entry.startTime"
+                            :value="entry.startTime"
                             full-width
                             format="24hr"
-                            @click:minute="setStartTime(index, entry.startTime)"
+                            @input="
+                              updateServiceHours(index, { startTime: $event })
+                            "
+                            @click:minute="closeMenu(timeStartMenu, index)"
                           />
                         </v-menu>
                       </v-col>
@@ -537,24 +487,25 @@ export default {
                               dense
                               background-color="accent"
                               filled
-                              v-model="entry.endTime"
-                              label="Endzeit *"
+                              :value="entry.endTime"
+                              :label="$t('bookable.edit.common.end-time')"
                               readonly
-                              suffix="Uhr"
+                              :suffix="$t('bookable.edit.common.clock')"
                               v-bind="attrs"
                               v-on="on"
                               hide-details="auto"
-                              :rules="[
-                                (v) => !!v || 'Endzeit ist erforderlich',
-                              ]"
+                              :rules="fieldRules.endTime"
                             />
                           </template>
                           <v-time-picker
                             v-if="timeEndMenu[index]"
-                            v-model="entry.endTime"
+                            :value="entry.endTime"
                             full-width
                             format="24hr"
-                            @click:minute="setEndTime(index, entry.endTime)"
+                            @input="
+                              updateServiceHours(index, { endTime: $event })
+                            "
+                            @click:minute="closeMenu(timeEndMenu, index)"
                           />
                         </v-menu>
                       </v-col>
@@ -567,11 +518,11 @@ export default {
 
           <div v-else class="text-center py-6">
             <div class="text-body-2 grey--text mb-3">
-              Mindestens ein Servicezeiten-Fenster ist erforderlich.
+              {{ $t("bookable.edit.leadTime.service-hours-empty") }}
             </div>
             <v-btn small text color="primary" @click="addServiceHours">
               <v-icon left small>mdi-plus</v-icon>
-              Servicezeiten hinzufügen
+              {{ $t("bookable.edit.leadTime.service-hours-add") }}
             </v-btn>
           </div>
         </template>
@@ -579,19 +530,23 @@ export default {
     </v-card>
 
     <v-card
-      v-if="showBuffer"
+      v-if="showBuffer && expertOptionShown('buffer')"
       id="be-section-bookingType-buffer"
+      data-field="buffer"
       class="mt-4 section-card"
       outlined
     >
       <v-card-title class="section-header pa-4">
         <v-icon class="mr-2">mdi-calendar-clock</v-icon>
-        <span class="text-h6 font-weight-bold">Puffer zwischen Buchungen</span>
+        <span class="text-h6 font-weight-bold">
+          {{ $t("bookable.edit.cards.buffer") }}
+        </span>
       </v-card-title>
       <v-divider />
 
       <v-card-text class="pa-4">
         <v-switch
+          data-test="buffer-switch"
           :input-value="bufferSwitchEnabled"
           color="primary"
           hide-details
@@ -601,11 +556,10 @@ export default {
           <template v-slot:label>
             <div>
               <div class="font-weight-medium">
-                Puffer zwischen Buchungen aktivieren
+                {{ $t("bookable.edit.buffer.switch") }}
               </div>
               <div class="text-caption text--secondary">
-                Mindestabstand vor und nach bestehenden Buchungen (z. B.
-                Reinigung, Umräumen)
+                {{ $t("bookable.edit.buffer.switch-hint") }}
               </div>
             </div>
           </template>
@@ -616,31 +570,30 @@ export default {
 
           <v-row dense>
             <v-col cols="12" md="6">
-              <div class="text-subtitle-2 mb-1">Vor der Buchung</div>
+              <div class="text-subtitle-2 mb-1">
+                {{ $t("bookable.edit.buffer.before") }}
+              </div>
               <div class="text-caption text--secondary mb-2">
-                Zeit, die vor dem Terminbeginn blockiert wird
+                {{ $t("bookable.edit.buffer.before-hint") }}
               </div>
               <v-text-field
                 background-color="accent"
                 filled
                 dense
-                label="Dauer"
+                :label="$t('bookable.edit.common.duration')"
                 type="number"
                 min="0"
-                suffix="Minuten"
-                :value="displayBufferMinutes(model.bufferTimeBeforeMinutes)"
+                :suffix="$t('bookable.edit.common.minutes')"
+                :value="displayBufferMinutes(bookable.bufferTimeBeforeMinutes)"
+                data-test="buffer-before"
                 hide-details="auto"
-                :rules="[
-                  (v) =>
-                    isBufferMinutesValid(v) ||
-                    'Gültige Dauer erforderlich (0 oder positive Ganzzahl)',
-                ]"
+                :rules="fieldRules.bufferMinutes"
                 @input="setBufferMinutes('bufferTimeBeforeMinutes', $event)"
               />
               <div class="d-flex flex-wrap mt-2">
-                <span class="text-caption text--secondary mr-2"
-                  >Schnellauswahl:</span
-                >
+                <span class="text-caption text--secondary mr-2">{{
+                  $t("bookable.edit.common.quick-pick")
+                }}</span>
                 <v-chip
                   v-for="preset in bufferPresets"
                   :key="`before-${preset.value}`"
@@ -664,31 +617,30 @@ export default {
             </v-col>
 
             <v-col cols="12" md="6">
-              <div class="text-subtitle-2 mb-1">Nach der Buchung</div>
+              <div class="text-subtitle-2 mb-1">
+                {{ $t("bookable.edit.buffer.after") }}
+              </div>
               <div class="text-caption text--secondary mb-2">
-                Zeit, die nach dem Terminende blockiert wird
+                {{ $t("bookable.edit.buffer.after-hint") }}
               </div>
               <v-text-field
                 background-color="accent"
                 filled
                 dense
-                label="Dauer"
+                :label="$t('bookable.edit.common.duration')"
                 type="number"
                 min="0"
-                suffix="Minuten"
-                :value="displayBufferMinutes(model.bufferTimeAfterMinutes)"
+                :suffix="$t('bookable.edit.common.minutes')"
+                :value="displayBufferMinutes(bookable.bufferTimeAfterMinutes)"
+                data-test="buffer-after"
                 hide-details="auto"
-                :rules="[
-                  (v) =>
-                    isBufferMinutesValid(v) ||
-                    'Gültige Dauer erforderlich (0 oder positive Ganzzahl)',
-                ]"
+                :rules="fieldRules.bufferMinutes"
                 @input="setBufferMinutes('bufferTimeAfterMinutes', $event)"
               />
               <div class="d-flex flex-wrap mt-2">
-                <span class="text-caption text--secondary mr-2"
-                  >Schnellauswahl:</span
-                >
+                <span class="text-caption text--secondary mr-2">{{
+                  $t("bookable.edit.common.quick-pick")
+                }}</span>
                 <v-chip
                   v-for="preset in bufferPresets"
                   :key="`after-${preset.value}`"
@@ -714,7 +666,7 @@ export default {
         </template>
       </v-card-text>
     </v-card>
-  </v-form>
+  </div>
 </template>
 
 <style scoped>
