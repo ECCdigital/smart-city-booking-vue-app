@@ -1106,13 +1106,137 @@ describe("BookableEdit - publication", () => {
     );
 
     await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await flip(wrapper, "publication-bookable");
     await flip(wrapper, "publication-public");
     await saveFlow(wrapper);
 
     expect(publicationOf(sent())).toEqual({
-      isBookable: true,
+      isBookable: false,
       isPublic: false,
     });
+    expect(find(wrapper, "flow-done-title").text()).toBe(
+      "Als Entwurf gespeichert"
+    );
+  });
+
+  it("confirms a free tenant's bookable by Direktlink only as such", async () => {
+    const wrapper = await mountBookableEdit({
+      query: { id: "b1", mode: "flow" },
+      bookable: stored({ isBookable: false, isPublic: false }),
+      level: "free",
+    });
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await flip(wrapper, "publication-bookable");
+    await saveFlow(wrapper);
+
+    expect(find(wrapper, "flow-done-title").text()).toBe(
+      "Per Direktlink buchbar"
+    );
+  });
+});
+
+describe("BookableEdit - publication under supervision", () => {
+  const supervised = (query, bookable) =>
+    mountBookableEdit({
+      query,
+      bookable,
+      level: "supervised",
+      stubs: { TenantReadinessCheck: stub("TenantReadinessCheck") },
+    });
+  const saveFlow = async (wrapper) => {
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await find(wrapper, "flow-save").trigger("click");
+    await flushPromises();
+  };
+  const flip = async (wrapper, test) => {
+    await find(wrapper, test).find("input").trigger("click");
+    await wrapper.vm.$nextTick();
+  };
+  // The backend submits a stored Veröffentlichungswunsch without a
+  // Prüfstatus and answers with the review it started.
+  const answerAsTheBackend = () =>
+    ApiBookablesService.createOrUpdateBookable.mockImplementation(
+      async (bookable) => ({
+        data: {
+          ...bookable,
+          review:
+            bookable.isPublic === true && !bookable.review?.status
+              ? { status: "pending" }
+              : bookable.review,
+        },
+      })
+    );
+
+  beforeEach(() => {
+    ApiBookablesService.createOrUpdateBookable.mockReset();
+    answerAsTheBackend();
+  });
+
+  it("says that saving submits only with „Im Katalog listen“", async () => {
+    const wrapper = await supervised(
+      { id: "b1", mode: "flow" },
+      stored({ isBookable: false, isPublic: false })
+    );
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await flip(wrapper, "publication-bookable");
+
+    expect(find(wrapper, "publication-submits").exists()).toBe(false);
+    expect(find(wrapper, "publication-effect").text()).not.toContain(
+      "Nach der Freigabe"
+    );
+
+    await flip(wrapper, "publication-public");
+
+    expect(find(wrapper, "publication-submits").text()).toBe(
+      "Beim Speichern wird das Angebot zur Prüfung eingereicht."
+    );
+  });
+
+  it("confirms Im Katalog without Buchbar as submitted", async () => {
+    const wrapper = await supervised(
+      { id: "b1", mode: "flow" },
+      stored({ isBookable: false, isPublic: false })
+    );
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await flip(wrapper, "publication-public");
+    await saveFlow(wrapper);
+
+    expect(find(wrapper, "flow-done-title").text()).toBe(
+      "Zur Prüfung eingereicht"
+    );
+  });
+
+  it("confirms an approved offer switched on as published", async () => {
+    const wrapper = await supervised(
+      { id: "b1", mode: "flow" },
+      stored({
+        isBookable: false,
+        isPublic: false,
+        review: { status: "approved" },
+      })
+    );
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await flip(wrapper, "publication-bookable");
+    await flip(wrapper, "publication-public");
+    await saveFlow(wrapper);
+
+    expect(find(wrapper, "flow-done-title").text()).toBe("Veröffentlicht");
+  });
+
+  it("confirms Buchbar alone, which submits nothing, as a draft", async () => {
+    const wrapper = await supervised(
+      { id: "b1", mode: "flow" },
+      stored({ isBookable: false, isPublic: false })
+    );
+
+    await find(wrapper, `flow-dot-${lastStep}`).trigger("click");
+    await flip(wrapper, "publication-bookable");
+    await saveFlow(wrapper);
+
     expect(find(wrapper, "flow-done-title").text()).toBe(
       "Als Entwurf gespeichert"
     );

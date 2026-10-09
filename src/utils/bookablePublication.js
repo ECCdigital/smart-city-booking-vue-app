@@ -41,8 +41,11 @@ function switchesEffect({ isBookable, isPublic }) {
  * The line under the switches: what follows from „Buchbar“, „Im Katalog
  * listen“, the level and the review, as an i18n key. Always one, also for a
  * free tenant. With both switches off nothing is reachable whatever the
- * gate; under supervision without approval it says what follows after the
- * approval; a pending or declined tenant keeps everything back.
+ * gate. Under supervision without approval it says what follows after the
+ * approval only while one is coming - the review runs, or saving submits
+ * the wish (`submitsOnSave`); without the wish nothing is submitted, and a
+ * rejected offer keeps its status. A pending or declined tenant keeps
+ * everything back.
  */
 export function publicationEffectKey(
   { isBookable, isPublic, review } = {},
@@ -54,9 +57,13 @@ export function publicationEffectKey(
     return `${EFFECT}.${effect}`;
   }
   if (level === LEVELS.SUPERVISED) {
-    return review?.status === REVIEW_STATUS.APPROVED
-      ? `${EFFECT}.${effect}`
-      : `${EFFECT}.after-approval.${effect}`;
+    const status = knownReviewStatus(review?.status);
+    if (status === REVIEW_STATUS.APPROVED) return `${EFFECT}.${effect}`;
+    if (status === REVIEW_STATUS.REJECTED) return `${EFFECT}.rejected`;
+    if (status === REVIEW_STATUS.PENDING || isPublic === true) {
+      return `${EFFECT}.after-approval.${effect}`;
+    }
+    return `${EFFECT}.unsubmitted`;
   }
   return `${EFFECT}.${level}`;
 }
@@ -76,14 +83,43 @@ export function submitsOnSave({ isPublic, review } = {}, supervisionLevel) {
 const PUBLICATION_FIELDS = ["isBookable", "isPublic"];
 const isOn = (bookable, field) => bookable?.[field] === true;
 
+/** What the public meets once the gate is passed, as the confirmation says it. */
+const OUTCOME_OF_EFFECT = Object.freeze({
+  listed: "published",
+  "direct-link": "direct-link",
+  "listed-not-bookable": "listed-not-bookable",
+  hidden: "draft",
+});
+
 /**
  * What the flow's confirmation says became of the publication, read from
- * the bookable as saved: `kept` for an existing bookable whose switches
- * stayed as they were, else `published` when it is „Buchbar“ and „Im
- * Katalog“, else `draft`. `before` is the bookable as stored before the
- * save, `null` for a new one.
+ * the bookable as the backend answered the save (`saved`, with the review
+ * it started) against the one stored before (`before`, `null` for a new
+ * one):
+ *
+ * - `submitted`: under supervision this save submitted the offer (its
+ *   review is pending now, it was not before);
+ * - `kept`: an existing bookable whose switches stayed as they were;
+ * - `noted`: a pending or declined tenant's Veröffentlichungswunsch;
+ * - `in-review`: under supervision, the review still runs;
+ * - where the gate is passed (a free tenant, an approved offer) what the
+ *   switches allow: `published` (Buchbar and Im Katalog), `direct-link`,
+ *   `listed-not-bookable`;
+ * - else `draft`: nothing is public.
+ *
+ * A missing or unknown level reads as free.
  */
-export function publicationOutcome(saved, before) {
+export function publicationOutcome(saved, before, supervisionLevel) {
+  const level = levelOf(supervisionLevel);
+  const status = knownReviewStatus(saved?.review?.status);
+  const statusBefore = before ? knownReviewStatus(before.review?.status) : null;
+  if (
+    level !== LEVELS.FREE &&
+    status === REVIEW_STATUS.PENDING &&
+    statusBefore !== REVIEW_STATUS.PENDING
+  ) {
+    return "submitted";
+  }
   if (
     before &&
     PUBLICATION_FIELDS.every(
@@ -92,7 +128,11 @@ export function publicationOutcome(saved, before) {
   ) {
     return "kept";
   }
-  return PUBLICATION_FIELDS.every((field) => isOn(saved, field))
-    ? "published"
-    : "draft";
+  if (level === LEVELS.PENDING || level === LEVELS.DECLINED) {
+    return isOn(saved, "isPublic") ? "noted" : "draft";
+  }
+  if (level === LEVELS.SUPERVISED && status !== REVIEW_STATUS.APPROVED) {
+    return status === REVIEW_STATUS.PENDING ? "in-review" : "draft";
+  }
+  return OUTCOME_OF_EFFECT[switchesEffect(saved || {})];
 }

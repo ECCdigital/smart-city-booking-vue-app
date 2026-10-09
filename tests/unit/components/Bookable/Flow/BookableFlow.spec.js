@@ -228,23 +228,24 @@ describe("BookableFlow", () => {
         ...propsData,
       });
 
-    it("says what became of the publication", () => {
-      expect(
-        find(mountDone({ outcome: "published" }), "flow-done-title").text()
-      ).toBe("Veröffentlicht");
-      expect(
-        find(
-          mountDone({ outcome: "published", level: "supervised" }),
-          "flow-done-title"
-        ).text()
-      ).toBe("Zur Prüfung eingereicht");
-      expect(
-        find(mountDone({ outcome: "draft" }), "flow-done-title").text()
-      ).toBe("Als Entwurf gespeichert");
-      expect(
-        find(mountDone({ outcome: "kept" }), "flow-done-title").text()
-      ).toBe("Gespeichert");
-    });
+    it.each([
+      ["published", null, "Veröffentlicht"],
+      ["direct-link", null, "Per Direktlink buchbar"],
+      ["listed-not-bookable", null, "Im Katalog gelistet"],
+      ["submitted", "supervised", "Zur Prüfung eingereicht"],
+      ["in-review", "supervised", "In Prüfung"],
+      ["noted", "pending", "Veröffentlichung vorgemerkt"],
+      ["noted", "declined", "Veröffentlichung vorgemerkt"],
+      ["draft", null, "Als Entwurf gespeichert"],
+      ["kept", null, "Gespeichert"],
+    ])(
+      "says what became of the publication: %s (level %s)",
+      (outcome, level, title) => {
+        expect(
+          find(mountDone({ outcome, level }), "flow-done-title").text()
+        ).toBe(title);
+      }
+    );
 
     it("shows the readiness check and names payment for a paid offer only", () => {
       const free = mountDone({ outcome: "draft" });

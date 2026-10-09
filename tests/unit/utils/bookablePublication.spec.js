@@ -63,18 +63,46 @@ describe("publicationEffectKey", () => {
     }
   );
 
-  it.each([null, "pending", "rejected"])(
-    "says under supervision with review %s what follows after the approval",
-    (status) => {
+  // Saving submits the wish (`submitsOnSave`), or the review runs already.
+  it.each([
+    [null, true, true, "listed"],
+    [null, false, true, "listed-not-bookable"],
+    ["pending", true, true, "listed"],
+    ["pending", true, false, "direct-link"],
+    ["pending", false, true, "listed-not-bookable"],
+  ])(
+    "says under supervision with review %s what follows after the approval (Buchbar %s, Im Katalog %s)",
+    (status, isBookable, isPublic, effect) => {
       expect(
-        publicationEffectKey(publication(true, true, status), "supervised")
-      ).toBe(`${EFFECT}.after-approval.listed`);
+        publicationEffectKey(
+          publication(isBookable, isPublic, status),
+          "supervised"
+        )
+      ).toBe(`${EFFECT}.after-approval.${effect}`);
+    }
+  );
+
+  // Without the wish saving submits nothing: no approval comes to promise.
+  it("says under supervision without a review or the wish that nothing is submitted", () => {
+    expect(publicationEffectKey(publication(true, false), "supervised")).toBe(
+      `${EFFECT}.unsubmitted`
+    );
+  });
+
+  // A rejected offer keeps its status on save; nothing is submitted again.
+  it.each([
+    [true, true],
+    [true, false],
+    [false, true],
+  ])(
+    "says under supervision that a rejected offer is not reachable (Buchbar %s, Im Katalog %s)",
+    (isBookable, isPublic) => {
       expect(
-        publicationEffectKey(publication(true, false, status), "supervised")
-      ).toBe(`${EFFECT}.after-approval.direct-link`);
-      expect(
-        publicationEffectKey(publication(false, true, status), "supervised")
-      ).toBe(`${EFFECT}.after-approval.listed-not-bookable`);
+        publicationEffectKey(
+          publication(isBookable, isPublic, "rejected"),
+          "supervised"
+        )
+      ).toBe(`${EFFECT}.rejected`);
     }
   );
 
@@ -106,15 +134,18 @@ describe("publicationEffectKey", () => {
   });
 
   it("has a German text for every effect", () => {
-    const keys = [
-      ...[true, false].flatMap((isBookable) =>
+    const keys = [null, "pending", "approved", "rejected"].flatMap((status) =>
+      [true, false].flatMap((isBookable) =>
         [true, false].flatMap((isPublic) =>
           ["free", "supervised", "pending", "declined"].map((level) =>
-            publicationEffectKey(publication(isBookable, isPublic), level)
+            publicationEffectKey(
+              publication(isBookable, isPublic, status),
+              level
+            )
           )
         )
-      ),
-    ];
+      )
+    );
     keys.forEach((key) => expect(i18n.te(key, "de")).toBe(true));
   });
 });
@@ -153,33 +184,105 @@ describe("submitsOnSave", () => {
 });
 
 describe("publicationOutcome", () => {
-  const saved = (isBookable, isPublic) => ({ isBookable, isPublic });
+  const saved = (isBookable, isPublic, status = null) => ({
+    isBookable,
+    isPublic,
+    review: status ? { status } : null,
+  });
 
-  it("reads a new bookable saved Buchbar and Im Katalog as published, else as a draft", () => {
-    expect(publicationOutcome(saved(true, true), null)).toBe("published");
-    expect(publicationOutcome(saved(true, false), null)).toBe("draft");
-    expect(publicationOutcome(saved(false, true), null)).toBe("draft");
-    expect(publicationOutcome(saved(false, false), null)).toBe("draft");
+  it.each([
+    [true, true, "published"],
+    [true, false, "direct-link"],
+    [false, true, "listed-not-bookable"],
+    [false, false, "draft"],
+  ])(
+    "reads a new bookable of a free tenant saved Buchbar %s and Im Katalog %s as %s",
+    (isBookable, isPublic, outcome) => {
+      expect(
+        publicationOutcome(saved(isBookable, isPublic), null, "free")
+      ).toBe(outcome);
+    }
+  );
+
+  it("reads an unknown level as free", () => {
+    expect(publicationOutcome(saved(true, false), null, null)).toBe(
+      "direct-link"
+    );
   });
 
   it("reads an existing bookable whose switches stayed as kept", () => {
-    expect(publicationOutcome(saved(true, true), saved(true, true))).toBe(
-      "kept"
-    );
-    expect(publicationOutcome(saved(true, false), saved(true, false))).toBe(
-      "kept"
-    );
-    expect(publicationOutcome(saved(false, false), { isBookable: false })).toBe(
-      "kept"
-    );
+    expect(
+      publicationOutcome(saved(true, true), saved(true, true), "free")
+    ).toBe("kept");
+    expect(
+      publicationOutcome(saved(true, false), saved(true, false), "free")
+    ).toBe("kept");
+    expect(
+      publicationOutcome(saved(false, false), { isBookable: false }, "free")
+    ).toBe("kept");
   });
 
   it("reads an existing bookable whose switches changed by what it is now", () => {
-    expect(publicationOutcome(saved(true, true), saved(false, false))).toBe(
-      "published"
-    );
-    expect(publicationOutcome(saved(false, false), saved(true, true))).toBe(
+    expect(
+      publicationOutcome(saved(true, true), saved(false, false), "free")
+    ).toBe("published");
+    expect(
+      publicationOutcome(saved(false, false), saved(true, true), "free")
+    ).toBe("draft");
+  });
+
+  // The backend answers the save with the review it started.
+  it("reads a save that submitted the offer under supervision as submitted", () => {
+    expect(
+      publicationOutcome(saved(false, true, "pending"), null, "supervised")
+    ).toBe("submitted");
+    expect(
+      publicationOutcome(
+        saved(true, true, "pending"),
+        saved(true, true),
+        "supervised"
+      )
+    ).toBe("submitted");
+  });
+
+  it("reads an approved offer switched on under supervision as published", () => {
+    expect(
+      publicationOutcome(
+        saved(true, true, "approved"),
+        saved(false, false, "approved"),
+        "supervised"
+      )
+    ).toBe("published");
+  });
+
+  it("reads an offer in review whose switches changed as in review", () => {
+    expect(
+      publicationOutcome(
+        saved(true, true, "pending"),
+        saved(false, true, "pending"),
+        "supervised"
+      )
+    ).toBe("in-review");
+  });
+
+  it("reads an offer without approval or submission under supervision as a draft", () => {
+    expect(publicationOutcome(saved(true, false), null, "supervised")).toBe(
       "draft"
     );
+    expect(
+      publicationOutcome(
+        saved(true, true, "rejected"),
+        saved(false, true, "rejected"),
+        "supervised"
+      )
+    ).toBe("draft");
   });
+
+  it.each(["pending", "declined"])(
+    "reads the wish of a tenant whose level is %s as noted",
+    (level) => {
+      expect(publicationOutcome(saved(true, true), null, level)).toBe("noted");
+      expect(publicationOutcome(saved(true, false), null, level)).toBe("draft");
+    }
+  );
 });

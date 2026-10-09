@@ -671,7 +671,11 @@ export default {
         this.flowSaveFailed = true;
         return;
       }
-      this.flowOutcome = publicationOutcome(this.bookable, before);
+      this.flowOutcome = publicationOutcome(
+        this.bookable,
+        before,
+        this.supervisionLevel
+      );
     },
     enterFlow() {
       this.$router.replace({

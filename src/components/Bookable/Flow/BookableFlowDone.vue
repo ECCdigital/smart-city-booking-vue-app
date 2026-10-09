@@ -92,6 +92,8 @@ import bookableEditing from "@/mixins/bookableEditing";
 import { isPaid, publishVariant } from "@/utils/bookableFlow";
 import { shownAreas } from "@/utils/bookableAreas";
 
+const PUBLIC_OUTCOMES = ["published", "direct-link", "listed-not-bookable"];
+
 /**
  * After the save: what became of the publication, the readiness check, the
  * open points legal texts and payment (payment for a paid offer only), the
@@ -103,17 +105,19 @@ export default {
   components: { TenantReadinessCheck, OnboardingSetupLinks },
   mixins: [bookableEditing],
   props: {
-    /** `published`, `draft` (a new bookable kept back) or `kept`. */
+    /** What became of the publication: `publicationOutcome`. */
     outcome: { type: String, required: true },
     level: { type: String, default: null },
   },
   computed: {
+    // Something is public now: it is listed or bookable.
     published() {
-      return this.outcome === "published";
+      return PUBLIC_OUTCOMES.includes(this.outcome);
     },
+    // A wish noted for later is worded by the tenant's level.
     stateKey() {
-      return this.published
-        ? `bookable.flow.done.published.${publishVariant(this.level)}`
+      return this.outcome === "noted"
+        ? `bookable.flow.done.noted.${publishVariant(this.level)}`
         : `bookable.flow.done.${this.outcome}`;
     },
     paid() {

@@ -434,14 +434,26 @@
       },
       "done": {
         "published": {
-          "free": {
-            "title": "Veröffentlicht",
-            "text": "Das Buchungsobjekt ist sichtbar und buchbar."
-          },
-          "supervised": {
-            "title": "Zur Prüfung eingereicht",
-            "text": "Ihr Angebot wartet auf Prüfung. Bis zur Freigabe durch den Betreiber ist es öffentlich nicht sichtbar."
-          },
+          "title": "Veröffentlicht",
+          "text": "Das Buchungsobjekt steht im Katalog und ist buchbar."
+        },
+        "direct-link": {
+          "title": "Per Direktlink buchbar",
+          "text": "Das Buchungsobjekt steht nicht im Katalog, ist aber per Direktlink buchbar."
+        },
+        "listed-not-bookable": {
+          "title": "Im Katalog gelistet",
+          "text": "Das Buchungsobjekt steht im Katalog, ist aber nicht buchbar."
+        },
+        "submitted": {
+          "title": "Zur Prüfung eingereicht",
+          "text": "Ihr Angebot wartet auf Prüfung. Bis zur Freigabe durch den Betreiber ist es öffentlich nicht sichtbar."
+        },
+        "in-review": {
+          "title": "In Prüfung",
+          "text": "Ihr Angebot wartet noch auf Prüfung. Bis zur Freigabe durch den Betreiber ist es öffentlich nicht sichtbar."
+        },
+        "noted": {
           "pending": {
             "title": "Veröffentlichung vorgemerkt",
             "text": "Ihr Veröffentlichungswunsch ist vorgemerkt. Der Mandant wartet auf die Freigabe durch den Betreiber."
@@ -880,6 +892,8 @@
           "listed-not-bookable": "Nach der Freigabe durch den Betreiber steht das Buchungsobjekt im Katalog, ist aber nicht buchbar. Bis dahin ist es nicht gelistet."
         },
         "pending": "Ihr Mandant wartet auf die Freigabe durch den Betreiber: Bis dahin steht das Buchungsobjekt nicht im Katalog und ist nicht buchbar.",
+        "unsubmitted": "Ohne Freigabe durch den Betreiber ist das Buchungsobjekt nicht per Direktlink buchbar. Zur Prüfung eingereicht wird es beim Speichern nur mit „Im Katalog listen“.",
+        "rejected": "Der Betreiber hat das Angebot abgelehnt: Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar.",
         "declined": "Der Mandant ist abgewiesen: Das Buchungsobjekt steht nicht im Katalog und ist nicht buchbar."
       }
     },

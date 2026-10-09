@@ -49,7 +49,8 @@ export const BOOKABLE_EDIT_STUBS = {
   Tiptap: stub("Tiptap"),
 };
 
-export function bookableEditStore() {
+/** The store `BookableEdit` reads; `level` is the tenant's Aufsichtsstufe. */
+export function bookableEditStore({ level = null } = {}) {
   return new Vuex.Store({
     modules: {
       tenants: {
@@ -57,12 +58,12 @@ export function bookableEditStore() {
         getters: {
           currentTenant: () => ({ id: "t1" }),
           currentTenantId: () => "t1",
-          currentSupervisionLevel: () => null,
+          currentSupervisionLevel: () => level,
         },
       },
       user: {
         namespaced: true,
-        getters: { supervisionLevelOf: () => () => null },
+        getters: { supervisionLevelOf: () => () => level },
       },
       toasts: { namespaced: true, actions: { add: () => {} } },
     },
@@ -90,6 +91,7 @@ export async function mountBookableEdit({
   bookable = storedBookable(),
   type = "room",
   stubs = {},
+  level = null,
 } = {}) {
   ApiBookablesService.getBookable.mockResolvedValue({ data: bookable });
   const router = new VueRouter({
@@ -100,7 +102,7 @@ export async function mountBookableEdit({
   const wrapper = mountComponent(BookableEdit, {
     localVue,
     router,
-    store: bookableEditStore(),
+    store: bookableEditStore({ level }),
     propsData: { type },
     stubs: { ...BOOKABLE_EDIT_STUBS, ...stubs },
   });
