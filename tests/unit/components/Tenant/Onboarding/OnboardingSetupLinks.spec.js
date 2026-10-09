@@ -4,24 +4,11 @@ import OnboardingSetupLinks from "@/components/Tenant/Onboarding/OnboardingSetup
 
 const mountLinks = (propsData) =>
   mountComponent(OnboardingSetupLinks, {
-    propsData: { returnStep: "setup", bookableId: "b-1", ...propsData },
+    propsData,
     stubs: { RouterLink: true },
   });
 
 describe("OnboardingSetupLinks", () => {
-  it("opens the existing legal form and names the step to return to", () => {
-    const wrapper = mountLinks({ returnStep: "overview" });
-
-    expect(wrapper.vm.formRoute("legal")).toEqual({
-      name: "tenant",
-      query: {
-        tab: "legal",
-        onboardingStep: "overview",
-        onboardingBookable: "b-1",
-      },
-    });
-  });
-
   it("offers the payment form for a paid offer only", () => {
     expect(
       mountLinks({ paid: true }).find("[data-test='setup-payment']").exists()
@@ -32,12 +19,18 @@ describe("OnboardingSetupLinks", () => {
     expect(free.text()).toContain("kein Zahlungsweg erforderlich");
   });
 
-  it("opens the forms without a way back outside the guided setup", () => {
-    const wrapper = mountLinks({ returnStep: null });
+  // No wizard step to return to any more (ECCdigital/tickets#371).
+  it("opens the existing forms on their own, without a way back", () => {
+    const wrapper = mountLinks({ paid: true });
+    const to = (test) => wrapper.find(`[data-test='${test}']`).vm.$props.to;
 
-    expect(wrapper.vm.formRoute("legal")).toEqual({
+    expect(to("setup-legal")).toEqual({
       name: "tenant",
       query: { tab: "legal" },
+    });
+    expect(to("setup-payment")).toEqual({
+      name: "tenant",
+      query: { tab: "payments" },
     });
   });
 
