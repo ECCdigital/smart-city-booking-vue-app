@@ -695,7 +695,7 @@ describe("a place without hit", () => {
     const s = after(fresh(), { type: "withoutHit", text: "Neißewiese Guben" });
 
     expect(s.address.addition).toBe("Neißewiese Guben");
-    expect(s.placing).toEqual({ text: "Neißewiese Guben" });
+    expect(s.placing.text).toBe("Neißewiese Guben");
   });
 
   it("keeps a addition already there", () => {
@@ -733,6 +733,21 @@ describe("a place without hit", () => {
 
     expect(s.placing).toBeNull();
     expect(s.point).toBeNull();
+  });
+
+  // User story 33: cancelling goes back to where it was before.
+  it.each([
+    ["empty", ""],
+    ["filled", "Bühne am Ufer"],
+  ])("gives the addition back as it was, %s, when cancelled", (_, before) => {
+    const s = after(
+      fresh(),
+      { type: "fieldChanged", field: "addition", value: before },
+      { type: "withoutHit", text: "Neißewiese Guben" },
+      { type: "placingCancelled" }
+    );
+
+    expect(s.address.addition).toBe(before);
   });
 });
 

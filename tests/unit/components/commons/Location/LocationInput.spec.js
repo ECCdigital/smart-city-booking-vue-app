@@ -305,10 +305,7 @@ describe("LocationInput - map and point", () => {
     expect(find(wrapper, "location-street").find("input").element.value).toBe(
       "Gasstraße"
     );
-    expect(lastInput(wrapper).coordinates.points).toEqual([
-      HALL.lon,
-      HALL.lat,
-    ]);
+    expect(lastInput(wrapper).coordinates.points).toEqual([HALL.lon, HALL.lat]);
     expect(lastInput(wrapper).meta.source).toBe("manual");
 
     await find(wrapper, "location-suggestion-accept").trigger("click");
@@ -499,6 +496,9 @@ describe("LocationInput - a place the search does not know", () => {
     expect(find(wrapper, "location-placing").exists()).toBe(false);
     expect(find(wrapper, "location-search").find("input").element.value).toBe(
       "Neißewiese"
+    );
+    expect(find(wrapper, "location-addition").find("input").element.value).toBe(
+      ""
     );
   });
 });

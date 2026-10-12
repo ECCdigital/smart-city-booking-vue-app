@@ -22,8 +22,8 @@
  *   search or `{ kind: "point", point, distance }` (metres) after the search.
  * - `request`: `null`, `{ id, kind: "reverse", point }` or
  *   `{ id, kind: "search", address }`, for the input to run.
- * - `placing`: `null` or `{ text }` while a place without hit waits for its
- *   point.
+ * - `placing`: `null` or `{ text, addition }` while a place without hit
+ *   waits for its point; `addition` is the one before, for a cancel.
  *
  * The other keys are the module's own.
  */
@@ -255,7 +255,7 @@ export function reducer(s, a) {
       return {
         ...s,
         address: { ...s.address, addition: s.address.addition || a.text },
-        placing: { text: a.text },
+        placing: { text: a.text, addition: s.address.addition },
         suggestion: null,
       };
 
@@ -267,8 +267,15 @@ export function reducer(s, a) {
         stored: s.stored,
       };
 
+    // Back to before the place without hit: its text leaves the addition.
     case "placingCancelled":
-      return s.placing ? { ...s, placing: null } : s;
+      return s.placing
+        ? {
+            ...s,
+            address: { ...s.address, addition: s.placing.addition },
+            placing: null,
+          }
+        : s;
 
     case "pointSet":
       return withRequest(
