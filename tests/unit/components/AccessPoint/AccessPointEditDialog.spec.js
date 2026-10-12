@@ -1164,7 +1164,7 @@ describe("AccessPointEditDialog - location", () => {
         "Anschrift am neuen Punkt: Gasstraße 4, 03172 Guben"
       );
       expect(dialogText(wrapper)).toContain(
-        "Die Koordinaten des Anbieters wurden übernommen."
+        "Der Punkt des Anbieters wurde übernommen. Speichern Sie, um ihn zu sichern."
       );
 
       const location = await savedLocation(wrapper);

@@ -2548,7 +2548,7 @@
         "title": "Standort",
         "prefill": "Standort vom Anbieter übernehmen",
         "prefillAfterSave": "Den Standort kann der Anbieter erst vorschlagen, wenn der Zugangspunkt angelegt ist.",
-        "prefillApplied": "Die Koordinaten des Anbieters wurden übernommen. Speichern Sie, um sie zu sichern.",
+        "prefillApplied": "Der Punkt des Anbieters wurde übernommen. Speichern Sie, um ihn zu sichern.",
         "prefillEmpty": "Der Anbieter kennt für dieses Schloss keinen Standort."
       },
       "config": {
