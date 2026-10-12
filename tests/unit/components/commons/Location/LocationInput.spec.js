@@ -241,7 +241,7 @@ describe("LocationInput - the search", () => {
 });
 
 describe("LocationInput - map and point", () => {
-  const HALLE = { lat: 51.95046, lon: 14.71528 };
+  const HALL = { lat: 51.95046, lon: 14.71528 };
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -285,18 +285,18 @@ describe("LocationInput - map and point", () => {
         house_number: "70",
         postcode: "03172",
         city: "Guben",
-        lat: HALLE.lat,
-        lon: HALLE.lon,
+        lat: HALL.lat,
+        lon: HALL.lon,
         display_address: "Kaltenborner Straße 70, 03172 Guben",
       })
     );
     const wrapper = mountInput({ value: STORED_GASSTRASSE });
 
-    map(wrapper).vm.$emit("point-set", HALLE);
+    map(wrapper).vm.$emit("point-set", HALL);
     await settle();
 
     expect(ApiGeoService.reverse).toHaveBeenCalledWith("t1", {
-      ...HALLE,
+      ...HALL,
       lang: "de",
     });
     expect(find(wrapper, "location-suggestion").text()).toContain(
@@ -306,8 +306,8 @@ describe("LocationInput - map and point", () => {
       "Gasstraße"
     );
     expect(lastInput(wrapper).coordinates.points).toEqual([
-      HALLE.lon,
-      HALLE.lat,
+      HALL.lon,
+      HALL.lat,
     ]);
     expect(lastInput(wrapper).meta.source).toBe("manual");
 
@@ -319,12 +319,37 @@ describe("LocationInput - map and point", () => {
     expect(find(wrapper, "location-suggestion").exists()).toBe(false);
   });
 
-  it("keeps the address when the suggestion is declined", async () => {
-    ApiGeoService.reverse.mockResolvedValue(
-      hit({ street: "Kaltenborner Straße", city: "Guben", ...HALLE })
+  it("suggests nothing when the reverse search answers after a new input (user story 26)", async () => {
+    let answer;
+    ApiGeoService.reverse.mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve;
+      })
     );
     const wrapper = mountInput({ value: STORED_GASSTRASSE });
-    map(wrapper).vm.$emit("point-set", HALLE);
+    map(wrapper).vm.$emit("point-set", HALL);
+    await settle();
+
+    await type(wrapper, "location-houseNumber", "5");
+    answer(
+      hit({
+        street: "Kaltenborner Straße",
+        house_number: "70",
+        city: "Guben",
+        ...HALL,
+      })
+    );
+    await settle();
+
+    expect(find(wrapper, "location-suggestion").exists()).toBe(false);
+  });
+
+  it("keeps the address when the suggestion is declined", async () => {
+    ApiGeoService.reverse.mockResolvedValue(
+      hit({ street: "Kaltenborner Straße", city: "Guben", ...HALL })
+    );
+    const wrapper = mountInput({ value: STORED_GASSTRASSE });
+    map(wrapper).vm.$emit("point-set", HALL);
     await settle();
 
     await find(wrapper, "location-suggestion-dismiss").trigger("click");
@@ -338,7 +363,7 @@ describe("LocationInput - map and point", () => {
   it("asks whether a point set by hand follows a changed address, with distance and a pale second pin", async () => {
     const byHand = {
       ...STORED_GASSTRASSE,
-      coordinates: { type: "Point", points: [HALLE.lon, HALLE.lat] },
+      coordinates: { type: "Point", points: [HALL.lon, HALL.lat] },
       meta: { source: "manual", additional: null },
     };
     ApiGeoService.search.mockResolvedValue([GASSTRASSE]);
@@ -366,7 +391,7 @@ describe("LocationInput - map and point", () => {
   it("runs the reverse search again after the location was read anew, as after a save", async () => {
     ApiGeoService.reverse.mockResolvedValue(null);
     const wrapper = mountInput({ value: STORED_GASSTRASSE });
-    map(wrapper).vm.$emit("point-set", HALLE);
+    map(wrapper).vm.$emit("point-set", HALL);
     await settle();
     const saved = lastInput(wrapper);
     await wrapper.setProps({ value: { ...saved }, stored: saved });

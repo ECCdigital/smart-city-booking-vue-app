@@ -620,6 +620,72 @@ describe("changing the address", () => {
     expect(addition.suggestion).toEqual(suggested.suggestion);
     expect(street.suggestion).toBeNull();
   });
+
+  // User story 26: a stale suggestion lapses once something else changed,
+  // so an old answer never overtakes a newer input.
+  describe("a stale suggestion", () => {
+    const houseNumber = (value) => ({
+      type: "fieldChanged",
+      field: "houseNumber",
+      value,
+    });
+
+    it("drops the question to move the point once the address changes again", () => {
+      const asked = afterSearch(byHand(), GASSTRASSE_20);
+      expect(asked.suggestion.kind).toBe("point");
+
+      const s = after(asked, houseNumber("21"));
+
+      expect(s.suggestion).toBeNull();
+      expect(s.point).toEqual(HALL);
+    });
+
+    it("keeps the question while only the addition changes", () => {
+      const asked = afterSearch(byHand(), GASSTRASSE_20);
+
+      const s = after(asked, {
+        type: "fieldChanged",
+        field: "addition",
+        value: "Halle 2",
+      });
+
+      expect(s.suggestion).toEqual(asked.suggestion);
+    });
+
+    it("makes no suggestion of a reverse search answered after a new input", () => {
+      const placed = after(fromSearch(), {
+        type: "pointSet",
+        point: HALL,
+        origin: "map",
+      });
+      const typed = after(placed, houseNumber("5"));
+
+      const s = after(typed, answer(placed, { hit: GASSTRASSE_6 }));
+
+      expect(s.suggestion).toBeNull();
+      expect(s.request).toBeNull();
+      expect(s.address.houseNumber).toBe("5");
+    });
+
+    it("makes no suggestion of a search answered after a new input", () => {
+      const asking = after(byHand(), ...houseNumber20);
+      const typed = after(asking, houseNumber("21"));
+
+      const s = after(typed, answer(asking, { hit: GASSTRASSE_20 }));
+
+      expect(s.suggestion).toBeNull();
+      expect(s.point).toEqual(HALL);
+    });
+
+    it("moves no point from the search after a new input", () => {
+      const asking = after(fromSearch(), ...houseNumber20);
+      const typed = after(asking, houseNumber("21"));
+
+      const s = after(typed, answer(asking, { hit: GASSTRASSE_20 }));
+
+      expect(s.point).toEqual(GASSTRASSE_POINT);
+    });
+  });
 });
 
 describe("a place without hit", () => {

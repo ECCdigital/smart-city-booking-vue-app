@@ -320,7 +320,9 @@ export function reducer(s, a) {
     case "suggestionDismissed":
       return s.suggestion ? { ...s, suggestion: null } : s;
 
-    // A change of the addition alone triggers nothing.
+    // A change of the addition alone triggers nothing. Any other change
+    // makes an open suggestion stale and drops the open request, so an
+    // answer that comes in after it suggests nothing (user story 26).
     case "fieldChanged": {
       const n = { ...s, address: { ...s.address, [a.field]: a.value || "" } };
       if (a.field === "addition") return n;
@@ -328,7 +330,8 @@ export function reducer(s, a) {
         ...n,
         oldText: "",
         addressOpen: true,
-        suggestion: s.suggestion?.kind === "address" ? null : s.suggestion,
+        suggestion: null,
+        request: null,
       };
     }
 
