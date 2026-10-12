@@ -970,6 +970,9 @@
     },
     "list": {
       "search": "Name, ID oder Veranstalter"
+    },
+    "participation-link": {
+      "missing": "Bei Hybrid und Online braucht die Veranstaltung einen gültigen https-Link zur Teilnahme. Tragen Sie ihn unter „Veranstaltungsort“ ein."
     }
   },
   "instance": {
