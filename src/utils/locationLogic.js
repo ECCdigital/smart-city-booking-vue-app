@@ -400,7 +400,8 @@ const isUnchanged = (s) => sameContent(contentOf(s), s.stored.content);
  * A new or changed location needs a point as soon as it has an address, an
  * addition or an old text; a point alone and an empty location are fine. An
  * unchanged old location without point passes, the backend lets it through
- * too (#455); `pointMissing` says the point is still to be set.
+ * too (#455); `pointMissing` marks just that one, for „Punkt fehlt“ (user
+ * story 40). A new or changed one without point has its `reason` instead.
  *
  * `reason` is `null` or one of `pointNotSet` (a place without hit still
  * waits for its point), `addressWithoutPoint` and `oldTextWithoutPoint`.
@@ -409,12 +410,13 @@ const isUnchanged = (s) => sameContent(contentOf(s), s.stored.content);
  * @returns {{ storable: boolean, reason: string|null, pointMissing: boolean }}
  */
 export function check(s) {
-  const pointMissing = !s.point && (hasContent(s) || !!s.placing);
-  const refuse = (reason) => ({ storable: false, reason, pointMissing });
+  const refuse = (reason) => ({ storable: false, reason, pointMissing: false });
 
   if (s.placing && !s.point) return refuse("pointNotSet");
-  if (!pointMissing || isUnchanged(s))
-    return { storable: true, reason: null, pointMissing };
+  if (s.point || !hasContent(s))
+    return { storable: true, reason: null, pointMissing: false };
+  if (isUnchanged(s))
+    return { storable: true, reason: null, pointMissing: true };
   if (s.oldText && isAddressEmpty(s.address))
     return refuse("oldTextWithoutPoint");
   return refuse("addressWithoutPoint");

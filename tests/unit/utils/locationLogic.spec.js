@@ -756,7 +756,7 @@ describe("a place without hit", () => {
     expect(s.placing.text).toBe("Neißewiese Guben");
   });
 
-  it("keeps a addition already there", () => {
+  it("keeps an addition already there", () => {
     const s = after(
       fresh(),
       { type: "fieldChanged", field: "addition", value: "Bühne am Ufer" },
@@ -878,11 +878,11 @@ describe("check", () => {
       expect(check(s)).toEqual({
         storable: false,
         reason: "addressWithoutPoint",
-        pointMissing: true,
+        pointMissing: false,
       });
     });
 
-    it("refuses a addition without point", () => {
+    it("refuses an addition without point", () => {
       const s = after(fresh(), {
         type: "fieldChanged",
         field: "addition",
@@ -892,11 +892,11 @@ describe("check", () => {
       expect(check(s)).toEqual({
         storable: false,
         reason: "addressWithoutPoint",
-        pointMissing: true,
+        pointMissing: false,
       });
     });
 
-    it("refuses while the point of an place without hit is not set", () => {
+    it("refuses while the point of a place without hit is not set", () => {
       const s = after(fresh(), {
         type: "withoutHit",
         text: "Neißewiese Guben",
@@ -905,7 +905,7 @@ describe("check", () => {
       expect(check(s)).toEqual({
         storable: false,
         reason: "pointNotSet",
-        pointMissing: true,
+        pointMissing: false,
       });
     });
   });
@@ -935,7 +935,7 @@ describe("check", () => {
       expect(check(s)).toEqual({
         storable: false,
         reason: "addressWithoutPoint",
-        pointMissing: true,
+        pointMissing: false,
       });
     });
 
@@ -949,7 +949,7 @@ describe("check", () => {
       expect(check(s)).toEqual({
         storable: false,
         reason: "oldTextWithoutPoint",
-        pointMissing: true,
+        pointMissing: false,
       });
     });
 
@@ -973,7 +973,7 @@ describe("check", () => {
         expect(check(fromStored(changed, OLD_WITHOUT_POINT))).toEqual({
           storable: false,
           reason: "addressWithoutPoint",
-          pointMissing: true,
+          pointMissing: false,
         });
       });
 

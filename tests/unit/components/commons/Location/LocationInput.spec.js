@@ -547,9 +547,23 @@ describe("LocationInput - whether it may be saved", () => {
     expect(lastCheck(wrapper)).toEqual({
       storable: false,
       reason: "addressWithoutPoint",
-      pointMissing: true,
+      pointMissing: false,
     });
     expect(lastInput(wrapper).address.street).toBe("Gasstraße");
+  });
+
+  // User story 40: „Punkt fehlt“ marks old data still to be completed; a
+  // new or changed location without point shows the reason instead.
+  it.each([
+    ["a new location", null],
+    ["an old one once changed", "Sportplatz Kaltenborner Straße, Guben"],
+  ])("shows no „Punkt fehlt“ at %s without point", async (_, value) => {
+    const wrapper = mountInput({ value });
+
+    await type(wrapper, "location-street", "Gasstraße");
+
+    expect(find(wrapper, "location-point-missing").exists()).toBe(false);
+    expect(lastCheck(wrapper).storable).toBe(false);
   });
 
   it("reports an empty location as fine from the start", () => {
@@ -607,7 +621,7 @@ describe("LocationInput - whether it may be saved", () => {
     expect(lastCheck(wrapper)).toEqual({
       storable: false,
       reason: "oldTextWithoutPoint",
-      pointMissing: true,
+      pointMissing: false,
     });
   });
 
