@@ -1091,6 +1091,43 @@ describe("BookableEdit - saving with issues", () => {
     ).toBe("true");
   });
 
+  describe("the Standort", () => {
+    const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
+
+    it("saves a bookable whose old Standort without Punkt stays untouched", async () => {
+      const wrapper = await mountEdit(
+        { id: "b1", tab: "general" },
+        stored({ location: OLD_TEXT })
+      );
+
+      await find(wrapper, "flow-title").find("input").setValue("Aula");
+      await save(wrapper);
+
+      expect(ApiBookablesService.createOrUpdateBookable).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Aula", location: OLD_TEXT })
+      );
+    });
+
+    it("refuses a changed Standort without Punkt and opens its tab", async () => {
+      const wrapper = await mountEdit(
+        { id: "b1", tab: "general" },
+        stored({ location: OLD_TEXT })
+      );
+      wrapper.findComponent({ name: "StandortEingabe" }).vm.$emit("input", {
+        address: { street: null, city: "Guben", country_code: "DE" },
+        display_address: OLD_TEXT,
+        meta: { additional: "Eingang Nord" },
+      });
+      await tab(wrapper, "Preise & Kapazität").trigger("click");
+      await flushPromises();
+
+      await save(wrapper);
+
+      expect(ApiBookablesService.createOrUpdateBookable).not.toHaveBeenCalled();
+      expect(wrapper.find("#be-section-general-catalog").exists()).toBe(true);
+    });
+  });
+
   it("goes on in the guided flow without a title", async () => {
     const wrapper = await mountEdit(
       { id: "b1", mode: "flow" },

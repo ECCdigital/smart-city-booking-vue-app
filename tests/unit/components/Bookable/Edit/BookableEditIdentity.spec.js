@@ -28,7 +28,10 @@ const STUBS = {
     publicOnly: Boolean,
     publicOnlyReason: String,
   }),
-  AddressLookup: stub("AddressLookup"),
+  StandortEingabe: stub("StandortEingabe", {
+    gespeichert: { type: [Object, String], default: undefined },
+    tenantId: String,
+  }),
   Tiptap: stub("Tiptap", { minHeight: [String, Number] }),
 };
 
@@ -343,5 +346,55 @@ describe("BookableEditIdentity - Bilder", () => {
     expect(list.props("publicOnlyReason")).toBe(
       "Dieses Buchungsobjekt ist öffentlich sichtbar, interne Medien können hier nicht gespeichert werden."
     );
+  });
+});
+
+describe("BookableEditIdentity - Standort", () => {
+  beforeEach(() => {
+    ApiEventService.getEvents.mockResolvedValue({ data: [] });
+    ApiTagsService.getTags.mockResolvedValue({ data: [] });
+  });
+
+  const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
+  const standort = (wrapper) =>
+    wrapper.findComponent({ name: "StandortEingabe" });
+
+  it("edits the Standort with the input of a Standort, of the bookable's tenant", () => {
+    const { wrapper } = mountBasics({ location: OLD_TEXT });
+
+    expect(standort(wrapper).props("value")).toBe(OLD_TEXT);
+    expect(standort(wrapper).props("tenantId")).toBe("t-own");
+    expect(wrapper.text()).not.toContain("Adresse");
+  });
+
+  it("patches the Standort as the input hands it out", () => {
+    const { wrapper, patches } = mountBasics();
+    const location = {
+      address: { city: "Guben", country_code: "DE" },
+      display_address: "Guben",
+      coordinates: { type: "Point", points: [14.71, 51.95] },
+      meta: { source: "manual", additional: null },
+    };
+
+    standort(wrapper).vm.$emit("input", location);
+
+    expect(patches).toEqual([{ location }]);
+  });
+
+  it("measures the Standort against the stored bookable's", () => {
+    const { wrapper } = mountBasics({
+      id: "b1",
+      expertMode: true,
+      location: "edited",
+      saved: { id: "b1", location: OLD_TEXT },
+    });
+
+    expect(standort(wrapper).props("gespeichert")).toBe(OLD_TEXT);
+  });
+
+  it("measures a new bookable's Standort against none", () => {
+    const { wrapper } = mountBasics({ isNew: true, expertMode: true });
+
+    expect(standort(wrapper).props("gespeichert")).toBeNull();
   });
 });

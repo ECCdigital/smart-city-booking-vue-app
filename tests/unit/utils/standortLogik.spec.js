@@ -822,6 +822,43 @@ describe("pruefen", () => {
       expect(pruefen(s).speicherbar).toBe(true);
     });
 
+    describe("an edited Standort against the one stored", () => {
+      const geaendert = {
+        ...ALT_OHNE_PUNKT,
+        meta: { additional: "Halle 2" },
+      };
+
+      it("refuses it when it differs from the stored one", () => {
+        expect(pruefen(ausGespeichert(geaendert, ALT_OHNE_PUNKT))).toEqual({
+          speicherbar: false,
+          grund: "anschriftOhnePunkt",
+          punktFehlt: true,
+        });
+      });
+
+      it("lets it be saved while it says what the stored one says", () => {
+        const kopie = JSON.parse(JSON.stringify(ALT_OHNE_PUNKT));
+
+        expect(pruefen(ausGespeichert(kopie, ALT_OHNE_PUNKT)).speicherbar).toBe(
+          true
+        );
+      });
+
+      it("refuses a text without Punkt where nothing was stored", () => {
+        expect(pruefen(ausGespeichert("Sportplatz, Guben", null)).grund).toBe(
+          "altTextOhnePunkt"
+        );
+      });
+
+      it("gives back the stored one while unchanged", () => {
+        const kopie = JSON.parse(JSON.stringify(ALT_OHNE_PUNKT));
+
+        expect(zuGespeichert(ausGespeichert(kopie, ALT_OHNE_PUNKT))).toBe(
+          ALT_OHNE_PUNKT
+        );
+      });
+    });
+
     it("lets a Standort stored as text be saved once it has a Punkt", () => {
       const s = folge(ausGespeichert("Sportplatz, Guben"), {
         typ: "punktGesetzt",
