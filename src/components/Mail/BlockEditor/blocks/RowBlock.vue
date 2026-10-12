@@ -4,12 +4,7 @@
       <v-btn icon x-small class="drag-handle" title="Reihe verschieben">
         <v-icon x-small>mdi-drag-vertical</v-icon>
       </v-btn>
-      <v-btn-toggle
-        :value="layoutIdx"
-        mandatory
-        dense
-        @change="onLayoutChange"
-      >
+      <v-btn-toggle :value="layoutIdx" mandatory dense @change="onLayoutChange">
         <v-btn x-small title="1 Spalte" :value="0">
           <v-icon x-small>mdi-square-outline</v-icon>
         </v-btn>
@@ -20,7 +15,9 @@
           <v-icon x-small>mdi-view-split-vertical</v-icon>
         </v-btn>
         <v-btn x-small title="2 Spalten 66/33" :value="3">
-          <v-icon x-small style="transform: scaleX(-1)">mdi-view-split-vertical</v-icon>
+          <v-icon x-small style="transform: scaleX(-1)"
+            >mdi-view-split-vertical</v-icon
+          >
         </v-btn>
         <v-btn x-small title="3 Spalten" :value="4">
           <v-icon x-small>mdi-view-grid-outline</v-icon>
@@ -79,13 +76,7 @@ import draggable from "vuedraggable";
 import BlockItem from "./BlockItem.vue";
 import { cryptoRandomId } from "@/components/Mail/BlockEditor/render/renderBlocksToHtml.js";
 
-const LAYOUTS = [
-  [12],
-  [6, 6],
-  [4, 8],
-  [8, 4],
-  [4, 4, 4],
-];
+const LAYOUTS = [[12], [6, 6], [4, 8], [8, 4], [4, 4, 4]];
 
 export default {
   name: "RowBlock",
@@ -154,7 +145,10 @@ export default {
         (c.blocks || []).forEach((b) => {
           blocks.push(b);
           if (b.id === blockId) {
-            blocks.push({ ...JSON.parse(JSON.stringify(b)), id: cryptoRandomId() });
+            blocks.push({
+              ...JSON.parse(JSON.stringify(b)),
+              id: cryptoRandomId(),
+            });
           }
         });
         return { ...c, blocks };
@@ -164,7 +158,10 @@ export default {
     onRemoveBlock(ci, blockId) {
       const columns = this.block.columns.map((c, idx) => {
         if (idx !== ci) return c;
-        return { ...c, blocks: (c.blocks || []).filter((b) => b.id !== blockId) };
+        return {
+          ...c,
+          blocks: (c.blocks || []).filter((b) => b.id !== blockId),
+        };
       });
       this.$emit("update", { ...this.block, columns });
     },

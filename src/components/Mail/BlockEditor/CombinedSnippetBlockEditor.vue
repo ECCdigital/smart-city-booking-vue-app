@@ -8,8 +8,7 @@
           @add-row="onAddRow"
         />
         <div class="zone-hint text-caption grey--text mt-3 px-1">
-          Neue Bausteine landen im aktiven Bereich
-          (<strong>{{
+          Neue Bausteine landen im aktiven Bereich (<strong>{{
             activeZone === "intro" ? "Einleitung" : "Abschluss"
           }}</strong
           >). Klicke in einen Bereich, um ihn zu aktivieren.
@@ -207,7 +206,7 @@ export default {
           showSupportFooter: this.showSupportFooter,
           bookingPeriodFormat: this.bookingPeriodFormat,
         }) ||
-        "<p style=\"margin:0;color:#666;\">Buchungsdetails und weitere System-Inhalte</p>"
+        '<p style="margin:0;color:#666;">Buchungsdetails und weitere System-Inhalte</p>'
       );
     },
     selectedBlock() {

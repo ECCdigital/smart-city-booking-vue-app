@@ -18,11 +18,7 @@
       <p class="grey--text">Noch keine Buchungen generiert.</p>
     </div>
 
-    <v-list
-      v-else
-      dense
-      class="booking-list pa-0"
-    >
+    <v-list v-else dense class="booking-list pa-0">
       <template v-for="(attempt, index) in bookingAttempts">
         <v-list-item
           :key="'attempt-' + index"
@@ -34,23 +30,13 @@
           class="booking-item"
         >
           <v-list-item-icon class="mr-2 my-auto">
-            <v-icon
-              v-if="attempt.valid === true"
-              color="success"
-              small
-            >
+            <v-icon v-if="attempt.valid === true" color="success" small>
               mdi-check-circle
             </v-icon>
-            <v-icon
-              v-else-if="attempt.valid === false"
-              color="error"
-              small
-            >
+            <v-icon v-else-if="attempt.valid === false" color="error" small>
               mdi-alert-circle
             </v-icon>
-            <v-icon v-else color="grey" small>
-              mdi-clock-outline
-            </v-icon>
+            <v-icon v-else color="grey" small> mdi-clock-outline </v-icon>
           </v-list-item-icon>
 
           <v-list-item-content class="py-1">
@@ -65,10 +51,7 @@
               v-if="attempt.valid === false && attempt.error"
               class="text-caption error--text"
             >
-              <span
-                v-for="(err, idx) in attempt.error"
-                :key="idx"
-              >
+              <span v-for="(err, idx) in attempt.error" :key="idx">
                 {{ err }}
               </span>
             </v-list-item-subtitle>
@@ -81,11 +64,7 @@
             >
               {{ attempt.userPriceEur | currency }}
             </span>
-            <v-btn
-              icon
-              x-small
-              @click="$emit('remove-booking-attempt', index)"
-            >
+            <v-btn icon x-small @click="$emit('remove-booking-attempt', index)">
               <v-icon small>mdi-close</v-icon>
             </v-btn>
           </v-list-item-action>
@@ -116,10 +95,7 @@
             <v-list-item-title class="text-body-2">
               {{ item.bookable?.title || item.bookableId }}
             </v-list-item-title>
-            <v-list-item-subtitle
-              v-if="item.mandatory"
-              class="text-caption"
-            >
+            <v-list-item-subtitle v-if="item.mandatory" class="text-caption">
               Pflicht
             </v-list-item-subtitle>
           </v-list-item-content>

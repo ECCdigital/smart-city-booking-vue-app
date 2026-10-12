@@ -289,13 +289,9 @@
           @change="(v) => onUpdate('fullWidth', !!v)"
         />
 
-        <v-alert
-          type="info"
-          text
-          dense
-          class="mt-2 text-caption"
-        >
-          Hinweis: Zahlungs- und Stornierungs-Buttons werden vom Server automatisch eingefügt.
+        <v-alert type="info" text dense class="mt-2 text-caption">
+          Hinweis: Zahlungs- und Stornierungs-Buttons werden vom Server
+          automatisch eingefügt.
         </v-alert>
       </div>
 
@@ -321,7 +317,10 @@
           @change="(v) => onUpdate('thickness', Number(v))"
         />
         <v-select
-          :items="[{text:'durchgezogen',value:'solid'},{text:'gestrichelt',value:'dashed'}]"
+          :items="[
+            { text: 'durchgezogen', value: 'solid' },
+            { text: 'gestrichelt', value: 'dashed' },
+          ]"
           label="Stil"
           :value="selectedBlock.style || 'solid'"
           dense
@@ -437,10 +436,7 @@ import { BLOCK_PALETTE } from "./blockFactory.js";
 import MailtoLinkDialog from "./MailtoLinkDialog.vue";
 import MailVariableTextField from "@/components/Mail/MailVariableTextField.vue";
 import { SUPPORT_EMAIL_MAILTO } from "@/components/Mail/templateVariables.js";
-import {
-  FONT_SIZE_OPTIONS,
-  resolveFontSizePx,
-} from "./render/fontSize.js";
+import { FONT_SIZE_OPTIONS, resolveFontSizePx } from "./render/fontSize.js";
 
 export default {
   name: "BlockPropertiesPanel",

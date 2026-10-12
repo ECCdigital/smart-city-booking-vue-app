@@ -291,10 +291,10 @@ export default {
 
       merged.roleMapping.roles = Array.isArray(merged.roleMapping.roles)
         ? merged.roleMapping.roles.map((r) => ({
-          tenantId: r.tenantId ?? null,
-          keycloakRole: r.keycloakRole ?? "",
-          tenantRoleId: r.tenantRoleId ?? null,
-        }))
+            tenantId: r.tenantId ?? null,
+            keycloakRole: r.keycloakRole ?? "",
+            tenantRoleId: r.tenantRoleId ?? null,
+          }))
         : [];
 
       return merged;

@@ -324,8 +324,7 @@ export default {
       return (
         this.loadingRefundPreview ||
         this.refundPreviewError ||
-        (this.refundPreview &&
-          Number(this.refundPreview.originalAmountEur) > 0)
+        (this.refundPreview && Number(this.refundPreview.originalAmountEur) > 0)
       );
     },
     refundPolicySummary() {
@@ -528,8 +527,8 @@ export default {
         const data = bookingStatusResponse && bookingStatusResponse.data;
         const status = Array.isArray(data)
           ? data.find(
-            (entry) => entry && entry.bookingId === this.bookingNumber
-          ) || data[0]
+              (entry) => entry && entry.bookingId === this.bookingNumber
+            ) || data[0]
           : data;
         if (!status) {
           this.statusError = true;

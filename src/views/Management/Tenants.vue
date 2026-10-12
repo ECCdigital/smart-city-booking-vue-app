@@ -1,7 +1,7 @@
 <template>
   <AdminLayout>
-    <TenantOverview/>
-      <!--
+    <TenantOverview />
+    <!--
       <DeleteConformationDialog
       :open="openDeleteDialog"
       :toDelete="selectedTenant"
@@ -13,7 +13,8 @@
 
 <script>
 import AdminLayout from "@/layouts/Admin.vue";
-import { mapActions, mapGetters } from "vuex";import TenantOverview from "@/components/Tenant/TenantOverview.vue";
+import { mapActions, mapGetters } from "vuex";
+import TenantOverview from "@/components/Tenant/TenantOverview.vue";
 
 export default {
   components: {

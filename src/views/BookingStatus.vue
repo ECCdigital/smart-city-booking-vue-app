@@ -218,12 +218,7 @@
             Bezahlt
           </v-chip>
 
-          <v-chip
-            class="ma-2"
-            color="orange"
-            text-color="white"
-            v-else
-          >
+          <v-chip class="ma-2" color="orange" text-color="white" v-else>
             <v-icon left>mdi-cash</v-icon>
             Zahlung ausstehend
           </v-chip>

@@ -6,21 +6,21 @@ Default Admin installs stay on **Direct** mode (no BFF). Use this guide only whe
 
 ## Requirements
 
-| Piece | Role |
-|-------|------|
-| Same site origin | e.g. `https://example.com` for both UIs |
-| Storefront | Nitro BFF under `/api` (existing) |
-| Admin UI | Built with `VUE_APP_AUTH_MODE=bff`, served under `/admin` |
-| Admin BFF | Node process, exposed as `/admin/api` |
-| Backend API | Bearer-only (unchanged) |
+| Piece            | Role                                                      |
+| ---------------- | --------------------------------------------------------- |
+| Same site origin | e.g. `https://example.com` for both UIs                   |
+| Storefront       | Nitro BFF under `/api` (existing)                         |
+| Admin UI         | Built with `VUE_APP_AUTH_MODE=bff`, served under `/admin` |
+| Admin BFF        | Node process, exposed as `/admin/api`                     |
+| Backend API      | Bearer-only (unchanged)                                   |
 
 Cookies (both BFFs must match):
 
-| Name | httpOnly | path | sameSite | secure (prod) | maxAge |
-|------|----------|------|----------|---------------|--------|
-| `access-token` | yes | `/` | `lax` | yes | 1 day |
-| `refresh-token` | yes | `/` | `lax` | yes | 7 days |
-| `auth-type` | no | `/` | `lax` | yes | 7 days (`keycloak` only; omitted for local/card) |
+| Name            | httpOnly | path | sameSite | secure (prod) | maxAge                                           |
+| --------------- | -------- | ---- | -------- | ------------- | ------------------------------------------------ |
+| `access-token`  | yes      | `/`  | `lax`    | yes           | 1 day                                            |
+| `refresh-token` | yes      | `/`  | `lax`    | yes           | 7 days                                           |
+| `auth-type`     | no       | `/`  | `lax`    | yes           | 7 days (`keycloak` only; omitted for local/card) |
 
 Source of truth in this repo: `bff/src/cookieContract.js`.
 
@@ -88,13 +88,13 @@ PUBLIC_ORIGIN=https://example.com
 
 ### Multi-URL / `PUBLIC_ORIGIN` allowlist
 
-- Comma-separated origins; `PUBLIC_ORIGIN` and `PUBLIC_ORIGINS` are **merged** (not overridden).
-- Request host (via `X-Forwarded-Host` / `Host` + `X-Forwarded-Proto`) must be on the allowlist; SSO `redirect_uri` follows that host and is stored in the PKCE session for the callback.
-- Edge must set `Host` / `X-Forwarded-Host` and `X-Forwarded-Proto` (see nginx sketch above). Expose the BFF **only** through the edge.
-- Behind TLS termination (Coolify/Traefik → container `:80`), the embedded nginx keeps edge `X-Forwarded-Proto`/`Host`. The BFF also maps an allowlisted hostname even if the derived scheme is still `http`.
-- IDN: use Unicode **or** Punycode consistently in env values.
-- Sessions are **per hostname** (host-only cookies). No shared login across unrelated domains.
-- **Storefront:** if the Storefront BFF still has a single fixed `PUBLIC_ORIGIN`, shared session on additional hostnames needs a follow-up in that repo.
+-   Comma-separated origins; `PUBLIC_ORIGIN` and `PUBLIC_ORIGINS` are **merged** (not overridden).
+-   Request host (via `X-Forwarded-Host` / `Host` + `X-Forwarded-Proto`) must be on the allowlist; SSO `redirect_uri` follows that host and is stored in the PKCE session for the callback.
+-   Edge must set `Host` / `X-Forwarded-Host` and `X-Forwarded-Proto` (see nginx sketch above). Expose the BFF **only** through the edge.
+-   Behind TLS termination (Coolify/Traefik → container `:80`), the embedded nginx keeps edge `X-Forwarded-Proto`/`Host`. The BFF also maps an allowlisted hostname even if the derived scheme is still `http`.
+-   IDN: use Unicode **or** Punycode consistently in env values.
+-   Sessions are **per hostname** (host-only cookies). No shared login across unrelated domains.
+-   **Storefront:** if the Storefront BFF still has a single fixed `PUBLIC_ORIGIN`, shared session on additional hostnames needs a follow-up in that repo.
 
 ### Keycloak (BFF SSO)
 
@@ -102,16 +102,16 @@ PUBLIC_ORIGIN=https://example.com
 
 ## Expected behaviour
 
-| Action | Result |
-|--------|--------|
-| Login in Storefront | Cookies set on `path=/` |
-| Open `/admin` or `/admin/login` | Admin BFF `/auth/me` succeeds → no password again |
-| Login in Admin (BFF) | Same cookies → Storefront `/api/auth/me` succeeds |
-| Logout in Admin (local) | Clears `access-token`, `refresh-token`, `auth-type`; broadcasts `session-ended` |
-| Logout in Admin (Keycloak) | Back-channel revoke + clear cookies + browser IdP logout URL + broadcast |
-| Logout in Storefront | Clears the same cookies + broadcast; other app drops client session |
-| Dead session in Admin (no cookie / refresh fail) | Clear Vuex user → redirect `/admin/login` |
-| Dead session in Storefront | Clear Pinia user; redirect `/login` only on `/account/*` |
+| Action                                           | Result                                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Login in Storefront                              | Cookies set on `path=/`                                                         |
+| Open `/admin` or `/admin/login`                  | Admin BFF `/auth/me` succeeds → no password again                               |
+| Login in Admin (BFF)                             | Same cookies → Storefront `/api/auth/me` succeeds                               |
+| Logout in Admin (local)                          | Clears `access-token`, `refresh-token`, `auth-type`; broadcasts `session-ended` |
+| Logout in Admin (Keycloak)                       | Back-channel revoke + clear cookies + browser IdP logout URL + broadcast        |
+| Logout in Storefront                             | Clears the same cookies + broadcast; other app drops client session             |
+| Dead session in Admin (no cookie / refresh fail) | Clear Vuex user → redirect `/admin/login`                                       |
+| Dead session in Storefront                       | Clear Pinia user; redirect `/login` only on `/account/*`                        |
 
 ## Local notes
 

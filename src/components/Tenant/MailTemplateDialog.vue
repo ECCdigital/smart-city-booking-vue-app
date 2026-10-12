@@ -19,7 +19,8 @@
       <v-card-subtitle>
         <div class="mt-2 info--text">
           <v-icon color="info" small>mdi-information-outline</v-icon>
-          Das Layout-Template umschließt jede E-Mail mit Logo, Kopf- und Fußzeile.
+          Das Layout-Template umschließt jede E-Mail mit Logo, Kopf- und
+          Fußzeile.
         </div>
       </v-card-subtitle>
       <v-card-text>
@@ -58,7 +59,13 @@
           </v-tab-item>
 
           <v-tab-item :transition="false">
-            <v-alert v-if="mode !== 'expert'" type="warning" text dense class="mb-2">
+            <v-alert
+              v-if="mode !== 'expert'"
+              type="warning"
+              text
+              dense
+              class="mb-2"
+            >
               Im Experten-Modus wird das Wizard-Modell überschrieben.
             </v-alert>
             <HTMLTemplateEditor
@@ -83,9 +90,7 @@
 <script>
 import HTMLTemplateEditor from "@/components/HTMLTemplateEditor.vue";
 import ThemeWizardForm from "@/components/Mail/ThemeWizard/ThemeWizardForm.vue";
-import {
-  renderThemeToHtml,
-} from "@/components/Mail/ThemeWizard/render/renderThemeToHtml.js";
+import { renderThemeToHtml } from "@/components/Mail/ThemeWizard/render/renderThemeToHtml.js";
 import {
   extractThemeMetadata,
   embedThemeMetadata,
@@ -109,7 +114,7 @@ export default {
       wizardConfirmed: false,
       mailVariables: GENERIC_MAIL_VARIABLES,
       defaultTemplate:
-        "<!DOCTYPE html>\n<html lang=\"de\">\n  <head>\n    <style>\n      .content {\n        text-align: left;\n        background-color: white;\n        border: 1px solid grey;\n        padding: 10px 40px;\n        border-radius: 2px;\n        margin: auto;\n        max-width: 750px;\n      }\n\n      body {\n        align-content: center;\n      }\n\n      .layer {\n        text-align: center;\n      }\n    </style>\n    <meta charset=\"UTF-8\" />\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>{{ title }}</title>\n  </head>\n\n  <body>\n    <div class=\"layer\">\n      <div class=\"content\">\n        <h1>{{ title }}</h1>\n        <p>{{{ content }}}</p>\n      </div>\n    </div>\n  </body>\n  <footer class=\"footer\"></footer>\n</html>",
+        '<!DOCTYPE html>\n<html lang="de">\n  <head>\n    <style>\n      .content {\n        text-align: left;\n        background-color: white;\n        border: 1px solid grey;\n        padding: 10px 40px;\n        border-radius: 2px;\n        margin: auto;\n        max-width: 750px;\n      }\n\n      body {\n        align-content: center;\n      }\n\n      .layer {\n        text-align: center;\n      }\n    </style>\n    <meta charset="UTF-8" />\n    <meta http-equiv="X-UA-Compatible" content="IE=edge" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>{{ title }}</title>\n  </head>\n\n  <body>\n    <div class="layer">\n      <div class="content">\n        <h1>{{ title }}</h1>\n        <p>{{{ content }}}</p>\n      </div>\n    </div>\n  </body>\n  <footer class="footer"></footer>\n</html>',
     };
   },
   computed: {

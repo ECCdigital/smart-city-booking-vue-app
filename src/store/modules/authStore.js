@@ -8,7 +8,8 @@ const state = {
 const mutations = {
   SET_NEXT_URL(state, nextUrl) {
     state.nextUrl = nextUrl;
-    const existingData = PersistenceService.getFromLocalStorage("authStore") || {};
+    const existingData =
+      PersistenceService.getFromLocalStorage("authStore") || {};
     existingData.nextUrl = nextUrl;
     PersistenceService.writeToLocalStorage("authStore", existingData);
   },
@@ -20,7 +21,7 @@ const actions = {
   },
   getNextUrl({ state }) {
     return state.nextUrl;
-  }
+  },
 };
 
 const getters = {

@@ -87,5 +87,4 @@ export default {
       withCredentials: true,
     });
   },
-
 };

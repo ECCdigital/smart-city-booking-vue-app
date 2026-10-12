@@ -22,9 +22,7 @@ export default {
         ],
         weblink: [
           (v) =>
-            !v ||
-            /https?:\/\/([a-z\.A-Z\-]+)\/.*/g.test(v) ||
-            "Ungültige URL.",
+            !v || /https?:\/\/([a-z\.A-Z\-]+)\/.*/g.test(v) || "Ungültige URL.",
         ],
       },
     };
@@ -85,7 +83,6 @@ export default {
         </v-col>
       </v-row>
     </v-form>
-
   </BaseSection>
 </template>
 

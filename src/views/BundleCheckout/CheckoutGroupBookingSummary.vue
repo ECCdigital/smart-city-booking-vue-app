@@ -155,12 +155,12 @@
     </v-card-text>
 
     <v-alert
-        v-if="couponError"
-        type="error"
-        border="left"
-        class="mt-5"
-        elevation="2"
-        icon="mdi-alert-circle"
+      v-if="couponError"
+      type="error"
+      border="left"
+      class="mt-5"
+      elevation="2"
+      icon="mdi-alert-circle"
     >
       <template v-slot:default>
         {{ couponError }}

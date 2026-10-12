@@ -30,7 +30,12 @@
 
     <div v-if="subsequentItems.length > 0" class="mb-6">
       <h3 class="mb-2">Ausgewählte Ergänzungen</h3>
-      <v-card outlined class="mb-2 rounded-sm" v-for="item in subsequentItems" :key="'selected-' + item.bookableId">
+      <v-card
+        outlined
+        class="mb-2 rounded-sm"
+        v-for="item in subsequentItems"
+        :key="'selected-' + item.bookableId"
+      >
         <v-card-text class="d-flex align-center py-2">
           <div class="flex-grow-1">
             <strong>{{ item.bookable?.title || item.bookableId }}</strong>
@@ -54,13 +59,22 @@
       </v-card>
     </div>
 
-    <v-divider v-if="subsequentItems.length > 0 && selectableItems.length > 0" class="mb-6"></v-divider>
+    <v-divider
+      v-if="subsequentItems.length > 0 && selectableItems.length > 0"
+      class="mb-6"
+    ></v-divider>
 
-    <p class="font-italic mt-4" v-if="selectableItems.length === 0 && subsequentItems.length === 0">
+    <p
+      class="font-italic mt-4"
+      v-if="selectableItems.length === 0 && subsequentItems.length === 0"
+    >
       Derzeit gibt es keine weiteren Objekte, die zu Ihrer Buchung passen.
     </p>
 
-    <p class="font-italic mt-4" v-else-if="selectableItems.length === 0 && subsequentItems.length > 0">
+    <p
+      class="font-italic mt-4"
+      v-else-if="selectableItems.length === 0 && subsequentItems.length > 0"
+    >
       Alle verfügbaren Ergänzungen wurden bereits hinzugefügt.
     </p>
 
@@ -237,8 +251,7 @@ export default {
         return (
           item.bookable.id !== this.leadItem.bookable.id &&
           !this.subsequentItems.some(
-            (subsequentItem) =>
-              subsequentItem.bookableId === item.bookable.id
+            (subsequentItem) => subsequentItem.bookableId === item.bookable.id
           )
         );
       });

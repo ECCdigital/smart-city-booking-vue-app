@@ -4,7 +4,13 @@
       <v-card-title class="calendar-header py-2" :style="headerStyle">
         <v-row align="center" class="ma-0">
           <v-col class="col-auto py-0">
-            <v-btn icon small :color="textColor" @click="previousMonth" :disabled="loading">
+            <v-btn
+              icon
+              small
+              :color="textColor"
+              @click="previousMonth"
+              :disabled="loading"
+            >
               <v-icon>mdi-chevron-left</v-icon>
             </v-btn>
           </v-col>
@@ -18,7 +24,13 @@
             </h3>
           </v-col>
           <v-col class="col-auto py-0 text-right">
-            <v-btn icon small :color="textColor" @click="nextMonth" :disabled="loading">
+            <v-btn
+              icon
+              small
+              :color="textColor"
+              @click="nextMonth"
+              :disabled="loading"
+            >
               <v-icon>mdi-chevron-right</v-icon>
             </v-btn>
           </v-col>
@@ -33,16 +45,14 @@
       />
     </v-card>
 
-    <v-card
-      v-if="fetchError && !loading"
-      elevation="1"
-      class="error-card"
-    >
+    <v-card v-if="fetchError && !loading" elevation="1" class="error-card">
       <v-card-text class="text-center py-6">
         <v-icon size="48" color="error" class="mb-3">
           mdi-alert-circle-outline
         </v-icon>
-        <div class="text-subtitle-1 mb-1">Zeiträume konnten nicht geladen werden</div>
+        <div class="text-subtitle-1 mb-1">
+          Zeiträume konnten nicht geladen werden
+        </div>
         <div class="text-body-2 grey--text text--darken-1 mb-4">
           Bitte versuchen Sie es erneut.
         </div>
@@ -52,7 +62,11 @@
       </v-card-text>
     </v-card>
 
-    <v-card v-else-if="loading && blockPeriodInstances.length === 0" elevation="1" class="loading-card">
+    <v-card
+      v-else-if="loading && blockPeriodInstances.length === 0"
+      elevation="1"
+      class="loading-card"
+    >
       <v-card-text class="text-center py-6">
         <v-progress-circular
           indeterminate
@@ -85,7 +99,11 @@
         <v-icon left :color="primaryColor" small>mdi-calendar-sync</v-icon>
         <span class="text-subtitle-1">Verfügbare Zeiträume</span>
         <v-spacer />
-        <v-chip x-small :color="availableCount > 0 ? 'success' : 'warning'" text-color="white">
+        <v-chip
+          x-small
+          :color="availableCount > 0 ? 'success' : 'warning'"
+          text-color="white"
+        >
           {{ availableCount }} verfügbar
         </v-chip>
       </v-card-title>
@@ -123,7 +141,9 @@
                       class="text-subtitle-2 font-weight-bold mt-1 block-period-card__range"
                       :style="{ color: cardMainColor(instance) }"
                     >
-                      {{ formatCompactRange(instance.timeBegin, instance.timeEnd) }}
+                      {{
+                        formatCompactRange(instance.timeBegin, instance.timeEnd)
+                      }}
                     </div>
                     <div
                       class="text-caption mt-1"
@@ -278,14 +298,28 @@ export default {
       this.$emit("input", instance);
     },
     previousMonth() {
-      const date = new Date(this.displayedMonth.year, this.displayedMonth.month, 1);
+      const date = new Date(
+        this.displayedMonth.year,
+        this.displayedMonth.month,
+        1
+      );
       date.setMonth(date.getMonth() - 1);
-      this.displayedMonth = { year: date.getFullYear(), month: date.getMonth() };
+      this.displayedMonth = {
+        year: date.getFullYear(),
+        month: date.getMonth(),
+      };
     },
     nextMonth() {
-      const date = new Date(this.displayedMonth.year, this.displayedMonth.month, 1);
+      const date = new Date(
+        this.displayedMonth.year,
+        this.displayedMonth.month,
+        1
+      );
       date.setMonth(date.getMonth() + 1);
-      this.displayedMonth = { year: date.getFullYear(), month: date.getMonth() };
+      this.displayedMonth = {
+        year: date.getFullYear(),
+        month: date.getMonth(),
+      };
     },
     async fetchBlockPeriods() {
       const bookable = this.leadItem?.bookable;
@@ -379,7 +413,9 @@ export default {
         month: "2-digit",
       });
 
-      return `${beginPart} ${this.formatTime(begin)} – ${endPart} ${this.formatTime(end)}`;
+      return `${beginPart} ${this.formatTime(
+        begin
+      )} – ${endPart} ${this.formatTime(end)}`;
     },
     formatCurrency(value) {
       return checkoutUtils.formatCurrency(value);
@@ -400,9 +436,7 @@ export default {
       if (!this.isSelectable(instance)) {
         return "rgba(0,0,0,0.38)";
       }
-      return this.isSelected(instance)
-        ? this.textColor
-        : "rgba(0,0,0,0.6)";
+      return this.isSelected(instance) ? this.textColor : "rgba(0,0,0,0.6)";
     },
     toDateString(date) {
       const y = date.getFullYear();

@@ -11,7 +11,9 @@
       <v-col cols="12" md="6" class="px-md-2">
         <div class="editor-canvas">
           <div v-if="!blocks.length" class="canvas-empty">
-            <v-icon large color="grey lighten-1">mdi-view-grid-plus-outline</v-icon>
+            <v-icon large color="grey lighten-1"
+              >mdi-view-grid-plus-outline</v-icon
+            >
             <div class="grey--text mt-2">
               Wähle links eine Reihe oder einen Baustein.
             </div>
@@ -52,13 +54,7 @@
       </v-col>
     </v-row>
 
-    <v-alert
-      v-if="overSize"
-      type="warning"
-      text
-      dense
-      class="mt-3"
-    >
+    <v-alert v-if="overSize" type="warning" text dense class="mt-3">
       Diese Vorlage ist sehr groß ({{ Math.round(currentSizeBytes / 1024) }} KB
       von max. 50 KB). Reduziere Inhalte, um Speicherprobleme zu vermeiden.
     </v-alert>
@@ -71,7 +67,10 @@ import BlockPalette from "./BlockPalette.vue";
 import BlockPropertiesPanel from "./BlockPropertiesPanel.vue";
 import RowBlock from "./blocks/RowBlock.vue";
 import { createBlock, createRow } from "./blockFactory.js";
-import { renderBlocksToHtml, cryptoRandomId } from "./render/renderBlocksToHtml.js";
+import {
+  renderBlocksToHtml,
+  cryptoRandomId,
+} from "./render/renderBlocksToHtml.js";
 import {
   MAX_SNIPPET_SIZE_BYTES,
   SOFT_WARN_SIZE_BYTES,
@@ -120,9 +119,7 @@ export default {
     value: {
       immediate: true,
       handler(newVal) {
-        if (
-          JSON.stringify(newVal || []) === JSON.stringify(this.blocks)
-        ) {
+        if (JSON.stringify(newVal || []) === JSON.stringify(this.blocks)) {
           return;
         }
         this.blocks = JSON.parse(JSON.stringify(newVal || []));
@@ -175,9 +172,7 @@ export default {
           idx === colIdx ? { ...c, blocks: [...(c.blocks || []), block] } : c
         ),
       };
-      this.blocks = this.blocks.map((b) =>
-        b.id === targetRowId ? newRow : b
-      );
+      this.blocks = this.blocks.map((b) => (b.id === targetRowId ? newRow : b));
       this.selectedId = targetRowId;
       this.selectedChildId = block.id;
     },

@@ -36,8 +36,7 @@ function enrichBooking(booking, items, { includePayment = false } = {}) {
 function enrichBookings(bookings = []) {
   return bookings.map((row) => ({
     ...row,
-    summaryItems:
-      row.summaryItems || buildSummaryItems(row.items || []),
+    summaryItems: row.summaryItems || buildSummaryItems(row.items || []),
   }));
 }
 
@@ -49,7 +48,7 @@ export function buildPdfPreviewSampleData(
   templateType,
   layout,
   Handlebars,
-  pdfBookingTableMeta = null,
+  pdfBookingTableMeta = null
 ) {
   const base = SAMPLE_DATA[templateType];
   if (!base || !Handlebars) {
@@ -63,7 +62,7 @@ export function buildPdfPreviewSampleData(
   });
   const bookings = enrichBookings(base.bookings);
   const tableMeta = resolveBookingTableMeta(
-    pdfBookingTableMeta ? { pdfBookingTableMeta } : null,
+    pdfBookingTableMeta ? { pdfBookingTableMeta } : null
   );
 
   const tablePayload = {

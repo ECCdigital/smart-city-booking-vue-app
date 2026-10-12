@@ -1,15 +1,14 @@
 <template>
-  <div class='content'>
+  <div class="content">
     <v-container fluid>
       <h1 class="title mb-2">{{ this.$route.meta.title }}</h1>
-      <slot/>
+      <slot />
     </v-container>
   </div>
 </template>
 
 <script>
-export default {}
+export default {};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

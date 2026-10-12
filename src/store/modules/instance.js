@@ -25,7 +25,7 @@ const actions = {
   },
   reset({ commit }) {
     commit("DELETE");
-  }
+  },
 };
 
 const getters = {

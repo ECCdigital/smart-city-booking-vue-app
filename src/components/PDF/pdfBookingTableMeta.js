@@ -6,7 +6,7 @@ export const DEFAULT_PDF_BOOKING_TABLE_META = {
 };
 
 export const PDF_BOOKING_TABLE_META_KEYS = Object.keys(
-  DEFAULT_PDF_BOOKING_TABLE_META,
+  DEFAULT_PDF_BOOKING_TABLE_META
 );
 
 /**
@@ -18,7 +18,11 @@ export function resolveBookingTableMeta(tenant, override = null) {
   const meta = { ...DEFAULT_PDF_BOOKING_TABLE_META };
 
   const tenantMeta = tenant?.pdfBookingTableMeta;
-  if (tenantMeta && typeof tenantMeta === "object" && !Array.isArray(tenantMeta)) {
+  if (
+    tenantMeta &&
+    typeof tenantMeta === "object" &&
+    !Array.isArray(tenantMeta)
+  ) {
     for (const key of PDF_BOOKING_TABLE_META_KEYS) {
       if (typeof tenantMeta[key] === "boolean") {
         meta[key] = tenantMeta[key];
@@ -64,8 +68,14 @@ export function enrichBookingTableMeta(tableMeta) {
     aggregatedMetaColumnCount,
     aggregatedReceiptColumnCount: Math.max(aggregatedReceiptColumnCount, 1),
     aggregatedInvoiceColumnCount: Math.max(aggregatedInvoiceColumnCount, 1),
-    aggregatedReceiptLabelColspan: Math.max(aggregatedReceiptColumnCount - 1, 0),
-    aggregatedInvoiceLabelColspan: Math.max(aggregatedInvoiceColumnCount - 1, 0),
+    aggregatedReceiptLabelColspan: Math.max(
+      aggregatedReceiptColumnCount - 1,
+      0
+    ),
+    aggregatedInvoiceLabelColspan: Math.max(
+      aggregatedInvoiceColumnCount - 1,
+      0
+    ),
     showAggregatedPaymentColumn: showPaymentInTable,
   };
 }

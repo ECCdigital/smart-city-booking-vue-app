@@ -829,23 +829,23 @@ export default {
       }
 
       switch (paymentProvider) {
-      case "giroCockpit":
-      case "pmPayment":
-      case "ePayBL": {
-        const paymentUrl = paymentData[0]?.url;
-        if (paymentUrl) {
-          window.location.href = paymentUrl;
-        } else {
-          await this.routeToStatus(groupBooking.bookingIds, paymentProvider);
+        case "giroCockpit":
+        case "pmPayment":
+        case "ePayBL": {
+          const paymentUrl = paymentData[0]?.url;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          } else {
+            await this.routeToStatus(groupBooking.bookingIds, paymentProvider);
+          }
+          break;
         }
-        break;
-      }
-      case "invoice":
-        await this.routeToStatus(groupBooking.bookingIds, paymentProvider);
-        break;
-      default:
-        await this.routeToStatus(groupBooking.bookingIds);
-        break;
+        case "invoice":
+          await this.routeToStatus(groupBooking.bookingIds, paymentProvider);
+          break;
+        default:
+          await this.routeToStatus(groupBooking.bookingIds);
+          break;
       }
     },
 

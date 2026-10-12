@@ -1,6 +1,15 @@
 class Booking {
-
-  constructor(id, tenant, bookableId, assignedUserId, mail, comment, timeBegin, timeEnd, timeCreated) {
+  constructor(
+    id,
+    tenant,
+    bookableId,
+    assignedUserId,
+    mail,
+    comment,
+    timeBegin,
+    timeEnd,
+    timeCreated
+  ) {
     this.id = id;
     this.tenant = tenant;
     this.bookableId = bookableId;
@@ -9,7 +18,7 @@ class Booking {
     this.comment = comment;
     this.timeBegin = timeBegin;
     this.timeEnd = timeEnd;
-    this.timeCreated = timeCreated
+    this.timeCreated = timeCreated;
   }
 }
 

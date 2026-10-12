@@ -100,10 +100,7 @@ export default {
       if (original <= 0) return 0;
       return Math.min(
         100,
-        Math.max(
-          0,
-          Math.round((Number(this.refundAmountEur) / original) * 100)
-        )
+        Math.max(0, Math.round((Number(this.refundAmountEur) / original) * 100))
       );
     },
     feeSharePercent() {

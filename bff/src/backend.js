@@ -14,7 +14,11 @@ class BackendUnreachableError extends Error {
 /**
  * fetch with AbortController timeout. Aborts become BackendUnreachableError.
  */
-async function fetchWithTimeout(url, options = {}, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS) {
+async function fetchWithTimeout(
+  url,
+  options = {},
+  timeoutMs = DEFAULT_FETCH_TIMEOUT_MS
+) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -56,7 +60,10 @@ async function backendFetch(path, options = {}) {
     });
   } catch (error) {
     if (error instanceof BackendUnreachableError) {
-      console.error(`BFF → API failed (${url}):`, error.cause?.message || error.message);
+      console.error(
+        `BFF → API failed (${url}):`,
+        error.cause?.message || error.message
+      );
       throw error;
     }
     console.error(`BFF → API failed (${url}):`, error.message);

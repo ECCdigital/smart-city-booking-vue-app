@@ -128,7 +128,9 @@ export default {
         navigation: "Navigation",
         searchbar: "Suchleiste",
       };
-      return map[this.field.usageOptions?.catalogFilterPosition] || "Seitenleiste";
+      return (
+        map[this.field.usageOptions?.catalogFilterPosition] || "Seitenleiste"
+      );
     },
     detailPosition() {
       return this.field.usageOptions?.detailDisplayPosition || "none";

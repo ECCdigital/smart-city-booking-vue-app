@@ -26,7 +26,8 @@ export function sampleBookingPeriod(format) {
 }
 
 const STYLES = {
-  section: "margin-top:16px; font-family:inherit; color:#222222; font-size:16px; line-height:1.5;",
+  section:
+    "margin-top:16px; font-family:inherit; color:#222222; font-size:16px; line-height:1.5;",
   hint: "background:#fff4e5; border-left:4px solid #ed6c02; color:#7a3c00; padding:10px 14px; border-radius:2px; margin-bottom:16px;",
   details: "margin:12px 0;",
   contact: "margin:12px 0;",
@@ -124,7 +125,7 @@ function buttonsBlock({ showPayment, showStorno }) {
 
 function systemFooterBlock() {
   return (
-    "<p style=\"margin-top:18px; color:#555555; font-size:14px;\">" +
+    '<p style="margin-top:18px; color:#555555; font-size:14px;">' +
     "Fragen? Kontaktieren Sie uns unter " +
     `<a href="mailto:support@beispiel.de" style="${STYLES.link}">support@beispiel.de</a>.` +
     "</p>"

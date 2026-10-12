@@ -3,13 +3,11 @@ import store from "@/store";
 
 class BookablePermissionService {
   static isOwner(bookable) {
-    return (
-      bookable.ownerUserId === user.state.data.user.id
-    );
+    return bookable.ownerUserId === user.state.data.user.id;
   }
 
   static isInstanceOwner() {
-    return user.state.data.permissions.instanceOwner
+    return user.state.data.permissions.instanceOwner;
   }
 
   static allowCreate() {
@@ -19,7 +17,7 @@ class BookablePermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return permissions.manageBookables.create;
   }
@@ -31,7 +29,7 @@ class BookablePermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return (
       permissions.manageBookables.updateAny ||
@@ -47,7 +45,7 @@ class BookablePermissionService {
       (p) => p.tenantId === tenantId
     );
     if (!permissions) return false;
-    if(permissions.isOwner) return true;
+    if (permissions.isOwner) return true;
 
     return (
       permissions.manageBookables.deleteAny ||

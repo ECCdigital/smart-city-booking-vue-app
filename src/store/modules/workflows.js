@@ -3,7 +3,7 @@ const namespaced = true;
 
 const state = {
   data: PersistenceService.getFromLocalStorage("workflows") || null,
-}
+};
 
 const mutations = {
   UPDATE(state, workflows) {
@@ -14,7 +14,7 @@ const mutations = {
     state.data = null;
     PersistenceService.removeFromLocalStorage("workflows");
   },
-}
+};
 
 const actions = {
   update({ commit }, workflows) {
@@ -25,12 +25,12 @@ const actions = {
   },
   reset({ commit }) {
     commit("DELETE");
-  }
-}
+  },
+};
 
 const getters = {
   workflows: (state) => state.data,
-}
+};
 
 export default {
   state,

@@ -5,11 +5,7 @@ const { bffPublicPath, spaBasePath, publicOrigins } = require("./config");
  * Always takes the first value of comma-separated X-Forwarded-* lists.
  */
 function deriveOrigin(req) {
-  const proto = (
-    req.headers["x-forwarded-proto"] ||
-    req.protocol ||
-    "http"
-  )
+  const proto = (req.headers["x-forwarded-proto"] || req.protocol || "http")
     .toString()
     .split(",")[0]
     .trim();

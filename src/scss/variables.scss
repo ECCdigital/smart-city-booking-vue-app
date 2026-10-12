@@ -1,5 +1,5 @@
-$body-font-family: 'Work Sans', sans-serif;
-$heading-font-family: 'Work Sans', sans-serif;
+$body-font-family: "Work Sans", sans-serif;
+$heading-font-family: "Work Sans", sans-serif;
 
 // The media library surfaces opt out of the card/dialog radius below — see
 // media-library.scss.
@@ -7,41 +7,40 @@ $card-border-radius: 25px !important;
 $btn-text-transform: capitalize !important;
 $dialog-border-radius: 25px !important;
 
-
 $headings: (
-    (
-      'h1': (
-        'size': 6rem,
-        'weight': 700,
-        'font-family': $heading-font-family,
-      ),
-      'h2': (
-        'size': 3.75rem,
-        'weight': 700,
-        'font-family': $heading-font-family,
-      ),
-      'h3': (
-        'size': 3rem,
-        'weight': 700,
-        'font-family': $heading-font-family,
-      ),
-      'h4': (
-        'size': 2.125rem,
-        'weight': 700,
-        'font-family': $heading-font-family,
-      ),
-      'h5': (
-        'size': 1.5rem,
-        'weight': 700,
-        'line-height': 2rem,
-        'letter-spacing': normal,
-        'font-family': $heading-font-family,
-        'text-transform': false
-      ),
-      'h6': (
-        'size': 1.25rem,
-        'weight': 700,
-        'font-family': $heading-font-family,
-      )
-    )
+  (
+    "h1": (
+      "size": 6rem,
+      "weight": 700,
+      "font-family": $heading-font-family,
+    ),
+    "h2": (
+      "size": 3.75rem,
+      "weight": 700,
+      "font-family": $heading-font-family,
+    ),
+    "h3": (
+      "size": 3rem,
+      "weight": 700,
+      "font-family": $heading-font-family,
+    ),
+    "h4": (
+      "size": 2.125rem,
+      "weight": 700,
+      "font-family": $heading-font-family,
+    ),
+    "h5": (
+      "size": 1.5rem,
+      "weight": 700,
+      "line-height": 2rem,
+      "letter-spacing": normal,
+      "font-family": $heading-font-family,
+      "text-transform": false,
+    ),
+    "h6": (
+      "size": 1.25rem,
+      "weight": 700,
+      "font-family": $heading-font-family,
+    ),
+  )
 );

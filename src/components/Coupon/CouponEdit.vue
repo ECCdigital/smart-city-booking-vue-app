@@ -8,9 +8,7 @@
               {{ coupon.id ? "mdi-pencil" : "mdi-plus-circle" }}
             </v-icon>
             <span class="text-h5 font-weight-bold">
-              {{
-                coupon.id ? "Rabatt bearbeiten" : "Neuen Rabatt erstellen"
-              }}
+              {{ coupon.id ? "Rabatt bearbeiten" : "Neuen Rabatt erstellen" }}
             </span>
           </div>
 
@@ -64,7 +62,7 @@
               <v-card-title class="section-header pa-4">
                 <v-icon class="mr-2">mdi-sale-outline</v-icon>
                 <span class="text-h6 font-weight-bold"
-                >Rabatt-Einstellungen</span
+                  >Rabatt-Einstellungen</span
                 >
               </v-card-title>
               <v-divider></v-divider>
@@ -95,9 +93,7 @@
                       label="Wert"
                       :rules="[rules.required]"
                       v-model="selectedCoupon.discount"
-                      :suffix="
-                        selectedCoupon.type === 'percentage' ? '%' : '€'
-                      "
+                      :suffix="selectedCoupon.type === 'percentage' ? '%' : '€'"
                     ></v-text-field>
                   </v-col>
                 </v-row>
@@ -108,7 +104,7 @@
               <v-card-title class="section-header pa-4">
                 <v-icon class="mr-2">mdi-calendar-range</v-icon>
                 <span class="text-h6 font-weight-bold"
-                >Gültigkeitszeitraum</span
+                  >Gültigkeitszeitraum</span
                 >
               </v-card-title>
               <v-divider></v-divider>
@@ -276,7 +272,11 @@
                         >
                           Löschen
                         </v-btn>
-                        <v-btn text color="primary" @click="validToModal = false">
+                        <v-btn
+                          text
+                          color="primary"
+                          @click="validToModal = false"
+                        >
                           Abbrechen
                         </v-btn>
                         <v-btn
@@ -561,7 +561,6 @@ export default {
   &::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 4px;
-
   }
 }
 
@@ -572,7 +571,6 @@ export default {
 
   &::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
-
   }
 }
 

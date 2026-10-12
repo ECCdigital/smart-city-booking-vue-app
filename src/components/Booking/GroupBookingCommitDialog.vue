@@ -43,7 +43,11 @@
           >
         </v-col>
         <v-col v-if="!seriesOnly" cols="auto">
-          <v-btn large color="primary" @click="commitSingleBooking" :loading="inProgress"
+          <v-btn
+            large
+            color="primary"
+            @click="commitSingleBooking"
+            :loading="inProgress"
             >Nur diese Buchung freigeben</v-btn
           >
         </v-col>

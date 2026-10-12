@@ -224,13 +224,18 @@ class BffAuthTransport {
 
   startSsoLogin(redirectPath) {
     const redirect = redirectPath || spaPath("/");
-    const url = `${getApiHttpBaseUrl()}/auth/sso/login?redirect=${encodeURIComponent(redirect)}`;
+    const url = `${getApiHttpBaseUrl()}/auth/sso/login?redirect=${encodeURIComponent(
+      redirect
+    )}`;
     window.location.href = url;
   }
 
   startSilentSso(redirectPath) {
-    const redirect = redirectPath || window.location.pathname + window.location.search;
-    const url = `${getApiHttpBaseUrl()}/auth/sso/silent-check?redirect=${encodeURIComponent(redirect)}`;
+    const redirect =
+      redirectPath || window.location.pathname + window.location.search;
+    const url = `${getApiHttpBaseUrl()}/auth/sso/silent-check?redirect=${encodeURIComponent(
+      redirect
+    )}`;
     window.location.href = url;
   }
 
@@ -267,7 +272,9 @@ class BffAuthTransport {
       ...this._ssoTicketParams(ticket),
     });
     if (!response.data?.success) {
-      const error = new Error(response.data?.message || "SSO confirmation failed");
+      const error = new Error(
+        response.data?.message || "SSO confirmation failed"
+      );
       error.response = response;
       throw error;
     }
@@ -281,7 +288,9 @@ class BffAuthTransport {
       ...this._ssoTicketParams(ticket),
     });
     if (!response.data?.success && response.status !== 201) {
-      const error = new Error(response.data?.message || "SSO registration failed");
+      const error = new Error(
+        response.data?.message || "SSO registration failed"
+      );
       error.response = response;
       throw error;
     }

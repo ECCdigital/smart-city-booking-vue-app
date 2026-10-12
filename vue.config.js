@@ -9,7 +9,9 @@ function readBffPort() {
       .readFileSync(envPath, "utf8")
       .split("\n")
       .map((line) => line.trim())
-      .find((line) => line && !line.startsWith("#") && line.startsWith("PORT="));
+      .find(
+        (line) => line && !line.startsWith("#") && line.startsWith("PORT=")
+      );
     if (!match) return null;
     const port = Number(match.slice("PORT=".length).trim());
     return Number.isFinite(port) && port > 0 ? port : null;
@@ -19,8 +21,7 @@ function readBffPort() {
 }
 
 const bffPort = readBffPort() || 3001;
-const bffDevTarget =
-  process.env.BFF_DEV_URL || `http://localhost:${bffPort}`;
+const bffDevTarget = process.env.BFF_DEV_URL || `http://localhost:${bffPort}`;
 
 function bffProxy(pathPrefix) {
   const escaped = pathPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

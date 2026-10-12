@@ -1,11 +1,8 @@
 <template>
   <v-row>
     <v-col cols="12">
-      <validation-observer
-        ref="observer"
-        v-slot="{ invalid }">
+      <validation-observer ref="observer" v-slot="{ invalid }">
         <v-container>
-
           <v-row class="pa-2">
             <v-col cols="12">
               <h4 class="title">Externe Buchung</h4>
@@ -24,10 +21,13 @@
                 class="mt-4"
                 prominent
                 type="info"
-                text>
+                text
+              >
                 <v-row align="center">
                   <v-col class="grow">
-                    Diese Veranstaltung wird über eine externe Buchungs-URL gebucht. Die Angaben zu Teilnehmern und Preisen sind deaktiviert.
+                    Diese Veranstaltung wird über eine externe Buchungs-URL
+                    gebucht. Die Angaben zu Teilnehmern und Preisen sind
+                    deaktiviert.
                   </v-col>
                 </v-row>
               </v-alert>
@@ -40,19 +40,20 @@
               <validation-provider
                 v-slot="{ errors }"
                 name="Art"
-                rules="required">
+                rules="required"
+              >
                 <v-checkbox
                   v-model="publicEvent"
                   :error-messages="errors"
-                  label="Diese Veranstaltung ist öffentlich"></v-checkbox>
-                <v-alert
-                  prominent
-                  type="info"
-                  text
-                  v-if="publicEvent">
+                  label="Diese Veranstaltung ist öffentlich"
+                ></v-checkbox>
+                <v-alert prominent type="info" text v-if="publicEvent">
                   <v-row align="center">
                     <v-col class="grow">
-                      Eine öffentliche Veranstaltung kann von jeder Person gebucht werden. Nicht öffentliche Veranstaltungen sind über einen speziellen Link zu erreichen. Der Link zu dieser Veranstaltung wird nach dem Erstellen angezeigt.
+                      Eine öffentliche Veranstaltung kann von jeder Person
+                      gebucht werden. Nicht öffentliche Veranstaltungen sind
+                      über einen speziellen Link zu erreichen. Der Link zu
+                      dieser Veranstaltung wird nach dem Erstellen angezeigt.
                     </v-col>
                   </v-row>
                 </v-alert>
@@ -60,16 +61,19 @@
               <validation-provider
                 v-slot="{ errors }"
                 name="Registration"
-                rules="required">
+                rules="required"
+              >
                 <v-checkbox
                   v-model="needsRegistration"
                   :error-messages="errors"
-                  label="Teilnehmer müssen sich anmelden"></v-checkbox>
+                  label="Teilnehmer müssen sich anmelden"
+                ></v-checkbox>
               </validation-provider>
               <validation-provider
                 v-slot="{ errors }"
                 name="Teilnehmer"
-                rules="required">
+                rules="required"
+              >
                 <v-text-field
                   v-model="maxAttendees"
                   v-if="needsRegistration"
@@ -89,16 +93,31 @@
               <validation-provider
                 v-slot="{ errors }"
                 name="Kostenlos"
-                rules="required">
+                rules="required"
+              >
                 <v-checkbox
                   v-model="free"
                   :error-messages="errors"
-                  label="Diese Veranstaltung ist kostenlos"></v-checkbox>
+                  label="Diese Veranstaltung ist kostenlos"
+                ></v-checkbox>
               </validation-provider>
-              <v-card class="pa-4 mb-4 mx-auto" v-for="category in priceCategories" :key="category.id">
+              <v-card
+                class="pa-4 mb-4 mx-auto"
+                v-for="category in priceCategories"
+                :key="category.id"
+              >
                 <v-tooltip bottom offset-y>
                   <template v-slot:activator="{ on }">
-                    <v-btn v-on="on" absolute top right icon color="white" class="error" @click="removeEventCategory(category.id)">
+                    <v-btn
+                      v-on="on"
+                      absolute
+                      top
+                      right
+                      icon
+                      color="white"
+                      class="error"
+                      @click="removeEventCategory(category.id)"
+                    >
                       <v-icon>mdi-close</v-icon>
                     </v-btn>
                   </template>
@@ -130,7 +149,14 @@
               <v-col cols="12" class="d-flex align-center justify-center">
                 <v-tooltip bottom offset-y>
                   <template v-slot:activator="{ on }">
-                    <v-btn class="primary align-center" color="white" v-on="on" large icon @click="addNewCategory">
+                    <v-btn
+                      class="primary align-center"
+                      color="white"
+                      v-on="on"
+                      large
+                      icon
+                      @click="addNewCategory"
+                    >
                       <v-icon>mdi-plus</v-icon>
                     </v-btn>
                   </template>
@@ -140,7 +166,7 @@
             </v-col>
           </v-row>
         </v-container>
-        <Pager :invalid="invalid"/>
+        <Pager :invalid="invalid" />
       </validation-observer>
     </v-col>
   </v-row>
@@ -148,46 +174,52 @@
 
 <script>
 import { mapGetters, mapActions } from "vuex";
-import { required, email, max } from "vee-validate/dist/rules"
-import { extend, ValidationObserver, ValidationProvider, setInteractionMode } from "vee-validate"
+import { required, email, max } from "vee-validate/dist/rules";
+import {
+  extend,
+  ValidationObserver,
+  ValidationProvider,
+  setInteractionMode,
+} from "vee-validate";
 import Pager from "@/components/Events/Form/Pager";
 import uniqueId from "lodash/uniqueId";
 
-setInteractionMode("eager")
+setInteractionMode("eager");
 
 extend("required", {
   ...required,
   message: "{_field_} muss ausgefüllt sein.",
-})
+});
 
 extend("email", {
   ...email,
   message: "E-Mail ist ungültig.",
-})
+});
 
 extend("max", {
   ...max,
-  message: "{_field_} Die Anzahl an Zeichen darf nicht größer als {length} sein.",
-})
+  message:
+    "{_field_} Die Anzahl an Zeichen darf nicht größer als {length} sein.",
+});
 
 export default {
   components: {
     ValidationProvider,
     ValidationObserver,
-    Pager
+    Pager,
   },
   methods: {
     ...mapActions({
       updateValue: "events/updateForm",
       addEventCategory: "events/addEventCategory",
-      removeEventCategory: "events/removeEventCategory"
+      removeEventCategory: "events/removeEventCategory",
     }),
     addNewCategory() {
       this.addEventCategory({
         id: uniqueId(),
         name: "",
         price: "",
-      })
+      });
     },
   },
   computed: {
@@ -197,62 +229,78 @@ export default {
     }),
     publicEvent: {
       get() {
-        return this.$store.state.events.form.attendees.publicEvent
+        return this.$store.state.events.form.attendees.publicEvent;
       },
       set(value) {
-        this.updateValue({ parent: "attendees", field: "publicEvent", value: value });
-      }
+        this.updateValue({
+          parent: "attendees",
+          field: "publicEvent",
+          value: value,
+        });
+      },
     },
     needsRegistration: {
       get() {
-        return this.$store.state.events.form.attendees.needsRegistration
+        return this.$store.state.events.form.attendees.needsRegistration;
       },
       set(value) {
-        this.updateValue({ parent: "attendees", field: "needsRegistration", value: value });
-      }
+        this.updateValue({
+          parent: "attendees",
+          field: "needsRegistration",
+          value: value,
+        });
+      },
     },
     free: {
       get() {
-        return this.$store.state.events.form.attendees.free
+        return this.$store.state.events.form.attendees.free;
       },
       set(value) {
         this.updateValue({ parent: "attendees", field: "free", value: value });
-      }
+      },
     },
     maxAttendees: {
       get() {
-        return this.$store.state.events.form.attendees.maxAttendees
+        return this.$store.state.events.form.attendees.maxAttendees;
       },
       set(value) {
-        this.updateValue({ parent: "attendees", field: "maxAttendees", value: value });
-      }
+        this.updateValue({
+          parent: "attendees",
+          field: "maxAttendees",
+          value: value,
+        });
+      },
     },
     priceCategories: {
       get() {
-        return this.$store.state.events.form.attendees.priceCategories
+        return this.$store.state.events.form.attendees.priceCategories;
       },
       set(value) {
-        this.updateValue({ parent: "attendees", field: "priceCategories", value: value });
-      }
+        this.updateValue({
+          parent: "attendees",
+          field: "priceCategories",
+          value: value,
+        });
+      },
     },
     externalBookingUrl: {
       get() {
-        return this.$store.state.events.form.externalBookingUrl
+        return this.$store.state.events.form.externalBookingUrl;
       },
       set(value) {
         this.updateValue({ field: "externalBookingUrl", value: value || "" });
-      }
+      },
     },
     hasExternalBookingUrl() {
-      return !!this.externalBookingUrl && this.externalBookingUrl.trim().length > 0;
+      return (
+        !!this.externalBookingUrl && this.externalBookingUrl.trim().length > 0
+      );
     },
     ...mapGetters({
-      form: "events/form"
-    })
+      form: "events/form",
+    }),
   },
-}
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

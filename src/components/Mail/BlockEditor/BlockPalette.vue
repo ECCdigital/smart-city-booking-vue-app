@@ -47,13 +47,9 @@
           <code class="variable-code">{{ v.placeholder }}</code>
         </div>
       </div>
-      <v-alert
-        type="info"
-        text
-        dense
-        class="mt-2 text-caption"
-      >
-        Variablen lassen sich im Text-Baustein über den Variablen-Button einfügen.
+      <v-alert type="info" text dense class="mt-2 text-caption">
+        Variablen lassen sich im Text-Baustein über den Variablen-Button
+        einfügen.
       </v-alert>
     </div>
   </div>

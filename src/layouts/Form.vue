@@ -12,20 +12,18 @@
         <SupervisionPendingBanner />
         <v-row>
           <v-col>
-            <slot/>
+            <slot />
           </v-col>
           <v-col cols="auto">
-            <slot name="sidebar"/>
+            <slot name="sidebar" />
           </v-col>
         </v-row>
       </v-col>
-
     </v-row>
-
   </v-container>
 </template>
 <script>
-import {mapActions} from "vuex";
+import { mapActions } from "vuex";
 import SupervisionPendingBanner from "@/components/Supervision/SupervisionPendingBanner.vue";
 
 // The event editor's layout: a page of the current tenant, so it carries the
@@ -35,11 +33,10 @@ export default {
   methods: {
     ...mapActions({
       clearForm: "events/clearForm",
-
     }),
     goBack() {
       this.clearForm();
-      this.$router.push({name: "events"});
+      this.$router.push({ name: "events" });
     },
   },
   computed: {
@@ -49,5 +46,5 @@ export default {
       },
     },
   },
-}
+};
 </script>

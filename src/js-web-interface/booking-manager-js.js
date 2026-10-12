@@ -750,7 +750,9 @@ class BookingManager {
             const commitLabel = booking.isCommitted
               ? "Freigegeben"
               : "Nicht freigegeben";
-            booking.status = `${commitLabel} / ${bmGetPaymentStatusLabel(booking)}`;
+            booking.status = `${commitLabel} / ${bmGetPaymentStatusLabel(
+              booking
+            )}`;
             booking.title = booking.bookable.map((bookable) => {
               return bookable._bookableUsed.title;
             });
@@ -981,9 +983,9 @@ class BookingManager {
         const formatTime = (date) => {
           return date
             ? date.toLocaleTimeString("de-DE", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+                hour: "2-digit",
+                minute: "2-digit",
+              })
             : "";
         };
 

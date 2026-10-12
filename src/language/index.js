@@ -5,7 +5,7 @@ import de from "./de/translations.json";
 const locale = "de";
 const messages = {
   de: de,
-}
+};
 
 Vue.use(VueI18n);
 

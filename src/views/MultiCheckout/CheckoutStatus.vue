@@ -2,7 +2,7 @@
   <div class="checkout-status-page">
     <v-container class="py-10" style="max-width: 800px">
       <!-- Loading State -->
-      <v-card v-if="isLoading" class="pa-10 text-center" flat >
+      <v-card v-if="isLoading" class="pa-10 text-center" flat>
         <v-progress-circular
           indeterminate
           color="primary"
@@ -19,11 +19,7 @@
       <!-- Result States -->
       <div v-else>
         <!-- Single Booking Status -->
-        <v-card
-          v-if="status !== 'multiple'"
-          class="pa-10 text-center"
-          flat
-        >
+        <v-card v-if="status !== 'multiple'" class="pa-10 text-center" flat>
           <!-- Success -->
           <div v-if="status === 'success'">
             <v-avatar size="90" color="primary" class="mb-6">
@@ -90,9 +86,7 @@
             <v-avatar size="90" color="warning" class="mb-6">
               <v-icon size="50" color="white">mdi-alert</v-icon>
             </v-avatar>
-            <h1 class="text-h4 warning--text">
-              Ihre Buchung wurde abgelehnt
-            </h1>
+            <h1 class="text-h4 warning--text">Ihre Buchung wurde abgelehnt</h1>
             <p class="text-body-1 grey--text text--darken-1 mt-4">
               Ihre Buchungsanfrage konnte leider nicht bestätigt werden. Bitte
               wenden Sie sich an unsere Koordinator*innen für weitere Info.
@@ -104,9 +98,7 @@
             <v-avatar size="90" color="warning" class="mb-6">
               <v-icon size="50" color="white">mdi-alert</v-icon>
             </v-avatar>
-            <h1 class="text-h4 warning--text">
-              Ihre Buchung wurde storniert
-            </h1>
+            <h1 class="text-h4 warning--text">Ihre Buchung wurde storniert</h1>
             <p class="text-body-1 grey--text text--darken-1 mt-4">
               Ihre Buchungsanfrage wurde storniert. Bitte wenden Sie sich an
               unsere Koordinator*innen für weitere Info.
@@ -193,10 +185,7 @@
           </v-data-table>
 
           <!-- Action Buttons -->
-          <div
-            class="d-flex justify-center flex-wrap mt-8"
-            style="gap: 12px"
-          >
+          <div class="d-flex justify-center flex-wrap mt-8" style="gap: 12px">
             <v-btn
               v-if="!!websiteLink"
               elevation="0"

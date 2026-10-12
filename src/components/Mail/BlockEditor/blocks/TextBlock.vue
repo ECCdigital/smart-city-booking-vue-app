@@ -154,9 +154,11 @@ export default {
     /** Warning text per conditional variable in warning level, for the chips. */
     chipWarnings() {
       const byName = {};
-      warningVariables(this.variables, this.tenant).forEach(({ variable, text }) => {
-        byName[variable.name] = text;
-      });
+      warningVariables(this.variables, this.tenant).forEach(
+        ({ variable, text }) => {
+          byName[variable.name] = text;
+        }
+      );
       return byName;
     },
   },
@@ -361,7 +363,8 @@ export default {
   font-size: 0;
   letter-spacing: 0;
 }
-.text-block-content >>> .mail-variable-chip[data-label]:not([data-label=""])::before {
+.text-block-content
+  >>> .mail-variable-chip[data-label]:not([data-label=""])::before {
   content: attr(data-label);
   font-size: 12px;
   font-family: inherit;

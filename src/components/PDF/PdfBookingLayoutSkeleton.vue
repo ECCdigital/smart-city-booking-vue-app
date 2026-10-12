@@ -140,7 +140,7 @@ export default {
     },
     visibleMetaKeys() {
       return META_ROW_DEFS.filter((row) => this.meta[row.key]).map(
-        (row) => row.key,
+        (row) => row.key
       );
     },
     visibleDetailedMetaRows() {
@@ -168,7 +168,7 @@ export default {
           dimmed: false,
           labelStyle: { width: row.labelWidth, maxWidth: "96px" },
           valueStyle: { width: row.valueWidth, maxWidth: "72px" },
-        }),
+        })
       );
 
       const staticRows = STATIC_SUMMARY_ROWS.map((row) => ({

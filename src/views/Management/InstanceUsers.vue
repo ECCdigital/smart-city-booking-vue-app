@@ -336,7 +336,9 @@ export default {
         const searchLower = this.search.toLowerCase().trim();
         if (searchLower) {
           filtered = filtered.filter((user) => {
-            const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+            const fullName = `${user.firstName || ""} ${
+              user.lastName || ""
+            }`.trim();
             return [user.id, user.firstName, user.lastName, fullName].some(
               (field) => field?.toLowerCase().includes(searchLower)
             );

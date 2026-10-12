@@ -112,7 +112,9 @@
                       v-bind="attrs"
                       v-on="on"
                     >
-                      <v-icon x-small>{{ inputTypeIcon(field.inputType) }}</v-icon>
+                      <v-icon x-small>{{
+                        inputTypeIcon(field.inputType)
+                      }}</v-icon>
                     </v-chip>
                   </template>
                   <span>Feldtyp: {{ inputTypeLabel(field.inputType) }}</span>
@@ -507,10 +509,7 @@ export default {
         chips.push({ text: "Intern", color: "blue-grey", outlined: true });
       }
 
-      if (
-        u.detailDisplayPosition &&
-        u.detailDisplayPosition !== "none"
-      ) {
+      if (u.detailDisplayPosition && u.detailDisplayPosition !== "none") {
         chips.push({
           text: "Detailansicht",
           color: "deep-purple",

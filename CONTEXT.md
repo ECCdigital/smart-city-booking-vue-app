@@ -61,7 +61,7 @@ An admin whose permissions list the tenant, or an instance owner for whom the te
 _Avoid_: berechtigt (that is Reichweite, a different question)
 
 **Reichweite**:
-How far an admin's read on bookings reaches at the current tenant: *any* (instance owner, tenant owner, `manageBookings.readAny`) or *own* (every other member). Decides only how a 404 is worded on a Buchungsseite, since the backend answers 404 alike for gone and out of reach.
+How far an admin's read on bookings reaches at the current tenant: _any_ (instance owner, tenant owner, `manageBookings.readAny`) or _own_ (every other member). Decides only how a 404 is worded on a Buchungsseite, since the backend answers 404 alike for gone and out of reach.
 _Avoid_: Rolle
 
 ### Bookables

@@ -44,10 +44,8 @@ export function normalizeBookingDiscounts(bookable) {
     const users = sanitizeUserDiscounts(discounts.users);
     const roles = sanitizeRoleDiscounts(discounts.roles);
 
-    discounts.users =
-      users.length > 0 ? users : usersFromLegacy;
-    discounts.roles =
-      roles.length > 0 ? roles : rolesFromLegacy;
+    discounts.users = users.length > 0 ? users : usersFromLegacy;
+    discounts.roles = roles.length > 0 ? roles : rolesFromLegacy;
   }
 
   delete bookable.freeBookingUsers;

@@ -1,28 +1,59 @@
 <template>
   <div class="multi-stepper mt-14">
     <ul class="multi-stepper__list">
-      <li v-for="(item, index) in items" :key="item.routeName" class="multi-stepper__item">
-        <router-link :to="{name: item.routeName}"
-                     class="multi-stepper__link body--text"
-                     :class="{'font-weight-bold darkgrey--text': $route.name === item.routeName || isActiveParent(item),
-                     'font-weight-bold': index < currentRouteIndex(),
-                     'disable-events': index > currentRouteIndex() && !updateEvent}">
-          <v-chip outlined color="primary"
-                  class="multi-stepper__circle primary--text font-weight-bold"
-                  :class="{'success d-inline-flex pa-0 justify-center': index < currentRouteIndex() && !updateEvent}">
-            <v-icon size="18" v-if="index < currentRouteIndex() && !updateEvent" class="success--text">mdi-check-bold</v-icon>
+      <li
+        v-for="(item, index) in items"
+        :key="item.routeName"
+        class="multi-stepper__item"
+      >
+        <router-link
+          :to="{ name: item.routeName }"
+          class="multi-stepper__link body--text"
+          :class="{
+            'font-weight-bold darkgrey--text':
+              $route.name === item.routeName || isActiveParent(item),
+            'font-weight-bold': index < currentRouteIndex(),
+            'disable-events': index > currentRouteIndex() && !updateEvent,
+          }"
+        >
+          <v-chip
+            outlined
+            color="primary"
+            class="multi-stepper__circle primary--text font-weight-bold"
+            :class="{
+              'success d-inline-flex pa-0 justify-center':
+                index < currentRouteIndex() && !updateEvent,
+            }"
+          >
+            <v-icon
+              size="18"
+              v-if="index < currentRouteIndex() && !updateEvent"
+              class="success--text"
+              >mdi-check-bold</v-icon
+            >
             <span v-else>{{ index + 1 }}</span>
           </v-chip>
 
           <span class="multi-stepper__link-title">{{ item.title }}</span>
         </router-link>
         <ul v-if="isActiveParent(item)" class="multi-stepper__sub-list">
-          <li v-for="child in item.childRoutes" :key="child.routeName" class="multi-stepper__sub-item">
-            <router-link :to="{name: child.routeName}"
-                         class="multi-stepper__link body--text"
-                         :class="{'font-weight-bold darkgrey--text': $route.name === child.routeName,
-                           'font-weight-bold': index < currentRouteIndex()}">
-              <span class="multi-stepper__sub-link-title">{{ child.title }}</span>
+          <li
+            v-for="child in item.childRoutes"
+            :key="child.routeName"
+            class="multi-stepper__sub-item"
+          >
+            <router-link
+              :to="{ name: child.routeName }"
+              class="multi-stepper__link body--text"
+              :class="{
+                'font-weight-bold darkgrey--text':
+                  $route.name === child.routeName,
+                'font-weight-bold': index < currentRouteIndex(),
+              }"
+            >
+              <span class="multi-stepper__sub-link-title">{{
+                child.title
+              }}</span>
             </router-link>
           </li>
         </ul>
@@ -39,17 +70,21 @@ export default {
   },
   data() {
     return {
-      items: []
-    }
+      items: [],
+    };
   },
   methods: {
     currentRouteIndex() {
-      let parentIndex = this.items.findIndex(item => item.routeName === this.$router.currentRoute.name);
+      let parentIndex = this.items.findIndex(
+        (item) => item.routeName === this.$router.currentRoute.name
+      );
 
       if (parentIndex === -1) {
-        const routesWithChildren = this.items.filter(item => !_.isNil(item.childRoutes));
+        const routesWithChildren = this.items.filter(
+          (item) => !_.isNil(item.childRoutes)
+        );
         const currentLocation = this.$router.currentRoute.name;
-        const parentRoute = routesWithChildren.find(route => {
+        const parentRoute = routesWithChildren.find((route) => {
           if (_.find(route.childRoutes, { routeName: currentLocation })) {
             return route;
           }
@@ -57,7 +92,9 @@ export default {
           return false;
         });
 
-        parentIndex = this.items.findIndex(item => item.routeName === parentRoute.routeName);
+        parentIndex = this.items.findIndex(
+          (item) => item.routeName === parentRoute.routeName
+        );
       }
       return parentIndex;
     },
@@ -69,7 +106,7 @@ export default {
 
       // Check if the user is on parent or one of it's childs
       const currentLocation = this.$router.currentRoute.name;
-      const childRoutes = route.childRoutes.map(child => child.routeName);
+      const childRoutes = route.childRoutes.map((child) => child.routeName);
       const parentAndChildRoutes = [...childRoutes, route.routeName];
       return parentAndChildRoutes.includes(currentLocation);
     },
@@ -79,25 +116,29 @@ export default {
 
       // Add title from route meta information to parent route
       this.items = this.structure.map((item) => {
-        item.title = routes.find(route => route.name === item.routeName).meta.title;
+        item.title = routes.find(
+          (route) => route.name === item.routeName
+        ).meta.title;
 
         // Check if route has childs
         if (!_.isNil(item.childRoutes)) {
           // Add title from route meta information to child routes
           item.childRoutes.map((children) => {
-            children.title = routes.find(route => route.name === children.routeName).meta.title;
+            children.title = routes.find(
+              (route) => route.name === children.routeName
+            ).meta.title;
             return children;
-          })
+          });
         }
 
         return item;
-      })
-    }
+      });
+    },
   },
   created() {
     this.setRouteNames();
-  }
-}
+  },
+};
 </script>
 
 <style lang="scss" scoped>
@@ -117,7 +158,7 @@ export default {
 
   &::before {
     background: black;
-    content: '';
+    content: "";
     display: block;
     height: calc(100% - 0.75rem);
     left: 1rem;
@@ -134,7 +175,7 @@ export default {
 
   &::before {
     background: black;
-    content: '';
+    content: "";
     display: block;
     height: 1px;
     left: 20px;
@@ -168,6 +209,6 @@ export default {
 }
 
 .disable-events {
-  pointer-events: none
+  pointer-events: none;
 }
 </style>

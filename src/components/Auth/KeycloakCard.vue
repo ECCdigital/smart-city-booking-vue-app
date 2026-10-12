@@ -75,7 +75,7 @@ export default {
     },
     async fetchSsoConfig() {
       this.ssoConfig = this.instance.applications.find(
-        (app) => app.id === "keycloak",
+        (app) => app.id === "keycloak"
       );
     },
     async createKeycloakSession() {
@@ -90,7 +90,10 @@ export default {
         if (keycloakService.isAuthenticated) {
           this.setState(this.possibleStates.KC_AUTH_SUCCESS);
           this.userEmail = keycloakService.tokenParsed?.email || "";
-          this.userName = keycloakService.tokenParsed?.given_name + " " + keycloakService.tokenParsed?.family_name || "";
+          this.userName =
+            keycloakService.tokenParsed?.given_name +
+              " " +
+              keycloakService.tokenParsed?.family_name || "";
         } else {
           this.setState(this.possibleStates.KC_AUTH_ERROR);
         }
@@ -140,10 +143,14 @@ export default {
     async afterSignIn(user, permissions, redirectHint) {
       await this.updateUser({ user, permissions });
       await this.addToast(
-        ToastService.createToast("login.success.default", "success"),
+        ToastService.createToast("login.success.default", "success")
       );
 
-      if (redirectHint && redirectHint !== "/" && !redirectHint.includes("/login")) {
+      if (
+        redirectHint &&
+        redirectHint !== "/" &&
+        !redirectHint.includes("/login")
+      ) {
         window.location.href = redirectHint;
         return;
       }
@@ -161,11 +168,7 @@ export default {
 
         if (this.isBffMode) {
           const data = await ApiAuthService.ssoLogin(null, this.ssoTicket());
-          await this.afterSignIn(
-            data.user,
-            data.permissions,
-            data.redirect
-          );
+          await this.afterSignIn(data.user, data.permissions, data.redirect);
           return;
         }
 
@@ -178,7 +181,7 @@ export default {
         } else {
           this.setState(this.possibleStates.SIGNIN_ERROR);
           await this.addToast(
-            ToastService.createToast("login.error.default", "error"),
+            ToastService.createToast("login.error.default", "error")
           );
         }
       } finally {
@@ -221,17 +224,14 @@ export default {
           );
           if (response.status === 201 || response.data) {
             await this.addToast(
-              ToastService.createToast("register.success.default", "success"),
+              ToastService.createToast("register.success.default", "success")
             );
             this.setState(this.possibleStates.SIGNUP_SUCCESS);
             const user = response.data?.user || response.user;
             const permissions =
               response.data?.permissions || response.permissions;
             if (user) {
-              setTimeout(
-                () => this.afterSignIn(user, permissions),
-                1500
-              );
+              setTimeout(() => this.afterSignIn(user, permissions), 1500);
             }
           }
           return;
@@ -240,12 +240,12 @@ export default {
         const token = await keycloakService.getValidToken();
         const response = await ApiAuthService.ssoRegister(
           token,
-          this.buildLegalAcceptance(),
+          this.buildLegalAcceptance()
         );
 
         if (response.status === 201) {
           await this.addToast(
-            ToastService.createToast("register.success.default", "success"),
+            ToastService.createToast("register.success.default", "success")
           );
           this.setState(this.possibleStates.SIGNUP_SUCCESS);
           setTimeout(() => this.signIn(), 2000);
@@ -253,7 +253,7 @@ export default {
       } catch (error) {
         this.setState(this.possibleStates.SIGNUP_ERROR);
         await this.addToast(
-          ToastService.createToast("register.error.default", "error"),
+          ToastService.createToast("register.error.default", "error")
         );
       } finally {
         this.loading = false;
