@@ -212,14 +212,13 @@
             class="location-input__banner"
             data-test="location-placing"
           >
-            <v-icon small color="white">mdi-gesture-tap</v-icon>
+            <v-icon small>mdi-gesture-tap</v-icon>
             <span class="location-input__banner-text">
               {{ $t("location.map.place", { text: state.placing.text }) }}
             </span>
             <v-btn
               x-small
               text
-              color="white"
               data-test="location-placing-cancel"
               @click="cancelPlacing"
             >
@@ -231,7 +230,7 @@
             class="location-input__banner"
             data-test="location-map-unavailable"
           >
-            <v-icon small color="white">mdi-map-marker-off-outline</v-icon>
+            <v-icon small>mdi-map-marker-off-outline</v-icon>
             <span class="location-input__banner-text">
               {{ $t("location.map.unavailable") }}
             </span>
@@ -283,8 +282,6 @@ const SEARCH_MIN_CHARS = 3;
 const SEARCH_MAX_HITS = 5;
 // After this pause in a field of the address, the address counts as typed.
 const ADDRESS_PAUSE_MS = 1200;
-// Below this width the fields and the map stand one under the other.
-const NARROW_BELOW_PX = 600;
 // Only if `geo/start` cannot be read: the map needs a view to be usable.
 const GERMANY = Object.freeze({ lat: 51.2, lon: 9.4, zoom: 5 });
 
@@ -429,11 +426,14 @@ export default {
         !point && !displayAddress(address) && !address.addition && !oldText
       );
     },
+    // On a small screen, and where the input itself is narrower than
+    // Vuetify's edge of `xs` (600px, `$scb-bp-xs` in tokens.scss), fields
+    // and map stand one under the other.
     isNarrow() {
       return (
         this.narrow ||
         this.$vuetify.breakpoint.xsOnly ||
-        this.width < NARROW_BELOW_PX
+        this.width < this.$vuetify.breakpoint.thresholds.xs
       );
     },
     mapHeight() {
@@ -743,9 +743,9 @@ export default {
 .location-input__map {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--scb-border, rgba(0, 0, 0, 0.12));
-  border-radius: 4px;
-  background: #e8eef2;
+  border: 1px solid var(--scb-surface-border);
+  border-radius: var(--scb-radius-control);
+  background: var(--scb-surface-raised);
 }
 .location-input__banner {
   position: absolute;
@@ -757,10 +757,14 @@ export default {
   align-items: center;
   gap: var(--scb-space-2);
   padding: var(--scb-space-1) var(--scb-space-2);
-  border-radius: 4px;
-  background: rgba(31, 35, 40, 0.88);
-  color: #fff;
+  border-radius: var(--scb-radius-control);
+  background: var(--scb-overlay);
+  color: var(--scb-on-overlay);
   font-size: var(--scb-font-size-sm);
+}
+.location-input__banner .v-icon,
+.location-input__banner .v-btn {
+  color: inherit;
 }
 .location-input__banner-text {
   flex: 1;
