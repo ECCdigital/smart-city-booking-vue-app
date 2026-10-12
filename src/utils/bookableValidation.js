@@ -17,6 +17,7 @@
 
 import { isBookableEditSectionVisible } from "@/utils/bookableEditSections";
 import { providerTakesOver } from "@/utils/bookableExternalProviders";
+import { ausGespeichert, pruefen } from "@/utils/standortLogik";
 
 const message = (name) => `bookable.validation.${name}`;
 
@@ -127,6 +128,7 @@ export const BOOKABLE_RULE_NAMES = Object.freeze(Object.keys(RULES));
  */
 const PLACES = Object.freeze({
   title: { tab: "general", section: "general-catalog", step: "identity" },
+  location: { tab: "general", section: "general-catalog", step: "identity" },
   priceCategories: { tab: "pricing", section: "pricing-price", step: "price" },
   maxAmountPerBooking: {
     tab: "pricing",
@@ -238,6 +240,21 @@ export function bookableRules(name, translate = (key) => key) {
 }
 
 /**
+ * Why the Standort may not be saved, as a key of `location.reason.*`, or
+ * `null`. The backend refuses a new or changed Standort with an Anschrift, a
+ * Zusatz or an old text but without Punkt (`LocationGuard.storable`); an
+ * unchanged one passes, so the check measures against the stored one.
+ *
+ * @param {*} location - The Standort as edited.
+ * @param {*} [storedLocation] - The Standort as stored; none for a new bookable.
+ * @returns {?string} The message.
+ */
+export function locationRefusal(location, storedLocation) {
+  const { grund } = pruefen(ausGespeichert(location, storedLocation ?? null));
+  return grund ? `location.reason.${grund}` : null;
+}
+
+/**
  * The text of an issue's or a rule's message.
  *
  * @param {string} key - The message, as an issue carries it.
@@ -263,10 +280,12 @@ function refusal(name, value) {
  * page's nav reads it - whether or not its component is mounted.
  *
  * @param {Object} bookable - The bookable as `BookableEdit` holds it.
- * @param {{ shown?: function(string): boolean, accessPoints?: Array<Object> }}
- *   [options] - `shown(option)` is the expert-mode rule as the caller asks
- *   it (`expertOptionShown`); without it every option shows. `accessPoints`
- *   are the tenant's, for what ParkraumService takes over.
+ * @param {{ shown?: function(string): boolean, accessPoints?: Array<Object>,
+ *   stored?: ?Object }} [options] - `shown(option)` is the expert-mode rule
+ *   as the caller asks it (`expertOptionShown`); without it every option
+ *   shows. `accessPoints` are the tenant's, for what ParkraumService takes
+ *   over. `stored` is the bookable as stored, `null` for a new one: an
+ *   unchanged Standort passes whatever it holds.
  * @returns {Array<{field: string, message: string, tab: string,
  *   section: ?string, step: ?string, area?: string}>} The issues, empty
  *   while it is fine. `area` names the area of the step „Weitere
@@ -274,7 +293,7 @@ function refusal(name, value) {
  */
 export function bookableIssues(
   bookable,
-  { shown = everyOption, accessPoints = [] } = {}
+  { shown = everyOption, accessPoints = [], stored = null } = {}
 ) {
   const found = [];
   const add = (field, keys) =>
@@ -301,6 +320,7 @@ export function bookableIssues(
   const times = { startTime: "startTime", endTime: "endTime" };
 
   check("title", "title", [bookable.title]);
+  add("location", [locationRefusal(bookable.location, stored?.location)]);
   // Where ParkraumService handles the prices, the price shows only its note.
   if (!providerTakesOver(bookable, "pricing", accessPoints)) {
     checkEntries("priceCategories", bookable.priceCategories, {

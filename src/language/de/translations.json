@@ -314,7 +314,7 @@
       "legacy-cover-active": "Es bleibt aktiv, bis hier Bilder aus der Mediathek zugeordnet werden.",
       "legacy-cover-adopt": "Als Bild übernehmen",
       "location": "Standort",
-      "location-hint": "Wo Buchende hin müssen. Wird die Adresse gefunden, erscheint sie auf der Objektseite auf der Karte.",
+      "location-hint": "Wo Buchende hin müssen. Der Punkt erscheint auf der Objektseite auf der Karte, und nach ihm sortiert die Suche nach Entfernung.",
       "type": "Typ",
       "type-hint": "Bestimmt Darstellung und Icon im Katalog. Lässt sich nach dem Anlegen nicht mehr ändern.",
       "type-fixed": "Wird beim Anlegen festgelegt.",
@@ -3030,6 +3030,55 @@
         "message": "Am Zugangspunkt ist ein Fehler aufgetreten (Code {code}).",
         "detailedMessage": "Am Zugangspunkt ist ein Fehler aufgetreten (Code {code}): {detail}"
       }
+    }
+  },
+  "location": {
+    "search": {
+      "label": "Anschrift oder Ort suchen",
+      "notListed": "Nicht dabei? „{text}“ auf der Karte setzen",
+      "noHit": "Kein Treffer. „{text}“ auf der Karte setzen",
+      "notListedHint": "Der Text kommt in den Zusatz.",
+      "unavailable": "Suche gerade nicht erreichbar, setze den Punkt auf der Karte",
+      "searchText": "Text suchen"
+    },
+    "fields": {
+      "street": "Straße",
+      "houseNumber": "Nr.",
+      "postcode": "PLZ",
+      "city": "Ort",
+      "country": "Land",
+      "additional": "Zusatz",
+      "additionalPlaceholder": "z. B. Halle 2, Hintereingang"
+    },
+    "point": {
+      "suche": "Punkt aus der Suche",
+      "karte": "Punkt von Hand gesetzt",
+      "nuki": "Punkt von NUKI",
+      "none": "Kein Punkt",
+      "missing": "Punkt fehlt.",
+      "missingText": "Gespeichert ist nur der Text „{text}“.",
+      "missingAddress": "Setze den Punkt auf der Karte oder suche die Anschrift.",
+      "clear": "Standort leeren"
+    },
+    "suggestion": {
+      "address": "Anschrift am neuen Punkt: {address}",
+      "adopt": "Übernehmen",
+      "keepAddress": "Anschrift behalten",
+      "point": "Die Anschrift liegt {distance} m vom Punkt. Punkt zur Anschrift verschieben?",
+      "move": "Verschieben",
+      "keepPoint": "Punkt behalten"
+    },
+    "map": {
+      "place": "Klicke in die Karte, wo „{text}“ liegt.",
+      "cancel": "Abbrechen",
+      "unavailable": "Karte gerade nicht erreichbar",
+      "sources": "Datenquellen",
+      "search": "Suche"
+    },
+    "reason": {
+      "punktNichtGesetzt": "Ort ohne Punkt. Setze den Punkt auf der Karte.",
+      "anschriftOhnePunkt": "Anschrift ohne Punkt. Setze den Punkt auf der Karte.",
+      "altTextOhnePunkt": "Standort ohne Punkt. Suche den Text oder setze den Punkt auf der Karte."
     }
   },
   "invoice": {

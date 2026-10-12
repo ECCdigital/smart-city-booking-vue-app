@@ -65,12 +65,19 @@ const gleicherInhalt = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 /**
  * The Zustand of the input for a stored Standort.
  *
+ * `gespeichert` is the Standort as stored, when the input opens one already
+ * edited (a field mounted again, the check of a whole bookable): unchanged
+ * then means saying what that one says, and an unchanged Standort comes back
+ * as that one. `null` means nothing is stored yet.
+ *
  * @param {*} wert - The Standort as stored: an object, a text, `null`, `""`.
+ * @param {*} [gespeichert] - The Standort as stored, `wert` by default.
  * @returns {Object} The Zustand.
  */
-export function ausGespeichert(wert) {
+export function ausGespeichert(wert, gespeichert = wert) {
   const s = { ...leer(), ...lesen(wert) };
-  return { ...s, gespeichert: { wert, inhalt: inhalt(s) } };
+  const basis = gespeichert === wert ? s : { ...leer(), ...lesen(gespeichert) };
+  return { ...s, gespeichert: { wert: gespeichert, inhalt: inhalt(basis) } };
 }
 
 // Old values of `meta.source` stay stored; `nominatim` counts as the search,

@@ -157,6 +157,71 @@ describe("bookableValidation - the rules of the spec", () => {
   });
 });
 
+describe("bookableValidation - the Standort", () => {
+  const GASSTRASSE = {
+    address: {
+      street: "Gasstraße",
+      house_number: "4",
+      postcode: "03172",
+      city: "Guben",
+      country_code: "DE",
+    },
+    display_address: "Gasstraße 4, 03172 Guben",
+    meta: { additional: null },
+  };
+  const MIT_PUNKT = {
+    ...GASSTRASSE,
+    coordinates: { type: "Point", points: [14.714485, 51.950438] },
+    meta: { source: "photon", additional: null },
+  };
+
+  it("refuses an Anschrift without Punkt, with the reason and where to fix it", () => {
+    expect(issuesOf({ location: GASSTRASSE })).toEqual([
+      {
+        field: "location",
+        message: "location.reason.anschriftOhnePunkt",
+        tab: "general",
+        section: "general-catalog",
+        step: "identity",
+      },
+    ]);
+  });
+
+  it.each([
+    ["a Standort with Anschrift and Punkt", MIT_PUNKT],
+    ["no Standort", null],
+    ["the empty default", ""],
+  ])("takes %s", (_, location) => {
+    expect(issuesOf({ location })).toEqual([]);
+  });
+
+  it("lets an unchanged old Standort without Punkt through", () => {
+    const stored = bookable({ location: "Sportplatz, Guben" });
+
+    expect(
+      issuesOf({ location: "Sportplatz, Guben" }, { stored: stored })
+    ).toEqual([]);
+  });
+
+  it("refuses an old Standort without Punkt once changed", () => {
+    const stored = bookable({ location: GASSTRASSE });
+    const location = { ...GASSTRASSE, meta: { additional: "Halle 2" } };
+
+    expect(issuesOf({ location }, { stored })).toEqual([
+      expect.objectContaining({
+        field: "location",
+        message: "location.reason.anschriftOhnePunkt",
+      }),
+    ]);
+  });
+
+  it("refuses a text without Punkt of a new bookable", () => {
+    expect(issuesOf({ location: "Sportplatz, Guben" })).toEqual([
+      expect.objectContaining({ message: "location.reason.altTextOhnePunkt" }),
+    ]);
+  });
+});
+
 describe("bookableValidation - the rules of the shared sections", () => {
   it.each([
     ["weekdays", [], "bookable.validation.weekdays"],

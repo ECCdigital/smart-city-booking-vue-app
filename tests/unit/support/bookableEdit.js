@@ -44,7 +44,7 @@ export const BOOKABLE_EDIT_STUBS = {
     },
   },
   MediaReferenceList: stub("MediaReferenceList"),
-  AddressLookup: stub("AddressLookup"),
+  StandortEingabe: stub("StandortEingabe"),
   Tiptap: stub("Tiptap"),
 };
 

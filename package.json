@@ -58,6 +58,7 @@
     "fuse.js": "^7.0.0",
     "handlebars": "^4.7.9",
     "keycloak-js": "^26.1.4",
+    "leaflet": "^1.9.4",
     "loadash": "^1.0.0",
     "lodash": "^4.17.21",
     "lodash.debounce": "^4.0.8",
