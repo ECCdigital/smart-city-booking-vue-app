@@ -262,3 +262,91 @@ describe("EventCreate", () => {
     expect(find(wrapper, "review-panel").exists()).toBe(false);
   });
 });
+
+describe("EventCreate - Standort", () => {
+  const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
+  const ADDRESS_WITHOUT_POINT = {
+    address: {
+      street: "Gasstraße",
+      house_number: "4",
+      postcode: "03172",
+      city: "Guben",
+      country_code: "DE",
+    },
+    display_address: "Gasstraße 4, 03172 Guben",
+    meta: { source: "manual", additional: null },
+  };
+  const save = (wrapper) =>
+    wrapper
+      .findAll("button")
+      .filter((b) => b.text() === "Änderungen übernehmen")
+      .at(0);
+
+  it("locks „Änderungen übernehmen“ while the Standort may not be saved, and says why", async () => {
+    const { wrapper, store } = await mountEditor();
+
+    await store.dispatch("events/updateForm", {
+      field: "location",
+      value: ADDRESS_WITHOUT_POINT,
+    });
+    await flushPromises();
+
+    expect(save(wrapper).attributes("disabled")).toBe("disabled");
+    expect(find(wrapper, "location-refusal").text()).toBe(
+      "Anschrift ohne Punkt. Setze den Punkt auf der Karte."
+    );
+  });
+
+  it("saves an event with an old Standort without Punkt, sending it back word for word", async () => {
+    let sent;
+    ApiEventService.addEvent.mockImplementation(() => {
+      sent = store.state.events.form.location;
+      return Promise.resolve({});
+    });
+    const { wrapper, store } = await mountEditor({
+      event: storedEvent({ location: OLD_TEXT }),
+    });
+
+    await store.dispatch("events/updateForm", {
+      parent: "information",
+      field: "name",
+      value: "Neuer Name",
+    });
+    await flushPromises();
+
+    expect(save(wrapper).attributes("disabled")).toBeUndefined();
+    expect(find(wrapper, "location-refusal").exists()).toBe(false);
+    await save(wrapper).trigger("click");
+    await flushPromises();
+
+    expect(ApiEventService.addEvent).toHaveBeenCalled();
+    expect(sent).toBe(OLD_TEXT);
+  });
+
+  it("measures the Standort against the saved one after a save", async () => {
+    const { wrapper, store } = await mountEditor({
+      event: storedEvent({ location: OLD_TEXT }),
+    });
+    await store.dispatch("events/updateForm", {
+      field: "location",
+      value: {
+        ...ADDRESS_WITHOUT_POINT,
+        coordinates: { type: "Point", points: [14.7213, 51.9526] },
+      },
+    });
+    await flushPromises();
+    await save(wrapper).trigger("click");
+    await flushPromises();
+
+    await store.dispatch("events/updateForm", {
+      field: "location",
+      value: OLD_TEXT,
+    });
+    await flushPromises();
+
+    expect(save(wrapper).attributes("disabled")).toBe("disabled");
+    expect(find(wrapper, "location-refusal").text()).toBe(
+      "Standort ohne Punkt. Suche den Text oder setze den Punkt auf der Karte."
+    );
+  });
+});
