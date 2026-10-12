@@ -272,6 +272,7 @@ import {
   displayAddress,
   fromStored,
   reducer,
+  refusalOf,
   toStored,
 } from "@/utils/locationLogic";
 
@@ -680,9 +681,10 @@ export default {
         return code;
       }
     },
+    // The message of the one rule of a location, as every page refuses it.
     message() {
-      const reason = this.checkResult.reason;
-      return !reason || this.$t(`location.reason.${reason}`);
+      const key = refusalOf(this.state);
+      return !key || this.$t(key);
     },
   },
 };

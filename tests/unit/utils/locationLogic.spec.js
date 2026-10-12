@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  check,
   distance,
   fromStored,
-  check,
+  locationRefusal,
+  pointOf,
   reducer,
   toStored,
 } from "@/utils/locationLogic";
@@ -1082,5 +1084,53 @@ describe("scenarios of the prototype", () => {
     });
     expect(check(s).storable).toBe(true);
     expect(toStored(s).display_address).toBe("Gasstraße 4, 03172 Guben");
+  });
+});
+
+// The one rule of a location, for every place that saves one: the bookable's
+// check, the events store, the access point's dialog and the input itself.
+describe("locationRefusal", () => {
+  const OLD_TEXT = "Sportplatz, Guben";
+
+  it("names the reason as a key of the catalogue", () => {
+    const address = { address: { city: "Guben" }, display_address: "Guben" };
+
+    expect(locationRefusal(address, null)).toBe(
+      "location.reason.addressWithoutPoint"
+    );
+    expect(locationRefusal(OLD_TEXT, null)).toBe(
+      "location.reason.oldTextWithoutPoint"
+    );
+  });
+
+  it("lets an unchanged old location without point pass", () => {
+    expect(locationRefusal(OLD_TEXT, OLD_TEXT)).toBeNull();
+  });
+
+  it.each([
+    ["a location with point", GASSTRASSE],
+    ["no location", null],
+  ])("lets %s pass where nothing is stored", (_, location) => {
+    expect(locationRefusal(location, null)).toBeNull();
+    expect(locationRefusal(location)).toBeNull();
+  });
+});
+
+describe("pointOf", () => {
+  it.each([
+    ["the stored form", GASSTRASSE],
+    ["the answer of NUKI", { coordinates: { points: [14.714485, 51.950438] } }],
+    ["an old one with lat and lng", { lat: 51.950438, lng: 14.714485 }],
+  ])("reads the point of %s", (_, value) => {
+    expect(pointOf(value)).toEqual({ lat: 51.950438, lon: 14.714485 });
+  });
+
+  it.each([
+    ["no location", null],
+    ["a text", "Sportplatz, Guben"],
+    ["points [null, null]", { coordinates: { points: [null, null] } }],
+    ["an empty answer", {}],
+  ])("reads no point from %s", (_, value) => {
+    expect(pointOf(value)).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 import Vue from "vue";
-import { locationRefusal } from "@/utils/bookableValidation";
+import { locationRefusal } from "@/utils/locationLogic";
 
 const namespaced = true;
 const defaultState = {

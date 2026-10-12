@@ -105,7 +105,16 @@ function number(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function readPoint(value) {
+/**
+ * The point of a location in the stored form, or of an answer that carries
+ * one the same way (NUKI's `getLocationPrefill`); old ones with `lat` and
+ * `lng` too.
+ *
+ * @param {*} value - The location.
+ * @returns {?{ lat: number, lon: number }} The point, `null` without one.
+ */
+export function pointOf(value) {
+  if (!value || typeof value !== "object") return null;
   const points = value.coordinates?.points;
   const [lon, lat] = Array.isArray(points)
     ? [number(points[0]), number(points[1])]
@@ -118,7 +127,7 @@ function read(value) {
   if (!value || typeof value !== "object") return {};
 
   const a = value.address || {};
-  const point = readPoint(value);
+  const point = pointOf(value);
   return {
     address: {
       street: text(a.street),
@@ -381,4 +390,32 @@ export function check(s) {
   if (s.oldText && isAddressEmpty(s.address))
     return refuse("oldTextWithoutPoint");
   return refuse("addressWithoutPoint");
+}
+
+/**
+ * Why the location of a state may not be saved, as a key of the catalogue
+ * (`location.reason.*`), or `null`. The message the input shows and the
+ * refusal of every page come from here.
+ *
+ * @param {Object} s - The state.
+ * @returns {?string} The key.
+ */
+export function refusalOf(s) {
+  const { reason } = check(s);
+  return reason ? `location.reason.${reason}` : null;
+}
+
+/**
+ * Why a location may not be saved, as a key of the catalogue, or `null`: the
+ * rule of the backend (`LocationGuard.storable`) for the bookable, the event
+ * and the access point. A new or changed location with an address, an
+ * addition or an old text needs a point; an unchanged one passes, so the
+ * rule measures against the stored one.
+ *
+ * @param {*} location - The location as edited, in the stored form.
+ * @param {*} [storedLocation] - The location as stored; none for a new one.
+ * @returns {?string} The key.
+ */
+export function locationRefusal(location, storedLocation) {
+  return refusalOf(fromStored(location, storedLocation ?? null));
 }

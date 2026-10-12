@@ -20,18 +20,12 @@ import {
   QR_SCAN_RULE,
 } from "@/utilities/access-points";
 import { isComingSoonAccessPointMode } from "@/utilities/coming-soon";
-import { locationRefusal } from "@/utils/bookableValidation";
+import { locationRefusal, pointOf } from "@/utils/locationLogic";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
 // The origin of a point taken over with „Vorbelegen“: it counts as one set
 // by hand, so a changed address asks before the point follows.
 const PREFILL_ORIGIN = "nuki";
-
-/** The point of a location in the stored form, as `{ lat, lon }`, or null. */
-function pointOf(location) {
-  const [lon, lat] = location?.coordinates?.points || [];
-  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
-}
 
 /**
  * The Öffnungsart of a Nuki access point: which action Nuki performs when the

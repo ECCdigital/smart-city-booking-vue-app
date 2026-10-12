@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { IFBS_LOCKER, takenOverBy } from "@tests/unit/support/parkraumService";
 import Bookable from "@/entities/bookable";
 import {
+  BOOKABLE_RULE_NAMES,
   bookableIssues,
   bookableRules,
   firstIssue,
@@ -221,6 +222,16 @@ describe("bookableValidation - the location", () => {
         message: "location.reason.oldTextWithoutPoint",
       }),
     ]);
+  });
+
+  it("is a rule like any field's, measured against the stored location", () => {
+    const rule = (stored) => (value) =>
+      bookableRules("location", (key) => key, { stored })[0](value);
+
+    expect(BOOKABLE_RULE_NAMES).toContain("location");
+    expect(rule(null)(GASSTRASSE)).toBe("location.reason.addressWithoutPoint");
+    expect(rule(GASSTRASSE)(GASSTRASSE)).toBe(true);
+    expect(rule(null)(WITH_POINT)).toBe(true);
   });
 });
 
