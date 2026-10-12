@@ -2546,8 +2546,6 @@
       },
       "location": {
         "title": "Standort",
-        "address": "Adresse",
-        "coordinates": "Koordinaten",
         "prefill": "Standort vom Anbieter übernehmen",
         "prefillAfterSave": "Den Standort kann der Anbieter erst vorschlagen, wenn der Zugangspunkt angelegt ist.",
         "prefillApplied": "Die Koordinaten des Anbieters wurden übernommen. Speichern Sie, um sie zu sichern.",

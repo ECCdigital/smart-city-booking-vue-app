@@ -13,10 +13,14 @@ vi.mock("@/services/api/ApiAccessAppsService", () => ({
 vi.mock("@/services/api/ApiAccessPointService", () => ({
   default: { storeAccessPoint: vi.fn(), getLocationPrefill: vi.fn() },
 }));
+vi.mock("@/services/api/ApiGeoService", () => ({
+  default: { search: vi.fn(), reverse: vi.fn(), start: vi.fn() },
+}));
 
 import AccessPointEditDialog from "@/components/AccessPoint/AccessPointEditDialog.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
+import ApiGeoService from "@/services/api/ApiGeoService";
 
 const LISTS = ["listAccessPoints"];
 
@@ -49,6 +53,20 @@ const LOCKER = {
   validationRules: [],
 };
 
+// The map stands aside; the input of a Standort around it is the real one.
+const KarteStub = {
+  name: "StandortKarte",
+  props: {
+    punkt: { type: Object, default: null },
+    vorschlagPunkt: { type: Object, default: null },
+    ansicht: { type: Object, default: null },
+    tenantId: { type: String, default: null },
+  },
+  render(h) {
+    return h("div");
+  },
+};
+
 function store() {
   return new Vuex.Store({
     modules: {
@@ -64,6 +82,7 @@ function store() {
 async function mountDialog(propsData = {}) {
   const wrapper = mountComponent(AccessPointEditDialog, {
     store: store(),
+    stubs: { StandortKarte: KarteStub },
     propsData: {
       open: false,
       accessPoint: null,
@@ -87,6 +106,15 @@ function dialogText(wrapper) {
   return wrapper.findComponent({ name: "v-card" }).text();
 }
 
+function standort(wrapper) {
+  return wrapper.findComponent({ name: "StandortEingabe" });
+}
+
+/** An input of the Standort's fields, by name (`strasse`, `ort`, ...). */
+function locationField(wrapper, name) {
+  return standort(wrapper).find(`[data-test='standort-${name}']`).find("input");
+}
+
 function labels(wrapper) {
   return wrapper.findAll("label").wrappers.map((label) => label.text());
 }
@@ -101,6 +129,9 @@ describe("AccessPointEditDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [] });
+    ApiGeoService.start.mockResolvedValue({ lat: 51.2, lon: 9.4, zoom: 5 });
+    ApiGeoService.search.mockResolvedValue([]);
+    ApiGeoService.reverse.mockResolvedValue(null);
   });
 
   it("shows the type of a locker system instead of offering a choice", async () => {
@@ -126,7 +157,7 @@ describe("AccessPointEditDialog", () => {
     const wrapper = await mountDialog({ accessPoint: LOCKER });
 
     expect(labels(wrapper)).not.toContain("Modus");
-    expect(labels(wrapper)).not.toContain("Adresse");
+    expect(standort(wrapper).exists()).toBe(false);
     expect(dialogText(wrapper)).not.toContain("QR-Scan erforderlich");
   });
 
@@ -134,7 +165,7 @@ describe("AccessPointEditDialog", () => {
     const wrapper = await mountDialog({ accessPoint: DOOR });
 
     expect(labels(wrapper)).toContain("Modus");
-    expect(labels(wrapper)).toContain("Adresse");
+    expect(standort(wrapper).exists()).toBe(true);
     expect(dialogText(wrapper)).toContain("QR-Scan erforderlich");
   });
 
@@ -959,6 +990,237 @@ describe("AccessPointEditDialog", () => {
       expect(labels(wrapper)).toContain("ID beim Anbieter");
       expect(labels(wrapper)).toContain("Standort-ID beim Anbieter");
       expect(dialogText(wrapper)).toContain("ohne den QR-Code neu zu drucken");
+    });
+  });
+});
+
+/**
+ * The Standort of a door is entered with the input of a Standort (map
+ * ECCdigital/tickets#372): narrow, fields and map one under the other, right
+ * in the dialog - no dialog in the dialog.
+ */
+describe("AccessPointEditDialog - Standort", () => {
+  const STORED = {
+    address: {
+      street: "Gasstraße",
+      house_number: "4",
+      postcode: "03172",
+      city: "Guben",
+      country_code: "DE",
+    },
+    display_address: "Gasstraße 4, 03172 Guben",
+    coordinates: { type: "Point", points: [14.714485, 51.950438] },
+    meta: { source: "photon", additional: null },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ApiAccessAppsService.getAccessPoints.mockResolvedValue({ data: [] });
+    ApiGeoService.start.mockResolvedValue({ lat: 51.2, lon: 9.4, zoom: 5 });
+    ApiGeoService.search.mockResolvedValue([]);
+    ApiGeoService.reverse.mockResolvedValue(null);
+    ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
+  });
+
+  it("edits the Standort with the narrow input of a Standort", async () => {
+    const wrapper = await mountDialog({
+      accessPoint: { ...DOOR, location: STORED },
+    });
+
+    expect(standort(wrapper).props("value")).toBe(STORED);
+    expect(standort(wrapper).props("schmal")).toBe(true);
+    expect(labels(wrapper)).toContain("Straße");
+    expect(labels(wrapper)).not.toContain("Adresse");
+    expect(dialogText(wrapper)).not.toContain("Koordinaten");
+  });
+
+  it("starts the Standort afresh when the dialog opens again", async () => {
+    const wrapper = await mountDialog({ providers: [] });
+    await standort(wrapper)
+      .find("[data-test='standort-suche']")
+      .find("input")
+      .setValue("Gasstr");
+    await locationField(wrapper, "ort").setValue("Guben");
+
+    await wrapper.setProps({ open: false });
+    await wrapper.setProps({ open: true });
+    await flushPromises();
+
+    expect(
+      standort(wrapper).find("[data-test='standort-suche']").find("input")
+        .element.value
+    ).toBe("");
+    expect(locationField(wrapper, "ort").element.value).toBe("");
+    expect(wrapper.find(".save-refusal").exists()).toBe(false);
+  });
+
+  /**
+   * The backend refuses a new or changed Standort with an Anschrift but no
+   * Punkt. The dialog does not offer to save it, and says why beside the
+   * button.
+   */
+  it("locks saving while the Standort cannot be saved, with the reason", async () => {
+    const wrapper = await mountDialog({ providers: [] });
+    const save = wrapper.find(".save-access-point");
+    expect(save.attributes("disabled")).toBeUndefined();
+
+    await locationField(wrapper, "ort").setValue("Guben");
+    await locationField(wrapper, "ort").trigger("blur");
+    await flushPromises();
+
+    expect(save.attributes("disabled")).toBe("disabled");
+    expect(wrapper.find(".save-refusal").text()).toBe(
+      "Anschrift ohne Punkt. Setze den Punkt auf der Karte."
+    );
+    await save.trigger("click");
+    await flushPromises();
+    expect(ApiAccessPointService.storeAccessPoint).not.toHaveBeenCalled();
+  });
+
+  /**
+   * An old Standort without Punkt is let through by the backend as long as
+   * it is sent back unchanged - word for word, as stored.
+   */
+  it("saves an old Standort without Punkt as long as it is unchanged", async () => {
+    const OLD = "Sportplatz Kaltenborner Straße, Guben";
+    const wrapper = await mountDialog({
+      accessPoint: { ...DOOR, location: OLD },
+    });
+
+    expect(dialogText(wrapper)).toContain("Punkt fehlt.");
+    expect(wrapper.find(".save-refusal").exists()).toBe(false);
+
+    await wrapper.find(".save-access-point").trigger("click");
+    await flushPromises();
+
+    const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+    expect(payload.location).toBe(OLD);
+  });
+
+  /**
+   * „Vorbelegen“ asks NUKI where the lock stands. Its Punkt is set through
+   * the input with the origin `nuki`; the Anschrift there comes only as the
+   * reverse search's suggestion, never written over the fields.
+   */
+  describe("„Vorbelegen“ from NUKI", () => {
+    const NUKI_LOCATING = {
+      ...PROVIDERS[0],
+      providerCapabilities: [...LISTS, "getLocation"],
+    };
+    const NUKI_POINT = { lat: 51.9512, lon: 14.7161 };
+
+    async function prefill(accessPoint = DOOR) {
+      const wrapper = await mountDialog({
+        accessPoint,
+        providers: [NUKI_LOCATING],
+      });
+      const button = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Standort vom Anbieter"));
+      await button.trigger("click");
+      await flushPromises();
+      return wrapper;
+    }
+
+    async function savedLocation(wrapper) {
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+      return ApiAccessPointService.storeAccessPoint.mock.calls[0][0].location;
+    }
+
+    beforeEach(() => {
+      ApiAccessPointService.getLocationPrefill.mockResolvedValue({
+        data: {
+          coordinates: {
+            type: "Point",
+            points: [NUKI_POINT.lon, NUKI_POINT.lat],
+          },
+        },
+      });
+      ApiGeoService.reverse.mockResolvedValue({
+        address: {
+          street: "Gasstraße",
+          house_number: "4",
+          postcode: "03172",
+          city: "Guben",
+          country_code: "DE",
+        },
+        coordinates: { type: "Point", points: [14.7161, 51.9512] },
+        display_address: "Gasstraße 4, 03172 Guben",
+      });
+    });
+
+    it("sets NUKI's Punkt with the origin nuki and suggests the Anschrift", async () => {
+      const wrapper = await prefill();
+
+      expect(ApiGeoService.reverse).toHaveBeenCalledWith(
+        "t1",
+        expect.objectContaining(NUKI_POINT)
+      );
+      expect(dialogText(wrapper)).toContain("Punkt von NUKI");
+      expect(dialogText(wrapper)).toContain(
+        "Anschrift am neuen Punkt: Gasstraße 4, 03172 Guben"
+      );
+      expect(dialogText(wrapper)).toContain(
+        "Die Koordinaten des Anbieters wurden übernommen."
+      );
+
+      const location = await savedLocation(wrapper);
+      expect(location.coordinates.points).toEqual([
+        NUKI_POINT.lon,
+        NUKI_POINT.lat,
+      ]);
+      expect(location.meta.source).toBe("nuki");
+      expect(location.address.street).toBeNull();
+    });
+
+    it("asks before NUKI's Punkt follows a changed Anschrift", async () => {
+      ApiGeoService.search.mockResolvedValue([
+        {
+          address: {
+            street: "Frankfurter Straße",
+            house_number: "1",
+            postcode: "03172",
+            city: "Guben",
+            country_code: "DE",
+          },
+          coordinates: { type: "Point", points: [14.7301, 51.9431] },
+          display_address: "Frankfurter Straße 1, 03172 Guben",
+        },
+      ]);
+      const wrapper = await prefill();
+
+      for (const [field, value] of [
+        ["strasse", "Frankfurter Straße"],
+        ["hausnummer", "1"],
+        ["ort", "Guben"],
+      ]) {
+        await locationField(wrapper, field).setValue(value);
+      }
+      await locationField(wrapper, "ort").trigger("blur");
+      await flushPromises();
+
+      expect(dialogText(wrapper)).toContain("Punkt zur Anschrift verschieben?");
+      const location = await savedLocation(wrapper);
+      expect(location.coordinates.points).toEqual([
+        NUKI_POINT.lon,
+        NUKI_POINT.lat,
+      ]);
+      expect(location.meta.source).toBe("nuki");
+    });
+
+    it("says so and keeps the Standort when NUKI knows none", async () => {
+      ApiAccessPointService.getLocationPrefill.mockResolvedValue({
+        data: null,
+      });
+
+      const wrapper = await prefill({ ...DOOR, location: STORED });
+
+      expect(dialogText(wrapper)).toContain(
+        "Der Anbieter kennt für dieses Schloss keinen Standort."
+      );
+      expect(ApiGeoService.reverse).not.toHaveBeenCalled();
+      expect(await savedLocation(wrapper)).toBe(STORED);
     });
   });
 });
