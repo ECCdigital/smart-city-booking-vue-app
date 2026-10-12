@@ -53,13 +53,13 @@ const LOCKER = {
   validationRules: [],
 };
 
-// The map stands aside; the input of a Standort around it is the real one.
-const KarteStub = {
-  name: "StandortKarte",
+// The map stands aside; the location input around it is the real one.
+const MapStub = {
+  name: "LocationMap",
   props: {
-    punkt: { type: Object, default: null },
-    vorschlagPunkt: { type: Object, default: null },
-    ansicht: { type: Object, default: null },
+    point: { type: Object, default: null },
+    suggestedPoint: { type: Object, default: null },
+    view: { type: Object, default: null },
     tenantId: { type: String, default: null },
   },
   render(h) {
@@ -82,7 +82,7 @@ function store() {
 async function mountDialog(propsData = {}) {
   const wrapper = mountComponent(AccessPointEditDialog, {
     store: store(),
-    stubs: { StandortKarte: KarteStub },
+    stubs: { LocationMap: MapStub },
     propsData: {
       open: false,
       accessPoint: null,
@@ -106,13 +106,15 @@ function dialogText(wrapper) {
   return wrapper.findComponent({ name: "v-card" }).text();
 }
 
-function standort(wrapper) {
-  return wrapper.findComponent({ name: "StandortEingabe" });
+function locationInput(wrapper) {
+  return wrapper.findComponent({ name: "LocationInput" });
 }
 
-/** An input of the Standort's fields, by name (`strasse`, `ort`, ...). */
+/** An input of the location's fields, by name (`street`, `city`, ...). */
 function locationField(wrapper, name) {
-  return standort(wrapper).find(`[data-test='standort-${name}']`).find("input");
+  return locationInput(wrapper)
+    .find(`[data-test='location-${name}']`)
+    .find("input");
 }
 
 function labels(wrapper) {
@@ -157,7 +159,7 @@ describe("AccessPointEditDialog", () => {
     const wrapper = await mountDialog({ accessPoint: LOCKER });
 
     expect(labels(wrapper)).not.toContain("Modus");
-    expect(standort(wrapper).exists()).toBe(false);
+    expect(locationInput(wrapper).exists()).toBe(false);
     expect(dialogText(wrapper)).not.toContain("QR-Scan erforderlich");
   });
 
@@ -165,7 +167,7 @@ describe("AccessPointEditDialog", () => {
     const wrapper = await mountDialog({ accessPoint: DOOR });
 
     expect(labels(wrapper)).toContain("Modus");
-    expect(standort(wrapper).exists()).toBe(true);
+    expect(locationInput(wrapper).exists()).toBe(true);
     expect(dialogText(wrapper)).toContain("QR-Scan erforderlich");
   });
 
@@ -995,11 +997,11 @@ describe("AccessPointEditDialog", () => {
 });
 
 /**
- * The Standort of a door is entered with the input of a Standort (map
+ * The location of a door is entered with the location input (map
  * ECCdigital/tickets#372): narrow, fields and map one under the other, right
  * in the dialog - no dialog in the dialog.
  */
-describe("AccessPointEditDialog - Standort", () => {
+describe("AccessPointEditDialog - location", () => {
   const STORED = {
     address: {
       street: "Gasstraße",
@@ -1022,50 +1024,50 @@ describe("AccessPointEditDialog - Standort", () => {
     ApiAccessPointService.storeAccessPoint.mockResolvedValue({ data: {} });
   });
 
-  it("edits the Standort with the narrow input of a Standort", async () => {
+  it("edits the location with the narrow location input", async () => {
     const wrapper = await mountDialog({
       accessPoint: { ...DOOR, location: STORED },
     });
 
-    expect(standort(wrapper).props("value")).toBe(STORED);
-    expect(standort(wrapper).props("schmal")).toBe(true);
+    expect(locationInput(wrapper).props("value")).toBe(STORED);
+    expect(locationInput(wrapper).props("narrow")).toBe(true);
     expect(labels(wrapper)).toContain("Straße");
     expect(labels(wrapper)).not.toContain("Adresse");
     expect(dialogText(wrapper)).not.toContain("Koordinaten");
   });
 
-  it("starts the Standort afresh when the dialog opens again", async () => {
+  it("starts the location afresh when the dialog opens again", async () => {
     const wrapper = await mountDialog({ providers: [] });
-    await standort(wrapper)
-      .find("[data-test='standort-suche']")
+    await locationInput(wrapper)
+      .find("[data-test='location-search']")
       .find("input")
       .setValue("Gasstr");
-    await locationField(wrapper, "ort").setValue("Guben");
+    await locationField(wrapper, "city").setValue("Guben");
 
     await wrapper.setProps({ open: false });
     await wrapper.setProps({ open: true });
     await flushPromises();
 
     expect(
-      standort(wrapper).find("[data-test='standort-suche']").find("input")
+      locationInput(wrapper).find("[data-test='location-search']").find("input")
         .element.value
     ).toBe("");
-    expect(locationField(wrapper, "ort").element.value).toBe("");
+    expect(locationField(wrapper, "city").element.value).toBe("");
     expect(wrapper.find(".save-refusal").exists()).toBe(false);
   });
 
   /**
-   * The backend refuses a new or changed Standort with an Anschrift but no
-   * Punkt. The dialog does not offer to save it, and says why beside the
+   * The backend refuses a new or changed location with an address but no
+   * point. The dialog does not offer to save it, and says why beside the
    * button.
    */
-  it("locks saving while the Standort cannot be saved, with the reason", async () => {
+  it("locks saving while the location cannot be saved, with the reason", async () => {
     const wrapper = await mountDialog({ providers: [] });
     const save = wrapper.find(".save-access-point");
     expect(save.attributes("disabled")).toBeUndefined();
 
-    await locationField(wrapper, "ort").setValue("Guben");
-    await locationField(wrapper, "ort").trigger("blur");
+    await locationField(wrapper, "city").setValue("Guben");
+    await locationField(wrapper, "city").trigger("blur");
     await flushPromises();
 
     expect(save.attributes("disabled")).toBe("disabled");
@@ -1078,10 +1080,10 @@ describe("AccessPointEditDialog - Standort", () => {
   });
 
   /**
-   * An old Standort without Punkt is let through by the backend as long as
+   * An old location without point is let through by the backend as long as
    * it is sent back unchanged - word for word, as stored.
    */
-  it("saves an old Standort without Punkt as long as it is unchanged", async () => {
+  it("saves an old location without point as long as it is unchanged", async () => {
     const OLD = "Sportplatz Kaltenborner Straße, Guben";
     const wrapper = await mountDialog({
       accessPoint: { ...DOOR, location: OLD },
@@ -1098,8 +1100,8 @@ describe("AccessPointEditDialog - Standort", () => {
   });
 
   /**
-   * „Vorbelegen“ asks NUKI where the lock stands. Its Punkt is set through
-   * the input with the origin `nuki`; the Anschrift there comes only as the
+   * „Vorbelegen“ asks NUKI where the lock stands. Its point is set through
+   * the input with the origin `nuki`; the address there comes only as the
    * reverse search's suggestion, never written over the fields.
    */
   describe("„Vorbelegen“ from NUKI", () => {
@@ -1150,7 +1152,7 @@ describe("AccessPointEditDialog - Standort", () => {
       });
     });
 
-    it("sets NUKI's Punkt with the origin nuki and suggests the Anschrift", async () => {
+    it("sets NUKI's point with the origin nuki and suggests the address", async () => {
       const wrapper = await prefill();
 
       expect(ApiGeoService.reverse).toHaveBeenCalledWith(
@@ -1162,7 +1164,7 @@ describe("AccessPointEditDialog - Standort", () => {
         "Anschrift am neuen Punkt: Gasstraße 4, 03172 Guben"
       );
       expect(dialogText(wrapper)).toContain(
-        "Die Koordinaten des Anbieters wurden übernommen."
+        "Der Punkt des Anbieters wurde übernommen. Speichern Sie, um ihn zu sichern."
       );
 
       const location = await savedLocation(wrapper);
@@ -1174,7 +1176,7 @@ describe("AccessPointEditDialog - Standort", () => {
       expect(location.address.street).toBeNull();
     });
 
-    it("asks before NUKI's Punkt follows a changed Anschrift", async () => {
+    it("asks before NUKI's point follows a changed address", async () => {
       ApiGeoService.search.mockResolvedValue([
         {
           address: {
@@ -1191,13 +1193,13 @@ describe("AccessPointEditDialog - Standort", () => {
       const wrapper = await prefill();
 
       for (const [field, value] of [
-        ["strasse", "Frankfurter Straße"],
-        ["hausnummer", "1"],
-        ["ort", "Guben"],
+        ["street", "Frankfurter Straße"],
+        ["houseNumber", "1"],
+        ["city", "Guben"],
       ]) {
         await locationField(wrapper, field).setValue(value);
       }
-      await locationField(wrapper, "ort").trigger("blur");
+      await locationField(wrapper, "city").trigger("blur");
       await flushPromises();
 
       expect(dialogText(wrapper)).toContain("Punkt zur Anschrift verschieben?");
@@ -1209,7 +1211,7 @@ describe("AccessPointEditDialog - Standort", () => {
       expect(location.meta.source).toBe("nuki");
     });
 
-    it("says so and keeps the Standort when NUKI knows none", async () => {
+    it("says so and keeps the location when NUKI knows none", async () => {
       ApiAccessPointService.getLocationPrefill.mockResolvedValue({
         data: null,
       });

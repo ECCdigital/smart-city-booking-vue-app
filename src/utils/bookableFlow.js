@@ -898,7 +898,7 @@ const everyOption = () => true;
  * asks it - every option by default. What ParkraumService takes over reads
  * from the tenant's `accessPoints` (none by default: nothing). In the flow a step not `visited` yet is
  * `open` and shows no rows; by default every step was. `stored` is the
- * bookable as stored (`null` for a new one), against which the Standort is
+ * bookable as stored (`null` for a new one), against which the location is
  * checked.
  */
 export function overviewBlocks(

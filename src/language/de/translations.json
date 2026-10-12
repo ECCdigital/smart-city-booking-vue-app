@@ -2548,7 +2548,7 @@
         "title": "Standort",
         "prefill": "Standort vom Anbieter übernehmen",
         "prefillAfterSave": "Den Standort kann der Anbieter erst vorschlagen, wenn der Zugangspunkt angelegt ist.",
-        "prefillApplied": "Die Koordinaten des Anbieters wurden übernommen. Speichern Sie, um sie zu sichern.",
+        "prefillApplied": "Der Punkt des Anbieters wurde übernommen. Speichern Sie, um ihn zu sichern.",
         "prefillEmpty": "Der Anbieter kennt für dieses Schloss keinen Standort."
       },
       "config": {
@@ -3049,8 +3049,8 @@
       "additionalPlaceholder": "z. B. Halle 2, Hintereingang"
     },
     "point": {
-      "suche": "Punkt aus der Suche",
-      "karte": "Punkt von Hand gesetzt",
+      "search": "Punkt aus der Suche",
+      "map": "Punkt von Hand gesetzt",
       "nuki": "Punkt von NUKI",
       "none": "Kein Punkt",
       "missing": "Punkt fehlt.",
@@ -3074,9 +3074,9 @@
       "search": "Suche"
     },
     "reason": {
-      "punktNichtGesetzt": "Ort ohne Punkt. Setze den Punkt auf der Karte.",
-      "anschriftOhnePunkt": "Anschrift ohne Punkt. Setze den Punkt auf der Karte.",
-      "altTextOhnePunkt": "Standort ohne Punkt. Suche den Text oder setze den Punkt auf der Karte."
+      "pointNotSet": "Ort ohne Punkt. Setze den Punkt auf der Karte.",
+      "addressWithoutPoint": "Anschrift ohne Punkt. Setze den Punkt auf der Karte.",
+      "oldTextWithoutPoint": "Standort ohne Punkt. Suche den Text oder setze den Punkt auf der Karte."
     }
   },
   "invoice": {

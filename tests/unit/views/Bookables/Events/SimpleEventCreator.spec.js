@@ -36,9 +36,9 @@ const stub = (name, props = {}) => ({
 });
 
 const STUBS = {
-  StandortEingabe: stub("StandortEingabe", {
+  LocationInput: stub("LocationInput", {
     value: { type: [Object, String], default: null },
-    gespeichert: { type: [Object, String], default: undefined },
+    stored: { type: [Object, String], default: undefined },
   }),
   MediaReferenceField: stub("MediaReferenceField"),
   Tiptap: stub("Tiptap"),
@@ -108,28 +108,28 @@ beforeEach(() => {
   ApiEventService.addEvent.mockResolvedValue({});
 });
 
-describe("SimpleEventCreator - Standort", () => {
-  it("edits the Standort with the input of a Standort, measured against none", async () => {
+describe("SimpleEventCreator - location", () => {
+  it("edits the location with the location input, measured against none", async () => {
     const { wrapper } = await mountCreator(ADDRESS_WITH_POINT);
-    const standort = wrapper.findComponent({ name: "StandortEingabe" });
+    const locationInput = wrapper.findComponent({ name: "LocationInput" });
 
-    expect(standort.props("value")).toEqual(ADDRESS_WITH_POINT);
-    expect(standort.props("gespeichert")).toBeNull();
+    expect(locationInput.props("value")).toEqual(ADDRESS_WITH_POINT);
+    expect(locationInput.props("stored")).toBeNull();
     const headings = wrapper.findAll("h4").wrappers.map((h) => h.text());
     expect(headings).not.toContain("Adresse");
   });
 
-  it("writes the Standort as the input hands it out into the store", async () => {
+  it("writes the location as the input hands it out into the store", async () => {
     const { wrapper, store } = await mountCreator();
 
     wrapper
-      .findComponent({ name: "StandortEingabe" })
+      .findComponent({ name: "LocationInput" })
       .vm.$emit("input", ADDRESS_WITH_POINT);
 
     expect(store.state.events.form.location).toEqual(ADDRESS_WITH_POINT);
   });
 
-  it("starts a new event with an empty Standort that names the postcode „postcode“", async () => {
+  it("starts a new event with an empty location that names the postcode „postcode“", async () => {
     const { store } = await mountCreator();
 
     expect(store.state.events.form.location.address).toHaveProperty(
@@ -141,7 +141,7 @@ describe("SimpleEventCreator - Standort", () => {
     );
   });
 
-  it("sends a Standort with Anschrift and Punkt", async () => {
+  it("sends a location with address and point", async () => {
     const { wrapper } = await mountCreator(ADDRESS_WITH_POINT);
 
     expect(submit(wrapper).attributes("disabled")).toBeUndefined();
@@ -152,7 +152,7 @@ describe("SimpleEventCreator - Standort", () => {
     expect(ApiEventService.addEvent).toHaveBeenCalled();
   });
 
-  it("locks „Absenden“ while the Standort may not be saved, and says why", async () => {
+  it("locks „Absenden“ while the location may not be saved, and says why", async () => {
     const { wrapper } = await mountCreator(ADDRESS_WITHOUT_POINT);
 
     expect(submit(wrapper).attributes("disabled")).toBe("disabled");

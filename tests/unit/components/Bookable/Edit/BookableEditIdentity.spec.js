@@ -28,8 +28,8 @@ const STUBS = {
     publicOnly: Boolean,
     publicOnlyReason: String,
   }),
-  StandortEingabe: stub("StandortEingabe", {
-    gespeichert: { type: [Object, String], default: undefined },
+  LocationInput: stub("LocationInput", {
+    stored: { type: [Object, String], default: undefined },
     tenantId: String,
   }),
   Tiptap: stub("Tiptap", { minHeight: [String, Number] }),
@@ -349,25 +349,25 @@ describe("BookableEditIdentity - Bilder", () => {
   });
 });
 
-describe("BookableEditIdentity - Standort", () => {
+describe("BookableEditIdentity - location", () => {
   beforeEach(() => {
     ApiEventService.getEvents.mockResolvedValue({ data: [] });
     ApiTagsService.getTags.mockResolvedValue({ data: [] });
   });
 
   const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
-  const standort = (wrapper) =>
-    wrapper.findComponent({ name: "StandortEingabe" });
+  const locationInput = (wrapper) =>
+    wrapper.findComponent({ name: "LocationInput" });
 
-  it("edits the Standort with the input of a Standort, of the bookable's tenant", () => {
+  it("edits the location with the location input, of the bookable's tenant", () => {
     const { wrapper } = mountBasics({ location: OLD_TEXT });
 
-    expect(standort(wrapper).props("value")).toBe(OLD_TEXT);
-    expect(standort(wrapper).props("tenantId")).toBe("t-own");
+    expect(locationInput(wrapper).props("value")).toBe(OLD_TEXT);
+    expect(locationInput(wrapper).props("tenantId")).toBe("t-own");
     expect(wrapper.text()).not.toContain("Adresse");
   });
 
-  it("patches the Standort as the input hands it out", () => {
+  it("patches the location as the input hands it out", () => {
     const { wrapper, patches } = mountBasics();
     const location = {
       address: { city: "Guben", country_code: "DE" },
@@ -376,12 +376,12 @@ describe("BookableEditIdentity - Standort", () => {
       meta: { source: "manual", additional: null },
     };
 
-    standort(wrapper).vm.$emit("input", location);
+    locationInput(wrapper).vm.$emit("input", location);
 
     expect(patches).toEqual([{ location }]);
   });
 
-  it("measures the Standort against the stored bookable's", () => {
+  it("measures the location against the stored bookable's", () => {
     const { wrapper } = mountBasics({
       id: "b1",
       expertMode: true,
@@ -389,12 +389,12 @@ describe("BookableEditIdentity - Standort", () => {
       saved: { id: "b1", location: OLD_TEXT },
     });
 
-    expect(standort(wrapper).props("gespeichert")).toBe(OLD_TEXT);
+    expect(locationInput(wrapper).props("stored")).toBe(OLD_TEXT);
   });
 
-  it("measures a new bookable's Standort against none", () => {
+  it("measures a new bookable's location against none", () => {
     const { wrapper } = mountBasics({ isNew: true, expertMode: true });
 
-    expect(standort(wrapper).props("gespeichert")).toBeNull();
+    expect(locationInput(wrapper).props("stored")).toBeNull();
   });
 });

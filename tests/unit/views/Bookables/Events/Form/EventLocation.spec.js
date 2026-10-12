@@ -14,14 +14,14 @@ import EventLocation from "@/views/Bookables/Events/Form/EventLocation.vue";
 const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
 
 const STUBS = {
-  StandortEingabe: {
-    name: "StandortEingabe",
+  LocationInput: {
+    name: "LocationInput",
     props: {
       value: { type: [Object, String], default: null },
-      gespeichert: { type: [Object, String], default: undefined },
+      stored: { type: [Object, String], default: undefined },
     },
     render(h) {
-      return h("div", { attrs: { "data-test": "stub-StandortEingabe" } });
+      return h("div", { attrs: { "data-test": "stub-LocationInput" } });
     },
   },
   Pager: { name: "Pager", render: (h) => h("div") },
@@ -46,34 +46,34 @@ async function mountLocation({ event } = {}) {
   return { wrapper, store };
 }
 
-const standort = (wrapper) =>
-  wrapper.findComponent({ name: "StandortEingabe" });
+const locationInput = (wrapper) =>
+  wrapper.findComponent({ name: "LocationInput" });
 
 beforeEach(() => {
   vi.clearAllMocks();
   ApiBookablesService.getBookables.mockResolvedValue({ data: [] });
 });
 
-describe("EventLocation - Standort", () => {
-  it("edits the event's Standort with the input of a Standort, measured against the stored one", async () => {
+describe("EventLocation - location", () => {
+  it("edits the event's location with the location input, measured against the stored one", async () => {
     const { wrapper } = await mountLocation({
       event: { id: "e-1", eventLocation: {}, location: OLD_TEXT },
     });
 
-    expect(standort(wrapper).props("value")).toBe(OLD_TEXT);
-    expect(standort(wrapper).props("gespeichert")).toBe(OLD_TEXT);
+    expect(locationInput(wrapper).props("value")).toBe(OLD_TEXT);
+    expect(locationInput(wrapper).props("stored")).toBe(OLD_TEXT);
     const headings = wrapper.findAll("h4").wrappers.map((h) => h.text());
     expect(headings).toContain("Standort");
     expect(headings).not.toContain("Adresse");
   });
 
-  it("measures a new event's Standort against none", async () => {
+  it("measures a new event's location against none", async () => {
     const { wrapper } = await mountLocation();
 
-    expect(standort(wrapper).props("gespeichert")).toBeNull();
+    expect(locationInput(wrapper).props("stored")).toBeNull();
   });
 
-  it("writes the Standort as the input hands it out into the store", async () => {
+  it("writes the location as the input hands it out into the store", async () => {
     const { wrapper, store } = await mountLocation();
     const location = {
       address: { city: "Guben", country_code: "DE" },
@@ -82,7 +82,7 @@ describe("EventLocation - Standort", () => {
       meta: { source: "manual", additional: null },
     };
 
-    standort(wrapper).vm.$emit("input", location);
+    locationInput(wrapper).vm.$emit("input", location);
 
     expect(store.state.events.form.location).toEqual(location);
   });

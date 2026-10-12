@@ -95,9 +95,9 @@
         <div class="bookable-basics__label">
           {{ $t("bookable.identity.location") }}
         </div>
-        <StandortEingabe
+        <LocationInput
           :value="bookable.location"
-          :gespeichert="storedLocation"
+          :stored="storedLocation"
           :tenant-id="bookable.tenantId"
           @input="patch({ location: $event })"
         />
@@ -177,7 +177,7 @@
 <script>
 import Tiptap from "@/components/Tiptap.vue";
 import MediaReferenceList from "@/components/Media/MediaReferenceList.vue";
-import StandortEingabe from "@/components/commons/Standort/StandortEingabe.vue";
+import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import ChipCombobox from "@/components/commons/ChipCombobox.vue";
 import ApiEventService from "@/services/api/ApiEventService";
 import ApiTagsService from "@/services/api/ApiTagsService";
@@ -201,7 +201,7 @@ import { externalReferenceOf } from "@/utils/mediaReference";
  */
 export default {
   name: "BookableEditIdentity",
-  components: { Tiptap, MediaReferenceList, StandortEingabe, ChipCombobox },
+  components: { Tiptap, MediaReferenceList, LocationInput, ChipCombobox },
   mixins: [bookableEditing],
   props: {
     isNew: { type: Boolean, default: false },
@@ -227,9 +227,9 @@ export default {
       return this.expertOptionShown("tags");
     },
     /**
-     * The Standort as stored, against which the input measures „unchanged“:
+     * The location as stored, against which the input measures „unchanged“:
      * none for a new bookable. Outside `BookableEdit` nothing is provided,
-     * and the input measures against the Standort it opened with.
+     * and the input measures against the location it opened with.
      */
     storedLocation() {
       if (this.isNew) return null;

@@ -2,7 +2,7 @@
 import { mapGetters } from "vuex";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
 import ApiAccessPointService from "@/services/api/ApiAccessPointService";
-import StandortEingabe from "@/components/commons/Standort/StandortEingabe.vue";
+import LocationInput from "@/components/commons/Location/LocationInput.vue";
 import {
   formatAccessPointErrorMessage,
   splitAccessPointFieldError,
@@ -20,18 +20,12 @@ import {
   QR_SCAN_RULE,
 } from "@/utilities/access-points";
 import { isComingSoonAccessPointMode } from "@/utilities/coming-soon";
-import { locationRefusal } from "@/utils/bookableValidation";
+import { locationRefusal, pointOf } from "@/utils/locationLogic";
 
 const GET_LOCATION_CAPABILITY = "getLocation";
-// The origin of a Punkt taken over with „Vorbelegen“: it counts as one set
-// by hand, so a changed Anschrift asks before the Punkt follows.
+// The origin of a point taken over with „Vorbelegen“: it counts as one set
+// by hand, so a changed address asks before the point follows.
 const PREFILL_ORIGIN = "nuki";
-
-/** The Punkt of a Standort in the stored form, as `{ lat, lon }`, or null. */
-function pointOf(location) {
-  const [lon, lat] = location?.coordinates?.points || [];
-  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
-}
 
 /**
  * The Öffnungsart of a Nuki access point: which action Nuki performs when the
@@ -76,7 +70,7 @@ function emptyForm() {
 
 export default {
   name: "AccessPointEditDialog",
-  components: { StandortEingabe },
+  components: { LocationInput },
   props: {
     open: { type: Boolean, default: false },
     // The access point to edit; `null` opens the dialog in create mode.
@@ -120,7 +114,7 @@ export default {
       lockLoadError: "",
       prefilling: false,
       prefillHint: "",
-      // Counts the openings: the input of a Standort starts afresh on each.
+      // Counts the openings: the location input starts afresh on each.
       opening: 0,
     };
   },
@@ -332,13 +326,13 @@ export default {
       const provider = this.providers.find((p) => p.id === this.form.provider);
       return hasProviderCapability(provider, GET_LOCATION_CAPABILITY);
     },
-    // The Standort as stored, against which the input measures "unchanged":
+    // The location as stored, against which the input measures "unchanged":
     // none for a new access point.
     storedLocation() {
       return this.accessPoint?.location ?? null;
     },
-    // Why the Standort may not be saved, or "": the backend's rule, measured
-    // against the stored Standort the same way the bookable's is.
+    // Why the location may not be saved, or "": the backend's rule, measured
+    // against the stored location the same way the bookable's is.
     saveRefusal() {
       const key = locationRefusal(this.form.location, this.storedLocation);
       return key ? this.$t(key) : "";
@@ -515,10 +509,10 @@ export default {
           return;
         }
 
-        // The input sets the Punkt and asks the reverse search for an
-        // Anschrift, which it only suggests. It hands the Standort out
+        // The input sets the point and asks the reverse search for an
+        // address, which it only suggests. It hands the location out
         // through `input`, which clears the hint - so the hint comes after.
-        this.$refs.standort.setzePunkt(point, PREFILL_ORIGIN);
+        this.$refs.location.setPoint(point, PREFILL_ORIGIN);
         this.prefillHint = this.$t(
           "accessPoint.management.location.prefillApplied"
         );
@@ -968,12 +962,12 @@ export default {
                 {{ $t("accessPoint.management.location.title") }}
               </span>
             </div>
-            <StandortEingabe
-              ref="standort"
+            <LocationInput
+              ref="location"
               :key="opening"
               :value="form.location"
-              :gespeichert="storedLocation"
-              schmal
+              :stored="storedLocation"
+              narrow
               class="mb-2"
               @input="onLocationChange"
             />
