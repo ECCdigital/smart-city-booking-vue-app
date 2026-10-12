@@ -14,6 +14,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Added
 
+-   Standort-Logik as a pure module (`src/utils/standortLogik.js`, ECCdigital/tickets#470): the rules between Anschrift and Punkt of the coming Standort input, from the prototype #375. A hit fills both and keeps the Zusatz; a Punkt set on the map or by NUKI only gets a suggested Anschrift; a changed Anschrift moves a Punkt from the search, asks about one set by hand (with the distance) and leaves it under 25 m. `pruefen` refuses a new or changed Standort with Anschrift or Zusatz but no Punkt and lets an unchanged old one through with „Punkt fehlt“; an unchanged Standort is given back as stored. Not wired to a page yet
 -   „Nutzer einladen“ on „Nächste Schritte“ opens the members page with its invite dialog open (ECCdigital/tickets#369, `/tenant/members?invite=1`); a reload does not open it again
 -   Guided flow of a bookable from 1904px (Vuetify `xl`, ECCdigital/tickets#333): a sticky list of the six steps stands left in place of the dots, with the same state, lock and jump, and the flow reads in three columns — step list, step, „Übersicht“
 -   The guided flow's „Übersicht“ shows Verfügbarkeit, Preis and Berechtigung too, in the steps' words (ECCdigital/tickets#332); „extern gesteuert“ where a provider handles availability or prices
