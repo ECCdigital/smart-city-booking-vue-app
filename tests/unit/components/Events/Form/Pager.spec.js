@@ -57,8 +57,8 @@ beforeEach(() => {
   ApiEventService.addEvent.mockResolvedValue({});
 });
 
-describe("Pager - Standort", () => {
-  it("locks „Absenden“ of a new event while its Standort may not be saved, and says why", async () => {
+describe("Pager - location", () => {
+  it("locks „Absenden“ of a new event while its location may not be saved, and says why", async () => {
     const wrapper = await mountLastStep(ADDRESS_WITHOUT_POINT);
 
     expect(submit(wrapper).attributes("disabled")).toBe("disabled");
@@ -70,7 +70,7 @@ describe("Pager - Standort", () => {
   it.each([
     ["removed", null],
     ["untouched", undefined],
-  ])("sends a new event whose Standort is %s", async (_, location) => {
+  ])("sends a new event whose location is %s", async (_, location) => {
     const wrapper = await mountLastStep(location);
 
     expect(submit(wrapper).attributes("disabled")).toBeUndefined();

@@ -132,9 +132,9 @@
               <h4 class="title">Standort</h4>
             </v-col>
             <v-col cols="12">
-              <StandortEingabe
+              <LocationInput
                 v-model="location"
-                :gespeichert="storedLocation"
+                :stored="storedLocation"
                 :tenant-id="form.tenantId || null"
               />
             </v-col>
@@ -160,7 +160,7 @@ import Pager from "@/components/Events/Form/Pager";
 import uniqueId from "lodash/uniqueId";
 import ApiBookablesService from "@/services/api/ApiBookablesService";
 import { isForbiddenError } from "@/services/api/apiErrorMessage";
-import StandortEingabe from "@/components/commons/Standort/StandortEingabe.vue";
+import LocationInput from "@/components/commons/Location/LocationInput.vue";
 
 setInteractionMode("eager");
 
@@ -185,7 +185,7 @@ export default {
     ValidationProvider,
     ValidationObserver,
     Pager,
-    StandortEingabe,
+    LocationInput,
   },
   data() {
     return {
@@ -324,7 +324,7 @@ export default {
         });
       },
     },
-    // The Standort in its stored form; the input reads every form of it.
+    // The location in its stored form; the input reads every form of it.
     location: {
       get() {
         return this.$store.state.events.form.location ?? null;

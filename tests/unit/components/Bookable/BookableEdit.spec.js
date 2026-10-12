@@ -1091,10 +1091,10 @@ describe("BookableEdit - saving with issues", () => {
     ).toBe("true");
   });
 
-  describe("the Standort", () => {
+  describe("the location", () => {
     const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
 
-    it("saves a bookable whose old Standort without Punkt stays untouched", async () => {
+    it("saves a bookable whose old location without point stays untouched", async () => {
       const wrapper = await mountEdit(
         { id: "b1", tab: "general" },
         stored({ location: OLD_TEXT })
@@ -1108,12 +1108,12 @@ describe("BookableEdit - saving with issues", () => {
       );
     });
 
-    it("refuses a changed Standort without Punkt and opens its tab", async () => {
+    it("refuses a changed location without point and opens its tab", async () => {
       const wrapper = await mountEdit(
         { id: "b1", tab: "general" },
         stored({ location: OLD_TEXT })
       );
-      wrapper.findComponent({ name: "StandortEingabe" }).vm.$emit("input", {
+      wrapper.findComponent({ name: "LocationInput" }).vm.$emit("input", {
         address: { street: null, city: "Guben", country_code: "DE" },
         display_address: OLD_TEXT,
         meta: { additional: "Eingang Nord" },

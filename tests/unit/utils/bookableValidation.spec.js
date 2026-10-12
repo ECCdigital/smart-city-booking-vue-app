@@ -157,7 +157,7 @@ describe("bookableValidation - the rules of the spec", () => {
   });
 });
 
-describe("bookableValidation - the Standort", () => {
+describe("bookableValidation - the location", () => {
   const GASSTRASSE = {
     address: {
       street: "Gasstraße",
@@ -169,17 +169,17 @@ describe("bookableValidation - the Standort", () => {
     display_address: "Gasstraße 4, 03172 Guben",
     meta: { additional: null },
   };
-  const MIT_PUNKT = {
+  const WITH_POINT = {
     ...GASSTRASSE,
     coordinates: { type: "Point", points: [14.714485, 51.950438] },
     meta: { source: "photon", additional: null },
   };
 
-  it("refuses an Anschrift without Punkt, with the reason and where to fix it", () => {
+  it("refuses an address without point, with the reason and where to fix it", () => {
     expect(issuesOf({ location: GASSTRASSE })).toEqual([
       {
         field: "location",
-        message: "location.reason.anschriftOhnePunkt",
+        message: "location.reason.addressWithoutPoint",
         tab: "general",
         section: "general-catalog",
         step: "identity",
@@ -188,14 +188,14 @@ describe("bookableValidation - the Standort", () => {
   });
 
   it.each([
-    ["a Standort with Anschrift and Punkt", MIT_PUNKT],
-    ["no Standort", null],
+    ["a location with address and point", WITH_POINT],
+    ["no location", null],
     ["the empty default", ""],
   ])("takes %s", (_, location) => {
     expect(issuesOf({ location })).toEqual([]);
   });
 
-  it("lets an unchanged old Standort without Punkt through", () => {
+  it("lets an unchanged old location without point through", () => {
     const stored = bookable({ location: "Sportplatz, Guben" });
 
     expect(
@@ -203,21 +203,23 @@ describe("bookableValidation - the Standort", () => {
     ).toEqual([]);
   });
 
-  it("refuses an old Standort without Punkt once changed", () => {
+  it("refuses an old location without point once changed", () => {
     const stored = bookable({ location: GASSTRASSE });
     const location = { ...GASSTRASSE, meta: { additional: "Halle 2" } };
 
     expect(issuesOf({ location }, { stored })).toEqual([
       expect.objectContaining({
         field: "location",
-        message: "location.reason.anschriftOhnePunkt",
+        message: "location.reason.addressWithoutPoint",
       }),
     ]);
   });
 
-  it("refuses a text without Punkt of a new bookable", () => {
+  it("refuses a text without point of a new bookable", () => {
     expect(issuesOf({ location: "Sportplatz, Guben" })).toEqual([
-      expect.objectContaining({ message: "location.reason.altTextOhnePunkt" }),
+      expect.objectContaining({
+        message: "location.reason.oldTextWithoutPoint",
+      }),
     ]);
   });
 });

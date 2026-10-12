@@ -263,7 +263,7 @@ describe("EventCreate", () => {
   });
 });
 
-describe("EventCreate - Standort", () => {
+describe("EventCreate - location", () => {
   const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
   const ADDRESS_WITHOUT_POINT = {
     address: {
@@ -282,7 +282,7 @@ describe("EventCreate - Standort", () => {
       .filter((b) => b.text() === "Änderungen übernehmen")
       .at(0);
 
-  it("locks „Änderungen übernehmen“ while the Standort may not be saved, and says why", async () => {
+  it("locks „Änderungen übernehmen“ while the location may not be saved, and says why", async () => {
     const { wrapper, store } = await mountEditor();
 
     await store.dispatch("events/updateForm", {
@@ -297,7 +297,7 @@ describe("EventCreate - Standort", () => {
     );
   });
 
-  it("saves an event with an old Standort without Punkt, sending it back word for word", async () => {
+  it("saves an event with an old location without point, sending it back word for word", async () => {
     let sent;
     ApiEventService.addEvent.mockImplementation(() => {
       sent = store.state.events.form.location;
@@ -323,7 +323,7 @@ describe("EventCreate - Standort", () => {
     expect(sent).toBe(OLD_TEXT);
   });
 
-  it("measures the Standort against the saved one after a save", async () => {
+  it("measures the location against the saved one after a save", async () => {
     const { wrapper, store } = await mountEditor({
       event: storedEvent({ location: OLD_TEXT }),
     });

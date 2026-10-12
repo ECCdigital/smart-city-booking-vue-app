@@ -3,12 +3,12 @@ import ApiClient from "./ApiClientService";
 const base = (tenantId) => `api/v2/${encodeURIComponent(tenantId)}/geo`;
 
 /**
- * The geo routes of the backend for the input of a Standort (map
+ * The geo routes of the backend for the location input (map
  * ECCdigital/tickets#372): search, reverse search, start view and the tile
  * proxy. They go through the API client, so they carry the sign-in in the
  * direct as in the BFF mode; a tile cannot be an `<img src>` for that reason.
  *
- * A hit has the stored form of a Standort: `address` (`street`,
+ * A hit has the stored form of a location: `address` (`street`,
  * `house_number`, `postcode`, `city`, `country_code`), `coordinates.points`
  * as `[lon, lat]` and `display_address`. Failures reach the caller; a
  * `503` (`geo_search_unavailable`, `geo_tiles_unavailable`) means the
@@ -52,8 +52,8 @@ export default {
   },
 
   /**
-   * Where the map of a Standort without Punkt begins: the middle of the
-   * tenant's Punkte, or all of Germany.
+   * Where the map of a location without point begins: the middle of the
+   * tenant's points, or all of Germany.
    *
    * @param {string} tenantId
    * @returns {Promise<{ lat: number, lon: number, zoom: number }>}

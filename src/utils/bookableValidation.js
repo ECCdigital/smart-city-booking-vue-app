@@ -17,7 +17,7 @@
 
 import { isBookableEditSectionVisible } from "@/utils/bookableEditSections";
 import { providerTakesOver } from "@/utils/bookableExternalProviders";
-import { ausGespeichert, pruefen } from "@/utils/standortLogik";
+import { fromStored, check } from "@/utils/locationLogic";
 
 const message = (name) => `bookable.validation.${name}`;
 
@@ -240,18 +240,18 @@ export function bookableRules(name, translate = (key) => key) {
 }
 
 /**
- * Why the Standort may not be saved, as a key of `location.reason.*`, or
- * `null`. The backend refuses a new or changed Standort with an Anschrift, a
- * Zusatz or an old text but without Punkt (`LocationGuard.storable`); an
+ * Why the location may not be saved, as a key of `location.reason.*`, or
+ * `null`. The backend refuses a new or changed location with an address, a
+ * addition or an old text but without point (`LocationGuard.storable`); an
  * unchanged one passes, so the check measures against the stored one.
  *
- * @param {*} location - The Standort as edited.
- * @param {*} [storedLocation] - The Standort as stored; none for a new bookable.
+ * @param {*} location - The location as edited.
+ * @param {*} [storedLocation] - The location as stored; none for a new bookable.
  * @returns {?string} The message.
  */
 export function locationRefusal(location, storedLocation) {
-  const { grund } = pruefen(ausGespeichert(location, storedLocation ?? null));
-  return grund ? `location.reason.${grund}` : null;
+  const { reason } = check(fromStored(location, storedLocation ?? null));
+  return reason ? `location.reason.${reason}` : null;
 }
 
 /**
@@ -285,7 +285,7 @@ function refusal(name, value) {
  *   as the caller asks it (`expertOptionShown`); without it every option
  *   shows. `accessPoints` are the tenant's, for what ParkraumService takes
  *   over. `stored` is the bookable as stored, `null` for a new one: an
- *   unchanged Standort passes whatever it holds.
+ *   unchanged location passes whatever it holds.
  * @returns {Array<{field: string, message: string, tab: string,
  *   section: ?string, step: ?string, area?: string}>} The issues, empty
  *   while it is fine. `area` names the area of the step „Weitere

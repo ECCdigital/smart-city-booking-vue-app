@@ -4,11 +4,11 @@ import Tiptap from "@/components/Tiptap.vue";
 import { mapActions, mapGetters } from "vuex";
 import ApiEventService from "@/services/api/ApiEventService";
 import ToastService from "@/services/ToastService";
-import StandortEingabe from "@/components/commons/Standort/StandortEingabe.vue";
+import LocationInput from "@/components/commons/Location/LocationInput.vue";
 
 export default {
   name: "SimpleEventCreator",
-  components: { Tiptap, MediaReferenceField, StandortEingabe },
+  components: { Tiptap, MediaReferenceField, LocationInput },
   data() {
     return {
       api: {
@@ -260,7 +260,7 @@ export default {
         });
       },
     },
-    // The Standort in its stored form; the input reads every form of it.
+    // The location in its stored form; the input reads every form of it.
     location: {
       get() {
         return this.$store.state.events.form.location ?? null;
@@ -462,7 +462,7 @@ export default {
         </v-col>
         <v-col cols="12">
           <div class="subtitle-1 mb-2">Standort</div>
-          <StandortEingabe v-model="location" :gespeichert="storedLocation" />
+          <LocationInput v-model="location" :stored="storedLocation" />
         </v-col>
       </v-row>
       <v-row> </v-row>

@@ -72,15 +72,15 @@ const state = {
   // backend's alone and changes through its own operations, so it lives next
   // to the form: never saved with it, never an unsaved change of it.
   review: null,
-  // The Standort as stored, against which an unchanged one is told apart:
-  // `null` for a new event. The backend lets an unchanged Standort pass
-  // whatever it holds, a new or changed one only with a Punkt.
+  // The location as stored, against which an unchanged one is told apart:
+  // `null` for a new event. The backend lets an unchanged location pass
+  // whatever it holds, a new or changed one only with a point.
   storedLocation: null,
 };
 
 const mutations = {
   UPDATE(state, payload) {
-    // A field the loaded event lacks (an event without Standort) becomes
+    // A field the loaded event lacks (an event without location) becomes
     // reactive on its first change.
     const target = payload.parent ? state.form[payload.parent] : state.form;
     Vue.set(target, payload.field, payload.value);
@@ -149,7 +149,7 @@ const actions = {
   restoreFromApi({ commit }, payload) {
     commit("RESTORE", payload);
   },
-  /** After a save: the Standort sent is the one stored now. */
+  /** After a save: the location sent is the one stored now. */
   locationSaved({ commit }, location) {
     commit("SET_STORED_LOCATION", location);
   },
@@ -192,7 +192,7 @@ const getters = {
   form: (state) => state.form,
   review: (state) => state.review,
   storedLocation: (state) => state.storedLocation,
-  /** Why the Standort may not be saved (`location.reason.*`), or `null`. */
+  /** Why the location may not be saved (`location.reason.*`), or `null`. */
   locationRefusal: (state) =>
     locationRefusal(state.form.location, state.storedLocation),
   speakers: (state) => state.form.eventOrganizer.speakers,

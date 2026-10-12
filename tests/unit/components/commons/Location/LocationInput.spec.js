@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountComponent } from "@tests/unit/support/mount";
-import StandortEingabe from "@/components/commons/Standort/StandortEingabe.vue";
+import LocationInput from "@/components/commons/Location/LocationInput.vue";
 
 vi.mock("@/services/api/ApiGeoService", () => ({
   default: {
@@ -14,20 +14,20 @@ vi.mock("@/services/api/ApiGeoService", () => ({
 import ApiGeoService from "@/services/api/ApiGeoService";
 
 // The map stands aside: a click and the end of a drag are its events.
-const KarteStub = {
-  name: "StandortKarte",
+const MapStub = {
+  name: "LocationMap",
   props: {
-    punkt: { type: Object, default: null },
-    vorschlagPunkt: { type: Object, default: null },
-    ansicht: { type: Object, default: null },
+    point: { type: Object, default: null },
+    suggestedPoint: { type: Object, default: null },
+    view: { type: Object, default: null },
     tenantId: { type: String, default: null },
   },
   render(h) {
-    return h("div", { attrs: { "data-test": "stub-karte" } });
+    return h("div", { attrs: { "data-test": "stub-map" } });
   },
 };
 
-// A hit of `geo/search` or `geo/reverse`: the stored form of a Standort.
+// A hit of `geo/search` or `geo/reverse`: the stored form of a location.
 const hit = ({
   lat,
   lon,
@@ -84,11 +84,11 @@ const unavailable = () =>
   });
 
 /** Mounts the input with `v-model` the way a page binds it. */
-function mountEingabe(propsData = {}) {
+function mountInput(propsData = {}) {
   let wrapper = null;
-  wrapper = mountComponent(StandortEingabe, {
+  wrapper = mountComponent(LocationInput, {
     propsData: { value: null, tenantId: "t1", ...propsData },
-    stubs: { StandortKarte: KarteStub },
+    stubs: { LocationMap: MapStub },
     listeners: {
       input: (value) => wrapper.setProps({ value }),
     },
@@ -97,7 +97,7 @@ function mountEingabe(propsData = {}) {
 }
 
 const find = (wrapper, test) => wrapper.find(`[data-test='${test}']`);
-const karte = (wrapper) => wrapper.findComponent(KarteStub);
+const map = (wrapper) => wrapper.findComponent(MapStub);
 const settle = () => vi.advanceTimersByTimeAsync(0);
 const lastInput = (wrapper) => wrapper.emitted("input")?.slice(-1)[0][0];
 
@@ -107,14 +107,14 @@ async function type(wrapper, test, text) {
 
 /** Types into the search and waits out its pause. */
 async function search(wrapper, text) {
-  await type(wrapper, "standort-suche", text);
+  await type(wrapper, "location-search", text);
   await vi.advanceTimersByTimeAsync(300);
   await settle();
 }
 
-const hits = (wrapper) => wrapper.findAll("[data-test='standort-treffer']");
+const hits = (wrapper) => wrapper.findAll("[data-test='location-hit']");
 
-describe("StandortEingabe - the search", () => {
+describe("LocationInput - the search", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
@@ -127,14 +127,14 @@ describe("StandortEingabe - the search", () => {
   });
 
   it("asks after a pause of 300 ms, from 3 characters, with the middle of the map as focus", async () => {
-    const wrapper = mountEingabe();
-    karte(wrapper).vm.$emit("ausschnitt", { lat: 51.95, lon: 14.71 });
+    const wrapper = mountInput();
+    map(wrapper).vm.$emit("moved", { lat: 51.95, lon: 14.71 });
 
-    await type(wrapper, "standort-suche", "Ga");
+    await type(wrapper, "location-search", "Ga");
     await vi.advanceTimersByTimeAsync(300);
     expect(ApiGeoService.search).not.toHaveBeenCalled();
 
-    await type(wrapper, "standort-suche", "Gasstr");
+    await type(wrapper, "location-search", "Gasstr");
     await vi.advanceTimersByTimeAsync(299);
     expect(ApiGeoService.search).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
@@ -157,7 +157,7 @@ describe("StandortEingabe - the search", () => {
       GASSTRASSE,
       GASSTRASSE,
     ]);
-    const wrapper = mountEingabe();
+    const wrapper = mountInput();
 
     await search(wrapper, "Gasstraße");
 
@@ -167,29 +167,29 @@ describe("StandortEingabe - the search", () => {
     expect(hits(wrapper).at(1).find(".v-chip").text()).toBe("Polen");
   });
 
-  it("fills the fields with a hit, sets the Punkt, keeps the Zusatz and reports the Standort", async () => {
-    const wrapper = mountEingabe();
-    await type(wrapper, "standort-zusatz", "Halle 2");
+  it("fills the fields with a hit, sets the point, keeps the addition and reports the location", async () => {
+    const wrapper = mountInput();
+    await type(wrapper, "location-addition", "Halle 2");
 
     await search(wrapper, "Gasstraße 4");
     await hits(wrapper).at(0).trigger("click");
 
-    expect(find(wrapper, "standort-strasse").find("input").element.value).toBe(
+    expect(find(wrapper, "location-street").find("input").element.value).toBe(
       "Gasstraße"
     );
     expect(
-      find(wrapper, "standort-hausnummer").find("input").element.value
+      find(wrapper, "location-houseNumber").find("input").element.value
     ).toBe("4");
-    expect(find(wrapper, "standort-plz").find("input").element.value).toBe(
+    expect(find(wrapper, "location-postcode").find("input").element.value).toBe(
       "03172"
     );
-    expect(find(wrapper, "standort-ort").find("input").element.value).toBe(
+    expect(find(wrapper, "location-city").find("input").element.value).toBe(
       "Guben"
     );
-    expect(find(wrapper, "standort-zusatz").find("input").element.value).toBe(
+    expect(find(wrapper, "location-addition").find("input").element.value).toBe(
       "Halle 2"
     );
-    expect(karte(wrapper).props("punkt")).toEqual({
+    expect(map(wrapper).props("point")).toEqual({
       lat: 51.950438,
       lon: 14.714485,
     });
@@ -200,9 +200,9 @@ describe("StandortEingabe - the search", () => {
   });
 
   it("is driven by keys: arrows choose, Enter takes, Escape closes", async () => {
-    const wrapper = mountEingabe();
+    const wrapper = mountInput();
     await search(wrapper, "Guben");
-    const input = find(wrapper, "standort-suche").find("input");
+    const input = find(wrapper, "location-search").find("input");
 
     await input.trigger("keydown", { key: "Escape" });
     expect(hits(wrapper)).toHaveLength(0);
@@ -212,35 +212,35 @@ describe("StandortEingabe - the search", () => {
     await input.trigger("keydown", { key: "ArrowDown" });
     await input.trigger("keydown", { key: "Enter" });
 
-    expect(find(wrapper, "standort-ort").find("input").element.value).toBe(
+    expect(find(wrapper, "location-city").find("input").element.value).toBe(
       "Gubin"
     );
-    expect(find(wrapper, "standort-land").find("input").element.value).toBe(
-      "PL"
-    );
+    expect(
+      find(wrapper, "location-countryCode").find("input").element.value
+    ).toBe("PL");
   });
 
   it("shows the country as a field only outside Germany", async () => {
-    const wrapper = mountEingabe({ value: STORED_GASSTRASSE });
+    const wrapper = mountInput({ value: STORED_GASSTRASSE });
 
-    expect(find(wrapper, "standort-land").exists()).toBe(false);
+    expect(find(wrapper, "location-countryCode").exists()).toBe(false);
   });
 
   it("tells when the search is unavailable, and the fields keep working", async () => {
     ApiGeoService.search.mockRejectedValue(unavailable());
-    const wrapper = mountEingabe();
+    const wrapper = mountInput();
 
     await search(wrapper, "Gasstraße");
 
     expect(wrapper.text()).toContain(
       "Suche gerade nicht erreichbar, setze den Punkt auf der Karte"
     );
-    await type(wrapper, "standort-ort", "Guben");
+    await type(wrapper, "location-city", "Guben");
     expect(lastInput(wrapper).address.city).toBe("Guben");
   });
 });
 
-describe("StandortEingabe - map and Punkt", () => {
+describe("LocationInput - map and point", () => {
   const HALLE = { lat: 51.95046, lon: 14.71528 };
 
   beforeEach(() => {
@@ -254,31 +254,31 @@ describe("StandortEingabe - map and Punkt", () => {
     vi.useRealTimers();
   });
 
-  it("begins the map at the Punkt and asks for no start view", async () => {
-    const wrapper = mountEingabe({ value: STORED_GASSTRASSE });
+  it("begins the map at the point and asks for no start view", async () => {
+    const wrapper = mountInput({ value: STORED_GASSTRASSE });
     await settle();
 
     expect(ApiGeoService.start).not.toHaveBeenCalled();
-    expect(karte(wrapper).props("punkt")).toEqual({
+    expect(map(wrapper).props("point")).toEqual({
       lat: 51.950438,
       lon: 14.714485,
     });
   });
 
-  it("asks once for the start view of a Standort without Punkt", async () => {
-    const wrapper = mountEingabe();
+  it("asks once for the start view of a location without point", async () => {
+    const wrapper = mountInput();
     await settle();
 
     expect(ApiGeoService.start).toHaveBeenCalledTimes(1);
     expect(ApiGeoService.start).toHaveBeenCalledWith("t1");
-    expect(karte(wrapper).props("ansicht")).toEqual({
+    expect(map(wrapper).props("view")).toEqual({
       lat: 51.95,
       lon: 14.71,
       zoom: 12,
     });
   });
 
-  it("runs the reverse search on a click into the map and suggests the Anschrift, never overwriting it", async () => {
+  it("runs the reverse search on a click into the map and suggests the address, never overwriting it", async () => {
     ApiGeoService.reverse.mockResolvedValue(
       hit({
         street: "Kaltenborner Straße",
@@ -290,19 +290,19 @@ describe("StandortEingabe - map and Punkt", () => {
         display_address: "Kaltenborner Straße 70, 03172 Guben",
       })
     );
-    const wrapper = mountEingabe({ value: STORED_GASSTRASSE });
+    const wrapper = mountInput({ value: STORED_GASSTRASSE });
 
-    karte(wrapper).vm.$emit("punkt-gesetzt", HALLE);
+    map(wrapper).vm.$emit("point-set", HALLE);
     await settle();
 
     expect(ApiGeoService.reverse).toHaveBeenCalledWith("t1", {
       ...HALLE,
       lang: "de",
     });
-    expect(find(wrapper, "standort-vorschlag").text()).toContain(
+    expect(find(wrapper, "location-suggestion").text()).toContain(
       "Anschrift am neuen Punkt: Kaltenborner Straße 70, 03172 Guben"
     );
-    expect(find(wrapper, "standort-strasse").find("input").element.value).toBe(
+    expect(find(wrapper, "location-street").find("input").element.value).toBe(
       "Gasstraße"
     );
     expect(lastInput(wrapper).coordinates.points).toEqual([
@@ -311,88 +311,88 @@ describe("StandortEingabe - map and Punkt", () => {
     ]);
     expect(lastInput(wrapper).meta.source).toBe("manual");
 
-    await find(wrapper, "standort-vorschlag-uebernehmen").trigger("click");
+    await find(wrapper, "location-suggestion-accept").trigger("click");
 
-    expect(find(wrapper, "standort-strasse").find("input").element.value).toBe(
+    expect(find(wrapper, "location-street").find("input").element.value).toBe(
       "Kaltenborner Straße"
     );
-    expect(find(wrapper, "standort-vorschlag").exists()).toBe(false);
+    expect(find(wrapper, "location-suggestion").exists()).toBe(false);
   });
 
-  it("keeps the Anschrift when the suggestion is declined", async () => {
+  it("keeps the address when the suggestion is declined", async () => {
     ApiGeoService.reverse.mockResolvedValue(
       hit({ street: "Kaltenborner Straße", city: "Guben", ...HALLE })
     );
-    const wrapper = mountEingabe({ value: STORED_GASSTRASSE });
-    karte(wrapper).vm.$emit("punkt-gesetzt", HALLE);
+    const wrapper = mountInput({ value: STORED_GASSTRASSE });
+    map(wrapper).vm.$emit("point-set", HALLE);
     await settle();
 
-    await find(wrapper, "standort-vorschlag-verwerfen").trigger("click");
+    await find(wrapper, "location-suggestion-dismiss").trigger("click");
 
-    expect(find(wrapper, "standort-vorschlag").exists()).toBe(false);
-    expect(find(wrapper, "standort-strasse").find("input").element.value).toBe(
+    expect(find(wrapper, "location-suggestion").exists()).toBe(false);
+    expect(find(wrapper, "location-street").find("input").element.value).toBe(
       "Gasstraße"
     );
   });
 
-  it("asks whether a Punkt set by hand follows a changed Anschrift, with distance and a pale second pin", async () => {
-    const vonHand = {
+  it("asks whether a point set by hand follows a changed address, with distance and a pale second pin", async () => {
+    const byHand = {
       ...STORED_GASSTRASSE,
       coordinates: { type: "Point", points: [HALLE.lon, HALLE.lat] },
       meta: { source: "manual", additional: null },
     };
     ApiGeoService.search.mockResolvedValue([GASSTRASSE]);
-    const wrapper = mountEingabe({ value: vonHand });
+    const wrapper = mountInput({ value: byHand });
 
-    await type(wrapper, "standort-hausnummer", "4a");
-    await find(wrapper, "standort-hausnummer").find("input").trigger("blur");
+    await type(wrapper, "location-houseNumber", "4a");
+    await find(wrapper, "location-houseNumber").find("input").trigger("blur");
     await settle();
 
-    expect(find(wrapper, "standort-vorschlag").text()).toMatch(
+    expect(find(wrapper, "location-suggestion").text()).toMatch(
       /Die Anschrift liegt \d+ m vom Punkt\. Punkt zur Anschrift verschieben\?/
     );
-    expect(karte(wrapper).props("vorschlagPunkt")).toEqual({
+    expect(map(wrapper).props("suggestedPoint")).toEqual({
       lat: 51.950438,
       lon: 14.714485,
     });
 
-    await find(wrapper, "standort-vorschlag-uebernehmen").trigger("click");
-    expect(karte(wrapper).props("punkt")).toEqual({
+    await find(wrapper, "location-suggestion-accept").trigger("click");
+    expect(map(wrapper).props("point")).toEqual({
       lat: 51.950438,
       lon: 14.714485,
     });
   });
 
-  it("runs the reverse search again after the Standort was read anew, as after a save", async () => {
+  it("runs the reverse search again after the location was read anew, as after a save", async () => {
     ApiGeoService.reverse.mockResolvedValue(null);
-    const wrapper = mountEingabe({ value: STORED_GASSTRASSE });
-    karte(wrapper).vm.$emit("punkt-gesetzt", HALLE);
+    const wrapper = mountInput({ value: STORED_GASSTRASSE });
+    map(wrapper).vm.$emit("point-set", HALLE);
     await settle();
     const saved = lastInput(wrapper);
-    await wrapper.setProps({ value: { ...saved }, gespeichert: saved });
+    await wrapper.setProps({ value: { ...saved }, stored: saved });
 
-    karte(wrapper).vm.$emit("punkt-gesetzt", { lat: 51.951, lon: 14.716 });
+    map(wrapper).vm.$emit("point-set", { lat: 51.951, lon: 14.716 });
     await settle();
 
     expect(ApiGeoService.reverse).toHaveBeenCalledTimes(2);
   });
 
   it("tells once when the map is unavailable", async () => {
-    const wrapper = mountEingabe();
+    const wrapper = mountInput();
 
-    karte(wrapper).vm.$emit("kacheln-ausfall");
+    map(wrapper).vm.$emit("tiles-unavailable");
     await wrapper.vm.$nextTick();
 
-    expect(find(wrapper, "standort-karte-ausfall").text()).toBe(
+    expect(find(wrapper, "location-map-unavailable").text()).toBe(
       "Karte gerade nicht erreichbar"
     );
   });
 
-  it("sets a Punkt from outside, from NUKI, and suggests the Anschrift", async () => {
+  it("sets a point from outside, from NUKI, and suggests the address", async () => {
     ApiGeoService.reverse.mockResolvedValue(GASSTRASSE);
-    const wrapper = mountEingabe();
+    const wrapper = mountInput();
 
-    wrapper.vm.setzePunkt({ lat: 51.950438, lon: 14.714485 });
+    wrapper.vm.setPoint({ lat: 51.950438, lon: 14.714485 });
     await settle();
 
     expect(lastInput(wrapper)).toEqual({
@@ -407,14 +407,14 @@ describe("StandortEingabe - map and Punkt", () => {
       coordinates: { type: "Point", points: [14.714485, 51.950438] },
       meta: { source: "nuki", additional: null },
     });
-    expect(find(wrapper, "standort-vorschlag").text()).toContain(
+    expect(find(wrapper, "location-suggestion").text()).toContain(
       "Gasstraße 4, 03172 Guben"
     );
     expect(wrapper.text()).toContain("Punkt von NUKI");
   });
 });
 
-describe("StandortEingabe - a place the search does not know", () => {
+describe("LocationInput - a place the search does not know", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
@@ -427,25 +427,25 @@ describe("StandortEingabe - a place the search does not know", () => {
     vi.useRealTimers();
   });
 
-  it("offers to set the Punkt on the map, puts the text in the Zusatz and waits for the Punkt", async () => {
-    const wrapper = mountEingabe();
+  it("offers to set the point on the map, puts the text in the addition and waits for the point", async () => {
+    const wrapper = mountInput();
     await search(wrapper, "Neißewiese");
 
-    const ohne = find(wrapper, "standort-ohne-treffer");
-    expect(ohne.text()).toContain("„Neißewiese“ auf der Karte setzen");
-    await ohne.trigger("click");
+    const withoutHit = find(wrapper, "location-without-hit");
+    expect(withoutHit.text()).toContain("„Neißewiese“ auf der Karte setzen");
+    await withoutHit.trigger("click");
 
-    expect(find(wrapper, "standort-zusatz").find("input").element.value).toBe(
+    expect(find(wrapper, "location-addition").find("input").element.value).toBe(
       "Neißewiese"
     );
-    expect(find(wrapper, "standort-setzen").text()).toContain(
+    expect(find(wrapper, "location-placing").text()).toContain(
       "Klicke in die Karte, wo „Neißewiese“ liegt."
     );
 
-    karte(wrapper).vm.$emit("punkt-gesetzt", { lat: 51.953, lon: 14.7198 });
+    map(wrapper).vm.$emit("point-set", { lat: 51.953, lon: 14.7198 });
     await settle();
 
-    expect(find(wrapper, "standort-setzen").exists()).toBe(false);
+    expect(find(wrapper, "location-placing").exists()).toBe(false);
     expect(lastInput(wrapper).meta).toEqual({
       source: "manual",
       additional: "Neißewiese",
@@ -454,33 +454,33 @@ describe("StandortEingabe - a place the search does not know", () => {
 
   it("names the place after hits as „Nicht dabei?“", async () => {
     ApiGeoService.search.mockResolvedValue([GASSTRASSE]);
-    const wrapper = mountEingabe();
+    const wrapper = mountInput();
 
     await search(wrapper, "Gasstraße");
 
-    expect(find(wrapper, "standort-ohne-treffer").text()).toContain(
+    expect(find(wrapper, "location-without-hit").text()).toContain(
       "Nicht dabei? „Gasstraße“ auf der Karte setzen"
     );
   });
 
   it("goes back to the search when cancelled", async () => {
-    const wrapper = mountEingabe();
+    const wrapper = mountInput();
     await search(wrapper, "Neißewiese");
-    await find(wrapper, "standort-ohne-treffer").trigger("click");
+    await find(wrapper, "location-without-hit").trigger("click");
 
-    await find(wrapper, "standort-setzen-abbrechen").trigger("click");
+    await find(wrapper, "location-placing-cancel").trigger("click");
     await settle();
 
-    expect(find(wrapper, "standort-setzen").exists()).toBe(false);
-    expect(find(wrapper, "standort-suche").find("input").element.value).toBe(
+    expect(find(wrapper, "location-placing").exists()).toBe(false);
+    expect(find(wrapper, "location-search").find("input").element.value).toBe(
       "Neißewiese"
     );
   });
 });
 
-describe("StandortEingabe - whether it may be saved", () => {
+describe("LocationInput - whether it may be saved", () => {
   const OLD_TEXT = "Sportplatz Kaltenborner Straße, Guben";
-  const lastCheck = (wrapper) => wrapper.emitted("pruefung").slice(-1)[0][0];
+  const lastCheck = (wrapper) => wrapper.emitted("check").slice(-1)[0][0];
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -493,30 +493,30 @@ describe("StandortEingabe - whether it may be saved", () => {
     vi.useRealTimers();
   });
 
-  it("reports an Anschrift without Punkt as not to be saved, with the reason", async () => {
-    const wrapper = mountEingabe();
+  it("reports an address without point as not to be saved, with the reason", async () => {
+    const wrapper = mountInput();
 
-    await type(wrapper, "standort-strasse", "Gasstraße");
+    await type(wrapper, "location-street", "Gasstraße");
 
     expect(lastCheck(wrapper)).toEqual({
-      speicherbar: false,
-      grund: "anschriftOhnePunkt",
-      punktFehlt: true,
+      storable: false,
+      reason: "addressWithoutPoint",
+      pointMissing: true,
     });
     expect(lastInput(wrapper).address.street).toBe("Gasstraße");
   });
 
-  it("reports an empty Standort as fine from the start", () => {
-    const wrapper = mountEingabe();
+  it("reports an empty location as fine from the start", () => {
+    const wrapper = mountInput();
 
-    expect(wrapper.emitted("pruefung")).toEqual([
-      [{ speicherbar: true, grund: null, punktFehlt: false }],
+    expect(wrapper.emitted("check")).toEqual([
+      [{ storable: true, reason: null, pointMissing: false }],
     ]);
   });
 
   it("shows the reason at the input once a surrounding form validates", async () => {
-    const wrapper = mountEingabe();
-    await type(wrapper, "standort-strasse", "Gasstraße");
+    const wrapper = mountInput();
+    await type(wrapper, "location-street", "Gasstraße");
 
     wrapper.findComponent({ name: "v-input" }).vm.validate(true);
     await wrapper.vm.$nextTick();
@@ -526,24 +526,24 @@ describe("StandortEingabe - whether it may be saved", () => {
     );
   });
 
-  it("marks an old Standort without Punkt, lets it be saved untouched and hands nothing out", async () => {
-    const wrapper = mountEingabe({ value: OLD_TEXT });
+  it("marks an old location without point, lets it be saved untouched and hands nothing out", async () => {
+    const wrapper = mountInput({ value: OLD_TEXT });
     await settle();
 
-    expect(find(wrapper, "standort-punkt-fehlt").text()).toContain(
+    expect(find(wrapper, "location-point-missing").text()).toContain(
       "Punkt fehlt."
     );
-    expect(find(wrapper, "standort-suche").find("input").element.value).toBe(
+    expect(find(wrapper, "location-search").find("input").element.value).toBe(
       OLD_TEXT
     );
-    expect(lastCheck(wrapper).speicherbar).toBe(true);
+    expect(lastCheck(wrapper).storable).toBe(true);
     expect(wrapper.emitted("input")).toBeUndefined();
   });
 
   it("searches the old text with „Text suchen“", async () => {
-    const wrapper = mountEingabe({ value: OLD_TEXT });
+    const wrapper = mountInput({ value: OLD_TEXT });
 
-    await find(wrapper, "standort-text-suchen").trigger("click");
+    await find(wrapper, "location-search-text").trigger("click");
     await settle();
 
     expect(ApiGeoService.search).toHaveBeenCalledWith(
@@ -552,26 +552,26 @@ describe("StandortEingabe - whether it may be saved", () => {
     );
   });
 
-  it("measures against the stored Standort it is given", async () => {
-    const wrapper = mountEingabe({
+  it("measures against the stored location it is given", async () => {
+    const wrapper = mountInput({
       value: { display_address: OLD_TEXT, meta: { additional: "Nord" } },
-      gespeichert: OLD_TEXT,
+      stored: OLD_TEXT,
     });
 
     expect(lastCheck(wrapper)).toEqual({
-      speicherbar: false,
-      grund: "altTextOhnePunkt",
-      punktFehlt: true,
+      storable: false,
+      reason: "oldTextWithoutPoint",
+      pointMissing: true,
     });
   });
 
-  it("hands the stored Standort back word for word once changed back", async () => {
-    const wrapper = mountEingabe({ value: OLD_TEXT });
+  it("hands the stored location back word for word once changed back", async () => {
+    const wrapper = mountInput({ value: OLD_TEXT });
 
-    await type(wrapper, "standort-zusatz", "Nord");
-    await type(wrapper, "standort-zusatz", "");
+    await type(wrapper, "location-addition", "Nord");
+    await type(wrapper, "location-addition", "");
 
     expect(lastInput(wrapper)).toBe(OLD_TEXT);
-    expect(lastCheck(wrapper).speicherbar).toBe(true);
+    expect(lastCheck(wrapper).storable).toBe(true);
   });
 });

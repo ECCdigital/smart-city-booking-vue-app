@@ -538,7 +538,7 @@ export default {
       const issues = bookableIssues(this.bookable, {
         shown: this.expertOptionShown,
         accessPoints: this.accessPoints.list,
-        // An unchanged Standort passes whatever it holds; a new bookable
+        // An unchanged location passes whatever it holds; a new bookable
         // has none stored yet.
         stored: this.bookableID ? this.expertModeContext.stored : null,
       });
