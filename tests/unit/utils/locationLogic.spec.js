@@ -220,6 +220,64 @@ describe("choosing a hit of the search", () => {
 
     expect(s.oldText).toBe("");
   });
+
+  // A place without house address (a park, a square, a hall) has no street;
+  // its name stands in front of the hit's display text (Marvin's decision).
+  describe("a place without street", () => {
+    const placeHit = (display_address, address = {}) => ({
+      ...hit({
+        postcode: "03172",
+        city: "Guben",
+        lat: 51.9531,
+        lon: 14.7189,
+        ...address,
+      }),
+      display_address,
+    });
+    const STADTPARK = placeHit("Stadtpark, 03172 Guben");
+    const choose = (start, chosen) =>
+      after(start, { type: "hitChosen", hit: chosen });
+
+    it("puts its name into an empty addition", () => {
+      const s = choose(fresh(), STADTPARK);
+
+      expect(s.address.addition).toBe("Stadtpark");
+      expect(s.address.street).toBe("");
+      expect(toStored(s).meta.additional).toBe("Stadtpark");
+    });
+
+    it("keeps an addition already there", () => {
+      const s = choose(
+        after(fresh(), {
+          type: "fieldChanged",
+          field: "addition",
+          value: "Halle 2",
+        }),
+        STADTPARK
+      );
+
+      expect(s.address.addition).toBe("Halle 2");
+    });
+
+    it("takes a name without postcode and city as it is", () => {
+      const s = choose(
+        fresh(),
+        placeHit("Neißeufer", { postcode: null, city: null })
+      );
+
+      expect(s.address.addition).toBe("Neißeufer");
+    });
+
+    it.each([
+      ["a town, whose name is its city", placeHit("03172 Guben")],
+      [
+        "a hit with street",
+        { ...HIT_GASSTRASSE, display_address: "Gasstraße 4, 03172 Guben" },
+      ],
+    ])("adds no name for %s", (_, chosen) => {
+      expect(choose(fresh(), chosen).address.addition).toBe("");
+    });
+  });
 });
 
 const HALL = { lat: 51.950438, lon: 14.715278 }; // 54 m east of Gasstraße 4

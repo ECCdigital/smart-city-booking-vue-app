@@ -216,6 +216,22 @@ const isAddressEmpty = (a) => ADDRESS_FIELDS.every((f) => !a[f]);
 const sameAddress = (a, b) =>
   ADDRESS_FIELDS.every((f) => norm(a[f]) === norm(b[f]));
 
+/**
+ * The name of a hit without street, a park or a hall: what its display text
+ * names in front of the address (`Stadtpark, 03172 Guben`, ECCdigital/
+ * tickets#468). Empty for a hit with street and for a town, whose name is
+ * its city.
+ */
+function placeName(hit, address) {
+  if (address.street) return "";
+  const display = text(hit?.display_address).trim();
+  const rest = displayAddress(address);
+  if (!rest) return display;
+  return display.endsWith(`, ${rest}`)
+    ? display.slice(0, -rest.length - 2).trim()
+    : "";
+}
+
 // An answer counts only for the request still open; a stale one is dropped.
 const answers = (s, a) => !!s.request && s.request.id === a.id;
 
@@ -234,11 +250,13 @@ const withRequest = (s, request) => ({
  */
 export function reducer(s, a) {
   switch (a.type) {
+    // A place without street brings its name into an empty addition.
     case "hitChosen": {
       const hit = read(a.hit);
+      const addition = s.address.addition || placeName(a.hit, hit.address);
       return {
         ...s,
-        address: { ...hit.address, addition: s.address.addition },
+        address: { ...hit.address, addition },
         point: hit.point,
         pointOrigin: "search",
         oldText: "",

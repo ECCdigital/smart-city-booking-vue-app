@@ -199,6 +199,27 @@ describe("LocationInput - the search", () => {
     });
   });
 
+  it("puts the name of a place without street into the empty addition", async () => {
+    ApiGeoService.search.mockResolvedValue([
+      hit({
+        postcode: "03172",
+        city: "Guben",
+        lat: 51.9531,
+        lon: 14.7189,
+        display_address: "Stadtpark, 03172 Guben",
+      }),
+    ]);
+    const wrapper = mountInput();
+
+    await search(wrapper, "Stadtpark");
+    await hits(wrapper).at(0).trigger("click");
+
+    expect(find(wrapper, "location-addition").find("input").element.value).toBe(
+      "Stadtpark"
+    );
+    expect(lastInput(wrapper).meta.additional).toBe("Stadtpark");
+  });
+
   it("is driven by keys: arrows choose, Enter takes, Escape closes", async () => {
     const wrapper = mountInput();
     await search(wrapper, "Guben");
