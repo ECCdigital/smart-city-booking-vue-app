@@ -21,6 +21,11 @@ vi.mock("@/services/api/ApiCatalogService", () => ({
   },
 }));
 
+// The footer reads name and proportions of its logos from the media API.
+vi.mock("@/services/MediaResolveService", () => ({
+  default: { resolve: vi.fn(() => Promise.resolve(null)), prime: vi.fn() },
+}));
+
 import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 
@@ -65,12 +70,16 @@ function blocks(count) {
 }
 
 function mountTab(propsData = {}) {
-  // The two media fields open a picker backed by the media API; what is under
-  // test is the tab around them.
+  // The media fields, the footer's „+ Logo“ and the font's tile open a picker
+  // backed by the media API; what is under test is the tab around them.
   return mountComponent(InstanceEditCatalog, {
     store: new Vuex.Store({ modules: { toasts } }),
     propsData: { instance: instance(), catalog: catalog(), ...propsData },
-    stubs: { MediaReferenceField: true, MediaReferenceImage: true },
+    stubs: {
+      MediaReferenceField: true,
+      MediaReferenceImage: true,
+      MediaPickerDialog: true,
+    },
   });
 }
 
@@ -464,6 +473,59 @@ describe("InstanceEditCatalog Farben", () => {
     expect(
       previewPart(wrapper, "primary", "light", "button").attributes("style")
     ).toContain("background: rgb(18, 52, 86)");
+  });
+});
+
+function withFooterLogos(footerLogos) {
+  const base = instance();
+  return { ...base, branding: { ...base.branding, footerLogos } };
+}
+
+function footerLogo(mediaId, overrides = {}) {
+  return {
+    image: { source: "media", mediaId, url: null },
+    size: "md",
+    link: "",
+    imageDark: null,
+    ...overrides,
+  };
+}
+
+describe("InstanceEditCatalog Fußbereich", () => {
+  it("shows the portal name in the mock of the footer", () => {
+    const wrapper = mountTab();
+
+    expect(wrapper.find(".portal-footer-mock").text()).toContain("Marktplatz");
+  });
+
+  it("hands a change of the footer logos up with the instance", async () => {
+    const wrapper = mountTab({
+      instance: withFooterLogos([footerLogo("bmwsb"), footerLogo("land")]),
+    });
+
+    await wrapper.findAll("[data-test='footer-logo']").at(0).trigger("click");
+    await settle(wrapper);
+    await wrapper.find("button[aria-label='Entfernen']").trigger("click");
+    await settle(wrapper);
+
+    expect(lastBranding(wrapper).footerLogos).toEqual([footerLogo("land")]);
+  });
+
+  it("refuses to save while a footer link is no http(s) address", async () => {
+    const wrapper = mountTab({
+      instance: withFooterLogos([
+        footerLogo("bmwsb", { link: "javascript:alert(1)" }),
+      ]),
+    });
+
+    expect(wrapper.vm.validate()).toBe(false);
+  });
+
+  it("reads a branding without footer logos as one with none", () => {
+    const wrapper = mountTab();
+
+    expect(wrapper.findAll("[data-test='footer-logo']")).toHaveLength(0);
+    expect(wrapper.vm.validate()).toBe(true);
   });
 });
 

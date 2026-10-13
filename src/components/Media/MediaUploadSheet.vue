@@ -78,7 +78,10 @@
 </template>
 
 <script>
-import { MEDIA_ALLOWED_TYPES_LABEL } from "@/utils/mediaUploadError";
+import {
+  FONT_UPLOAD_LABEL,
+  MEDIA_ALLOWED_TYPES_LABEL,
+} from "@/utils/mediaUploadError";
 
 /**
  * The upload on a phone (ECCdigital/tickets#58): nobody drags a file onto a
@@ -99,7 +102,7 @@ export default {
     accept: { type: String, default: undefined },
     hint: {
       type: String,
-      default: `${MEDIA_ALLOWED_TYPES_LABEL} bis 15 MB · PDF bis 50 MB`,
+      default: `${MEDIA_ALLOWED_TYPES_LABEL} bis 15 MB · PDF bis 50 MB · ${FONT_UPLOAD_LABEL}`,
     },
   },
   computed: {
