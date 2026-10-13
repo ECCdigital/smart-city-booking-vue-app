@@ -190,7 +190,7 @@ const LICENSE_REQUIRED = "Ohne Bestätigung nicht speicherbar";
 const LICENSE_FIELD = "branding.font.license";
 
 const SAVED_TEXT =
-  "Die Schrift ist gespeichert. Das Portal zeigt sie ab dem nächsten Aufruf einer Seite, wer es gerade offen hat, erst nach dem Neuladen. Die Live-Vorschau im Kopfbereich zeigt sie schon.";
+  "Die Schrift ist gespeichert. Das Portal zeigt sie ab dem nächsten Aufruf einer Seite, wer es gerade offen hat, erst nach dem Neuladen.";
 
 const SAMPLE_TEXT =
   "Räume, Sportplätze und Lastenräder buchen – ab 12,50 € je Stunde.";
