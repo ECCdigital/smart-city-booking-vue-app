@@ -60,7 +60,7 @@ function mediaField(wrapper, label) {
 }
 
 function logoTile(wrapper, mode) {
-  return wrapper.find(`.portal-header-logo-tile[data-mode='${mode}']`);
+  return wrapper.find(`.portal-app-logo-tile[data-mode='${mode}']`);
 }
 
 const VARIANT_LABEL = "Variante für den Dunkelmodus (optional)";

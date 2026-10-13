@@ -81,23 +81,7 @@
         />
       </v-col>
     </v-row>
-    <div class="portal-header-logo-pair">
-      <div
-        v-for="mode in modes"
-        :key="mode"
-        class="portal-header-logo-tile"
-        :class="`portal-header-logo-tile--${mode}`"
-        :data-mode="mode"
-      >
-        <span class="text-caption">{{ tileLabel(mode) }}</span>
-        <PortalAppLogo
-          :logo="logo"
-          :logo-dark="branding.logoDark"
-          :mode="mode"
-          :height="44"
-        />
-      </div>
-    </div>
+    <PortalAppLogoPair :logo="logo" :logo-dark="branding.logoDark" />
 
     <v-row class="mt-2">
       <v-col cols="12" md="6">
@@ -131,7 +115,7 @@
 import SubSection from "@/components/commons/SubSection.vue";
 import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
-import PortalAppLogo from "@/components/Instance/Edit/PortalAppLogo.vue";
+import PortalAppLogoPair from "@/components/Instance/Edit/PortalAppLogoPair.vue";
 import PortalHeaderBar from "@/components/Instance/Edit/PortalHeaderBar.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import { brandingImage, brandingImagePatch } from "@/utils/instanceBranding";
@@ -153,12 +137,6 @@ const VARIANT_LABEL = "Variante für den Dunkelmodus (optional)";
 const VARIANT_HINT =
   "Für Logos, die invertiert falsche Farben bekommen, etwa Wappen. Passt das Logo ohne Änderung auf dunklen Grund, wählen Sie dasselbe Bild.";
 
-const TILE_LABELS = Object.freeze({
-  light: "Hell",
-  dark: "Dunkel",
-  inverted: "Dunkel · invertiert",
-});
-
 const PUBLIC_ONLY_REASON =
   "Logo, Variante und Favicon werden öffentlich ausgeliefert — interne Medien sind hier nicht wählbar.";
 
@@ -175,7 +153,7 @@ export default {
     SubSection,
     MediaReferenceField,
     MediaReferenceImage,
-    PortalAppLogo,
+    PortalAppLogoPair,
     PortalHeaderBar,
   },
   props: {
@@ -214,12 +192,6 @@ export default {
     setLogoDark(value) {
       this.$emit("patch", { logoDark: value || null });
     },
-    tileLabel(mode) {
-      if (mode === "light") {
-        return TILE_LABELS.light;
-      }
-      return this.branding.logoDark ? TILE_LABELS.dark : TILE_LABELS.inverted;
-    },
     setImage(name, value) {
       this.$emit("patch", brandingImagePatch(name, value));
     },
@@ -244,34 +216,5 @@ export default {
 .portal-header-card--active {
   border-color: var(--v-primary-base);
   box-shadow: inset 0 0 0 1px var(--v-primary-base);
-}
-
-.portal-header-logo-pair {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--scb-space-3);
-}
-
-.portal-header-logo-tile {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--scb-space-3);
-  padding: 10px 14px;
-  border-radius: 6px;
-  min-height: 64px;
-}
-
-/* Literal colours on purpose: the tiles mimic the portal's light and dark
-   pages and must not follow the admin UI's own theme. */
-.portal-header-logo-tile--light {
-  background: #ffffff;
-  color: #4b5563;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.portal-header-logo-tile--dark {
-  background: #101828;
-  color: #d1d5db;
 }
 </style>

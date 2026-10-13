@@ -42,9 +42,20 @@ function formOf(block, options = {}) {
     themeColors = THEME_COLORS,
     errors = {},
     background = null,
+    appLogo = null,
+    appLogoDark = null,
   } = options;
   return mountComponent(HeroBlockForm, {
-    propsData: { block, blocks, locale, themeColors, errors, background },
+    propsData: {
+      block,
+      blocks,
+      locale,
+      themeColors,
+      errors,
+      background,
+      appLogo,
+      appLogoDark,
+    },
     stubs: { MediaReferenceField: true, MediaReferenceImage: true },
   });
 }
@@ -757,6 +768,204 @@ describe("HeroBlockForm, the image Block's Inhalt", () => {
   });
 });
 
+describe("HeroBlockForm, the image Block's source", () => {
+  const APP_LOGO = Object.freeze({ source: "media", mediaId: "logo" });
+  const APP_LOGO_DARK = Object.freeze({
+    source: "media",
+    mediaId: "logo-dark",
+  });
+  const FOLLOWS = Object.freeze({ source: "app-logo" });
+
+  /** The two buttons of „Quelle“, by the word they carry. */
+  function sourceButton(wrapper, label) {
+    const found = wrapper
+      .findAll(".hero-block-form__source button")
+      .wrappers.find((entry) => entry.text().trim() === label);
+    if (!found) {
+      throw new Error(`Die Quelle „${label}“ fehlt.`);
+    }
+    return found;
+  }
+
+  function hasSwitch(wrapper, label) {
+    return wrapper
+      .findAllComponents({ name: "v-switch" })
+      .wrappers.some((entry) => entry.props("label") === label);
+  }
+
+  function logoTiles(wrapper) {
+    return wrapper.findAll(".portal-app-logo-tile").wrappers;
+  }
+
+  it("offers Mediathek and App-Logo, with Mediathek pressed for a medium", () => {
+    const wrapper = formOf(heroImageBlock(), { appLogo: APP_LOGO });
+
+    expect(wrapper.text()).toContain("Quelle");
+    expect(pressed([sourceButton(wrapper, "Mediathek")])).toEqual([
+      "Mediathek",
+    ]);
+    expect(sourceButton(wrapper, "App-Logo").attributes("disabled")).toBe(
+      undefined
+    );
+  });
+
+  it("does not let „App-Logo“ be chosen while the instance has none", () => {
+    const wrapper = formOf(heroImageBlock(), { appLogo: null });
+
+    expect(sourceButton(wrapper, "App-Logo").attributes("disabled")).toBe(
+      "disabled"
+    );
+  });
+
+  it("switches to the App-Logo without a media id and without the invert switch", async () => {
+    const wrapper = formOf(heroImageBlock({ invertInDarkMode: true }), {
+      appLogo: APP_LOGO,
+    });
+
+    await sourceButton(wrapper, "App-Logo").trigger("click");
+
+    const patch = lastPatch(wrapper);
+    expect(patch.image).toEqual({ source: "app-logo" });
+    // `undefined` drops the key from the Draft (`updateHeroBlock`).
+    expect("invertInDarkMode" in patch).toBe(true);
+    expect(patch.invertInDarkMode).toBeUndefined();
+  });
+
+  it("switches back to the Mediathek with no image chosen yet", async () => {
+    const wrapper = formOf(heroImageBlock({ image: FOLLOWS }), {
+      appLogo: APP_LOGO,
+    });
+
+    await sourceButton(wrapper, "Mediathek").trigger("click");
+
+    expect(lastPatch(wrapper)).toEqual({
+      image: null,
+      invertInDarkMode: false,
+    });
+  });
+
+  it("drops the Mediathek field and the invert switch but keeps alt text and height", () => {
+    const wrapper = formOf(heroImageBlock({ image: FOLLOWS }), {
+      appLogo: APP_LOGO,
+    });
+
+    expect(pressed([sourceButton(wrapper, "App-Logo")])).toEqual(["App-Logo"]);
+    expect(mediaField(wrapper).exists()).toBe(false);
+    expect(hasSwitch(wrapper, "Im Dunkelmodus invertieren")).toBe(false);
+    expect(fieldByLabel(wrapper, "Alternativtext").exists()).toBe(true);
+    expect(
+      wrapper
+        .findAllComponents({ name: "v-select" })
+        .wrappers.some((entry) => entry.props("label") === "Maximale Höhe")
+    ).toBe(true);
+    expect(wrapper.text()).not.toContain(
+      "Bitte ein Bild aus der Mediathek wählen."
+    );
+  });
+
+  it("shows the App-Logo light and dark with its variant, and says it follows the tab „Portal“", () => {
+    const wrapper = formOf(heroImageBlock({ image: FOLLOWS }), {
+      appLogo: APP_LOGO,
+      appLogoDark: APP_LOGO_DARK,
+    });
+    const logos = wrapper.findAllComponents({ name: "PortalAppLogo" }).wrappers;
+
+    expect(logos.map((logo) => logo.props("mode"))).toEqual(["light", "dark"]);
+    expect(logos[1].props("logo")).toEqual(APP_LOGO);
+    expect(logos[1].props("logoDark")).toEqual(APP_LOGO_DARK);
+    expect(logoTiles(wrapper)[1].text()).toContain("Dunkel");
+    expect(wrapper.text()).toContain(
+      "Folgt dem App-Logo aus dem Tab „Portal“. Im Dunkelmodus mit der Variante für den Dunkelmodus."
+    );
+  });
+
+  it("says the dark mode inverts the App-Logo while it has no variant", () => {
+    const wrapper = formOf(heroImageBlock({ image: FOLLOWS }), {
+      appLogo: APP_LOGO,
+    });
+
+    expect(logoTiles(wrapper)[1].text()).toContain("Dunkel · invertiert");
+    expect(wrapper.text()).toContain(
+      "Folgt dem App-Logo aus dem Tab „Portal“. Im Dunkelmodus invertiert, weil es keine Variante gibt."
+    );
+  });
+
+  it("hands the App-Logo to the tile of „Darstellung“", () => {
+    const wrapper = formOf(heroImageBlock({ image: FOLLOWS }), {
+      appLogo: APP_LOGO,
+    });
+
+    expect(wrapper.findComponent(HeroBlockTile).props("appLogo")).toEqual(
+      APP_LOGO
+    );
+  });
+
+  it("says so when the Block follows an App-Logo the instance no longer has", () => {
+    const wrapper = formOf(heroImageBlock({ image: FOLLOWS }), {
+      appLogo: null,
+    });
+
+    expect(wrapper.text()).toContain(
+      "Die Instanz hat kein App-Logo. Der Block zeigt kein Bild."
+    );
+  });
+
+  describe("a Block holding a copy of the App-Logo", () => {
+    const COPY_HINT =
+      "Dieses Bild ist eine Kopie des App-Logos. Ein neues App-Logo und die Variante für den Dunkelmodus erreichen es nicht.";
+
+    function useAppLogoButton(wrapper) {
+      return wrapper
+        .findAll(".hero-block-form__copy-hint button")
+        .wrappers.find(
+          (entry) => entry.text().trim() === "Quelle „App-Logo“ verwenden"
+        );
+    }
+
+    it("says so and offers the source „App-Logo“", () => {
+      const wrapper = formOf(
+        heroImageBlock({
+          image: {
+            source: "media",
+            mediaId: "logo",
+            url: "/api/v2/instance/media/logo/file",
+          },
+        }),
+        { appLogo: APP_LOGO }
+      );
+
+      expect(wrapper.text()).toContain(COPY_HINT);
+      expect(useAppLogoButton(wrapper)).toBeTruthy();
+    });
+
+    it("switches the source with the button", async () => {
+      const wrapper = formOf(
+        heroImageBlock({ image: { source: "media", mediaId: "logo" } }),
+        { appLogo: APP_LOGO }
+      );
+
+      await useAppLogoButton(wrapper).trigger("click");
+
+      expect(lastPatch(wrapper).image).toEqual({ source: "app-logo" });
+      expect("invertInDarkMode" in lastPatch(wrapper)).toBe(true);
+    });
+
+    it("says nothing for any other medium", () => {
+      const wrapper = formOf(heroImageBlock(), { appLogo: APP_LOGO });
+
+      expect(wrapper.text()).not.toContain(COPY_HINT);
+    });
+
+    it("says nothing for a Block that already follows the App-Logo", () => {
+      const wrapper = formOf(heroImageBlock({ image: FOLLOWS }), {
+        appLogo: APP_LOGO,
+      });
+
+      expect(wrapper.text()).not.toContain(COPY_HINT);
+    });
+  });
+});
+
 describe("HeroBlockForm, the colour control", () => {
   it("offers the five chips", () => {
     expect(chipLabels(colorField(formOf(heroBlock())))).toEqual([
@@ -766,6 +975,56 @@ describe("HeroBlockForm, the colour control", () => {
       "Weiß",
       "Eigene…",
     ]);
+  });
+
+  it("offers „Akzent“ after the two branding chips once the instance has an accent", async () => {
+    const wrapper = formOf(heroBlock(), {
+      themeColors: { ...THEME_COLORS, accent: "#ffbf00" },
+    });
+
+    expect(chipLabels(colorField(wrapper))).toEqual([
+      "Standard",
+      "Primärfarbe",
+      "Sekundärfarbe",
+      "Akzent",
+      "Weiß",
+      "Eigene…",
+    ]);
+    expect(
+      wrapper.findAll(".hero-color-field__swatch").at(2).attributes("style")
+    ).toContain("rgb(255, 191, 0)");
+
+    await clickChip(colorField(wrapper), "Akzent");
+
+    expect(lastPatch(wrapper)).toEqual({ color: "accent" });
+  });
+
+  it("offers no „Akzent“ while the instance's accent is empty", () => {
+    const wrapper = formOf(heroBlock(), {
+      themeColors: { ...THEME_COLORS, accent: "" },
+    });
+
+    expect(chipLabels(colorField(wrapper))).not.toContain("Akzent");
+  });
+
+  /**
+   * An accent emptied after the Block took it: the storefront paints the
+   * Block in the primary colour, so the chip stays pressed and painted so,
+   * rather than calling a valid token a broken hex value.
+   */
+  it("keeps a stored „Akzent“ pressed, painted primary, once the accent is emptied", () => {
+    const wrapper = formOf(heroBlock({ color: "accent" }), {
+      themeColors: { ...THEME_COLORS, accent: "" },
+    });
+    const accent = chips(colorField(wrapper)).find(
+      (entry) => entry.label === "Akzent"
+    );
+
+    expect(accent.chip.props("outlined")).toBe(false);
+    expect(
+      accent.chip.find(".hero-color-field__swatch").attributes("style")
+    ).toContain("rgb(18, 52, 86)");
+    expect(wrapper.text()).not.toContain("Hex-Wert");
   });
 
   it("paints the two branding chips with the instance's colours", () => {
@@ -993,6 +1252,28 @@ describe("HeroBlockForm, Darstellung and Sichtbarkeit", () => {
       "Sekundärfarbe",
       "Eigene…",
     ]);
+  });
+
+  it("adds „Akzent“ to the Panel's colours once the instance has an accent", async () => {
+    const wrapper = formOf(heroBlock({ panel: GLASS }), {
+      themeColors: { ...THEME_COLORS, accent: "#ffbf00" },
+    });
+
+    expect(chipLabels(colorField(wrapper, PANEL_COLOR))).toEqual([
+      "Weiß",
+      "Schwarz",
+      "Primärfarbe",
+      "Sekundärfarbe",
+      "Akzent",
+      "Eigene…",
+    ]);
+
+    await clickChip(colorField(wrapper, PANEL_COLOR), "Akzent");
+
+    expect(lastPatch(wrapper)).toEqual({
+      panel: { ...GLASS, color: "accent" },
+    });
+    expect(wrapper.text()).not.toContain("Hex-Wert");
   });
 
   it("writes only the Panel's colour when a dot is clicked", async () => {
