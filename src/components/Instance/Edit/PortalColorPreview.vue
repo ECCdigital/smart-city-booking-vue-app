@@ -81,12 +81,7 @@
 </template>
 
 <script>
-import { contrastOf } from "@/utils/brandingContrast";
-
-// The storefront's own colours while the instance sets none (its Theme-CSS
-// route), so an empty field previews what the portal shows.
-const STOREFRONT_PRIMARY = "#FF8B00";
-const STOREFRONT_SECONDARY = "#1D9ECC";
+import { contrastOf, STOREFRONT_COLORS } from "@/utils/brandingContrast";
 
 // The storefront writes the accent only when it is a colour; anything else
 // leaves every element on its fallback.
@@ -117,10 +112,10 @@ export default {
       return MODE_LABELS[this.mode];
     },
     primary() {
-      return this.colors.primary || STOREFRONT_PRIMARY;
+      return this.colors.primary || STOREFRONT_COLORS.primary;
     },
     secondary() {
-      return this.colors.secondary || STOREFRONT_SECONDARY;
+      return this.colors.secondary || STOREFRONT_COLORS.secondary;
     },
     accent() {
       const accent = this.colors.accent;

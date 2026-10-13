@@ -3,10 +3,58 @@
     class="mt-7"
     title="Kopfleiste"
     icon="mdi-page-layout-header"
-    description="Die Leiste oben auf jeder Seite, mit Logo, Portalname und Navigation. Logo und Favicon kommen aus der Mediathek der Instanz und werden allen Besuchern ausgeliefert, daher sind nur öffentliche Medien wählbar."
+    description="Die Leiste oben auf jeder Seite, mit Logo, Portalname und Navigation. Die Schrift darauf wird schwarz oder weiß, je nach Kontrast. Logo, Variante und Favicon kommen aus der Mediathek der Instanz und werden allen Besuchern ausgeliefert, daher sind nur öffentliche Medien wählbar."
     no-margin
   >
-    <v-row>
+    <div
+      class="portal-header-cards"
+      role="radiogroup"
+      aria-label="Farbe der Kopfleiste"
+    >
+      <div
+        v-for="option in headerOptions"
+        :key="option.value"
+        class="portal-header-card"
+        :class="{ 'portal-header-card--active': header === option.value }"
+        role="radio"
+        :data-header="option.value"
+        :aria-checked="String(header === option.value)"
+        tabindex="0"
+        @click="setHeader(option.value)"
+        @keydown.enter.prevent="setHeader(option.value)"
+        @keydown.space.prevent="setHeader(option.value)"
+      >
+        <div class="d-flex align-center mb-2">
+          <v-icon
+            small
+            class="mr-1"
+            :color="header === option.value ? 'primary' : undefined"
+          >
+            {{
+              header === option.value
+                ? "mdi-radiobox-marked"
+                : "mdi-radiobox-blank"
+            }}
+          </v-icon>
+          <span class="text-body-2 font-weight-medium">{{ option.text }}</span>
+          <span v-if="option.note" class="text-caption text--secondary ml-2">{{
+            option.note
+          }}</span>
+        </div>
+        <PortalHeaderBar
+          v-for="mode in modes"
+          :key="mode"
+          :header="option.value"
+          :theme-colors="branding.theme.colors"
+          :mode="mode"
+          :logo="logo"
+          :logo-dark="branding.logoDark"
+          class="mt-1"
+        />
+      </div>
+    </div>
+
+    <v-row class="mt-4">
       <v-col cols="12" md="6">
         <MediaReferenceField
           :value="logo"
@@ -15,21 +63,43 @@
           public-only
           :public-only-reason="publicOnlyReason"
           empty-label="Kein Logo ausgewählt"
-          hint="Wird im Kopfbereich des Portals angezeigt, idealerweise 200 × 50 Pixel."
+          hint="Kopfleiste, Anmeldeseiten und Standard-Kopfbereich, idealerweise 200 × 50 Pixel."
           @input="setImage('logo', $event)"
         />
-        <MediaReferenceImage
-          v-if="logo"
-          :reference="logo"
+      </v-col>
+      <v-col cols="12" md="6">
+        <MediaReferenceField
+          :value="branding.logoDark"
           :scope="mediaScope"
-          size="sm"
-          lazy-size="thumb"
-          :height="72"
-          contain
-          rounded
-          class="mt-2"
+          :label="variantLabel"
+          public-only
+          :public-only-reason="publicOnlyReason"
+          :allow-external="false"
+          empty-label="Keine Variante: Logo wird invertiert"
+          :hint="variantHint"
+          @input="setLogoDark"
         />
       </v-col>
+    </v-row>
+    <div class="portal-header-logo-pair">
+      <div
+        v-for="mode in modes"
+        :key="mode"
+        class="portal-header-logo-tile"
+        :class="`portal-header-logo-tile--${mode}`"
+        :data-mode="mode"
+      >
+        <span class="text-caption">{{ tileLabel(mode) }}</span>
+        <PortalAppLogo
+          :logo="logo"
+          :logo-dark="branding.logoDark"
+          :mode="mode"
+          :height="44"
+        />
+      </div>
+    </div>
+
+    <v-row class="mt-2">
       <v-col cols="12" md="6">
         <MediaReferenceField
           :value="favicon"
@@ -61,22 +131,53 @@
 import SubSection from "@/components/commons/SubSection.vue";
 import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
+import PortalAppLogo from "@/components/Instance/Edit/PortalAppLogo.vue";
+import PortalHeaderBar from "@/components/Instance/Edit/PortalHeaderBar.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import { brandingImage, brandingImagePatch } from "@/utils/instanceBranding";
 
-// Logo and favicon are served to every visitor of the portal, so they may only
+// Logo, its variant and favicon are served to every visitor of the portal, so they may only
 // ever point at public media — the backend refuses anything else on save.
+// The colours the header bar can take (`branding.header`), in this order.
+const HEADER_OPTIONS = Object.freeze([
+  { value: "neutral", text: "Neutral", note: "" },
+  { value: "primary", text: "Primär", note: "(wie heute)" },
+  { value: "secondary", text: "Sekundär", note: "" },
+]);
+
+// Anything but one of the three reads as primary, the look from before the
+// setting, as the storefront's Theme-CSS reads it.
+const DEFAULT_HEADER = "primary";
+
+const VARIANT_LABEL = "Variante für den Dunkelmodus (optional)";
+const VARIANT_HINT =
+  "Für Logos, die invertiert falsche Farben bekommen, etwa Wappen. Passt das Logo ohne Änderung auf dunklen Grund, wählen Sie dasselbe Bild.";
+
+const TILE_LABELS = Object.freeze({
+  light: "Hell",
+  dark: "Dunkel",
+  inverted: "Dunkel · invertiert",
+});
+
 const PUBLIC_ONLY_REASON =
-  "Logo und Favicon werden öffentlich ausgeliefert — interne Medien sind hier nicht wählbar.";
+  "Logo, Variante und Favicon werden öffentlich ausgeliefert — interne Medien sind hier nicht wählbar.";
 
 /**
- * The section „Kopfleiste“ of the Portal tab: App-Logo and Favicon. It changes
- * the branding only through `patch` events with the top-level fields it
- * changes.
+ * The section „Kopfleiste“ of the Portal tab (map #510): the colour of the
+ * header bar as three cards, each previewing a small bar in light and dark;
+ * the App-Logo with its optional variant for dark mode, previewed as a pair of
+ * tiles; and the Favicon. It changes the branding only through `patch` events
+ * with the top-level fields it changes.
  */
 export default {
   name: "PortalHeader",
-  components: { SubSection, MediaReferenceField, MediaReferenceImage },
+  components: {
+    SubSection,
+    MediaReferenceField,
+    MediaReferenceImage,
+    PortalAppLogo,
+    PortalHeaderBar,
+  },
   props: {
     branding: { type: Object, required: true },
   },
@@ -84,9 +185,19 @@ export default {
     return {
       mediaScope: MEDIA_SCOPE.INSTANCE,
       publicOnlyReason: PUBLIC_ONLY_REASON,
+      headerOptions: HEADER_OPTIONS,
+      modes: ["light", "dark"],
+      variantLabel: VARIANT_LABEL,
+      variantHint: VARIANT_HINT,
     };
   },
   computed: {
+    header() {
+      const value = this.branding.header;
+      return HEADER_OPTIONS.some((option) => option.value === value)
+        ? value
+        : DEFAULT_HEADER;
+    },
     logo() {
       return brandingImage(this.branding, "logo");
     },
@@ -95,9 +206,72 @@ export default {
     },
   },
   methods: {
+    setHeader(value) {
+      if (value !== this.branding.header) {
+        this.$emit("patch", { header: value });
+      }
+    },
+    setLogoDark(value) {
+      this.$emit("patch", { logoDark: value || null });
+    },
+    tileLabel(mode) {
+      if (mode === "light") {
+        return TILE_LABELS.light;
+      }
+      return this.branding.logoDark ? TILE_LABELS.dark : TILE_LABELS.inverted;
+    },
     setImage(name, value) {
       this.$emit("patch", brandingImagePatch(name, value));
     },
   },
 };
 </script>
+
+<style scoped>
+.portal-header-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--scb-space-3);
+}
+
+.portal-header-card {
+  padding: var(--scb-space-3);
+  border-radius: var(--scb-radius-surface);
+  border: 1px solid var(--scb-surface-border);
+  cursor: pointer;
+}
+
+.portal-header-card--active {
+  border-color: var(--v-primary-base);
+  box-shadow: inset 0 0 0 1px var(--v-primary-base);
+}
+
+.portal-header-logo-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--scb-space-3);
+}
+
+.portal-header-logo-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--scb-space-3);
+  padding: 10px 14px;
+  border-radius: 6px;
+  min-height: 64px;
+}
+
+/* Literal colours on purpose: the tiles mimic the portal's light and dark
+   pages and must not follow the admin UI's own theme. */
+.portal-header-logo-tile--light {
+  background: #ffffff;
+  color: #4b5563;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.portal-header-logo-tile--dark {
+  background: #101828;
+  color: #d1d5db;
+}
+</style>

@@ -137,9 +137,77 @@ describe("brandingForSave with the font", () => {
   });
 });
 
+describe("brandingForSave with the header bar and the variant of the App-Logo", () => {
+  it("sends the header and the variant as the form holds them", () => {
+    const logoDark = { source: "media", mediaId: "m2", url: null };
+
+    const payload = brandingForSave({
+      ...defaultBranding(),
+      header: "neutral",
+      logoDark,
+    });
+
+    expect(payload.header).toBe("neutral");
+    expect(payload.logoDark).toEqual(logoDark);
+  });
+
+  it("sends a branding that never stored them with Primär and without variant", () => {
+    const payload = brandingForSave(defaultBranding());
+
+    expect(payload.header).toBe("primary");
+    expect(payload).toHaveProperty("logoDark", null);
+  });
+});
+
+describe("brandingForSave with footer logos", () => {
+  it("sends the footer logos in their order with size, link and variant", () => {
+    const footerLogos = [
+      {
+        image: { source: "media", mediaId: "bmwsb", url: null },
+        size: "lg",
+        link: "https://www.bmwsb.bund.de",
+        imageDark: null,
+      },
+      {
+        image: { source: "media", mediaId: "land", url: null },
+        size: "md",
+        link: "",
+        imageDark: { source: "media", mediaId: "land-dunkel", url: null },
+      },
+    ];
+
+    const payload = brandingForSave({ active: true, footerLogos });
+
+    expect(payload.footerLogos).toEqual(footerLogos);
+  });
+});
+
+describe("brandingForSave with the size of the logo on the auth pages", () => {
+  it("sends S for a branding that never stored a size, as today", () => {
+    const stored = { active: false, theme: { colors: { primary: "" } } };
+
+    const payload = brandingForSave({ ...defaultBranding(), ...stored });
+
+    expect(payload.authLogoSize).toBe("sm");
+  });
+
+  it("sends the chosen size", () => {
+    const payload = brandingForSave({
+      ...defaultBranding(),
+      authLogoSize: "md",
+    });
+
+    expect(payload.authLogoSize).toBe("md");
+  });
+});
+
 describe("defaultBranding", () => {
   it("reads a branding without font as the system font", () => {
     expect(defaultBranding().font).toBeNull();
+  });
+
+  it("reads a branding without footer logos as one with none", () => {
+    expect(defaultBranding().footerLogos).toEqual([]);
   });
 
   it("reads a branding without accent colour as one with an empty accent", () => {

@@ -21,6 +21,11 @@ vi.mock("@/services/api/ApiCatalogService", () => ({
   },
 }));
 
+// The footer reads name and proportions of its logos from the media API.
+vi.mock("@/services/MediaResolveService", () => ({
+  default: { resolve: vi.fn(() => Promise.resolve(null)), prime: vi.fn() },
+}));
+
 import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 
@@ -65,8 +70,8 @@ function blocks(count) {
 }
 
 function mountTab(propsData = {}) {
-  // The media fields and the font's picker are backed by the media API; what
-  // is under test is the tab around them.
+  // The media fields, the footer's „+ Logo“ and the font's tile open a picker
+  // backed by the media API; what is under test is the tab around them.
   return mountComponent(InstanceEditCatalog, {
     store: new Vuex.Store({ modules: { toasts } }),
     propsData: { instance: instance(), catalog: catalog(), ...propsData },
@@ -250,13 +255,17 @@ describe("InstanceEditCatalog sections by area of the page", () => {
     ]);
   });
 
-  it("keeps App-Logo and Favicon in the Kopfleiste", () => {
+  it("keeps App-Logo, its variant for dark mode and Favicon in the Kopfleiste", () => {
     const wrapper = mountTab();
     const labels = section(wrapper, "Kopfleiste")
       .findAllComponents({ name: "MediaReferenceField" })
       .wrappers.map((field) => field.attributes("label"));
 
-    expect(labels).toEqual(["App-Logo", "Favicon"]);
+    expect(labels).toEqual([
+      "App-Logo",
+      "Variante für den Dunkelmodus (optional)",
+      "Favicon",
+    ]);
   });
 
   it("stores a new App-Logo as reference and drops the legacy address", async () => {
@@ -464,6 +473,99 @@ describe("InstanceEditCatalog Farben", () => {
     expect(
       previewPart(wrapper, "primary", "light", "button").attributes("style")
     ).toContain("background: rgb(18, 52, 86)");
+  });
+});
+
+function withFooterLogos(footerLogos) {
+  const base = instance();
+  return { ...base, branding: { ...base.branding, footerLogos } };
+}
+
+function footerLogo(mediaId, overrides = {}) {
+  return {
+    image: { source: "media", mediaId, url: null },
+    size: "md",
+    link: "",
+    imageDark: null,
+    ...overrides,
+  };
+}
+
+describe("InstanceEditCatalog Fußbereich", () => {
+  it("shows the portal name in the mock of the footer", () => {
+    const wrapper = mountTab();
+
+    expect(wrapper.find(".portal-footer-mock").text()).toContain("Marktplatz");
+  });
+
+  it("hands a change of the footer logos up with the instance", async () => {
+    const wrapper = mountTab({
+      instance: withFooterLogos([footerLogo("bmwsb"), footerLogo("land")]),
+    });
+
+    await wrapper.findAll("[data-test='footer-logo']").at(0).trigger("click");
+    await settle(wrapper);
+    await wrapper.find("button[aria-label='Entfernen']").trigger("click");
+    await settle(wrapper);
+
+    expect(lastBranding(wrapper).footerLogos).toEqual([footerLogo("land")]);
+  });
+
+  it("refuses to save while a footer link is no http(s) address", async () => {
+    const wrapper = mountTab({
+      instance: withFooterLogos([
+        footerLogo("bmwsb", { link: "javascript:alert(1)" }),
+      ]),
+    });
+
+    expect(wrapper.vm.validate()).toBe(false);
+  });
+
+  it("reads a branding without footer logos as one with none", () => {
+    const wrapper = mountTab();
+
+    expect(wrapper.findAll("[data-test='footer-logo']")).toHaveLength(0);
+    expect(wrapper.vm.validate()).toBe(true);
+  });
+});
+
+describe("InstanceEditCatalog Anmeldeseiten", () => {
+  function sizeRadio(wrapper, label) {
+    return wrapper
+      .findAll(".v-radio")
+      .wrappers.find((item) => item.text().trim() === label);
+  }
+
+  it("starts on S for an instance that never stored a size", () => {
+    const wrapper = mountTab();
+
+    expect(
+      sizeRadio(wrapper, "S · 56 px (wie heute)")
+        .find("input")
+        .attributes("aria-checked")
+    ).toBe("true");
+  });
+
+  it("sends the chosen size with the instance", async () => {
+    const wrapper = mountTab();
+
+    await sizeRadio(wrapper, "L · 160 px").find("input").trigger("click");
+
+    const updates = wrapper.emitted("update:instance");
+    expect(updates[updates.length - 1][0].branding.authLogoSize).toBe("lg");
+  });
+
+  it("puts the Portalname into the login card as it is typed", async () => {
+    const wrapper = mountTab();
+
+    await fieldByLabel(wrapper, "Portalname")
+      .find("input")
+      .setValue("Stadtportal");
+
+    const names = wrapper
+      .findAll(".portal-login-preview__name")
+      .wrappers.map((name) => name.text());
+    expect(names).toEqual(["Stadtportal", "Stadtportal"]);
   });
 });
 
