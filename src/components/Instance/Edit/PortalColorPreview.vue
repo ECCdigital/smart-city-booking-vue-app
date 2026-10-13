@@ -144,7 +144,7 @@ export default {
   padding: var(--scb-space-2) var(--scb-space-3);
   border-radius: var(--scb-radius-surface);
   border: 1px solid var(--scb-surface-border);
-  font-size: 11px;
+  font-size: var(--scb-font-size-caption);
 }
 
 /* Literal colours on purpose: the tiles mimic the portal's light and dark
@@ -210,7 +210,7 @@ export default {
 
 .portal-color-preview__card-body {
   flex: 1;
-  padding: 6px 8px;
+  padding: 6px var(--scb-space-2);
 }
 
 .portal-color-preview__badge {
@@ -224,17 +224,17 @@ export default {
 }
 
 .portal-color-preview__button {
-  padding: 1px 8px;
-  border-radius: 4px;
+  padding: 1px var(--scb-space-2);
+  border-radius: var(--scb-radius-control);
 }
 
 .portal-color-preview__chips {
   display: flex;
-  gap: 4px;
+  gap: var(--scb-space-1);
 }
 
 .portal-color-preview__chip {
-  padding: 1px 8px;
+  padding: 1px var(--scb-space-2);
   border-radius: 999px;
 }
 

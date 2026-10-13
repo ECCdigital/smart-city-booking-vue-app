@@ -173,8 +173,8 @@ export default {
 .portal-login-preview__card {
   width: 170px;
   max-width: 100%;
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: var(--scb-radius-surface);
+  padding: var(--scb-space-3);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -197,7 +197,7 @@ export default {
 
 .portal-login-preview__name {
   font-weight: 700;
-  font-size: 12px;
+  font-size: var(--scb-font-size-xs);
 }
 
 .portal-login-preview__title {

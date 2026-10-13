@@ -74,7 +74,7 @@ export default {
   align-items: center;
   justify-content: center;
   border: 1px dashed currentColor;
-  border-radius: 4px;
+  border-radius: var(--scb-radius-control);
   font-size: 10px;
   opacity: 0.6;
 }

@@ -414,7 +414,7 @@ export default {
 .portal-font__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 12px;
+  gap: var(--scb-space-3);
 }
 
 .portal-font__tile {
@@ -422,10 +422,10 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 150px;
-  padding: 12px 14px;
+  padding: var(--scb-space-3) 14px;
   text-align: left;
   border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
+  border-radius: var(--scb-radius-surface);
   background: #ffffff;
   color: rgba(0, 0, 0, 0.87);
   cursor: pointer;
@@ -456,26 +456,26 @@ export default {
 
 .portal-font__name {
   margin-top: 2px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--scb-font-size-md);
+  font-weight: var(--scb-font-weight-semibold);
 }
 
 .portal-font__sample {
   flex-grow: 1;
   margin-top: 6px;
-  font-size: 13px;
+  font-size: var(--scb-font-size-sm);
   line-height: 1.35;
 }
 
 .portal-font__meta {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: var(--scb-font-size-caption);
   color: rgba(0, 0, 0, 0.6);
 }
 
 .portal-font__tile .portal-font__check {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: var(--scb-space-2);
+  right: var(--scb-space-2);
 }
 </style>
