@@ -74,18 +74,20 @@
         </template>
 
         <template v-slot:item.bookableIds="{ item }">
-          <div class="">
+          <div class="bookables">
             <v-chip
               v-for="(bookable, key) in item.bookableItems.slice(0, 2)"
               :key="key"
-              class="ma-1"
+              class="bookable-chip ma-1"
               small
               color="secondary"
               text-color="black"
               :title="bookable._bookableUsed?.title"
             >
               <v-icon left x-small>mdi-package-variant</v-icon>
-              {{ truncate(bookable._bookableUsed?.title, 20) }}
+              <span class="bookable-chip-title">
+                {{ truncate(bookable._bookableUsed?.title, 20) }}
+              </span>
             </v-chip>
             <v-chip
               v-if="item.bookableItems.length > 2"
@@ -326,7 +328,14 @@ export default {
           value: "id",
         },
         { text: "Name", value: "name" },
-        { text: "Buchungsdatum", value: "timeCreated" },
+        // A soft hyphen and the narrowest width the content allows: the
+        // header breaks as „Buchungs-/datum“ above the date.
+        {
+          text: "Buchungs­datum",
+          value: "timeCreated",
+          width: "1%",
+          class: "wrapping-header",
+        },
         { text: "Buchungsobjekte", value: "bookableIds", sortable: false },
         { text: "Serie", value: "groupBooking" },
         { text: "Von", value: "timeBegin" },
@@ -457,6 +466,35 @@ export default {
 <style scoped>
 .booking-number {
   color: var(--scb-text-link);
+}
+
+/* The column stays narrow: chips that don't fit side by side wrap below
+   each other, a long title ends in an ellipsis. */
+.bookables {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 220px;
+}
+
+.bookable-chip {
+  max-width: 100%;
+}
+
+/* Only the title is cut: the icon sits on a negative margin and would be
+   clipped by an overflow on the whole content. */
+.bookable-chip ::v-deep .v-chip__content {
+  max-width: 100%;
+}
+
+.bookable-chip-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Headers don't wrap by default; this one may, at its soft hyphen. */
+.booking-table-wrapper ::v-deep th.wrapping-header {
+  white-space: normal;
 }
 
 .booking-table-wrapper {
