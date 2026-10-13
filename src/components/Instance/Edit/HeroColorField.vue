@@ -95,6 +95,7 @@ const TOKEN_LABELS = Object.freeze({
   secondary: "Sekundärfarbe",
   white: "Weiß",
   black: "Schwarz",
+  accent: "Akzent", // PROTOTYPE (ECCdigital/tickets#519)
 });
 
 // What „Eigene…“ starts from when the Block still carries a token and the

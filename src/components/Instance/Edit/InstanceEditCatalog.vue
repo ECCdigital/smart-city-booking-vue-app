@@ -78,6 +78,18 @@
       </v-col>
     </v-row>
 
+    <!-- PROTOTYPE (ECCdigital/tickets#519): „Theme“ und „Logo & Favicon“
+         stehen hier in drei Varianten. -->
+    <AppearancePrototype
+      :branding="local.branding"
+      :logo="logo"
+      :favicon="favicon"
+      :portal-name="localCatalog.name"
+      @update="emitUpdate"
+      @set-image="setBrandingImage"
+    />
+
+    <template v-if="false">
     <SubSection
       class="mt-7"
       title="Theme"
@@ -278,6 +290,7 @@
         </v-col>
       </v-row>
     </SubSection>
+    </template>
 
     <SubSection
       class="mt-8"
@@ -324,6 +337,9 @@ import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import SubSection from "@/components/commons/SubSection.vue";
 import HeroEditorDialog from "@/components/Instance/Edit/HeroEditorDialog.vue";
+// PROTOTYPE (ECCdigital/tickets#519)
+import AppearancePrototype from "@/components/Instance/Edit/Prototype519/AppearancePrototype.vue";
+import { store as appearanceStore } from "@/components/Instance/Edit/Prototype519/appearancePrototype";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import { BRANDING_IMAGES, defaultBranding } from "@/utils/instanceBranding";
 
@@ -375,6 +391,7 @@ export default {
     MediaReferenceImage,
     BaseSection,
     HeroEditorDialog,
+    AppearancePrototype,
   },
   props: {
     instance: { type: Object, required: true },
@@ -478,6 +495,14 @@ export default {
     },
   },
   watch: {
+    // PROTOTYPE (ECCdigital/tickets#519): das gespeicherte App-Logo für den
+    // Hero-Editor, der nur nach dem Speichern öffnet.
+    "instance.branding.logo": {
+      immediate: true,
+      handler(value) {
+        appearanceStore.appLogo = value || null;
+      },
+    },
     instance: {
       handler(n) {
         const next = this.cloneInstance(n);

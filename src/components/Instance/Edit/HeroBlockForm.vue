@@ -147,17 +147,25 @@
               >
                 Farbe
               </span>
+              <!-- PROTOTYPE (ECCdigital/tickets#519): „Akzent“ als Textfarbe. -->
               <HeroColorField
-                :value="block.color"
-                :theme-colors="themeColors"
+                :value="protoHero.color || block.color"
+                :theme-colors="protoThemeColors"
+                :tokens="protoTextTokens"
                 :error="errorOf('color')"
                 label=""
                 class="hero-block-form__color"
-                @input="patch({ color: $event })"
+                @input="protoSetColor('color', $event)"
               />
             </div>
           </div>
 
+          <div
+            v-if="protoHero.color && !protoAccent"
+            class="text-caption warning--text mt-1"
+          >
+            PROTOTYP: Die Instanz hat noch keine Akzentfarbe. Rückfall offen.
+          </div>
           <v-switch
             :input-value="block.shadow"
             label="Schatten für bessere Lesbarkeit"
@@ -224,6 +232,70 @@
         </template>
 
         <template v-else-if="isImage">
+          <!-- PROTOTYPE (ECCdigital/tickets#519): Quelle des Bildes. -->
+          <div class="text-caption text--secondary mb-1">Quelle</div>
+          <v-btn-toggle
+            :value="protoHero.appLogo ? 'app-logo' : 'media'"
+            mandatory
+            dense
+            color="primary"
+            class="mb-3"
+            @change="protoSetSource"
+          >
+            <v-btn small value="media">
+              <v-icon small left>mdi-image-multiple-outline</v-icon>
+              Mediathek
+            </v-btn>
+            <v-btn
+              small
+              value="app-logo"
+              :disabled="!protoAppLogo"
+              :title="protoAppLogo ? '' : 'Die Instanz hat kein App-Logo.'"
+            >
+              <v-icon small left>mdi-star-circle-outline</v-icon>
+              App-Logo
+            </v-btn>
+          </v-btn-toggle>
+
+          <template v-if="protoHero.appLogo">
+            <div class="proto-hero-logo-pair">
+              <div class="proto-hero-logo proto-hero-logo--light">
+                <ProtoAppLogo :logo="protoAppLogo" mode="light" :height="40" />
+              </div>
+              <div class="proto-hero-logo proto-hero-logo--dark">
+                <ProtoAppLogo
+                  :logo="protoAppLogo"
+                  :logo-dark="protoSaved.logoDark"
+                  mode="dark"
+                  :height="40"
+                />
+              </div>
+            </div>
+            <div class="text-caption text--secondary mt-1">
+              Folgt dem App-Logo aus dem Tab „Portal“. Im Dunkelmodus die
+              Variante für den Dunkelmodus{{
+                protoSaved.logoDark ? "" : ", ohne Variante invertiert"
+              }}.
+            </div>
+          </template>
+
+          <v-alert
+            v-else-if="protoIsLogoCopy"
+            type="info"
+            text
+            dense
+            class="text-body-2 mb-3"
+          >
+            Dieses Bild ist eine Kopie des App-Logos. Ein neues App-Logo und
+            die Variante für den Dunkelmodus erreichen es nicht.
+            <div class="mt-2">
+              <v-btn small outlined color="primary" @click="protoSetSource('app-logo')">
+                Quelle „App-Logo“ verwenden
+              </v-btn>
+            </div>
+          </v-alert>
+
+          <template v-if="!protoHero.appLogo">
           <MediaReferenceField
             :value="block.image"
             :scope="mediaScope"
@@ -253,6 +325,7 @@
             rounded
             class="hero-block-form__thumbnail mt-2"
           />
+          </template>
 
           <v-text-field
             :value="alt"
@@ -283,6 +356,7 @@
           />
 
           <v-switch
+            v-if="!protoHero.appLogo"
             :input-value="block.invertInDarkMode"
             label="Im Dunkelmodus invertieren"
             hint="Für dunkle Logos auf hellem Grund"
@@ -341,14 +415,21 @@
           </div>
 
           <template v-if="hasPanel">
+            <!-- PROTOTYPE (ECCdigital/tickets#519): „Akzent“ als Panel-Farbe. -->
             <HeroColorField
-              :value="block.panel.color"
-              :theme-colors="themeColors"
-              :tokens="panelColorTokens"
+              :value="protoHero.panelColor || block.panel.color"
+              :theme-colors="protoThemeColors"
+              :tokens="protoPanelTokens"
               :error="errorOf('panel.color')"
               class="hero-block-form__panel-color mt-1"
-              @input="patchPanel({ color: $event })"
+              @input="protoSetColor('panelColor', $event)"
             />
+            <div
+              v-if="protoHero.panelColor && !protoAccent"
+              class="text-caption warning--text"
+            >
+              PROTOTYP: Die Instanz hat noch keine Akzentfarbe. Rückfall offen.
+            </div>
 
             <v-slider
               :value="block.panel.opacity"
@@ -562,6 +643,13 @@ import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import HeroBlockTile from "@/components/Instance/Edit/HeroBlockTile.vue";
 import HeroColorField from "@/components/Instance/Edit/HeroColorField.vue";
+// PROTOTYPE (ECCdigital/tickets#519)
+import ProtoAppLogo from "@/components/Instance/Edit/Prototype519/ProtoAppLogo.vue";
+import {
+  heroOf as protoHeroOf,
+  patchHero as protoPatchHero,
+  store as protoStore,
+} from "@/components/Instance/Edit/Prototype519/appearancePrototype";
 import HeroPositionGrid from "@/components/Instance/Edit/HeroPositionGrid.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import {
@@ -756,6 +844,7 @@ export default {
   components: {
     HeroBlockTile,
     HeroColorField,
+    ProtoAppLogo,
     HeroPositionGrid,
     MediaReferenceField,
     MediaReferenceImage,
@@ -803,6 +892,33 @@ export default {
     };
   },
   computed: {
+    // PROTOTYPE (ECCdigital/tickets#519) ---------------------------------
+    protoHero() {
+      return protoHeroOf(this.block.id);
+    },
+    protoSaved() {
+      return protoStore.saved;
+    },
+    protoAccent() {
+      return protoStore.saved.accent;
+    },
+    protoAppLogo() {
+      return protoStore.appLogo;
+    },
+    protoThemeColors() {
+      return { ...(this.themeColors || {}), accent: this.protoAccent };
+    },
+    protoTextTokens() {
+      return ["default", "primary", "secondary", "accent", "white"];
+    },
+    protoPanelTokens() {
+      return ["white", "black", "primary", "secondary", "accent"];
+    },
+    protoIsLogoCopy() {
+      const id = this.block.image && this.block.image.mediaId;
+      return !!id && !!this.protoAppLogo && id === this.protoAppLogo.mediaId;
+    },
+    // --------------------------------------------------------------------
     /** The card's title: the Block's first German line, or its type. */
     title() {
       return heroBlockLabel(this.block);
@@ -1036,6 +1152,26 @@ export default {
     patchFine(key, value) {
       this.patch({ [key]: value });
     },
+    // PROTOTYPE (ECCdigital/tickets#519): „Akzent“ kennt das Backend nicht,
+    // also hält der Prototyp ihn; der Block behält seinen echten Wert.
+    protoSetColor(key, value) {
+      if (value === "accent") {
+        protoPatchHero(this.block.id, { [key]: "accent" });
+        return;
+      }
+      protoPatchHero(this.block.id, { [key]: null });
+      if (key === "color") this.patch({ color: value });
+      else this.patchPanel({ color: value });
+    },
+    // Die Quelle „App-Logo“ hält der Prototyp; der Block bekommt die
+    // `mediaId` des App-Logos, damit Vorschau und Speichern weiter gehen.
+    protoSetSource(source) {
+      const appLogo = source === "app-logo";
+      protoPatchHero(this.block.id, { appLogo });
+      if (appLogo && this.protoAppLogo) {
+        this.patch({ image: this.protoAppLogo, invertInDarkMode: false });
+      }
+    },
     patch(fields) {
       this.$emit("input", fields);
     },
@@ -1209,5 +1345,30 @@ export default {
 
 .theme--dark .hero-block-form__fine-panel.v-expansion-panel {
   border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* PROTOTYPE (ECCdigital/tickets#519) */
+.proto-hero-logo-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.proto-hero-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 6px;
+  min-height: 56px;
+}
+
+.proto-hero-logo--light {
+  background: #fff;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+}
+
+.proto-hero-logo--dark {
+  background: #111827;
 }
 </style>

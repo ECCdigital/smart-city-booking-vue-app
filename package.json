@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node --max_old_space_size=4096 node_modules/@vue/cli-service/bin/vue-cli-service.js serve --mode production",
     "serve": "vue-cli-service serve",
+    "prototype:erscheinungsbild": "BFF_DEV_URL=http://localhost:3007 vue-cli-service serve --port 8087",
+    "prototype:erscheinungsbild:bff": "cd bff && PORT=3007 PUBLIC_ORIGIN=http://localhost:8087 node src/index.js",
     "build": "vue-cli-service build && mkdir -p ./dist/cdn/current && uglifyjs ./src/js-web-interface/booking-manager-js.js > ./dist/cdn/current/booking-manager.min.js",
     "test-build": "mkdir -p ./public/cdn/current && uglifyjs ./src/js-web-interface/booking-manager-js.js > ./public/cdn/current/booking-manager.min.js",
     "release:major": "npm version $(semver $npm_package_version -i major)",
