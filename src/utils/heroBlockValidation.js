@@ -11,8 +11,9 @@
  * takes for the message under the field.
  *
  * The colour helpers — `isHeroHexColor`, `heroHexWithoutAlpha` and the two
- * hex rule arrays — are the contract's, not a Block's: `heroBackground.js`
- * and the Background's colour fields read the same `#rrggbb` from here.
+ * hex rule arrays — are the contract's, not a Block's: `heroBackground.js`,
+ * the Background's colour fields and the colours of the Portal tab read the
+ * same `#rrggbb` from here.
  */
 
 import {

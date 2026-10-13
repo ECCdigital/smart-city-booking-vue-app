@@ -43,12 +43,12 @@
 
 <script>
 import { contrastOf } from "@/utils/brandingContrast";
+import { isHeroHexColor } from "@/utils/heroBlockValidation";
 
 // What the picker opens on while the field is empty. Upper case, as the
 // picker writes hex: a value it would rewrite on opening would read as an
 // edit, and an empty field would be filled without a pick.
 const EMPTY_PICKER_VALUE = "#FFFFFF";
-const HEX_LONG = /^#[0-9a-f]{6}$/i;
 
 /**
  * A colour of the branding: a text field with a colour picker. An `opaque`
@@ -72,7 +72,7 @@ export default {
       if (!this.value) {
         return EMPTY_PICKER_VALUE;
       }
-      return HEX_LONG.test(this.value) ? this.value.toUpperCase() : this.value;
+      return isHeroHexColor(this.value) ? this.value.toUpperCase() : this.value;
     },
   },
   methods: {

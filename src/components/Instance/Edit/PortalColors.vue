@@ -59,12 +59,10 @@
 import SubSection from "@/components/commons/SubSection.vue";
 import PortalColorField from "@/components/Instance/Edit/PortalColorField.vue";
 import PortalColorPreview from "@/components/Instance/Edit/PortalColorPreview.vue";
+import { isHeroHexColor } from "@/utils/heroBlockValidation";
 
 const ACCENT_FORMAT_MESSAGE =
   "Bitte eine Farbe im Format #rrggbb angeben oder das Feld leeren.";
-
-// The backend takes an empty accent or `#rrggbb`, nothing else.
-const ACCENT = /^#[0-9a-f]{6}$/i;
 
 const ACCENT_FALLBACK =
   "Nicht gesetzt: Badges und Streifen in Primär, „Pauschal“ in Sekundär, wie heute.";
@@ -100,7 +98,8 @@ const COLOR_ROWS = Object.freeze([
       placeholder: "Nicht gesetzt",
       clearable: true,
       opaque: true,
-      rules: [(v) => !v || ACCENT.test(v) || ACCENT_FORMAT_MESSAGE],
+      // The backend takes an empty accent or `#rrggbb`, nothing else.
+      rules: [(v) => !v || isHeroHexColor(v) || ACCENT_FORMAT_MESSAGE],
     },
   },
 ]);

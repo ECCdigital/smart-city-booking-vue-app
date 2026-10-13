@@ -82,10 +82,7 @@
 
 <script>
 import { contrastOf, STOREFRONT_COLORS } from "@/utils/brandingContrast";
-
-// The storefront writes the accent only when it is a colour; anything else
-// leaves every element on its fallback.
-const ACCENT = /^#[0-9a-f]{6}$/i;
+import { isHeroHexColor } from "@/utils/heroBlockValidation";
 
 const MODE_LABELS = Object.freeze({ light: "Hell", dark: "Dunkel" });
 
@@ -118,8 +115,10 @@ export default {
       return this.colors.secondary || STOREFRONT_COLORS.secondary;
     },
     accent() {
+      // The storefront writes the accent only when it is a colour; anything
+      // else leaves every element on its fallback.
       const accent = this.colors.accent;
-      return ACCENT.test(accent || "") ? accent : null;
+      return isHeroHexColor(accent) ? accent : null;
     },
     decor() {
       return this.accent || this.primary;
