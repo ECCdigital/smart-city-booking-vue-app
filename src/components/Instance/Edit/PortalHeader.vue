@@ -120,8 +120,6 @@ import PortalHeaderBar from "@/components/Instance/Edit/PortalHeaderBar.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import { brandingImage, brandingImagePatch } from "@/utils/instanceBranding";
 
-// Logo, its variant and favicon are served to every visitor of the portal, so they may only
-// ever point at public media — the backend refuses anything else on save.
 // The colours the header bar can take (`branding.header`), in this order.
 const HEADER_OPTIONS = Object.freeze([
   { value: "neutral", text: "Neutral", note: "" },
@@ -137,6 +135,9 @@ const VARIANT_LABEL = "Variante für den Dunkelmodus (optional)";
 const VARIANT_HINT =
   "Für Logos, die invertiert falsche Farben bekommen, etwa Wappen. Passt das Logo ohne Änderung auf dunklen Grund, wählen Sie dasselbe Bild.";
 
+// Logo, its variant and favicon are served to every visitor of the portal,
+// so they may only ever point at public media — the backend refuses anything
+// else on save.
 const PUBLIC_ONLY_REASON =
   "Logo, Variante und Favicon werden öffentlich ausgeliefert — interne Medien sind hier nicht wählbar.";
 
