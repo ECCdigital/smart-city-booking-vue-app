@@ -38,3 +38,8 @@ export function bookedViaOf(booking) {
 export function filterBookingsByBookedVia(bookings, ways) {
   return bookings.filter((booking) => ways.includes(bookedViaOf(booking)));
 }
+
+/** The badge's tooltip: who made the booking, or that it is not known. */
+export function bookedViaHint(bookedVia) {
+  return i18n.t(`booking.booked-via.hint.${bookedViaOf({ bookedVia })}`);
+}

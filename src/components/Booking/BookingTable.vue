@@ -57,12 +57,10 @@
           <div>
             <div class="font-weight-bold">
               {{ item.name }}
-              <span
+              <BookedViaBadge
                 v-if="isMarkedBookedVia(item)"
-                class="booked-via-badge"
-                :title="bookedViaBadgeTitle(item)"
-                >{{ bookedViaLabel(item.bookedVia) }}</span
-              >
+                :booked-via="item.bookedVia"
+              />
             </div>
             <div class="text-caption grey--text">
               {{ truncate(item.company, 20) }}
@@ -305,10 +303,12 @@ import {
   transitionActions,
 } from "@/utils/bookingStatus";
 import { refundStateMarker, refundStateOf } from "@/utils/cancellationRefund";
-import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
+import { BOOKED_VIA } from "@/utils/bookedVia";
+import BookedViaBadge from "@/components/Booking/BookedViaBadge.vue";
 
 export default {
   name: "BookingTable",
+  components: { BookedViaBadge },
   props: {
     bookings: {
       type: Array,
@@ -381,14 +381,9 @@ export default {
     actionIcon,
     actionLabel,
     allowsAction,
-    bookedViaLabel,
-    /** The badge's hover text, „Buchungsweg: Gast“. */
-    bookedViaBadgeTitle(item) {
-      return `${bookedViaTitle()}: ${bookedViaLabel(item.bookedVia)}`;
-    },
     /** Guest and admin bookings carry a badge; a signed-in one is the rule. */
     isMarkedBookedVia(item) {
-      return ["guest", "admin"].includes(item.bookedVia);
+      return [BOOKED_VIA.GUEST, BOOKED_VIA.ADMIN].includes(item.bookedVia);
     },
     isFree,
     statusColor,
@@ -501,17 +496,6 @@ export default {
 /* Headers don't wrap by default; this one may, at its soft hyphen. */
 .booking-table-wrapper ::v-deep th.wrapping-header {
   white-space: normal;
-}
-
-.booked-via-badge {
-  margin-left: var(--scb-space-1);
-  padding: 0 var(--scb-space-1);
-  border-radius: var(--scb-radius-badge);
-  background: var(--scb-hover-tint-strong);
-  color: var(--scb-text-muted);
-  font-size: var(--scb-font-size-caption);
-  font-weight: var(--scb-font-weight-medium);
-  vertical-align: middle;
 }
 
 .booking-table-wrapper {

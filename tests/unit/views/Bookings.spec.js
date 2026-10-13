@@ -293,7 +293,7 @@ describe("Bookings", () => {
       const card = await openFilterCard(wrapper);
 
       expect(funnelBadge(wrapper)).toBeNull();
-      expect(card.textContent).toContain("Keine Einschränkung");
+      expect(card.textContent).toContain("Keine Filter ausgewählt");
       expect(selectedStatusLabels()).toEqual([]);
       expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([
         "bk-requested",
@@ -367,13 +367,13 @@ describe("Bookings", () => {
       await chooseType(wrapper, "Einzel");
 
       expect(funnelBadge(wrapper)).toBe("1");
-      expect(card.textContent).toContain("1 Einschränkung aktiv");
+      expect(card.textContent).toContain("1 Filter aktiv");
 
       await toggleStatus(wrapper, "Angefragt");
       await toggleStatus(wrapper, "Bestätigt");
 
       expect(funnelBadge(wrapper)).toBe("3");
-      expect(card.textContent).toContain("3 Einschränkungen aktiv");
+      expect(card.textContent).toContain("3 Filter aktiv");
     });
 
     it("offers a reset per section only while that section restricts", async () => {

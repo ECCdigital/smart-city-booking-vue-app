@@ -591,6 +591,21 @@ describe("BookingPage", () => {
     });
 
     it.each([
+      [{ bookedVia: "user" }, "Angemeldet"],
+      [{ bookedVia: "admin" }, "Admin"],
+      [{}, "Unbekannt"],
+    ])("marks the name of %o with the badge %s", async (extra, word) => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking(extra),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      const name = wrapper.find(".booking-page__name");
+      expect(name.find(".booked-via-badge").text()).toBe(word);
+    });
+
+    it.each([
       [{ bookedVia: "guest" }, "Gast"],
       [{}, "Unbekannt"],
     ])("names the Buchungsweg of %o as %s in Details", async (extra, word) => {

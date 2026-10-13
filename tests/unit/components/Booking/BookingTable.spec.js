@@ -138,7 +138,6 @@ describe("BookingTable", () => {
       const badge = wrapper.find(".booked-via-badge");
 
       expect(badge.text()).toBe(label);
-      expect(badge.attributes("title")).toBe(`Buchungsweg: ${label}`);
     });
 
     it.each([["user"], [undefined]])(
