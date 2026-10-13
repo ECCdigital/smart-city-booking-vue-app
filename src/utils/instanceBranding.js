@@ -35,6 +35,8 @@ export function defaultBranding() {
     favicon: null,
     logoUrl: "",
     faviconUrl: "",
+    // The height of the logo on the auth pages: S is today's 56 px.
+    authLogoSize: "sm",
   };
 }
 

@@ -467,6 +467,46 @@ describe("InstanceEditCatalog Farben", () => {
   });
 });
 
+describe("InstanceEditCatalog Anmeldeseiten", () => {
+  function sizeRadio(wrapper, label) {
+    return wrapper
+      .findAll(".v-radio")
+      .wrappers.find((item) => item.text().trim() === label);
+  }
+
+  it("starts on S for an instance that never stored a size", () => {
+    const wrapper = mountTab();
+
+    expect(
+      sizeRadio(wrapper, "S · 56 px (wie heute)")
+        .find("input")
+        .attributes("aria-checked")
+    ).toBe("true");
+  });
+
+  it("sends the chosen size with the instance", async () => {
+    const wrapper = mountTab();
+
+    await sizeRadio(wrapper, "L · 160 px").find("input").trigger("click");
+
+    const updates = wrapper.emitted("update:instance");
+    expect(updates[updates.length - 1][0].branding.authLogoSize).toBe("lg");
+  });
+
+  it("puts the Portalname into the login card as it is typed", async () => {
+    const wrapper = mountTab();
+
+    await fieldByLabel(wrapper, "Portalname")
+      .find("input")
+      .setValue("Stadtportal");
+
+    const names = wrapper
+      .findAll(".portal-login-preview__name")
+      .wrappers.map((name) => name.text());
+    expect(names).toEqual(["Stadtportal", "Stadtportal"]);
+  });
+});
+
 describe("InstanceEditCatalog Kopfbereich entry card", () => {
   it("no longer offers the two old text fields", () => {
     const wrapper = mountTab();
