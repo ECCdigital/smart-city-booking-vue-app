@@ -6,7 +6,7 @@
     size="sm"
     lazy-size="thumb"
     :height="height"
-    :width="height * 3.5"
+    :width="width || height * 3.5"
     contain
     class="portal-app-logo"
     :class="{ 'portal-app-logo--inverted': inverted }"
@@ -38,6 +38,8 @@ export default {
     logoDark: { type: Object, default: null },
     mode: { type: String, default: "light" },
     height: { type: Number, default: 32 },
+    // The box of the logo; by default up to 3.5 times as wide as it is high.
+    width: { type: [Number, String], default: null },
   },
   data() {
     return { mediaScope: MEDIA_SCOPE.INSTANCE };
@@ -72,7 +74,7 @@ export default {
   align-items: center;
   justify-content: center;
   border: 1px dashed currentColor;
-  border-radius: 4px;
+  border-radius: var(--scb-radius-control);
   font-size: 10px;
   opacity: 0.6;
 }

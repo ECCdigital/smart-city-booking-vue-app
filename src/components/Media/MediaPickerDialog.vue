@@ -43,7 +43,7 @@
             @filter="onFilter"
           >
             <template v-if="kind || publicOnly" #actions>
-              <v-chip v-if="kind" small label>{{ kindLabel }}</v-chip>
+              <v-chip v-if="kind" small label>{{ kindOptions.label }}</v-chip>
               <v-chip v-if="publicOnly" small label color="warning" outlined>
                 <v-icon x-small left>mdi-lock-outline</v-icon>
                 intern = nicht wählbar
@@ -155,8 +155,8 @@
             </p>
             <MediaUploadSheet
               v-model="uploadSheet"
-              :accept="acceptAttribute"
-              :hint="uploadHint"
+              :accept="kindOptions.accept"
+              :hint="kindOptions.hint"
               @pick="uploadFiles"
             />
           </div>
@@ -187,7 +187,7 @@
               type="file"
               multiple
               hidden
-              :accept="acceptAttribute"
+              :accept="kindOptions.accept"
               @change="onFilePick"
             />
           </div>
@@ -250,6 +250,32 @@ import {
 } from "@/utils/mediaReference";
 
 const PAGE_SIZE = 24;
+
+const IMAGE_UPLOAD_HINT = `${MEDIA_ALLOWED_TYPES_LABEL} bis 15 MB`;
+const DOCUMENT_UPLOAD_HINT = "PDF bis 50 MB";
+
+// What the picker says and takes for each kind of media it can be limited to.
+const KINDS = Object.freeze({
+  image: { label: "Nur Bilder", hint: IMAGE_UPLOAD_HINT, accept: "image/*" },
+  document: {
+    label: "Nur Dokumente",
+    hint: DOCUMENT_UPLOAD_HINT,
+    accept: "application/pdf",
+  },
+  font: {
+    label: "Nur Schriften",
+    hint: FONT_UPLOAD_LABEL,
+    accept: ".woff2,font/woff2",
+  },
+});
+
+// Without a kind the picker offers images and documents alike; the chip of
+// the kind is not shown then.
+const ANY_KIND = Object.freeze({
+  label: "",
+  hint: `${IMAGE_UPLOAD_HINT} · ${DOCUMENT_UPLOAD_HINT}`,
+  accept: undefined,
+});
 
 /**
  * The media picker (§4.11): a gallery grid in a modal that every editor shares.
@@ -322,23 +348,8 @@ export default {
     allowCreate() {
       return MediaPermissionService.allowCreate(this.scope);
     },
-    kindLabel() {
-      if (this.kind === "document") return "Nur Dokumente";
-      if (this.kind === "font") return "Nur Schriften";
-      return "Nur Bilder";
-    },
-    uploadHint() {
-      const images = `${MEDIA_ALLOWED_TYPES_LABEL} bis 15 MB`;
-      if (this.kind === "image") return images;
-      if (this.kind === "document") return "PDF bis 50 MB";
-      if (this.kind === "font") return FONT_UPLOAD_LABEL;
-      return `${images} · PDF bis 50 MB`;
-    },
-    acceptAttribute() {
-      if (this.kind === "image") return "image/*";
-      if (this.kind === "document") return "application/pdf";
-      if (this.kind === "font") return ".woff2,font/woff2";
-      return undefined;
+    kindOptions() {
+      return KINDS[this.kind] || ANY_KIND;
     },
     /** The tag behind the funnel, once the listing has shown one. */
     filterSections() {

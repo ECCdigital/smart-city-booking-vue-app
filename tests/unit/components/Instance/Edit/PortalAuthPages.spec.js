@@ -3,17 +3,27 @@ import { mountComponent } from "@tests/unit/support/mount";
 import { defaultBranding } from "@/utils/instanceBranding";
 
 import PortalAuthPages from "@/components/Instance/Edit/PortalAuthPages.vue";
+import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
+
+// The logo reads its medium from the media API; what is under test is the
+// section around it. The double keeps the props, so the spec reads what the
+// logo is asked to show.
+const MediaReferenceImageDouble = {
+  name: "MediaReferenceImage",
+  props: MediaReferenceImage.props,
+  render(h) {
+    return h("div");
+  },
+};
 
 function mountSection(branding = {}, propsData = {}) {
-  // The logo reads its medium from the media API; what is under test is the
-  // section around it.
   return mountComponent(PortalAuthPages, {
     propsData: {
       branding: { ...defaultBranding(), ...branding },
       portalName: "Marktplatz",
       ...propsData,
     },
-    stubs: { MediaReferenceImage: true },
+    stubs: { MediaReferenceImage: MediaReferenceImageDouble },
   });
 }
 
@@ -133,11 +143,11 @@ describe("PortalAuthPages login card", () => {
     const wrapper = mountSection({ logo: LOGO });
 
     expect(logoImage(wrapper, "dark").props("reference")).toEqual(LOGO);
-    expect(logoIn(wrapper, "dark").classes()).toContain(
-      "portal-login-preview__logo--inverted"
+    expect(logoImage(wrapper, "dark").classes()).toContain(
+      "portal-app-logo--inverted"
     );
-    expect(logoIn(wrapper, "light").classes()).not.toContain(
-      "portal-login-preview__logo--inverted"
+    expect(logoImage(wrapper, "light").classes()).not.toContain(
+      "portal-app-logo--inverted"
     );
   });
 
@@ -146,8 +156,8 @@ describe("PortalAuthPages login card", () => {
 
     expect(logoImage(wrapper, "light").props("reference")).toEqual(LOGO);
     expect(logoImage(wrapper, "dark").props("reference")).toEqual(LOGO_DARK);
-    expect(logoIn(wrapper, "dark").classes()).not.toContain(
-      "portal-login-preview__logo--inverted"
+    expect(logoImage(wrapper, "dark").classes()).not.toContain(
+      "portal-app-logo--inverted"
     );
   });
 });

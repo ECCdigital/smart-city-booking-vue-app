@@ -168,6 +168,7 @@ import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import MediaResolveService from "@/services/MediaResolveService";
 import { mediaReferenceOf, referencedMediaId } from "@/utils/mediaReference";
+import { isAbsoluteHttpUrl } from "@/utils/absoluteHttpUrl";
 
 // The backend stores no more footer logos than this.
 const MAX_FOOTER_LOGOS = 12;
@@ -201,22 +202,10 @@ const MODES = Object.freeze([
 const LINK_MESSAGE =
   "Bitte eine vollständige Adresse mit http:// oder https:// angeben oder das Feld leeren.";
 
-/**
- * Whether a footer link may be stored: empty, or an absolute http(s) address.
- * The backend refuses anything else, `javascript:` first of all.
- */
+// A footer link is empty or an absolute http(s) address, as the backend
+// takes it.
 function isFooterLink(value) {
-  if (!value) {
-    return true;
-  }
-  try {
-    const url = new URL(value);
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") && !!url.hostname
-    );
-  } catch {
-    return false;
-  }
+  return !value || isAbsoluteHttpUrl(value);
 }
 
 /**
@@ -416,8 +405,8 @@ export default {
    does not follow the admin's design tokens. */
 .portal-footer-mock {
   border-radius: 6px;
-  padding: 12px 14px 8px;
-  font-size: 11px;
+  padding: var(--scb-space-3) 14px var(--scb-space-2);
+  font-size: var(--scb-font-size-caption);
 }
 
 .portal-footer-mock--light {
@@ -435,15 +424,15 @@ export default {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: var(--scb-space-4);
   padding-bottom: 10px;
-  margin-bottom: 8px;
+  margin-bottom: var(--scb-space-2);
   border-bottom: 1px solid rgba(127, 127, 127, 0.25);
 }
 
 .portal-footer-mock__logo {
   display: inline-flex;
-  border-radius: 4px;
+  border-radius: var(--scb-radius-control);
   outline-offset: 3px;
 }
 
@@ -462,9 +451,9 @@ export default {
   gap: 2px;
   padding: 6px 10px;
   border: 1px dashed currentColor;
-  border-radius: 4px;
+  border-radius: var(--scb-radius-control);
   color: inherit;
-  font-size: 12px;
+  font-size: var(--scb-font-size-xs);
 }
 
 .portal-footer-mock__add:disabled {
@@ -476,7 +465,7 @@ export default {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--scb-space-2);
 }
 
 .portal-footer-fields {
@@ -486,6 +475,7 @@ export default {
   align-items: start;
 }
 
+/* Below $scb-bp-sm (959px) the fields stack. */
 @media (max-width: 959px) {
   .portal-footer-fields {
     grid-template-columns: 1fr;

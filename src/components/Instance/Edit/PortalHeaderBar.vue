@@ -69,7 +69,7 @@ export default {
   padding: 0 0 0 10px;
   border-radius: 6px;
   overflow: hidden;
-  font-size: 11px;
+  font-size: var(--scb-font-size-caption);
   min-height: 34px;
 }
 
@@ -93,7 +93,7 @@ export default {
   position: relative;
   display: flex;
   align-items: center;
-  padding: 0 8px;
+  padding: 0 var(--scb-space-2);
   white-space: nowrap;
 }
 

@@ -462,6 +462,18 @@ describe("PortalFont after saving", () => {
     expect(savedNote(wrapper)).toContain("erst nach dem Neuladen");
   });
 
+  // The Live Preview loads the stored font like any page of the portal: its
+  // Draft carries no font, so it shows the font no sooner than the portal.
+  it("promises the Live Preview nothing the portal does not do", async () => {
+    const wrapper = mountTab();
+    await tileNamed(wrapper, "Figtree").trigger("click");
+
+    wrapper.vm.onSaved();
+    await settle(wrapper);
+
+    expect(savedNote(wrapper)).not.toContain("Live-Vorschau");
+  });
+
   it("says nothing after a save that left the font alone", async () => {
     const wrapper = mountTab({ source: "curated", id: "inter" });
 
