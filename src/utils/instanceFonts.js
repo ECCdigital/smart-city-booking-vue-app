@@ -22,6 +22,10 @@ const SERIF = "Mit Serifen";
 // ids (map #510, story 92): a new font touches all three repositories. The
 // admin UI ships the latin part of each as a variable woff2 under
 // `public/fonts/preview/` (Fontsource 5.3.0, licence beside it) for the tiles.
+// IBM Plex Sans is the exception: its licence reserves the name "Plex", which
+// a subset cut by anyone but IBM may not carry, so its file is IBM's own
+// `IBM Plex Sans Var-Roman-Latin1.woff2` of `@ibm/plex-sans-variable` 0.2.0
+// with IBM's licence, byte for byte and only renamed.
 export const CURATED_FONTS = Object.freeze([
   { id: "inter", name: "Inter", kind: SANS },
   { id: "open-sans", name: "Open Sans", kind: SANS },
