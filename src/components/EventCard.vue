@@ -235,7 +235,7 @@
           </span>
         </div>
         <div class="ml-7">
-          <span class="font-weight-bold primary--text text-body-2">
+          <span class="font-weight-bold event-card__price text-body-2">
             {{
               item.attendees?.priceCategories?.price | currency("EUR", "de-DE")
             }}
@@ -411,6 +411,11 @@ export default {
 </script>
 
 <style scoped lang="scss">
+// The theme colour, lightened under .theme--dark (ECCdigital/tickets#307).
+.event-card__price {
+  color: var(--scb-text-link);
+}
+
 .placeholder-container {
   position: relative;
   width: 100%;

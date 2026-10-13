@@ -27,8 +27,8 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-surface-tint: rgba(0, 0, 0, 0.03); // section header strip, item hover
   --scb-surface-tint-faint: rgba(0, 0, 0, 0.02); // expansion-panel header
   --scb-surface-raised: var(--v-accent-base, #f5f5f5); // status / price tiles
-  // Behind the instance logo in the app bar (Navbar): none in the light
-  // theme, the one the logos are made for.
+  // Behind the instance logo (app bar, login pages, public booking status):
+  // none in the light theme, the one the logos are made for.
   --scb-logo-plate: transparent;
   --scb-logo-plate-padding: 0;
 
@@ -61,7 +61,8 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-text-muted: rgba(0, 0, 0, 0.6); // labels, subtitles, nav sections
   --scb-text-caption: rgba(0, 0, 0, 0.45); // small-caps captions
   --scb-text-hover: rgba(0, 0, 0, 0.87); // a muted item under the pointer
-  // A link in the theme colour: the booking number in the booking list.
+  // Text in the theme colour: the booking number in the booking list, prices
+  // on the bookable and event cards, the stepper's numbers, a tenant's name.
   --scb-text-link: var(--v-primary-base);
 
   // --- Type scale -----------------------------------------------------------

@@ -198,3 +198,37 @@ describe("BookableCard - the provider's prices", () => {
     });
   });
 });
+
+describe("BookableCard - the prices in dark mode", () => {
+  // A dark primary colour (VUE_APP_PRIMARY_COLOR_DARK) all but vanished on
+  // the dark card (ECCdigital/tickets#307). The link token lightens it under
+  // .theme--dark; the bare Vuetify class `primary--text` cannot.
+  it("draws the provider's rates and fee in the link colour", async () => {
+    const wrapper = await mountCard();
+    const prices = wrapper.findAll(".bookable-card__price");
+
+    expect(prices).toHaveLength(3);
+    prices.wrappers.forEach((price) =>
+      expect(price.classes()).not.toContain("primary--text")
+    );
+  });
+
+  it("draws the chip „extern“ in the link colour", async () => {
+    const wrapper = await mountCard();
+    const chip = wrapper.find(".bookable-card__extern");
+
+    expect(chip.text()).toBe("extern");
+    expect(chip.classes()).not.toContain("primary--text");
+  });
+
+  it("draws the bookable's own price tiers in the link colour", async () => {
+    const wrapper = await mountCard({
+      externalProviders: [],
+      priceCategories: [{ priceEur: 5, fixedPrice: false, interval: {} }],
+    });
+    const prices = wrapper.findAll(".bookable-card__price");
+
+    expect(prices).toHaveLength(1);
+    expect(prices.at(0).classes()).not.toContain("primary--text");
+  });
+});

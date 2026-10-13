@@ -203,7 +203,7 @@
           <span class="text-body-2 font-weight-bold grey--text text--darken-2">
             {{ $t("bookable.externalPrice.title") }}
           </span>
-          <v-chip x-small class="ml-2" color="primary" outlined label>
+          <v-chip x-small class="ml-2 bookable-card__extern" outlined label>
             extern
           </v-chip>
         </div>
@@ -226,7 +226,7 @@
                 {{ $t(row.labelKey) }}
               </span>
             </div>
-            <span class="font-weight-bold primary--text">
+            <span class="font-weight-bold bookable-card__price">
               {{ formatCurrency(row.priceEur) }}
             </span>
           </div>
@@ -245,7 +245,7 @@
                   {{ $t("bookable.externalPrice.serviceFee") }}
                 </span>
               </div>
-              <span class="font-weight-bold primary--text">
+              <span class="font-weight-bold bookable-card__price">
                 {{ formatCurrency(externalServiceFee) }}
               </span>
             </div>
@@ -272,7 +272,7 @@
         >
           <div class="d-flex align-center justify-space-between text-body-2">
             <div class="d-flex align-center">
-              <span class="font-weight-bold primary--text mr-2">
+              <span class="font-weight-bold bookable-card__price mr-2">
                 {{ priceCategory.priceEur | currency("EUR", "de-DE") }}
               </span>
               <v-chip
@@ -555,6 +555,16 @@ export default {
 </script>
 
 <style scoped lang="scss">
+// The theme colour, lightened under .theme--dark (ECCdigital/tickets#307).
+.bookable-card__price {
+  color: var(--scb-text-link);
+}
+
+// Specificity above Vuetify's `.theme--dark.v-chip` colour.
+.v-chip.bookable-card__extern {
+  color: var(--scb-text-link);
+}
+
 .placeholder-container {
   position: relative;
   width: 100%;

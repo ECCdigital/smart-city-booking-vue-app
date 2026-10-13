@@ -99,3 +99,18 @@ describe("EventCard review badge", () => {
     expect(badge(wrapper).exists()).toBe(false);
   });
 });
+
+describe("EventCard price", () => {
+  // A dark primary colour (VUE_APP_PRIMARY_COLOR_DARK) all but vanished on
+  // the dark card (ECCdigital/tickets#307). The link token lightens it under
+  // .theme--dark; the bare Vuetify class `primary--text` cannot.
+  it("is drawn in the link colour, not the bare primary colour", async () => {
+    const wrapper = await mountCard(
+      item({ attendees: { priceCategories: { price: 12 } } })
+    );
+    const price = wrapper.find(".event-card__price");
+
+    expect(price.exists()).toBe(true);
+    expect(price.classes()).not.toContain("primary--text");
+  });
+});
