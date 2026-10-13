@@ -7,6 +7,7 @@
  *
  * Mirrors `src/commons/services/media/instance-media.js` of the backend.
  */
+import { FONT_SOURCE, fontLicenseConfirmed } from "@/utils/instanceFonts";
 
 // Where a branding reference is stored, and the read field it feeds.
 export const BRANDING_IMAGES = Object.freeze({
@@ -30,6 +31,8 @@ export function defaultBranding() {
       colors: { primary: "", secondary: "", accent: "" },
     },
     header: "primary",
+    // The system font, as long as none is chosen.
+    font: null,
     logo: null,
     logoDark: null,
     favicon: null,
@@ -71,6 +74,28 @@ export function brandingImagePatch(name, value) {
 }
 
 /**
+ * The font as it goes to the API. The licence of an own font goes as the tick
+ * alone: the backend stamps person and moment itself and never takes them
+ * from the form (`branding-font.js`). A font of the list carries no licence.
+ *
+ * @param {?Object} font - The font held by the editor.
+ * @returns {?Object} The font as it goes out.
+ */
+function fontForSave(font) {
+  if (font?.source === FONT_SOURCE.CURATED) {
+    return { source: font.source, id: font.id };
+  }
+  if (font?.source !== FONT_SOURCE.MEDIA) {
+    return font;
+  }
+  const payload = { source: font.source, reference: font.reference };
+  if (fontLicenseConfirmed(font)) {
+    payload.license = { confirmed: true };
+  }
+  return payload;
+}
+
+/**
  * The branding as it goes to the API: a read field drops out wherever its
  * reference stands, so a save never writes back what the backend derives
  * (§4.9). A site that holds only a legacy address keeps it — until the media
@@ -100,6 +125,10 @@ export function brandingForSave(branding) {
     if (payload[image.reference]) {
       delete payload[image.readField];
     }
+  }
+
+  if ("font" in payload) {
+    payload.font = fontForSave(payload.font);
   }
 
   return payload;

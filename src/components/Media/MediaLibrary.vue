@@ -200,7 +200,8 @@
           <strong>Dateien hierher ziehen</strong> oder klicken — landen direkt
           in der Mediathek<br />
           <span class="text--secondary" style="font-size: 12px">
-            {{ allowedTypesLabel }} bis 15 MB · PDF bis 50 MB
+            {{ allowedTypesLabel }} bis 15 MB · PDF bis 50 MB ·
+            {{ fontUploadLabel }}
           </span>
         </div>
         <v-select
@@ -306,6 +307,7 @@ import MediaUploadQueue from "@/components/Media/MediaUploadQueue.vue";
 import MediaUploadSheet from "@/components/Media/MediaUploadSheet.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
 import {
+  FONT_UPLOAD_LABEL,
   MEDIA_ALLOWED_TYPES_LABEL,
   mediaUploadErrorMessage,
 } from "@/utils/mediaUploadError";
@@ -347,6 +349,7 @@ export default {
         { text: "Alle Medien", value: null, icon: "mdi-view-grid-outline" },
         { text: "Bilder", value: "image", icon: "mdi-image-outline" },
         { text: "Dokumente", value: "document", icon: "mdi-file-outline" },
+        { text: "Schriften", value: "font", icon: "mdi-format-font" },
       ],
       visibilityOptions: [
         { text: "Alle", value: null },
@@ -394,6 +397,7 @@ export default {
             { value: KIND_ALL, label: "Alle" },
             { value: "image", label: "Bilder" },
             { value: "document", label: "Dokumente" },
+            { value: "font", label: "Schriften" },
           ],
         },
         {
@@ -430,6 +434,9 @@ export default {
     },
     allowedTypesLabel() {
       return MEDIA_ALLOWED_TYPES_LABEL;
+    },
+    fontUploadLabel() {
+      return FONT_UPLOAD_LABEL;
     },
   },
   watch: {
@@ -595,7 +602,11 @@ export default {
         await this.fetchMedia();
       } catch (error) {
         entry.status = "error";
-        entry.message = mediaUploadErrorMessage(error);
+        entry.message = mediaUploadErrorMessage(
+          error,
+          undefined,
+          entry.file.name
+        );
       }
     },
     dismissUpload(index) {

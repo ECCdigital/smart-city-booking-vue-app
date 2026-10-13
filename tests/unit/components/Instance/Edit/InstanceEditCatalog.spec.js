@@ -70,8 +70,8 @@ function blocks(count) {
 }
 
 function mountTab(propsData = {}) {
-  // The media fields and the footer's „+ Logo“ open a picker backed by the
-  // media API; what is under test is the tab around them.
+  // The media fields, the footer's „+ Logo“ and the font's tile open a picker
+  // backed by the media API; what is under test is the tab around them.
   return mountComponent(InstanceEditCatalog, {
     store: new Vuex.Store({ modules: { toasts } }),
     propsData: { instance: instance(), catalog: catalog(), ...propsData },
