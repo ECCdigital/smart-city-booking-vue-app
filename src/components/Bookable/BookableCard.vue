@@ -170,7 +170,7 @@
       </h3>
       <p
         v-if="item.type === 'ticket'"
-        class="text-caption grey--text mb-0 event-name-clamp"
+        class="text-caption bookable-card__caption mb-0 event-name-clamp"
         :title="item._populated?.event?.information?.name"
       >
         <v-icon x-small class="mr-1">mdi-calendar-star</v-icon>
@@ -188,7 +188,7 @@
     <v-card-text class="flex-grow-1 pa-4">
       <div v-if="item.description" class="mb-3 text-body-2">
         <p
-          class="grey--text text--darken-2 mb-0"
+          class="bookable-card__muted mb-0"
           v-html="shortenText(item.description)"
         ></p>
       </div>
@@ -197,10 +197,10 @@
            price tiers. -->
       <div v-if="handlesExternalPricing" class="mb-3">
         <div class="d-flex align-center mb-2">
-          <v-icon small color="grey darken-1" class="mr-2">
+          <v-icon small class="bookable-card__muted mr-2">
             mdi-cash-multiple
           </v-icon>
-          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
+          <span class="text-body-2 font-weight-bold bookable-card__muted">
             {{ $t("bookable.externalPrice.title") }}
           </span>
           <v-chip x-small class="ml-2 bookable-card__extern" outlined label>
@@ -222,7 +222,7 @@
               <v-icon x-small color="primary" class="mr-2">
                 {{ row.icon }}
               </v-icon>
-              <span class="grey--text text--darken-1">
+              <span class="bookable-card__muted">
                 {{ $t(row.labelKey) }}
               </span>
             </div>
@@ -241,7 +241,7 @@
                 <v-icon x-small color="primary" class="mr-2">
                   mdi-cash-plus
                 </v-icon>
-                <span class="grey--text text--darken-1">
+                <span class="bookable-card__muted">
                   {{ $t("bookable.externalPrice.serviceFee") }}
                 </span>
               </div>
@@ -252,7 +252,7 @@
           </template>
         </div>
 
-        <div v-else class="ml-7 text-caption grey--text">
+        <div v-else class="ml-7 text-caption bookable-card__caption">
           Preise nicht verfügbar
         </div>
       </div>
@@ -260,8 +260,8 @@
       <!-- Normal Prices -->
       <div v-else-if="hasPriceCategories" class="mb-3">
         <div class="d-flex align-center mb-2">
-          <v-icon small color="grey darken-1" class="mr-2"> mdi-cash </v-icon>
-          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
+          <v-icon small class="bookable-card__muted mr-2"> mdi-cash </v-icon>
+          <span class="text-body-2 font-weight-bold bookable-card__muted">
             Preise
           </span>
         </div>
@@ -286,7 +286,7 @@
             </div>
             <span
               v-if="priceCategory.interval.end || priceCategory.interval.start"
-              class="grey--text text--darken-1"
+              class="bookable-card__muted"
             >
               {{
                 getPrice(
@@ -314,11 +314,11 @@
             class="d-flex align-center mb-1 text-body-2"
           >
             <v-icon x-small color="success" class="mr-2">mdi-check</v-icon>
-            <span class="grey--text text--darken-2">{{ flag }}</span>
+            <span class="bookable-card__muted">{{ flag }}</span>
           </div>
           <span
             v-if="item.flags.length > 3"
-            class="text-caption grey--text ml-5"
+            class="text-caption bookable-card__caption ml-5"
           >
             +{{ item.flags.length - 3 }} weitere
           </span>
@@ -342,7 +342,7 @@
             Sind Sie sicher, dass Sie das Buchungsobjekt
             <strong>{{ item.title }}</strong> löschen wollen?
           </span>
-          <p class="text-body-2 grey--text text--darken-1 mt-3 mb-0">
+          <p class="text-body-2 bookable-card__muted mt-3 mb-0">
             Diese Aktion kann nicht rückgängig gemacht werden.
           </p>
         </v-card-text>
@@ -555,6 +555,17 @@ export default {
 </script>
 
 <style scoped lang="scss">
+// Labels, values and icons in muted text, small notes as captions. Vuetify's
+// fixed greys stayed dark under .theme--dark (ECCdigital/tickets#307).
+.bookable-card__muted,
+.v-icon.bookable-card__muted {
+  color: var(--scb-text-muted);
+}
+
+.bookable-card__caption {
+  color: var(--scb-text-caption);
+}
+
 // The theme colour, lightened under .theme--dark (ECCdigital/tickets#307).
 .bookable-card__price {
   color: var(--scb-text-link);

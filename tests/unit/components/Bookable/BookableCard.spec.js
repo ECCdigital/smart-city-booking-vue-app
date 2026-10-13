@@ -232,3 +232,25 @@ describe("BookableCard - the prices in dark mode", () => {
     expect(prices.at(0).classes()).not.toContain("primary--text");
   });
 });
+
+describe("BookableCard - text in dark mode", () => {
+  // Vuetify's fixed greys (`grey--text text--darken-2`, …) stayed dark under
+  // .theme--dark. Labels and values read --scb-text-muted, notes
+  // --scb-text-caption; both follow the theme.
+  it.each([
+    ["the provider's prices", {}],
+    [
+      "the bookable's own prices",
+      {
+        externalProviders: [],
+        priceCategories: [{ priceEur: 5, interval: { start: 1, end: 2 } }],
+        flags: ["a", "b", "c", "d"],
+      },
+    ],
+  ])("uses no fixed Vuetify grey with %s", async (_label, overrides) => {
+    const wrapper = await mountCard(overrides);
+
+    expect(wrapper.find(".bookable-card__muted").exists()).toBe(true);
+    expect(wrapper.findAll(".grey--text")).toHaveLength(0);
+  });
+});

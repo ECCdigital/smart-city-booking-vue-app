@@ -132,34 +132,32 @@
     <v-card-text class="flex-grow-1 pa-4 event-card-content">
       <div class="mb-3">
         <div class="d-flex align-center mb-2">
-          <v-icon small color="grey darken-1" class="mr-2">
-            mdi-calendar
-          </v-icon>
-          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
+          <v-icon small class="event-card__muted mr-2"> mdi-calendar </v-icon>
+          <span class="text-body-2 font-weight-bold event-card__muted">
             Veranstaltungsdaten
           </span>
         </div>
         <div class="ml-7">
           <div class="d-flex align-start mb-2 text-body-2">
             <span
-              class="font-weight-bold grey--text text--darken-2 mr-2"
+              class="font-weight-bold event-card__muted mr-2"
               style="min-width: 50px"
             >
               Beginn:
             </span>
-            <span class="grey--text text--darken-1">
+            <span class="event-card__muted">
               {{ item.information?.startDate | date("short") }} –
               {{ item.information?.startTime | time("short") }} Uhr
             </span>
           </div>
           <div class="d-flex align-start mb-2 text-body-2">
             <span
-              class="font-weight-bold grey--text text--darken-2 mr-2"
+              class="font-weight-bold event-card__muted mr-2"
               style="min-width: 50px"
             >
               Ende:
             </span>
-            <span class="grey--text text--darken-1">
+            <span class="event-card__muted">
               {{ item.information?.endDate | date("short") }} –
               {{ item.information?.endTime | time("short") }} Uhr
             </span>
@@ -169,12 +167,12 @@
             v-if="item.eventLocation?.name"
           >
             <span
-              class="font-weight-bold grey--text text--darken-2 mr-2"
+              class="font-weight-bold event-card__muted mr-2"
               style="min-width: 50px"
             >
               Ort:
             </span>
-            <span class="grey--text text--darken-1">
+            <span class="event-card__muted">
               {{ item.eventLocation?.name }}
             </span>
           </div>
@@ -183,30 +181,25 @@
 
       <div v-if="item.information?.teaserText" class="mb-3 text-body-2">
         <p
-          class="grey--text text--darken-2 mb-0"
+          class="event-card__muted mb-0"
           v-html="item.information?.teaserText"
         ></p>
       </div>
 
       <div class="mb-3">
         <div class="d-flex align-center mb-2">
-          <v-icon small color="grey darken-1" class="mr-2">
-            mdi-account
-          </v-icon>
-          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
+          <v-icon small class="event-card__muted mr-2"> mdi-account </v-icon>
+          <span class="text-body-2 font-weight-bold event-card__muted">
             Teilnehmer
           </span>
         </div>
         <div class="ml-7">
           <div class="text-body-2 mb-2">
-            <span
-              v-if="item.attendees?.maxAttendees"
-              class="grey--text text--darken-1"
-            >
+            <span v-if="item.attendees?.maxAttendees" class="event-card__muted">
               {{ bookedSeatsCount }} / {{ item.attendees.maxAttendees }} Plätze
               belegt
             </span>
-            <span v-else class="grey--text text--darken-1">
+            <span v-else class="event-card__muted">
               {{ bookedSeatsCount }} Plätze gebucht
             </span>
           </div>
@@ -229,8 +222,8 @@
       </div>
       <div class="mb-3" v-else-if="item.attendees?.priceCategories?.price">
         <div class="d-flex align-center mb-2">
-          <v-icon small color="grey darken-1" class="mr-2">mdi-cash</v-icon>
-          <span class="text-body-2 font-weight-bold grey--text text--darken-2">
+          <v-icon small class="event-card__muted mr-2">mdi-cash</v-icon>
+          <span class="text-body-2 font-weight-bold event-card__muted">
             Preis
           </span>
         </div>
@@ -251,11 +244,11 @@
             class="d-flex align-center mb-1 text-body-2"
           >
             <v-icon x-small color="success" class="mr-2">mdi-check</v-icon>
-            <span class="grey--text text--darken-2">{{ flag }}</span>
+            <span class="event-card__muted">{{ flag }}</span>
           </div>
           <span
             v-if="item.information.flags.length > 3"
-            class="text-caption grey--text ml-5"
+            class="text-caption event-card__caption ml-5"
           >
             +{{ item.information.flags.length - 3 }} weitere
           </span>
@@ -411,6 +404,17 @@ export default {
 </script>
 
 <style scoped lang="scss">
+// Labels, values and icons in muted text, small notes as captions. Vuetify's
+// fixed greys stayed dark under .theme--dark (ECCdigital/tickets#307).
+.event-card__muted,
+.v-icon.event-card__muted {
+  color: var(--scb-text-muted);
+}
+
+.event-card__caption {
+  color: var(--scb-text-caption);
+}
+
 // The theme colour, lightened under .theme--dark (ECCdigital/tickets#307).
 .event-card__price {
   color: var(--scb-text-link);

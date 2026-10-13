@@ -114,3 +114,26 @@ describe("EventCard price", () => {
     expect(price.classes()).not.toContain("primary--text");
   });
 });
+
+describe("EventCard text in dark mode", () => {
+  // Vuetify's fixed greys (`grey--text text--darken-2`, …) stayed dark under
+  // .theme--dark. Labels and values read --scb-text-muted, notes
+  // --scb-text-caption; both follow the theme.
+  it("uses no fixed Vuetify grey", async () => {
+    const wrapper = await mountCard(
+      item({
+        information: {
+          ...item().information,
+          teaserText: "<p>Kurz</p>",
+          flags: ["a", "b", "c", "d"],
+        },
+        eventLocation: { name: "Rathaus" },
+        attendees: { maxAttendees: 10, priceCategories: { price: 12 } },
+      })
+    );
+
+    expect(wrapper.find(".event-card__muted").exists()).toBe(true);
+    expect(wrapper.find(".event-card__caption").exists()).toBe(true);
+    expect(wrapper.findAll(".grey--text")).toHaveLength(0);
+  });
+});
