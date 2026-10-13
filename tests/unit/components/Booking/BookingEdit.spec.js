@@ -37,6 +37,7 @@ vi.mock("@/components/Checkout/CheckoutCalendar.vue", () => ({
 
 import BookingEdit from "@/components/Booking/BookingEdit.vue";
 import ApiBookingService from "@/services/api/ApiBookingService";
+import ApiGroupBookingService from "@/services/api/ApiGroupBookingService";
 import ApiTenantService from "@/services/api/ApiTenantService";
 import ApiCheckoutService from "@/services/api/ApiCheckoutService";
 
@@ -220,6 +221,36 @@ describe("BookingEdit", () => {
         expect(putBody()).not.toHaveProperty(key)
       );
       expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("saves the comment of the series alone, not the series", async () => {
+      const { wrapper } = await mountEdit({
+        groupBooking: {
+          id: "grp-1",
+          tenantId: "tenant-1",
+          bookingIds: ["bk-1", "bk-2"],
+          mail: "erika@example.org",
+          hooks: [],
+          internalComments: "Alt",
+        },
+      });
+      saveAnswers({ data: {} });
+      ApiGroupBookingService.updateGroupBooking.mockResolvedValue({});
+      await wrapper
+        .findAllComponents({ name: "v-textarea" })
+        .wrappers.find(
+          (field) => field.props("label") === "Interne Bemerkung der Serie"
+        )
+        .find("textarea")
+        .setValue("Neu");
+
+      await submit(wrapper);
+
+      expect(ApiGroupBookingService.updateGroupBooking).toHaveBeenCalledWith(
+        "tenant-1",
+        "grp-1",
+        { internalComments: "Neu" }
+      );
     });
 
     it.each(["rejected", "cancelled"])(
