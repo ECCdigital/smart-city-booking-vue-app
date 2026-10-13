@@ -96,6 +96,7 @@
     <PortalAuthPages
       ref="authPages"
       :branding="local.branding"
+      :portal-name="localCatalog.name"
       @patch="patchBranding"
     />
     <PortalFooter
