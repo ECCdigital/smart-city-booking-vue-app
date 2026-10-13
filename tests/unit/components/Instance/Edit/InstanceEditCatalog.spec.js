@@ -246,13 +246,17 @@ describe("InstanceEditCatalog sections by area of the page", () => {
     ]);
   });
 
-  it("keeps App-Logo and Favicon in the Kopfleiste", () => {
+  it("keeps App-Logo, its variant for dark mode and Favicon in the Kopfleiste", () => {
     const wrapper = mountTab();
     const labels = section(wrapper, "Kopfleiste")
       .findAllComponents({ name: "MediaReferenceField" })
       .wrappers.map((field) => field.attributes("label"));
 
-    expect(labels).toEqual(["App-Logo", "Favicon"]);
+    expect(labels).toEqual([
+      "App-Logo",
+      "Variante für den Dunkelmodus (optional)",
+      "Favicon",
+    ]);
   });
 
   it("stores a new App-Logo as reference and drops the legacy address", async () => {
