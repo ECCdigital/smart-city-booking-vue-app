@@ -131,7 +131,7 @@ describe("BookingTable", () => {
     });
 
     it.each([
-      ["user", "Userkonto"],
+      ["user", "Angemeldet"],
       ["guest", "Gast"],
       ["admin", "Admin"],
       [undefined, "Unbekannt"],

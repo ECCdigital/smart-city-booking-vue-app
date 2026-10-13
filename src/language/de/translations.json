@@ -1528,7 +1528,7 @@
       "title": "Buchungsweg",
       "unknown": "Unbekannt",
       "values": {
-        "user": "Userkonto",
+        "user": "Angemeldet",
         "guest": "Gast",
         "admin": "Admin"
       }

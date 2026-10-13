@@ -10,7 +10,7 @@ describe("bookedViaTitle", () => {
 
 describe("bookedViaLabel", () => {
   it.each([
-    ["user", "Userkonto"],
+    ["user", "Angemeldet"],
     ["guest", "Gast"],
     ["admin", "Admin"],
   ])("reads %s as %s", (code, label) => {

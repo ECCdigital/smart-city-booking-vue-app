@@ -123,7 +123,7 @@ describe("BookingExportButton", () => {
     expect(headers).toContain("Buchungsweg");
     expect(rows.map((row) => [row["ID der Buchung"], row.Buchungsweg])).toEqual(
       [
-        ["u", "Userkonto"],
+        ["u", "Angemeldet"],
         ["g", "Gast"],
         ["a", "Admin"],
         ["old", "Unbekannt"],
