@@ -18,8 +18,8 @@ export const BRANDING_IMAGES = Object.freeze({
  * A branding as an untouched instance carries it. A field an older instance
  * never stored reads as its default here, as it does in the backend
  * (`branding-schema.js`): the accent colour is empty while none is set, the
- * header bar is primary as it was before the setting, and the App-Logo has no
- * variant for dark mode.
+ * header bar is primary as it was before the setting, the App-Logo has no
+ * variant for dark mode, and the footer shows no logos.
  *
  * @returns {Object} The default branding.
  */
@@ -35,6 +35,7 @@ export function defaultBranding() {
     favicon: null,
     logoUrl: "",
     faviconUrl: "",
+    footerLogos: [],
     // The height of the logo on the auth pages: S is today's 56 px.
     authLogoSize: "sm",
   };

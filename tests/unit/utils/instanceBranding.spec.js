@@ -113,6 +113,29 @@ describe("brandingForSave with the header bar and the variant of the App-Logo", 
   });
 });
 
+describe("brandingForSave with footer logos", () => {
+  it("sends the footer logos in their order with size, link and variant", () => {
+    const footerLogos = [
+      {
+        image: { source: "media", mediaId: "bmwsb", url: null },
+        size: "lg",
+        link: "https://www.bmwsb.bund.de",
+        imageDark: null,
+      },
+      {
+        image: { source: "media", mediaId: "land", url: null },
+        size: "md",
+        link: "",
+        imageDark: { source: "media", mediaId: "land-dunkel", url: null },
+      },
+    ];
+
+    const payload = brandingForSave({ active: true, footerLogos });
+
+    expect(payload.footerLogos).toEqual(footerLogos);
+  });
+});
+
 describe("brandingForSave with the size of the logo on the auth pages", () => {
   it("sends S for a branding that never stored a size, as today", () => {
     const stored = { active: false, theme: { colors: { primary: "" } } };
@@ -133,6 +156,10 @@ describe("brandingForSave with the size of the logo on the auth pages", () => {
 });
 
 describe("defaultBranding", () => {
+  it("reads a branding without footer logos as one with none", () => {
+    expect(defaultBranding().footerLogos).toEqual([]);
+  });
+
   it("reads a branding without accent colour as one with an empty accent", () => {
     expect(defaultBranding().theme.colors).toEqual({
       primary: "",
