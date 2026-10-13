@@ -15,7 +15,9 @@ export const BRANDING_IMAGES = Object.freeze({
 });
 
 /**
- * A branding as an untouched instance carries it.
+ * A branding as an untouched instance carries it. A field an older instance
+ * never stored reads as its default here, as it does in the backend
+ * (`branding-schema.js`): the accent colour is empty while none is set.
  *
  * @returns {Object} The default branding.
  */
@@ -23,7 +25,7 @@ export function defaultBranding() {
   return {
     active: false,
     theme: {
-      colors: { primary: "", secondary: "" },
+      colors: { primary: "", secondary: "", accent: "" },
     },
     logo: null,
     favicon: null,
@@ -33,10 +35,43 @@ export function defaultBranding() {
 }
 
 /**
+ * A branding image as the form reads it: the stored media reference or — as
+ * long as the media import has not converted it — the legacy address, which
+ * reads as an external reference (§4.9 of the media spec).
+ *
+ * @param {Object} branding - The branding held by the editor.
+ * @param {string} name - A key of `BRANDING_IMAGES`.
+ * @returns {Object|string|null} The reference, the legacy address or null.
+ */
+export function brandingImage(branding, name) {
+  const { reference, readField } = BRANDING_IMAGES[name];
+  return branding[reference] || branding[readField] || null;
+}
+
+/**
+ * The change of the branding that sets an image: the reference, and the
+ * legacy address dropped along with it. The read field is derived from the
+ * reference on the way out (§4.9); an address left behind would resurface the
+ * old image the moment the user removes the reference again.
+ *
+ * @param {string} name - A key of `BRANDING_IMAGES`.
+ * @param {Object|null} value - The new reference.
+ * @returns {Object} The top-level fields of the branding that change.
+ */
+export function brandingImagePatch(name, value) {
+  const { reference, readField } = BRANDING_IMAGES[name];
+  return { [reference]: value || null, [readField]: "" };
+}
+
+/**
  * The branding as it goes to the API: a read field drops out wherever its
  * reference stands, so a save never writes back what the backend derives
  * (§4.9). A site that holds only a legacy address keeps it — until the media
  * import has converted it, that address is the branding.
+ *
+ * Every other field goes back as the editor holds it, those this UI does not
+ * edit included: the backend reads a field the payload leaves out as its
+ * default, so dropping one would reset it.
  *
  * The Background drops out as well. The Hero Editor owns it and saves it
  * through its own route; a payload without the key keeps the stored

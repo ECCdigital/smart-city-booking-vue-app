@@ -9,6 +9,7 @@ import {
 } from "@tests/unit/support/dialog";
 import toasts from "@/store/modules/toasts";
 import { heroLayoutResponse } from "@tests/unit/support/heroLayout";
+import { toggleSwitch } from "@tests/unit/support/vuetify";
 
 // The Hero Editor the entry card opens fills itself from the hero layout
 // route; the tab around it is what is under test here.
@@ -190,70 +191,275 @@ describe("InstanceEditCatalog Portal-URL", () => {
   });
 });
 
-describe("InstanceEditCatalog Theme colours", () => {
-  it("asks above the colour fields to keep both colours visible on light and dark backgrounds", () => {
-    const wrapper = mountTab();
-    const hint = wrapper.find(".theme-contrast-hint");
-    expect(hint.text()).toContain(
-      "sowohl auf hellen als auch auf dunklen Hintergründen gut sichtbar"
-    );
+function section(wrapper, title) {
+  return wrapper
+    .findAllComponents({ name: "SubSection" })
+    .wrappers.find((entry) => entry.props("title") === title);
+}
 
-    // The hint precedes the fields in the document, so it reads before them.
-    const hintIndex = wrapper.html().indexOf("theme-contrast-hint");
-    const fieldIndex = wrapper.html().indexOf("Primärfarbe");
-    expect(hintIndex).toBeGreaterThan(-1);
-    expect(hintIndex).toBeLessThan(fieldIndex);
+function sectionTitles(wrapper) {
+  return wrapper
+    .findAllComponents({ name: "SubSection" })
+    .wrappers.map((entry) => entry.props("title"));
+}
+
+function withColors(colors) {
+  const base = instance();
+  return {
+    ...base,
+    branding: {
+      ...base.branding,
+      theme: { colors: { primary: "", secondary: "", accent: "", ...colors } },
+    },
+  };
+}
+
+function colorRow(wrapper, key) {
+  return wrapper.find(`.portal-color-row[data-color='${key}']`);
+}
+
+/** The part of the preview tile in one mode of one colour row. */
+function previewPart(wrapper, key, mode, part) {
+  return colorRow(wrapper, key).find(
+    `.portal-color-preview[data-mode='${mode}'] [data-part='${part}']`
+  );
+}
+
+function lastBranding(wrapper) {
+  return wrapper.emitted("update:instance").at(-1)[0].branding;
+}
+
+const ACCENT_FALLBACK_SENTENCE =
+  "Badges und Streifen in Primär, „Pauschal“ in Sekundär, wie heute";
+
+describe("InstanceEditCatalog sections by area of the page", () => {
+  it("orders the appearance by area of the page, then the Kopfbereich", () => {
+    const wrapper = mountTab();
+
+    expect(sectionTitles(wrapper)).toEqual([
+      "Farben",
+      "Kopfleiste",
+      "Schrift",
+      "Anmeldeseiten",
+      "Fußbereich",
+      "Kopfbereich",
+    ]);
   });
 
-  it("previews one primary and one secondary icon on a light and a dark tile", () => {
-    const base = instance();
+  it("keeps App-Logo and Favicon in the Kopfleiste", () => {
+    const wrapper = mountTab();
+    const labels = section(wrapper, "Kopfleiste")
+      .findAllComponents({ name: "MediaReferenceField" })
+      .wrappers.map((field) => field.attributes("label"));
+
+    expect(labels).toEqual(["App-Logo", "Favicon"]);
+  });
+
+  it("stores a new App-Logo as reference and drops the legacy address", async () => {
     const wrapper = mountTab({
       instance: {
-        ...base,
+        ...instance(),
         branding: {
-          ...base.branding,
-          theme: { colors: { primary: "#ff0000", secondary: "#00ff00" } },
+          ...instance().branding,
+          logoUrl: "https://old.example/l.png",
         },
       },
     });
+    const reference = { source: "media", mediaId: "m1", url: null };
 
-    const tiles = wrapper.findAll(".theme-preview__tile");
-    expect(tiles.length).toBe(2);
-    expect(tiles.at(0).attributes("data-surface")).toBe("light");
-    expect(tiles.at(0).text()).toContain("Helle Fläche (Light-Mode)");
-    expect(tiles.at(1).attributes("data-surface")).toBe("dark");
-    expect(tiles.at(1).text()).toContain("Dunkle Fläche (Dark-Mode)");
+    section(wrapper, "Kopfleiste")
+      .findAllComponents({ name: "MediaReferenceField" })
+      .at(0)
+      .vm.$emit("input", reference);
+    await settle(wrapper);
 
-    for (let index = 0; index < 2; index += 1) {
-      const icons = tiles.at(index).findAll(".theme-preview__icon");
-      expect(icons.length).toBe(2);
-      expect(icons.at(0).attributes("data-role")).toBe("primary");
-      expect(icons.at(0).attributes("style")).toContain("rgb(255, 0, 0)");
-      expect(icons.at(1).attributes("data-role")).toBe("secondary");
-      expect(icons.at(1).attributes("style")).toContain("rgb(0, 255, 0)");
+    expect(lastBranding(wrapper).logo).toEqual(reference);
+    expect(lastBranding(wrapper).logoUrl).toBe("");
+  });
+});
+
+describe("InstanceEditCatalog Farben", () => {
+  it("begins with the switch Benutzerdefiniertes Theme", async () => {
+    const wrapper = mountTab();
+    const colors = section(wrapper, "Farben");
+
+    expect(colors.text().indexOf("Benutzerdefiniertes Theme")).toBeLessThan(
+      colors.text().indexOf("Primärfarbe")
+    );
+
+    await toggleSwitch(colors, "Benutzerdefiniertes Theme");
+
+    expect(lastBranding(wrapper).active).toBe(true);
+  });
+
+  it("names what each colour carries", () => {
+    const wrapper = mountTab();
+
+    expect(colorRow(wrapper, "primary").text()).toContain("Interaktiv");
+    expect(colorRow(wrapper, "secondary").text()).toContain("Auswahl");
+    expect(colorRow(wrapper, "accent").text()).toContain("Badges und Dekor");
+  });
+
+  it("leaves an empty accent with the placeholder and says what applies then", () => {
+    const wrapper = mountTab({ instance: withColors({}) });
+    const field = fieldByLabel(wrapper, "Akzentfarbe (optional)");
+
+    expect(field.find("input").element.value).toBe("");
+    expect(field.find("input").attributes("placeholder")).toBe("Nicht gesetzt");
+    expect(colorRow(wrapper, "accent").text()).toContain(
+      ACCENT_FALLBACK_SENTENCE
+    );
+  });
+
+  it("drops the sentence once an accent is set", () => {
+    const wrapper = mountTab({ instance: withColors({ accent: "#f59e0b" }) });
+
+    expect(
+      fieldByLabel(wrapper, "Akzentfarbe (optional)").find("input").element
+        .value
+    ).toBe("#f59e0b");
+    expect(colorRow(wrapper, "accent").text()).not.toContain(
+      ACCENT_FALLBACK_SENTENCE
+    );
+  });
+
+  it("sends a typed accent with the instance", async () => {
+    const wrapper = mountTab();
+
+    await fieldByLabel(wrapper, "Akzentfarbe (optional)")
+      .find("input")
+      .setValue("#f59e0b");
+
+    expect(lastBranding(wrapper).theme.colors).toEqual({
+      primary: "",
+      secondary: "",
+      accent: "#f59e0b",
+    });
+  });
+
+  it("empties a cleared accent to an empty string, not null", async () => {
+    const wrapper = mountTab({ instance: withColors({ accent: "#f59e0b" }) });
+    const field = fieldByLabel(wrapper, "Akzentfarbe (optional)");
+
+    await field.find(".v-input__icon--clear button").trigger("click");
+    await settle(wrapper);
+
+    expect(lastBranding(wrapper).theme.colors.accent).toBe("");
+    expect(colorRow(wrapper, "accent").text()).toContain(
+      ACCENT_FALLBACK_SENTENCE
+    );
+  });
+
+  it("refuses an accent that is no #rrggbb on validate", async () => {
+    const wrapper = mountTab();
+    const field = fieldByLabel(wrapper, "Akzentfarbe (optional)");
+
+    await field.find("input").setValue("#abc");
+    const valid = wrapper.vm.validate();
+    await settle(wrapper);
+
+    expect(valid).toBe(false);
+    expect(fieldMessage(field)).toMatch(/#rrggbb/);
+  });
+
+  it.each([["light"], ["dark"]])(
+    "previews the primary colour on the result card's price and button, %s",
+    (mode) => {
+      const wrapper = mountTab({
+        instance: withColors({ primary: "#1976d2", secondary: "#ffd54f" }),
+      });
+
+      expect(
+        previewPart(wrapper, "primary", mode, "price").attributes("style")
+      ).toContain("color: rgb(25, 118, 210)");
+      const button = previewPart(wrapper, "primary", mode, "button");
+      expect(button.text()).toBe("Buchen");
+      expect(button.attributes("style")).toContain(
+        "background: rgb(25, 118, 210)"
+      );
+      expect(button.attributes("style")).toContain("color: rgb(255, 255, 255)");
+    }
+  );
+
+  it.each([["light"], ["dark"]])(
+    "previews the secondary colour on a selected chip with its contrast, %s",
+    (mode) => {
+      const wrapper = mountTab({
+        instance: withColors({ primary: "#1976d2", secondary: "#ffd54f" }),
+      });
+      const chip = previewPart(wrapper, "secondary", mode, "chip-selected");
+
+      expect(chip.attributes("style")).toContain(
+        "background: rgb(255, 213, 79)"
+      );
+      expect(chip.attributes("style")).toContain("color: rgb(0, 0, 0)");
+    }
+  );
+
+  it.each([["light"], ["dark"]])(
+    "previews the accent on category circle, stripe and both badges, %s",
+    (mode) => {
+      const wrapper = mountTab({
+        instance: withColors({
+          primary: "#1976d2",
+          secondary: "#26a69a",
+          accent: "#ffd54f",
+        }),
+      });
+      const accent = "rgb(255, 213, 79)";
+
+      for (const part of ["category", "stripe", "badge-type", "badge-flat"]) {
+        expect(
+          previewPart(wrapper, "accent", mode, part).attributes("style")
+        ).toContain(`background: ${accent}`);
+      }
+      expect(
+        previewPart(wrapper, "accent", mode, "badge-type").attributes("style")
+      ).toContain("color: rgb(0, 0, 0)");
+    }
+  );
+
+  it("falls back to today's colours without accent: primary, „Pauschal“ secondary", () => {
+    const wrapper = mountTab({
+      instance: withColors({ primary: "#1976d2", secondary: "#26a69a" }),
+    });
+    const style = (part) =>
+      previewPart(wrapper, "accent", "light", part).attributes("style");
+
+    expect(style("category")).toContain("background: rgb(25, 118, 210)");
+    expect(style("stripe")).toContain("background: rgb(25, 118, 210)");
+    expect(style("badge-type")).toContain("background: rgb(25, 118, 210)");
+    expect(style("badge-flat")).toContain("background: rgb(38, 166, 154)");
+  });
+
+  it("follows the accent while it is typed", async () => {
+    const wrapper = mountTab({
+      instance: withColors({ primary: "#1976d2", secondary: "#26a69a" }),
+    });
+
+    await fieldByLabel(wrapper, "Akzentfarbe (optional)")
+      .find("input")
+      .setValue("#f59e0b");
+    await settle(wrapper);
+
+    for (const mode of ["light", "dark"]) {
+      expect(
+        previewPart(wrapper, "accent", mode, "stripe").attributes("style")
+      ).toContain("background: rgb(245, 158, 11)");
     }
   });
 
-  it("follows the colour while it is typed", async () => {
+  it("follows the primary colour while it is typed", async () => {
     const wrapper = mountTab();
-    const primary = wrapper.find(".theme-preview__icon[data-role='primary']");
-    expect(primary.attributes("style") || "").not.toContain("rgb(18, 52, 86)");
 
-    await wrapper.setData({
-      local: {
-        ...wrapper.vm.local,
-        branding: {
-          ...wrapper.vm.local.branding,
-          theme: { colors: { primary: "#123456", secondary: "" } },
-        },
-      },
-    });
+    await fieldByLabel(wrapper, "Primärfarbe")
+      .find("input")
+      .setValue("#123456");
+    await settle(wrapper);
 
     expect(
-      wrapper
-        .find(".theme-preview__icon[data-role='primary']")
-        .attributes("style")
-    ).toContain("rgb(18, 52, 86)");
+      previewPart(wrapper, "primary", "light", "button").attributes("style")
+    ).toContain("background: rgb(18, 52, 86)");
   });
 });
 
