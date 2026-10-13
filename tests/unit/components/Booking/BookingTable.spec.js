@@ -119,27 +119,36 @@ describe("BookingTable", () => {
     });
   });
 
-  describe("the Buchungsweg column", () => {
-    it("is headed Buchungsweg and offers no sorting", () => {
-      const wrapper = mountTable([booking()]);
-      const header = wrapper
-        .findAll("th")
-        .wrappers.find((th) => th.text().includes("Buchungsweg"));
+  describe("the Buchungsweg, a badge at the name", () => {
+    it("has no column of its own", () => {
+      const wrapper = mountTable([booking({ bookedVia: "guest" })]);
 
-      expect(header).toBeTruthy();
-      expect(header.classes()).not.toContain("sortable");
+      expect(
+        wrapper
+          .findAll("th")
+          .wrappers.some((th) => th.text().includes("Buchungsweg"))
+      ).toBe(false);
     });
 
     it.each([
-      ["user", "Angemeldet"],
       ["guest", "Gast"],
       ["admin", "Admin"],
-      [undefined, "Unbekannt"],
-    ])("shows a booking made via %s as %s", (bookedVia, label) => {
+    ])("marks a booking made via %s with %s", (bookedVia, label) => {
       const wrapper = mountTable([booking({ bookedVia })]);
+      const badge = wrapper.find(".booked-via-badge");
 
-      expect(wrapper.find("td.booked-via-cell").text()).toBe(label);
+      expect(badge.text()).toBe(label);
+      expect(badge.attributes("title")).toBe(`Buchungsweg: ${label}`);
     });
+
+    it.each([["user"], [undefined]])(
+      "leaves a booking made via %s unmarked",
+      (bookedVia) => {
+        const wrapper = mountTable([booking({ bookedVia })]);
+
+        expect(wrapper.find(".booked-via-badge").exists()).toBe(false);
+      }
+    );
   });
 
   describe("the booking number", () => {

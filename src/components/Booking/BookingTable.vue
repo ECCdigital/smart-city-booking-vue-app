@@ -55,7 +55,15 @@
 
         <template v-slot:item.name="{ item }">
           <div>
-            <div class="font-weight-bold">{{ item.name }}</div>
+            <div class="font-weight-bold">
+              {{ item.name }}
+              <span
+                v-if="isMarkedBookedVia(item)"
+                class="booked-via-badge"
+                :title="bookedViaBadgeTitle(item)"
+                >{{ bookedViaLabel(item.bookedVia) }}</span
+              >
+            </div>
             <div class="text-caption grey--text">
               {{ truncate(item.company, 20) }}
             </div>
@@ -185,10 +193,6 @@
             </span>
           </div>
           <span v-else class="grey--text">—</span>
-        </template>
-
-        <template v-slot:item.bookedVia="{ item }">
-          {{ bookedViaLabel(item.bookedVia) }}
         </template>
 
         <template v-slot:item.controls="{ item }">
@@ -349,12 +353,6 @@ export default {
         },
         { text: "Zahlungsart", value: "paymentMethod" },
         {
-          text: bookedViaTitle(),
-          value: "bookedVia",
-          sortable: false,
-          cellClass: "booked-via-cell",
-        },
-        {
           text: "",
           value: "controls",
           sortable: false,
@@ -384,6 +382,14 @@ export default {
     actionLabel,
     allowsAction,
     bookedViaLabel,
+    /** The badge's hover text, „Buchungsweg: Gast“. */
+    bookedViaBadgeTitle(item) {
+      return `${bookedViaTitle()}: ${bookedViaLabel(item.bookedVia)}`;
+    },
+    /** Guest and admin bookings carry a badge; a signed-in one is the rule. */
+    isMarkedBookedVia(item) {
+      return ["guest", "admin"].includes(item.bookedVia);
+    },
     isFree,
     statusColor,
     statusIcon,
@@ -495,6 +501,17 @@ export default {
 /* Headers don't wrap by default; this one may, at its soft hyphen. */
 .booking-table-wrapper ::v-deep th.wrapping-header {
   white-space: normal;
+}
+
+.booked-via-badge {
+  margin-left: var(--scb-space-1);
+  padding: 0 var(--scb-space-1);
+  border-radius: var(--scb-radius-badge);
+  background: var(--scb-hover-tint-strong);
+  color: var(--scb-text-muted);
+  font-size: var(--scb-font-size-caption);
+  font-weight: var(--scb-font-weight-medium);
+  vertical-align: middle;
 }
 
 .booking-table-wrapper {
