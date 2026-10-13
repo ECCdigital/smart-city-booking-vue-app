@@ -61,9 +61,10 @@ export default {
   flex: 0 0 auto;
 }
 
-/* The storefront inverts an App-Logo without variant in dark mode. */
+/* As the storefront inverts an App-Logo without variant in dark mode
+   (`dark:invert dark:hue-rotate-180`), so its hues stay. */
 .portal-app-logo--inverted {
-  filter: invert(1);
+  filter: invert(1) hue-rotate(180deg);
 }
 
 .portal-app-logo--empty {
