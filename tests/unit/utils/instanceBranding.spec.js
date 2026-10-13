@@ -91,7 +91,57 @@ describe("brandingForSave with the fields of map #510", () => {
   });
 });
 
+describe("brandingForSave with the font", () => {
+  const reference = { source: "media", mediaId: "f1", url: null };
+
+  it("sends the system font as null and a font of the list by its id", () => {
+    expect(brandingForSave({ font: null }).font).toBeNull();
+    expect(
+      brandingForSave({ font: { source: "curated", id: "figtree" } }).font
+    ).toEqual({ source: "curated", id: "figtree" });
+  });
+
+  it("sends the tick of a new own font alone", () => {
+    const payload = brandingForSave({
+      font: { source: "media", reference, license: { confirmed: true } },
+    });
+
+    expect(payload.font).toEqual({
+      source: "media",
+      reference,
+      license: { confirmed: true },
+    });
+  });
+
+  it("sends a stored confirmation as the tick, never its person or time", () => {
+    const payload = brandingForSave({
+      font: {
+        source: "media",
+        reference,
+        license: {
+          confirmedAt: "2026-10-01T08:00:00.000Z",
+          confirmedBy: "admin@example.org",
+        },
+      },
+    });
+
+    expect(payload.font.license).toEqual({ confirmed: true });
+  });
+
+  it("sends an own font without tick without a licence", () => {
+    const payload = brandingForSave({
+      font: { source: "media", reference, license: null },
+    });
+
+    expect(payload.font).toEqual({ source: "media", reference });
+  });
+});
+
 describe("defaultBranding", () => {
+  it("reads a branding without font as the system font", () => {
+    expect(defaultBranding().font).toBeNull();
+  });
+
   it("reads a branding without accent colour as one with an empty accent", () => {
     expect(defaultBranding().theme.colors).toEqual({
       primary: "",

@@ -65,12 +65,16 @@ function blocks(count) {
 }
 
 function mountTab(propsData = {}) {
-  // The two media fields open a picker backed by the media API; what is under
-  // test is the tab around them.
+  // The media fields and the font's picker are backed by the media API; what
+  // is under test is the tab around them.
   return mountComponent(InstanceEditCatalog, {
     store: new Vuex.Store({ modules: { toasts } }),
     propsData: { instance: instance(), catalog: catalog(), ...propsData },
-    stubs: { MediaReferenceField: true, MediaReferenceImage: true },
+    stubs: {
+      MediaReferenceField: true,
+      MediaReferenceImage: true,
+      MediaPickerDialog: true,
+    },
   });
 }
 

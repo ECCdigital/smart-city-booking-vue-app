@@ -239,7 +239,9 @@ import MediaImage from "@/components/Media/MediaImage.vue";
 import MediaUploadSheet from "@/components/Media/MediaUploadSheet.vue";
 import SearchBar from "@/components/commons/SearchBar.vue";
 import {
+  FONT_UPLOAD_LABEL,
   MEDIA_ALLOWED_TYPES_LABEL,
+  fontFileRefusal,
   mediaUploadErrorMessage,
 } from "@/utils/mediaUploadError";
 import {
@@ -321,17 +323,21 @@ export default {
       return MediaPermissionService.allowCreate(this.scope);
     },
     kindLabel() {
-      return this.kind === "document" ? "Nur Dokumente" : "Nur Bilder";
+      if (this.kind === "document") return "Nur Dokumente";
+      if (this.kind === "font") return "Nur Schriften";
+      return "Nur Bilder";
     },
     uploadHint() {
       const images = `${MEDIA_ALLOWED_TYPES_LABEL} bis 15 MB`;
       if (this.kind === "image") return images;
       if (this.kind === "document") return "PDF bis 50 MB";
+      if (this.kind === "font") return FONT_UPLOAD_LABEL;
       return `${images} · PDF bis 50 MB`;
     },
     acceptAttribute() {
       if (this.kind === "image") return "image/*";
       if (this.kind === "document") return "application/pdf";
+      if (this.kind === "font") return ".woff2,font/woff2";
       return undefined;
     },
     /** The tag behind the funnel, once the listing has shown one. */
@@ -506,6 +512,11 @@ export default {
       this.uploadError = null;
       try {
         for (const file of files) {
+          const refusal = this.kind === "font" && fontFileRefusal(file.name);
+          if (refusal) {
+            this.uploadError = refusal;
+            continue;
+          }
           try {
             const response = await ApiMediaService.uploadMedia(this.scope, {
               file,

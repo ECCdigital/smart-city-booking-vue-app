@@ -34,7 +34,8 @@ import ApiMediaService from "@/services/api/ApiMediaService";
  * Renders the file of a medium in a fixed preset (§4.11): public media come
  * straight from the binary route, so the browser caches them under the headers
  * of §4.6; `intern` media go through the API client, because a plain <img src>
- * would carry no credentials. Documents and failed loads fall back to an icon.
+ * would carry no credentials. Documents, fonts and failed loads fall back to an
+ * icon.
  */
 export default {
   name: "MediaImage",
@@ -91,6 +92,9 @@ export default {
         return this.media.mimeType === "application/pdf"
           ? "mdi-file-pdf-box"
           : "mdi-file-outline";
+      }
+      if (this.media.kind === "font") {
+        return "mdi-format-font";
       }
       return "mdi-image-off-outline";
     },

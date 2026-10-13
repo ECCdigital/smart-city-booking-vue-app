@@ -4,6 +4,42 @@ import FormatService from "@/services/FormatService";
 // advertise it.
 export const MEDIA_ALLOWED_TYPES_LABEL = "JPEG, PNG, WebP, GIF, SVG, ICO";
 
+// A font is taken as woff2 alone (map #510). The other font formats are the
+// ones an admin most likely holds; they get told what to bring instead.
+export const FONT_UPLOAD_LABEL = "woff2 bis 500 KB";
+const OTHER_FONT_FORMATS = Object.freeze(["ttf", "otf", "woff"]);
+
+function extensionOf(fileName) {
+  const match = /\.([^.]+)$/.exec(fileName || "");
+  return match ? match[1].toLowerCase() : "";
+}
+
+function otherFontFormat(subject, fileName) {
+  const extension = extensionOf(fileName);
+  return OTHER_FONT_FORMATS.includes(extension)
+    ? `${subject} ist eine ${extension.toUpperCase()}-Datei. Schriften bitte als woff2 hochladen.`
+    : null;
+}
+
+/**
+ * Why a file cannot be a font, judged by its name before it is uploaded — a
+ * picker of fonts would otherwise take an image in. The backend decides by
+ * the content in the end.
+ *
+ * @param {string} fileName - Name of the picked file.
+ * @returns {?string} The message, or null for a woff2.
+ */
+export function fontFileRefusal(fileName) {
+  if (extensionOf(fileName) === "woff2") {
+    return null;
+  }
+  const subject = `„${fileName}“`;
+  return (
+    otherFontFormat(subject, fileName) ||
+    `${subject} ist keine Schrift im Format woff2.`
+  );
+}
+
 const MESSAGE_BY_CODE = {
   file_too_large: (params) => {
     const limit = params?.maxBytes
@@ -12,7 +48,7 @@ const MESSAGE_BY_CODE = {
     return `ist zu groß${limit} — Upload abgelehnt.`;
   },
   unsupported_file_type: () =>
-    `hat einen nicht unterstützten Dateityp — erlaubt sind ${MEDIA_ALLOWED_TYPES_LABEL} und PDF.`,
+    `hat einen nicht unterstützten Dateityp — erlaubt sind ${MEDIA_ALLOWED_TYPES_LABEL}, PDF und Schriften als woff2.`,
   invalid_image: () => "ist keine gültige Bilddatei oder beschädigt.",
   empty_file: () => "ist leer.",
 };
@@ -24,11 +60,24 @@ const MESSAGE_BY_CODE = {
  *
  * @param {Object} error - The rejected request.
  * @param {string} [fileName] - Names the file when the surrounding UI does not.
+ * @param {string} [uploadedName] - Name of the uploaded file, for a site that
+ *   names it itself; a refused TTF, OTF or WOFF is told to come as woff2.
  * @returns {string} The message.
  */
-export function mediaUploadErrorMessage(error, fileName) {
+export function mediaUploadErrorMessage(
+  error,
+  fileName,
+  uploadedName = fileName
+) {
   const body = error.response?.data;
   const subject = fileName ? `„${fileName}"` : "Die Datei";
+
+  if (body?.code === "unsupported_file_type") {
+    const font = otherFontFormat(subject, uploadedName);
+    if (font) {
+      return font;
+    }
+  }
 
   const message = MESSAGE_BY_CODE[body?.code];
   if (message) {

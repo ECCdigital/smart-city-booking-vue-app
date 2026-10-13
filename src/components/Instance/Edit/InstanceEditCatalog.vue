@@ -338,15 +338,26 @@ export default {
             ? REQUIRED_MESSAGE
             : detail.message || "Ungültiger Wert"
         );
+      this.sectionsWith("showApiErrors").forEach((section) =>
+        section.showApiErrors(details)
+      );
+    },
+    /** The view saved the tab; the sections that care get to know. */
+    onSaved() {
+      this.sectionsWith("onSaved").forEach((section) => section.onSaved());
+    },
+    /** The sections of the appearance that have `method`. Refs, so no computed. */
+    sectionsWith(method) {
+      return SECTION_REFS.map((name) => this.$refs[name]).filter(
+        (section) => section && typeof section[method] === "function"
+      );
     },
     /**
      * The fields of this tab that carry rules, and the sections that check
      * their own. Refs, so not a computed.
      */
     validatedFields() {
-      const sections = SECTION_REFS.map((name) => this.$refs[name]).filter(
-        (section) => section && typeof section.validate === "function"
-      );
+      const sections = this.sectionsWith("validate");
       return [
         this.$refs.nameField,
         this.$refs.portalUrlField,
