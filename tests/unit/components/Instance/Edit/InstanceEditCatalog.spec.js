@@ -313,6 +313,44 @@ describe("InstanceEditCatalog Farben", () => {
     expect(colorRow(wrapper, "accent").text()).toContain("Badges und Dekor");
   });
 
+  it("names the Kopfleiste with Primär while the header bar is primary, as today", () => {
+    const wrapper = mountTab();
+
+    expect(colorRow(wrapper, "primary").text()).toContain(
+      "Knöpfe, Preise, Links und die Kopfleiste (wie heute)."
+    );
+    expect(colorRow(wrapper, "secondary").text()).not.toContain("Kopfleiste");
+  });
+
+  it("names the Kopfleiste with no colour while the header bar is neutral", () => {
+    const wrapper = mountTab({
+      instance: {
+        ...instance(),
+        branding: { ...instance().branding, header: "neutral" },
+      },
+    });
+
+    expect(colorRow(wrapper, "primary").text()).toContain(
+      "Knöpfe, Preise und Links."
+    );
+    expect(colorRow(wrapper, "primary").text()).not.toContain("Kopfleiste");
+    expect(colorRow(wrapper, "secondary").text()).not.toContain("Kopfleiste");
+  });
+
+  it("moves the Kopfleiste to Sekundär once the header bar is chosen in it", async () => {
+    const wrapper = mountTab();
+
+    await section(wrapper, "Kopfleiste")
+      .find("[role='radio'][data-header='secondary']")
+      .trigger("click");
+    await settle(wrapper);
+
+    expect(colorRow(wrapper, "primary").text()).not.toContain("Kopfleiste");
+    expect(colorRow(wrapper, "secondary").text()).toContain(
+      "Gewählte Tage, Filter, aktive Reiter und die Kopfleiste."
+    );
+  });
+
   it("leaves an empty accent with the placeholder and says what applies then", () => {
     const wrapper = mountTab({ instance: withColors({}) });
     const field = fieldByLabel(wrapper, "Akzentfarbe (optional)");

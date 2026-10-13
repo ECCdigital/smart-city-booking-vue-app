@@ -69,13 +69,15 @@ const ACCENT = /^#[0-9a-f]{6}$/i;
 const ACCENT_FALLBACK =
   "Nicht gesetzt: Badges und Streifen in Primär, „Pauschal“ in Sekundär, wie heute.";
 
-// The three colours and what each carries in the portal (map #510).
+// The three colours and what each carries in the portal (map #510). The
+// header bar is named with the colour it takes (`branding.header`).
 const COLOR_ROWS = Object.freeze([
   {
     key: "primary",
     label: "Primärfarbe",
     title: "Interaktiv",
-    text: "Knöpfe, Preise, Links und die Kopfleiste (wie heute).",
+    text: "Knöpfe, Preise und Links.",
+    withHeader: "Knöpfe, Preise, Links und die Kopfleiste (wie heute).",
     parts: ["card"],
     field: {},
   },
@@ -84,6 +86,7 @@ const COLOR_ROWS = Object.freeze([
     label: "Sekundärfarbe",
     title: "Auswahl",
     text: "Gewählte Tage, Filter und aktive Reiter.",
+    withHeader: "Gewählte Tage, Filter, aktive Reiter und die Kopfleiste.",
     parts: ["selection"],
     field: {},
   },
@@ -115,7 +118,6 @@ export default {
   },
   data() {
     return {
-      rows: COLOR_ROWS,
       modes: ["light", "dark"],
       accentFallback: ACCENT_FALLBACK,
     };
@@ -123,6 +125,20 @@ export default {
   computed: {
     colors() {
       return this.branding.theme.colors;
+    },
+    /**
+     * The colour the header bar takes: none while neutral, otherwise primary
+     * or secondary; anything else reads as primary, as in `headerColors`.
+     */
+    headerColor() {
+      const header = this.branding.header;
+      if (header === "neutral") return null;
+      return header === "secondary" ? "secondary" : "primary";
+    },
+    rows() {
+      return COLOR_ROWS.map((row) =>
+        row.key === this.headerColor ? { ...row, text: row.withHeader } : row
+      );
     },
   },
   methods: {
