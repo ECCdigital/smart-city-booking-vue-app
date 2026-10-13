@@ -17,7 +17,8 @@ export const BRANDING_IMAGES = Object.freeze({
 /**
  * A branding as an untouched instance carries it. A field an older instance
  * never stored reads as its default here, as it does in the backend
- * (`branding-schema.js`): the accent colour is empty while none is set.
+ * (`branding-schema.js`): the accent colour is empty while none is set, and
+ * the footer shows no logos.
  *
  * @returns {Object} The default branding.
  */
@@ -31,6 +32,7 @@ export function defaultBranding() {
     favicon: null,
     logoUrl: "",
     faviconUrl: "",
+    footerLogos: [],
   };
 }
 
