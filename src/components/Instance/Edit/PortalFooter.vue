@@ -168,6 +168,7 @@ import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import MediaResolveService from "@/services/MediaResolveService";
 import { mediaReferenceOf, referencedMediaId } from "@/utils/mediaReference";
+import { isAbsoluteHttpUrl } from "@/utils/absoluteHttpUrl";
 
 // The backend stores no more footer logos than this.
 const MAX_FOOTER_LOGOS = 12;
@@ -201,22 +202,10 @@ const MODES = Object.freeze([
 const LINK_MESSAGE =
   "Bitte eine vollständige Adresse mit http:// oder https:// angeben oder das Feld leeren.";
 
-/**
- * Whether a footer link may be stored: empty, or an absolute http(s) address.
- * The backend refuses anything else, `javascript:` first of all.
- */
+// A footer link is empty or an absolute http(s) address, as the backend
+// takes it.
 function isFooterLink(value) {
-  if (!value) {
-    return true;
-  }
-  try {
-    const url = new URL(value);
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") && !!url.hostname
-    );
-  } catch {
-    return false;
-  }
+  return !value || isAbsoluteHttpUrl(value);
 }
 
 /**

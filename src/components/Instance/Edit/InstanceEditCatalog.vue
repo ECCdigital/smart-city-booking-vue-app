@@ -157,6 +157,7 @@ import PortalFont from "@/components/Instance/Edit/PortalFont.vue";
 import PortalAuthPages from "@/components/Instance/Edit/PortalAuthPages.vue";
 import PortalFooter from "@/components/Instance/Edit/PortalFooter.vue";
 import { defaultBranding } from "@/utils/instanceBranding";
+import { isAbsoluteHttpUrl } from "@/utils/absoluteHttpUrl";
 
 // The refs of the sections of the appearance, in the order of the page.
 const SECTION_REFS = Object.freeze([
@@ -178,22 +179,6 @@ const BACKGROUND_LABELS = Object.freeze({
   color: "Farbe",
   image: "Bild",
 });
-
-/**
- * Whether `value` is an absolute http(s) address. The Live Preview of the
- * Hero Editor needs the origin of the Portal-URL, which a bare host or a
- * relative path does not have.
- */
-function isAbsoluteHttpUrl(value) {
-  try {
-    const url = new URL(value);
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") && !!url.hostname
-    );
-  } catch {
-    return false;
-  }
-}
 
 export default {
   name: "InstanceEditCatalog",
