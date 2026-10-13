@@ -114,6 +114,25 @@ describe("brandingForSave with footer logos", () => {
   });
 });
 
+describe("brandingForSave with the size of the logo on the auth pages", () => {
+  it("sends S for a branding that never stored a size, as today", () => {
+    const stored = { active: false, theme: { colors: { primary: "" } } };
+
+    const payload = brandingForSave({ ...defaultBranding(), ...stored });
+
+    expect(payload.authLogoSize).toBe("sm");
+  });
+
+  it("sends the chosen size", () => {
+    const payload = brandingForSave({
+      ...defaultBranding(),
+      authLogoSize: "md",
+    });
+
+    expect(payload.authLogoSize).toBe("md");
+  });
+});
+
 describe("defaultBranding", () => {
   it("reads a branding without footer logos as one with none", () => {
     expect(defaultBranding().footerLogos).toEqual([]);
