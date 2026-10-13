@@ -532,6 +532,55 @@ describe("Bookings", () => {
   });
 
   /**
+   * The Buchungsweg filter: Angemeldet, Gast, Admin and Unbekannt as a
+   * checkbox list, narrowing every view; Unbekannt keeps the bookings
+   * without one. Every reach reads `bookedVia`, so it is always offered.
+   */
+  describe("the Buchungsweg filter", () => {
+    function viaEveryWay() {
+      return [
+        booking({ id: "bk-user", bookedVia: "user" }),
+        booking({ id: "bk-guest", bookedVia: "guest" }),
+        booking({ id: "bk-admin", bookedVia: "admin" }),
+        booking({ id: "bk-old" }),
+      ];
+    }
+
+    it("keeps only the guest bookings", async () => {
+      const { wrapper } = await mountBookings({ bookings: viaEveryWay() });
+
+      const card = await openFilterCard(wrapper);
+      expect(card.textContent).toContain("Buchungsweg");
+      await toggleStatus(wrapper, "Gast");
+
+      expect(funnelBadge(wrapper)).toBe("1");
+      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual(["bk-guest"]);
+    });
+
+    it("keeps signed-in and unknown bookings together", async () => {
+      const { wrapper } = await mountBookings({ bookings: viaEveryWay() });
+
+      await openFilterCard(wrapper);
+      await toggleStatus(wrapper, "Angemeldet");
+      await toggleStatus(wrapper, "Unbekannt");
+
+      expect(bookingIdsOf(wrapper, "BookingTable")).toEqual([
+        "bk-user",
+        "bk-old",
+      ]);
+    });
+
+    it("is offered under the Reichweite own too", async () => {
+      BookingPermissionService.allowReadAny.mockReturnValue(false);
+      const { wrapper } = await mountBookings({ bookings: viaEveryWay() });
+
+      const card = await openFilterCard(wrapper);
+
+      expect(card.textContent).toContain("Buchungsweg");
+    });
+  });
+
+  /**
    * The openers lead to the Buchungsseite and the Serienbuchungsseite (spec
    * "Openers and the retired dialogs"): every push carries `?tenant=` so the
    * address bar always shows the complete Buchungslink.
