@@ -573,6 +573,34 @@ describe("InstanceEditCatalog Kopfbereich entry card", () => {
     ).toBe("https://portal.example.org");
   });
 
+  it("hands the stored App-Logo and its variant to the editor, not the edited ones", async () => {
+    const logo = { source: "media", mediaId: "logo" };
+    const logoDark = { source: "media", mediaId: "logo-dark" };
+    const stored = instance();
+    const wrapper = mountTab({
+      instance: { ...stored, branding: { ...stored.branding, logo, logoDark } },
+    });
+    const dialog = () => wrapper.findComponent({ name: "HeroEditorDialog" });
+
+    expect(dialog().props("appLogo")).toEqual(logo);
+    expect(dialog().props("appLogoDark")).toEqual(logoDark);
+
+    wrapper
+      .findComponent({ name: "PortalHeader" })
+      .vm.$emit("patch", { logo: null, logoDark: null });
+    await settle(wrapper);
+
+    expect(dialog().props("appLogo")).toEqual(logo);
+  });
+
+  it("hands no App-Logo on while none is stored", () => {
+    const wrapper = mountTab();
+    const dialog = wrapper.findComponent({ name: "HeroEditorDialog" });
+
+    expect(dialog.props("appLogo")).toBe(null);
+    expect(dialog.props("appLogoDark")).toBe(null);
+  });
+
   it("hands an empty string on when no Portal-URL is stored", () => {
     const wrapper = mountTab({ instance: instance({ portalUrl: undefined }) });
 

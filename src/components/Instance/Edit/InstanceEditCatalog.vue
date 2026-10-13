@@ -139,6 +139,8 @@
       v-model="heroEditorOpen"
       :portal-url="instance.portalUrl || ''"
       :theme-colors="themeColors"
+      :app-logo="appLogo"
+      :app-logo-dark="appLogoDark"
       @closed="$emit('refetch')"
     />
   </BaseSection>
@@ -258,6 +260,17 @@ export default {
      */
     themeColors() {
       return this.instance.branding?.theme?.colors || null;
+    },
+    /**
+     * The saved App-Logo and its variant, for the same reason as the colours.
+     * Only the reference counts: a legacy `logoUrl` is no App-Logo to the
+     * backend, so a Block could not follow it.
+     */
+    appLogo() {
+      return this.instance.branding?.logo || null;
+    },
+    appLogoDark() {
+      return this.instance.branding?.logoDark || null;
     },
     backgroundLabel() {
       const type = this.instance.branding?.background?.type;

@@ -149,6 +149,23 @@ const TYPE_DEFAULTS = Object.freeze({
   }),
 });
 
+/**
+ * The source of an image Block that follows the App-Logo of the branding
+ * instead of pointing at a medium of its own (map #510). Such a Block has no
+ * `mediaId` and no `invertInDarkMode`: the App-Logo brings its own rule for
+ * the dark mode, its variant or inverted without one. The backend refuses
+ * either key on it.
+ */
+export const HERO_APP_LOGO_SOURCE = "app-logo";
+
+/**
+ * @param {*} image - The `image` of an image Block.
+ * @returns {boolean} Whether the Block follows the App-Logo.
+ */
+export function isHeroAppLogo(image) {
+  return !!image && image.source === HERO_APP_LOGO_SOURCE;
+}
+
 // What a Block of an unknown type reads as. Only a hand-written layout can
 // produce one; the list still has to name it.
 const UNKNOWN_BLOCK_TYPE = Object.freeze({
@@ -209,13 +226,20 @@ export function normalizeHeroBlock(block) {
   const source = block || {};
   const content = TYPE_DEFAULTS[source.type];
 
-  return {
+  const normalized = {
     ...commonDefaults(),
     ...(content ? content() : {}),
     ...source,
     panel: normalizeHeroPanel(source.panel),
     offset: { ...NO_OFFSET, ...offsetObject(source.offset) },
   };
+  // The one default a Block may not carry: the App-Logo has its own rule for
+  // the dark mode, and the backend refuses the switch beside it.
+  if (normalized.type === "image" && isHeroAppLogo(normalized.image)) {
+    delete normalized.invertInDarkMode;
+  }
+
+  return normalized;
 }
 
 /**
@@ -475,6 +499,9 @@ export function setHeroBlockZone(blocks, id, zone, index = null) {
  * moved and nothing else, so a Block keeps everything the form does not ask
  * about — including the keys of a type this editor version has no field for.
  *
+ * A key the patch sets to `undefined` leaves the Block: the switch to the
+ * source „App-Logo“ drops `invertInDarkMode`, which the backend refuses there.
+ *
  * A Zone is not one of those fields: moving a Block reorders the array, which
  * is what `setHeroBlockZone` is for.
  *
@@ -486,9 +513,20 @@ export function setHeroBlockZone(blocks, id, zone, index = null) {
 export function updateHeroBlock(blocks, id, patch) {
   return sortHeroBlocks(
     (blocks || []).map((block) =>
-      block.id === id ? { ...block, ...patch } : block
+      block.id === id ? patchedBlock(block, patch) : block
     )
   );
+}
+
+function patchedBlock(block, patch) {
+  const next = { ...block, ...patch };
+  Object.keys(patch).forEach((key) => {
+    if (patch[key] === undefined) {
+      delete next[key];
+    }
+  });
+
+  return next;
 }
 
 /**
