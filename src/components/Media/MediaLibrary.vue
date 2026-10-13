@@ -602,11 +602,10 @@ export default {
         await this.fetchMedia();
       } catch (error) {
         entry.status = "error";
-        entry.message = mediaUploadErrorMessage(
-          error,
-          undefined,
-          entry.file.name
-        );
+        // The row of the queue names the file already.
+        entry.message = mediaUploadErrorMessage(error, entry.file.name, {
+          named: false,
+        });
       }
     },
     dismissUpload(index) {

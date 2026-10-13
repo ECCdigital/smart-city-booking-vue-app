@@ -59,21 +59,23 @@ const MESSAGE_BY_CODE = {
  * every upload site.
  *
  * @param {Object} error - The rejected request.
- * @param {string} [fileName] - Names the file when the surrounding UI does not.
- * @param {string} [uploadedName] - Name of the uploaded file, for a site that
- *   names it itself; a refused TTF, OTF or WOFF is told to come as woff2.
+ * @param {string} [fileName] - Name of the uploaded file; a refused TTF, OTF
+ *   or WOFF is told to come as woff2.
+ * @param {Object} [options]
+ * @param {boolean} [options.named=true] - Whether the message names the file;
+ *   a site that shows the name beside it says „Die Datei“ instead.
  * @returns {string} The message.
  */
 export function mediaUploadErrorMessage(
   error,
   fileName,
-  uploadedName = fileName
+  { named = true } = {}
 ) {
   const body = error.response?.data;
-  const subject = fileName ? `„${fileName}"` : "Die Datei";
+  const subject = named && fileName ? `„${fileName}"` : "Die Datei";
 
   if (body?.code === "unsupported_file_type") {
-    const font = otherFontFormat(subject, uploadedName);
+    const font = otherFontFormat(subject, fileName);
     if (font) {
       return font;
     }
