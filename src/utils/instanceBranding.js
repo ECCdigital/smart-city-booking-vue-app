@@ -17,7 +17,9 @@ export const BRANDING_IMAGES = Object.freeze({
 /**
  * A branding as an untouched instance carries it. A field an older instance
  * never stored reads as its default here, as it does in the backend
- * (`branding-schema.js`): the accent colour is empty while none is set.
+ * (`branding-schema.js`): the accent colour is empty while none is set, the
+ * header bar is primary as it was before the setting, and the App-Logo has no
+ * variant for dark mode.
  *
  * @returns {Object} The default branding.
  */
@@ -27,7 +29,9 @@ export function defaultBranding() {
     theme: {
       colors: { primary: "", secondary: "", accent: "" },
     },
+    header: "primary",
     logo: null,
+    logoDark: null,
     favicon: null,
     logoUrl: "",
     faviconUrl: "",

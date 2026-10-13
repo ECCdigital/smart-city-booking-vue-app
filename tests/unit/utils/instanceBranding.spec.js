@@ -91,6 +91,28 @@ describe("brandingForSave with the fields of map #510", () => {
   });
 });
 
+describe("brandingForSave with the header bar and the variant of the App-Logo", () => {
+  it("sends the header and the variant as the form holds them", () => {
+    const logoDark = { source: "media", mediaId: "m2", url: null };
+
+    const payload = brandingForSave({
+      ...defaultBranding(),
+      header: "neutral",
+      logoDark,
+    });
+
+    expect(payload.header).toBe("neutral");
+    expect(payload.logoDark).toEqual(logoDark);
+  });
+
+  it("sends a branding that never stored them with Primär and without variant", () => {
+    const payload = brandingForSave(defaultBranding());
+
+    expect(payload.header).toBe("primary");
+    expect(payload).toHaveProperty("logoDark", null);
+  });
+});
+
 describe("defaultBranding", () => {
   it("reads a branding without accent colour as one with an empty accent", () => {
     expect(defaultBranding().theme.colors).toEqual({
