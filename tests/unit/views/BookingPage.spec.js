@@ -591,6 +591,21 @@ describe("BookingPage", () => {
     });
 
     it.each([
+      [{ bookedVia: "guest" }, "Gast"],
+      [{}, "Unbekannt"],
+    ])("names the Buchungsweg of %o as %s in Details", async (extra, word) => {
+      ApiBookingService.getBooking.mockResolvedValue({
+        data: booking(extra),
+      });
+      const { wrapper } = mountPage();
+      await settle(wrapper);
+
+      const fact = wrapper.find(".booking-page__booked-via");
+      expect(fact.text()).toContain("Buchungsweg");
+      expect(fact.text()).toContain(word);
+    });
+
+    it.each([
       ["confirmed", { priceEur: 25 }, "Bezahlt"],
       ["payment_due", { priceEur: 25 }, "Nicht bezahlt"],
       ["confirmed", { priceEur: 0 }, "Kostenfrei"],

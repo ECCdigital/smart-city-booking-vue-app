@@ -18,6 +18,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 -   A required custom field in the booking form and its preview is marked with a red asterisk, as E-Mail and Zahlungsanbieter are
 -   Saving the booking form with a required field still missing marks that field and scrolls to the first one, besides the toast „Fehlende Angaben“. A create checks the whole form, an update the custom fields only, as before
 -   „Kurzbeschreibung (optional)“ of a tenant (Admin UI side of ECCdigital/tickets#478): a multi-line field with a counter up to 300 characters in the tab „Allgemein“ and in the onboarding step „Ihr Mandant“, saved as `description`; the storefront shows it in „Angebot nach Anbietern“. Requires the backend with the tenant's `description`
+-   Buchungsweg of a booking (ECCdigital/tickets#487): a column in the booking list, a fact under Details and an XLSX column — Userkonto, Gast or Admin from `booking.bookedVia`, „Unbekannt“ without it
 -   „Nutzer einladen“ on „Nächste Schritte“ opens the members page with its invite dialog open (ECCdigital/tickets#369, `/tenant/members?invite=1`); a reload does not open it again
 -   Guided flow of a bookable from 1904px (Vuetify `xl`, ECCdigital/tickets#333): a sticky list of the six steps stands left in place of the dots, with the same state, lock and jump, and the flow reads in three columns — step list, step, „Übersicht“
 -   The guided flow's „Übersicht“ shows Verfügbarkeit, Preis and Berechtigung too, in the steps' words (ECCdigital/tickets#332); „extern gesteuert“ where a provider handles availability or prices
@@ -100,6 +101,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Fixed
 
+-   The XLSX export of the booking list fills „Payment Provider“ (ECCdigital/tickets#487): it read `booking.PaymentProvider` and stayed empty
 -   Direct mode ends a session whose token renewal failed as BFF mode does, for local accounts and Keycloak (ECCdigital/tickets#110): on a public path such as the checkout it only drops the session and carries on anonymously, where a bookable behind a login leads to the checkout's login step; an internal page goes to `/login?next=<page>` and returns there after signing in. Before, both went to `/login` without a way back. Requests that waited on the failed renewal are rejected instead of left pending
 -   Checkout of an offer that is no longer reachable (ECCdigital/tickets#262): the backend's refusal `checkout.bookable_not_found` reads „Dieses Angebot ist nicht mehr verfügbar und kann nicht gebucht werden.“, at the item and in the toast „Angebot nicht mehr verfügbar“ of the checkout, instead of the generic text for unexpected errors
 -   Registration: the page „Herzlich willkommen!“ and the toast say the mail went out „falls die Adresse noch nicht bestätigt ist“ instead of „noch nicht registriert“; the backend mails a registered, unverified address too (ECCdigital/tickets#259)

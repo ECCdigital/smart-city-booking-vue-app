@@ -185,6 +185,10 @@
           <span v-else class="grey--text">—</span>
         </template>
 
+        <template v-slot:item.bookedVia="{ item }">
+          {{ bookedViaLabel(item.bookedVia) }}
+        </template>
+
         <template v-slot:item.controls="{ item }">
           <v-menu offset-y left>
             <template v-slot:activator="{ on, attrs }">
@@ -295,6 +299,7 @@ import {
   transitionActions,
 } from "@/utils/bookingStatus";
 import { refundStateMarker, refundStateOf } from "@/utils/cancellationRefund";
+import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
 
 export default {
   name: "BookingTable",
@@ -335,6 +340,12 @@ export default {
         },
         { text: "Zahlungsart", value: "paymentMethod" },
         {
+          text: bookedViaTitle(),
+          value: "bookedVia",
+          sortable: false,
+          cellClass: "booked-via-cell",
+        },
+        {
           text: "",
           value: "controls",
           sortable: false,
@@ -363,6 +374,7 @@ export default {
     actionIcon,
     actionLabel,
     allowsAction,
+    bookedViaLabel,
     isFree,
     statusColor,
     statusIcon,

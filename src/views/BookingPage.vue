@@ -332,6 +332,12 @@
                   }}
                 </span>
               </div>
+              <div class="booking-fact booking-page__booked-via">
+                <span class="booking-fact__label">
+                  {{ bookedViaTitle }}
+                </span>
+                <span class="booking-fact__value">{{ bookedVia }}</span>
+              </div>
               <div class="booking-fact">
                 <span class="booking-fact__label">
                   {{ $t("booking.page.details.cancellation-policy") }}
@@ -403,6 +409,7 @@ import {
   transitionTarget,
 } from "@/utils/bookingStatus";
 import { getCancellationRefundAudit } from "@/utils/cancellationRefund";
+import { bookedViaLabel, bookedViaTitle } from "@/utils/bookedVia";
 
 /**
  * The Buchungsseite (CONTEXT.md): one booking at `/bookings/:bookingId`,
@@ -473,6 +480,12 @@ export default {
     },
     paymentProvider() {
       return paymentProviderLabel(this.booking.paymentProvider);
+    },
+    bookedViaTitle() {
+      return bookedViaTitle();
+    },
+    bookedVia() {
+      return bookedViaLabel(this.booking.bookedVia);
     },
     /** The state read as a path (spec N2). */
     path() {

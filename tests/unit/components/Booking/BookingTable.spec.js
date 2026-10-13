@@ -119,6 +119,29 @@ describe("BookingTable", () => {
     });
   });
 
+  describe("the Buchungsweg column", () => {
+    it("is headed Buchungsweg and offers no sorting", () => {
+      const wrapper = mountTable([booking()]);
+      const header = wrapper
+        .findAll("th")
+        .wrappers.find((th) => th.text().includes("Buchungsweg"));
+
+      expect(header).toBeTruthy();
+      expect(header.classes()).not.toContain("sortable");
+    });
+
+    it.each([
+      ["user", "Userkonto"],
+      ["guest", "Gast"],
+      ["admin", "Admin"],
+      [undefined, "Unbekannt"],
+    ])("shows a booking made via %s as %s", (bookedVia, label) => {
+      const wrapper = mountTable([booking({ bookedVia })]);
+
+      expect(wrapper.find("td.booked-via-cell").text()).toBe(label);
+    });
+  });
+
   describe("the booking number", () => {
     // A dark primary colour (VUE_APP_PRIMARY_COLOR_DARK) all but vanished on
     // the dark table (ECCdigital/tickets#276). The link token lightens it
