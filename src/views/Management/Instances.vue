@@ -88,6 +88,8 @@ import { mapActions, mapGetters } from "vuex";
 import SaveBar from "@/components/commons/SaveBar.vue";
 import UnsavedChangesDialog from "@/components/commons/UnsavedChangesDialog.vue";
 import unsavedChangesGuard from "@/mixins/unsavedChangesGuard";
+// PROTOTYPE (ECCdigital/tickets#516)
+import * as fontPrototype from "@/components/Instance/Edit/Prototype516/fontPrototype";
 import InstanceEditGeneral from "@/components/Instance/Edit/InstanceEditGeneral.vue";
 import InstanceEditLegal from "@/components/Instance/Edit/InstanceEditLegal.vue";
 import InstanceEditMail from "@/components/Instance/Edit/InstanceEditMail.vue";
@@ -245,8 +247,10 @@ export default {
         return false;
       }
       return (
+        // PROTOTYPE (ECCdigital/tickets#516): the font lives outside the form.
+        fontPrototype.isDirty() ||
         JSON.stringify({ instance: this.instance, catalog: this.catalog }) !==
-        this.originalSnapshot
+          this.originalSnapshot
       );
     },
   },
@@ -266,6 +270,7 @@ export default {
     async onRestoreChanges() {
       const discard = await this.confirmDiscardChanges();
       if (discard) {
+        fontPrototype.reset(); // PROTOTYPE (ECCdigital/tickets#516)
         await this.fetchInstance();
       }
     },
@@ -456,6 +461,7 @@ export default {
           instance: this.instance,
           catalog: this.catalog,
         });
+        fontPrototype.commit(); // PROTOTYPE (ECCdigital/tickets#516)
         this.notifySaved();
         await this.addToast({
           message: "Instanz erfolgreich aktualisiert",

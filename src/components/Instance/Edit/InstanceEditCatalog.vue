@@ -224,6 +224,12 @@
       </v-row>
     </SubSection>
 
+    <!-- PROTOTYPE (ECCdigital/tickets#516) -->
+    <FontSectionPrototype
+      :colors="local.branding.theme.colors"
+      :portal-name="localCatalog.name"
+    />
+
     <SubSection
       class="mt-7"
       title="Logo & Favicon"
@@ -324,6 +330,7 @@ import MediaReferenceField from "@/components/Media/MediaReferenceField.vue";
 import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
 import SubSection from "@/components/commons/SubSection.vue";
 import HeroEditorDialog from "@/components/Instance/Edit/HeroEditorDialog.vue";
+import FontSectionPrototype from "@/components/Instance/Edit/Prototype516/FontSectionPrototype.vue";
 import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import { BRANDING_IMAGES, defaultBranding } from "@/utils/instanceBranding";
 
@@ -375,6 +382,7 @@ export default {
     MediaReferenceImage,
     BaseSection,
     HeroEditorDialog,
+    FontSectionPrototype,
   },
   props: {
     instance: { type: Object, required: true },
