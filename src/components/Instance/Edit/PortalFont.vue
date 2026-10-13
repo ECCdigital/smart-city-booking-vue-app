@@ -135,8 +135,7 @@
 <script>
 import SubSection from "@/components/commons/SubSection.vue";
 import MediaPickerDialog from "@/components/Media/MediaPickerDialog.vue";
-import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
-import ApiMediaService from "@/services/api/ApiMediaService";
+import ApiMediaService, { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
 import MediaResolveService from "@/services/MediaResolveService";
 import FormatService from "@/services/FormatService";
 import { mediaReferenceOf } from "@/utils/mediaReference";
