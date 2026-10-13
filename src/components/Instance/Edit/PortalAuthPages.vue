@@ -37,20 +37,13 @@
         >
           <span class="portal-login-preview__label">{{ mode.label }}</span>
           <div class="portal-login-preview__card">
-            <div
-              v-if="logo"
-              class="portal-login-preview__logo"
-              :class="{
-                'portal-login-preview__logo--inverted': invertsLogo(mode.value),
-              }"
-            >
-              <MediaReferenceImage
-                :reference="logoIn(mode.value)"
-                :scope="mediaScope"
-                size="sm"
-                lazy-size="thumb"
+            <div v-if="logo" class="portal-login-preview__logo">
+              <PortalAppLogo
+                :logo="logo"
+                :logo-dark="branding.logoDark"
+                :mode="mode.value"
                 :height="logoHeight"
-                contain
+                width="100%"
               />
             </div>
             <div class="portal-login-preview__name">
@@ -71,10 +64,9 @@
 
 <script>
 import SubSection from "@/components/commons/SubSection.vue";
-import MediaReferenceImage from "@/components/Media/MediaReferenceImage.vue";
-import { MEDIA_SCOPE } from "@/services/api/ApiMediaService";
+import PortalAppLogo from "@/components/Instance/Edit/PortalAppLogo.vue";
 import { brandingImage } from "@/utils/instanceBranding";
-import { contrastOf } from "@/utils/brandingContrast";
+import { contrastOf, STOREFRONT_COLORS } from "@/utils/brandingContrast";
 
 // The heights of the logo in the storefront's login card
 // (`branding.authLogoSize`). S is what every portal showed before.
@@ -87,11 +79,6 @@ const DEFAULT_SIZE = "sm";
 
 // The card is drawn at half its size, so light and dark fit the column.
 const PREVIEW_SCALE = 0.5;
-
-// The storefront's own colours while the instance sets none (its Theme-CSS
-// route), as in PortalColorPreview.
-const STOREFRONT_PRIMARY = "#FF8B00";
-const STOREFRONT_SECONDARY = "#1D9ECC";
 
 const MODES = Object.freeze([
   { value: "light", label: "Hell" },
@@ -107,7 +94,7 @@ const MODES = Object.freeze([
  */
 export default {
   name: "PortalAuthPages",
-  components: { SubSection, MediaReferenceImage },
+  components: { SubSection, PortalAppLogo },
   props: {
     branding: { type: Object, required: true },
     // The name of the catalog, as the form holds it.
@@ -117,7 +104,6 @@ export default {
     return {
       sizes: AUTH_LOGO_SIZES,
       modes: MODES,
-      mediaScope: MEDIA_SCOPE.INSTANCE,
     };
   },
   computed: {
@@ -141,26 +127,18 @@ export default {
     // The Background behind the card is the Hero's; the theme's colours stand
     // in for it.
     backdropStyle() {
-      const primary = this.colors.primary || STOREFRONT_PRIMARY;
-      const secondary = this.colors.secondary || STOREFRONT_SECONDARY;
+      const primary = this.colors.primary || STOREFRONT_COLORS.primary;
+      const secondary = this.colors.secondary || STOREFRONT_COLORS.secondary;
       return {
         background: `linear-gradient(135deg, ${primary}, ${secondary})`,
       };
     },
     buttonStyle() {
-      const primary = this.colors.primary || STOREFRONT_PRIMARY;
+      const primary = this.colors.primary || STOREFRONT_COLORS.primary;
       return { background: primary, color: contrastOf(primary) };
     },
   },
   methods: {
-    logoIn(mode) {
-      return mode === "dark" && this.branding.logoDark
-        ? this.branding.logoDark
-        : this.logo;
-    },
-    invertsLogo(mode) {
-      return mode === "dark" && !this.branding.logoDark;
-    },
     setSize(value) {
       this.$emit("patch", { authLogoSize: value });
     },
@@ -215,10 +193,6 @@ export default {
 
 .portal-login-preview__logo {
   width: 100%;
-}
-
-.portal-login-preview__logo--inverted {
-  filter: invert(1) hue-rotate(180deg);
 }
 
 .portal-login-preview__name {
