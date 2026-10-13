@@ -35,7 +35,7 @@ The admin UI's visual vocabulary lives in `src/scss/tokens.scss` as CSS custom p
 -   `src/scss/booking-page.scss` — captions, facts and rows of the booking pages; the booking editor's `BaseSection`
 -   `src/views/BookingPage.vue`, `src/components/Booking/BookingEdit.vue`, `BookingEditSummary.vue`
 -   `src/components/Bookable/BookableEdit.vue` (section nav, overview column, id chip) and `src/components/Bookable/Edit/*.vue`
--   `src/components/Navbar.vue`, `src/components/Auth/AuthPage.vue` and `src/views/BookingStatus.vue` (the plate behind the instance logo); `src/components/Booking/BookingTable.vue` (the booking number), `Bookable/BookableCard.vue` and `EventCard.vue` (prices; their labels and notes read `--scb-text-muted` / `--scb-text-caption`), `MultiStepper.vue` (step numbers), `Tenant/PendingApprovals.vue` (the tenant's name) for `--scb-text-link`
+-   `src/components/Navbar.vue`, `src/components/Auth/AuthPage.vue` and `src/views/BookingStatus.vue` (the plate behind the instance logo), `src/components/AppPanel.vue` (the same plate behind a provider's logo); `src/components/Booking/BookingTable.vue` (the booking number), `Bookable/BookableCard.vue` and `EventCard.vue` (prices; their labels and notes read `--scb-text-muted` / `--scb-text-caption`), `MultiStepper.vue` (step numbers), `Tenant/PendingApprovals.vue` (the tenant's name) for `--scb-text-link`
 -   `src/components/PDF/PdfBookingLayoutPicker.vue` and `PdfBookingLayoutSkeleton.vue` (the layout previews of the receipts: surfaces, rules, the total's line in `--scb-text`)
 
 Other surfaces (media library, dashboard, dialogs) still carry literals. Move them onto the tokens when a task touches them; do not sweep them in a drive-by.

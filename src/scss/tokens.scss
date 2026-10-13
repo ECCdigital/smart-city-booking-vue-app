@@ -27,8 +27,9 @@ $scb-bp-md: 1264px; // below: the booking page's panel narrows
   --scb-surface-tint: rgba(0, 0, 0, 0.03); // section header strip, item hover
   --scb-surface-tint-faint: rgba(0, 0, 0, 0.02); // expansion-panel header
   --scb-surface-raised: var(--v-accent-base, #f5f5f5); // status / price tiles
-  // Behind the instance logo (app bar, login pages, public booking status):
-  // none in the light theme, the one the logos are made for.
+  // Behind the instance logo (app bar, login pages, public booking status)
+  // and the providers' logos (AppPanel): none in the light theme, the one
+  // the logos are made for.
   --scb-logo-plate: transparent;
   --scb-logo-plate-padding: 0;
 
