@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brandingForSave } from "@/utils/instanceBranding";
+import { brandingForSave, defaultBranding } from "@/utils/instanceBranding";
 
 /**
  * The Hero Editor owns the Background (hero layout spec, "Stale-overwrite
@@ -38,5 +38,65 @@ describe("brandingForSave", () => {
   it("passes an empty branding through", () => {
     expect(brandingForSave(null)).toBeNull();
     expect(brandingForSave(undefined)).toBeUndefined();
+  });
+});
+
+describe("brandingForSave with the fields of map #510", () => {
+  it("sends the accent colour, set or empty", () => {
+    const set = brandingForSave({
+      active: true,
+      theme: {
+        colors: { primary: "#111111", secondary: "#222222", accent: "#f59e0b" },
+      },
+    });
+    const empty = brandingForSave({
+      active: true,
+      theme: {
+        colors: { primary: "#111111", secondary: "#222222", accent: "" },
+      },
+    });
+
+    expect(set.theme.colors.accent).toBe("#f59e0b");
+    expect(empty.theme.colors.accent).toBe("");
+  });
+
+  it("sends back every field the backend delivered, untouched", () => {
+    // The backend resets a field the payload leaves out to its default.
+    const delivered = {
+      active: true,
+      theme: {
+        colors: { primary: "#111111", secondary: "#222222", accent: "" },
+      },
+      header: "secondary",
+      authLogoSize: "lg",
+      logoDark: { source: "media", mediaId: "m2", url: null },
+      footerLogos: [
+        {
+          image: { source: "media", mediaId: "m3", url: null },
+          size: "md",
+          link: "",
+          imageDark: null,
+        },
+      ],
+      font: { source: "curated", id: "inter" },
+    };
+
+    const payload = brandingForSave(delivered);
+
+    expect(payload.header).toBe("secondary");
+    expect(payload.authLogoSize).toBe("lg");
+    expect(payload.logoDark).toEqual(delivered.logoDark);
+    expect(payload.footerLogos).toEqual(delivered.footerLogos);
+    expect(payload.font).toEqual(delivered.font);
+  });
+});
+
+describe("defaultBranding", () => {
+  it("reads a branding without accent colour as one with an empty accent", () => {
+    expect(defaultBranding().theme.colors).toEqual({
+      primary: "",
+      secondary: "",
+      accent: "",
+    });
   });
 });
