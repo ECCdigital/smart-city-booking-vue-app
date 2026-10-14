@@ -1524,6 +1524,21 @@
     }
   },
   "booking": {
+    "booked-via": {
+      "title": "Buchungsweg",
+      "unknown": "Unbekannt",
+      "values": {
+        "user": "Angemeldet",
+        "guest": "Gast",
+        "admin": "Admin"
+      },
+      "hint": {
+        "user": "Diese Buchung wurde erstellt von einem angemeldeten User.",
+        "guest": "Diese Buchung wurde erstellt von einem Gast.",
+        "admin": "Diese Buchung wurde erstellt von einem Admin.",
+        "unknown": "Es ist nicht bekannt, über welchen Weg diese Buchung erstellt wurde."
+      }
+    },
     "delete": {
       "success": {
         "title": "Erfolgreich gelöscht",
@@ -3371,8 +3386,8 @@
   },
   "filter": {
     "title": "Filter",
-    "none": "Keine Einschränkung",
-    "active": "1 Einschränkung aktiv | {n} Einschränkungen aktiv",
+    "none": "Keine Filter ausgewählt",
+    "active": "1 Filter aktiv | {n} Filter aktiv",
     "reset": "zurücksetzen",
     "resetAll": "Alle zurücksetzen",
     "empty": "Keine Einträge",

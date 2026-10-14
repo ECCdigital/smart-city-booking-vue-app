@@ -119,6 +119,37 @@ describe("BookingTable", () => {
     });
   });
 
+  describe("the Buchungsweg, a badge at the name", () => {
+    it("has no column of its own", () => {
+      const wrapper = mountTable([booking({ bookedVia: "guest" })]);
+
+      expect(
+        wrapper
+          .findAll("th")
+          .wrappers.some((th) => th.text().includes("Buchungsweg"))
+      ).toBe(false);
+    });
+
+    it.each([
+      ["guest", "Gast"],
+      ["admin", "Admin"],
+    ])("marks a booking made via %s with %s", (bookedVia, label) => {
+      const wrapper = mountTable([booking({ bookedVia })]);
+      const badge = wrapper.find(".booked-via-badge");
+
+      expect(badge.text()).toBe(label);
+    });
+
+    it.each([["user"], [undefined]])(
+      "leaves a booking made via %s unmarked",
+      (bookedVia) => {
+        const wrapper = mountTable([booking({ bookedVia })]);
+
+        expect(wrapper.find(".booked-via-badge").exists()).toBe(false);
+      }
+    );
+  });
+
   describe("the booking number", () => {
     // A dark primary colour (VUE_APP_PRIMARY_COLOR_DARK) all but vanished on
     // the dark table (ECCdigital/tickets#276). The link token lightens it
