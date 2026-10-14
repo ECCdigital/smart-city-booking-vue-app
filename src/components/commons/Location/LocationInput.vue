@@ -27,6 +27,7 @@
       <v-card
         v-if="listShown"
         class="location-input__list"
+        :style="{ zIndex: listZIndex }"
         elevation="8"
         role="listbox"
       >
@@ -275,6 +276,7 @@ import {
   refusalOf,
   toStored,
 } from "@/utils/locationLogic";
+import { SAVE_BAR_Z_INDEX } from "@/utilities/overlay-layers";
 
 // The search waits this long after the last keystroke, and asks from this
 // many characters on (#372, user story 2).
@@ -285,6 +287,10 @@ const SEARCH_MAX_HITS = 5;
 const ADDRESS_PAUSE_MS = 1200;
 // Only if `geo/start` cannot be read: the map needs a view to be usable.
 const GERMANY = Object.freeze({ lat: 51.2, lon: 9.4, zoom: 5 });
+// The hits lie above the map, whose layers stay in its own stacking context,
+// and above the bookable's fixed SaveBar, but below the menu on the phone
+// (Vuetify's navigation drawer, 6) and every dialog (#553).
+const LIST_Z_INDEX = SAVE_BAR_Z_INDEX + 1;
 
 const FIELDS = Object.freeze([
   { name: "street", label: "location.fields.street" },
@@ -355,6 +361,7 @@ export default {
       searchDone: false,
       searchNumber: 0,
       listOpen: false,
+      listZIndex: LIST_Z_INDEX,
       active: 0,
       searchUnavailable: false,
       mapUnavailable: false,
@@ -699,7 +706,6 @@ export default {
   left: 0;
   right: 0;
   top: calc(100% + 2px);
-  z-index: 1200;
   max-height: 320px;
   overflow-y: auto;
 }
@@ -744,6 +750,9 @@ export default {
 }
 .location-input__map {
   position: relative;
+  /* Leaflet's layers carry z-indexes far above Vuetify's dialogs: they stay
+     inside the map, below every overlay of the app. */
+  isolation: isolate;
   overflow: hidden;
   border: 1px solid var(--scb-surface-border);
   border-radius: var(--scb-radius-control);
