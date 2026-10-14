@@ -31,15 +31,25 @@
           @update:review="setReview"
         />
       </div>
-      <v-btn
-        v-if="formHasChanged"
-        class="mt-10"
-        color="primary"
-        elevation="2"
-        rounded
-        @click="submitForm"
-        >Änderungen übernehmen</v-btn
-      >
+      <template v-if="formHasChanged">
+        <v-btn
+          class="mt-10"
+          color="primary"
+          elevation="2"
+          rounded
+          :disabled="!participationLinkValid"
+          data-test="event-save"
+          @click="submitForm"
+          >Änderungen übernehmen</v-btn
+        >
+        <p
+          v-if="!participationLinkValid"
+          class="event-hint text-caption error--text mt-2 mb-0"
+          data-test="participation-link-hint"
+        >
+          {{ $t("event.participation-link.missing") }}
+        </p>
+      </template>
     </template>
   </FormLayout>
 </template>
@@ -56,6 +66,7 @@ import ToastService from "@/services/ToastService";
 import OfferReviewPanel from "@/components/Supervision/OfferReviewPanel.vue";
 import { publicationWishHintKey } from "@/utils/offerReview";
 import { OFFER_TYPES } from "@/utils/supervision";
+import { hasValidParticipationLink } from "@/utils/eventParticipationLink";
 
 setInteractionMode("eager");
 
@@ -123,6 +134,9 @@ export default {
     }),
     publicationWishHint() {
       return publicationWishHintKey(this.supervisionLevel);
+    },
+    participationLinkValid() {
+      return hasValidParticipationLink(this.form);
     },
     name() {
       return this.data;
@@ -240,8 +254,9 @@ export default {
 </script>
 
 <style scoped>
-/* The sidebar column sizes to its content; the review texts must not widen it. */
-.event-review {
+/* The sidebar column sizes to its content; its texts must not widen it. */
+.event-review,
+.event-hint {
   max-width: 280px;
 }
 </style>

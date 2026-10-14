@@ -17,7 +17,8 @@
               elevation="2"
               rounded
               @click="submitForm"
-              :disabled="invalid"
+              :disabled="invalid || !participationLinkValid"
+              data-test="event-submit"
               >Absenden</v-btn
             >
           </template>
@@ -58,11 +59,20 @@
 <script>
 import ApiEventService from "@/services/api/ApiEventService";
 import ToastService from "@/services/ToastService";
-import { mapActions } from "vuex";
+import { mapActions, mapGetters } from "vuex";
+import { hasValidParticipationLink } from "@/utils/eventParticipationLink";
 
 export default {
   props: {
     invalid: Boolean,
+  },
+  computed: {
+    ...mapGetters({ form: "events/form" }),
+    // The link is checked on its own step; an existing event can reach
+    // the last step without passing it.
+    participationLinkValid() {
+      return hasValidParticipationLink(this.form);
+    },
   },
   methods: {
     ...mapActions({
