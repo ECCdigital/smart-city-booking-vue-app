@@ -522,6 +522,7 @@
 
           <BookingCustomFieldsSection
             v-if="editableCustomFields.length"
+            ref="customFields"
             :fields="editableCustomFields"
             :values="selectedBooking.customFieldValues || []"
             @update:values="onCustomFieldUpdate"
@@ -1782,18 +1783,55 @@ export default {
     finishSave() {
       this.$emit("saved");
     },
-    async submitChanges() {
-      this.createError = null;
+    /**
+     * Marks every field still missing, brings the first into view and names
+     * the gap as a toast. False while one is missing. A create checks the
+     * whole form, an update the custom fields only, as the backend does.
+     */
+    async validateForm() {
+      const inputs = this.isCreateMode
+        ? this.$refs.form.inputs
+        : this.customFieldInputs();
+      const formValid = inputs
+        .map((input) => input.validate(true))
+        .every(Boolean);
       const missingFields = validateRequiredCustomFields(
         this.editableCustomFields,
         this.selectedBooking.customFieldValues || []
       );
-      if (missingFields.length) {
+      if (formValid && !missingFields.length) return true;
+
+      this.$nextTick(() => {
+        const firstInvalid = inputs.find((input) => input.hasError);
+        firstInvalid?.$el.scrollIntoView?.({
+          behavior: "smooth",
+          block: "center",
+        });
+      });
+      await this.addToast(
+        ToastService.createToast("booking.validation.required", "error")
+      );
+      if (this.bookableItems.length === 0) {
         await this.addToast(
-          ToastService.createToast("booking.validation.required", "error")
+          ToastService.createToast(
+            "booking.validation.bookableItems.min_items",
+            "error"
+          )
         );
-        return;
       }
+      return false;
+    },
+    /** The form's inputs within the section „Zusatzfelder“. */
+    customFieldInputs() {
+      const section = this.$refs.customFields?.$el;
+      if (!section) return [];
+      return this.$refs.form.inputs.filter((input) =>
+        section.contains(input.$el)
+      );
+    },
+    async submitChanges() {
+      this.createError = null;
+      if (!(await this.validateForm())) return;
 
       if (this.bookingPeriodInvalid) {
         await this.addToast(
@@ -1807,22 +1845,6 @@ export default {
 
       if (!this.selectedBooking.id) {
         this.inProgress = true;
-        if (!this.$refs.form.validate()) {
-          await this.addToast(
-            ToastService.createToast("booking.validation.required", "error")
-          );
-          if (this.bookableItems.length === 0) {
-            await this.addToast(
-              ToastService.createToast(
-                "booking.validation.bookableItems.min_items",
-                "error"
-              )
-            );
-          }
-          this.inProgress = false;
-          return;
-        }
-
         // The create POST carries the chosen initial state as `status` and
         // no flag (spec E10).
         await ApiBookingService.createBooking(

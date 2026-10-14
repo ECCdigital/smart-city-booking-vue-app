@@ -362,6 +362,67 @@ describe("BookingEdit", () => {
   });
 
   /**
+   * A save with a required field still missing marks that field, besides
+   * the toast, and sends nothing. A create checks the whole form, an update
+   * the custom fields only.
+   */
+  describe("a required field still missing", () => {
+    const RATING = {
+      id: "rating",
+      caption: "Bewerten Sie uns",
+      inputType: "string",
+      usageOptions: { context: "checkout", requiredInCheckout: true },
+    };
+
+    function withRating(base) {
+      const [item] = base.bookableItems;
+      return {
+        ...base,
+        bookableItems: [
+          {
+            ...item,
+            _bookableUsed: { ...item._bookableUsed, customFields: [RATING] },
+          },
+        ],
+        customFieldDefinitions: [RATING],
+        customFieldValues: [],
+      };
+    }
+
+    function invalidLabels(wrapper) {
+      return wrapper
+        .findAll(".v-input.error--text label")
+        .wrappers.map((label) => label.text().replace(/\s+/g, " "));
+    }
+
+    it("marks a missing custom field on a create", async () => {
+      const { wrapper, store } = await mountEdit({
+        booking: withRating(draft()),
+      });
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(invalidLabels(wrapper)).toEqual(["Bewerten Sie uns *"]);
+      expect(ApiBookingService.createBooking).not.toHaveBeenCalled();
+      expect(lastToast(store)).toMatchObject({
+        title: "Fehlende Angaben",
+        type: "error",
+      });
+    });
+
+    it("marks the missing custom field on an update", async () => {
+      const { wrapper } = await mountEdit({ booking: withRating(booking()) });
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(invalidLabels(wrapper)).toEqual(["Bewerten Sie uns *"]);
+      expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
    * The end lies after the begin (ECCdigital/tickets#493). The form names a
    * backwards period before the save; the backend refuses it as well.
    */
