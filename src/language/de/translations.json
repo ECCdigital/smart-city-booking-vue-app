@@ -1211,7 +1211,7 @@
   "tenant": {
     "description": {
       "label": "Kurzbeschreibung (optional)",
-      "hint": "Erscheint auf der Startseite der Plattform im Bereich „Angebot nach Anbietern“.",
+      "hint": "Beschreiben Sie den Mandanten für Buchende. Die Beschreibung bespielsweise erscheint im Katalog oder auf eingebundenen Webseiten.",
       "too-long": "Höchstens {max} Zeichen."
     },
     "home": {
