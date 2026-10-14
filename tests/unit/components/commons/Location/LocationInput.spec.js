@@ -259,6 +259,20 @@ describe("LocationInput - the search", () => {
     await type(wrapper, "location-city", "Guben");
     expect(lastInput(wrapper).address.city).toBe("Guben");
   });
+
+  // ECCdigital/tickets#553: the bookable's fixed SaveBar lies at 4, the
+  // menu on the phone (Vuetify's navigation drawer) at 6.
+  it("lays the hits above the SaveBar and below the menu on the phone", async () => {
+    const wrapper = mountInput();
+
+    await search(wrapper, "Gasstraße");
+
+    const zIndex = Number(
+      wrapper.find("[role='listbox']").element.style.zIndex
+    );
+    expect(zIndex).toBeGreaterThan(4);
+    expect(zIndex).toBeLessThan(6);
+  });
 });
 
 describe("LocationInput - map and point", () => {
