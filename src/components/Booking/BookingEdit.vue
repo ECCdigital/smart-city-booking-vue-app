@@ -412,6 +412,7 @@
                       dense
                       readonly
                       hide-details
+                      :error="bookingPeriodInvalid"
                       v-bind="attrs"
                       v-on="on"
                     ></v-text-field>
@@ -454,6 +455,7 @@
                       dense
                       readonly
                       hide-details
+                      :error="bookingPeriodInvalid"
                       v-bind="attrs"
                       v-on="on"
                     ></v-text-field>
@@ -479,6 +481,12 @@
                 </v-dialog>
               </v-col>
             </v-row>
+            <div
+              v-if="bookingPeriodInvalid"
+              class="booking-period-error error--text caption mt-1"
+            >
+              {{ $t("booking.validation.timeEnd.greater_than.message") }}
+            </div>
 
             <template v-if="showOccupancyCalendar">
               <div class="d-flex align-center justify-space-between mt-4 mb-1">
@@ -514,6 +522,7 @@
 
           <BookingCustomFieldsSection
             v-if="editableCustomFields.length"
+            ref="customFields"
             :fields="editableCustomFields"
             :values="selectedBooking.customFieldValues || []"
             @update:values="onCustomFieldUpdate"
@@ -1176,6 +1185,11 @@ export default {
         this.hasUnsavedChanges
       );
     },
+    /** The end lies at or before the begin; the backend refuses that too. */
+    bookingPeriodInvalid() {
+      const { timeBegin, timeEnd } = this.selectedBooking;
+      return !!timeBegin && !!timeEnd && timeEnd <= timeBegin;
+    },
     hasUnsavedChanges() {
       if (!this.originalSnapshot || !this.editableBooking) return false;
       return this.createSnapshot() !== this.originalSnapshot;
@@ -1512,6 +1526,15 @@ export default {
         return;
       }
 
+      if (this.bookingPeriodInvalid) {
+        if (!isCurrent()) return;
+        this.$set(this.itemValidations, bookableId, {
+          status: "idle",
+          message: "Zeitraum ungültig",
+        });
+        return;
+      }
+
       if (!isCurrent()) return;
       this.$set(this.itemValidations, bookableId, {
         status: "loading",
@@ -1760,37 +1783,68 @@ export default {
     finishSave() {
       this.$emit("saved");
     },
-    async submitChanges() {
-      this.createError = null;
+    /**
+     * Marks every field still missing, brings the first into view and names
+     * the gap as a toast. False while one is missing. A create checks the
+     * whole form, an update the custom fields only, as the backend does.
+     */
+    async validateForm() {
+      const inputs = this.isCreateMode
+        ? this.$refs.form.inputs
+        : this.customFieldInputs();
+      const formValid = inputs
+        .map((input) => input.validate(true))
+        .every(Boolean);
       const missingFields = validateRequiredCustomFields(
         this.editableCustomFields,
         this.selectedBooking.customFieldValues || []
       );
-      if (missingFields.length) {
+      if (formValid && !missingFields.length) return true;
+
+      this.$nextTick(() => {
+        const firstInvalid = inputs.find((input) => input.hasError);
+        firstInvalid?.$el.scrollIntoView?.({
+          behavior: "smooth",
+          block: "center",
+        });
+      });
+      await this.addToast(
+        ToastService.createToast("booking.validation.required", "error")
+      );
+      if (this.bookableItems.length === 0) {
         await this.addToast(
-          ToastService.createToast("booking.validation.required", "error")
+          ToastService.createToast(
+            "booking.validation.bookableItems.min_items",
+            "error"
+          )
+        );
+      }
+      return false;
+    },
+    /** The form's inputs within the section „Zusatzfelder“. */
+    customFieldInputs() {
+      const section = this.$refs.customFields?.$el;
+      if (!section) return [];
+      return this.$refs.form.inputs.filter((input) =>
+        section.contains(input.$el)
+      );
+    },
+    async submitChanges() {
+      this.createError = null;
+      if (!(await this.validateForm())) return;
+
+      if (this.bookingPeriodInvalid) {
+        await this.addToast(
+          ToastService.createToast(
+            "booking.validation.timeEnd.greater_than",
+            "error"
+          )
         );
         return;
       }
 
       if (!this.selectedBooking.id) {
         this.inProgress = true;
-        if (!this.$refs.form.validate()) {
-          await this.addToast(
-            ToastService.createToast("booking.validation.required", "error")
-          );
-          if (this.bookableItems.length === 0) {
-            await this.addToast(
-              ToastService.createToast(
-                "booking.validation.bookableItems.min_items",
-                "error"
-              )
-            );
-          }
-          this.inProgress = false;
-          return;
-        }
-
         // The create POST carries the chosen initial state as `status` and
         // no flag (spec E10).
         await ApiBookingService.createBooking(

@@ -14,6 +14,9 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Added
 
+-   Booking form: a period that ends at or before its begin is named below „Buchungszeitraum“ and not saved (ECCdigital/tickets#493); a toast says „Ungültige Endzeit“, and no availability is asked for it. The backend refuses it as before
+-   A required custom field in the booking form and its preview is marked with a red asterisk, as E-Mail and Zahlungsanbieter are
+-   Saving the booking form with a required field still missing marks that field and scrolls to the first one, besides the toast „Fehlende Angaben“. A create checks the whole form, an update the custom fields only, as before
 -   „Nutzer einladen“ on „Nächste Schritte“ opens the members page with its invite dialog open (ECCdigital/tickets#369, `/tenant/members?invite=1`); a reload does not open it again
 -   Guided flow of a bookable from 1904px (Vuetify `xl`, ECCdigital/tickets#333): a sticky list of the six steps stands left in place of the dots, with the same state, lock and jump, and the flow reads in three columns — step list, step, „Übersicht“
 -   The guided flow's „Übersicht“ shows Verfügbarkeit, Preis and Berechtigung too, in the steps' words (ECCdigital/tickets#332); „extern gesteuert“ where a provider handles availability or prices
