@@ -452,7 +452,7 @@ export default {
         // says that it failed.
         if (!this.instance.ownerUserIds?.length) {
           await this.addToast({
-            message: "Fehler beim Aktualisieren der Instanz",
+            message: "Instanz muss mindestens einen Admin haben",
             type: "error",
           });
         }
