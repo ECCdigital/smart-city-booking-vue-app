@@ -1209,6 +1209,11 @@
     }
   },
   "tenant": {
+    "description": {
+      "label": "Kurzbeschreibung (optional)",
+      "hint": "Beschreiben Sie den Mandanten für Buchende. Die Beschreibung bespielsweise erscheint im Katalog oder auf eingebundenen Webseiten.",
+      "too-long": "Höchstens {max} Zeichen."
+    },
     "home": {
       "section": "Meine Mandanten",
       "count": "Kein Mandant | Ein Mandant | {n} Mandanten",
