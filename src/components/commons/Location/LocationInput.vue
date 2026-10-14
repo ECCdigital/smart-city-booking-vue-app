@@ -699,7 +699,9 @@ export default {
   left: 0;
   right: 0;
   top: calc(100% + 2px);
-  z-index: 1200;
+  /* Above the map, whose layers stay in its own stacking context, and below
+     Vuetify's menus and dialogs. */
+  z-index: 1;
   max-height: 320px;
   overflow-y: auto;
 }
@@ -744,6 +746,9 @@ export default {
 }
 .location-input__map {
   position: relative;
+  /* Leaflet's layers reach z-index 1000, Vuetify's dialogs 202: they stay
+     inside the map, below every overlay of the app. */
+  isolation: isolate;
   overflow: hidden;
   border: 1px solid var(--scb-surface-border);
   border-radius: var(--scb-radius-control);
