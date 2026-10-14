@@ -133,7 +133,8 @@
     "bad-request-codes": {
       "invalid_status_change": "Dieser Statuswechsel ist nicht möglich.",
       "invalid_status": "In diesem Zustand kann keine Buchung angelegt werden.",
-      "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum."
+      "missing_payment_details": "Eine als bezahlt angelegte Buchung braucht Zahlungsart und Zahldatum.",
+      "instance_owners_required": "Die Instanz braucht mindestens einen Admin. Fügen Sie im Tab „Admin“ einen hinzu."
     },
     "bad-gateway-codes": {
       "bad_gateway": "Ein angebundener Dienst hat die Anfrage abgelehnt. Bitte später erneut versuchen.",
@@ -974,6 +975,9 @@
   },
   "instance": {
     "edit": {
+      "owners": {
+        "missing": "Die Instanz braucht mindestens einen Admin. Fügen Sie einen Admin hinzu."
+      },
       "tenants": {
         "initialLevel": {
           "title": "Startstufe selbst angelegter Mandanten",

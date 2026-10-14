@@ -96,6 +96,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Fixed
 
+-   Removing the last admin of the instance (ECCdigital/tickets#295): the tab „Admin“ names the missing admin and keeps the save back; the backend's `400 instance_owners_required` toasts „Die Instanz braucht mindestens einen Admin. …“ instead of the generic error
 -   Direct mode ends a session whose token renewal failed as BFF mode does, for local accounts and Keycloak (ECCdigital/tickets#110): on a public path such as the checkout it only drops the session and carries on anonymously, where a bookable behind a login leads to the checkout's login step; an internal page goes to `/login?next=<page>` and returns there after signing in. Before, both went to `/login` without a way back. Requests that waited on the failed renewal are rejected instead of left pending
 -   Checkout of an offer that is no longer reachable (ECCdigital/tickets#262): the backend's refusal `checkout.bookable_not_found` reads „Dieses Angebot ist nicht mehr verfügbar und kann nicht gebucht werden.“, at the item and in the toast „Angebot nicht mehr verfügbar“ of the checkout, instead of the generic text for unexpected errors
 -   Registration: the page „Herzlich willkommen!“ and the toast say the mail went out „falls die Adresse noch nicht bestätigt ist“ instead of „noch nicht registriert“; the backend mails a registered, unverified address too (ECCdigital/tickets#259)

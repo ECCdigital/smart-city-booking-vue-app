@@ -147,8 +147,9 @@ async function mountView(query = {}) {
   ApiTenantService.getTenants.mockResolvedValue({ data: [] });
 
   const replace = vi.fn();
+  const addToast = vi.fn();
   const store = new Vuex.Store({
-    modules: { toasts: { namespaced: true, actions: { add: vi.fn() } } },
+    modules: { toasts: { namespaced: true, actions: { add: addToast } } },
   });
   const wrapper = mountComponent(Instances, {
     store,
@@ -159,7 +160,7 @@ async function mountView(query = {}) {
   });
   await flushPromises();
   await wrapper.vm.$nextTick();
-  return { wrapper, replace };
+  return { wrapper, replace, addToast };
 }
 
 const tabLabels = (wrapper) =>
@@ -233,13 +234,40 @@ describe("Instances save in „Single Sign-On“", () => {
     expect(savedHint(wrapper).exists()).toBe(false);
   });
 
+  it("names the missing admin instead of the general error when the backend refuses the owners", async () => {
+    ApiInstanceService.updateInstance.mockRejectedValue({
+      response: {
+        status: 400,
+        data: {
+          error: "BadRequestError",
+          code: "instance_owners_required",
+          statusCode: 400,
+          params: { field: "ownerUserIds" },
+        },
+      },
+    });
+    const { wrapper, addToast } = await mountView({ tab: "sso" });
+
+    await changeRealmAndSave(wrapper);
+
+    expect(addToast).toHaveBeenLastCalledWith(expect.anything(), {
+      message:
+        "Die Instanz braucht mindestens einen Admin. Fügen Sie im Tab „Admin“ einen hinzu.",
+      type: "error",
+    });
+  });
+
   it("says nothing of the kind when saving fails", async () => {
     ApiInstanceService.updateInstance.mockRejectedValue(new Error("down"));
-    const { wrapper } = await mountView({ tab: "sso" });
+    const { wrapper, addToast } = await mountView({ tab: "sso" });
 
     await changeRealmAndSave(wrapper);
 
     expect(ApiInstanceService.updateInstance).toHaveBeenCalled();
     expect(savedHint(wrapper).exists()).toBe(false);
+    expect(addToast).toHaveBeenLastCalledWith(expect.anything(), {
+      message: "Fehler beim Aktualisieren der Instanz",
+      type: "error",
+    });
   });
 });
