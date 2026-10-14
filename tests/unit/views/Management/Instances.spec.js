@@ -136,10 +136,11 @@ describe("Instances start level", () => {
   });
 });
 
-async function mountView(query = {}) {
+async function mountView(query = {}, instance = {}) {
   ApiInstanceService.getInstance.mockResolvedValue({
     id: "i1",
     applications: [],
+    ...instance,
   });
   ApiCatalogService.getCatalog.mockResolvedValue({ data: {} });
   ApiUsersService.getUsers.mockResolvedValue([]);
@@ -265,6 +266,29 @@ describe("Instances save in „Single Sign-On“", () => {
 
     expect(ApiInstanceService.updateInstance).toHaveBeenCalled();
     expect(savedHint(wrapper).exists()).toBe(false);
+    expect(addToast).toHaveBeenLastCalledWith(expect.anything(), {
+      message: "Fehler beim Aktualisieren der Instanz",
+      type: "error",
+    });
+  });
+});
+
+describe("Instances save in „Admin“", () => {
+  it("keeps the save back without an admin and toasts the save error beside the banner", async () => {
+    ApiInstanceService.updateInstance.mockClear();
+    const { wrapper, addToast } = await mountView(
+      { tab: "owners" },
+      { ownerUserIds: ["admin"] }
+    );
+
+    await wrapper.find("[data-test='remove-owner']").trigger("click");
+    await wrapper.vm.$nextTick();
+    await wrapper.find(".save-bar-btn--primary").trigger("click");
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    expect(ApiInstanceService.updateInstance).not.toHaveBeenCalled();
+    expect(wrapper.find("[data-test='owners-missing']").exists()).toBe(true);
     expect(addToast).toHaveBeenLastCalledWith(expect.anything(), {
       message: "Fehler beim Aktualisieren der Instanz",
       type: "error",
