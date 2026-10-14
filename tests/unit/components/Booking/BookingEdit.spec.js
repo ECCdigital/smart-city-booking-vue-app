@@ -362,6 +362,71 @@ describe("BookingEdit", () => {
   });
 
   /**
+   * The end lies after the begin (ECCdigital/tickets#493). The form names a
+   * backwards period before the save; the backend refuses it as well.
+   */
+  describe("a period that ends before it begins", () => {
+    const BEGIN = 1_700_000_000_000;
+    const ENDS_AFTER_BEGIN = "Die Endzeit muss nach der Startzeit liegen.";
+
+    function periodError(wrapper) {
+      return wrapper.find(".booking-period-error");
+    }
+
+    it.each([
+      ["before the begin", BEGIN - 3_600_000],
+      ["at the begin", BEGIN],
+    ])(
+      "is named at the period and not created when it ends %s",
+      async (_, timeEnd) => {
+        const { wrapper, store } = await mountEdit({
+          booking: { ...draft(), timeBegin: BEGIN, timeEnd },
+        });
+        saveAnswers({ data: {} });
+
+        expect(periodError(wrapper).text()).toBe(ENDS_AFTER_BEGIN);
+
+        await submit(wrapper);
+
+        expect(ApiBookingService.createBooking).not.toHaveBeenCalled();
+        expect(lastToast(store)).toMatchObject({
+          title: "Ungültige Endzeit",
+          message: ENDS_AFTER_BEGIN,
+          type: "error",
+        });
+      }
+    );
+
+    it("is not saved on an existing booking", async () => {
+      const { wrapper } = await mountEdit({
+        booking: booking({ timeBegin: BEGIN, timeEnd: BEGIN - 3_600_000 }),
+      });
+      saveAnswers({ data: {} });
+
+      await submit(wrapper);
+
+      expect(ApiBookingService.updateBooking).not.toHaveBeenCalled();
+    });
+
+    it("asks for no availability", async () => {
+      const { wrapper } = await mountEdit({
+        booking: { ...draft(), timeBegin: BEGIN, timeEnd: BEGIN - 3_600_000 },
+      });
+
+      await wrapper.vm.validateAllBookableItems();
+      await flushPromises();
+
+      expect(ApiCheckoutService.validateCheckoutItem).not.toHaveBeenCalled();
+    });
+
+    it("names nothing when the end lies after the begin", async () => {
+      const { wrapper } = await mountEdit({ booking: draft() });
+
+      expect(periodError(wrapper).exists()).toBe(false);
+    });
+  });
+
+  /**
    * The staff books backwards (ECCdigital/tickets#188). The form validates
    * over the self-booking's validation, which refuses a begin in the past;
    * for the staff that is no conflict. The backend names a conflict first.

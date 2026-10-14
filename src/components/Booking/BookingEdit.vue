@@ -412,6 +412,7 @@
                       dense
                       readonly
                       hide-details
+                      :error="bookingPeriodInvalid"
                       v-bind="attrs"
                       v-on="on"
                     ></v-text-field>
@@ -454,6 +455,7 @@
                       dense
                       readonly
                       hide-details
+                      :error="bookingPeriodInvalid"
                       v-bind="attrs"
                       v-on="on"
                     ></v-text-field>
@@ -479,6 +481,12 @@
                 </v-dialog>
               </v-col>
             </v-row>
+            <div
+              v-if="bookingPeriodInvalid"
+              class="booking-period-error error--text caption mt-1"
+            >
+              {{ $t("booking.validation.timeEnd.greater_than.message") }}
+            </div>
 
             <template v-if="showOccupancyCalendar">
               <div class="d-flex align-center justify-space-between mt-4 mb-1">
@@ -1176,6 +1184,11 @@ export default {
         this.hasUnsavedChanges
       );
     },
+    /** The end lies at or before the begin; the backend refuses that too. */
+    bookingPeriodInvalid() {
+      const { timeBegin, timeEnd } = this.selectedBooking;
+      return !!timeBegin && !!timeEnd && timeEnd <= timeBegin;
+    },
     hasUnsavedChanges() {
       if (!this.originalSnapshot || !this.editableBooking) return false;
       return this.createSnapshot() !== this.originalSnapshot;
@@ -1512,6 +1525,15 @@ export default {
         return;
       }
 
+      if (this.bookingPeriodInvalid) {
+        if (!isCurrent()) return;
+        this.$set(this.itemValidations, bookableId, {
+          status: "idle",
+          message: "Zeitraum ungültig",
+        });
+        return;
+      }
+
       if (!isCurrent()) return;
       this.$set(this.itemValidations, bookableId, {
         status: "loading",
@@ -1769,6 +1791,16 @@ export default {
       if (missingFields.length) {
         await this.addToast(
           ToastService.createToast("booking.validation.required", "error")
+        );
+        return;
+      }
+
+      if (this.bookingPeriodInvalid) {
+        await this.addToast(
+          ToastService.createToast(
+            "booking.validation.timeEnd.greater_than",
+            "error"
+          )
         );
         return;
       }
