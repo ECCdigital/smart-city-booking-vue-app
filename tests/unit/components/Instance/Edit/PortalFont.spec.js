@@ -35,18 +35,10 @@ vi.mock("@/services/permissions/MediaPermissionService", () => ({
   default: { allowCreate: vi.fn(() => true) },
 }));
 
-// Unpacking a woff2 is the reader's own spec; here it answers what a file
-// would.
-vi.mock("@/utils/instanceFonts", async (importOriginal) => ({
-  ...(await importOriginal()),
-  fontDefaultWeight: vi.fn(),
-}));
-
 import InstanceEditCatalog from "@/components/Instance/Edit/InstanceEditCatalog.vue";
 import ApiCatalogService from "@/services/api/ApiCatalogService";
 import ApiMediaService from "@/services/api/ApiMediaService";
 import MediaResolveService from "@/services/MediaResolveService";
-import { fontDefaultWeight } from "@/utils/instanceFonts";
 
 const KB = 1024;
 
@@ -58,6 +50,8 @@ function fontMedium(id, overrides = {}) {
     kind: "font",
     mimeType: "font/woff2",
     size: 48 * KB,
+    // A static font: the backend found no weight axis.
+    defaultWeight: null,
     visibility: "public",
     tags: [],
     ...overrides,
@@ -145,7 +139,6 @@ beforeEach(() => {
   MediaResolveService.resolve.mockImplementation((scope, id) =>
     Promise.resolve(fontMedium(id))
   );
-  fontDefaultWeight.mockResolvedValue(null);
 });
 
 describe("PortalFont tiles", () => {
@@ -319,32 +312,30 @@ describe("PortalFont hints on an own font", () => {
 
   it("stays quiet below 100 KB and for a variable font that starts at 400", async () => {
     MediaResolveService.resolve.mockResolvedValue(
-      fontMedium("f2", { size: 99 * KB })
+      fontMedium("f2", { size: 99 * KB, defaultWeight: 400 })
     );
-    fontDefaultWeight.mockResolvedValue(400);
     const wrapper = mountTab(ownFont("f2", STORED_LICENSE));
     await settle(wrapper);
 
     expect(hints(wrapper)).toEqual([]);
   });
 
-  it("warns when the default of a variable font is not the weight 400, read from its file", async () => {
-    fontDefaultWeight.mockResolvedValue(200);
+  it("warns when the default of a variable font is not the weight 400, as the backend read it", async () => {
+    MediaResolveService.resolve.mockResolvedValue(
+      fontMedium("f2", { defaultWeight: 200 })
+    );
     const wrapper = mountTab(ownFont("f2", STORED_LICENSE));
     await settle(wrapper);
 
-    expect(ApiMediaService.getMediaFileBlob).toHaveBeenCalledWith(
-      "instance",
-      "f2"
-    );
-    expect(fontDefaultWeight).toHaveBeenCalledWith(expect.any(ArrayBuffer));
     expect(hints(wrapper)).toHaveLength(1);
     expect(hints(wrapper)[0]).toContain("Gewicht 200");
     expect(hints(wrapper)[0]).toContain("Ersatzschrift");
   });
 
   it("shows no hint while another tile is chosen", async () => {
-    fontDefaultWeight.mockResolvedValue(200);
+    MediaResolveService.resolve.mockResolvedValue(
+      fontMedium("f2", { defaultWeight: 200 })
+    );
     const wrapper = mountTab(ownFont("f2", STORED_LICENSE));
     await settle(wrapper);
 

@@ -143,7 +143,6 @@ import {
   CURATED_FONTS,
   FONT_SIZE_HINT_BYTES,
   FONT_SOURCE,
-  fontDefaultWeight,
   fontLicenseConfirmed,
   SYSTEM_FONT_STACK,
   previewFontFamily,
@@ -215,12 +214,9 @@ export default {
       // The own font last chosen, licence included: the tile keeps it while
       // another tile is chosen, and choosing it again brings it back as it was.
       ownFont: null,
-      // The medium behind `ownFont` and what its file tells.
+      // The medium behind `ownFont` and the face of its file.
       ownMedia: null,
       ownFamily: SYSTEM_FONT_STACK,
-      // Null while unknown: a static font, or a browser that cannot unpack
-      // the woff2 (`fontDefaultWeight`).
-      ownDefaultWeight: null,
       licenseText: LICENSE_TEXT,
       licenseRequired: LICENSE_REQUIRED,
       licenseError: false,
@@ -256,7 +252,8 @@ export default {
       if (this.ownMedia?.size >= FONT_SIZE_HINT_BYTES) {
         hints.push(sizeHint(this.ownMedia.size));
       }
-      const weight = this.ownDefaultWeight;
+      // Read by the backend at upload (#524), null for a static font.
+      const weight = this.ownMedia?.defaultWeight ?? null;
       if (weight !== null && weight !== DEFAULT_WEIGHT) {
         hints.push(weightHint(weight));
       }
@@ -370,7 +367,6 @@ export default {
      * tile, the face for its preview.
      */
     async loadOwnMedia(mediaId) {
-      this.ownDefaultWeight = null;
       if (!mediaId) {
         this.ownMedia = null;
         this.ownFamily = SYSTEM_FONT_STACK;
@@ -390,14 +386,7 @@ export default {
         );
         const bytes = await response.data.arrayBuffer();
         if (mediaId !== this.ownMediaId) return;
-        // The face gets a copy: the reader below still needs the bytes.
-        this.ownFamily = previewFontFamily(
-          `scb-font-media-${mediaId}`,
-          bytes.slice(0)
-        );
-        const weight = await fontDefaultWeight(bytes);
-        if (mediaId !== this.ownMediaId) return;
-        this.ownDefaultWeight = weight;
+        this.ownFamily = previewFontFamily(`scb-font-media-${mediaId}`, bytes);
       } catch (error) {
         // Without its file the tile shows the system font; the name stays.
         console.error(error);
