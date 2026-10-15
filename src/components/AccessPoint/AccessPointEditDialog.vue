@@ -38,6 +38,7 @@ const PREFILL_ORIGIN = "nuki";
  * keeps no device table of its own.
  */
 const NUKI_PROVIDER = "nuki";
+const SALTO_PROVIDER = "salto-ks";
 const AUTO_OPEN_ACTION = "auto";
 const OPEN_ACTIONS = [
   AUTO_OPEN_ACTION,
@@ -215,8 +216,16 @@ export default {
     // The PIN-at-the-lock modes stay listed while they are unfinished, so the
     // dialog shows what is coming - but they cannot be chosen. An access point
     // already stored on one keeps it; only picking it anew is barred.
+    //
+    // A Salto door opens remotely or not at all, for good: the backend
+    // refuses `authorization` and `both` at every Salto lock (tickets#499), so
+    // the dialog offers `remote` alone, without a „coming soon“ for the rest.
     modeOptions() {
-      return ["authorization", "remote", "both"].map((value) => {
+      const modes =
+        this.form.provider === SALTO_PROVIDER
+          ? ["remote"]
+          : ["authorization", "remote", "both"];
+      return modes.map((value) => {
         const comingSoon = isComingSoonAccessPointMode(value);
         return {
           value,
@@ -325,6 +334,20 @@ export default {
       const supported = this.matchingLock?.supportedModes;
       if (!Array.isArray(supported) || supported.length === 0) return false;
       return !supported.includes(this.form.mode);
+    },
+    // A Salto lock whose IQ is not activated, or needs re-activation, lists
+    // no modes: it can do nothing right now. The backend saves the door all
+    // the same (tickets#570); the hint says why it does not open yet and
+    // where the IQ is activated - on the tab of the locking systems, not here.
+    iqNotActivatedHint() {
+      if (this.form.provider !== SALTO_PROVIDER) return "";
+      const supported = this.matchingLock?.supportedModes;
+      if (!Array.isArray(supported) || supported.length > 0) return "";
+
+      return this.$t("accessPoint.management.iqNotActivated", {
+        tab: this.$t("accessPoint.management.providersTab"),
+        section: this.$t("accessPoint.tenant.salto.iq.title"),
+      });
     },
     // Lock and mode are judged against the provider's listing. While the
     // provider is not active there is none, and the backend saves without
@@ -894,6 +917,7 @@ export default {
             </v-col>
             <v-col v-if="!isLocker" cols="12" md="6">
               <v-select
+                ref="modeSelect"
                 v-model="form.mode"
                 :items="modeOptions"
                 :label="$t('accessPoint.management.fields.mode')"
@@ -961,6 +985,16 @@ export default {
               </v-select>
             </v-col>
           </v-row>
+
+          <v-alert
+            v-if="iqNotActivatedHint"
+            class="iq-not-activated-hint mt-2"
+            type="info"
+            text
+            dense
+          >
+            {{ iqNotActivatedHint }}
+          </v-alert>
 
           <v-alert
             v-if="providerInactiveHint"

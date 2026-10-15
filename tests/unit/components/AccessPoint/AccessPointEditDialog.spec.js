@@ -117,6 +117,11 @@ function locationField(wrapper, name) {
     .find("input");
 }
 
+/** The select of the door's Modus (`form.mode`). */
+function modeSelect(wrapper) {
+  return wrapper.findComponent({ ref: "modeSelect" });
+}
+
 function labels(wrapper) {
   return wrapper.findAll("label").wrappers.map((label) => label.text());
 }
@@ -1024,6 +1029,131 @@ describe("AccessPointEditDialog", () => {
       expect(dialogText(wrapper)).not.toContain(
         "Nicht gefunden oder nicht zugänglich."
       );
+    });
+  });
+
+  /**
+   * A Salto lock whose IQ is not activated, or needs re-activation, lists no
+   * modes: it can do nothing right now. The door is saved all the same
+   * (tickets#570), and the dialog says why it does not open yet and where the
+   * IQ is activated.
+   */
+  describe("a Salto door whose IQ is not activated", () => {
+    const SALTO = {
+      id: "salto-ks",
+      title: "Salto KS",
+      providerCapabilities: LISTS,
+    };
+    const SALTO_DOOR = {
+      ...DOOR,
+      id: "ap-salto",
+      provider: "salto-ks",
+      externalId: "lock-salto",
+    };
+
+    function saltoLock(supportedModes) {
+      return {
+        id: "lock-salto",
+        externalId: "lock-salto",
+        provider: "salto-ks",
+        label: "Labortür",
+        supportedModes,
+      };
+    }
+
+    it("says that the door opens once the IQ is activated, and where", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [saltoLock([])],
+      });
+
+      const wrapper = await mountDialog({
+        accessPoint: SALTO_DOOR,
+        providers: [SALTO],
+      });
+
+      expect(wrapper.find(".iq-not-activated-hint").text()).toBe(
+        "Öffnet erst, wenn das IQ aktiviert ist. Aktivieren können Sie es unter „Schließsysteme“ › Salto KS › „IQ-Aktivierung für Remote-Open“. Speichern können Sie schon jetzt."
+      );
+      expect(dialogText(wrapper)).not.toContain(
+        "Dieses Schloss meldet den gewählten Modus aktuell nicht als unterstützt."
+      );
+    });
+
+    it("saves the renamed door all the same", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [saltoLock([])],
+      });
+      ApiAccessPointService.storeAccessPoint.mockResolvedValue({
+        data: { ...SALTO_DOOR, label: "Labortür" },
+      });
+
+      const wrapper = await mountDialog({
+        accessPoint: SALTO_DOOR,
+        providers: [SALTO],
+      });
+      await wrapper.find(".label-field input").setValue("Labortür");
+      await wrapper.find(".save-access-point").trigger("click");
+      await flushPromises();
+
+      const payload = ApiAccessPointService.storeAccessPoint.mock.calls[0][0];
+      expect(payload).toMatchObject({
+        id: "ap-salto",
+        provider: "salto-ks",
+        label: "Labortür",
+        mode: "remote",
+      });
+      expect(wrapper.emitted("saved")).toHaveLength(1);
+    });
+
+    it("says nothing of the kind while the lock opens remotely", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [saltoLock(["remote"])],
+      });
+
+      const wrapper = await mountDialog({
+        accessPoint: SALTO_DOOR,
+        providers: [SALTO],
+      });
+
+      expect(wrapper.find(".iq-not-activated-hint").exists()).toBe(false);
+    });
+
+    it("says nothing of the kind while Salto KS is not active", async () => {
+      ApiAccessAppsService.getAccessPoints.mockRejectedValue(
+        lifecycleError(404, "salto_ks_application_not_found", { tenant: "t1" })
+      );
+
+      const wrapper = await mountDialog({ accessPoint: SALTO_DOOR });
+
+      expect(wrapper.find(".iq-not-activated-hint").exists()).toBe(false);
+      expect(wrapper.find(".provider-inactive-hint").exists()).toBe(true);
+    });
+
+    it("offers a Salto door the mode remote alone", async () => {
+      ApiAccessAppsService.getAccessPoints.mockResolvedValue({
+        data: [saltoLock([])],
+      });
+
+      const wrapper = await mountDialog({
+        accessPoint: SALTO_DOOR,
+        providers: [SALTO],
+      });
+
+      const items = modeSelect(wrapper).props("items");
+      expect(items.map((item) => item.value)).toEqual(["remote"]);
+      expect(items[0].disabled).toBe(false);
+      expect(items[0].description).not.toContain("Fertigstellung");
+    });
+
+    it("keeps the PIN modes in sight, not choosable, for a Nuki door", async () => {
+      const wrapper = await mountDialog({ accessPoint: DOOR });
+
+      const items = modeSelect(wrapper).props("items");
+      expect(items.map((item) => [item.value, item.disabled])).toEqual([
+        ["authorization", true],
+        ["remote", false],
+        ["both", true],
+      ]);
     });
   });
 
