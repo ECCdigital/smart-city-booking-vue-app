@@ -1,7 +1,6 @@
 <script>
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
-
-const SECRET_FIELDS = ["clientSecret", "password"];
+import { saltoSecretSources } from "@/utilities/access-apps";
 
 const T = "accessPoint.tenant.salto.connectionTest";
 
@@ -49,7 +48,7 @@ function iqSummary(iqs) {
  * answer. A secret field left empty is sent empty; the backend then takes the
  * stored secret, as long as it belongs to the client id, system user and
  * environment in the form, and answers `missing_secret` with the reason per
- * secret otherwise.
+ * secret otherwise. The text next to the button follows the same rule.
  *
  * A test that ran is a checklist under the button: a headline, one row per
  * check with sign, value and, where needed, what to do, and where each secret
@@ -62,6 +61,8 @@ export default {
     tenantId: { type: String, required: true },
     /** The Salto KS application as the form holds it. */
     app: { type: Object, required: true },
+    /** The stored Salto KS application, whose identity the secrets are for. */
+    stored: { type: Object, default: null },
     secretConfigured: { type: Boolean, default: false },
     passwordConfigured: { type: Boolean, default: false },
     /** Whether the activation of the IQs is on the page to jump to. */
@@ -75,24 +76,20 @@ export default {
     };
   },
   computed: {
-    /** Per secret: `form`, `stored`, or `missing` when neither is there. */
+    /** Per secret: `form`, `stored`, or `missing` with the reason. */
     sources() {
-      const configured = {
+      return saltoSecretSources(this.app, this.stored, {
         clientSecret: this.secretConfigured,
         password: this.passwordConfigured,
-      };
-      return Object.fromEntries(
-        SECRET_FIELDS.map((field) => [
-          field,
-          this.app[field] ? "form" : configured[field] ? "stored" : "missing",
-        ])
-      );
+      });
     },
     basisText() {
-      const sources = Object.values(this.sources);
-      if (sources.includes("missing")) {
-        return this.$t("accessPoint.tenant.salto.connectionTest.basisMissing");
-      }
+      const missing = Object.entries(this.sources)
+        .filter(([, { source }]) => source === "missing")
+        .map(([field, { reason }]) => this.missingText({ field, reason }));
+      if (missing.length) return missing.join(" ");
+
+      const sources = Object.values(this.sources).map(({ source }) => source);
       if (sources.every((source) => source === "stored")) {
         return this.$t("accessPoint.tenant.salto.connectionTest.basisStored");
       }
@@ -144,15 +141,14 @@ export default {
       });
     },
     missingTexts() {
-      return (this.result?.missing || []).map(({ field, reason }) => {
-        const key = `accessPoint.tenant.salto.connectionTest.missing.${field}.${reason}`;
-        return this.$te(key)
-          ? this.$t(key)
-          : this.$t("accessPoint.tenant.salto.connectionTest.missing.fallback");
-      });
+      return (this.result?.missing || []).map(this.missingText);
     },
   },
   methods: {
+    missingText({ field, reason }) {
+      const key = `${T}.missing.${field}.${reason}`;
+      return this.$te(key) ? this.$t(key) : this.$t(`${T}.missing.fallback`);
+    },
     /** One row of the checklist: status, sign, value and hint. */
     row(key, check = { status: "skipped" }) {
       let status = check.status;

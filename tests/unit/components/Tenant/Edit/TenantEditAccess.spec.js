@@ -250,6 +250,78 @@ describe("TenantEditAccess connection test for Salto KS", () => {
     );
   });
 
+  /**
+   * What the text next to the button says follows the backend's rule: a
+   * stored client secret counts for the stored client id and environment, a
+   * stored password for the stored System-User and environment.
+   */
+  describe("with the identity the secrets are stored for", () => {
+    const STORED = storedSalto()["salto-ks"];
+    const STORED_TENANT = {
+      ...BOTH_STORED,
+      tenant: { id: "t1", applications: [STORED] },
+    };
+
+    async function basisWith(form) {
+      const wrapper = await mountAccess(storedSalto(form), STORED_TENANT);
+      return saltoPanel(wrapper).text();
+    }
+
+    it("says it tests with the stored secrets while the identity is the stored one", async () => {
+      expect(await basisWith({ clientId: " client-1 " })).toContain(
+        "Testet mit den gespeicherten Secrets."
+      );
+    });
+
+    it("names the client secret as missing for another client id", async () => {
+      const text = await basisWith({ clientId: "client-2" });
+
+      expect(text).toContain(
+        "Die Client-ID ist neu. Geben Sie das passende Client Secret ein."
+      );
+      expect(text).not.toContain("Testet mit");
+    });
+
+    it("names the password as missing for another System-User", async () => {
+      const text = await basisWith({ username: "neu@example.com" });
+
+      expect(text).toContain(
+        "Der System-User ist neu. Geben Sie sein Passwort ein."
+      );
+      expect(text).not.toContain("Testet mit");
+    });
+
+    it("names both secrets as missing for another environment", async () => {
+      const text = await basisWith({ environment: "production" });
+
+      expect(text).toContain(
+        "Die Umgebung ist neu. Geben Sie das Client Secret für diese Umgebung ein."
+      );
+      expect(text).toContain(
+        "Die Umgebung ist neu. Geben Sie das Passwort des System-Users für diese Umgebung ein."
+      );
+    });
+
+    it("takes a secret typed in for the new client id and the stored password", async () => {
+      expect(
+        await basisWith({ clientId: "client-2", clientSecret: "secret-2" })
+      ).toContain(
+        "Testet mit gespeicherten Secrets und Secrets aus dem Formular."
+      );
+    });
+
+    it("names a secret that was never stored", async () => {
+      const wrapper = await mountAccess(storedSalto(), {
+        saltoPasswordConfigured: true,
+        tenant: { id: "t1", applications: [STORED] },
+      });
+
+      expect(saltoPanel(wrapper).text()).toContain(
+        "Es ist kein Client Secret gespeichert. Geben Sie es ein."
+      );
+    });
+  });
+
   it("sends empty secret fields empty, next to the identity", async () => {
     const wrapper = await mountAccess(storedSalto(), BOTH_STORED);
 

@@ -624,6 +624,7 @@ export default {
             <SaltoConnectionTest
               :tenant-id="tenant.id"
               :app="localApps['salto-ks']"
+              :stored="storedSalto"
               :secret-configured="saltoSecretConfigured"
               :password-configured="saltoPasswordConfigured"
               :activation-shown="localApps['salto-ks'].active"
