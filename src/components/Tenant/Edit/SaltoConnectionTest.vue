@@ -2,6 +2,10 @@
 import ConnectionTestAlert from "@/components/Tenant/Edit/ConnectionTestAlert.vue";
 import { SALTO_PROVIDER, saltoSecretSources } from "@/utilities/access-apps";
 import { runConnectionTest } from "@/utilities/access-connection-test";
+import {
+  stateKey,
+  stateMeta,
+} from "@/components/Tenant/Edit/SaltoIqActivation/iqActivationState";
 
 /** Where the texts of the connection test live in the catalogue. */
 const I18N_PREFIX = "accessPoint.tenant.salto.connectionTest";
@@ -38,16 +42,17 @@ const HINT_STATUSES = ["failed", "unknown", "not_verifiable", "todo"];
 
 /**
  * The IQs in numbers: all of them, those that need an activation (OTP on),
- * how many of those are activated, how many are open, how many offline.
+ * how many of those are done, how many are open, how many offline. Done is
+ * what the activation section counts as done (`stateMeta`).
  */
 function iqSummary(iqs) {
-  const needed = iqs.filter((iq) => iq.otpEnabled);
-  const ready = needed.filter((iq) => iq.state === "activated").length;
+  const needed = iqs.filter((iq) => stateKey(iq) !== "no_otp").length;
+  const open = iqs.filter((iq) => !stateMeta(iq).done).length;
   return {
     total: iqs.length,
-    needed: needed.length,
-    ready,
-    open: needed.length - ready,
+    needed,
+    ready: needed - open,
+    open,
     offline: iqs.filter((iq) => iq.online === false).length,
   };
 }
@@ -273,7 +278,7 @@ export default {
 
 <template>
   <div>
-    <!-- Testergebnis -->
+    <!-- Result of the test -->
     <v-row v-if="result" dense>
       <v-col cols="12">
         <v-alert v-if="stoppedForMissing" type="warning" text dense>
@@ -345,7 +350,7 @@ export default {
       </v-col>
     </v-row>
 
-    <!-- Aktion -->
+    <!-- Action -->
     <v-row dense class="mt-2">
       <v-col class="d-flex align-center justify-end flex-wrap test-action">
         <span class="text-caption text--secondary">{{ basisText }}</span>
@@ -365,7 +370,7 @@ export default {
 
 <style scoped>
 .test-action {
-  gap: 12px;
+  gap: var(--scb-space-3);
 }
 .checklist-ok {
   border-left: 3px solid var(--v-success-base) !important;

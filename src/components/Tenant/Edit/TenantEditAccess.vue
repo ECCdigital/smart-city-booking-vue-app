@@ -424,7 +424,7 @@ export default {
               </v-col>
             </v-row>
 
-            <!-- Voraussetzungen in Salto KS -->
+            <!-- Prerequisites in Salto KS -->
             <v-row dense class="mt-2">
               <v-col cols="12">
                 <v-alert
