@@ -227,8 +227,8 @@
                     ? 'success darken-3'
                     : 'error darken-3'
                   : modelApps.ePayBL.clientP12
-                    ? 'success lighten-5'
-                    : 'error lighten-5'
+                  ? 'success lighten-5'
+                  : 'error lighten-5'
               "
               class="rounded"
             >
@@ -356,8 +356,8 @@
                     ? 'success darken-3'
                     : 'error darken-3'
                   : modelTenant?.invoiceTemplate
-                    ? 'success lighten-5'
-                    : 'error lighten-5'
+                  ? 'success lighten-5'
+                  : 'error lighten-5'
               "
               class="rounded"
               flat
@@ -536,8 +536,8 @@
                   ? 'success darken-3'
                   : 'error darken-3'
                 : modelTenant?.receiptTemplate
-                  ? 'success lighten-5'
-                  : 'error lighten-5'
+                ? 'success lighten-5'
+                : 'error lighten-5'
             "
             class="rounded"
           >
@@ -584,8 +584,8 @@
                   ? 'success darken-3'
                   : 'error darken-3'
                 : modelTenant?.cancellationTemplate
-                  ? 'success lighten-5'
-                  : 'error lighten-5'
+                ? 'success lighten-5'
+                : 'error lighten-5'
             "
             class="rounded"
           >
