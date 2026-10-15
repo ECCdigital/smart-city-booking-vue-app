@@ -36,6 +36,13 @@ export function stateMeta(iq) {
   return { key, ...META[key] };
 }
 
+// Whether the IQ has an activation of the current identity, in any state
+// from the PIN on - all of it rests when site, System-User or environment
+// change.
+export function hasActivation(iq) {
+  return !!iq.state && iq.state !== "not_activated";
+}
+
 export function actionOrder(iq) {
   return ACTION_ORDER[stateKey(iq)];
 }

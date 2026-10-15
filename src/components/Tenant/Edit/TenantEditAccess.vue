@@ -3,7 +3,12 @@ import BaseSection from "@/components/commons/BaseSection.vue";
 import AppPanel from "@/components/AppPanel.vue";
 import AccessAuditExport from "@/components/Tenant/Edit/AccessAuditExport.vue";
 import AccessAppCustomerServiceFields from "@/components/Tenant/Edit/AccessAppCustomerServiceFields.vue";
-import { emptyCustomerService } from "@/utilities/access-apps";
+import {
+  emptyCustomerService,
+  findTenantApp,
+  saltoEnvironment,
+  saltoIdentityChanged,
+} from "@/utilities/access-apps";
 import SaltoIqActivationSection from "@/components/Tenant/Edit/SaltoIqActivation/SaltoIqActivationSection.vue";
 import SaltoConnectionTest from "@/components/Tenant/Edit/SaltoConnectionTest.vue";
 import ApiAccessAppsService from "@/services/api/ApiAccessAppsService";
@@ -37,6 +42,11 @@ export default {
       },
       testing: { nuki: false },
       testResult: { nuki: null },
+      // IQs with an activation of the stored identity, as the activation
+      // section last listed them. Kept while the section is hidden.
+      activatedIqCount: 0,
+      // The open question before an identity change: { count, resolve }.
+      identityQuestion: null,
     };
   },
   watch: {
@@ -46,8 +56,18 @@ export default {
         this.localApps = this.cloneApps(v);
       },
     },
+    // After a save under another identity the IQ list still shows the old
+    // one's activations; load it again.
+    storedSalto(next, previous) {
+      if (next && previous && saltoIdentityChanged(previous, next)) {
+        this.$refs.iqActivation?.load();
+      }
+    },
   },
   computed: {
+    storedSalto() {
+      return findTenantApp(this.tenant.applications, "salto-ks") || null;
+    },
     allowAuditExport() {
       return BookingPermissionService.allowAuditExport();
     },
@@ -95,19 +115,36 @@ export default {
           active: false,
         };
       }
-      if (!cloned["salto-ks"].environment) {
-        // Configurations from before the environment switch only carried a
-        // free-text API URL; an accept host meant accept, anything else
-        // production. Without a URL it stays accept, as the backend reads it -
-        // only a new setup starts on production.
-        const legacyUrl = String(cloned["salto-ks"].apiBaseUrl || "");
-        cloned["salto-ks"].environment =
-          legacyUrl && !legacyUrl.includes("accept") ? "production" : "accept";
-      }
+      cloned["salto-ks"].environment = saltoEnvironment(cloned["salto-ks"]);
       return cloned;
     },
     emitApps() {
       this.$emit("update:apps", this.localApps);
+    },
+    /**
+     * Asks before a save that changes site, System-User or environment of
+     * Salto KS while IQs are activated: their activations rest under another
+     * identity (ECCdigital/tickets#505).
+     *
+     * @returns {Promise<boolean>} Whether the save may go on
+     */
+    confirmSave() {
+      const stored = this.storedSalto;
+      if (
+        !stored ||
+        !this.activatedIqCount ||
+        !saltoIdentityChanged(stored, this.localApps["salto-ks"])
+      ) {
+        return Promise.resolve(true);
+      }
+      return new Promise((resolve) => {
+        this.identityQuestion = { count: this.activatedIqCount, resolve };
+      });
+    },
+    answerIdentityQuestion(proceed) {
+      const question = this.identityQuestion;
+      this.identityQuestion = null;
+      question?.resolve(proceed);
     },
     async validate() {
       return this.$refs.form ? this.$refs.form.validate() : true;
@@ -598,6 +635,7 @@ export default {
               v-if="localApps['salto-ks'].active"
               ref="iqActivation"
               :tenant-id="tenant.id"
+              @update:activated-count="activatedIqCount = $event"
             />
           </AppPanel>
 
@@ -608,6 +646,38 @@ export default {
         </v-col>
       </v-row>
     </v-form>
+
+    <!-- Question before a change of site, System-User or environment -->
+    <v-dialog
+      :value="!!identityQuestion"
+      max-width="520"
+      persistent
+      @input="answerIdentityQuestion(false)"
+    >
+      <v-card v-if="identityQuestion" data-test="salto-identity-change">
+        <v-card-title class="headline">
+          {{ $t("accessPoint.tenant.salto.identityChange.title") }}
+        </v-card-title>
+        <v-card-text>
+          {{
+            $tc(
+              "accessPoint.tenant.salto.identityChange.text",
+              identityQuestion.count,
+              { count: identityQuestion.count }
+            )
+          }}
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text @click="answerIdentityQuestion(false)">
+            {{ $t("accessPoint.tenant.salto.identityChange.cancel") }}
+          </v-btn>
+          <v-btn color="primary" text @click="answerIdentityQuestion(true)">
+            {{ $t("accessPoint.tenant.salto.identityChange.confirm") }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </BaseSection>
 </template>
 
