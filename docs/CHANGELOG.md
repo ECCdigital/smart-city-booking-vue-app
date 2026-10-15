@@ -19,6 +19,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 ### Fixed
 
 -   The XLSX export of the booking list fills „Payment Provider“ (ECCdigital/tickets#487): it read `booking.PaymentProvider` and stayed empty
+-   The route `/booking/verify-reject/:tenantId` is named `booking-verify-reject` (ECCdigital/tickets#317): it shared `booking-request-reject` with `/booking/request-reject/:tenantId`, and vue-router warned about the duplicate name. Both paths open the same pages as before
 
 ### Changed
 
