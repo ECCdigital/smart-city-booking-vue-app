@@ -227,3 +227,23 @@ export function splitAccessPointFieldError(error, field, options) {
         : formatAccessPointErrorMessage(error, options),
   };
 }
+
+/**
+ * Whether a provider's listing was refused because the tenant has not
+ * switched the provider on: the backend answers `404
+ * <provider>_application_not_found` (tickets#311). That is no failure - an
+ * access point may be prepared before its provider is active, and is checked
+ * once it is.
+ *
+ * @param {Object} error The rejected axios error
+ * @returns {boolean} True for the refusal of a provider that is not active
+ */
+export function isProviderNotActiveError(error) {
+  const response = error?.response;
+  const code = response?.data?.code;
+  return (
+    response?.status === 404 &&
+    typeof code === "string" &&
+    code.endsWith("_application_not_found")
+  );
+}
