@@ -9,9 +9,6 @@
  * Remove the flag - and the markup reading it - once the feature ships.
  */
 
-/** Salto KS credentials and the IQ activation wizard. */
-export const SALTO_KS_COMING_SOON = true;
-
 /** Access point modes where the booking user types a PIN at the lock. */
 export const COMING_SOON_ACCESS_POINT_MODES = ["authorization", "both"];
 
