@@ -18,6 +18,7 @@ Every release `v<major>.<minor>.<patch>` is tagged on its branch `version/<major
 
 ### Fixed
 
+-   Removing the last admin of the instance (ECCdigital/tickets#295): the tab „Admin“ names the missing admin and keeps the save back, with the toast „Fehler beim Aktualisieren der Instanz“; the backend's `400 instance_owners_required` toasts „Die Instanz braucht mindestens einen Admin. …“ instead of the generic error
 -   The XLSX export of the booking list fills „Payment Provider“ (ECCdigital/tickets#487): it read `booking.PaymentProvider` and stayed empty
 -   Dark mode, more of the same (ECCdigital/tickets#307): prices on bookable and event cards, the step numbers of the event stepper and the tenant name in „Freigabe ausstehend“ read `--scb-text-link` instead of the bare primary colour, the leiste over the rich-text fields (Kurzbeschreibung, Beschreibung) reads `--scb-surface-tint` instead of the light grey `grey lighten-4`; labels, values and notes on bookable and event cards read `--scb-text-muted` and `--scb-text-caption` instead of Vuetify's fixed greys; the layout previews under „Zahlungs- und Stornobelege“ (tenant settings, Zahlungen) are drawn in the surface and rule tokens instead of fixed light greys; the logo on the login pages and on the public booking status page and the providers' logos under „Zutritt & Schließsysteme“ and „Zahlungen“ sit on the logo plate. The light theme is unchanged
 
